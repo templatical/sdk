@@ -111,6 +111,7 @@
       },
       "peerDependencies": {
         "@templatical/renderer": "^0.1.0",
+        "tailwindcss": "^4.0.0",
         "vue": "^3.4.0",
       },
       "optionalPeers": [

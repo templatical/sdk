@@ -29,6 +29,7 @@
   },
   "peerDependencies": {
     "vue": "^3.4.0",
+    "tailwindcss": "^4.0.0",
     "@templatical/renderer": "^0.1.0"
   },
   "peerDependenciesMeta": {
