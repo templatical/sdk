@@ -1,0 +1,24 @@
+{
+  "name": "templatical",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "bun run --filter './packages/*' build",
+    "build:email-editor": "vite build --config vite.email-editor.config.ts",
+    "build:headless-email-editor": "vite build --config vite.headless-email-editor.config.ts",
+    "build:all-sdk": "bun run build:email-editor && bun run build:headless-email-editor",
+    "test": "bun run --filter './packages/*' test",
+    "lint": "eslint packages/*/src",
+    "format": "prettier --write 'packages/*/src/**/*.{ts,vue}'",
+    "typecheck": "bun run --filter './packages/*' typecheck"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
+    "eslint": "^10.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.7.0"
+  }
+}

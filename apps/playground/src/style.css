@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@variant dark (&:is(.dark *));
+
+@theme {
+    --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
+    --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+    --color-primary: oklch(70% 0.16 55);
+    --color-primary-hover: oklch(63% 0.17 55);
+    --color-primary-dark: oklch(78% 0.14 55);
+    --color-primary-dark-hover: oklch(70% 0.16 55);
+}
+
+#app {
+    height: 100%;
+}

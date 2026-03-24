@@ -1,0 +1,61 @@
+Functional Source License, Version 1.1, MIT Future License
+
+Copyright (c) 2024-present Templatical
+
+## Terms and Conditions
+
+### Licensor ("We")
+
+Templatical
+
+### The Software
+
+Templatical Email Editor — the visual drag-and-drop email template editor
+(@templatical/core and @templatical/vue packages).
+
+### Grant of Rights
+
+Subject to the terms and conditions of this License, We hereby grant You a
+non-exclusive, worldwide, non-transferable license to use, copy, modify,
+create derivative works, and redistribute the Software, subject to the
+following conditions:
+
+### Permitted Uses
+
+You may use the Software for any purpose, including commercial purposes,
+**provided that**:
+
+1. You do not offer the Software, or a substantially similar product built
+   using the Software, as a hosted or managed service that competes with
+   Templatical's commercial offerings.
+
+2. If your organization's annual revenue exceeds $5,000,000 USD, you must
+   purchase a commercial license from Templatical ($2,000 USD per year).
+   Contact licensing@templatical.com.
+
+### Change Date
+
+Two (2) years from the date of each release of the Software.
+
+### Change License
+
+MIT License
+
+On the Change Date, the above copyright notice and this permission notice
+shall be replaced with the MIT License, and the Software will be available
+under the MIT License for all purposes without restriction.
+
+### Notices
+
+You must retain this license notice in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+---
+
+Note: The @templatical/types, @templatical/renderer, and
+@templatical/import-beefree packages are licensed separately under the MIT
+License. See LICENSE-MIT.
