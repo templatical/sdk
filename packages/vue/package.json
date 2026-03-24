@@ -25,7 +25,20 @@
   },
   "dependencies": {
     "@templatical/core": "workspace:*",
-    "@templatical/types": "workspace:*"
+    "@templatical/types": "workspace:*",
+    "@tiptap/core": "^2.0.0",
+    "@tiptap/extension-link": "^2.0.0",
+    "@tiptap/extension-subscript": "^2.0.0",
+    "@tiptap/extension-superscript": "^2.0.0",
+    "@tiptap/extension-text-align": "^2.0.0",
+    "@tiptap/extension-underline": "^2.0.0",
+    "@tiptap/starter-kit": "^2.0.0",
+    "@tiptap/vue-3": "^2.0.0",
+    "@vueuse/core": "^12.0.0",
+    "liquidjs": "^10.0.0",
+    "lucide-vue-next": "^0.475.0",
+    "vue-advanced-cropper": "^2.0.0",
+    "vuedraggable": "^4.1.0"
   },
   "peerDependencies": {
     "vue": "^3.4.0",
