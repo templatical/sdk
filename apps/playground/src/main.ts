@@ -1,4 +1,4 @@
-import { createApp, shallowRef, h, type Component } from 'vue';
+import { createApp, shallowRef, h, Transition, type Component } from 'vue';
 import App from './App.vue';
 import Cloud from './Cloud.vue';
 import '@templatical/vue/src/styles/index.css';
@@ -17,6 +17,11 @@ window.addEventListener('hashchange', () => {
 
 createApp({
     setup() {
-        return () => h(currentPage.value);
+        return () =>
+            h(
+                Transition,
+                { name: 'pg-screen', mode: 'out-in' },
+                () => h(currentPage.value, { key: currentPage.value === Cloud ? 'cloud' : 'oss' }),
+            );
     },
 }).mount('#app');

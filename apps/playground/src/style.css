@@ -9,8 +9,110 @@
     --color-primary-hover: oklch(63% 0.17 55);
     --color-primary-dark: oklch(78% 0.14 55);
     --color-primary-dark-hover: oklch(70% 0.16 55);
+    --shadow-primary-ring: 0 0 0 3px oklch(70% 0.16 55 / 0.15);
+    --shadow-primary-glow: 0 4px 12px oklch(70% 0.16 55 / 0.25);
+    --shadow-primary-ring-subtle: 0 0 0 3px oklch(70% 0.16 55 / 0.12);
 }
 
 #app {
     height: 100%;
+}
+
+/* Shared playground patterns */
+
+.pg-toolbar-btn {
+    @apply inline-flex items-center gap-[5px] h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50;
+}
+
+.pg-input {
+    @apply w-full py-2.5 px-3.5 text-sm bg-white border border-gray-200 rounded-lg text-gray-900 outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-gray-400 focus:border-primary focus:shadow-primary-ring;
+}
+
+.pg-cta {
+    @apply inline-flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium font-sans border-none rounded-lg cursor-pointer transition-[color,background-color,box-shadow,transform] duration-150 bg-primary text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:bg-primary-hover hover:-translate-y-px hover:shadow-primary-glow disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.pg-modal-backdrop {
+    @apply fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-[4px];
+}
+
+.pg-modal-close {
+    @apply size-7 flex items-center justify-center border-none bg-transparent text-xl text-gray-500 cursor-pointer rounded-md transition-[background] duration-150 hover:bg-gray-50;
+}
+
+/* Modal transitions */
+
+.pg-modal-enter-active {
+    transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pg-modal-leave-active {
+    transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pg-modal-enter-from,
+.pg-modal-leave-to {
+    opacity: 0;
+}
+
+.pg-modal-enter-active .pg-modal-dialog {
+    transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pg-modal-leave-active .pg-modal-dialog {
+    transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pg-modal-enter-from .pg-modal-dialog {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+}
+
+.pg-modal-leave-to .pg-modal-dialog {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+}
+
+/* Screen crossfade */
+
+.pg-screen-enter-active,
+.pg-screen-leave-active {
+    transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pg-screen-enter-from,
+.pg-screen-leave-to {
+    opacity: 0;
+}
+
+/* Card stagger entrance */
+
+@keyframes pg-card-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pg-card-stagger {
+    animation: pg-card-in 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pg-modal-enter-active,
+    .pg-modal-leave-active,
+    .pg-modal-enter-active .pg-modal-dialog,
+    .pg-modal-leave-active .pg-modal-dialog,
+    .pg-screen-enter-active,
+    .pg-screen-leave-active {
+        transition-duration: 0.01ms !important;
+    }
+
+    .pg-card-stagger {
+        animation-duration: 0.01ms !important;
+    }
 }

@@ -9,6 +9,7 @@ import type { BeeFreeTemplate } from '@templatical/import-beefree';
 import { templates, customBlockDefinitions } from '@/templates';
 import type { TemplateOption } from '@/templates';
 import CodeEditor from '@/CodeEditor.vue';
+import LogoIcon from '@/LogoIcon.vue';
 
 type Screen = 'chooser' | 'editor';
 const screen = ref<Screen>('chooser');
@@ -95,13 +96,21 @@ const displayConditions = {
 
 let selectedContent: TemplateContent | null = null;
 let selectedCustomBlocks: CustomBlockDefinition[] | undefined;
+let pendingEditorInit = false;
 
 function chooseTemplate(content: TemplateContent, template?: TemplateOption): void {
     selectedContent = content;
     selectedCustomBlocks = template?.customBlocks;
     currentSerializableConfig = buildSerializableConfig();
+    pendingEditorInit = true;
     screen.value = 'editor';
-    nextTick(() => initEditor());
+}
+
+function onScreenEnter(): void {
+    if (pendingEditorInit) {
+        pendingEditorInit = false;
+        nextTick(() => initEditor());
+    }
 }
 
 function importBeefreeFromJson(raw: string): void {
@@ -278,32 +287,21 @@ onUnmounted(() => {
 
 <template>
     <div class="box-border flex flex-col h-screen font-sans bg-white text-gray-900">
+        <Transition name="pg-screen" mode="out-in" @enter="onScreenEnter">
         <!-- Template Chooser Screen -->
-        <template v-if="screen === 'chooser'">
-            <div class="flex flex-col items-center justify-center h-screen bg-white font-sans">
+        <div v-if="screen === 'chooser'" key="chooser" class="flex flex-col items-center justify-center min-h-screen bg-white font-sans py-12">
                 <div class="flex flex-col items-center max-w-[860px] px-6">
-                    <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" class="mb-5">
-                        <defs>
-                            <mask id="chooser-logo">
-                                <rect width="32" height="32" fill="white"/>
-                                <rect x="6" y="9" width="10" height="1.8" rx="0.9" fill="black"/>
-                                <rect x="6" y="13.5" width="7" height="1.5" rx="0.75" fill="black"/>
-                                <rect x="6" y="17" width="9" height="1.5" rx="0.75" fill="black"/>
-                                <rect x="6" y="20.5" width="5" height="1.5" rx="0.75" fill="black"/>
-                            </mask>
-                        </defs>
-                        <rect x="10" y="1" width="18" height="22" rx="3" fill="#d4d4d4" transform="rotate(8 19 12)"/>
-                        <rect x="6" y="2" width="18" height="22" rx="3" fill="#a3a3a3" transform="rotate(-4 15 13)"/>
-                        <rect x="2" y="4" width="18" height="22" rx="3" fill="#525252" mask="url(#chooser-logo)"/>
-                    </svg>
+                    <LogoIcon class="mb-5" />
                     <h1 class="m-0 mb-2 text-[22px] font-semibold text-gray-900 tracking-[-0.02em]">Templatical Playground</h1>
                     <p class="m-0 mb-9 text-[15px] text-gray-500">Choose a starting point for your email template</p>
 
-                    <div class="grid grid-cols-4 gap-[14px] w-full">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[14px] w-full">
                         <button
-                            v-for="tpl in templates"
+                            v-for="(tpl, i) in templates"
                             :key="tpl.name"
-                            class="chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-all duration-200 ease-in-out text-left font-sans overflow-hidden hover:border-primary hover:shadow-[0_0_0_3px_oklch(70%_0.16_55_/_0.12)]"
+                            :aria-label="`Choose ${tpl.name} template`"
+                            class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left font-sans overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle"
+                            :style="{ animationDelay: `${i * 40}ms` }"
                             @click="chooseTemplate(tpl.create(), tpl)"
                         >
                             <div class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200">
@@ -393,9 +391,9 @@ onUnmounted(() => {
                             <span class="block px-[14px] pb-[14px] text-xs text-gray-500 leading-[1.4]">{{ tpl.description }}</span>
                         </button>
 
-                        <button class="chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-all duration-200 ease-in-out text-left font-sans overflow-hidden hover:border-primary hover:shadow-[0_0_0_3px_oklch(70%_0.16_55_/_0.12)]" @click="chooseTemplate(createDefaultTemplateContent())">
+                        <button aria-label="Start from scratch with empty canvas" class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left font-sans overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle" :style="{ animationDelay: `${templates.length * 40}ms` }" @click="chooseTemplate(createDefaultTemplateContent())">
                             <div class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200 text-gray-500">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <line x1="12" y1="5" x2="12" y2="19" />
                                     <line x1="5" y1="12" x2="19" y2="12" />
                                 </svg>
@@ -408,10 +406,10 @@ onUnmounted(() => {
                     <div class="flex items-center gap-3 mt-6 text-sm text-gray-500">
                         <span>Have an existing BeeFree template?</span>
                         <button
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-all duration-150 hover:text-gray-900 hover:bg-gray-50"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50"
                             @click="showBeefreeImport = true"
                         >
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                                 <path
                                     d="M8 2.5v8M5 7.5L8 4.5l3 3M3 10v2.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V10"
                                     stroke="currentColor"
@@ -433,20 +431,19 @@ onUnmounted(() => {
                     <a href="#cloud">Cloud Playground</a>
                 </div>
             </div>
-        </template>
 
         <!-- Editor Screen -->
-        <template v-else>
+        <div v-else key="editor" class="flex flex-col h-full">
             <header class="flex items-center justify-between h-12 px-4 border-b border-gray-200 bg-white shrink-0 z-[100]">
                 <div class="flex items-center gap-2">
-                    <button class="inline-flex items-center gap-[5px] h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-all duration-150 no-underline whitespace-nowrap hover:text-gray-900 hover:bg-gray-50" title="Back to templates" @click="backToChooser">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <button class="pg-toolbar-btn no-underline" title="Back to templates" @click="backToChooser">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                             <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                         Templates
                     </button>
-                    <button class="inline-flex items-center gap-[5px] h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-all duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50" @click="openConfig">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <button class="pg-toolbar-btn" @click="openConfig">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                             <path d="M6.5 1.75a.75.75 0 0 1 1.5 0V4a.75.75 0 0 1-1.5 0V1.75zM6.5 12a.75.75 0 0 1 1.5 0v2.25a.75.75 0 0 1-1.5 0V12zM1.75 6.5a.75.75 0 0 0 0 1.5H4a.75.75 0 0 0 0-1.5H1.75zM12 6.5a.75.75 0 0 0 0 1.5h2.25a.75.75 0 0 0 0-1.5H12z" fill="currentColor"/>
                             <circle cx="7.25" cy="7.25" r="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
                         </svg>
@@ -456,29 +453,34 @@ onUnmounted(() => {
 
                 <div class="flex items-center gap-1">
                     <!-- View JSON -->
-                    <button class="inline-flex items-center gap-[5px] h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-all duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50" @click="toggleJson">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <button class="pg-toolbar-btn" @click="toggleJson">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                             <path d="M5.5 3L2 8l3.5 5M10.5 3L14 8l-3.5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                         JSON
                     </button>
 
                     <!-- Export dropdown -->
-                    <div class="relative">
-                        <button class="inline-flex items-center gap-[5px] h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-all duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50" @click="exportMenuOpen = !exportMenuOpen">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <div class="relative" @keydown.escape="exportMenuOpen = false">
+                        <button
+                            class="pg-toolbar-btn"
+                            aria-haspopup="true"
+                            :aria-expanded="exportMenuOpen"
+                            @click="exportMenuOpen = !exportMenuOpen"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                                 <path d="M3 10v2.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V10M8 2.5v8M5 7.5L8 10.5l3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                             Export
-                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                                 <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                         </button>
-                        <div v-if="exportMenuOpen" class="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden z-50" @mouseleave="exportMenuOpen = false">
-                            <button class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 font-sans bg-transparent border-none cursor-pointer transition-colors duration-100 hover:bg-gray-50 hover:text-gray-900" @click="handleExportJson(); exportMenuOpen = false">
+                        <div v-if="exportMenuOpen" role="menu" class="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden z-50" @mouseleave="exportMenuOpen = false">
+                            <button role="menuitem" class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 font-sans bg-transparent border-none cursor-pointer transition-colors duration-100 hover:bg-gray-50 hover:text-gray-900" @click="handleExportJson(); exportMenuOpen = false">
                                 Download JSON
                             </button>
-                            <button class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 font-sans bg-transparent border-none cursor-pointer transition-colors duration-100 hover:bg-gray-50 hover:text-gray-900" @click="handleExportMjml(); exportMenuOpen = false">
+                            <button role="menuitem" class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 font-sans bg-transparent border-none cursor-pointer transition-colors duration-100 hover:bg-gray-50 hover:text-gray-900" @click="handleExportMjml(); exportMenuOpen = false">
                                 Download MJML
                             </button>
                         </div>
@@ -486,13 +488,13 @@ onUnmounted(() => {
 
                     <div class="w-px h-5 bg-gray-200 mx-1" />
 
-                    <a href="https://docs.templatical.com" target="_blank" rel="noopener" class="inline-flex items-center h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-all duration-150 no-underline whitespace-nowrap hover:text-gray-900 hover:bg-gray-50">Docs</a>
-                    <a href="https://github.com/templatical/editor" target="_blank" rel="noopener" class="inline-flex items-center h-8 px-2 border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-all duration-150 no-underline hover:text-gray-900 hover:bg-gray-50" title="GitHub">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <a href="https://docs.templatical.com" target="_blank" rel="noopener" class="pg-toolbar-btn no-underline">Docs</a>
+                    <a href="https://github.com/templatical/editor" target="_blank" rel="noopener" class="pg-toolbar-btn px-2 no-underline" aria-label="GitHub repository">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                             <path d="M8 .2A8 8 0 0 0 5.47 15.79c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8 8 0 0 0 8 .2z"/>
                         </svg>
                     </a>
-                    <a href="#cloud" class="inline-flex items-center h-8 px-2.5 border border-primary rounded-md bg-primary text-white text-[13px] font-medium font-sans cursor-pointer transition-all duration-150 no-underline whitespace-nowrap hover:bg-primary-hover hover:border-primary-hover hover:text-white">
+                    <a href="#cloud" class="inline-flex items-center h-8 px-2.5 border border-primary rounded-md bg-primary text-white text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 no-underline whitespace-nowrap hover:bg-primary-hover hover:border-primary-hover hover:text-white">
                         Cloud
                     </a>
                 </div>
@@ -501,19 +503,21 @@ onUnmounted(() => {
             <div class="flex flex-1 min-h-0">
                 <div ref="editorContainer" class="flex-1 min-w-0" />
             </div>
-        </template>
+        </div>
+        </Transition>
 
         <!-- JSON Viewer Modal -->
         <Teleport to="body">
-            <div v-if="showJson" class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-[4px]" @click.self="showJson = false">
-                <div class="w-[720px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden">
+            <Transition name="pg-modal">
+            <div v-if="showJson" class="pg-modal-backdrop" @click.self="showJson = false" @keydown.escape="showJson = false">
+                <div role="dialog" aria-modal="true" aria-labelledby="json-modal-title" class="pg-modal-dialog w-[720px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden">
                     <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
-                        <span class="text-sm font-semibold text-gray-900">Template JSON</span>
+                        <span id="json-modal-title" class="text-sm font-semibold text-gray-900">Template JSON</span>
                         <div class="flex items-center gap-2">
-                            <button class="h-[30px] px-3 border border-gray-200 rounded-md bg-white text-gray-500 text-xs font-medium font-sans cursor-pointer transition-all duration-150 hover:bg-gray-50 hover:text-gray-900" @click="copyJson">
+                            <button class="h-[30px] px-3 border border-gray-200 rounded-md bg-white text-gray-500 text-xs font-medium font-sans cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900" @click="copyJson">
                                 {{ copied ? 'Copied!' : 'Copy' }}
                             </button>
-                            <button class="size-[30px] flex items-center justify-center border-none bg-transparent text-xl text-gray-500 cursor-pointer rounded-md transition-[background] duration-150 hover:bg-gray-50" @click="showJson = false">&times;</button>
+                            <button aria-label="Close" class="pg-modal-close" @click="showJson = false">&times;</button>
                         </div>
                     </div>
                     <div class="flex-1 overflow-auto [&_pre]:m-0 [&_pre]:p-5 [&_pre]:text-xs [&_pre]:leading-relaxed [&_pre]:font-mono [&_pre]:text-gray-500">
@@ -521,37 +525,39 @@ onUnmounted(() => {
                     </div>
                 </div>
             </div>
+            </Transition>
         </Teleport>
 
         <!-- Config Modal -->
         <Teleport to="body">
-            <div v-if="showConfig" class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-[4px]" @click.self="showConfig = false">
-                <div class="w-[800px] max-w-[90vw] max-h-[90vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden">
+            <Transition name="pg-modal">
+            <div v-if="showConfig" class="pg-modal-backdrop" @click.self="showConfig = false" @keydown.escape="showConfig = false">
+                <div role="dialog" aria-modal="true" aria-label="Editor Configuration" class="pg-modal-dialog w-[800px] max-w-[90vw] max-h-[90vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden">
                     <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 shrink-0">
                         <div class="flex items-center gap-1">
                             <button
-                                class="h-8 px-3 text-[13px] font-medium rounded-md border-none cursor-pointer transition-all duration-150"
+                                class="h-8 px-3 text-[13px] font-medium rounded-md border-none cursor-pointer transition-colors duration-150"
                                 :class="configTab === 'options' ? 'bg-gray-100 text-gray-900' : 'bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'"
                                 @click="configTab = 'options'"
                             >
                                 Options
                             </button>
                             <button
-                                class="h-8 px-3 text-[13px] font-medium rounded-md border-none cursor-pointer transition-all duration-150"
+                                class="h-8 px-3 text-[13px] font-medium rounded-md border-none cursor-pointer transition-colors duration-150"
                                 :class="configTab === 'content' ? 'bg-gray-100 text-gray-900' : 'bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'"
                                 @click="configTab = 'content'"
                             >
                                 Content
                             </button>
                             <button
-                                class="h-8 px-3 text-[13px] font-medium rounded-md border-none cursor-pointer transition-all duration-150"
+                                class="h-8 px-3 text-[13px] font-medium rounded-md border-none cursor-pointer transition-colors duration-150"
                                 :class="configTab === 'theme' ? 'bg-gray-100 text-gray-900' : 'bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'"
                                 @click="configTab = 'theme'"
                             >
                                 Theme
                             </button>
                         </div>
-                        <button class="size-7 flex items-center justify-center border-none bg-transparent text-xl text-gray-500 cursor-pointer rounded-md transition-[background] duration-150 hover:bg-gray-50" @click="showConfig = false">&times;</button>
+                        <button aria-label="Close" class="pg-modal-close" @click="showConfig = false">&times;</button>
                     </div>
                     <div class="flex-1 overflow-auto p-5">
                         <CodeEditor
@@ -572,13 +578,13 @@ onUnmounted(() => {
                         <p class="m-0 text-xs text-gray-400">{{ { options: 'mergeTags, displayConditions, customBlocks', content: 'Template block structure', theme: 'Colors and visual overrides (OKLch)' }[configTab] }}</p>
                         <div class="flex items-center gap-2">
                             <button
-                                class="h-9 px-4 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-all duration-150 hover:text-gray-900 hover:bg-gray-50"
+                                class="h-9 px-4 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50"
                                 @click="showConfig = false"
                             >
                                 Cancel
                             </button>
                             <button
-                                class="h-9 px-4 text-[13px] font-medium border-none rounded-md bg-[oklch(70%_0.16_55)] text-white cursor-pointer transition-all duration-150 shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:bg-[oklch(63%_0.17_55)] hover:-translate-y-px hover:shadow-[0_4px_12px_oklch(70%_0.16_55_/_0.25)]"
+                                class="pg-cta h-9 px-4 text-[13px] rounded-md"
                                 @click="applyConfig"
                             >
                                 Apply & Reload
@@ -587,25 +593,27 @@ onUnmounted(() => {
                     </div>
                 </div>
             </div>
+            </Transition>
         </Teleport>
 
         <!-- BeeFree Import Modal -->
         <Teleport to="body">
-            <div v-if="showBeefreeImport" class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-[4px]" @click.self="showBeefreeImport = false">
-                <div class="w-[640px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden">
+            <Transition name="pg-modal">
+            <div v-if="showBeefreeImport" class="pg-modal-backdrop" @click.self="showBeefreeImport = false" @keydown.escape="showBeefreeImport = false; beefreeError = ''">
+                <div role="dialog" aria-modal="true" aria-labelledby="beefree-modal-title" class="pg-modal-dialog w-[640px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden">
                     <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
                         <div>
-                            <span class="text-sm font-semibold text-gray-900">Import BeeFree Template</span>
+                            <span id="beefree-modal-title" class="text-sm font-semibold text-gray-900">Import BeeFree Template</span>
                             <p class="m-0 mt-1 text-xs text-gray-500">Paste the JSON export from your BeeFree editor below.</p>
                         </div>
-                        <button class="size-7 flex items-center justify-center border-none bg-transparent text-xl text-gray-500 cursor-pointer rounded-md transition-[background] duration-150 hover:bg-gray-50" @click="showBeefreeImport = false; beefreeError = ''">&times;</button>
+                        <button aria-label="Close" class="pg-modal-close" @click="showBeefreeImport = false; beefreeError = ''">&times;</button>
                     </div>
                     <div class="flex-1 overflow-auto p-5">
                         <button
-                            class="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 cursor-pointer transition-all duration-150 bg-transparent hover:border-primary hover:text-gray-900"
+                            class="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 cursor-pointer transition-[border-color,color] duration-150 bg-transparent hover:border-primary hover:text-gray-900"
                             @click="handleBeefreeFileUpload"
                         >
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                 <polyline points="17 8 12 3 7 8" />
                                 <line x1="12" y1="3" x2="12" y2="15" />
@@ -619,20 +627,20 @@ onUnmounted(() => {
 
                         <textarea
                             v-model="beefreeJson"
-                            class="w-full h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 border border-gray-200 rounded-lg text-gray-900 outline-none resize-y transition-all duration-150 placeholder:text-gray-500 focus:border-primary focus:shadow-[0_0_0_3px_oklch(70%_0.16_55_/_0.15)]"
+                            class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500"
                             placeholder='{"page": {"body": {...}, "rows": [...]}}'
                         ></textarea>
                         <p v-if="beefreeError" class="mt-2 mb-0 text-[13px] text-red-500">{{ beefreeError }}</p>
                     </div>
                     <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200 shrink-0">
                         <button
-                            class="h-9 px-4 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-all duration-150 hover:text-gray-900 hover:bg-gray-50"
+                            class="h-9 px-4 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50"
                             @click="showBeefreeImport = false; beefreeError = ''"
                         >
                             Cancel
                         </button>
                         <button
-                            class="h-9 px-4 text-[13px] font-medium border-none rounded-md bg-[oklch(70%_0.16_55)] text-white cursor-pointer transition-all duration-150 shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:bg-[oklch(63%_0.17_55)] hover:-translate-y-px hover:shadow-[0_4px_12px_oklch(70%_0.16_55_/_0.25)]"
+                            class="pg-cta h-9 px-4 text-[13px] rounded-md"
                             @click="confirmBeefreeImport"
                         >
                             Import & Open
@@ -640,15 +648,17 @@ onUnmounted(() => {
                     </div>
                 </div>
             </div>
+            </Transition>
         </Teleport>
 
         <!-- Merge Tag Picker Modal -->
         <Teleport to="body">
-            <div v-if="mergeTagPickerOpen" class="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 backdrop-blur-[4px]" @click.self="cancelMergeTagPicker">
-                <div class="w-[380px] max-h-[480px] flex flex-col bg-white rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.15)] overflow-hidden">
+            <Transition name="pg-modal">
+            <div v-if="mergeTagPickerOpen" class="pg-modal-backdrop" @click.self="cancelMergeTagPicker" @keydown.escape="cancelMergeTagPicker">
+                <div role="dialog" aria-modal="true" aria-labelledby="mergetag-modal-title" class="pg-modal-dialog w-[380px] max-h-[480px] flex flex-col bg-white rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.15)] overflow-hidden">
                     <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-                        <span class="text-sm font-semibold text-gray-900">Insert Merge Tag</span>
-                        <button class="size-7 flex items-center justify-center border-none bg-transparent text-lg text-gray-500 cursor-pointer rounded-md transition-[background] duration-150 hover:bg-gray-50" @click="cancelMergeTagPicker">&times;</button>
+                        <span id="mergetag-modal-title" class="text-sm font-semibold text-gray-900">Insert Merge Tag</span>
+                        <button aria-label="Close" class="pg-modal-close" @click="cancelMergeTagPicker">&times;</button>
                     </div>
                     <div class="overflow-y-auto p-2">
                         <button
@@ -663,6 +673,7 @@ onUnmounted(() => {
                     </div>
                 </div>
             </div>
+            </Transition>
         </Teleport>
     </div>
 </template>
