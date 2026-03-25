@@ -157,6 +157,7 @@ export default {
     previewUrlTooltip:
       "Da die Bild-URL einen Platzhalter verwendet, können Sie hier ein echtes Bild angeben, um das Layout während der Gestaltung in der Vorschau anzuzeigen. Dies wird nicht in die endgültige Ausgabe aufgenommen.",
     clickToAdd: "Klicken Sie, um eine Bild-URL hinzuzufügen",
+    browseMedia: "Medien durchsuchen",
   },
 
   // Toolbar - Video

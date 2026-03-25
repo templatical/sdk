@@ -6,16 +6,29 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { containsMergeTag } from "@templatical/types";
+import type { TemplaticalEditorConfig } from "../../index";
 import { Image } from "lucide-vue-next";
-import { computed } from "vue";
+import { computed, inject } from "vue";
 
 const props = defineProps<{
   block: ImageBlockType;
   viewport: ViewportSize;
 }>();
 
+const emit = defineEmits<{
+  (e: "update", updates: Partial<ImageBlockType>): void;
+}>();
+
 const { t } = useI18n();
 const { syntax } = useMergeTag();
+const config = inject<TemplaticalEditorConfig>("config");
+const canBrowseMedia = computed(() => !!config?.onRequestMedia);
+
+function browseMedia(): void {
+  config?.onRequestMedia?.((url: string) => {
+    emit("update", { src: url });
+  });
+}
 
 const containerStyle = computed(() => ({
   textAlign: props.block.align,
@@ -109,14 +122,27 @@ const hasMergeTagSrc = computed(() =>
     <!-- Empty state -->
     <div
       v-else
-      class="tpl:flex tpl:min-h-[100px] tpl:items-center tpl:justify-center tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-sm"
+      class="tpl:flex tpl:min-h-[100px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-sm"
       style="
         border-color: var(--tpl-border-light);
         background-color: var(--tpl-bg-hover);
         color: var(--tpl-text-dim);
       "
     >
-      <span>{{ t.image.clickToAdd }}</span>
+      <button
+        v-if="canBrowseMedia"
+        class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:cursor-pointer"
+        style="
+          border-color: var(--tpl-border);
+          color: var(--tpl-primary);
+          background-color: var(--tpl-bg);
+        "
+        @click.stop="browseMedia"
+      >
+        <Image :size="14" :stroke-width="1.5" />
+        {{ t.image.browseMedia }}
+      </button>
+      <span v-else>{{ t.image.clickToAdd }}</span>
     </div>
   </div>
 </template>

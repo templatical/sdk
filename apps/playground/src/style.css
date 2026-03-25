@@ -21,7 +21,7 @@
 /* Shared playground patterns */
 
 .pg-toolbar-btn {
-    @apply inline-flex items-center gap-[5px] h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50;
+    @apply inline-flex items-center gap-[5px] h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
 }
 
 .pg-input {

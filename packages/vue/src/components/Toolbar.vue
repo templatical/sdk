@@ -612,7 +612,7 @@ function removeTableColumn(colIndex: number): void {
             @click="openMediaBrowser"
           >
             <Image :size="14" :stroke-width="1.5" />
-            Browse
+            {{ t.image.browseMedia }}
           </button>
         </div>
         <div

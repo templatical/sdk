@@ -71,7 +71,7 @@ function browseMedia(): void {
       @click="browseMedia()"
     >
       <Image :size="14" :stroke-width="1.5" />
-      Browse
+      {{ t.image.browseMedia }}
     </button>
   </div>
 </template>

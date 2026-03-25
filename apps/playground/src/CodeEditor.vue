@@ -65,5 +65,5 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div ref="container" class="h-[480px] border border-gray-200 rounded-lg overflow-auto text-sm" />
+    <div ref="container" class="h-[min(480px,60vh)] border border-gray-200 rounded-lg overflow-auto text-sm" />
 </template>

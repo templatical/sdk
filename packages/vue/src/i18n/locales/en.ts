@@ -154,6 +154,7 @@ export default {
     previewUrlTooltip:
       "Since the image URL uses a placeholder, you can provide a real image here to preview the layout while designing. This is not included in the final output.",
     clickToAdd: "Click to add image URL",
+    browseMedia: "Browse Media",
   },
 
   // Toolbar - Video

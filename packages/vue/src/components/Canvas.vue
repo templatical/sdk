@@ -249,6 +249,7 @@ function handleFetchData(
                   :block="block"
                   :viewport="viewport"
                   @fetch-data="handleFetchData(block, $event)"
+                  @update="(updates: Partial<Block>) => editor.updateBlock(block.id, updates)"
                 />
               </BlockWrapper>
             </div>

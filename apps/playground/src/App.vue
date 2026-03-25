@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, onUnmounted, nextTick } from 'vue';
 import { init, unmount } from '@templatical/vue';
 import type { TemplaticalEditor, TemplaticalEditorConfig } from '@templatical/vue';
 import type { TemplateContent, MergeTag, CustomBlockDefinition } from '@templatical/types';
 import { createDefaultTemplateContent } from '@templatical/types';
 import { convertBeeFreeTemplate } from '@templatical/import-beefree';
 import type { BeeFreeTemplate } from '@templatical/import-beefree';
-import { templates, customBlockDefinitions } from '@/templates';
-import type { TemplateOption } from '@/templates';
+import { templates, customBlockDefinitions, registerDataSourcePicker, resolveDataSourcePicker } from '@/templates';
+import type { TemplateOption, TemplateFeature, DataSourcePickerRequest, DataSourcePickerItem } from '@/templates';
 import CodeEditor from '@/CodeEditor.vue';
 import LogoIcon from '@/LogoIcon.vue';
 
@@ -17,6 +17,75 @@ const cloudBannerDismissed = ref(false);
 const showBeefreeImport = ref(false);
 const beefreeJson = ref('');
 const beefreeError = ref('');
+
+// Feature showcase overlay
+const showFeatureOverlay = ref(false);
+const currentFeatures = ref<TemplateFeature[]>([]);
+const currentTemplateName = ref('');
+
+const FEATURES_DISMISSED_KEY = 'tpl-playground-features-dismissed';
+
+function getDismissedTemplates(): Set<string> {
+    try {
+        const raw = localStorage.getItem(FEATURES_DISMISSED_KEY);
+        return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+    } catch { return new Set(); }
+}
+
+function setDismissedTemplate(name: string): void {
+    const dismissed = getDismissedTemplates();
+    dismissed.add(name);
+    localStorage.setItem(FEATURES_DISMISSED_KEY, JSON.stringify([...dismissed]));
+}
+
+function resetDismissedTemplate(name: string): void {
+    const dismissed = getDismissedTemplates();
+    dismissed.delete(name);
+    localStorage.setItem(FEATURES_DISMISSED_KEY, JSON.stringify([...dismissed]));
+}
+
+function dismissFeatureOverlay(): void {
+    showFeatureOverlay.value = false;
+    if (currentTemplateName.value) {
+        setDismissedTemplate(currentTemplateName.value);
+    }
+}
+
+function reopenFeatureOverlay(): void {
+    if (currentTemplateName.value) {
+        resetDismissedTemplate(currentTemplateName.value);
+    }
+    showFeatureOverlay.value = true;
+}
+
+// Data source picker modal
+const dataSourcePickerOpen = ref(false);
+const dataSourcePickerRequest = ref<DataSourcePickerRequest | null>(null);
+const dataSourcePickerFetching = ref(true);
+let dataSourceFetchTimer: ReturnType<typeof setTimeout> | null = null;
+
+registerDataSourcePicker((request: DataSourcePickerRequest) => {
+    dataSourcePickerRequest.value = request;
+    dataSourcePickerFetching.value = true;
+    dataSourcePickerOpen.value = true;
+    if (dataSourceFetchTimer) clearTimeout(dataSourceFetchTimer);
+    dataSourceFetchTimer = setTimeout(() => {
+        dataSourcePickerFetching.value = false;
+        dataSourceFetchTimer = null;
+    }, 3000);
+});
+
+function selectDataSourceItem(item: DataSourcePickerItem): void {
+    if (dataSourceFetchTimer) { clearTimeout(dataSourceFetchTimer); dataSourceFetchTimer = null; }
+    dataSourcePickerOpen.value = false;
+    resolveDataSourcePicker(item);
+}
+
+function cancelDataSourcePicker(): void {
+    if (dataSourceFetchTimer) { clearTimeout(dataSourceFetchTimer); dataSourceFetchTimer = null; }
+    dataSourcePickerOpen.value = false;
+    resolveDataSourcePicker(null);
+}
 
 const editorContainer = ref<HTMLElement | null>(null);
 const editor = ref<TemplaticalEditor | null>(null);
@@ -28,7 +97,9 @@ const configOptionsJson = ref('');
 const configContentJson = ref('');
 const configThemeJson = ref('');
 const configError = ref('');
-const configTab = ref<'options' | 'content' | 'theme'>('options');
+const configTab = ref<'options' | 'content' | 'theme' | 'callbacks'>('options');
+const enableRequestMedia = ref(true);
+const enableRequestMergeTag = ref(true);
 const mergeTagPickerOpen = ref(false);
 let mergeTagResolve: ((tag: MergeTag | null) => void) | null = null;
 
@@ -39,6 +110,10 @@ const mergeTagList = ref<MergeTag[]>([
     { label: 'Company', value: '{{company}}' },
     { label: 'Account ID', value: '{{account_id}}' },
     { label: 'Plan Name', value: '{{plan_name}}' },
+    { label: 'Order ID', value: '{{order_id}}' },
+    { label: 'Order Total', value: '{{order_total}}' },
+    { label: 'Shipping Method', value: '{{shipping_method}}' },
+    { label: 'Tracking URL', value: '{{tracking_url}}' },
     { label: 'Unsubscribe URL', value: '{{unsubscribe_url}}' },
     { label: 'Preferences URL', value: '{{preferences_url}}' },
     { label: 'Current Date', value: '{{current_date}}' },
@@ -91,6 +166,27 @@ const displayConditions = {
             group: 'Audience',
             description: 'Show only to enterprise accounts',
         },
+        {
+            label: 'Beta Testers',
+            before: '{% if beta_tester %}',
+            after: '{% endif %}',
+            group: 'Audience',
+            description: 'Show only to users in the beta program',
+        },
+        {
+            label: 'Early Bird',
+            before: '{% if early_bird %}',
+            after: '{% endif %}',
+            group: 'Registration',
+            description: 'Show early bird pricing for early registrants',
+        },
+        {
+            label: 'Speakers',
+            before: '{% if is_speaker %}',
+            after: '{% endif %}',
+            group: 'Role',
+            description: 'Show only to confirmed speakers',
+        },
     ],
     allowCustom: true,
 };
@@ -105,6 +201,19 @@ function chooseTemplate(content: TemplateContent, template?: TemplateOption): vo
     currentSerializableConfig = buildSerializableConfig();
     pendingEditorInit = true;
     screen.value = 'editor';
+
+    // Show feature overlay if not dismissed
+    if (template?.features?.length) {
+        currentFeatures.value = template.features;
+        currentTemplateName.value = template.name;
+        const dismissed = getDismissedTemplates();
+        if (!dismissed.has(template.name)) {
+            showFeatureOverlay.value = true;
+        }
+    } else {
+        currentFeatures.value = [];
+        currentTemplateName.value = '';
+    }
 }
 
 function onScreenEnter(): void {
@@ -196,6 +305,32 @@ function buildSerializableConfig() {
 
 let currentSerializableConfig = buildSerializableConfig();
 
+// --- Media picker ---
+const mediaPickerOpen = ref(false);
+let mediaResolve: ((url: string) => void) | null = null;
+
+const demoImages = [
+    { label: 'Product Shot', url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80', thumb: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80' },
+    { label: 'Team Photo', url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80', thumb: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&q=80' },
+    { label: 'Abstract', url: 'https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=600&q=80', thumb: 'https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=200&q=80' },
+];
+
+function requestMedia(callback: (url: string) => void): void {
+    mediaResolve = callback;
+    mediaPickerOpen.value = true;
+}
+
+function selectMedia(url: string): void {
+    mediaPickerOpen.value = false;
+    mediaResolve?.(url);
+    mediaResolve = null;
+}
+
+function cancelMediaPicker(): void {
+    mediaPickerOpen.value = false;
+    mediaResolve = null;
+}
+
 function initEditor(): void {
     if (!editorContainer.value) return;
 
@@ -203,7 +338,8 @@ function initEditor(): void {
         container: editorContainer.value,
         ...currentSerializableConfig,
         theme: currentTheme,
-        onRequestMergeTag: requestMergeTag,
+        onRequestMedia: enableRequestMedia.value ? requestMedia : undefined,
+        onRequestMergeTag: enableRequestMergeTag.value ? requestMergeTag : undefined,
     });
 }
 
@@ -248,9 +384,22 @@ function toggleJson(): void {
 
 const copied = ref(false);
 
-function copyJson(): void {
-    navigator.clipboard.writeText(jsonContent.value);
-    copied.value = true;
+async function copyJson(): Promise<void> {
+    try {
+        await navigator.clipboard.writeText(jsonContent.value);
+        copied.value = true;
+    } catch {
+        // Fallback for browsers without clipboard API
+        const ta = document.createElement('textarea');
+        ta.value = jsonContent.value;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copied.value = true;
+    }
     setTimeout(() => { copied.value = false; }, 1500);
 }
 
@@ -277,10 +426,6 @@ function handleExportMjml(): void {
     downloadFile(mjml, 'email-template.mjml', 'text/plain');
 }
 
-onMounted(() => {
-    // Editor is initialized when user picks a template
-});
-
 onUnmounted(() => {
     unmount();
 });
@@ -290,7 +435,7 @@ onUnmounted(() => {
     <div class="box-border flex flex-col h-screen font-sans bg-white text-gray-900">
         <Transition name="pg-screen" mode="out-in" @enter="onScreenEnter">
         <!-- Template Chooser Screen -->
-        <div v-if="screen === 'chooser'" key="chooser" class="flex flex-col items-center justify-center min-h-screen bg-white font-sans py-12">
+        <div v-if="screen === 'chooser'" key="chooser" class="flex flex-col items-center justify-center min-h-screen bg-white py-12">
                 <div class="flex flex-col items-center max-w-[860px] w-full px-6">
                     <LogoIcon class="mb-5" />
                     <h1 class="m-0 mb-2 text-[22px] font-semibold text-gray-900 tracking-[-0.02em]">Templatical Playground</h1>
@@ -301,98 +446,98 @@ onUnmounted(() => {
                             v-for="(tpl, i) in templates"
                             :key="tpl.name"
                             :aria-label="`Choose ${tpl.name} template`"
-                            class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left font-sans overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle"
+                            class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                             :style="{ animationDelay: `${i * 40}ms` }"
                             @click="chooseTemplate(tpl.create(), tpl)"
                         >
                             <div class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200">
                                 <!-- Product launch wireframe -->
                                 <div v-if="tpl.preview === 'product'" class="flex flex-col gap-1.5 w-[60%]">
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 40%; margin: 0 auto"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 70%; margin: 0 auto"></div>
-                                    <div class="h-5 w-[40%] rounded bg-primary opacity-30 my-1" style="margin: 4px auto"></div>
-                                    <div class="h-8 w-full rounded bg-gray-200 opacity-60 my-0.5"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 50%; margin: 0 auto"></div>
+                                    <div class="mx-auto h-1.5 w-[40%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="mx-auto h-1.5 w-[70%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="mx-auto my-1 h-5 w-[40%] rounded bg-primary/30"></div>
+                                    <div class="my-0.5 h-8 w-full rounded bg-gray-200/60"></div>
+                                    <div class="mx-auto h-1.5 w-[50%] rounded-[3px] bg-gray-200"></div>
                                 </div>
                                 <!-- Newsletter wireframe -->
                                 <div v-else-if="tpl.preview === 'newsletter'" class="flex flex-col gap-1.5 w-[60%]">
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 50%; margin: 0 auto"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 30%; margin: 0 auto; opacity: 0.4"></div>
-                                    <div class="h-8 w-full rounded bg-gray-200 opacity-60 my-0.5"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 90%"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 70%"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 80%"></div>
+                                    <div class="mx-auto h-1.5 w-[50%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="mx-auto h-1.5 w-[30%] rounded-[3px] bg-gray-200/40"></div>
+                                    <div class="my-0.5 h-8 w-full rounded bg-gray-200/60"></div>
+                                    <div class="h-1.5 w-[90%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="h-1.5 w-[70%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="h-1.5 w-[80%] rounded-[3px] bg-gray-200"></div>
                                 </div>
                                 <!-- Welcome wireframe -->
                                 <div v-else-if="tpl.preview === 'welcome'" class="flex flex-col gap-1.5 w-[60%]">
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 35%; margin: 0 auto"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 60%; margin: 0 auto"></div>
-                                    <div style="display: flex; gap: 6px; align-items: center">
-                                        <div class="size-2.5 rounded-full bg-primary opacity-30 shrink-0"></div>
-                                        <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 70%; flex-shrink: 0"></div>
+                                    <div class="mx-auto h-1.5 w-[35%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="mx-auto h-1.5 w-[60%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="size-2.5 shrink-0 rounded-full bg-primary/30"></div>
+                                        <div class="h-1.5 w-[70%] shrink-0 rounded-[3px] bg-gray-200"></div>
                                     </div>
-                                    <div style="display: flex; gap: 6px; align-items: center">
-                                        <div class="size-2.5 rounded-full bg-primary opacity-30 shrink-0"></div>
-                                        <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 65%; flex-shrink: 0"></div>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="size-2.5 shrink-0 rounded-full bg-primary/30"></div>
+                                        <div class="h-1.5 w-[65%] shrink-0 rounded-[3px] bg-gray-200"></div>
                                     </div>
-                                    <div style="display: flex; gap: 6px; align-items: center">
-                                        <div class="size-2.5 rounded-full bg-primary opacity-30 shrink-0"></div>
-                                        <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 60%; flex-shrink: 0"></div>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="size-2.5 shrink-0 rounded-full bg-primary/30"></div>
+                                        <div class="h-1.5 w-[60%] shrink-0 rounded-[3px] bg-gray-200"></div>
                                     </div>
                                 </div>
                                 <!-- Order confirmation wireframe -->
                                 <div v-else-if="tpl.preview === 'order'" class="flex flex-col gap-1.5 w-[60%]">
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 40%; margin: 0 auto"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 55%; margin: 0 auto; opacity: 0.5"></div>
-                                    <div style="display: flex; gap: 4px">
-                                        <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 40%"></div>
-                                        <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 20%"></div>
-                                        <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 25%"></div>
+                                    <div class="mx-auto h-1.5 w-[40%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="mx-auto h-1.5 w-[55%] rounded-[3px] bg-gray-200/50"></div>
+                                    <div class="flex gap-1">
+                                        <div class="h-1.5 w-[40%] rounded-[3px] bg-gray-200"></div>
+                                        <div class="h-1.5 w-[20%] rounded-[3px] bg-gray-200"></div>
+                                        <div class="h-1.5 w-[25%] rounded-[3px] bg-gray-200"></div>
                                     </div>
-                                    <div style="display: flex; gap: 4px">
-                                        <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 40%; opacity: 0.5"></div>
-                                        <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 20%; opacity: 0.5"></div>
-                                        <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 25%; opacity: 0.5"></div>
+                                    <div class="flex gap-1">
+                                        <div class="h-1.5 w-[40%] rounded-[3px] bg-gray-200/50"></div>
+                                        <div class="h-1.5 w-[20%] rounded-[3px] bg-gray-200/50"></div>
+                                        <div class="h-1.5 w-[25%] rounded-[3px] bg-gray-200/50"></div>
                                     </div>
-                                    <div class="h-5 w-[40%] rounded bg-primary opacity-30 my-1" style="margin: 4px auto; background: #059669"></div>
+                                    <div class="mx-auto my-1 h-5 w-[40%] rounded bg-emerald-600/30"></div>
                                 </div>
                                 <!-- Event invitation wireframe -->
                                 <div v-else-if="tpl.preview === 'event'" class="flex flex-col gap-1.5 w-[60%]">
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 45%; margin: 0 auto"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 65%; margin: 0 auto"></div>
-                                    <div class="h-8 w-full rounded bg-gray-200 opacity-60 my-0.5" style="opacity: 0.4"></div>
-                                    <div style="display: flex; gap: 4px; justify-content: center">
-                                        <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 28%"></div>
-                                        <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 28%"></div>
-                                        <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 28%"></div>
+                                    <div class="mx-auto h-1.5 w-[45%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="mx-auto h-1.5 w-[65%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="my-0.5 h-8 w-full rounded bg-gray-200/40"></div>
+                                    <div class="flex justify-center gap-1">
+                                        <div class="h-1.5 w-[28%] rounded-[3px] bg-gray-200"></div>
+                                        <div class="h-1.5 w-[28%] rounded-[3px] bg-gray-200"></div>
+                                        <div class="h-1.5 w-[28%] rounded-[3px] bg-gray-200"></div>
                                     </div>
-                                    <div class="h-5 w-[40%] rounded bg-primary opacity-30 my-1" style="margin: 4px auto; background: #7c3aed"></div>
+                                    <div class="mx-auto my-1 h-5 w-[40%] rounded bg-violet-600/30"></div>
                                 </div>
                                 <!-- Sale wireframe -->
                                 <div v-else-if="tpl.preview === 'sale'" class="flex flex-col gap-1.5 w-[60%]">
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 50%; margin: 0 auto; background: #fbbf24; opacity: 0.6"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 70%; margin: 0 auto"></div>
-                                    <div style="display: flex; gap: 4px; margin-top: 2px;">
-                                        <div style="flex: 1; height: 28px; border-radius: 3px; background: #e5e7eb; opacity: 0.8;"></div>
-                                        <div style="flex: 1; height: 28px; border-radius: 3px; background: #e5e7eb; opacity: 0.8;"></div>
-                                        <div style="flex: 1; height: 28px; border-radius: 3px; background: #e5e7eb; opacity: 0.8;"></div>
+                                    <div class="mx-auto h-1.5 w-[50%] rounded-[3px] bg-amber-400/60"></div>
+                                    <div class="mx-auto h-1.5 w-[70%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="mt-0.5 flex gap-1">
+                                        <div class="h-7 flex-1 rounded-[3px] bg-gray-200/80"></div>
+                                        <div class="h-7 flex-1 rounded-[3px] bg-gray-200/80"></div>
+                                        <div class="h-7 flex-1 rounded-[3px] bg-gray-200/80"></div>
                                     </div>
-                                    <div class="h-5 w-[40%] rounded bg-primary opacity-30 my-1" style="margin: 4px auto; background: #fbbf24; opacity: 0.5"></div>
+                                    <div class="mx-auto my-1 h-5 w-[40%] rounded bg-amber-400/50"></div>
                                 </div>
                                 <!-- Password reset wireframe -->
-                                <div v-else-if="tpl.preview === 'reset'" class="flex flex-col gap-1.5 w-[60%]" style="align-items: center">
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 35%; margin: 0 auto"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 50%; margin: 0 auto"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 70%; margin: 0 auto; opacity: 0.5"></div>
-                                    <div class="h-5 w-[40%] rounded bg-primary opacity-30 my-1" style="margin: 6px auto; width: 45%"></div>
-                                    <div class="h-1.5 rounded-[3px] bg-gray-200" style="width: 60%; margin: 0 auto; opacity: 0.3"></div>
+                                <div v-else-if="tpl.preview === 'reset'" class="flex flex-col items-center gap-1.5 w-[60%]">
+                                    <div class="h-1.5 w-[35%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="h-1.5 w-[50%] rounded-[3px] bg-gray-200"></div>
+                                    <div class="h-1.5 w-[70%] rounded-[3px] bg-gray-200/50"></div>
+                                    <div class="my-1.5 h-5 w-[45%] rounded bg-primary/30"></div>
+                                    <div class="h-1.5 w-[60%] rounded-[3px] bg-gray-200/30"></div>
                                 </div>
                             </div>
                             <span class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900">{{ tpl.name }}</span>
                             <span class="block px-[14px] pb-[14px] text-xs text-gray-500 leading-[1.4]">{{ tpl.description }}</span>
                         </button>
 
-                        <button aria-label="Start from scratch with empty canvas" class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left font-sans overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle" :style="{ animationDelay: `${templates.length * 40}ms` }" @click="chooseTemplate(createDefaultTemplateContent())">
+                        <button aria-label="Start from scratch with empty canvas" class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2" :style="{ animationDelay: `${templates.length * 40}ms` }" @click="chooseTemplate(createDefaultTemplateContent())">
                             <div class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200 text-gray-500">
                                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                     <line x1="12" y1="5" x2="12" y2="19" />
@@ -442,7 +587,7 @@ onUnmounted(() => {
                         </div>
                     </a>
 
-                    <div class="fixed bottom-6 flex items-center gap-2 text-[13px] [&_a]:text-gray-500 [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-150 [&_a:hover]:text-gray-900">
+                    <div class="mt-8 flex items-center gap-2 text-[13px] [&_a]:text-gray-500 [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-150 [&_a:hover]:text-gray-900">
                         <a href="https://docs.templatical.com" target="_blank" rel="noopener">Docs</a>
                         <span class="text-gray-200">&middot;</span>
                         <a href="https://github.com/templatical/editor" target="_blank" rel="noopener">GitHub</a>
@@ -467,6 +612,13 @@ onUnmounted(() => {
                         </svg>
                         Config
                     </button>
+                    <button v-if="currentFeatures.length" class="pg-toolbar-btn" @click="reopenFeatureOverlay">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                            <path d="M8 5v3.5M8 10.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                        Features
+                    </button>
                 </div>
 
                 <div class="flex items-center gap-1">
@@ -479,6 +631,7 @@ onUnmounted(() => {
                     </button>
 
                     <!-- Export dropdown -->
+                    <div v-if="exportMenuOpen" class="fixed inset-0 z-40" @click="exportMenuOpen = false" />
                     <div class="relative" @keydown.escape="exportMenuOpen = false">
                         <button
                             class="pg-toolbar-btn"
@@ -494,11 +647,11 @@ onUnmounted(() => {
                                 <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                         </button>
-                        <div v-if="exportMenuOpen" role="menu" class="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden z-50" @mouseleave="exportMenuOpen = false">
-                            <button role="menuitem" class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 font-sans bg-transparent border-none cursor-pointer transition-colors duration-100 hover:bg-gray-50 hover:text-gray-900" @click="handleExportJson(); exportMenuOpen = false">
+                        <div v-if="exportMenuOpen" role="menu" class="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden z-50">
+                            <button role="menuitem" class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 bg-transparent border-none cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900" @click="handleExportJson(); exportMenuOpen = false">
                                 Download JSON
                             </button>
-                            <button role="menuitem" class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 font-sans bg-transparent border-none cursor-pointer transition-colors duration-100 hover:bg-gray-50 hover:text-gray-900" @click="handleExportMjml(); exportMenuOpen = false">
+                            <button role="menuitem" class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 bg-transparent border-none cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900" @click="handleExportMjml(); exportMenuOpen = false">
                                 Download MJML
                             </button>
                         </div>
@@ -531,14 +684,14 @@ onUnmounted(() => {
                 <Transition name="pg-modal">
                 <div v-if="!cloudBannerDismissed" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-[99] flex items-center gap-3 py-2.5 pl-4 pr-2.5 bg-white border border-gray-200 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.1)] max-w-[520px] w-[calc(100%-2rem)]">
                     <div class="flex items-center gap-2.5 flex-1 min-w-0">
-                        <div class="shrink-0 flex items-center justify-center size-7 rounded-md bg-blue-100 text-blue-600">
+                        <div class="shrink-0 flex items-center justify-center size-7 rounded-md bg-primary/10 text-primary">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                             </svg>
                         </div>
                         <span class="text-[13px] text-gray-600 leading-snug">Need <strong class="text-gray-900 font-semibold">collaboration, AI tools, or version history</strong>? Try the Cloud version.</span>
                     </div>
-                    <a href="#cloud" class="shrink-0 inline-flex items-center h-7 px-3 rounded-md bg-blue-600 text-white text-xs font-medium no-underline whitespace-nowrap transition-colors duration-150 hover:bg-blue-700">Try Cloud</a>
+                    <a href="#cloud" class="shrink-0 inline-flex items-center h-7 px-3 rounded-md bg-primary text-white text-xs font-medium no-underline whitespace-nowrap transition-colors duration-150 hover:bg-primary-hover">Try Cloud</a>
                     <button aria-label="Dismiss" class="shrink-0 size-7 flex items-center justify-center border-none bg-transparent text-gray-400 cursor-pointer rounded-md transition-colors duration-150 hover:bg-gray-100 hover:text-gray-600" @click="cloudBannerDismissed = true">&times;</button>
                 </div>
                 </Transition>
@@ -555,7 +708,7 @@ onUnmounted(() => {
                         <span id="json-modal-title" class="text-sm font-semibold text-gray-900">Template JSON</span>
                         <div class="flex items-center gap-2">
                             <button class="h-[30px] px-3 border border-gray-200 rounded-md bg-white text-gray-500 text-xs font-medium font-sans cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900" @click="copyJson">
-                                {{ copied ? 'Copied!' : 'Copy' }}
+                                <span aria-live="polite">{{ copied ? 'Copied!' : 'Copy' }}</span>
                             </button>
                             <button aria-label="Close" class="pg-modal-close" @click="showJson = false">&times;</button>
                         </div>
@@ -574,48 +727,53 @@ onUnmounted(() => {
             <div v-if="showConfig" class="pg-modal-backdrop" @click.self="showConfig = false" @keydown.escape="showConfig = false">
                 <div role="dialog" aria-modal="true" aria-label="Editor Configuration" class="pg-modal-dialog w-[800px] max-w-[90vw] max-h-[90vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden">
                     <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200 shrink-0">
-                        <div class="flex items-center gap-1">
+                        <div role="tablist" class="flex items-center gap-1">
                             <button
+                                v-for="tab in (['options', 'content', 'theme', 'callbacks'] as const)"
+                                :key="tab"
+                                role="tab"
+                                :aria-selected="configTab === tab"
+                                :aria-controls="`config-panel-${tab}`"
                                 class="h-8 px-3 text-[13px] font-medium rounded-md border-none cursor-pointer transition-colors duration-150"
-                                :class="configTab === 'options' ? 'bg-gray-100 text-gray-900' : 'bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'"
-                                @click="configTab = 'options'"
+                                :class="configTab === tab ? 'bg-gray-100 text-gray-900' : 'bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'"
+                                @click="configTab = tab"
                             >
-                                Options
-                            </button>
-                            <button
-                                class="h-8 px-3 text-[13px] font-medium rounded-md border-none cursor-pointer transition-colors duration-150"
-                                :class="configTab === 'content' ? 'bg-gray-100 text-gray-900' : 'bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'"
-                                @click="configTab = 'content'"
-                            >
-                                Content
-                            </button>
-                            <button
-                                class="h-8 px-3 text-[13px] font-medium rounded-md border-none cursor-pointer transition-colors duration-150"
-                                :class="configTab === 'theme' ? 'bg-gray-100 text-gray-900' : 'bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'"
-                                @click="configTab = 'theme'"
-                            >
-                                Theme
+                                {{ tab[0].toUpperCase() + tab.slice(1) }}
                             </button>
                         </div>
                         <button aria-label="Close" class="pg-modal-close" @click="showConfig = false">&times;</button>
                     </div>
                     <div class="flex-1 overflow-auto p-5">
-                        <CodeEditor
-                            v-show="configTab === 'options'"
-                            v-model="configOptionsJson"
-                        />
-                        <CodeEditor
-                            v-show="configTab === 'content'"
-                            v-model="configContentJson"
-                        />
-                        <CodeEditor
-                            v-show="configTab === 'theme'"
-                            v-model="configThemeJson"
-                        />
+                        <div v-show="configTab === 'options'" id="config-panel-options" role="tabpanel">
+                            <CodeEditor v-model="configOptionsJson" />
+                        </div>
+                        <div v-show="configTab === 'content'" id="config-panel-content" role="tabpanel">
+                            <CodeEditor v-model="configContentJson" />
+                        </div>
+                        <div v-show="configTab === 'theme'" id="config-panel-theme" role="tabpanel">
+                            <CodeEditor v-model="configThemeJson" />
+                        </div>
+                        <div v-show="configTab === 'callbacks'" id="config-panel-callbacks" role="tabpanel" class="flex flex-col gap-4">
+                            <p class="m-0 text-[13px] text-gray-500">Toggle callback handlers passed to the editor. Changes apply on "Apply &amp; Reload".</p>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input v-model="enableRequestMedia" type="checkbox" class="size-4 accent-primary cursor-pointer" />
+                                <div>
+                                    <span class="text-[13px] font-medium text-gray-900">onRequestMedia</span>
+                                    <p class="m-0 mt-0.5 text-[12px] text-gray-500">Opens a demo image picker when the user clicks "Browse Media"</p>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input v-model="enableRequestMergeTag" type="checkbox" class="size-4 accent-primary cursor-pointer" />
+                                <div>
+                                    <span class="text-[13px] font-medium text-gray-900">onRequestMergeTag</span>
+                                    <p class="m-0 mt-0.5 text-[12px] text-gray-500">Opens a merge tag picker when the user inserts a placeholder</p>
+                                </div>
+                            </label>
+                        </div>
                         <p v-if="configError" class="mt-2 mb-0 text-[13px] text-red-500">{{ configError }}</p>
                     </div>
                     <div class="flex items-center justify-between px-5 py-4 border-t border-gray-200 shrink-0">
-                        <p class="m-0 text-xs text-gray-400">{{ { options: 'mergeTags, displayConditions, customBlocks', content: 'Template block structure', theme: 'Colors and visual overrides (OKLch)' }[configTab] }}</p>
+                        <p class="m-0 text-xs text-gray-400">{{ { options: 'mergeTags, displayConditions, customBlocks', content: 'Template block structure', theme: 'Colors and visual overrides (OKLch)', callbacks: 'onRequestMedia, onRequestMergeTag' }[configTab] }}</p>
                         <div class="flex items-center gap-2">
                             <button
                                 class="h-9 px-4 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50"
@@ -667,6 +825,7 @@ onUnmounted(() => {
 
                         <textarea
                             v-model="beefreeJson"
+                            aria-label="BeeFree JSON content"
                             class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500"
                             placeholder='{"page": {"body": {...}, "rows": [...]}}'
                         ></textarea>
@@ -695,7 +854,7 @@ onUnmounted(() => {
         <Teleport to="body">
             <Transition name="pg-modal">
             <div v-if="mergeTagPickerOpen" class="pg-modal-backdrop" @click.self="cancelMergeTagPicker" @keydown.escape="cancelMergeTagPicker">
-                <div role="dialog" aria-modal="true" aria-labelledby="mergetag-modal-title" class="pg-modal-dialog w-[380px] max-h-[480px] flex flex-col bg-white rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.15)] overflow-hidden">
+                <div role="dialog" aria-modal="true" aria-labelledby="mergetag-modal-title" class="pg-modal-dialog w-[380px] max-w-[90vw] max-h-[480px] flex flex-col bg-white rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.15)] overflow-hidden">
                     <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
                         <span id="mergetag-modal-title" class="text-sm font-semibold text-gray-900">Insert Merge Tag</span>
                         <button aria-label="Close" class="pg-modal-close" @click="cancelMergeTagPicker">&times;</button>
@@ -709,6 +868,149 @@ onUnmounted(() => {
                         >
                             <span class="text-[13px] font-medium text-gray-900">{{ tag.label }}</span>
                             <code class="text-[11px] font-mono text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded group-hover:bg-gray-200">{{ tag.value }}</code>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            </Transition>
+        </Teleport>
+
+        <!-- Media Picker Modal -->
+        <Teleport to="body">
+            <Transition name="pg-modal">
+            <div v-if="mediaPickerOpen" class="pg-modal-backdrop" @click.self="cancelMediaPicker" @keydown.escape="cancelMediaPicker">
+                <div role="dialog" aria-modal="true" aria-labelledby="media-modal-title" class="pg-modal-dialog w-[460px] max-w-[90vw] flex flex-col bg-white rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.15)] overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                        <span id="media-modal-title" class="text-sm font-semibold text-gray-900">Select Image</span>
+                        <button aria-label="Close" class="pg-modal-close" @click="cancelMediaPicker">&times;</button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 p-4">
+                        <button
+                            v-for="img in demoImages"
+                            :key="img.url"
+                            class="group flex flex-col items-center gap-2 p-0 border border-gray-200 rounded-lg bg-white cursor-pointer transition-[border-color,box-shadow] duration-150 overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle"
+                            @click="selectMedia(img.url)"
+                        >
+                            <img :src="img.thumb" :alt="img.label" class="w-full h-24 object-cover" />
+                            <span class="text-[12px] font-medium text-gray-700 pb-2">{{ img.label }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            </Transition>
+        </Teleport>
+
+        <!-- Data Source Picker Modal -->
+        <Teleport to="body">
+            <Transition name="pg-modal">
+            <div v-if="dataSourcePickerOpen && dataSourcePickerRequest" class="pg-modal-backdrop" @click.self="cancelDataSourcePicker" @keydown.escape="cancelDataSourcePicker">
+                <div role="dialog" aria-modal="true" aria-labelledby="datasource-modal-title" class="pg-modal-dialog w-[500px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
+                        <span id="datasource-modal-title" class="text-sm font-semibold text-gray-900">{{ dataSourcePickerRequest.title }}</span>
+                        <button aria-label="Close" class="pg-modal-close" @click="cancelDataSourcePicker">&times;</button>
+                    </div>
+                    <!-- Loading state: simulated API request -->
+                    <div v-if="dataSourcePickerFetching" class="flex flex-col items-center justify-center gap-4 py-12 px-5">
+                        <svg class="h-6 w-6 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" opacity="0.2"/>
+                            <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                        <div class="text-center space-y-2">
+                            <p class="m-0 text-sm text-gray-500">Fetching data from endpoint&hellip;</p>
+                            <code class="block text-[11px] text-gray-400 font-mono bg-gray-50 rounded-md px-3 py-2 border border-gray-100 max-w-full break-all">{{ dataSourcePickerRequest.endpoint }}</code>
+                        </div>
+                    </div>
+
+                    <!-- Items revealed after loading -->
+                    <div v-else class="flex-1 overflow-auto p-3 space-y-2">
+                        <p class="m-0 px-2 pb-1 text-[11px] text-gray-400 uppercase tracking-[0.5px] font-medium">Response received — select an item</p>
+                        <button
+                            v-for="item in dataSourcePickerRequest.items"
+                            :key="item.id"
+                            class="group flex w-full items-center gap-3 p-3 border border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-150 text-left font-sans hover:border-primary hover:shadow-primary-ring-subtle"
+                            @click="selectDataSourceItem(item)"
+                        >
+                            <img
+                                v-if="item.thumbnail"
+                                :src="item.thumbnail"
+                                :alt="item.label"
+                                class="shrink-0 size-12 rounded-md object-cover border border-gray-100"
+                            />
+                            <div class="min-w-0 flex-1">
+                                <div class="text-[13px] font-semibold text-gray-900 group-hover:text-primary transition-colors duration-150">{{ item.label }}</div>
+                                <p class="m-0 mt-0.5 text-xs text-gray-500 truncate">{{ item.description }}</p>
+                            </div>
+                            <svg class="shrink-0 text-gray-300 group-hover:text-primary transition-colors duration-150" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            </Transition>
+        </Teleport>
+
+        <!-- Feature Showcase Overlay -->
+        <Teleport to="body">
+            <Transition name="pg-modal">
+            <div v-if="showFeatureOverlay" class="pg-modal-backdrop" @click.self="dismissFeatureOverlay" @keydown.escape="dismissFeatureOverlay">
+                <div role="dialog" aria-modal="true" aria-labelledby="features-modal-title" class="pg-modal-dialog w-[720px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
+                        <div>
+                            <span id="features-modal-title" class="text-sm font-semibold text-gray-900">Features in this template</span>
+                            <p class="m-0 mt-1 text-xs text-gray-500">{{ currentTemplateName }} showcases these SDK capabilities</p>
+                        </div>
+                        <button aria-label="Close" class="pg-modal-close" @click="dismissFeatureOverlay">&times;</button>
+                    </div>
+                    <div class="flex-1 overflow-auto p-5 space-y-4">
+                        <div
+                            v-for="(feature, i) in currentFeatures"
+                            :key="i"
+                            class="flex gap-3 p-3.5 bg-gray-50 rounded-lg border border-gray-100"
+                        >
+                            <div class="shrink-0 flex items-center justify-center size-8 rounded-md bg-primary/10 text-primary mt-0.5">
+                                <svg v-if="feature.icon === 'merge-tag'" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                    <path d="M4.5 3C3.67 3 3 3.67 3 4.5v2c0 .55-.45 1-1 1v1c.55 0 1 .45 1 1v2c0 .83.67 1.5 1.5 1.5M11.5 3c.83 0 1.5.67 1.5 1.5v2c0 .55.45 1 1 1v1c-.55 0-1 .45-1 1v2c0 .83-.67 1.5-1.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                                <svg v-else-if="feature.icon === 'display-condition'" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                    <path d="M2.5 8a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0z" stroke="currentColor" stroke-width="1.5"/>
+                                    <path d="M8 5v3l2 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <svg v-else-if="feature.icon === 'data-source'" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                    <path d="M13 4c0 1.1-2.24 2-5 2S3 5.1 3 4m10 0c0-1.1-2.24-2-5-2S3 2.9 3 4m10 0v8c0 1.1-2.24 2-5 2s-5-.9-5-2V4m10 4c0 1.1-2.24 2-5 2s-5-.9-5-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <svg v-else-if="feature.icon === 'custom-block'" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                    <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                                    <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                                    <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                                    <path d="M11.5 9.5v5M9 11.75h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                                <svg v-else-if="feature.icon === 'responsive'" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                    <rect x="1" y="3" width="9" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                                    <rect x="11" y="5" width="4" height="7" rx="1" stroke="currentColor" stroke-width="1.5"/>
+                                    <line x1="1" y1="13" x2="10" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                                <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                    <path d="M13 2L3 14h9l-1 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-[13px] font-semibold text-gray-900">{{ feature.label }}</div>
+                                <p
+                                    v-for="(para, pi) in feature.description.split('\n')"
+                                    :key="pi"
+                                    class="text-xs text-gray-500 leading-relaxed"
+                                    :class="pi === 0 ? 'm-0 mt-1.5' : 'm-0 mt-2'"
+                                >{{ para }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-end px-5 py-4 border-t border-gray-200 shrink-0">
+                        <button
+                            class="pg-cta h-9 px-5 text-[13px] rounded-md"
+                            @click="dismissFeatureOverlay"
+                        >
+                            Got it, start editing
                         </button>
                     </div>
                 </div>
