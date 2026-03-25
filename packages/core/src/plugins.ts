@@ -2,7 +2,6 @@ import type {
   Block,
   TemplateContent,
   TemplateSettings,
-  ViewportSize,
 } from "@templatical/types";
 import type { Ref, DeepReadonly } from "@vue/reactivity";
 import type { EditorState } from "./editor";

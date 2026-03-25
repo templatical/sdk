@@ -532,7 +532,7 @@ async function handleAddMergeTag(): Promise<void> {
     <component
       :is="EditorContent"
       v-else-if="EditorContent && editor"
-      :editor="editor"
+      :editor="editor as any"
       class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:border-indigo-500 tpl:p-2"
     />
 

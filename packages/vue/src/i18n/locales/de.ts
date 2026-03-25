@@ -96,6 +96,7 @@ export default {
     duplicate: "Block duplizieren",
     delete: "Block löschen",
     hiddenOnViewport: "Ausgeblendet auf {viewport}",
+    saveAsModule: "Als Modul speichern",
   },
 
   // Toolbar - Section

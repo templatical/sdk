@@ -122,7 +122,7 @@ const TemplaticalMedia = {
 // Assign to window for IIFE usage
 if (typeof window !== "undefined") {
   (
-    window as Window & { TemplaticalMedia: typeof TemplaticalMedia }
+    window as unknown as Window & { TemplaticalMedia: typeof TemplaticalMedia }
   ).TemplaticalMedia = TemplaticalMedia;
 }
 

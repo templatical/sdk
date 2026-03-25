@@ -7,7 +7,7 @@ import { isHiddenOnAll, getCssClassAttr } from "../visibility";
  */
 export function renderCustom(
   block: CustomBlock,
-  context: RenderContext,
+  _context: RenderContext,
 ): string {
   if (isHiddenOnAll(block)) {
     return "";

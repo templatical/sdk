@@ -44,7 +44,7 @@ const visibleSuggestionCount = ref(0);
 let suggestionTimer: ReturnType<typeof setTimeout> | null = null;
 
 watch(
-  () => aiChat.suggestions.value.length,
+  () => aiChat.suggestions.value?.length ?? 0,
   (count) => {
     if (count === 0) {
       visibleSuggestionCount.value = 0;
@@ -73,7 +73,7 @@ function scrollToBottom(): void {
 }
 
 watch(
-  () => aiChat.messages.value.length,
+  () => aiChat.messages.value?.length ?? 0,
   () => scrollToBottom(),
 );
 
@@ -85,7 +85,7 @@ watch(
       await aiChat.loadConversation();
 
       if (
-        aiChat.messages.value.length === 0 &&
+        (aiChat.messages.value?.length ?? 0) === 0 &&
         editor.content.value.blocks.length === 0
       ) {
         aiChat.loadSuggestions(editor.content.value, mergeTags);
@@ -165,7 +165,7 @@ function handleKeydown(event: KeyboardEvent): void {
         </div>
         <div class="tpl:flex tpl:items-center tpl:gap-1">
           <button
-            v-if="aiChat.messages.value.length > 0"
+            v-if="(aiChat.messages.value?.length ?? 0) > 0"
             class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
             style="color: var(--tpl-text-muted)"
             :title="translations.aiChat.clear"
@@ -208,7 +208,7 @@ function handleKeydown(event: KeyboardEvent): void {
 
           <!-- Empty state -->
           <div
-            v-else-if="aiChat.messages.value.length === 0"
+            v-else-if="(aiChat.messages.value?.length ?? 0) === 0"
             class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
           >
             <Sparkles
@@ -251,7 +251,7 @@ function handleKeydown(event: KeyboardEvent): void {
                   v-if="
                     !stripJsonBlock(message.content) &&
                     aiChat.isGenerating.value &&
-                    index === aiChat.messages.value.length - 1
+                    index === (aiChat.messages.value?.length ?? 0) - 1
                   "
                 />
                 <div
@@ -319,7 +319,7 @@ function handleKeydown(event: KeyboardEvent): void {
 
         <!-- Suggestions (overlay) -->
         <div
-          v-if="aiChat.suggestions.value.length > 0"
+          v-if="(aiChat.suggestions.value?.length ?? 0) > 0"
           class="tpl:absolute tpl:right-0 tpl:bottom-0 tpl:left-0 tpl:z-10 tpl:px-3 tpl:pb-3"
           style="
             background-color: color-mix(
@@ -332,11 +332,11 @@ function handleKeydown(event: KeyboardEvent): void {
         >
           <div class="tpl:flex tpl:flex-col tpl:gap-1.5">
             <button
-              v-for="(suggestion, index) in aiChat.suggestions.value"
+              v-for="(suggestion, index) in aiChat.suggestions.value ?? []"
               :key="index"
               class="tpl-suggestion-btn tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:text-left tpl:text-xs tpl:leading-snug tpl:transition-all tpl:duration-300 tpl:ease-out"
               :class="
-                aiChat.suggestions.value.length - 1 - index <
+                (aiChat.suggestions.value?.length ?? 0) - 1 - index <
                 visibleSuggestionCount
                   ? 'tpl:translate-y-0 tpl:opacity-100'
                   : 'tpl:pointer-events-none tpl:-translate-y-2 tpl:opacity-0'

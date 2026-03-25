@@ -66,7 +66,7 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
   },
 
   addNodeView() {
-    return VueNodeViewRenderer(MergeTagNodeView);
+    return VueNodeViewRenderer(MergeTagNodeView as any);
   },
 
   addCommands() {
@@ -138,8 +138,7 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
             value: fullValue,
           });
 
-          const tr = state.tr.replaceWith(range.from, range.to, node);
-          return tr;
+          state.tr.replaceWith(range.from, range.to, node);
         },
       }),
     ];
@@ -160,8 +159,7 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
             value: fullValue,
           });
 
-          const tr = state.tr.replaceWith(range.from, range.to, node);
-          return tr;
+          state.tr.replaceWith(range.from, range.to, node);
         },
       }),
     ];

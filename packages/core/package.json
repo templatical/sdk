@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@templatical/types": "workspace:*",
-    "@vue/reactivity": "^3.5.0",
+    "@vue/reactivity": "^3.5.31",
     "pusher-js": "^8.0.0"
   },
   "devDependencies": {

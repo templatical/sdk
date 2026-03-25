@@ -127,7 +127,8 @@ function handleFetchData(
           :group="{
             name: 'blocks',
             pull: true,
-            put: (to, from, el) => el.dataset.blockType !== 'section',
+            put: (to: any, from: any, el: HTMLElement) =>
+              el.dataset.blockType !== 'section',
           }"
           item-key="id"
           :animation="150"

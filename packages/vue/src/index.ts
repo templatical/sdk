@@ -1,7 +1,6 @@
 import { createApp, h, ref, type App, type Ref } from "vue";
 import type {
   CustomBlockDefinition,
-  CustomFont,
   DisplayConditionsConfig,
   FontsConfig,
   MergeTag,
@@ -10,7 +9,6 @@ import type {
   Template,
   TemplateContent,
   ThemeOverrides,
-  ViewportSize,
 } from "@templatical/types";
 import type { EditorPlugin } from "@templatical/core";
 import Editor from "./Editor.vue";
@@ -119,7 +117,7 @@ export function init(config: TemplaticalEditorConfig): TemplaticalEditor {
 // ---------------------------------------------------------------------------
 
 let cloudAppInstance: App | null = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const cloudEditorRef: Ref<any> = ref(null);
 
 export async function initCloud(

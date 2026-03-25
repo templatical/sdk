@@ -38,9 +38,9 @@ const customBlockDefinitions = inject<CustomBlockDefinition[]>(
 );
 
 // Cloud-only injects — null in OSS mode
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const savedModulesVisual = inject<any>("savedModules", null);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const planConfig = inject<any>("planConfig", null);
 
 const showModulesSection = computed(

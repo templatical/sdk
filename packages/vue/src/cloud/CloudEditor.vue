@@ -1837,8 +1837,10 @@ defineExpose({
           planConfigInstance.hasFeature('saved_modules') &&
           props.config.modules !== false
         "
-        :visible="savedModulesVisual.showSaveDialog.value"
-        :pre-selected-block-id="savedModulesVisual.preSelectedBlockId.value"
+        :visible="savedModulesVisual.showSaveDialog.value ?? false"
+        :pre-selected-block-id="
+          savedModulesVisual.preSelectedBlockId.value ?? null
+        "
         @close="savedModulesVisual.closeSaveDialog()"
         @saved="savedModulesHeadless.loadModules()"
       />
@@ -1848,7 +1850,7 @@ defineExpose({
           planConfigInstance.hasFeature('saved_modules') &&
           props.config.modules !== false
         "
-        :visible="savedModulesVisual.showBrowserModal.value"
+        :visible="savedModulesVisual.showBrowserModal.value ?? false"
         @close="savedModulesVisual.closeBrowserModal()"
         @insert="handleModuleInsert"
       />

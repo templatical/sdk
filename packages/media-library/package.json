@@ -26,7 +26,7 @@
   "dependencies": {
     "@templatical/core": "workspace:*",
     "@templatical/types": "workspace:*",
-    "@vueuse/core": "^12.0.0",
+    "@vueuse/core": "^14.0.0",
     "lucide-vue-next": "^0.475.0",
     "vue-advanced-cropper": "^2.0.0"
   },

@@ -1,7 +1,6 @@
 import type {
   AuthConfig,
   AuthRequestOptions,
-  DirectAuthConfig,
   SdkAuthConfig,
   TestEmailConfig,
   TokenData,

@@ -35,6 +35,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const mediaT = t.mediaLibrary as Record<string, string>;
 
 const { isImageMimeType } = useMediaCategories();
 
@@ -294,8 +295,8 @@ function handleKeydown(event: KeyboardEvent): void {
                       @click="aspectRatio = preset"
                     >
                       {{
-                        t.mediaLibrary[
-                          `crop${preset.charAt(0).toUpperCase()}${preset.slice(1)}` as keyof typeof t.mediaLibrary
+                        mediaT[
+                          `crop${preset.charAt(0).toUpperCase()}${preset.slice(1)}`
                         ]
                       }}
                     </button>

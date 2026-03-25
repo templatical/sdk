@@ -8,7 +8,7 @@ import { isHiddenOnAll, getCssClassAttr } from "../visibility";
  */
 export function renderDivider(
   block: DividerBlock,
-  context: RenderContext,
+  _context: RenderContext,
 ): string {
   if (isHiddenOnAll(block)) {
     return "";

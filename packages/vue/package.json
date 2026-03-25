@@ -35,7 +35,7 @@
     "@tiptap/extension-underline": "^2.0.0",
     "@tiptap/starter-kit": "^2.0.0",
     "@tiptap/vue-3": "^2.0.0",
-    "@vueuse/core": "^12.0.0",
+    "@vueuse/core": "^14.0.0",
     "liquidjs": "^10.0.0",
     "lucide-vue-next": "^0.475.0",
     "vue-advanced-cropper": "^2.0.0",

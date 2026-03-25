@@ -84,9 +84,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const editor = inject<UseEditorReturn>("editor")!;
+const _editor = inject<UseEditorReturn>("editor")!;
 const config = inject<TemplaticalEditorConfig>("config");
-const mergeTags = inject<MergeTag[]>("mergeTags", []);
+const _mergeTags = inject<MergeTag[]>("mergeTags", []);
 const mergeTagSyntax = inject<SyntaxPreset>(
   "mergeTagSyntax",
   SYNTAX_PRESETS.liquid,
@@ -100,11 +100,13 @@ const customBlockDefinitions = inject<CustomBlockDefinition[]>(
 
 // Font families - use injected config or defaults
 const fontFamilies = computed<Array<{ value: string; label: string }>>(() => {
-  const configFonts = config?.theme?.fonts as CustomFont[] | undefined;
+  const configFonts = (config?.theme as Record<string, unknown>)?.fonts as
+    | CustomFont[]
+    | undefined;
   if (configFonts && configFonts.length > 0) {
     return configFonts.map((f) => ({
-      value: typeof f === "string" ? f : f.family,
-      label: typeof f === "string" ? f : f.family,
+      value: typeof f === "string" ? f : f.name,
+      label: typeof f === "string" ? f : f.name,
     }));
   }
   return [
@@ -252,10 +254,7 @@ const tableColumnCount = computed(() => {
   return rows.length > 0 ? rows[0].cells.length : 0;
 });
 
-function updateField<T extends Block, K extends keyof T>(
-  field: K,
-  value: T[K],
-): void {
+function updateField(field: string, value: unknown): void {
   emit("update", { [field]: value } as Partial<Block>);
 }
 

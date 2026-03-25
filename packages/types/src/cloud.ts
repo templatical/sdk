@@ -1,6 +1,5 @@
 import type {
   Block,
-  BlockType,
   CustomBlockDefinition,
   DisplayConditionsConfig,
   FontsConfig,
@@ -9,16 +8,12 @@ import type {
   SyntaxPreset,
   SyntaxPresetName,
   TemplateContent,
-  TemplateSettings,
   ThemeOverrides,
   ViewportSize,
 } from "./index";
 
 import type {
-  MediaBrowseParams,
-  MediaBrowseResponse,
   MediaConfig,
-  MediaFolder,
   MediaItem,
   MediaRequestContext,
   StorageInfo,

@@ -138,7 +138,7 @@ function formatDate(dateStr: string): string {
   <div class="tpl:flex tpl:items-center tpl:gap-3">
     <img
       v-if="isImage"
-      :src="previewUrl"
+      :src="previewUrl ?? undefined"
       :alt="item.alt_text || item.filename"
       class="tpl:size-10 tpl:shrink-0 tpl:rounded tpl:object-cover"
       style="border: 1px solid var(--tpl-border)"

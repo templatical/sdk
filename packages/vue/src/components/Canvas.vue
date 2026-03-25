@@ -55,9 +55,9 @@ const blockRegistry = inject<UseBlockRegistryReturn>(
 );
 
 // Cloud-only injects — null in OSS mode
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const planConfig = inject<any>("planConfig", null);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const aiConfig = inject<any>("aiConfig", null);
 
 const canUseAi = computed(
@@ -249,7 +249,10 @@ function handleFetchData(
                   :block="block"
                   :viewport="viewport"
                   @fetch-data="handleFetchData(block, $event)"
-                  @update="(updates: Partial<Block>) => editor.updateBlock(block.id, updates)"
+                  @update="
+                    (updates: Partial<Block>) =>
+                      editor.updateBlock(block.id, updates)
+                  "
                 />
               </BlockWrapper>
             </div>

@@ -67,7 +67,7 @@ export const LogicMergeTagNode = Node.create<LogicMergeTagNodeOptions>({
   },
 
   addNodeView() {
-    return VueNodeViewRenderer(LogicMergeTagNodeView);
+    return VueNodeViewRenderer(LogicMergeTagNodeView as any);
   },
 
   addKeyboardShortcuts() {
@@ -130,8 +130,7 @@ export const LogicMergeTagNode = Node.create<LogicMergeTagNodeOptions>({
             keyword,
           });
 
-          const tr = state.tr.replaceWith(range.from, range.to, node);
-          return tr;
+          state.tr.replaceWith(range.from, range.to, node);
         },
       }),
     ];
@@ -159,8 +158,7 @@ export const LogicMergeTagNode = Node.create<LogicMergeTagNodeOptions>({
             keyword,
           });
 
-          const tr = state.tr.replaceWith(range.from, range.to, node);
-          return tr;
+          state.tr.replaceWith(range.from, range.to, node);
         },
       }),
     ];

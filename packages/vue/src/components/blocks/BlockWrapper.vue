@@ -54,15 +54,15 @@ const blockActions = inject<UseBlockActionsReturn>("blockActions");
 const conditionPreview = inject<UseConditionPreviewReturn>("conditionPreview");
 
 // Cloud-only injects — null in OSS mode
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const commentsInstance = inject<any>("comments", null);
 const openCommentsForBlock = inject<(blockId: string) => void>(
   "openCommentsForBlock",
   undefined as never,
 );
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const savedModulesVisual = inject<any>("savedModules", null);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 const planConfig = inject<any>("planConfig", null);
 
 const canSaveAsModule = computed(

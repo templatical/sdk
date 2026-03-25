@@ -19,10 +19,17 @@
     "@changesets/cli": "^2.27.0",
     "@tailwindcss/vite": "^4.2.2",
     "@vitejs/plugin-vue": "^6.0.5",
-    "@vue/reactivity": "^3.5.30",
+    "@vue/reactivity": "^3.5.31",
     "eslint": "^10.0.0",
+    "eslint-plugin-vue": "^10.8.0",
     "prettier": "^3.0.0",
     "typescript": "^5.7.0",
-    "vite": "^8.0.2"
+    "typescript-eslint": "^8.57.2",
+    "vite": "^8.0.2",
+    "vue-eslint-parser": "^10.4.0"
+  },
+  "dependencies": {
+    "@vueuse/core": "^14.2.1",
+    "vue": "^3.5.31"
   }
 }

@@ -11,7 +11,10 @@ import TableBlock from "./TableBlock.vue";
 import TextBlock from "./TextBlock.vue";
 import VideoBlock from "./VideoBlock.vue";
 import type { useBlockRegistry } from "../../composables";
-import type { Block, SectionBlock as SectionBlockType } from "/types";
+import type {
+  Block,
+  SectionBlock as SectionBlockType,
+} from "@templatical/types";
 import { computed, inject, type Component } from "vue";
 
 const props = defineProps<{

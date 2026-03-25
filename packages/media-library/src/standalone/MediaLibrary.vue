@@ -78,7 +78,7 @@ const storageLimitBytes = computed(
   () => props.planConfig.storage.limit_bytes ?? 0,
 );
 
-const { availableCategories } = useMediaCategories(planConfigRef);
+const { availableCategories } = useMediaCategories();
 
 const categoryLabels: Record<string, () => string> = {
   images: () => t.value.mediaLibrary.filterImages,

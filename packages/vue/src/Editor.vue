@@ -69,7 +69,7 @@ const fontsManager = useFonts(props.config.fonts);
 
 // --- Core editor state ---
 const editor = useEditor({
-  content: props.config.content,
+  content: props.config.content!,
 });
 
 // --- History (undo/redo) ---

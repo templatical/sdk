@@ -10,7 +10,7 @@ import { generateSocialIconDataUri } from "../social-icons";
  */
 export function renderSocialIcons(
   block: SocialIconsBlock,
-  context: RenderContext,
+  _context: RenderContext,
 ): string {
   if (isHiddenOnAll(block)) {
     return "";

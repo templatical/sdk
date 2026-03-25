@@ -18,26 +18,32 @@ const editor = inject<UseEditorReturn>("editor")!;
 
 const hasRows = computed(() => props.block.rows.length > 0);
 
-const tableStyle = computed(() => ({
-  width: "100%",
-  borderCollapse: "collapse" as const,
-  fontSize: `${props.block.fontSize}px`,
-  color: props.block.color,
-  textAlign: props.block.textAlign as string,
-  fontFamily: props.block.fontFamily || "inherit",
-}));
+const tableStyle = computed(
+  (): Record<string, string> => ({
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: `${props.block.fontSize}px`,
+    color: props.block.color,
+    textAlign: props.block.textAlign,
+    fontFamily: props.block.fontFamily || "inherit",
+  }),
+);
 
-const cellStyle = computed(() => ({
-  border: `${props.block.borderWidth}px solid ${props.block.borderColor}`,
-  padding: `${props.block.cellPadding}px`,
-  textAlign: props.block.textAlign as string,
-}));
+const cellStyle = computed(
+  (): Record<string, string> => ({
+    border: `${props.block.borderWidth}px solid ${props.block.borderColor}`,
+    padding: `${props.block.cellPadding}px`,
+    textAlign: props.block.textAlign,
+  }),
+);
 
-const headerCellStyle = computed(() => ({
-  ...cellStyle.value,
-  fontWeight: "bold",
-  backgroundColor: props.block.headerBackgroundColor || "transparent",
-}));
+const headerCellStyle = computed(
+  (): Record<string, string> => ({
+    ...cellStyle.value,
+    fontWeight: "bold",
+    backgroundColor: props.block.headerBackgroundColor || "transparent",
+  }),
+);
 
 const headerRow = computed(() =>
   props.block.hasHeaderRow && props.block.rows.length > 0
