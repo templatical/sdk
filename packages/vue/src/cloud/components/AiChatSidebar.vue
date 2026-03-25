@@ -1,436 +1,420 @@
 <script setup lang="ts">
-import LoadingTrack from '../../components/LoadingTrack.vue';
-import { useAiChat, type UseEditorReturn } from '@templatical/core/cloud';
-import type { Translations } from '../../i18n';
-import type { AuthManager } from '@templatical/core/cloud';
-import type { MergeTag, TemplateContent } from '@templatical/types';
+import LoadingTrack from "../../components/LoadingTrack.vue";
+import { useAiChat, type UseEditorReturn } from "@templatical/core/cloud";
+import type { Translations } from "../../i18n";
+import type { AuthManager } from "@templatical/core/cloud";
+import type { MergeTag, TemplateContent } from "@templatical/types";
 import {
-    AlertCircle,
-    Loader2,
-    Redo2,
-    Send,
-    Sparkles,
-    Trash2,
-    Undo2,
-    X,
-} from 'lucide-vue-next';
-import { inject, nextTick, ref, watch } from 'vue';
+  AlertCircle,
+  Loader2,
+  Redo2,
+  Send,
+  Sparkles,
+  Trash2,
+  Undo2,
+  X,
+} from "lucide-vue-next";
+import { inject, nextTick, ref, watch } from "vue";
 
 const props = defineProps<{
-    visible: boolean;
-    onApply?: (content: TemplateContent) => void;
+  visible: boolean;
+  onApply?: (content: TemplateContent) => void;
 }>();
 
 const emit = defineEmits<{
-    (e: 'close'): void;
+  (e: "close"): void;
 }>();
 
-const translations = inject<Translations>('translations')!;
-const editor = inject<UseEditorReturn>('editor')!;
-const authManager = inject<AuthManager>('authManager')!;
-const mergeTags = inject<MergeTag[]>('mergeTags', []);
+const translations = inject<Translations>("translations")!;
+const editor = inject<UseEditorReturn>("editor")!;
+const authManager = inject<AuthManager>("authManager")!;
+const mergeTags = inject<MergeTag[]>("mergeTags", []);
 
 const aiChat = useAiChat({
-    authManager,
-    getTemplateId: () => editor.state.template?.id ?? null,
-    onApply: props.onApply,
-    onError: undefined,
+  authManager,
+  getTemplateId: () => editor.state.template?.id ?? null,
+  onApply: props.onApply,
+  onError: undefined,
 });
 
-const promptInput = ref('');
+const promptInput = ref("");
 const messagesContainer = ref<HTMLElement | null>(null);
 const historyLoaded = ref(false);
 const visibleSuggestionCount = ref(0);
 let suggestionTimer: ReturnType<typeof setTimeout> | null = null;
 
 watch(
-    () => aiChat.suggestions.value.length,
-    (count) => {
-        if (count === 0) {
-            visibleSuggestionCount.value = 0;
-            return;
-        }
+  () => aiChat.suggestions.value.length,
+  (count) => {
+    if (count === 0) {
+      visibleSuggestionCount.value = 0;
+      return;
+    }
 
-        visibleSuggestionCount.value = 0;
-        let i = 0;
-        const reveal = (): void => {
-            i++;
-            visibleSuggestionCount.value = i;
-            if (i < count) {
-                suggestionTimer = setTimeout(reveal, 150);
-            }
-        };
-        suggestionTimer = setTimeout(reveal, 100);
-    },
+    visibleSuggestionCount.value = 0;
+    let i = 0;
+    const reveal = (): void => {
+      i++;
+      visibleSuggestionCount.value = i;
+      if (i < count) {
+        suggestionTimer = setTimeout(reveal, 150);
+      }
+    };
+    suggestionTimer = setTimeout(reveal, 100);
+  },
 );
 
 function scrollToBottom(): void {
-    nextTick(() => {
-        if (messagesContainer.value) {
-            messagesContainer.value.scrollTop =
-                messagesContainer.value.scrollHeight;
-        }
-    });
+  nextTick(() => {
+    if (messagesContainer.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+    }
+  });
 }
 
 watch(
-    () => aiChat.messages.value.length,
-    () => scrollToBottom(),
+  () => aiChat.messages.value.length,
+  () => scrollToBottom(),
 );
 
 watch(
-    () => props.visible,
-    async (isVisible) => {
-        if (isVisible && !historyLoaded.value) {
-            historyLoaded.value = true;
-            await aiChat.loadConversation();
+  () => props.visible,
+  async (isVisible) => {
+    if (isVisible && !historyLoaded.value) {
+      historyLoaded.value = true;
+      await aiChat.loadConversation();
 
-            if (
-                aiChat.messages.value.length === 0 &&
-                editor.content.value.blocks.length === 0
-            ) {
-                aiChat.loadSuggestions(editor.content.value, mergeTags);
-            }
-        }
-    },
+      if (
+        aiChat.messages.value.length === 0 &&
+        editor.content.value.blocks.length === 0
+      ) {
+        aiChat.loadSuggestions(editor.content.value, mergeTags);
+      }
+    }
+  },
 );
 
 async function handleSend(): Promise<void> {
-    const prompt = promptInput.value.trim();
-    if (!prompt || aiChat.isGenerating.value) {
-        return;
-    }
+  const prompt = promptInput.value.trim();
+  if (!prompt || aiChat.isGenerating.value) {
+    return;
+  }
 
-    promptInput.value = '';
-    aiChat.error.value = null;
-    aiChat.failedPrompt.value = null;
-    scrollToBottom();
+  promptInput.value = "";
+  aiChat.error.value = null;
+  aiChat.failedPrompt.value = null;
+  scrollToBottom();
 
-    await aiChat.sendPrompt(prompt, editor.content.value, mergeTags);
+  await aiChat.sendPrompt(prompt, editor.content.value, mergeTags);
 
-    if (aiChat.failedPrompt.value) {
-        promptInput.value = aiChat.failedPrompt.value;
-    }
+  if (aiChat.failedPrompt.value) {
+    promptInput.value = aiChat.failedPrompt.value;
+  }
 
-    scrollToBottom();
+  scrollToBottom();
 }
 
 function stripJsonBlock(text: string): string {
-    return text
-        .replace(/```json[\s\S]*?```/g, '')
-        .replace(/```json[\s\S]*/g, '')
-        .trim();
+  return text
+    .replace(/```json[\s\S]*?```/g, "")
+    .replace(/```json[\s\S]*/g, "")
+    .trim();
 }
 
 function handleSuggestionClick(suggestion: string): void {
-    if (suggestionTimer) {
-        clearTimeout(suggestionTimer);
-        suggestionTimer = null;
-    }
-    promptInput.value = suggestion;
-    handleSend();
+  if (suggestionTimer) {
+    clearTimeout(suggestionTimer);
+    suggestionTimer = null;
+  }
+  promptInput.value = suggestion;
+  handleSend();
 }
 
 function handleKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        handleSend();
-    }
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    handleSend();
+  }
 }
 </script>
 
 <template>
-    <Transition
-        enter-active-class="tpl-ai-slide-enter-active"
-        enter-from-class="tpl:translate-x-full"
-        enter-to-class="tpl:translate-x-0"
-        leave-active-class="tpl-ai-slide-leave-active"
-        leave-from-class="tpl:translate-x-0"
-        leave-to-class="tpl:translate-x-full"
+  <Transition
+    enter-active-class="tpl-ai-slide-enter-active"
+    enter-from-class="tpl:translate-x-full"
+    enter-to-class="tpl:translate-x-0"
+    leave-active-class="tpl-ai-slide-leave-active"
+    leave-from-class="tpl:translate-x-0"
+    leave-to-class="tpl:translate-x-full"
+  >
+    <div
+      v-if="visible"
+      class="tpl-ai-sidebar tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:z-[45] tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
     >
+      <!-- Header -->
+      <div
+        class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
+      >
         <div
-            v-if="visible"
-            class="tpl-ai-sidebar tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:z-[45] tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
+          class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-primary)]"
         >
-            <!-- Header -->
-            <div
-                class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
-            >
-                <div
-                    class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-primary)]"
-                >
-                    <Sparkles :size="13" :stroke-width="2" />
-                    <span>
-                        {{ translations.aiChat.title }}
-                    </span>
-                </div>
-                <div class="tpl:flex tpl:items-center tpl:gap-1">
-                    <button
-                        v-if="aiChat.messages.value.length > 0"
-                        class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
-                        style="color: var(--tpl-text-muted)"
-                        :title="translations.aiChat.clear"
-                        @click="aiChat.clearChat()"
-                    >
-                        <Trash2 :size="14" :stroke-width="2" />
-                    </button>
-                    <button
-                        class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
-                        style="color: var(--tpl-text-muted)"
-                        @click="emit('close')"
-                    >
-                        <X :size="14" :stroke-width="2" />
-                    </button>
-                </div>
-            </div>
-
-            <!-- Messages wrapper -->
-            <div
-                class="tpl:relative tpl:flex tpl:min-h-0 tpl:flex-1 tpl:flex-col"
-            >
-                <!-- Messages -->
-                <div
-                    ref="messagesContainer"
-                    class="tpl:flex-1 tpl:overflow-y-auto tpl:p-4"
-                >
-                    <!-- Loading history state -->
-                    <div
-                        v-if="aiChat.isLoadingHistory.value"
-                        class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
-                    >
-                        <Loader2
-                            class="tpl-spinner"
-                            :size="24"
-                            :stroke-width="2"
-                            style="color: var(--tpl-text-muted)"
-                        />
-                        <p
-                            class="tpl:text-sm"
-                            style="color: var(--tpl-text-muted)"
-                        >
-                            {{ translations.aiChat.loadingHistory }}
-                        </p>
-                    </div>
-
-                    <!-- Empty state -->
-                    <div
-                        v-else-if="aiChat.messages.value.length === 0"
-                        class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
-                    >
-                        <Sparkles
-                            :size="32"
-                            :stroke-width="1.5"
-                            style="color: var(--tpl-text-dim)"
-                        />
-                        <p
-                            class="tpl:max-w-[240px] tpl:text-sm"
-                            style="color: var(--tpl-text-muted)"
-                        >
-                            {{ translations.aiChat.placeholder }}
-                        </p>
-                    </div>
-
-                    <!-- Message list -->
-                    <div v-else class="tpl:flex tpl:flex-col tpl:gap-4">
-                        <div
-                            v-for="(message, index) in aiChat.messages.value"
-                            :key="message.id"
-                            class="tpl:flex tpl:flex-col tpl:gap-2"
-                        >
-                            <!-- User message -->
-                            <div
-                                v-if="message.role === 'user'"
-                                class="tpl:self-end tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3.5 tpl:py-2.5 tpl:text-sm"
-                                style="
-                                    background-color: var(--tpl-primary-light);
-                                    color: var(--tpl-text);
-                                    max-width: 85%;
-                                    box-shadow: var(--tpl-shadow);
-                                "
-                            >
-                                {{ message.content }}
-                            </div>
-
-                            <!-- Assistant message -->
-                            <div v-else class="tpl:flex tpl:flex-col tpl:gap-2">
-                                <LoadingTrack
-                                    v-if="
-                                        !stripJsonBlock(message.content) &&
-                                        aiChat.isGenerating.value &&
-                                        index ===
-                                            aiChat.messages.value.length - 1
-                                    "
-                                />
-                                <div
-                                    v-else
-                                    class="tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3.5 tpl:py-2.5 tpl:text-sm tpl:whitespace-pre-wrap"
-                                    style="
-                                        max-width: 85%;
-                                        background-color: white;
-                                        color: var(--tpl-text);
-                                        box-shadow: var(--tpl-shadow);
-                                    "
-                                >
-                                    {{
-                                        stripJsonBlock(message.content) ||
-                                        translations.aiChat.applied
-                                    }}
-                                </div>
-                                <button
-                                    v-if="
-                                        message.id ===
-                                            aiChat.lastApplyMessageId.value &&
-                                        !aiChat.isGenerating.value
-                                    "
-                                    class="tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:self-start tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
-                                    style="
-                                        border-color: var(--tpl-border);
-                                        color: var(--tpl-text-muted);
-                                        background-color: transparent;
-                                    "
-                                    @click="aiChat.toggleLastRevert()"
-                                >
-                                    <template
-                                        v-if="aiChat.isLastChangeReverted.value"
-                                    >
-                                        <Redo2 :size="12" :stroke-width="2" />
-                                        {{ translations.aiChat.reapply }}
-                                    </template>
-                                    <template v-else>
-                                        <Undo2 :size="12" :stroke-width="2" />
-                                        {{ translations.aiChat.revert }}
-                                    </template>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Error message -->
-                <div
-                    v-if="aiChat.error.value"
-                    class="tpl:mx-3 tpl:mb-2 tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs"
-                    style="
-                        background-color: var(--tpl-danger-light);
-                        color: var(--tpl-danger);
-                    "
-                >
-                    <AlertCircle
-                        :size="14"
-                        :stroke-width="2"
-                        class="tpl:mt-0.5 tpl:shrink-0"
-                    />
-                    <span>{{
-                        aiChat.error.value === 'ai_apply_failed'
-                            ? translations.aiChat.applyFailed
-                            : translations.aiChat.error
-                    }}</span>
-                </div>
-
-                <!-- Suggestions (overlay) -->
-                <div
-                    v-if="aiChat.suggestions.value.length > 0"
-                    class="tpl:absolute tpl:right-0 tpl:bottom-0 tpl:left-0 tpl:z-10 tpl:px-3 tpl:pb-3"
-                    style="
-                        background-color: color-mix(
-                            in srgb,
-                            var(--tpl-bg) 50%,
-                            transparent
-                        );
-                        backdrop-filter: blur(2px);
-                    "
-                >
-                    <div class="tpl:flex tpl:flex-col tpl:gap-1.5">
-                        <button
-                            v-for="(suggestion, index) in aiChat.suggestions
-                                .value"
-                            :key="index"
-                            class="tpl-suggestion-btn tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:text-left tpl:text-xs tpl:leading-snug tpl:transition-all tpl:duration-300 tpl:ease-out"
-                            :class="
-                                aiChat.suggestions.value.length - 1 - index <
-                                visibleSuggestionCount
-                                    ? 'tpl:translate-y-0 tpl:opacity-100'
-                                    : 'tpl:pointer-events-none tpl:-translate-y-2 tpl:opacity-0'
-                            "
-                            style="
-                                border-color: var(--tpl-border);
-                                color: var(--tpl-primary);
-                                background-color: white;
-                                box-shadow: var(--tpl-shadow);
-                            "
-                            @click="handleSuggestionClick(suggestion)"
-                        >
-                            {{ suggestion }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Input area -->
-            <div
-                class="tpl:border-t tpl:p-3"
-                style="border-color: var(--tpl-border)"
-            >
-                <div
-                    class="tpl-ai-input-wrapper tpl:flex tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2"
-                    style="
-                        border-color: var(--tpl-border);
-                        background-color: var(--tpl-bg);
-                    "
-                >
-                    <textarea
-                        v-model="promptInput"
-                        class="tpl:max-h-32 tpl:min-h-[64px] tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-sm tpl:outline-none"
-                        style="color: var(--tpl-text)"
-                        :placeholder="translations.aiChat.inputPlaceholder"
-                        :disabled="aiChat.isGenerating.value"
-                        rows="3"
-                        @keydown="handleKeydown"
-                    />
-                    <button
-                        class="tpl-ai-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:duration-150 tpl:disabled:opacity-40"
-                        style="color: var(--tpl-primary)"
-                        :disabled="
-                            !promptInput.trim() || aiChat.isGenerating.value
-                        "
-                        @click="handleSend"
-                    >
-                        <Send :size="16" :stroke-width="2" />
-                    </button>
-                </div>
-
-                <!-- AI disclaimer -->
-                <p
-                    class="tpl:m-0 tpl:px-1 tpl:pt-2 tpl:text-center tpl:text-[11px]"
-                    style="color: var(--tpl-text-dim)"
-                >
-                    {{ translations.aiMenu.disclaimer }}
-                </p>
-            </div>
+          <Sparkles :size="13" :stroke-width="2" />
+          <span>
+            {{ translations.aiChat.title }}
+          </span>
         </div>
-    </Transition>
+        <div class="tpl:flex tpl:items-center tpl:gap-1">
+          <button
+            v-if="aiChat.messages.value.length > 0"
+            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
+            style="color: var(--tpl-text-muted)"
+            :title="translations.aiChat.clear"
+            @click="aiChat.clearChat()"
+          >
+            <Trash2 :size="14" :stroke-width="2" />
+          </button>
+          <button
+            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
+            style="color: var(--tpl-text-muted)"
+            @click="emit('close')"
+          >
+            <X :size="14" :stroke-width="2" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages wrapper -->
+      <div class="tpl:relative tpl:flex tpl:min-h-0 tpl:flex-1 tpl:flex-col">
+        <!-- Messages -->
+        <div
+          ref="messagesContainer"
+          class="tpl:flex-1 tpl:overflow-y-auto tpl:p-4"
+        >
+          <!-- Loading history state -->
+          <div
+            v-if="aiChat.isLoadingHistory.value"
+            class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
+          >
+            <Loader2
+              class="tpl-spinner"
+              :size="24"
+              :stroke-width="2"
+              style="color: var(--tpl-text-muted)"
+            />
+            <p class="tpl:text-sm" style="color: var(--tpl-text-muted)">
+              {{ translations.aiChat.loadingHistory }}
+            </p>
+          </div>
+
+          <!-- Empty state -->
+          <div
+            v-else-if="aiChat.messages.value.length === 0"
+            class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
+          >
+            <Sparkles
+              :size="32"
+              :stroke-width="1.5"
+              style="color: var(--tpl-text-dim)"
+            />
+            <p
+              class="tpl:max-w-[240px] tpl:text-sm"
+              style="color: var(--tpl-text-muted)"
+            >
+              {{ translations.aiChat.placeholder }}
+            </p>
+          </div>
+
+          <!-- Message list -->
+          <div v-else class="tpl:flex tpl:flex-col tpl:gap-4">
+            <div
+              v-for="(message, index) in aiChat.messages.value"
+              :key="message.id"
+              class="tpl:flex tpl:flex-col tpl:gap-2"
+            >
+              <!-- User message -->
+              <div
+                v-if="message.role === 'user'"
+                class="tpl:self-end tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3.5 tpl:py-2.5 tpl:text-sm"
+                style="
+                  background-color: var(--tpl-primary-light);
+                  color: var(--tpl-text);
+                  max-width: 85%;
+                  box-shadow: var(--tpl-shadow);
+                "
+              >
+                {{ message.content }}
+              </div>
+
+              <!-- Assistant message -->
+              <div v-else class="tpl:flex tpl:flex-col tpl:gap-2">
+                <LoadingTrack
+                  v-if="
+                    !stripJsonBlock(message.content) &&
+                    aiChat.isGenerating.value &&
+                    index === aiChat.messages.value.length - 1
+                  "
+                />
+                <div
+                  v-else
+                  class="tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3.5 tpl:py-2.5 tpl:text-sm tpl:whitespace-pre-wrap"
+                  style="
+                    max-width: 85%;
+                    background-color: white;
+                    color: var(--tpl-text);
+                    box-shadow: var(--tpl-shadow);
+                  "
+                >
+                  {{
+                    stripJsonBlock(message.content) ||
+                    translations.aiChat.applied
+                  }}
+                </div>
+                <button
+                  v-if="
+                    message.id === aiChat.lastApplyMessageId.value &&
+                    !aiChat.isGenerating.value
+                  "
+                  class="tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:self-start tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
+                  style="
+                    border-color: var(--tpl-border);
+                    color: var(--tpl-text-muted);
+                    background-color: transparent;
+                  "
+                  @click="aiChat.toggleLastRevert()"
+                >
+                  <template v-if="aiChat.isLastChangeReverted.value">
+                    <Redo2 :size="12" :stroke-width="2" />
+                    {{ translations.aiChat.reapply }}
+                  </template>
+                  <template v-else>
+                    <Undo2 :size="12" :stroke-width="2" />
+                    {{ translations.aiChat.revert }}
+                  </template>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error message -->
+        <div
+          v-if="aiChat.error.value"
+          class="tpl:mx-3 tpl:mb-2 tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs"
+          style="
+            background-color: var(--tpl-danger-light);
+            color: var(--tpl-danger);
+          "
+        >
+          <AlertCircle
+            :size="14"
+            :stroke-width="2"
+            class="tpl:mt-0.5 tpl:shrink-0"
+          />
+          <span>{{
+            aiChat.error.value === "ai_apply_failed"
+              ? translations.aiChat.applyFailed
+              : translations.aiChat.error
+          }}</span>
+        </div>
+
+        <!-- Suggestions (overlay) -->
+        <div
+          v-if="aiChat.suggestions.value.length > 0"
+          class="tpl:absolute tpl:right-0 tpl:bottom-0 tpl:left-0 tpl:z-10 tpl:px-3 tpl:pb-3"
+          style="
+            background-color: color-mix(
+              in srgb,
+              var(--tpl-bg) 50%,
+              transparent
+            );
+            backdrop-filter: blur(2px);
+          "
+        >
+          <div class="tpl:flex tpl:flex-col tpl:gap-1.5">
+            <button
+              v-for="(suggestion, index) in aiChat.suggestions.value"
+              :key="index"
+              class="tpl-suggestion-btn tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:text-left tpl:text-xs tpl:leading-snug tpl:transition-all tpl:duration-300 tpl:ease-out"
+              :class="
+                aiChat.suggestions.value.length - 1 - index <
+                visibleSuggestionCount
+                  ? 'tpl:translate-y-0 tpl:opacity-100'
+                  : 'tpl:pointer-events-none tpl:-translate-y-2 tpl:opacity-0'
+              "
+              style="
+                border-color: var(--tpl-border);
+                color: var(--tpl-primary);
+                background-color: white;
+                box-shadow: var(--tpl-shadow);
+              "
+              @click="handleSuggestionClick(suggestion)"
+            >
+              {{ suggestion }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="tpl:border-t tpl:p-3" style="border-color: var(--tpl-border)">
+        <div
+          class="tpl-ai-input-wrapper tpl:flex tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2"
+          style="
+            border-color: var(--tpl-border);
+            background-color: var(--tpl-bg);
+          "
+        >
+          <textarea
+            v-model="promptInput"
+            class="tpl:max-h-32 tpl:min-h-[64px] tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-sm tpl:outline-none"
+            style="color: var(--tpl-text)"
+            :placeholder="translations.aiChat.inputPlaceholder"
+            :disabled="aiChat.isGenerating.value"
+            rows="3"
+            @keydown="handleKeydown"
+          />
+          <button
+            class="tpl-ai-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:duration-150 tpl:disabled:opacity-40"
+            style="color: var(--tpl-primary)"
+            :disabled="!promptInput.trim() || aiChat.isGenerating.value"
+            @click="handleSend"
+          >
+            <Send :size="16" :stroke-width="2" />
+          </button>
+        </div>
+
+        <!-- AI disclaimer -->
+        <p
+          class="tpl:m-0 tpl:px-1 tpl:pt-2 tpl:text-center tpl:text-[11px]"
+          style="color: var(--tpl-text-dim)"
+        >
+          {{ translations.aiMenu.disclaimer }}
+        </p>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
 .tpl-ai-slide-enter-active {
-    transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tpl-ai-slide-leave-active {
-    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tpl-ai-input-wrapper:focus-within {
-    border-color: var(--tpl-primary);
-    box-shadow: var(--tpl-ring);
+  border-color: var(--tpl-primary);
+  box-shadow: var(--tpl-ring);
 }
 
 .tpl-ai-send-btn:not(:disabled):hover {
-    transform: scale(1.05);
+  transform: scale(1.05);
 }
 
 .tpl-suggestion-btn:hover {
-    border-color: var(--tpl-primary) !important;
-    background-color: var(--tpl-primary-light) !important;
+  border-color: var(--tpl-primary) !important;
+  background-color: var(--tpl-primary-light) !important;
 }
 </style>

@@ -1,6 +1,6 @@
-import type { HtmlBlock } from '@templatical/types';
-import type { RenderContext } from '../render-context';
-import { isHiddenOnAll, getCssClassAttr } from '../visibility';
+import type { HtmlBlock } from "@templatical/types";
+import type { RenderContext } from "../render-context";
+import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
  * Render an HTML block to MJML markup.
@@ -8,17 +8,17 @@ import { isHiddenOnAll, getCssClassAttr } from '../visibility';
  */
 export function renderHtml(block: HtmlBlock, context: RenderContext): string {
   if (isHiddenOnAll(block)) {
-    return '';
+    return "";
   }
 
   if (!context.allowHtmlBlocks) {
-    return '';
+    return "";
   }
 
   const content = block.content;
 
-  if (content === '') {
-    return '';
+  if (content === "") {
+    return "";
   }
 
   const visibilityAttr = getCssClassAttr(block);

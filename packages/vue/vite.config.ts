@@ -12,12 +12,13 @@ export default defineConfig({
       formats: ['es', 'umd'],
     },
     rollupOptions: {
-      external: ['vue', '@templatical/core', '@templatical/core/cloud', '@templatical/types', '@templatical/renderer'],
+      external: ['vue', '@templatical/core', '@templatical/core/cloud', '@templatical/media-library', '@templatical/types', '@templatical/renderer'],
       output: {
         globals: {
           vue: 'Vue',
           '@templatical/core': 'TemplaticalCore',
           '@templatical/core/cloud': 'TemplaticalCoreCloud',
+          '@templatical/media-library': 'TemplaticalMediaLibrary',
           '@templatical/types': 'TemplaticalTypes',
           '@templatical/renderer': 'TemplaticalRenderer',
         },

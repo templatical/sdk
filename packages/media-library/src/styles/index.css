@@ -1,0 +1,163 @@
+/**
+ * Templatical Media Library SDK Styles
+ *
+ * Standalone stylesheet for the media library SDK.
+ * Contains only essential styles that cannot be inlined with Tailwind.
+ */
+
+@import url('https://fonts.bunny.net/css?family=geist:400,500,600');
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme) theme(inline) prefix(tpl);
+/* Preflight deliberately omitted — SDK must not reset consumer styles */
+@import 'tailwindcss/utilities.css' layer(utilities) prefix(tpl);
+
+@theme inline {
+    --font-sans:
+        'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* Source paths for Tailwind scanning */
+@source '../components/**/*.vue';
+@source '../standalone/**/*.vue';
+
+/* SDK CSS Variables - Default theme, can be overridden via inline styles */
+.tpl {
+    /* Warm palette */
+    --tpl-bg: oklch(99.5% 0.002 60);
+    --tpl-bg-elevated: oklch(98% 0.004 60);
+    --tpl-bg-hover: oklch(96% 0.006 60);
+    --tpl-bg-active: oklch(93.5% 0.008 60);
+    --tpl-border: oklch(92% 0.006 60);
+    --tpl-border-light: oklch(86% 0.01 60);
+    --tpl-text: oklch(18% 0.01 60);
+    --tpl-text-muted: oklch(50% 0.015 60);
+    --tpl-text-dim: oklch(68% 0.012 60);
+    --tpl-primary: oklch(70% 0.16 55);
+    --tpl-primary-hover: oklch(63% 0.17 55);
+    --tpl-primary-light: oklch(95% 0.04 55);
+    --tpl-secondary: oklch(60% 0.118 184.71);
+    --tpl-secondary-hover: oklch(53.2% 0.105 186.39);
+    --tpl-secondary-light: oklch(93.8% 0.03 186.82);
+    --tpl-success: oklch(62.8% 0.194 155.1);
+    --tpl-success-light: oklch(93.6% 0.043 163.51);
+    --tpl-warning: oklch(76.9% 0.168 70.08);
+    --tpl-warning-light: oklch(95% 0.038 73.59);
+    --tpl-danger: oklch(63.7% 0.237 25.33);
+    --tpl-danger-light: oklch(93.6% 0.032 17.72);
+
+    /* 3-level radius */
+    --tpl-radius: 10px;
+    --tpl-radius-sm: 7px;
+    --tpl-radius-lg: 14px;
+
+    /* Font — Geist */
+    --tpl-font-family:
+        'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* 4-level shadow system */
+    --tpl-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
+    --tpl-shadow-md:
+        0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+    --tpl-shadow-lg:
+        0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    --tpl-shadow-xl:
+        0 8px 32px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06);
+
+    /* Focus ring with amber accent */
+    --tpl-ring: 0 0 0 3px var(--tpl-primary-light);
+
+    /* Spring easing transition */
+    --tpl-transition: 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* SDK Base Styles */
+.tpl {
+    @apply tpl:font-sans tpl:text-sm tpl:leading-normal tpl:antialiased;
+    background-color: var(--tpl-bg);
+    color: var(--tpl-text);
+    font-family: var(--tpl-font-family);
+}
+
+/* Form element reset - Preflight is omitted so form elements use browser defaults */
+.tpl button,
+.tpl input,
+.tpl select,
+.tpl textarea {
+    font-family: inherit;
+}
+
+.tpl button {
+    border: none;
+    outline: none;
+    background: none;
+    cursor: pointer;
+}
+
+/* Scrollbar Styles */
+.tpl ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.tpl ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tpl ::-webkit-scrollbar-thumb {
+    background-color: color-mix(
+        in srgb,
+        var(--tpl-border-light) 60%,
+        transparent
+    );
+    @apply tpl:rounded;
+}
+
+.tpl ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--tpl-border-light);
+}
+
+/* Animations */
+@keyframes tpl-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes tpl-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes tpl-scale-in {
+    from {
+        opacity: 0;
+        transform: scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.tpl-pulse {
+    animation: tpl-pulse 2s infinite;
+}
+
+.tpl-spinner {
+    animation: tpl-spin 1s linear infinite;
+}
+
+.tpl-scale-in {
+    animation: tpl-scale-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}

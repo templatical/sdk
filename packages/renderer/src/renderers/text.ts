@@ -1,21 +1,21 @@
-import type { TextBlock } from '@templatical/types';
-import type { RenderContext } from '../render-context';
-import { convertMergeTagsToValues } from '../escape';
-import { toPaddingString } from '../padding';
-import { isHiddenOnAll, getCssClassAttr } from '../visibility';
+import type { TextBlock } from "@templatical/types";
+import type { RenderContext } from "../render-context";
+import { convertMergeTagsToValues } from "../escape";
+import { toPaddingString } from "../padding";
+import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
  * Render a text block to MJML markup.
  */
 export function renderText(block: TextBlock, context: RenderContext): string {
   if (isHiddenOnAll(block)) {
-    return '';
+    return "";
   }
 
   const padding = toPaddingString(block.styles.padding);
   const bgColor = block.styles.backgroundColor
     ? ` background-color="${block.styles.backgroundColor}"`
-    : '';
+    : "";
   const content = convertMergeTagsToValues(block.content);
   const fontSize = block.fontSize;
   const color = block.color;
@@ -39,7 +39,7 @@ function renderFontFamilyAttr(
   context: RenderContext,
 ): string {
   if (!fontFamily) {
-    return '';
+    return "";
   }
 
   const resolved = context.resolveFontFamily(fontFamily);

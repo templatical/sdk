@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@templatical/core": "workspace:*",
+    "@templatical/media-library": "workspace:*",
     "@templatical/types": "workspace:*",
     "@tiptap/core": "^2.0.0",
     "@tiptap/extension-link": "^2.0.0",

@@ -7,4 +7,5 @@ export default defineConfig({
   clean: true,
   target: 'es2020',
   sourcemap: true,
+  external: ['vue'],
 })

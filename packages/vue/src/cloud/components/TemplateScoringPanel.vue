@@ -1,577 +1,522 @@
 <script setup lang="ts">
-import LoadingTrack from '../../components/LoadingTrack.vue';
-import { useTemplateScoring, type UseEditorReturn } from '@templatical/core/cloud';
-import type { Translations } from '../../i18n';
-import type {
-    ScoringCategory,
-    ScoringFinding,
-} from '@templatical/types';
-import type { MergeTag } from '@templatical/types';
-import type { AuthManager } from '@templatical/core/cloud';
+import LoadingTrack from "../../components/LoadingTrack.vue";
 import {
-    AlertCircle,
-    AlertTriangle,
-    ChevronDown,
-    Eye,
-    Info,
-    Loader2,
-    RefreshCw,
-    ShieldCheck,
-    ShieldX,
-    Sparkles,
-    X,
-    Zap,
-} from 'lucide-vue-next';
-import { inject, ref, watch } from 'vue';
+  useTemplateScoring,
+  type UseEditorReturn,
+} from "@templatical/core/cloud";
+import type { Translations } from "../../i18n";
+import type { ScoringCategory, ScoringFinding } from "@templatical/types";
+import type { MergeTag } from "@templatical/types";
+import type { AuthManager } from "@templatical/core/cloud";
+import {
+  AlertCircle,
+  AlertTriangle,
+  ChevronDown,
+  Eye,
+  Info,
+  Loader2,
+  RefreshCw,
+  ShieldCheck,
+  ShieldX,
+  Sparkles,
+  X,
+  Zap,
+} from "lucide-vue-next";
+import { inject, ref, watch } from "vue";
 
 const props = defineProps<{
-    visible: boolean;
+  visible: boolean;
 }>();
 
 const emit = defineEmits<{
-    (e: 'close'): void;
+  (e: "close"): void;
 }>();
 
-const translations = inject<Translations>('translations')!;
-const editor = inject<UseEditorReturn>('editor')!;
-const authManager = inject<AuthManager>('authManager')!;
-const mergeTags = inject<MergeTag[]>('mergeTags', []);
+const translations = inject<Translations>("translations")!;
+const editor = inject<UseEditorReturn>("editor")!;
+const authManager = inject<AuthManager>("authManager")!;
+const mergeTags = inject<MergeTag[]>("mergeTags", []);
 
 const scoring = useTemplateScoring({
-    authManager,
-    getTemplateId: () => editor.state.template?.id ?? null,
+  authManager,
+  getTemplateId: () => editor.state.template?.id ?? null,
 });
 
 const expandedCategories = ref<Record<string, boolean>>({
-    spam: true,
-    readability: true,
-    accessibility: true,
-    bestPractices: true,
+  spam: true,
+  readability: true,
+  accessibility: true,
+  bestPractices: true,
 });
 
 function toggleCategory(category: string): void {
-    expandedCategories.value[category] = !expandedCategories.value[category];
+  expandedCategories.value[category] = !expandedCategories.value[category];
 }
 
 const categoryOrder: ScoringCategory[] = [
-    'spam',
-    'readability',
-    'accessibility',
-    'bestPractices',
+  "spam",
+  "readability",
+  "accessibility",
+  "bestPractices",
 ];
 
 const categoryIcons: Record<ScoringCategory, typeof ShieldCheck> = {
-    spam: ShieldX,
-    readability: Eye,
-    accessibility: Sparkles,
-    bestPractices: Zap,
+  spam: ShieldX,
+  readability: Eye,
+  accessibility: Sparkles,
+  bestPractices: Zap,
 };
 
 function scoreColor(score: number): string {
-    if (score >= 80) {
-        return 'var(--tpl-success)';
-    }
-    if (score >= 60) {
-        return 'var(--tpl-warning)';
-    }
-    return 'var(--tpl-danger)';
+  if (score >= 80) {
+    return "var(--tpl-success)";
+  }
+  if (score >= 60) {
+    return "var(--tpl-warning)";
+  }
+  return "var(--tpl-danger)";
 }
 
 function scoreBgColor(score: number): string {
-    if (score >= 80) {
-        return 'var(--tpl-success-light)';
-    }
-    if (score >= 60) {
-        return 'var(--tpl-warning-light)';
-    }
-    return 'var(--tpl-danger-light)';
+  if (score >= 80) {
+    return "var(--tpl-success-light)";
+  }
+  if (score >= 60) {
+    return "var(--tpl-warning-light)";
+  }
+  return "var(--tpl-danger-light)";
 }
 
 function severityColor(severity: string): string {
-    if (severity === 'high') {
-        return 'var(--tpl-danger)';
-    }
-    if (severity === 'medium') {
-        return 'var(--tpl-warning)';
-    }
-    return 'var(--tpl-text-muted)';
+  if (severity === "high") {
+    return "var(--tpl-danger)";
+  }
+  if (severity === "medium") {
+    return "var(--tpl-warning)";
+  }
+  return "var(--tpl-text-muted)";
 }
 
 function severityBgColor(severity: string): string {
-    if (severity === 'high') {
-        return 'var(--tpl-danger-light)';
-    }
-    if (severity === 'medium') {
-        return 'var(--tpl-warning-light)';
-    }
-    return 'var(--tpl-bg-hover)';
+  if (severity === "high") {
+    return "var(--tpl-danger-light)";
+  }
+  if (severity === "medium") {
+    return "var(--tpl-warning-light)";
+  }
+  return "var(--tpl-bg-hover)";
 }
 
 function triggerScore(): void {
-    scoring.score(editor.content.value, mergeTags);
+  scoring.score(editor.content.value, mergeTags);
 }
 
 watch(
-    () => props.visible,
-    (isVisible) => {
-        if (
-            isVisible &&
-            !scoring.scoringResult.value &&
-            !scoring.isScoring.value
-        ) {
-            triggerScore();
-        }
-    },
+  () => props.visible,
+  (isVisible) => {
+    if (isVisible && !scoring.scoringResult.value && !scoring.isScoring.value) {
+      triggerScore();
+    }
+  },
 );
 
 async function handleFix(finding: ScoringFinding): Promise<void> {
-    if (!finding.blockId) {
-        return;
-    }
+  if (!finding.blockId) {
+    return;
+  }
 
-    // Get the block content from the editor
-    const block = editor.content.value.blocks.find(
-        (b) => b.id === finding.blockId,
-    );
-    if (!block) {
-        return;
-    }
+  // Get the block content from the editor
+  const block = editor.content.value.blocks.find(
+    (b) => b.id === finding.blockId,
+  );
+  if (!block) {
+    return;
+  }
 
-    // Extract HTML content from the block (text blocks have content property)
-    const blockContent = (block as unknown as Record<string, unknown>)
-        .content as string | undefined;
-    if (!blockContent) {
-        return;
-    }
+  // Extract HTML content from the block (text blocks have content property)
+  const blockContent = (block as unknown as Record<string, unknown>).content as
+    | string
+    | undefined;
+  if (!blockContent) {
+    return;
+  }
 
-    const fixedContent = await scoring.fixFinding(
-        blockContent,
-        finding,
-        mergeTags,
-    );
+  const fixedContent = await scoring.fixFinding(
+    blockContent,
+    finding,
+    mergeTags,
+  );
 
-    if (fixedContent) {
-        editor.updateBlock(finding.blockId, { content: fixedContent });
-        scoring.removeFinding(finding.category, finding.id);
-    }
+  if (fixedContent) {
+    editor.updateBlock(finding.blockId, { content: fixedContent });
+    scoring.removeFinding(finding.category, finding.id);
+  }
 }
 
 function totalFindings(): number {
-    if (!scoring.scoringResult.value) {
-        return 0;
-    }
-    return categoryOrder.reduce((sum, cat) => {
-        return (
-            sum +
-            (scoring.scoringResult.value?.categories[cat]?.findings.length ?? 0)
-        );
-    }, 0);
+  if (!scoring.scoringResult.value) {
+    return 0;
+  }
+  return categoryOrder.reduce((sum, cat) => {
+    return (
+      sum + (scoring.scoringResult.value?.categories[cat]?.findings.length ?? 0)
+    );
+  }, 0);
 }
 </script>
 
 <template>
-    <Transition
-        enter-active-class="tpl-scoring-slide-enter-active"
-        enter-from-class="tpl:translate-x-full"
-        enter-to-class="tpl:translate-x-0"
-        leave-active-class="tpl-scoring-slide-leave-active"
-        leave-from-class="tpl:translate-x-0"
-        leave-to-class="tpl:translate-x-full"
+  <Transition
+    enter-active-class="tpl-scoring-slide-enter-active"
+    enter-from-class="tpl:translate-x-full"
+    enter-to-class="tpl:translate-x-0"
+    leave-active-class="tpl-scoring-slide-leave-active"
+    leave-from-class="tpl:translate-x-0"
+    leave-to-class="tpl:translate-x-full"
+  >
+    <div
+      v-if="visible"
+      class="tpl-scoring-panel tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:z-[45] tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
     >
+      <!-- Header -->
+      <div
+        class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
+      >
         <div
-            v-if="visible"
-            class="tpl-scoring-panel tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:z-[45] tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
+          class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium"
+          style="color: var(--tpl-primary)"
         >
-            <!-- Header -->
-            <div
-                class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
-            >
-                <div
-                    class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium"
-                    style="color: var(--tpl-primary)"
-                >
-                    <ShieldCheck :size="13" :stroke-width="2" />
-                    <span>{{ translations.scoring.title }}</span>
-                </div>
-                <div class="tpl:flex tpl:items-center tpl:gap-1">
-                    <button
-                        v-if="
-                            scoring.scoringResult.value &&
-                            !scoring.isScoring.value
-                        "
-                        class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
-                        style="color: var(--tpl-text-muted)"
-                        :title="translations.scoring.rescore"
-                        @click="triggerScore()"
-                    >
-                        <RefreshCw :size="14" :stroke-width="2" />
-                    </button>
-                    <button
-                        class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
-                        style="color: var(--tpl-text-muted)"
-                        @click="emit('close')"
-                    >
-                        <X :size="14" :stroke-width="2" />
-                    </button>
-                </div>
-            </div>
-
-            <!-- Content -->
-            <div class="tpl:flex-1 tpl:overflow-y-auto tpl:p-4">
-                <!-- Loading state -->
-                <div
-                    v-if="scoring.isScoring.value"
-                    class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
-                >
-                    <p class="tpl:text-sm" style="color: var(--tpl-text-muted)">
-                        {{ translations.scoring.scoring }}
-                    </p>
-                    <LoadingTrack class="tpl:w-3/4" />
-                </div>
-
-                <!-- Error state -->
-                <div
-                    v-else-if="
-                        scoring.error.value && !scoring.scoringResult.value
-                    "
-                    class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
-                >
-                    <AlertCircle
-                        :size="32"
-                        :stroke-width="1.5"
-                        style="color: var(--tpl-danger)"
-                    />
-                    <p
-                        class="tpl:max-w-[240px] tpl:text-sm"
-                        style="color: var(--tpl-text-muted)"
-                    >
-                        {{ translations.scoring.error }}
-                    </p>
-                    <button
-                        class="tpl:mt-2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
-                        style="
-                            border-color: var(--tpl-border);
-                            color: var(--tpl-text-muted);
-                        "
-                        @click="triggerScore()"
-                    >
-                        <RefreshCw :size="12" :stroke-width="2" />
-                        {{ translations.scoring.rescore }}
-                    </button>
-                </div>
-
-                <!-- Results -->
-                <div
-                    v-else-if="scoring.scoringResult.value"
-                    class="tpl:flex tpl:flex-col tpl:gap-4"
-                >
-                    <!-- Overall score -->
-                    <div
-                        class="tpl:flex tpl:flex-col tpl:items-center tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:p-5"
-                        :style="{
-                            backgroundColor: scoreBgColor(
-                                scoring.scoringResult.value.score,
-                            ),
-                        }"
-                    >
-                        <span
-                            class="tpl:text-4xl tpl:font-bold tpl:tabular-nums"
-                            :style="{
-                                color: scoreColor(
-                                    scoring.scoringResult.value.score,
-                                ),
-                            }"
-                        >
-                            {{ scoring.scoringResult.value.score }}
-                        </span>
-                        <span
-                            class="tpl:text-xs tpl:font-medium tpl:uppercase tpl:tracking-wider"
-                            style="color: var(--tpl-text-muted)"
-                        >
-                            {{ translations.scoring.overallScore }}
-                        </span>
-                        <span
-                            v-if="totalFindings() > 0"
-                            class="tpl:text-xs"
-                            style="color: var(--tpl-text-dim)"
-                        >
-                            {{ totalFindings() }}
-                            {{ translations.scoring.findings }}
-                        </span>
-                    </div>
-
-                    <!-- Fix error -->
-                    <div
-                        v-if="scoring.fixError.value"
-                        class="tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs"
-                        style="
-                            background-color: var(--tpl-danger-light);
-                            color: var(--tpl-danger);
-                        "
-                    >
-                        <AlertCircle
-                            :size="14"
-                            :stroke-width="2"
-                            class="tpl:mt-0.5 tpl:shrink-0"
-                        />
-                        <span>{{ translations.scoring.fixError }}</span>
-                    </div>
-
-                    <!-- Category cards -->
-                    <div
-                        v-for="category in categoryOrder"
-                        :key="category"
-                        class="tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)] tpl:border"
-                        style="border-color: var(--tpl-border)"
-                    >
-                        <!-- Category header -->
-                        <button
-                            class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-2.5 tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-colors tpl:duration-100"
-                            style="background-color: var(--tpl-bg)"
-                            @click="toggleCategory(category)"
-                        >
-                            <component
-                                :is="categoryIcons[category]"
-                                :size="14"
-                                :stroke-width="2"
-                                :style="{
-                                    color: scoreColor(
-                                        scoring.scoringResult.value.categories[
-                                            category
-                                        ].score,
-                                    ),
-                                }"
-                            />
-                            <span
-                                class="tpl:flex-1 tpl:text-xs tpl:font-medium"
-                                style="color: var(--tpl-text)"
-                            >
-                                {{ translations.scoring.categories[category] }}
-                            </span>
-                            <span
-                                class="tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-semibold tpl:tabular-nums"
-                                :style="{
-                                    color: scoreColor(
-                                        scoring.scoringResult.value.categories[
-                                            category
-                                        ].score,
-                                    ),
-                                    backgroundColor: scoreBgColor(
-                                        scoring.scoringResult.value.categories[
-                                            category
-                                        ].score,
-                                    ),
-                                }"
-                            >
-                                {{
-                                    scoring.scoringResult.value.categories[
-                                        category
-                                    ].score
-                                }}
-                            </span>
-                            <span
-                                v-if="
-                                    scoring.scoringResult.value.categories[
-                                        category
-                                    ].findings.length > 0
-                                "
-                                class="tpl:text-[10px]"
-                                style="color: var(--tpl-text-dim)"
-                            >
-                                {{
-                                    scoring.scoringResult.value.categories[
-                                        category
-                                    ].findings.length
-                                }}
-                            </span>
-                            <ChevronDown
-                                :size="12"
-                                :stroke-width="2"
-                                class="tpl:transition-transform tpl:duration-200"
-                                :class="
-                                    expandedCategories[category]
-                                        ? 'tpl:rotate-0'
-                                        : 'tpl:-rotate-90'
-                                "
-                                style="color: var(--tpl-text-dim)"
-                            />
-                        </button>
-
-                        <!-- Findings list -->
-                        <div
-                            v-if="expandedCategories[category]"
-                            class="tpl:border-t"
-                            style="border-color: var(--tpl-border)"
-                        >
-                            <div
-                                v-if="
-                                    scoring.scoringResult.value.categories[
-                                        category
-                                    ].findings.length === 0
-                                "
-                                class="tpl:px-3 tpl:py-3 tpl:text-center tpl:text-xs"
-                                style="color: var(--tpl-text-dim)"
-                            >
-                                {{ translations.scoring.noFindings }}
-                            </div>
-                            <div
-                                v-for="finding in scoring.scoringResult.value
-                                    .categories[category].findings"
-                                :key="finding.id"
-                                class="tpl:border-t tpl:px-3 tpl:py-2.5 first:tpl:border-t-0"
-                                style="border-color: var(--tpl-border-light)"
-                            >
-                                <div class="tpl:flex tpl:items-start tpl:gap-2">
-                                    <!-- Severity icon -->
-                                    <component
-                                        :is="
-                                            finding.severity === 'high'
-                                                ? AlertCircle
-                                                : finding.severity === 'medium'
-                                                  ? AlertTriangle
-                                                  : Info
-                                        "
-                                        :size="13"
-                                        :stroke-width="2"
-                                        class="tpl:mt-0.5 tpl:shrink-0"
-                                        :style="{
-                                            color: severityColor(
-                                                finding.severity,
-                                            ),
-                                        }"
-                                    />
-                                    <div class="tpl:flex-1 tpl:min-w-0">
-                                        <!-- Severity badge + message -->
-                                        <div
-                                            class="tpl:flex tpl:items-start tpl:gap-1.5"
-                                        >
-                                            <span
-                                                class="tpl:mt-0.5 tpl:shrink-0 tpl:rounded tpl:px-1 tpl:py-px tpl:text-[10px] tpl:font-medium tpl:leading-tight"
-                                                :style="{
-                                                    color: severityColor(
-                                                        finding.severity,
-                                                    ),
-                                                    backgroundColor:
-                                                        severityBgColor(
-                                                            finding.severity,
-                                                        ),
-                                                }"
-                                            >
-                                                {{
-                                                    translations.scoring
-                                                        .severity[
-                                                        finding.severity
-                                                    ]
-                                                }}
-                                            </span>
-                                            <span
-                                                class="tpl:text-xs tpl:leading-snug"
-                                                style="color: var(--tpl-text)"
-                                            >
-                                                {{ finding.message }}
-                                            </span>
-                                        </div>
-                                        <!-- Suggestion -->
-                                        <p
-                                            v-if="finding.suggestion"
-                                            class="tpl:mt-1 tpl:text-[11px] tpl:leading-snug"
-                                            style="color: var(--tpl-text-dim)"
-                                        >
-                                            {{ finding.suggestion }}
-                                        </p>
-                                        <!-- Fix button -->
-                                        <div
-                                            v-if="finding.blockId"
-                                            class="tpl:mt-2 tpl:flex tpl:justify-center"
-                                        >
-                                            <button
-                                                class="tpl-scoring-fix-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded tpl:border tpl:px-3 tpl:py-1.5 tpl:text-[11px] tpl:font-medium tpl:transition-all tpl:duration-150 tpl:disabled:opacity-50"
-                                                style="
-                                                    border-color: var(
-                                                        --tpl-border
-                                                    );
-                                                    color: var(--tpl-primary);
-                                                    background-color: transparent;
-                                                "
-                                                :disabled="
-                                                    scoring.fixingFindingId
-                                                        .value !== null
-                                                "
-                                                @click="handleFix(finding)"
-                                            >
-                                                <Loader2
-                                                    v-if="
-                                                        scoring.fixingFindingId
-                                                            .value ===
-                                                        finding.id
-                                                    "
-                                                    class="tpl-spinner"
-                                                    :size="11"
-                                                    :stroke-width="2"
-                                                />
-                                                <Sparkles
-                                                    v-else
-                                                    :size="11"
-                                                    :stroke-width="2"
-                                                />
-                                                {{
-                                                    scoring.fixingFindingId
-                                                        .value === finding.id
-                                                        ? translations.scoring
-                                                              .fixing
-                                                        : translations.scoring
-                                                              .fix
-                                                }}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Empty state (no result, no loading, no error) -->
-                <div
-                    v-else
-                    class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
-                >
-                    <ShieldCheck
-                        :size="32"
-                        :stroke-width="1.5"
-                        style="color: var(--tpl-text-dim)"
-                    />
-                    <p
-                        class="tpl:max-w-[240px] tpl:text-sm"
-                        style="color: var(--tpl-text-muted)"
-                    >
-                        {{ translations.scoring.emptyState }}
-                    </p>
-                </div>
-
-                <!-- AI disclaimer -->
-                <p
-                    class="tpl:m-0 tpl:px-4 tpl:pb-2 tpl:pt-2 tpl:text-center tpl:text-[11px]"
-                    style="color: var(--tpl-text-dim)"
-                >
-                    {{ translations.aiMenu.disclaimer }}
-                </p>
-            </div>
+          <ShieldCheck :size="13" :stroke-width="2" />
+          <span>{{ translations.scoring.title }}</span>
         </div>
-    </Transition>
+        <div class="tpl:flex tpl:items-center tpl:gap-1">
+          <button
+            v-if="scoring.scoringResult.value && !scoring.isScoring.value"
+            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
+            style="color: var(--tpl-text-muted)"
+            :title="translations.scoring.rescore"
+            @click="triggerScore()"
+          >
+            <RefreshCw :size="14" :stroke-width="2" />
+          </button>
+          <button
+            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
+            style="color: var(--tpl-text-muted)"
+            @click="emit('close')"
+          >
+            <X :size="14" :stroke-width="2" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="tpl:flex-1 tpl:overflow-y-auto tpl:p-4">
+        <!-- Loading state -->
+        <div
+          v-if="scoring.isScoring.value"
+          class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
+        >
+          <p class="tpl:text-sm" style="color: var(--tpl-text-muted)">
+            {{ translations.scoring.scoring }}
+          </p>
+          <LoadingTrack class="tpl:w-3/4" />
+        </div>
+
+        <!-- Error state -->
+        <div
+          v-else-if="scoring.error.value && !scoring.scoringResult.value"
+          class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
+        >
+          <AlertCircle
+            :size="32"
+            :stroke-width="1.5"
+            style="color: var(--tpl-danger)"
+          />
+          <p
+            class="tpl:max-w-[240px] tpl:text-sm"
+            style="color: var(--tpl-text-muted)"
+          >
+            {{ translations.scoring.error }}
+          </p>
+          <button
+            class="tpl:mt-2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
+            style="
+              border-color: var(--tpl-border);
+              color: var(--tpl-text-muted);
+            "
+            @click="triggerScore()"
+          >
+            <RefreshCw :size="12" :stroke-width="2" />
+            {{ translations.scoring.rescore }}
+          </button>
+        </div>
+
+        <!-- Results -->
+        <div
+          v-else-if="scoring.scoringResult.value"
+          class="tpl:flex tpl:flex-col tpl:gap-4"
+        >
+          <!-- Overall score -->
+          <div
+            class="tpl:flex tpl:flex-col tpl:items-center tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:p-5"
+            :style="{
+              backgroundColor: scoreBgColor(scoring.scoringResult.value.score),
+            }"
+          >
+            <span
+              class="tpl:text-4xl tpl:font-bold tpl:tabular-nums"
+              :style="{
+                color: scoreColor(scoring.scoringResult.value.score),
+              }"
+            >
+              {{ scoring.scoringResult.value.score }}
+            </span>
+            <span
+              class="tpl:text-xs tpl:font-medium tpl:uppercase tpl:tracking-wider"
+              style="color: var(--tpl-text-muted)"
+            >
+              {{ translations.scoring.overallScore }}
+            </span>
+            <span
+              v-if="totalFindings() > 0"
+              class="tpl:text-xs"
+              style="color: var(--tpl-text-dim)"
+            >
+              {{ totalFindings() }}
+              {{ translations.scoring.findings }}
+            </span>
+          </div>
+
+          <!-- Fix error -->
+          <div
+            v-if="scoring.fixError.value"
+            class="tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs"
+            style="
+              background-color: var(--tpl-danger-light);
+              color: var(--tpl-danger);
+            "
+          >
+            <AlertCircle
+              :size="14"
+              :stroke-width="2"
+              class="tpl:mt-0.5 tpl:shrink-0"
+            />
+            <span>{{ translations.scoring.fixError }}</span>
+          </div>
+
+          <!-- Category cards -->
+          <div
+            v-for="category in categoryOrder"
+            :key="category"
+            class="tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)] tpl:border"
+            style="border-color: var(--tpl-border)"
+          >
+            <!-- Category header -->
+            <button
+              class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-2.5 tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-colors tpl:duration-100"
+              style="background-color: var(--tpl-bg)"
+              @click="toggleCategory(category)"
+            >
+              <component
+                :is="categoryIcons[category]"
+                :size="14"
+                :stroke-width="2"
+                :style="{
+                  color: scoreColor(
+                    scoring.scoringResult.value.categories[category].score,
+                  ),
+                }"
+              />
+              <span
+                class="tpl:flex-1 tpl:text-xs tpl:font-medium"
+                style="color: var(--tpl-text)"
+              >
+                {{ translations.scoring.categories[category] }}
+              </span>
+              <span
+                class="tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-semibold tpl:tabular-nums"
+                :style="{
+                  color: scoreColor(
+                    scoring.scoringResult.value.categories[category].score,
+                  ),
+                  backgroundColor: scoreBgColor(
+                    scoring.scoringResult.value.categories[category].score,
+                  ),
+                }"
+              >
+                {{ scoring.scoringResult.value.categories[category].score }}
+              </span>
+              <span
+                v-if="
+                  scoring.scoringResult.value.categories[category].findings
+                    .length > 0
+                "
+                class="tpl:text-[10px]"
+                style="color: var(--tpl-text-dim)"
+              >
+                {{
+                  scoring.scoringResult.value.categories[category].findings
+                    .length
+                }}
+              </span>
+              <ChevronDown
+                :size="12"
+                :stroke-width="2"
+                class="tpl:transition-transform tpl:duration-200"
+                :class="
+                  expandedCategories[category]
+                    ? 'tpl:rotate-0'
+                    : 'tpl:-rotate-90'
+                "
+                style="color: var(--tpl-text-dim)"
+              />
+            </button>
+
+            <!-- Findings list -->
+            <div
+              v-if="expandedCategories[category]"
+              class="tpl:border-t"
+              style="border-color: var(--tpl-border)"
+            >
+              <div
+                v-if="
+                  scoring.scoringResult.value.categories[category].findings
+                    .length === 0
+                "
+                class="tpl:px-3 tpl:py-3 tpl:text-center tpl:text-xs"
+                style="color: var(--tpl-text-dim)"
+              >
+                {{ translations.scoring.noFindings }}
+              </div>
+              <div
+                v-for="finding in scoring.scoringResult.value.categories[
+                  category
+                ].findings"
+                :key="finding.id"
+                class="tpl:border-t tpl:px-3 tpl:py-2.5 first:tpl:border-t-0"
+                style="border-color: var(--tpl-border-light)"
+              >
+                <div class="tpl:flex tpl:items-start tpl:gap-2">
+                  <!-- Severity icon -->
+                  <component
+                    :is="
+                      finding.severity === 'high'
+                        ? AlertCircle
+                        : finding.severity === 'medium'
+                          ? AlertTriangle
+                          : Info
+                    "
+                    :size="13"
+                    :stroke-width="2"
+                    class="tpl:mt-0.5 tpl:shrink-0"
+                    :style="{
+                      color: severityColor(finding.severity),
+                    }"
+                  />
+                  <div class="tpl:flex-1 tpl:min-w-0">
+                    <!-- Severity badge + message -->
+                    <div class="tpl:flex tpl:items-start tpl:gap-1.5">
+                      <span
+                        class="tpl:mt-0.5 tpl:shrink-0 tpl:rounded tpl:px-1 tpl:py-px tpl:text-[10px] tpl:font-medium tpl:leading-tight"
+                        :style="{
+                          color: severityColor(finding.severity),
+                          backgroundColor: severityBgColor(finding.severity),
+                        }"
+                      >
+                        {{ translations.scoring.severity[finding.severity] }}
+                      </span>
+                      <span
+                        class="tpl:text-xs tpl:leading-snug"
+                        style="color: var(--tpl-text)"
+                      >
+                        {{ finding.message }}
+                      </span>
+                    </div>
+                    <!-- Suggestion -->
+                    <p
+                      v-if="finding.suggestion"
+                      class="tpl:mt-1 tpl:text-[11px] tpl:leading-snug"
+                      style="color: var(--tpl-text-dim)"
+                    >
+                      {{ finding.suggestion }}
+                    </p>
+                    <!-- Fix button -->
+                    <div
+                      v-if="finding.blockId"
+                      class="tpl:mt-2 tpl:flex tpl:justify-center"
+                    >
+                      <button
+                        class="tpl-scoring-fix-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded tpl:border tpl:px-3 tpl:py-1.5 tpl:text-[11px] tpl:font-medium tpl:transition-all tpl:duration-150 tpl:disabled:opacity-50"
+                        style="
+                          border-color: var(--tpl-border);
+                          color: var(--tpl-primary);
+                          background-color: transparent;
+                        "
+                        :disabled="scoring.fixingFindingId.value !== null"
+                        @click="handleFix(finding)"
+                      >
+                        <Loader2
+                          v-if="scoring.fixingFindingId.value === finding.id"
+                          class="tpl-spinner"
+                          :size="11"
+                          :stroke-width="2"
+                        />
+                        <Sparkles v-else :size="11" :stroke-width="2" />
+                        {{
+                          scoring.fixingFindingId.value === finding.id
+                            ? translations.scoring.fixing
+                            : translations.scoring.fix
+                        }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state (no result, no loading, no error) -->
+        <div
+          v-else
+          class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
+        >
+          <ShieldCheck
+            :size="32"
+            :stroke-width="1.5"
+            style="color: var(--tpl-text-dim)"
+          />
+          <p
+            class="tpl:max-w-[240px] tpl:text-sm"
+            style="color: var(--tpl-text-muted)"
+          >
+            {{ translations.scoring.emptyState }}
+          </p>
+        </div>
+
+        <!-- AI disclaimer -->
+        <p
+          class="tpl:m-0 tpl:px-4 tpl:pb-2 tpl:pt-2 tpl:text-center tpl:text-[11px]"
+          style="color: var(--tpl-text-dim)"
+        >
+          {{ translations.aiMenu.disclaimer }}
+        </p>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
 .tpl-scoring-slide-enter-active {
-    transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tpl-scoring-slide-leave-active {
-    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tpl-scoring-fix-btn:not(:disabled):hover {
-    border-color: var(--tpl-primary) !important;
-    background-color: var(--tpl-primary-light) !important;
+  border-color: var(--tpl-primary) !important;
+  background-color: var(--tpl-primary-light) !important;
 }
 </style>

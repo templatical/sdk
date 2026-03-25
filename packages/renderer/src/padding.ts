@@ -1,4 +1,4 @@
-import type { SpacingValue } from '@templatical/types';
+import type { SpacingValue } from "@templatical/types";
 
 /**
  * Convert a SpacingValue to a CSS padding string like "10px 10px 10px 10px".

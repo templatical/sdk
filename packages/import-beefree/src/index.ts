@@ -1,8 +1,8 @@
-export { convertBeeFreeTemplate } from './converter';
+export { convertBeeFreeTemplate } from "./converter";
 export type {
-    BeeFreeTemplate,
-    ImportResult,
-    ImportReport,
-    ImportReportEntry,
-    ConversionStatus,
-} from './types';
+  BeeFreeTemplate,
+  ImportResult,
+  ImportReport,
+  ImportReportEntry,
+  ConversionStatus,
+} from "./types";

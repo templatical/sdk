@@ -13,6 +13,7 @@ import LogoIcon from '@/LogoIcon.vue';
 
 type Screen = 'chooser' | 'editor';
 const screen = ref<Screen>('chooser');
+const cloudBannerDismissed = ref(false);
 const showBeefreeImport = ref(false);
 const beefreeJson = ref('');
 const beefreeError = ref('');
@@ -290,7 +291,7 @@ onUnmounted(() => {
         <Transition name="pg-screen" mode="out-in" @enter="onScreenEnter">
         <!-- Template Chooser Screen -->
         <div v-if="screen === 'chooser'" key="chooser" class="flex flex-col items-center justify-center min-h-screen bg-white font-sans py-12">
-                <div class="flex flex-col items-center max-w-[860px] px-6">
+                <div class="flex flex-col items-center max-w-[860px] w-full px-6">
                     <LogoIcon class="mb-5" />
                     <h1 class="m-0 mb-2 text-[22px] font-semibold text-gray-900 tracking-[-0.02em]">Templatical Playground</h1>
                     <p class="m-0 mb-9 text-[15px] text-gray-500">Choose a starting point for your email template</p>
@@ -421,14 +422,31 @@ onUnmounted(() => {
                             Import from BeeFree
                         </button>
                     </div>
-                </div>
 
-                <div class="fixed bottom-6 flex items-center gap-2 text-[13px] [&_a]:text-gray-500 [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-150 [&_a:hover]:text-gray-900">
-                    <a href="https://docs.templatical.com" target="_blank" rel="noopener">Docs</a>
-                    <span class="text-gray-200">&middot;</span>
-                    <a href="https://github.com/templatical/editor" target="_blank" rel="noopener">GitHub</a>
-                    <span class="text-gray-200">&middot;</span>
-                    <a href="#cloud">Cloud Playground</a>
+                    <!-- Cloud Promotion Banner -->
+                    <a href="#cloud" class="group pg-card-stagger mt-8 w-full flex items-center gap-5 p-5 border border-primary/20 rounded-xl bg-primary/[0.04] no-underline text-left transition-all duration-200 hover:border-primary/30 hover:-translate-y-px" :style="{ animationDelay: `${(templates.length + 1) * 40}ms` }">
+                        <div class="shrink-0 flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-semibold text-gray-900 mb-0.5">Unlock the full experience with Cloud</div>
+                            <div class="text-xs text-gray-500 leading-relaxed">Real-time collaboration, AI writing assistant, version history, template scoring, media library, and more.</div>
+                        </div>
+                        <div class="shrink-0 flex items-center gap-1.5 text-[13px] font-medium text-primary transition-colors group-hover:text-primary-hover">
+                            Try Cloud Playground
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M6 3l5 5-5 5"/>
+                            </svg>
+                        </div>
+                    </a>
+
+                    <div class="fixed bottom-6 flex items-center gap-2 text-[13px] [&_a]:text-gray-500 [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-150 [&_a:hover]:text-gray-900">
+                        <a href="https://docs.templatical.com" target="_blank" rel="noopener">Docs</a>
+                        <span class="text-gray-200">&middot;</span>
+                        <a href="https://github.com/templatical/editor" target="_blank" rel="noopener">GitHub</a>
+                    </div>
                 </div>
             </div>
 
@@ -494,14 +512,36 @@ onUnmounted(() => {
                             <path d="M8 .2A8 8 0 0 0 5.47 15.79c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8 8 0 0 0 8 .2z"/>
                         </svg>
                     </a>
-                    <a href="#cloud" class="inline-flex items-center h-8 px-2.5 border border-primary rounded-md bg-primary text-white text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 no-underline whitespace-nowrap hover:bg-primary-hover hover:border-primary-hover hover:text-white">
-                        Cloud
+                    <a href="#cloud" class="group inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary text-white text-[13px] font-medium font-sans cursor-pointer no-underline whitespace-nowrap transition-all duration-150 hover:bg-primary-hover">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                        </svg>
+                        Try Cloud
+                        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="transition-transform duration-150 group-hover:translate-x-0.5">
+                            <path d="M6 3l5 5-5 5"/>
+                        </svg>
                     </a>
                 </div>
             </header>
 
-            <div class="flex flex-1 min-h-0">
+            <div class="flex flex-1 min-h-0 relative">
                 <div ref="editorContainer" class="flex-1 min-w-0" />
+
+                <!-- Floating cloud upsell banner -->
+                <Transition name="pg-modal">
+                <div v-if="!cloudBannerDismissed" class="absolute bottom-4 left-1/2 -translate-x-1/2 z-[99] flex items-center gap-3 py-2.5 pl-4 pr-2.5 bg-white border border-gray-200 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.1)] max-w-[520px] w-[calc(100%-2rem)]">
+                    <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                        <div class="shrink-0 flex items-center justify-center size-7 rounded-md bg-blue-100 text-blue-600">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                            </svg>
+                        </div>
+                        <span class="text-[13px] text-gray-600 leading-snug">Need <strong class="text-gray-900 font-semibold">collaboration, AI tools, or version history</strong>? Try the Cloud version.</span>
+                    </div>
+                    <a href="#cloud" class="shrink-0 inline-flex items-center h-7 px-3 rounded-md bg-blue-600 text-white text-xs font-medium no-underline whitespace-nowrap transition-colors duration-150 hover:bg-blue-700">Try Cloud</a>
+                    <button aria-label="Dismiss" class="shrink-0 size-7 flex items-center justify-center border-none bg-transparent text-gray-400 cursor-pointer rounded-md transition-colors duration-150 hover:bg-gray-100 hover:text-gray-600" @click="cloudBannerDismissed = true">&times;</button>
+                </div>
+                </Transition>
             </div>
         </div>
         </Transition>

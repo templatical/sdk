@@ -1,21 +1,24 @@
-import type { ButtonBlock } from '@templatical/types';
-import type { RenderContext } from '../render-context';
-import { escapeAttr, escapeHtml } from '../escape';
-import { toPaddingString } from '../padding';
-import { isHiddenOnAll, getCssClassAttr } from '../visibility';
+import type { ButtonBlock } from "@templatical/types";
+import type { RenderContext } from "../render-context";
+import { escapeAttr, escapeHtml } from "../escape";
+import { toPaddingString } from "../padding";
+import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
  * Render a button block to MJML markup.
  */
-export function renderButton(block: ButtonBlock, context: RenderContext): string {
+export function renderButton(
+  block: ButtonBlock,
+  context: RenderContext,
+): string {
   if (isHiddenOnAll(block)) {
-    return '';
+    return "";
   }
 
   const padding = toPaddingString(block.styles.padding);
   const bgColor = block.styles.backgroundColor
     ? ` container-background-color="${block.styles.backgroundColor}"`
-    : '';
+    : "";
   const buttonPadding = toPaddingString(block.buttonPadding);
 
   const href = escapeAttr(block.url);
@@ -24,7 +27,7 @@ export function renderButton(block: ButtonBlock, context: RenderContext): string
   const fontSize = block.fontSize;
   const borderRadius = block.borderRadius;
   const text = escapeHtml(block.text);
-  const targetAttr = block.openInNewTab ? ' target="_blank"' : '';
+  const targetAttr = block.openInNewTab ? ' target="_blank"' : "";
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const visibilityAttr = getCssClassAttr(block);
 
@@ -45,7 +48,7 @@ function renderFontFamilyAttr(
   context: RenderContext,
 ): string {
   if (!fontFamily) {
-    return '';
+    return "";
   }
 
   const resolved = context.resolveFontFamily(fontFamily);

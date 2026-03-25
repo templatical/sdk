@@ -1,8 +1,12 @@
-import type { TableBlock, TableRowData, TableCellData } from '@templatical/types';
-import type { RenderContext } from '../render-context';
-import { escapeAttr, convertMergeTagsToValues } from '../escape';
-import { toPaddingString } from '../padding';
-import { isHiddenOnAll, getCssClassAttr } from '../visibility';
+import type {
+  TableBlock,
+  TableRowData,
+  TableCellData,
+} from "@templatical/types";
+import type { RenderContext } from "../render-context";
+import { escapeAttr, convertMergeTagsToValues } from "../escape";
+import { toPaddingString } from "../padding";
+import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
  * Render a table block to MJML markup.
@@ -10,17 +14,17 @@ import { isHiddenOnAll, getCssClassAttr } from '../visibility';
  */
 export function renderTable(block: TableBlock, context: RenderContext): string {
   if (isHiddenOnAll(block)) {
-    return '';
+    return "";
   }
 
   if (block.rows.length === 0) {
-    return '';
+    return "";
   }
 
   const padding = toPaddingString(block.styles.padding);
   const bgColor = block.styles.backgroundColor
     ? ` background-color="${block.styles.backgroundColor}"`
-    : '';
+    : "";
   const visibilityAttr = getCssClassAttr(block);
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const fontSize = block.fontSize;
@@ -42,9 +46,9 @@ function renderTableElement(block: TableBlock): string {
   const borderColor = escapeAttr(block.borderColor);
   const borderWidth = block.borderWidth;
 
-  const tableStyle = 'width: 100%; border-collapse: collapse;';
+  const tableStyle = "width: 100%; border-collapse: collapse;";
 
-  let rowsHtml = '';
+  let rowsHtml = "";
 
   for (let index = 0; index < block.rows.length; index++) {
     const row = block.rows[index];
@@ -62,7 +66,7 @@ function renderRow(
   borderColor: string,
   borderWidth: number,
 ): string {
-  let cellsHtml = '';
+  let cellsHtml = "";
 
   for (const cell of row.cells) {
     cellsHtml += renderCell(cell, block, isHeader, borderColor, borderWidth);
@@ -86,7 +90,7 @@ function renderCell(
   ];
 
   if (isHeader) {
-    styles.push('font-weight: bold');
+    styles.push("font-weight: bold");
 
     if (block.headerBackgroundColor) {
       styles.push(
@@ -95,10 +99,10 @@ function renderCell(
     }
   }
 
-  const styleAttr = styles.join('; ');
+  const styleAttr = styles.join("; ");
   const content = convertMergeTagsToValues(cell.content);
 
-  const tag = isHeader ? 'th' : 'td';
+  const tag = isHeader ? "th" : "td";
 
   return `<${tag} style="${styleAttr}">${content}</${tag}>`;
 }
@@ -108,7 +112,7 @@ function renderFontFamilyAttr(
   context: RenderContext,
 ): string {
   if (!fontFamily) {
-    return '';
+    return "";
   }
 
   const resolved = context.resolveFontFamily(fontFamily);

@@ -1,6 +1,6 @@
 # CLAUDE.md — templatical-sdk
 
-Open-source Templatical email editor. Bun monorepo with 5 npm packages, a playground app, and a docs site.
+Open-source Templatical email editor. Bun monorepo with 6 npm packages, a playground app, and a docs site.
 
 ## Packages
 
@@ -8,7 +8,8 @@ Open-source Templatical email editor. Bun monorepo with 5 npm packages, a playgr
 |---------|-------------|---------|-------------|
 | `@templatical/types` | Shared TS types, block factories, event emitter | MIT | Block types, guards, factory fns, `EventEmitter`, merge tag presets |
 | `@templatical/core` | Framework-agnostic editor logic, state, history, plugins | FSL-1.1-MIT | `useEditor`, `useHistory`, `useBlockActions`, `useAutoSave`, plugins |
-| `@templatical/core/cloud` | Cloud-only modules (subpath export) | FSL-1.1-MIT | Auth, API, WebSocket, AI chat/rewrite, collaboration, comments, media, scoring, MCP, export |
+| `@templatical/core/cloud` | Cloud-only modules (subpath export) | FSL-1.1-MIT | Auth, API, WebSocket, AI chat/rewrite, collaboration, comments, scoring, MCP, export |
+| `@templatical/media-library` | Media library management (types, composable, API client, Vue components, standalone SDK) | FSL-1.1-MIT | `useMediaLibrary`, `MediaApiClient`, `MediaLibraryModal`, `MediaItem`, `init()`, `createMediaLibrary()` |
 | `@templatical/vue` | Vue 3 visual drag-and-drop editor | FSL-1.1-MIT | `init()`, `initCloud()`, `unmount()` |
 | `@templatical/renderer` | JSON → MJML → HTML renderer (browser + Node) | MIT | `renderToMjml()`, `renderToHtml()` |
 | `@templatical/import-beefree` | BeeFree template converter | MIT | `convertBeeFreeTemplate()` |
@@ -16,14 +17,19 @@ Open-source Templatical email editor. Bun monorepo with 5 npm packages, a playgr
 ### Dependency graph
 
 ```
-@templatical/types  (no deps)
+@templatical/types  (no deps, devDep on media-library for type imports in cloud.ts)
   ├── @templatical/core  (+@vue/reactivity, pusher-js)
   ├── @templatical/renderer  (peer: mjml)
   └── @templatical/import-beefree
 
 @templatical/core + @templatical/types
-  └── @templatical/vue  (+tiptap, vuedraggable, liquidjs, lucide-vue-next, vue-advanced-cropper; peer: vue, tailwindcss)
+  └── @templatical/media-library  (+@vueuse/core, lucide-vue-next, vue-advanced-cropper; peer: vue, tailwindcss)
+
+@templatical/core + @templatical/types + @templatical/media-library
+  └── @templatical/vue  (+tiptap, vuedraggable, liquidjs; peer: vue, tailwindcss)
 ```
+
+**Media types** (`MediaItem`, `MediaFolder`, etc.) are canonically defined in `@templatical/media-library`. The `@templatical/types` package imports them via devDependency for use in cloud config interfaces (`TemplaticalConfig`, `HeadlessConfig`, `PlanConfig`). **Build order:** media-library before types.
 
 ## Commands
 
@@ -36,7 +42,7 @@ bun run build
 
 # CDN bundles (IIFE/ES for script-tag usage)
 bun run build:email-editor           # → dist/email-editor/
-bun run build:headless-email-editor   # → dist/headless-email-editor/
+bun run build:media-library           # → dist/media-library/
 bun run build:all-sdk                 # both CDN builds
 
 # Test (Vitest 3, all packages)
@@ -61,34 +67,47 @@ cd apps/docs && bun run docs:dev
 Root-level Vite configs produce standalone bundles for CDN/script-tag usage:
 
 - **`vite.email-editor.config.ts`** — Builds `@templatical/vue` as IIFE (`TemplaticalEmailEditor` global) + ES with code-split chunks (icons, vue, tiptap, pusher, draggable, media-library, features). Output: `dist/email-editor/`.
-- **`vite.headless-email-editor.config.ts`** — Builds `@templatical/core/cloud` as ES + CJS. Aliases `vue` → `@vue/reactivity` (no Vue runtime). Output: `dist/headless-email-editor/`.
+- **`vite.media-library.config.ts`** — Builds `@templatical/media-library` standalone visual SDK as IIFE (`TemplaticalMediaLibrary` global) + ES with code-split chunks. Output: `dist/media-library/`.
 
-Both resolve `@templatical/core` and `@templatical/types` to source via aliases.
+Both CDN configs resolve `@templatical/media-library`, `@templatical/core`, and `@templatical/types` to source via aliases.
 
 ## Cloud Subpath (`@templatical/core/cloud`)
 
 Cloud modules live in `packages/core/src/cloud/`. They provide features that connect to the Templatical Cloud backend:
 
-- **Auth** — `AuthManager`, `createHeadlessAuthManager` (JWT)
-- **API** — `ApiClient`, `MediaApiClient`
+- **Auth** — `AuthManager`, `createSdkAuthManager` (JWT)
+- **API** — `ApiClient` (HTTP requests with auth)
 - **WebSocket** — `WebSocketClient` (Pusher protocol, presence channels)
 - **AI** — `useAiChat` (streaming), `useAiRewrite`, `useAiConfig`
 - **Collaboration** — `useCollaboration` (presence, block locking)
 - **Comments** — `useComments`, `useCommentListener`
-- **Media** — `useMediaLibrary` (upload, organize, browse)
 - **Templates** — `useSavedModules`, `useSnapshotHistory`
 - **Quality** — `useTemplateScoring`, `useDesignReference`
-- **Other** — `useTestEmail`, `useExport`, `usePlanConfig`, `performHealthCheck`, `API_ROUTES`
+- **Other** — `useTestEmail`, `useExport`, `usePlanConfig`, `performHealthCheck`, `API_ROUTES`, `buildUrl`
+
+**Note:** Media functionality (`useMediaLibrary`, `MediaApiClient`) has moved to `@templatical/media-library`. It is NOT exported from `@templatical/core/cloud`.
 
 Used by `@templatical/vue`'s `initCloud()` and the headless CDN build.
 
+## Media Library (`@templatical/media-library`)
+
+Standalone package for media management. Lives in `packages/media-library/`. Built with Vite (has Vue components).
+
+- **Types** — `MediaItem`, `MediaFolder`, `MediaCategory`, `MediaConversion`, `MediaBrowseParams/Response`, `MediaUsageInfo/Response`, `MediaRequestContext`, `StorageInfo`, `MediaConfig`, `MediaCategoryData` (canonical home for all media types)
+- **Composable** — `useMediaLibrary` (reactive state machine for browse, upload, delete, move, folders, replace)
+- **API Client** — `MediaApiClient` (HTTP requests for all media CRUD operations)
+- **Vue Components** — `MediaLibraryModal` + 12 sub-components (grid, upload zone, folder tree, preview panel, edit/replace/import modals, etc.)
+- **Composables** — `useMediaCategories`, `useMediaPicker`, `useImageCrop`, `useI18n`
+- **Standalone SDK** — `init()` (visual mount) with own i18n (en/de) and styles
+- **Dependencies** — `@templatical/core/cloud` (for AuthManager, buildUrl, API_ROUTES), `@templatical/types` (for ApiError, ApiResponse, PlanConfig)
+
 ## Architecture
 
-- **Build:** tsup for types, core, renderer, import-beefree. Vite for vue package and CDN bundles.
+- **Build:** tsup for types, core, renderer, import-beefree. Vite for vue, media-library packages and CDN bundles. **Build order matters:** media-library must build before types (types has devDep on media-library for type imports).
 - **TypeScript:** Strict mode, target ES2020, module resolution `bundler`.
 - **Vue 3** with TipTap 2 for rich text editing, VueDraggable for drag-and-drop, Tailwind CSS 4 for styling.
 - **Tests:** Vitest 3. Files in `tests/**/*.test.ts` (or `src/__tests__/*.test.ts` for import-beefree). Run per-package with `vitest run --config vitest.config.ts`.
-- **Headless `vue` alias:** The headless CDN build and `@templatical/core` alias `vue` to `@vue/reactivity` — this is critical, do not add Vue runtime imports in core or cloud modules.
+- **`vue` alias in core:** `@templatical/core` aliases `vue` to `@vue/reactivity` — this is critical, do not add Vue runtime imports in core or cloud modules.
 - **Block types:** 13 types (Text, Image, Button, Section, Divider, Spacer, SocialIcons, Menu, Table, Html, Video, Countdown, Custom). Block IDs use UUID v7.
 
 ## Changesets

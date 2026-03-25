@@ -63,11 +63,10 @@ export default defineConfig({
                             return 'draggable';
                         }
                         if (
-                            id.includes('/cloud/components/media/') ||
-                            id.includes('/cloud/components/MediaLibraryModal') ||
-                            id.includes('/cloud/composables/useMediaCategories') ||
-                            id.includes('/core/src/cloud/media-library') ||
-                            id.includes('/core/src/cloud/media-api')
+                            id.includes('/media-library/src/components/') ||
+                            id.includes('/media-library/src/composable') ||
+                            id.includes('/media-library/src/api-client') ||
+                            id.includes('/media-library/src/composables/')
                         ) {
                             return 'media-library';
                         }
@@ -93,6 +92,7 @@ export default defineConfig({
     },
     resolve: {
         alias: {
+            '@templatical/media-library': resolve(__dirname, 'packages/media-library/src/index.ts'),
             '@templatical/core/cloud': resolve(__dirname, 'packages/core/src/cloud/index.ts'),
             '@templatical/core': resolve(__dirname, 'packages/core/src/index.ts'),
             '@templatical/types': resolve(__dirname, 'packages/types/src/index.ts'),

@@ -1,8 +1,8 @@
-import type { Block, TemplateContent, CustomFont } from '@templatical/types';
-import { isSection } from '@templatical/types';
-import { RenderContext } from './render-context';
-import { renderBlock } from './renderers';
-import { escapeHtml, escapeAttr } from './escape';
+import type { Block, TemplateContent, CustomFont } from "@templatical/types";
+import { isSection } from "@templatical/types";
+import { RenderContext } from "./render-context";
+import { renderBlock } from "./renderers";
+import { escapeHtml, escapeAttr } from "./escape";
 
 export interface RenderOptions {
   customFonts?: CustomFont[];
@@ -19,7 +19,8 @@ export function renderToMjml(
   options?: RenderOptions,
 ): string {
   const customFonts = options?.customFonts ?? [];
-  const defaultFallbackFont = options?.defaultFallbackFont ?? 'Arial, sans-serif';
+  const defaultFallbackFont =
+    options?.defaultFallbackFont ?? "Arial, sans-serif";
   const allowHtmlBlocks = options?.allowHtmlBlocks ?? true;
 
   const renderContext = new RenderContext(
@@ -30,13 +31,15 @@ export function renderToMjml(
   );
 
   const blocks = filterHtmlBlocks(content.blocks, allowHtmlBlocks);
-  const fontFamily = renderContext.resolveFontFamily(content.settings.fontFamily);
+  const fontFamily = renderContext.resolveFontFamily(
+    content.settings.fontFamily,
+  );
   const backgroundColor = content.settings.backgroundColor;
 
   const bodyContent = blocks
     .map((block) => renderTopLevelBlock(block, renderContext))
-    .filter((value) => value !== '')
-    .join('\n');
+    .filter((value) => value !== "")
+    .join("\n");
 
   const fontDeclarations = generateFontDeclarations(customFonts);
   const previewTag = generatePreviewTag(content.settings.preheaderText);
@@ -77,7 +80,7 @@ export async function renderToHtml(
   options?: RenderOptions,
 ): Promise<string> {
   const mjml = renderToMjml(content, options);
-  const { default: mjml2html } = await import('mjml');
+  const { default: mjml2html } = await import("mjml");
   const { html } = mjml2html(mjml);
   return html;
 }
@@ -101,8 +104,8 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
  * Wrap rendered block content with display condition tags if present.
  */
 function wrapWithDisplayCondition(block: Block, rendered: string): string {
-  if (rendered === '') {
-    return '';
+  if (rendered === "") {
+    return "";
   }
 
   const displayCondition = block.displayCondition;
@@ -113,9 +116,9 @@ function wrapWithDisplayCondition(block: Block, rendered: string): string {
 
   return (
     `<mj-raw>${displayCondition.before}</mj-raw>` +
-    '\n' +
+    "\n" +
     rendered +
-    '\n' +
+    "\n" +
     `<mj-raw>${displayCondition.after}</mj-raw>`
   );
 }
@@ -124,8 +127,8 @@ function wrapWithDisplayCondition(block: Block, rendered: string): string {
  * Wrap block content in a default mj-section/mj-column for non-section blocks.
  */
 function wrapInSection(content: string): string {
-  if (content === '') {
-    return '';
+  if (content === "") {
+    return "";
   }
 
   return `<mj-section>
@@ -137,13 +140,13 @@ ${content}
 
 function generatePreviewTag(preheaderText?: string): string {
   if (!preheaderText) {
-    return '';
+    return "";
   }
 
   const trimmed = preheaderText.trim();
 
-  if (trimmed === '') {
-    return '';
+  if (trimmed === "") {
+    return "";
   }
 
   const escaped = escapeHtml(trimmed);
@@ -153,7 +156,7 @@ function generatePreviewTag(preheaderText?: string): string {
 
 function generateFontDeclarations(customFonts: CustomFont[]): string {
   if (customFonts.length === 0) {
-    return '';
+    return "";
   }
 
   return customFonts
@@ -161,7 +164,7 @@ function generateFontDeclarations(customFonts: CustomFont[]): string {
       (font) =>
         `\n    <mj-font name="${escapeAttr(font.name)}" href="${escapeAttr(font.url)}" />`,
     )
-    .join('');
+    .join("");
 }
 
 /**
@@ -172,15 +175,15 @@ function filterHtmlBlocks(blocks: Block[], allowHtmlBlocks: boolean): Block[] {
     return blocks;
   }
 
-  return blocks.filter((block) => block.type !== 'html');
+  return blocks.filter((block) => block.type !== "html");
 }
 
 // Re-export utilities for consumers
-export { RenderContext } from './render-context';
-export { escapeHtml, escapeAttr, convertMergeTagsToValues } from './escape';
-export { isHiddenOnAll, getCssClassAttr, getCssClasses } from './visibility';
-export { getWidthPercentages, getWidthPixels } from './columns';
-export { toPaddingString } from './padding';
-export { SOCIAL_ICONS, generateSocialIconDataUri } from './social-icons';
-export { renderBlock } from './renderers';
-export type { BlockRenderer } from './renderers/section';
+export { RenderContext } from "./render-context";
+export { escapeHtml, escapeAttr, convertMergeTagsToValues } from "./escape";
+export { isHiddenOnAll, getCssClassAttr, getCssClasses } from "./visibility";
+export { getWidthPercentages, getWidthPixels } from "./columns";
+export { toPaddingString } from "./padding";
+export { SOCIAL_ICONS, generateSocialIconDataUri } from "./social-icons";
+export { renderBlock } from "./renderers";
+export type { BlockRenderer } from "./renderers/section";

@@ -1,9 +1,9 @@
-import type { SocialIconsBlock } from '@templatical/types';
-import type { RenderContext } from '../render-context';
-import { escapeAttr } from '../escape';
-import { toPaddingString } from '../padding';
-import { isHiddenOnAll, getCssClassAttr } from '../visibility';
-import { generateSocialIconDataUri } from '../social-icons';
+import type { SocialIconsBlock } from "@templatical/types";
+import type { RenderContext } from "../render-context";
+import { escapeAttr } from "../escape";
+import { toPaddingString } from "../padding";
+import { isHiddenOnAll, getCssClassAttr } from "../visibility";
+import { generateSocialIconDataUri } from "../social-icons";
 
 /**
  * Render a social icons block to MJML markup.
@@ -13,19 +13,19 @@ export function renderSocialIcons(
   context: RenderContext,
 ): string {
   if (isHiddenOnAll(block)) {
-    return '';
+    return "";
   }
 
   const icons = block.icons;
 
   if (icons.length === 0) {
-    return '';
+    return "";
   }
 
   const padding = toPaddingString(block.styles.padding);
   const bgColor = block.styles.backgroundColor
     ? ` container-background-color="${block.styles.backgroundColor}"`
-    : '';
+    : "";
   const visibilityAttr = getCssClassAttr(block);
   const align = block.align;
   const iconSize = block.iconSize;
@@ -34,10 +34,10 @@ export function renderSocialIcons(
 
   let iconSizePx: number;
   switch (iconSize) {
-    case 'small':
+    case "small":
       iconSizePx = 24;
       break;
-    case 'large':
+    case "large":
       iconSizePx = 48;
       break;
     default:
@@ -48,17 +48,17 @@ export function renderSocialIcons(
   // MJML mj-social-element has default border-radius of 3px, override per style
   let borderRadius: string;
   switch (iconStyle) {
-    case 'circle':
-      borderRadius = '50%';
+    case "circle":
+      borderRadius = "50%";
       break;
-    case 'rounded':
-      borderRadius = '8px';
+    case "rounded":
+      borderRadius = "8px";
       break;
-    case 'square':
-      borderRadius = '0';
+    case "square":
+      borderRadius = "0";
       break;
     default:
-      borderRadius = '4px'; // solid, outlined
+      borderRadius = "4px"; // solid, outlined
       break;
   }
 
@@ -77,7 +77,7 @@ export function renderSocialIcons(
     return `<mj-social-element src="${iconSrc}" href="${url}" icon-size="${iconSizePx}px" padding="0 ${rightPad}px 0 0" border-radius="${borderRadius}" background-color="transparent"></mj-social-element>`;
   });
 
-  const socialContent = socialElements.join('\n');
+  const socialContent = socialElements.join("\n");
 
   return `<mj-social
   mode="horizontal"

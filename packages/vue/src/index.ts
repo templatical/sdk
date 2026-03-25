@@ -1,60 +1,60 @@
-import { createApp, h, ref, type App, type Ref } from 'vue';
+import { createApp, h, ref, type App, type Ref } from "vue";
 import type {
-    CustomBlockDefinition,
-    CustomFont,
-    DisplayConditionsConfig,
-    FontsConfig,
-    MergeTag,
-    MergeTagsConfig,
-    SaveResult,
-    Template,
-    TemplateContent,
-    ThemeOverrides,
-    ViewportSize,
-} from '@templatical/types';
-import type { EditorPlugin } from '@templatical/core';
-import Editor from './Editor.vue';
-import { useFonts } from './composables/useFonts';
+  CustomBlockDefinition,
+  CustomFont,
+  DisplayConditionsConfig,
+  FontsConfig,
+  MergeTag,
+  MergeTagsConfig,
+  SaveResult,
+  Template,
+  TemplateContent,
+  ThemeOverrides,
+  ViewportSize,
+} from "@templatical/types";
+import type { EditorPlugin } from "@templatical/core";
+import Editor from "./Editor.vue";
+import { useFonts } from "./composables/useFonts";
 
 // ---------------------------------------------------------------------------
 // OSS config + return types
 // ---------------------------------------------------------------------------
 
 export interface TemplaticalEditorConfig {
-    container: string | HTMLElement;
-    content?: TemplateContent;
+  container: string | HTMLElement;
+  content?: TemplateContent;
 
-    onChange?: (content: TemplateContent) => void;
-    onSave?: (content: TemplateContent) => void;
-    onError?: (error: Error) => void;
+  onChange?: (content: TemplateContent) => void;
+  onSave?: (content: TemplateContent) => void;
+  onError?: (error: Error) => void;
 
-    onRequestMedia?: (callback: (url: string) => void) => void;
-    onRequestMergeTag?: () => Promise<MergeTag | null>;
+  onRequestMedia?: (callback: (url: string) => void) => void;
+  onRequestMergeTag?: () => Promise<MergeTag | null>;
 
-    mergeTags?: MergeTagsConfig;
-    displayConditions?: DisplayConditionsConfig;
-    customBlocks?: CustomBlockDefinition[];
-    fonts?: FontsConfig;
+  mergeTags?: MergeTagsConfig;
+  displayConditions?: DisplayConditionsConfig;
+  customBlocks?: CustomBlockDefinition[];
+  fonts?: FontsConfig;
 
-    theme?: ThemeOverrides;
-    locale?: string;
-    darkMode?: boolean | 'auto';
+  theme?: ThemeOverrides;
+  locale?: string;
+  darkMode?: boolean | "auto";
 
-    plugins?: EditorPlugin[];
+  plugins?: EditorPlugin[];
 }
 
 export interface TemplaticalEditor {
-    getContent(): TemplateContent;
-    setContent(content: TemplateContent): void;
-    unmount(): void;
-    toMjml?(): string;
-    toHtml?(): Promise<string>;
+  getContent(): TemplateContent;
+  setContent(content: TemplateContent): void;
+  unmount(): void;
+  toMjml?(): string;
+  toHtml?(): Promise<string>;
 }
 
 export interface TemplaticalCloudEditor extends TemplaticalEditor {
-    create(content?: TemplateContent): Promise<Template>;
-    load(templateId: string): Promise<Template>;
-    save(): Promise<SaveResult>;
+  create(content?: TemplateContent): Promise<Template>;
+  load(templateId: string): Promise<Template>;
+  save(): Promise<SaveResult>;
 }
 
 // ---------------------------------------------------------------------------
@@ -65,55 +65,53 @@ let appInstance: App | null = null;
 const editorRef: Ref<InstanceType<typeof Editor> | null> = ref(null);
 
 export function init(config: TemplaticalEditorConfig): TemplaticalEditor {
-    const container =
-        typeof config.container === 'string'
-            ? document.querySelector(config.container)
-            : config.container;
+  const container =
+    typeof config.container === "string"
+      ? document.querySelector(config.container)
+      : config.container;
 
-    if (!container) {
-        throw new Error(
-            `[Templatical] Container element not found: ${config.container}`,
-        );
-    }
+  if (!container) {
+    throw new Error(
+      `[Templatical] Container element not found: ${config.container}`,
+    );
+  }
 
-    if (appInstance) {
-        unmount();
-    }
+  if (appInstance) {
+    unmount();
+  }
 
-    appInstance = createApp({
-        setup() {
-            return () =>
-                h(Editor, {
-                    config,
-                    ref: editorRef,
-                });
-        },
-    });
+  appInstance = createApp({
+    setup() {
+      return () =>
+        h(Editor, {
+          config,
+          ref: editorRef,
+        });
+    },
+  });
 
-    appInstance.mount(container);
+  appInstance.mount(container);
 
-    const instance: TemplaticalEditor = {
-        getContent() {
-            if (editorRef.value) {
-                return JSON.parse(
-                    JSON.stringify(editorRef.value.getContent()),
-                );
-            }
-            return JSON.parse(JSON.stringify(config.content));
-        },
-        setContent(content: TemplateContent) {
-            if (editorRef.value) {
-                editorRef.value.setContent(content);
-            }
-            config.content = content;
-        },
-        unmount,
-    };
+  const instance: TemplaticalEditor = {
+    getContent() {
+      if (editorRef.value) {
+        return JSON.parse(JSON.stringify(editorRef.value.getContent()));
+      }
+      return JSON.parse(JSON.stringify(config.content));
+    },
+    setContent(content: TemplateContent) {
+      if (editorRef.value) {
+        editorRef.value.setContent(content);
+      }
+      config.content = content;
+    },
+    unmount,
+  };
 
-    // Try to detect @templatical/renderer for export methods
-    attachRenderer(instance);
+  // Try to detect @templatical/renderer for export methods
+  attachRenderer(instance);
 
-    return instance;
+  return instance;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,97 +123,103 @@ let cloudAppInstance: App | null = null;
 const cloudEditorRef: Ref<any> = ref(null);
 
 export async function initCloud(
-    config: import('./cloud/CloudEditor.vue').TemplaticalCloudEditorConfig,
+  config: import("./cloud/CloudEditor.vue").TemplaticalCloudEditorConfig,
 ): Promise<TemplaticalCloudEditor> {
-    const container =
-        typeof config.container === 'string'
-            ? document.querySelector(config.container)
-            : config.container;
+  const container =
+    typeof config.container === "string"
+      ? document.querySelector(config.container)
+      : config.container;
 
-    if (!container) {
-        throw new Error(
-            `[Templatical] Container element not found: ${config.container}`,
-        );
-    }
+  if (!container) {
+    throw new Error(
+      `[Templatical] Container element not found: ${config.container}`,
+    );
+  }
 
-    if (cloudAppInstance) {
-        unmountCloud();
-    }
+  if (cloudAppInstance) {
+    unmountCloud();
+  }
 
-    // Dynamic import — CloudEditor.vue is tree-shaken from the OSS bundle
-    const { default: CloudEditor } = await import('./cloud/CloudEditor.vue');
+  // Dynamic import — CloudEditor.vue is tree-shaken from the OSS bundle
+  const { default: CloudEditor } = await import("./cloud/CloudEditor.vue");
 
-    // Load translations before mounting so child components can use useI18n synchronously
-    const { loadTranslations } = await import('./i18n');
-    const translations = await loadTranslations(config.locale ?? 'en');
+  // Load translations before mounting so child components can use useI18n synchronously
+  const { loadTranslations } = await import("./i18n");
+  const translations = await loadTranslations(config.locale ?? "en");
 
-    // Create fonts manager to pass to CloudEditor
-    const fontsManager = useFonts(config.fonts);
+  // Create fonts manager to pass to CloudEditor
+  const fontsManager = useFonts(config.fonts);
 
-    // Promise that resolves when CloudEditor emits 'ready'
-    const readyPromise = new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-            reject(new Error('[Templatical] Cloud editor initialization timed out'));
-        }, 30000);
+  // Promise that resolves when CloudEditor emits 'ready'
+  const readyPromise = new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error("[Templatical] Cloud editor initialization timed out"));
+    }, 30000);
 
-        cloudAppInstance = createApp({
-            setup() {
-                return () =>
-                    h(CloudEditor, {
-                        config,
-                        translations,
-                        fontsManager,
-                        ref: cloudEditorRef,
-                        onReady: () => {
-                            clearTimeout(timeout);
-                            resolve();
-                        },
-                    });
+    cloudAppInstance = createApp({
+      setup() {
+        return () =>
+          h(CloudEditor, {
+            config,
+            translations,
+            fontsManager,
+            ref: cloudEditorRef,
+            onReady: () => {
+              clearTimeout(timeout);
+              resolve();
             },
-        });
-
-        cloudAppInstance.mount(container);
+          });
+      },
     });
 
-    await readyPromise;
+    cloudAppInstance.mount(container);
+  });
 
-    const instance: TemplaticalCloudEditor = {
-        getContent() {
-            if (cloudEditorRef.value) {
-                return JSON.parse(JSON.stringify(cloudEditorRef.value.getContent()));
-            }
-            return JSON.parse(JSON.stringify(config.content));
-        },
-        setContent(content: TemplateContent) {
-            if (cloudEditorRef.value) {
-                cloudEditorRef.value.setContent(content);
-            }
-        },
-        unmount: unmountCloud,
-        create(content?: TemplateContent) {
-            if (!cloudEditorRef.value) {
-                return Promise.reject(new Error('[Templatical] Cloud editor not ready'));
-            }
-            return cloudEditorRef.value.create(content);
-        },
-        load(templateId: string) {
-            if (!cloudEditorRef.value) {
-                return Promise.reject(new Error('[Templatical] Cloud editor not ready'));
-            }
-            return cloudEditorRef.value.load(templateId);
-        },
-        save() {
-            if (!cloudEditorRef.value) {
-                return Promise.reject(new Error('[Templatical] Cloud editor not ready'));
-            }
-            return cloudEditorRef.value.save();
-        },
-    };
+  await readyPromise;
 
-    // Try to detect @templatical/renderer for export methods
-    attachRenderer(instance);
+  const instance: TemplaticalCloudEditor = {
+    getContent() {
+      if (cloudEditorRef.value) {
+        return JSON.parse(JSON.stringify(cloudEditorRef.value.getContent()));
+      }
+      return JSON.parse(JSON.stringify(config.content));
+    },
+    setContent(content: TemplateContent) {
+      if (cloudEditorRef.value) {
+        cloudEditorRef.value.setContent(content);
+      }
+    },
+    unmount: unmountCloud,
+    create(content?: TemplateContent) {
+      if (!cloudEditorRef.value) {
+        return Promise.reject(
+          new Error("[Templatical] Cloud editor not ready"),
+        );
+      }
+      return cloudEditorRef.value.create(content);
+    },
+    load(templateId: string) {
+      if (!cloudEditorRef.value) {
+        return Promise.reject(
+          new Error("[Templatical] Cloud editor not ready"),
+        );
+      }
+      return cloudEditorRef.value.load(templateId);
+    },
+    save() {
+      if (!cloudEditorRef.value) {
+        return Promise.reject(
+          new Error("[Templatical] Cloud editor not ready"),
+        );
+      }
+      return cloudEditorRef.value.save();
+    },
+  };
 
-    return instance;
+  // Try to detect @templatical/renderer for export methods
+  attachRenderer(instance);
+
+  return instance;
 }
 
 // ---------------------------------------------------------------------------
@@ -223,19 +227,19 @@ export async function initCloud(
 // ---------------------------------------------------------------------------
 
 export function unmount(): void {
-    if (appInstance) {
-        appInstance.unmount();
-        appInstance = null;
-        editorRef.value = null;
-    }
+  if (appInstance) {
+    appInstance.unmount();
+    appInstance = null;
+    editorRef.value = null;
+  }
 }
 
 function unmountCloud(): void {
-    if (cloudAppInstance) {
-        cloudAppInstance.unmount();
-        cloudAppInstance = null;
-        cloudEditorRef.value = null;
-    }
+  if (cloudAppInstance) {
+    cloudAppInstance.unmount();
+    cloudAppInstance = null;
+    cloudEditorRef.value = null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -243,24 +247,38 @@ function unmountCloud(): void {
 // ---------------------------------------------------------------------------
 
 function attachRenderer(instance: TemplaticalEditor): void {
-    import('@templatical/renderer')
-        .then((renderer) => {
-            instance.toMjml = () =>
-                renderer.renderToMjml(instance.getContent());
-            instance.toHtml = () =>
-                renderer.renderToHtml(instance.getContent());
-        })
-        .catch(() => {
-            // @templatical/renderer not installed — export methods not available
-        });
+  import("@templatical/renderer")
+    .then((renderer) => {
+      instance.toMjml = () => renderer.renderToMjml(instance.getContent());
+      instance.toHtml = () => renderer.renderToHtml(instance.getContent());
+    })
+    .catch(() => {
+      // @templatical/renderer not installed — export methods not available
+    });
 }
 
 // ---------------------------------------------------------------------------
 // Re-exports
 // ---------------------------------------------------------------------------
 
-export type { TemplaticalCloudEditorConfig } from './cloud/CloudEditor.vue';
-export type { TemplateContent, ThemeOverrides, MergeTagsConfig, DisplayConditionsConfig, CustomBlockDefinition, ViewportSize, CustomFont, FontsConfig, SaveResult, Template } from '@templatical/types';
-export type { EditorPlugin, EditorPluginContext, ToolbarAction, SidebarPanel } from '@templatical/core';
-export type { UseFontsReturn, FontOption } from './composables/useFonts';
-export { useFonts } from './composables/useFonts';
+export type { TemplaticalCloudEditorConfig } from "./cloud/CloudEditor.vue";
+export type {
+  TemplateContent,
+  ThemeOverrides,
+  MergeTagsConfig,
+  DisplayConditionsConfig,
+  CustomBlockDefinition,
+  ViewportSize,
+  CustomFont,
+  FontsConfig,
+  SaveResult,
+  Template,
+} from "@templatical/types";
+export type {
+  EditorPlugin,
+  EditorPluginContext,
+  ToolbarAction,
+  SidebarPanel,
+} from "@templatical/core";
+export type { UseFontsReturn, FontOption } from "./composables/useFonts";
+export { useFonts } from "./composables/useFonts";

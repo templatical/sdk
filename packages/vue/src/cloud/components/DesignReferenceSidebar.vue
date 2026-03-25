@@ -1,44 +1,47 @@
 <script setup lang="ts">
-import LoadingTrack from '../../components/LoadingTrack.vue';
-import { useDesignReference, type UseEditorReturn } from '@templatical/core/cloud';
-import type { Translations } from '../../i18n';
-import type { AuthManager } from '@templatical/core/cloud';
-import type { TemplateContent } from '@templatical/types';
+import LoadingTrack from "../../components/LoadingTrack.vue";
 import {
-    AlertCircle,
-    FileImage,
-    FileText,
-    ImageUp,
-    Upload,
-    X,
-} from 'lucide-vue-next';
-import { computed, inject, ref, watch } from 'vue';
+  useDesignReference,
+  type UseEditorReturn,
+} from "@templatical/core/cloud";
+import type { Translations } from "../../i18n";
+import type { AuthManager } from "@templatical/core/cloud";
+import type { TemplateContent } from "@templatical/types";
+import {
+  AlertCircle,
+  FileImage,
+  FileText,
+  ImageUp,
+  Upload,
+  X,
+} from "lucide-vue-next";
+import { computed, inject, ref, watch } from "vue";
 
 const props = defineProps<{
-    visible: boolean;
-    hasExistingBlocks: boolean;
+  visible: boolean;
+  hasExistingBlocks: boolean;
 }>();
 
 const emit = defineEmits<{
-    (e: 'close'): void;
-    (e: 'apply', content: TemplateContent): void;
+  (e: "close"): void;
+  (e: "apply", content: TemplateContent): void;
 }>();
 
-const translations = inject<Translations>('translations')!;
-const editor = inject<UseEditorReturn>('editor')!;
-const authManager = inject<AuthManager>('authManager')!;
+const translations = inject<Translations>("translations")!;
+const editor = inject<UseEditorReturn>("editor")!;
+const authManager = inject<AuthManager>("authManager")!;
 
 const designReference = useDesignReference({
-    authManager,
-    getTemplateId: () => editor.state.template?.id ?? null,
-    onApply: (content) => emit('apply', content),
+  authManager,
+  getTemplateId: () => editor.state.template?.id ?? null,
+  onApply: (content) => emit("apply", content),
 });
 
-type SourceTab = 'image' | 'pdf';
+type SourceTab = "image" | "pdf";
 
-const activeTab = ref<SourceTab>('image');
+const activeTab = ref<SourceTab>("image");
 const selectedFile = ref<File | null>(null);
-const prompt = ref('');
+const prompt = ref("");
 const filePreviewUrl = ref<string | null>(null);
 const showConfirmation = ref(false);
 const isDragging = ref(false);
@@ -46,476 +49,446 @@ const isDragging = ref(false);
 const t = computed(() => translations.designReference);
 
 const canGenerate = computed(() => {
-    if (designReference.isGenerating.value) {
-        return false;
-    }
+  if (designReference.isGenerating.value) {
+    return false;
+  }
 
-    return selectedFile.value !== null;
+  return selectedFile.value !== null;
 });
 
 function selectTab(tab: SourceTab): void {
-    activeTab.value = tab;
-    clearFile();
+  activeTab.value = tab;
+  clearFile();
 }
 
 function handleFileSelect(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (file) {
-        setFile(file);
-    }
-    // Reset input so same file can be selected again
-    input.value = '';
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (file) {
+    setFile(file);
+  }
+  // Reset input so same file can be selected again
+  input.value = "";
 }
 
 function setFile(file: File): void {
-    // Validate file size (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-        designReference.error.value = t.value.fileTooLarge;
-        return;
-    }
+  // Validate file size (10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    designReference.error.value = t.value.fileTooLarge;
+    return;
+  }
 
-    // Validate file type
-    if (activeTab.value === 'image') {
-        const validTypes = [
-            'image/png',
-            'image/jpeg',
-            'image/jpg',
-            'image/webp',
-        ];
-        if (!validTypes.includes(file.type)) {
-            designReference.error.value = t.value.invalidFileType;
-            return;
-        }
-    } else if (activeTab.value === 'pdf') {
-        if (file.type !== 'application/pdf') {
-            designReference.error.value = t.value.invalidFileType;
-            return;
-        }
+  // Validate file type
+  if (activeTab.value === "image") {
+    const validTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      designReference.error.value = t.value.invalidFileType;
+      return;
     }
+  } else if (activeTab.value === "pdf") {
+    if (file.type !== "application/pdf") {
+      designReference.error.value = t.value.invalidFileType;
+      return;
+    }
+  }
 
-    selectedFile.value = file;
-    designReference.error.value = null;
+  selectedFile.value = file;
+  designReference.error.value = null;
 
-    // Create preview URL for images
-    if (filePreviewUrl.value) {
-        URL.revokeObjectURL(filePreviewUrl.value);
-    }
-    if (file.type.startsWith('image/')) {
-        filePreviewUrl.value = URL.createObjectURL(file);
-    } else {
-        filePreviewUrl.value = null;
-    }
+  // Create preview URL for images
+  if (filePreviewUrl.value) {
+    URL.revokeObjectURL(filePreviewUrl.value);
+  }
+  if (file.type.startsWith("image/")) {
+    filePreviewUrl.value = URL.createObjectURL(file);
+  } else {
+    filePreviewUrl.value = null;
+  }
 }
 
 function clearFile(): void {
-    if (filePreviewUrl.value) {
-        URL.revokeObjectURL(filePreviewUrl.value);
-        filePreviewUrl.value = null;
-    }
-    selectedFile.value = null;
+  if (filePreviewUrl.value) {
+    URL.revokeObjectURL(filePreviewUrl.value);
+    filePreviewUrl.value = null;
+  }
+  selectedFile.value = null;
 }
 
 function handleDragOver(event: DragEvent): void {
-    event.preventDefault();
-    isDragging.value = true;
+  event.preventDefault();
+  isDragging.value = true;
 }
 
 function handleDragLeave(): void {
-    isDragging.value = false;
+  isDragging.value = false;
 }
 
 function handleDrop(event: DragEvent): void {
-    event.preventDefault();
-    isDragging.value = false;
+  event.preventDefault();
+  isDragging.value = false;
 
-    const file = event.dataTransfer?.files?.[0];
-    if (file) {
-        setFile(file);
-    }
+  const file = event.dataTransfer?.files?.[0];
+  if (file) {
+    setFile(file);
+  }
 }
 
 function handleGenerate(): void {
-    if (!canGenerate.value) {
-        return;
-    }
+  if (!canGenerate.value) {
+    return;
+  }
 
-    // Show confirmation if there are existing blocks
-    if (props.hasExistingBlocks && !showConfirmation.value) {
-        showConfirmation.value = true;
-        return;
-    }
+  // Show confirmation if there are existing blocks
+  if (props.hasExistingBlocks && !showConfirmation.value) {
+    showConfirmation.value = true;
+    return;
+  }
 
-    showConfirmation.value = false;
+  showConfirmation.value = false;
 
-    const input: {
-        prompt?: string;
-        imageUpload?: File;
-        pdfUpload?: File;
-    } = {};
+  const input: {
+    prompt?: string;
+    imageUpload?: File;
+    pdfUpload?: File;
+  } = {};
 
-    if (prompt.value.trim()) {
-        input.prompt = prompt.value.trim();
-    }
+  if (prompt.value.trim()) {
+    input.prompt = prompt.value.trim();
+  }
 
-    if (activeTab.value === 'image' && selectedFile.value) {
-        input.imageUpload = selectedFile.value;
-    } else if (activeTab.value === 'pdf' && selectedFile.value) {
-        input.pdfUpload = selectedFile.value;
-    }
+  if (activeTab.value === "image" && selectedFile.value) {
+    input.imageUpload = selectedFile.value;
+  } else if (activeTab.value === "pdf" && selectedFile.value) {
+    input.pdfUpload = selectedFile.value;
+  }
 
-    designReference.generate(input);
+  designReference.generate(input);
 }
 
 function cancelConfirmation(): void {
-    showConfirmation.value = false;
+  showConfirmation.value = false;
 }
 
 // Reset state when panel closes
 watch(
-    () => props.visible,
-    (isVisible) => {
-        if (!isVisible) {
-            showConfirmation.value = false;
-        }
-    },
+  () => props.visible,
+  (isVisible) => {
+    if (!isVisible) {
+      showConfirmation.value = false;
+    }
+  },
 );
 </script>
 
 <template>
-    <Transition
-        enter-active-class="tpl-design-slide-enter-active"
-        enter-from-class="tpl:translate-x-full"
-        enter-to-class="tpl:translate-x-0"
-        leave-active-class="tpl-design-slide-leave-active"
-        leave-from-class="tpl:translate-x-0"
-        leave-to-class="tpl:translate-x-full"
+  <Transition
+    enter-active-class="tpl-design-slide-enter-active"
+    enter-from-class="tpl:translate-x-full"
+    enter-to-class="tpl:translate-x-0"
+    leave-active-class="tpl-design-slide-leave-active"
+    leave-from-class="tpl:translate-x-0"
+    leave-to-class="tpl:translate-x-full"
+  >
+    <div
+      v-if="visible"
+      class="tpl-design-sidebar tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:z-[45] tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
     >
+      <!-- Header -->
+      <div
+        class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
+      >
         <div
-            v-if="visible"
-            class="tpl-design-sidebar tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:z-[45] tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
+          class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium"
+          style="color: var(--tpl-primary)"
         >
-            <!-- Header -->
-            <div
-                class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
-            >
-                <div
-                    class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium"
-                    style="color: var(--tpl-primary)"
-                >
-                    <ImageUp :size="13" :stroke-width="2" />
-                    <span>{{ t.title }}</span>
-                </div>
-                <button
-                    class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
-                    style="color: var(--tpl-text-muted)"
-                    @click="emit('close')"
-                >
-                    <X :size="14" :stroke-width="2" />
-                </button>
-            </div>
-
-            <!-- Content -->
-            <div class="tpl:flex-1 tpl:overflow-y-auto tpl:p-4">
-                <!-- Loading state -->
-                <div
-                    v-if="designReference.isGenerating.value"
-                    class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
-                >
-                    <div
-                        class="tpl:flex tpl:w-full tpl:flex-col tpl:items-center tpl:gap-3"
-                    >
-                        <LoadingTrack />
-                        <p
-                            class="tpl:text-sm"
-                            style="color: var(--tpl-text-muted)"
-                        >
-                            {{ t.generating }}
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Input form -->
-                <div v-else class="tpl:flex tpl:flex-col tpl:gap-4">
-                    <!-- Source tabs -->
-                    <div
-                        class="tpl:flex tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1"
-                        style="background-color: var(--tpl-bg-hover)"
-                    >
-                        <button
-                            class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
-                            :style="{
-                                backgroundColor:
-                                    activeTab === 'image'
-                                        ? 'var(--tpl-bg)'
-                                        : 'transparent',
-                                color:
-                                    activeTab === 'image'
-                                        ? 'var(--tpl-primary)'
-                                        : 'var(--tpl-text-muted)',
-                                boxShadow:
-                                    activeTab === 'image'
-                                        ? 'var(--tpl-shadow)'
-                                        : 'none',
-                            }"
-                            @click="selectTab('image')"
-                        >
-                            <FileImage :size="12" :stroke-width="2" />
-                            {{ t.uploadImage }}
-                        </button>
-                        <button
-                            class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
-                            :style="{
-                                backgroundColor:
-                                    activeTab === 'pdf'
-                                        ? 'var(--tpl-bg)'
-                                        : 'transparent',
-                                color:
-                                    activeTab === 'pdf'
-                                        ? 'var(--tpl-primary)'
-                                        : 'var(--tpl-text-muted)',
-                                boxShadow:
-                                    activeTab === 'pdf'
-                                        ? 'var(--tpl-shadow)'
-                                        : 'none',
-                            }"
-                            @click="selectTab('pdf')"
-                        >
-                            <FileText :size="12" :stroke-width="2" />
-                            {{ t.uploadPdf }}
-                        </button>
-                    </div>
-
-                    <!-- File upload area (image or pdf) -->
-                    <div>
-                        <!-- Preview -->
-                        <div
-                            v-if="selectedFile"
-                            class="tpl:flex tpl:flex-col tpl:gap-2"
-                        >
-                            <div
-                                class="tpl:relative tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)]"
-                                style="
-                                    border: 1px solid var(--tpl-border);
-                                    background-color: var(--tpl-bg);
-                                "
-                            >
-                                <!-- Image preview -->
-                                <img
-                                    v-if="filePreviewUrl"
-                                    :src="filePreviewUrl"
-                                    :alt="selectedFile.name"
-                                    class="tpl:h-auto tpl:max-h-48 tpl:w-full tpl:object-contain"
-                                />
-                                <!-- PDF preview (icon-based) -->
-                                <div
-                                    v-else
-                                    class="tpl:flex tpl:h-32 tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2"
-                                >
-                                    <FileText
-                                        :size="32"
-                                        :stroke-width="1.5"
-                                        style="color: var(--tpl-text-dim)"
-                                    />
-                                    <span
-                                        class="tpl:text-xs"
-                                        style="color: var(--tpl-text-muted)"
-                                    >
-                                        {{ selectedFile.name }}
-                                    </span>
-                                </div>
-                                <!-- Remove button -->
-                                <button
-                                    class="tpl:absolute tpl:top-2 tpl:right-2 tpl:rounded-full tpl:p-1 tpl:transition-colors tpl:duration-150"
-                                    style="
-                                        background-color: var(--tpl-bg);
-                                        color: var(--tpl-text-muted);
-                                        box-shadow: var(--tpl-shadow);
-                                    "
-                                    @click="clearFile"
-                                >
-                                    <X :size="12" :stroke-width="2" />
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Drop zone -->
-                        <div
-                            v-else
-                            class="tpl-design-dropzone tpl:flex tpl:cursor-pointer tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border-2 tpl:border-dashed tpl:px-4 tpl:py-8 tpl:transition-colors tpl:duration-150"
-                            :style="{
-                                borderColor: isDragging
-                                    ? 'var(--tpl-primary)'
-                                    : 'var(--tpl-border-light)',
-                                backgroundColor: isDragging
-                                    ? 'var(--tpl-primary-light)'
-                                    : 'var(--tpl-bg)',
-                            }"
-                            @click="
-                                ($refs.fileInput as HTMLInputElement)?.click()
-                            "
-                            @dragover="handleDragOver"
-                            @dragleave="handleDragLeave"
-                            @drop="handleDrop"
-                        >
-                            <Upload
-                                :size="24"
-                                :stroke-width="1.5"
-                                style="color: var(--tpl-text-dim)"
-                            />
-                            <span
-                                class="tpl:text-center tpl:text-xs"
-                                style="color: var(--tpl-text-muted)"
-                            >
-                                {{ t.dropHint }}
-                            </span>
-                            <span
-                                class="tpl:text-center tpl:text-[11px]"
-                                style="color: var(--tpl-text-dim)"
-                            >
-                                {{
-                                    activeTab === 'image'
-                                        ? t.acceptedImages
-                                        : t.acceptedPdf
-                                }}
-                            </span>
-                        </div>
-                        <input
-                            ref="fileInput"
-                            type="file"
-                            class="tpl:hidden"
-                            :accept="
-                                activeTab === 'image'
-                                    ? 'image/png,image/jpeg,image/webp'
-                                    : 'application/pdf'
-                            "
-                            @change="handleFileSelect"
-                        />
-                    </div>
-
-                    <!-- Prompt textarea -->
-                    <div class="tpl:flex tpl:flex-col tpl:gap-1.5">
-                        <label
-                            class="tpl:text-xs tpl:font-medium"
-                            style="color: var(--tpl-text-muted)"
-                        >
-                            {{ t.promptLabel }}
-                        </label>
-                        <textarea
-                            v-model="prompt"
-                            class="tpl:min-h-[72px] tpl:w-full tpl:resize-none tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:font-sans tpl:text-sm tpl:outline-none tpl:transition-colors tpl:duration-150"
-                            :class="['tpl-design-prompt-input']"
-                            style="
-                                border-color: var(--tpl-border);
-                                color: var(--tpl-text);
-                                background-color: var(--tpl-bg);
-                            "
-                            :placeholder="t.promptPlaceholder"
-                            rows="3"
-                        />
-                    </div>
-
-                    <!-- Confirmation overlay -->
-                    <div
-                        v-if="showConfirmation"
-                        class="tpl:flex tpl:flex-col tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:px-3 tpl:py-3"
-                        style="
-                            background-color: var(--tpl-warning-light);
-                            border: 1px solid var(--tpl-warning);
-                        "
-                    >
-                        <p
-                            class="tpl:text-xs tpl:leading-snug"
-                            style="color: var(--tpl-text)"
-                        >
-                            {{ t.replaceWarning }}
-                        </p>
-                        <div class="tpl:flex tpl:gap-2">
-                            <button
-                                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
-                                style="
-                                    background-color: transparent;
-                                    color: var(--tpl-text-muted);
-                                    border: 1px solid var(--tpl-border);
-                                "
-                                @click="cancelConfirmation"
-                            >
-                                {{ t.replaceCancel }}
-                            </button>
-                            <button
-                                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90"
-                                style="
-                                    background-color: var(--tpl-primary);
-                                    color: var(--tpl-bg);
-                                "
-                                @click="handleGenerate"
-                            >
-                                {{ t.replaceConfirm }}
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Error message -->
-                    <div
-                        v-if="designReference.error.value"
-                        class="tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs"
-                        style="
-                            background-color: var(--tpl-danger-light);
-                            color: var(--tpl-danger);
-                        "
-                    >
-                        <AlertCircle
-                            :size="14"
-                            :stroke-width="2"
-                            class="tpl:mt-0.5 tpl:shrink-0"
-                        />
-                        <span>{{ t.error }}</span>
-                    </div>
-
-                    <!-- Generate button -->
-                    <button
-                        v-if="!showConfirmation"
-                        class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
-                        style="
-                            background-color: var(--tpl-primary);
-                            color: var(--tpl-bg);
-                        "
-                        :disabled="!canGenerate"
-                        @click="handleGenerate"
-                    >
-                        <ImageUp :size="16" :stroke-width="2" />
-                        {{ t.generate }}
-                    </button>
-
-                    <!-- AI disclaimer -->
-                    <p
-                        class="tpl:m-0 tpl:pt-1 tpl:text-center tpl:text-[11px]"
-                        style="color: var(--tpl-text-dim)"
-                    >
-                        {{ translations.aiMenu.disclaimer }}
-                    </p>
-                </div>
-            </div>
+          <ImageUp :size="13" :stroke-width="2" />
+          <span>{{ t.title }}</span>
         </div>
-    </Transition>
+        <button
+          class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
+          style="color: var(--tpl-text-muted)"
+          @click="emit('close')"
+        >
+          <X :size="14" :stroke-width="2" />
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="tpl:flex-1 tpl:overflow-y-auto tpl:p-4">
+        <!-- Loading state -->
+        <div
+          v-if="designReference.isGenerating.value"
+          class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
+        >
+          <div
+            class="tpl:flex tpl:w-full tpl:flex-col tpl:items-center tpl:gap-3"
+          >
+            <LoadingTrack />
+            <p class="tpl:text-sm" style="color: var(--tpl-text-muted)">
+              {{ t.generating }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Input form -->
+        <div v-else class="tpl:flex tpl:flex-col tpl:gap-4">
+          <!-- Source tabs -->
+          <div
+            class="tpl:flex tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1"
+            style="background-color: var(--tpl-bg-hover)"
+          >
+            <button
+              class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
+              :style="{
+                backgroundColor:
+                  activeTab === 'image' ? 'var(--tpl-bg)' : 'transparent',
+                color:
+                  activeTab === 'image'
+                    ? 'var(--tpl-primary)'
+                    : 'var(--tpl-text-muted)',
+                boxShadow: activeTab === 'image' ? 'var(--tpl-shadow)' : 'none',
+              }"
+              @click="selectTab('image')"
+            >
+              <FileImage :size="12" :stroke-width="2" />
+              {{ t.uploadImage }}
+            </button>
+            <button
+              class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
+              :style="{
+                backgroundColor:
+                  activeTab === 'pdf' ? 'var(--tpl-bg)' : 'transparent',
+                color:
+                  activeTab === 'pdf'
+                    ? 'var(--tpl-primary)'
+                    : 'var(--tpl-text-muted)',
+                boxShadow: activeTab === 'pdf' ? 'var(--tpl-shadow)' : 'none',
+              }"
+              @click="selectTab('pdf')"
+            >
+              <FileText :size="12" :stroke-width="2" />
+              {{ t.uploadPdf }}
+            </button>
+          </div>
+
+          <!-- File upload area (image or pdf) -->
+          <div>
+            <!-- Preview -->
+            <div v-if="selectedFile" class="tpl:flex tpl:flex-col tpl:gap-2">
+              <div
+                class="tpl:relative tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)]"
+                style="
+                  border: 1px solid var(--tpl-border);
+                  background-color: var(--tpl-bg);
+                "
+              >
+                <!-- Image preview -->
+                <img
+                  v-if="filePreviewUrl"
+                  :src="filePreviewUrl"
+                  :alt="selectedFile.name"
+                  class="tpl:h-auto tpl:max-h-48 tpl:w-full tpl:object-contain"
+                />
+                <!-- PDF preview (icon-based) -->
+                <div
+                  v-else
+                  class="tpl:flex tpl:h-32 tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2"
+                >
+                  <FileText
+                    :size="32"
+                    :stroke-width="1.5"
+                    style="color: var(--tpl-text-dim)"
+                  />
+                  <span
+                    class="tpl:text-xs"
+                    style="color: var(--tpl-text-muted)"
+                  >
+                    {{ selectedFile.name }}
+                  </span>
+                </div>
+                <!-- Remove button -->
+                <button
+                  class="tpl:absolute tpl:top-2 tpl:right-2 tpl:rounded-full tpl:p-1 tpl:transition-colors tpl:duration-150"
+                  style="
+                    background-color: var(--tpl-bg);
+                    color: var(--tpl-text-muted);
+                    box-shadow: var(--tpl-shadow);
+                  "
+                  @click="clearFile"
+                >
+                  <X :size="12" :stroke-width="2" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Drop zone -->
+            <div
+              v-else
+              class="tpl-design-dropzone tpl:flex tpl:cursor-pointer tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border-2 tpl:border-dashed tpl:px-4 tpl:py-8 tpl:transition-colors tpl:duration-150"
+              :style="{
+                borderColor: isDragging
+                  ? 'var(--tpl-primary)'
+                  : 'var(--tpl-border-light)',
+                backgroundColor: isDragging
+                  ? 'var(--tpl-primary-light)'
+                  : 'var(--tpl-bg)',
+              }"
+              @click="($refs.fileInput as HTMLInputElement)?.click()"
+              @dragover="handleDragOver"
+              @dragleave="handleDragLeave"
+              @drop="handleDrop"
+            >
+              <Upload
+                :size="24"
+                :stroke-width="1.5"
+                style="color: var(--tpl-text-dim)"
+              />
+              <span
+                class="tpl:text-center tpl:text-xs"
+                style="color: var(--tpl-text-muted)"
+              >
+                {{ t.dropHint }}
+              </span>
+              <span
+                class="tpl:text-center tpl:text-[11px]"
+                style="color: var(--tpl-text-dim)"
+              >
+                {{ activeTab === "image" ? t.acceptedImages : t.acceptedPdf }}
+              </span>
+            </div>
+            <input
+              ref="fileInput"
+              type="file"
+              class="tpl:hidden"
+              :accept="
+                activeTab === 'image'
+                  ? 'image/png,image/jpeg,image/webp'
+                  : 'application/pdf'
+              "
+              @change="handleFileSelect"
+            />
+          </div>
+
+          <!-- Prompt textarea -->
+          <div class="tpl:flex tpl:flex-col tpl:gap-1.5">
+            <label
+              class="tpl:text-xs tpl:font-medium"
+              style="color: var(--tpl-text-muted)"
+            >
+              {{ t.promptLabel }}
+            </label>
+            <textarea
+              v-model="prompt"
+              class="tpl:min-h-[72px] tpl:w-full tpl:resize-none tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:font-sans tpl:text-sm tpl:outline-none tpl:transition-colors tpl:duration-150"
+              :class="['tpl-design-prompt-input']"
+              style="
+                border-color: var(--tpl-border);
+                color: var(--tpl-text);
+                background-color: var(--tpl-bg);
+              "
+              :placeholder="t.promptPlaceholder"
+              rows="3"
+            />
+          </div>
+
+          <!-- Confirmation overlay -->
+          <div
+            v-if="showConfirmation"
+            class="tpl:flex tpl:flex-col tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:px-3 tpl:py-3"
+            style="
+              background-color: var(--tpl-warning-light);
+              border: 1px solid var(--tpl-warning);
+            "
+          >
+            <p
+              class="tpl:text-xs tpl:leading-snug"
+              style="color: var(--tpl-text)"
+            >
+              {{ t.replaceWarning }}
+            </p>
+            <div class="tpl:flex tpl:gap-2">
+              <button
+                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
+                style="
+                  background-color: transparent;
+                  color: var(--tpl-text-muted);
+                  border: 1px solid var(--tpl-border);
+                "
+                @click="cancelConfirmation"
+              >
+                {{ t.replaceCancel }}
+              </button>
+              <button
+                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90"
+                style="
+                  background-color: var(--tpl-primary);
+                  color: var(--tpl-bg);
+                "
+                @click="handleGenerate"
+              >
+                {{ t.replaceConfirm }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Error message -->
+          <div
+            v-if="designReference.error.value"
+            class="tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs"
+            style="
+              background-color: var(--tpl-danger-light);
+              color: var(--tpl-danger);
+            "
+          >
+            <AlertCircle
+              :size="14"
+              :stroke-width="2"
+              class="tpl:mt-0.5 tpl:shrink-0"
+            />
+            <span>{{ t.error }}</span>
+          </div>
+
+          <!-- Generate button -->
+          <button
+            v-if="!showConfirmation"
+            class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+            style="background-color: var(--tpl-primary); color: var(--tpl-bg)"
+            :disabled="!canGenerate"
+            @click="handleGenerate"
+          >
+            <ImageUp :size="16" :stroke-width="2" />
+            {{ t.generate }}
+          </button>
+
+          <!-- AI disclaimer -->
+          <p
+            class="tpl:m-0 tpl:pt-1 tpl:text-center tpl:text-[11px]"
+            style="color: var(--tpl-text-dim)"
+          >
+            {{ translations.aiMenu.disclaimer }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
 .tpl-design-slide-enter-active {
-    transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tpl-design-slide-leave-active {
-    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tpl-design-prompt-input:focus {
-    border-color: var(--tpl-primary);
-    box-shadow: var(--tpl-ring);
+  border-color: var(--tpl-primary);
+  box-shadow: var(--tpl-ring);
 }
 
 .tpl-design-dropzone:hover {
-    border-color: var(--tpl-primary) !important;
-    background-color: var(--tpl-primary-light) !important;
+  border-color: var(--tpl-primary) !important;
+  background-color: var(--tpl-primary-light) !important;
 }
 </style>

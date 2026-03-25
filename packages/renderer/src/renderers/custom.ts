@@ -1,19 +1,22 @@
-import type { CustomBlock } from '@templatical/types';
-import type { RenderContext } from '../render-context';
-import { isHiddenOnAll, getCssClassAttr } from '../visibility';
+import type { CustomBlock } from "@templatical/types";
+import type { RenderContext } from "../render-context";
+import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
  * Render a custom block to MJML markup using pre-rendered HTML from the SDK.
  */
-export function renderCustom(block: CustomBlock, context: RenderContext): string {
+export function renderCustom(
+  block: CustomBlock,
+  context: RenderContext,
+): string {
   if (isHiddenOnAll(block)) {
-    return '';
+    return "";
   }
 
   const content = block.renderedHtml;
 
-  if (!content || content === '') {
-    return '';
+  if (!content || content === "") {
+    return "";
   }
 
   const visibilityAttr = getCssClassAttr(block);

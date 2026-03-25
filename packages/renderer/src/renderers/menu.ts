@@ -1,8 +1,8 @@
-import type { MenuBlock, MenuItemData } from '@templatical/types';
-import type { RenderContext } from '../render-context';
-import { escapeHtml, escapeAttr } from '../escape';
-import { toPaddingString } from '../padding';
-import { isHiddenOnAll, getCssClassAttr } from '../visibility';
+import type { MenuBlock, MenuItemData } from "@templatical/types";
+import type { RenderContext } from "../render-context";
+import { escapeHtml, escapeAttr } from "../escape";
+import { toPaddingString } from "../padding";
+import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
  * Render a menu block to MJML markup.
@@ -10,17 +10,17 @@ import { isHiddenOnAll, getCssClassAttr } from '../visibility';
  */
 export function renderMenu(block: MenuBlock, context: RenderContext): string {
   if (isHiddenOnAll(block)) {
-    return '';
+    return "";
   }
 
   if (block.items.length === 0) {
-    return '';
+    return "";
   }
 
   const padding = toPaddingString(block.styles.padding);
   const bgColor = block.styles.backgroundColor
     ? ` background-color="${block.styles.backgroundColor}"`
-    : '';
+    : "";
   const visibilityAttr = getCssClassAttr(block);
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const align = block.textAlign;
@@ -58,26 +58,26 @@ function renderMenuItems(block: MenuBlock): string {
     }
   }
 
-  return parts.join('');
+  return parts.join("");
 }
 
 function renderMenuItem(item: MenuItemData, linkColor: string): string {
   const text = escapeHtml(item.text);
   const url = escapeAttr(item.url);
   const color = item.color ?? linkColor;
-  const target = item.openInNewTab ? ' target="_blank"' : '';
+  const target = item.openInNewTab ? ' target="_blank"' : "";
 
-  const styles: string[] = [`color: ${color}`, 'text-decoration: none'];
+  const styles: string[] = [`color: ${color}`, "text-decoration: none"];
 
   if (item.bold) {
-    styles.push('font-weight: bold');
+    styles.push("font-weight: bold");
   }
 
   if (item.underline) {
-    styles.push('text-decoration: underline');
+    styles.push("text-decoration: underline");
   }
 
-  const styleAttr = styles.join('; ');
+  const styleAttr = styles.join("; ");
 
   return `<a href="${url}" style="${styleAttr}"${target}>${text}</a>`;
 }
@@ -87,7 +87,7 @@ function renderFontFamilyAttr(
   context: RenderContext,
 ): string {
   if (!fontFamily) {
-    return '';
+    return "";
   }
 
   const resolved = context.resolveFontFamily(fontFamily);

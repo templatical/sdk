@@ -1,4 +1,4 @@
-import type { Block } from '@templatical/types';
+import type { Block } from "@templatical/types";
 import {
   isSection,
   isText,
@@ -12,20 +12,20 @@ import {
   isTable,
   isVideo,
   isCustomBlock,
-} from '@templatical/types';
-import type { RenderContext } from '../render-context';
-import { renderText } from './text';
-import { renderImage } from './image';
-import { renderButton } from './button';
-import { renderDivider } from './divider';
-import { renderSpacer } from './spacer';
-import { renderHtml } from './html';
-import { renderSocialIcons } from './social';
-import { renderMenu } from './menu';
-import { renderTable } from './table';
-import { renderCustom } from './custom';
-import { renderSection } from './section';
-import { renderVideo } from './video';
+} from "@templatical/types";
+import type { RenderContext } from "../render-context";
+import { renderText } from "./text";
+import { renderImage } from "./image";
+import { renderButton } from "./button";
+import { renderDivider } from "./divider";
+import { renderSpacer } from "./spacer";
+import { renderHtml } from "./html";
+import { renderSocialIcons } from "./social";
+import { renderMenu } from "./menu";
+import { renderTable } from "./table";
+import { renderCustom } from "./custom";
+import { renderSection } from "./section";
+import { renderVideo } from "./video";
 
 /**
  * Render a single block to MJML markup.
@@ -82,5 +82,5 @@ export function renderBlock(block: Block, context: RenderContext): string {
 
   // Unsupported block types (e.g. countdown) are skipped in the OSS renderer.
   // The SaaS backend handles these with server-side services.
-  return '';
+  return "";
 }

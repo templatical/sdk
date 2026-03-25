@@ -1,4 +1,4 @@
-import type { CustomFont } from '@templatical/types';
+import type { CustomFont } from "@templatical/types";
 
 /**
  * Immutable context passed through the block rendering chain.

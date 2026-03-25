@@ -1,9 +1,9 @@
 const HTML_ENTITIES: Record<string, string> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#039;',
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#039;",
 };
 
 const HTML_ENTITY_REGEX = /[&<>"']/g;
@@ -13,8 +13,8 @@ const HTML_ENTITY_REGEX = /[&<>"']/g;
  * Equivalent to PHP htmlspecialchars with ENT_QUOTES | ENT_HTML5.
  */
 export function escapeHtml(text: string): string {
-  if (text === '') {
-    return '';
+  if (text === "") {
+    return "";
   }
 
   return text.replace(HTML_ENTITY_REGEX, (char) => HTML_ENTITIES[char] ?? char);
@@ -25,8 +25,8 @@ export function escapeHtml(text: string): string {
  * Same implementation as escapeHtml for consistency with PHP.
  */
 export function escapeAttr(text: string): string {
-  if (text === '') {
-    return '';
+  if (text === "") {
+    return "";
   }
 
   return text.replace(HTML_ENTITY_REGEX, (char) => HTML_ENTITIES[char] ?? char);
@@ -38,20 +38,20 @@ export function escapeAttr(text: string): string {
  * Also handles `data-logic-merge-tag` attributes.
  */
 export function convertMergeTagsToValues(html: string): string {
-  if (html === '') {
-    return '';
+  if (html === "") {
+    return "";
   }
 
   // Replace <span data-merge-tag="...">...</span> with the merge tag value
   let result = html.replace(
     /<span[^>]*\bdata-merge-tag="([^"]*)"[^>]*>.*?<\/span>/gs,
-    '$1',
+    "$1",
   );
 
   // Replace <span data-logic-merge-tag="...">...</span> with the merge tag value
   result = result.replace(
     /<span[^>]*\bdata-logic-merge-tag="([^"]*)"[^>]*>.*?<\/span>/gs,
-    '$1',
+    "$1",
   );
 
   return result;

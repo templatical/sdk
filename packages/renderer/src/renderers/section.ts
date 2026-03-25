@@ -1,8 +1,8 @@
-import type { Block, SectionBlock } from '@templatical/types';
-import type { RenderContext } from '../render-context';
-import { getWidthPercentages, getWidthPixels } from '../columns';
-import { toPaddingString } from '../padding';
-import { isHiddenOnAll, getCssClassAttr } from '../visibility';
+import type { Block, SectionBlock } from "@templatical/types";
+import type { RenderContext } from "../render-context";
+import { getWidthPercentages, getWidthPixels } from "../columns";
+import { toPaddingString } from "../padding";
+import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
  * A function type that renders a single block to MJML markup.
@@ -18,7 +18,7 @@ export function renderSection(
   renderBlock: BlockRenderer,
 ): string {
   if (isHiddenOnAll(block)) {
-    return '';
+    return "";
   }
 
   const columnsLayout = block.columns;
@@ -27,7 +27,7 @@ export function renderSection(
   const padding = toPaddingString(block.styles.padding);
   const bgColor = block.styles.backgroundColor
     ? ` background-color="${block.styles.backgroundColor}"`
-    : '';
+    : "";
   const visibilityAttr = getCssClassAttr(block);
 
   const children = block.children;
@@ -35,25 +35,28 @@ export function renderSection(
 
   for (let index = 0; index < children.length; index++) {
     const column = children[index];
-    const width = columnWidths[index] ?? '100%';
-    const columnWidth = Math.floor(columnWidthsPx[index] ?? context.containerWidth);
+    const width = columnWidths[index] ?? "100%";
+    const columnWidth = Math.floor(
+      columnWidthsPx[index] ?? context.containerWidth,
+    );
 
     const filteredColumn = filterHtmlBlocks(column, context.allowHtmlBlocks);
     const columnContext = context.withContainerWidth(columnWidth);
 
     const columnBlocks = filteredColumn
       .map((child) => renderBlock(child, columnContext))
-      .filter((value) => value !== '')
-      .join('\n');
+      .filter((value) => value !== "")
+      .join("\n");
 
-    const content = columnBlocks === '' ? '<mj-text>&nbsp;</mj-text>' : columnBlocks;
+    const content =
+      columnBlocks === "" ? "<mj-text>&nbsp;</mj-text>" : columnBlocks;
 
     columnsContent.push(`<mj-column width="${width}">
 ${content}
 </mj-column>`);
   }
 
-  const columns = columnsContent.join('\n');
+  const columns = columnsContent.join("\n");
 
   return `<mj-section${bgColor} padding="${padding}"${visibilityAttr}>
 ${columns}
@@ -68,5 +71,5 @@ function filterHtmlBlocks(blocks: Block[], allowHtmlBlocks: boolean): Block[] {
     return blocks;
   }
 
-  return blocks.filter((block) => block.type !== 'html');
+  return blocks.filter((block) => block.type !== "html");
 }

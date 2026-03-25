@@ -1,21 +1,24 @@
-import type { DividerBlock } from '@templatical/types';
-import type { RenderContext } from '../render-context';
-import { toPaddingString } from '../padding';
-import { isHiddenOnAll, getCssClassAttr } from '../visibility';
+import type { DividerBlock } from "@templatical/types";
+import type { RenderContext } from "../render-context";
+import { toPaddingString } from "../padding";
+import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
  * Render a divider block to MJML markup.
  */
-export function renderDivider(block: DividerBlock, context: RenderContext): string {
+export function renderDivider(
+  block: DividerBlock,
+  context: RenderContext,
+): string {
   if (isHiddenOnAll(block)) {
-    return '';
+    return "";
   }
 
   const padding = toPaddingString(block.styles.padding);
   const bgColor = block.styles.backgroundColor
     ? ` container-background-color="${block.styles.backgroundColor}"`
-    : '';
-  const width = block.width === 'full' ? '100%' : block.width + 'px';
+    : "";
+  const width = block.width === "full" ? "100%" : block.width + "px";
   const thickness = block.thickness;
   const lineStyle = block.lineStyle;
   const color = block.color;

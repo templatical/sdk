@@ -1,4 +1,4 @@
-declare module 'mjml' {
+declare module "mjml" {
   interface MjmlResult {
     html: string;
     errors: Array<{
@@ -9,7 +9,10 @@ declare module 'mjml' {
     }>;
   }
 
-  function mjml2html(mjml: string, options?: Record<string, unknown>): MjmlResult;
+  function mjml2html(
+    mjml: string,
+    options?: Record<string, unknown>,
+  ): MjmlResult;
 
   export default mjml2html;
 }
