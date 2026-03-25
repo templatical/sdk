@@ -27,6 +27,10 @@ export default defineConfig({
                 packagesDir,
                 'import-beefree/src/index.ts',
             ),
+            '@templatical/media-library': resolve(
+                packagesDir,
+                'media-library/src/index.ts',
+            ),
         },
     },
     build: {

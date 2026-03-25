@@ -23,6 +23,9 @@
 /* SDK-specific source paths for Tailwind scanning */
 @source '../**/*.vue';
 @source '../**/*.ts';
+/* Media library components (imported via @templatical/media-library) */
+@source '../../../media-library/src/**/*.vue';
+@source '../../../media-library/src/**/*.ts';
 
 /* SDK CSS Variables - Default theme, can be overridden via inline styles */
 .tpl {

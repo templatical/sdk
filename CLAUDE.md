@@ -9,7 +9,7 @@ Open-source Templatical email editor. Bun monorepo with 6 npm packages, a playgr
 | `@templatical/types` | Shared TS types, block factories, event emitter | MIT | Block types, guards, factory fns, `EventEmitter`, merge tag presets |
 | `@templatical/core` | Framework-agnostic editor logic, state, history, plugins | FSL-1.1-MIT | `useEditor`, `useHistory`, `useBlockActions`, `useAutoSave`, plugins |
 | `@templatical/core/cloud` | Cloud-only modules (subpath export) | FSL-1.1-MIT | Auth, API, WebSocket, AI chat/rewrite, collaboration, comments, scoring, MCP, export |
-| `@templatical/media-library` | Media library management (types, composable, API client, Vue components, standalone SDK) | FSL-1.1-MIT | `useMediaLibrary`, `MediaApiClient`, `MediaLibraryModal`, `MediaItem`, `init()`, `createMediaLibrary()` |
+| `@templatical/media-library` | Media library management (types, composable, API client, Vue components, standalone SDK) | FSL-1.1-MIT | `useMediaLibrary`, `MediaApiClient`, `MediaLibraryModal`, `MediaItem`, `init()` |
 | `@templatical/vue` | Vue 3 visual drag-and-drop editor | FSL-1.1-MIT | `init()`, `initCloud()`, `unmount()` |
 | `@templatical/renderer` | JSON → MJML → HTML renderer (browser + Node) | MIT | `renderToMjml()`, `renderToHtml()` |
 | `@templatical/import-beefree` | BeeFree template converter | MIT | `convertBeeFreeTemplate()` |
@@ -29,7 +29,7 @@ Open-source Templatical email editor. Bun monorepo with 6 npm packages, a playgr
   └── @templatical/vue  (+tiptap, vuedraggable, liquidjs; peer: vue, tailwindcss)
 ```
 
-**Media types** (`MediaItem`, `MediaFolder`, etc.) are canonically defined in `@templatical/media-library`. The `@templatical/types` package imports them via devDependency for use in cloud config interfaces (`TemplaticalConfig`, `HeadlessConfig`, `PlanConfig`). **Build order:** media-library before types.
+**Media types** (`MediaItem`, `MediaFolder`, etc.) are canonically defined in `@templatical/media-library`. The `@templatical/types` package imports them via devDependency for use in cloud config interfaces (`TemplaticalConfig`, `PlanConfig`). **Build order:** media-library before types.
 
 ## Commands
 
@@ -87,7 +87,7 @@ Cloud modules live in `packages/core/src/cloud/`. They provide features that con
 
 **Note:** Media functionality (`useMediaLibrary`, `MediaApiClient`) has moved to `@templatical/media-library`. It is NOT exported from `@templatical/core/cloud`.
 
-Used by `@templatical/vue`'s `initCloud()` and the headless CDN build.
+Used by `@templatical/vue`'s `initCloud()`.
 
 ## Media Library (`@templatical/media-library`)
 
@@ -100,6 +100,16 @@ Standalone package for media management. Lives in `packages/media-library/`. Bui
 - **Composables** — `useMediaCategories`, `useMediaPicker`, `useImageCrop`, `useI18n`
 - **Standalone SDK** — `init()` (visual mount) with own i18n (en/de) and styles
 - **Dependencies** — `@templatical/core/cloud` (for AuthManager, buildUrl, API_ROUTES), `@templatical/types` (for ApiError, ApiResponse, PlanConfig)
+
+## Conventions
+
+- Always use i18n translation keys in components, never hardcoded strings.
+- Use `tpl:` prefix for all SDK CSS classes (Tailwind prefix).
+- Lazy-load heavy libraries via dynamic `import()` (e.g. `pusher-js`).
+- Use `defineAsyncComponent` for non-critical UI panels (sidebars, modals).
+- Keep `manualChunks` in `vite.email-editor.config.ts` up to date when adding new cloud components.
+- Use type-only imports for runtime-lazy packages.
+- Don't statically import packages >20KB gzipped that are only used conditionally.
 
 ## Architecture
 

@@ -6,11 +6,13 @@
  */
 
 @import url('https://fonts.bunny.net/css?family=geist:400,500,600');
-@layer theme, base, components, utilities;
+@layer theme, base, components;
 
 @import 'tailwindcss/theme.css' layer(theme) theme(inline) prefix(tpl);
 /* Preflight deliberately omitted — SDK must not reset consumer styles */
-@import 'tailwindcss/utilities.css' layer(utilities) prefix(tpl);
+/* Utilities are intentionally NOT in a @layer so they won't be overridden
+   by unlayered consumer CSS resets (e.g. * { margin: 0 }). */
+@import 'tailwindcss/utilities.css' prefix(tpl);
 
 @theme inline {
     --font-sans:
@@ -19,8 +21,8 @@
 }
 
 /* Source paths for Tailwind scanning */
-@source '../components/**/*.vue';
-@source '../standalone/**/*.vue';
+@source '../**/*.vue';
+@source '../**/*.ts';
 
 /* SDK CSS Variables - Default theme, can be overridden via inline styles */
 .tpl {
