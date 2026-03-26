@@ -420,6 +420,7 @@ export default {
     clickToEdit: "Click to edit",
     remove: "Remove merge tag",
     insert: "Insert merge tag",
+    add: "Add merge tag",
   },
 
   // Snapshot history (cloud)

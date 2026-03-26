@@ -143,6 +143,8 @@ Two separate i18n systems, same pattern. Supported locales: `en`, `de`.
 
 Both use dynamic `import()` for locale files. Locale normalization strips region codes (`en-US` → `en`) and falls back to `en` for unsupported locales. When adding new i18n keys, add to both `en.ts` and `de.ts` — tests verify key parity between locales.
 
+- **Playground** — `apps/playground/src/i18n/` with `usePlaygroundI18n()` composable returning reactive `{ locale, t }`. Translations are eagerly imported (no dynamic `import()`). Locale persisted to `localStorage` key `tpl-playground-locale`. The `format(template, values)` helper handles `{placeholder}` substitution. Locale is passed to both `init({ locale })` and `initCloud({ locale })` so the editor SDK also switches language. Changing locale re-initializes the editor.
+
 ## Architecture
 
 - **Build:** tsup for types, core, renderer, import-beefree. Vite for vue, media-library packages and CDN bundles. **Build order matters:** media-library must build before types (types has devDep on media-library for type imports).

@@ -33,6 +33,21 @@ import type {
 } from "@/templates";
 import CodeEditor from "@/CodeEditor.vue";
 import LogoIcon from "@/LogoIcon.vue";
+import { usePlaygroundI18n, format, supportedLocales } from "@/i18n";
+
+const { locale, t } = usePlaygroundI18n();
+
+function tplName(tpl: TemplateOption): string {
+  const entry =
+    t.value.templates[tpl.preview as keyof typeof t.value.templates];
+  return entry?.name ?? tpl.name;
+}
+
+function tplDesc(tpl: TemplateOption): string {
+  const entry =
+    t.value.templates[tpl.preview as keyof typeof t.value.templates];
+  return entry?.description ?? tpl.description;
+}
 
 type Screen = "chooser" | "editor";
 const screen = ref<Screen>("chooser");
@@ -140,26 +155,21 @@ const enableRequestMergeTag = ref(true);
 const mergeTagPickerOpen = ref(false);
 let mergeTagResolve: ((tag: MergeTag | null) => void) | null = null;
 
-const mergeTagList = ref<MergeTag[]>([
-  { label: "First Name", value: "{{first_name}}" },
-  { label: "Last Name", value: "{{last_name}}" },
-  { label: "Email", value: "{{email}}" },
-  { label: "Company", value: "{{company}}" },
-  { label: "Account ID", value: "{{account_id}}" },
-  { label: "Plan Name", value: "{{plan_name}}" },
-  { label: "Order ID", value: "{{order_id}}" },
-  { label: "Order Total", value: "{{order_total}}" },
-  { label: "Shipping Method", value: "{{shipping_method}}" },
-  { label: "Tracking URL", value: "{{tracking_url}}" },
-  { label: "Unsubscribe URL", value: "{{unsubscribe_url}}" },
-  { label: "Preferences URL", value: "{{preferences_url}}" },
-  { label: "Current Date", value: "{{current_date}}" },
+const mergeTagList = computed<MergeTag[]>(() => [
+  { label: t.value.mergeTags.firstName, value: "{{first_name}}" },
+  { label: t.value.mergeTags.lastName, value: "{{last_name}}" },
+  { label: t.value.mergeTags.email, value: "{{email}}" },
+  { label: t.value.mergeTags.company, value: "{{company}}" },
+  { label: t.value.mergeTags.accountId, value: "{{account_id}}" },
+  { label: t.value.mergeTags.planName, value: "{{plan_name}}" },
+  { label: t.value.mergeTags.orderId, value: "{{order_id}}" },
+  { label: t.value.mergeTags.orderTotal, value: "{{order_total}}" },
+  { label: t.value.mergeTags.shippingMethod, value: "{{shipping_method}}" },
+  { label: t.value.mergeTags.trackingUrl, value: "{{tracking_url}}" },
+  { label: t.value.mergeTags.unsubscribeUrl, value: "{{unsubscribe_url}}" },
+  { label: t.value.mergeTags.preferencesUrl, value: "{{preferences_url}}" },
+  { label: t.value.mergeTags.currentDate, value: "{{current_date}}" },
 ]);
-
-const mergeTags = {
-  syntax: "liquid" as const,
-  tags: mergeTagList.value,
-};
 
 function requestMergeTag(): Promise<MergeTag | null> {
   return new Promise((resolve) => {
@@ -279,7 +289,7 @@ function importBeefreeFromJson(raw: string): void {
 function confirmBeefreeImport(): void {
   const raw = beefreeJson.value.trim();
   if (!raw) {
-    beefreeError.value = "Paste your BeeFree JSON or upload a file.";
+    beefreeError.value = t.value.beefreeModal.emptyError;
     return;
   }
 
@@ -334,7 +344,7 @@ let currentTheme: Record<string, string> = { ...defaultTheme };
 function buildSerializableConfig() {
   return {
     content: selectedContent ?? createDefaultTemplateContent(),
-    mergeTags,
+    mergeTags: { syntax: "liquid" as const, tags: mergeTagList.value },
     displayConditions,
     customBlocks:
       selectedCustomBlocks !== undefined
@@ -349,26 +359,26 @@ let currentSerializableConfig = buildSerializableConfig();
 const mediaPickerOpen = ref(false);
 let mediaResolve: ((url: string) => void) | null = null;
 
-const demoImages = [
+const demoImages = computed(() => [
   {
-    label: "Product Shot",
+    label: t.value.demoImages.productShot,
     url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80",
     thumb:
       "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=200&q=80",
   },
   {
-    label: "Team Photo",
+    label: t.value.demoImages.teamPhoto,
     url: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80",
     thumb:
       "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&q=80",
   },
   {
-    label: "Abstract",
+    label: t.value.demoImages.abstract,
     url: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=600&q=80",
     thumb:
       "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=200&q=80",
   },
-];
+]);
 
 function requestMedia(callback: (url: string) => void): void {
   mediaResolve = callback;
@@ -397,6 +407,7 @@ function initEditor(): void {
       container: editorContainer.value,
       ...currentSerializableConfig,
       theme: currentTheme,
+      locale: locale.value,
       onRequestMedia: enableRequestMedia.value ? requestMedia : undefined,
       onRequestMergeTag: enableRequestMergeTag.value
         ? requestMergeTag
@@ -404,7 +415,9 @@ function initEditor(): void {
     });
   } catch (err) {
     console.error("[Playground] Editor init failed:", err);
-    initError.value = `Failed to initialize editor: ${(err as Error).message}`;
+    initError.value = format(t.value.error.initFailed, {
+      message: (err as Error).message,
+    });
   }
 }
 
@@ -431,9 +444,7 @@ function applyConfig(): void {
     selectedContent = content;
     selectedCustomBlocks = options.customBlocks;
     currentTheme = theme;
-    if (options.mergeTags?.tags) {
-      mergeTagList.value = options.mergeTags.tags;
-    }
+    // mergeTags from config will be used via currentSerializableConfig
     showConfig.value = false;
     initEditor();
   } catch (e) {
@@ -519,6 +530,12 @@ function handleExportMjml(): void {
   downloadFile(mjml, "email-template.mjml", "text/plain");
 }
 
+watch(locale, () => {
+  if (screen.value === "editor" && editor.value) {
+    initEditor();
+  }
+});
+
 onUnmounted(() => {
   unmount();
 });
@@ -533,17 +550,27 @@ onUnmounted(() => {
       <main
         v-if="screen === 'chooser'"
         key="chooser"
-        class="flex flex-col items-center justify-center min-h-screen bg-white py-12"
+        class="relative flex flex-col items-center justify-center min-h-screen bg-white py-12"
       >
+        <div class="absolute top-4 right-4">
+          <select
+            v-model="locale"
+            class="h-8 px-2 pr-7 text-[12px] font-medium text-gray-500 bg-white border border-gray-200 rounded-md cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3Csvg_xmlns=%27http://www.w3.org/2000/svg%27_width=%2712%27_height=%2712%27_viewBox=%270_0_24_24%27_fill=%27none%27_stroke=%27%236b7280%27_stroke-width=%272%27_stroke-linecap=%27round%27_stroke-linejoin=%27round%27%3E%3Cpath_d=%27m6_9_6_6_6-6%27/%3E%3C/svg%3E')] bg-no-repeat bg-[position:right_6px_center] transition-colors duration-150 hover:text-gray-900 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            <option v-for="loc in supportedLocales" :key="loc" :value="loc">
+              {{ loc.toUpperCase() }}
+            </option>
+          </select>
+        </div>
         <div class="flex flex-col items-center max-w-[860px] w-full px-6">
           <LogoIcon class="mb-5" />
           <h1
             class="m-0 mb-2 text-[22px] font-semibold text-gray-900 tracking-[-0.02em]"
           >
-            Templatical Playground
+            {{ t.chooser.title }}
           </h1>
           <p class="m-0 mb-9 text-[15px] text-gray-500">
-            Choose a starting point for your email template
+            {{ t.chooser.subtitle }}
           </p>
 
           <div
@@ -552,7 +579,7 @@ onUnmounted(() => {
             <button
               v-for="(tpl, i) in templates"
               :key="tpl.name"
-              :aria-label="`Choose ${tpl.name} template`"
+              :aria-label="format(t.a11y.chooseTemplate, { name: tpl.name })"
               class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               :style="{ animationDelay: `${i * 40}ms` }"
               @click="chooseTemplate(tpl.create(), tpl)"
@@ -717,16 +744,16 @@ onUnmounted(() => {
               </div>
               <span
                 class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900"
-                >{{ tpl.name }}</span
+                >{{ tplName(tpl) }}</span
               >
               <span
                 class="block px-[14px] pb-[14px] text-xs text-gray-500 leading-[1.4]"
-                >{{ tpl.description }}</span
+                >{{ tplDesc(tpl) }}</span
               >
             </button>
 
             <button
-              aria-label="Start from scratch with empty canvas"
+              :aria-label="t.a11y.startFromScratch"
               class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               :style="{ animationDelay: `${templates.length * 40}ms` }"
               @click="chooseTemplate(createDefaultTemplateContent())"
@@ -751,17 +778,17 @@ onUnmounted(() => {
               </div>
               <span
                 class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900"
-                >Start from Scratch</span
+                >{{ t.chooser.startFromScratch }}</span
               >
               <span
                 class="block px-[14px] pb-[14px] text-xs text-gray-500 leading-[1.4]"
-                >Empty canvas with default settings</span
+                >{{ t.chooser.emptyCanvas }}</span
               >
             </button>
           </div>
 
           <div class="flex items-center gap-3 mt-6 text-sm text-gray-500">
-            <span>Have an existing BeeFree template?</span>
+            <span>{{ t.chooser.beefreePrompt }}</span>
             <button
               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               @click="showBeefreeImport = true"
@@ -781,7 +808,7 @@ onUnmounted(() => {
                   stroke-linejoin="round"
                 />
               </svg>
-              Import from BeeFree
+              {{ t.chooser.importBeefree }}
             </button>
           </div>
 
@@ -810,17 +837,16 @@ onUnmounted(() => {
             </div>
             <div class="flex-1 min-w-0">
               <div class="text-sm font-semibold text-gray-900 mb-0.5">
-                Unlock the full experience with Cloud
+                {{ t.cloudBanner.title }}
               </div>
               <div class="text-xs text-gray-500 leading-relaxed">
-                Real-time collaboration, AI writing assistant, version history,
-                template scoring, media library, and more.
+                {{ t.cloudBanner.description }}
               </div>
             </div>
             <div
               class="shrink-0 flex items-center gap-1.5 text-[13px] font-medium text-primary transition-colors group-hover:text-primary-hover"
             >
-              Try Cloud Playground
+              {{ t.cloudBanner.cta }}
               <svg
                 width="14"
                 height="14"
@@ -844,7 +870,7 @@ onUnmounted(() => {
               href="https://docs.templatical.com"
               target="_blank"
               rel="noopener noreferrer"
-              >Docs</a
+              >{{ t.toolbar.docs }}</a
             >
             <span class="text-gray-200">&middot;</span>
             <a
@@ -865,7 +891,7 @@ onUnmounted(() => {
           <div class="flex items-center gap-2">
             <button
               class="pg-toolbar-btn no-underline"
-              title="Back to templates"
+              :title="t.a11y.backToTemplates"
               @click="backToChooser"
             >
               <svg
@@ -883,7 +909,7 @@ onUnmounted(() => {
                   stroke-linejoin="round"
                 />
               </svg>
-              Templates
+              {{ t.toolbar.templates }}
             </button>
             <button class="pg-toolbar-btn" @click="openConfig">
               <svg
@@ -906,7 +932,7 @@ onUnmounted(() => {
                   fill="none"
                 />
               </svg>
-              Config
+              {{ t.toolbar.config }}
             </button>
             <button
               v-if="currentFeatures.length"
@@ -933,7 +959,7 @@ onUnmounted(() => {
                   stroke-linecap="round"
                 />
               </svg>
-              Features
+              {{ t.toolbar.features }}
             </button>
           </div>
 
@@ -955,7 +981,7 @@ onUnmounted(() => {
                   stroke-linejoin="round"
                 />
               </svg>
-              JSON
+              {{ t.toolbar.json }}
             </button>
 
             <!-- Export dropdown -->
@@ -987,7 +1013,7 @@ onUnmounted(() => {
                     stroke-linejoin="round"
                   />
                 </svg>
-                Export
+                {{ t.toolbar.export }}
                 <svg
                   width="12"
                   height="12"
@@ -1021,7 +1047,7 @@ onUnmounted(() => {
                     exportMenuOpen = false;
                   "
                 >
-                  Download JSON
+                  {{ t.toolbar.downloadJson }}
                 </button>
                 <button
                   role="menuitem"
@@ -1032,7 +1058,7 @@ onUnmounted(() => {
                     exportMenuOpen = false;
                   "
                 >
-                  Download MJML
+                  {{ t.toolbar.downloadMjml }}
                 </button>
               </div>
             </div>
@@ -1044,14 +1070,14 @@ onUnmounted(() => {
               target="_blank"
               rel="noopener noreferrer"
               class="pg-toolbar-btn no-underline"
-              >Docs</a
+              >{{ t.toolbar.docs }}</a
             >
             <a
               href="https://github.com/templatical/editor"
               target="_blank"
               rel="noopener noreferrer"
               class="pg-toolbar-btn px-2 no-underline"
-              aria-label="GitHub repository"
+              :aria-label="t.a11y.githubRepo"
             >
               <svg
                 width="16"
@@ -1082,7 +1108,7 @@ onUnmounted(() => {
               >
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
               </svg>
-              Try Cloud
+              {{ t.toolbar.tryCloud }}
               <svg
                 width="10"
                 height="10"
@@ -1098,6 +1124,14 @@ onUnmounted(() => {
                 <path d="M6 3l5 5-5 5" />
               </svg>
             </a>
+            <select
+              v-model="locale"
+              class="h-8 px-2 pr-7 text-[12px] font-medium text-gray-500 bg-white border border-gray-200 rounded-md cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3Csvg_xmlns=%27http://www.w3.org/2000/svg%27_width=%2712%27_height=%2712%27_viewBox=%270_0_24_24%27_fill=%27none%27_stroke=%27%236b7280%27_stroke-width=%272%27_stroke-linecap=%27round%27_stroke-linejoin=%27round%27%3E%3Cpath_d=%27m6_9_6_6_6-6%27/%3E%3C/svg%3E')] bg-no-repeat bg-[position:right_6px_center] transition-colors duration-150 hover:text-gray-900 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              <option v-for="loc in supportedLocales" :key="loc" :value="loc">
+                {{ loc.toUpperCase() }}
+              </option>
+            </select>
           </div>
         </header>
 
@@ -1107,7 +1141,9 @@ onUnmounted(() => {
             class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center"
           >
             <p class="m-0 text-sm text-red-500">{{ initError }}</p>
-            <button class="pg-toolbar-btn" @click="initEditor">Retry</button>
+            <button class="pg-toolbar-btn" @click="initEditor">
+              {{ t.toolbar.retry }}
+            </button>
           </div>
           <div v-else ref="editorContainer" class="flex-1 min-w-0" />
 
@@ -1136,19 +1172,20 @@ onUnmounted(() => {
                   </svg>
                 </div>
                 <span class="text-[13px] text-gray-600 leading-snug"
-                  >Need
-                  <strong class="text-gray-900 font-semibold"
-                    >collaboration, AI tools, or version history</strong
-                  >? Try the Cloud version.</span
+                  >{{ t.floatingBanner.before
+                  }}<strong class="text-gray-900 font-semibold">{{
+                    t.cloudBanner.floatingFeatures
+                  }}</strong
+                  >{{ t.floatingBanner.after }}</span
                 >
               </div>
               <a
                 href="#cloud"
                 class="shrink-0 inline-flex items-center h-7 px-3 rounded-md bg-primary text-white text-xs font-medium no-underline whitespace-nowrap transition-colors duration-150 hover:bg-primary-hover"
-                >Try Cloud</a
+                >{{ t.cloudBanner.floatingCta }}</a
               >
               <button
-                aria-label="Dismiss"
+                :aria-label="t.common.dismiss"
                 class="shrink-0 size-7 flex items-center justify-center border-none bg-transparent text-gray-400 cursor-pointer rounded-md transition-colors duration-150 hover:bg-gray-100 hover:text-gray-600"
                 @click="cloudBannerDismissed = true"
               >
@@ -1182,7 +1219,7 @@ onUnmounted(() => {
               <span
                 id="json-modal-title"
                 class="text-sm font-semibold text-gray-900"
-                >Template JSON</span
+                >{{ t.jsonModal.title }}</span
               >
               <div class="flex items-center gap-2">
                 <button
@@ -1190,11 +1227,11 @@ onUnmounted(() => {
                   @click="copyJson"
                 >
                   <span aria-live="polite">{{
-                    copied ? "Copied!" : "Copy"
+                    copied ? t.jsonModal.copied : t.jsonModal.copy
                   }}</span>
                 </button>
                 <button
-                  aria-label="Close"
+                  :aria-label="t.common.close"
                   class="pg-modal-close"
                   @click="showJson = false"
                 >
@@ -1225,7 +1262,7 @@ onUnmounted(() => {
             ref="configModalRef"
             role="dialog"
             aria-modal="true"
-            aria-label="Editor Configuration"
+            :aria-label="t.a11y.editorConfig"
             class="pg-modal-dialog w-[800px] max-w-[90vw] max-h-[90vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden"
           >
             <div
@@ -1252,11 +1289,11 @@ onUnmounted(() => {
                   "
                   @click="configTab = tab"
                 >
-                  {{ tab[0].toUpperCase() + tab.slice(1) }}
+                  {{ t.configModal.tabs[tab] }}
                 </button>
               </div>
               <button
-                aria-label="Close"
+                :aria-label="t.common.close"
                 class="pg-modal-close"
                 @click="showConfig = false"
               >
@@ -1309,8 +1346,7 @@ onUnmounted(() => {
                 class="flex flex-col gap-4"
               >
                 <p class="m-0 text-[13px] text-gray-500">
-                  Toggle callback handlers passed to the editor. Changes apply
-                  on "Apply &amp; Reload".
+                  {{ t.configModal.callbacksHint }}
                 </p>
                 <label class="flex items-center gap-3 cursor-pointer">
                   <input
@@ -1323,8 +1359,7 @@ onUnmounted(() => {
                       >onRequestMedia</span
                     >
                     <p class="m-0 mt-0.5 text-[12px] text-gray-500">
-                      Opens a demo image picker when the user clicks "Browse
-                      Media"
+                      {{ t.configModal.onRequestMediaDesc }}
                     </p>
                   </div>
                 </label>
@@ -1339,8 +1374,7 @@ onUnmounted(() => {
                       >onRequestMergeTag</span
                     >
                     <p class="m-0 mt-0.5 text-[12px] text-gray-500">
-                      Opens a merge tag picker when the user inserts a
-                      placeholder
+                      {{ t.configModal.onRequestMergeTagDesc }}
                     </p>
                   </div>
                 </label>
@@ -1353,27 +1387,20 @@ onUnmounted(() => {
               class="flex items-center justify-between px-5 py-4 border-t border-gray-200 shrink-0"
             >
               <p class="m-0 text-xs text-gray-400">
-                {{
-                  {
-                    options: "mergeTags, displayConditions, customBlocks",
-                    content: "Template block structure",
-                    theme: "Colors and visual overrides (OKLch)",
-                    callbacks: "onRequestMedia, onRequestMergeTag",
-                  }[configTab]
-                }}
+                {{ t.configModal.descriptions[configTab] }}
               </p>
               <div class="flex items-center gap-2">
                 <button
                   class="h-9 px-4 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50"
                   @click="showConfig = false"
                 >
-                  Cancel
+                  {{ t.configModal.cancel }}
                 </button>
                 <button
                   class="pg-cta h-9 px-4 text-[13px] rounded-md"
                   @click="applyConfig"
                 >
-                  Apply & Reload
+                  {{ t.configModal.apply }}
                 </button>
               </div>
             </div>
@@ -1408,14 +1435,14 @@ onUnmounted(() => {
                 <span
                   id="beefree-modal-title"
                   class="text-sm font-semibold text-gray-900"
-                  >Import BeeFree Template</span
+                  >{{ t.beefreeModal.title }}</span
                 >
                 <p class="m-0 mt-1 text-xs text-gray-500">
-                  Paste the JSON export from your BeeFree editor below.
+                  {{ t.beefreeModal.description }}
                 </p>
               </div>
               <button
-                aria-label="Close"
+                :aria-label="t.common.close"
                 class="pg-modal-close"
                 @click="
                   showBeefreeImport = false;
@@ -1445,18 +1472,20 @@ onUnmounted(() => {
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
-                <span class="text-sm font-medium">Choose .json file</span>
+                <span class="text-sm font-medium">{{
+                  t.beefreeModal.chooseFile
+                }}</span>
               </button>
 
               <div
                 class="flex items-center gap-4 my-4 text-gray-500 text-xs uppercase tracking-[0.5px] before:content-[''] before:flex-1 before:h-px before:bg-gray-200 after:content-[''] after:flex-1 after:h-px after:bg-gray-200"
               >
-                <span>or paste JSON</span>
+                <span>{{ t.beefreeModal.orPaste }}</span>
               </div>
 
               <textarea
                 v-model="beefreeJson"
-                aria-label="BeeFree JSON content"
+                :aria-label="t.a11y.beefreeJsonContent"
                 class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500"
                 placeholder='{"page": {"body": {...}, "rows": [...]}}'
               ></textarea>
@@ -1474,13 +1503,13 @@ onUnmounted(() => {
                   beefreeError = '';
                 "
               >
-                Cancel
+                {{ t.beefreeModal.cancel }}
               </button>
               <button
                 class="pg-cta h-9 px-4 text-[13px] rounded-md"
                 @click="confirmBeefreeImport"
               >
-                Import & Open
+                {{ t.beefreeModal.import }}
               </button>
             </div>
           </div>
@@ -1510,10 +1539,10 @@ onUnmounted(() => {
               <span
                 id="mergetag-modal-title"
                 class="text-sm font-semibold text-gray-900"
-                >Insert Merge Tag</span
+                >{{ t.mergeTagModal.title }}</span
               >
               <button
-                aria-label="Close"
+                :aria-label="t.common.close"
                 class="pg-modal-close"
                 @click="cancelMergeTagPicker"
               >
@@ -1563,10 +1592,10 @@ onUnmounted(() => {
               <span
                 id="media-modal-title"
                 class="text-sm font-semibold text-gray-900"
-                >Select Image</span
+                >{{ t.mediaModal.title }}</span
               >
               <button
-                aria-label="Close"
+                :aria-label="t.common.close"
                 class="pg-modal-close"
                 @click="cancelMediaPicker"
               >
@@ -1620,7 +1649,7 @@ onUnmounted(() => {
                 >{{ dataSourcePickerRequest.title }}</span
               >
               <button
-                aria-label="Close"
+                :aria-label="t.common.close"
                 class="pg-modal-close"
                 @click="cancelDataSourcePicker"
               >
@@ -1654,7 +1683,7 @@ onUnmounted(() => {
               </svg>
               <div class="text-center space-y-2">
                 <p class="m-0 text-sm text-gray-500">
-                  Fetching data from endpoint&hellip;
+                  {{ t.dataSourceModal.fetching }}
                 </p>
                 <code
                   class="block text-[11px] text-gray-400 font-mono bg-gray-50 rounded-md px-3 py-2 border border-gray-100 max-w-full break-all"
@@ -1663,9 +1692,7 @@ onUnmounted(() => {
                 <p
                   class="m-0 text-[11px] text-gray-400 leading-relaxed max-w-xs mx-auto"
                 >
-                  This simulates retrieving data from your endpoint. In
-                  production, the SDK calls this URL and displays the response
-                  for the user to pick from.
+                  {{ t.dataSourceModal.fetchDescription }}
                 </p>
               </div>
             </div>
@@ -1675,7 +1702,7 @@ onUnmounted(() => {
               <p
                 class="m-0 px-2 pb-1 text-[11px] text-gray-400 uppercase tracking-[0.5px] font-medium"
               >
-                Response received — select an item
+                {{ t.dataSourceModal.responseReceived }}
               </p>
               <button
                 v-for="item in dataSourcePickerRequest.items"
@@ -1745,14 +1772,18 @@ onUnmounted(() => {
                 <span
                   id="features-modal-title"
                   class="text-sm font-semibold text-gray-900"
-                  >Features in this template</span
+                  >{{ t.featureModal.title }}</span
                 >
                 <p class="m-0 mt-1 text-xs text-gray-500">
-                  {{ currentTemplateName }} showcases these SDK capabilities
+                  {{
+                    format(t.featureModal.subtitle, {
+                      name: currentTemplateName,
+                    })
+                  }}
                 </p>
               </div>
               <button
-                aria-label="Close"
+                :aria-label="t.common.close"
                 class="pg-modal-close"
                 @click="dismissFeatureOverlay"
               >
@@ -1937,7 +1968,7 @@ onUnmounted(() => {
                 class="pg-cta h-9 px-5 text-[13px] rounded-md"
                 @click="dismissFeatureOverlay"
               >
-                Got it, start editing
+                {{ t.featureModal.dismiss }}
               </button>
             </div>
           </div>

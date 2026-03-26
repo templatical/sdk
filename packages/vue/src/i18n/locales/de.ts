@@ -425,6 +425,7 @@ export default {
     clickToEdit: "Zum Bearbeiten klicken",
     remove: "Merge-Tag entfernen",
     insert: "Merge-Tag einfügen",
+    add: "Merge-Tag hinzuf\u00fcgen",
   },
 
   // Snapshot history (cloud)

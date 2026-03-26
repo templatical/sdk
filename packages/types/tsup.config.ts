@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup'
 export default defineConfig({
   entry: ['src/index.ts'],
   format: ['esm', 'cjs'],
-  dts: true,
+  dts: { tsconfig: 'tsconfig.build.json' },
   clean: true,
   target: 'es2020',
   sourcemap: true,

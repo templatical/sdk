@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useLocalStorage } from "@vueuse/core";
 import { initCloud } from "@templatical/vue";
 import type {
@@ -9,6 +9,9 @@ import type {
 import type { MergeTag } from "@templatical/types";
 import { customBlockDefinitions } from "@/templates";
 import LogoIcon from "@/LogoIcon.vue";
+import { usePlaygroundI18n, format, supportedLocales } from "@/i18n";
+
+const { locale, t } = usePlaygroundI18n();
 
 const STORAGE_KEY = "templatical-cloud-playground";
 
@@ -111,7 +114,7 @@ function validateAuth(): boolean {
       !settings.value.clientSecret.trim() ||
       !settings.value.tenant.trim()
     ) {
-      loadError.value = "Client ID, Client Secret, and Tenant are required";
+      loadError.value = t.value.cloud.errors.requiredFields;
       isAuthValid.value = false;
       return false;
     }
@@ -120,7 +123,7 @@ function validateAuth(): boolean {
   }
 
   if (!settings.value.authUrl.trim()) {
-    loadError.value = "Auth URL is required";
+    loadError.value = t.value.cloud.errors.authUrlRequired;
     isAuthValid.value = false;
     return false;
   }
@@ -202,17 +205,17 @@ onMounted(() => {
   window.fetch = patchedFetch;
 });
 
-const mergeTagList: MergeTag[] = [
-  { label: "First Name", value: "{{first_name}}" },
-  { label: "Last Name", value: "{{last_name}}" },
-  { label: "Email", value: "{{email}}" },
-  { label: "Company", value: "{{company}}" },
-  { label: "Plan Name", value: "{{plan_name}}" },
-];
+const mergeTagList = computed<MergeTag[]>(() => [
+  { label: t.value.mergeTags.firstName, value: "{{first_name}}" },
+  { label: t.value.mergeTags.lastName, value: "{{last_name}}" },
+  { label: t.value.mergeTags.email, value: "{{email}}" },
+  { label: t.value.mergeTags.company, value: "{{company}}" },
+  { label: t.value.mergeTags.planName, value: "{{plan_name}}" },
+]);
 
 function requestMergeTag(): Promise<MergeTag | null> {
   return new Promise((resolve) => {
-    const tag = mergeTagList[0];
+    const tag = mergeTagList.value[0];
     resolve(tag ?? null);
   });
 }
@@ -222,7 +225,7 @@ async function loadTemplate(): Promise<void> {
 
   const uuid = settings.value.templateUuid.trim();
   if (!uuid) {
-    loadError.value = "Please enter a template UUID";
+    loadError.value = t.value.cloud.errors.enterUuid;
     return;
   }
 
@@ -255,9 +258,10 @@ async function initEditor(templateId?: string): Promise<void> {
     const config: TemplaticalCloudEditorConfig = {
       container: editorContainer.value,
       auth: buildAuthConfig(),
+      locale: locale.value,
       mergeTags: {
         syntax: "liquid" as const,
-        tags: mergeTagList,
+        tags: mergeTagList.value,
       },
       customBlocks: customBlockDefinitions,
       onRequestMergeTag: requestMergeTag,
@@ -306,7 +310,9 @@ async function initEditor(templateId?: string): Promise<void> {
     }
   } catch (err) {
     console.error("[Cloud SDK] Init failed:", err);
-    initError.value = `Failed to initialize: ${(err as Error).message}`;
+    initError.value = format(t.value.cloud.errors.initFailed, {
+      message: (err as Error).message,
+    });
   }
 }
 
@@ -332,6 +338,12 @@ function goToOss(): void {
   window.location.reload();
 }
 
+watch(locale, () => {
+  if (screen.value === "editor" && editor.value) {
+    initEditor(currentTemplateId.value ?? undefined);
+  }
+});
+
 onUnmounted(() => {
   editor.value?.unmount();
   if (originalFetch) {
@@ -346,8 +358,18 @@ onUnmounted(() => {
     <!-- Start Screen -->
     <template v-if="screen === 'start'">
       <main
-        class="flex flex-col items-center justify-center min-h-screen px-6 py-12 gap-4"
+        class="relative flex flex-col items-center justify-center min-h-screen px-6 py-12 gap-4"
       >
+        <div class="absolute top-4 right-4">
+          <select
+            v-model="locale"
+            class="h-8 px-2 pr-7 text-[12px] font-medium text-gray-500 bg-white border border-gray-200 rounded-md cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3Csvg_xmlns=%27http://www.w3.org/2000/svg%27_width=%2712%27_height=%2712%27_viewBox=%270_0_24_24%27_fill=%27none%27_stroke=%27%236b7280%27_stroke-width=%272%27_stroke-linecap=%27round%27_stroke-linejoin=%27round%27%3E%3Cpath_d=%27m6_9_6_6_6-6%27/%3E%3C/svg%3E')] bg-no-repeat bg-[position:right_6px_center] transition-colors duration-150 hover:text-gray-900 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            <option v-for="loc in supportedLocales" :key="loc" :value="loc">
+              {{ loc.toUpperCase() }}
+            </option>
+          </select>
+        </div>
         <div class="max-w-[800px] w-full text-center">
           <div class="flex items-center gap-3 mb-2 justify-center">
             <LogoIcon />
@@ -355,12 +377,12 @@ onUnmounted(() => {
               <h1
                 class="m-0 text-[22px] font-semibold text-gray-900 tracking-[-0.01em]"
               >
-                Templatical Cloud
+                {{ t.cloud.title }}
               </h1>
             </div>
           </div>
           <p class="mb-0 text-gray-500 text-sm leading-normal">
-            Everything in the OSS editor, plus cloud-powered features.
+            {{ t.cloud.subtitle }}
           </p>
         </div>
 
@@ -370,7 +392,11 @@ onUnmounted(() => {
           <div
             class="flex-1 bg-white border border-gray-200 rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.06)]"
           >
-            <div role="tablist" aria-label="Authentication method" class="flex items-center gap-1 mb-4">
+            <div
+              role="tablist"
+              :aria-label="t.a11y.authMethod"
+              class="flex items-center gap-1 mb-4"
+            >
               <button
                 role="tab"
                 :aria-selected="settings.authMode === 'quick'"
@@ -383,7 +409,7 @@ onUnmounted(() => {
                 "
                 @click="settings.authMode = 'quick'"
               >
-                API Credentials
+                {{ t.cloud.auth.apiCredentials }}
               </button>
               <button
                 role="tab"
@@ -397,21 +423,24 @@ onUnmounted(() => {
                 "
                 @click="settings.authMode = 'custom'"
               >
-                Auth Proxy
+                {{ t.cloud.auth.authProxy }}
               </button>
             </div>
 
             <!-- API Credentials -->
-            <div v-if="settings.authMode === 'quick'" id="auth-panel-quick" role="tabpanel">
+            <div
+              v-if="settings.authMode === 'quick'"
+              id="auth-panel-quick"
+              role="tabpanel"
+            >
               <p class="m-0 mb-4 text-[13px] text-gray-500 leading-relaxed">
-                Use your project's API credentials to connect directly. Meant
-                only for development and testing — no backend required.
+                {{ t.cloud.auth.apiDescription }}
               </p>
               <div class="flex-1 mb-2.5">
                 <label
                   for="cloud-client-id"
                   class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                  >Client ID</label
+                  >{{ t.cloud.auth.clientId }}</label
                 >
                 <input
                   id="cloud-client-id"
@@ -429,7 +458,7 @@ onUnmounted(() => {
                 <label
                   for="cloud-client-secret"
                   class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                  >Client Secret</label
+                  >{{ t.cloud.auth.clientSecret }}</label
                 >
                 <input
                   id="cloud-client-secret"
@@ -447,7 +476,7 @@ onUnmounted(() => {
                 <label
                   for="cloud-tenant"
                   class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                  >Tenant</label
+                  >{{ t.cloud.auth.tenant }}</label
                 >
                 <input
                   id="cloud-tenant"
@@ -482,10 +511,10 @@ onUnmounted(() => {
                   >
                     <path d="m9 18 6-6-6-6" />
                   </svg>
-                  Identity & Signing
+                  {{ t.cloud.auth.identitySigning }}
                   <span
                     class="font-normal normal-case tracking-normal opacity-70"
-                    >optional</span
+                    >{{ t.cloud.auth.optional }}</span
                   >
                 </button>
                 <Transition name="pg-collapsible">
@@ -494,7 +523,7 @@ onUnmounted(() => {
                       <label
                         for="cloud-signing-key"
                         class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                        >Signing Key</label
+                        >{{ t.cloud.auth.signingKey }}</label
                       >
                       <input
                         id="cloud-signing-key"
@@ -506,11 +535,14 @@ onUnmounted(() => {
                       <p
                         class="m-0 mt-1.5 text-[11px] text-gray-400 leading-snug"
                       >
-                        Found in your Templatical Cloud project settings under
-                        API Keys.
+                        {{ t.cloud.auth.signingKeyHelp }}
                       </p>
                     </div>
-                    <div role="tablist" aria-label="Realtime mode" class="flex items-center gap-1 mb-3">
+                    <div
+                      role="tablist"
+                      :aria-label="t.a11y.realtimeMode"
+                      class="flex items-center gap-1 mb-3"
+                    >
                       <button
                         role="tab"
                         :aria-selected="settings.realtimeMode === 'collab'"
@@ -522,7 +554,7 @@ onUnmounted(() => {
                         "
                         @click="settings.realtimeMode = 'collab'"
                       >
-                        Collaboration
+                        {{ t.cloud.auth.collaboration }}
                       </button>
                       <button
                         role="tab"
@@ -535,22 +567,18 @@ onUnmounted(() => {
                         "
                         @click="settings.realtimeMode = 'mcp'"
                       >
-                        MCP
+                        {{ t.cloud.auth.mcp }}
                       </button>
                     </div>
                     <p class="m-0 mb-3 text-[11px] text-gray-400 leading-snug">
-                      These modes are mutually exclusive. Collaboration lets
-                      multiple people edit together in real time with presence
-                      and block locking. MCP lets you connect your AI agent to
-                      the editor so it can read and modify the template —
-                      changes appear live as the agent works.
+                      {{ t.cloud.auth.realtimeDescription }}
                     </p>
                     <div class="flex gap-3 mb-2.5">
                       <div class="flex-1">
                         <label
                           for="cloud-user-name"
                           class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                          >User Name</label
+                          >{{ t.cloud.auth.userName }}</label
                         >
                         <input
                           id="cloud-user-name"
@@ -564,7 +592,7 @@ onUnmounted(() => {
                         <label
                           for="cloud-test-email"
                           class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                          >Test Email</label
+                          >{{ t.cloud.auth.testEmail }}</label
                         >
                         <input
                           id="cloud-test-email"
@@ -601,9 +629,7 @@ onUnmounted(() => {
                   <line x1="12" x2="12.01" y1="17" y2="17" />
                 </svg>
                 <p class="m-0 text-[11px] text-amber-700 leading-snug">
-                  Credentials are stored in browser storage and sent directly
-                  from the browser. For production, use the Auth Proxy tab to
-                  route token requests through your backend.
+                  {{ t.cloud.auth.credentialsWarning }}
                 </p>
               </div>
             </div>
@@ -611,15 +637,13 @@ onUnmounted(() => {
             <!-- Auth Proxy -->
             <div v-else id="auth-panel-custom" role="tabpanel">
               <p class="m-0 mb-4 text-[13px] text-gray-500 leading-relaxed">
-                Point the SDK to your backend token endpoint. The editor will
-                send a request to this URL to retrieve an access token before
-                connecting.
+                {{ t.cloud.auth.proxyDescription }}
               </p>
               <div class="flex-1 mb-2.5">
                 <label
                   for="cloud-auth-url"
                   class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                  >Auth Endpoint</label
+                  >{{ t.cloud.auth.authEndpoint }}</label
                 >
                 <input
                   id="cloud-auth-url"
@@ -635,7 +659,7 @@ onUnmounted(() => {
                   <label
                     for="cloud-auth-method"
                     class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                    >Method</label
+                    >{{ t.cloud.auth.method }}</label
                   >
                   <select
                     id="cloud-auth-method"
@@ -650,7 +674,7 @@ onUnmounted(() => {
                   <label
                     for="cloud-auth-credentials"
                     class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                    >Credentials</label
+                    >{{ t.cloud.auth.credentials }}</label
                   >
                   <select
                     id="cloud-auth-credentials"
@@ -667,10 +691,10 @@ onUnmounted(() => {
                 <label
                   for="cloud-auth-headers"
                   class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                  >Headers
+                  >{{ t.cloud.auth.headers }}
                   <span
                     class="font-normal normal-case tracking-normal opacity-70"
-                    >JSON, optional</span
+                    >{{ t.cloud.auth.jsonOptional }}</span
                   ></label
                 >
                 <textarea
@@ -685,10 +709,10 @@ onUnmounted(() => {
                 <label
                   for="cloud-auth-body"
                   class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                  >Body
+                  >{{ t.cloud.auth.body }}
                   <span
                     class="font-normal normal-case tracking-normal opacity-70"
-                    >JSON, optional</span
+                    >{{ t.cloud.auth.jsonOptional }}</span
                   ></label
                 >
                 <textarea
@@ -709,15 +733,15 @@ onUnmounted(() => {
               <h2
                 class="m-0 mb-3 text-[11px] font-semibold text-gray-500 uppercase tracking-[0.5px]"
               >
-                Load Existing Template
+                {{ t.cloud.template.loadExisting }}
               </h2>
               <div class="flex gap-2">
                 <input
                   v-model="settings.templateUuid"
                   type="text"
-                  aria-label="Template UUID"
+                  :aria-label="t.a11y.templateUuid"
                   class="pg-input flex-1 py-3 px-4 font-sans placeholder:text-gray-500"
-                  placeholder="Enter template UUID..."
+                  :placeholder="t.cloud.template.enterUuid"
                   @keydown.enter="loadTemplate"
                 />
                 <button
@@ -725,7 +749,7 @@ onUnmounted(() => {
                   :disabled="isLoading"
                   @click="loadTemplate"
                 >
-                  Load
+                  {{ t.cloud.template.load }}
                 </button>
               </div>
               <p v-if="loadError" class="text-red-500 text-[13px] mt-2 mb-0">
@@ -736,7 +760,7 @@ onUnmounted(() => {
             <div
               class="flex items-center gap-4 my-6 text-gray-500 text-xs uppercase tracking-[0.5px] before:content-[''] before:flex-1 before:h-px before:bg-gray-200 after:content-[''] after:flex-1 after:h-px after:bg-gray-200"
             >
-              <span>or</span>
+              <span>{{ t.common.or }}</span>
             </div>
 
             <button
@@ -755,7 +779,7 @@ onUnmounted(() => {
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Start from Scratch
+              {{ t.cloud.template.startFromScratch }}
             </button>
           </div>
         </div>
@@ -776,7 +800,7 @@ onUnmounted(() => {
             >
               <path d="M12 8V4H8" />
               <rect width="16" height="12" x="4" y="8" rx="2" /></svg
-            >Version History
+            >{{ t.cloud.features.versionHistory }}
           </li>
           <li class="flex items-center gap-2">
             <svg
@@ -790,7 +814,7 @@ onUnmounted(() => {
               aria-hidden="true"
             >
               <path d="M12 3v18m-6-6 6 6 6-6" /></svg
-            >Auto Save
+            >{{ t.cloud.features.autoSave }}
           </li>
           <li class="flex items-center gap-2">
             <svg
@@ -806,7 +830,7 @@ onUnmounted(() => {
               <path
                 d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
               /></svg
-            >AI Writing
+            >{{ t.cloud.features.aiWriting }}
           </li>
           <li class="flex items-center gap-2">
             <svg
@@ -823,7 +847,7 @@ onUnmounted(() => {
               <circle cx="9" cy="7" r="4" />
               <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg
-            >Real-time Collaboration
+            >{{ t.cloud.features.realtimeCollaboration }}
           </li>
           <li class="flex items-center gap-2">
             <svg
@@ -839,7 +863,7 @@ onUnmounted(() => {
               <rect width="18" height="18" x="3" y="3" rx="2" />
               <circle cx="9" cy="9" r="2" />
               <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg
-            >Media Library
+            >{{ t.cloud.features.mediaLibrary }}
           </li>
           <li class="flex items-center gap-2">
             <svg
@@ -855,7 +879,7 @@ onUnmounted(() => {
               <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
               <polyline points="16 6 12 2 8 6" />
               <line x1="12" x2="12" y1="2" y2="15" /></svg
-            >Saved Modules
+            >{{ t.cloud.features.savedModules }}
           </li>
           <li class="flex items-center gap-2">
             <svg
@@ -872,7 +896,7 @@ onUnmounted(() => {
                 d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
               />
               <line x1="4" x2="4" y1="22" y2="15" /></svg
-            >Test Email
+            >{{ t.cloud.features.testEmail }}
           </li>
           <li class="flex items-center gap-2">
             <svg
@@ -888,7 +912,7 @@ onUnmounted(() => {
               <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
               <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
               <line x1="12" x2="12" y1="19" y2="22" /></svg
-            >MCP Integration
+            >{{ t.cloud.features.mcpIntegration }}
           </li>
           <li class="flex items-center gap-2">
             <svg
@@ -902,7 +926,7 @@ onUnmounted(() => {
               aria-hidden="true"
             >
               <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" /></svg
-            >Commenting
+            >{{ t.cloud.features.commenting }}
           </li>
           <li class="flex items-center gap-2">
             <svg
@@ -917,7 +941,7 @@ onUnmounted(() => {
             >
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
               <polyline points="22 4 12 14.01 9 11.01" /></svg
-            >Template Scoring
+            >{{ t.cloud.features.templateScoring }}
           </li>
           <li class="flex items-center gap-2">
             <svg
@@ -934,7 +958,7 @@ onUnmounted(() => {
               <path d="m12 2 3.5 3.5L12 9 8.5 5.5 12 2Z" />
               <path d="M18.5 8.5 22 12l-3.5 3.5L15 12l3.5-3.5Z" />
               <path d="m12 15 3.5 3.5L12 22l-3.5-3.5L12 15Z" /></svg
-            >White Label
+            >{{ t.cloud.features.whiteLabel }}
           </li>
           <li class="flex items-center gap-2">
             <a
@@ -942,7 +966,7 @@ onUnmounted(() => {
               target="_blank"
               rel="noopener noreferrer"
               class="flex items-center gap-2 text-gray-500 no-underline hover:text-gray-900"
-              >and more &rarr;</a
+              >{{ t.cloud.features.andMore }}</a
             >
           </li>
         </ul>
@@ -951,7 +975,7 @@ onUnmounted(() => {
           class="bg-transparent border-none text-gray-500 text-[13px] font-sans cursor-pointer transition-colors duration-150 hover:text-gray-900 focus-visible:outline-none focus-visible:text-gray-900"
           @click="goToOss"
         >
-          &larr; Back to OSS Playground
+          {{ t.cloud.backToOss }}
         </button>
       </main>
     </template>
@@ -978,11 +1002,11 @@ onUnmounted(() => {
                 stroke-linejoin="round"
               />
             </svg>
-            Back
+            {{ t.cloud.editor.back }}
           </button>
           <span
             class="inline-block text-[11px] font-medium py-0.5 px-1.5 rounded-[4px] bg-gray-50 border border-gray-200 text-gray-500"
-            >Cloud</span
+            >{{ t.cloud.editor.cloud }}</span
           >
           <code
             v-if="currentTemplateId"
@@ -992,15 +1016,23 @@ onUnmounted(() => {
           <span
             v-else
             class="text-xs text-gray-500 font-mono py-1 px-2 bg-gray-50 border border-gray-200 rounded-[4px]"
-            >New Template</span
+            >{{ t.cloud.editor.newTemplate }}</span
           >
         </div>
         <div class="flex items-center gap-2">
+          <select
+            v-model="locale"
+            class="h-8 px-2 pr-7 text-[12px] font-medium text-gray-500 bg-white border border-gray-200 rounded-md cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3Csvg_xmlns=%27http://www.w3.org/2000/svg%27_width=%2712%27_height=%2712%27_viewBox=%270_0_24_24%27_fill=%27none%27_stroke=%27%236b7280%27_stroke-width=%272%27_stroke-linecap=%27round%27_stroke-linejoin=%27round%27%3E%3Cpath_d=%27m6_9_6_6_6-6%27/%3E%3C/svg%3E')] bg-no-repeat bg-[position:right_6px_center] transition-colors duration-150 hover:text-gray-900 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            <option v-for="loc in supportedLocales" :key="loc" :value="loc">
+              {{ loc.toUpperCase() }}
+            </option>
+          </select>
           <button
             class="pg-cta h-8 px-3 text-[13px] rounded-md"
             @click="saveTemplate"
           >
-            Save
+            {{ t.cloud.editor.save }}
           </button>
         </div>
       </header>
@@ -1010,7 +1042,12 @@ onUnmounted(() => {
           class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center"
         >
           <p class="m-0 text-sm text-red-500">{{ initError }}</p>
-          <button class="pg-toolbar-btn" @click="initEditor(currentTemplateId ?? undefined)">Retry</button>
+          <button
+            class="pg-toolbar-btn"
+            @click="initEditor(currentTemplateId ?? undefined)"
+          >
+            {{ t.cloud.editor.retry }}
+          </button>
         </div>
         <div v-else ref="editorContainer" class="flex-1 min-w-0" />
       </main>
