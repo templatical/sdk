@@ -75,7 +75,7 @@ function saveSettings(): void {
 }
 
 function buildAuthConfig(): TemplaticalCloudEditorConfig['auth'] {
-    const baseUrl = (import.meta.env.VITE_CLOUD_BASE_URL || 'https://templatical.com').replace(/\/$/, '');
+    const baseUrl = (import.meta.env.VITE_CLOUD_BASE_URL || 'https://cloud.templatical.com').replace(/\/$/, '');
 
     if (authMode.value === 'quick') {
         return {

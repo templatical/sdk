@@ -34,7 +34,6 @@ import "./styles/index.css";
 
 const props = defineProps<{
   config: TemplaticalEditorConfig;
-  headless?: boolean;
 }>();
 
 // --- i18n ---
@@ -326,9 +325,8 @@ defineExpose({
       </div>
     </template>
     <template v-else>
-      <!-- Header — absolute, full width, above everything (hidden in headless mode) -->
+      <!-- Header — absolute, full width, above everything -->
       <header
-        v-if="!headless"
         class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[1fr_auto_1fr] tpl:items-center tpl:px-4"
         style="
           background-color: color-mix(in srgb, var(--tpl-bg) 80%, transparent);
@@ -389,7 +387,7 @@ defineExpose({
           editor.state.previewMode
             ? 'tpl:left-0 tpl:right-0'
             : 'tpl:left-12 tpl:right-[320px]',
-          headless ? 'tpl:top-0' : 'tpl:top-14',
+          'tpl:top-14',
         ]"
       >
         <!-- Restore hidden blocks button -->
