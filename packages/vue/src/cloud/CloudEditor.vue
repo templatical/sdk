@@ -77,7 +77,7 @@ import {
   shallowRef,
   watch,
 } from "vue";
-import { onClickOutside } from "@vueuse/core";
+import { onClickOutside, useEventListener, useTimeoutFn } from "@vueuse/core";
 import {
   AlertCircle,
   Clock,
@@ -563,7 +563,7 @@ function showCollabUndoWarning(): void {
 
   collabUndoWarningFired = true;
   collabUndoWarningVisible.value = true;
-  setTimeout(() => {
+  useTimeoutFn(() => {
     collabUndoWarningVisible.value = false;
   }, 4000);
 }
@@ -1262,14 +1262,14 @@ if (props.config.darkMode === true) {
 // Lifecycle
 // ---------------------------------------------------------------------------
 
+useEventListener(document, "keydown", handleKeydown);
+
 onMounted(() => {
   isMac.value = navigator.platform.toUpperCase().includes("MAC");
-  document.addEventListener("keydown", handleKeydown);
   initialize();
 });
 
 onUnmounted(() => {
-  document.removeEventListener("keydown", handleKeydown);
   websocket.disconnect();
   history.destroy();
   autoSave.destroy();

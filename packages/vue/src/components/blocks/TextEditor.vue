@@ -23,6 +23,7 @@ import {
   Underline,
   X,
 } from "lucide-vue-next";
+import { useEventListener } from "@vueuse/core";
 import {
   inject,
   onBeforeUnmount,
@@ -199,12 +200,11 @@ function handleClickOutside(event: MouseEvent): void {
   emit("done");
 }
 
+useEventListener(document, "mousedown", handleClickOutside);
+
 onBeforeUnmount(() => {
-  document.removeEventListener("mousedown", handleClickOutside);
   editor.value?.destroy();
 });
-
-document.addEventListener("mousedown", handleClickOutside);
 
 function openLinkDialog(): void {
   const previousUrl = editor.value?.getAttributes("link").href || "";

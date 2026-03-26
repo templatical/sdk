@@ -20,13 +20,19 @@ const editorContainer = ref<HTMLElement | null>(null);
 const editor = ref<TemplaticalCloudEditor | null>(null);
 
 // Auth config fields — persisted to localStorage
-const authSaved = ref(false);
 const authMode = ref<'quick' | 'custom'>('quick');
 
 // Quick Start fields
 const clientId = ref('');
 const clientSecret = ref('');
 const tenant = ref('');
+
+// Signing / identity fields
+const signingKey = ref('');
+const userName = ref('Playground User');
+const testEmailAddress = ref('');
+const realtimeMode = ref<'collab' | 'mcp'>('collab');
+const signingOpen = ref(false);
 
 // Auth Proxy fields
 const authUrl = ref('');
@@ -49,6 +55,10 @@ function loadSettings(): void {
         if (saved.authCredentials) authCredentials.value = saved.authCredentials;
         if (saved.authHeaders) authHeaders.value = saved.authHeaders;
         if (saved.authBody) authBody.value = saved.authBody;
+        if (saved.signingKey) signingKey.value = saved.signingKey;
+        if (saved.userName) userName.value = saved.userName;
+        if (saved.testEmailAddress) testEmailAddress.value = saved.testEmailAddress;
+        if (saved.realtimeMode) realtimeMode.value = saved.realtimeMode;
         if (saved.templateUuid) templateUuid.value = saved.templateUuid;
     } catch {
         // ignore corrupt localStorage
@@ -67,6 +77,10 @@ function saveSettings(): void {
             authCredentials: authCredentials.value,
             authHeaders: authHeaders.value,
             authBody: authBody.value,
+            signingKey: signingKey.value,
+            userName: userName.value,
+            testEmailAddress: testEmailAddress.value,
+            realtimeMode: realtimeMode.value,
             templateUuid: templateUuid.value,
         }));
     } catch {
@@ -78,12 +92,14 @@ function buildAuthConfig(): TemplaticalCloudEditorConfig['auth'] {
     const baseUrl = (import.meta.env.VITE_CLOUD_BASE_URL || 'https://cloud.templatical.com').replace(/\/$/, '');
 
     if (authMode.value === 'quick') {
+        tokenAuthUrl = `${baseUrl}/api/v1/auth/token`;
         return {
-            url: `${baseUrl}/api/v1/auth/token`,
+            url: tokenAuthUrl,
             baseUrl,
             requestOptions: {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'omit',
                 body: {
                     client_id: clientId.value.trim(),
                     client_secret: clientSecret.value.trim(),
@@ -93,8 +109,9 @@ function buildAuthConfig(): TemplaticalCloudEditorConfig['auth'] {
         };
     }
 
+    tokenAuthUrl = authUrl.value.trim();
     const config: TemplaticalCloudEditorConfig['auth'] = {
-        url: authUrl.value.trim(),
+        url: tokenAuthUrl,
         baseUrl,
         requestOptions: {
             method: authMethod.value,
@@ -142,6 +159,54 @@ function validateAuth(): boolean {
     isAuthValid.value = true;
     return true;
 }
+
+async function hmacSha256(key: string, message: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        encoder.encode(key),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign'],
+    );
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(message));
+    return Array.from(new Uint8Array(signature))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+let tokenAuthUrl: string | null = null;
+const originalFetch = window.fetch;
+
+window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const response = await originalFetch(input, init);
+
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const key = signingKey.value.trim();
+    if (!key || !tokenAuthUrl || !url.includes(tokenAuthUrl)) {
+        return response;
+    }
+
+    const data = await response.json();
+
+    const userId = crypto.randomUUID();
+    const name = userName.value.trim() || 'Playground User';
+    const userSignature = await hmacSha256(key, userId);
+    data.user = { id: userId, name, signature: userSignature };
+
+    const email = testEmailAddress.value.trim();
+    if (email) {
+        const emails = [email];
+        const testEmailSignature = await hmacSha256(key, JSON.stringify(emails));
+        data.test_email = { allowed_emails: emails, signature: testEmailSignature };
+    }
+
+    return new Response(JSON.stringify(data), {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+    });
+};
 
 const mergeTagList: MergeTag[] = [
     { label: 'First Name', value: '{{first_name}}' },
@@ -217,6 +282,11 @@ async function initEditor(templateId?: string): Promise<void> {
             onError: (error: Error) => {
                 console.error('[Cloud SDK]', error);
             },
+            commenting: !!(signingKey.value.trim() && userName.value.trim()),
+            ...(realtimeMode.value === 'collab'
+                ? { collaboration: { enabled: !!(signingKey.value.trim() && userName.value.trim()) } }
+                : { mcp: { enabled: true, onOperation: (payload: unknown) => console.log('[Cloud SDK] MCP operation:', payload) } }
+            ),
         };
 
         const instance = await initCloud(config);
@@ -263,6 +333,7 @@ onMounted(() => {
 
 onUnmounted(() => {
     editor.value?.unmount();
+    window.fetch = originalFetch;
 });
 </script>
 
@@ -309,7 +380,7 @@ onUnmounted(() => {
                                     id="cloud-client-id"
                                     v-model="clientId"
                                     type="text"
-                                    class="pg-input font-mono"
+                                    class="pg-input"
                                     :class="{ '!border-red-500': !isAuthValid && !clientId.trim() }"
                                     placeholder="your-client-id"
                                 />
@@ -320,7 +391,7 @@ onUnmounted(() => {
                                     id="cloud-client-secret"
                                     v-model="clientSecret"
                                     type="password"
-                                    class="pg-input font-mono"
+                                    class="pg-input"
                                     :class="{ '!border-red-500': !isAuthValid && !clientSecret.trim() }"
                                     placeholder="your-client-secret"
                                 />
@@ -331,14 +402,82 @@ onUnmounted(() => {
                                     id="cloud-tenant"
                                     v-model="tenant"
                                     type="text"
-                                    class="pg-input font-mono"
+                                    class="pg-input"
                                     :class="{ '!border-red-500': !isAuthValid && !tenant.trim() }"
                                     placeholder="tenant-slug-or-uuid"
                                 />
                             </div>
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <button
+                                    class="m-0 mb-3 text-[11px] font-semibold text-gray-500 uppercase tracking-[0.5px] cursor-pointer flex items-center gap-1.5 select-none bg-transparent border-none p-0"
+                                    @click="signingOpen = !signingOpen"
+                                >
+                                    <svg
+                                        class="shrink-0 transition-transform duration-150"
+                                        :class="signingOpen ? 'rotate-90' : ''"
+                                        width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+                                    ><path d="m9 18 6-6-6-6"/></svg>
+                                    Identity & Signing <span class="font-normal normal-case tracking-normal opacity-70">optional</span>
+                                </button>
+                                <Transition name="pg-collapsible">
+                                    <div v-show="signingOpen">
+                                        <div class="flex-1 mb-2.5">
+                                            <label for="cloud-signing-key" class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]">Signing Key</label>
+                                            <input
+                                                id="cloud-signing-key"
+                                                v-model="signingKey"
+                                                type="password"
+                                                class="pg-input"
+                                                placeholder="Project signing key"
+                                            />
+                                            <p class="m-0 mt-1.5 text-[11px] text-gray-400 leading-snug">Found in your Templatical Cloud project settings under API Keys.</p>
+                                        </div>
+                                        <div class="flex items-center gap-1 mb-3">
+                                            <button
+                                                class="h-7 px-2.5 text-[12px] font-medium rounded-md border-none cursor-pointer transition-colors duration-150"
+                                                :class="realtimeMode === 'collab' ? 'bg-gray-100 text-gray-900' : 'bg-transparent text-gray-400 hover:text-gray-900 hover:bg-gray-50'"
+                                                @click="realtimeMode = 'collab'"
+                                            >
+                                                Collaboration
+                                            </button>
+                                            <button
+                                                class="h-7 px-2.5 text-[12px] font-medium rounded-md border-none cursor-pointer transition-colors duration-150"
+                                                :class="realtimeMode === 'mcp' ? 'bg-gray-100 text-gray-900' : 'bg-transparent text-gray-400 hover:text-gray-900 hover:bg-gray-50'"
+                                                @click="realtimeMode = 'mcp'"
+                                            >
+                                                MCP
+                                            </button>
+                                        </div>
+                                        <p class="m-0 mb-3 text-[11px] text-gray-400 leading-snug">These modes are mutually exclusive. Collaboration lets multiple people edit together in real time with presence and block locking. MCP lets you connect your AI agent to the editor so it can read and modify the template — changes appear live as the agent works.</p>
+                                        <div class="flex gap-3 mb-2.5">
+                                            <div class="flex-1">
+                                                <label for="cloud-user-name" class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]">User Name</label>
+                                                <input
+                                                    id="cloud-user-name"
+                                                    v-model="userName"
+                                                    type="text"
+                                                    class="pg-input"
+                                                    placeholder="Playground User"
+                                                />
+                                            </div>
+                                            <div class="flex-1">
+                                                <label for="cloud-test-email" class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]">Test Email</label>
+                                                <input
+                                                    id="cloud-test-email"
+                                                    v-model="testEmailAddress"
+                                                    type="email"
+                                                    class="pg-input"
+                                                    placeholder="you@example.com"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Transition>
+                            </div>
+
                             <div class="mt-3 flex gap-2 items-start rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5">
                                 <svg class="shrink-0 mt-px text-amber-500" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-                                <p class="m-0 text-[11px] text-amber-700 leading-snug">Credentials are sent directly from the browser. For production, use the Auth Proxy tab to route token requests through your backend.</p>
+                                <p class="m-0 text-[11px] text-amber-700 leading-snug">Credentials are stored in browser storage and sent directly from the browser. For production, use the Auth Proxy tab to route token requests through your backend.</p>
                             </div>
                         </div>
 
@@ -351,7 +490,7 @@ onUnmounted(() => {
                                     id="cloud-auth-url"
                                     v-model="authUrl"
                                     type="text"
-                                    class="pg-input font-sans"
+                                    class="pg-input"
                                     :class="{ '!border-red-500': !isAuthValid }"
                                     placeholder="https://your-app.com/api/templatical/token"
                                 />
@@ -378,7 +517,7 @@ onUnmounted(() => {
                                 <textarea
                                     id="cloud-auth-headers"
                                     v-model="authHeaders"
-                                    class="pg-input font-mono !text-xs resize-y min-h-10"
+                                    class="pg-input !text-xs resize-y min-h-10"
                                     rows="2"
                                     placeholder='{"Authorization": "Bearer ..."}'
                                 ></textarea>
@@ -388,19 +527,13 @@ onUnmounted(() => {
                                 <textarea
                                     id="cloud-auth-body"
                                     v-model="authBody"
-                                    class="pg-input font-mono !text-xs resize-y min-h-10"
+                                    class="pg-input !text-xs resize-y min-h-10"
                                     rows="2"
                                     placeholder='{"project_id": "..."}'
                                 ></textarea>
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                            <p class="m-0 text-xs text-gray-500 leading-snug opacity-80">Persisted in browser storage.</p>
-                            <button class="py-1.5 px-3.5 text-[13px] border border-gray-200 rounded-md bg-white text-gray-500 font-medium font-sans cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50" @click="saveSettings(); authSaved = true; setTimeout(() => authSaved = false, 2000)">
-                                {{ authSaved ? 'Saved' : 'Save' }}
-                            </button>
-                        </div>
                     </div>
 
                     <div class="flex-1 bg-white border border-gray-200 rounded-2xl p-8 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">

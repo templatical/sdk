@@ -71,6 +71,7 @@ import {
   X,
 } from "lucide-vue-next";
 import { computed, inject, ref, watch } from "vue";
+import { useTimeoutFn } from "@vueuse/core";
 
 const props = defineProps<{
   block: Block;
@@ -207,7 +208,7 @@ function openMediaBrowser(): void {
   config?.onRequestMedia?.((url: string) => {
     updateField("src", url);
     pulseSrc.value = true;
-    setTimeout(() => {
+    useTimeoutFn(() => {
       pulseSrc.value = false;
     }, 1000);
   });

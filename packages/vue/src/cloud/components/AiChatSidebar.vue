@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-vue-next";
 import { inject, nextTick, ref, watch } from "vue";
+import { useIntervalFn, useTimeoutFn } from "@vueuse/core";
 
 const props = defineProps<{
   visible: boolean;
@@ -41,26 +42,31 @@ const promptInput = ref("");
 const messagesContainer = ref<HTMLElement | null>(null);
 const historyLoaded = ref(false);
 const visibleSuggestionCount = ref(0);
-let suggestionTimer: ReturnType<typeof setTimeout> | null = null;
+
+const { pause: pauseReveal, resume: resumeReveal } = useIntervalFn(
+  () => {
+    const count = aiChat.suggestions.value?.length ?? 0;
+    if (visibleSuggestionCount.value < count) {
+      visibleSuggestionCount.value++;
+    } else {
+      pauseReveal();
+    }
+  },
+  150,
+  { immediate: false },
+);
 
 watch(
   () => aiChat.suggestions.value?.length ?? 0,
   (count) => {
+    pauseReveal();
     if (count === 0) {
       visibleSuggestionCount.value = 0;
       return;
     }
 
     visibleSuggestionCount.value = 0;
-    let i = 0;
-    const reveal = (): void => {
-      i++;
-      visibleSuggestionCount.value = i;
-      if (i < count) {
-        suggestionTimer = setTimeout(reveal, 150);
-      }
-    };
-    suggestionTimer = setTimeout(reveal, 100);
+    useTimeoutFn(() => resumeReveal(), 100);
   },
 );
 
@@ -122,10 +128,7 @@ function stripJsonBlock(text: string): string {
 }
 
 function handleSuggestionClick(suggestion: string): void {
-  if (suggestionTimer) {
-    clearTimeout(suggestionTimer);
-    suggestionTimer = null;
-  }
+  pauseReveal();
   promptInput.value = suggestion;
   handleSend();
 }

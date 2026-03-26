@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { useToggle } from "@vueuse/core";
 
 export type EmojiCategoryKey = "smileys" | "gestures" | "objects";
 
@@ -116,10 +116,10 @@ const emojiCategories: EmojiCategory[] = [
 ];
 
 export function useEmoji() {
-  const isOpen = ref(false);
+  const [isOpen, toggleValue] = useToggle(false);
 
   function toggle(): void {
-    isOpen.value = !isOpen.value;
+    toggleValue();
   }
 
   function close(): void {

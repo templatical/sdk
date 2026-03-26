@@ -7,6 +7,7 @@ import {
   ref,
   shallowRef,
 } from "vue";
+import { useEventListener } from "@vueuse/core";
 import type { TemplaticalEditorConfig } from "./index";
 import {
   useEditor,
@@ -281,10 +282,11 @@ provide(
 );
 
 // --- Lifecycle ---
+useEventListener(document, "keydown", handleKeyboard);
+
 onMounted(async () => {
   await initTranslations();
   isReady.value = true;
-  document.addEventListener("keydown", handleKeyboard);
   installPlugins();
 
   // Load custom fonts
@@ -292,7 +294,6 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  document.removeEventListener("keydown", handleKeyboard);
   autoSave?.destroy();
   history.destroy();
   for (const plugin of installedPlugins) {
@@ -441,32 +442,32 @@ defineExpose({
             -webkit-backdrop-filter: blur(8px);
           "
         >
-        <span>{{ t("footer.poweredBy") }}</span>
-        <a
-          href="https://templatical.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="tpl:inline-flex tpl:items-center tpl:gap-1 tpl:font-medium tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80"
-          style="color: var(--tpl-text-muted); text-decoration: none"
-        >
-          <img
-            width="14"
-            height="14"
-            src="https://templatical.com/logo.svg"
-            alt=""
-          />
-          Templatical
-        </a>
-        <span style="color: var(--tpl-border)">·</span>
-        <a
-          href="https://github.com/templatical/sdk"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80"
-          style="color: var(--tpl-text-dim); text-decoration: none"
-        >
-          {{ t("footer.openSource") }}
-        </a>
+          <span>{{ t("footer.poweredBy") }}</span>
+          <a
+            href="https://templatical.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="tpl:inline-flex tpl:items-center tpl:gap-1 tpl:font-medium tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80"
+            style="color: var(--tpl-text-muted); text-decoration: none"
+          >
+            <img
+              width="14"
+              height="14"
+              src="https://templatical.com/logo.svg"
+              alt=""
+            />
+            Templatical
+          </a>
+          <span style="color: var(--tpl-border)">·</span>
+          <a
+            href="https://github.com/templatical/sdk"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80"
+            style="color: var(--tpl-text-dim); text-decoration: none"
+          >
+            {{ t("footer.openSource") }}
+          </a>
         </div>
       </footer>
 

@@ -25,7 +25,7 @@
 }
 
 .pg-input {
-    @apply w-full py-2.5 px-3.5 text-sm bg-white border border-gray-200 rounded-lg text-gray-900 outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-gray-400 focus:border-primary focus:shadow-primary-ring;
+    @apply w-full py-2.5 px-3.5 text-sm font-sans bg-white border border-gray-200 rounded-lg text-gray-900 outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-gray-400 focus:border-primary focus:shadow-primary-ring;
 }
 
 .pg-cta {
@@ -102,6 +102,31 @@
     animation: pg-card-in 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Collapsible */
+
+.pg-collapsible-enter-active {
+    transition: opacity 150ms cubic-bezier(0.16, 1, 0.3, 1), grid-template-rows 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    display: grid !important;
+    grid-template-rows: 1fr;
+}
+
+.pg-collapsible-leave-active {
+    transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1), grid-template-rows 120ms cubic-bezier(0.16, 1, 0.3, 1);
+    display: grid !important;
+    grid-template-rows: 1fr;
+}
+
+.pg-collapsible-enter-from,
+.pg-collapsible-leave-to {
+    opacity: 0;
+    grid-template-rows: 0fr;
+}
+
+.pg-collapsible-enter-active > *,
+.pg-collapsible-leave-active > * {
+    overflow: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .pg-modal-enter-active,
     .pg-modal-leave-active,
@@ -114,5 +139,10 @@
 
     .pg-card-stagger {
         animation-duration: 0.01ms !important;
+    }
+
+    .pg-collapsible-enter-active,
+    .pg-collapsible-leave-active {
+        transition-duration: 0.01ms !important;
     }
 }
