@@ -24,6 +24,12 @@ export default {
     templatesUsed: "{used}/{max} templates used",
   },
 
+  // Footer (OSS only)
+  footer: {
+    poweredBy: "Powered by",
+    openSource: "Open Source",
+  },
+
   // Snapshot preview banner
   snapshotPreview: {
     message: "You are previewing a previous snapshot of this template.",

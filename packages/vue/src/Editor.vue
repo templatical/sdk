@@ -421,6 +421,57 @@ defineExpose({
         </div>
       </div>
 
+      <!-- Footer — OSS branding (not shown in CloudEditor) -->
+      <footer
+        class="tpl:pointer-events-none tpl:absolute tpl:bottom-0 tpl:z-50 tpl:flex tpl:h-8 tpl:items-center tpl:justify-end tpl:pr-4 tpl:text-[9px] tpl:opacity-90 tpl:transition-all tpl:duration-300"
+        :class="[
+          editor.state.previewMode
+            ? 'tpl:left-0 tpl:right-0'
+            : 'tpl:left-12 tpl:right-[320px]',
+        ]"
+        style="color: var(--tpl-text-dim)"
+      >
+        <div
+          class="tpl:pointer-events-auto tpl:flex tpl:items-center tpl:gap-1.5 tpl:rounded-tl-lg tpl:p-1"
+          style="
+            background-color: color-mix(
+              in srgb,
+              var(--tpl-canvas-bg) 85%,
+              transparent
+            );
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+          "
+        >
+        <span>{{ t("footer.poweredBy") }}</span>
+        <a
+          href="https://templatical.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="tpl:inline-flex tpl:items-center tpl:gap-1 tpl:font-medium tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80"
+          style="color: var(--tpl-text-muted); text-decoration: none"
+        >
+          <img
+            width="14"
+            height="14"
+            src="https://templatical.com/logo.svg"
+            alt=""
+          />
+          Templatical
+        </a>
+        <span style="color: var(--tpl-border)">·</span>
+        <a
+          href="https://github.com/templatical/sdk"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80"
+          style="color: var(--tpl-text-dim); text-decoration: none"
+        >
+          {{ t("footer.openSource") }}
+        </a>
+        </div>
+      </footer>
+
       <!-- Right sidebar — absolute, below header -->
       <RightSidebar
         v-if="!editor.state.previewMode"
