@@ -50,10 +50,11 @@ bun run test
 
 # Lint & format
 bun run lint          # eslint packages/*/src
-bun run format        # prettier
+bun run format        # prettier --write (auto-fix)
+bun run format --check  # prettier check only (used in CI)
 
 # Type check
-bun run typecheck     # tsc --noEmit per package
+bun run typecheck     # tsc/vue-tsc --noEmit per package
 
 # Playground dev server
 cd apps/playground && bun run dev
@@ -61,6 +62,28 @@ cd apps/playground && bun run dev
 # Docs dev server (VitePress)
 cd apps/docs && bun run docs:dev
 ```
+
+## Quality Tools
+
+### ESLint
+
+Root config: `eslint.config.mjs` (flat config, ESLint 10).
+
+- **Plugins:** `typescript-eslint` v8 + `eslint-plugin-vue` v10 with `vue-eslint-parser`
+- **TS rules:** `no-unused-vars` set to `warn` with `argsIgnorePattern: "^_"` and `varsIgnorePattern: "^_"`. `no-explicit-any` and `no-empty-object-type` are off.
+- **Vue rules:** `multi-word-component-names`, `no-v-html`, `html-self-closing`, `max-attributes-per-line`, and several formatting rules are off (deferred to Prettier).
+- **Scope:** Only `packages/*/src/**/*.ts` and `packages/*/src/**/*.vue`. Test files, dist, node_modules, and `.d.ts` are ignored.
+
+### Prettier
+
+Uses Prettier 3 with **default settings** (no `.prettierrc` or config in `package.json`). Formats `packages/*/src/**/*.{ts,vue}`.
+
+### TypeScript
+
+- Strict mode, target ES2020, module resolution `bundler` (from `tsconfig.base.json`).
+- Each package has its own `tsconfig.json` extending the base.
+- The `vue` and `media-library` packages use `vue-tsc` for typecheck (handles `.vue` SFCs). All others use plain `tsc`.
+- **Critical:** `@templatical/core` aliases `vue` to `@vue/reactivity` at build time. In tests, `vue` resolves to the full Vue package (it's a devDependency). Don't add Vue runtime imports in core or cloud source modules.
 
 ## CDN Builds
 
@@ -111,14 +134,36 @@ Standalone package for media management. Lives in `packages/media-library/`. Bui
 - Use type-only imports for runtime-lazy packages.
 - Don't statically import packages >20KB gzipped that are only used conditionally.
 
+### i18n
+
+Two separate i18n systems, same pattern. Supported locales: `en`, `de`.
+
+- **`@templatical/vue`** — `src/i18n/` with `loadTranslations(locale)`, `getBaseLocale()`, `isLocaleSupported()`, `getSupportedLocales()`. Translations are deeply nested objects. Composable: `useI18n(override?)` with `format(template, values)` for `{placeholder}` substitution. Injected via `"translations"` key.
+- **`@templatical/media-library`** — `src/i18n/` with `loadMediaTranslations(locale)`. Flat namespace under `mediaLibrary.*`. Same `useI18n(override?)` pattern. Injected via `"translations"` key.
+
+Both use dynamic `import()` for locale files. Locale normalization strips region codes (`en-US` → `en`) and falls back to `en` for unsupported locales. When adding new i18n keys, add to both `en.ts` and `de.ts` — tests verify key parity between locales.
+
 ## Architecture
 
 - **Build:** tsup for types, core, renderer, import-beefree. Vite for vue, media-library packages and CDN bundles. **Build order matters:** media-library must build before types (types has devDep on media-library for type imports).
 - **TypeScript:** Strict mode, target ES2020, module resolution `bundler`.
 - **Vue 3** with TipTap 2 for rich text editing, VueDraggable for drag-and-drop, Tailwind CSS 4 for styling.
-- **Tests:** Vitest 3. Files in `tests/**/*.test.ts` (or `src/__tests__/*.test.ts` for import-beefree). Run per-package with `vitest run --config vitest.config.ts`.
-- **`vue` alias in core:** `@templatical/core` aliases `vue` to `@vue/reactivity` — this is critical, do not add Vue runtime imports in core or cloud modules.
 - **Block types:** 13 types (Text, Image, Button, Section, Divider, Spacer, SocialIcons, Menu, Table, Html, Video, Countdown, Custom). Block IDs use UUID v7.
+
+## Tests
+
+**Vitest 3.** All 6 packages have test coverage. Run `bun run test` to execute all.
+
+### Test conventions
+
+- **Location:** `tests/**/*.test.ts` per package (exception: import-beefree uses `src/__tests__/**/*.test.ts`).
+- **Config:** Each package has `vitest.config.ts` with `include: ['tests/**/*.test.ts']`.
+- **Patterns:** `describe`/`it` blocks, factory functions for test data (e.g. `createTextBlock()`, `createMediaItem()`).
+- **Mocking API clients:** Cloud composables create `ApiClient` internally — mock via `vi.mock('../../src/cloud/api')` then `vi.mocked(ApiClient.prototype.methodName)`.
+- **Mocking fetch for AuthManager:** Use `vi.stubGlobal('fetch', mockFn)` since AuthManager calls `fetch()` directly.
+- **SSE streaming tests:** Use a `createSSEResponse()` helper that builds a `ReadableStream` from SSE event objects. Used for ai-chat, ai-rewrite, template-scoring, design-reference.
+- **Testing inject-dependent composables:** Use a `withProvide()` helper that creates a real Vue app with `app.provide()`, runs the composable in setup, then unmounts. Used for useMergeTag, useMediaCategories, useMediaPicker. Requires DOM stubs (`dom-stubs.ts`) imported before Vue.
+- **Mock bleed across tests:** When using `vi.mock()` on a module, prototype mocks persist across tests. To check "not called in this test", snapshot `mock.calls.length` before the action and compare, rather than `not.toHaveBeenCalled()`.
 
 ## Changesets
 
@@ -128,10 +173,12 @@ Versioning and publishing use `@changesets/cli`. CI (`.github/workflows/publish.
 
 GitHub Actions (`.github/workflows/ci.yml`) on push to main + PRs:
 
-1. Lint (`bun run format --check` + `bun run lint`)
-2. Typecheck (`bun run typecheck`)
-3. Test (`bun run test`)
-4. Build (`bun run build`)
+1. **Lint** — `bun run format --check` (Prettier) + `bun run lint` (ESLint)
+2. **Typecheck** — `bun run typecheck` (tsc/vue-tsc --noEmit per package)
+3. **Test** — `bun run test` (Vitest across all 6 packages)
+4. **Build** — `bun run build` (tsup/vite per package in dependency order)
+
+All four gates must pass. Run them locally before pushing to catch issues early.
 
 ## Design Context
 
