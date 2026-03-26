@@ -10,7 +10,10 @@ import {
   createMenuBlock,
   createTableBlock,
   createSectionBlock,
+  createCountdownBlock,
+  createVideoBlock,
 } from '@templatical/types';
+import type { Block, CustomBlock } from '@templatical/types';
 import { renderBlock, RenderContext } from '../src';
 
 const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
@@ -190,5 +193,115 @@ describe('renderBlock', () => {
   it('renders empty string for empty html content', () => {
     const block = createHtmlBlock({ content: '' });
     expect(renderBlock(block, ctx)).toBe('');
+  });
+
+  it('returns empty string for countdown block (unsupported in OSS renderer)', () => {
+    const block = createCountdownBlock();
+    const result = renderBlock(block, ctx);
+    expect(result).toBe('');
+  });
+
+  it('returns empty string for unknown/invalid block type', () => {
+    const block = {
+      id: '1',
+      type: 'nonexistent' as never,
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+    } as Block;
+    const result = renderBlock(block, ctx);
+    expect(result).toBe('');
+  });
+
+  it('renders custom block with renderedHtml', () => {
+    const block: CustomBlock = {
+      id: '1',
+      type: 'custom',
+      customType: 'product-card',
+      fieldValues: {},
+      renderedHtml: '<div>Custom Content</div>',
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+    };
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('<mj-text');
+    expect(result).toContain('<div>Custom Content</div>');
+  });
+
+  it('returns empty string for custom block without renderedHtml', () => {
+    const block: CustomBlock = {
+      id: '1',
+      type: 'custom',
+      customType: 'product-card',
+      fieldValues: {},
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+    };
+    const result = renderBlock(block, ctx);
+    expect(result).toBe('');
+  });
+
+  it('returns empty string for custom block with empty renderedHtml', () => {
+    const block: CustomBlock = {
+      id: '1',
+      type: 'custom',
+      customType: 'product-card',
+      fieldValues: {},
+      renderedHtml: '',
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+    };
+    const result = renderBlock(block, ctx);
+    expect(result).toBe('');
+  });
+
+  it('returns empty string for custom block hidden on all viewports', () => {
+    const block: CustomBlock = {
+      id: '1',
+      type: 'custom',
+      customType: 'product-card',
+      fieldValues: {},
+      renderedHtml: '<div>Content</div>',
+      visibility: { desktop: false, tablet: false, mobile: false },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+    };
+    const result = renderBlock(block, ctx);
+    expect(result).toBe('');
+  });
+
+  it('adds visibility classes to custom block', () => {
+    const block: CustomBlock = {
+      id: '1',
+      type: 'custom',
+      customType: 'product-card',
+      fieldValues: {},
+      renderedHtml: '<div>Content</div>',
+      visibility: { desktop: true, tablet: false, mobile: true },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+    };
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('css-class="tpl-hide-tablet"');
+  });
+
+  it('renders video block with YouTube URL', () => {
+    const block = createVideoBlock({
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      alt: 'Video',
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('<mj-image');
+    expect(result).toContain('img.youtube.com/vi/dQw4w9WgXcQ');
+    expect(result).toContain('href="https://www.youtube.com/watch?v=dQw4w9WgXcQ"');
+  });
+
+  it('renders video block with custom thumbnail', () => {
+    const block = createVideoBlock({
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      thumbnailUrl: 'https://example.com/thumb.jpg',
+      alt: 'My Video',
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('src="https://example.com/thumb.jpg"');
+  });
+
+  it('returns empty string for video block with no URL and no thumbnail', () => {
+    const block = createVideoBlock({ url: '', thumbnailUrl: '' });
+    const result = renderBlock(block, ctx);
+    expect(result).toBe('');
   });
 });

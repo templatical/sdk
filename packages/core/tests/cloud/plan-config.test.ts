@@ -107,6 +107,28 @@ describe('usePlanConfig', () => {
     });
   });
 
+  describe('fetchConfig double-call concurrency', () => {
+    it('second call returns early while first is loading', async () => {
+      const { fetchConfig, isLoading, config } = usePlanConfig({
+        authManager: createMockAuthManager(),
+      });
+
+      // First call starts and sets isLoading = true
+      const first = fetchConfig();
+      expect(isLoading.value).toBe(true);
+
+      // Second call should return immediately since isLoading is true
+      await fetchConfig();
+
+      // Await the first call
+      await first;
+
+      // Config should be populated from the first call
+      expect(config.value).toEqual(MOCK_CONFIG);
+      expect(isLoading.value).toBe(false);
+    });
+  });
+
   describe('error handling', () => {
     it('calls onError on fetch failure', async () => {
       const error = new Error('Network error');

@@ -14,4 +14,44 @@ describe('createDefaultTemplateContent', () => {
         const content = createDefaultTemplateContent('Helvetica, sans-serif');
         expect(content.settings.fontFamily).toBe('Helvetica, sans-serif');
     });
+
+    it('uses default font family when called with no arguments', () => {
+        const content = createDefaultTemplateContent();
+        expect(content.settings.fontFamily).toBe('Arial, sans-serif');
+    });
+
+    it('accepts empty string as font family', () => {
+        const content = createDefaultTemplateContent('');
+        expect(content.settings.fontFamily).toBe('');
+    });
+
+    it('does not include preheaderText by default', () => {
+        const content = createDefaultTemplateContent();
+        expect(content.settings.preheaderText).toBeUndefined();
+    });
+
+    it('returns independent objects on each call', () => {
+        const content1 = createDefaultTemplateContent();
+        const content2 = createDefaultTemplateContent();
+        content1.blocks.push({
+            id: '1',
+            type: 'text',
+            content: 'test',
+            fontSize: 14,
+            color: '#000',
+            textAlign: 'left',
+            fontWeight: 'normal',
+            styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+        } as any);
+        expect(content2.blocks).toEqual([]);
+    });
+
+    it('settings object has expected shape', () => {
+        const content = createDefaultTemplateContent();
+        expect(content.settings).toEqual({
+            width: 600,
+            backgroundColor: '#ffffff',
+            fontFamily: 'Arial, sans-serif',
+        });
+    });
 });

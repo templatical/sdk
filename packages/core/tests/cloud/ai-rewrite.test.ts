@@ -179,5 +179,124 @@ describe('useAiRewrite', () => {
       expect(rw.error.value).toBe('Generation failed');
       expect(rw.isRewriting.value).toBe(false);
     });
+
+    it('handles response with null body', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: null,
+        json: () => Promise.resolve({}),
+      } as unknown as Response);
+
+      const rw = useAiRewrite({ authManager, getTemplateId: () => 'tmpl-1' });
+      const result = await rw.rewrite('content', 'instruction', mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(rw.error.value).toBe('Failed to read stream');
+      expect(rw.isRewriting.value).toBe(false);
+    });
+
+    it('does not set previousContent when done event has no content', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([
+          { type: 'done' },  // no content field
+        ]),
+      );
+
+      const rw = useAiRewrite({ authManager, getTemplateId: () => 'tmpl-1' });
+      const result = await rw.rewrite('original', 'instruction', mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(rw.previousContent.value).toBeNull();
+      expect(rw.rewrittenContent.value).toBeNull();
+    });
+
+    it('clears error state when starting a new rewrite', async () => {
+      // First rewrite fails
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([{ type: 'error', message: 'First failure' }]),
+      );
+
+      const rw = useAiRewrite({ authManager, getTemplateId: () => 'tmpl-1' });
+      await rw.rewrite('content', 'instruction', mockMergeTags);
+
+      expect(rw.error.value).toBe('First failure');
+
+      // Second rewrite succeeds - error should be cleared
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([
+          { type: 'done', content: '<p>success</p>' },
+        ]),
+      );
+
+      await rw.rewrite('content', 'new instruction', mockMergeTags);
+
+      expect(rw.error.value).toBeNull();
+    });
+  });
+
+  describe('undo edge cases', () => {
+    it('returns same previousContent on double undo', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([
+          { type: 'text', text: 'rewritten' },
+          { type: 'done', content: '<p>rewritten</p>' },
+        ]),
+      );
+
+      const rw = useAiRewrite({ authManager, getTemplateId: () => 'tmpl-1' });
+      await rw.rewrite('<p>original</p>', 'make it bold', mockMergeTags);
+
+      const first = rw.undo();
+      const second = rw.undo();
+
+      expect(first).toBe('<p>original</p>');
+      expect(second).toBe('<p>original</p>');
+      expect(rw.isReverted.value).toBe(true);
+    });
+  });
+
+  describe('redo edge cases', () => {
+    it('returns null when redo called without prior undo and no rewrite', () => {
+      const rw = useAiRewrite({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const result = rw.redo();
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('rewrite -> undo -> new rewrite -> redo', () => {
+    it('redo returns new rewrite content, not old one', async () => {
+      const rw = useAiRewrite({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      // First rewrite
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([
+          { type: 'done', content: '<p>first rewrite</p>' },
+        ]),
+      );
+      await rw.rewrite('<p>original</p>', 'instruction 1', mockMergeTags);
+
+      // Undo first rewrite
+      rw.undo();
+      expect(rw.isReverted.value).toBe(true);
+
+      // Second rewrite (replaces previous state)
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([
+          { type: 'done', content: '<p>second rewrite</p>' },
+        ]),
+      );
+      await rw.rewrite('<p>original</p>', 'instruction 2', mockMergeTags);
+
+      // Now undo second rewrite
+      const undone = rw.undo();
+      expect(undone).toBe('<p>original</p>');
+
+      // Redo should return second rewrite content
+      const redone = rw.redo();
+      expect(redone).toBe('<p>second rewrite</p>');
+    });
   });
 });

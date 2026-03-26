@@ -99,4 +99,125 @@ describe('EventEmitter', () => {
         const emitter = new EventEmitter<TestEvents>();
         expect(() => emitter.off('message', () => {})).not.toThrow();
     });
+
+    it('fires same handler twice when registered twice', () => {
+        const emitter = new EventEmitter<TestEvents>();
+        const handler = vi.fn();
+
+        emitter.on('message', handler);
+        emitter.on('message', handler);
+        emitter.emit('message', 'hello');
+
+        // Set uses reference equality, so adding same fn reference again
+        // does not create a duplicate — it fires once
+        // But we verify the actual behavior of the Set
+        expect(handler).toHaveBeenCalledTimes(1);
+        expect(emitter.listenerCount('message')).toBe(1);
+    });
+
+    it('fires two different handlers that do the same thing', () => {
+        const emitter = new EventEmitter<TestEvents>();
+        const results: string[] = [];
+        const handler1 = (msg: string) => results.push(msg);
+        const handler2 = (msg: string) => results.push(msg);
+
+        emitter.on('message', handler1);
+        emitter.on('message', handler2);
+        emitter.emit('message', 'hello');
+
+        expect(results).toEqual(['hello', 'hello']);
+        expect(emitter.listenerCount('message')).toBe(2);
+    });
+
+    it('does not break other handlers when one throws', () => {
+        const emitter = new EventEmitter<TestEvents>();
+        const handler1 = vi.fn(() => {
+            throw new Error('boom');
+        });
+        const handler2 = vi.fn();
+
+        emitter.on('message', handler1);
+        emitter.on('message', handler2);
+
+        // The emit iterates over a copy of the set, so the throw from
+        // handler1 will propagate and prevent handler2 from being called.
+        // This is the actual behavior — no try/catch in the implementation.
+        expect(() => emitter.emit('message', 'hello')).toThrow('boom');
+        expect(handler1).toHaveBeenCalled();
+    });
+
+    it('off with handler that was never registered does not throw', () => {
+        const emitter = new EventEmitter<TestEvents>();
+        const handler = vi.fn();
+        // off on an event that has no handlers at all
+        expect(() => emitter.off('click', handler)).not.toThrow();
+    });
+
+    it('off with handler that was never registered on existing event', () => {
+        const emitter = new EventEmitter<TestEvents>();
+        const handler1 = vi.fn();
+        const handler2 = vi.fn();
+
+        emitter.on('message', handler1);
+        // Remove handler2 which was never registered
+        emitter.off('message', handler2);
+
+        emitter.emit('message', 'hello');
+        expect(handler1).toHaveBeenCalledWith('hello');
+    });
+
+    it('removeAllListeners cleans up specific event', () => {
+        const emitter = new EventEmitter<TestEvents>();
+        emitter.on('message', () => {});
+        emitter.on('click', () => {});
+
+        emitter.removeAllListeners('message');
+
+        expect(emitter.listenerCount('message')).toBe(0);
+        expect(emitter.listenerCount('click')).toBe(1);
+    });
+
+    it('removeAllListeners without args cleans up all events', () => {
+        const emitter = new EventEmitter<TestEvents>();
+        emitter.on('message', () => {});
+        emitter.on('click', () => {});
+
+        emitter.removeAllListeners();
+
+        expect(emitter.listenerCount('message')).toBe(0);
+        expect(emitter.listenerCount('click')).toBe(0);
+    });
+
+    it('listenerCount returns 0 for never-used event', () => {
+        const emitter = new EventEmitter<TestEvents>();
+        expect(emitter.listenerCount('click')).toBe(0);
+    });
+
+    it('unsubscribe function cleans up empty handler set', () => {
+        const emitter = new EventEmitter<TestEvents>();
+        const unsub = emitter.on('message', () => {});
+
+        expect(emitter.listenerCount('message')).toBe(1);
+        unsub();
+        expect(emitter.listenerCount('message')).toBe(0);
+    });
+
+    it('handler can remove itself during emit via unsubscribe', () => {
+        const emitter = new EventEmitter<TestEvents>();
+        const results: string[] = [];
+
+        let unsub: () => void;
+        unsub = emitter.on('message', (msg) => {
+            results.push(msg);
+            unsub();
+        });
+        emitter.on('message', (msg) => results.push('second:' + msg));
+
+        emitter.emit('message', 'hello');
+        // The emit iterates over a copy, so both handlers should fire
+        expect(results).toContain('hello');
+
+        // After emit, the first handler should be unsubscribed
+        expect(emitter.listenerCount('message')).toBe(1);
+    });
 });

@@ -157,6 +157,10 @@ describe('createBlock', () => {
     it('throws for unknown block type', () => {
         expect(() => createBlock('unknown' as never)).toThrow('Unknown block type: unknown');
     });
+
+    it('throws for custom block type (requires definition)', () => {
+        expect(() => createBlock('custom' as never)).toThrow('Unknown block type: custom');
+    });
 });
 
 describe('cloneBlock', () => {
@@ -189,5 +193,144 @@ describe('cloneBlock', () => {
             (cloned as { text: string }).text = 'Modified';
         }
         expect(original.text).toBe('Original');
+    });
+
+    it('recursively clones deeply nested sections (section within section)', () => {
+        const innerChild = createTextBlock({ content: '<p>Inner</p>' });
+        const innerSection = createSectionBlock({ children: [[innerChild]] });
+        const outerSection = createSectionBlock({ children: [[innerSection]] });
+
+        const cloned = cloneBlock(outerSection);
+
+        expect(cloned.id).not.toBe(outerSection.id);
+        if (cloned.type === 'section') {
+            const clonedInner = cloned.children[0][0];
+            expect(clonedInner.id).not.toBe(innerSection.id);
+            if (clonedInner.type === 'section') {
+                const clonedInnerChild = clonedInner.children[0][0];
+                expect(clonedInnerChild.id).not.toBe(innerChild.id);
+            }
+        }
+    });
+
+    it('ensures ALL nested IDs are unique after cloning', () => {
+        const child1 = createTextBlock();
+        const child2 = createImageBlock();
+        const child3 = createButtonBlock();
+        const section = createSectionBlock({
+            columns: '3',
+            children: [[child1], [child2], [child3]],
+        });
+        const cloned = cloneBlock(section);
+
+        const originalIds = [section.id, child1.id, child2.id, child3.id];
+        const clonedIds: string[] = [cloned.id];
+        if (cloned.type === 'section') {
+            for (const col of cloned.children) {
+                for (const block of col) {
+                    clonedIds.push(block.id);
+                }
+            }
+        }
+
+        // No cloned ID should match any original ID
+        for (const clonedId of clonedIds) {
+            expect(originalIds).not.toContain(clonedId);
+        }
+
+        // All cloned IDs should be unique among themselves
+        expect(new Set(clonedIds).size).toBe(clonedIds.length);
+    });
+
+    it('clones non-section block without touching children', () => {
+        const block = createImageBlock({ src: 'https://example.com/img.png' });
+        const cloned = cloneBlock(block);
+        expect(cloned.id).not.toBe(block.id);
+        if (cloned.type === 'image') {
+            expect(cloned.src).toBe('https://example.com/img.png');
+        }
+    });
+});
+
+describe('createCustomBlock edge cases', () => {
+    it('creates custom block with empty fields array', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'empty-block',
+            name: 'Empty Block',
+            fields: [],
+            template: '<div></div>',
+        };
+        const block = createCustomBlock(definition);
+        expect(block.fieldValues).toEqual({});
+        expect(block.customType).toBe('empty-block');
+    });
+
+    it('creates custom block with repeatable field defaults to empty array', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'list-block',
+            name: 'List Block',
+            fields: [
+                {
+                    key: 'items',
+                    label: 'Items',
+                    type: 'repeatable',
+                    fields: [{ key: 'name', label: 'Name', type: 'text' }],
+                },
+            ],
+            template: '<div></div>',
+        };
+        const block = createCustomBlock(definition);
+        expect(block.fieldValues.items).toEqual([]);
+    });
+
+    it('creates custom block with all field types using defaults', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'full-block',
+            name: 'Full Block',
+            fields: [
+                { key: 'title', label: 'Title', type: 'text' },
+                { key: 'desc', label: 'Desc', type: 'textarea' },
+                { key: 'img', label: 'Image', type: 'image' },
+                { key: 'clr', label: 'Color', type: 'color' },
+                { key: 'num', label: 'Number', type: 'number' },
+                { key: 'sel', label: 'Select', type: 'select', options: [{ label: 'A', value: 'a' }] },
+                { key: 'flag', label: 'Flag', type: 'boolean' },
+            ],
+            template: '<div></div>',
+        };
+        const block = createCustomBlock(definition);
+        expect(block.fieldValues.title).toBe('');
+        expect(block.fieldValues.desc).toBe('');
+        expect(block.fieldValues.img).toBe('');
+        expect(block.fieldValues.clr).toBe('');
+        expect(block.fieldValues.num).toBe(0);
+        expect(block.fieldValues.sel).toBe('');
+        expect(block.fieldValues.flag).toBe(false);
+    });
+
+    it('creates custom block with dataSource sets dataSourceFetched', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'data-block',
+            name: 'Data Block',
+            fields: [],
+            template: '<div></div>',
+            dataSource: {
+                label: 'Fetch Data',
+                onFetch: async () => null,
+            },
+        };
+        const block = createCustomBlock(definition);
+        expect(block.dataSourceFetched).toBe(false);
+    });
+
+    it('creates custom block without dataSource does not set dataSourceFetched', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'simple-block',
+            name: 'Simple Block',
+            fields: [],
+            template: '<div></div>',
+        };
+        const block = createCustomBlock(definition);
+        expect(block).not.toHaveProperty('dataSourceFetched');
     });
 });

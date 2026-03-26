@@ -106,6 +106,18 @@ describe('useTemplateScoring', () => {
       // Should not throw
       scoring.removeFinding('spam', 'f1');
     });
+
+    it('no-ops for nonexistent finding ID', () => {
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+      scoring.scoringResult.value = JSON.parse(JSON.stringify(mockScoringResult));
+
+      const findingsBefore = scoring.scoringResult.value!.categories.spam.findings.length;
+
+      scoring.removeFinding('spam', 'nonexistent-id');
+
+      // Findings count should remain the same
+      expect(scoring.scoringResult.value!.categories.spam.findings.length).toBe(findingsBefore);
+    });
   });
 
   describe('score', () => {
@@ -178,6 +190,37 @@ describe('useTemplateScoring', () => {
       expect(result).toBeNull();
       expect(scoring.error.value).toBe('Scoring failed');
       expect(scoring.isScoring.value).toBe(false);
+    });
+
+    it('handles non-403 HTTP error with message from response', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Internal error' }),
+      } as unknown as Response);
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const result = await scoring.score(mockContent, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.error.value).toBe('Internal error');
+    });
+
+    it('handles null body in response', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: null,
+        json: () => Promise.resolve({}),
+      } as unknown as Response);
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const result = await scoring.score(mockContent, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.error.value).toBe('Failed to read stream');
     });
   });
 

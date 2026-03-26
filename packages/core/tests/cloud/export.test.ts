@@ -122,4 +122,36 @@ describe('useExport', () => {
       expect(result).toBe('<mjml>source</mjml>');
     });
   });
+
+  describe('edge cases', () => {
+    it('handles API response without mjml field gracefully', async () => {
+      vi.mocked(ApiClient.prototype.exportTemplate).mockResolvedValue({
+        html: '<html>rendered</html>',
+      } as any);
+
+      const { exportHtml } = useExport({ authManager: createMockAuthManager() });
+
+      const result = await exportHtml('tmpl-1');
+
+      expect(result.html).toBe('<html>rendered</html>');
+      expect(result.mjml).toBeUndefined();
+    });
+
+    it('passes empty customFonts array with defaultFallback', async () => {
+      const { exportHtml } = useExport({
+        authManager: createMockAuthManager(),
+        getFontsConfig: () => ({
+          customFonts: [],
+          defaultFallback: 'Helvetica, sans-serif',
+        }),
+      });
+
+      await exportHtml('tmpl-1');
+
+      expect(ApiClient.prototype.exportTemplate).toHaveBeenCalledWith('tmpl-1', {
+        customFonts: [],
+        defaultFallback: 'Helvetica, sans-serif',
+      });
+    });
+  });
 });

@@ -130,5 +130,73 @@ describe('useMergeTag', () => {
       await promise;
       expect(isRequesting.value).toBe(false);
     });
+
+    it('resets isRequesting when callback throws', async () => {
+      const callback = vi.fn().mockRejectedValue(new Error('User cancelled'));
+
+      const { requestMergeTag, isRequesting } = withProvide(() => useMergeTag(), {
+        onRequestMergeTag: callback,
+      });
+
+      await expect(requestMergeTag()).rejects.toThrow('User cancelled');
+      expect(isRequesting.value).toBe(false);
+    });
+
+    it('returns null when callback returns null', async () => {
+      const callback = vi.fn().mockResolvedValue(null);
+
+      const { requestMergeTag } = withProvide(() => useMergeTag(), {
+        onRequestMergeTag: callback,
+      });
+
+      const result = await requestMergeTag();
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('isMergeTagValue with different syntax presets', () => {
+    it('works with handlebars syntax', () => {
+      const { isMergeTagValue } = withProvide(() => useMergeTag(), {
+        mergeTagSyntax: SYNTAX_PRESETS.handlebars,
+      });
+
+      expect(isMergeTagValue('{{first_name}}')).toBe(true);
+      expect(isMergeTagValue('plain text')).toBe(false);
+    });
+
+    it('works with mailchimp syntax', () => {
+      const { isMergeTagValue } = withProvide(() => useMergeTag(), {
+        mergeTagSyntax: SYNTAX_PRESETS.mailchimp,
+      });
+
+      expect(isMergeTagValue('*|FNAME|*')).toBe(true);
+      expect(isMergeTagValue('{{first_name}}')).toBe(false);
+    });
+
+    it('works with ampscript syntax', () => {
+      const { isMergeTagValue } = withProvide(() => useMergeTag(), {
+        mergeTagSyntax: SYNTAX_PRESETS.ampscript,
+      });
+
+      expect(isMergeTagValue('%%=v(@first_name)=%%')).toBe(true);
+      expect(isMergeTagValue('{{first_name}}')).toBe(false);
+    });
+  });
+
+  describe('getMergeTagLabel with different tags', () => {
+    it('returns value for empty merge tags array', () => {
+      const { getMergeTagLabel } = withProvide(() => useMergeTag(), {
+        mergeTags: [],
+      });
+
+      expect(getMergeTagLabel('{{first_name}}')).toBe('{{first_name}}');
+    });
+  });
+
+  describe('syntax default', () => {
+    it('defaults to liquid syntax when not provided', () => {
+      const { syntax } = withProvide(() => useMergeTag());
+      expect(syntax).toEqual(SYNTAX_PRESETS.liquid);
+    });
   });
 });

@@ -186,4 +186,122 @@ describe('useBlockRegistry', () => {
       expect(html).toContain('Hello World');
     });
   });
+
+  describe('getSidebarItems (additional)', () => {
+    it('returns empty array when nothing registered', () => {
+      const registry = useBlockRegistry();
+      const items = registry.getSidebarItems();
+      expect(items).toEqual([]);
+    });
+
+    it('returns only built-in items when no custom blocks', () => {
+      const registry = useBlockRegistry();
+
+      registry.registerBuiltIn('text', {
+        component: DummyComponent,
+        createBlock: () => createMockBlock('text'),
+        sidebarItem: { type: 'text', label: 'Text', isCustom: false },
+      });
+
+      registry.registerBuiltIn('image', {
+        component: DummyComponent,
+        createBlock: () => createMockBlock('image'),
+        sidebarItem: { type: 'image', label: 'Image', isCustom: false },
+      });
+
+      const items = registry.getSidebarItems();
+      expect(items).toHaveLength(2);
+      expect(items.every((i) => !i.isCustom)).toBe(true);
+    });
+
+    it('returns only custom items when no built-in blocks', () => {
+      const registry = useBlockRegistry();
+
+      registry.registerCustom(createCustomBlockDef('hero', 'Hero'), DummyComponent);
+      registry.registerCustom(createCustomBlockDef('cta', 'CTA'), DummyComponent);
+
+      const items = registry.getSidebarItems();
+      expect(items).toHaveLength(2);
+      expect(items.every((i) => i.isCustom)).toBe(true);
+    });
+  });
+
+  describe('overwriting registrations', () => {
+    it('overwrites existing built-in registration', () => {
+      const registry = useBlockRegistry();
+
+      const OtherComponent = defineComponent({ template: '<span>other</span>' });
+
+      registry.registerBuiltIn('text', {
+        component: DummyComponent,
+        createBlock: () => createMockBlock('text'),
+        sidebarItem: { type: 'text', label: 'Text', isCustom: false },
+      });
+
+      registry.registerBuiltIn('text', {
+        component: OtherComponent,
+        createBlock: () => createMockBlock('text'),
+        sidebarItem: { type: 'text', label: 'Rich Text', isCustom: false },
+      });
+
+      expect(registry.isRegistered('text')).toBe(true);
+      expect(registry.getComponent(createMockBlock('text'))).toBe(OtherComponent);
+      const items = registry.getSidebarItems();
+      expect(items).toHaveLength(1);
+      expect(items[0].label).toBe('Rich Text');
+    });
+
+    it('overwrites existing custom registration', () => {
+      const registry = useBlockRegistry();
+
+      const OtherComponent = defineComponent({ template: '<span>other</span>' });
+
+      const def1 = createCustomBlockDef('hero', 'Hero v1');
+      const def2 = createCustomBlockDef('hero', 'Hero v2');
+
+      registry.registerCustom(def1, DummyComponent);
+      registry.registerCustom(def2, OtherComponent);
+
+      expect(registry.isRegistered('custom:hero')).toBe(true);
+      const block = { id: 'b1', type: 'custom', customType: 'hero' } as any;
+      expect(registry.getComponent(block)).toBe(OtherComponent);
+      expect(registry.getDefinition('hero')?.name).toBe('Hero v2');
+    });
+  });
+
+  describe('getDefinition (additional)', () => {
+    it('returns undefined for built-in types', () => {
+      const registry = useBlockRegistry();
+
+      registry.registerBuiltIn('text', {
+        component: DummyComponent,
+        createBlock: () => createMockBlock('text'),
+        sidebarItem: { type: 'text', label: 'Text', isCustom: false },
+      });
+
+      // getDefinition looks up "custom:text" which is not registered
+      expect(registry.getDefinition('text')).toBeUndefined();
+    });
+  });
+
+  describe('getComponent for custom blocks', () => {
+    it('returns undefined for unregistered custom block type', () => {
+      const registry = useBlockRegistry();
+      const block = { id: 'b1', type: 'custom', customType: 'unknown' } as any;
+      expect(registry.getComponent(block)).toBeUndefined();
+    });
+  });
+
+  describe('createBlock from custom registration', () => {
+    it('creates a custom block via registration key', () => {
+      const registry = useBlockRegistry();
+      const def = createCustomBlockDef('hero', 'Hero');
+
+      registry.registerCustom(def, DummyComponent);
+
+      const block = registry.createBlock('custom:hero');
+      expect(block).toBeDefined();
+      expect(block!.type).toBe('custom');
+    });
+  });
 });

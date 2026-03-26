@@ -151,5 +151,29 @@ describe('useSnapshotHistory', () => {
       await restoreSnapshot('snap-1').catch(() => {});
       expect(isRestoring.value).toBe(false);
     });
+
+    it('resets isRestoring even when onRestore callback throws', async () => {
+      const template = { id: 'tmpl-1', content: {} };
+      vi.mocked(ApiClient.prototype.restoreSnapshot).mockResolvedValue(template as any);
+
+      const onRestore = vi.fn().mockImplementation(() => {
+        throw new Error('Callback error');
+      });
+      const onError = vi.fn();
+
+      const { isRestoring, restoreSnapshot } = useSnapshotHistory({
+        authManager: createMockAuthManager(),
+        templateId: 'tmpl-1',
+        onRestore,
+        onError,
+      });
+
+      await expect(restoreSnapshot('snap-1')).rejects.toThrow('Callback error');
+
+      expect(isRestoring.value).toBe(false);
+      expect(onRestore).toHaveBeenCalledWith(template);
+      // onError is called because the thrown error propagates through catch
+      expect(onError).toHaveBeenCalled();
+    });
   });
 });

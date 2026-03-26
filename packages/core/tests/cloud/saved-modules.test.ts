@@ -142,6 +142,29 @@ describe('useSavedModules', () => {
     });
   });
 
+  describe('updateModule edge cases', () => {
+    it('does not replace any module when ID not found in list', async () => {
+      const m1 = createModule('m1', 'Header');
+      const updated = createModule('nonexistent', 'Updated');
+
+      vi.mocked(ApiClient.prototype.listModules).mockResolvedValue([m1]);
+      vi.mocked(ApiClient.prototype.updateModule).mockResolvedValue(updated);
+
+      const { modules, loadModules, updateModule } = useSavedModules({
+        authManager: createMockAuthManager(),
+      });
+
+      await loadModules();
+      const result = await updateModule('nonexistent', { name: 'Updated' });
+
+      // The returned value is the API response
+      expect(result).toEqual(updated);
+      // But the list still only has m1 (unchanged since no ID match)
+      expect(modules.value).toHaveLength(1);
+      expect(modules.value[0]).toEqual(m1);
+    });
+  });
+
   describe('deleteModule', () => {
     it('removes module from list', async () => {
       const m1 = createModule('m1', 'Header');
@@ -172,6 +195,35 @@ describe('useSavedModules', () => {
 
       await expect(deleteModule('m1')).rejects.toThrow('Delete failed');
       expect(onError).toHaveBeenCalledWith(error);
+    });
+
+    it('rethrows without onError when not provided', async () => {
+      const error = new Error('Delete failed');
+      vi.mocked(ApiClient.prototype.deleteModule).mockRejectedValue(error);
+
+      const { deleteModule } = useSavedModules({
+        authManager: createMockAuthManager(),
+        // No onError provided
+      });
+
+      await expect(deleteModule('m1')).rejects.toThrow('Delete failed');
+    });
+  });
+
+  describe('createModule edge cases', () => {
+    it('creates module with empty name string', async () => {
+      const newModule = createModule('m1', '');
+      vi.mocked(ApiClient.prototype.createModule).mockResolvedValue(newModule);
+
+      const { modules, createModule: create } = useSavedModules({
+        authManager: createMockAuthManager(),
+      });
+
+      const result = await create('', []);
+
+      expect(result).toEqual(newModule);
+      expect(modules.value[0].name).toBe('');
+      expect(ApiClient.prototype.createModule).toHaveBeenCalledWith({ name: '', content: [] });
     });
   });
 });

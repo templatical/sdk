@@ -130,6 +130,34 @@ describe('useDragDrop', () => {
     });
   });
 
+  describe('handleDrop edge cases', () => {
+    it('passes targetSectionId and columnIndex to onBlockAdd for new blocks', () => {
+      const onBlockMove = vi.fn();
+      const onBlockAdd = vi.fn();
+      const { startDrag, handleDrop } = useDragDrop({ onBlockMove, onBlockAdd });
+
+      const newBlock = { id: 'new-1', type: 'text' } as any;
+      startDrag(newBlock);
+
+      handleDrop([], 0, 'section-1', 2);
+
+      expect(onBlockAdd).toHaveBeenCalledWith(newBlock, 'section-1', 2);
+    });
+
+    it('passes all args to onBlockMove for existing blocks', () => {
+      const onBlockMove = vi.fn();
+      const onBlockAdd = vi.fn();
+      const { startDrag, handleDrop } = useDragDrop({ onBlockMove, onBlockAdd });
+
+      const existingBlock = { id: 'b1', type: 'text' } as any;
+      startDrag(existingBlock);
+
+      handleDrop([existingBlock], 3, 'section-2', 1);
+
+      expect(onBlockMove).toHaveBeenCalledWith('b1', 3, 'section-2', 1);
+    });
+  });
+
   describe('getSortableOptions', () => {
     it('returns object with expected properties', () => {
       const { getSortableOptions } = setup();
@@ -144,6 +172,156 @@ describe('useDragDrop', () => {
       expect(options.onEnd).toBeTypeOf('function');
       expect(options.onAdd).toBeTypeOf('function');
       expect(options.onUpdate).toBeTypeOf('function');
+    });
+  });
+
+  describe('getSortableOptions callbacks', () => {
+    it('onStart sets isDragging when blockId in dataset', () => {
+      const { isDragging, getSortableOptions } = useDragDrop({
+        onBlockMove: vi.fn(),
+        onBlockAdd: vi.fn(),
+      });
+
+      const options = getSortableOptions('blocks');
+      const onStart = options.onStart as Function;
+
+      onStart({ item: { dataset: { blockId: 'b1' } } });
+      expect(isDragging.value).toBe(true);
+    });
+
+    it('onStart does not set isDragging when blockId is missing', () => {
+      const { isDragging, getSortableOptions } = useDragDrop({
+        onBlockMove: vi.fn(),
+        onBlockAdd: vi.fn(),
+      });
+
+      const options = getSortableOptions('blocks');
+      const onStart = options.onStart as Function;
+
+      onStart({ item: { dataset: {} } });
+      expect(isDragging.value).toBe(false);
+    });
+
+    it('onEnd calls endDrag', () => {
+      const { isDragging, getSortableOptions, startDrag } = useDragDrop({
+        onBlockMove: vi.fn(),
+        onBlockAdd: vi.fn(),
+      });
+
+      startDrag({ id: 'b1', type: 'text' } as any);
+
+      const options = getSortableOptions('blocks');
+      const onEnd = options.onEnd as Function;
+
+      onEnd();
+      expect(isDragging.value).toBe(false);
+    });
+
+    it('onAdd triggers onBlockMove with section context', () => {
+      const onBlockMove = vi.fn();
+      const { getSortableOptions } = useDragDrop({
+        onBlockMove,
+        onBlockAdd: vi.fn(),
+      });
+
+      const options = getSortableOptions('blocks', 'sec-1', 2);
+      const onAdd = options.onAdd as Function;
+
+      onAdd({ item: { dataset: { blockId: 'b1' } }, newIndex: 5 });
+      expect(onBlockMove).toHaveBeenCalledWith('b1', 5, 'sec-1', 2);
+    });
+
+    it('onAdd does nothing when blockId is missing', () => {
+      const onBlockMove = vi.fn();
+      const { getSortableOptions } = useDragDrop({
+        onBlockMove,
+        onBlockAdd: vi.fn(),
+      });
+
+      const options = getSortableOptions('blocks', 'sec-1', 2);
+      const onAdd = options.onAdd as Function;
+
+      onAdd({ item: { dataset: {} }, newIndex: 5 });
+      expect(onBlockMove).not.toHaveBeenCalled();
+    });
+
+    it('onUpdate triggers onBlockMove with section context', () => {
+      const onBlockMove = vi.fn();
+      const { getSortableOptions } = useDragDrop({
+        onBlockMove,
+        onBlockAdd: vi.fn(),
+      });
+
+      const options = getSortableOptions('blocks', 'sec-1', 0);
+      const onUpdate = options.onUpdate as Function;
+
+      onUpdate({ item: { dataset: { blockId: 'b1' } }, newIndex: 2 });
+      expect(onBlockMove).toHaveBeenCalledWith('b1', 2, 'sec-1', 0);
+    });
+
+    it('onUpdate does nothing when blockId is missing', () => {
+      const onBlockMove = vi.fn();
+      const { getSortableOptions } = useDragDrop({
+        onBlockMove,
+        onBlockAdd: vi.fn(),
+      });
+
+      const options = getSortableOptions('blocks', 'sec-1', 0);
+      const onUpdate = options.onUpdate as Function;
+
+      onUpdate({ item: { dataset: {} }, newIndex: 2 });
+      expect(onBlockMove).not.toHaveBeenCalled();
+    });
+
+    it('getSortableOptions without section context', () => {
+      const onBlockMove = vi.fn();
+      const { getSortableOptions } = useDragDrop({
+        onBlockMove,
+        onBlockAdd: vi.fn(),
+      });
+
+      const options = getSortableOptions('blocks');
+      const onAdd = options.onAdd as Function;
+
+      onAdd({ item: { dataset: { blockId: 'b1' } }, newIndex: 0 });
+      expect(onBlockMove).toHaveBeenCalledWith('b1', 0, undefined, undefined);
+    });
+  });
+
+  describe('handleDrop without section context', () => {
+    it('calls onBlockAdd without optional params', () => {
+      const { startDrag, handleDrop, onBlockAdd } = setup();
+      const block = createMockBlock({ id: 'new-block' });
+
+      startDrag(block);
+      handleDrop([], 0);
+
+      expect(onBlockAdd).toHaveBeenCalledWith(block, undefined, undefined);
+    });
+
+    it('calls onBlockMove without optional params', () => {
+      const { startDrag, handleDrop, onBlockMove } = setup();
+      const block = createMockBlock({ id: 'b1' });
+
+      startDrag(block);
+      handleDrop([block], 1);
+
+      expect(onBlockMove).toHaveBeenCalledWith('b1', 1, undefined, undefined);
+    });
+  });
+
+  describe('setDropTarget', () => {
+    it('sets and clears drop target', () => {
+      const { dropTargetId, setDropTarget } = setup();
+
+      setDropTarget('target-1');
+      expect(dropTargetId.value).toBe('target-1');
+
+      setDropTarget('target-2');
+      expect(dropTargetId.value).toBe('target-2');
+
+      setDropTarget(null);
+      expect(dropTargetId.value).toBeNull();
     });
   });
 });

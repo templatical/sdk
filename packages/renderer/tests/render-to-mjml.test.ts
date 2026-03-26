@@ -97,4 +97,87 @@ describe('renderToMjml', () => {
     expect(mjml).toContain('Keep');
     expect(mjml).not.toContain('Remove');
   });
+
+  it('renders with width=0', () => {
+    const content = createDefaultTemplateContent();
+    content.settings.width = 0;
+    const mjml = renderToMjml(content);
+    expect(mjml).toContain('width="0px"');
+    expect(mjml).toContain('<mjml>');
+  });
+
+  it('renders with very large width', () => {
+    const content = createDefaultTemplateContent();
+    content.settings.width = 9999;
+    const mjml = renderToMjml(content);
+    expect(mjml).toContain('width="9999px"');
+  });
+
+  it('renders with empty blocks array', () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [];
+    const mjml = renderToMjml(content);
+    expect(mjml).toContain('<mj-body');
+    expect(mjml).toContain('</mj-body>');
+    expect(mjml).not.toContain('<mj-text');
+  });
+
+  it('does not add preview tag for empty preheader text', () => {
+    const content = createDefaultTemplateContent();
+    content.settings.preheaderText = '';
+    const mjml = renderToMjml(content);
+    expect(mjml).not.toContain('<mj-preview>');
+  });
+
+  it('does not add preview tag for whitespace-only preheader text', () => {
+    const content = createDefaultTemplateContent();
+    content.settings.preheaderText = '   ';
+    const mjml = renderToMjml(content);
+    expect(mjml).not.toContain('<mj-preview>');
+  });
+
+  it('trims preheader text', () => {
+    const content = createDefaultTemplateContent();
+    content.settings.preheaderText = '  Hello World  ';
+    const mjml = renderToMjml(content);
+    expect(mjml).toContain('<mj-preview>Hello World</mj-preview>');
+  });
+
+  it('escapes HTML in preheader text', () => {
+    const content = createDefaultTemplateContent();
+    content.settings.preheaderText = 'Sale <50% off> & more';
+    const mjml = renderToMjml(content);
+    expect(mjml).toContain('<mj-preview>Sale &lt;50% off&gt; &amp; more</mj-preview>');
+  });
+
+  it('handles very long preheader text', () => {
+    const content = createDefaultTemplateContent();
+    content.settings.preheaderText = 'A'.repeat(500);
+    const mjml = renderToMjml(content);
+    expect(mjml).toContain(`<mj-preview>${'A'.repeat(500)}</mj-preview>`);
+  });
+
+  it('does not add preview tag when preheaderText is undefined', () => {
+    const content = createDefaultTemplateContent();
+    // preheaderText is optional and undefined by default
+    expect(content.settings.preheaderText).toBeUndefined();
+    const mjml = renderToMjml(content);
+    expect(mjml).not.toContain('<mj-preview>');
+  });
+
+  it('skips blocks that render to empty string', () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createTextBlock({
+        content: '<p>Visible</p>',
+      }),
+      createTextBlock({
+        content: '<p>Hidden</p>',
+        visibility: { desktop: false, tablet: false, mobile: false },
+      }),
+    ];
+    const mjml = renderToMjml(content);
+    expect(mjml).toContain('Visible');
+    expect(mjml).not.toContain('Hidden');
+  });
 });

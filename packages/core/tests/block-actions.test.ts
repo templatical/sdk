@@ -73,4 +73,80 @@ describe('useBlockActions', () => {
         actions.updateBlockProperty('block-1', 'type', 'text');
         expect(opts.updateBlock).toHaveBeenCalledWith('block-1', { type: 'text' });
     });
+
+    it('duplicates section with empty columns preserving structure', () => {
+        const opts = createMockOptions();
+        const actions = useBlockActions(opts);
+        const section = createSectionBlock({ children: [[], []] });
+
+        const cloned = actions.duplicateBlock(section);
+        expect(cloned.id).not.toBe(section.id);
+        expect(cloned.type).toBe('section');
+        if (cloned.type === 'section') {
+            expect(cloned.children).toHaveLength(2);
+            expect(cloned.children[0]).toEqual([]);
+            expect(cloned.children[1]).toEqual([]);
+        }
+        expect(opts.addBlock).toHaveBeenCalled();
+        expect(opts.selectBlock).toHaveBeenCalledWith(cloned.id);
+    });
+
+    it('duplicates section ensuring all child block IDs are unique', () => {
+        const opts = createMockOptions();
+        const actions = useBlockActions(opts);
+        const child1 = createTextBlock({ content: '<p>A</p>' });
+        const child2 = createTextBlock({ content: '<p>B</p>' });
+        const child3 = createTextBlock({ content: '<p>C</p>' });
+        const section = createSectionBlock({ children: [[child1, child2], [child3]] });
+
+        const cloned = actions.duplicateBlock(section);
+        expect(cloned.type).toBe('section');
+        if (cloned.type === 'section' && section.type === 'section') {
+            // Collect all original IDs
+            const originalIds = new Set([
+                section.id,
+                child1.id,
+                child2.id,
+                child3.id,
+            ]);
+            // Collect all cloned IDs
+            const clonedIds = [cloned.id];
+            for (const col of cloned.children) {
+                for (const block of col) {
+                    clonedIds.push(block.id);
+                }
+            }
+            // No cloned ID should match any original ID
+            for (const id of clonedIds) {
+                expect(originalIds.has(id)).toBe(false);
+            }
+            // All cloned IDs should be unique among themselves
+            expect(new Set(clonedIds).size).toBe(clonedIds.length);
+        }
+    });
+
+    it('duplicates a non-section block (simple block) with new ID', () => {
+        const opts = createMockOptions();
+        const actions = useBlockActions(opts);
+        const original = createTextBlock({ content: '<p>Simple</p>' });
+
+        const cloned = actions.duplicateBlock(original);
+        expect(cloned.id).not.toBe(original.id);
+        expect(cloned.type).toBe('text');
+        if (cloned.type === 'text' && original.type === 'text') {
+            expect(cloned.content).toBe(original.content);
+        }
+        expect(opts.addBlock).toHaveBeenCalledWith(cloned, undefined, undefined);
+        expect(opts.selectBlock).toHaveBeenCalledWith(cloned.id);
+    });
+
+    it('duplicateBlock does not modify the original block', () => {
+        const opts = createMockOptions();
+        const actions = useBlockActions(opts);
+        const original = createTextBlock({ content: '<p>Original</p>' });
+        const originalId = original.id;
+
+        actions.duplicateBlock(original);
+        expect(original.id).toBe(originalId);
+    });
 });

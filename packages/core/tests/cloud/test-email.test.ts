@@ -205,5 +205,40 @@ describe('useTestEmail', () => {
       await sendTestEmail('user@test.com').catch(() => {});
       expect(isSending.value).toBe(false);
     });
+
+    it('does not call exportHtml when save rejects', async () => {
+      const isAuthReady = ref(true);
+      const exportHtml = vi.fn();
+      const { sendTestEmail } = useTestEmail({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+        save: vi.fn().mockRejectedValue(new Error('Save failed')),
+        exportHtml,
+        isAuthReady,
+      });
+
+      await sendTestEmail('user@test.com').catch(() => {});
+
+      expect(exportHtml).not.toHaveBeenCalled();
+    });
+
+    it('sends empty string from onBeforeTestEmail hook', async () => {
+      const isAuthReady = ref(true);
+      const { sendTestEmail } = useTestEmail({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+        save: vi.fn().mockResolvedValue({}),
+        exportHtml: vi.fn().mockResolvedValue({ html: '<html>original</html>', mjml: '' }),
+        isAuthReady,
+        onBeforeTestEmail: () => '',
+      });
+
+      await sendTestEmail('user@test.com');
+
+      expect(ApiClient.prototype.sendTestEmail).toHaveBeenCalledWith(
+        'tmpl-1',
+        expect.objectContaining({ html: '' }),
+      );
+    });
   });
 });

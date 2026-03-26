@@ -13,7 +13,8 @@
     "test": "bun run --filter './packages/*' test",
     "lint": "eslint packages/*/src",
     "format": "prettier --write 'packages/*/src/**/*.{ts,vue}'",
-    "typecheck": "bun run --filter './packages/*' typecheck"
+    "typecheck": "bun run --filter './packages/*' typecheck",
+    "ci": "bun run format && bun run lint && bun run typecheck && bun run test"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",

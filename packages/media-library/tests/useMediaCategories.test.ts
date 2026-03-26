@@ -190,5 +190,92 @@ describe('useMediaCategories', () => {
       });
       expect(getCategoryForMimeType('text/plain')).toBeNull();
     });
+
+    it('returns null when no categories configured', () => {
+      const planConfig = createMockPlanConfig(null);
+      const { getCategoryForMimeType } = withProvide(() => useMediaCategories(), {
+        planConfig,
+      });
+      expect(getCategoryForMimeType('image/jpeg')).toBeNull();
+    });
+  });
+
+  describe('with null/empty categories', () => {
+    it('allAcceptedMimeTypes returns empty array when no categories', () => {
+      const planConfig = createMockPlanConfig(null);
+      const { allAcceptedMimeTypes } = withProvide(() => useMediaCategories(), {
+        planConfig,
+      });
+      expect(allAcceptedMimeTypes.value).toEqual([]);
+    });
+
+    it('allAcceptedInputString returns empty string when no categories', () => {
+      const planConfig = createMockPlanConfig(null);
+      const { allAcceptedInputString } = withProvide(() => useMediaCategories(), {
+        planConfig,
+      });
+      expect(allAcceptedInputString.value).toBe('');
+    });
+
+    it('availableCategories returns empty array when no categories', () => {
+      const planConfig = createMockPlanConfig(null);
+      const { availableCategories } = withProvide(() => useMediaCategories(), {
+        planConfig,
+      });
+      expect(availableCategories.value).toEqual([]);
+    });
+
+    it('isAcceptedMimeType returns false when no categories', () => {
+      const planConfig = createMockPlanConfig(null);
+      const { isAcceptedMimeType } = withProvide(() => useMediaCategories(), {
+        planConfig,
+      });
+      expect(isAcceptedMimeType('image/jpeg')).toBe(false);
+    });
+
+    it('isImageMimeType returns false when no categories', () => {
+      const planConfig = createMockPlanConfig(null);
+      const { isImageMimeType } = withProvide(() => useMediaCategories(), {
+        planConfig,
+      });
+      expect(isImageMimeType('image/jpeg')).toBe(false);
+    });
+
+    it('isAcceptedMimeType with empty filter categories checks all', () => {
+      const planConfig = createMockPlanConfig(sampleMediaConfig);
+      const { isAcceptedMimeType } = withProvide(() => useMediaCategories(), {
+        planConfig,
+      });
+      expect(isAcceptedMimeType('image/jpeg', [])).toBe(true);
+      expect(isAcceptedMimeType('text/plain', [])).toBe(false);
+    });
+
+    it('isAcceptedMimeType with non-existent filter category returns false', () => {
+      const planConfig = createMockPlanConfig(sampleMediaConfig);
+      const { isAcceptedMimeType } = withProvide(() => useMediaCategories(), {
+        planConfig,
+      });
+      expect(isAcceptedMimeType('image/jpeg', ['nonexistent' as any])).toBe(false);
+    });
+  });
+
+  describe('with media config with use_media_library explicitly set', () => {
+    it('isMediaLibraryEnabled is true when explicitly set', () => {
+      const planConfig = createMockPlanConfig({ use_media_library: true });
+      const { isMediaLibraryEnabled } = withProvide(() => useMediaCategories(), {
+        planConfig,
+      });
+      expect(isMediaLibraryEnabled.value).toBe(true);
+    });
+  });
+
+  describe('maxFileSize with explicit config', () => {
+    it('returns configured value', () => {
+      const planConfig = createMockPlanConfig({ max_file_size: 5242880 });
+      const { maxFileSize } = withProvide(() => useMediaCategories(), {
+        planConfig,
+      });
+      expect(maxFileSize.value).toBe(5242880);
+    });
   });
 });

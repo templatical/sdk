@@ -109,4 +109,77 @@ describe('calculateOutputDimensions', () => {
     expect(result.height).toBe(300);
     expect(result.width).toBe(400);
   });
+
+  it('handles equal width and height constraints', () => {
+    const result = calculateOutputDimensions(1000, 1000, 500, 500);
+    expect(result).toEqual({ width: 500, height: 500 });
+  });
+
+  it('handles very large dimensions', () => {
+    const result = calculateOutputDimensions(10000, 8000, 1920, 1080);
+    // Width scales: 10000 -> 1920, height: 8000 * 0.192 = 1536
+    // 1536 > 1080, so height clamps: 1080, width: 1920 * (1080/1536) = 1350
+    expect(result.height).toBe(1080);
+    expect(result.width).toBeLessThanOrEqual(1920);
+  });
+
+  it('returns original when exactly at constraints', () => {
+    const result = calculateOutputDimensions(400, 300, 400, 300);
+    expect(result).toEqual({ width: 400, height: 300 });
+  });
+
+  it('handles zero width input', () => {
+    const result = calculateOutputDimensions(0, 600, 400, 300);
+    // Width 0 < 400, skip width constraint
+    // Height 600 > 300, ratio=0.5: height -> 300, width -> round(0 * 0.5) = 0
+    expect(result.width).toBe(0);
+    expect(result.height).toBe(300);
+  });
+
+  it('handles zero height input', () => {
+    const result = calculateOutputDimensions(800, 0, 400, 300);
+    // Width: 800 > 400, so ratio = 0.5; width -> 400, height -> 0 * 0.5 = 0
+    expect(result.width).toBe(400);
+    expect(result.height).toBe(0);
+  });
+
+  it('handles zero width and height input', () => {
+    const result = calculateOutputDimensions(0, 0);
+    expect(result).toEqual({ width: 0, height: 0 });
+  });
+
+  it('handles extreme wide aspect ratio (panoramic)', () => {
+    const result = calculateOutputDimensions(10000, 100, 1000, 500);
+    // Width scales: 10000 -> 1000, height: 100 * 0.1 = 10
+    // 10 < 500, so maxHeight doesn't kick in
+    expect(result.width).toBe(1000);
+    expect(result.height).toBe(10);
+  });
+
+  it('handles extreme tall aspect ratio', () => {
+    const result = calculateOutputDimensions(100, 10000, 500, 1000);
+    // Width: 100 < 500, skip width constraint
+    // Height: 10000 > 1000, ratio = 0.1; height -> 1000, width -> 100 * 0.1 = 10
+    expect(result.height).toBe(1000);
+    expect(result.width).toBe(10);
+  });
+
+  it('handles 1x1 pixel dimensions', () => {
+    const result = calculateOutputDimensions(1, 1, 500, 500);
+    expect(result).toEqual({ width: 1, height: 1 });
+  });
+});
+
+describe('getExportSettings (additional)', () => {
+  it('returns JPEG for image/tiff (unknown type)', () => {
+    const settings = getExportSettings('image/tiff');
+    expect(settings.mimeType).toBe('image/jpeg');
+    expect(settings.quality).toBe(0.92);
+  });
+
+  it('returns JPEG for empty string', () => {
+    const settings = getExportSettings('');
+    expect(settings.mimeType).toBe('image/jpeg');
+    expect(settings.quality).toBe(0.92);
+  });
 });

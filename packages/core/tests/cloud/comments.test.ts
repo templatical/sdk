@@ -301,6 +301,51 @@ describe('useComments', () => {
 
       expect(comments.value[0].replies![0].body).toBe('Updated reply');
     });
+
+    it('returns null when no template ID', async () => {
+      const { editComment } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => null,
+      });
+
+      const result = await editComment('c1', 'Updated');
+      expect(result).toBeNull();
+    });
+
+    it('calls onError and returns null on API failure', async () => {
+      vi.mocked(ApiClient.prototype.updateComment).mockRejectedValue(new Error('Update failed'));
+
+      const onError = vi.fn();
+      const { comments, editComment } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+        onError,
+      });
+
+      comments.value = [createThread('c1')];
+
+      const result = await editComment('c1', 'Updated');
+
+      expect(result).toBeNull();
+      expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Update failed' }));
+    });
+
+    it('manages isSubmitting state', async () => {
+      vi.mocked(ApiClient.prototype.updateComment).mockResolvedValue(createComment('c1'));
+
+      const { comments, isSubmitting, editComment } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+      });
+
+      comments.value = [createThread('c1')];
+
+      const promise = editComment('c1', 'Updated');
+      expect(isSubmitting.value).toBe(true);
+
+      await promise;
+      expect(isSubmitting.value).toBe(false);
+    });
   });
 
   describe('removeComment', () => {
@@ -359,6 +404,51 @@ describe('useComments', () => {
       const result = await removeComment('nonexistent');
       expect(result).toBe(false);
     });
+
+    it('returns false when no template ID', async () => {
+      const { removeComment } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => null,
+      });
+
+      const result = await removeComment('c1');
+      expect(result).toBe(false);
+    });
+
+    it('calls onError and returns false on API failure', async () => {
+      vi.mocked(ApiClient.prototype.deleteComment).mockRejectedValue(new Error('Delete failed'));
+
+      const onError = vi.fn();
+      const { comments, removeComment } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+        onError,
+      });
+
+      comments.value = [createThread('c1')];
+
+      const result = await removeComment('c1');
+
+      expect(result).toBe(false);
+      expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Delete failed' }));
+    });
+
+    it('manages isSubmitting state', async () => {
+      vi.mocked(ApiClient.prototype.deleteComment).mockResolvedValue(undefined);
+
+      const { comments, isSubmitting, removeComment } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+      });
+
+      comments.value = [createThread('c1')];
+
+      const promise = removeComment('c1');
+      expect(isSubmitting.value).toBe(true);
+
+      await promise;
+      expect(isSubmitting.value).toBe(false);
+    });
   });
 
   describe('toggleResolve', () => {
@@ -396,6 +486,70 @@ describe('useComments', () => {
       await toggleResolve('c1');
 
       expect(onComment).toHaveBeenCalledWith({ type: 'unresolved', comment: unresolved });
+    });
+
+    it('returns null when no template ID', async () => {
+      const { toggleResolve } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => null,
+      });
+
+      const result = await toggleResolve('c1');
+      expect(result).toBeNull();
+    });
+
+    it('calls onError and returns null on API failure', async () => {
+      vi.mocked(ApiClient.prototype.resolveComment).mockRejectedValue(new Error('Resolve failed'));
+
+      const onError = vi.fn();
+      const { comments, toggleResolve } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+        onError,
+      });
+
+      comments.value = [createThread('c1')];
+
+      const result = await toggleResolve('c1');
+
+      expect(result).toBeNull();
+      expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Resolve failed' }));
+    });
+
+    it('manages isSubmitting state', async () => {
+      vi.mocked(ApiClient.prototype.resolveComment).mockResolvedValue(
+        createComment('c1', { resolved_at: '2024-01-02' } as any),
+      );
+
+      const { comments, isSubmitting, toggleResolve } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+      });
+
+      comments.value = [createThread('c1')];
+
+      const promise = toggleResolve('c1');
+      expect(isSubmitting.value).toBe(true);
+
+      await promise;
+      expect(isSubmitting.value).toBe(false);
+    });
+
+    it('updates comment in state after resolve', async () => {
+      const resolved = createComment('c1', { resolved_at: '2024-01-02', body: 'Resolved comment' } as any);
+      vi.mocked(ApiClient.prototype.resolveComment).mockResolvedValue(resolved);
+
+      const { comments, toggleResolve } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+      });
+
+      comments.value = [createThread('c1', { body: 'Original' } as any)];
+
+      const result = await toggleResolve('c1');
+
+      expect(result).toEqual(resolved);
+      expect(comments.value[0].body).toBe('Resolved comment');
     });
   });
 
@@ -481,6 +635,102 @@ describe('useComments', () => {
       applyRemoteDelete('r1', 'c1');
 
       expect(comments.value[0].replies).toHaveLength(0);
+    });
+
+    it('applyRemoteCreate with non-existent parent drops the reply silently', () => {
+      const { comments, applyRemoteCreate } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+      });
+
+      const reply = createComment('r1', { parent_id: 'nonexistent-parent' });
+      applyRemoteCreate(reply);
+
+      // Reply should not appear anywhere since parent doesn't exist
+      expect(comments.value).toHaveLength(0);
+    });
+
+    it('applyRemoteDelete with non-existent comment does not crash', () => {
+      const { comments, applyRemoteDelete } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+      });
+
+      comments.value = [createThread('c1')];
+
+      // Should not throw
+      applyRemoteDelete('nonexistent', null);
+      expect(comments.value).toHaveLength(1);
+    });
+
+    it('applyRemoteUpdate with non-existent comment does nothing', () => {
+      const onComment = vi.fn();
+      const { comments, applyRemoteUpdate } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+        onComment,
+      });
+
+      comments.value = [createThread('c1')];
+
+      applyRemoteUpdate(createComment('nonexistent', { body: 'Updated' } as any));
+
+      // Comment c1 should be unchanged
+      expect(comments.value[0].body).toBe('Comment c1');
+      // Event is still emitted (updateCommentInState doesn't find it but emitEvent is called regardless)
+      expect(onComment).toHaveBeenCalledWith({ type: 'updated', comment: expect.any(Object) });
+    });
+
+    it('applyRemoteDelete for reply when parent not found does not crash', () => {
+      const onComment = vi.fn();
+      const { comments, applyRemoteDelete } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+        onComment,
+      });
+
+      comments.value = [createThread('c1')];
+
+      // Try to delete a reply whose parent_id does not exist
+      applyRemoteDelete('r1', 'nonexistent-parent');
+
+      // Comments should be unchanged
+      expect(comments.value).toHaveLength(1);
+      expect(comments.value[0].id).toBe('c1');
+    });
+
+    it('applyRemoteDelete does not emit event when comment snapshot is null', () => {
+      const onComment = vi.fn();
+      const { comments, applyRemoteDelete } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+        onComment,
+      });
+
+      comments.value = [createThread('c1')];
+      const callsBefore = onComment.mock.calls.length;
+
+      // Delete a non-existent top-level comment - snapshot will be null so no event
+      applyRemoteDelete('nonexistent', null);
+
+      expect(onComment.mock.calls.length - callsBefore).toBe(0);
+    });
+  });
+
+  describe('loadComments edge cases', () => {
+    it('calls onError with wrapped error when API throws non-Error', async () => {
+      vi.mocked(ApiClient.prototype.getComments).mockRejectedValue('string error');
+
+      const onError = vi.fn();
+      const { loadComments } = useComments({
+        authManager: createMockAuthManager(),
+        getTemplateId: () => 'tmpl-1',
+        onError,
+      });
+
+      await loadComments();
+
+      expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Failed to load comments' }));
     });
   });
 });

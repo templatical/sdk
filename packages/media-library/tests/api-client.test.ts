@@ -342,5 +342,292 @@ describe('MediaApiClient', () => {
 
       await expect(api.updateMedia('m1', 'test.jpg')).rejects.toThrow('HTTP error 500');
     });
+
+    it('handles network error (fetch throws)', async () => {
+      vi.mocked(auth.authenticatedFetch).mockRejectedValue(new Error('Network failure'));
+
+      await expect(api.browseMedia({})).rejects.toThrow('Network failure');
+    });
+
+    it('handles network error on request-based methods', async () => {
+      vi.mocked(auth.authenticatedFetch).mockRejectedValue(new Error('Connection refused'));
+
+      await expect(api.getMediaFolders()).rejects.toThrow('Connection refused');
+    });
+
+    it('handles non-JSON error response for browseMedia', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue({
+        ok: false,
+        status: 502,
+        json: () => Promise.reject(new Error('not json')),
+      } as unknown as Response);
+
+      await expect(api.browseMedia({})).rejects.toThrow('HTTP error 502');
+    });
+
+    it('handles non-JSON error response for uploadMedia', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.reject(new Error('not json')),
+      } as unknown as Response);
+
+      const file = new File(['data'], 'photo.jpg');
+      await expect(api.uploadMedia(file)).rejects.toThrow('HTTP error 500');
+    });
+
+    it('handles non-JSON error response for replaceMedia', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.reject(new Error('not json')),
+      } as unknown as Response);
+
+      const file = new File(['data'], 'new.jpg');
+      await expect(api.replaceMedia('m1', file)).rejects.toThrow('HTTP error 500');
+    });
+
+    it('handles non-JSON error response for checkMediaUsage', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.reject(new Error('not json')),
+      } as unknown as Response);
+
+      await expect(api.checkMediaUsage(['m1'])).rejects.toThrow('HTTP error 500');
+    });
+  });
+
+  describe('uploadMedia (additional)', () => {
+    it('does not include folder_id when not provided', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockJsonResponse({ id: 'm1' }),
+      );
+
+      const file = new File(['data'], 'photo.jpg');
+      await api.uploadMedia(file);
+
+      const formData = vi.mocked(auth.authenticatedFetch).mock.calls[0][1]!.body as FormData;
+      expect(formData.get('file')).toBeInstanceOf(File);
+      expect(formData.get('folder_id')).toBeNull();
+    });
+
+    it('does not include folder_id when null', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockJsonResponse({ id: 'm1' }),
+      );
+
+      const file = new File(['data'], 'photo.jpg');
+      await api.uploadMedia(file, null);
+
+      const formData = vi.mocked(auth.authenticatedFetch).mock.calls[0][1]!.body as FormData;
+      expect(formData.get('folder_id')).toBeNull();
+    });
+
+    it('sends Accept header but no Content-Type for FormData', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockJsonResponse({ id: 'm1' }),
+      );
+
+      const file = new File(['data'], 'photo.jpg');
+      await api.uploadMedia(file);
+
+      const callArgs = vi.mocked(auth.authenticatedFetch).mock.calls[0];
+      expect(callArgs[1]!.headers).toEqual({ Accept: 'application/json' });
+    });
+  });
+
+  describe('deleteMedia (additional)', () => {
+    it('sends single ID', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(mockJsonResponse(undefined, 204));
+
+      await api.deleteMedia(['m1']);
+
+      const body = JSON.parse(vi.mocked(auth.authenticatedFetch).mock.calls[0][1]!.body as string);
+      expect(body.ids).toEqual(['m1']);
+    });
+
+    it('sends empty array', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(mockJsonResponse(undefined, 204));
+
+      await api.deleteMedia([]);
+
+      const body = JSON.parse(vi.mocked(auth.authenticatedFetch).mock.calls[0][1]!.body as string);
+      expect(body.ids).toEqual([]);
+    });
+
+    it('throws on error', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Items in use', 409),
+      );
+
+      await expect(api.deleteMedia(['m1'])).rejects.toThrow('Items in use');
+    });
+  });
+
+  describe('moveMedia (additional)', () => {
+    it('throws on error', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Move failed', 422),
+      );
+
+      await expect(api.moveMedia(['m1'], 'f2')).rejects.toThrow('Move failed');
+    });
+
+    it('sends multiple IDs', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(mockJsonResponse([]));
+
+      await api.moveMedia(['m1', 'm2', 'm3'], 'f1');
+
+      const body = JSON.parse(
+        vi.mocked(auth.authenticatedFetch).mock.calls[0][1]!.body as string,
+      );
+      expect(body.ids).toEqual(['m1', 'm2', 'm3']);
+      expect(body.folder_id).toBe('f1');
+    });
+  });
+
+  describe('updateMedia (additional)', () => {
+    it('sends without alt_text when not provided', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockJsonResponse({ id: 'm1', filename: 'test.jpg' }),
+      );
+
+      await api.updateMedia('m1', 'test.jpg');
+
+      const body = JSON.parse(vi.mocked(auth.authenticatedFetch).mock.calls[0][1]!.body as string);
+      expect(body.filename).toBe('test.jpg');
+      expect(body.alt_text).toBeUndefined();
+    });
+
+    it('throws on error', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Not found', 404),
+      );
+
+      await expect(api.updateMedia('m1', 'test.jpg')).rejects.toThrow('Not found');
+    });
+  });
+
+  describe('replaceMedia (additional)', () => {
+    it('throws on error', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Replace failed', 422),
+      );
+
+      const file = new File(['data'], 'new.jpg');
+      await expect(api.replaceMedia('m1', file)).rejects.toThrow('Replace failed');
+    });
+
+    it('sends FormData with file only', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockJsonResponse({ id: 'm1', filename: 'new.jpg' }),
+      );
+
+      const file = new File(['data'], 'new.jpg', { type: 'image/jpeg' });
+      await api.replaceMedia('m1', file);
+
+      const formData = vi.mocked(auth.authenticatedFetch).mock.calls[0][1]!.body as FormData;
+      expect(formData.get('file')).toBeInstanceOf(File);
+    });
+  });
+
+  describe('getMediaFolders (additional)', () => {
+    it('returns empty array', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(mockJsonResponse([]));
+
+      const result = await api.getMediaFolders();
+      expect(result).toEqual([]);
+    });
+
+    it('returns nested folder tree', async () => {
+      const folders = [
+        { id: 'f1', name: 'Root', children: [{ id: 'f2', name: 'Child', children: [] }] },
+      ];
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(mockJsonResponse(folders));
+
+      const result = await api.getMediaFolders();
+      expect(result).toHaveLength(1);
+      expect(result[0].children).toHaveLength(1);
+    });
+
+    it('throws on error', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Unauthorized', 401),
+      );
+
+      await expect(api.getMediaFolders()).rejects.toThrow('Unauthorized');
+    });
+  });
+
+  describe('getFrequentlyUsed (additional)', () => {
+    it('returns empty array', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(mockJsonResponse([]));
+
+      const result = await api.getFrequentlyUsed();
+      expect(result).toEqual([]);
+    });
+
+    it('throws on error', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Server error', 500),
+      );
+
+      await expect(api.getFrequentlyUsed()).rejects.toThrow('Server error');
+    });
+  });
+
+  describe('createMediaFolder (additional)', () => {
+    it('throws on error', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Duplicate name', 422),
+      );
+
+      await expect(api.createMediaFolder('Existing')).rejects.toThrow('Duplicate name');
+    });
+  });
+
+  describe('renameMediaFolder (additional)', () => {
+    it('throws on error', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Not found', 404),
+      );
+
+      await expect(api.renameMediaFolder('f1', 'New Name')).rejects.toThrow('Not found');
+    });
+  });
+
+  describe('deleteMediaFolder (additional)', () => {
+    it('throws on error', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Folder not empty', 409),
+      );
+
+      await expect(api.deleteMediaFolder('f1')).rejects.toThrow('Folder not empty');
+    });
+  });
+
+  describe('importFromUrl (additional)', () => {
+    it('throws on error', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Invalid URL', 422),
+      );
+
+      await expect(api.importFromUrl('bad-url')).rejects.toThrow('Invalid URL');
+    });
+  });
+
+  describe('request helper - 204 handling', () => {
+    it('returns undefined for 204 responses', async () => {
+      vi.mocked(auth.authenticatedFetch).mockResolvedValue({
+        ok: true,
+        status: 204,
+        json: vi.fn(),
+        headers: new Headers(),
+      } as unknown as Response);
+
+      const result = await api.deleteMedia(['m1']);
+      expect(result).toBeUndefined();
+    });
   });
 });

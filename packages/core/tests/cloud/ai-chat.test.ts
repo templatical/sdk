@@ -224,6 +224,104 @@ describe('useAiChat', () => {
       expect(chat.error.value).toBe('ai_generation_not_available');
       expect(chat.isGenerating.value).toBe(false);
     });
+
+    it('handles response with null body', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: null,
+        json: () => Promise.resolve({}),
+      } as unknown as Response);
+
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+        onError,
+      });
+
+      const result = await chat.sendPrompt('hi', mockContent, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(chat.error.value).toBe('Failed to read stream');
+      expect(onError).toHaveBeenCalled();
+    });
+
+    it('sets error when done event has no content', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([
+          { type: 'text', text: 'thinking...' },
+          { type: 'done', text: 'result' },  // no content field
+        ]),
+      );
+
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      const result = await chat.sendPrompt('hi', mockContent, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(chat.error.value).toBe('ai_apply_failed');
+      expect(onApply).not.toHaveBeenCalled();
+    });
+
+    it('handles malformed JSON in SSE stream gracefully', async () => {
+      // Build a stream with invalid JSON mixed in
+      const encoder = new TextEncoder();
+      const lines = 'data: {invalid json}\ndata: {"type":"done","text":"ok","content":{"blocks":[],"settings":{}},"conversation_id":"c1"}\n';
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(lines));
+          controller.close();
+        },
+      });
+
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: stream,
+        json: () => Promise.resolve({}),
+      } as unknown as Response);
+
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      const result = await chat.sendPrompt('hi', mockContent, mockMergeTags);
+
+      // Should skip invalid line and process valid done event
+      expect(result).not.toBeNull();
+      expect(onApply).toHaveBeenCalled();
+    });
+
+    it('ignores non-data lines in SSE stream', async () => {
+      const encoder = new TextEncoder();
+      const lines = 'event: ping\n: comment\ndata: {"type":"done","text":"ok","content":{"blocks":[],"settings":{}},"conversation_id":"c1"}\n';
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(lines));
+          controller.close();
+        },
+      });
+
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true, status: 200, body: stream, json: () => Promise.resolve({}),
+      } as unknown as Response);
+
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      const result = await chat.sendPrompt('hi', mockContent, mockMergeTags);
+      expect(result).not.toBeNull();
+    });
   });
 
   describe('loadSuggestions', () => {
@@ -257,6 +355,212 @@ describe('useAiChat', () => {
       await chat.loadSuggestions(mockContent, mockMergeTags);
 
       expect(authManager.authenticatedFetch).not.toHaveBeenCalled();
+    });
+
+    it('handles non-OK response silently', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        body: null,
+        json: () => Promise.resolve({}),
+      } as unknown as Response);
+
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      await chat.loadSuggestions(mockContent, mockMergeTags);
+
+      expect(chat.suggestions.value).toEqual([]);
+      expect(chat.isLoadingSuggestions.value).toBe(false);
+    });
+
+    it('handles null response body silently', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: null,
+        json: () => Promise.resolve({}),
+      } as unknown as Response);
+
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      await chat.loadSuggestions(mockContent, mockMergeTags);
+
+      expect(chat.suggestions.value).toEqual([]);
+      expect(chat.isLoadingSuggestions.value).toBe(false);
+    });
+
+    it('handles fetch error silently', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockRejectedValueOnce(new Error('Network error'));
+
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      await chat.loadSuggestions(mockContent, mockMergeTags);
+
+      expect(chat.suggestions.value).toEqual([]);
+      expect(chat.isLoadingSuggestions.value).toBe(false);
+    });
+  });
+
+  describe('sendPrompt edge cases', () => {
+    it('sends empty prompt string (no client-side validation)', async () => {
+      const resultContent = { rows: [{ id: 'r1' }] } as unknown as TemplateContent;
+
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([
+          { type: 'done', text: 'Result', content: resultContent, conversation_id: 'conv-1' },
+        ]),
+      );
+
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      const result = await chat.sendPrompt('', mockContent, mockMergeTags);
+
+      expect(result).toEqual(resultContent);
+      expect(chat.messages.value[0].content).toBe('');
+    });
+
+    it('returns null when stream closes before done event (partial stream)', async () => {
+      // Stream has text events but no done event - result stays null
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([
+          { type: 'text', text: 'Partial response...' },
+        ]),
+      );
+
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      const result = await chat.sendPrompt('hi', mockContent, mockMergeTags);
+
+      expect(result).toBeNull();
+      // Messages should still be present (not removed since no error was thrown)
+      expect(chat.messages.value).toHaveLength(2);
+      expect(chat.isGenerating.value).toBe(false);
+    });
+
+    it('clears suggestions when sending a prompt', async () => {
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      chat.suggestions.value = ['suggestion 1', 'suggestion 2'];
+
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([
+          { type: 'done', text: 'Done', content: { rows: [] }, conversation_id: 'conv-1' },
+        ]),
+      );
+
+      await chat.sendPrompt('hi', mockContent, mockMergeTags);
+
+      expect(chat.suggestions.value).toEqual([]);
+    });
+  });
+
+  describe('clearChat edge cases', () => {
+    it('does not clear suggestions', () => {
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      chat.suggestions.value = ['suggestion 1', 'suggestion 2'];
+
+      chat.clearChat();
+
+      expect(chat.suggestions.value).toEqual(['suggestion 1', 'suggestion 2']);
+    });
+  });
+
+  describe('toggleLastRevert edge cases', () => {
+    it('does not call onApply when no previous content (null lastPreviousContent)', () => {
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      // No prior sendPrompt - both lastPreviousContent and lastAppliedContent are null
+      chat.toggleLastRevert();
+
+      expect(onApply).not.toHaveBeenCalled();
+      expect(chat.isLastChangeReverted.value).toBe(true);
+    });
+
+    it('does not call onApply when re-applying with null lastAppliedContent', () => {
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      // Force reverted state without actual content
+      chat.isLastChangeReverted.value = true;
+
+      chat.toggleLastRevert();
+
+      expect(onApply).not.toHaveBeenCalled();
+      expect(chat.isLastChangeReverted.value).toBe(false);
+    });
+
+    it('triple toggle: revert -> re-apply -> revert again', async () => {
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+      });
+
+      const resultContent = { rows: [{ id: 'new' }], settings: {} } as unknown as TemplateContent;
+
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([
+          { type: 'done', text: 'Hello', content: resultContent, conversation_id: 'conv-1' },
+        ]),
+      );
+
+      await chat.sendPrompt('make it better', mockContent, mockMergeTags);
+      onApply.mockClear();
+
+      // First toggle: revert
+      chat.toggleLastRevert();
+      expect(chat.isLastChangeReverted.value).toBe(true);
+      expect(onApply).toHaveBeenCalledWith(mockContent);
+
+      onApply.mockClear();
+
+      // Second toggle: re-apply
+      chat.toggleLastRevert();
+      expect(chat.isLastChangeReverted.value).toBe(false);
+      expect(onApply).toHaveBeenCalledWith(resultContent);
+
+      onApply.mockClear();
+
+      // Third toggle: revert again
+      chat.toggleLastRevert();
+      expect(chat.isLastChangeReverted.value).toBe(true);
+      expect(onApply).toHaveBeenCalledWith(mockContent);
     });
   });
 });

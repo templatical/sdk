@@ -151,6 +151,97 @@ describe('useMediaLibrary', () => {
 
       expect(onError).toHaveBeenCalled();
     });
+
+    it('resets isLoading on error', async () => {
+      vi.mocked(MediaApiClient.prototype.browseMedia).mockRejectedValue(
+        new Error('Server error'),
+      );
+
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+        onError: vi.fn(),
+      });
+
+      await lib.loadItems();
+
+      expect(lib.isLoading.value).toBe(false);
+    });
+
+    it('omits folder_id when search query is set', async () => {
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      lib.searchQuery.value = 'logo';
+      lib.currentFolderId.value = 'f1';
+
+      await lib.loadItems();
+
+      const callArgs = vi.mocked(MediaApiClient.prototype.browseMedia).mock.calls;
+      const lastCall = callArgs[callArgs.length - 1][0];
+      expect(lastCall.folder_id).toBeUndefined();
+      expect(lastCall.search).toBe('logo');
+    });
+
+    it('includes folder_id when no search query', async () => {
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      lib.currentFolderId.value = 'f1';
+
+      await lib.loadItems();
+
+      const callArgs = vi.mocked(MediaApiClient.prototype.browseMedia).mock.calls;
+      const lastCall = callArgs[callArgs.length - 1][0];
+      expect(lastCall.folder_id).toBe('f1');
+    });
+
+    it('omits sort when set to newest (default)', async () => {
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      await lib.loadItems();
+
+      const callArgs = vi.mocked(MediaApiClient.prototype.browseMedia).mock.calls;
+      const lastCall = callArgs[callArgs.length - 1][0];
+      expect(lastCall.sort).toBeUndefined();
+    });
+
+    it('includes sort when not default', async () => {
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      lib.sortOption.value = 'name_asc';
+
+      await lib.loadItems();
+
+      const callArgs = vi.mocked(MediaApiClient.prototype.browseMedia).mock.calls;
+      const lastCall = callArgs[callArgs.length - 1][0];
+      expect(lastCall.sort).toBe('name_asc');
+    });
+
+    it('includes category filter when set', async () => {
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      lib.categoryFilter.value = 'images';
+
+      await lib.loadItems();
+
+      const callArgs = vi.mocked(MediaApiClient.prototype.browseMedia).mock.calls;
+      const lastCall = callArgs[callArgs.length - 1][0];
+      expect(lastCall.category).toBe('images');
+    });
   });
 
   describe('loadMore', () => {
@@ -210,6 +301,90 @@ describe('useMediaLibrary', () => {
       // browseMedia should only have been called once (loadItems)
       // because loadMore bails when isLoading is true
     });
+
+    it('does nothing when nextCursor is null', async () => {
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      // Load with no cursor (hasMore will be false)
+      vi.mocked(MediaApiClient.prototype.browseMedia).mockResolvedValue(
+        mockBrowseResponse([createMediaItem('m1')]),
+      );
+      await lib.loadItems();
+
+      // Force hasMore to true but cursor is null
+      lib.hasMore.value = true;
+      const callCount = vi.mocked(MediaApiClient.prototype.browseMedia).mock.calls.length;
+
+      await lib.loadMore();
+
+      expect(vi.mocked(MediaApiClient.prototype.browseMedia).mock.calls.length).toBe(callCount);
+    });
+
+    it('passes cursor to browseMedia', async () => {
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      vi.mocked(MediaApiClient.prototype.browseMedia).mockResolvedValue(
+        mockBrowseResponse([createMediaItem('m1')], 'cursor-abc'),
+      );
+      await lib.loadItems();
+
+      vi.mocked(MediaApiClient.prototype.browseMedia).mockResolvedValue(
+        mockBrowseResponse([createMediaItem('m2')]),
+      );
+      await lib.loadMore();
+
+      const callArgs = vi.mocked(MediaApiClient.prototype.browseMedia).mock.calls;
+      const lastCall = callArgs[callArgs.length - 1][0];
+      expect(lastCall.cursor).toBe('cursor-abc');
+    });
+
+    it('updates hasMore to false when no more items', async () => {
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      vi.mocked(MediaApiClient.prototype.browseMedia).mockResolvedValue(
+        mockBrowseResponse([createMediaItem('m1')], 'cursor-1'),
+      );
+      await lib.loadItems();
+      expect(lib.hasMore.value).toBe(true);
+
+      vi.mocked(MediaApiClient.prototype.browseMedia).mockResolvedValue(
+        mockBrowseResponse([createMediaItem('m2')], null),
+      );
+      await lib.loadMore();
+
+      expect(lib.hasMore.value).toBe(false);
+    });
+
+    it('calls onError on failure', async () => {
+      const onError = vi.fn();
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+        onError,
+      });
+
+      vi.mocked(MediaApiClient.prototype.browseMedia).mockResolvedValue(
+        mockBrowseResponse([createMediaItem('m1')], 'cursor-1'),
+      );
+      await lib.loadItems();
+
+      vi.mocked(MediaApiClient.prototype.browseMedia).mockRejectedValue(
+        new Error('Load more failed'),
+      );
+      await lib.loadMore();
+
+      expect(onError).toHaveBeenCalled();
+      expect(lib.isLoading.value).toBe(false);
+    });
   });
 
   describe('search, filter, sort', () => {
@@ -225,6 +400,18 @@ describe('useMediaLibrary', () => {
       expect(MediaApiClient.prototype.browseMedia).toHaveBeenCalled();
     });
 
+    it('search with empty string clears query', async () => {
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      await lib.search('logo');
+      await lib.search('');
+
+      expect(lib.searchQuery.value).toBe('');
+    });
+
     it('filterByCategory updates filter and reloads', async () => {
       const lib = useMediaLibrary({
         projectId: 'proj-1',
@@ -236,6 +423,18 @@ describe('useMediaLibrary', () => {
       expect(lib.categoryFilter.value).toBe('images');
     });
 
+    it('filterByCategory with null clears filter', async () => {
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      await lib.filterByCategory('images');
+      await lib.filterByCategory(null);
+
+      expect(lib.categoryFilter.value).toBeNull();
+    });
+
     it('sortBy updates option and reloads', async () => {
       const lib = useMediaLibrary({
         projectId: 'proj-1',
@@ -245,6 +444,19 @@ describe('useMediaLibrary', () => {
       await lib.sortBy('name_asc');
 
       expect(lib.sortOption.value).toBe('name_asc');
+    });
+
+    it('sortBy triggers API call with new sort', async () => {
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      const callsBefore = vi.mocked(MediaApiClient.prototype.browseMedia).mock.calls.length;
+
+      await lib.sortBy('size_desc');
+
+      expect(vi.mocked(MediaApiClient.prototype.browseMedia).mock.calls.length).toBeGreaterThan(callsBefore);
     });
   });
 
@@ -347,6 +559,31 @@ describe('useMediaLibrary', () => {
       expect(lib.uploadProgress.value).toBeNull();
       expect(lib.isUploading.value).toBe(false);
       expect(lib.items.value).toHaveLength(2);
+    });
+  });
+
+  describe('upload edge cases', () => {
+    it('handles partial failure in multi-file upload', async () => {
+      vi.mocked(MediaApiClient.prototype.uploadMedia)
+        .mockResolvedValueOnce(createMediaItem('m1'))
+        .mockRejectedValueOnce(new Error('Upload failed'))
+        .mockResolvedValueOnce(createMediaItem('m3'));
+
+      const onError = vi.fn();
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+        onError,
+      });
+
+      const files = [new File(['a'], 'a.jpg'), new File(['b'], 'b.jpg'), new File(['c'], 'c.jpg')];
+      await lib.uploadFiles(files);
+
+      // Two successful uploads, one failed
+      expect(lib.items.value).toHaveLength(2);
+      expect(onError).toHaveBeenCalledOnce();
+      expect(lib.isUploading.value).toBe(false);
+      expect(lib.uploadProgress.value).toBeNull();
     });
   });
 
@@ -533,6 +770,26 @@ describe('useMediaLibrary', () => {
 
       expect(moveMediaMock.mock.calls.length - callsBefore).toBe(0);
     });
+
+    it('updates items in-place when in root folder', async () => {
+      const moved = [createMediaItem('m1', { folder_id: 'f2' })];
+      vi.mocked(MediaApiClient.prototype.moveMedia).mockResolvedValue(moved);
+
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      lib.currentFolderId.value = null; // root
+      lib.items.value = [createMediaItem('m1'), createMediaItem('m2')];
+      lib.selectedItems.value = new Set(['m1']);
+
+      await lib.moveSelected('f2');
+
+      // In root, items are updated in place (not removed)
+      expect(lib.items.value).toHaveLength(2);
+      expect(lib.items.value[0].folder_id).toBe('f2');
+    });
   });
 
   describe('updateFile', () => {
@@ -636,6 +893,31 @@ describe('useMediaLibrary', () => {
       expect(lib.findFolderInTree(tree, 'nonexistent')).toBeNull();
     });
 
+    it('findFolderInTree returns null for empty tree', () => {
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      expect(lib.findFolderInTree([], 'any-id')).toBeNull();
+    });
+
+    it('deleteFolder stays in current folder if different from deleted', async () => {
+      vi.mocked(MediaApiClient.prototype.deleteMediaFolder).mockResolvedValue(undefined);
+
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      lib.folders.value = [createFolder('f1', 'Folder1'), createFolder('f2', 'Folder2')];
+      lib.currentFolderId.value = 'f1';
+
+      await lib.deleteFolder('f2');
+
+      expect(lib.currentFolderId.value).toBe('f1');
+    });
+
     it('deleteFolder navigates to parent if current folder is deleted', async () => {
       vi.mocked(MediaApiClient.prototype.deleteMediaFolder).mockResolvedValue(undefined);
 
@@ -651,6 +933,74 @@ describe('useMediaLibrary', () => {
       await lib.deleteFolder('f2');
 
       expect(lib.currentFolderId.value).toBe('f1');
+    });
+  });
+
+  describe('renameFolder', () => {
+    it('renames folder and reloads tree', async () => {
+      vi.mocked(MediaApiClient.prototype.renameMediaFolder).mockResolvedValue(
+        createFolder('f1', 'Renamed'),
+      );
+
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      await lib.renameFolder('f1', 'Renamed');
+
+      expect(MediaApiClient.prototype.renameMediaFolder).toHaveBeenCalledWith('f1', 'Renamed');
+      expect(MediaApiClient.prototype.getMediaFolders).toHaveBeenCalled();
+    });
+
+    it('calls onError on failure', async () => {
+      vi.mocked(MediaApiClient.prototype.renameMediaFolder).mockRejectedValue(
+        new Error('Rename failed'),
+      );
+
+      const onError = vi.fn();
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+        onError,
+      });
+
+      await lib.renameFolder('f1', 'Bad Name');
+
+      expect(onError).toHaveBeenCalled();
+    });
+  });
+
+  describe('loadFrequentlyUsed', () => {
+    it('loads frequently used items', async () => {
+      const items = [createMediaItem('m1'), createMediaItem('m2')];
+      vi.mocked(MediaApiClient.prototype.getFrequentlyUsed).mockResolvedValue(items);
+
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      await lib.loadFrequentlyUsed();
+
+      expect(lib.frequentlyUsedItems.value).toEqual(items);
+    });
+
+    it('calls onError on failure', async () => {
+      vi.mocked(MediaApiClient.prototype.getFrequentlyUsed).mockRejectedValue(
+        new Error('Failed'),
+      );
+
+      const onError = vi.fn();
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+        onError,
+      });
+
+      await lib.loadFrequentlyUsed();
+
+      expect(onError).toHaveBeenCalled();
     });
   });
 
@@ -714,6 +1064,28 @@ describe('useMediaLibrary', () => {
       expect(lib.previewItem.value!.filename).toBe('replaced.jpg');
       expect(lib.showReplaceWarning.value).toBe(false);
       expect(lib.pendingReplaceItem.value).toBeNull();
+    });
+
+    it('replaceFile sets replaceError on failure', async () => {
+      vi.mocked(MediaApiClient.prototype.replaceMedia).mockRejectedValue(
+        new Error('Replace failed'),
+      );
+
+      const onError = vi.fn();
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+        onError,
+      });
+
+      lib.pendingReplaceItem.value = createMediaItem('m1');
+
+      const result = await lib.replaceFile(new File(['data'], 'new.jpg'));
+
+      expect(result).toBeNull();
+      expect(lib.replaceError.value).toBe('Replace failed');
+      expect(lib.isReplacing.value).toBe(false);
+      expect(onError).toHaveBeenCalled();
     });
 
     it('replaceFile returns null when no pending item', async () => {

@@ -49,4 +49,31 @@ describe('convertMergeTagsToValues', () => {
   it('returns unchanged string with no merge tags', () => {
     expect(convertMergeTagsToValues('Hello World')).toBe('Hello World');
   });
+
+  it('handles nested merge tag spans', () => {
+    // Outer span with inner content that includes another span
+    const html = '<span data-merge-tag="{{outer}}"><span data-merge-tag="{{inner}}">Inner</span></span>';
+    const result = convertMergeTagsToValues(html);
+    // The /s flag makes .*? match across the inner </span>, so the outer
+    // replacement consumes everything up to the first </span> it finds.
+    // The outer tag value replaces the whole thing, leaving a trailing </span>.
+    expect(result).toBe('{{outer}}</span>');
+  });
+
+  it('handles malformed HTML with unclosed spans gracefully', () => {
+    const html = '<span data-merge-tag="{{name}}">unclosed';
+    // The regex requires a closing </span>, so this should not match
+    const result = convertMergeTagsToValues(html);
+    expect(result).toBe(html);
+  });
+
+  it('handles merge tag with extra attributes', () => {
+    const html = '<span class="tag" data-merge-tag="{{name}}" style="color:red">Label</span>';
+    expect(convertMergeTagsToValues(html)).toBe('{{name}}');
+  });
+
+  it('handles logic merge tag with extra attributes', () => {
+    const html = '<span class="logic" data-logic-merge-tag="{% if active %}" style="color:blue">IF</span>';
+    expect(convertMergeTagsToValues(html)).toBe('{% if active %}');
+  });
 });

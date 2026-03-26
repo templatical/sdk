@@ -362,5 +362,122 @@ describe('ApiClient', () => {
 
       await expect(api.getTemplate('id')).rejects.toThrow('HTTP error 500');
     });
+
+    it('handles 400 Bad Request', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Bad request data', 400),
+      );
+
+      await expect(api.getTemplate('id')).rejects.toThrow('Bad request data');
+    });
+
+    it('handles 403 Forbidden', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Access denied', 403),
+      );
+
+      await expect(api.getTemplate('id')).rejects.toThrow('Access denied');
+    });
+
+    it('handles empty validation errors object', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Validation failed', 422, {}),
+      );
+
+      await expect(api.getTemplate('id')).rejects.toThrow('Validation failed');
+    });
+
+    it('handles network error (fetch throws)', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockRejectedValue(
+        new TypeError('Failed to fetch'),
+      );
+
+      await expect(api.getTemplate('id')).rejects.toThrow('Failed to fetch');
+    });
+
+    it('handles validation errors with empty array for a field', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockErrorResponse('Validation failed', 422, { name: [] }),
+      );
+
+      // Empty array means no first element, so falls back to message
+      await expect(api.getTemplate('id')).rejects.toThrow('Validation failed');
+    });
+  });
+
+  describe('createComment with block_id variants', () => {
+    it('sends empty string block_id', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockResponse({ id: 'c1' }),
+      );
+
+      await api.createComment('tmpl-1', {
+        body: 'hi',
+        block_id: '',
+        user_id: 'u1',
+        user_name: 'U',
+        user_signature: 's',
+      });
+
+      const callArgs = vi.mocked(authManager.authenticatedFetch).mock.calls[0];
+      const body = JSON.parse(callArgs[1]!.body as string);
+      expect(body.block_id).toBe('');
+    });
+
+    it('sends undefined block_id (omitted from payload)', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockResponse({ id: 'c1' }),
+      );
+
+      await api.createComment('tmpl-1', {
+        body: 'hi',
+        user_id: 'u1',
+        user_name: 'U',
+        user_signature: 's',
+      });
+
+      const callArgs = vi.mocked(authManager.authenticatedFetch).mock.calls[0];
+      const body = JSON.parse(callArgs[1]!.body as string);
+      expect(body.block_id).toBeUndefined();
+    });
+  });
+
+  describe('comments edge cases', () => {
+    it('updates a comment', async () => {
+      const updated = { id: 'c1', body: 'updated' };
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockResponse(updated),
+      );
+
+      const result = await api.updateComment('tmpl-1', 'c1', {
+        body: 'updated',
+        user_id: 'u1',
+        user_name: 'U',
+        user_signature: 's',
+      });
+
+      expect(result).toEqual(updated);
+      expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/comments/c1'),
+        expect.objectContaining({ method: 'PUT' }),
+      );
+    });
+
+    it('deletes a comment', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockResponse(undefined, 204),
+      );
+
+      await api.deleteComment('tmpl-1', 'c1', {
+        user_id: 'u1',
+        user_name: 'U',
+        user_signature: 's',
+      });
+
+      expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/comments/c1'),
+        expect.objectContaining({ method: 'DELETE' }),
+      );
+    });
   });
 });

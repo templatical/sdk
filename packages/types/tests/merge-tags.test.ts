@@ -6,6 +6,7 @@ import {
     isLogicMergeTagValue,
     getLogicMergeTagKeyword,
     resolveHtmlMergeTagLabels,
+    resolveHtmlLogicMergeTagLabels,
     restoreMergeTagMarkup,
     resolveSyntax,
     SYNTAX_PRESETS,
@@ -115,5 +116,183 @@ describe('restoreMergeTagMarkup', () => {
         );
         expect(result).toContain('data-merge-tag="{{first_name}}"');
         expect(result).toContain('First Name');
+    });
+});
+
+describe('resolveHtmlLogicMergeTagLabels', () => {
+    it('replaces logic tag labels inside spans', () => {
+        const html = '<span data-logic-merge-tag="{% if active %}">old_label</span>';
+        const result = resolveHtmlLogicMergeTagLabels(html, SYNTAX_PRESETS.liquid);
+        expect(result).toContain('>IF<');
+    });
+
+    it('handles multiple logic tag spans', () => {
+        const html = '<span data-logic-merge-tag="{% if active %}">old</span> content <span data-logic-merge-tag="{% endif %}">old2</span>';
+        const result = resolveHtmlLogicMergeTagLabels(html, SYNTAX_PRESETS.liquid);
+        expect(result).toContain('>IF<');
+        expect(result).toContain('>ENDIF<');
+    });
+
+    it('leaves HTML without logic tags unchanged', () => {
+        const html = '<p>No logic tags here</p>';
+        const result = resolveHtmlLogicMergeTagLabels(html, SYNTAX_PRESETS.liquid);
+        expect(result).toBe(html);
+    });
+});
+
+describe('cross-syntax merge tag detection', () => {
+    it('isMergeTagValue works with handlebars syntax', () => {
+        expect(isMergeTagValue('{{name}}', SYNTAX_PRESETS.handlebars)).toBe(true);
+        expect(isMergeTagValue('{{{raw}}}', SYNTAX_PRESETS.handlebars)).toBe(true);
+    });
+
+    it('isMergeTagValue works with mailchimp syntax', () => {
+        expect(isMergeTagValue('*|FNAME|*', SYNTAX_PRESETS.mailchimp)).toBe(true);
+        expect(isMergeTagValue('{{ not_mailchimp }}', SYNTAX_PRESETS.mailchimp)).toBe(false);
+    });
+
+    it('isMergeTagValue works with ampscript syntax', () => {
+        expect(isMergeTagValue('%%=v(@var)=%%', SYNTAX_PRESETS.ampscript)).toBe(true);
+    });
+
+    it('containsMergeTag works with handlebars syntax', () => {
+        expect(containsMergeTag('Hello {{name}}!', SYNTAX_PRESETS.handlebars)).toBe(true);
+        expect(containsMergeTag('{{#if active}}show{{/if}}', SYNTAX_PRESETS.handlebars)).toBe(true);
+    });
+
+    it('containsMergeTag works with mailchimp syntax', () => {
+        expect(containsMergeTag('Hi *|FNAME|*', SYNTAX_PRESETS.mailchimp)).toBe(true);
+    });
+});
+
+describe('restoreMergeTagMarkup edge cases', () => {
+    it('does not double-wrap already wrapped merge tags', () => {
+        const html = '<span data-merge-tag="{{ name }}">Name</span>';
+        const result = restoreMergeTagMarkup(
+            html,
+            [{ label: 'Name', value: '{{ name }}' }],
+            SYNTAX_PRESETS.liquid,
+        );
+        // Should not double-wrap - lookahead prevents it
+        const count = (result.match(/data-merge-tag/g) || []).length;
+        expect(count).toBe(1);
+    });
+
+    it('wraps unwrapped merge tags while preserving wrapped ones', () => {
+        const html = '<span data-merge-tag="{{ name }}">Name</span> and {{ email }}';
+        const result = restoreMergeTagMarkup(
+            html,
+            [
+                { label: 'Name', value: '{{ name }}' },
+                { label: 'Email', value: '{{ email }}' },
+            ],
+            SYNTAX_PRESETS.liquid,
+        );
+        expect(result).toContain('data-merge-tag="{{ email }}"');
+        expect((result.match(/data-merge-tag/g) || []).length).toBe(2);
+    });
+
+    it('wraps logic tags in addition to value tags', () => {
+        const html = '{{ name }} and {% if active %}show{% endif %}';
+        const result = restoreMergeTagMarkup(
+            html,
+            [{ label: 'Name', value: '{{ name }}' }],
+            SYNTAX_PRESETS.liquid,
+        );
+        expect(result).toContain('data-merge-tag="{{ name }}"');
+        expect(result).toContain('data-logic-merge-tag="{% if active %}"');
+        expect(result).toContain('data-logic-merge-tag="{% endif %}"');
+    });
+});
+
+describe('isMergeTagValue edge cases', () => {
+    it('handles whitespace around tags', () => {
+        expect(isMergeTagValue('  {{ name }}  ', SYNTAX_PRESETS.liquid)).toBe(true);
+    });
+
+    it('returns false for empty string', () => {
+        expect(isMergeTagValue('', SYNTAX_PRESETS.liquid)).toBe(false);
+    });
+
+    it('returns false for null-ish input', () => {
+        expect(isMergeTagValue(null as any, SYNTAX_PRESETS.liquid)).toBe(false);
+        expect(isMergeTagValue(undefined as any, SYNTAX_PRESETS.liquid)).toBe(false);
+    });
+});
+
+describe('restoreMergeTagMarkup with regex special chars', () => {
+    it('handles merge tag values containing regex special characters', () => {
+        const specialTags: MergeTag[] = [
+            { label: 'Price', value: '{{price.$total}}' },
+        ];
+        const html = 'Total: {{price.$total}}';
+        const result = restoreMergeTagMarkup(html, specialTags, SYNTAX_PRESETS.liquid);
+        expect(result).toContain('data-merge-tag="{{price.$total}}"');
+        expect(result).toContain('>Price<');
+    });
+
+    it('handles merge tag values with parentheses', () => {
+        const specialTags: MergeTag[] = [
+            { label: 'Calc', value: '{{calc(1+2)}}' },
+        ];
+        const html = 'Result: {{calc(1+2)}}';
+        const result = restoreMergeTagMarkup(html, specialTags, SYNTAX_PRESETS.liquid);
+        expect(result).toContain('data-merge-tag="{{calc(1+2)}}"');
+    });
+});
+
+describe('getMergeTagLabel cross-syntax', () => {
+    it('returns label for handlebars syntax tags', () => {
+        const hbTags: MergeTag[] = [{ label: 'Name', value: '{{name}}' }];
+        expect(getMergeTagLabel('{{name}}', hbTags)).toBe('Name');
+    });
+
+    it('returns label for mailchimp syntax tags', () => {
+        const mcTags: MergeTag[] = [{ label: 'First Name', value: '*|FNAME|*' }];
+        expect(getMergeTagLabel('*|FNAME|*', mcTags)).toBe('First Name');
+    });
+
+    it('returns label for ampscript syntax tags', () => {
+        const ampTags: MergeTag[] = [{ label: 'Variable', value: '%%=v(@var)=%%' }];
+        expect(getMergeTagLabel('%%=v(@var)=%%', ampTags)).toBe('Variable');
+    });
+});
+
+describe('isMergeTagValue cross-syntax', () => {
+    it('works with django syntax (same as liquid)', () => {
+        expect(isMergeTagValue('{{name}}', SYNTAX_PRESETS.django)).toBe(true);
+    });
+
+    it('returns false for mailchimp syntax with liquid tag', () => {
+        expect(isMergeTagValue('{{name}}', SYNTAX_PRESETS.mailchimp)).toBe(false);
+    });
+
+    it('returns false for ampscript syntax with liquid tag', () => {
+        expect(isMergeTagValue('{{name}}', SYNTAX_PRESETS.ampscript)).toBe(false);
+    });
+});
+
+describe('containsMergeTag with empty string', () => {
+    it('returns false for empty string with all syntaxes', () => {
+        expect(containsMergeTag('', SYNTAX_PRESETS.liquid)).toBe(false);
+        expect(containsMergeTag('', SYNTAX_PRESETS.handlebars)).toBe(false);
+        expect(containsMergeTag('', SYNTAX_PRESETS.mailchimp)).toBe(false);
+        expect(containsMergeTag('', SYNTAX_PRESETS.ampscript)).toBe(false);
+        expect(containsMergeTag('', SYNTAX_PRESETS.django)).toBe(false);
+    });
+
+    it('returns false for null-ish input', () => {
+        expect(containsMergeTag(null as any, SYNTAX_PRESETS.liquid)).toBe(false);
+        expect(containsMergeTag(undefined as any, SYNTAX_PRESETS.liquid)).toBe(false);
+    });
+});
+
+describe('containsMergeTag with ampscript syntax', () => {
+    it('detects ampscript value tags', () => {
+        expect(containsMergeTag('Hello %%=v(@name)=%%', SYNTAX_PRESETS.ampscript)).toBe(true);
+    });
+
+    it('detects ampscript logic tags', () => {
+        expect(containsMergeTag('%%[IF @active]%%', SYNTAX_PRESETS.ampscript)).toBe(true);
     });
 });

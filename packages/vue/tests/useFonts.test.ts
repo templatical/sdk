@@ -59,6 +59,16 @@ describe('useFonts', () => {
 
       expect(fonts.value.find((f) => f.label === 'Roboto')).toBeDefined();
     });
+
+    it('custom font with same name as built-in is included as custom', () => {
+      const { fonts } = useFonts({
+        customFonts: [{ name: 'Arial', url: 'https://fonts.com/arial-custom.css' }],
+      });
+
+      const arialFonts = fonts.value.filter((f) => f.label === 'Arial');
+      expect(arialFonts.length).toBe(2); // built-in + custom
+      expect(arialFonts.some((f) => f.isCustom)).toBe(true);
+    });
   });
 
   describe('defaultFont', () => {
@@ -105,6 +115,78 @@ describe('useFonts', () => {
       const { getDefaultFont } = useFonts({ defaultFont: 'NonexistentFont' });
       expect(getDefaultFont()).toBe('Arial, sans-serif');
     });
+
+    it('returns fallback when no config provided', () => {
+      const { getDefaultFont } = useFonts();
+      expect(getDefaultFont()).toBe('Arial, sans-serif');
+    });
+
+    it('returns custom font value when available', () => {
+      const { getDefaultFont } = useFonts({
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+        defaultFont: 'Roboto',
+      });
+      expect(getDefaultFont()).toBe('Roboto');
+    });
+
+    it('returns fallback when default is custom but custom fonts disabled', () => {
+      const { getDefaultFont, setCustomFontsEnabled } = useFonts({
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+        defaultFont: 'Roboto',
+      });
+
+      setCustomFontsEnabled(false);
+      expect(getDefaultFont()).toBe('Arial, sans-serif');
+    });
+
+    it('is case-insensitive for matching', () => {
+      const { getDefaultFont } = useFonts({ defaultFont: 'arial' });
+      expect(getDefaultFont()).toBe('Arial, sans-serif');
+    });
+  });
+
+  describe('isFontAvailable (via getDefaultFont behavior)', () => {
+    it('recognizes built-in fonts', () => {
+      // isFontAvailable is internal but drives getDefaultFont behavior
+      const { getDefaultFont } = useFonts({ defaultFont: 'Georgia' });
+      expect(getDefaultFont()).toBe('Georgia, serif');
+    });
+
+    it('recognizes custom fonts', () => {
+      const { getDefaultFont } = useFonts({
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+        defaultFont: 'Roboto',
+      });
+      expect(getDefaultFont()).toBe('Roboto');
+    });
+
+    it('does not recognize unknown fonts', () => {
+      const { getDefaultFont } = useFonts({ defaultFont: 'FakeFont' });
+      expect(getDefaultFont()).toBe('Arial, sans-serif');
+    });
+  });
+
+  describe('isBuiltInFont (via custom fonts disabled behavior)', () => {
+    it('allows built-in font as default when custom fonts disabled', () => {
+      const { getDefaultFont, setCustomFontsEnabled } = useFonts({
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+        defaultFont: 'Georgia',
+      });
+
+      setCustomFontsEnabled(false);
+      // Georgia is built-in so it should still work
+      expect(getDefaultFont()).toBe('Georgia, serif');
+    });
+
+    it('rejects custom font as default when custom fonts disabled', () => {
+      const { getDefaultFont, setCustomFontsEnabled } = useFonts({
+        customFonts: [{ name: 'MyFont', url: 'https://fonts.com/myfont.css' }],
+        defaultFont: 'MyFont',
+      });
+
+      setCustomFontsEnabled(false);
+      expect(getDefaultFont()).toBe('Arial, sans-serif');
+    });
   });
 
   describe('getFontWithFallback', () => {
@@ -143,6 +225,13 @@ describe('useFonts', () => {
       expect(getFontWithFallback('Custom, serif')).toBe('Custom, serif');
     });
 
+    it('handles empty string font name', () => {
+      const { getFontWithFallback } = useFonts();
+      const result = getFontWithFallback('');
+      // Empty string is falsy, so falls back to default
+      expect(result).toBe('Arial, sans-serif');
+    });
+
     it('is case-insensitive', () => {
       const { getFontWithFallback } = useFonts();
       expect(getFontWithFallback('arial')).toBe('Arial, sans-serif');
@@ -155,6 +244,49 @@ describe('useFonts', () => {
       const { isLoaded, loadCustomFonts } = useFonts();
       await loadCustomFonts();
       expect(isLoaded.value).toBe(true);
+    });
+  });
+
+  describe('duplicate fonts in list', () => {
+    it('includes both built-in and custom font with same name', () => {
+      const { fonts } = useFonts({
+        customFonts: [
+          { name: 'Arial', url: 'https://fonts.com/arial-custom.css' },
+        ],
+      });
+
+      const arialFonts = fonts.value.filter((f) => f.label === 'Arial');
+      expect(arialFonts.length).toBe(2);
+    });
+
+    it('multiple custom fonts appear correctly', () => {
+      const { fonts } = useFonts({
+        customFonts: [
+          { name: 'Roboto', url: 'https://fonts.com/roboto.css' },
+          { name: 'Open Sans', url: 'https://fonts.com/opensans.css' },
+          { name: 'Lato', url: 'https://fonts.com/lato.css' },
+        ],
+      });
+
+      expect(fonts.value.some((f) => f.label === 'Roboto' && f.isCustom)).toBe(true);
+      expect(fonts.value.some((f) => f.label === 'Open Sans' && f.isCustom)).toBe(true);
+      expect(fonts.value.some((f) => f.label === 'Lato' && f.isCustom)).toBe(true);
+      // 7 built-in + 3 custom
+      expect(fonts.value.length).toBe(10);
+    });
+  });
+
+  describe('setCustomFontsEnabled', () => {
+    it('toggles custom fonts visibility', () => {
+      const { fonts, setCustomFontsEnabled } = useFonts({
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+      });
+
+      expect(fonts.value.length).toBe(8); // 7 built-in + 1 custom
+      setCustomFontsEnabled(false);
+      expect(fonts.value.length).toBe(7); // only built-in
+      setCustomFontsEnabled(true);
+      expect(fonts.value.length).toBe(8); // back to 8
     });
   });
 });

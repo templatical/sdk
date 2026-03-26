@@ -166,6 +166,61 @@ describe('AuthManager', () => {
       await expect(auth.initialize()).rejects.toThrow('Invalid token response');
     });
 
+    it('throws on malformed JSON response', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.reject(new SyntaxError('Unexpected token')),
+      }));
+      const auth = new AuthManager({ url: 'https://example.com/auth' });
+
+      await expect(auth.initialize()).rejects.toThrow();
+    });
+
+    it('throws when response missing token field', async () => {
+      vi.stubGlobal('fetch', createMockFetch({
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        project_id: 'proj-1',
+        tenant: 'acme',
+      }));
+      const auth = new AuthManager({ url: 'https://example.com/auth' });
+
+      await expect(auth.initialize()).rejects.toThrow('Invalid token response');
+    });
+
+    it('throws when response missing expires_at field', async () => {
+      vi.stubGlobal('fetch', createMockFetch({
+        token: 'test-token',
+        project_id: 'proj-1',
+        tenant: 'acme',
+      }));
+      const auth = new AuthManager({ url: 'https://example.com/auth' });
+
+      await expect(auth.initialize()).rejects.toThrow('Invalid token response');
+    });
+
+    it('throws when response missing project_id field', async () => {
+      vi.stubGlobal('fetch', createMockFetch({
+        token: 'test-token',
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        tenant: 'acme',
+      }));
+      const auth = new AuthManager({ url: 'https://example.com/auth' });
+
+      await expect(auth.initialize()).rejects.toThrow('Invalid token response');
+    });
+
+    it('throws when response missing tenant field', async () => {
+      vi.stubGlobal('fetch', createMockFetch({
+        token: 'test-token',
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        project_id: 'proj-1',
+      }));
+      const auth = new AuthManager({ url: 'https://example.com/auth' });
+
+      await expect(auth.initialize()).rejects.toThrow('Invalid token response');
+    });
+
     it('throws on HTTP error', async () => {
       vi.stubGlobal('fetch', createMockFetch({}, 401));
       const auth = new AuthManager({ url: 'https://example.com/auth' });
@@ -283,6 +338,26 @@ describe('AuthManager', () => {
       // Initial auth + API call + refresh + retry = 4 calls
       expect(mockFetch).toHaveBeenCalledTimes(4);
     });
+
+    it('throws when token refresh fails after 401 (cascade failure)', async () => {
+      const mockFetch = createMockFetch();
+      vi.stubGlobal('fetch', mockFetch);
+
+      const auth = new AuthManager({
+        url: 'https://example.com/auth',
+        baseUrl: 'https://api.example.com',
+      });
+      await auth.initialize();
+
+      // API call returns 401, then token refresh fails
+      mockFetch
+        .mockResolvedValueOnce({ ok: false, status: 401 })
+        .mockResolvedValueOnce({ ok: false, status: 500, json: () => Promise.resolve({}) });
+
+      await expect(auth.authenticatedFetch('/api/test')).rejects.toThrow(
+        'Token refresh failed: 500',
+      );
+    });
   });
 });
 
@@ -331,5 +406,88 @@ describe('createSdkAuthManager', () => {
 
     await expect(auth.initialize()).rejects.toThrow();
     expect(onError).toHaveBeenCalled();
+  });
+});
+
+describe('token expiration', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', createMockFetch());
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('refreshes token when expiring within threshold', async () => {
+    // First init with token that expires in 30 seconds (within 60s threshold)
+    const nearExpiryData = {
+      ...VALID_TOKEN_DATA,
+      expires_at: Math.floor(Date.now() / 1000) + 30, // 30 seconds from now
+    };
+    const mockFetch = createMockFetch(nearExpiryData);
+    vi.stubGlobal('fetch', mockFetch);
+
+    const auth = new AuthManager({ url: 'https://example.com/auth' });
+    await auth.initialize();
+
+    // Reset to return fresh token
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        ...VALID_TOKEN_DATA,
+        token: 'fresh-token',
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+      }),
+    });
+
+    // authenticatedFetch should trigger refresh because token is expiring soon
+    mockFetch.mockResolvedValueOnce({ ok: true, status: 200 });
+
+    await auth.authenticatedFetch('/api/test');
+
+    // Should have called fetch 3 times: init + refresh + API call
+    expect(mockFetch.mock.calls.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('reuses valid token without refreshing', async () => {
+    const mockFetch = createMockFetch();
+    vi.stubGlobal('fetch', mockFetch);
+
+    const auth = new AuthManager({ url: 'https://example.com/auth' });
+    await auth.initialize();
+
+    // API call should reuse token (no refresh needed)
+    mockFetch.mockResolvedValueOnce({ ok: true, status: 200 });
+
+    await auth.authenticatedFetch('/api/test');
+
+    // Only 2 calls: init + API call (no refresh)
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not refresh token when it expires well above the threshold', async () => {
+    // Token expires in 61 seconds (safely above the 60s threshold)
+    const boundaryData = {
+      ...VALID_TOKEN_DATA,
+      expires_at: Math.floor(Date.now() / 1000) + 61,
+    };
+    const mockFetch = createMockFetch(boundaryData);
+    vi.stubGlobal('fetch', mockFetch);
+
+    const auth = new AuthManager({ url: 'https://example.com/auth' });
+    await auth.initialize();
+
+    // API call should reuse token (no refresh needed)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({}),
+    });
+
+    await auth.authenticatedFetch('/api/test');
+
+    // Only 2 calls: init + API call (no refresh)
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });

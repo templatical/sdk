@@ -104,3 +104,57 @@ describe('type guards', () => {
         expect(isText(block)).toBe(false);
     });
 });
+
+describe('type guards return false for wrong block types', () => {
+    it('isText returns false for image block', () => {
+        expect(isText(createImageBlock())).toBe(false);
+    });
+
+    it('isImage returns false for text block', () => {
+        expect(isImage(createTextBlock())).toBe(false);
+    });
+
+    it('isButton returns false for section block', () => {
+        expect(isButton(createSectionBlock())).toBe(false);
+    });
+
+    it('isDivider returns false for spacer block', () => {
+        expect(isDivider(createSpacerBlock())).toBe(false);
+    });
+
+    it('isVideo returns false for image block', () => {
+        expect(isVideo(createImageBlock())).toBe(false);
+    });
+
+    it('isSocialIcons returns false for menu block', () => {
+        expect(isSocialIcons(createMenuBlock())).toBe(false);
+    });
+
+    it('isSpacer returns false for divider block', () => {
+        expect(isSpacer(createDividerBlock())).toBe(false);
+    });
+
+    it('isHtml returns false for text block', () => {
+        expect(isHtml(createTextBlock())).toBe(false);
+    });
+
+    it('isMenu returns false for table block', () => {
+        expect(isMenu(createTableBlock())).toBe(false);
+    });
+
+    it('isTable returns false for menu block', () => {
+        expect(isTable(createMenuBlock())).toBe(false);
+    });
+
+    it('isCountdown returns false for text block', () => {
+        expect(isCountdown(createTextBlock())).toBe(false);
+    });
+
+    it('isCustomBlock returns false for text block', () => {
+        expect(isCustomBlock(createTextBlock())).toBe(false);
+    });
+
+    it('isSection returns false for text block', () => {
+        expect(isSection(createTextBlock())).toBe(false);
+    });
+});

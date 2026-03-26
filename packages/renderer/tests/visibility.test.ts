@@ -59,3 +59,44 @@ describe('getCssClassAttr', () => {
     expect(getCssClassAttr(block)).toBe(' css-class="tpl-hide-tablet"');
   });
 });
+
+describe('visibility with null/undefined', () => {
+  it('isHiddenOnAll returns false when visibility is undefined', () => {
+    const block = createTextBlock();
+    // block.visibility is undefined by default
+    expect(block.visibility).toBeUndefined();
+    expect(isHiddenOnAll(block)).toBe(false);
+  });
+
+  it('getCssClasses returns empty string when visibility is undefined', () => {
+    const block = createTextBlock();
+    expect(getCssClasses(block)).toBe('');
+  });
+
+  it('getCssClassAttr returns empty string when visibility is undefined', () => {
+    const block = createTextBlock();
+    expect(getCssClassAttr(block)).toBe('');
+  });
+
+  it('returns empty string when all viewports visible', () => {
+    const block = createTextBlock({
+      visibility: { desktop: true, tablet: true, mobile: true },
+    });
+    expect(getCssClasses(block)).toBe('');
+    expect(getCssClassAttr(block)).toBe('');
+  });
+
+  it('returns only desktop hide class', () => {
+    const block = createTextBlock({
+      visibility: { desktop: false, tablet: true, mobile: true },
+    });
+    expect(getCssClasses(block)).toBe('tpl-hide-desktop');
+  });
+
+  it('returns only mobile hide class', () => {
+    const block = createTextBlock({
+      visibility: { desktop: true, tablet: true, mobile: false },
+    });
+    expect(getCssClasses(block)).toBe('tpl-hide-mobile');
+  });
+});
