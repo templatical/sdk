@@ -15,10 +15,14 @@
     "@codemirror/language": "^6.12.2",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.40.0",
+    "@templatical/import-beefree": "workspace:*",
     "@templatical/renderer": "workspace:*",
     "@templatical/types": "workspace:*",
     "@templatical/vue": "workspace:*",
+    "@vueuse/core": "^14.0.0",
+    "@vueuse/integrations": "^14.2.1",
     "codemirror": "^6.0.2",
+    "focus-trap": "^8.0.1",
     "vue": "^3.5.0"
   },
   "devDependencies": {

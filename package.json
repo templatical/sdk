@@ -11,8 +11,8 @@
     "build:media-library": "vite build --config vite.media-library.config.ts",
     "build:all-sdk": "bun run build:email-editor && bun run build:media-library",
     "test": "bun run --filter './packages/*' test",
-    "lint": "eslint packages/*/src",
-    "format": "prettier --write 'packages/*/src/**/*.{ts,vue}'",
+    "lint": "eslint packages/*/src apps/*/src",
+    "format": "prettier --write 'packages/*/src/**/*.{ts,vue}' 'apps/*/src/**/*.{ts,vue}'",
     "typecheck": "bun run --filter './packages/*' typecheck",
     "ci": "bun run format && bun run lint && bun run typecheck && bun run test"
   },

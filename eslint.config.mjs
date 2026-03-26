@@ -24,7 +24,7 @@ export default tseslint.config(
 
   // ── TypeScript files ──────────────────────────────────────────────────
   {
-    files: ["packages/*/src/**/*.ts"],
+    files: ["packages/*/src/**/*.ts", "apps/*/src/**/*.ts"],
     extends: [tseslint.configs.recommended],
     rules: tsRules,
   },
@@ -32,10 +32,10 @@ export default tseslint.config(
   // ── Vue single-file components ────────────────────────────────────────
   ...pluginVue.configs["flat/recommended"].map((cfg) => ({
     ...cfg,
-    files: ["packages/*/src/**/*.vue"],
+    files: ["packages/*/src/**/*.vue", "apps/*/src/**/*.vue"],
   })),
   {
-    files: ["packages/*/src/**/*.vue"],
+    files: ["packages/*/src/**/*.vue", "apps/*/src/**/*.vue"],
     languageOptions: {
       parser: vueParser,
       parserOptions: {
@@ -58,6 +58,9 @@ export default tseslint.config(
       "vue/html-closing-bracket-newline": "off",
       "vue/first-attribute-linebreak": "off",
       "vue/attributes-order": "off",
+      "vue/html-closing-bracket-spacing": "off",
+      "vue/html-quotes": "off",
+      "vue/multiline-html-element-content-newline": "off",
     },
   },
 );
