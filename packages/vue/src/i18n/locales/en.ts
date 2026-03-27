@@ -93,6 +93,24 @@ export default {
     delete: "Delete",
   },
 
+  // Text editor toolbar
+  textEditor: {
+    bold: "Bold (Ctrl+B)",
+    italic: "Italic (Ctrl+I)",
+    underline: "Underline (Ctrl+U)",
+    strikethrough: "Strikethrough",
+    subscript: "Subscript",
+    superscript: "Superscript",
+    addLink: "Add Link",
+    bulletList: "Bullet List",
+    numberedList: "Numbered List",
+    alignLeft: "Align Left",
+    alignCenter: "Align Center",
+    alignRight: "Align Right",
+    clearFormatting: "Clear Formatting",
+    insertEmoji: "Insert Emoji",
+  },
+
   // Block actions (BlockWrapper)
   blockActions: {
     drag: "Drag to reorder",

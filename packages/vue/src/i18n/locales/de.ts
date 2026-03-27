@@ -96,6 +96,24 @@ export default {
     delete: "Löschen",
   },
 
+  // Text editor toolbar
+  textEditor: {
+    bold: "Fett (Strg+B)",
+    italic: "Kursiv (Strg+I)",
+    underline: "Unterstrichen (Strg+U)",
+    strikethrough: "Durchgestrichen",
+    subscript: "Tiefgestellt",
+    superscript: "Hochgestellt",
+    addLink: "Link hinzufügen",
+    bulletList: "Aufzählungsliste",
+    numberedList: "Nummerierte Liste",
+    alignLeft: "Linksbündig",
+    alignCenter: "Zentriert",
+    alignRight: "Rechtsbündig",
+    clearFormatting: "Formatierung entfernen",
+    insertEmoji: "Emoji einfügen",
+  },
+
   // Block actions (BlockWrapper)
   blockActions: {
     drag: "Zum Sortieren ziehen",

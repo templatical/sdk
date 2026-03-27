@@ -213,11 +213,26 @@ const mergeTagList = computed<MergeTag[]>(() => [
   { label: t.value.mergeTags.planName, value: "{{plan_name}}" },
 ]);
 
+const mergeTagPickerOpen = ref(false);
+let mergeTagResolve: ((tag: MergeTag | null) => void) | null = null;
+
 function requestMergeTag(): Promise<MergeTag | null> {
   return new Promise((resolve) => {
-    const tag = mergeTagList.value[0];
-    resolve(tag ?? null);
+    mergeTagResolve = resolve;
+    mergeTagPickerOpen.value = true;
   });
+}
+
+function selectMergeTag(tag: MergeTag): void {
+  mergeTagPickerOpen.value = false;
+  mergeTagResolve?.(tag);
+  mergeTagResolve = null;
+}
+
+function cancelMergeTagPicker(): void {
+  mergeTagPickerOpen.value = false;
+  mergeTagResolve?.(null);
+  mergeTagResolve = null;
 }
 
 async function loadTemplate(): Promise<void> {
@@ -1052,5 +1067,57 @@ onUnmounted(() => {
         <div v-else ref="editorContainer" class="flex-1 min-w-0" />
       </main>
     </template>
+
+    <!-- Merge Tag Picker Modal -->
+    <Teleport to="body">
+      <Transition name="pg-modal">
+        <div
+          v-if="mergeTagPickerOpen"
+          class="pg-modal-backdrop"
+          @click.self="cancelMergeTagPicker"
+          @keydown.escape="cancelMergeTagPicker"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cloud-mergetag-modal-title"
+            class="pg-modal-dialog w-[380px] max-w-[90vw] max-h-[480px] flex flex-col bg-white rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.15)] overflow-hidden"
+          >
+            <div
+              class="flex items-center justify-between px-5 py-4 border-b border-gray-200"
+            >
+              <span
+                id="cloud-mergetag-modal-title"
+                class="text-sm font-semibold text-gray-900"
+                >{{ t.mergeTagModal.title }}</span
+              >
+              <button
+                :aria-label="t.common.close"
+                class="pg-modal-close"
+                @click="cancelMergeTagPicker"
+              >
+                &times;
+              </button>
+            </div>
+            <div class="overflow-y-auto p-2">
+              <button
+                v-for="tag in mergeTagList"
+                :key="tag.value"
+                class="group flex items-center justify-between w-full px-3 py-2.5 border-none bg-transparent rounded-lg cursor-pointer transition-[background] duration-[120ms] text-left font-sans hover:bg-gray-50"
+                @click="selectMergeTag(tag)"
+              >
+                <span class="text-[13px] font-medium text-gray-900">{{
+                  tag.label
+                }}</span>
+                <code
+                  class="text-[11px] font-mono text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded group-hover:bg-gray-200"
+                  >{{ tag.value }}</code
+                >
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>

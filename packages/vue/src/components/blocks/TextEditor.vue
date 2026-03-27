@@ -284,7 +284,7 @@ async function handleAddMergeTag(): Promise<void> {
               'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
                 editor?.isActive('bold'),
             }"
-            title="Bold (Ctrl+B)"
+            :title="t.textEditor.bold"
             @click="editor?.chain().focus().toggleBold().run()"
           >
             <Bold :size="16" :stroke-width="2.5" />
@@ -296,7 +296,7 @@ async function handleAddMergeTag(): Promise<void> {
               'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
                 editor?.isActive('italic'),
             }"
-            title="Italic (Ctrl+I)"
+            :title="t.textEditor.italic"
             @click="editor?.chain().focus().toggleItalic().run()"
           >
             <Italic :size="16" :stroke-width="2" />
@@ -308,7 +308,7 @@ async function handleAddMergeTag(): Promise<void> {
               'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
                 editor?.isActive('underline'),
             }"
-            title="Underline (Ctrl+U)"
+            :title="t.textEditor.underline"
             @click="editor?.chain().focus().toggleUnderline().run()"
           >
             <Underline :size="16" :stroke-width="2" />
@@ -320,7 +320,7 @@ async function handleAddMergeTag(): Promise<void> {
               'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
                 editor?.isActive('strike'),
             }"
-            title="Strikethrough"
+            :title="t.textEditor.strikethrough"
             @click="editor?.chain().focus().toggleStrike().run()"
           >
             <Strikethrough :size="16" :stroke-width="2" />
@@ -336,7 +336,7 @@ async function handleAddMergeTag(): Promise<void> {
               'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
                 editor?.isActive('subscript'),
             }"
-            title="Subscript"
+            :title="t.textEditor.subscript"
             @click="editor?.chain().focus().toggleSubscript().run()"
           >
             <Subscript :size="16" :stroke-width="2" />
@@ -348,7 +348,7 @@ async function handleAddMergeTag(): Promise<void> {
               'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
                 editor?.isActive('superscript'),
             }"
-            title="Superscript"
+            :title="t.textEditor.superscript"
             @click="editor?.chain().focus().toggleSuperscript().run()"
           >
             <Superscript :size="16" :stroke-width="2" />
@@ -364,7 +364,7 @@ async function handleAddMergeTag(): Promise<void> {
               'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
                 editor?.isActive('link'),
             }"
-            title="Add Link"
+            :title="t.textEditor.addLink"
             @click="openLinkDialog"
           >
             <Link :size="16" :stroke-width="2" />
@@ -380,7 +380,7 @@ async function handleAddMergeTag(): Promise<void> {
               'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
                 editor?.isActive('bulletList'),
             }"
-            title="Bullet List"
+            :title="t.textEditor.bulletList"
             @click="editor?.chain().focus().toggleBulletList().run()"
           >
             <List :size="16" :stroke-width="2" />
@@ -392,7 +392,7 @@ async function handleAddMergeTag(): Promise<void> {
               'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
                 editor?.isActive('orderedList'),
             }"
-            title="Numbered List"
+            :title="t.textEditor.numberedList"
             @click="editor?.chain().focus().toggleOrderedList().run()"
           >
             <ListOrdered :size="16" :stroke-width="2" />
@@ -409,7 +409,7 @@ async function handleAddMergeTag(): Promise<void> {
                 textAlign: 'left',
               }),
             }"
-            title="Align Left"
+            :title="t.textEditor.alignLeft"
             @click="editor?.chain().focus().setTextAlign('left').run()"
           >
             <AlignLeft :size="16" :stroke-width="2" />
@@ -422,7 +422,7 @@ async function handleAddMergeTag(): Promise<void> {
                 textAlign: 'center',
               }),
             }"
-            title="Align Center"
+            :title="t.textEditor.alignCenter"
             @click="editor?.chain().focus().setTextAlign('center').run()"
           >
             <AlignCenter :size="16" :stroke-width="2" />
@@ -435,7 +435,7 @@ async function handleAddMergeTag(): Promise<void> {
                 textAlign: 'right',
               }),
             }"
-            title="Align Right"
+            :title="t.textEditor.alignRight"
             @click="editor?.chain().focus().setTextAlign('right').run()"
           >
             <AlignRight :size="16" :stroke-width="2" />
@@ -447,7 +447,7 @@ async function handleAddMergeTag(): Promise<void> {
           <button
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-            title="Clear Formatting"
+            :title="t.textEditor.clearFormatting"
             @click="editor?.chain().focus().clearNodes().unsetAllMarks().run()"
           >
             <RemoveFormatting :size="16" :stroke-width="2" />
@@ -463,7 +463,7 @@ async function handleAddMergeTag(): Promise<void> {
               :class="{
                 'tpl:!bg-[var(--tpl-primary)] tpl:!text-white': showEmojiPicker,
               }"
-              title="Insert Emoji"
+              :title="t.textEditor.insertEmoji"
               @click="toggleEmojiPicker"
             >
               <Smile :size="16" :stroke-width="2" />
