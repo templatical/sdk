@@ -11,8 +11,4 @@ declare module "@templatical/renderer" {
     content: TemplateContent,
     options?: RenderOptions,
   ): string;
-  export function renderToHtml(
-    content: TemplateContent,
-    options?: RenderOptions,
-  ): Promise<string>;
 }

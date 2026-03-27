@@ -66,6 +66,14 @@ interface ResponsiveStyles {
 }
 ```
 
+The editor uses these viewport breakpoints:
+
+| Viewport | Width |
+|----------|-------|
+| Desktop | 600px and above |
+| Tablet | 480px -- 599px |
+| Mobile | Below 480px |
+
 Responsive overrides merge with the base styles. Only specify the properties you want to change:
 
 ```ts
@@ -120,7 +128,7 @@ block.customCss = `
 ```
 
 ::: warning
-Custom CSS may not render consistently across all email clients. Test thoroughly when using this property.
+Most CSS properties don't work reliably across email clients. Properties like `display: flex`, `grid`, `position`, `box-shadow`, and CSS animations are ignored by many clients (especially Outlook). Stick to `padding`, `margin`, `border`, `border-radius`, `background-color`, and `text-align` for the best compatibility. Always test in real email clients before sending.
 :::
 
 ## Template-level settings
@@ -139,8 +147,8 @@ These are configured through the editor's `init()` config or by modifying the te
 import { init } from '@templatical/vue';
 
 const editor = init({
-  el: '#editor',
-  template: {
+  container: '#editor',
+  content: {
     settings: {
       width: 640,
       backgroundColor: '#f8fafc',

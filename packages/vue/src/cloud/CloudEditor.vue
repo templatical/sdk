@@ -196,7 +196,6 @@ export interface TemplaticalCloudEditorConfig {
   onUnmount?: () => void;
 
   onRequestMedia?: (context: MediaRequestContext) => Promise<MediaItem | null>;
-  onRequestMergeTag?: () => Promise<MergeTag | null>;
   onBeforeTestEmail?: (html: string) => string | Promise<string>;
 }
 
@@ -716,7 +715,7 @@ provide("customBlockDefinitions", props.config.customBlocks ?? []);
 const mergeTagSyntax = resolveSyntax(props.config.mergeTags?.syntax);
 provide("mergeTags", props.config.mergeTags?.tags ?? []);
 provide("mergeTagSyntax", mergeTagSyntax);
-provide("onRequestMergeTag", props.config.onRequestMergeTag ?? null);
+provide("onRequestMergeTag", props.config.mergeTags?.onRequest ?? null);
 
 // Display conditions
 provide("displayConditions", props.config.displayConditions?.conditions ?? []);

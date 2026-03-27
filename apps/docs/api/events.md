@@ -77,7 +77,7 @@ const editor = init({
 
 If you don't provide `onRequestMedia`, the editor falls back to a text input where users type or paste image URLs directly.
 
-### `onRequestMergeTag`
+### `mergeTags.onRequest`
 
 Called when the user clicks to insert a merge tag in a text block. Return a `Promise` that resolves to a `MergeTag` object or `null` if the user cancels.
 
@@ -87,21 +87,20 @@ import type { MergeTag } from '@templatical/types';
 const editor = init({
   container: '#editor',
   mergeTags: {
-    syntax: 'liquid',
     tags: [
       { label: 'First Name', value: '{{first_name}}' },
       { label: 'Email', value: '{{email}}' },
     ],
-  },
-  async onRequestMergeTag(): Promise<MergeTag | null> {
-    // Show your own picker UI and return the selected tag
-    const tag = await showMergeTagPicker();
-    return tag; // or null if cancelled
+    async onRequest(): Promise<MergeTag | null> {
+      // Show your own picker UI and return the selected tag
+      const tag = await showMergeTagPicker();
+      return tag; // or null if cancelled
+    },
   },
 });
 ```
 
-If you provide `mergeTags.tags` without `onRequestMergeTag`, the editor uses a built-in dropdown populated with your tags. The `onRequestMergeTag` callback lets you replace that dropdown with your own UI.
+If you provide `mergeTags.tags` without `onRequest`, the editor uses a built-in dropdown populated with your tags. The `onRequest` callback lets you replace that dropdown with your own UI.
 
 ## Patterns
 

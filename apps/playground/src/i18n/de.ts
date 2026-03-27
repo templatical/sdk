@@ -45,13 +45,13 @@ export default {
       options: "mergeTags, displayConditions, customBlocks",
       content: "Vorlagen-Blockstruktur",
       theme: "Farben und visuelle \u00dcberschreibungen (OKLch)",
-      callbacks: "onRequestMedia, onRequestMergeTag",
+      callbacks: "onRequestMedia, mergeTags.onRequest",
     },
     callbacksHint:
       'Callback-Handler f\u00fcr den Editor umschalten. \u00c4nderungen werden bei "\u00dcbernehmen & Neu laden" wirksam.',
     onRequestMediaDesc:
       '\u00d6ffnet eine Demo-Bildauswahl, wenn der Benutzer auf "Medien durchsuchen" klickt',
-    onRequestMergeTagDesc:
+    onRequestMergeTag:
       "\u00d6ffnet eine Merge-Tag-Auswahl, wenn der Benutzer einen Platzhalter einf\u00fcgt",
     cancel: "Abbrechen",
     apply: "\u00dcbernehmen & Neu laden",

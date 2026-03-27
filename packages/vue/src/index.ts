@@ -27,7 +27,6 @@ export interface TemplaticalEditorConfig {
   onError?: (error: Error) => void;
 
   onRequestMedia?: (callback: (url: string) => void) => void;
-  onRequestMergeTag?: () => Promise<MergeTag | null>;
 
   mergeTags?: MergeTagsConfig;
   displayConditions?: DisplayConditionsConfig;
@@ -46,7 +45,6 @@ export interface TemplaticalEditor {
   setContent(content: TemplateContent): void;
   unmount(): void;
   toMjml?(): string;
-  toHtml?(): Promise<string>;
 }
 
 export interface TemplaticalCloudEditor extends TemplaticalEditor {
@@ -248,7 +246,6 @@ function attachRenderer(instance: TemplaticalEditor): void {
   import("@templatical/renderer")
     .then((renderer) => {
       instance.toMjml = () => renderer.renderToMjml(instance.getContent());
-      instance.toHtml = () => renderer.renderToHtml(instance.getContent());
     })
     .catch(() => {
       // @templatical/renderer not installed — export methods not available

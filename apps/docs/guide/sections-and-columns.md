@@ -9,6 +9,10 @@ The `SectionBlock` is the layout primitive in Templatical. Every multi-column la
 
 ## Column layouts
 
+::: tip Email best practice
+Stick to 1-2 columns for most emails. Three-column layouts become cramped on mobile when columns stack vertically, and some email clients handle 3-column layouts inconsistently.
+:::
+
 The `columns` property accepts one of five layout presets:
 
 | Value | Description | Column widths |

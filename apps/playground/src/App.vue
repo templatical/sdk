@@ -406,12 +406,13 @@ function initEditor(): void {
     editor.value = init({
       container: editorContainer.value,
       ...currentSerializableConfig,
+      mergeTags: {
+        ...currentSerializableConfig.mergeTags,
+        onRequest: enableRequestMergeTag.value ? requestMergeTag : undefined,
+      },
       theme: currentTheme,
       locale: locale.value,
       onRequestMedia: enableRequestMedia.value ? requestMedia : undefined,
-      onRequestMergeTag: enableRequestMergeTag.value
-        ? requestMergeTag
-        : undefined,
     });
   } catch (err) {
     console.error("[Playground] Editor init failed:", err);
@@ -1371,10 +1372,10 @@ onUnmounted(() => {
                   />
                   <div>
                     <span class="text-[13px] font-medium text-gray-900"
-                      >onRequestMergeTag</span
+                      >mergeTags.onRequest</span
                     >
                     <p class="m-0 mt-0.5 text-[12px] text-gray-500">
-                      {{ t.configModal.onRequestMergeTagDesc }}
+                      {{ t.configModal.onRequestMergeTag }}
                     </p>
                   </div>
                 </label>

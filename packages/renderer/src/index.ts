@@ -72,20 +72,6 @@ ${bodyContent}
 }
 
 /**
- * Render template content to an HTML string.
- * Dynamically imports the mjml package for MJML-to-HTML conversion.
- */
-export async function renderToHtml(
-  content: TemplateContent,
-  options?: RenderOptions,
-): Promise<string> {
-  const mjml = renderToMjml(content, options);
-  const { default: mjml2html } = await import("mjml");
-  const { html } = mjml2html(mjml);
-  return html;
-}
-
-/**
  * Render a top-level block. Sections are rendered directly,
  * non-section blocks are wrapped in a default section/column.
  */

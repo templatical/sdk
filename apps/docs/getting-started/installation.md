@@ -5,30 +5,201 @@ description: Install the Templatical email editor via npm or CDN.
 
 # Installation
 
+## Requirements
+
+- **Modern browser** -- Chrome 80+, Firefox 80+, Safari 14+, Edge 80+
+- **Container element** -- must have a defined height (the editor fills its container)
+
 ## npm
 
-Install the editor package and, optionally, the renderer for MJML/HTML export:
-
-```bash
-npm install @templatical/vue
+::: code-group
+```bash [npm]
+npm install @templatical/vue @templatical/renderer
 ```
-
-```bash
-npm install @templatical/renderer
+```bash [pnpm]
+pnpm add @templatical/vue @templatical/renderer
 ```
+```bash [yarn]
+yarn add @templatical/vue @templatical/renderer
+```
+```bash [bun]
+bun add @templatical/vue @templatical/renderer
+```
+:::
 
-The renderer is an optional peer dependency of `@templatical/vue`. Install it if you need `toMjml()` or `toHtml()` export methods on the editor instance.
+`@templatical/vue` is the visual editor. `@templatical/renderer` converts templates to MJML for email sending.
+
+## Package overview
+
+| Package | Description | Required |
+|---|---|---|
+| `@templatical/vue` | Visual drag-and-drop editor and `init()` entry point | Yes |
+| `@templatical/types` | Shared TypeScript types, block factory functions, type guards | Auto-installed |
+| `@templatical/core` | Framework-agnostic editor logic (state, history, plugins) | Auto-installed |
+| `@templatical/renderer` | Renders templates to MJML | Recommended |
+| `@templatical/import-beefree` | Converts BeeFree JSON templates to Templatical format | Optional |
+
+`@templatical/types` and `@templatical/core` are direct dependencies of `@templatical/vue` and are installed automatically.
+
+## Framework integration
+
+Templatical mounts into any DOM element. It creates its own isolated application internally, so it works with any framework — or no framework at all.
+
+::: code-group
+```ts [Vanilla JS]
+import { init, unmount } from '@templatical/vue';
+import '@templatical/vue/style.css';
+
+const editor = init({
+  container: '#editor',
+  onChange(content) {
+    console.log('Content changed', content);
+  },
+});
+
+// Later, when removing the editor:
+editor.unmount();
+```
+```tsx [React]
+import { useRef, useEffect } from 'react';
+import { init } from '@templatical/vue';
+import '@templatical/vue/style.css';
+import type { TemplaticalEditor } from '@templatical/vue';
+
+export function EmailEditor() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<TemplaticalEditor | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    editorRef.current = init({
+      container: containerRef.current,
+      onChange(content) {
+        console.log('Content changed', content);
+      },
+    });
+
+    return () => {
+      editorRef.current?.unmount();
+    };
+  }, []);
+
+  return <div ref={containerRef} style={{ height: '100vh' }} />;
+}
+```
+```vue [Vue]
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue';
+import { init } from '@templatical/vue';
+import '@templatical/vue/style.css';
+import type { TemplaticalEditor } from '@templatical/vue';
+
+const container = ref<HTMLElement>();
+let editor: TemplaticalEditor | null = null;
+
+onMounted(() => {
+  if (!container.value) return;
+
+  editor = init({
+    container: container.value,
+    onChange(content) {
+      console.log('Content changed', content);
+    },
+  });
+});
+
+onUnmounted(() => {
+  editor?.unmount();
+});
+</script>
+
+<template>
+  <div ref="container" style="height: 100vh" />
+</template>
+```
+```svelte [Svelte]
+<script lang="ts">
+  import { onMount, onDestroy } from 'svelte';
+  import { init } from '@templatical/vue';
+  import '@templatical/vue/style.css';
+  import type { TemplaticalEditor } from '@templatical/vue';
+
+  let containerEl: HTMLElement;
+  let editor: TemplaticalEditor | null = null;
+
+  onMount(() => {
+    editor = init({
+      container: containerEl,
+      onChange(content) {
+        console.log('Content changed', content);
+      },
+    });
+  });
+
+  onDestroy(() => {
+    editor?.unmount();
+  });
+</script>
+
+<div bind:this={containerEl} style="height: 100vh;" />
+```
+```ts [Angular]
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { init } from '@templatical/vue';
+import '@templatical/vue/style.css';
+import type { TemplaticalEditor } from '@templatical/vue';
+
+@Component({
+  selector: 'app-email-editor',
+  standalone: true,
+  template: `<div #editorContainer style="height: 100vh"></div>`,
+})
+export class EmailEditorComponent implements OnInit, OnDestroy {
+  @ViewChild('editorContainer', { static: true })
+  containerRef!: ElementRef<HTMLElement>;
+
+  private editor: TemplaticalEditor | null = null;
+
+  ngOnInit(): void {
+    this.editor = init({
+      container: this.containerRef.nativeElement,
+      onChange(content) {
+        console.log('Content changed', content);
+      },
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.editor?.unmount();
+  }
+}
+```
+:::
+
+::: warning Important
+Always call `unmount()` when removing the editor from the page. This cleans up event listeners, timers, and DOM elements. This is especially important in single-page applications where components mount and unmount during navigation.
+:::
+
+## TypeScript support
+
+All packages ship with full TypeScript type definitions. Configuration options, callback payloads, block types, and instance methods are fully typed:
+
+```ts
+import { init, unmount } from '@templatical/vue';
+import type { TemplaticalEditor, TemplaticalEditorConfig } from '@templatical/vue';
+import type { TemplateContent, Block, ThemeOverrides, FontsConfig } from '@templatical/types';
+```
 
 ## CDN
 
-Load the editor directly in the browser using the UMD build:
+If you prefer not to use a package manager, load the editor directly via script tags:
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@templatical/vue/dist/style.css" />
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-<script src="https://unpkg.com/@templatical/vue/dist/templatical-vue.umd.cjs"></script>
+<link rel="stylesheet" href="https://unpkg.com/@templatical/vue@0.1.0/dist/email-editor/email-editor.css" />
+<script src="https://unpkg.com/@templatical/vue@0.1.0/dist/email-editor/email-editor.js"></script>
 
-<div id="editor"></div>
+<div id="editor" style="height: 100vh;"></div>
 
 <script>
   const editor = Templatical.init({
@@ -40,25 +211,4 @@ Load the editor directly in the browser using the UMD build:
 </script>
 ```
 
-Replace `@templatical/vue` with a pinned version (e.g. `@templatical/vue@0.1.0`) for production use.
-
-## Package Overview
-
-The Templatical editor is split into focused packages. Most applications only need `@templatical/vue` and optionally `@templatical/renderer`.
-
-| Package | Description | Required |
-|---|---|---|
-| `@templatical/vue` | Visual drag-and-drop editor component and `init()` entry point | Yes |
-| `@templatical/types` | Shared TypeScript types, block factory functions, and type guards | Auto-installed |
-| `@templatical/core` | Framework-agnostic editor logic (state, history, plugins) | Auto-installed |
-| `@templatical/renderer` | Renders `TemplateContent` to MJML and HTML (browser + Node.js) | Optional |
-| `@templatical/import-beefree` | Converts BeeFree JSON templates to Templatical format | Optional |
-| `templatical-php` | PHP renderer (Composer package, separate repository) | Optional |
-
-`@templatical/types` and `@templatical/core` are direct dependencies of `@templatical/vue` and are installed automatically.
-
-## Requirements
-
-- **Vue 3.4+** -- listed as a peer dependency of `@templatical/vue`.
-- **Modern browser** -- Chrome, Firefox, Safari, or Edge. ES2020+ support required.
-- **Node.js 18+** -- for server-side rendering with `@templatical/renderer`.
+The CDN build is fully self-contained — everything is bundled in a single file. No additional scripts needed.

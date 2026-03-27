@@ -43,13 +43,13 @@ export default {
       options: "mergeTags, displayConditions, customBlocks",
       content: "Template block structure",
       theme: "Colors and visual overrides (OKLch)",
-      callbacks: "onRequestMedia, onRequestMergeTag",
+      callbacks: "onRequestMedia, mergeTags.onRequest",
     },
     callbacksHint:
       'Toggle callback handlers passed to the editor. Changes apply on "Apply & Reload".',
     onRequestMediaDesc:
       'Opens a demo image picker when the user clicks "Browse Media"',
-    onRequestMergeTagDesc:
+    onRequestMergeTag:
       "Opens a merge tag picker when the user inserts a placeholder",
     cancel: "Cancel",
     apply: "Apply & Reload",

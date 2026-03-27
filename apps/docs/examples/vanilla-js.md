@@ -5,9 +5,9 @@ description: Using Templatical with plain HTML and a script tag — no build too
 
 # Vanilla JavaScript
 
-The simplest way to use Templatical. No build tools, no framework — just a script tag.
+The simplest way to use Templatical. No build tools, no framework -- just a script tag.
 
-## CDN Setup
+## CDN setup
 
 ```html
 <!DOCTYPE html>
@@ -16,7 +16,7 @@ The simplest way to use Templatical. No build tools, no framework — just a scr
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Email Editor</title>
-  <link rel="stylesheet" href="https://unpkg.com/@templatical/vue/dist/email-editor/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@templatical/vue@0.1.0/dist/email-editor/email-editor.css" />
   <style>
     body { margin: 0; }
     #editor { height: 100vh; }
@@ -25,7 +25,7 @@ The simplest way to use Templatical. No build tools, no framework — just a scr
 <body>
   <div id="editor"></div>
 
-  <script src="https://unpkg.com/@templatical/vue/dist/email-editor/templatical.iife.js"></script>
+  <script src="https://unpkg.com/@templatical/vue@0.1.0/dist/email-editor/email-editor.js"></script>
   <script>
     const editor = Templatical.init({
       container: '#editor',
@@ -38,7 +38,9 @@ The simplest way to use Templatical. No build tools, no framework — just a scr
 </html>
 ```
 
-## With Merge Tags
+The CDN build bundles Vue 3 internally -- you don't need to load Vue separately.
+
+## With merge tags
 
 ```html
 <script>
@@ -59,7 +61,7 @@ The simplest way to use Templatical. No build tools, no framework — just a scr
 </script>
 ```
 
-## Loading Saved Content
+## Loading saved content
 
 ```html
 <script>
@@ -76,13 +78,29 @@ The simplest way to use Templatical. No build tools, no framework — just a scr
 </script>
 ```
 
+## Dark mode and theming
+
+```html
+<script>
+  const editor = Templatical.init({
+    container: '#editor',
+    darkMode: 'auto', // follows system preference
+    theme: {
+      primary: '#6d28d9',
+      primaryHover: '#5b21b6',
+      primaryLight: '#ede9fe',
+    },
+  });
+</script>
+```
+
 ## Export
 
 ```html
 <button onclick="exportJson()">Export JSON</button>
 <button onclick="exportMjml()">Export MJML</button>
 
-<script src="https://unpkg.com/@templatical/vue/dist/email-editor/templatical.iife.js"></script>
+<script src="https://unpkg.com/@templatical/vue@0.1.0/dist/email-editor/email-editor.js"></script>
 <script>
   const editor = Templatical.init({ container: '#editor' });
 
@@ -92,7 +110,7 @@ The simplest way to use Templatical. No build tools, no framework — just a scr
   }
 
   function exportMjml() {
-    if (!editor.toMjml) return alert('Renderer not loaded');
+    if (!editor.toMjml) return alert('Renderer not available in CDN build');
     const mjml = editor.toMjml();
     download(mjml, 'template.mjml', 'text/plain');
   }
@@ -112,5 +130,5 @@ The simplest way to use Templatical. No build tools, no framework — just a scr
 ## Notes
 
 - The IIFE build exposes `window.Templatical` with `init()` and `unmount()` methods.
-- For export to MJML/HTML, include the renderer build as well, or use the npm module setup.
-- The CDN build bundles Vue 3 internally — you don't need to load Vue separately.
+- The CDN build includes export buttons in the editor UI but does not include the renderer for programmatic `toMjml()` calls. For server-side rendering, use the npm package.
+- Always pin the CDN version in production to avoid unexpected changes.

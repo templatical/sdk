@@ -7,6 +7,14 @@ description: Handle image input, integrate custom media pickers, and configure i
 
 By default, the editor provides a URL text input for image sources. You can replace this with a custom media picker using the `onRequestMedia` callback.
 
+::: tip Email image best practices
+- **Use absolute URLs** -- Relative paths won't resolve in email clients. Always use `https://` URLs.
+- **Prefer PNG or JPG** -- SVG and WebP have limited email client support. Use PNG for graphics with transparency, JPG for photos.
+- **Keep file sizes under 1MB** -- Large images slow down email loading and may be clipped by Gmail (which truncates emails over 102KB of HTML).
+- **Always set alt text** -- Many email clients (especially Outlook) block images by default. Recipients see the alt text until they choose to load images.
+- **Set explicit width** -- Email clients may render images at their native size if no width is specified, breaking your layout on small screens.
+:::
+
 ## Default Behavior
 
 When a user adds an image block, the editor shows a text field where they can paste an image URL. The image block toolbar exposes fields for `src`, `alt`, `width`, `align`, and an optional `linkUrl`.
@@ -54,13 +62,19 @@ const editor = init({
       const file = input.files?.[0];
       if (!file) return;
 
-      const formData = new FormData();
-      formData.append('file', file);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
 
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
-      const { url } = await res.json();
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('Upload failed');
+        const { url } = await res.json();
 
-      callback(url);
+        callback(url);
+      } catch (error) {
+        console.error('Image upload failed:', error);
+        // Don't call callback — the editor stays in its current state
+      }
     };
 
     input.click();

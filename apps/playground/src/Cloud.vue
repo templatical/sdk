@@ -277,9 +277,9 @@ async function initEditor(templateId?: string): Promise<void> {
       mergeTags: {
         syntax: "liquid" as const,
         tags: mergeTagList.value,
+        onRequest: requestMergeTag,
       },
       customBlocks: customBlockDefinitions,
-      onRequestMergeTag: requestMergeTag,
       onCreate: (template) => {
         currentTemplateId.value = template.id;
         console.log("[Cloud SDK] Template created:", template.id);

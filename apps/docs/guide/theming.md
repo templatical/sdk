@@ -80,9 +80,13 @@ const editor = init({
 
 Theme overrides apply regardless of the dark mode setting. If you provide overrides, make sure they work well in the active mode.
 
+::: tip
+If you provide custom theme overrides, test them in both light and dark mode to make sure your colors work well in both. Use `darkMode: 'auto'` during development to quickly toggle between modes via your OS settings.
+:::
+
 ## CSS Custom Properties
 
-Every theme token maps to a CSS custom property prefixed with `--tpl-`. You can use these in your own stylesheets to keep your surrounding UI consistent with the editor:
+Every theme token maps to a CSS custom property prefixed with `--tpl-`. The `tpl-` prefix prevents conflicts with your application's own CSS variables, making the editor safe to embed in any page. You can use these variables in your own stylesheets to keep your surrounding UI consistent with the editor:
 
 ```css
 .my-wrapper {

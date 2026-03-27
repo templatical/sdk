@@ -5,62 +5,13 @@ description: Get the Templatical email editor running in under 5 minutes.
 
 # Quick Start
 
-This guide gets you from zero to a working editor in under 5 minutes.
-
 ## 1. Install packages
 
 ```bash
 npm install @templatical/vue @templatical/renderer
 ```
 
-## 2. Add a container element
-
-The editor mounts into a DOM element. Give it a fixed height -- the editor fills its container.
-
-```html
-<div id="editor" style="height: 100vh;"></div>
-```
-
-## 3. Import and initialize
-
-```ts
-import { init } from '@templatical/vue';
-import '@templatical/vue/style.css';
-
-const editor = init({
-  container: '#editor',
-  onChange(content) {
-    console.log('Content changed', content);
-  },
-});
-```
-
-`init()` accepts a CSS selector string or an `HTMLElement` reference. It creates a Vue application internally -- you do not need to set up Vue yourself.
-
-## 4. Read the current content
-
-Call `getContent()` at any time to get the template as a serializable JSON object:
-
-```ts
-const content = editor.getContent();
-console.log(JSON.stringify(content, null, 2));
-```
-
-The returned `TemplateContent` object contains `blocks` (the block tree) and `settings` (width, background color, font family, preheader text).
-
-## 5. Export to HTML
-
-With `@templatical/renderer` installed, the editor instance exposes `toMjml()` and `toHtml()`:
-
-```ts
-// Synchronous -- returns an MJML string
-const mjml = editor.toMjml();
-
-// Asynchronous -- compiles MJML to HTML
-const html = await editor.toHtml();
-```
-
-## Complete example
+## 2. Mount the editor
 
 ```html
 <!DOCTYPE html>
@@ -71,10 +22,15 @@ const html = await editor.toHtml();
   <title>Templatical Editor</title>
   <style>
     body { margin: 0; }
-    #editor { height: 100vh; }
+    #editor { height: calc(100vh - 48px); }
+    #toolbar { height: 48px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid #e5e7eb; }
+    #toolbar button { padding: 8px 16px; background: #1a73e8; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
   </style>
 </head>
 <body>
+  <div id="toolbar">
+    <button onclick="save()">Save Template</button>
+  </div>
   <div id="editor"></div>
 
   <script type="module">
@@ -83,38 +39,27 @@ const html = await editor.toHtml();
 
     const editor = init({
       container: '#editor',
-      onChange(content) {
-        // Auto-save, sync to server, etc.
-        localStorage.setItem('email-template', JSON.stringify(content));
-      },
     });
 
-    // Restore previously saved content
-    const saved = localStorage.getItem('email-template');
-    if (saved) {
-      editor.setContent(JSON.parse(saved));
-    }
+    window.save = async function () {
+      const content = editor.getContent();
+      const mjml = editor.toMjml();
 
-    // Export button (assuming you add one to your UI)
-    window.exportHtml = async () => {
-      const html = await editor.toHtml();
-      console.log(html);
+      await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, mjml }),
+      });
     };
   </script>
 </body>
 </html>
 ```
 
-## Cleanup
-
-When the editor is no longer needed (e.g. navigating away in a SPA), call `unmount()` to tear down the Vue instance and release resources:
-
-```ts
-editor.unmount();
-```
+Your backend receives both the JSON (store it to let users edit later) and the MJML (compile to HTML with any [MJML library](https://mjml.io) and send).
 
 ## Next steps
 
-- [Your First Template](/getting-started/your-first-template) -- create content programmatically with factory functions.
-- [Export](/getting-started/export) -- detailed export options for JSON, MJML, and HTML.
-- [Blocks](/guide/blocks) -- reference for all 13 block types.
+- [How Rendering Works](/getting-started/how-rendering-works) -- understand the JSON → MJML pipeline.
+- [Blocks](/guide/blocks) -- reference for all 12 block types.
+- [Renderer API](/api/renderer-typescript) -- full `renderToMjml()` reference.

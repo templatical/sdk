@@ -18,12 +18,14 @@ npm install @templatical/vue @templatical/renderer
 ```vue
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import { init, unmount } from '@templatical/vue';
+import { init } from '@templatical/vue';
+import '@templatical/vue/style.css';
 import type { TemplaticalEditor } from '@templatical/vue';
 import type { TemplateContent } from '@templatical/types';
 
 const props = defineProps<{
   content?: TemplateContent;
+  darkMode?: boolean | 'auto';
 }>();
 
 const emit = defineEmits<{
@@ -32,14 +34,15 @@ const emit = defineEmits<{
 }>();
 
 const container = ref<HTMLElement>();
-const editor = ref<TemplaticalEditor>();
+let editor: TemplaticalEditor | null = null;
 
-onMounted(() => {
+function mountEditor() {
   if (!container.value) return;
 
-  editor.value = init({
+  editor = init({
     container: container.value,
     content: props.content,
+    darkMode: props.darkMode ?? false,
     onChange: (content) => emit('change', content),
     onSave: (content) => emit('save', content),
     mergeTags: {
@@ -50,17 +53,26 @@ onMounted(() => {
       ],
     },
   });
+}
+
+onMounted(() => {
+  mountEditor();
 });
 
 onUnmounted(() => {
-  unmount();
+  editor?.unmount();
+  editor = null;
 });
 
-function exportHtml() {
-  return editor.value?.toHtml?.();
+function getContent() {
+  return editor?.getContent();
 }
 
-defineExpose({ exportHtml });
+function exportMjml() {
+  return editor?.toMjml?.();
+}
+
+defineExpose({ getContent, exportMjml });
 </script>
 
 <template>
@@ -95,42 +107,103 @@ function handleSave(content: TemplateContent) {
 </script>
 
 <template>
-  <EmailEditor @change="handleChange" @save="handleSave" />
+  <EmailEditor
+    dark-mode="auto"
+    @change="handleChange"
+    @save="handleSave"
+  />
 </template>
 ```
 
-## Dark Mode
+## Dark mode
+
+The simplest approach is `darkMode: 'auto'`, which follows the user's system preference:
+
+```ts
+init({
+  container: '#editor',
+  darkMode: 'auto',
+});
+```
+
+If you need to toggle dark mode programmatically, you must re-initialize the editor because `darkMode` is not reactive after initialization:
 
 ```vue
 <script setup lang="ts">
-import { useDark } from '@vueuse/core';
+import { ref, watch } from 'vue';
+import { init } from '@templatical/vue';
+import '@templatical/vue/style.css';
+import type { TemplaticalEditor } from '@templatical/vue';
 
-const isDark = useDark();
+const isDark = ref(false);
+const container = ref<HTMLElement>();
+let editor: TemplaticalEditor | null = null;
 
-// Re-initialize the editor when dark mode changes
-// or pass darkMode: 'auto' to follow system preference
+function mountEditor() {
+  // Preserve current content across re-mounts
+  const currentContent = editor?.getContent();
+  editor?.unmount();
+
+  if (!container.value) return;
+
+  editor = init({
+    container: container.value,
+    content: currentContent,
+    darkMode: isDark.value,
+  });
+}
+
+watch(isDark, () => mountEditor());
 </script>
 ```
 
-```ts
-init({
-  container: '#editor',
-  darkMode: 'auto', // follows prefers-color-scheme
-});
-```
+## With custom media picker
 
-## With Custom Media Picker
+```vue
+<script setup lang="ts">
+import { ref } from 'vue';
+import { init } from '@templatical/vue';
+import '@templatical/vue/style.css';
 
-```ts
-init({
-  container: '#editor',
-  onRequestMedia(callback) {
-    // Open your own Vue modal/dialog
-    mediaPickerVisible.value = true;
-    onMediaSelected = (url: string) => {
-      callback(url);
-      mediaPickerVisible.value = false;
-    };
-  },
-});
+const container = ref<HTMLElement>();
+const showMediaPicker = ref(false);
+let mediaCallback: ((url: string) => void) | null = null;
+
+function onMounted() {
+  if (!container.value) return;
+
+  init({
+    container: container.value,
+    onRequestMedia(callback) {
+      // Store the callback and open your picker UI
+      mediaCallback = callback;
+      showMediaPicker.value = true;
+    },
+  });
+}
+
+// Called when the user selects an image in your picker
+function onImageSelected(url: string) {
+  mediaCallback?.(url);
+  mediaCallback = null;
+  showMediaPicker.value = false;
+}
+
+// Called when the user cancels the picker
+function onPickerClose() {
+  mediaCallback = null; // Don't call the callback — editor stays unchanged
+  showMediaPicker.value = false;
+}
+</script>
+
+<template>
+  <div ref="container" style="height: 100vh" />
+
+  <!-- Your media picker modal -->
+  <MyMediaPicker
+    v-if="showMediaPicker"
+    @select="onImageSelected"
+    @close="onPickerClose"
+  />
+</template>
 ```

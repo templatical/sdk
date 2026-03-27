@@ -27,6 +27,7 @@ export interface MergeTag {
 export interface MergeTagsConfig {
   syntax?: SyntaxPresetName | SyntaxPreset;
   tags?: MergeTag[];
+  onRequest?: () => Promise<MergeTag | null>;
 }
 
 export interface DisplayCondition {

@@ -269,7 +269,7 @@ provide("customBlockDefinitions", props.config.customBlocks ?? []);
 const mergeTagSyntax = resolveSyntax(props.config.mergeTags?.syntax);
 provide("mergeTags", props.config.mergeTags?.tags ?? []);
 provide("mergeTagSyntax", mergeTagSyntax);
-provide("onRequestMergeTag", props.config.onRequestMergeTag ?? null);
+provide("onRequestMergeTag", props.config.mergeTags?.onRequest ?? null);
 
 // Media
 provide("onRequestMedia", props.config.onRequestMedia ?? null);

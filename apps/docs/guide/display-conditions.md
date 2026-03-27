@@ -15,7 +15,7 @@ Define available conditions through the editor config:
 import { init } from '@templatical/vue';
 
 const editor = init({
-  el: '#editor',
+  container: '#editor',
   displayConditions: {
     conditions: [
       {
@@ -133,7 +133,7 @@ displayConditions: {
 }
 ```
 
-### Django / Jinja2
+### Liquid / Django / Jinja2
 
 ```ts
 {
@@ -162,3 +162,7 @@ The conditional logic is evaluated by the sending platform at send time, not by 
 ## Applying conditions in the editor
 
 Users select a display condition from the block settings panel. Each block can have at most one display condition. In the editor canvas, blocks with conditions show a visual indicator so template authors can see which content is conditional at a glance.
+
+::: tip Testing conditional content
+Since Templatical doesn't evaluate conditions, the editor always shows conditional blocks. To verify conditions work correctly, send test emails with different recipient profiles through your email platform and confirm each variation renders as expected.
+:::

@@ -11,8 +11,7 @@ export type SyntaxPresetName =
   | "liquid"
   | "handlebars"
   | "mailchimp"
-  | "ampscript"
-  | "django";
+  | "ampscript";
 
 export const SYNTAX_PRESETS: Record<SyntaxPresetName, SyntaxPreset> = {
   liquid: { value: /\{\{.+?\}\}/g, logic: /\{%-?\s*(\w+).*?-?%\}/g },
@@ -22,7 +21,6 @@ export const SYNTAX_PRESETS: Record<SyntaxPresetName, SyntaxPreset> = {
   },
   mailchimp: { value: /\*\|\w+\|\*/g, logic: /\*\|(\w+)[:|].*?\|\*/g },
   ampscript: { value: /%%=.+?=%%/g, logic: /%%\[\s*(\w+).*?\]%%/g },
-  django: { value: /\{\{.+?\}\}/g, logic: /\{%-?\s*(\w+).*?-?%\}/g },
 };
 
 export function resolveSyntax(

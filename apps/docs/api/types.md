@@ -236,6 +236,8 @@ type SocialPlatform =
   | 'whatsapp' | 'telegram' | 'discord' | 'snapchat'
   | 'reddit' | 'github' | 'dribbble' | 'behance';
 
+// 16 platforms total
+
 type SocialIconStyle = 'solid' | 'outlined' | 'rounded' | 'square' | 'circle';
 type SocialIconSize = 'small' | 'medium' | 'large';
 ```
@@ -363,7 +365,7 @@ interface MergeTagsConfig {
   tags?: MergeTag[];
 }
 
-type SyntaxPresetName = 'liquid' | 'handlebars' | 'mailchimp' | 'ampscript' | 'django';
+type SyntaxPresetName = 'liquid' | 'handlebars' | 'mailchimp' | 'ampscript';
 ```
 
 ### DisplayCondition

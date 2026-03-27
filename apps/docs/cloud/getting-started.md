@@ -133,7 +133,6 @@ const result = await editor.save();
 
 ```js
 const mjml = editor.toMjml();
-const html = await editor.toHtml();
 ```
 
 ## Cleanup

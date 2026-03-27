@@ -1,22 +1,23 @@
 ---
 title: Node.js Renderer
-description: Server-side batch rendering of Templatical templates with Node.js.
+description: Server-side rendering of Templatical templates with Node.js.
 ---
 
 # Node.js Renderer
 
-Use `@templatical/renderer` in Node.js for server-side rendering, batch processing, or API endpoints.
+Use `@templatical/renderer` in Node.js for server-side rendering, batch processing, or API endpoints. The renderer produces MJML; you compile it to HTML using the `mjml` package.
 
 ## Setup
 
 ```bash
-npm install @templatical/renderer @templatical/types
+npm install @templatical/renderer @templatical/types mjml
 ```
 
-## Basic Rendering
+## Basic rendering
 
 ```ts
-import { renderToMjml, renderToHtml } from '@templatical/renderer';
+import { renderToMjml } from '@templatical/renderer';
+import mjml2html from 'mjml';
 import { readFileSync, writeFileSync } from 'fs';
 
 const template = JSON.parse(readFileSync('template.json', 'utf8'));
@@ -25,27 +26,29 @@ const template = JSON.parse(readFileSync('template.json', 'utf8'));
 const mjml = renderToMjml(template);
 writeFileSync('output.mjml', mjml);
 
-// Render to HTML
-const html = await renderToHtml(template);
+// Compile MJML to HTML
+const { html } = mjml2html(mjml);
 writeFileSync('output.html', html);
 ```
 
-## Express API Endpoint
+## Express API endpoint
 
 ```ts
 import express from 'express';
-import { renderToHtml } from '@templatical/renderer';
+import { renderToMjml } from '@templatical/renderer';
+import mjml2html from 'mjml';
 
 const app = express();
 app.use(express.json({ limit: '1mb' }));
 
-app.post('/api/render', async (req, res) => {
+app.post('/api/render', (req, res) => {
   try {
-    const html = await renderToHtml(req.body.content, {
+    const mjml = renderToMjml(req.body.content, {
       customFonts: req.body.customFonts,
     });
+    const { html } = mjml2html(mjml);
 
-    res.json({ html });
+    res.json({ html, mjml });
   } catch (error) {
     res.status(400).json({ error: 'Failed to render template' });
   }
@@ -54,11 +57,11 @@ app.post('/api/render', async (req, res) => {
 app.listen(3000);
 ```
 
-## Batch Rendering
+## Batch rendering
 
 ```ts
-import { renderToHtml } from '@templatical/renderer';
-import { convertMergeTagsToValues } from '@templatical/renderer';
+import { renderToMjml } from '@templatical/renderer';
+import mjml2html from 'mjml';
 import type { TemplateContent } from '@templatical/types';
 
 interface Recipient {
@@ -67,20 +70,18 @@ interface Recipient {
   company: string;
 }
 
-async function renderForRecipients(
+function renderForRecipients(
   template: TemplateContent,
   recipients: Recipient[],
-): Promise<Map<string, string>> {
-  const baseHtml = await renderToHtml(template);
+): Map<string, string> {
+  const mjml = renderToMjml(template);
+  const { html: baseHtml } = mjml2html(mjml);
   const results = new Map<string, string>();
 
   for (const recipient of recipients) {
-    const tags = [
-      { label: 'First Name', value: recipient.first_name },
-      { label: 'Company', value: recipient.company },
-    ];
-
-    const personalized = convertMergeTagsToValues(baseHtml, tags, 'liquid');
+    let personalized = baseHtml;
+    personalized = personalized.replace('{{ first_name }}', recipient.first_name);
+    personalized = personalized.replace('{{ company }}', recipient.company);
     results.set(recipient.email, personalized);
   }
 
@@ -88,7 +89,7 @@ async function renderForRecipients(
 }
 ```
 
-## Building Templates Programmatically
+## Building templates programmatically
 
 ```ts
 import {
@@ -96,9 +97,9 @@ import {
   createTextBlock,
   createButtonBlock,
   createImageBlock,
-  createSectionBlock,
 } from '@templatical/types';
-import { renderToHtml } from '@templatical/renderer';
+import { renderToMjml } from '@templatical/renderer';
+import mjml2html from 'mjml';
 
 const template = createDefaultTemplateContent();
 
@@ -126,5 +127,6 @@ template.blocks = [
 
 template.settings.backgroundColor = '#f5f5f5';
 
-const html = await renderToHtml(template);
+const mjml = renderToMjml(template);
+const { html } = mjml2html(mjml);
 ```
