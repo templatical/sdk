@@ -29,14 +29,72 @@ export default defineConfig({
             { text: 'Guide', link: '/getting-started/installation' },
             { text: 'API', link: '/api/editor' },
             { text: 'Examples', link: '/examples/vanilla-js' },
+            { text: 'Cloud', link: '/cloud/' },
             { text: 'Playground', link: 'https://play.templatical.com' },
-            {
-                text: 'Cloud',
-                link: 'https://templatical.com',
-            },
         ],
 
         sidebar: {
+            '/cloud/': [
+                {
+                    text: 'Cloud',
+                    items: [
+                        { text: 'Overview', link: '/cloud/' },
+                        {
+                            text: 'Getting Started',
+                            link: '/cloud/getting-started',
+                        },
+                        {
+                            text: 'Authentication',
+                            link: '/cloud/authentication',
+                        },
+                    ],
+                },
+                {
+                    text: 'Features',
+                    items: [
+                        { text: 'AI Assistant', link: '/cloud/ai' },
+                        {
+                            text: 'Collaboration',
+                            link: '/cloud/collaboration',
+                        },
+                        { text: 'Comments', link: '/cloud/comments' },
+                        {
+                            text: 'Media Library',
+                            link: '/cloud/media-library',
+                        },
+                        {
+                            text: 'Template Scoring',
+                            link: '/cloud/template-scoring',
+                        },
+                        {
+                            text: 'Saved Modules',
+                            link: '/cloud/saved-modules',
+                        },
+                        {
+                            text: 'Test Emails',
+                            link: '/cloud/test-emails',
+                        },
+                        { text: 'Snapshots', link: '/cloud/snapshots' },
+                    ],
+                },
+                {
+                    text: 'Advanced',
+                    items: [
+                        {
+                            text: 'MCP Integration',
+                            link: '/cloud/mcp',
+                        },
+                        {
+                            text: 'Multi-Tenant',
+                            link: '/cloud/multi-tenant',
+                        },
+                        {
+                            text: 'Headless API',
+                            link: '/cloud/headless-api',
+                        },
+                    ],
+                },
+            ],
             '/': [
                 {
                     text: 'Getting Started',
@@ -119,15 +177,6 @@ export default defineConfig({
                         {
                             text: 'Node.js Renderer',
                             link: '/examples/node-renderer',
-                        },
-                    ],
-                },
-                {
-                    text: 'Templatical Cloud',
-                    items: [
-                        {
-                            text: 'Overview',
-                            link: '/templatical-cloud/',
                         },
                     ],
                 },
