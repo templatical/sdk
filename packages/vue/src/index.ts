@@ -3,7 +3,7 @@ import type {
   CustomBlockDefinition,
   DisplayConditionsConfig,
   FontsConfig,
-  MergeTag,
+  MediaResult,
   MergeTagsConfig,
   SaveResult,
   Template,
@@ -12,7 +12,7 @@ import type {
 } from "@templatical/types";
 import type { EditorPlugin } from "@templatical/core";
 import Editor from "./Editor.vue";
-import { useFonts } from "./composables/useFonts";
+import { useFonts } from "./composables";
 
 // ---------------------------------------------------------------------------
 // OSS config + return types
@@ -26,7 +26,7 @@ export interface TemplaticalEditorConfig {
   onSave?: (content: TemplateContent) => void;
   onError?: (error: Error) => void;
 
-  onRequestMedia?: (callback: (url: string) => void) => void;
+  onRequestMedia?: () => Promise<MediaResult | null>;
 
   mergeTags?: MergeTagsConfig;
   displayConditions?: DisplayConditionsConfig;
@@ -35,7 +35,6 @@ export interface TemplaticalEditorConfig {
 
   theme?: ThemeOverrides;
   locale?: string;
-  darkMode?: boolean | "auto";
 
   plugins?: EditorPlugin[];
 }

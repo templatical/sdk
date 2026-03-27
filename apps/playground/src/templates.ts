@@ -92,6 +92,7 @@ export const eventDetailsBlock: CustomBlockDefinition = {
       key: "eventName",
       label: "Event Name",
       default: "My Event",
+      required: true,
     },
     {
       type: "text",
@@ -99,6 +100,7 @@ export const eventDetailsBlock: CustomBlockDefinition = {
       label: "Date",
       default: "April 15, 2026",
       placeholder: "e.g. April 15, 2026",
+      required: true,
     },
     {
       type: "text",
@@ -106,6 +108,7 @@ export const eventDetailsBlock: CustomBlockDefinition = {
       label: "Time",
       default: "9:00 AM – 6:00 PM",
       placeholder: "e.g. 9:00 AM – 6:00 PM",
+      required: true,
     },
     {
       type: "text",
@@ -177,12 +180,14 @@ export const testimonialBlock: CustomBlockDefinition = {
       label: "Quote",
       default:
         "This product completely changed how our team works. We shipped 3x faster in the first month.",
+      required: true,
     },
     {
       type: "text",
       key: "authorName",
       label: "Author Name",
       default: "Sarah Chen",
+      required: true,
     },
     {
       type: "text",
@@ -281,7 +286,6 @@ export const featuredArticleBlock: CustomBlockDefinition = {
       key: "imageUrl",
       label: "Cover Image",
       default: "",
-      readOnly: true,
     },
     {
       type: "text",
@@ -584,132 +588,73 @@ export const productShowcaseBlock: CustomBlockDefinition = {
 
 // ─── NEW: Stats Row (with Data Source) ────────────────────────
 
-export const statsRowBlock: CustomBlockDefinition = {
-  type: "stats-row",
-  name: "Stats Row",
-  icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>',
-  description: "Fetches live stats from your analytics API",
+export const shippingTrackerBlock: CustomBlockDefinition = {
+  type: "shipping-tracker",
+  name: "Shipping Tracker",
+  icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>',
+  description: "Displays shipping status with carrier info and tracking link",
   fields: [
     {
+      type: "select",
+      key: "status",
+      label: "Status",
+      options: [
+        { label: "Order Placed", value: "placed" },
+        { label: "Shipped", value: "shipped" },
+        { label: "In Transit", value: "transit" },
+        { label: "Delivered", value: "delivered" },
+      ],
+      default: "shipped",
+    },
+    {
       type: "text",
-      key: "stat1Label",
-      label: "Stat 1 Label",
-      default: "",
+      key: "carrier",
+      label: "Carrier",
+      default: "FedEx",
       readOnly: true,
     },
     {
       type: "text",
-      key: "stat1Value",
-      label: "Stat 1 Value",
-      default: "",
+      key: "trackingNumber",
+      label: "Tracking Number",
+      default: "7489 2034 8561",
       readOnly: true,
     },
     {
       type: "text",
-      key: "stat2Label",
-      label: "Stat 2 Label",
-      default: "",
+      key: "estimatedDelivery",
+      label: "Estimated Delivery",
+      default: "{{estimated_delivery}}",
       readOnly: true,
     },
     {
       type: "text",
-      key: "stat2Value",
-      label: "Stat 2 Value",
-      default: "",
-      readOnly: true,
-    },
-    {
-      type: "text",
-      key: "stat3Label",
-      label: "Stat 3 Label",
-      default: "",
-      readOnly: true,
-    },
-    {
-      type: "text",
-      key: "stat3Value",
-      label: "Stat 3 Value",
-      default: "",
+      key: "trackingUrl",
+      label: "Tracking URL",
+      default: "{{tracking_url}}",
       readOnly: true,
     },
     {
       type: "color",
       key: "accentColor",
       label: "Accent Color",
-      default: "#2563eb",
+      default: "#059669",
     },
   ],
-  template: `<div style="display: flex; text-align: center; gap: 0;">
-  <div style="flex: 1; padding: 16px;">
-    <div style="font-size: 28px; font-weight: bold; color: {{ accentColor }};">{{ stat1Value }}</div>
-    <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">{{ stat1Label }}</div>
+  template: `<div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div style="font-size: 14px; font-weight: 600; color: #111827;">Shipping Status</div>
+    <div style="font-size: 12px; font-weight: 600; color: {{ accentColor }}; background: {{ accentColor }}1a; padding: 3px 10px; border-radius: 99px;">{% if status == "placed" %}Order Placed{% elsif status == "shipped" %}Shipped{% elsif status == "transit" %}In Transit{% elsif status == "delivered" %}Delivered{% endif %}</div>
   </div>
-  <div style="flex: 1; padding: 16px; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb;">
-    <div style="font-size: 28px; font-weight: bold; color: {{ accentColor }};">{{ stat2Value }}</div>
-    <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">{{ stat2Label }}</div>
+  <div style="background: #f3f4f6; border-radius: 99px; height: 6px; margin-bottom: 16px;">
+    <div style="background: {{ accentColor }}; border-radius: 99px; height: 6px; width: {% if status == 'placed' %}15%{% elsif status == 'shipped' %}40%{% elsif status == 'transit' %}70%{% elsif status == 'delivered' %}100%{% endif %};"></div>
   </div>
-  <div style="flex: 1; padding: 16px;">
-    <div style="font-size: 28px; font-weight: bold; color: {{ accentColor }};">{{ stat3Value }}</div>
-    <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">{{ stat3Label }}</div>
+  <div style="font-size: 13px; color: #4b5563; line-height: 1.8;">
+    <div><strong>{{ carrier }}</strong> &middot; {{ trackingNumber }}</div>
+    <div>Estimated delivery: <strong>{{ estimatedDelivery }}</strong></div>
   </div>
+  {% if trackingUrl %}<div style="margin-top: 14px;"><a href="{{ trackingUrl }}" style="display: inline-block; background: {{ accentColor }}; color: #ffffff; font-size: 13px; font-weight: 600; padding: 10px 24px; border-radius: 6px; text-decoration: none;">Track Your Order</a></div>{% endif %}
 </div>`,
-  dataSource: {
-    label: "Change period",
-    onFetch: async (_ctx: {
-      fieldValues: Record<string, unknown>;
-      blockId: string;
-    }) => {
-      const endpoint = `GET https://api.example.com/v1/analytics/summary?metrics=users,revenue,growth`;
-
-      const picked = await openDataSourcePicker({
-        title: "Select Reporting Period",
-        endpoint,
-        items: [
-          {
-            id: "period-30d",
-            label: "Last 30 Days",
-            description: "Mar 1 \u2013 Mar 25, 2026",
-            data: {
-              stat1Label: "Active Users",
-              stat1Value: "12,847",
-              stat2Label: "Revenue",
-              stat2Value: "$284K",
-              stat3Label: "Growth",
-              stat3Value: "+34%",
-            },
-          },
-          {
-            id: "period-7d",
-            label: "Last 7 Days",
-            description: "Mar 18 \u2013 Mar 25, 2026",
-            data: {
-              stat1Label: "Active Users",
-              stat1Value: "3,291",
-              stat2Label: "Revenue",
-              stat2Value: "$68K",
-              stat3Label: "Growth",
-              stat3Value: "+12%",
-            },
-          },
-          {
-            id: "period-90d",
-            label: "Last Quarter",
-            description: "Jan 1 \u2013 Mar 25, 2026",
-            data: {
-              stat1Label: "Active Users",
-              stat1Value: "38,102",
-              stat2Label: "Revenue",
-              stat2Value: "$812K",
-              stat3Label: "Growth",
-              stat3Value: "+89%",
-            },
-          },
-        ],
-      });
-
-      return picked?.data ?? null;
-    },
-  },
 };
 
 export const customBlockDefinitions: CustomBlockDefinition[] = [
@@ -719,7 +664,6 @@ export const customBlockDefinitions: CustomBlockDefinition[] = [
   productCardBlock,
   featuredArticleBlock,
   productShowcaseBlock,
-  statsRowBlock,
 ];
 
 // ─── Product Launch ───────────────────────────────────────────
@@ -1467,16 +1411,19 @@ export function createOrderConfirmationTemplate(): TemplateContent {
         styles: white(0, 24, 0, 24),
       }),
 
-      createButtonBlock({
-        text: "Track Your Order",
-        url: "{{tracking_url}}",
-        backgroundColor: "#059669",
-        textColor: "#ffffff",
-        borderRadius: 6,
-        fontSize: 15,
-        buttonPadding: { top: 14, right: 28, bottom: 14, left: 28 },
-        styles: white(16, 20, 24, 20),
-      }),
+      // Custom block: Shipping Tracker (read-only fields populated by backend)
+      {
+        ...createCustomBlock(shippingTrackerBlock),
+        fieldValues: {
+          status: "shipped",
+          carrier: "FedEx",
+          trackingNumber: "7489 2034 8561",
+          estimatedDelivery: "{{estimated_delivery}}",
+          trackingUrl: "{{tracking_url}}",
+          accentColor: "#059669",
+        },
+        styles: white(16, 24, 24, 24),
+      },
 
       // ── Display Condition: VIP loyalty offer ──
       createTextBlock({
@@ -2075,7 +2022,7 @@ export const templates: TemplateOption[] = [
         label: "Custom Block",
         icon: "custom-block",
         description:
-          "The Testimonial near the bottom is a custom block with its own fields: quote, author name, title, and an optional avatar.\nTo try it: click the testimonial and check the right sidebar \u2014 you\u2019ll see custom field editors instead of the usual text toolbar. Edit any field and watch the block update instantly.\nCustom blocks use Liquid templates, so developers can add conditional logic (like {% if avatarUrl %}) directly in the markup.",
+          "The Testimonial near the bottom is a custom block with its own fields: quote, author name, title, and an optional avatar.\nTo try it: click the testimonial and check the right sidebar \u2014 you\u2019ll see custom field editors instead of the usual text toolbar. Edit any field and watch the block update instantly.\nThe Quote and Author Name fields are marked as required \u2014 they show a red asterisk and cannot be left empty. The avatar is optional and uses {% if avatarUrl %} in the Liquid template to conditionally render.\nCustom blocks use Liquid templates, so developers can add conditional logic directly in the markup.",
       },
     ],
   },
@@ -2090,7 +2037,7 @@ export const templates: TemplateOption[] = [
         label: "Custom Block with Data Source",
         icon: "data-source",
         description:
-          "The Featured Article block is pre-populated with content loaded from a simulated CMS API. The article title, excerpt, image, and author were all fetched automatically.\nTo try it: click the article block and look at the right sidebar. The fields are read-only because they came from the data source.\nThis is how developers connect the editor to their own backends \u2014 the onFetch callback fetches content and maps it to block fields.",
+          "The Featured Article block is pre-populated with content loaded from a simulated CMS API. The article title, excerpt, author, and other metadata were all fetched automatically.\nTo try it: click the article block and look at the right sidebar. Most fields are read-only (grayed out) because they came from the data source \u2014 but the Cover Image is editable, letting marketers override the image while keeping the rest locked.\nThis shows how developers can mix read-only and editable fields on the same block, giving marketers flexibility where it matters while protecting data integrity on API-sourced content.",
       },
       {
         label: "Data Source: Change Content",
@@ -2132,8 +2079,14 @@ export const templates: TemplateOption[] = [
     description: "Order summary with items and shipping",
     create: createOrderConfirmationTemplate,
     preview: "order",
-    customBlocks: [],
+    customBlocks: [shippingTrackerBlock],
     features: [
+      {
+        label: "Custom Block with Read-Only Fields",
+        icon: "custom-block",
+        description:
+          'The Shipping Tracker card shows carrier info, tracking number, estimated delivery, and a progress bar that adapts to the shipping status.\nTo try it: click the tracker and check the sidebar. The carrier, tracking number, estimated delivery, and tracking URL are all read-only \u2014 grayed out and non-editable because the backend populates them at send time. But the Status dropdown and Accent Color are editable, showing how developers can mix locked and editable fields on the same block.\nTry changing the Status dropdown to see the progress bar and status badge update instantly.',
+      },
       {
         label: "Logic Merge Tags (If/Else)",
         icon: "merge-tag",
@@ -2144,7 +2097,7 @@ export const templates: TemplateOption[] = [
         label: "Merge Tags (Transactional)",
         icon: "merge-tag",
         description:
-          'A fully dynamic transactional email with multiple merge tags: {{order_id}} in the header, {{first_name}} and {{last_name}} in the shipping address, {{order_total}} for the amount, and {{tracking_url}} as the CTA button link.\nTo try it: click "Track Your Order" and check the URL field in the sidebar \u2014 it\u2019s set to {{tracking_url}} directly, showing how merge tags work in button links, not just text.',
+          'A fully dynamic transactional email with multiple merge tags: {{order_id}} in the header, {{first_name}} and {{last_name}} in the shipping address, and {{order_total}} for the amount.\nTo try it: click any text with a colored chip to see the merge tag. These are configured in the mergeTags option passed to init().',
       },
       {
         label: "Display Condition",
@@ -2171,7 +2124,7 @@ export const templates: TemplateOption[] = [
         label: "Custom Block",
         icon: "custom-block",
         description:
-          'The Event Details card is a custom block with 6 editable fields: event name, date, time, location, map link, and accent color.\nTo try it: click the card and edit fields in the sidebar \u2014 changes render instantly. Try clearing the map link to see the "View on Map" link disappear (it uses {% if mapUrl %} in the Liquid template).\nThis shows how custom blocks combine structured data entry with conditional rendering logic.',
+          'The Event Details card is a custom block with 6 editable fields: event name, date, time, location, map link, and accent color.\nTo try it: click the card and edit fields in the sidebar \u2014 changes render instantly. Try clearing the map link to see the "View on Map" link disappear (it uses {% if mapUrl %} in the Liquid template).\nNotice that Event Name, Date, and Time are marked as required fields \u2014 they show a red asterisk and cannot be left empty. This shows how developers can enforce data integrity on custom blocks using the required option.\nThis shows how custom blocks combine structured data entry with conditional rendering logic.',
       },
     ],
   },

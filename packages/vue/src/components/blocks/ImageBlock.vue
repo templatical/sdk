@@ -24,10 +24,13 @@ const { syntax } = useMergeTag();
 const config = inject<TemplaticalEditorConfig>("config");
 const canBrowseMedia = computed(() => !!config?.onRequestMedia);
 
-function browseMedia(): void {
-  config?.onRequestMedia?.((url: string) => {
-    emit("update", { src: url });
-  });
+async function browseMedia(): Promise<void> {
+  const result = await config?.onRequestMedia?.();
+  if (result) {
+    const updates: Partial<ImageBlockType> = { src: result.url };
+    if (result.alt) updates.alt = result.alt;
+    emit("update", updates);
+  }
 }
 
 const containerStyle = computed(() => ({
@@ -50,7 +53,7 @@ const hasMergeTagSrc = computed(() =>
 <template>
   <div class="tpl:w-full" :style="containerStyle">
     <!-- Placeholder with preview image provided -->
-    <template v-if="block.src && hasMergeTagSrc && block.previewUrl">
+    <template v-if="block.src && hasMergeTagSrc && block.placeholderUrl">
       <a
         v-if="block.linkUrl"
         :href="block.linkUrl"
@@ -60,7 +63,7 @@ const hasMergeTagSrc = computed(() =>
       >
         <img
           class="tpl:border-0"
-          :src="block.previewUrl"
+          :src="block.placeholderUrl"
           :alt="block.alt"
           :style="imageStyle"
         />
@@ -68,7 +71,7 @@ const hasMergeTagSrc = computed(() =>
       <img
         v-else
         class="tpl:border-0"
-        :src="block.previewUrl"
+        :src="block.placeholderUrl"
         :alt="block.alt"
         :style="imageStyle"
       />

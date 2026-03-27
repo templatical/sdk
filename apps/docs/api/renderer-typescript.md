@@ -99,12 +99,12 @@ const cleaned = convertMergeTagsToValues(editorHtml);
 You typically don't need to call this directly -- the renderer calls it internally when processing text blocks. It's exported for advanced use cases where you're working with editor HTML outside the normal rendering pipeline.
 :::
 
-### `isHiddenOnAll(visibility)`
+### `isHiddenOnAll(block)`
 
-Returns `true` if a `BlockVisibility` object has all viewports set to `false`. Useful for skipping blocks that shouldn't render at all:
+Returns `true` if a block's `visibility` has all viewports set to `false`. Useful for skipping blocks that shouldn't render at all:
 
 ```ts
-if (isHiddenOnAll(block.visibility)) {
+if (isHiddenOnAll(block)) {
   // Skip this block entirely
 }
 ```
@@ -120,10 +120,10 @@ toPaddingString({ top: 10, right: 20, bottom: 10, left: 20 });
 
 ### `generateSocialIconDataUri(platform, style, size)`
 
-Generates a data URI for a social media platform icon. Used internally by the renderer for social icon blocks:
+Generates a base64-encoded SVG data URI for a social media platform icon. Used internally by the renderer for social icon blocks:
 
 ```ts
-const uri = generateSocialIconDataUri('twitter', 'circle', 'medium');
+const uri = generateSocialIconDataUri('twitter', 'circle', 32);
 // 'data:image/svg+xml,...'
 ```
 
@@ -141,4 +141,4 @@ const { html } = mjml2html(mjml);
 // html is ready to send via your email service
 ```
 
-See [Node.js Renderer Example](/examples/node-renderer) for a complete server-side setup.
+See [How Rendering Works](/getting-started/how-rendering-works) for more on the rendering pipeline.

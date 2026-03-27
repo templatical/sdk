@@ -102,6 +102,7 @@ export default {
     orderId: "Order ID",
     orderTotal: "Order Total",
     shippingMethod: "Shipping Method",
+    estimatedDelivery: "Estimated Delivery",
     trackingUrl: "Tracking URL",
     unsubscribeUrl: "Unsubscribe URL",
     preferencesUrl: "Preferences URL",

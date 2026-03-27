@@ -7,7 +7,7 @@ description: Reference for all 12 built-in block types in Templatical.
 
 Blocks are the building units of every Templatical template. Each block represents a distinct piece of content -- a paragraph, an image, a button. Blocks can be placed directly in the template or inside sections for multi-column layouts. The editor renders them top-to-bottom in the order they appear.
 
-Every block extends a common `Block` base with shared properties (`id`, `type`, `styles`, `displayCondition`, `mergeTag`, `customCss`, `visibility`), and each type adds its own specific properties.
+Every block extends a common `Block` base with shared properties (`id`, `type`, `styles`, `displayCondition`, `customCss`, `visibility`), and each type adds its own specific properties.
 
 To create blocks programmatically, see [Programmatic Templates](/guide/programmatic-templates).
 
@@ -34,11 +34,11 @@ Rich text content rendered as HTML. The editor uses [Tiptap](https://tiptap.dev)
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `content` | `string` | `''` | HTML content |
+| `content` | `string` | `'<p>Enter your text here</p>'` | HTML content |
 | `fontSize` | `number` | `16` | Font size in px |
-| `color` | `string` | `'#000000'` | Text color |
+| `color` | `string` | `'#333333'` | Text color |
 | `textAlign` | `'left' \| 'center' \| 'right'` | `'left'` | Horizontal alignment |
-| `fontWeight` | `string` | `'normal'` | CSS font weight |
+| `fontWeight` | `'normal' \| 'bold'` | `'normal'` | Font weight |
 | `fontFamily` | `string` | `undefined` | Font family override |
 
 ## Image
@@ -49,11 +49,11 @@ Displays an image with optional link wrapping.
 |----------|------|---------|-------------|
 | `src` | `string` | `''` | Image URL |
 | `alt` | `string` | `''` | Alt text |
-| `width` | `number` | `600` | Display width in px |
+| `width` | `number \| 'full'` | `'full'` | Display width in px, or `'full'` for 100% |
 | `align` | `'left' \| 'center' \| 'right'` | `'center'` | Horizontal alignment |
 | `linkUrl` | `string` | `undefined` | Wraps image in a link |
-| `linkOpenInNewTab` | `boolean` | `true` | Link target behavior |
-| `previewUrl` | `string` | `undefined` | Placeholder shown in the editor when `src` uses a merge tag |
+| `linkOpenInNewTab` | `boolean` | `undefined` | Link target behavior |
+| `placeholderUrl` | `string` | `undefined` | Placeholder shown in the editor when `src` uses a merge tag |
 
 ## Button
 
@@ -61,7 +61,7 @@ A call-to-action button with customizable appearance.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `text` | `string` | `'Click me'` | Button label |
+| `text` | `string` | `'Click Here'` | Button label |
 | `url` | `string` | `''` | Link URL |
 | `backgroundColor` | `string` | `'#007bff'` | Button background color |
 | `textColor` | `string` | `'#ffffff'` | Button text color |
@@ -69,7 +69,7 @@ A call-to-action button with customizable appearance.
 | `fontSize` | `number` | `16` | Font size in px |
 | `buttonPadding` | `SpacingValue` | `{ top: 12, right: 24, bottom: 12, left: 24 }` | Inner padding |
 | `fontFamily` | `string` | `undefined` | Font family override |
-| `openInNewTab` | `boolean` | `true` | Link target behavior |
+| `openInNewTab` | `boolean` | `undefined` | Link target behavior |
 
 ## Divider
 
@@ -80,7 +80,7 @@ A horizontal line separator.
 | `lineStyle` | `'solid' \| 'dashed' \| 'dotted'` | `'solid'` | Line style |
 | `color` | `string` | `'#cccccc'` | Line color |
 | `thickness` | `number` | `1` | Line thickness in px |
-| `width` | `string` | `'100%'` | Line width |
+| `width` | `number \| 'full'` | `'full'` | Line width in px, or `'full'` for 100% |
 
 ## Spacer
 
@@ -107,7 +107,7 @@ A row of social media icons linking to platform profiles.
 | `icons` | `SocialIcon[]` | `[]` | List of social icons |
 | `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle'` | `'solid'` | Visual style |
 | `iconSize` | `'small' \| 'medium' \| 'large'` | `'medium'` | Icon size |
-| `spacing` | `number` | `8` | Space between icons in px |
+| `spacing` | `number` | `10` | Space between icons in px |
 | `align` | `'left' \| 'center' \| 'right'` | `'center'` | Horizontal alignment |
 
 16 platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, Email, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
@@ -131,19 +131,24 @@ A horizontal navigation menu with text links.
 | `items` | `MenuItemData[]` | `[]` | Menu items |
 | `fontSize` | `number` | `14` | Font size in px |
 | `fontFamily` | `string` | `undefined` | Font family override |
-| `color` | `string` | `'#000000'` | Text color |
-| `linkColor` | `string` | `'#007bff'` | Link color |
+| `color` | `string` | `'#333333'` | Text color |
+| `linkColor` | `string` | `undefined` | Link color |
 | `textAlign` | `'left' \| 'center' \| 'right'` | `'center'` | Alignment |
 | `separator` | `string` | `'\|'` | Character between items |
 | `separatorColor` | `string` | `'#cccccc'` | Separator color |
-| `spacing` | `number` | `8` | Space around separator |
+| `spacing` | `number` | `10` | Space around separator |
 
 Each `MenuItemData` has:
 
 ```ts
 interface MenuItemData {
+  id: string;
   text: string;
   url: string;
+  openInNewTab: boolean;
+  bold: boolean;
+  underline: boolean;
+  color?: string;
 }
 ```
 
@@ -155,13 +160,13 @@ A data table with optional header row styling.
 |----------|------|---------|-------------|
 | `rows` | `TableRowData[]` | `[]` | Table rows |
 | `hasHeaderRow` | `boolean` | `true` | Style first row as header |
-| `headerBackgroundColor` | `string` | `'#f3f4f6'` | Header row background |
-| `borderColor` | `string` | `'#e5e7eb'` | Border color |
+| `headerBackgroundColor` | `string` | `undefined` | Header row background |
+| `borderColor` | `string` | `'#dddddd'` | Border color |
 | `borderWidth` | `number` | `1` | Border width in px |
 | `cellPadding` | `number` | `8` | Cell padding in px |
 | `fontSize` | `number` | `14` | Font size in px |
 | `fontFamily` | `string` | `undefined` | Font family override |
-| `color` | `string` | `'#000000'` | Text color |
+| `color` | `string` | `'#333333'` | Text color |
 | `textAlign` | `'left' \| 'center' \| 'right'` | `'left'` | Cell text alignment |
 
 ## Video
@@ -177,10 +182,10 @@ Email clients do not support embedded video playback. The renderer outputs a cli
 | `url` | `string` | `''` | Video URL (YouTube, Vimeo, etc.) |
 | `thumbnailUrl` | `string` | `''` | Thumbnail image URL |
 | `alt` | `string` | `''` | Alt text for thumbnail |
-| `width` | `number` | `600` | Display width in px |
+| `width` | `number \| 'full'` | `'full'` | Display width in px, or `'full'` for 100% |
 | `align` | `'left' \| 'center' \| 'right'` | `'center'` | Horizontal alignment |
-| `openInNewTab` | `boolean` | `true` | Link target behavior |
-| `previewUrl` | `string` | `undefined` | Editor-only placeholder |
+| `openInNewTab` | `boolean` | `undefined` | Link target behavior |
+| `placeholderUrl` | `string` | `undefined` | Editor-only placeholder |
 
 ## Section
 

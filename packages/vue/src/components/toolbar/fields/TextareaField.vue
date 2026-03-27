@@ -3,6 +3,7 @@ import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockTextareaField } from "@templatical/types";
 import { labelClass } from "../../../constants/styleConstants";
 import { Lock } from "lucide-vue-next";
+import MergeTagTextarea from "../../MergeTagTextarea.vue";
 
 defineProps<{
   field: CustomBlockTextareaField;
@@ -18,9 +19,6 @@ const { t } = useI18n();
 
 const readOnlyTextareaClass =
   "tpl:w-full tpl:resize-y tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:text-sm tpl:text-[var(--tpl-text)] tpl:outline-none tpl:opacity-60 tpl:cursor-not-allowed";
-
-const editableTextareaClass =
-  "tpl:w-full tpl:resize-y tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:text-sm tpl:text-[var(--tpl-text)] tpl:outline-none tpl:placeholder:text-[var(--tpl-text-dim)] tpl:focus:border-[var(--tpl-primary)]";
 </script>
 
 <template>
@@ -45,15 +43,11 @@ const editableTextareaClass =
       :title="t.customBlocks.dataSource.readOnlyTooltip"
       :class="readOnlyTextareaClass"
     />
-    <textarea
+    <MergeTagTextarea
       v-else
-      :value="modelValue"
+      :model-value="modelValue"
       :placeholder="field.placeholder"
-      rows="3"
-      :class="editableTextareaClass"
-      @input="
-        emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)
-      "
+      @update:model-value="emit('update:modelValue', $event)"
     />
   </div>
 </template>

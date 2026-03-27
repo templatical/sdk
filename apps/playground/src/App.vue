@@ -165,6 +165,7 @@ const mergeTagList = computed<MergeTag[]>(() => [
   { label: t.value.mergeTags.orderId, value: "{{order_id}}" },
   { label: t.value.mergeTags.orderTotal, value: "{{order_total}}" },
   { label: t.value.mergeTags.shippingMethod, value: "{{shipping_method}}" },
+  { label: t.value.mergeTags.estimatedDelivery, value: "{{estimated_delivery}}" },
   { label: t.value.mergeTags.trackingUrl, value: "{{tracking_url}}" },
   { label: t.value.mergeTags.unsubscribeUrl, value: "{{unsubscribe_url}}" },
   { label: t.value.mergeTags.preferencesUrl, value: "{{preferences_url}}" },
@@ -357,7 +358,7 @@ let currentSerializableConfig = buildSerializableConfig();
 
 // --- Media picker ---
 const mediaPickerOpen = ref(false);
-let mediaResolve: ((url: string) => void) | null = null;
+let mediaResolve: ((result: { url: string; alt?: string } | null) => void) | null = null;
 
 const demoImages = computed(() => [
   {
@@ -380,19 +381,22 @@ const demoImages = computed(() => [
   },
 ]);
 
-function requestMedia(callback: (url: string) => void): void {
-  mediaResolve = callback;
+function requestMedia(): Promise<{ url: string; alt?: string } | null> {
   mediaPickerOpen.value = true;
+  return new Promise((resolve) => {
+    mediaResolve = resolve;
+  });
 }
 
-function selectMedia(url: string): void {
+function selectMedia(url: string, alt?: string): void {
   mediaPickerOpen.value = false;
-  mediaResolve?.(url);
+  mediaResolve?.({ url, alt });
   mediaResolve = null;
 }
 
 function cancelMediaPicker(): void {
   mediaPickerOpen.value = false;
+  mediaResolve?.(null);
   mediaResolve = null;
 }
 
@@ -1608,7 +1612,7 @@ onUnmounted(() => {
                 v-for="img in demoImages"
                 :key="img.url"
                 class="group flex flex-col items-center gap-2 p-0 border border-gray-200 rounded-lg bg-white cursor-pointer transition-[border-color,box-shadow] duration-150 overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle"
-                @click="selectMedia(img.url)"
+                @click="selectMedia(img.url, img.label)"
               >
                 <img
                   :src="img.thumb"

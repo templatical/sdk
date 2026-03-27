@@ -455,7 +455,7 @@ onUnmounted(() => {
                 <label
                   for="cloud-client-id"
                   class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                  >{{ t.cloud.auth.clientId }}</label
+                  >{{ t.cloud.auth.clientId }} <span class="text-red-500">*</span></label
                 >
                 <input
                   id="cloud-client-id"
@@ -473,7 +473,7 @@ onUnmounted(() => {
                 <label
                   for="cloud-client-secret"
                   class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                  >{{ t.cloud.auth.clientSecret }}</label
+                  >{{ t.cloud.auth.clientSecret }} <span class="text-red-500">*</span></label
                 >
                 <input
                   id="cloud-client-secret"
@@ -491,7 +491,7 @@ onUnmounted(() => {
                 <label
                   for="cloud-tenant"
                   class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                  >{{ t.cloud.auth.tenant }}</label
+                  >{{ t.cloud.auth.tenant }} <span class="text-red-500">*</span></label
                 >
                 <input
                   id="cloud-tenant"
@@ -658,7 +658,7 @@ onUnmounted(() => {
                 <label
                   for="cloud-auth-url"
                   class="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-[0.5px]"
-                  >{{ t.cloud.auth.authEndpoint }}</label
+                  >{{ t.cloud.auth.authEndpoint }} <span class="text-red-500">*</span></label
                 >
                 <input
                   id="cloud-auth-url"

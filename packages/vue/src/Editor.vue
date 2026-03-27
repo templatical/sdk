@@ -239,11 +239,6 @@ function installPlugins(): void {
   }
 }
 
-// --- Dark mode ---
-if (props.config.darkMode === true) {
-  editor.setDarkMode(true);
-}
-
 // --- Provide to child components ---
 provide("editor", editor);
 provide("history", history);

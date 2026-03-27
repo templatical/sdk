@@ -59,23 +59,22 @@ const editor = init({
 
 ### `onRequestMedia`
 
-Called when the user clicks to select an image (e.g. in the image block settings). The editor passes a callback function — call it with the image URL when the user has made their selection.
+Called when the user clicks to select an image (e.g. in the image block settings). Return a `MediaResult` object, or `null` if the user cancels. When `alt` is provided, the editor automatically fills in the image's alt text.
 
 ```ts
+import type { MediaResult } from '@templatical/types';
+
 const editor = init({
   container: '#editor',
-  onRequestMedia(callback) {
-    // Open your own media picker
-    openMediaPicker({
-      onSelect(imageUrl) {
-        callback(imageUrl);
-      },
-    });
+  async onRequestMedia(): Promise<MediaResult | null> {
+    const image = await openMediaPicker();
+    if (!image) return null;
+    return { url: image.url, alt: image.alt };
   },
 });
 ```
 
-If you don't provide `onRequestMedia`, the editor falls back to a text input where users type or paste image URLs directly.
+If you don't provide `onRequestMedia`, the editor shows a text input where users type or paste image URLs directly.
 
 ### `mergeTags.onRequest`
 

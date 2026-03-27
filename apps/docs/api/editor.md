@@ -45,14 +45,13 @@ unmount();
 | `onChange` | `(content: TemplateContent) => void` | No | Called when template content changes (debounced) |
 | `onSave` | `(content: TemplateContent) => void` | No | Called when the user triggers a save action |
 | `onError` | `(error: Error) => void` | No | Called when an error occurs |
-| `onRequestMedia` | `(callback: (url: string) => void) => void` | No | Called when user wants to pick an image. Call `callback` with the URL |
+| `onRequestMedia` | `() => Promise<MediaResult \| null>` | No | Called when user wants to pick an image. Return `{ url, alt? }` or `null` |
 | `mergeTags` | `MergeTagsConfig` | No | Merge tag configuration. See [Merge Tags](/guide/merge-tags) |
 | `displayConditions` | `DisplayConditionsConfig` | No | Display condition configuration. See [Display Conditions](/guide/display-conditions) |
 | `customBlocks` | `CustomBlockDefinition[]` | No | Custom block type definitions. See [Custom Blocks](/guide/custom-blocks) |
-| `fonts` | `FontsConfig` | No | Font configuration. See [Theming](/guide/theming) |
+| `fonts` | `FontsConfig` | No | Font configuration. See [Custom Fonts](/guide/fonts) |
 | `theme` | `ThemeOverrides` | No | Color token overrides. See [Theming](/guide/theming) |
 | `locale` | `string` | No | Locale code (e.g. `'en'`, `'de'`). Defaults to `'en'` |
-| `darkMode` | `boolean \| 'auto'` | No | Dark mode setting. `'auto'` follows system preference |
 | `plugins` | `EditorPlugin[]` | No | Editor plugins. See [Plugin System](#plugin-system) |
 
 ## TemplaticalEditor
@@ -217,7 +216,7 @@ import { useAutoSave } from '@templatical/core';
 
 const autoSave = useAutoSave({
   content: editor.content,
-  isDirty: editor.state.isDirty,
+  isDirty: () => editor.state.isDirty,
   onChange: (content) => saveToServer(content),
   debounce: 1000,
 });
@@ -234,7 +233,7 @@ Manages preview state for display conditions in the editor. Allows toggling indi
 ```ts
 import { useConditionPreview } from '@templatical/core';
 
-const preview = useConditionPreview();
+const preview = useConditionPreview(editor);
 
 preview.isHidden(blockId);         // Check if a block is hidden in preview
 preview.toggleBlock(blockId);      // Toggle a block's visibility
@@ -249,7 +248,13 @@ Handles fetching external data for custom blocks with data sources. Manages load
 ```ts
 import { useDataSourceFetch } from '@templatical/core';
 
-const dataFetch = useDataSourceFetch({ block, customBlocks, updateBlock });
+const dataFetch = useDataSourceFetch({
+  definition: computed(() => customBlockDefinition),
+  block: computed(() => customBlock),
+  onUpdate: (fieldValues, fetched) => {
+    updateBlock(block.id, { fieldValues, dataSourceFetched: fetched });
+  },
+});
 
 dataFetch.isFetching;              // Ref<boolean>
 dataFetch.fetchError;              // Ref<boolean>

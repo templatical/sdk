@@ -177,9 +177,9 @@ export default {
     fullWidth: "Volle Breite",
     linkUrl: "Link-URL",
     openInNewTab: "In neuem Tab öffnen",
-    previewUrl: "Vorschaubild",
-    previewUrlPlaceholder: "https://... (nur zur Gestaltung)",
-    previewUrlTooltip:
+    placeholderUrl: "Platzhalterbild",
+    placeholderUrlPlaceholder: "https://... (nur zur Gestaltung)",
+    placeholderUrlTooltip:
       "Da die Bild-URL einen Platzhalter verwendet, können Sie hier ein echtes Bild angeben, um das Layout während der Gestaltung in der Vorschau anzuzeigen. Dies wird nicht in die endgültige Ausgabe aufgenommen.",
     clickToAdd: "Klicken Sie, um eine Bild-URL hinzuzufügen",
     browseMedia: "Medien durchsuchen",
@@ -200,9 +200,9 @@ export default {
     altTextPlaceholder: "Videobeschreibung",
     width: "Breite",
     fullWidth: "Volle Breite",
-    previewUrl: "Vorschau-Thumbnail",
-    previewUrlPlaceholder: "https://... (nur zur Gestaltung)",
-    previewUrlTooltip:
+    placeholderUrl: "Platzhalter-Thumbnail",
+    placeholderUrlPlaceholder: "https://... (nur zur Gestaltung)",
+    placeholderUrlTooltip:
       "Da die Video-URL einen Platzhalter verwendet, können Sie hier ein echtes Thumbnail angeben, um das Layout während der Gestaltung in der Vorschau anzuzeigen. Dies wird nicht in die endgültige Ausgabe aufgenommen.",
     addVideo: "Video-URL hinzufügen",
   },

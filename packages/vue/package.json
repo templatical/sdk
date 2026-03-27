@@ -38,6 +38,7 @@
     "@vueuse/core": "^14.0.0",
     "liquidjs": "^10.0.0",
     "lucide-vue-next": "^0.475.0",
+    "vanilla-colorful": "^0.7.2",
     "vue-advanced-cropper": "^2.0.0",
     "vuedraggable": "^4.1.0"
   },

@@ -13,8 +13,8 @@ The `BlockStyles` interface controls padding, margin, background, and responsive
 
 ```ts
 interface BlockStyles {
-  padding?: SpacingValue;
-  margin?: SpacingValue;
+  padding: SpacingValue;
+  margin: SpacingValue;
   backgroundColor?: string;
   responsive?: ResponsiveStyles;
 }
@@ -29,6 +29,7 @@ const block = createTextBlock({
 
 block.styles = {
   padding: { top: 16, right: 24, bottom: 16, left: 24 },
+  margin: { top: 0, right: 0, bottom: 0, left: 0 },
   backgroundColor: '#f0f9ff',
 };
 ```
@@ -66,13 +67,13 @@ interface ResponsiveStyles {
 }
 ```
 
-The editor uses these viewport breakpoints:
+The editor uses these viewport widths in preview mode:
 
-| Viewport | Width |
-|----------|-------|
-| Desktop | 600px and above |
-| Tablet | 480px -- 599px |
-| Mobile | Below 480px |
+| Viewport | Preview Width |
+|----------|---------------|
+| Desktop | Template width (default 600px) |
+| Tablet | 768px |
+| Mobile | 375px |
 
 Responsive overrides merge with the base styles. Only specify the properties you want to change:
 

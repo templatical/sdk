@@ -29,7 +29,6 @@ export default defineConfig({
         nav: [
             { text: 'Guide', link: '/getting-started/installation' },
             { text: 'API', link: '/api/editor' },
-            { text: 'Examples', link: '/examples/vanilla-js' },
             { text: 'Cloud', link: '/cloud/' },
             { text: 'Playground', link: 'https://play.templatical.com' },
         ],
@@ -126,15 +125,20 @@ export default defineConfig({
                             text: 'Custom Blocks',
                             link: '/guide/custom-blocks',
                         },
+                        { text: 'Images', link: '/guide/images' },
+                    ],
+                },
+                {
+                    text: 'Customization',
+                    items: [
                         { text: 'Theming', link: '/guide/theming' },
+                        {
+                            text: 'Custom Fonts',
+                            link: '/guide/fonts',
+                        },
                         {
                             text: 'Internationalization',
                             link: '/guide/i18n',
-                        },
-                        { text: 'Images', link: '/guide/images' },
-                        {
-                            text: 'Migration from BeeFree',
-                            link: '/guide/migration-from-beefree',
                         },
                     ],
                 },
@@ -166,21 +170,11 @@ export default defineConfig({
                     ],
                 },
                 {
-                    text: 'Examples',
+                    text: 'Migration',
                     items: [
                         {
-                            text: 'Vanilla JavaScript',
-                            link: '/examples/vanilla-js',
-                        },
-                        { text: 'Vue 3', link: '/examples/vue' },
-                        { text: 'React', link: '/examples/react' },
-                        {
-                            text: 'Laravel + Inertia',
-                            link: '/examples/laravel',
-                        },
-                        {
-                            text: 'Node.js Renderer',
-                            link: '/examples/node-renderer',
+                            text: 'From BeeFree',
+                            link: '/guide/migration-from-beefree',
                         },
                     ],
                 },

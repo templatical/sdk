@@ -24,6 +24,11 @@ export interface MergeTag {
   value: string;
 }
 
+export interface MediaResult {
+  url: string;
+  alt?: string;
+}
+
 export interface MergeTagsConfig {
   syntax?: SyntaxPresetName | SyntaxPreset;
   tags?: MergeTag[];

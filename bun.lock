@@ -25,6 +25,7 @@
     "apps/docs": {
       "name": "@templatical/docs",
       "devDependencies": {
+        "medium-zoom": "^1.1.0",
         "vitepress": "^1.6.0",
         "vue": "^3.5.0",
       },
@@ -119,12 +120,6 @@
         "typescript": "^5.7.0",
         "vitest": "^3.0.0",
       },
-      "peerDependencies": {
-        "mjml": "^4.15.0",
-      },
-      "optionalPeers": [
-        "mjml",
-      ],
     },
     "packages/types": {
       "name": "@templatical/types",
@@ -154,6 +149,7 @@
         "@vueuse/core": "^14.0.0",
         "liquidjs": "^10.0.0",
         "lucide-vue-next": "^0.475.0",
+        "vanilla-colorful": "^0.7.2",
         "vue-advanced-cropper": "^2.0.0",
         "vuedraggable": "^4.1.0",
       },
@@ -1046,6 +1042,8 @@
 
     "mdurl": ["mdurl@2.0.0", "", {}, "sha512-Lf+9+2r+Tdp5wXDXC4PcIBjTDtq4UKjCPMQhKIuzpJNW0b96kVqSwW0bT7FhRSfmAiFYgP+SCRvdrDozfh0U5w=="],
 
+    "medium-zoom": ["medium-zoom@1.1.0", "", {}, "sha512-ewyDsp7k4InCUp3jRmwHBRFGyjBimKps/AJLjRSox+2q/2H4p/PNpQf+pwONWlJiOudkBXtbdmVbFjqyybfTmQ=="],
+
     "merge2": ["merge2@1.4.1", "", {}, "sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg=="],
 
     "micromark-util-character": ["micromark-util-character@2.1.1", "", { "dependencies": { "micromark-util-symbol": "^2.0.0", "micromark-util-types": "^2.0.0" } }, "sha512-wv8tdUTJ3thSFFFJKtpYKOYiGP2+v96Hvk4Tu8KpCAsTMs6yi+nVmGh1syvSCsaxz45J6Jbw+9DD6g97+NV67Q=="],
@@ -1343,6 +1341,8 @@
     "uri-js": ["uri-js@4.4.1", "", { "dependencies": { "punycode": "^2.1.0" } }, "sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg=="],
 
     "util-deprecate": ["util-deprecate@1.0.2", "", {}, "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw=="],
+
+    "vanilla-colorful": ["vanilla-colorful@0.7.2", "", {}, "sha512-z2YZusTFC6KnLERx1cgoIRX2CjPRP0W75N+3CC6gbvdX5Ch47rZkEMGO2Xnf+IEmi3RiFLxS18gayMA27iU7Kg=="],
 
     "vfile": ["vfile@6.0.3", "", { "dependencies": { "@types/unist": "^3.0.0", "vfile-message": "^4.0.0" } }, "sha512-KzIbH/9tXat2u30jf+smMwFCsno4wHVdNmzFyL+T/L3UGqqk6JKfVqOFOZEpZSHADH1k40ab6NUIXZq422ov3Q=="],
 

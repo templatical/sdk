@@ -51,7 +51,6 @@ type Block =
   | SocialIconsBlock
   | MenuBlock
   | TableBlock
-  | CountdownBlock
   | HtmlBlock
   | CustomBlock;
 ```
@@ -61,8 +60,8 @@ type Block =
 ```ts
 type BlockType =
   | 'text' | 'image' | 'button' | 'section'
-  | 'divider' | 'video' | 'spacer' | 'social-icons'
-  | 'menu' | 'table' | 'countdown' | 'html' | 'custom';
+  | 'divider' | 'video' | 'spacer' | 'social'
+  | 'menu' | 'table' | 'html' | 'custom';
 ```
 
 ## Base Types
@@ -139,8 +138,8 @@ interface TextBlock extends BaseBlock {
   content: string;          // HTML content
   fontSize: number;
   color: string;
-  textAlign: string;
-  fontWeight: string;
+  textAlign: 'left' | 'center' | 'right';
+  fontWeight: 'normal' | 'bold';
   fontFamily?: string;
 }
 ```
@@ -152,11 +151,11 @@ interface ImageBlock extends BaseBlock {
   type: 'image';
   src: string;
   alt: string;
-  width: number;
-  align: string;
+  width: number | 'full';
+  align: 'left' | 'center' | 'right';
   linkUrl?: string;
   linkOpenInNewTab?: boolean;
-  previewUrl?: string;
+  placeholderUrl?: string;
 }
 ```
 
@@ -196,10 +195,10 @@ type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
 ```ts
 interface DividerBlock extends BaseBlock {
   type: 'divider';
-  lineStyle: string;
+  lineStyle: 'solid' | 'dashed' | 'dotted';
   color: string;
   thickness: number;
-  width: number;            // Percentage (0-100)
+  width: number | 'full';
 }
 ```
 
@@ -216,12 +215,12 @@ interface SpacerBlock extends BaseBlock {
 
 ```ts
 interface SocialIconsBlock extends BaseBlock {
-  type: 'social-icons';
+  type: 'social';
   icons: SocialIcon[];
   iconStyle: SocialIconStyle;
   iconSize: SocialIconSize;
   spacing: number;
-  align: string;
+  align: 'left' | 'center' | 'right';
 }
 
 interface SocialIcon {
@@ -252,7 +251,7 @@ interface MenuBlock extends BaseBlock {
   fontFamily?: string;
   color: string;
   linkColor?: string;
-  textAlign: string;
+  textAlign: 'left' | 'center' | 'right';
   separator: string;
   separatorColor: string;
   spacing: number;
@@ -283,7 +282,7 @@ interface TableBlock extends BaseBlock {
   fontSize: number;
   fontFamily?: string;
   color: string;
-  textAlign: string;
+  textAlign: 'left' | 'center' | 'right';
 }
 
 interface TableRowData {
@@ -294,34 +293,6 @@ interface TableRowData {
 interface TableCellData {
   id: string;
   content: string;
-}
-```
-
-### CountdownBlock
-
-```ts
-interface CountdownBlock extends BaseBlock {
-  type: 'countdown';
-  targetDate: string;
-  timezone: string;
-  showDays: boolean;
-  showHours: boolean;
-  showMinutes: boolean;
-  showSeconds: boolean;
-  separator: string;
-  digitFontSize: number;
-  digitColor: string;
-  labelColor: string;
-  labelFontSize: number;
-  backgroundColor: string;
-  fontFamily?: string;
-  labelDays: string;
-  labelHours: string;
-  labelMinutes: string;
-  labelSeconds: string;
-  expiredMessage: string;
-  expiredImageUrl: string;
-  hideOnExpiry: boolean;
 }
 ```
 
@@ -363,6 +334,7 @@ interface MergeTag {
 interface MergeTagsConfig {
   syntax?: SyntaxPresetName | SyntaxPreset;
   tags?: MergeTag[];
+  onRequest?: () => Promise<MergeTag | null>;
 }
 
 type SyntaxPresetName = 'liquid' | 'handlebars' | 'mailchimp' | 'ampscript';
@@ -472,7 +444,6 @@ import {
   createSocialIconsBlock,
   createMenuBlock,
   createTableBlock,
-  createCountdownBlock,
   createHtmlBlock,
   createCustomBlock,
   createBlock,
@@ -510,7 +481,7 @@ const id = generateId();
 import {
   isText, isImage, isButton, isSection,
   isDivider, isVideo, isSpacer, isSocialIcons,
-  isMenu, isTable, isCountdown, isHtml, isCustomBlock,
+  isMenu, isTable, isHtml, isCustomBlock,
 } from '@templatical/types';
 
 if (isText(block)) {

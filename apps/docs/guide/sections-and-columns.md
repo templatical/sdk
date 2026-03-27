@@ -123,5 +123,6 @@ const section = createSectionBlock({ columns: '1' });
 section.styles = {
   backgroundColor: '#f8fafc',
   padding: { top: 32, right: 24, bottom: 32, left: 24 },
+  margin: { top: 0, right: 0, bottom: 0, left: 0 },
 };
 ```

@@ -128,8 +128,8 @@ createSocialIconsBlock({
   iconStyle: 'circle',
   iconSize: 'large',
   icons: [
-    { platform: 'twitter', url: 'https://x.com/acme' },
-    { platform: 'github', url: 'https://github.com/acme' },
+    { id: crypto.randomUUID(), platform: 'twitter', url: 'https://x.com/acme' },
+    { id: crypto.randomUUID(), platform: 'github', url: 'https://github.com/acme' },
   ],
 })
 ```
@@ -139,9 +139,9 @@ createSocialIconsBlock({
 ```ts
 createMenuBlock({
   items: [
-    { text: 'Home', url: 'https://example.com' },
-    { text: 'Blog', url: 'https://example.com/blog' },
-    { text: 'Docs', url: 'https://docs.example.com' },
+    { id: crypto.randomUUID(), text: 'Home', url: 'https://example.com', openInNewTab: false, bold: false, underline: false },
+    { id: crypto.randomUUID(), text: 'Blog', url: 'https://example.com/blog', openInNewTab: false, bold: false, underline: false },
+    { id: crypto.randomUUID(), text: 'Docs', url: 'https://docs.example.com', openInNewTab: true, bold: false, underline: false },
   ],
   separator: '-',
 })
@@ -153,9 +153,9 @@ createMenuBlock({
 createTableBlock({
   hasHeaderRow: true,
   rows: [
-    { cells: [{ content: 'Plan' }, { content: 'Price' }] },
-    { cells: [{ content: 'Starter' }, { content: '$9/mo' }] },
-    { cells: [{ content: 'Pro' }, { content: '$29/mo' }] },
+    { id: crypto.randomUUID(), cells: [{ id: crypto.randomUUID(), content: 'Plan' }, { id: crypto.randomUUID(), content: 'Price' }] },
+    { id: crypto.randomUUID(), cells: [{ id: crypto.randomUUID(), content: 'Starter' }, { id: crypto.randomUUID(), content: '$9/mo' }] },
+    { id: crypto.randomUUID(), cells: [{ id: crypto.randomUUID(), content: 'Pro' }, { id: crypto.randomUUID(), content: '$29/mo' }] },
   ],
 })
 ```
@@ -186,16 +186,7 @@ The `columns` property accepts: `'1'` (single), `'2'` (two equal), `'3'` (three 
 
 ### Custom
 
-```ts
-createCustomBlock({
-  customType: 'product-card',
-  fieldValues: {
-    title: 'Wireless Headphones',
-    price: 79.99,
-    imageUrl: 'https://cdn.example.com/headphones.jpg',
-  },
-})
-```
+`createCustomBlock` takes a `CustomBlockDefinition` (not a partial block). It generates field values from the definition's field defaults. See [Custom Blocks](/guide/custom-blocks) for defining custom block types.
 
 ## Utilities
 
@@ -236,7 +227,7 @@ if (isImage(block)) {
 }
 ```
 
-Every block type has a corresponding guard: `isText()`, `isImage()`, `isButton()`, `isDivider()`, `isSpacer()`, `isHtml()`, `isSocialIcons()`, `isMenu()`, `isTable()`, `isVideo()`, `isSection()`, `isCustom()`.
+Every block type has a corresponding guard: `isText()`, `isImage()`, `isButton()`, `isDivider()`, `isSpacer()`, `isHtml()`, `isSocialIcons()`, `isMenu()`, `isTable()`, `isVideo()`, `isSection()`, `isCustomBlock()`.
 
 ## Template settings
 

@@ -53,7 +53,7 @@ The `value` must include the syntax delimiters. For example, with Liquid syntax:
 
 ## Syntax presets
 
-Templatical includes five built-in syntax presets. The `syntax` setting tells the editor how to detect and highlight both data tags and logic tags in content.
+Templatical includes four built-in syntax presets. The `syntax` setting tells the editor how to detect and highlight both data tags and logic tags in content.
 
 Each preset defines two patterns:
 - **Data tags** -- variable placeholders like a recipient's name or email
@@ -64,7 +64,7 @@ Each preset defines two patterns:
 | `'liquid'` | <code v-pre>{{first_name}}</code> | <code v-pre>{% if vip %}</code> | Shopify, Jekyll, Django, Jinja2 |
 | `'handlebars'` | <code v-pre>{{first_name}}</code> | <code v-pre>{{#if vip}}</code> | Handlebars.js, Mandrill |
 | `'mailchimp'` | `*\|FIRST_NAME\|*` | `*\|IF:VIP\|*` | Mailchimp |
-| `'ampscript'` | `%%first_name%%` | `%%[IF @vip]%%` | Salesforce Marketing Cloud |
+| `'ampscript'` | `%%=first_name=%%` | `%%[IF @vip]%%` | Salesforce Marketing Cloud |
 
 ```ts
 mergeTags: {

@@ -65,7 +65,7 @@ import {
   type UseSnapshotHistoryReturn,
 } from "@templatical/core/cloud";
 import type { UseFontsReturn } from "../composables/useFonts";
-import type { McpOperationPayload } from "@templatical/types";
+import type { McpOperationPayload, MediaResult } from "@templatical/types";
 import {
   computed,
   defineAsyncComponent,
@@ -171,7 +171,6 @@ export interface TemplaticalCloudEditorConfig {
 
   theme?: ThemeOverrides;
   locale?: string;
-  darkMode?: boolean | "auto";
 
   ai?: import("@templatical/types").AiConfig | false;
   commenting?: boolean;
@@ -1027,32 +1026,29 @@ function handleKeydown(event: KeyboardEvent): void {
 // Media library handler
 // ---------------------------------------------------------------------------
 
-let mediaResolve: ((item: MediaItem | null) => void) | null = null;
+let mediaResolve: ((result: MediaResult | null) => void) | null = null;
 
-function handleRequestMedia(callback: (url: string) => void): void {
+async function handleRequestMedia(): Promise<MediaResult | null> {
   // If consumer provides a custom media handler, use it
   if (props.config.onRequestMedia) {
-    props.config.onRequestMedia({ accept: ["images"] }).then((item) => {
-      if (item) {
-        callback(item.url);
-      }
-    });
-    return;
+    const item = await props.config.onRequestMedia({ accept: ["images"] });
+    if (!item) return null;
+    return { url: item.url, alt: item.alt_text || undefined };
   }
 
   // Otherwise open the built-in media library
   mediaLibraryAccept.value = ["images"];
   mediaLibraryOpen.value = true;
-  mediaResolve = (item) => {
-    if (item) {
-      callback(item.url);
-    }
-  };
+  return new Promise<MediaResult | null>((resolve) => {
+    mediaResolve = (result) => {
+      resolve(result);
+    };
+  });
 }
 
 function handleMediaSelect(item: MediaItem): void {
   mediaLibraryOpen.value = false;
-  mediaResolve?.(item);
+  mediaResolve?.({ url: item.url, alt: item.alt_text || undefined });
   mediaResolve = null;
 }
 
@@ -1250,12 +1246,7 @@ async function saveTemplate(): Promise<SaveResult> {
 }
 
 // ---------------------------------------------------------------------------
-// Dark mode
-// ---------------------------------------------------------------------------
 
-if (props.config.darkMode === true) {
-  editor.setDarkMode(true);
-}
 
 // ---------------------------------------------------------------------------
 // Lifecycle
