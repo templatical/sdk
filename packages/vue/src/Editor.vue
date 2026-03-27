@@ -392,22 +392,24 @@ defineExpose({
         ]"
       >
         <!-- Restore hidden blocks button -->
-        <Transition name="tpl-restore-btn">
-          <button
-            v-if="conditionPreview.hasHiddenBlocks.value"
-            class="tpl:absolute tpl:top-2 tpl:left-1/2 tpl:z-40 tpl:-translate-x-1/2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-full tpl:border tpl:px-3.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:whitespace-nowrap tpl:shadow-md tpl:hover:opacity-80"
-            style="
-              background-color: var(--tpl-warning-light);
-              color: var(--tpl-warning);
-              border-color: var(--tpl-warning);
-              backdrop-filter: blur(8px);
-            "
-            @click="conditionPreview.reset()"
-          >
-            <RotateCcw :size="13" :stroke-width="2" />
-            {{ t("blockSettings.restoreHiddenBlocks") }}
-          </button>
-        </Transition>
+        <div class="tpl:sticky tpl:top-0 tpl:z-40 tpl:h-0">
+          <Transition name="tpl-restore-btn">
+            <button
+              v-if="conditionPreview.hasHiddenBlocks.value"
+              class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:-translate-x-1/2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-full tpl:border tpl:px-3.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:whitespace-nowrap tpl:shadow-md tpl:hover:opacity-80"
+              style="
+                background-color: var(--tpl-warning-light);
+                color: var(--tpl-warning);
+                border-color: var(--tpl-warning);
+                backdrop-filter: blur(8px);
+              "
+              @click="conditionPreview.reset()"
+            >
+              <RotateCcw :size="13" :stroke-width="2" />
+              {{ t("blockSettings.restoreHiddenBlocks") }}
+            </button>
+          </Transition>
+        </div>
         <div class="tpl:flex tpl:min-h-full tpl:justify-center tpl:p-8">
           <Canvas
             :viewport="editor.state.viewport"
@@ -501,3 +503,29 @@ defineExpose({
     </template>
   </div>
 </template>
+
+<style scoped>
+.tpl-restore-btn-enter-active {
+  transition:
+    opacity 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tpl-restore-btn-leave-active {
+  transition:
+    opacity 150ms ease-in,
+    transform 150ms ease-in;
+}
+
+.tpl-restore-btn-enter-from,
+.tpl-restore-btn-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.9);
+}
+
+.tpl-restore-btn-enter-to,
+.tpl-restore-btn-leave-from {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+</style>
