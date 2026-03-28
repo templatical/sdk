@@ -35,8 +35,9 @@ describe('useFonts', () => {
       });
 
       const roboto = fonts.value.find((f) => f.label === 'Roboto');
-      expect(roboto).toBeDefined();
+      expect(roboto).not.toBeUndefined();
       expect(roboto!.isCustom).toBe(true);
+      expect(roboto!.value).toBe('Roboto');
     });
 
     it('excludes custom fonts when disabled', () => {
@@ -57,7 +58,9 @@ describe('useFonts', () => {
       setCustomFontsEnabled(false);
       setCustomFontsEnabled(true);
 
-      expect(fonts.value.find((f) => f.label === 'Roboto')).toBeDefined();
+      const roboto = fonts.value.find((f) => f.label === 'Roboto');
+      expect(roboto).not.toBeUndefined();
+      expect(roboto!.isCustom).toBe(true);
     });
 
     it('custom font with same name as built-in is included as custom', () => {

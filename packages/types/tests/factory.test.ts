@@ -37,7 +37,7 @@ describe('block factory functions', () => {
         expect(block.type).toBe('text');
         expect(block.content).toBe('<p>Enter your text here</p>');
         expect(block.fontSize).toBe(16);
-        expect(block.id).toBeTruthy();
+        expect(block.id).toMatch(/^[0-9a-f-]+$/);
     });
 
     it('creates a text block with partial overrides', () => {

@@ -1,9 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import './dom-stubs';
+
+import { describe, expect, it, vi } from 'vitest';
 import {
   SYNTAX_PRESETS,
   isLogicMergeTagValue,
   getLogicMergeTagKeyword,
 } from '@templatical/types';
+
+// Mock .vue imports to avoid needing @vitejs/plugin-vue in tests
+vi.mock('../src/extensions/LogicMergeTagNodeView.vue', () => ({ default: {} }));
+
+import { LogicMergeTagNode } from '../src/extensions/LogicMergeTagNode';
 
 // Test the regex patterns and logic used by LogicMergeTagNode.
 // The extension uses `syntax.logic.source` for input/paste rules
@@ -70,6 +77,47 @@ describe('LogicMergeTagNode regex patterns', () => {
     it('matches {{#each items}}', () => {
       expect(inputRegex.test('{{#each products}}')).toBe(true);
     });
+  });
+});
+
+describe('LogicMergeTagNode extension config', () => {
+  it('has name "logicMergeTagNode"', () => {
+    expect(LogicMergeTagNode.config.name).toBe('logicMergeTagNode');
+  });
+
+  it('has group "inline"', () => {
+    expect(LogicMergeTagNode.config.group).toBe('inline');
+  });
+
+  it('is inline', () => {
+    expect(LogicMergeTagNode.config.inline).toBe(true);
+  });
+
+  it('is atom', () => {
+    expect(LogicMergeTagNode.config.atom).toBe(true);
+  });
+
+  it('addAttributes returns value and keyword', () => {
+    const attrs = (LogicMergeTagNode.config.addAttributes as Function).call({});
+    expect(attrs.value).toEqual({ default: '' });
+    expect(attrs.keyword).toEqual({ default: '' });
+  });
+
+  it('parseHTML returns array with tag span[data-logic-merge-tag]', () => {
+    const rules = (LogicMergeTagNode.config.parseHTML as Function).call({});
+    expect(Array.isArray(rules)).toBe(true);
+    expect(rules).toHaveLength(1);
+    expect(rules[0].tag).toBe('span[data-logic-merge-tag]');
+  });
+
+  it('default options use liquid syntax', () => {
+    const options = (LogicMergeTagNode.config.addOptions as Function).call({});
+    expect(options.syntax).toEqual(SYNTAX_PRESETS.liquid);
+  });
+
+  it('has no mergeTags in default options (only syntax)', () => {
+    const options = (LogicMergeTagNode.config.addOptions as Function).call({});
+    expect(Object.keys(options)).toEqual(['syntax']);
   });
 });
 

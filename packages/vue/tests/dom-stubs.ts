@@ -27,6 +27,7 @@ function createElement(tag?: string): any {
     nextSibling: null,
     childNodes: [],
     firstChild: null,
+    style: {},
     namespaceURI: 'http://www.w3.org/1999/xhtml',
     ownerDocument: doc,
   };

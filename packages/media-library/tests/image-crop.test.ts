@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import {
   ASPECT_RATIO_VALUES,
   getExportSettings,
   calculateOutputDimensions,
+  resizeCanvas,
+  canvasToFile,
 } from '../src/composables/useImageCrop';
 
 describe('ASPECT_RATIO_VALUES', () => {
@@ -181,5 +183,161 @@ describe('getExportSettings (additional)', () => {
     const settings = getExportSettings('');
     expect(settings.mimeType).toBe('image/jpeg');
     expect(settings.quality).toBe(0.92);
+  });
+});
+
+function createMockCanvas(width: number, height: number) {
+  const ctx = {
+    imageSmoothingEnabled: false,
+    imageSmoothingQuality: 'low',
+    drawImage: vi.fn(),
+  };
+  return {
+    width,
+    height,
+    getContext: vi.fn(() => ctx),
+    toBlob: vi.fn(),
+    __ctx: ctx,
+  } as unknown as HTMLCanvasElement & { __ctx: typeof ctx };
+}
+
+describe('resizeCanvas', () => {
+  let origDocument: typeof globalThis.document;
+
+  beforeEach(() => {
+    origDocument = globalThis.document;
+    // Provide a minimal document stub for resizeCanvas
+    (globalThis as any).document = {
+      createElement: vi.fn(() => createMockCanvas(0, 0)),
+    };
+  });
+
+  afterEach(() => {
+    (globalThis as any).document = origDocument;
+  });
+
+  it('returns same canvas when no constraints', () => {
+    const source = createMockCanvas(800, 600);
+    const result = resizeCanvas(source);
+    expect(result).toBe(source);
+  });
+
+  it('returns same canvas when within bounds', () => {
+    const source = createMockCanvas(200, 150);
+    const result = resizeCanvas(source, 400, 300);
+    expect(result).toBe(source);
+  });
+
+  it('scales down width proportionally', () => {
+    const resized = createMockCanvas(0, 0);
+    vi.mocked(document.createElement).mockReturnValue(resized as any);
+
+    const source = createMockCanvas(800, 600);
+    const result = resizeCanvas(source, 400);
+
+    expect(result).toBe(resized);
+    expect(resized.width).toBe(400);
+    expect(resized.height).toBe(300);
+  });
+
+  it('scales down height proportionally', () => {
+    const resized = createMockCanvas(0, 0);
+    vi.mocked(document.createElement).mockReturnValue(resized as any);
+
+    const source = createMockCanvas(800, 600);
+    const result = resizeCanvas(source, undefined, 300);
+
+    expect(result).toBe(resized);
+    expect(resized.height).toBe(300);
+    expect(resized.width).toBe(400);
+  });
+
+  it('draws source onto resized canvas', () => {
+    const resized = createMockCanvas(0, 0);
+    vi.mocked(document.createElement).mockReturnValue(resized as any);
+
+    const source = createMockCanvas(800, 600);
+    resizeCanvas(source, 400);
+
+    const ctx = resized.__ctx;
+    expect(resized.getContext).toHaveBeenCalledWith('2d');
+    expect(ctx.imageSmoothingEnabled).toBe(true);
+    expect(ctx.imageSmoothingQuality).toBe('high');
+    expect(ctx.drawImage).toHaveBeenCalledWith(source, 0, 0, 400, 300);
+  });
+});
+
+describe('canvasToFile', () => {
+  it('resolves with File from blob', async () => {
+    const canvas = createMockCanvas(100, 100);
+    const blob = new Blob(['test'], { type: 'image/jpeg' });
+
+    (canvas.toBlob as any).mockImplementation(
+      (callback: (b: Blob | null) => void) => {
+        callback(blob);
+      },
+    );
+
+    const file = await canvasToFile(canvas, 'photo.jpg', {
+      mimeType: 'image/jpeg',
+      quality: 0.92,
+    });
+
+    expect(file).toBeInstanceOf(File);
+    expect(file.name).toBe('photo.jpeg');
+    expect(file.type).toBe('image/jpeg');
+  });
+
+  it('rejects when toBlob returns null', async () => {
+    const canvas = createMockCanvas(100, 100);
+
+    (canvas.toBlob as any).mockImplementation(
+      (callback: (b: Blob | null) => void) => {
+        callback(null);
+      },
+    );
+
+    await expect(
+      canvasToFile(canvas, 'photo.jpg', {
+        mimeType: 'image/jpeg',
+        quality: 0.92,
+      }),
+    ).rejects.toThrow('Failed to create blob from canvas');
+  });
+
+  it('uses correct extension from mime type', async () => {
+    const canvas = createMockCanvas(100, 100);
+    const blob = new Blob(['test'], { type: 'image/png' });
+
+    (canvas.toBlob as any).mockImplementation(
+      (callback: (b: Blob | null) => void) => {
+        callback(blob);
+      },
+    );
+
+    const file = await canvasToFile(canvas, 'photo.jpg', {
+      mimeType: 'image/png',
+      quality: 1,
+    });
+
+    expect(file.name).toBe('photo.png');
+  });
+
+  it('strips old extension before adding new one', async () => {
+    const canvas = createMockCanvas(100, 100);
+    const blob = new Blob(['test'], { type: 'image/webp' });
+
+    (canvas.toBlob as any).mockImplementation(
+      (callback: (b: Blob | null) => void) => {
+        callback(blob);
+      },
+    );
+
+    const file = await canvasToFile(canvas, 'my-image.png', {
+      mimeType: 'image/webp',
+      quality: 0.92,
+    });
+
+    expect(file.name).toBe('my-image.webp');
   });
 });

@@ -165,7 +165,10 @@ const mergeTagList = computed<MergeTag[]>(() => [
   { label: t.value.mergeTags.orderId, value: "{{order_id}}" },
   { label: t.value.mergeTags.orderTotal, value: "{{order_total}}" },
   { label: t.value.mergeTags.shippingMethod, value: "{{shipping_method}}" },
-  { label: t.value.mergeTags.estimatedDelivery, value: "{{estimated_delivery}}" },
+  {
+    label: t.value.mergeTags.estimatedDelivery,
+    value: "{{estimated_delivery}}",
+  },
   { label: t.value.mergeTags.trackingUrl, value: "{{tracking_url}}" },
   { label: t.value.mergeTags.unsubscribeUrl, value: "{{unsubscribe_url}}" },
   { label: t.value.mergeTags.preferencesUrl, value: "{{preferences_url}}" },
@@ -358,7 +361,9 @@ let currentSerializableConfig = buildSerializableConfig();
 
 // --- Media picker ---
 const mediaPickerOpen = ref(false);
-let mediaResolve: ((result: { url: string; alt?: string } | null) => void) | null = null;
+let mediaResolve:
+  | ((result: { url: string; alt?: string } | null) => void)
+  | null = null;
 
 const demoImages = computed(() => [
   {

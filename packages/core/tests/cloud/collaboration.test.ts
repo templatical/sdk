@@ -58,14 +58,14 @@ describe('useCollaboration', () => {
       channel,
     });
 
-    // Should not throw when channel is null
-    expect(() =>
-      _broadcastOperation({
-        operation: 'update_block',
-        block_id: 'b1',
-        properties: { content: 'test' },
-      }),
-    ).not.toThrow();
+    // Should silently skip when channel is null
+    _broadcastOperation({
+      operation: 'update_block',
+      block_id: 'b1',
+      properties: { content: 'test' },
+    });
+    // No channel means nothing was triggered — editor state should be unchanged
+    expect(channel.value).toBeNull();
   });
 
   it('_isProcessingRemoteOperation returns false initially', () => {

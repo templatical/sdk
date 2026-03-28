@@ -90,14 +90,18 @@ describe('EventEmitter', () => {
         expect(emitter.listenerCount('message')).toBe(2);
     });
 
-    it('does not throw when emitting without listeners', () => {
+    it('emitting without listeners has no effect', () => {
         const emitter = new EventEmitter<TestEvents>();
-        expect(() => emitter.emit('message', 'hello')).not.toThrow();
+        emitter.emit('message', 'hello');
+        expect(emitter.listenerCount('message')).toBe(0);
     });
 
-    it('does not throw when removing non-existent handler', () => {
+    it('removing non-existent handler leaves listener count unchanged', () => {
         const emitter = new EventEmitter<TestEvents>();
-        expect(() => emitter.off('message', () => {})).not.toThrow();
+        const handler = vi.fn();
+        emitter.on('message', handler);
+        emitter.off('message', () => {}); // different function reference
+        expect(emitter.listenerCount('message')).toBe(1);
     });
 
     it('fires same handler twice when registered twice', () => {
@@ -146,11 +150,12 @@ describe('EventEmitter', () => {
         expect(handler1).toHaveBeenCalled();
     });
 
-    it('off with handler that was never registered does not throw', () => {
+    it('off with handler that was never registered leaves listener count at zero', () => {
         const emitter = new EventEmitter<TestEvents>();
         const handler = vi.fn();
         // off on an event that has no handlers at all
-        expect(() => emitter.off('click', handler)).not.toThrow();
+        emitter.off('click', handler);
+        expect(emitter.listenerCount('click')).toBe(0);
     });
 
     it('off with handler that was never registered on existing event', () => {

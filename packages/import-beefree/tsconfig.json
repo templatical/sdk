@@ -2,7 +2,10 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    "paths": {
+      "@templatical/types": ["../types/src/index.ts"],
+      "@templatical/media-library": ["../media-library/src/types.ts"]
+    }
   },
   "include": ["src"]
 }

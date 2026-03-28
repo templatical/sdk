@@ -85,6 +85,31 @@ Uses Prettier 3 with **default settings** (no `.prettierrc` or config in `packag
 - The `vue` and `media-library` packages use `vue-tsc` for typecheck (handles `.vue` SFCs). All others use plain `tsc`.
 - **Critical:** `@templatical/core` aliases `vue` to `@vue/reactivity` at build time. In tests, `vue` resolves to the full Vue package (it's a devDependency). Don't add Vue runtime imports in core or cloud source modules.
 
+### Cross-package type resolution (tsconfig paths)
+
+Each package's `tsconfig.json` has `paths` mapping sibling `@templatical/*` imports to source directories. This allows `bun run typecheck` to work **without building first** — no `dist/` needed.
+
+**How it works:** Instead of resolving `@templatical/types` via `node_modules/.../dist/index.d.ts` (which requires a build), the paths redirect to `../types/src/index.ts` (source).
+
+**Maintenance rules when modifying tsconfigs:**
+- When a package adds a new `@templatical/*` import, add the corresponding `paths` entry to its `tsconfig.json`.
+- Non-vue packages (types, core, renderer, import-beefree) must point `@templatical/media-library` to `../media-library/src/types.ts` (not `index.ts`) because `tsc` cannot resolve `.vue` files that the barrel re-exports.
+- Vue packages (media-library, vue) use `vue-tsc` and can point to `../*/src/index.ts` directly.
+- The media-library package has a self-referencing path (`"@templatical/media-library": ["./src/index.ts"]`) because the types package imports from it, and media-library resolves types source which contains that import.
+
+**Current path map:**
+
+| Package | Paths to |
+|---------|----------|
+| `types` | media-library (types.ts only) |
+| `core` | types, media-library (types.ts only) |
+| `renderer` | types, media-library (types.ts only) |
+| `import-beefree` | types, media-library (types.ts only) |
+| `media-library` | types, core, core/cloud, media-library (self) |
+| `vue` | types, core, core/cloud, media-library |
+
+**Why not TypeScript project references (`composite: true`)?** The monorepo uses tsup (rollup-plugin-dts) and vite (vite-plugin-dts) for `.d.ts` generation. These are incompatible with `composite` mode, which requires `tsc` to generate granular declarations + `.tsbuildinfo`. Switching would require replacing the entire build toolchain.
+
 ## CDN Builds
 
 Root-level Vite configs produce standalone bundles for CDN/script-tag usage:
@@ -154,18 +179,74 @@ Both use dynamic `import()` for locale files. Locale normalization strips region
 
 ## Tests
 
-**Vitest 3.** All 6 packages have test coverage. Run `bun run test` to execute all.
+**Vitest 3.** All 6 packages have test coverage (~1,368 tests). Run `bun run test` to execute all. Every new feature, bug fix, or refactor **must** include tests. Tests must be regression-sensitive — a source code change without a corresponding test update should cause a failure.
 
-### Test conventions
+### Test location
 
 - **Location:** `tests/**/*.test.ts` per package (exception: import-beefree uses `src/__tests__/**/*.test.ts`).
 - **Config:** Each package has `vitest.config.ts` with `include: ['tests/**/*.test.ts']`.
-- **Patterns:** `describe`/`it` blocks, factory functions for test data (e.g. `createTextBlock()`, `createMediaItem()`).
-- **Mocking API clients:** Cloud composables create `ApiClient` internally — mock via `vi.mock('../../src/cloud/api')` then `vi.mocked(ApiClient.prototype.methodName)`.
-- **Mocking fetch for AuthManager:** Use `vi.stubGlobal('fetch', mockFn)` since AuthManager calls `fetch()` directly.
-- **SSE streaming tests:** Use a `createSSEResponse()` helper that builds a `ReadableStream` from SSE event objects. Used for ai-chat, ai-rewrite, template-scoring, design-reference.
-- **Testing inject-dependent composables:** Use a `withProvide()` helper that creates a real Vue app with `app.provide()`, runs the composable in setup, then unmounts. Used for useMergeTag, useMediaCategories, useMediaPicker. Requires DOM stubs (`dom-stubs.ts`) imported before Vue.
-- **Mock bleed across tests:** When using `vi.mock()` on a module, prototype mocks persist across tests. To check "not called in this test", snapshot `mock.calls.length` before the action and compare, rather than `not.toHaveBeenCalled()`.
+
+### Test structure
+
+- **`describe`/`it` blocks** with clear, behavior-focused names (`"clears isDirty after save"`, not `"test save"`).
+- **Factory functions** for test data (e.g. `createTextBlock()`, `createMediaItem()`, `createMockAuthManager()`).
+- **`beforeEach`** with `vi.mocked(X).mockClear()` for test isolation.
+
+### Mocking patterns
+
+- **API clients:** Cloud composables create `ApiClient` internally — mock via `vi.mock('../../src/cloud/api')` then `vi.mocked(ApiClient.prototype.methodName)`.
+- **Fetch for AuthManager:** Use `vi.stubGlobal('fetch', mockFn)` since AuthManager calls `fetch()` directly. Clean up with `vi.unstubAllGlobals()` in `afterEach`.
+- **WebSocket:** Mock via `vi.stubGlobal('WebSocket', MockClass)`. For timeout tests, use `vi.useFakeTimers()` + `vi.advanceTimersByTimeAsync()`.
+- **SSE streaming:** Use `createSSEResponse()` helper that builds a `ReadableStream` from SSE event objects. Used for ai-chat, ai-rewrite, template-scoring, design-reference.
+- **Inject-dependent composables:** Use `withProvide()` helper that creates a real Vue app with `app.provide()`, runs the composable in setup, then unmounts. Used for useMergeTag, useMediaCategories, useMediaPicker, useI18n. Requires DOM stubs (`dom-stubs.ts`) imported before Vue.
+- **Fake timers:** Use `vi.useFakeTimers()` in `beforeEach` and `vi.useRealTimers()` in `afterEach` for debounce/timeout tests (e.g. auto-save, health check).
+- **Mock bleed:** When using `vi.mock()` on a module, prototype mocks persist across tests. To check "not called in this test", snapshot `mock.calls.length` before the action and compare, rather than `not.toHaveBeenCalled()`.
+
+### Assertion requirements — regression sensitivity
+
+Every test must assert on **concrete values or state**, not just "didn't crash." These rules ensure source code changes without test updates cause failures:
+
+- **Never use `.toBeDefined()` or `.toBeTruthy()` as the sole assertion.** Always pair with a value check. Instead of `expect(block).toBeDefined()`, write `expect(block.type).toBe('text')`.
+- **Never use `.not.toThrow()` as the sole assertion.** Always assert on the resulting state. Instead of `expect(() => editor.removeBlock('x')).not.toThrow()`, write `editor.removeBlock('x'); expect(editor.content.value.blocks).toHaveLength(1)`.
+- **Never use `typeof` checks alone.** Instead of `expect(typeof result).toBe('string')`, assert the actual value: `expect(result).toBe('')` or `expect(result).toContain('<mj-text')`.
+- **Prefer `.toBe()` / `.toEqual()` over loose matchers.** Use `expect(x).toBe(false)` not `expect(x).toBeFalsy()`.
+- **Assert return values, not just side effects.** If a function returns a value, test it. If it modifies state, check the state before and after.
+- **Test both branches of every `if/else`.** If a function behaves differently based on a condition, write tests for both paths.
+
+### Coverage requirements — what to test
+
+Every module with logic must have tests covering three categories:
+
+1. **Happy path** — Normal expected usage, success scenarios. E.g. "creates template via API and sets state."
+2. **Unhappy path** — Error handling, failure scenarios, invalid input. E.g. "calls onError when API rejects", "throws SdkError when no template loaded."
+3. **Edge cases** — Boundary conditions, empty inputs, null/undefined, double calls, state transitions. E.g. "double destroy is safe", "moveBlock with invalid target section removes block from source", "empty fieldValues merges without error."
+
+When adding a new function or composable:
+- Test every `if/else` branch in the implementation
+- Test every `try/catch` — trigger the catch path
+- Test every early `return` — verify the guard condition
+- Test computed properties react to state changes
+- Test that callbacks receive correct arguments (use `toHaveBeenCalledWith`)
+
+### Test patterns by package
+
+**`@templatical/types`** — Pure functions, no mocking needed. Test factory defaults, partial overrides, and type guards with all block types.
+
+**`@templatical/core`** — Uses `@vue/reactivity` (ref, computed, watch). Composables can be tested directly without Vue mount. Use `vi.useFakeTimers()` for debounce-based composables (auto-save). Mock `ApiClient` for cloud modules.
+
+**`@templatical/core/cloud`** — Mock `ApiClient.prototype.*` methods. Use `createMockAuthManager()` factory. Test API success, failure (onError called + error rethrown), and state transitions (isLoading/isSaving flags). For health check, mock both `fetch` global and `WebSocket` global.
+
+**`@templatical/renderer`** — Pure render functions. Create blocks via `@templatical/types` factories, pass to `renderBlock()` with a `RenderContext`. Assert output with `.toContain()` for expected MJML/HTML fragments. Test hidden blocks return `''`.
+
+**`@templatical/import-beefree`** — Test `convertModule()` with crafted `BeeFreeeModule` objects. Assert both the returned `block` properties and the `entry` status/metadata. Test unknown module types fall back to HTML.
+
+**`@templatical/media-library`** — Mock `MediaApiClient` for composable tests. Use `createMediaItem()` / `createFolder()` factories. Test both API success and error paths. For image crop, mock `document.createElement('canvas')` and canvas context.
+
+**`@templatical/vue`** — Import `dom-stubs.ts` before Vue in any test that touches Vue components or extensions. Use `withProvide()` for composables that use `inject()`. For TipTap extensions, test the config object properties directly (name, group, attributes, parseHTML) — don't instantiate a full editor. For component structure tests, read `.vue` source files with `node:fs` and assert on content patterns.
+
+### Vue package DOM stubs
+
+The `packages/vue/tests/dom-stubs.ts` file provides minimal DOM stubs for tests that import Vue or TipTap extensions. **Always import it first** — before any Vue imports — because Vue captures `document` at module load time. The stubs include a `style` property on elements for ProseMirror compatibility.
 
 ## Changesets
 
@@ -175,12 +256,18 @@ Versioning and publishing use `@changesets/cli`. CI (`.github/workflows/publish.
 
 GitHub Actions (`.github/workflows/ci.yml`) on push to main + PRs:
 
-1. **Lint** — `bun run format --check` (Prettier) + `bun run lint` (ESLint)
-2. **Typecheck** — `bun run typecheck` (tsc/vue-tsc --noEmit per package)
-3. **Test** — `bun run test` (Vitest across all 6 packages)
-4. **Build** — `bun run build` (tsup/vite per package in dependency order)
+```
+lint ──────┐
+typecheck ─┤──→ test (build + test)
+           └──→ build
+```
 
-All four gates must pass. Run them locally before pushing to catch issues early.
+1. **Lint** (parallel) — `bun run format --check` (Prettier) + `bun run lint` (ESLint)
+2. **Typecheck** (parallel) — `bun run typecheck` (tsc/vue-tsc --noEmit per package, no build needed)
+3. **Test** (after lint + typecheck) — `bun run build` then `bun run test` (tests import from dist)
+4. **Build** (after lint + typecheck) — `bun run build` (tsup/vite per package in dependency order)
+
+All four gates must pass. Lint and typecheck run in parallel first; test and build only run if both pass. Run checks locally before pushing: `bun run format --check && bun run lint && bun run typecheck && bun run build && bun run test`.
 
 ## Design Context
 

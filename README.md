@@ -12,6 +12,7 @@
   <a href="https://www.npmjs.com/package/@templatical/vue"><img src="https://img.shields.io/npm/v/@templatical/vue?label=npm&color=cb3837" alt="npm version" /></a>
   <a href="https://github.com/templatical/editor/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-FSL--1.1--MIT-blue" alt="License" /></a>
   <a href="https://github.com/templatical/editor/actions"><img src="https://img.shields.io/github/actions/workflow/status/templatical/editor/ci.yml?branch=main" alt="CI" /></a>
+  <a href="https://codecov.io/gh/templatical/sdk"><img src="https://codecov.io/gh/templatical/sdk/branch/main/graph/badge.svg" alt="Coverage" /></a>
   <a href="https://github.com/templatical/editor/stargazers"><img src="https://img.shields.io/github/stars/templatical/editor?style=flat" alt="Stars" /></a>
 </p>
 

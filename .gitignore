@@ -1,6 +1,7 @@
 node_modules
 dist
 dist-standalone
+coverage
 .DS_Store
 .idea
 *.tsbuildinfo

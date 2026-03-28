@@ -26,14 +26,21 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    needs: [lint, typecheck]
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun run test
+      - run: bun run build
+      - run: bun run test:coverage
+      - uses: codecov/codecov-action@v5
+        with:
+          files: packages/*/coverage/coverage-final.json
+          fail_ci_if_error: false
 
   build:
     runs-on: ubuntu-latest
+    needs: [lint, typecheck]
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
