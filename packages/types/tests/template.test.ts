@@ -55,3 +55,50 @@ describe('createDefaultTemplateContent', () => {
         });
     });
 });
+
+describe('createDefaultTemplateContent with templateDefaults', () => {
+    it('applies templateDefaults overrides', () => {
+        const content = createDefaultTemplateContent('Arial, sans-serif', {
+            width: 640,
+            backgroundColor: '#f5f5f5',
+        });
+        expect(content.settings.width).toBe(640);
+        expect(content.settings.backgroundColor).toBe('#f5f5f5');
+        expect(content.settings.fontFamily).toBe('Arial, sans-serif');
+    });
+
+    it('templateDefaults fontFamily overrides defaultFontFamily parameter', () => {
+        const content = createDefaultTemplateContent('Helvetica, sans-serif', {
+            fontFamily: 'Georgia, serif',
+        });
+        expect(content.settings.fontFamily).toBe('Georgia, serif');
+    });
+
+    it('applies preheaderText from templateDefaults', () => {
+        const content = createDefaultTemplateContent('Arial, sans-serif', {
+            preheaderText: 'Hello world',
+        });
+        expect(content.settings.preheaderText).toBe('Hello world');
+    });
+
+    it('returns defaults when templateDefaults is undefined', () => {
+        const content = createDefaultTemplateContent('Arial, sans-serif', undefined);
+        expect(content.settings.width).toBe(600);
+        expect(content.settings.backgroundColor).toBe('#ffffff');
+    });
+
+    it('returns defaults when templateDefaults is empty', () => {
+        const content = createDefaultTemplateContent('Arial, sans-serif', {});
+        expect(content.settings.width).toBe(600);
+        expect(content.settings.backgroundColor).toBe('#ffffff');
+    });
+
+    it('only overrides specified properties', () => {
+        const content = createDefaultTemplateContent('Arial, sans-serif', {
+            width: 700,
+        });
+        expect(content.settings.width).toBe(700);
+        expect(content.settings.backgroundColor).toBe('#ffffff');
+        expect(content.settings.fontFamily).toBe('Arial, sans-serif');
+    });
+});

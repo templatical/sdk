@@ -9,7 +9,7 @@ Blocks are the building units of every Templatical template. Each block represen
 
 Every block extends a common `Block` base with shared properties (`id`, `type`, `styles`, `displayCondition`, `customCss`, `visibility`), and each type adds its own specific properties.
 
-To create blocks programmatically, see [Programmatic Templates](/guide/programmatic-templates).
+To create blocks programmatically, see [Programmatic Templates](/guide/programmatic-templates). For default property values and how to customize them, see [Block & Template Defaults](/guide/defaults).
 
 ## Choosing the right block
 
@@ -32,83 +32,83 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 
 Rich text content rendered as HTML. The editor uses [Tiptap](https://tiptap.dev) for inline editing with formatting controls (bold, italic, links, alignment, etc.).
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `content` | `string` | `'<p>Enter your text here</p>'` | HTML content |
-| `fontSize` | `number` | `16` | Font size in px |
-| `color` | `string` | `'#333333'` | Text color |
-| `textAlign` | `'left' \| 'center' \| 'right'` | `'left'` | Horizontal alignment |
-| `fontWeight` | `'normal' \| 'bold'` | `'normal'` | Font weight |
-| `fontFamily` | `string` | `undefined` | Font family override |
+| Property | Type | Description |
+|----------|------|-------------|
+| `content` | `string` | HTML content |
+| `fontSize` | `number` | Font size in px |
+| `color` | `string` | Text color |
+| `textAlign` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
+| `fontWeight` | `'normal' \| 'bold'` | Font weight |
+| `fontFamily` | `string` | Font family override |
 
 ## Image
 
 Displays an image with optional link wrapping.
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `src` | `string` | `''` | Image URL |
-| `alt` | `string` | `''` | Alt text |
-| `width` | `number \| 'full'` | `'full'` | Display width in px, or `'full'` for 100% |
-| `align` | `'left' \| 'center' \| 'right'` | `'center'` | Horizontal alignment |
-| `linkUrl` | `string` | `undefined` | Wraps image in a link |
-| `linkOpenInNewTab` | `boolean` | `undefined` | Link target behavior |
-| `placeholderUrl` | `string` | `undefined` | Placeholder shown in the editor when `src` uses a merge tag |
+| Property | Type | Description |
+|----------|------|-------------|
+| `src` | `string` | Image URL |
+| `alt` | `string` | Alt text |
+| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
+| `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
+| `linkUrl` | `string` | Wraps image in a link |
+| `linkOpenInNewTab` | `boolean` | Link target behavior |
+| `placeholderUrl` | `string` | Placeholder shown in the editor when `src` uses a merge tag |
 
 ## Button
 
 A call-to-action button with customizable appearance.
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `text` | `string` | `'Click Here'` | Button label |
-| `url` | `string` | `''` | Link URL |
-| `backgroundColor` | `string` | `'#007bff'` | Button background color |
-| `textColor` | `string` | `'#ffffff'` | Button text color |
-| `borderRadius` | `number` | `4` | Corner radius in px |
-| `fontSize` | `number` | `16` | Font size in px |
-| `buttonPadding` | `SpacingValue` | `{ top: 12, right: 24, bottom: 12, left: 24 }` | Inner padding |
-| `fontFamily` | `string` | `undefined` | Font family override |
-| `openInNewTab` | `boolean` | `undefined` | Link target behavior |
+| Property | Type | Description |
+|----------|------|-------------|
+| `text` | `string` | Button label |
+| `url` | `string` | Link URL |
+| `backgroundColor` | `string` | Button background color |
+| `textColor` | `string` | Button text color |
+| `borderRadius` | `number` | Corner radius in px |
+| `fontSize` | `number` | Font size in px |
+| `buttonPadding` | `SpacingValue` | Inner padding |
+| `fontFamily` | `string` | Font family override |
+| `openInNewTab` | `boolean` | Link target behavior |
 
 ## Divider
 
 A horizontal line separator.
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `lineStyle` | `'solid' \| 'dashed' \| 'dotted'` | `'solid'` | Line style |
-| `color` | `string` | `'#cccccc'` | Line color |
-| `thickness` | `number` | `1` | Line thickness in px |
-| `width` | `number \| 'full'` | `'full'` | Line width in px, or `'full'` for 100% |
+| Property | Type | Description |
+|----------|------|-------------|
+| `lineStyle` | `'solid' \| 'dashed' \| 'dotted'` | Line style |
+| `color` | `string` | Line color |
+| `thickness` | `number` | Line thickness in px |
+| `width` | `number \| 'full'` | Line width in px, or `'full'` for 100% |
 
 ## Spacer
 
 Empty vertical space.
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `height` | `number` | `20` | Height in px |
+| Property | Type | Description |
+|----------|------|-------------|
+| `height` | `number` | Height in px |
 
 ## HTML
 
 Injects raw HTML into the template. Use this for content that cannot be expressed with other block types.
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `content` | `string` | `''` | Raw HTML markup |
+| Property | Type | Description |
+|----------|------|-------------|
+| `content` | `string` | Raw HTML markup |
 
 ## Social Icons
 
 A row of social media icons linking to platform profiles.
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `icons` | `SocialIcon[]` | `[]` | List of social icons |
-| `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle'` | `'solid'` | Visual style |
-| `iconSize` | `'small' \| 'medium' \| 'large'` | `'medium'` | Icon size |
-| `spacing` | `number` | `10` | Space between icons in px |
-| `align` | `'left' \| 'center' \| 'right'` | `'center'` | Horizontal alignment |
+| Property | Type | Description |
+|----------|------|-------------|
+| `icons` | `SocialIcon[]` | List of social icons |
+| `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle'` | Visual style |
+| `iconSize` | `'small' \| 'medium' \| 'large'` | Icon size |
+| `spacing` | `number` | Space between icons in px |
+| `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
 
 16 platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, Email, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
 
@@ -126,17 +126,17 @@ interface SocialIcon {
 
 A horizontal navigation menu with text links.
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `items` | `MenuItemData[]` | `[]` | Menu items |
-| `fontSize` | `number` | `14` | Font size in px |
-| `fontFamily` | `string` | `undefined` | Font family override |
-| `color` | `string` | `'#333333'` | Text color |
-| `linkColor` | `string` | `undefined` | Link color |
-| `textAlign` | `'left' \| 'center' \| 'right'` | `'center'` | Alignment |
-| `separator` | `string` | `'\|'` | Character between items |
-| `separatorColor` | `string` | `'#cccccc'` | Separator color |
-| `spacing` | `number` | `10` | Space around separator |
+| Property | Type | Description |
+|----------|------|-------------|
+| `items` | `MenuItemData[]` | Menu items |
+| `fontSize` | `number` | Font size in px |
+| `fontFamily` | `string` | Font family override |
+| `color` | `string` | Text color |
+| `linkColor` | `string` | Link color |
+| `textAlign` | `'left' \| 'center' \| 'right'` | Alignment |
+| `separator` | `string` | Character between items |
+| `separatorColor` | `string` | Separator color |
+| `spacing` | `number` | Space around separator |
 
 Each `MenuItemData` has:
 
@@ -156,18 +156,18 @@ interface MenuItemData {
 
 A data table with optional header row styling.
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `rows` | `TableRowData[]` | `[]` | Table rows |
-| `hasHeaderRow` | `boolean` | `true` | Style first row as header |
-| `headerBackgroundColor` | `string` | `undefined` | Header row background |
-| `borderColor` | `string` | `'#dddddd'` | Border color |
-| `borderWidth` | `number` | `1` | Border width in px |
-| `cellPadding` | `number` | `8` | Cell padding in px |
-| `fontSize` | `number` | `14` | Font size in px |
-| `fontFamily` | `string` | `undefined` | Font family override |
-| `color` | `string` | `'#333333'` | Text color |
-| `textAlign` | `'left' \| 'center' \| 'right'` | `'left'` | Cell text alignment |
+| Property | Type | Description |
+|----------|------|-------------|
+| `rows` | `TableRowData[]` | Table rows |
+| `hasHeaderRow` | `boolean` | Style first row as header |
+| `headerBackgroundColor` | `string` | Header row background |
+| `borderColor` | `string` | Border color |
+| `borderWidth` | `number` | Border width in px |
+| `cellPadding` | `number` | Cell padding in px |
+| `fontSize` | `number` | Font size in px |
+| `fontFamily` | `string` | Font family override |
+| `color` | `string` | Text color |
+| `textAlign` | `'left' \| 'center' \| 'right'` | Cell text alignment |
 
 ## Video
 
@@ -177,32 +177,32 @@ Displays a video thumbnail that links to the video URL.
 Email clients do not support embedded video playback. The renderer outputs a clickable thumbnail image that links to the video URL. Always provide a good `thumbnailUrl` -- it's the only thing recipients see in their inbox.
 :::
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `url` | `string` | `''` | Video URL (YouTube, Vimeo, etc.) |
-| `thumbnailUrl` | `string` | `''` | Thumbnail image URL |
-| `alt` | `string` | `''` | Alt text for thumbnail |
-| `width` | `number \| 'full'` | `'full'` | Display width in px, or `'full'` for 100% |
-| `align` | `'left' \| 'center' \| 'right'` | `'center'` | Horizontal alignment |
-| `openInNewTab` | `boolean` | `undefined` | Link target behavior |
-| `placeholderUrl` | `string` | `undefined` | Editor-only placeholder |
+| Property | Type | Description |
+|----------|------|-------------|
+| `url` | `string` | Video URL (YouTube, Vimeo, etc.) |
+| `thumbnailUrl` | `string` | Thumbnail image URL |
+| `alt` | `string` | Alt text for thumbnail |
+| `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
+| `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
+| `openInNewTab` | `boolean` | Link target behavior |
+| `placeholderUrl` | `string` | Editor-only placeholder |
 
 ## Section
 
 A layout container that holds one or more columns. See [Sections and Columns](/guide/sections-and-columns) for full details.
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `columns` | `ColumnLayout` | `'1'` | Column layout preset |
-| `children` | `Block[][]` | `[[]]` | Array of block arrays, one per column |
+| Property | Type | Description |
+|----------|------|-------------|
+| `columns` | `ColumnLayout` | Column layout preset |
+| `children` | `Block[][]` | Array of block arrays, one per column |
 
 ## Custom
 
 A user-defined block type powered by field definitions and a Liquid template. See [Custom Blocks](/guide/custom-blocks) for full details.
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `customType` | `string` | | Unique identifier for the custom block type |
-| `fieldValues` | `Record<string, any>` | `{}` | Current values for defined fields |
-| `renderedHtml` | `string` | `''` | Cached rendered output |
-| `dataSourceFetched` | `boolean` | `false` | Whether the data source has been fetched |
+| Property | Type | Description |
+|----------|------|-------------|
+| `customType` | `string` | Unique identifier for the custom block type |
+| `fieldValues` | `Record<string, any>` | Current values for defined fields |
+| `renderedHtml` | `string` | Cached rendered output |
+| `dataSourceFetched` | `boolean` | Whether the data source has been fetched |

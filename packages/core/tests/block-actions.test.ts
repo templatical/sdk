@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createTextBlock, createSectionBlock } from '@templatical/types';
+import { createTextBlock, createSectionBlock, type BlockDefaults } from '@templatical/types';
 import { useBlockActions } from '../src';
 
 function createMockOptions() {
@@ -148,5 +148,93 @@ describe('useBlockActions', () => {
 
         actions.duplicateBlock(original);
         expect(original.id).toBe(originalId);
+    });
+});
+
+describe('useBlockActions with blockDefaults', () => {
+    it('creates block with blockDefaults applied', () => {
+        const defaults: BlockDefaults = {
+            text: { fontSize: 24, color: '#000000' },
+        };
+        const opts = { ...createMockOptions(), blockDefaults: defaults };
+        const actions = useBlockActions(opts);
+
+        const block = actions.createAndAddBlock('text');
+        expect(block.type).toBe('text');
+        if (block.type === 'text') {
+            expect(block.fontSize).toBe(24);
+            expect(block.color).toBe('#000000');
+        }
+    });
+
+    it('applies correct defaults per block type', () => {
+        const defaults: BlockDefaults = {
+            text: { fontSize: 24 },
+            button: { backgroundColor: '#ff0000' },
+        };
+        const opts = { ...createMockOptions(), blockDefaults: defaults };
+        const actions = useBlockActions(opts);
+
+        const textBlock = actions.createAndAddBlock('text');
+        const buttonBlock = actions.createAndAddBlock('button');
+        if (textBlock.type === 'text') {
+            expect(textBlock.fontSize).toBe(24);
+        }
+        if (buttonBlock.type === 'button') {
+            expect(buttonBlock.backgroundColor).toBe('#ff0000');
+            expect(buttonBlock.textColor).toBe('#ffffff');
+        }
+    });
+
+    it('does not apply blockDefaults for mismatched types', () => {
+        const defaults: BlockDefaults = {
+            text: { fontSize: 24 },
+        };
+        const opts = { ...createMockOptions(), blockDefaults: defaults };
+        const actions = useBlockActions(opts);
+
+        const block = actions.createAndAddBlock('button');
+        if (block.type === 'button') {
+            expect(block.fontSize).toBe(15);
+        }
+    });
+
+    it('duplicateBlock ignores blockDefaults', () => {
+        const defaults: BlockDefaults = {
+            text: { fontSize: 24 },
+        };
+        const opts = { ...createMockOptions(), blockDefaults: defaults };
+        const actions = useBlockActions(opts);
+
+        const original = createTextBlock({ fontSize: 12 });
+        const cloned = actions.duplicateBlock(original);
+        if (cloned.type === 'text') {
+            expect(cloned.fontSize).toBe(12);
+        }
+    });
+
+    it('works without blockDefaults (backward compatible)', () => {
+        const opts = createMockOptions();
+        const actions = useBlockActions(opts);
+
+        const block = actions.createAndAddBlock('text');
+        if (block.type === 'text') {
+            expect(block.fontSize).toBe(16);
+        }
+    });
+
+    it('applies deep-merged styles via blockDefaults', () => {
+        const defaults: BlockDefaults = {
+            text: { styles: { padding: { top: 30 } } },
+        };
+        const opts = { ...createMockOptions(), blockDefaults: defaults };
+        const actions = useBlockActions(opts);
+
+        const block = actions.createAndAddBlock('text');
+        if (block.type === 'text') {
+            expect(block.styles.padding.top).toBe(30);
+            expect(block.styles.padding.right).toBe(10);
+            expect(block.styles.margin.top).toBe(0);
+        }
     });
 });

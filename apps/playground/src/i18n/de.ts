@@ -39,14 +39,25 @@ export default {
       options: "Optionen",
       content: "Inhalt",
       theme: "Design",
+      defaults: "Standards",
       callbacks: "Callbacks",
     },
     descriptions: {
       options: "mergeTags, displayConditions, customBlocks",
       content: "Vorlagen-Blockstruktur",
       theme: "Farben und visuelle \u00dcberschreibungen (OKLch)",
+      defaults: "blockDefaults, templateDefaults",
       callbacks: "onRequestMedia, mergeTags.onRequest",
     },
+    defaultsPresetLabel: "Vorlage",
+    defaultsPresets: {
+      templatical: "Templatical Standard",
+      corporate: "Gesch\u00e4ftlich",
+      playful: "Verspielt",
+      minimal: "Minimalistisch",
+    },
+    defaultsHint:
+      'Standardwerte f\u00fcr neu erstellte Bl\u00f6cke und Vorlagen. W\u00e4hlen Sie eine Vorlage oder bearbeiten Sie das JSON. \u00c4nderungen werden bei "\u00dcbernehmen & Neu laden" wirksam.',
     callbacksHint:
       'Callback-Handler f\u00fcr den Editor umschalten. \u00c4nderungen werden bei "\u00dcbernehmen & Neu laden" wirksam.',
     onRequestMediaDesc:

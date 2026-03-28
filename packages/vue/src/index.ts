@@ -1,5 +1,6 @@
 import { createApp, h, ref, type App, type Ref } from "vue";
 import type {
+  BlockDefaults,
   CustomBlockDefinition,
   DisplayConditionsConfig,
   FontsConfig,
@@ -8,6 +9,7 @@ import type {
   SaveResult,
   Template,
   TemplateContent,
+  TemplateDefaults,
   ThemeOverrides,
 } from "@templatical/types";
 import type { EditorPlugin } from "@templatical/core";
@@ -32,6 +34,9 @@ export interface TemplaticalEditorConfig {
   displayConditions?: DisplayConditionsConfig;
   customBlocks?: CustomBlockDefinition[];
   fonts?: FontsConfig;
+
+  blockDefaults?: BlockDefaults;
+  templateDefaults?: TemplateDefaults;
 
   theme?: ThemeOverrides;
   locale?: string;
@@ -257,7 +262,9 @@ function attachRenderer(instance: TemplaticalEditor): void {
 
 export type { TemplaticalCloudEditorConfig } from "./cloud/CloudEditor.vue";
 export type {
+  BlockDefaults,
   TemplateContent,
+  TemplateDefaults,
   ThemeOverrides,
   MergeTagsConfig,
   DisplayConditionsConfig,

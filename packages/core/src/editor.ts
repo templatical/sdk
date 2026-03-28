@@ -1,6 +1,7 @@
 import type {
   Block,
   TemplateContent,
+  TemplateDefaults,
   TemplateSettings,
   ViewportSize,
 } from "@templatical/types";
@@ -25,6 +26,7 @@ export interface EditorState {
 export interface UseEditorOptions {
   content: TemplateContent;
   defaultFontFamily?: string;
+  templateDefaults?: TemplateDefaults;
   lockedBlocks?: Ref<Map<string, unknown>>;
 }
 
@@ -60,7 +62,10 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
   const state = reactive<EditorState>({
     content:
       options.content ??
-      createDefaultTemplateContent(options.defaultFontFamily),
+      createDefaultTemplateContent(
+        options.defaultFontFamily,
+        options.templateDefaults,
+      ),
     selectedBlockId: null,
     viewport: "desktop",
     darkMode: false,

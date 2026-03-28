@@ -20,6 +20,30 @@ import type {
   VideoBlock,
 } from "./blocks";
 import type { CustomBlockDefinition, CustomBlockField } from "./custom-blocks";
+import type { BlockDefaults } from "./defaults";
+import {
+  BUTTON_BLOCK_DEFAULTS,
+  COUNTDOWN_BLOCK_DEFAULTS,
+  deepMergeDefaults,
+  DIVIDER_BLOCK_DEFAULTS,
+  HTML_BLOCK_DEFAULTS,
+  IMAGE_BLOCK_DEFAULTS,
+  MENU_BLOCK_DEFAULTS,
+  SECTION_BLOCK_DEFAULTS,
+  SOCIAL_ICONS_BLOCK_DEFAULTS,
+  SPACER_BLOCK_DEFAULTS,
+  TABLE_BLOCK_DEFAULTS,
+  TEXT_BLOCK_DEFAULTS,
+  VIDEO_BLOCK_DEFAULTS,
+} from "./defaults";
+
+function applyDefaults<T>(base: T, partial: Partial<T> | undefined): T {
+  if (!partial || Object.keys(partial).length === 0) return base;
+  return deepMergeDefaults(
+    base as unknown as Record<string, unknown>,
+    partial as unknown as Record<string, unknown>,
+  ) as unknown as T;
+}
 
 export function generateId(): string {
   return crypto.randomUUID();
@@ -37,148 +61,120 @@ function createDefaultStyles(padding = 10): BlockStyles {
 }
 
 export function createTextBlock(partial: Partial<TextBlock> = {}): TextBlock {
-  return {
+  const base: TextBlock = {
     id: generateId(),
     type: "text",
-    content: "<p>Enter your text here</p>",
-    fontSize: 16,
-    color: "#333333",
-    textAlign: "left",
-    fontWeight: "normal",
+    ...TEXT_BLOCK_DEFAULTS,
     styles: createDefaultStyles(),
-    ...partial,
-  };
+  } as TextBlock;
+  return applyDefaults(base, partial);
 }
 
 export function createImageBlock(
   partial: Partial<ImageBlock> = {},
 ): ImageBlock {
-  return {
+  const base: ImageBlock = {
     id: generateId(),
     type: "image",
-    src: "",
-    alt: "",
-    width: "full",
-    align: "center",
+    ...IMAGE_BLOCK_DEFAULTS,
     styles: createDefaultStyles(),
-    ...partial,
-  };
+  } as ImageBlock;
+  return applyDefaults(base, partial);
 }
 
 export function createButtonBlock(
   partial: Partial<ButtonBlock> = {},
 ): ButtonBlock {
-  return {
+  const base: ButtonBlock = {
     id: generateId(),
     type: "button",
-    text: "Click Here",
-    url: "",
-    backgroundColor: "#007bff",
-    textColor: "#ffffff",
-    borderRadius: 4,
-    fontSize: 16,
-    buttonPadding: { top: 12, right: 24, bottom: 12, left: 24 },
+    ...BUTTON_BLOCK_DEFAULTS,
     styles: createDefaultStyles(),
-    ...partial,
-  };
+  } as ButtonBlock;
+  return applyDefaults(base, partial);
 }
 
 export function createDividerBlock(
   partial: Partial<DividerBlock> = {},
 ): DividerBlock {
-  return {
+  const base: DividerBlock = {
     id: generateId(),
     type: "divider",
-    lineStyle: "solid",
-    color: "#cccccc",
-    thickness: 1,
-    width: "full",
+    ...DIVIDER_BLOCK_DEFAULTS,
     styles: createDefaultStyles(20),
-    ...partial,
-  };
+  } as DividerBlock;
+  return applyDefaults(base, partial);
 }
 
 export function createSectionBlock(
   partial: Partial<SectionBlock> = {},
 ): SectionBlock {
-  return {
+  const base: SectionBlock = {
     id: generateId(),
     type: "section",
-    columns: "1",
+    ...SECTION_BLOCK_DEFAULTS,
     children: [[]],
     styles: createDefaultStyles(20),
-    ...partial,
-  };
+  } as SectionBlock;
+  return applyDefaults(base, partial);
 }
 
 export function createVideoBlock(
   partial: Partial<VideoBlock> = {},
 ): VideoBlock {
-  return {
+  const base: VideoBlock = {
     id: generateId(),
     type: "video",
-    url: "",
-    thumbnailUrl: "",
-    alt: "Video",
-    width: "full",
-    align: "center",
+    ...VIDEO_BLOCK_DEFAULTS,
     styles: createDefaultStyles(),
-    ...partial,
-  };
+  } as VideoBlock;
+  return applyDefaults(base, partial);
 }
 
 export function createSocialIconsBlock(
   partial: Partial<SocialIconsBlock> = {},
 ): SocialIconsBlock {
-  return {
+  const base: SocialIconsBlock = {
     id: generateId(),
     type: "social",
     icons: [],
-    iconStyle: "solid",
-    iconSize: "medium",
-    spacing: 10,
-    align: "center",
+    ...SOCIAL_ICONS_BLOCK_DEFAULTS,
     styles: createDefaultStyles(),
-    ...partial,
-  };
+  } as SocialIconsBlock;
+  return applyDefaults(base, partial);
 }
 
 export function createSpacerBlock(
   partial: Partial<SpacerBlock> = {},
 ): SpacerBlock {
-  return {
+  const base: SpacerBlock = {
     id: generateId(),
     type: "spacer",
-    height: 20,
+    ...SPACER_BLOCK_DEFAULTS,
     styles: createDefaultStyles(0),
-    ...partial,
-  };
+  } as SpacerBlock;
+  return applyDefaults(base, partial);
 }
 
 export function createHtmlBlock(partial: Partial<HtmlBlock> = {}): HtmlBlock {
-  return {
+  const base: HtmlBlock = {
     id: generateId(),
     type: "html",
-    content: "",
+    ...HTML_BLOCK_DEFAULTS,
     styles: createDefaultStyles(),
-    ...partial,
-  };
+  } as HtmlBlock;
+  return applyDefaults(base, partial);
 }
 
 export function createMenuBlock(partial: Partial<MenuBlock> = {}): MenuBlock {
-  return {
+  const base: MenuBlock = {
     id: generateId(),
     type: "menu",
     items: [],
-    fontSize: 14,
-    color: "#333333",
-    textAlign: "center",
-    separator: "|",
-    separatorColor: "#cccccc",
-    spacing: 10,
+    ...MENU_BLOCK_DEFAULTS,
     styles: createDefaultStyles(),
-    ...partial,
-  };
+  } as MenuBlock;
+  return applyDefaults(base, partial);
 }
 
 function createDefaultTableRows(columns: number, rows: number): TableRowData[] {
@@ -197,50 +193,26 @@ function createDefaultTableRows(columns: number, rows: number): TableRowData[] {
 export function createTableBlock(
   partial: Partial<TableBlock> = {},
 ): TableBlock {
-  return {
+  const base: TableBlock = {
     id: generateId(),
     type: "table",
     rows: createDefaultTableRows(3, 3),
-    hasHeaderRow: true,
-    borderColor: "#dddddd",
-    borderWidth: 1,
-    cellPadding: 8,
-    fontSize: 14,
-    color: "#333333",
-    textAlign: "left",
+    ...TABLE_BLOCK_DEFAULTS,
     styles: createDefaultStyles(),
-    ...partial,
-  };
+  } as TableBlock;
+  return applyDefaults(base, partial);
 }
 
 export function createCountdownBlock(
   partial: Partial<CountdownBlock> = {},
 ): CountdownBlock {
-  return {
+  const base: CountdownBlock = {
     id: generateId(),
     type: "countdown",
-    targetDate: "",
-    timezone: "UTC",
-    showDays: true,
-    showHours: true,
-    showMinutes: true,
-    showSeconds: true,
-    separator: ":",
-    digitFontSize: 32,
-    digitColor: "#333333",
-    labelColor: "#666666",
-    labelFontSize: 12,
-    backgroundColor: "#ffffff",
-    labelDays: "Days",
-    labelHours: "Hours",
-    labelMinutes: "Minutes",
-    labelSeconds: "Seconds",
-    expiredMessage: "This offer has expired",
-    expiredImageUrl: "",
-    hideOnExpiry: false,
+    ...COUNTDOWN_BLOCK_DEFAULTS,
     styles: createDefaultStyles(),
-    ...partial,
-  };
+  } as CountdownBlock;
+  return applyDefaults(base, partial);
 }
 
 function getFieldDefault(field: CustomBlockField): unknown {
@@ -276,32 +248,35 @@ export function createCustomBlock(
   };
 }
 
-export function createBlock(type: BlockType): Block {
+export function createBlock(
+  type: BlockType,
+  blockDefaults?: BlockDefaults,
+): Block {
   switch (type) {
     case "section":
-      return createSectionBlock();
+      return createSectionBlock(blockDefaults?.section);
     case "text":
-      return createTextBlock();
+      return createTextBlock(blockDefaults?.text);
     case "image":
-      return createImageBlock();
+      return createImageBlock(blockDefaults?.image);
     case "button":
-      return createButtonBlock();
+      return createButtonBlock(blockDefaults?.button);
     case "divider":
-      return createDividerBlock();
+      return createDividerBlock(blockDefaults?.divider);
     case "video":
-      return createVideoBlock();
+      return createVideoBlock(blockDefaults?.video);
     case "social":
-      return createSocialIconsBlock();
+      return createSocialIconsBlock(blockDefaults?.social);
     case "spacer":
-      return createSpacerBlock();
+      return createSpacerBlock(blockDefaults?.spacer);
     case "html":
-      return createHtmlBlock();
+      return createHtmlBlock(blockDefaults?.html);
     case "menu":
-      return createMenuBlock();
+      return createMenuBlock(blockDefaults?.menu);
     case "table":
-      return createTableBlock();
+      return createTableBlock(blockDefaults?.table);
     case "countdown":
-      return createCountdownBlock();
+      return createCountdownBlock(blockDefaults?.countdown);
     default:
       throw new Error(`Unknown block type: ${type}`);
   }

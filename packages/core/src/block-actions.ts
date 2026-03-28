@@ -1,4 +1,4 @@
-import type { Block, BlockType } from "@templatical/types";
+import type { Block, BlockDefaults, BlockType } from "@templatical/types";
 import { createBlock, generateId } from "@templatical/types";
 
 export interface UseBlockActionsOptions {
@@ -10,6 +10,7 @@ export interface UseBlockActionsOptions {
   removeBlock: (blockId: string) => void;
   updateBlock: (blockId: string, updates: Partial<Block>) => void;
   selectBlock: (blockId: string | null) => void;
+  blockDefaults?: BlockDefaults;
 }
 
 export interface UseBlockActionsReturn {
@@ -41,7 +42,7 @@ export function useBlockActions(
     targetSectionId?: string,
     columnIndex?: number,
   ): Block {
-    const block = createBlock(type);
+    const block = createBlock(type, options.blockDefaults);
     addBlock(block, targetSectionId, columnIndex);
     selectBlock(block.id);
     return block;

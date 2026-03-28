@@ -122,7 +122,7 @@ function convertText(descriptor: BeeFreeeModuleDescriptor): Block {
   return createTextBlock({
     content: html,
     fontSize: parsePxValue(style["font-size"]) || 16,
-    color: parseColor(style.color) || "#333333",
+    color: parseColor(style.color) || "#1a1a1a",
     textAlign: toAlign(style["text-align"]),
     fontWeight: toFontWeight(style["font-weight"]),
     fontFamily: parseFontFamily(style["font-family"]) || undefined,
@@ -142,7 +142,7 @@ function convertHeading(descriptor: BeeFreeeModuleDescriptor): Block {
   return createTextBlock({
     content,
     fontSize: parsePxValue(style["font-size"]) || 24,
-    color: parseColor(style.color) || "#333333",
+    color: parseColor(style.color) || "#1a1a1a",
     textAlign: toAlign(style["text-align"]),
     fontWeight: toFontWeight(style["font-weight"], "bold"),
     fontFamily: parseFontFamily(style["font-family"]) || undefined,
@@ -209,7 +209,7 @@ function convertDivider(descriptor: BeeFreeeModuleDescriptor): Block {
 
 function convertSpacer(descriptor: BeeFreeeModuleDescriptor): Block {
   const spacer = descriptor.spacer;
-  const height = parsePxValue(spacer?.style?.height) || 20;
+  const height = parsePxValue(spacer?.style?.height) || 24;
 
   return createSpacerBlock({
     height,
@@ -299,7 +299,7 @@ function convertMenu(descriptor: BeeFreeeModuleDescriptor): Block {
     separator: menu.separator || "|",
     separatorColor: parseColor(menu.separatorColor) || "#999999",
     fontSize: parsePxValue(style["font-size"]) || 14,
-    color: parseColor(style.color) || "#333333",
+    color: parseColor(style.color) || "#1a1a1a",
     fontFamily: parseFontFamily(style["font-family"]) || undefined,
     textAlign: toAlign(style["text-align"], "center"),
     styles: makeStyles(descriptor),
@@ -335,7 +335,7 @@ function convertTable(descriptor: BeeFreeeModuleDescriptor): Block {
         ? table.cellPadding
         : parsePxValue(table.cellPadding as string) || 8,
     fontSize: parsePxValue(style["font-size"]) || 14,
-    color: parseColor(style.color) || "#333333",
+    color: parseColor(style.color) || "#1a1a1a",
     textAlign: toAlign(style["text-align"]),
     styles: makeStyles(descriptor),
   });

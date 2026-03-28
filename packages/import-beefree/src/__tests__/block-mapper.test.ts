@@ -58,7 +58,7 @@ describe("convertModule", () => {
       if (block.type === "text") {
         expect(block.content).toBe("<p>Plain</p>");
         expect(block.fontSize).toBe(16);
-        expect(block.color).toBe("#333333");
+        expect(block.color).toBe("#1a1a1a");
         expect(block.textAlign).toBe("left");
       }
     });
@@ -172,7 +172,7 @@ describe("convertModule", () => {
 
       expect(block.type).toBe("button");
       if (block.type === "button") {
-        expect(block.backgroundColor).toBe("#007bff");
+        expect(block.backgroundColor).toBe("#333333");
         expect(block.textColor).toBe("#ffffff");
       }
     });
@@ -204,7 +204,7 @@ describe("convertModule", () => {
   });
 
   describe("spacer", () => {
-    it("uses height from descriptor or defaults to 20", () => {
+    it("uses height from descriptor or defaults to 24", () => {
       const warnings: string[] = [];
 
       const withHeight = makeModule("mailup-bee-newsletter-modules-spacer", {
@@ -220,7 +220,7 @@ describe("convertModule", () => {
       const { block: b2 } = convertModule(noHeight, warnings);
       expect(b2.type).toBe("spacer");
       if (b2.type === "spacer") {
-        expect(b2.height).toBe(20);
+        expect(b2.height).toBe(24);
       }
     });
   });

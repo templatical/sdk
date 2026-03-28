@@ -133,6 +133,10 @@ export default defineConfig({
                     items: [
                         { text: 'Theming', link: '/guide/theming' },
                         {
+                            text: 'Block & Template Defaults',
+                            link: '/guide/defaults',
+                        },
+                        {
                             text: 'Custom Fonts',
                             link: '/guide/fonts',
                         },

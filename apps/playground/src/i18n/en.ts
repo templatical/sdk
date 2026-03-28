@@ -37,14 +37,25 @@ export default {
       options: "Options",
       content: "Content",
       theme: "Theme",
+      defaults: "Defaults",
       callbacks: "Callbacks",
     },
     descriptions: {
       options: "mergeTags, displayConditions, customBlocks",
       content: "Template block structure",
       theme: "Colors and visual overrides (OKLch)",
+      defaults: "blockDefaults, templateDefaults",
       callbacks: "onRequestMedia, mergeTags.onRequest",
     },
+    defaultsPresetLabel: "Preset",
+    defaultsPresets: {
+      templatical: "Templatical Default",
+      corporate: "Corporate",
+      playful: "Playful",
+      minimal: "Minimal",
+    },
+    defaultsHint:
+      'Defaults for newly created blocks and templates. Pick a preset or edit the JSON below. Changes apply on "Apply & Reload".',
     callbacksHint:
       'Toggle callback handlers passed to the editor. Changes apply on "Apply & Reload".',
     onRequestMediaDesc:

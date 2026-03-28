@@ -336,3 +336,75 @@ describe('edge cases', () => {
         expect(editor.state.selectedBlockId).toBeNull();
     });
 });
+
+describe('useEditor with templateDefaults', () => {
+    it('applies templateDefaults when no content is provided', () => {
+        const editor = useEditor({
+            content: undefined as any,
+            templateDefaults: {
+                width: 640,
+                backgroundColor: '#f5f5f5',
+            },
+        });
+        expect(editor.state.content.settings.width).toBe(640);
+        expect(editor.state.content.settings.backgroundColor).toBe('#f5f5f5');
+        expect(editor.state.content.settings.fontFamily).toBe('Arial, sans-serif');
+    });
+
+    it('applies templateDefaults with custom fontFamily', () => {
+        const editor = useEditor({
+            content: undefined as any,
+            defaultFontFamily: 'Helvetica, sans-serif',
+            templateDefaults: {
+                width: 700,
+            },
+        });
+        expect(editor.state.content.settings.width).toBe(700);
+        expect(editor.state.content.settings.fontFamily).toBe('Helvetica, sans-serif');
+    });
+
+    it('templateDefaults fontFamily overrides defaultFontFamily', () => {
+        const editor = useEditor({
+            content: undefined as any,
+            defaultFontFamily: 'Helvetica, sans-serif',
+            templateDefaults: {
+                fontFamily: 'Georgia, serif',
+            },
+        });
+        expect(editor.state.content.settings.fontFamily).toBe('Georgia, serif');
+    });
+
+    it('content wins over templateDefaults when content is provided', () => {
+        const content = createDefaultTemplateContent();
+        content.settings.width = 800;
+        content.settings.backgroundColor = '#000000';
+        const editor = useEditor({
+            content,
+            templateDefaults: {
+                width: 640,
+                backgroundColor: '#f5f5f5',
+            },
+        });
+        expect(editor.state.content.settings.width).toBe(800);
+        expect(editor.state.content.settings.backgroundColor).toBe('#000000');
+    });
+
+    it('works without templateDefaults (backward compatible)', () => {
+        const editor = useEditor({
+            content: undefined as any,
+        });
+        expect(editor.state.content.settings.width).toBe(600);
+        expect(editor.state.content.settings.backgroundColor).toBe('#ffffff');
+        expect(editor.state.content.settings.fontFamily).toBe('Arial, sans-serif');
+    });
+
+    it('applies preheaderText from templateDefaults', () => {
+        const editor = useEditor({
+            content: undefined as any,
+            templateDefaults: {
+                preheaderText: 'Check out our latest deals!',
+            },
+        });
+        expect(editor.state.content.settings.preheaderText).toBe('Check out our latest deals!');
+    });
+});

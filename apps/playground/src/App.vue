@@ -15,8 +15,14 @@ import type {
   TemplateContent,
   MergeTag,
   CustomBlockDefinition,
+  BlockDefaults,
+  TemplateDefaults,
 } from "@templatical/types";
-import { createDefaultTemplateContent } from "@templatical/types";
+import {
+  createDefaultTemplateContent,
+  DEFAULT_BLOCK_DEFAULTS,
+  DEFAULT_TEMPLATE_DEFAULTS,
+} from "@templatical/types";
 import { convertBeeFreeTemplate } from "@templatical/import-beefree";
 import type { BeeFreeTemplate } from "@templatical/import-beefree";
 import {
@@ -149,9 +155,113 @@ const configOptionsJson = ref("");
 const configContentJson = ref("");
 const configThemeJson = ref("");
 const configError = ref("");
-const configTab = ref<"options" | "content" | "theme" | "callbacks">("options");
+const configTab = ref<
+  "options" | "content" | "theme" | "callbacks" | "defaults"
+>("options");
 const enableRequestMedia = ref(true);
 const enableRequestMergeTag = ref(true);
+
+// --- Block & Template Defaults ---
+
+interface DefaultsPreset {
+  key: string;
+  blockDefaults: BlockDefaults;
+  templateDefaults: TemplateDefaults;
+}
+
+const defaultsPresets: DefaultsPreset[] = [
+  {
+    key: "templatical",
+    blockDefaults: DEFAULT_BLOCK_DEFAULTS,
+    templateDefaults: DEFAULT_TEMPLATE_DEFAULTS,
+  },
+  {
+    key: "corporate",
+    blockDefaults: {
+      text: { fontSize: 15, color: "#1a1a2e" },
+      button: {
+        backgroundColor: "#0f3460",
+        textColor: "#ffffff",
+        borderRadius: 2,
+        fontSize: 14,
+        buttonPadding: { top: 14, right: 28, bottom: 14, left: 28 },
+      },
+      divider: { color: "#e0e0e0", thickness: 1 },
+      spacer: { height: 24 },
+      image: { align: "center" },
+    },
+    templateDefaults: {
+      width: 640,
+      backgroundColor: "#f8f9fa",
+      fontFamily: "Georgia, 'Times New Roman', serif",
+    },
+  },
+  {
+    key: "playful",
+    blockDefaults: {
+      text: { fontSize: 16, color: "#2d3436" },
+      button: {
+        backgroundColor: "#e17055",
+        textColor: "#ffffff",
+        borderRadius: 24,
+        fontSize: 15,
+        buttonPadding: { top: 14, right: 32, bottom: 14, left: 32 },
+      },
+      divider: { color: "#fab1a0", thickness: 2, lineStyle: "dashed" },
+      spacer: { height: 28 },
+      social: { iconSize: "large", spacing: 16 },
+    },
+    templateDefaults: {
+      width: 600,
+      backgroundColor: "#ffeaa7",
+      fontFamily: "'Trebuchet MS', 'Lucida Grande', sans-serif",
+    },
+  },
+  {
+    key: "minimal",
+    blockDefaults: {
+      text: { fontSize: 14, color: "#111111" },
+      button: {
+        backgroundColor: "#111111",
+        textColor: "#ffffff",
+        borderRadius: 0,
+        fontSize: 13,
+        buttonPadding: { top: 12, right: 20, bottom: 12, left: 20 },
+      },
+      divider: { color: "#111111", thickness: 1 },
+      spacer: { height: 16 },
+    },
+    templateDefaults: {
+      width: 560,
+      backgroundColor: "#ffffff",
+      fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    },
+  },
+];
+
+const selectedPresetKey = ref("templatical");
+const configDefaultsJson = ref("");
+
+function buildDefaultsJson(preset: DefaultsPreset): string {
+  return JSON.stringify(
+    {
+      blockDefaults: preset.blockDefaults,
+      templateDefaults: preset.templateDefaults,
+    },
+    null,
+    2,
+  );
+}
+
+watch(selectedPresetKey, (key) => {
+  const preset = defaultsPresets.find((p) => p.key === key);
+  if (preset) {
+    configDefaultsJson.value = buildDefaultsJson(preset);
+  }
+});
+
+let currentBlockDefaults: BlockDefaults | undefined;
+let currentTemplateDefaults: TemplateDefaults | undefined;
 const mergeTagPickerOpen = ref(false);
 let mergeTagResolve: ((tag: MergeTag | null) => void) | null = null;
 
@@ -419,6 +529,8 @@ function initEditor(): void {
         ...currentSerializableConfig.mergeTags,
         onRequest: enableRequestMergeTag.value ? requestMergeTag : undefined,
       },
+      blockDefaults: currentBlockDefaults,
+      templateDefaults: currentTemplateDefaults,
       theme: currentTheme,
       locale: locale.value,
       onRequestMedia: enableRequestMedia.value ? requestMedia : undefined,
@@ -439,6 +551,10 @@ function openConfig(): void {
   configOptionsJson.value = JSON.stringify(options, null, 2);
   configContentJson.value = JSON.stringify(content, null, 2);
   configThemeJson.value = JSON.stringify(currentTheme, null, 2);
+  const currentPreset =
+    defaultsPresets.find((p) => p.key === selectedPresetKey.value) ??
+    defaultsPresets[0];
+  configDefaultsJson.value = buildDefaultsJson(currentPreset);
   configError.value = "";
   configTab.value = "options";
   showConfig.value = true;
@@ -450,11 +566,13 @@ function applyConfig(): void {
     const options = JSON.parse(configOptionsJson.value);
     const content = JSON.parse(configContentJson.value);
     const theme = JSON.parse(configThemeJson.value);
+    const defaults = JSON.parse(configDefaultsJson.value);
     currentSerializableConfig = { ...options, content };
     selectedContent = content;
     selectedCustomBlocks = options.customBlocks;
     currentTheme = theme;
-    // mergeTags from config will be used via currentSerializableConfig
+    currentBlockDefaults = defaults.blockDefaults;
+    currentTemplateDefaults = defaults.templateDefaults;
     showConfig.value = false;
     initEditor();
   } catch (e) {
@@ -1284,6 +1402,7 @@ onUnmounted(() => {
                     'options',
                     'content',
                     'theme',
+                    'defaults',
                     'callbacks',
                   ] as const"
                   :id="`config-tab-${tab}`"
@@ -1345,6 +1464,46 @@ onUnmounted(() => {
                 <CodeEditor
                   v-model="configThemeJson"
                   aria-label="Theme configuration JSON"
+                />
+              </div>
+              <div
+                v-show="configTab === 'defaults'"
+                :inert="configTab !== 'defaults' || undefined"
+                id="config-panel-defaults"
+                role="tabpanel"
+                aria-labelledby="config-tab-defaults"
+                class="flex flex-col gap-3"
+              >
+                <div class="flex items-center gap-3">
+                  <label
+                    for="defaults-preset"
+                    class="text-[13px] font-medium text-gray-700 shrink-0"
+                    >{{ t.configModal.defaultsPresetLabel }}</label
+                  >
+                  <select
+                    id="defaults-preset"
+                    v-model="selectedPresetKey"
+                    class="h-8 px-2 pr-7 text-[13px] font-medium text-gray-700 bg-white border border-gray-200 rounded-md cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3Csvg_xmlns=%27http://www.w3.org/2000/svg%27_width=%2712%27_height=%2712%27_viewBox=%270_0_24_24%27_fill=%27none%27_stroke=%27%236b7280%27_stroke-width=%272%27_stroke-linecap=%27round%27_stroke-linejoin=%27round%27%3E%3Cpath_d=%27m6_9_6_6_6-6%27/%3E%3C/svg%3E')] bg-no-repeat bg-[position:right_6px_center] transition-colors duration-150 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  >
+                    <option
+                      v-for="preset in defaultsPresets"
+                      :key="preset.key"
+                      :value="preset.key"
+                    >
+                      {{
+                        t.configModal.defaultsPresets[
+                          preset.key as keyof typeof t.configModal.defaultsPresets
+                        ]
+                      }}
+                    </option>
+                  </select>
+                </div>
+                <p class="m-0 text-[12px] text-gray-500">
+                  {{ t.configModal.defaultsHint }}
+                </p>
+                <CodeEditor
+                  v-model="configDefaultsJson"
+                  aria-label="Block and template defaults JSON"
                 />
               </div>
               <div

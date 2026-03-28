@@ -17,6 +17,7 @@ import {
     createBlock,
     cloneBlock,
     type CustomBlockDefinition,
+    type BlockDefaults,
 } from '../src';
 
 describe('generateId', () => {
@@ -58,7 +59,7 @@ describe('block factory functions', () => {
         const block = createButtonBlock();
         expect(block.type).toBe('button');
         expect(block.text).toBe('Click Here');
-        expect(block.backgroundColor).toBe('#007bff');
+        expect(block.backgroundColor).toBe('#333333');
     });
 
     it('creates a divider block with defaults', () => {
@@ -89,7 +90,7 @@ describe('block factory functions', () => {
     it('creates a spacer block with defaults', () => {
         const block = createSpacerBlock();
         expect(block.type).toBe('spacer');
-        expect(block.height).toBe(20);
+        expect(block.height).toBe(24);
     });
 
     it('creates an html block with defaults', () => {
@@ -332,5 +333,216 @@ describe('createCustomBlock edge cases', () => {
         };
         const block = createCustomBlock(definition);
         expect(block).not.toHaveProperty('dataSourceFetched');
+    });
+});
+
+describe('createBlock with blockDefaults', () => {
+    it('applies text defaults via createBlock', () => {
+        const defaults: BlockDefaults = {
+            text: { fontSize: 24, color: '#000000' },
+        };
+        const block = createBlock('text', defaults);
+        expect(block.type).toBe('text');
+        if (block.type === 'text') {
+            expect(block.fontSize).toBe(24);
+            expect(block.color).toBe('#000000');
+            expect(block.content).toBe('<p>Enter your text here</p>');
+        }
+    });
+
+    it('applies button defaults with deep-merged nested styles', () => {
+        const defaults: BlockDefaults = {
+            button: {
+                backgroundColor: '#ff6600',
+                styles: { padding: { top: 20, right: 10, bottom: 20, left: 10 } },
+            },
+        };
+        const block = createBlock('button', defaults);
+        if (block.type === 'button') {
+            expect(block.backgroundColor).toBe('#ff6600');
+            expect(block.textColor).toBe('#ffffff');
+            expect(block.styles.padding.top).toBe(20);
+            expect(block.styles.padding.right).toBe(10);
+            expect(block.styles.margin.top).toBe(0);
+        }
+    });
+
+    it('deep merges buttonPadding', () => {
+        const defaults: BlockDefaults = {
+            button: { buttonPadding: { top: 20 } },
+        };
+        const block = createBlock('button', defaults);
+        if (block.type === 'button') {
+            expect(block.buttonPadding.top).toBe(20);
+            expect(block.buttonPadding.right).toBe(24);
+            expect(block.buttonPadding.bottom).toBe(12);
+        }
+    });
+
+    it('replaces arrays in table rows', () => {
+        const customRows = [
+            { id: 'r1', cells: [{ id: 'c1', content: 'Custom' }] },
+        ];
+        const defaults: BlockDefaults = {
+            table: { rows: customRows },
+        };
+        const block = createBlock('table', defaults);
+        if (block.type === 'table') {
+            expect(block.rows).toEqual(customRows);
+            expect(block.hasHeaderRow).toBe(true);
+        }
+    });
+
+    it('applies divider defaults', () => {
+        const defaults: BlockDefaults = {
+            divider: { color: '#eeeeee', thickness: 2 },
+        };
+        const block = createBlock('divider', defaults);
+        if (block.type === 'divider') {
+            expect(block.color).toBe('#eeeeee');
+            expect(block.thickness).toBe(2);
+            expect(block.lineStyle).toBe('solid');
+        }
+    });
+
+    it('applies spacer defaults', () => {
+        const defaults: BlockDefaults = {
+            spacer: { height: 40 },
+        };
+        const block = createBlock('spacer', defaults);
+        if (block.type === 'spacer') {
+            expect(block.height).toBe(40);
+        }
+    });
+
+    it('applies image defaults', () => {
+        const defaults: BlockDefaults = {
+            image: { alt: 'Default alt', width: '300px' },
+        };
+        const block = createBlock('image', defaults);
+        if (block.type === 'image') {
+            expect(block.alt).toBe('Default alt');
+            expect(block.width).toBe('300px');
+            expect(block.align).toBe('center');
+        }
+    });
+
+    it('applies video defaults', () => {
+        const defaults: BlockDefaults = {
+            video: { alt: 'Watch now' },
+        };
+        const block = createBlock('video', defaults);
+        if (block.type === 'video') {
+            expect(block.alt).toBe('Watch now');
+            expect(block.url).toBe('');
+        }
+    });
+
+    it('applies social defaults', () => {
+        const defaults: BlockDefaults = {
+            social: { iconSize: 'large', spacing: 20 },
+        };
+        const block = createBlock('social', defaults);
+        if (block.type === 'social') {
+            expect(block.iconSize).toBe('large');
+            expect(block.spacing).toBe(20);
+            expect(block.iconStyle).toBe('solid');
+        }
+    });
+
+    it('applies html defaults', () => {
+        const defaults: BlockDefaults = {
+            html: { content: '<div>Default</div>' },
+        };
+        const block = createBlock('html', defaults);
+        if (block.type === 'html') {
+            expect(block.content).toBe('<div>Default</div>');
+        }
+    });
+
+    it('applies menu defaults', () => {
+        const defaults: BlockDefaults = {
+            menu: { separator: '-', fontSize: 16 },
+        };
+        const block = createBlock('menu', defaults);
+        if (block.type === 'menu') {
+            expect(block.separator).toBe('-');
+            expect(block.fontSize).toBe(16);
+            expect(block.color).toBe('#1a1a1a');
+        }
+    });
+
+    it('applies section defaults', () => {
+        const defaults: BlockDefaults = {
+            section: { columns: '2' },
+        };
+        const block = createBlock('section', defaults);
+        if (block.type === 'section') {
+            expect(block.columns).toBe('2');
+        }
+    });
+
+    it('applies countdown defaults', () => {
+        const defaults: BlockDefaults = {
+            countdown: { digitFontSize: 48, digitColor: '#000000' },
+        };
+        const block = createBlock('countdown', defaults);
+        if (block.type === 'countdown') {
+            expect(block.digitFontSize).toBe(48);
+            expect(block.digitColor).toBe('#000000');
+            expect(block.labelColor).toBe('#6b7280');
+        }
+    });
+
+    it('returns default block when blockDefaults is undefined', () => {
+        const block = createBlock('text', undefined);
+        if (block.type === 'text') {
+            expect(block.fontSize).toBe(16);
+            expect(block.color).toBe('#1a1a1a');
+        }
+    });
+
+    it('returns default block when blockDefaults is empty object', () => {
+        const block = createBlock('text', {});
+        if (block.type === 'text') {
+            expect(block.fontSize).toBe(16);
+        }
+    });
+
+    it('ignores defaults for other block types', () => {
+        const defaults: BlockDefaults = {
+            text: { fontSize: 24 },
+        };
+        const block = createBlock('button', defaults);
+        if (block.type === 'button') {
+            expect(block.fontSize).toBe(15);
+        }
+    });
+
+    it('preserves id and type even when defaults try to override them', () => {
+        const defaults: BlockDefaults = {
+            text: { content: 'Custom' } as any,
+        };
+        const block = createBlock('text', defaults);
+        expect(block.type).toBe('text');
+        expect(block.id).toMatch(/^[0-9a-f-]+$/);
+    });
+});
+
+describe('factory deep merge vs shallow spread', () => {
+    it('deep merges styles.padding without losing styles.margin', () => {
+        const block = createTextBlock({
+            styles: { padding: { top: 20, right: 20, bottom: 20, left: 20 } },
+        } as any);
+        expect(block.styles.padding.top).toBe(20);
+        expect(block.styles.margin.top).toBe(0);
+    });
+
+    it('deep merges partial padding preserving other padding values', () => {
+        const block = createButtonBlock({
+            styles: { padding: { top: 30 } },
+        } as any);
+        expect(block.styles.padding.top).toBe(30);
+        expect(block.styles.padding.right).toBe(10);
     });
 });

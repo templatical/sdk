@@ -2,6 +2,7 @@
 import { useI18n } from "../composables/useI18n";
 import type {
   Block,
+  BlockDefaults,
   BlockType,
   CustomBlockDefinition,
 } from "@templatical/types";
@@ -35,6 +36,10 @@ const { t } = useI18n();
 const customBlockDefinitions = inject<CustomBlockDefinition[]>(
   "customBlockDefinitions",
   [],
+);
+const blockDefaults = inject<BlockDefaults | undefined>(
+  "blockDefaults",
+  undefined,
 );
 
 // Cloud-only injects — null in OSS mode
@@ -90,7 +95,7 @@ function cloneBlock(item: BlockTypeItem): Block {
     }
   }
 
-  return createBlock(item.type as BlockType);
+  return createBlock(item.type as BlockType, blockDefaults);
 }
 </script>
 
