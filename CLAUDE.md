@@ -85,6 +85,31 @@ Uses Prettier 3 with **default settings** (no `.prettierrc` or config in `packag
 - The `vue` and `media-library` packages use `vue-tsc` for typecheck (handles `.vue` SFCs). All others use plain `tsc`.
 - **Critical:** `@templatical/core` aliases `vue` to `@vue/reactivity` at build time. In tests, `vue` resolves to the full Vue package (it's a devDependency). Don't add Vue runtime imports in core or cloud source modules.
 
+### Cross-package type resolution (tsconfig paths)
+
+Each package's `tsconfig.json` has `paths` mapping sibling `@templatical/*` imports to source directories. This allows `bun run typecheck` to work **without building first** — no `dist/` needed.
+
+**How it works:** Instead of resolving `@templatical/types` via `node_modules/.../dist/index.d.ts` (which requires a build), the paths redirect to `../types/src/index.ts` (source).
+
+**Maintenance rules when modifying tsconfigs:**
+- When a package adds a new `@templatical/*` import, add the corresponding `paths` entry to its `tsconfig.json`.
+- Non-vue packages (types, core, renderer, import-beefree) must point `@templatical/media-library` to `../media-library/src/types.ts` (not `index.ts`) because `tsc` cannot resolve `.vue` files that the barrel re-exports.
+- Vue packages (media-library, vue) use `vue-tsc` and can point to `../*/src/index.ts` directly.
+- The media-library package has a self-referencing path (`"@templatical/media-library": ["./src/index.ts"]`) because the types package imports from it, and media-library resolves types source which contains that import.
+
+**Current path map:**
+
+| Package | Paths to |
+|---------|----------|
+| `types` | media-library (types.ts only) |
+| `core` | types, media-library (types.ts only) |
+| `renderer` | types, media-library (types.ts only) |
+| `import-beefree` | types, media-library (types.ts only) |
+| `media-library` | types, core, core/cloud, media-library (self) |
+| `vue` | types, core, core/cloud, media-library |
+
+**Why not TypeScript project references (`composite: true`)?** The monorepo uses tsup (rollup-plugin-dts) and vite (vite-plugin-dts) for `.d.ts` generation. These are incompatible with `composite` mode, which requires `tsc` to generate granular declarations + `.tsbuildinfo`. Switching would require replacing the entire build toolchain.
+
 ## CDN Builds
 
 Root-level Vite configs produce standalone bundles for CDN/script-tag usage:
