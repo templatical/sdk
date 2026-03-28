@@ -8,10 +8,15 @@ import {
 describe('socialIcons', () => {
   it('has definitions for all platform options', () => {
     for (const platform of socialPlatformOptions) {
-      expect(socialIcons[platform]).toBeDefined();
-      expect(socialIcons[platform].name).toBeTruthy();
-      expect(socialIcons[platform].color).toMatch(/^#[0-9A-Fa-f]{6}$/);
-      expect(socialIcons[platform].path).toBeTruthy();
+      expect(socialIcons[platform]).toEqual(
+        expect.objectContaining({
+          name: expect.any(String),
+          color: expect.stringMatching(/^#[0-9A-Fa-f]{6}$/),
+          path: expect.any(String),
+        }),
+      );
+      expect(socialIcons[platform].name.length).toBeGreaterThan(0);
+      expect(socialIcons[platform].path.length).toBeGreaterThan(10);
     }
   });
 

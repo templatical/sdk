@@ -1,4 +1,7 @@
+import './dom-stubs';
+
 import { describe, expect, it } from 'vitest';
+import { createApp, defineComponent, h, ref } from 'vue';
 import en from '../src/i18n/locales/en';
 import de from '../src/i18n/locales/de';
 import {
@@ -7,7 +10,29 @@ import {
   isLocaleSupported,
   getSupportedLocales,
 } from '../src/i18n';
+import type { Translations } from '../src/i18n';
 import { useI18n } from '../src/composables/useI18n';
+
+function withProvide<T>(
+  setup: () => T,
+  provides: Record<string, unknown> = {},
+): T {
+  let result: T;
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = setup();
+        return () => h('div');
+      },
+    }),
+  );
+  for (const [key, value] of Object.entries(provides)) {
+    app.provide(key, value);
+  }
+  app.mount(document.createElement('div'));
+  app.unmount();
+  return result!;
+}
 
 describe('getBaseLocale', () => {
   it('extracts base from locale with region', () => {
@@ -147,6 +172,54 @@ describe('useI18n', () => {
       expect(
         format(en.header.templatesUsed, { used: 3, max: 10 }),
       ).toBe('3/10 templates used');
+    });
+  });
+
+  describe('injection path', () => {
+    it('injects plain translations from context when no override', () => {
+      const { t } = withProvide(() => useI18n(), {
+        translations: en,
+      });
+      expect(t.header.title).toBe('Templatical');
+    });
+
+    it('unwraps Ref<Translations> from inject', () => {
+      const translationsRef = ref(en);
+      const { t } = withProvide(() => useI18n(), {
+        translations: translationsRef,
+      });
+      expect(t.header.title).toBe('Templatical');
+    });
+
+    it('injects German translations from context', () => {
+      const { t } = withProvide(() => useI18n(), {
+        translations: de,
+      });
+      expect(t.loading.initializing).toBe('Initialisieren...');
+    });
+
+    it('override takes precedence over injected', () => {
+      const { t } = withProvide(() => useI18n(de), {
+        translations: en,
+      });
+      expect(t.loading.initializing).toBe('Initialisieren...');
+    });
+
+    it('format works with injected translations', () => {
+      const { format } = withProvide(() => useI18n(), {
+        translations: en,
+      });
+      expect(format('{a} + {b}', { a: '1', b: '2' })).toBe('1 + 2');
+    });
+
+    it('format handles Ref-injected translations', () => {
+      const translationsRef = ref(en);
+      const { format } = withProvide(() => useI18n(), {
+        translations: translationsRef,
+      });
+      expect(
+        format(en.header.templatesUsed, { used: 5, max: 20 }),
+      ).toBe('5/20 templates used');
     });
   });
 });

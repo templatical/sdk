@@ -1,5 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import './dom-stubs';
+
+import { describe, expect, it, vi } from 'vitest';
 import { SYNTAX_PRESETS } from '@templatical/types';
+
+// Mock .vue imports to avoid needing @vitejs/plugin-vue in tests
+vi.mock('../src/extensions/MergeTagNodeView.vue', () => ({ default: {} }));
+
+import { MergeTagNode } from '../src/extensions/MergeTagNode';
 
 // Test the regex patterns used by MergeTagNode's input/paste rules.
 // The extension uses `syntax.value.source` to build input/paste regexes.
@@ -82,6 +89,49 @@ describe('MergeTagNode regex patterns', () => {
       const selector = 'span[data-merge-tag]';
       expect(selector).toContain('data-merge-tag');
     });
+  });
+});
+
+describe('MergeTagNode extension config', () => {
+  it('has name "mergeTagNode"', () => {
+    expect(MergeTagNode.config.name).toBe('mergeTagNode');
+  });
+
+  it('has group "inline"', () => {
+    expect(MergeTagNode.config.group).toBe('inline');
+  });
+
+  it('is inline', () => {
+    expect(MergeTagNode.config.inline).toBe(true);
+  });
+
+  it('is atom', () => {
+    expect(MergeTagNode.config.atom).toBe(true);
+  });
+
+  it('addAttributes returns label and value with default empty strings', () => {
+    const attrs = (MergeTagNode.config.addAttributes as Function).call({});
+    expect(attrs.label).toEqual({ default: '' });
+    expect(attrs.value).toEqual({ default: '' });
+  });
+
+  it('parseHTML returns array with tag span[data-merge-tag]', () => {
+    const rules = (MergeTagNode.config.parseHTML as Function).call({});
+    expect(Array.isArray(rules)).toBe(true);
+    expect(rules).toHaveLength(1);
+    expect(rules[0].tag).toBe('span[data-merge-tag]');
+  });
+
+  it('addCommands has insertMergeTag command', () => {
+    const commands = (MergeTagNode.config.addCommands as Function).call({ name: 'mergeTagNode' });
+    expect(commands).toHaveProperty('insertMergeTag');
+    expect(typeof commands.insertMergeTag).toBe('function');
+  });
+
+  it('default options use liquid syntax', () => {
+    const options = (MergeTagNode.config.addOptions as Function).call({});
+    expect(options.syntax).toEqual(SYNTAX_PRESETS.liquid);
+    expect(options.mergeTags).toEqual([]);
   });
 });
 

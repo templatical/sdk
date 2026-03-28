@@ -58,8 +58,9 @@ describe('useBlockRegistry', () => {
       });
 
       const block = registry.createBlock('text');
-      expect(block).toBeDefined();
+      expect(block).not.toBeNull();
       expect(block!.type).toBe('text');
+      expect(block!.id).toBe('new-id');
     });
   });
 
@@ -126,8 +127,9 @@ describe('useBlockRegistry', () => {
 
       const items = registry.getSidebarItems();
       const heroItem = items.find((i) => i.type === 'custom:hero');
-      expect(heroItem).toBeDefined();
+      expect(heroItem).not.toBeUndefined();
       expect(heroItem!.label).toBe('Hero Banner');
+      expect(heroItem!.isCustom).toBe(true);
       expect(heroItem!.icon).toBe('🎯');
       expect(heroItem!.description).toBe('A hero banner');
     });
@@ -300,8 +302,9 @@ describe('useBlockRegistry', () => {
       registry.registerCustom(def, DummyComponent);
 
       const block = registry.createBlock('custom:hero');
-      expect(block).toBeDefined();
+      expect(block).not.toBeNull();
       expect(block!.type).toBe('custom');
+      expect((block as any).customType).toBe('hero');
     });
   });
 });

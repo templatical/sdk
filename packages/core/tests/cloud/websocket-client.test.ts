@@ -67,7 +67,8 @@ describe('WebSocketClient', () => {
 
   it('stores config from constructor', () => {
     const client = createClient();
-    expect(client).toBeDefined();
+    expect(client.isConnected).toBe(false);
+    expect(client.getSocketId()).toBeNull();
   });
 
   it('isConnected returns false before connect', () => {
@@ -80,9 +81,10 @@ describe('WebSocketClient', () => {
     expect(client.getSocketId()).toBeNull();
   });
 
-  it('disconnect is safe to call before connect', () => {
+  it('disconnect before connect leaves client disconnected', () => {
     const client = createClient();
-    expect(() => client.disconnect()).not.toThrow();
+    client.disconnect();
+    expect(client.isConnected).toBe(false);
   });
 
   it('subscribePresence throws if not connected', () => {
@@ -92,9 +94,10 @@ describe('WebSocketClient', () => {
     );
   });
 
-  it('unsubscribe is safe to call before connect', () => {
+  it('unsubscribe before connect returns without error', () => {
     const client = createClient();
-    expect(() => client.unsubscribe('some-channel')).not.toThrow();
+    client.unsubscribe('some-channel');
+    expect(client.getChannel('some-channel')).toBeUndefined();
   });
 
   it('getChannel returns undefined before connect', () => {

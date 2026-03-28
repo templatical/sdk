@@ -152,11 +152,12 @@ describe('useWebSocket', () => {
       expect(ws.isConnected.value).toBe(false);
     });
 
-    it('is safe to call before connect', () => {
+    it('disconnect before connect leaves channel null and isConnected false', () => {
       const ws = useWebSocket({ authManager: createMockAuthManager() });
 
-      expect(() => ws.disconnect()).not.toThrow();
+      ws.disconnect();
       expect(ws.channel.value).toBeNull();
+      expect(ws.isConnected.value).toBe(false);
     });
   });
 
