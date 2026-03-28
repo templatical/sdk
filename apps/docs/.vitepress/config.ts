@@ -3,8 +3,9 @@ import { defineConfig } from 'vitepress';
 export default defineConfig({
     title: 'Templatical',
     description: 'Open-source drag-and-drop email editor for modern apps',
+    cleanUrls: true,
     head: [
-        ['link', { rel: 'icon', href: '/favicon.ico' }],
+        ['link', { rel: 'icon', type: 'image/svg+xml', href: 'https://templatical.com/logo-small.svg' }],
         [
             'meta',
             {
@@ -22,13 +23,12 @@ export default defineConfig({
         ],
     ],
     themeConfig: {
-        logo: '/logo.svg',
+        logo: 'https://templatical.com/logo.svg',
         siteTitle: 'Templatical',
 
         nav: [
             { text: 'Guide', link: '/getting-started/installation' },
             { text: 'API', link: '/api/editor' },
-            { text: 'Examples', link: '/examples/vanilla-js' },
             { text: 'Cloud', link: '/cloud/' },
             { text: 'Playground', link: 'https://play.templatical.com' },
         ],
@@ -108,21 +108,14 @@ export default defineConfig({
                             link: '/getting-started/quick-start',
                         },
                         {
-                            text: 'Your First Template',
-                            link: '/getting-started/your-first-template',
+                            text: 'How Rendering Works',
+                            link: '/getting-started/how-rendering-works',
                         },
-                        { text: 'Export', link: '/getting-started/export' },
                     ],
                 },
                 {
                     text: 'Guide',
                     items: [
-                        { text: 'Blocks', link: '/guide/blocks' },
-                        {
-                            text: 'Sections & Columns',
-                            link: '/guide/sections-and-columns',
-                        },
-                        { text: 'Styling', link: '/guide/styling' },
                         { text: 'Merge Tags', link: '/guide/merge-tags' },
                         {
                             text: 'Display Conditions',
@@ -132,16 +125,35 @@ export default defineConfig({
                             text: 'Custom Blocks',
                             link: '/guide/custom-blocks',
                         },
-                        { text: 'Theming', link: '/guide/theming' },
-                        { text: 'Internationalization', link: '/guide/i18n' },
                         { text: 'Images', link: '/guide/images' },
+                    ],
+                },
+                {
+                    text: 'Customization',
+                    items: [
+                        { text: 'Theming', link: '/guide/theming' },
                         {
-                            text: 'Export Options',
-                            link: '/guide/export-options',
+                            text: 'Custom Fonts',
+                            link: '/guide/fonts',
                         },
                         {
-                            text: 'Migration from BeeFree',
-                            link: '/guide/migration-from-beefree',
+                            text: 'Internationalization',
+                            link: '/guide/i18n',
+                        },
+                    ],
+                },
+                {
+                    text: 'Reference',
+                    items: [
+                        { text: 'Block Types', link: '/guide/blocks' },
+                        {
+                            text: 'Sections & Columns',
+                            link: '/guide/sections-and-columns',
+                        },
+                        { text: 'Styling', link: '/guide/styling' },
+                        {
+                            text: 'Programmatic Templates',
+                            link: '/guide/programmatic-templates',
                         },
                     ],
                 },
@@ -151,32 +163,18 @@ export default defineConfig({
                         { text: 'Editor', link: '/api/editor' },
                         { text: 'Types', link: '/api/types' },
                         {
-                            text: 'Renderer (TypeScript)',
+                            text: 'Renderer',
                             link: '/api/renderer-typescript',
-                        },
-                        {
-                            text: 'Renderer (PHP)',
-                            link: '/api/renderer-php',
                         },
                         { text: 'Events', link: '/api/events' },
                     ],
                 },
                 {
-                    text: 'Examples',
+                    text: 'Migration',
                     items: [
                         {
-                            text: 'Vanilla JavaScript',
-                            link: '/examples/vanilla-js',
-                        },
-                        { text: 'Vue 3', link: '/examples/vue' },
-                        { text: 'React', link: '/examples/react' },
-                        {
-                            text: 'Laravel + Inertia',
-                            link: '/examples/laravel',
-                        },
-                        {
-                            text: 'Node.js Renderer',
-                            link: '/examples/node-renderer',
+                            text: 'From BeeFree',
+                            link: '/guide/migration-from-beefree',
                         },
                     ],
                 },

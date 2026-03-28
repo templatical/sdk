@@ -50,13 +50,13 @@ const mergeTagLabel = computed(() => {
   <div class="tpl:w-full" :style="containerStyle">
     <!-- Placeholder with preview image provided -->
     <div
-      v-if="hasMergeTagUrl && block.previewUrl"
+      v-if="hasMergeTagUrl && block.placeholderUrl"
       class="tpl:relative tpl:inline-block"
       :style="thumbnailStyle"
     >
       <img
         class="tpl:w-full tpl:border-0"
-        :src="block.previewUrl"
+        :src="block.placeholderUrl"
         :alt="block.alt"
       />
       <div

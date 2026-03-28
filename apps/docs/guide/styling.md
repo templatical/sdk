@@ -13,8 +13,8 @@ The `BlockStyles` interface controls padding, margin, background, and responsive
 
 ```ts
 interface BlockStyles {
-  padding?: SpacingValue;
-  margin?: SpacingValue;
+  padding: SpacingValue;
+  margin: SpacingValue;
   backgroundColor?: string;
   responsive?: ResponsiveStyles;
 }
@@ -29,6 +29,7 @@ const block = createTextBlock({
 
 block.styles = {
   padding: { top: 16, right: 24, bottom: 16, left: 24 },
+  margin: { top: 0, right: 0, bottom: 0, left: 0 },
   backgroundColor: '#f0f9ff',
 };
 ```
@@ -65,6 +66,14 @@ interface ResponsiveStyles {
   mobile?: Partial<BlockStyles>;
 }
 ```
+
+The editor uses these viewport widths in preview mode:
+
+| Viewport | Preview Width |
+|----------|---------------|
+| Desktop | Template width (default 600px) |
+| Tablet | 768px |
+| Mobile | 375px |
 
 Responsive overrides merge with the base styles. Only specify the properties you want to change:
 
@@ -120,7 +129,7 @@ block.customCss = `
 ```
 
 ::: warning
-Custom CSS may not render consistently across all email clients. Test thoroughly when using this property.
+Most CSS properties don't work reliably across email clients. Properties like `display: flex`, `grid`, `position`, `box-shadow`, and CSS animations are ignored by many clients (especially Outlook). Stick to `padding`, `margin`, `border`, `border-radius`, `background-color`, and `text-align` for the best compatibility. Always test in real email clients before sending.
 :::
 
 ## Template-level settings
@@ -139,8 +148,8 @@ These are configured through the editor's `init()` config or by modifying the te
 import { init } from '@templatical/vue';
 
 const editor = init({
-  el: '#editor',
-  template: {
+  container: '#editor',
+  content: {
     settings: {
       width: 640,
       backgroundColor: '#f8fafc',

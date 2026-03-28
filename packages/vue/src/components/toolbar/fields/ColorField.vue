@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockColorField } from "@templatical/types";
-import {
-  colorInputClass,
-  colorTextClass,
-  labelClass,
-} from "../../../constants/styleConstants";
+import { labelClass } from "../../../constants/styleConstants";
 import { Lock } from "lucide-vue-next";
+import ColorPicker from "../../ColorPicker.vue";
 
-const props = defineProps<{
+defineProps<{
   field: CustomBlockColorField;
   modelValue: string;
   readOnly?: boolean;
@@ -19,13 +16,11 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-
-const inputId = `tpl-color-${props.field.key ?? props.field.label.replace(/\s+/g, "-").toLowerCase()}`;
 </script>
 
 <template>
   <div class="tpl:mb-3.5">
-    <label :for="inputId" :class="labelClass">
+    <label :class="labelClass">
       {{ field.label }}
       <Lock
         v-if="readOnly"
@@ -36,35 +31,12 @@ const inputId = `tpl-color-${props.field.key ?? props.field.label.replace(/\s+/g
         *
       </span>
     </label>
-    <div
-      :class="[
-        'tpl:flex tpl:gap-2',
-        readOnly && 'tpl:opacity-60 tpl:cursor-not-allowed',
-      ]"
+    <ColorPicker
+      :model-value="modelValue || '#000000'"
+      :placeholder="field.placeholder || '#000000'"
+      :disabled="readOnly"
       :title="readOnly ? t.customBlocks.dataSource.readOnlyTooltip : undefined"
-    >
-      <input
-        type="color"
-        :class="colorInputClass"
-        :value="modelValue || '#000000'"
-        :disabled="readOnly"
-        @input="
-          !readOnly &&
-          emit('update:modelValue', ($event.target as HTMLInputElement).value)
-        "
-      />
-      <input
-        :id="inputId"
-        type="text"
-        :class="colorTextClass"
-        :value="modelValue"
-        :placeholder="field.placeholder || '#000000'"
-        :disabled="readOnly"
-        @input="
-          !readOnly &&
-          emit('update:modelValue', ($event.target as HTMLInputElement).value)
-        "
-      />
-    </div>
+      @update:model-value="emit('update:modelValue', $event)"
+    />
   </div>
 </template>

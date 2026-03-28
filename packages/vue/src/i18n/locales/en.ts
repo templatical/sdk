@@ -174,9 +174,9 @@ export default {
     fullWidth: "Full Width",
     linkUrl: "Link URL",
     openInNewTab: "Open in new tab",
-    previewUrl: "Preview Image",
-    previewUrlPlaceholder: "https://... (design-time only)",
-    previewUrlTooltip:
+    placeholderUrl: "Placeholder Image",
+    placeholderUrlPlaceholder: "https://... (design-time only)",
+    placeholderUrlTooltip:
       "Since the image URL uses a placeholder, you can provide a real image here to preview the layout while designing. This is not included in the final output.",
     clickToAdd: "Click to add image URL",
     browseMedia: "Browse Media",
@@ -197,9 +197,9 @@ export default {
     altTextPlaceholder: "Video description",
     width: "Width",
     fullWidth: "Full Width",
-    previewUrl: "Preview Thumbnail",
-    previewUrlPlaceholder: "https://... (design-time only)",
-    previewUrlTooltip:
+    placeholderUrl: "Placeholder Thumbnail",
+    placeholderUrlPlaceholder: "https://... (design-time only)",
+    placeholderUrlTooltip:
       "Since the video URL uses a placeholder, you can provide a real thumbnail here to preview the layout while designing. This is not included in the final output.",
     addVideo: "Add a video URL",
   },

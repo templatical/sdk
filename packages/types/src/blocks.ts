@@ -64,7 +64,7 @@ export interface ImageBlock extends BaseBlock {
   align: "left" | "center" | "right";
   linkUrl?: string;
   linkOpenInNewTab?: boolean;
-  previewUrl?: string;
+  placeholderUrl?: string;
 }
 
 export interface ButtonBlock extends BaseBlock {
@@ -96,7 +96,7 @@ export interface VideoBlock extends BaseBlock {
   alt: string;
   width: number | "full";
   align: "left" | "center" | "right";
-  previewUrl?: string;
+  placeholderUrl?: string;
 }
 
 export type SocialPlatform =

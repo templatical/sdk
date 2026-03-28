@@ -1,12 +1,11 @@
 <script setup lang="ts">
+import ColorPicker from "./ColorPicker.vue";
 import MergeTagTextarea from "./MergeTagTextarea.vue";
 import { useI18n } from "../composables/useI18n";
 import type { UseFontsReturn } from "../composables/useFonts";
 import type { TemplateSettings } from "@templatical/types";
 import {
   cardClass,
-  colorInputClass,
-  colorTextClass,
   inputClass,
   inputGroupInputClass,
   inputSuffixClass,
@@ -140,29 +139,11 @@ const widthPresets = [
           <label :class="labelClass">{{
             t.templateSettings.backgroundColor
           }}</label>
-          <div class="tpl:flex tpl:gap-2">
-            <input
-              type="color"
-              :class="colorInputClass"
-              :value="settings.backgroundColor"
-              @input="
-                emit('update', {
-                  backgroundColor: ($event.target as HTMLInputElement).value,
-                })
-              "
-            />
-            <input
-              type="text"
-              :class="colorTextClass"
-              :value="settings.backgroundColor"
-              placeholder="#ffffff"
-              @input="
-                emit('update', {
-                  backgroundColor: ($event.target as HTMLInputElement).value,
-                })
-              "
-            />
-          </div>
+          <ColorPicker
+            :model-value="settings.backgroundColor"
+            placeholder="#ffffff"
+            @update:model-value="emit('update', { backgroundColor: $event })"
+          />
         </div>
 
         <div>

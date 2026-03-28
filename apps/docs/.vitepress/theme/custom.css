@@ -11,3 +11,15 @@
     --vp-c-brand-3: oklch(63% 0.17 55);
     --vp-c-brand-soft: oklch(78% 0.14 55 / 0.14);
 }
+
+.main img {
+    cursor: zoom-in;
+}
+
+.medium-zoom-overlay {
+    z-index: 30;
+}
+
+.medium-zoom-image--opened {
+    z-index: 31;
+}

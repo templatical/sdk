@@ -1,7 +1,7 @@
 {
   "name": "@templatical/renderer",
   "version": "0.1.0",
-  "description": "Render Templatical email templates to MJML and HTML",
+  "description": "Render Templatical email templates to MJML",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -24,14 +24,6 @@
   },
   "dependencies": {
     "@templatical/types": "workspace:*"
-  },
-  "peerDependencies": {
-    "mjml": "^4.15.0"
-  },
-  "peerDependenciesMeta": {
-    "mjml": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "tsup": "^8.0.0",

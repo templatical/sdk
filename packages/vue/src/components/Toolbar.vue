@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ColorPicker from "./ColorPicker.vue";
 import CustomBlockToolbar from "./toolbar/CustomBlockToolbar.vue";
 import MergeTagInput from "./MergeTagInput.vue";
 import SlidingPillSelect from "./SlidingPillSelect.vue";
@@ -6,8 +7,6 @@ import SpacingControl from "./SpacingControl.vue";
 import { useI18n } from "../composables/useI18n";
 import { socialIcons, socialPlatformOptions } from "../constants/socialIcons";
 import {
-  colorInputClass,
-  colorTextClass,
   inputClass,
   inputGroupInputClass,
   inputSuffixClass,
@@ -204,14 +203,16 @@ const groupedDisplayConditions = computed(() => {
   return groups;
 });
 
-function openMediaBrowser(): void {
-  config?.onRequestMedia?.((url: string) => {
-    updateField("src", url);
+async function openMediaBrowser(): Promise<void> {
+  const result = await config?.onRequestMedia?.();
+  if (result) {
+    updateField("src", result.url);
+    if (result.alt) updateField("alt", result.alt);
     pulseSrc.value = true;
     useTimeoutFn(() => {
       pulseSrc.value = false;
     }, 1000);
-  });
+  }
 }
 
 const blockType = computed(() => props.block.type);
@@ -535,24 +536,10 @@ function removeTableColumn(colIndex: number): void {
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.text.color }}</label>
-          <div class="tpl:flex tpl:gap-2">
-            <input
-              type="color"
-              :class="colorInputClass"
-              :value="(block as TextBlock).color"
-              @input="
-                updateField('color', ($event.target as HTMLInputElement).value)
-              "
-            />
-            <input
-              type="text"
-              :class="colorTextClass"
-              :value="(block as TextBlock).color"
-              @input="
-                updateField('color', ($event.target as HTMLInputElement).value)
-              "
-            />
-          </div>
+          <ColorPicker
+            :model-value="(block as TextBlock).color"
+            @update:model-value="updateField('color', $event)"
+          />
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.text.align }}</label>
@@ -620,7 +607,7 @@ function removeTableColumn(colIndex: number): void {
           class="tpl:mb-3.5"
         >
           <label :class="labelClass"
-            >{{ t.image.previewUrl }}
+            >{{ t.image.placeholderUrl }}
             <span class="tpl:font-normal tpl:text-[var(--tpl-text-dim)]">{{
               "(optional)"
             }}</span>
@@ -628,11 +615,11 @@ function removeTableColumn(colIndex: number): void {
           <input
             type="url"
             :class="inputClass"
-            :value="(block as ImageBlock).previewUrl || ''"
-            :placeholder="t.image.previewUrlPlaceholder"
+            :value="(block as ImageBlock).placeholderUrl || ''"
+            :placeholder="t.image.placeholderUrlPlaceholder"
             @input="
               updateField(
-                'previewUrl',
+                'placeholderUrl',
                 ($event.target as HTMLInputElement).value,
               )
             "
@@ -768,57 +755,17 @@ function removeTableColumn(colIndex: number): void {
         <div class="tpl:grid tpl:grid-cols-2 tpl:gap-3">
           <div class="tpl:mb-3.5">
             <label :class="labelClass">{{ t.button.background }}</label>
-            <div class="tpl:flex tpl:gap-2">
-              <input
-                type="color"
-                :class="colorInputClass"
-                :value="(block as ButtonBlock).backgroundColor"
-                @input="
-                  updateField(
-                    'backgroundColor',
-                    ($event.target as HTMLInputElement).value,
-                  )
-                "
-              />
-              <input
-                type="text"
-                :class="colorTextClass"
-                :value="(block as ButtonBlock).backgroundColor"
-                @input="
-                  updateField(
-                    'backgroundColor',
-                    ($event.target as HTMLInputElement).value,
-                  )
-                "
-              />
-            </div>
+            <ColorPicker
+              :model-value="(block as ButtonBlock).backgroundColor"
+              @update:model-value="updateField('backgroundColor', $event)"
+            />
           </div>
           <div class="tpl:mb-3.5">
             <label :class="labelClass">{{ t.button.textColor }}</label>
-            <div class="tpl:flex tpl:gap-2">
-              <input
-                type="color"
-                :class="colorInputClass"
-                :value="(block as ButtonBlock).textColor"
-                @input="
-                  updateField(
-                    'textColor',
-                    ($event.target as HTMLInputElement).value,
-                  )
-                "
-              />
-              <input
-                type="text"
-                :class="colorTextClass"
-                :value="(block as ButtonBlock).textColor"
-                @input="
-                  updateField(
-                    'textColor',
-                    ($event.target as HTMLInputElement).value,
-                  )
-                "
-              />
-            </div>
+            <ColorPicker
+              :model-value="(block as ButtonBlock).textColor"
+              @update:model-value="updateField('textColor', $event)"
+            />
           </div>
         </div>
         <div class="tpl:grid tpl:grid-cols-2 tpl:gap-3">
@@ -878,24 +825,10 @@ function removeTableColumn(colIndex: number): void {
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.divider.color }}</label>
-          <div class="tpl:flex tpl:gap-2">
-            <input
-              type="color"
-              :class="colorInputClass"
-              :value="(block as DividerBlock).color"
-              @input="
-                updateField('color', ($event.target as HTMLInputElement).value)
-              "
-            />
-            <input
-              type="text"
-              :class="colorTextClass"
-              :value="(block as DividerBlock).color"
-              @input="
-                updateField('color', ($event.target as HTMLInputElement).value)
-              "
-            />
-          </div>
+          <ColorPicker
+            :model-value="(block as DividerBlock).color"
+            @update:model-value="updateField('color', $event)"
+          />
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.divider.thickness }}</label>
@@ -1138,20 +1071,15 @@ function removeTableColumn(colIndex: number): void {
                 <label class="tpl:text-xs tpl:text-[var(--tpl-text-muted)]">{{
                   t.menu.color
                 }}</label>
-                <input
-                  type="color"
-                  :class="colorInputClass"
-                  :value="
+                <ColorPicker
+                  swatch-only
+                  :model-value="
                     item.color ||
                     (block as MenuBlock).linkColor ||
                     (block as MenuBlock).color
                   "
-                  @input="
-                    updateMenuItem(
-                      item.id,
-                      'color',
-                      ($event.target as HTMLInputElement).value,
-                    )
+                  @update:model-value="
+                    updateMenuItem(item.id, 'color', $event)
                   "
                 />
               </div>
@@ -1208,53 +1136,19 @@ function removeTableColumn(colIndex: number): void {
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.menu.color }}</label>
-          <div class="tpl:flex tpl:items-center tpl:gap-2">
-            <input
-              type="color"
-              :class="colorInputClass"
-              :value="(block as MenuBlock).color"
-              @input="
-                updateField('color', ($event.target as HTMLInputElement).value)
-              "
-            />
-            <input
-              type="text"
-              :class="colorTextClass"
-              :value="(block as MenuBlock).color"
-              @input="
-                updateField('color', ($event.target as HTMLInputElement).value)
-              "
-            />
-          </div>
+          <ColorPicker
+            :model-value="(block as MenuBlock).color"
+            @update:model-value="updateField('color', $event)"
+          />
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.menu.linkColor }}</label>
-          <div class="tpl:flex tpl:items-center tpl:gap-2">
-            <input
-              type="color"
-              :class="colorInputClass"
-              :value="
-                (block as MenuBlock).linkColor || (block as MenuBlock).color
-              "
-              @input="
-                updateField(
-                  'linkColor',
-                  ($event.target as HTMLInputElement).value,
-                )
-              "
-            />
-            <input
-              type="text"
-              :class="colorTextClass"
-              :value="(block as MenuBlock).linkColor || ''"
-              @input="
-                updateField(
-                  'linkColor',
-                  ($event.target as HTMLInputElement).value || undefined,
-                )
-              "
-            />
-          </div>
+          <ColorPicker
+            :model-value="
+              (block as MenuBlock).linkColor || (block as MenuBlock).color
+            "
+            @update:model-value="updateField('linkColor', $event || undefined)"
+          />
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.menu.textAlign }}</label>
@@ -1296,30 +1190,10 @@ function removeTableColumn(colIndex: number): void {
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.menu.separatorColor }}</label>
-          <div class="tpl:flex tpl:items-center tpl:gap-2">
-            <input
-              type="color"
-              :class="colorInputClass"
-              :value="(block as MenuBlock).separatorColor"
-              @input="
-                updateField(
-                  'separatorColor',
-                  ($event.target as HTMLInputElement).value,
-                )
-              "
-            />
-            <input
-              type="text"
-              :class="colorTextClass"
-              :value="(block as MenuBlock).separatorColor"
-              @input="
-                updateField(
-                  'separatorColor',
-                  ($event.target as HTMLInputElement).value,
-                )
-              "
-            />
-          </div>
+          <ColorPicker
+            :model-value="(block as MenuBlock).separatorColor"
+            @update:model-value="updateField('separatorColor', $event)"
+          />
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.menu.spacing }}</label>
@@ -1426,58 +1300,18 @@ function removeTableColumn(colIndex: number): void {
         </div>
         <div v-if="(block as TableBlock).hasHeaderRow" class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.table.headerBackgroundColor }}</label>
-          <div class="tpl:flex tpl:items-center tpl:gap-2">
-            <input
-              type="color"
-              :class="colorInputClass"
-              :value="(block as TableBlock).headerBackgroundColor || '#f2f2f2'"
-              @input="
-                updateField(
-                  'headerBackgroundColor',
-                  ($event.target as HTMLInputElement).value,
-                )
-              "
-            />
-            <input
-              type="text"
-              :class="colorTextClass"
-              :value="(block as TableBlock).headerBackgroundColor || ''"
-              :placeholder="t.table.noHeaderBg"
-              @input="
-                updateField(
-                  'headerBackgroundColor',
-                  ($event.target as HTMLInputElement).value || null,
-                )
-              "
-            />
-          </div>
+          <ColorPicker
+            :model-value="(block as TableBlock).headerBackgroundColor || '#f2f2f2'"
+            :placeholder="t.table.noHeaderBg"
+            @update:model-value="updateField('headerBackgroundColor', $event || null)"
+          />
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.table.borderColor }}</label>
-          <div class="tpl:flex tpl:items-center tpl:gap-2">
-            <input
-              type="color"
-              :class="colorInputClass"
-              :value="(block as TableBlock).borderColor"
-              @input="
-                updateField(
-                  'borderColor',
-                  ($event.target as HTMLInputElement).value,
-                )
-              "
-            />
-            <input
-              type="text"
-              :class="colorTextClass"
-              :value="(block as TableBlock).borderColor"
-              @input="
-                updateField(
-                  'borderColor',
-                  ($event.target as HTMLInputElement).value,
-                )
-              "
-            />
-          </div>
+          <ColorPicker
+            :model-value="(block as TableBlock).borderColor"
+            @update:model-value="updateField('borderColor', $event)"
+          />
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.table.borderWidth }}</label>
@@ -1560,24 +1394,10 @@ function removeTableColumn(colIndex: number): void {
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.table.color }}</label>
-          <div class="tpl:flex tpl:items-center tpl:gap-2">
-            <input
-              type="color"
-              :class="colorInputClass"
-              :value="(block as TableBlock).color"
-              @input="
-                updateField('color', ($event.target as HTMLInputElement).value)
-              "
-            />
-            <input
-              type="text"
-              :class="colorTextClass"
-              :value="(block as TableBlock).color"
-              @input="
-                updateField('color', ($event.target as HTMLInputElement).value)
-              "
-            />
-          </div>
+          <ColorPicker
+            :model-value="(block as TableBlock).color"
+            @update:model-value="updateField('color', $event)"
+          />
         </div>
         <div class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.table.textAlign }}</label>
@@ -1714,30 +1534,11 @@ function removeTableColumn(colIndex: number): void {
           </button>
           <div v-show="bgOpen" class="tpl:mt-3">
             <label :class="labelClass">{{ t.blockSettings.color }}</label>
-            <div class="tpl:flex tpl:gap-2">
-              <input
-                type="color"
-                class="tpl:size-12 tpl:shrink-0 tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-0.5"
-                :value="block.styles.backgroundColor || '#ffffff'"
-                @input="
-                  updateStyle(
-                    'backgroundColor',
-                    ($event.target as HTMLInputElement).value,
-                  )
-                "
-              />
-              <input
-                type="text"
-                :class="colorTextClass"
-                :value="block.styles.backgroundColor || '#ffffff'"
-                @input="
-                  updateStyle(
-                    'backgroundColor',
-                    ($event.target as HTMLInputElement).value,
-                  )
-                "
-              />
-            </div>
+            <ColorPicker
+              size="large"
+              :model-value="block.styles.backgroundColor || '#ffffff'"
+              @update:model-value="updateStyle('backgroundColor', $event)"
+            />
           </div>
         </div>
 

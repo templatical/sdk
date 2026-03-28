@@ -275,7 +275,6 @@ export interface TemplaticalConfig {
   onError?: (error: Error) => void;
   onUnmount?: () => void;
   mergeTags?: MergeTagsConfig;
-  onRequestMergeTag?: () => Promise<MergeTag | null>;
   onRequestMedia?: (context: MediaRequestContext) => Promise<MediaItem | null>;
   displayConditions?: DisplayConditionsConfig;
   fonts?: FontsConfig;

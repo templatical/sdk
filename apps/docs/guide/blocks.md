@@ -1,45 +1,45 @@
 ---
 title: Block Types
-description: Reference for all 13 built-in block types in Templatical, including properties and factory functions.
+description: Reference for all 12 built-in block types in Templatical.
 ---
 
 # Block Types
 
-Templatical ships with 13 built-in block types. Every block extends a common `Block` base with shared properties (`id`, `type`, `styles`, `displayCondition`, `mergeTag`, `customCss`, `visibility`), and each type adds its own specific properties.
+Blocks are the building units of every Templatical template. Each block represents a distinct piece of content -- a paragraph, an image, a button. Blocks can be placed directly in the template or inside sections for multi-column layouts. The editor renders them top-to-bottom in the order they appear.
 
-All block factories and type guards are exported from `@templatical/types`.
+Every block extends a common `Block` base with shared properties (`id`, `type`, `styles`, `displayCondition`, `customCss`, `visibility`), and each type adds its own specific properties.
 
-```ts
-import {
-  createTextBlock,
-  createImageBlock,
-  createBlock,
-  cloneBlock,
-  isText,
-  isImage,
-} from '@templatical/types';
-```
+To create blocks programmatically, see [Programmatic Templates](/guide/programmatic-templates).
+
+## Choosing the right block
+
+| Need | Block | Notes |
+|------|-------|-------|
+| Formatted text, headings | [Text](#text) | Rich text editor with inline formatting |
+| Photos, banners, logos | [Image](#image) | Optional link wrapping, responsive width |
+| Call-to-action | [Button](#button) | Bulletproof buttons that work in all email clients |
+| Multi-column layout | [Section](#section) | The only block that holds other blocks |
+| Visual separation | [Divider](#divider) | Horizontal line with style options |
+| Vertical spacing | [Spacer](#spacer) | Empty space between blocks |
+| Social links | [Social Icons](#social-icons) | 16 platforms, 5 icon styles |
+| Navigation links | [Menu](#menu) | Horizontal link list with separators |
+| Tabular data | [Table](#table) | Data table with optional header styling |
+| Video preview | [Video](#video) | Clickable thumbnail (email clients don't support embedded video) |
+| Raw markup | [HTML](#html) | Escape hatch for custom code |
+| Domain-specific content | [Custom](#custom) | Your own block types with fields and Liquid templates |
 
 ## Text
 
-Rich text content rendered as HTML.
+Rich text content rendered as HTML. The editor uses [Tiptap](https://tiptap.dev) for inline editing with formatting controls (bold, italic, links, alignment, etc.).
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `content` | `string` | `''` | HTML content |
+| `content` | `string` | `'<p>Enter your text here</p>'` | HTML content |
 | `fontSize` | `number` | `16` | Font size in px |
-| `color` | `string` | `'#000000'` | Text color |
+| `color` | `string` | `'#333333'` | Text color |
 | `textAlign` | `'left' \| 'center' \| 'right'` | `'left'` | Horizontal alignment |
-| `fontWeight` | `string` | `'normal'` | CSS font weight |
+| `fontWeight` | `'normal' \| 'bold'` | `'normal'` | Font weight |
 | `fontFamily` | `string` | `undefined` | Font family override |
-
-```ts
-const block = createTextBlock({
-  content: '<p>Welcome, {{name}}!</p>',
-  fontSize: 18,
-  textAlign: 'center',
-});
-```
 
 ## Image
 
@@ -49,20 +49,11 @@ Displays an image with optional link wrapping.
 |----------|------|---------|-------------|
 | `src` | `string` | `''` | Image URL |
 | `alt` | `string` | `''` | Alt text |
-| `width` | `number` | `600` | Display width in px |
+| `width` | `number \| 'full'` | `'full'` | Display width in px, or `'full'` for 100% |
 | `align` | `'left' \| 'center' \| 'right'` | `'center'` | Horizontal alignment |
 | `linkUrl` | `string` | `undefined` | Wraps image in a link |
-| `linkOpenInNewTab` | `boolean` | `true` | Link target behavior |
-| `previewUrl` | `string` | `undefined` | Placeholder shown in the editor |
-
-```ts
-const block = createImageBlock({
-  src: 'https://cdn.example.com/hero.png',
-  alt: 'Hero banner',
-  width: 560,
-  linkUrl: 'https://example.com',
-});
-```
+| `linkOpenInNewTab` | `boolean` | `undefined` | Link target behavior |
+| `placeholderUrl` | `string` | `undefined` | Placeholder shown in the editor when `src` uses a merge tag |
 
 ## Button
 
@@ -70,24 +61,15 @@ A call-to-action button with customizable appearance.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `text` | `string` | `'Click me'` | Button label |
+| `text` | `string` | `'Click Here'` | Button label |
 | `url` | `string` | `''` | Link URL |
 | `backgroundColor` | `string` | `'#007bff'` | Button background color |
 | `textColor` | `string` | `'#ffffff'` | Button text color |
 | `borderRadius` | `number` | `4` | Corner radius in px |
 | `fontSize` | `number` | `16` | Font size in px |
-| `buttonPadding` | `string` | `'12px 24px'` | Inner padding |
+| `buttonPadding` | `SpacingValue` | `{ top: 12, right: 24, bottom: 12, left: 24 }` | Inner padding |
 | `fontFamily` | `string` | `undefined` | Font family override |
-| `openInNewTab` | `boolean` | `true` | Link target behavior |
-
-```ts
-const block = createButtonBlock({
-  text: 'Get Started',
-  url: 'https://example.com/signup',
-  backgroundColor: '#6366f1',
-  borderRadius: 8,
-});
-```
+| `openInNewTab` | `boolean` | `undefined` | Link target behavior |
 
 ## Divider
 
@@ -98,15 +80,7 @@ A horizontal line separator.
 | `lineStyle` | `'solid' \| 'dashed' \| 'dotted'` | `'solid'` | Line style |
 | `color` | `string` | `'#cccccc'` | Line color |
 | `thickness` | `number` | `1` | Line thickness in px |
-| `width` | `string` | `'100%'` | Line width |
-
-```ts
-const block = createDividerBlock({
-  lineStyle: 'dashed',
-  color: '#e5e7eb',
-  thickness: 2,
-});
-```
+| `width` | `number \| 'full'` | `'full'` | Line width in px, or `'full'` for 100% |
 
 ## Spacer
 
@@ -116,10 +90,6 @@ Empty vertical space.
 |----------|------|---------|-------------|
 | `height` | `number` | `20` | Height in px |
 
-```ts
-const block = createSpacerBlock({ height: 40 });
-```
-
 ## HTML
 
 Injects raw HTML into the template. Use this for content that cannot be expressed with other block types.
@@ -127,12 +97,6 @@ Injects raw HTML into the template. Use this for content that cannot be expresse
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `content` | `string` | `''` | Raw HTML markup |
-
-```ts
-const block = createHtmlBlock({
-  content: '<div style="text-align:center;">Custom markup</div>',
-});
-```
 
 ## Social Icons
 
@@ -143,30 +107,19 @@ A row of social media icons linking to platform profiles.
 | `icons` | `SocialIcon[]` | `[]` | List of social icons |
 | `iconStyle` | `'solid' \| 'outlined' \| 'rounded' \| 'square' \| 'circle'` | `'solid'` | Visual style |
 | `iconSize` | `'small' \| 'medium' \| 'large'` | `'medium'` | Icon size |
-| `spacing` | `number` | `8` | Space between icons in px |
+| `spacing` | `number` | `10` | Space between icons in px |
 | `align` | `'left' \| 'center' \| 'right'` | `'center'` | Horizontal alignment |
 
-16 platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, Snapchat, GitHub, Dribbble, Behance, Medium, Discord, Telegram, WhatsApp, and Reddit.
+16 platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, Email, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
 
 Each `SocialIcon` has:
 
 ```ts
 interface SocialIcon {
-  platform: string;
+  id: string;
+  platform: SocialPlatform;
   url: string;
-  enabled: boolean;
 }
-```
-
-```ts
-const block = createSocialIconsBlock({
-  iconStyle: 'circle',
-  iconSize: 'large',
-  icons: [
-    { platform: 'twitter', url: 'https://x.com/acme', enabled: true },
-    { platform: 'github', url: 'https://github.com/acme', enabled: true },
-  ],
-});
 ```
 
 ## Menu
@@ -178,31 +131,25 @@ A horizontal navigation menu with text links.
 | `items` | `MenuItemData[]` | `[]` | Menu items |
 | `fontSize` | `number` | `14` | Font size in px |
 | `fontFamily` | `string` | `undefined` | Font family override |
-| `color` | `string` | `'#000000'` | Text color |
-| `linkColor` | `string` | `'#007bff'` | Link color |
+| `color` | `string` | `'#333333'` | Text color |
+| `linkColor` | `string` | `undefined` | Link color |
 | `textAlign` | `'left' \| 'center' \| 'right'` | `'center'` | Alignment |
 | `separator` | `string` | `'\|'` | Character between items |
 | `separatorColor` | `string` | `'#cccccc'` | Separator color |
-| `spacing` | `number` | `8` | Space around separator |
+| `spacing` | `number` | `10` | Space around separator |
 
 Each `MenuItemData` has:
 
 ```ts
 interface MenuItemData {
+  id: string;
   text: string;
   url: string;
+  openInNewTab: boolean;
+  bold: boolean;
+  underline: boolean;
+  color?: string;
 }
-```
-
-```ts
-const block = createMenuBlock({
-  items: [
-    { text: 'Home', url: 'https://example.com' },
-    { text: 'Blog', url: 'https://example.com/blog' },
-    { text: 'Docs', url: 'https://docs.example.com' },
-  ],
-  separator: '-',
-});
 ```
 
 ## Table
@@ -213,74 +160,32 @@ A data table with optional header row styling.
 |----------|------|---------|-------------|
 | `rows` | `TableRowData[]` | `[]` | Table rows |
 | `hasHeaderRow` | `boolean` | `true` | Style first row as header |
-| `headerBackgroundColor` | `string` | `'#f3f4f6'` | Header row background |
-| `borderColor` | `string` | `'#e5e7eb'` | Border color |
+| `headerBackgroundColor` | `string` | `undefined` | Header row background |
+| `borderColor` | `string` | `'#dddddd'` | Border color |
 | `borderWidth` | `number` | `1` | Border width in px |
 | `cellPadding` | `number` | `8` | Cell padding in px |
 | `fontSize` | `number` | `14` | Font size in px |
 | `fontFamily` | `string` | `undefined` | Font family override |
-| `color` | `string` | `'#000000'` | Text color |
+| `color` | `string` | `'#333333'` | Text color |
 | `textAlign` | `'left' \| 'center' \| 'right'` | `'left'` | Cell text alignment |
-
-```ts
-const block = createTableBlock({
-  hasHeaderRow: true,
-  rows: [
-    { cells: [{ content: 'Plan' }, { content: 'Price' }] },
-    { cells: [{ content: 'Starter' }, { content: '$9/mo' }] },
-    { cells: [{ content: 'Pro' }, { content: '$29/mo' }] },
-  ],
-});
-```
 
 ## Video
 
-Displays a video thumbnail that links to the video URL. Since email clients do not support embedded video playback, a clickable thumbnail image is rendered instead.
+Displays a video thumbnail that links to the video URL.
+
+::: tip Email client note
+Email clients do not support embedded video playback. The renderer outputs a clickable thumbnail image that links to the video URL. Always provide a good `thumbnailUrl` -- it's the only thing recipients see in their inbox.
+:::
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `url` | `string` | `''` | Video URL (YouTube, Vimeo, etc.) |
 | `thumbnailUrl` | `string` | `''` | Thumbnail image URL |
 | `alt` | `string` | `''` | Alt text for thumbnail |
-| `width` | `number` | `600` | Display width in px |
+| `width` | `number \| 'full'` | `'full'` | Display width in px, or `'full'` for 100% |
 | `align` | `'left' \| 'center' \| 'right'` | `'center'` | Horizontal alignment |
-| `openInNewTab` | `boolean` | `true` | Link target behavior |
-| `previewUrl` | `string` | `undefined` | Editor-only placeholder |
-
-```ts
-const block = createVideoBlock({
-  url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-  thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-  alt: 'Product demo video',
-});
-```
-
-## Countdown
-
-A live countdown timer that renders as digit groups with labels.
-
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `targetDate` | `string` | | ISO date string for the countdown target |
-| `timezone` | `string` | `'UTC'` | IANA timezone identifier |
-| `showDays` | `boolean` | `true` | Show days digit |
-| `showHours` | `boolean` | `true` | Show hours digit |
-| `showMinutes` | `boolean` | `true` | Show minutes digit |
-| `showSeconds` | `boolean` | `true` | Show seconds digit |
-| `separator` | `string` | `':'` | Character between digit groups |
-| `digitFontSize` | `number` | `32` | Digit font size in px |
-| `digitColor` | `string` | `'#000000'` | Digit text color |
-| `labelColor` | `string` | `'#666666'` | Label text color |
-
-```ts
-const block = createCountdownBlock({
-  targetDate: '2026-12-31T23:59:59',
-  timezone: 'America/New_York',
-  showSeconds: false,
-  digitFontSize: 48,
-  digitColor: '#6366f1',
-});
-```
+| `openInNewTab` | `boolean` | `undefined` | Link target behavior |
+| `placeholderUrl` | `string` | `undefined` | Editor-only placeholder |
 
 ## Section
 
@@ -290,16 +195,6 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 |----------|------|---------|-------------|
 | `columns` | `ColumnLayout` | `'1'` | Column layout preset |
 | `children` | `Block[][]` | `[[]]` | Array of block arrays, one per column |
-
-```ts
-const block = createSectionBlock({
-  columns: '2',
-  children: [
-    [createTextBlock({ content: '<p>Left column</p>' })],
-    [createImageBlock({ src: 'https://cdn.example.com/photo.jpg' })],
-  ],
-});
-```
 
 ## Custom
 
@@ -311,55 +206,3 @@ A user-defined block type powered by field definitions and a Liquid template. Se
 | `fieldValues` | `Record<string, any>` | `{}` | Current values for defined fields |
 | `renderedHtml` | `string` | `''` | Cached rendered output |
 | `dataSourceFetched` | `boolean` | `false` | Whether the data source has been fetched |
-
-```ts
-const block = createCustomBlock({
-  customType: 'product-card',
-  fieldValues: {
-    title: 'Wireless Headphones',
-    price: 79.99,
-    imageUrl: 'https://cdn.example.com/headphones.jpg',
-  },
-});
-```
-
-## Utilities
-
-### Generic factory
-
-Create any block by type string:
-
-```ts
-import { createBlock } from '@templatical/types';
-
-const block = createBlock('text'); // TextBlock with defaults
-```
-
-### Cloning
-
-Deep-clone a block with a new ID:
-
-```ts
-import { cloneBlock } from '@templatical/types';
-
-const copy = cloneBlock(existingBlock);
-// copy.id !== existingBlock.id
-```
-
-### Type guards
-
-Narrow a `Block` union to a specific type:
-
-```ts
-import { isText, isImage, isButton, isSection } from '@templatical/types';
-
-if (isText(block)) {
-  console.log(block.content); // TypeScript knows this is TextBlock
-}
-
-if (isImage(block)) {
-  console.log(block.src);
-}
-```
-
-Every block type has a corresponding guard: `isText()`, `isImage()`, `isButton()`, `isDivider()`, `isSpacer()`, `isHtml()`, `isSocialIcons()`, `isMenu()`, `isTable()`, `isVideo()`, `isCountdown()`, `isSection()`, `isCustom()`.

@@ -5,7 +5,7 @@ description: Conditional block visibility using display conditions in Templatica
 
 # Display Conditions
 
-Display conditions let template authors wrap blocks in conditional logic. When rendered, the block's output is surrounded by platform-specific conditional tags (e.g., Liquid `{% if %}` / `{% endif %}`), allowing the sending platform to show or hide content based on recipient data.
+Display conditions allow users to change block visibility based on conditions. When a condition is applied to a block, the renderer wraps its output in the conditional syntax you define (e.g., Liquid `{% if %}` / `{% endif %}`). The conditions pass through unchanged — your sending platform or templating engine should render them before sending.
 
 ## Configuration
 
@@ -15,7 +15,7 @@ Define available conditions through the editor config:
 import { init } from '@templatical/vue';
 
 const editor = init({
-  el: '#editor',
+  container: '#editor',
   displayConditions: {
     conditions: [
       {
@@ -64,7 +64,7 @@ interface DisplayConditionsConfig {
 }
 ```
 
-When `allowCustom` is `true`, users can write their own `before` and `after` strings directly in the editor instead of choosing from the predefined list.
+When `allowCustom` is `true`, users can write their own `before` and `after` strings directly in the editor instead of choosing from the predefined list. Defaults to `false`.
 
 ## Grouping conditions
 
@@ -72,76 +72,51 @@ Use the `group` property to organize conditions into logical sections. Groups ap
 
 ```ts
 displayConditions: {
+  allowCustom: true,
   conditions: [
     {
-      label: 'Premium Plan',
-      before: '{% if user.plan == "premium" %}',
+      label: 'VIP Partners',
+      before: '{% if customer.vip %}',
       after: '{% endif %}',
-      group: 'Plan',
+      group: 'Audience',
     },
     {
-      label: 'Free Plan',
-      before: '{% if user.plan == "free" %}',
+      label: 'Free Users',
+      before: '{% if customer.plan == "free" %}',
       after: '{% endif %}',
-      group: 'Plan',
+      group: 'Audience',
     },
     {
-      label: 'English',
-      before: '{% if user.locale == "en" %}',
+      label: 'Enterprise',
+      before: '{% if customer.plan == "enterprise" %}',
       after: '{% endif %}',
-      group: 'Locale',
+      group: 'Audience',
     },
     {
-      label: 'Spanish',
-      before: '{% if user.locale == "es" %}',
+      label: 'Beta Testers',
+      before: '{% if customer.beta %}',
       after: '{% endif %}',
-      group: 'Locale',
+      group: 'Audience',
+    },
+    {
+      label: 'Early Bird',
+      before: '{% if registration.early_bird %}',
+      after: '{% endif %}',
+      group: 'Registration',
+    },
+    {
+      label: 'Speakers',
+      before: '{% if role == "speaker" %}',
+      after: '{% endif %}',
+      group: 'Role',
     },
   ],
 }
 ```
 
-## Platform-specific examples
+<img src="/images/display-condition-grouping.png" alt="Grouped display conditions in the dropdown" style="max-width: 360px;" />
 
-### Liquid (Shopify, custom platforms)
-
-```ts
-{
-  label: 'Returning Customer',
-  before: '{% if customer.orders_count > 0 %}',
-  after: '{% endif %}',
-}
-```
-
-### Handlebars
-
-```ts
-{
-  label: 'Has First Name',
-  before: '{{#if first_name}}',
-  after: '{{/if}}',
-}
-```
-
-### Salesforce Marketing Cloud (AMPscript)
-
-```ts
-{
-  label: 'Subscribed to Newsletter',
-  before: '%%[IF @newsletter == "true" THEN]%%',
-  after: '%%[ENDIF]%%',
-}
-```
-
-### Django / Jinja2
-
-```ts
-{
-  label: 'Admin User',
-  before: '{% if user.is_admin %}',
-  after: '{% endif %}',
-}
-```
+The `before` and `after` fields accept any string, so you can use any templating syntax your platform supports — Liquid, Handlebars, AMPscript, Jinja2, or anything else.
 
 ## How conditions affect output
 
@@ -157,8 +132,18 @@ When a block has a display condition assigned, the renderer wraps the block's HT
 {% endif %}
 ```
 
-The conditional logic is evaluated by the sending platform at send time, not by Templatical. The editor and renderer treat the `before` and `after` strings as opaque -- they are inserted exactly as defined.
+The editor and renderer treat the `before` and `after` strings as opaque — they are inserted exactly as defined.
 
 ## Applying conditions in the editor
 
-Users select a display condition from the block settings panel. Each block can have at most one display condition. In the editor canvas, blocks with conditions show a visual indicator so template authors can see which content is conditional at a glance.
+Users select a display condition from the block settings panel. Each block can have at most one display condition. In the editor canvas, blocks with conditions show a filter icon so it's easy to see which content is conditional at a glance.
+
+<img src="/images/display-condition-icon.png" alt="Display condition icon on a block" style="max-width: 360px;" />
+
+Clicking the filter icon hides the block, simulating a falsy condition. This lets users preview how the template looks when certain conditional blocks are not visible. When any block is hidden this way, a restore button appears in the editor to bring all hidden blocks back.
+
+<img src="/images/display-condition-restore.png" alt="Restore hidden conditions button" style="max-width: 360px;" />
+
+::: tip Testing conditional content
+To verify conditions work correctly, send test emails with different recipient profiles through your email platform and confirm each variation renders as expected.
+:::

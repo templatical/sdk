@@ -115,6 +115,7 @@ export type {
   DisplayConditionsConfig,
   ExportResult,
   FontsConfig,
+  MediaResult,
   MergeTag,
   MergeTagsConfig,
   ThemeOverrides,

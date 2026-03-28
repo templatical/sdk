@@ -259,8 +259,8 @@ describe('getMergeTagLabel cross-syntax', () => {
 });
 
 describe('isMergeTagValue cross-syntax', () => {
-    it('works with django syntax (same as liquid)', () => {
-        expect(isMergeTagValue('{{name}}', SYNTAX_PRESETS.django)).toBe(true);
+    it('works with liquid syntax', () => {
+        expect(isMergeTagValue('{{name}}', SYNTAX_PRESETS.liquid)).toBe(true);
     });
 
     it('returns false for mailchimp syntax with liquid tag', () => {
@@ -278,7 +278,6 @@ describe('containsMergeTag with empty string', () => {
         expect(containsMergeTag('', SYNTAX_PRESETS.handlebars)).toBe(false);
         expect(containsMergeTag('', SYNTAX_PRESETS.mailchimp)).toBe(false);
         expect(containsMergeTag('', SYNTAX_PRESETS.ampscript)).toBe(false);
-        expect(containsMergeTag('', SYNTAX_PRESETS.django)).toBe(false);
     });
 
     it('returns false for null-ish input', () => {

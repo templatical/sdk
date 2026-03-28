@@ -3,6 +3,7 @@ import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockTextField } from "@templatical/types";
 import { inputClass, labelClass } from "../../../constants/styleConstants";
 import { Lock } from "lucide-vue-next";
+import MergeTagInput from "../../MergeTagInput.vue";
 
 defineProps<{
   field: CustomBlockTextField;
@@ -39,15 +40,11 @@ const { t } = useI18n();
       disabled
       :title="t.customBlocks.dataSource.readOnlyTooltip"
     />
-    <input
+    <MergeTagInput
       v-else
-      type="text"
-      :class="inputClass"
-      :value="modelValue"
+      :model-value="modelValue"
       :placeholder="field.placeholder"
-      @input="
-        emit('update:modelValue', ($event.target as HTMLInputElement).value)
-      "
+      @update:model-value="emit('update:modelValue', $event)"
     />
   </div>
 </template>

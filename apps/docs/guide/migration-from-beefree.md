@@ -20,36 +20,49 @@ npm install @templatical/import-beefree
 ## Usage
 
 ```ts
-import { convertFromBeefree } from '@templatical/import-beefree';
+import { convertBeeFreeTemplate } from '@templatical/import-beefree';
 
 // Load your BeeFree template JSON
 const beefreeJson = await fetch('/api/beefree-templates/123').then(r => r.json());
 
 // Convert to Templatical format
-const content = convertFromBeefree(beefreeJson);
+const { content, report } = convertBeeFreeTemplate(beefreeJson);
 
 // Use in the editor
 const editor = init({
   container: '#editor',
   content,
 });
+
+// Check the conversion report for any issues
+console.log(report);
 ```
+
+The function returns an `ImportResult` with:
+- `content` — the converted `TemplateContent` ready for the editor
+- `report` — a conversion report with the status of each block (`converted`, `approximated`, `html-fallback`, or `skipped`)
 
 ## Block Mapping
 
 BeeFree block types map to Templatical equivalents:
 
-| BeeFree Block | Templatical Block | Notes |
+| BeeFree Module | Templatical Block | Status |
 |---|---|---|
-| `mailup.bee.newsletter.modules.Paragraph` | `text` | HTML content preserved |
-| `mailup.bee.newsletter.modules.Image` | `image` | `src`, `alt`, `width`, link properties |
-| `mailup.bee.newsletter.modules.Button` | `button` | Style properties mapped |
-| `mailup.bee.newsletter.modules.Divider` | `divider` | Line style, color, thickness |
-| `mailup.bee.newsletter.modules.Spacer` | `spacer` | Height value |
-| `mailup.bee.newsletter.modules.Social` | `social` | Icon platforms and URLs |
-| `mailup.bee.newsletter.modules.Html` | `html` | Raw HTML content |
-| `mailup.bee.newsletter.modules.Menu` | `menu` | Menu items and styling |
-| `mailup.bee.newsletter.modules.Video` | `video` | URL and thumbnail |
+| Text | `text` | Converted |
+| Paragraph | `text` | Converted |
+| Heading | `text` | Converted (wrapped in heading tags) |
+| List | `text` | Converted |
+| Image | `image` | Converted |
+| Button | `button` | Converted |
+| Divider | `divider` | Converted |
+| Spacer | `spacer` | Converted |
+| Social | `social` | Converted (16 platforms mapped) |
+| Html | `html` | Converted |
+| Menu | `menu` | Approximated (styles may differ) |
+| Video | `video` | Converted |
+| Table | `table` | Converted |
+
+Unknown module types are converted to HTML blocks as a fallback.
 
 ## Column Layout Conversion
 
@@ -79,7 +92,6 @@ Global template settings are converted where possible:
 - **Conditional display** -- BeeFree dynamic content rules do not have a direct equivalent and are dropped during conversion.
 - **Icons** -- BeeFree custom icon uploads are not migrated. Standard social platform icons are mapped by name.
 - **Forms** -- BeeFree form blocks have no Templatical equivalent and are skipped.
-- **Countdown timers** -- Partial support. Basic countdown blocks are converted, but advanced styling options may not carry over.
 - **Advanced styling** -- Some granular BeeFree style properties (e.g., per-column padding overrides, content-area background images) may not be fully preserved.
 
 ## Verifying Converted Templates

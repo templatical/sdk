@@ -3,7 +3,7 @@ import type {
   CustomBlockDefinition,
   DisplayConditionsConfig,
   FontsConfig,
-  MergeTag,
+  MediaResult,
   MergeTagsConfig,
   SaveResult,
   Template,
@@ -12,7 +12,7 @@ import type {
 } from "@templatical/types";
 import type { EditorPlugin } from "@templatical/core";
 import Editor from "./Editor.vue";
-import { useFonts } from "./composables/useFonts";
+import { useFonts } from "./composables";
 
 // ---------------------------------------------------------------------------
 // OSS config + return types
@@ -26,8 +26,7 @@ export interface TemplaticalEditorConfig {
   onSave?: (content: TemplateContent) => void;
   onError?: (error: Error) => void;
 
-  onRequestMedia?: (callback: (url: string) => void) => void;
-  onRequestMergeTag?: () => Promise<MergeTag | null>;
+  onRequestMedia?: () => Promise<MediaResult | null>;
 
   mergeTags?: MergeTagsConfig;
   displayConditions?: DisplayConditionsConfig;
@@ -36,7 +35,6 @@ export interface TemplaticalEditorConfig {
 
   theme?: ThemeOverrides;
   locale?: string;
-  darkMode?: boolean | "auto";
 
   plugins?: EditorPlugin[];
 }
@@ -46,7 +44,6 @@ export interface TemplaticalEditor {
   setContent(content: TemplateContent): void;
   unmount(): void;
   toMjml?(): string;
-  toHtml?(): Promise<string>;
 }
 
 export interface TemplaticalCloudEditor extends TemplaticalEditor {
@@ -248,7 +245,6 @@ function attachRenderer(instance: TemplaticalEditor): void {
   import("@templatical/renderer")
     .then((renderer) => {
       instance.toMjml = () => renderer.renderToMjml(instance.getContent());
-      instance.toHtml = () => renderer.renderToHtml(instance.getContent());
     })
     .catch(() => {
       // @templatical/renderer not installed — export methods not available

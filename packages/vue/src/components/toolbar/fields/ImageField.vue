@@ -21,10 +21,11 @@ const config = inject<TemplaticalEditorConfig>("config");
 
 const canBrowseMedia = computed(() => !!config?.onRequestMedia);
 
-function browseMedia(): void {
-  config?.onRequestMedia?.((url: string) => {
-    emit("update:modelValue", url);
-  });
+async function browseMedia(): Promise<void> {
+  const result = await config?.onRequestMedia?.();
+  if (result) {
+    emit("update:modelValue", result.url);
+  }
 }
 </script>
 

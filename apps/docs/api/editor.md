@@ -45,15 +45,13 @@ unmount();
 | `onChange` | `(content: TemplateContent) => void` | No | Called when template content changes (debounced) |
 | `onSave` | `(content: TemplateContent) => void` | No | Called when the user triggers a save action |
 | `onError` | `(error: Error) => void` | No | Called when an error occurs |
-| `onRequestMedia` | `(callback: (url: string) => void) => void` | No | Called when user wants to pick an image. Call `callback` with the URL |
-| `onRequestMergeTag` | `() => Promise<MergeTag \| null>` | No | Called when user wants to insert a merge tag. Return the tag or `null` |
+| `onRequestMedia` | `() => Promise<MediaResult \| null>` | No | Called when user wants to pick an image. Return `{ url, alt? }` or `null` |
 | `mergeTags` | `MergeTagsConfig` | No | Merge tag configuration. See [Merge Tags](/guide/merge-tags) |
 | `displayConditions` | `DisplayConditionsConfig` | No | Display condition configuration. See [Display Conditions](/guide/display-conditions) |
 | `customBlocks` | `CustomBlockDefinition[]` | No | Custom block type definitions. See [Custom Blocks](/guide/custom-blocks) |
-| `fonts` | `FontsConfig` | No | Font configuration. See [Theming](/guide/theming) |
+| `fonts` | `FontsConfig` | No | Font configuration. See [Custom Fonts](/guide/fonts) |
 | `theme` | `ThemeOverrides` | No | Color token overrides. See [Theming](/guide/theming) |
 | `locale` | `string` | No | Locale code (e.g. `'en'`, `'de'`). Defaults to `'en'` |
-| `darkMode` | `boolean \| 'auto'` | No | Dark mode setting. `'auto'` follows system preference |
 | `plugins` | `EditorPlugin[]` | No | Editor plugins. See [Plugin System](#plugin-system) |
 
 ## TemplaticalEditor
@@ -91,17 +89,15 @@ Renders the current content to MJML markup. Only available when `@templatical/re
 const mjml = editor.toMjml?.();
 ```
 
-### `toHtml()`
-
-Renders the current content to HTML. Only available when `@templatical/renderer` is installed. Returns a `Promise` because MJML compilation is async.
-
-```ts
-const html = await editor.toHtml?.();
-```
+To compile MJML to HTML, use any MJML library (e.g., [mjml](https://www.npmjs.com/package/mjml) for Node.js).
 
 ## Plugin System
 
 Plugins extend the editor with custom toolbar actions, sidebar panels, and block context actions.
+
+::: warning Work in progress
+The plugin registration methods (`registerToolbarAction`, `registerSidebarPanel`, `registerBlockAction`) are defined in the type system and available in the plugin context, but their UI rendering is not yet implemented. You can use plugins today for reading state, reacting to changes, and calling mutation methods — but registered actions won't appear in the UI until a future release.
+:::
 
 ### EditorPlugin
 
@@ -163,7 +159,7 @@ For advanced use cases, you can use the composables from `@templatical/core` dir
 
 ### `useEditor(options)`
 
-Manages editor state, block selection, viewport, and content mutations.
+The core composable that manages the entire editor state: the block tree, template settings, block selection, viewport mode, and all mutation methods. This is what `init()` uses internally. Use it directly if you're building a completely custom editor UI on top of the Templatical state engine.
 
 ```ts
 import { useEditor } from '@templatical/core';
@@ -177,7 +173,7 @@ editor.setViewport('mobile');
 
 ### `useHistory(options)`
 
-Provides undo/redo functionality.
+Tracks content snapshots and provides undo/redo. Connects to the editor's content ref and captures state after each mutation. Configurable max history size prevents unbounded memory growth.
 
 ```ts
 import { useHistory } from '@templatical/core';
@@ -194,7 +190,7 @@ history.redo();
 
 ### `useBlockActions(options)`
 
-High-level block creation, duplication, and deletion.
+Higher-level convenience methods for common block operations: creating a block and inserting it in one step, duplicating an existing block (deep clone with new ID), and deleting with automatic selection cleanup.
 
 ```ts
 import { useBlockActions } from '@templatical/core';
@@ -213,14 +209,14 @@ actions.deleteBlock(blockId);
 
 ### `useAutoSave(options)`
 
-Debounced auto-save with pause/resume control.
+Watches the editor content and calls your save callback with configurable debounce. Includes pause/resume for temporarily disabling saves (e.g., during bulk operations) and a `flush()` method for immediate saves.
 
 ```ts
 import { useAutoSave } from '@templatical/core';
 
 const autoSave = useAutoSave({
   content: editor.content,
-  isDirty: editor.state.isDirty,
+  isDirty: () => editor.state.isDirty,
   onChange: (content) => saveToServer(content),
   debounce: 1000,
 });
@@ -228,4 +224,41 @@ const autoSave = useAutoSave({
 autoSave.flush();   // Save immediately
 autoSave.pause();   // Pause auto-save
 autoSave.resume();  // Resume
+```
+
+### `useConditionPreview()`
+
+Manages preview state for display conditions in the editor. Allows toggling individual blocks on/off to simulate how conditional content looks when different conditions are met.
+
+```ts
+import { useConditionPreview } from '@templatical/core';
+
+const preview = useConditionPreview(editor);
+
+preview.isHidden(blockId);         // Check if a block is hidden in preview
+preview.toggleBlock(blockId);      // Toggle a block's visibility
+preview.reset();                   // Reset all blocks to visible
+preview.hasHiddenBlocks;           // ComputedRef<boolean>
+```
+
+### `useDataSourceFetch(options)`
+
+Handles fetching external data for custom blocks with data sources. Manages loading state and error handling for the `onFetch` callback.
+
+```ts
+import { useDataSourceFetch } from '@templatical/core';
+
+const dataFetch = useDataSourceFetch({
+  definition: computed(() => customBlockDefinition),
+  block: computed(() => customBlock),
+  onUpdate: (fieldValues, fetched) => {
+    updateBlock(block.id, { fieldValues, dataSourceFetched: fetched });
+  },
+});
+
+dataFetch.isFetching;              // Ref<boolean>
+dataFetch.fetchError;              // Ref<boolean>
+dataFetch.hasDataSource;           // ComputedRef<boolean>
+dataFetch.needsFetch;              // ComputedRef<boolean>
+await dataFetch.fetch();           // Trigger the fetch
 ```
