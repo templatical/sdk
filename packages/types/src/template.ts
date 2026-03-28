@@ -1,4 +1,6 @@
 import type { Block } from "./blocks";
+import { DEFAULT_TEMPLATE_DEFAULTS } from "./defaults";
+import type { TemplateDefaults } from "./defaults";
 
 export interface TemplateSettings {
   width: number;
@@ -14,13 +16,14 @@ export interface TemplateContent {
 
 export function createDefaultTemplateContent(
   defaultFontFamily = "Arial, sans-serif",
+  templateDefaults?: TemplateDefaults,
 ): TemplateContent {
   return {
     blocks: [],
     settings: {
-      width: 600,
-      backgroundColor: "#ffffff",
+      ...DEFAULT_TEMPLATE_DEFAULTS,
       fontFamily: defaultFontFamily,
-    },
+      ...templateDefaults,
+    } as TemplateSettings,
   };
 }

@@ -1,4 +1,9 @@
-import type { EditorState, Template, ViewportSize } from "@templatical/types";
+import type {
+  EditorState,
+  Template,
+  TemplateDefaults,
+  ViewportSize,
+} from "@templatical/types";
 import { SdkError } from "@templatical/types";
 import { ApiClient } from "./api";
 import type { AuthManager } from "./auth";
@@ -13,6 +18,7 @@ import { computed, reactive, readonly, type DeepReadonly, type Ref } from "vue";
 export interface UseEditorOptions {
   authManager: AuthManager;
   defaultFontFamily?: string;
+  templateDefaults?: TemplateDefaults;
   onError?: (error: Error) => void;
   lockedBlocks?: Ref<Map<string, unknown>>;
 }
@@ -56,7 +62,10 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
 
   const state = reactive<EditorState>({
     template: null,
-    content: createDefaultTemplateContent(options.defaultFontFamily),
+    content: createDefaultTemplateContent(
+      options.defaultFontFamily,
+      options.templateDefaults,
+    ),
     selectedBlockId: null,
     viewport: "desktop",
     darkMode: false,

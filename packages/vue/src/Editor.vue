@@ -70,6 +70,7 @@ const fontsManager = useFonts(props.config.fonts);
 // --- Core editor state ---
 const editor = useEditor({
   content: props.config.content!,
+  templateDefaults: props.config.templateDefaults,
 });
 
 // --- History (undo/redo) ---
@@ -116,6 +117,7 @@ const blockActions = useBlockActions({
   removeBlock: editor.removeBlock,
   updateBlock: editor.updateBlock,
   selectBlock: editor.selectBlock,
+  blockDefaults: props.config.blockDefaults,
 });
 
 // --- Auto-save (debounced onChange for OSS mode) ---
@@ -249,6 +251,7 @@ provide("t", t);
 provide("translations", translations);
 provide("fontsManager", fontsManager);
 provide("themeStyles", themeStyles);
+provide("blockDefaults", props.config.blockDefaults);
 
 // Block registry — register custom blocks from config
 const registry = useBlockRegistry();

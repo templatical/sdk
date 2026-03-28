@@ -175,6 +175,9 @@ export interface TemplaticalCloudEditorConfig {
   commenting?: boolean;
   collaboration?: CollaborationConfig;
   mcp?: McpConfig;
+  blockDefaults?: import("@templatical/types").BlockDefaults;
+  templateDefaults?: import("@templatical/types").TemplateDefaults;
+
   modules?: boolean;
   autoSave?: boolean;
   autoSaveDebounce?: number;
@@ -307,6 +310,7 @@ const collaborationLockedBlocks = ref<Map<string, unknown>>(new Map());
 const editor = useEditor({
   authManager,
   defaultFontFamily: props.config.fonts?.defaultFont,
+  templateDefaults: props.config.templateDefaults,
   onError: props.config.onError,
   lockedBlocks: collaborationLockedBlocks,
 });
@@ -461,6 +465,7 @@ const blockActions = useBlockActions({
   removeBlock: editor.removeBlock,
   updateBlock: editor.updateBlock,
   selectBlock: editor.selectBlock,
+  blockDefaults: props.config.blockDefaults,
 });
 
 // ---------------------------------------------------------------------------
@@ -706,6 +711,7 @@ provide("dragDrop", dragDrop);
 provide("conditionPreview", conditionPreview);
 provide("fontsManager", props.fontsManager);
 provide("themeStyles", themeStyles);
+provide("blockDefaults", props.config.blockDefaults);
 provide("blockRegistry", registry);
 provide("customBlockDefinitions", props.config.customBlocks ?? []);
 

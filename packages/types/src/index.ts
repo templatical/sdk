@@ -51,6 +51,26 @@ export {
 export type { TemplateContent, TemplateSettings } from "./template";
 export { createDefaultTemplateContent } from "./template";
 
+// Defaults
+export type { BlockDefaults, TemplateDefaults } from "./defaults";
+export {
+  deepMergeDefaults,
+  DEFAULT_BLOCK_DEFAULTS,
+  DEFAULT_TEMPLATE_DEFAULTS,
+  TEXT_BLOCK_DEFAULTS,
+  IMAGE_BLOCK_DEFAULTS,
+  BUTTON_BLOCK_DEFAULTS,
+  DIVIDER_BLOCK_DEFAULTS,
+  SECTION_BLOCK_DEFAULTS,
+  VIDEO_BLOCK_DEFAULTS,
+  SOCIAL_ICONS_BLOCK_DEFAULTS,
+  SPACER_BLOCK_DEFAULTS,
+  HTML_BLOCK_DEFAULTS,
+  MENU_BLOCK_DEFAULTS,
+  TABLE_BLOCK_DEFAULTS,
+  COUNTDOWN_BLOCK_DEFAULTS,
+} from "./defaults";
+
 // Custom blocks
 export type {
   CustomBlockBooleanField,

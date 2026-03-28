@@ -242,12 +242,14 @@ content.settings.fontFamily = 'Helvetica, Arial, sans-serif';
 content.settings.preheaderText = 'Your weekly digest is here';
 ```
 
-| Setting | Type | Default | Description |
-|---|---|---|---|
-| `width` | `number` | `600` | Email width in pixels |
-| `backgroundColor` | `string` | `'#ffffff'` | Outer background color |
-| `fontFamily` | `string` | `'Arial, sans-serif'` | Default font stack |
-| `preheaderText` | `string` | `undefined` | Preview text shown in inbox list |
+| Setting | Type | Description |
+|---|---|---|
+| `width` | `number` | Email width in pixels |
+| `backgroundColor` | `string` | Outer background color |
+| `fontFamily` | `string` | Default font stack |
+| `preheaderText` | `string` | Preview text shown in inbox list |
+
+For default values and how to customize them, see [Block & Template Defaults](/guide/defaults).
 
 ## Loading saved content
 
