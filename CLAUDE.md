@@ -256,12 +256,18 @@ Versioning and publishing use `@changesets/cli`. CI (`.github/workflows/publish.
 
 GitHub Actions (`.github/workflows/ci.yml`) on push to main + PRs:
 
-1. **Lint** — `bun run format --check` (Prettier) + `bun run lint` (ESLint)
-2. **Typecheck** — `bun run typecheck` (tsc/vue-tsc --noEmit per package)
-3. **Test** — `bun run test` (Vitest across all 6 packages)
-4. **Build** — `bun run build` (tsup/vite per package in dependency order)
+```
+lint ──────┐
+typecheck ─┤──→ test (build + test)
+           └──→ build
+```
 
-All four gates must pass. Run them locally before pushing to catch issues early.
+1. **Lint** (parallel) — `bun run format --check` (Prettier) + `bun run lint` (ESLint)
+2. **Typecheck** (parallel) — `bun run typecheck` (tsc/vue-tsc --noEmit per package, no build needed)
+3. **Test** (after lint + typecheck) — `bun run build` then `bun run test` (tests import from dist)
+4. **Build** (after lint + typecheck) — `bun run build` (tsup/vite per package in dependency order)
+
+All four gates must pass. Lint and typecheck run in parallel first; test and build only run if both pass. Run checks locally before pushing: `bun run format --check && bun run lint && bun run typecheck && bun run build && bun run test`.
 
 ## Design Context
 
