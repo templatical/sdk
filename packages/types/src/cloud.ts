@@ -3,7 +3,6 @@ import type {
   CustomBlockDefinition,
   DisplayConditionsConfig,
   FontsConfig,
-  MergeTag,
   MergeTagsConfig,
   SyntaxPreset,
   SyntaxPresetName,

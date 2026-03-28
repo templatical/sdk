@@ -56,7 +56,6 @@ function onTextInput(e: Event) {
   internalColor.value = value;
   emit("update:modelValue", value);
 }
-
 </script>
 
 <template>
@@ -72,9 +71,7 @@ function onTextInput(e: Event) {
       :disabled="disabled"
       :class="[
         'tpl:shrink-0 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-0.5 tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]',
-        disabled
-          ? 'tpl:cursor-not-allowed'
-          : 'tpl:cursor-pointer',
+        disabled ? 'tpl:cursor-not-allowed' : 'tpl:cursor-pointer',
         open
           ? 'tpl:border-[var(--tpl-primary)] tpl:shadow-[var(--tpl-ring)]'
           : !disabled && 'hover:tpl:border-[var(--tpl-text-dim)]',

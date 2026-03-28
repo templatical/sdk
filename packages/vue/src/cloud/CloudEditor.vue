@@ -9,7 +9,6 @@ import type {
   DisplayConditionsConfig,
   FontsConfig,
   McpConfig,
-  MergeTag,
   MergeTagsConfig,
   SaveResult,
   Template,
@@ -1246,7 +1245,6 @@ async function saveTemplate(): Promise<SaveResult> {
 }
 
 // ---------------------------------------------------------------------------
-
 
 // ---------------------------------------------------------------------------
 // Lifecycle

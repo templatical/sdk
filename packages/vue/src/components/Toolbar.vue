@@ -1078,9 +1078,7 @@ function removeTableColumn(colIndex: number): void {
                     (block as MenuBlock).linkColor ||
                     (block as MenuBlock).color
                   "
-                  @update:model-value="
-                    updateMenuItem(item.id, 'color', $event)
-                  "
+                  @update:model-value="updateMenuItem(item.id, 'color', $event)"
                 />
               </div>
             </div>
@@ -1301,9 +1299,13 @@ function removeTableColumn(colIndex: number): void {
         <div v-if="(block as TableBlock).hasHeaderRow" class="tpl:mb-3.5">
           <label :class="labelClass">{{ t.table.headerBackgroundColor }}</label>
           <ColorPicker
-            :model-value="(block as TableBlock).headerBackgroundColor || '#f2f2f2'"
+            :model-value="
+              (block as TableBlock).headerBackgroundColor || '#f2f2f2'
+            "
             :placeholder="t.table.noHeaderBg"
-            @update:model-value="updateField('headerBackgroundColor', $event || null)"
+            @update:model-value="
+              updateField('headerBackgroundColor', $event || null)
+            "
           />
         </div>
         <div class="tpl:mb-3.5">

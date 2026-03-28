@@ -2085,7 +2085,7 @@ export const templates: TemplateOption[] = [
         label: "Custom Block with Read-Only Fields",
         icon: "custom-block",
         description:
-          'The Shipping Tracker card shows carrier info, tracking number, estimated delivery, and a progress bar that adapts to the shipping status.\nTo try it: click the tracker and check the sidebar. The carrier, tracking number, estimated delivery, and tracking URL are all read-only \u2014 grayed out and non-editable because the backend populates them at send time. But the Status dropdown and Accent Color are editable, showing how developers can mix locked and editable fields on the same block.\nTry changing the Status dropdown to see the progress bar and status badge update instantly.',
+          "The Shipping Tracker card shows carrier info, tracking number, estimated delivery, and a progress bar that adapts to the shipping status.\nTo try it: click the tracker and check the sidebar. The carrier, tracking number, estimated delivery, and tracking URL are all read-only \u2014 grayed out and non-editable because the backend populates them at send time. But the Status dropdown and Accent Color are editable, showing how developers can mix locked and editable fields on the same block.\nTry changing the Status dropdown to see the progress bar and status badge update instantly.",
       },
       {
         label: "Logic Merge Tags (If/Else)",
@@ -2097,7 +2097,7 @@ export const templates: TemplateOption[] = [
         label: "Merge Tags (Transactional)",
         icon: "merge-tag",
         description:
-          'A fully dynamic transactional email with multiple merge tags: {{order_id}} in the header, {{first_name}} and {{last_name}} in the shipping address, and {{order_total}} for the amount.\nTo try it: click any text with a colored chip to see the merge tag. These are configured in the mergeTags option passed to init().',
+          "A fully dynamic transactional email with multiple merge tags: {{order_id}} in the header, {{first_name}} and {{last_name}} in the shipping address, and {{order_total}} for the amount.\nTo try it: click any text with a colored chip to see the merge tag. These are configured in the mergeTags option passed to init().",
       },
       {
         label: "Display Condition",
