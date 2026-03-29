@@ -1,6 +1,7 @@
 {
   "name": "@templatical/import-beefree",
   "version": "0.0.1",
+  "publishConfig": { "access": "public" },
   "description": "Convert BeeFree email templates to Templatical format",
   "license": "MIT",
   "type": "module",

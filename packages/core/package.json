@@ -1,6 +1,7 @@
 {
   "name": "@templatical/core",
   "version": "0.0.1",
+  "publishConfig": { "access": "public" },
   "description": "Framework-agnostic editor logic for Templatical email editor",
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",

@@ -1,6 +1,7 @@
 {
   "name": "@templatical/renderer",
   "version": "0.0.1",
+  "publishConfig": { "access": "public" },
   "description": "Render Templatical email templates to MJML",
   "license": "MIT",
   "type": "module",

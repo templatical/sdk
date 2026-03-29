@@ -1,6 +1,7 @@
 {
   "name": "@templatical/types",
   "version": "0.0.1",
+  "publishConfig": { "access": "public" },
   "description": "Shared TypeScript types, block factory functions, and event emitter for Templatical email editor",
   "license": "MIT",
   "type": "module",
