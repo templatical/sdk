@@ -1,240 +1,252 @@
-import { defineConfig } from 'vitepress';
+import { defineConfig } from "vitepress";
 
 export default defineConfig({
-    title: 'Templatical',
-    description: 'Open-source drag-and-drop email editor for modern apps',
-    cleanUrls: true,
-    head: [
-        [
-            "link",
-            {
-                rel: "icon",
-                type: "image/svg+xml",
-                href: "https://templatical.com/logo-small.svg",
-            },
-        ],
-        ["meta", { name: "author", content: "Templatical" }],
-        [
-            "meta",
-            {
-                property: "og:title",
-                content: "Templatical — Open-Source Email Editor",
-            },
-        ],
-        [
-            "meta",
-            {
-                property: "og:description",
-                content:
-                    "Production-ready drag-and-drop email editor. 13 block types, merge tags, custom blocks, dark mode, and client-side export.",
-            },
-        ],
-        ["meta", { property: "og:type", content: "website" }],
-        ["meta", { property: "og:url", content: "https://docs.templatical.com" }],
-        ["meta", { property: "og:image", content: "/og-image.png" }],
-        ["meta", { name: "twitter:card", content: "summary_large_image" }],
-        [
-            "meta",
-            {
-                name: "twitter:title",
-                content: "Templatical — Open-Source Email Editor",
-            },
-        ],
-        [
-            "meta",
-            {
-                name: "twitter:description",
-                content:
-                    "Production-ready drag-and-drop email editor. 13 block types, merge tags, custom blocks, dark mode, and client-side export.",
-            },
-        ],
-        ["meta", { name: "twitter:image", content: "/og-image.png" }],
-        ["link", { rel: "canonical", href: "https://docs.templatical.com" }],
+  title: "Templatical",
+  description: "Open-source drag-and-drop email editor for modern apps",
+  cleanUrls: true,
+  head: [
+    [
+      "link",
+      {
+        rel: "icon",
+        type: "image/svg+xml",
+        href: "https://templatical.com/logo-small.svg",
+      },
     ],
-    themeConfig: {
-        logo: 'https://templatical.com/logo.svg',
-        siteTitle: 'Templatical',
+    ["meta", { name: "author", content: "Templatical" }],
+    [
+      "meta",
+      {
+        property: "og:title",
+        content: "Templatical — Open-Source Email Editor",
+      },
+    ],
+    [
+      "meta",
+      {
+        property: "og:description",
+        content:
+          "Production-ready drag-and-drop email editor. 13 block types, merge tags, custom blocks, dark mode, and client-side export.",
+      },
+    ],
+    ["meta", { property: "og:type", content: "website" }],
+    ["meta", { property: "og:url", content: "https://docs.templatical.com" }],
+    [
+      "meta",
+      {
+        property: "og:image",
+        content: "https://docs.templatical.com/og-image.png",
+      },
+    ],
+    ["meta", { name: "twitter:card", content: "summary_large_image" }],
+    [
+      "meta",
+      {
+        name: "twitter:title",
+        content: "Templatical — Open-Source Email Editor",
+      },
+    ],
+    [
+      "meta",
+      {
+        name: "twitter:description",
+        content:
+          "Production-ready drag-and-drop email editor. 13 block types, merge tags, custom blocks, dark mode, and client-side export.",
+      },
+    ],
+    [
+      "meta",
+      {
+        name: "twitter:image",
+        content: "https://docs.templatical.com/og-image.png",
+      },
+    ],
+    ["link", { rel: "canonical", href: "https://docs.templatical.com" }],
+  ],
+  themeConfig: {
+    logo: "https://templatical.com/logo.svg",
+    siteTitle: "Templatical",
 
-        nav: [
-            { text: 'Guide', link: '/getting-started/installation' },
-            { text: 'API', link: '/api/editor' },
-            { text: 'Cloud', link: '/cloud/' },
-            { text: 'Playground', link: 'https://play.templatical.com' },
-        ],
+    nav: [
+      { text: "Guide", link: "/getting-started/installation" },
+      { text: "API", link: "/api/editor" },
+      { text: "Cloud", link: "/cloud/" },
+      { text: "Playground", link: "https://play.templatical.com" },
+    ],
 
-        sidebar: {
-            '/cloud/': [
-                {
-                    text: 'Cloud',
-                    items: [
-                        { text: 'Overview', link: '/cloud/' },
-                        {
-                            text: 'Getting Started',
-                            link: '/cloud/getting-started',
-                        },
-                        {
-                            text: 'Authentication',
-                            link: '/cloud/authentication',
-                        },
-                    ],
-                },
-                {
-                    text: 'Features',
-                    items: [
-                        { text: 'AI Assistant', link: '/cloud/ai' },
-                        {
-                            text: 'Collaboration',
-                            link: '/cloud/collaboration',
-                        },
-                        { text: 'Comments', link: '/cloud/comments' },
-                        {
-                            text: 'Media Library',
-                            link: '/cloud/media-library',
-                        },
-                        {
-                            text: 'Template Scoring',
-                            link: '/cloud/template-scoring',
-                        },
-                        {
-                            text: 'Saved Modules',
-                            link: '/cloud/saved-modules',
-                        },
-                        {
-                            text: 'Test Emails',
-                            link: '/cloud/test-emails',
-                        },
-                        { text: 'Snapshots', link: '/cloud/snapshots' },
-                    ],
-                },
-                {
-                    text: 'Advanced',
-                    items: [
-                        {
-                            text: 'MCP Integration',
-                            link: '/cloud/mcp',
-                        },
-                        {
-                            text: 'Multi-Tenant',
-                            link: '/cloud/multi-tenant',
-                        },
-                        {
-                            text: 'Headless API',
-                            link: '/cloud/headless-api',
-                        },
-                    ],
-                },
-            ],
-            '/': [
-                {
-                    text: 'Getting Started',
-                    items: [
-                        {
-                            text: 'Installation',
-                            link: '/getting-started/installation',
-                        },
-                        {
-                            text: 'Quick Start',
-                            link: '/getting-started/quick-start',
-                        },
-                        {
-                            text: 'How Rendering Works',
-                            link: '/getting-started/how-rendering-works',
-                        },
-                    ],
-                },
-                {
-                    text: 'Guide',
-                    items: [
-                        { text: 'Merge Tags', link: '/guide/merge-tags' },
-                        {
-                            text: 'Display Conditions',
-                            link: '/guide/display-conditions',
-                        },
-                        {
-                            text: 'Custom Blocks',
-                            link: '/guide/custom-blocks',
-                        },
-                        { text: 'Images', link: '/guide/images' },
-                    ],
-                },
-                {
-                    text: 'Customization',
-                    items: [
-                        { text: 'Theming', link: '/guide/theming' },
-                        {
-                            text: 'Block & Template Defaults',
-                            link: '/guide/defaults',
-                        },
-                        {
-                            text: 'Custom Fonts',
-                            link: '/guide/fonts',
-                        },
-                        {
-                            text: 'Internationalization',
-                            link: '/guide/i18n',
-                        },
-                    ],
-                },
-                {
-                    text: 'Reference',
-                    items: [
-                        { text: 'Block Types', link: '/guide/blocks' },
-                        {
-                            text: 'Sections & Columns',
-                            link: '/guide/sections-and-columns',
-                        },
-                        { text: 'Styling', link: '/guide/styling' },
-                        {
-                            text: 'Programmatic Templates',
-                            link: '/guide/programmatic-templates',
-                        },
-                    ],
-                },
-                {
-                    text: 'API Reference',
-                    items: [
-                        { text: 'Editor', link: '/api/editor' },
-                        { text: 'Types', link: '/api/types' },
-                        {
-                            text: 'Renderer',
-                            link: '/api/renderer-typescript',
-                        },
-                        { text: 'Events', link: '/api/events' },
-                    ],
-                },
-                {
-                    text: 'Migration',
-                    items: [
-                        {
-                            text: 'From BeeFree',
-                            link: '/guide/migration-from-beefree',
-                        },
-                    ],
-                },
-            ],
-        },
-
-        socialLinks: [
+    sidebar: {
+      "/cloud/": [
+        {
+          text: "Cloud",
+          items: [
+            { text: "Overview", link: "/cloud/" },
             {
-                icon: 'github',
-                link: 'https://github.com/templatical/editor',
+              text: "Getting Started",
+              link: "/cloud/getting-started",
             },
-        ],
-
-        editLink: {
-            pattern:
-                'https://github.com/templatical/editor/edit/main/apps/docs/:path',
-            text: 'Edit this page on GitHub',
+            {
+              text: "Authentication",
+              link: "/cloud/authentication",
+            },
+          ],
         },
-
-        search: {
-            provider: 'local',
+        {
+          text: "Features",
+          items: [
+            { text: "AI Assistant", link: "/cloud/ai" },
+            {
+              text: "Collaboration",
+              link: "/cloud/collaboration",
+            },
+            { text: "Comments", link: "/cloud/comments" },
+            {
+              text: "Media Library",
+              link: "/cloud/media-library",
+            },
+            {
+              text: "Template Scoring",
+              link: "/cloud/template-scoring",
+            },
+            {
+              text: "Saved Modules",
+              link: "/cloud/saved-modules",
+            },
+            {
+              text: "Test Emails",
+              link: "/cloud/test-emails",
+            },
+            { text: "Snapshots", link: "/cloud/snapshots" },
+          ],
         },
-
-        footer: {
-            message:
-                'Released under the <a href="https://github.com/templatical/editor/blob/main/LICENSE">FSL-1.1-MIT License</a>.',
-            copyright: 'Copyright © 2024-present Templatical',
+        {
+          text: "Advanced",
+          items: [
+            {
+              text: "MCP Integration",
+              link: "/cloud/mcp",
+            },
+            {
+              text: "Multi-Tenant",
+              link: "/cloud/multi-tenant",
+            },
+            {
+              text: "Headless API",
+              link: "/cloud/headless-api",
+            },
+          ],
         },
+      ],
+      "/": [
+        {
+          text: "Getting Started",
+          items: [
+            {
+              text: "Installation",
+              link: "/getting-started/installation",
+            },
+            {
+              text: "Quick Start",
+              link: "/getting-started/quick-start",
+            },
+            {
+              text: "How Rendering Works",
+              link: "/getting-started/how-rendering-works",
+            },
+          ],
+        },
+        {
+          text: "Guide",
+          items: [
+            { text: "Merge Tags", link: "/guide/merge-tags" },
+            {
+              text: "Display Conditions",
+              link: "/guide/display-conditions",
+            },
+            {
+              text: "Custom Blocks",
+              link: "/guide/custom-blocks",
+            },
+            { text: "Images", link: "/guide/images" },
+          ],
+        },
+        {
+          text: "Customization",
+          items: [
+            { text: "Theming", link: "/guide/theming" },
+            {
+              text: "Block & Template Defaults",
+              link: "/guide/defaults",
+            },
+            {
+              text: "Custom Fonts",
+              link: "/guide/fonts",
+            },
+            {
+              text: "Internationalization",
+              link: "/guide/i18n",
+            },
+          ],
+        },
+        {
+          text: "Reference",
+          items: [
+            { text: "Block Types", link: "/guide/blocks" },
+            {
+              text: "Sections & Columns",
+              link: "/guide/sections-and-columns",
+            },
+            { text: "Styling", link: "/guide/styling" },
+            {
+              text: "Programmatic Templates",
+              link: "/guide/programmatic-templates",
+            },
+          ],
+        },
+        {
+          text: "API Reference",
+          items: [
+            { text: "Editor", link: "/api/editor" },
+            { text: "Types", link: "/api/types" },
+            {
+              text: "Renderer",
+              link: "/api/renderer-typescript",
+            },
+            { text: "Events", link: "/api/events" },
+          ],
+        },
+        {
+          text: "Migration",
+          items: [
+            {
+              text: "From BeeFree",
+              link: "/guide/migration-from-beefree",
+            },
+          ],
+        },
+      ],
     },
+
+    socialLinks: [
+      {
+        icon: "github",
+        link: "https://github.com/templatical/editor",
+      },
+    ],
+
+    editLink: {
+      pattern:
+        "https://github.com/templatical/editor/edit/main/apps/docs/:path",
+      text: "Edit this page on GitHub",
+    },
+
+    search: {
+      provider: "local",
+    },
+
+    footer: {
+      message:
+        'Released under the <a href="https://github.com/templatical/editor/blob/main/LICENSE">FSL-1.1-MIT License</a>.',
+      copyright: "Copyright © 2024-present Templatical",
+    },
+  },
 });
