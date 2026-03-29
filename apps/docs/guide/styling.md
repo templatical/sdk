@@ -145,7 +145,7 @@ Beyond individual block styles, the template itself has global settings that aff
 These are configured through the editor's `init()` config or by modifying the template JSON directly:
 
 ```ts
-import { init } from '@templatical/vue';
+import { init } from '@templatical/editor';
 
 const editor = init({
   container: '#editor',

@@ -11,8 +11,8 @@ export default defineConfig({
         alias: {
             '@': resolve(__dirname, 'src'),
             // Resolve workspace packages to source for dev — avoids needing pre-built dist
-            '@templatical/vue/src': resolve(packagesDir, 'vue/src'),
-            '@templatical/vue': resolve(packagesDir, 'vue/src/index.ts'),
+            '@templatical/editor/src': resolve(packagesDir, 'editor/src'),
+            '@templatical/editor': resolve(packagesDir, 'editor/src/index.ts'),
             '@templatical/core/cloud': resolve(
                 packagesDir,
                 'core/src/cloud/index.ts',

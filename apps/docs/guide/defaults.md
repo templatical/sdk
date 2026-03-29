@@ -12,7 +12,7 @@ Block properties (colors, font sizes, padding, placeholder text, etc.) are hardc
 Pass a `blockDefaults` object to `init()`. Each key maps to a block type and accepts a partial override of that block's properties:
 
 ```ts
-import { init } from '@templatical/vue';
+import { init } from '@templatical/editor';
 
 const editor = init({
   container: '#editor',
@@ -75,7 +75,7 @@ Custom blocks are not affected by `blockDefaults`. They use their own `default` 
 ### TypeScript Type
 
 ```ts
-import type { BlockDefaults } from '@templatical/vue';
+import type { BlockDefaults } from '@templatical/editor';
 // or
 import type { BlockDefaults } from '@templatical/types';
 ```
@@ -117,7 +117,7 @@ In other words, `templateDefaults` are fallbacks for missing content, not overri
 ### TypeScript Type
 
 ```ts
-import type { TemplateDefaults } from '@templatical/vue';
+import type { TemplateDefaults } from '@templatical/editor';
 // or
 import type { TemplateDefaults } from '@templatical/types';
 ```

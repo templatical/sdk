@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
 import { useLocalStorage } from "@vueuse/core";
-import { initCloud } from "@templatical/vue";
+import { initCloud } from "@templatical/editor";
 import type {
   TemplaticalCloudEditor,
   TemplaticalCloudEditorConfig,
-} from "@templatical/vue";
+} from "@templatical/editor";
 import type { MergeTag } from "@templatical/types";
 import { customBlockDefinitions } from "@/templates";
 import LogoIcon from "@/LogoIcon.vue";

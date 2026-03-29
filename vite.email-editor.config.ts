@@ -11,7 +11,7 @@ export default defineConfig({
     },
     build: {
         lib: {
-            entry: resolve(__dirname, 'packages/vue/src/index.ts'),
+            entry: resolve(__dirname, 'packages/editor/src/index.ts'),
             name: 'TemplaticalEmailEditor',
             fileName: (format) => `email-editor.${format}.js`,
             cssFileName: 'email-editor',

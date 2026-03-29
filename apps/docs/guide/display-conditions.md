@@ -12,7 +12,7 @@ Display conditions allow users to change block visibility based on conditions. W
 Define available conditions through the editor config:
 
 ```ts
-import { init } from '@templatical/vue';
+import { init } from '@templatical/editor';
 
 const editor = init({
   container: '#editor',

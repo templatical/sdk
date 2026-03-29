@@ -12,7 +12,7 @@ Templatical ships with a polished default theme. You can override any color toke
 Pass a `ThemeOverrides` object to `init()` to customize the editor's color palette:
 
 ```ts
-import { init } from '@templatical/vue';
+import { init } from '@templatical/editor';
 
 const editor = init({
   container: '#editor',

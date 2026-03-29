@@ -9,8 +9,8 @@ import {
   onClickOutside,
 } from "@vueuse/core";
 import { useFocusTrap } from "@vueuse/integrations/useFocusTrap";
-import { init, unmount } from "@templatical/vue";
-import type { TemplaticalEditor } from "@templatical/vue";
+import { init, unmount } from "@templatical/editor";
+import type { TemplaticalEditor } from "@templatical/editor";
 import type {
   TemplateContent,
   MergeTag,

@@ -18,7 +18,7 @@
     "@templatical/import-beefree": "workspace:*",
     "@templatical/renderer": "workspace:*",
     "@templatical/types": "workspace:*",
-    "@templatical/vue": "workspace:*",
+    "@templatical/editor": "workspace:*",
     "@vueuse/core": "^14.0.0",
     "@vueuse/integrations": "^14.2.1",
     "codemirror": "^6.0.2",

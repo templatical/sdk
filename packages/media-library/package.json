@@ -1,6 +1,6 @@
 {
   "name": "@templatical/media-library",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Media library management for Templatical email editor",
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",

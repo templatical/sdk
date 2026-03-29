@@ -14,32 +14,32 @@ description: Install the Templatical email editor via npm or CDN.
 
 ::: code-group
 ```bash [npm]
-npm install @templatical/vue @templatical/renderer
+npm install @templatical/editor @templatical/renderer
 ```
 ```bash [pnpm]
-pnpm add @templatical/vue @templatical/renderer
+pnpm add @templatical/editor @templatical/renderer
 ```
 ```bash [yarn]
-yarn add @templatical/vue @templatical/renderer
+yarn add @templatical/editor @templatical/renderer
 ```
 ```bash [bun]
-bun add @templatical/vue @templatical/renderer
+bun add @templatical/editor @templatical/renderer
 ```
 :::
 
-`@templatical/vue` is the visual editor. `@templatical/renderer` converts templates to MJML for email sending.
+`@templatical/editor` is the visual editor. `@templatical/renderer` converts templates to MJML for email sending.
 
 ## Package overview
 
 | Package | Description | Required |
 |---|---|---|
-| `@templatical/vue` | Visual drag-and-drop editor and `init()` entry point | Yes |
+| `@templatical/editor` | Visual drag-and-drop editor and `init()` entry point | Yes |
 | `@templatical/types` | Shared TypeScript types, block factory functions, type guards | Auto-installed |
 | `@templatical/core` | Framework-agnostic editor logic (state, history, plugins) | Auto-installed |
 | `@templatical/renderer` | Renders templates to MJML | Recommended |
 | `@templatical/import-beefree` | Converts BeeFree JSON templates to Templatical format | Optional |
 
-`@templatical/types` and `@templatical/core` are direct dependencies of `@templatical/vue` and are installed automatically.
+`@templatical/types` and `@templatical/core` are direct dependencies of `@templatical/editor` and are installed automatically.
 
 ## Framework integration
 
@@ -47,8 +47,8 @@ Templatical mounts into any DOM element. It creates its own isolated application
 
 ::: code-group
 ```ts [Vanilla JS]
-import { init, unmount } from '@templatical/vue';
-import '@templatical/vue/style.css';
+import { init, unmount } from '@templatical/editor';
+import '@templatical/editor/style.css';
 
 const editor = init({
   container: '#editor',
@@ -62,9 +62,9 @@ editor.unmount();
 ```
 ```tsx [React]
 import { useRef, useEffect } from 'react';
-import { init } from '@templatical/vue';
-import '@templatical/vue/style.css';
-import type { TemplaticalEditor } from '@templatical/vue';
+import { init } from '@templatical/editor';
+import '@templatical/editor/style.css';
+import type { TemplaticalEditor } from '@templatical/editor';
 
 export function EmailEditor() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,9 +91,9 @@ export function EmailEditor() {
 ```vue [Vue]
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import { init } from '@templatical/vue';
-import '@templatical/vue/style.css';
-import type { TemplaticalEditor } from '@templatical/vue';
+import { init } from '@templatical/editor';
+import '@templatical/editor/style.css';
+import type { TemplaticalEditor } from '@templatical/editor';
 
 const container = ref<HTMLElement>();
 let editor: TemplaticalEditor | null = null;
@@ -121,9 +121,9 @@ onUnmounted(() => {
 ```svelte [Svelte]
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { init } from '@templatical/vue';
-  import '@templatical/vue/style.css';
-  import type { TemplaticalEditor } from '@templatical/vue';
+  import { init } from '@templatical/editor';
+  import '@templatical/editor/style.css';
+  import type { TemplaticalEditor } from '@templatical/editor';
 
   let containerEl: HTMLElement;
   let editor: TemplaticalEditor | null = null;
@@ -146,9 +146,9 @@ onUnmounted(() => {
 ```
 ```ts [Angular]
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { init } from '@templatical/vue';
-import '@templatical/vue/style.css';
-import type { TemplaticalEditor } from '@templatical/vue';
+import { init } from '@templatical/editor';
+import '@templatical/editor/style.css';
+import type { TemplaticalEditor } from '@templatical/editor';
 
 @Component({
   selector: 'app-email-editor',
@@ -186,8 +186,8 @@ Always call `unmount()` when removing the editor from the page. This cleans up e
 All packages ship with full TypeScript type definitions. Configuration options, callback payloads, block types, and instance methods are fully typed:
 
 ```ts
-import { init, unmount } from '@templatical/vue';
-import type { TemplaticalEditor, TemplaticalEditorConfig } from '@templatical/vue';
+import { init, unmount } from '@templatical/editor';
+import type { TemplaticalEditor, TemplaticalEditorConfig } from '@templatical/editor';
 import type { TemplateContent, Block, ThemeOverrides, FontsConfig } from '@templatical/types';
 ```
 
@@ -196,8 +196,8 @@ import type { TemplateContent, Block, ThemeOverrides, FontsConfig } from '@templ
 If you prefer not to use a package manager, load the editor directly via script tags:
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@templatical/vue@0.1.0/dist/email-editor/email-editor.css" />
-<script src="https://unpkg.com/@templatical/vue@0.1.0/dist/email-editor/email-editor.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@templatical/editor@0.1.0/dist/email-editor/email-editor.css" />
+<script src="https://unpkg.com/@templatical/editor@0.1.0/dist/email-editor/email-editor.js"></script>
 
 <div id="editor" style="height: 100vh;"></div>
 

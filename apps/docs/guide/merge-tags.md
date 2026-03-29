@@ -20,7 +20,7 @@ Hovering over a tag reveals the raw value behind the label.
 The `syntax` property is optional and defaults to `'liquid'`.
 
 ```ts
-import { init } from '@templatical/vue';
+import { init } from '@templatical/editor';
 
 const editor = init({
   container: '#editor',

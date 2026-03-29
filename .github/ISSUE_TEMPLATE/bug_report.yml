@@ -28,7 +28,7 @@ body:
     attributes:
       label: Package
       description: Which package is affected?
-      placeholder: "@templatical/vue"
+      placeholder: "@templatical/editor"
     validations:
       required: true
   - type: input

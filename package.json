@@ -6,7 +6,7 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "bun run --filter '@templatical/media-library' build && bun run --filter '@templatical/types' build && bun run --filter '@templatical/core' --filter '@templatical/renderer' --filter '@templatical/import-beefree' build && bun run --filter '@templatical/vue' build",
+    "build": "bun run --filter '@templatical/media-library' build && bun run --filter '@templatical/types' build && bun run --filter '@templatical/core' --filter '@templatical/renderer' --filter '@templatical/import-beefree' build && bun run --filter '@templatical/editor' build",
     "build:email-editor": "vite build --config vite.email-editor.config.ts",
     "build:media-library": "vite build --config vite.media-library.config.ts",
     "build:all-sdk": "bun run build:email-editor && bun run build:media-library",

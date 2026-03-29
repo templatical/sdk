@@ -1,17 +1,17 @@
 {
-  "name": "@templatical/vue",
-  "version": "0.1.0",
+  "name": "@templatical/editor",
+  "version": "0.0.1",
   "description": "Vue 3 visual drag-and-drop email editor powered by Templatical",
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",
-  "main": "./dist/templatical-vue.umd.cjs",
-  "module": "./dist/templatical-vue.js",
+  "main": "./dist/templatical-editor.umd.cjs",
+  "module": "./dist/templatical-editor.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/templatical-vue.js",
-      "require": "./dist/templatical-vue.umd.cjs"
+      "import": "./dist/templatical-editor.js",
+      "require": "./dist/templatical-editor.umd.cjs"
     },
     "./style.css": "./dist/style.css"
   },
@@ -45,7 +45,7 @@
   "peerDependencies": {
     "vue": "^3.4.0",
     "tailwindcss": "^4.0.0",
-    "@templatical/renderer": "^0.1.0"
+    "@templatical/renderer": "^0.0.1"
   },
   "peerDependenciesMeta": {
     "@templatical/renderer": {

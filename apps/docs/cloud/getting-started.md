@@ -11,14 +11,14 @@ This guide walks you through setting up Templatical Cloud in your application.
 
 - A Templatical Cloud account with an active plan
 - A project and tenant configured in the [Cloud dashboard](https://templatical.com)
-- The `@templatical/vue` package installed in your project
+- The `@templatical/editor` package installed in your project
 
 ## Installation
 
 If you haven't already installed the editor, add it to your project:
 
 ```bash
-npm install @templatical/vue
+npm install @templatical/editor
 ```
 
 ## Authentication Endpoint
@@ -65,7 +65,7 @@ app.post('/api/templatical/token', async (req, res) => {
 Replace `init()` with `initCloud()` and provide your auth endpoint:
 
 ```js
-import { initCloud } from '@templatical/vue';
+import { initCloud } from '@templatical/editor';
 
 const editor = await initCloud({
   container: '#editor',

@@ -5,15 +5,15 @@ description: Complete reference for the init() function, TemplaticalEditorConfig
 
 # Editor API
 
-The main entry point is the `init()` function from `@templatical/vue`.
+The main entry point is the `init()` function from `@templatical/editor`.
 
 ## `init(config)`
 
 Creates and mounts the editor into a container element.
 
 ```ts
-import { init } from '@templatical/vue';
-import '@templatical/vue/style.css';
+import { init } from '@templatical/editor';
+import '@templatical/editor/style.css';
 
 const editor = init({
   container: '#editor',
@@ -31,7 +31,7 @@ const editor = init({
 Destroys the editor instance and cleans up event listeners.
 
 ```ts
-import { unmount } from '@templatical/vue';
+import { unmount } from '@templatical/editor';
 
 unmount();
 ```

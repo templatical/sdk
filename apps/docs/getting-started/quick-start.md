@@ -8,7 +8,7 @@ description: Get the Templatical email editor running in under 5 minutes.
 ## 1. Install packages
 
 ```bash
-npm install @templatical/vue @templatical/renderer
+npm install @templatical/editor @templatical/renderer
 ```
 
 ## 2. Mount the editor
@@ -34,8 +34,8 @@ npm install @templatical/vue @templatical/renderer
   <div id="editor"></div>
 
   <script type="module">
-    import { init } from '@templatical/vue';
-    import '@templatical/vue/style.css';
+    import { init } from '@templatical/editor';
+    import '@templatical/editor/style.css';
 
     const editor = init({
       container: '#editor',

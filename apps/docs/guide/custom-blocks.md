@@ -12,7 +12,7 @@ Custom blocks let you extend Templatical with your own block types. Define a set
 Pass custom block definitions through the editor config. The example below creates a "Testimonial" block with a quote, author details, avatar, and star rating. Once registered, users can drag it from the block palette into their template and edit each field from the settings panel.
 
 ```ts
-import { init } from '@templatical/vue';
+import { init } from '@templatical/editor';
 
 const editor = init({
   container: '#editor',

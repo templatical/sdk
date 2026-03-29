@@ -2,7 +2,7 @@ import { createApp, shallowRef, h, Transition, type Component } from "vue";
 import { useEventListener } from "@vueuse/core";
 import App from "./App.vue";
 import Cloud from "./Cloud.vue";
-import "@templatical/vue/src/styles/index.css";
+import "@templatical/editor/src/styles/index.css";
 import "./style.css";
 
 const pages: Record<string, Component> = {

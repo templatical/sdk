@@ -12,7 +12,7 @@ The open-source editor gives you everything you need to build and render email t
 Cloud features are activated by switching from `init()` to `initCloud()` when initializing the editor. The same visual editor you already know gets additional capabilities powered by the Templatical Cloud backend.
 
 ```js
-import { initCloud } from '@templatical/vue';
+import { initCloud } from '@templatical/editor';
 
 const editor = await initCloud({
   container: '#editor',

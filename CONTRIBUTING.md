@@ -32,7 +32,7 @@ bun run typecheck    # Type check all packages
 - `packages/types` — Shared TypeScript types (MIT)
 - `packages/renderer` — JSON to MJML renderer (MIT)
 - `packages/core` — Framework-agnostic editor logic (FSL)
-- `packages/vue` — Vue 3 editor components (FSL)
+- `packages/editor` — Vue 3 editor components (FSL)
 - `packages/import-beefree` — BeeFree template converter (MIT)
 
 ## Pull Requests

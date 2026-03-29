@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@templatical/vue"><img src="https://img.shields.io/npm/v/@templatical/vue?label=npm&color=cb3837" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/@templatical/editor"><img src="https://img.shields.io/npm/v/@templatical/editor?label=npm&color=cb3837" alt="npm version" /></a>
   <a href="https://github.com/templatical/editor/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-FSL--1.1--MIT-blue" alt="License" /></a>
   <a href="https://github.com/templatical/editor/actions"><img src="https://img.shields.io/github/actions/workflow/status/templatical/editor/ci.yml?branch=main" alt="CI" /></a>
   <a href="https://codecov.io/gh/templatical/sdk"><img src="https://codecov.io/gh/templatical/sdk/branch/main/graph/badge.svg" alt="Coverage" /></a>
@@ -36,12 +36,12 @@
 ## Quick Start
 
 ```bash
-npm install @templatical/vue @templatical/renderer
+npm install @templatical/editor @templatical/renderer
 ```
 
 ```js
-import { init } from '@templatical/vue';
-import '@templatical/vue/style.css';
+import { init } from '@templatical/editor';
+import '@templatical/editor/style.css';
 
 const editor = init({
   container: '#editor',
@@ -105,7 +105,7 @@ That's it. [Read the full guide →](https://docs.templatical.com/getting-starte
 
 | Package | Description | License |
 |---------|-------------|---------|
-| [`@templatical/vue`](https://www.npmjs.com/package/@templatical/vue) | Vue 3 visual editor — the main package | [FSL-1.1-MIT](./LICENSE) |
+| [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) | Vue 3 visual editor — the main package | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/core`](https://www.npmjs.com/package/@templatical/core) | Framework-agnostic editor logic, state, history, plugins | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/types`](https://www.npmjs.com/package/@templatical/types) | Shared TypeScript types and block factories | [MIT](./LICENSE-MIT) |
 | [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) | JSON → MJML → HTML renderer (browser + Node.js) | [MIT](./LICENSE-MIT) |
@@ -152,7 +152,7 @@ bun run dev
 
 ## License
 
-- **Editor packages** (`@templatical/vue`, `@templatical/core`) — [FSL-1.1-MIT](./LICENSE) (free to use; converts to MIT after 2 years)
+- **Editor packages** (`@templatical/editor`, `@templatical/core`) — [FSL-1.1-MIT](./LICENSE) (free to use; converts to MIT after 2 years)
 - **Types, renderers, importers** — [MIT](./LICENSE-MIT)
 
 See [LICENSE](./LICENSE) for full terms including revenue threshold and commercial licensing details.

@@ -10,7 +10,7 @@ Open-source Templatical email editor. Bun monorepo with 6 npm packages, a playgr
 | `@templatical/core` | Framework-agnostic editor logic, state, history, plugins | FSL-1.1-MIT | `useEditor`, `useHistory`, `useBlockActions`, `useAutoSave`, plugins |
 | `@templatical/core/cloud` | Cloud-only modules (subpath export) | FSL-1.1-MIT | Auth, API, WebSocket, AI chat/rewrite, collaboration, comments, scoring, MCP, export |
 | `@templatical/media-library` | Media library management (types, composable, API client, Vue components, standalone SDK) | FSL-1.1-MIT | `useMediaLibrary`, `MediaApiClient`, `MediaLibraryModal`, `MediaItem`, `init()` |
-| `@templatical/vue` | Vue 3 visual drag-and-drop editor | FSL-1.1-MIT | `init()`, `initCloud()`, `unmount()` |
+| `@templatical/editor` | Vue 3 visual drag-and-drop editor | FSL-1.1-MIT | `init()`, `initCloud()`, `unmount()` |
 | `@templatical/renderer` | JSON → MJML → HTML renderer (browser + Node) | MIT | `renderToMjml()`, `renderToHtml()` |
 | `@templatical/import-beefree` | BeeFree template converter | MIT | `convertBeeFreeTemplate()` |
 
@@ -26,7 +26,7 @@ Open-source Templatical email editor. Bun monorepo with 6 npm packages, a playgr
   └── @templatical/media-library  (+@vueuse/core, lucide-vue-next, vue-advanced-cropper; peer: vue, tailwindcss)
 
 @templatical/core + @templatical/types + @templatical/media-library
-  └── @templatical/vue  (+tiptap, vuedraggable, liquidjs; peer: vue, tailwindcss)
+  └── @templatical/editor  (+tiptap, vuedraggable, liquidjs; peer: vue, tailwindcss)
 ```
 
 **Media types** (`MediaItem`, `MediaFolder`, etc.) are canonically defined in `@templatical/media-library`. The `@templatical/types` package imports them via devDependency for use in cloud config interfaces (`TemplaticalConfig`, `PlanConfig`). **Build order:** media-library before types.
@@ -82,7 +82,7 @@ Uses Prettier 3 with **default settings** (no `.prettierrc` or config in `packag
 
 - Strict mode, target ES2020, module resolution `bundler` (from `tsconfig.base.json`).
 - Each package has its own `tsconfig.json` extending the base.
-- The `vue` and `media-library` packages use `vue-tsc` for typecheck (handles `.vue` SFCs). All others use plain `tsc`.
+- The `editor` and `media-library` packages use `vue-tsc` for typecheck (handles `.vue` SFCs). All others use plain `tsc`.
 - **Critical:** `@templatical/core` aliases `vue` to `@vue/reactivity` at build time. In tests, `vue` resolves to the full Vue package (it's a devDependency). Don't add Vue runtime imports in core or cloud source modules.
 
 ### Cross-package type resolution (tsconfig paths)
@@ -94,7 +94,7 @@ Each package's `tsconfig.json` has `paths` mapping sibling `@templatical/*` impo
 **Maintenance rules when modifying tsconfigs:**
 - When a package adds a new `@templatical/*` import, add the corresponding `paths` entry to its `tsconfig.json`.
 - Non-vue packages (types, core, renderer, import-beefree) must point `@templatical/media-library` to `../media-library/src/types.ts` (not `index.ts`) because `tsc` cannot resolve `.vue` files that the barrel re-exports.
-- Vue packages (media-library, vue) use `vue-tsc` and can point to `../*/src/index.ts` directly.
+- Vue packages (media-library, editor) use `vue-tsc` and can point to `../*/src/index.ts` directly.
 - The media-library package has a self-referencing path (`"@templatical/media-library": ["./src/index.ts"]`) because the types package imports from it, and media-library resolves types source which contains that import.
 
 **Current path map:**
@@ -106,7 +106,7 @@ Each package's `tsconfig.json` has `paths` mapping sibling `@templatical/*` impo
 | `renderer` | types, media-library (types.ts only) |
 | `import-beefree` | types, media-library (types.ts only) |
 | `media-library` | types, core, core/cloud, media-library (self) |
-| `vue` | types, core, core/cloud, media-library |
+| `editor` | types, core, core/cloud, media-library |
 
 **Why not TypeScript project references (`composite: true`)?** The monorepo uses tsup (rollup-plugin-dts) and vite (vite-plugin-dts) for `.d.ts` generation. These are incompatible with `composite` mode, which requires `tsc` to generate granular declarations + `.tsbuildinfo`. Switching would require replacing the entire build toolchain.
 
@@ -114,7 +114,7 @@ Each package's `tsconfig.json` has `paths` mapping sibling `@templatical/*` impo
 
 Root-level Vite configs produce standalone bundles for CDN/script-tag usage:
 
-- **`vite.email-editor.config.ts`** — Builds `@templatical/vue` as IIFE (`TemplaticalEmailEditor` global) + ES with code-split chunks (icons, vue, tiptap, pusher, draggable, media-library, features). Output: `dist/email-editor/`.
+- **`vite.email-editor.config.ts`** — Builds `@templatical/editor` as IIFE (`TemplaticalEmailEditor` global) + ES with code-split chunks (icons, vue, tiptap, pusher, draggable, media-library, features). Output: `dist/email-editor/`.
 - **`vite.media-library.config.ts`** — Builds `@templatical/media-library` standalone visual SDK as IIFE (`TemplaticalMediaLibrary` global) + ES with code-split chunks. Output: `dist/media-library/`.
 
 Both CDN configs resolve `@templatical/media-library`, `@templatical/core`, and `@templatical/types` to source via aliases.
@@ -135,7 +135,7 @@ Cloud modules live in `packages/core/src/cloud/`. They provide features that con
 
 **Note:** Media functionality (`useMediaLibrary`, `MediaApiClient`) has moved to `@templatical/media-library`. It is NOT exported from `@templatical/core/cloud`.
 
-Used by `@templatical/vue`'s `initCloud()`.
+Used by `@templatical/editor`'s `initCloud()`.
 
 ## Media Library (`@templatical/media-library`)
 
@@ -163,7 +163,7 @@ Standalone package for media management. Lives in `packages/media-library/`. Bui
 
 Two separate i18n systems, same pattern. Supported locales: `en`, `de`.
 
-- **`@templatical/vue`** — `src/i18n/` with `loadTranslations(locale)`, `getBaseLocale()`, `isLocaleSupported()`, `getSupportedLocales()`. Translations are deeply nested objects. Composable: `useI18n(override?)` with `format(template, values)` for `{placeholder}` substitution. Injected via `"translations"` key.
+- **`@templatical/editor`** — `src/i18n/` with `loadTranslations(locale)`, `getBaseLocale()`, `isLocaleSupported()`, `getSupportedLocales()`. Translations are deeply nested objects. Composable: `useI18n(override?)` with `format(template, values)` for `{placeholder}` substitution. Injected via `"translations"` key.
 - **`@templatical/media-library`** — `src/i18n/` with `loadMediaTranslations(locale)`. Flat namespace under `mediaLibrary.*`. Same `useI18n(override?)` pattern. Injected via `"translations"` key.
 
 Both use dynamic `import()` for locale files. Locale normalization strips region codes (`en-US` → `en`) and falls back to `en` for unsupported locales. When adding new i18n keys, add to both `en.ts` and `de.ts` — tests verify key parity between locales.
@@ -172,7 +172,7 @@ Both use dynamic `import()` for locale files. Locale normalization strips region
 
 ## Architecture
 
-- **Build:** tsup for types, core, renderer, import-beefree. Vite for vue, media-library packages and CDN bundles. **Build order matters:** media-library must build before types (types has devDep on media-library for type imports).
+- **Build:** tsup for types, core, renderer, import-beefree. Vite for editor, media-library packages and CDN bundles. **Build order matters:** media-library must build before types (types has devDep on media-library for type imports).
 - **TypeScript:** Strict mode, target ES2020, module resolution `bundler`.
 - **Vue 3** with TipTap 2 for rich text editing, VueDraggable for drag-and-drop, Tailwind CSS 4 for styling.
 - **Block types:** 13 types (Text, Image, Button, Section, Divider, Spacer, SocialIcons, Menu, Table, Html, Video, Countdown, Custom). Block IDs use UUID v7.
@@ -242,11 +242,11 @@ When adding a new function or composable:
 
 **`@templatical/media-library`** — Mock `MediaApiClient` for composable tests. Use `createMediaItem()` / `createFolder()` factories. Test both API success and error paths. For image crop, mock `document.createElement('canvas')` and canvas context.
 
-**`@templatical/vue`** — Import `dom-stubs.ts` before Vue in any test that touches Vue components or extensions. Use `withProvide()` for composables that use `inject()`. For TipTap extensions, test the config object properties directly (name, group, attributes, parseHTML) — don't instantiate a full editor. For component structure tests, read `.vue` source files with `node:fs` and assert on content patterns.
+**`@templatical/editor`** — Import `dom-stubs.ts` before Vue in any test that touches Vue components or extensions. Use `withProvide()` for composables that use `inject()`. For TipTap extensions, test the config object properties directly (name, group, attributes, parseHTML) — don't instantiate a full editor. For component structure tests, read `.vue` source files with `node:fs` and assert on content patterns.
 
-### Vue package DOM stubs
+### Editor package DOM stubs
 
-The `packages/vue/tests/dom-stubs.ts` file provides minimal DOM stubs for tests that import Vue or TipTap extensions. **Always import it first** — before any Vue imports — because Vue captures `document` at module load time. The stubs include a `style` property on elements for ProseMirror compatibility.
+The `packages/editor/tests/dom-stubs.ts` file provides minimal DOM stubs for tests that import Vue or TipTap extensions. **Always import it first** — before any Vue imports — because Vue captures `document` at module load time. The stubs include a `style` property on elements for ProseMirror compatibility.
 
 ## Changesets
 
