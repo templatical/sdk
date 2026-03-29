@@ -5,22 +5,51 @@ export default defineConfig({
     description: 'Open-source drag-and-drop email editor for modern apps',
     cleanUrls: true,
     head: [
-        ['link', { rel: 'icon', type: 'image/svg+xml', href: 'https://templatical.com/logo-small.svg' }],
         [
-            'meta',
+            "link",
             {
-                property: 'og:title',
-                content: 'Templatical — Open-Source Email Editor',
+                rel: "icon",
+                type: "image/svg+xml",
+                href: "https://templatical.com/logo-small.svg",
+            },
+        ],
+        ["meta", { name: "author", content: "Templatical" }],
+        [
+            "meta",
+            {
+                property: "og:title",
+                content: "Templatical — Open-Source Email Editor",
             },
         ],
         [
-            'meta',
+            "meta",
             {
-                property: 'og:description',
+                property: "og:description",
                 content:
-                    'Production-ready drag-and-drop email editor. 13 block types, merge tags, custom blocks, dark mode, and client-side export.',
+                    "Production-ready drag-and-drop email editor. 13 block types, merge tags, custom blocks, dark mode, and client-side export.",
             },
         ],
+        ["meta", { property: "og:type", content: "website" }],
+        ["meta", { property: "og:url", content: "https://docs.templatical.com" }],
+        ["meta", { property: "og:image", content: "/og-image.png" }],
+        ["meta", { name: "twitter:card", content: "summary_large_image" }],
+        [
+            "meta",
+            {
+                name: "twitter:title",
+                content: "Templatical — Open-Source Email Editor",
+            },
+        ],
+        [
+            "meta",
+            {
+                name: "twitter:description",
+                content:
+                    "Production-ready drag-and-drop email editor. 13 block types, merge tags, custom blocks, dark mode, and client-side export.",
+            },
+        ],
+        ["meta", { name: "twitter:image", content: "/og-image.png" }],
+        ["link", { rel: "canonical", href: "https://docs.templatical.com" }],
     ],
     themeConfig: {
         logo: 'https://templatical.com/logo.svg',
