@@ -35,7 +35,8 @@ jobs:
       - run: bun run test:coverage
       - uses: codecov/codecov-action@v5
         with:
-          files: packages/*/coverage/coverage-final.json
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: .
           fail_ci_if_error: false
 
   build:
