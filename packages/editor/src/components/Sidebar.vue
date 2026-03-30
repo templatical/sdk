@@ -19,6 +19,7 @@ import {
   RectangleHorizontal,
   Share2,
   Table,
+  Timer,
   Type,
 } from "lucide-vue-next";
 import { computed, inject, ref } from "vue";
@@ -54,8 +55,10 @@ const showModulesSection = computed(
 
 const isExpanded = ref(false);
 
+const isCloudMode = computed(() => !!planConfig);
+
 const builtInBlockTypes = computed<BlockTypeItem[]>(() => {
-  return [
+  const types: BlockTypeItem[] = [
     { type: "section", label: t.blocks.section },
     { type: "image", label: t.blocks.image },
     { type: "text", label: t.blocks.text },
@@ -68,6 +71,13 @@ const builtInBlockTypes = computed<BlockTypeItem[]>(() => {
     { type: "spacer", label: t.blocks.spacer },
     { type: "html", label: t.blocks.html },
   ];
+
+  // Countdown requires Templatical Cloud for server-side GIF rendering
+  if (isCloudMode.value) {
+    types.splice(-1, 0, { type: "countdown", label: t.blocks.countdown });
+  }
+
+  return types;
 });
 
 const customBlockItems = computed<BlockTypeItem[]>(() => {
@@ -217,6 +227,11 @@ function cloneBlock(item: BlockTypeItem): Block {
             />
             <MoveVertical
               v-else-if="blockType.type === 'spacer'"
+              :size="20"
+              :stroke-width="1.5"
+            />
+            <Timer
+              v-else-if="blockType.type === 'countdown'"
               :size="20"
               :stroke-width="1.5"
             />

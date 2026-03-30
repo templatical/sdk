@@ -6,13 +6,13 @@
  */
 
 @import url('https://fonts.bunny.net/css?family=geist:400,500,600');
-@layer theme, base, components;
-
 @import 'tailwindcss/theme.css' layer(theme) theme(inline) prefix(tpl);
 /* Preflight deliberately omitted — SDK must not reset consumer styles */
 /* Utilities are intentionally NOT in a @layer so they won't be overridden
    by unlayered consumer CSS resets (e.g. * { margin: 0 }). */
 @import 'tailwindcss/utilities.css' prefix(tpl);
+
+@layer theme, base, components;
 
 @theme inline {
     --font-sans:

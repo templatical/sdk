@@ -195,7 +195,7 @@ describe('renderBlock', () => {
     expect(renderBlock(block, ctx)).toBe('');
   });
 
-  it('returns empty string for countdown block (unsupported in OSS renderer)', () => {
+  it('returns empty string for countdown block (rendered by Cloud backend)', () => {
     const block = createCountdownBlock();
     const result = renderBlock(block, ctx);
     expect(result).toBe('');

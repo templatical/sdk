@@ -29,6 +29,7 @@ import MenuBlock from "./blocks/MenuBlock.vue";
 import TableBlock from "./blocks/TableBlock.vue";
 import CustomBlock from "./blocks/CustomBlock.vue";
 import VideoBlock from "./blocks/VideoBlock.vue";
+import CountdownBlockComponent from "./blocks/CountdownBlock.vue";
 
 const props = defineProps<{
   viewport: ViewportSize;
@@ -138,6 +139,8 @@ function getBlockComponent(block: Block): Component | null {
       return TableBlock;
     case "video":
       return VideoBlock;
+    case "countdown":
+      return CountdownBlockComponent;
     case "custom":
       return CustomBlock;
     default:
