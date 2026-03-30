@@ -33,6 +33,7 @@ import {
   createSpacerBlock,
   createTableBlock,
   createTextBlock,
+  createCountdownBlock,
   createVideoBlock,
   isCustomBlock,
   resolveSyntax,
@@ -106,6 +107,7 @@ import SpacerBlock from "../components/blocks/SpacerBlock.vue";
 import TableBlock from "../components/blocks/TableBlock.vue";
 import TextBlock from "../components/blocks/TextBlock.vue";
 import VideoBlock from "../components/blocks/VideoBlock.vue";
+import CountdownBlockComponent from "../components/blocks/CountdownBlock.vue";
 import type { Translations } from "../i18n";
 import { useBlockRegistry } from "../composables/useBlockRegistry";
 import { useI18n } from "../composables/useI18n";
@@ -698,6 +700,11 @@ registry.registerBuiltIn("html", {
   component: HtmlBlock,
   createBlock: () => createHtmlBlock(),
   sidebarItem: { type: "html", label: "HTML", isCustom: false },
+});
+registry.registerBuiltIn("countdown", {
+  component: CountdownBlockComponent,
+  createBlock: () => createCountdownBlock(),
+  sidebarItem: { type: "countdown", label: "Countdown", isCustom: false },
 });
 
 // ---------------------------------------------------------------------------

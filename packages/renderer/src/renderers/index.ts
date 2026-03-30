@@ -80,7 +80,7 @@ export function renderBlock(block: Block, context: RenderContext): string {
     return renderCustom(block, context);
   }
 
-  // Unsupported block types (e.g. countdown) are skipped in the OSS renderer.
-  // The SaaS backend handles these with server-side services.
+  // Countdown blocks are rendered by the Templatical Cloud backend.
+  // In OSS mode they return empty — use initCloud() for full countdown support.
   return "";
 }
