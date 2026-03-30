@@ -28,6 +28,7 @@ export default {
     docs: "Dokumentation",
     tryCloud: "Cloud testen",
     retry: "Erneut versuchen",
+    share: "Teilen",
   },
   jsonModal: {
     title: "Vorlagen-JSON",
@@ -98,6 +99,24 @@ export default {
   floatingBanner: {
     before: "Ben\u00f6tigen Sie ",
     after: "? Testen Sie die Cloud-Version.",
+  },
+  shareModal: {
+    title: "Vorlage teilen",
+    description:
+      "Jeder mit diesem Link kann eine Kopie Ihrer Vorlage ansehen und bearbeiten.",
+    copyLink: "Link kopieren",
+    copied: "Kopiert!",
+    expiry: "Links laufen nach 30 Tagen ab.",
+    loading: "Freigabelink wird erstellt\u2026",
+    error: "Freigabelink konnte nicht erstellt werden.",
+    retry: "Erneut versuchen",
+  },
+  sharedTemplate: {
+    loading: "Geteilte Vorlage wird geladen\u2026",
+    notFound:
+      "Diese geteilte Vorlage wurde nicht gefunden oder ist abgelaufen.",
+    error: "Geteilte Vorlage konnte nicht geladen werden.",
+    goToPlayground: "Zum Playground",
   },
   common: {
     close: "Schlie\u00dfen",
