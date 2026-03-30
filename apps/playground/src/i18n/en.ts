@@ -26,6 +26,7 @@ export default {
     docs: "Docs",
     tryCloud: "Try Cloud",
     retry: "Retry",
+    share: "Share",
   },
   jsonModal: {
     title: "Template JSON",
@@ -94,6 +95,23 @@ export default {
   floatingBanner: {
     before: "Need ",
     after: "? Try the Cloud version.",
+  },
+  shareModal: {
+    title: "Share Template",
+    description:
+      "Anyone with this link can view and edit a copy of your template.",
+    copyLink: "Copy Link",
+    copied: "Copied!",
+    expiry: "Links expire after 30 days.",
+    loading: "Creating share link\u2026",
+    error: "Failed to create share link.",
+    retry: "Try Again",
+  },
+  sharedTemplate: {
+    loading: "Loading shared template\u2026",
+    notFound: "This shared template was not found or has expired.",
+    error: "Failed to load shared template.",
+    goToPlayground: "Go to Playground",
   },
   common: {
     close: "Close",

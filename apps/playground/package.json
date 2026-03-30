@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:share": "wrangler pages dev --kv SHARES_KV -- vite",
     "build": "vite build",
     "preview": "vite preview"
   },

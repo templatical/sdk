@@ -16,7 +16,9 @@ useEventListener(window, "hashchange", () => {
   currentPage.value = pages[window.location.hash] ?? App;
 });
 
-createApp({
+const shareId = new URLSearchParams(window.location.search).get("s");
+
+const app = createApp({
   setup() {
     return () =>
       h(Transition, { name: "pg-screen", mode: "out-in" }, () =>
@@ -25,4 +27,7 @@ createApp({
         }),
       );
   },
-}).mount("#app");
+});
+
+app.provide("shareId", shareId);
+app.mount("#app");

@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted, nextTick } from "vue";
+import {
+  ref,
+  computed,
+  watch,
+  inject,
+  onMounted,
+  onUnmounted,
+  nextTick,
+} from "vue";
 import {
   useClipboard,
   useFileDialog,
@@ -592,6 +600,58 @@ function copyJson(): void {
   copy(jsonContent.value);
 }
 
+// --- Share ---
+const shareId = inject<string | null>("shareId", null);
+const shareModalOpen = ref(false);
+const shareUrl = ref("");
+const shareLoading = ref(false);
+const shareError = ref("");
+const shareLoadPending = ref(!!shareId);
+const shareLoadError = ref(false);
+
+const {
+  copy: copyShareUrl,
+  copied: shareCopied,
+  isSupported: clipboardSupported,
+} = useClipboard({ copiedDuring: 1500 });
+
+async function handleShare(): Promise<void> {
+  if (!editor.value) return;
+  shareLoading.value = true;
+  shareError.value = "";
+  shareUrl.value = "";
+  shareModalOpen.value = true;
+  try {
+    const content = editor.value.getContent();
+    const res = await fetch("/api/shares", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    if (!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+    shareUrl.value = data.url;
+  } catch (e) {
+    shareError.value = e instanceof Error ? e.message : "Unknown error";
+  } finally {
+    shareLoading.value = false;
+  }
+}
+
+onMounted(async () => {
+  if (!shareId) return;
+  try {
+    const res = await fetch(`/api/shares/${shareId}`);
+    if (!res.ok) throw new Error(res.status === 404 ? "not-found" : "error");
+    const data = await res.json();
+    chooseTemplate(data.content);
+  } catch {
+    shareLoadError.value = true;
+  } finally {
+    shareLoadPending.value = false;
+  }
+});
+
 // --- Focus traps for modals (useFocusTrap) ---
 const trapOpts = { allowOutsideClick: true, escapeDeactivates: false };
 
@@ -618,6 +678,7 @@ const dataSourceModalRef = useModalTrap(
   computed(() => dataSourcePickerOpen.value && !!dataSourcePickerRequest.value),
 );
 const featureModalRef = useModalTrap(showFeatureOverlay);
+const shareModalRef = useModalTrap(shareModalOpen);
 
 // --- Lock body scroll when any modal is open ---
 const bodyScrollLocked = useScrollLock(document.body);
@@ -629,7 +690,8 @@ watch(
     mergeTagPickerOpen.value ||
     mediaPickerOpen.value ||
     (dataSourcePickerOpen.value && !!dataSourcePickerRequest.value) ||
-    showFeatureOverlay.value,
+    showFeatureOverlay.value ||
+    shareModalOpen.value,
   (locked) => {
     bodyScrollLocked.value = locked;
   },
@@ -690,7 +752,57 @@ onUnmounted(() => {
             </option>
           </select>
         </div>
-        <div class="flex flex-col items-center max-w-[860px] w-full px-6">
+        <!-- Shared template loading -->
+        <div
+          v-if="shareLoadPending"
+          class="flex flex-col items-center gap-3 py-20"
+        >
+          <svg
+            class="animate-spin h-6 w-6 text-gray-400"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            />
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+          <span class="text-sm text-gray-500">{{
+            t.sharedTemplate.loading
+          }}</span>
+        </div>
+
+        <!-- Shared template error -->
+        <div
+          v-else-if="shareLoadError"
+          class="flex flex-col items-center gap-4 py-20"
+        >
+          <LogoIcon class="mb-2" />
+          <p class="text-sm text-gray-500 m-0">
+            {{ t.sharedTemplate.notFound }}
+          </p>
+          <a
+            href="/"
+            class="h-9 px-5 inline-flex items-center bg-gray-900 text-white text-sm font-medium font-sans rounded-md no-underline transition-colors duration-150 hover:bg-gray-800"
+          >
+            {{ t.sharedTemplate.goToPlayground }}
+          </a>
+        </div>
+
+        <div
+          v-else
+          class="flex flex-col items-center max-w-[860px] w-full px-6"
+        >
           <LogoIcon class="mb-5" />
           <h1
             class="m-0 mb-2 text-[22px] font-semibold text-gray-900 tracking-[-0.02em]"
@@ -1191,6 +1303,25 @@ onUnmounted(() => {
               </div>
             </div>
 
+            <button class="pg-toolbar-btn" @click="handleShare">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                <polyline points="16 6 12 2 8 6" />
+                <line x1="12" y1="2" x2="12" y2="15" />
+              </svg>
+              {{ t.toolbar.share }}
+            </button>
+
             <div class="w-px h-5 bg-gray-200 mx-1" />
 
             <a
@@ -1371,6 +1502,117 @@ onUnmounted(() => {
               class="flex-1 overflow-auto [&_pre]:m-0 [&_pre]:p-5 [&_pre]:text-xs [&_pre]:leading-relaxed [&_pre]:font-mono [&_pre]:text-gray-500"
             >
               <pre><code>{{ jsonContent }}</code></pre>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Share Modal -->
+    <Teleport to="body">
+      <Transition name="pg-modal">
+        <div
+          v-if="shareModalOpen"
+          class="pg-modal-backdrop"
+          @click.self="shareModalOpen = false"
+          @keydown.escape="shareModalOpen = false"
+        >
+          <div
+            ref="shareModalRef"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-modal-title"
+            class="pg-modal-dialog w-[440px] max-w-[90vw] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden"
+          >
+            <div
+              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0"
+            >
+              <span
+                id="share-modal-title"
+                class="text-sm font-semibold text-gray-900"
+                >{{ t.shareModal.title }}</span
+              >
+              <button
+                :aria-label="t.common.close"
+                class="pg-modal-close"
+                @click="shareModalOpen = false"
+              >
+                &times;
+              </button>
+            </div>
+            <div class="px-5 py-5">
+              <!-- Loading -->
+              <div
+                v-if="shareLoading"
+                class="flex flex-col items-center gap-3 py-4"
+              >
+                <svg
+                  class="animate-spin h-5 w-5 text-gray-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  />
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                <span class="text-sm text-gray-500">{{
+                  t.shareModal.loading
+                }}</span>
+              </div>
+
+              <!-- Error -->
+              <div
+                v-else-if="shareError"
+                class="flex flex-col items-center gap-3 py-4"
+              >
+                <p class="text-sm text-gray-500 m-0">
+                  {{ t.shareModal.error }}
+                </p>
+                <button
+                  class="h-8 px-4 bg-gray-900 text-white text-xs font-medium font-sans rounded-md border-none cursor-pointer transition-colors duration-150 hover:bg-gray-800"
+                  @click="handleShare"
+                >
+                  {{ t.shareModal.retry }}
+                </button>
+              </div>
+
+              <!-- Success -->
+              <div v-else class="flex flex-col gap-3">
+                <p class="text-[13px] text-gray-500 m-0">
+                  {{ t.shareModal.description }}
+                </p>
+                <div class="flex gap-2">
+                  <input
+                    :value="shareUrl"
+                    readonly
+                    class="flex-1 h-9 px-3 text-[13px] font-mono text-gray-700 bg-gray-50 border border-gray-200 rounded-md outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    @focus="($event.target as HTMLInputElement).select()"
+                  />
+                  <button
+                    v-if="clipboardSupported"
+                    class="h-9 px-4 border border-gray-200 rounded-md bg-white text-gray-700 text-xs font-medium font-sans cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 whitespace-nowrap"
+                    @click="copyShareUrl(shareUrl)"
+                  >
+                    {{
+                      shareCopied ? t.shareModal.copied : t.shareModal.copyLink
+                    }}
+                  </button>
+                </div>
+                <p class="text-[11px] text-gray-400 m-0">
+                  {{ t.shareModal.expiry }}
+                </p>
+              </div>
             </div>
           </div>
         </div>
