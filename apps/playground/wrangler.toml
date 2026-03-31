@@ -1,7 +1,0 @@
-name = "templatical-playground"
-compatibility_date = "2025-01-01"
-
-[[kv_namespaces]]
-binding = "SHARES_KV"
-id = "814549f5f57e48f7ada75f011bb0ebf6"
-preview_id = "f646964fc8b44240bf93bb7c482ad1db"
