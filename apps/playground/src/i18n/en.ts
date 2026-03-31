@@ -27,6 +27,7 @@ export default {
     tryCloud: "Try Cloud",
     retry: "Retry",
     share: "Share",
+    tour: "Tour",
   },
   jsonModal: {
     title: "Template JSON",
@@ -170,6 +171,44 @@ export default {
     sale: {
       name: "Black Friday Sale",
       description: "Promo with product picks and discount code",
+    },
+  },
+  onboarding: {
+    next: "Next",
+    skip: "Skip tour",
+    done: "Got it!",
+    stepCounter: "{current} of {total}",
+    canvas: {
+      title: "Your email canvas",
+      text: "This is where your email takes shape. Click any block to select and edit it.",
+    },
+    sidebar: {
+      title: "Block library",
+      text: "Drag blocks from here onto the canvas to add text, images, buttons, and more.",
+    },
+    rightSidebar: {
+      title: "Content & Settings",
+      text: "Select a block to edit its content here, or switch to Settings to adjust the overall template layout.",
+    },
+    config: {
+      title: "Editor configuration",
+      text: "Customize merge tags, display conditions, theme colors, and block defaults.",
+    },
+    json: {
+      title: "Template JSON",
+      text: "Inspect the raw JSON output of your template at any time.",
+    },
+    exportBtn: {
+      title: "Export options",
+      text: "Download your template as JSON or MJML to use in your application.",
+    },
+    share: {
+      title: "Share your work",
+      text: "Generate a shareable link so others can view and remix your template.",
+    },
+    cloud: {
+      title: "Try Cloud",
+      text: "Unlock AI writing, real-time collaboration, media library, and more.",
     },
   },
   a11y: {

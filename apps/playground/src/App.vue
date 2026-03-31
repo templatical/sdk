@@ -91,6 +91,10 @@ function dismissFeatureOverlay(): void {
       currentTemplateName.value,
     ];
   }
+  // Start onboarding after feature overlay closes
+  if (!onboardingDismissed.value) {
+    setTimeout(() => startOnboarding(), 1000);
+  }
 }
 
 function reopenFeatureOverlay(): void {
@@ -390,7 +394,13 @@ function chooseTemplate(
 function onScreenEnter(): void {
   if (pendingEditorInit) {
     pendingEditorInit = false;
-    nextTick(() => initEditor());
+    nextTick(() => {
+      initEditor();
+      // Start onboarding after editor has mounted (slight delay to let user orient)
+      if (!onboardingDismissed.value && !showFeatureOverlay.value) {
+        setTimeout(() => startOnboarding(), 1000);
+      }
+    });
   }
 }
 
@@ -680,6 +690,8 @@ const dataSourceModalRef = useModalTrap(
 const featureModalRef = useModalTrap(showFeatureOverlay);
 const shareModalRef = useModalTrap(shareModalOpen);
 
+const onboardingActive = ref(false);
+
 // --- Lock body scroll when any modal is open ---
 const bodyScrollLocked = useScrollLock(document.body);
 watch(
@@ -691,7 +703,8 @@ watch(
     mediaPickerOpen.value ||
     (dataSourcePickerOpen.value && !!dataSourcePickerRequest.value) ||
     showFeatureOverlay.value ||
-    shareModalOpen.value,
+    shareModalOpen.value ||
+    onboardingActive.value,
   (locked) => {
     bodyScrollLocked.value = locked;
   },
@@ -726,7 +739,194 @@ watch(locale, () => {
   }
 });
 
+// --- Onboarding tour ---
+type OnboardingStep =
+  | "canvas"
+  | "sidebar"
+  | "rightSidebar"
+  | "config"
+  | "json"
+  | "export"
+  | "share"
+  | "cloud";
+
+const onboardingSteps: OnboardingStep[] = [
+  "canvas",
+  "sidebar",
+  "rightSidebar",
+  "config",
+  "json",
+  "export",
+  "share",
+  "cloud",
+];
+
+const onboardingDismissed = useLocalStorage(
+  "tpl-playground-onboarding-dismissed",
+  false,
+);
+const onboardingStepIndex = ref(0);
+const onboardingRect = ref<DOMRect | null>(null);
+const typedText = ref("");
+let typewriterTimer: ReturnType<typeof setInterval> | null = null;
+
+const currentOnboardingStep = computed(
+  () => onboardingSteps[onboardingStepIndex.value],
+);
+
+const onboardingI18nKey: Record<OnboardingStep, string> = {
+  canvas: "canvas",
+  sidebar: "sidebar",
+  rightSidebar: "rightSidebar",
+  config: "config",
+  json: "json",
+  export: "exportBtn",
+  share: "share",
+  cloud: "cloud",
+};
+
+const onboardingStepData = computed(() => {
+  const key = onboardingI18nKey[currentOnboardingStep.value];
+  const data = t.value.onboarding[key as keyof typeof t.value.onboarding] as {
+    title: string;
+    text: string;
+  };
+  return { title: data.title, text: data.text };
+});
+
+const onboardingSelector: Partial<Record<OnboardingStep, string>> = {
+  canvas: ".tpl-body",
+  sidebar: ".tpl-sidebar-rail",
+  rightSidebar: ".tpl-right-sidebar",
+};
+
+function updateOnboardingRect(): void {
+  const step = currentOnboardingStep.value;
+  const selector = onboardingSelector[step] ?? `[data-onboarding="${step}"]`;
+  const el = document.querySelector<HTMLElement>(selector);
+  if (el) {
+    onboardingRect.value = el.getBoundingClientRect();
+  }
+}
+
+function startTypewriter(): void {
+  stopTypewriter();
+  const fullText = onboardingStepData.value.text;
+  typedText.value = "";
+  const prefersReduced = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+  if (prefersReduced) {
+    typedText.value = fullText;
+    return;
+  }
+  let i = 0;
+  typewriterTimer = setInterval(() => {
+    if (i < fullText.length) {
+      typedText.value = fullText.slice(0, i + 1);
+      i++;
+    } else {
+      stopTypewriter();
+    }
+  }, 25);
+}
+
+function stopTypewriter(): void {
+  if (typewriterTimer !== null) {
+    clearInterval(typewriterTimer);
+    typewriterTimer = null;
+  }
+}
+
+function startOnboarding(): void {
+  if (onboardingDismissed.value) return;
+  onboardingStepIndex.value = 0;
+  onboardingActive.value = true;
+  nextTick(() => {
+    updateOnboardingRect();
+    startTypewriter();
+  });
+}
+
+function nextOnboardingStep(): void {
+  if (onboardingStepIndex.value < onboardingSteps.length - 1) {
+    onboardingStepIndex.value++;
+    nextTick(() => {
+      updateOnboardingRect();
+      startTypewriter();
+    });
+  } else {
+    dismissOnboarding();
+  }
+}
+
+function dismissOnboarding(): void {
+  stopTypewriter();
+  onboardingActive.value = false;
+  onboardingDismissed.value = true;
+}
+
+function restartOnboarding(): void {
+  onboardingDismissed.value = false;
+  startOnboarding();
+}
+
+const onboardingTooltipStyle = computed(() => {
+  const rect = onboardingRect.value;
+  if (!rect) return {};
+  const step = currentOnboardingStep.value;
+  const pad = 12;
+
+  // Canvas: center the tooltip over the canvas area
+  if (step === "canvas") {
+    return {
+      top: `${rect.top + rect.height / 3}px`,
+      left: `${rect.left + rect.width / 2}px`,
+      transform: "translate(-50%, -50%)",
+    };
+  }
+
+  // Sidebar: position tooltip to the right of the sidebar
+  if (step === "sidebar") {
+    return {
+      top: `${rect.top + rect.height / 3}px`,
+      left: `${rect.right + pad}px`,
+    };
+  }
+
+  // Right sidebar: position tooltip to the left of the sidebar
+  if (step === "rightSidebar") {
+    return {
+      top: `${rect.top + rect.height / 3}px`,
+      left: `${rect.left - 300 - pad}px`,
+    };
+  }
+
+  // Toolbar buttons: position below
+  return {
+    top: `${rect.bottom + pad}px`,
+    left: `${Math.min(rect.left, window.innerWidth - 320)}px`,
+  };
+});
+
+const onboardingSpotlightStyle = computed(() => {
+  const rect = onboardingRect.value;
+  if (!rect) return {};
+  const step = currentOnboardingStep.value;
+  const pad = 6;
+  const isLargePanel =
+    step === "canvas" || step === "sidebar" || step === "rightSidebar";
+  return {
+    top: `${rect.top - pad}px`,
+    left: `${rect.left - pad}px`,
+    width: `${rect.width + pad * 2}px`,
+    height: `${rect.height + pad * 2}px`,
+    borderRadius: isLargePanel ? "14px" : "8px",
+  };
+});
+
 onUnmounted(() => {
+  stopTypewriter();
   unmount();
 });
 </script>
@@ -1126,7 +1326,7 @@ onUnmounted(() => {
       <!-- Editor Screen -->
       <div v-else key="editor" class="flex flex-col h-full">
         <header
-          class="flex items-center justify-between h-12 px-4 border-b border-gray-200 bg-white shrink-0 z-[100]"
+          class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0 z-[100]"
         >
           <div class="flex items-center gap-2">
             <button
@@ -1151,7 +1351,11 @@ onUnmounted(() => {
               </svg>
               {{ t.toolbar.templates }}
             </button>
-            <button class="pg-toolbar-btn" @click="openConfig">
+            <button
+              data-onboarding="config"
+              class="pg-toolbar-btn"
+              @click="openConfig"
+            >
               <svg
                 width="16"
                 height="16"
@@ -1201,11 +1405,40 @@ onUnmounted(() => {
               </svg>
               {{ t.toolbar.features }}
             </button>
+            <button class="pg-toolbar-btn" @click="restartOnboarding">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  fill="none"
+                />
+                <path
+                  d="M12 16v-4M12 8h.01"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+              {{ t.toolbar.tour }}
+            </button>
           </div>
 
           <div class="flex items-center gap-1">
             <!-- View JSON -->
-            <button class="pg-toolbar-btn" @click="toggleJson">
+            <button
+              data-onboarding="json"
+              class="pg-toolbar-btn"
+              @click="toggleJson"
+            >
               <svg
                 width="16"
                 height="16"
@@ -1227,6 +1460,7 @@ onUnmounted(() => {
             <!-- Export dropdown -->
             <div
               ref="exportDropdownRef"
+              data-onboarding="export"
               class="relative"
               @keydown.escape="exportMenuOpen = false"
               @keydown.arrow-down.prevent="focusExportItem(0)"
@@ -1303,7 +1537,11 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <button class="pg-toolbar-btn" @click="handleShare">
+            <button
+              data-onboarding="share"
+              class="pg-toolbar-btn"
+              @click="handleShare"
+            >
               <svg
                 width="14"
                 height="14"
@@ -1352,6 +1590,7 @@ onUnmounted(() => {
             </a>
             <a
               href="#cloud"
+              data-onboarding="cloud"
               class="group inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary text-white text-[13px] font-medium font-sans cursor-pointer no-underline whitespace-nowrap transition-all duration-150 hover:bg-primary-hover"
             >
               <svg
@@ -1394,17 +1633,22 @@ onUnmounted(() => {
           </div>
         </header>
 
-        <main class="flex flex-1 min-h-0 relative">
+        <main class="flex flex-1 min-h-0 relative bg-gray-100 p-[15px]">
           <div
             v-if="initError"
-            class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center"
+            class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center bg-white rounded-lg border border-gray-200 shadow-sm"
           >
             <p class="m-0 text-sm text-red-500">{{ initError }}</p>
             <button class="pg-toolbar-btn" @click="initEditor">
               {{ t.toolbar.retry }}
             </button>
           </div>
-          <div v-else ref="editorContainer" class="flex-1 min-w-0" />
+          <div
+            v-else
+            ref="editorContainer"
+            data-onboarding="canvas"
+            class="flex-1 min-w-0 isolate rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white"
+          />
 
           <!-- Floating cloud upsell banner -->
           <Transition name="pg-modal">
@@ -2380,6 +2624,93 @@ onUnmounted(() => {
                 @click="dismissFeatureOverlay"
               >
                 {{ t.featureModal.dismiss }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Onboarding Tour Overlay -->
+    <Teleport to="body">
+      <Transition name="pg-modal">
+        <div
+          v-if="onboardingActive"
+          class="fixed inset-0 z-[10001]"
+          @click.self="dismissOnboarding"
+          @keydown.escape="dismissOnboarding"
+        >
+          <!-- Spotlight with backdrop shadow -->
+          <div
+            v-if="onboardingRect"
+            class="pg-onboarding-spotlight absolute"
+            :style="onboardingSpotlightStyle"
+            @click="dismissOnboarding"
+          />
+
+          <!-- Tooltip -->
+          <div
+            v-if="onboardingRect"
+            class="pg-onboarding-tooltip fixed z-[10002] w-[300px] bg-white rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.2)] overflow-hidden"
+            :style="onboardingTooltipStyle"
+          >
+            <div class="px-4 pt-4 pb-3">
+              <div
+                class="text-xs font-medium text-primary mb-1 tracking-wide uppercase"
+              >
+                {{
+                  format(t.onboarding.stepCounter, {
+                    current: String(onboardingStepIndex + 1),
+                    total: String(onboardingSteps.length),
+                  })
+                }}
+              </div>
+              <div class="text-[15px] font-semibold text-gray-900 mb-1.5">
+                {{ onboardingStepData.title }}
+              </div>
+              <div
+                class="text-[13px] text-gray-500 leading-relaxed min-h-[40px]"
+              >
+                {{ typedText
+                }}<span
+                  v-if="typedText.length < onboardingStepData.text.length"
+                  class="pg-onboarding-cursor"
+                  >|</span
+                >
+              </div>
+            </div>
+            <div
+              class="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50"
+            >
+              <button
+                class="text-[13px] text-gray-400 bg-transparent border-none cursor-pointer font-sans transition-colors duration-150 hover:text-gray-600"
+                @click="dismissOnboarding"
+              >
+                {{ t.onboarding.skip }}
+              </button>
+              <button
+                class="inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-primary text-white text-[13px] font-medium font-sans border-none cursor-pointer transition-all duration-150 hover:bg-primary-hover"
+                @click="nextOnboardingStep"
+              >
+                {{
+                  onboardingStepIndex < onboardingSteps.length - 1
+                    ? t.onboarding.next
+                    : t.onboarding.done
+                }}
+                <svg
+                  v-if="onboardingStepIndex < onboardingSteps.length - 1"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M6 3l5 5-5 5" />
+                </svg>
               </button>
             </div>
           </div>

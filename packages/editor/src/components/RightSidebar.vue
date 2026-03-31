@@ -40,7 +40,7 @@ watch(
 
 <template>
   <aside
-    class="tpl:absolute tpl:top-14 tpl:bottom-0 tpl:z-40 tpl:flex tpl:w-[320px] tpl:flex-col tpl:bg-[var(--tpl-bg-elevated)] tpl:transition-all tpl:duration-200"
+    class="tpl-right-sidebar tpl:absolute tpl:top-14 tpl:bottom-0 tpl:z-40 tpl:flex tpl:w-[320px] tpl:flex-col tpl:bg-[var(--tpl-bg-elevated)] tpl:transition-all tpl:duration-200"
     style="border-left: 1px solid var(--tpl-border)"
     :class="shiftedLeft ? 'tpl:right-[360px]' : 'tpl:right-0'"
   >

@@ -29,6 +29,7 @@ export default {
     tryCloud: "Cloud testen",
     retry: "Erneut versuchen",
     share: "Teilen",
+    tour: "Tour",
   },
   jsonModal: {
     title: "Vorlagen-JSON",
@@ -155,6 +156,44 @@ export default {
     sale: {
       name: "Black Friday Sale",
       description: "Aktion mit Produktauswahl und Rabattcode",
+    },
+  },
+  onboarding: {
+    next: "Weiter",
+    skip: "Tour überspringen",
+    done: "Verstanden!",
+    stepCounter: "{current} von {total}",
+    canvas: {
+      title: "Ihre E-Mail-Leinwand",
+      text: "Hier nimmt Ihre E-Mail Gestalt an. Klicken Sie auf einen Block, um ihn auszuwählen und zu bearbeiten.",
+    },
+    sidebar: {
+      title: "Block-Bibliothek",
+      text: "Ziehen Sie Blöcke von hier auf die Leinwand, um Text, Bilder, Buttons und mehr hinzuzufügen.",
+    },
+    rightSidebar: {
+      title: "Inhalt & Einstellungen",
+      text: "Wählen Sie einen Block aus, um seinen Inhalt hier zu bearbeiten, oder wechseln Sie zu Einstellungen, um das gesamte Vorlagenlayout anzupassen.",
+    },
+    config: {
+      title: "Editor-Konfiguration",
+      text: "Passen Sie Merge-Tags, Anzeigebedingungen, Designfarben und Block-Standards an.",
+    },
+    json: {
+      title: "Vorlagen-JSON",
+      text: "Sehen Sie jederzeit die rohe JSON-Ausgabe Ihrer Vorlage ein.",
+    },
+    exportBtn: {
+      title: "Export-Optionen",
+      text: "Laden Sie Ihre Vorlage als JSON oder MJML herunter, um sie in Ihrer Anwendung zu verwenden.",
+    },
+    share: {
+      title: "Arbeit teilen",
+      text: "Erstellen Sie einen Link, damit andere Ihre Vorlage ansehen und bearbeiten können.",
+    },
+    cloud: {
+      title: "Cloud testen",
+      text: "Schalten Sie KI-Schreiben, Echtzeit-Zusammenarbeit, Medienbibliothek und mehr frei.",
     },
   },
   mergeTags: {

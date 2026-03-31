@@ -1002,7 +1002,7 @@ onUnmounted(() => {
     <!-- Editor Screen -->
     <template v-else>
       <header
-        class="flex items-center justify-between h-12 px-4 border-b border-gray-200 bg-white shrink-0"
+        class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0"
       >
         <div class="flex items-center gap-3">
           <button class="pg-toolbar-btn" @click="backToStart">
@@ -1055,10 +1055,10 @@ onUnmounted(() => {
           </button>
         </div>
       </header>
-      <main class="flex flex-1 min-h-0">
+      <main class="flex flex-1 min-h-0 bg-gray-100 p-[15px]">
         <div
           v-if="initError"
-          class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center"
+          class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center bg-white rounded-lg border border-gray-200 shadow-sm"
         >
           <p class="m-0 text-sm text-red-500">{{ initError }}</p>
           <button
@@ -1068,7 +1068,11 @@ onUnmounted(() => {
             {{ t.cloud.editor.retry }}
           </button>
         </div>
-        <div v-else ref="editorContainer" class="flex-1 min-w-0" />
+        <div
+          v-else
+          ref="editorContainer"
+          class="flex-1 min-w-0 rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white"
+        />
       </main>
     </template>
 
