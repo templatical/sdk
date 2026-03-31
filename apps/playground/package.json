@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:share": "wrangler pages dev --kv SHARES_KV --directory public -- vite",
-    "build": "cd ../.. && bun install && cd apps/playground && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
