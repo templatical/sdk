@@ -36,7 +36,22 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         rollupOptions: {
-            external: ['mjml'],
+            output: {
+                manualChunks(id: string) {
+                    // Vue runtime — cached across navigations
+                    if (id.includes('/vue/') || id.includes('@vue/reactivity')) {
+                        return 'vue-runtime';
+                    }
+                    // VueUse — shared between App and Cloud pages
+                    if (id.includes('@vueuse/')) {
+                        return 'vueuse';
+                    }
+                    // Pusher — only needed when Cloud collaboration is active
+                    if (id.includes('pusher-js')) {
+                        return 'pusher';
+                    }
+                },
+            },
         },
     },
 });

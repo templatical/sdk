@@ -7,6 +7,7 @@ import {
   onMounted,
   onUnmounted,
   nextTick,
+  defineAsyncComponent,
 } from "vue";
 import {
   useClipboard,
@@ -31,8 +32,6 @@ import {
   DEFAULT_BLOCK_DEFAULTS,
   DEFAULT_TEMPLATE_DEFAULTS,
 } from "@templatical/types";
-import { convertBeeFreeTemplate } from "@templatical/import-beefree";
-import type { BeeFreeTemplate } from "@templatical/import-beefree";
 import {
   templates,
   customBlockDefinitions,
@@ -45,7 +44,7 @@ import type {
   DataSourcePickerRequest,
   DataSourcePickerItem,
 } from "@/templates";
-import CodeEditor from "@/CodeEditor.vue";
+const CodeEditor = defineAsyncComponent(() => import("@/CodeEditor.vue"));
 import LogoIcon from "@/LogoIcon.vue";
 import { usePlaygroundI18n, format, supportedLocales } from "@/i18n";
 
@@ -161,6 +160,17 @@ function focusExportItem(index: number, delta?: number): void {
     target = (current + delta + items.length) % items.length;
   }
   items[target]?.focus();
+}
+
+const configTabs = ["options", "content", "theme", "defaults", "callbacks"] as const;
+
+function focusConfigTab(delta: number): void {
+  const idx = configTabs.indexOf(configTab.value);
+  const next = (idx + delta + configTabs.length) % configTabs.length;
+  configTab.value = configTabs[next];
+  nextTick(() => {
+    document.getElementById(`config-tab-${configTabs[next]}`)?.focus();
+  });
 }
 const showConfig = ref(false);
 const configOptionsJson = ref("");
@@ -404,11 +414,14 @@ function onScreenEnter(): void {
   }
 }
 
-function importBeefreeFromJson(raw: string): void {
+async function importBeefreeFromJson(raw: string): Promise<void> {
   beefreeError.value = "";
 
   try {
-    const json = JSON.parse(raw) as BeeFreeTemplate;
+    const json = JSON.parse(raw);
+    const { convertBeeFreeTemplate } = await import(
+      "@templatical/import-beefree"
+    );
     const { content } = convertBeeFreeTemplate(json);
     showBeefreeImport.value = false;
     beefreeJson.value = "";
@@ -687,10 +700,11 @@ const mediaModalRef = useModalTrap(mediaPickerOpen);
 const dataSourceModalRef = useModalTrap(
   computed(() => dataSourcePickerOpen.value && !!dataSourcePickerRequest.value),
 );
+const onboardingActive = ref(false);
+
 const featureModalRef = useModalTrap(showFeatureOverlay);
 const shareModalRef = useModalTrap(shareModalOpen);
-
-const onboardingActive = ref(false);
+const onboardingTooltipRef = useModalTrap(onboardingActive);
 
 // --- Lock body scroll when any modal is open ---
 const bodyScrollLocked = useScrollLock(document.body);
@@ -916,11 +930,14 @@ const onboardingSpotlightStyle = computed(() => {
   const pad = 6;
   const isLargePanel =
     step === "canvas" || step === "sidebar" || step === "rightSidebar";
+  const w = rect.width + pad * 2;
+  const h = rect.height + pad * 2;
+  const x = rect.left - pad;
+  const y = rect.top - pad;
   return {
-    top: `${rect.top - pad}px`,
-    left: `${rect.left - pad}px`,
-    width: `${rect.width + pad * 2}px`,
-    height: `${rect.height + pad * 2}px`,
+    width: `${w}px`,
+    height: `${h}px`,
+    transform: `translate(${x}px, ${y}px)`,
     borderRadius: isLargePanel ? "14px" : "8px",
   };
 });
@@ -933,19 +950,20 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="box-border flex flex-col h-screen font-sans bg-white text-gray-900"
+    class="box-border flex flex-col h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
   >
     <Transition name="pg-screen" mode="out-in" @enter="onScreenEnter">
       <!-- Template Chooser Screen -->
       <main
         v-if="screen === 'chooser'"
         key="chooser"
-        class="relative flex flex-col items-center justify-center min-h-screen bg-white py-12"
+        class="relative flex flex-col items-center justify-center min-h-screen bg-white py-12 dark:bg-gray-900"
       >
         <div class="absolute top-4 right-4">
           <select
             v-model="locale"
-            class="h-8 px-2 pr-7 text-[12px] font-medium text-gray-500 bg-white border border-gray-200 rounded-md cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3Csvg_xmlns=%27http://www.w3.org/2000/svg%27_width=%2712%27_height=%2712%27_viewBox=%270_0_24_24%27_fill=%27none%27_stroke=%27%236b7280%27_stroke-width=%272%27_stroke-linecap=%27round%27_stroke-linejoin=%27round%27%3E%3Cpath_d=%27m6_9_6_6_6-6%27/%3E%3C/svg%3E')] bg-no-repeat bg-[position:right_6px_center] transition-colors duration-150 hover:text-gray-900 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            :aria-label="t.a11y.selectLanguage"
+            class="pg-locale-select"
           >
             <option v-for="loc in supportedLocales" :key="loc" :value="loc">
               {{ loc.toUpperCase() }}
@@ -958,10 +976,11 @@ onUnmounted(() => {
           class="flex flex-col items-center gap-3 py-20"
         >
           <svg
-            class="animate-spin h-6 w-6 text-gray-400"
+            class="animate-spin h-6 w-6 text-gray-400 dark:text-gray-500"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <circle
               class="opacity-25"
@@ -977,7 +996,7 @@ onUnmounted(() => {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
             />
           </svg>
-          <span class="text-sm text-gray-500">{{
+          <span class="text-sm text-gray-500 dark:text-gray-400">{{
             t.sharedTemplate.loading
           }}</span>
         </div>
@@ -988,12 +1007,12 @@ onUnmounted(() => {
           class="flex flex-col items-center gap-4 py-20"
         >
           <LogoIcon class="mb-2" />
-          <p class="text-sm text-gray-500 m-0">
+          <p class="text-sm text-gray-500 dark:text-gray-400 m-0">
             {{ t.sharedTemplate.notFound }}
           </p>
           <a
             href="/"
-            class="h-9 px-5 inline-flex items-center bg-gray-900 text-white text-sm font-medium font-sans rounded-md no-underline transition-colors duration-150 hover:bg-gray-800"
+            class="h-9 px-5 inline-flex items-center bg-gray-900 text-white text-sm font-medium font-sans rounded-md no-underline transition-colors duration-150 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
           >
             {{ t.sharedTemplate.goToPlayground }}
           </a>
@@ -1001,15 +1020,15 @@ onUnmounted(() => {
 
         <div
           v-else
-          class="flex flex-col items-center max-w-[860px] w-full px-6"
+          class="flex flex-col items-center max-w-[860px] w-full px-4 sm:px-6"
         >
           <LogoIcon class="mb-5" />
           <h1
-            class="m-0 mb-2 text-[22px] font-semibold text-gray-900 tracking-[-0.02em]"
+            class="m-0 mb-2 text-[22px] font-semibold text-gray-900 tracking-[-0.02em] dark:text-gray-100"
           >
             {{ t.chooser.title }}
           </h1>
-          <p class="m-0 mb-9 text-[15px] text-gray-500">
+          <p class="m-0 mb-9 text-[15px] text-gray-500 dark:text-gray-400">
             {{ t.chooser.subtitle }}
           </p>
 
@@ -1020,12 +1039,13 @@ onUnmounted(() => {
               v-for="(tpl, i) in templates"
               :key="tpl.name"
               :aria-label="format(t.a11y.chooseTemplate, { name: tpl.name })"
-              class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
               :style="{ animationDelay: `${i * 40}ms` }"
               @click="chooseTemplate(tpl.create(), tpl)"
             >
               <div
-                class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200"
+                aria-hidden="true"
+                class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200 dark:bg-gray-700/50 dark:border-gray-700"
               >
                 <!-- Product launch wireframe -->
                 <div
@@ -1033,17 +1053,17 @@ onUnmounted(() => {
                   class="flex flex-col gap-1.5 w-[60%]"
                 >
                   <div
-                    class="mx-auto h-1.5 w-[40%] rounded-[3px] bg-gray-200"
+                    class="mx-auto h-1.5 w-[40%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
                   <div
-                    class="mx-auto h-1.5 w-[70%] rounded-[3px] bg-gray-200"
+                    class="mx-auto h-1.5 w-[70%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
                   <div
                     class="mx-auto my-1 h-5 w-[40%] rounded bg-primary/30"
                   ></div>
-                  <div class="my-0.5 h-8 w-full rounded bg-gray-200/60"></div>
+                  <div class="my-0.5 h-8 w-full rounded bg-gray-200/60 dark:bg-gray-500/40"></div>
                   <div
-                    class="mx-auto h-1.5 w-[50%] rounded-[3px] bg-gray-200"
+                    class="mx-auto h-1.5 w-[50%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
                 </div>
                 <!-- Newsletter wireframe -->
@@ -1052,15 +1072,15 @@ onUnmounted(() => {
                   class="flex flex-col gap-1.5 w-[60%]"
                 >
                   <div
-                    class="mx-auto h-1.5 w-[50%] rounded-[3px] bg-gray-200"
+                    class="mx-auto h-1.5 w-[50%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
                   <div
-                    class="mx-auto h-1.5 w-[30%] rounded-[3px] bg-gray-200/40"
+                    class="mx-auto h-1.5 w-[30%] rounded-[3px] bg-gray-200/40 dark:bg-gray-500/30"
                   ></div>
-                  <div class="my-0.5 h-8 w-full rounded bg-gray-200/60"></div>
-                  <div class="h-1.5 w-[90%] rounded-[3px] bg-gray-200"></div>
-                  <div class="h-1.5 w-[70%] rounded-[3px] bg-gray-200"></div>
-                  <div class="h-1.5 w-[80%] rounded-[3px] bg-gray-200"></div>
+                  <div class="my-0.5 h-8 w-full rounded bg-gray-200/60 dark:bg-gray-500/40"></div>
+                  <div class="h-1.5 w-[90%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
+                  <div class="h-1.5 w-[70%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
+                  <div class="h-1.5 w-[80%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
                 </div>
                 <!-- Welcome wireframe -->
                 <div
@@ -1068,17 +1088,17 @@ onUnmounted(() => {
                   class="flex flex-col gap-1.5 w-[60%]"
                 >
                   <div
-                    class="mx-auto h-1.5 w-[35%] rounded-[3px] bg-gray-200"
+                    class="mx-auto h-1.5 w-[35%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
                   <div
-                    class="mx-auto h-1.5 w-[60%] rounded-[3px] bg-gray-200"
+                    class="mx-auto h-1.5 w-[60%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
                   <div class="flex items-center gap-1.5">
                     <div
                       class="size-2.5 shrink-0 rounded-full bg-primary/30"
                     ></div>
                     <div
-                      class="h-1.5 w-[70%] shrink-0 rounded-[3px] bg-gray-200"
+                      class="h-1.5 w-[70%] shrink-0 rounded-[3px] bg-gray-200 dark:bg-gray-500"
                     ></div>
                   </div>
                   <div class="flex items-center gap-1.5">
@@ -1086,7 +1106,7 @@ onUnmounted(() => {
                       class="size-2.5 shrink-0 rounded-full bg-primary/30"
                     ></div>
                     <div
-                      class="h-1.5 w-[65%] shrink-0 rounded-[3px] bg-gray-200"
+                      class="h-1.5 w-[65%] shrink-0 rounded-[3px] bg-gray-200 dark:bg-gray-500"
                     ></div>
                   </div>
                   <div class="flex items-center gap-1.5">
@@ -1094,7 +1114,7 @@ onUnmounted(() => {
                       class="size-2.5 shrink-0 rounded-full bg-primary/30"
                     ></div>
                     <div
-                      class="h-1.5 w-[60%] shrink-0 rounded-[3px] bg-gray-200"
+                      class="h-1.5 w-[60%] shrink-0 rounded-[3px] bg-gray-200 dark:bg-gray-500"
                     ></div>
                   </div>
                 </div>
@@ -1104,25 +1124,25 @@ onUnmounted(() => {
                   class="flex flex-col gap-1.5 w-[60%]"
                 >
                   <div
-                    class="mx-auto h-1.5 w-[40%] rounded-[3px] bg-gray-200"
+                    class="mx-auto h-1.5 w-[40%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
                   <div
-                    class="mx-auto h-1.5 w-[55%] rounded-[3px] bg-gray-200/50"
+                    class="mx-auto h-1.5 w-[55%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"
                   ></div>
                   <div class="flex gap-1">
-                    <div class="h-1.5 w-[40%] rounded-[3px] bg-gray-200"></div>
-                    <div class="h-1.5 w-[20%] rounded-[3px] bg-gray-200"></div>
-                    <div class="h-1.5 w-[25%] rounded-[3px] bg-gray-200"></div>
+                    <div class="h-1.5 w-[40%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
+                    <div class="h-1.5 w-[20%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
+                    <div class="h-1.5 w-[25%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
                   </div>
                   <div class="flex gap-1">
                     <div
-                      class="h-1.5 w-[40%] rounded-[3px] bg-gray-200/50"
+                      class="h-1.5 w-[40%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"
                     ></div>
                     <div
-                      class="h-1.5 w-[20%] rounded-[3px] bg-gray-200/50"
+                      class="h-1.5 w-[20%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"
                     ></div>
                     <div
-                      class="h-1.5 w-[25%] rounded-[3px] bg-gray-200/50"
+                      class="h-1.5 w-[25%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"
                     ></div>
                   </div>
                   <div
@@ -1135,16 +1155,16 @@ onUnmounted(() => {
                   class="flex flex-col gap-1.5 w-[60%]"
                 >
                   <div
-                    class="mx-auto h-1.5 w-[45%] rounded-[3px] bg-gray-200"
+                    class="mx-auto h-1.5 w-[45%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
                   <div
-                    class="mx-auto h-1.5 w-[65%] rounded-[3px] bg-gray-200"
+                    class="mx-auto h-1.5 w-[65%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
-                  <div class="my-0.5 h-8 w-full rounded bg-gray-200/40"></div>
+                  <div class="my-0.5 h-8 w-full rounded bg-gray-200/40 dark:bg-gray-500/30"></div>
                   <div class="flex justify-center gap-1">
-                    <div class="h-1.5 w-[28%] rounded-[3px] bg-gray-200"></div>
-                    <div class="h-1.5 w-[28%] rounded-[3px] bg-gray-200"></div>
-                    <div class="h-1.5 w-[28%] rounded-[3px] bg-gray-200"></div>
+                    <div class="h-1.5 w-[28%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
+                    <div class="h-1.5 w-[28%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
+                    <div class="h-1.5 w-[28%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
                   </div>
                   <div
                     class="mx-auto my-1 h-5 w-[40%] rounded bg-violet-600/30"
@@ -1159,12 +1179,12 @@ onUnmounted(() => {
                     class="mx-auto h-1.5 w-[50%] rounded-[3px] bg-amber-400/60"
                   ></div>
                   <div
-                    class="mx-auto h-1.5 w-[70%] rounded-[3px] bg-gray-200"
+                    class="mx-auto h-1.5 w-[70%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
                   <div class="mt-0.5 flex gap-1">
-                    <div class="h-7 flex-1 rounded-[3px] bg-gray-200/80"></div>
-                    <div class="h-7 flex-1 rounded-[3px] bg-gray-200/80"></div>
-                    <div class="h-7 flex-1 rounded-[3px] bg-gray-200/80"></div>
+                    <div class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"></div>
+                    <div class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"></div>
+                    <div class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"></div>
                   </div>
                   <div
                     class="mx-auto my-1 h-5 w-[40%] rounded bg-amber-400/50"
@@ -1175,31 +1195,31 @@ onUnmounted(() => {
                   v-else-if="tpl.preview === 'reset'"
                   class="flex flex-col items-center gap-1.5 w-[60%]"
                 >
-                  <div class="h-1.5 w-[35%] rounded-[3px] bg-gray-200"></div>
-                  <div class="h-1.5 w-[50%] rounded-[3px] bg-gray-200"></div>
-                  <div class="h-1.5 w-[70%] rounded-[3px] bg-gray-200/50"></div>
+                  <div class="h-1.5 w-[35%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
+                  <div class="h-1.5 w-[50%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
+                  <div class="h-1.5 w-[70%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"></div>
                   <div class="my-1.5 h-5 w-[45%] rounded bg-primary/30"></div>
-                  <div class="h-1.5 w-[60%] rounded-[3px] bg-gray-200/30"></div>
+                  <div class="h-1.5 w-[60%] rounded-[3px] bg-gray-200/30 dark:bg-gray-500/20"></div>
                 </div>
               </div>
               <span
-                class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900"
+                class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >{{ tplName(tpl) }}</span
               >
               <span
-                class="block px-[14px] pb-[14px] text-xs text-gray-500 leading-[1.4]"
+                class="block px-[14px] pb-[14px] text-xs text-gray-500 dark:text-gray-400 leading-[1.4]"
                 >{{ tplDesc(tpl) }}</span
               >
             </button>
 
             <button
               :aria-label="t.a11y.startFromScratch"
-              class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
               :style="{ animationDelay: `${templates.length * 40}ms` }"
               @click="chooseTemplate(createDefaultTemplateContent())"
             >
               <div
-                class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200 text-gray-500"
+                class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200 text-gray-500 dark:bg-gray-700/50 dark:border-gray-700 dark:text-gray-400"
               >
                 <svg
                   width="32"
@@ -1217,20 +1237,20 @@ onUnmounted(() => {
                 </svg>
               </div>
               <span
-                class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900"
+                class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >{{ t.chooser.startFromScratch }}</span
               >
               <span
-                class="block px-[14px] pb-[14px] text-xs text-gray-500 leading-[1.4]"
+                class="block px-[14px] pb-[14px] text-xs text-gray-500 dark:text-gray-400 leading-[1.4]"
                 >{{ t.chooser.emptyCanvas }}</span
               >
             </button>
           </div>
 
-          <div class="flex items-center gap-3 mt-6 text-sm text-gray-500">
+          <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-6 text-sm text-gray-500 dark:text-gray-400">
             <span>{{ t.chooser.beefreePrompt }}</span>
             <button
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
               @click="showBeefreeImport = true"
             >
               <svg
@@ -1255,7 +1275,7 @@ onUnmounted(() => {
           <!-- Cloud Promotion Banner -->
           <a
             href="#cloud"
-            class="group pg-card-stagger mt-8 w-full flex items-center gap-5 p-5 border border-primary/20 rounded-xl bg-primary/[0.04] no-underline text-left transition-all duration-200 hover:border-primary/30 hover:-translate-y-px"
+            class="group pg-card-stagger mt-8 w-full flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5 p-4 sm:p-5 border border-primary/20 rounded-xl bg-primary/[0.04] no-underline text-left transition-all duration-200 hover:border-primary/30 hover:-translate-y-px"
             :style="{ animationDelay: `${(templates.length + 1) * 40}ms` }"
           >
             <div
@@ -1276,10 +1296,10 @@ onUnmounted(() => {
               </svg>
             </div>
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-semibold text-gray-900 mb-0.5">
+              <div class="text-sm font-semibold text-gray-900 mb-0.5 dark:text-gray-100">
                 {{ t.cloudBanner.title }}
               </div>
-              <div class="text-xs text-gray-500 leading-relaxed">
+              <div class="text-xs text-gray-500 leading-relaxed dark:text-gray-400">
                 {{ t.cloudBanner.description }}
               </div>
             </div>
@@ -1304,7 +1324,7 @@ onUnmounted(() => {
           </a>
 
           <div
-            class="mt-8 flex items-center gap-2 text-[13px] [&_a]:text-gray-500 [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-150 [&_a:hover]:text-gray-900"
+            class="mt-8 flex items-center gap-2 text-[13px] [&_a]:text-gray-500 [&_a]:no-underline [&_a]:transition-colors [&_a]:duration-150 [&_a:hover]:text-gray-900 [&_a]:dark:text-gray-400 [&_a:hover]:dark:text-gray-100"
           >
             <a
               href="https://docs.templatical.com"
@@ -1312,7 +1332,7 @@ onUnmounted(() => {
               rel="noopener noreferrer"
               >{{ t.toolbar.docs }}</a
             >
-            <span class="text-gray-200">&middot;</span>
+            <span class="text-gray-200 dark:text-gray-700">&middot;</span>
             <a
               href="https://github.com/templatical/editor"
               target="_blank"
@@ -1326,7 +1346,7 @@ onUnmounted(() => {
       <!-- Editor Screen -->
       <div v-else key="editor" class="flex flex-col h-full">
         <header
-          class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0 z-[100]"
+          class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-2 overflow-x-auto"
         >
           <div class="flex items-center gap-2">
             <button
@@ -1349,11 +1369,12 @@ onUnmounted(() => {
                   stroke-linejoin="round"
                 />
               </svg>
-              {{ t.toolbar.templates }}
+              <span class="pg-toolbar-label">{{ t.toolbar.templates }}</span>
             </button>
             <button
               data-onboarding="config"
               class="pg-toolbar-btn"
+              :title="t.toolbar.config"
               @click="openConfig"
             >
               <svg
@@ -1376,11 +1397,12 @@ onUnmounted(() => {
                   fill="none"
                 />
               </svg>
-              {{ t.toolbar.config }}
+              <span class="pg-toolbar-label">{{ t.toolbar.config }}</span>
             </button>
             <button
               v-if="currentFeatures.length"
               class="pg-toolbar-btn"
+              :title="t.toolbar.features"
               @click="reopenFeatureOverlay"
             >
               <svg
@@ -1403,9 +1425,13 @@ onUnmounted(() => {
                   stroke-linecap="round"
                 />
               </svg>
-              {{ t.toolbar.features }}
+              <span class="pg-toolbar-label">{{ t.toolbar.features }}</span>
             </button>
-            <button class="pg-toolbar-btn" @click="restartOnboarding">
+            <button
+              class="pg-toolbar-btn"
+              :title="t.toolbar.tour"
+              @click="restartOnboarding"
+            >
               <svg
                 width="16"
                 height="16"
@@ -1428,7 +1454,7 @@ onUnmounted(() => {
                   stroke-linecap="round"
                 />
               </svg>
-              {{ t.toolbar.tour }}
+              <span class="pg-toolbar-label">{{ t.toolbar.tour }}</span>
             </button>
           </div>
 
@@ -1437,6 +1463,7 @@ onUnmounted(() => {
             <button
               data-onboarding="json"
               class="pg-toolbar-btn"
+              :title="t.toolbar.json"
               @click="toggleJson"
             >
               <svg
@@ -1454,7 +1481,7 @@ onUnmounted(() => {
                   stroke-linejoin="round"
                 />
               </svg>
-              {{ t.toolbar.json }}
+              <span class="pg-toolbar-label">{{ t.toolbar.json }}</span>
             </button>
 
             <!-- Export dropdown -->
@@ -1468,6 +1495,7 @@ onUnmounted(() => {
             >
               <button
                 class="pg-toolbar-btn"
+                :title="t.toolbar.export"
                 aria-haspopup="true"
                 :aria-expanded="exportMenuOpen"
                 @click="exportMenuOpen = !exportMenuOpen"
@@ -1487,7 +1515,7 @@ onUnmounted(() => {
                     stroke-linejoin="round"
                   />
                 </svg>
-                {{ t.toolbar.export }}
+                <span class="pg-toolbar-label">{{ t.toolbar.export }}</span>
                 <svg
                   width="12"
                   height="12"
@@ -1508,14 +1536,14 @@ onUnmounted(() => {
                 v-if="exportMenuOpen"
                 ref="exportMenuRef"
                 role="menu"
-                class="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden z-50"
+                class="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-float overflow-hidden z-50 dark:bg-gray-800 dark:border-gray-700"
                 @keydown.arrow-down.prevent="focusExportItem(0, 1)"
                 @keydown.arrow-up.prevent="focusExportItem(0, -1)"
               >
                 <button
                   role="menuitem"
                   tabindex="-1"
-                  class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 bg-transparent border-none cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 focus-visible:bg-gray-50 focus-visible:text-gray-900 focus-visible:outline-none"
+                  class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 bg-transparent border-none cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 focus-visible:bg-gray-50 focus-visible:text-gray-900 focus-visible:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100 dark:focus-visible:bg-gray-700 dark:focus-visible:text-gray-100"
                   @click="
                     handleExportJson();
                     exportMenuOpen = false;
@@ -1526,7 +1554,7 @@ onUnmounted(() => {
                 <button
                   role="menuitem"
                   tabindex="-1"
-                  class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 bg-transparent border-none cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 focus-visible:bg-gray-50 focus-visible:text-gray-900 focus-visible:outline-none"
+                  class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 bg-transparent border-none cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 focus-visible:bg-gray-50 focus-visible:text-gray-900 focus-visible:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100 dark:focus-visible:bg-gray-700 dark:focus-visible:text-gray-100"
                   @click="
                     handleExportMjml();
                     exportMenuOpen = false;
@@ -1540,6 +1568,7 @@ onUnmounted(() => {
             <button
               data-onboarding="share"
               class="pg-toolbar-btn"
+              :title="t.toolbar.share"
               @click="handleShare"
             >
               <svg
@@ -1557,16 +1586,16 @@ onUnmounted(() => {
                 <polyline points="16 6 12 2 8 6" />
                 <line x1="12" y1="2" x2="12" y2="15" />
               </svg>
-              {{ t.toolbar.share }}
+              <span class="pg-toolbar-label">{{ t.toolbar.share }}</span>
             </button>
 
-            <div class="w-px h-5 bg-gray-200 mx-1" />
+            <div class="w-px h-5 bg-gray-200 mx-1 hidden sm:block dark:bg-gray-700" />
 
             <a
               href="https://docs.templatical.com"
               target="_blank"
               rel="noopener noreferrer"
-              class="pg-toolbar-btn no-underline"
+              class="pg-toolbar-btn no-underline hidden sm:inline-flex"
               >{{ t.toolbar.docs }}</a
             >
             <a
@@ -1606,7 +1635,7 @@ onUnmounted(() => {
               >
                 <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
               </svg>
-              {{ t.toolbar.tryCloud }}
+              <span class="pg-toolbar-label">{{ t.toolbar.tryCloud }}</span>
               <svg
                 width="10"
                 height="10"
@@ -1617,14 +1646,15 @@ onUnmounted(() => {
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 aria-hidden="true"
-                class="transition-transform duration-150 group-hover:translate-x-0.5"
+                class="transition-transform duration-150 group-hover:translate-x-0.5 hidden sm:block"
               >
                 <path d="M6 3l5 5-5 5" />
               </svg>
             </a>
             <select
               v-model="locale"
-              class="h-8 px-2 pr-7 text-[12px] font-medium text-gray-500 bg-white border border-gray-200 rounded-md cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3Csvg_xmlns=%27http://www.w3.org/2000/svg%27_width=%2712%27_height=%2712%27_viewBox=%270_0_24_24%27_fill=%27none%27_stroke=%27%236b7280%27_stroke-width=%272%27_stroke-linecap=%27round%27_stroke-linejoin=%27round%27%3E%3Cpath_d=%27m6_9_6_6_6-6%27/%3E%3C/svg%3E')] bg-no-repeat bg-[position:right_6px_center] transition-colors duration-150 hover:text-gray-900 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              :aria-label="t.a11y.selectLanguage"
+              class="pg-locale-select"
             >
               <option v-for="loc in supportedLocales" :key="loc" :value="loc">
                 {{ loc.toUpperCase() }}
@@ -1633,10 +1663,10 @@ onUnmounted(() => {
           </div>
         </header>
 
-        <main class="flex flex-1 min-h-0 relative bg-gray-100 p-[15px]">
+        <main class="flex flex-1 min-h-0 relative bg-gray-100 p-[15px] dark:bg-gray-950">
           <div
             v-if="initError"
-            class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center bg-white rounded-lg border border-gray-200 shadow-sm"
+            class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center bg-white rounded-lg border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700"
           >
             <p class="m-0 text-sm text-red-500">{{ initError }}</p>
             <button class="pg-toolbar-btn" @click="initEditor">
@@ -1647,14 +1677,14 @@ onUnmounted(() => {
             v-else
             ref="editorContainer"
             data-onboarding="canvas"
-            class="flex-1 min-w-0 isolate rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white"
+            class="flex-1 min-w-0 isolate rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700"
           />
 
           <!-- Floating cloud upsell banner -->
           <Transition name="pg-modal">
             <div
               v-if="!cloudBannerDismissed"
-              class="absolute bottom-4 left-1/2 -translate-x-1/2 z-[99] flex items-center gap-3 py-2.5 pl-4 pr-2.5 bg-white border border-gray-200 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.1)] max-w-[520px] w-[calc(100%-2rem)]"
+              class="absolute bottom-4 left-1/2 -translate-x-1/2 z-[99] flex items-center gap-3 py-2.5 pl-4 pr-2.5 bg-white border border-gray-200 rounded-xl shadow-float max-w-[520px] w-[calc(100%-2rem)] dark:bg-gray-800 dark:border-gray-700"
             >
               <div class="flex items-center gap-2.5 flex-1 min-w-0">
                 <div
@@ -1674,9 +1704,9 @@ onUnmounted(() => {
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                   </svg>
                 </div>
-                <span class="text-[13px] text-gray-600 leading-snug"
+                <span class="text-[13px] text-gray-600 leading-snug dark:text-gray-400"
                   >{{ t.floatingBanner.before
-                  }}<strong class="text-gray-900 font-semibold">{{
+                  }}<strong class="text-gray-900 font-semibold dark:text-gray-100">{{
                     t.cloudBanner.floatingFeatures
                   }}</strong
                   >{{ t.floatingBanner.after }}</span
@@ -1689,7 +1719,7 @@ onUnmounted(() => {
               >
               <button
                 :aria-label="t.common.dismiss"
-                class="shrink-0 size-7 flex items-center justify-center border-none bg-transparent text-gray-400 cursor-pointer rounded-md transition-colors duration-150 hover:bg-gray-100 hover:text-gray-600"
+                class="shrink-0 size-7 flex items-center justify-center border-none bg-transparent text-gray-400 cursor-pointer rounded-md transition-colors duration-150 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                 @click="cloudBannerDismissed = true"
               >
                 &times;
@@ -1714,19 +1744,19 @@ onUnmounted(() => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="json-modal-title"
-            class="pg-modal-dialog w-[720px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden"
+            class="pg-modal-dialog w-[720px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
           >
             <div
-              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0"
+              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0 dark:border-gray-700"
             >
               <span
                 id="json-modal-title"
-                class="text-sm font-semibold text-gray-900"
+                class="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >{{ t.jsonModal.title }}</span
               >
               <div class="flex items-center gap-2">
                 <button
-                  class="h-[30px] px-3 border border-gray-200 rounded-md bg-white text-gray-500 text-xs font-medium font-sans cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900"
+                  class="h-[30px] px-3 border border-gray-200 rounded-md bg-white text-gray-500 text-xs font-medium font-sans cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-100"
                   @click="copyJson"
                 >
                   <span aria-live="polite">{{
@@ -1743,7 +1773,7 @@ onUnmounted(() => {
               </div>
             </div>
             <div
-              class="flex-1 overflow-auto [&_pre]:m-0 [&_pre]:p-5 [&_pre]:text-xs [&_pre]:leading-relaxed [&_pre]:font-mono [&_pre]:text-gray-500"
+              class="flex-1 overflow-auto [&_pre]:m-0 [&_pre]:p-5 [&_pre]:text-xs [&_pre]:leading-relaxed [&_pre]:font-mono [&_pre]:text-gray-500 [&_pre]:dark:text-gray-400"
             >
               <pre><code>{{ jsonContent }}</code></pre>
             </div>
@@ -1766,14 +1796,14 @@ onUnmounted(() => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="share-modal-title"
-            class="pg-modal-dialog w-[440px] max-w-[90vw] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden"
+            class="pg-modal-dialog w-[440px] max-w-[90vw] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
           >
             <div
-              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0"
+              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0 dark:border-gray-700"
             >
               <span
                 id="share-modal-title"
-                class="text-sm font-semibold text-gray-900"
+                class="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >{{ t.shareModal.title }}</span
               >
               <button
@@ -1791,10 +1821,11 @@ onUnmounted(() => {
                 class="flex flex-col items-center gap-3 py-4"
               >
                 <svg
-                  class="animate-spin h-5 w-5 text-gray-400"
+                  class="animate-spin h-5 w-5 text-gray-400 dark:text-gray-500"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <circle
                     class="opacity-25"
@@ -1810,7 +1841,7 @@ onUnmounted(() => {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                   />
                 </svg>
-                <span class="text-sm text-gray-500">{{
+                <span class="text-sm text-gray-500 dark:text-gray-400">{{
                   t.shareModal.loading
                 }}</span>
               </div>
@@ -1820,11 +1851,11 @@ onUnmounted(() => {
                 v-else-if="shareError"
                 class="flex flex-col items-center gap-3 py-4"
               >
-                <p class="text-sm text-gray-500 m-0">
+                <p class="text-sm text-gray-500 dark:text-gray-400 m-0">
                   {{ t.shareModal.error }}
                 </p>
                 <button
-                  class="h-8 px-4 bg-gray-900 text-white text-xs font-medium font-sans rounded-md border-none cursor-pointer transition-colors duration-150 hover:bg-gray-800"
+                  class="h-8 px-4 bg-gray-900 text-white text-xs font-medium font-sans rounded-md border-none cursor-pointer transition-colors duration-150 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
                   @click="handleShare"
                 >
                   {{ t.shareModal.retry }}
@@ -1833,19 +1864,20 @@ onUnmounted(() => {
 
               <!-- Success -->
               <div v-else class="flex flex-col gap-3">
-                <p class="text-[13px] text-gray-500 m-0">
+                <p class="text-[13px] text-gray-500 dark:text-gray-400 m-0">
                   {{ t.shareModal.description }}
                 </p>
                 <div class="flex gap-2">
                   <input
                     :value="shareUrl"
                     readonly
-                    class="flex-1 h-9 px-3 text-[13px] font-mono text-gray-700 bg-gray-50 border border-gray-200 rounded-md outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    :aria-label="t.shareModal.copyLink"
+                    class="flex-1 h-9 px-3 text-[13px] font-mono text-gray-700 bg-gray-50 border border-gray-200 rounded-md outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
                     @focus="($event.target as HTMLInputElement).select()"
                   />
                   <button
                     v-if="clipboardSupported"
-                    class="h-9 px-4 border border-gray-200 rounded-md bg-white text-gray-700 text-xs font-medium font-sans cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 whitespace-nowrap"
+                    class="h-9 px-4 border border-gray-200 rounded-md bg-white text-gray-700 text-xs font-medium font-sans cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 whitespace-nowrap dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-gray-100"
                     @click="copyShareUrl(shareUrl)"
                   >
                     {{
@@ -1853,7 +1885,7 @@ onUnmounted(() => {
                     }}
                   </button>
                 </div>
-                <p class="text-[11px] text-gray-400 m-0">
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 m-0">
                   {{ t.shareModal.expiry }}
                 </p>
               </div>
@@ -1877,12 +1909,17 @@ onUnmounted(() => {
             role="dialog"
             aria-modal="true"
             :aria-label="t.a11y.editorConfig"
-            class="pg-modal-dialog w-[800px] max-w-[90vw] max-h-[90vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden"
+            class="pg-modal-dialog w-[800px] max-w-[90vw] max-h-[90vh] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
           >
             <div
-              class="flex items-center justify-between px-5 py-3 border-b border-gray-200 shrink-0"
+              class="flex items-center justify-between px-5 py-3 border-b border-gray-200 shrink-0 dark:border-gray-700"
             >
-              <div role="tablist" class="flex items-center gap-1">
+              <div
+                role="tablist"
+                class="flex items-center gap-1"
+                @keydown.arrow-right.prevent="focusConfigTab(1)"
+                @keydown.arrow-left.prevent="focusConfigTab(-1)"
+              >
                 <button
                   v-for="tab in [
                     'options',
@@ -1896,11 +1933,12 @@ onUnmounted(() => {
                   role="tab"
                   :aria-selected="configTab === tab"
                   :aria-controls="`config-panel-${tab}`"
-                  class="h-8 px-3 text-[13px] font-medium rounded-md border-none cursor-pointer transition-colors duration-150"
+                  :tabindex="configTab === tab ? 0 : -1"
+                  class="pg-tab h-8 px-3 text-[13px]"
                   :class="
                     configTab === tab
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'pg-tab-active'
+                      : 'pg-tab-inactive text-gray-500 dark:text-gray-400'
                   "
                   @click="configTab = tab"
                 >
@@ -1963,13 +2001,13 @@ onUnmounted(() => {
                 <div class="flex items-center gap-3">
                   <label
                     for="defaults-preset"
-                    class="text-[13px] font-medium text-gray-700 shrink-0"
+                    class="text-[13px] font-medium text-gray-700 shrink-0 dark:text-gray-300"
                     >{{ t.configModal.defaultsPresetLabel }}</label
                   >
                   <select
                     id="defaults-preset"
                     v-model="selectedPresetKey"
-                    class="h-8 px-2 pr-7 text-[13px] font-medium text-gray-700 bg-white border border-gray-200 rounded-md cursor-pointer appearance-none bg-[url('data:image/svg+xml,%3Csvg_xmlns=%27http://www.w3.org/2000/svg%27_width=%2712%27_height=%2712%27_viewBox=%270_0_24_24%27_fill=%27none%27_stroke=%27%236b7280%27_stroke-width=%272%27_stroke-linecap=%27round%27_stroke-linejoin=%27round%27%3E%3Cpath_d=%27m6_9_6_6_6-6%27/%3E%3C/svg%3E')] bg-no-repeat bg-[position:right_6px_center] transition-colors duration-150 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    class="pg-locale-select text-[13px] text-gray-700 dark:text-gray-300"
                   >
                     <option
                       v-for="preset in defaultsPresets"
@@ -1984,7 +2022,7 @@ onUnmounted(() => {
                     </option>
                   </select>
                 </div>
-                <p class="m-0 text-[12px] text-gray-500">
+                <p class="m-0 text-[12px] text-gray-500 dark:text-gray-400">
                   {{ t.configModal.defaultsHint }}
                 </p>
                 <CodeEditor
@@ -2000,7 +2038,7 @@ onUnmounted(() => {
                 aria-labelledby="config-tab-callbacks"
                 class="flex flex-col gap-4"
               >
-                <p class="m-0 text-[13px] text-gray-500">
+                <p class="m-0 text-[13px] text-gray-500 dark:text-gray-400">
                   {{ t.configModal.callbacksHint }}
                 </p>
                 <label class="flex items-center gap-3 cursor-pointer">
@@ -2010,10 +2048,10 @@ onUnmounted(() => {
                     class="size-4 accent-primary cursor-pointer"
                   />
                   <div>
-                    <span class="text-[13px] font-medium text-gray-900"
+                    <span class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
                       >onRequestMedia</span
                     >
-                    <p class="m-0 mt-0.5 text-[12px] text-gray-500">
+                    <p class="m-0 mt-0.5 text-[12px] text-gray-500 dark:text-gray-400">
                       {{ t.configModal.onRequestMediaDesc }}
                     </p>
                   </div>
@@ -2025,10 +2063,10 @@ onUnmounted(() => {
                     class="size-4 accent-primary cursor-pointer"
                   />
                   <div>
-                    <span class="text-[13px] font-medium text-gray-900"
+                    <span class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
                       >mergeTags.onRequest</span
                     >
-                    <p class="m-0 mt-0.5 text-[12px] text-gray-500">
+                    <p class="m-0 mt-0.5 text-[12px] text-gray-500 dark:text-gray-400">
                       {{ t.configModal.onRequestMergeTag }}
                     </p>
                   </div>
@@ -2039,14 +2077,14 @@ onUnmounted(() => {
               </p>
             </div>
             <div
-              class="flex items-center justify-between px-5 py-4 border-t border-gray-200 shrink-0"
+              class="flex items-center justify-between px-5 py-4 border-t border-gray-200 shrink-0 dark:border-gray-700"
             >
-              <p class="m-0 text-xs text-gray-400">
+              <p class="m-0 text-xs text-gray-400 dark:text-gray-500">
                 {{ t.configModal.descriptions[configTab] }}
               </p>
               <div class="flex items-center gap-2">
                 <button
-                  class="h-9 px-4 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50"
+                  class="pg-cancel-btn"
                   @click="showConfig = false"
                 >
                   {{ t.configModal.cancel }}
@@ -2081,18 +2119,18 @@ onUnmounted(() => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="beefree-modal-title"
-            class="pg-modal-dialog w-[640px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden"
+            class="pg-modal-dialog w-[640px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
           >
             <div
-              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0"
+              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0 dark:border-gray-700"
             >
               <div>
                 <span
                   id="beefree-modal-title"
-                  class="text-sm font-semibold text-gray-900"
+                  class="text-sm font-semibold text-gray-900 dark:text-gray-100"
                   >{{ t.beefreeModal.title }}</span
                 >
-                <p class="m-0 mt-1 text-xs text-gray-500">
+                <p class="m-0 mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {{ t.beefreeModal.description }}
                 </p>
               </div>
@@ -2109,7 +2147,7 @@ onUnmounted(() => {
             </div>
             <div class="flex-1 overflow-auto p-5">
               <button
-                class="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 cursor-pointer transition-[border-color,color] duration-150 bg-transparent hover:border-primary hover:text-gray-900"
+                class="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 cursor-pointer transition-[border-color,color] duration-150 bg-transparent hover:border-primary hover:text-gray-900 dark:border-gray-600 dark:text-gray-400 dark:hover:text-gray-100"
                 @click="openBeefreeFile"
               >
                 <svg
@@ -2133,7 +2171,7 @@ onUnmounted(() => {
               </button>
 
               <div
-                class="flex items-center gap-4 my-4 text-gray-500 text-xs uppercase tracking-[0.5px] before:content-[''] before:flex-1 before:h-px before:bg-gray-200 after:content-[''] after:flex-1 after:h-px after:bg-gray-200"
+                class="flex items-center gap-4 my-4 text-gray-500 text-xs uppercase tracking-[0.5px] before:content-[''] before:flex-1 before:h-px before:bg-gray-200 after:content-[''] after:flex-1 after:h-px after:bg-gray-200 dark:text-gray-400 before:dark:bg-gray-700 after:dark:bg-gray-700"
               >
                 <span>{{ t.beefreeModal.orPaste }}</span>
               </div>
@@ -2141,7 +2179,7 @@ onUnmounted(() => {
               <textarea
                 v-model="beefreeJson"
                 :aria-label="t.a11y.beefreeJsonContent"
-                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
                 placeholder='{"page": {"body": {...}, "rows": [...]}}'
               ></textarea>
               <p v-if="beefreeError" class="mt-2 mb-0 text-[13px] text-red-500">
@@ -2149,10 +2187,10 @@ onUnmounted(() => {
               </p>
             </div>
             <div
-              class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200 shrink-0"
+              class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200 shrink-0 dark:border-gray-700"
             >
               <button
-                class="h-9 px-4 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50"
+                class="pg-cancel-btn"
                 @click="
                   showBeefreeImport = false;
                   beefreeError = '';
@@ -2186,14 +2224,14 @@ onUnmounted(() => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="mergetag-modal-title"
-            class="pg-modal-dialog w-[380px] max-w-[90vw] max-h-[480px] flex flex-col bg-white rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.15)] overflow-hidden"
+            class="pg-modal-dialog w-[380px] max-w-[90vw] max-h-[480px] flex flex-col bg-white rounded-xl shadow-modal-sm overflow-hidden dark:bg-gray-800"
           >
             <div
-              class="flex items-center justify-between px-5 py-4 border-b border-gray-200"
+              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700"
             >
               <span
                 id="mergetag-modal-title"
-                class="text-sm font-semibold text-gray-900"
+                class="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >{{ t.mergeTagModal.title }}</span
               >
               <button
@@ -2208,14 +2246,14 @@ onUnmounted(() => {
               <button
                 v-for="tag in mergeTagList"
                 :key="tag.value"
-                class="group flex items-center justify-between w-full px-3 py-2.5 border-none bg-transparent rounded-lg cursor-pointer transition-[background] duration-[120ms] text-left font-sans hover:bg-gray-50"
+                class="group flex items-center justify-between w-full px-3 py-2.5 border-none bg-transparent rounded-lg cursor-pointer transition-[background] duration-[120ms] text-left font-sans hover:bg-gray-50 dark:hover:bg-gray-700"
                 @click="selectMergeTag(tag)"
               >
-                <span class="text-[13px] font-medium text-gray-900">{{
+                <span class="text-[13px] font-medium text-gray-900 dark:text-gray-100">{{
                   tag.label
                 }}</span>
                 <code
-                  class="text-[11px] font-mono text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded group-hover:bg-gray-200"
+                  class="text-[11px] font-mono text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded group-hover:bg-gray-200 dark:text-gray-400 dark:bg-gray-700 dark:group-hover:bg-gray-600"
                   >{{ tag.value }}</code
                 >
               </button>
@@ -2239,14 +2277,14 @@ onUnmounted(() => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="media-modal-title"
-            class="pg-modal-dialog w-[460px] max-w-[90vw] flex flex-col bg-white rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.15)] overflow-hidden"
+            class="pg-modal-dialog w-[460px] max-w-[90vw] flex flex-col bg-white rounded-xl shadow-modal-sm overflow-hidden dark:bg-gray-800"
           >
             <div
-              class="flex items-center justify-between px-5 py-4 border-b border-gray-200"
+              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700"
             >
               <span
                 id="media-modal-title"
-                class="text-sm font-semibold text-gray-900"
+                class="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >{{ t.mediaModal.title }}</span
               >
               <button
@@ -2261,15 +2299,16 @@ onUnmounted(() => {
               <button
                 v-for="img in demoImages"
                 :key="img.url"
-                class="group flex flex-col items-center gap-2 p-0 border border-gray-200 rounded-lg bg-white cursor-pointer transition-[border-color,box-shadow] duration-150 overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle"
+                class="group flex flex-col items-center gap-2 p-0 border border-gray-200 rounded-lg bg-white cursor-pointer transition-[border-color,box-shadow] duration-150 overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle dark:bg-gray-700 dark:border-gray-600"
                 @click="selectMedia(img.url, img.label)"
               >
                 <img
                   :src="img.thumb"
                   :alt="img.label"
+                  loading="lazy"
                   class="w-full h-24 object-cover"
                 />
-                <span class="text-[12px] font-medium text-gray-700 pb-2">{{
+                <span class="text-[12px] font-medium text-gray-700 pb-2 dark:text-gray-300">{{
                   img.label
                 }}</span>
               </button>
@@ -2293,14 +2332,14 @@ onUnmounted(() => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="datasource-modal-title"
-            class="pg-modal-dialog w-[500px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden"
+            class="pg-modal-dialog w-[500px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
           >
             <div
-              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0"
+              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0 dark:border-gray-700"
             >
               <span
                 id="datasource-modal-title"
-                class="text-sm font-semibold text-gray-900"
+                class="text-sm font-semibold text-gray-900 dark:text-gray-100"
                 >{{ dataSourcePickerRequest.title }}</span
               >
               <button
@@ -2320,6 +2359,7 @@ onUnmounted(() => {
                 class="h-6 w-6 animate-spin text-primary"
                 viewBox="0 0 24 24"
                 fill="none"
+                aria-hidden="true"
               >
                 <circle
                   cx="12"
@@ -2337,15 +2377,15 @@ onUnmounted(() => {
                 />
               </svg>
               <div class="text-center space-y-2">
-                <p class="m-0 text-sm text-gray-500">
+                <p class="m-0 text-sm text-gray-500 dark:text-gray-400">
                   {{ t.dataSourceModal.fetching }}
                 </p>
                 <code
-                  class="block text-[11px] text-gray-400 font-mono bg-gray-50 rounded-md px-3 py-2 border border-gray-100 max-w-full break-all"
+                  class="block text-[11px] text-gray-400 font-mono bg-gray-50 rounded-md px-3 py-2 border border-gray-100 max-w-full break-all dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
                   >{{ dataSourcePickerRequest.endpoint }}</code
                 >
                 <p
-                  class="m-0 text-[11px] text-gray-400 leading-relaxed max-w-xs mx-auto"
+                  class="m-0 text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed max-w-xs mx-auto"
                 >
                   {{ t.dataSourceModal.fetchDescription }}
                 </p>
@@ -2355,29 +2395,29 @@ onUnmounted(() => {
             <!-- Items revealed after loading -->
             <div v-else class="flex-1 overflow-auto p-3 space-y-2">
               <p
-                class="m-0 px-2 pb-1 text-[11px] text-gray-400 uppercase tracking-[0.5px] font-medium"
+                class="m-0 px-2 pb-1 text-[11px] text-gray-400 dark:text-gray-500 uppercase tracking-[0.5px] font-medium"
               >
                 {{ t.dataSourceModal.responseReceived }}
               </p>
               <button
                 v-for="item in dataSourcePickerRequest.items"
                 :key="item.id"
-                class="group flex w-full items-center gap-3 p-3 border border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-150 text-left font-sans hover:border-primary hover:shadow-primary-ring-subtle"
+                class="group flex w-full items-center gap-3 p-3 border border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-150 text-left font-sans hover:border-primary hover:shadow-primary-ring-subtle dark:bg-gray-700 dark:border-gray-600"
                 @click="selectDataSourceItem(item)"
               >
                 <img
                   v-if="item.thumbnail"
                   :src="item.thumbnail"
                   :alt="item.label"
-                  class="shrink-0 size-12 rounded-md object-cover border border-gray-100"
+                  class="shrink-0 size-12 rounded-md object-cover border border-gray-100 dark:border-gray-600"
                 />
                 <div class="min-w-0 flex-1">
                   <div
-                    class="text-[13px] font-semibold text-gray-900 group-hover:text-primary transition-colors duration-150"
+                    class="text-[13px] font-semibold text-gray-900 group-hover:text-primary transition-colors duration-150 dark:text-gray-100"
                   >
                     {{ item.label }}
                   </div>
-                  <p class="m-0 mt-0.5 text-xs text-gray-500 truncate">
+                  <p class="m-0 mt-0.5 text-xs text-gray-500 dark:text-gray-400 truncate">
                     {{ item.description }}
                   </p>
                 </div>
@@ -2418,18 +2458,18 @@ onUnmounted(() => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="features-modal-title"
-            class="pg-modal-dialog w-[720px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-[0_24px_64px_rgba(0,0,0,0.2)] overflow-hidden"
+            class="pg-modal-dialog w-[720px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
           >
             <div
-              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0"
+              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0 dark:border-gray-700"
             >
               <div>
                 <span
                   id="features-modal-title"
-                  class="text-sm font-semibold text-gray-900"
+                  class="text-sm font-semibold text-gray-900 dark:text-gray-100"
                   >{{ t.featureModal.title }}</span
                 >
-                <p class="m-0 mt-1 text-xs text-gray-500">
+                <p class="m-0 mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {{
                     format(t.featureModal.subtitle, {
                       name: currentTemplateName,
@@ -2449,7 +2489,7 @@ onUnmounted(() => {
               <div
                 v-for="(feature, i) in currentFeatures"
                 :key="i"
-                class="flex gap-3 p-3.5 bg-gray-50 rounded-lg border border-gray-100"
+                class="flex gap-3 p-3.5 bg-gray-50 rounded-lg border border-gray-100 dark:bg-gray-700 dark:border-gray-600"
               >
                 <div
                   class="shrink-0 flex items-center justify-center size-8 rounded-md bg-primary/10 text-primary mt-0.5"
@@ -2602,13 +2642,13 @@ onUnmounted(() => {
                   </svg>
                 </div>
                 <div class="min-w-0">
-                  <div class="text-[13px] font-semibold text-gray-900">
+                  <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100">
                     {{ feature.label }}
                   </div>
                   <p
                     v-for="(para, pi) in feature.description.split('\n')"
                     :key="pi"
-                    class="text-xs text-gray-500 leading-relaxed"
+                    class="text-xs text-gray-500 leading-relaxed dark:text-gray-400"
                     :class="pi === 0 ? 'm-0 mt-1.5' : 'm-0 mt-2'"
                   >
                     {{ para }}
@@ -2617,7 +2657,7 @@ onUnmounted(() => {
               </div>
             </div>
             <div
-              class="flex items-center justify-end px-5 py-4 border-t border-gray-200 shrink-0"
+              class="flex items-center justify-end px-5 py-4 border-t border-gray-200 shrink-0 dark:border-gray-700"
             >
               <button
                 class="pg-cta h-9 px-5 text-[13px] rounded-md"
@@ -2643,7 +2683,7 @@ onUnmounted(() => {
           <!-- Spotlight with backdrop shadow -->
           <div
             v-if="onboardingRect"
-            class="pg-onboarding-spotlight absolute"
+            class="pg-onboarding-spotlight absolute top-0 left-0"
             :style="onboardingSpotlightStyle"
             @click="dismissOnboarding"
           />
@@ -2651,7 +2691,11 @@ onUnmounted(() => {
           <!-- Tooltip -->
           <div
             v-if="onboardingRect"
-            class="pg-onboarding-tooltip fixed z-[10002] w-[300px] bg-white rounded-xl shadow-[0_16px_48px_rgba(0,0,0,0.2)] overflow-hidden"
+            ref="onboardingTooltipRef"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="onboardingStepData.title"
+            class="pg-onboarding-tooltip fixed z-[10002] w-[300px] bg-white rounded-xl shadow-modal-sm overflow-hidden dark:bg-gray-800"
             :style="onboardingTooltipStyle"
           >
             <div class="px-4 pt-4 pb-3">
@@ -2665,11 +2709,11 @@ onUnmounted(() => {
                   })
                 }}
               </div>
-              <div class="text-[15px] font-semibold text-gray-900 mb-1.5">
+              <div class="text-[15px] font-semibold text-gray-900 mb-1.5 dark:text-gray-100">
                 {{ onboardingStepData.title }}
               </div>
               <div
-                class="text-[13px] text-gray-500 leading-relaxed min-h-[40px]"
+                class="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed min-h-[40px]"
               >
                 {{ typedText
                 }}<span
@@ -2680,10 +2724,10 @@ onUnmounted(() => {
               </div>
             </div>
             <div
-              class="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50"
+              class="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-800/50"
             >
               <button
-                class="text-[13px] text-gray-400 bg-transparent border-none cursor-pointer font-sans transition-colors duration-150 hover:text-gray-600"
+                class="text-[13px] text-gray-400 bg-transparent border-none cursor-pointer font-sans transition-colors duration-150 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                 @click="dismissOnboarding"
               >
                 {{ t.onboarding.skip }}

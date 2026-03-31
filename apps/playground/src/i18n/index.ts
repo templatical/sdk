@@ -1,4 +1,4 @@
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { useLocalStorage } from "@vueuse/core";
 import en from "./en";
 import de from "./de";
@@ -20,6 +20,15 @@ export function usePlaygroundI18n() {
     "en",
   );
   const t = computed(() => translations[locale.value] ?? en);
+
+  watch(
+    locale,
+    (lang) => {
+      document.documentElement.lang = lang;
+    },
+    { immediate: true },
+  );
+
   return { locale, t };
 }
 

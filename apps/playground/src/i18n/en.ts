@@ -221,6 +221,7 @@ export default {
     templateUuid: "Template UUID",
     editorConfig: "Editor Configuration",
     beefreeJsonContent: "BeeFree JSON content",
+    selectLanguage: "Select language",
   },
   cloud: {
     title: "Templatical Cloud",

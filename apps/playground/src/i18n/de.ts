@@ -227,6 +227,7 @@ export default {
     templateUuid: "Vorlagen-UUID",
     editorConfig: "Editor-Konfiguration",
     beefreeJsonContent: "BeeFree-JSON-Inhalt",
+    selectLanguage: "Sprache auswählen",
   },
   cloud: {
     title: "Templatical Cloud",

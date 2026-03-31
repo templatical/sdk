@@ -48,6 +48,13 @@ onMounted(() => {
         json(),
         syntaxHighlighting(defaultHighlightStyle),
         keymap.of([...defaultKeymap, indentWithTab]),
+        ...(props.ariaLabel
+          ? [
+              EditorView.contentAttributes.of({
+                "aria-label": props.ariaLabel,
+              }),
+            ]
+          : []),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             skipUpdate = true;
@@ -82,9 +89,6 @@ onUnmounted(() => {
 <template>
   <div
     ref="container"
-    role="textbox"
-    aria-multiline="true"
-    :aria-label="ariaLabel"
-    class="h-[min(480px,60vh)] border border-gray-200 rounded-lg overflow-auto text-sm"
+    class="h-[min(480px,60vh)] border border-gray-200 rounded-lg overflow-auto text-sm dark:border-gray-700"
   />
 </template>
