@@ -1,6 +1,3 @@
 name = "templatical-playground"
 compatibility_date = "2025-01-01"
 pages_build_output_dir = "apps/playground/dist"
-
-[build]
-command = "bun install && bun run --filter @templatical/playground build"
