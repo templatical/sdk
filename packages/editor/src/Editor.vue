@@ -432,7 +432,7 @@ defineExpose({
             </button>
           </Transition>
         </div>
-        <div class="tpl:flex tpl:min-h-full tpl:justify-center tpl:p-8">
+        <div class="tpl:flex tpl:justify-center tpl:p-8">
           <Canvas
             :viewport="editor.state.viewport"
             :content="editor.content.value"
