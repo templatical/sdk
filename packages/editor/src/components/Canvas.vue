@@ -92,6 +92,9 @@ const viewportWidth = computed(() => {
   }
 });
 
+// Canvas dark mode preview: simulates how the email will appear in recipients'
+// dark-themed email clients. Uses CSS filter inversion — independent of the
+// editor UI theme (light/dark/auto) which is controlled via uiTheme config.
 const canvasStyle = computed(() => ({
   backgroundColor: props.content.settings.backgroundColor,
   fontFamily: props.content.settings.fontFamily,

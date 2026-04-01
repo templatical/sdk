@@ -31,6 +31,7 @@ import {
   shallowRef,
   watch,
   type ComputedRef,
+  type Ref,
 } from "vue";
 
 const props = defineProps<{
@@ -44,6 +45,7 @@ const emit = defineEmits<{
 
 const emailEditor = inject<UseEditorReturn>("editor");
 const themeStyles = inject<ComputedRef<Record<string, string>>>("themeStyles");
+const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
 const {
   mergeTags,
   isEnabled: mergeTagEnabled,
@@ -267,6 +269,7 @@ async function handleAddMergeTag(): Promise<void> {
   <div class="tpl-text-editor-wrapper tpl:relative">
     <Teleport to="body">
       <div
+        :data-tpl-theme="tplUiTheme"
         class="tpl tpl-text-toolbar tpl:fixed tpl:z-[9999] tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:shadow-lg"
         :style="{
           ...themeStyles,
@@ -539,6 +542,7 @@ async function handleAddMergeTag(): Promise<void> {
     <Teleport to="body">
       <div
         v-if="showLinkDialog"
+        :data-tpl-theme="tplUiTheme"
         class="tpl tpl-link-dialog tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center tpl:bg-black/50"
         :style="themeStyles"
         @click.self="closeLinkDialog"

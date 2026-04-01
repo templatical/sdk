@@ -11,6 +11,7 @@ import type {
   TemplateContent,
   TemplateDefaults,
   ThemeOverrides,
+  UiTheme,
 } from "@templatical/types";
 import type { EditorPlugin } from "@templatical/core";
 import Editor from "./Editor.vue";
@@ -39,6 +40,7 @@ export interface TemplaticalEditorConfig {
   templateDefaults?: TemplateDefaults;
 
   theme?: ThemeOverrides;
+  uiTheme?: UiTheme;
   locale?: string;
 
   plugins?: EditorPlugin[];
@@ -47,6 +49,7 @@ export interface TemplaticalEditorConfig {
 export interface TemplaticalEditor {
   getContent(): TemplateContent;
   setContent(content: TemplateContent): void;
+  setTheme(theme: UiTheme): void;
   unmount(): void;
   toMjml?(): string;
 }
@@ -104,6 +107,11 @@ export function init(config: TemplaticalEditorConfig): TemplaticalEditor {
         editorRef.value.setContent(content);
       }
       config.content = content;
+    },
+    setTheme(theme: UiTheme) {
+      if (editorRef.value) {
+        editorRef.value.setTheme(theme);
+      }
     },
     unmount,
   };
@@ -189,6 +197,11 @@ export async function initCloud(
         cloudEditorRef.value.setContent(content);
       }
     },
+    setTheme(theme: UiTheme) {
+      if (cloudEditorRef.value) {
+        cloudEditorRef.value.setTheme(theme);
+      }
+    },
     unmount: unmountCloud,
     create(content?: TemplateContent) {
       if (!cloudEditorRef.value) {
@@ -266,6 +279,7 @@ export type {
   TemplateContent,
   TemplateDefaults,
   ThemeOverrides,
+  UiTheme,
   MergeTagsConfig,
   DisplayConditionsConfig,
   CustomBlockDefinition,

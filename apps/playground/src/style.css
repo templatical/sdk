@@ -59,6 +59,10 @@ html.dark body {
     }
 }
 
+.pg-theme-btn {
+    @apply flex items-center justify-center size-8 rounded-md border border-gray-200 text-gray-500 bg-white cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:border-gray-600;
+}
+
 .pg-locale-select {
     @apply h-8 px-2 pr-7 text-[12px] font-medium text-gray-500 bg-white border border-gray-200 rounded-md cursor-pointer appearance-none bg-no-repeat transition-colors duration-150 hover:text-gray-900 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:border-gray-600;
     background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%236b7280%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');

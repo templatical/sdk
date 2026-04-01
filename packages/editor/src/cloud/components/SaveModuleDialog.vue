@@ -4,7 +4,7 @@ import type { UseEditorReturn } from "@templatical/core/cloud";
 import type { UseSavedModulesReturn } from "@templatical/core/cloud";
 import type { Block } from "@templatical/types";
 import { Loader2 } from "lucide-vue-next";
-import { computed, inject, ref, watch } from "vue";
+import { computed, inject, ref, watch, type Ref } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -17,6 +17,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
 const editor = inject<UseEditorReturn>("editor")!;
 const savedModules = inject<UseSavedModulesReturn>("savedModulesHeadless")!;
 
@@ -112,6 +113,7 @@ function handleKeydown(event: KeyboardEvent): void {
     >
       <div
         v-if="visible"
+        :data-tpl-theme="tplUiTheme"
         class="tpl tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center"
         style="
           background-color: var(--tpl-overlay);

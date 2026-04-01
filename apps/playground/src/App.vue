@@ -4,6 +4,7 @@ import {
   computed,
   watch,
   inject,
+  provide,
   onMounted,
   onUnmounted,
   nextTick,
@@ -46,9 +47,20 @@ import type {
 } from "@/templates";
 const CodeEditor = defineAsyncComponent(() => import("@/CodeEditor.vue"));
 import LogoIcon from "@/LogoIcon.vue";
-import { usePlaygroundI18n, format, supportedLocales } from "@/i18n";
-
+import {
+  usePlaygroundI18n,
+  usePlaygroundTheme,
+  format,
+  supportedLocales,
+} from "@/i18n";
 const { locale, t } = usePlaygroundI18n();
+const { theme: uiTheme, isDark } = usePlaygroundTheme();
+provide("isDark", isDark);
+
+function cycleTheme(): void {
+  const cycle = { auto: "light", light: "dark", dark: "auto" } as const;
+  uiTheme.value = cycle[uiTheme.value];
+}
 
 function tplName(tpl: TemplateOption): string {
   const entry =
@@ -162,7 +174,13 @@ function focusExportItem(index: number, delta?: number): void {
   items[target]?.focus();
 }
 
-const configTabs = ["options", "content", "theme", "defaults", "callbacks"] as const;
+const configTabs = [
+  "options",
+  "content",
+  "theme",
+  "defaults",
+  "callbacks",
+] as const;
 
 function focusConfigTab(delta: number): void {
   const idx = configTabs.indexOf(configTab.value);
@@ -176,10 +194,10 @@ const showConfig = ref(false);
 const configOptionsJson = ref("");
 const configContentJson = ref("");
 const configThemeJson = ref("");
+const configDarkThemeJson = ref("");
+const configThemeMode = ref<"light" | "dark">("light");
 const configError = ref("");
-const configTab = ref<
-  "options" | "content" | "theme" | "callbacks" | "defaults"
->("options");
+const configTab = ref<(typeof configTabs)[number]>("options");
 const enableRequestMedia = ref(true);
 const enableRequestMergeTag = ref(true);
 
@@ -419,9 +437,8 @@ async function importBeefreeFromJson(raw: string): Promise<void> {
 
   try {
     const json = JSON.parse(raw);
-    const { convertBeeFreeTemplate } = await import(
-      "@templatical/import-beefree"
-    );
+    const { convertBeeFreeTemplate } =
+      await import("@templatical/import-beefree");
     const { content } = convertBeeFreeTemplate(json);
     showBeefreeImport.value = false;
     beefreeJson.value = "";
@@ -484,7 +501,33 @@ const defaultTheme = {
   canvasBg: "oklch(97.5% 0.003 60)",
 };
 
+const defaultDarkTheme = {
+  bg: "oklch(16% 0.005 60)",
+  bgElevated: "oklch(21% 0.006 60)",
+  bgHover: "oklch(26% 0.007 60)",
+  bgActive: "oklch(30% 0.008 60)",
+  border: "oklch(30% 0.006 60)",
+  borderLight: "oklch(38% 0.008 60)",
+  text: "oklch(93% 0.005 60)",
+  textMuted: "oklch(65% 0.01 60)",
+  textDim: "oklch(50% 0.008 60)",
+  primary: "oklch(73% 0.15 55)",
+  primaryHover: "oklch(78% 0.14 55)",
+  primaryLight: "oklch(28% 0.05 55)",
+  secondary: "oklch(63% 0.11 184.71)",
+  secondaryHover: "oklch(68% 0.1 186.39)",
+  secondaryLight: "oklch(25% 0.03 186.82)",
+  success: "oklch(65% 0.18 155.1)",
+  successLight: "oklch(25% 0.04 163.51)",
+  warning: "oklch(78% 0.16 70.08)",
+  warningLight: "oklch(28% 0.04 73.59)",
+  danger: "oklch(65% 0.22 25.33)",
+  dangerLight: "oklch(25% 0.04 17.72)",
+  canvasBg: "oklch(10% 0.003 60)",
+};
+
 let currentTheme: Record<string, string> = { ...defaultTheme };
+let currentDarkTheme: Record<string, string> = { ...defaultDarkTheme };
 
 function buildSerializableConfig() {
   return {
@@ -562,7 +605,8 @@ function initEditor(): void {
       },
       blockDefaults: currentBlockDefaults,
       templateDefaults: currentTemplateDefaults,
-      theme: currentTheme,
+      theme: { ...currentTheme, dark: currentDarkTheme },
+      uiTheme: uiTheme.value,
       locale: locale.value,
       onRequestMedia: enableRequestMedia.value ? requestMedia : undefined,
     });
@@ -582,6 +626,7 @@ function openConfig(): void {
   configOptionsJson.value = JSON.stringify(options, null, 2);
   configContentJson.value = JSON.stringify(content, null, 2);
   configThemeJson.value = JSON.stringify(currentTheme, null, 2);
+  configDarkThemeJson.value = JSON.stringify(currentDarkTheme, null, 2);
   const currentPreset =
     defaultsPresets.find((p) => p.key === selectedPresetKey.value) ??
     defaultsPresets[0];
@@ -597,11 +642,13 @@ function applyConfig(): void {
     const options = JSON.parse(configOptionsJson.value);
     const content = JSON.parse(configContentJson.value);
     const theme = JSON.parse(configThemeJson.value);
+    const darkTheme = JSON.parse(configDarkThemeJson.value);
     const defaults = JSON.parse(configDefaultsJson.value);
     currentSerializableConfig = { ...options, content };
     selectedContent = content;
     selectedCustomBlocks = options.customBlocks;
     currentTheme = theme;
+    currentDarkTheme = darkTheme;
     currentBlockDefaults = defaults.blockDefaults;
     currentTemplateDefaults = defaults.templateDefaults;
     showConfig.value = false;
@@ -750,6 +797,12 @@ function handleExportMjml(): void {
 watch(locale, () => {
   if (screen.value === "editor" && editor.value) {
     initEditor();
+  }
+});
+
+watch(uiTheme, (theme) => {
+  if (editor.value) {
+    editor.value.setTheme(theme);
   }
 });
 
@@ -959,7 +1012,61 @@ onUnmounted(() => {
         key="chooser"
         class="relative flex flex-col items-center justify-center min-h-screen bg-white py-12 dark:bg-gray-900"
       >
-        <div class="absolute top-4 right-4">
+        <div class="absolute top-4 right-4 flex items-center gap-1.5">
+          <button
+            class="pg-theme-btn"
+            :title="t.theme[uiTheme]"
+            :aria-label="t.a11y.selectTheme"
+            @click="cycleTheme"
+          >
+            <!-- Auto: monitor icon -->
+            <svg
+              v-if="uiTheme === 'auto'"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <path d="M8 21h8" />
+              <path d="M12 17v4" />
+            </svg>
+            <!-- Light: sun icon -->
+            <svg
+              v-else-if="uiTheme === 'light'"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+              />
+            </svg>
+            <!-- Dark: moon icon -->
+            <svg
+              v-else
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+          </button>
           <select
             v-model="locale"
             :aria-label="t.a11y.selectLanguage"
@@ -1061,7 +1168,9 @@ onUnmounted(() => {
                   <div
                     class="mx-auto my-1 h-5 w-[40%] rounded bg-primary/30"
                   ></div>
-                  <div class="my-0.5 h-8 w-full rounded bg-gray-200/60 dark:bg-gray-500/40"></div>
+                  <div
+                    class="my-0.5 h-8 w-full rounded bg-gray-200/60 dark:bg-gray-500/40"
+                  ></div>
                   <div
                     class="mx-auto h-1.5 w-[50%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
@@ -1077,10 +1186,18 @@ onUnmounted(() => {
                   <div
                     class="mx-auto h-1.5 w-[30%] rounded-[3px] bg-gray-200/40 dark:bg-gray-500/30"
                   ></div>
-                  <div class="my-0.5 h-8 w-full rounded bg-gray-200/60 dark:bg-gray-500/40"></div>
-                  <div class="h-1.5 w-[90%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
-                  <div class="h-1.5 w-[70%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
-                  <div class="h-1.5 w-[80%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
+                  <div
+                    class="my-0.5 h-8 w-full rounded bg-gray-200/60 dark:bg-gray-500/40"
+                  ></div>
+                  <div
+                    class="h-1.5 w-[90%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                  ></div>
+                  <div
+                    class="h-1.5 w-[70%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                  ></div>
+                  <div
+                    class="h-1.5 w-[80%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                  ></div>
                 </div>
                 <!-- Welcome wireframe -->
                 <div
@@ -1130,9 +1247,15 @@ onUnmounted(() => {
                     class="mx-auto h-1.5 w-[55%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"
                   ></div>
                   <div class="flex gap-1">
-                    <div class="h-1.5 w-[40%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
-                    <div class="h-1.5 w-[20%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
-                    <div class="h-1.5 w-[25%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
+                    <div
+                      class="h-1.5 w-[40%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                    ></div>
+                    <div
+                      class="h-1.5 w-[20%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                    ></div>
+                    <div
+                      class="h-1.5 w-[25%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                    ></div>
                   </div>
                   <div class="flex gap-1">
                     <div
@@ -1160,11 +1283,19 @@ onUnmounted(() => {
                   <div
                     class="mx-auto h-1.5 w-[65%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
-                  <div class="my-0.5 h-8 w-full rounded bg-gray-200/40 dark:bg-gray-500/30"></div>
+                  <div
+                    class="my-0.5 h-8 w-full rounded bg-gray-200/40 dark:bg-gray-500/30"
+                  ></div>
                   <div class="flex justify-center gap-1">
-                    <div class="h-1.5 w-[28%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
-                    <div class="h-1.5 w-[28%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
-                    <div class="h-1.5 w-[28%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
+                    <div
+                      class="h-1.5 w-[28%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                    ></div>
+                    <div
+                      class="h-1.5 w-[28%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                    ></div>
+                    <div
+                      class="h-1.5 w-[28%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                    ></div>
                   </div>
                   <div
                     class="mx-auto my-1 h-5 w-[40%] rounded bg-violet-600/30"
@@ -1182,9 +1313,15 @@ onUnmounted(() => {
                     class="mx-auto h-1.5 w-[70%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
                   ></div>
                   <div class="mt-0.5 flex gap-1">
-                    <div class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"></div>
-                    <div class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"></div>
-                    <div class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"></div>
+                    <div
+                      class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"
+                    ></div>
+                    <div
+                      class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"
+                    ></div>
+                    <div
+                      class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"
+                    ></div>
                   </div>
                   <div
                     class="mx-auto my-1 h-5 w-[40%] rounded bg-amber-400/50"
@@ -1195,11 +1332,19 @@ onUnmounted(() => {
                   v-else-if="tpl.preview === 'reset'"
                   class="flex flex-col items-center gap-1.5 w-[60%]"
                 >
-                  <div class="h-1.5 w-[35%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
-                  <div class="h-1.5 w-[50%] rounded-[3px] bg-gray-200 dark:bg-gray-500"></div>
-                  <div class="h-1.5 w-[70%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"></div>
+                  <div
+                    class="h-1.5 w-[35%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                  ></div>
+                  <div
+                    class="h-1.5 w-[50%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                  ></div>
+                  <div
+                    class="h-1.5 w-[70%] rounded-[3px] bg-gray-200/50 dark:bg-gray-500/40"
+                  ></div>
                   <div class="my-1.5 h-5 w-[45%] rounded bg-primary/30"></div>
-                  <div class="h-1.5 w-[60%] rounded-[3px] bg-gray-200/30 dark:bg-gray-500/20"></div>
+                  <div
+                    class="h-1.5 w-[60%] rounded-[3px] bg-gray-200/30 dark:bg-gray-500/20"
+                  ></div>
                 </div>
               </div>
               <span
@@ -1247,7 +1392,9 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-6 text-sm text-gray-500 dark:text-gray-400">
+          <div
+            class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-6 text-sm text-gray-500 dark:text-gray-400"
+          >
             <span>{{ t.chooser.beefreePrompt }}</span>
             <button
               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
@@ -1296,10 +1443,14 @@ onUnmounted(() => {
               </svg>
             </div>
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-semibold text-gray-900 mb-0.5 dark:text-gray-100">
+              <div
+                class="text-sm font-semibold text-gray-900 mb-0.5 dark:text-gray-100"
+              >
                 {{ t.cloudBanner.title }}
               </div>
-              <div class="text-xs text-gray-500 leading-relaxed dark:text-gray-400">
+              <div
+                class="text-xs text-gray-500 leading-relaxed dark:text-gray-400"
+              >
                 {{ t.cloudBanner.description }}
               </div>
             </div>
@@ -1589,7 +1740,9 @@ onUnmounted(() => {
               <span class="pg-toolbar-label">{{ t.toolbar.share }}</span>
             </button>
 
-            <div class="w-px h-5 bg-gray-200 mx-1 hidden sm:block dark:bg-gray-700" />
+            <div
+              class="w-px h-5 bg-gray-200 mx-1 hidden sm:block dark:bg-gray-700"
+            />
 
             <a
               href="https://docs.templatical.com"
@@ -1651,6 +1804,57 @@ onUnmounted(() => {
                 <path d="M6 3l5 5-5 5" />
               </svg>
             </a>
+            <button
+              class="pg-theme-btn"
+              :title="t.theme[uiTheme]"
+              :aria-label="t.a11y.selectTheme"
+              @click="cycleTheme"
+            >
+              <svg
+                v-if="uiTheme === 'auto'"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <path d="M8 21h8" />
+                <path d="M12 17v4" />
+              </svg>
+              <svg
+                v-else-if="uiTheme === 'light'"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="4" />
+                <path
+                  d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+                />
+              </svg>
+              <svg
+                v-else
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+            </button>
             <select
               v-model="locale"
               :aria-label="t.a11y.selectLanguage"
@@ -1663,7 +1867,9 @@ onUnmounted(() => {
           </div>
         </header>
 
-        <main class="flex flex-1 min-h-0 relative bg-gray-100 p-[15px] dark:bg-gray-950">
+        <main
+          class="flex flex-1 min-h-0 relative bg-gray-100 p-[15px] dark:bg-gray-950"
+        >
           <div
             v-if="initError"
             class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center bg-white rounded-lg border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700"
@@ -1704,11 +1910,12 @@ onUnmounted(() => {
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                   </svg>
                 </div>
-                <span class="text-[13px] text-gray-600 leading-snug dark:text-gray-400"
+                <span
+                  class="text-[13px] text-gray-600 leading-snug dark:text-gray-400"
                   >{{ t.floatingBanner.before
-                  }}<strong class="text-gray-900 font-semibold dark:text-gray-100">{{
-                    t.cloudBanner.floatingFeatures
-                  }}</strong
+                  }}<strong
+                    class="text-gray-900 font-semibold dark:text-gray-100"
+                    >{{ t.cloudBanner.floatingFeatures }}</strong
                   >{{ t.floatingBanner.after }}</span
                 >
               </div>
@@ -1772,10 +1979,11 @@ onUnmounted(() => {
                 </button>
               </div>
             </div>
-            <div
-              class="flex-1 overflow-auto [&_pre]:m-0 [&_pre]:p-5 [&_pre]:text-xs [&_pre]:leading-relaxed [&_pre]:font-mono [&_pre]:text-gray-500 [&_pre]:dark:text-gray-400"
-            >
-              <pre><code>{{ jsonContent }}</code></pre>
+            <div class="flex-1 overflow-auto p-3">
+              <CodeEditor
+                :model-value="jsonContent"
+                aria-label="Template JSON content"
+              />
             </div>
           </div>
         </div>
@@ -1921,13 +2129,7 @@ onUnmounted(() => {
                 @keydown.arrow-left.prevent="focusConfigTab(-1)"
               >
                 <button
-                  v-for="tab in [
-                    'options',
-                    'content',
-                    'theme',
-                    'defaults',
-                    'callbacks',
-                  ] as const"
+                  v-for="tab in configTabs"
                   :id="`config-tab-${tab}`"
                   :key="tab"
                   role="tab"
@@ -1984,10 +2186,28 @@ onUnmounted(() => {
                 id="config-panel-theme"
                 role="tabpanel"
                 aria-labelledby="config-tab-theme"
+                class="flex flex-col gap-3"
               >
+                <select
+                  v-model="configThemeMode"
+                  class="pg-locale-select w-auto self-start"
+                >
+                  <option value="light">
+                    {{ t.theme.light }}
+                  </option>
+                  <option value="dark">
+                    {{ t.theme.dark }}
+                  </option>
+                </select>
                 <CodeEditor
+                  v-if="configThemeMode === 'light'"
                   v-model="configThemeJson"
                   aria-label="Theme configuration JSON"
+                />
+                <CodeEditor
+                  v-else
+                  v-model="configDarkThemeJson"
+                  aria-label="Dark theme configuration JSON"
                 />
               </div>
               <div
@@ -2048,10 +2268,13 @@ onUnmounted(() => {
                     class="size-4 accent-primary cursor-pointer"
                   />
                   <div>
-                    <span class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
+                    <span
+                      class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
                       >onRequestMedia</span
                     >
-                    <p class="m-0 mt-0.5 text-[12px] text-gray-500 dark:text-gray-400">
+                    <p
+                      class="m-0 mt-0.5 text-[12px] text-gray-500 dark:text-gray-400"
+                    >
                       {{ t.configModal.onRequestMediaDesc }}
                     </p>
                   </div>
@@ -2063,10 +2286,13 @@ onUnmounted(() => {
                     class="size-4 accent-primary cursor-pointer"
                   />
                   <div>
-                    <span class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
+                    <span
+                      class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
                       >mergeTags.onRequest</span
                     >
-                    <p class="m-0 mt-0.5 text-[12px] text-gray-500 dark:text-gray-400">
+                    <p
+                      class="m-0 mt-0.5 text-[12px] text-gray-500 dark:text-gray-400"
+                    >
                       {{ t.configModal.onRequestMergeTag }}
                     </p>
                   </div>
@@ -2083,10 +2309,7 @@ onUnmounted(() => {
                 {{ t.configModal.descriptions[configTab] }}
               </p>
               <div class="flex items-center gap-2">
-                <button
-                  class="pg-cancel-btn"
-                  @click="showConfig = false"
-                >
+                <button class="pg-cancel-btn" @click="showConfig = false">
                   {{ t.configModal.cancel }}
                 </button>
                 <button
@@ -2249,9 +2472,10 @@ onUnmounted(() => {
                 class="group flex items-center justify-between w-full px-3 py-2.5 border-none bg-transparent rounded-lg cursor-pointer transition-[background] duration-[120ms] text-left font-sans hover:bg-gray-50 dark:hover:bg-gray-700"
                 @click="selectMergeTag(tag)"
               >
-                <span class="text-[13px] font-medium text-gray-900 dark:text-gray-100">{{
-                  tag.label
-                }}</span>
+                <span
+                  class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
+                  >{{ tag.label }}</span
+                >
                 <code
                   class="text-[11px] font-mono text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded group-hover:bg-gray-200 dark:text-gray-400 dark:bg-gray-700 dark:group-hover:bg-gray-600"
                   >{{ tag.value }}</code
@@ -2308,9 +2532,10 @@ onUnmounted(() => {
                   loading="lazy"
                   class="w-full h-24 object-cover"
                 />
-                <span class="text-[12px] font-medium text-gray-700 pb-2 dark:text-gray-300">{{
-                  img.label
-                }}</span>
+                <span
+                  class="text-[12px] font-medium text-gray-700 pb-2 dark:text-gray-300"
+                  >{{ img.label }}</span
+                >
               </button>
             </div>
           </div>
@@ -2417,7 +2642,9 @@ onUnmounted(() => {
                   >
                     {{ item.label }}
                   </div>
-                  <p class="m-0 mt-0.5 text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p
+                    class="m-0 mt-0.5 text-xs text-gray-500 dark:text-gray-400 truncate"
+                  >
                     {{ item.description }}
                   </p>
                 </div>
@@ -2642,7 +2869,9 @@ onUnmounted(() => {
                   </svg>
                 </div>
                 <div class="min-w-0">
-                  <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100">
+                  <div
+                    class="text-[13px] font-semibold text-gray-900 dark:text-gray-100"
+                  >
                     {{ feature.label }}
                   </div>
                   <p
@@ -2709,7 +2938,9 @@ onUnmounted(() => {
                   })
                 }}
               </div>
-              <div class="text-[15px] font-semibold text-gray-900 mb-1.5 dark:text-gray-100">
+              <div
+                class="text-[15px] font-semibold text-gray-900 mb-1.5 dark:text-gray-100"
+              >
                 {{ onboardingStepData.title }}
               </div>
               <div

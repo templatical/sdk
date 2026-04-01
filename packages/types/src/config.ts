@@ -2,6 +2,8 @@ import type { SyntaxPreset, SyntaxPresetName } from "./merge-tags";
 
 export type ViewportSize = "desktop" | "tablet" | "mobile";
 
+export type UiTheme = "light" | "dark" | "auto";
+
 export interface CustomFont {
   name: string;
   url: string;
@@ -71,6 +73,7 @@ export interface ThemeOverrides {
   danger?: string;
   dangerLight?: string;
   canvasBg?: string;
+  dark?: Omit<ThemeOverrides, "dark">;
 }
 
 export class SdkError extends Error {

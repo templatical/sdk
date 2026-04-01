@@ -50,7 +50,8 @@ unmount();
 | `displayConditions` | `DisplayConditionsConfig` | No | Display condition configuration. See [Display Conditions](/guide/display-conditions) |
 | `customBlocks` | `CustomBlockDefinition[]` | No | Custom block type definitions. See [Custom Blocks](/guide/custom-blocks) |
 | `fonts` | `FontsConfig` | No | Font configuration. See [Custom Fonts](/guide/fonts) |
-| `theme` | `ThemeOverrides` | No | Color token overrides. See [Theming](/guide/theming) |
+| `theme` | `ThemeOverrides` | No | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming) |
+| `uiTheme` | `'light' \| 'dark' \| 'auto'` | No | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'` |
 | `locale` | `string` | No | Locale code (e.g. `'en'`, `'de'`). Defaults to `'en'` |
 | `plugins` | `EditorPlugin[]` | No | Editor plugins. See [Plugin System](#plugin-system) |
 
@@ -76,6 +77,18 @@ import { createDefaultTemplateContent } from '@templatical/types';
 
 editor.setContent(createDefaultTemplateContent());
 ```
+
+### `setTheme(theme)`
+
+Switches the UI color scheme at runtime without re-initializing the editor.
+
+```ts
+editor.setTheme('dark');
+editor.setTheme('light');
+editor.setTheme('auto'); // follow system preference
+```
+
+**Parameter:** `theme: 'light' | 'dark' | 'auto'`
 
 ### `unmount()`
 

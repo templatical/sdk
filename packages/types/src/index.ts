@@ -139,6 +139,7 @@ export type {
   MergeTag,
   MergeTagsConfig,
   ThemeOverrides,
+  UiTheme,
   ViewportSize,
 } from "./config";
 export { SdkError } from "./config";

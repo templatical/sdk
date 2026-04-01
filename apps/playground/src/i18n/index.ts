@@ -1,5 +1,5 @@
 import { computed, watch } from "vue";
-import { useLocalStorage } from "@vueuse/core";
+import { useLocalStorage, useMediaQuery } from "@vueuse/core";
 import en from "./en";
 import de from "./de";
 
@@ -30,6 +30,31 @@ export function usePlaygroundI18n() {
   );
 
   return { locale, t };
+}
+
+export type PlaygroundTheme = "auto" | "light" | "dark";
+
+export function usePlaygroundTheme() {
+  const theme = useLocalStorage<PlaygroundTheme>(
+    "tpl-playground-theme",
+    "auto",
+  );
+  const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
+
+  const isDark = computed(() => {
+    if (theme.value === "auto") return prefersDark.value;
+    return theme.value === "dark";
+  });
+
+  watch(
+    isDark,
+    (dark) => {
+      document.documentElement.classList.toggle("dark", dark);
+    },
+    { immediate: true },
+  );
+
+  return { theme, isDark };
 }
 
 export function format(

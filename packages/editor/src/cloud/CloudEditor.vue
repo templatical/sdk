@@ -15,6 +15,7 @@ import type {
   TemplateContent,
   TemplateSnapshot,
   ThemeOverrides,
+  UiTheme,
 } from "@templatical/types";
 import type {
   MediaCategory,
@@ -112,6 +113,7 @@ import type { Translations } from "../i18n";
 import { useBlockRegistry } from "../composables/useBlockRegistry";
 import { useI18n } from "../composables/useI18n";
 import { useDragDrop } from "../composables/useDragDrop";
+import { useUiTheme } from "../composables/useUiTheme";
 import { useVisualSavedModules } from "./composables/useSavedModules";
 import "../styles/index.css";
 
@@ -171,6 +173,7 @@ export interface TemplaticalCloudEditorConfig {
   };
 
   theme?: ThemeOverrides;
+  uiTheme?: UiTheme;
   locale?: string;
 
   ai?: import("@templatical/types").AiConfig | false;
@@ -225,7 +228,7 @@ const { t, format } = useI18n(props.translations);
 
 const themeOverrides = ref<ThemeOverrides>({});
 
-const themeVarMapping: Record<keyof ThemeOverrides, string> = {
+const themeVarMapping: Record<keyof Omit<ThemeOverrides, "dark">, string> = {
   bg: "--tpl-bg",
   bgElevated: "--tpl-bg-elevated",
   bgHover: "--tpl-bg-hover",
@@ -252,11 +255,17 @@ const themeVarMapping: Record<keyof ThemeOverrides, string> = {
 
 const themeStyles = computed(() => {
   const styles: Record<string, string> = {};
+  const base = themeOverrides.value;
+  const isDark = resolvedTheme.value === "dark";
+  const overrides = isDark ? base.dark : base;
 
-  for (const [key, cssVar] of Object.entries(themeVarMapping)) {
-    const value = themeOverrides.value[key as keyof ThemeOverrides];
-    if (value) {
-      styles[cssVar] = value;
+  if (overrides) {
+    for (const [key, cssVar] of Object.entries(themeVarMapping)) {
+      const k = key as keyof Omit<ThemeOverrides, "dark">;
+      const value = overrides[k];
+      if (value) {
+        styles[cssVar] = value;
+      }
     }
   }
 
@@ -266,11 +275,15 @@ const themeStyles = computed(() => {
   return styles;
 });
 
-function setTheme(overrides: ThemeOverrides): void {
+function setThemeOverrides(overrides: ThemeOverrides): void {
   if (!planConfigInstance.hasFeature("theme_customization")) {
     return;
   }
   themeOverrides.value = overrides;
+}
+
+function setUiTheme(theme: UiTheme): void {
+  editor.setUiTheme(theme);
 }
 
 // ---------------------------------------------------------------------------
@@ -316,6 +329,11 @@ const editor = useEditor({
   onError: props.config.onError,
   lockedBlocks: collaborationLockedBlocks,
 });
+
+// UI theme (dark/light/auto) — independent from canvas dark mode
+editor.setUiTheme(props.config.uiTheme ?? "auto");
+const uiThemeRef = computed(() => editor.state.uiTheme);
+const { resolvedTheme } = useUiTheme(uiThemeRef);
 
 // ---------------------------------------------------------------------------
 // 5. Collaboration composable
@@ -718,6 +736,7 @@ provide("dragDrop", dragDrop);
 provide("conditionPreview", conditionPreview);
 provide("fontsManager", props.fontsManager);
 provide("themeStyles", themeStyles);
+provide("tplUiTheme", resolvedTheme);
 provide("blockDefaults", props.config.blockDefaults);
 provide("blockRegistry", registry);
 provide("customBlockDefinitions", props.config.customBlocks ?? []);
@@ -1284,7 +1303,8 @@ onUnmounted(() => {
 defineExpose({
   getContent: () => editor.content.value,
   setContent: (content: TemplateContent) => editor.setContent(content),
-  setTheme,
+  setTheme: setUiTheme,
+  setThemeOverrides: setThemeOverrides,
   create: createTemplate,
   load: loadTemplate,
   save: saveTemplate,
@@ -1295,6 +1315,7 @@ defineExpose({
 <template>
   <div
     class="tpl tpl:relative tpl:h-full tpl:overflow-hidden"
+    :data-tpl-theme="resolvedTheme"
     :style="themeStyles"
   >
     <!-- Loading overlay -->
@@ -1461,6 +1482,7 @@ defineExpose({
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         box-shadow: var(--tpl-shadow-md);
+        border-bottom: 1px solid var(--tpl-border);
       "
     >
       <!-- Left: Logo + template count -->

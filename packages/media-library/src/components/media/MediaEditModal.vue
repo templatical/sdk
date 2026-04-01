@@ -10,7 +10,7 @@ import {
   type AspectRatioPreset,
 } from "../../composables/useImageCrop";
 import type { MediaItem } from "../../types";
-import { computed, ref, watch } from "vue";
+import { computed, inject, ref, watch, type Ref } from "vue";
 import { Cropper, type CropperResult } from "vue-advanced-cropper";
 import "vue-advanced-cropper/dist/style.css";
 
@@ -35,6 +35,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
 const mediaT = t.mediaLibrary as Record<string, string>;
 
 const { isImageMimeType } = useMediaCategories();
@@ -210,6 +211,7 @@ function handleKeydown(event: KeyboardEvent): void {
     >
       <div
         v-if="visible && item"
+        :data-tpl-theme="tplUiTheme"
         class="tpl tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center"
         style="background-color: var(--tpl-overlay)"
         @click.self="emit('close')"

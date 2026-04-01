@@ -228,6 +228,12 @@ export default {
     editorConfig: "Editor-Konfiguration",
     beefreeJsonContent: "BeeFree-JSON-Inhalt",
     selectLanguage: "Sprache auswählen",
+    selectTheme: "Farbschema auswählen",
+  },
+  theme: {
+    auto: "Auto",
+    light: "Hell",
+    dark: "Dunkel",
   },
   cloud: {
     title: "Templatical Cloud",

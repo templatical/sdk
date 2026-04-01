@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
 import type { MediaItem, MediaUsageInfo } from "../../types";
-import { computed, ref, watch } from "vue";
+import { computed, inject, ref, watch, type Ref } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -17,6 +17,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const selectedFile = ref<File | null>(null);
@@ -82,6 +83,7 @@ function handleKeydown(event: KeyboardEvent): void {
     >
       <div
         v-if="visible && item"
+        :data-tpl-theme="tplUiTheme"
         class="tpl tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center"
         style="background-color: var(--tpl-overlay)"
         @click.self="emit('close')"

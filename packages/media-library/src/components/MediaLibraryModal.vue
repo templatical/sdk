@@ -27,7 +27,7 @@ import {
   Search,
   X,
 } from "lucide-vue-next";
-import { computed, inject, ref, watch, type ComputedRef } from "vue";
+import { computed, inject, ref, watch, type ComputedRef, type Ref } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -40,6 +40,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
 const authManager = inject<AuthManager>("authManager")!;
 const projectIdRef = inject<ComputedRef<string>>("projectId")!;
 const projectId = computed(() => projectIdRef.value);
@@ -285,6 +286,7 @@ useEventListener(document, "keydown", handleKeydown);
     >
       <div
         v-if="visible"
+        :data-tpl-theme="tplUiTheme"
         class="tpl tpl-media-overlay tpl:fixed tpl:inset-0 tpl:z-[9999]"
         @click.self="emit('close')"
       >

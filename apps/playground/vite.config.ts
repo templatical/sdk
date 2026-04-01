@@ -8,6 +8,9 @@ const packagesDir = resolve(__dirname, '../../packages');
 export default defineConfig({
     plugins: [vue(), tailwindcss()],
     resolve: {
+        // Deduplicate vue and @vue/reactivity so they share one reactive system.
+        // Core package imports from @vue/reactivity; editor components import from vue.
+        dedupe: ['vue', '@vue/reactivity'],
         alias: {
             '@': resolve(__dirname, 'src'),
             // Resolve workspace packages to source for dev — avoids needing pre-built dist

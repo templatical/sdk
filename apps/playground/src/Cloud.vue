@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
+import {
+  ref,
+  computed,
+  watch,
+  provide,
+  onMounted,
+  onUnmounted,
+  nextTick,
+} from "vue";
 import { useLocalStorage } from "@vueuse/core";
 import { useFocusTrap } from "@vueuse/integrations/useFocusTrap";
 import { initCloud } from "@templatical/editor";
@@ -10,9 +18,20 @@ import type {
 import type { MergeTag } from "@templatical/types";
 import { customBlockDefinitions } from "@/templates";
 import LogoIcon from "@/LogoIcon.vue";
-import { usePlaygroundI18n, format, supportedLocales } from "@/i18n";
-
+import {
+  usePlaygroundI18n,
+  usePlaygroundTheme,
+  format,
+  supportedLocales,
+} from "@/i18n";
 const { locale, t } = usePlaygroundI18n();
+const { theme: uiTheme, isDark } = usePlaygroundTheme();
+provide("isDark", isDark);
+
+function cycleTheme(): void {
+  const cycle = { auto: "light", light: "dark", dark: "auto" } as const;
+  uiTheme.value = cycle[uiTheme.value];
+}
 
 const STORAGE_KEY = "templatical-cloud-playground";
 
@@ -289,6 +308,7 @@ async function initEditor(templateId?: string): Promise<void> {
     const config: TemplaticalCloudEditorConfig = {
       container: editorContainer.value,
       auth: buildAuthConfig(),
+      uiTheme: uiTheme.value,
       locale: locale.value,
       mergeTags: {
         syntax: "liquid" as const,
@@ -376,6 +396,12 @@ watch(locale, () => {
   }
 });
 
+watch(uiTheme, (theme) => {
+  if (editor.value) {
+    editor.value.setTheme(theme);
+  }
+});
+
 onUnmounted(() => {
   editor.value?.unmount();
   if (originalFetch) {
@@ -386,13 +412,69 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="cloud flex flex-col h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+  <div
+    class="cloud flex flex-col h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+  >
     <!-- Start Screen -->
     <template v-if="screen === 'start'">
       <main
         class="relative flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 py-12 gap-4"
       >
-        <div class="absolute top-4 right-4">
+        <div class="absolute top-4 right-4 flex items-center gap-1.5">
+          <button
+            class="pg-theme-btn"
+            :title="t.theme[uiTheme]"
+            :aria-label="t.a11y.selectTheme"
+            @click="cycleTheme"
+          >
+            <!-- Auto: monitor icon -->
+            <svg
+              v-if="uiTheme === 'auto'"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <path d="M8 21h8" />
+              <path d="M12 17v4" />
+            </svg>
+            <!-- Light: sun icon -->
+            <svg
+              v-else-if="uiTheme === 'light'"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+              />
+            </svg>
+            <!-- Dark: moon icon -->
+            <svg
+              v-else
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+          </button>
           <select
             v-model="locale"
             :aria-label="t.a11y.selectLanguage"
@@ -414,7 +496,9 @@ onUnmounted(() => {
               </h1>
             </div>
           </div>
-          <p class="mb-0 text-gray-500 dark:text-gray-400 text-sm leading-normal">
+          <p
+            class="mb-0 text-gray-500 dark:text-gray-400 text-sm leading-normal"
+          >
             {{ t.cloud.subtitle }}
           </p>
         </div>
@@ -435,7 +519,11 @@ onUnmounted(() => {
                 :aria-selected="settings.authMode === 'quick'"
                 aria-controls="auth-panel-quick"
                 class="pg-tab"
-                :class="settings.authMode === 'quick' ? 'pg-tab-active' : 'pg-tab-inactive'"
+                :class="
+                  settings.authMode === 'quick'
+                    ? 'pg-tab-active'
+                    : 'pg-tab-inactive'
+                "
                 @click="settings.authMode = 'quick'"
               >
                 {{ t.cloud.auth.apiCredentials }}
@@ -445,7 +533,11 @@ onUnmounted(() => {
                 :aria-selected="settings.authMode === 'custom'"
                 aria-controls="auth-panel-custom"
                 class="pg-tab"
-                :class="settings.authMode === 'custom' ? 'pg-tab-active' : 'pg-tab-inactive'"
+                :class="
+                  settings.authMode === 'custom'
+                    ? 'pg-tab-active'
+                    : 'pg-tab-inactive'
+                "
                 @click="settings.authMode = 'custom'"
               >
                 {{ t.cloud.auth.authProxy }}
@@ -458,13 +550,13 @@ onUnmounted(() => {
               id="auth-panel-quick"
               role="tabpanel"
             >
-              <p class="m-0 mb-4 text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed">
+              <p
+                class="m-0 mb-4 text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed"
+              >
                 {{ t.cloud.auth.apiDescription }}
               </p>
               <div class="flex-1 mb-2.5">
-                <label
-                  for="cloud-client-id"
-                  class="pg-form-label"
+                <label for="cloud-client-id" class="pg-form-label"
                   >{{ t.cloud.auth.clientId }}
                   <span class="text-red-500">*</span></label
                 >
@@ -482,9 +574,7 @@ onUnmounted(() => {
                 />
               </div>
               <div class="flex-1 mb-2.5">
-                <label
-                  for="cloud-client-secret"
-                  class="pg-form-label"
+                <label for="cloud-client-secret" class="pg-form-label"
                   >{{ t.cloud.auth.clientSecret }}
                   <span class="text-red-500">*</span></label
                 >
@@ -502,9 +592,7 @@ onUnmounted(() => {
                 />
               </div>
               <div class="flex-1">
-                <label
-                  for="cloud-tenant"
-                  class="pg-form-label"
+                <label for="cloud-tenant" class="pg-form-label"
                   >{{ t.cloud.auth.tenant }}
                   <span class="text-red-500">*</span></label
                 >
@@ -520,7 +608,9 @@ onUnmounted(() => {
                   placeholder="tenant-slug-or-uuid"
                 />
               </div>
-              <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div
+                class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+              >
                 <button
                   :aria-expanded="signingOpen"
                   aria-controls="signing-section"
@@ -551,11 +641,9 @@ onUnmounted(() => {
                 <Transition name="pg-collapsible">
                   <div id="signing-section" v-show="signingOpen">
                     <div class="flex-1 mb-2.5">
-                      <label
-                        for="cloud-signing-key"
-                        class="pg-form-label"
-                        >{{ t.cloud.auth.signingKey }}</label
-                      >
+                      <label for="cloud-signing-key" class="pg-form-label">{{
+                        t.cloud.auth.signingKey
+                      }}</label>
                       <input
                         id="cloud-signing-key"
                         v-model="settings.signingKey"
@@ -578,7 +666,11 @@ onUnmounted(() => {
                         role="tab"
                         :aria-selected="settings.realtimeMode === 'collab'"
                         class="pg-tab"
-                        :class="settings.realtimeMode === 'collab' ? 'pg-tab-active' : 'pg-tab-inactive'"
+                        :class="
+                          settings.realtimeMode === 'collab'
+                            ? 'pg-tab-active'
+                            : 'pg-tab-inactive'
+                        "
                         @click="settings.realtimeMode = 'collab'"
                       >
                         {{ t.cloud.auth.collaboration }}
@@ -587,22 +679,26 @@ onUnmounted(() => {
                         role="tab"
                         :aria-selected="settings.realtimeMode === 'mcp'"
                         class="pg-tab"
-                        :class="settings.realtimeMode === 'mcp' ? 'pg-tab-active' : 'pg-tab-inactive'"
+                        :class="
+                          settings.realtimeMode === 'mcp'
+                            ? 'pg-tab-active'
+                            : 'pg-tab-inactive'
+                        "
                         @click="settings.realtimeMode = 'mcp'"
                       >
                         {{ t.cloud.auth.mcp }}
                       </button>
                     </div>
-                    <p class="m-0 mb-3 text-[11px] text-gray-400 dark:text-gray-500 leading-snug">
+                    <p
+                      class="m-0 mb-3 text-[11px] text-gray-400 dark:text-gray-500 leading-snug"
+                    >
                       {{ t.cloud.auth.realtimeDescription }}
                     </p>
                     <div class="flex gap-3 mb-2.5">
                       <div class="flex-1">
-                        <label
-                          for="cloud-user-name"
-                          class="pg-form-label"
-                          >{{ t.cloud.auth.userName }}</label
-                        >
+                        <label for="cloud-user-name" class="pg-form-label">{{
+                          t.cloud.auth.userName
+                        }}</label>
                         <input
                           id="cloud-user-name"
                           v-model="settings.userName"
@@ -612,11 +708,9 @@ onUnmounted(() => {
                         />
                       </div>
                       <div class="flex-1">
-                        <label
-                          for="cloud-test-email"
-                          class="pg-form-label"
-                          >{{ t.cloud.auth.testEmail }}</label
-                        >
+                        <label for="cloud-test-email" class="pg-form-label">{{
+                          t.cloud.auth.testEmail
+                        }}</label>
                         <input
                           id="cloud-test-email"
                           v-model="settings.testEmailAddress"
@@ -651,7 +745,9 @@ onUnmounted(() => {
                   <line x1="12" x2="12" y1="9" y2="13" />
                   <line x1="12" x2="12.01" y1="17" y2="17" />
                 </svg>
-                <p class="m-0 text-[11px] text-amber-700 leading-snug dark:text-amber-400">
+                <p
+                  class="m-0 text-[11px] text-amber-700 leading-snug dark:text-amber-400"
+                >
                   {{ t.cloud.auth.credentialsWarning }}
                 </p>
               </div>
@@ -659,13 +755,13 @@ onUnmounted(() => {
 
             <!-- Auth Proxy -->
             <div v-else id="auth-panel-custom" role="tabpanel">
-              <p class="m-0 mb-4 text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed">
+              <p
+                class="m-0 mb-4 text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed"
+              >
                 {{ t.cloud.auth.proxyDescription }}
               </p>
               <div class="flex-1 mb-2.5">
-                <label
-                  for="cloud-auth-url"
-                  class="pg-form-label"
+                <label for="cloud-auth-url" class="pg-form-label"
                   >{{ t.cloud.auth.authEndpoint }}
                   <span class="text-red-500">*</span></label
                 >
@@ -680,11 +776,9 @@ onUnmounted(() => {
               </div>
               <div class="flex gap-3 mb-2.5">
                 <div class="flex-1">
-                  <label
-                    for="cloud-auth-method"
-                    class="pg-form-label"
-                    >{{ t.cloud.auth.method }}</label
-                  >
+                  <label for="cloud-auth-method" class="pg-form-label">{{
+                    t.cloud.auth.method
+                  }}</label>
                   <select
                     id="cloud-auth-method"
                     v-model="settings.authMethod"
@@ -695,11 +789,9 @@ onUnmounted(() => {
                   </select>
                 </div>
                 <div class="flex-1">
-                  <label
-                    for="cloud-auth-credentials"
-                    class="pg-form-label"
-                    >{{ t.cloud.auth.credentials }}</label
-                  >
+                  <label for="cloud-auth-credentials" class="pg-form-label">{{
+                    t.cloud.auth.credentials
+                  }}</label>
                   <select
                     id="cloud-auth-credentials"
                     v-model="settings.authCredentials"
@@ -712,9 +804,7 @@ onUnmounted(() => {
                 </div>
               </div>
               <div class="flex-1 mb-2.5">
-                <label
-                  for="cloud-auth-headers"
-                  class="pg-form-label"
+                <label for="cloud-auth-headers" class="pg-form-label"
                   >{{ t.cloud.auth.headers }}
                   <span
                     class="font-normal normal-case tracking-normal opacity-70"
@@ -730,9 +820,7 @@ onUnmounted(() => {
                 ></textarea>
               </div>
               <div v-if="settings.authMethod === 'POST'" class="flex-1 mb-2.5">
-                <label
-                  for="cloud-auth-body"
-                  class="pg-form-label"
+                <label for="cloud-auth-body" class="pg-form-label"
                   >{{ t.cloud.auth.body }}
                   <span
                     class="font-normal normal-case tracking-normal opacity-70"
@@ -754,9 +842,7 @@ onUnmounted(() => {
             class="flex-1 bg-white border border-gray-200 rounded-2xl p-5 sm:p-8 shadow-card dark:bg-gray-800 dark:border-gray-700"
           >
             <div>
-              <h2
-                class="pg-form-label m-0 mb-3"
-              >
+              <h2 class="pg-form-label m-0 mb-3">
                 {{ t.cloud.template.loadExisting }}
               </h2>
               <div class="flex gap-2">
@@ -1044,6 +1130,60 @@ onUnmounted(() => {
           >
         </div>
         <div class="flex items-center gap-2">
+          <button
+            class="pg-theme-btn"
+            :title="t.theme[uiTheme]"
+            :aria-label="t.a11y.selectTheme"
+            @click="cycleTheme"
+          >
+            <!-- Auto: monitor icon -->
+            <svg
+              v-if="uiTheme === 'auto'"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <path d="M8 21h8" />
+              <path d="M12 17v4" />
+            </svg>
+            <!-- Light: sun icon -->
+            <svg
+              v-else-if="uiTheme === 'light'"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="4" />
+              <path
+                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
+              />
+            </svg>
+            <!-- Dark: moon icon -->
+            <svg
+              v-else
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+          </button>
           <select
             v-model="locale"
             :aria-label="t.a11y.selectLanguage"
@@ -1121,9 +1261,10 @@ onUnmounted(() => {
                 class="group flex items-center justify-between w-full px-3 py-2.5 border-none bg-transparent rounded-lg cursor-pointer transition-[background] duration-[120ms] text-left font-sans hover:bg-gray-50 dark:hover:bg-gray-700"
                 @click="selectMergeTag(tag)"
               >
-                <span class="text-[13px] font-medium text-gray-900 dark:text-gray-100">{{
-                  tag.label
-                }}</span>
+                <span
+                  class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
+                  >{{ tag.label }}</span
+                >
                 <code
                   class="text-[11px] font-mono text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded group-hover:bg-gray-200 dark:text-gray-400 dark:bg-gray-700 dark:group-hover:bg-gray-600"
                   >{{ tag.value }}</code

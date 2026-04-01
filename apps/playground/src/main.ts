@@ -1,21 +1,34 @@
-import { createApp, shallowRef, h, Transition, defineAsyncComponent } from "vue";
+import {
+  createApp,
+  shallowRef,
+  h,
+  Transition,
+  defineAsyncComponent,
+} from "vue";
 import { useEventListener } from "@vueuse/core";
 import App from "./App.vue";
 import "@templatical/editor/src/styles/index.css";
 import "./style.css";
 
-// Dark mode: follow system preference
-const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
-function applyDarkMode(dark: boolean): void {
+// Dark mode: pre-hydration to avoid flash. Full reactive control is in
+// usePlaygroundTheme() composable (auto/light/dark, persisted to localStorage).
+{
+  const raw = localStorage.getItem("tpl-playground-theme");
+  const theme = raw ? raw.replace(/^"|"$/g, "") : "auto";
+  const dark =
+    theme === "dark" ||
+    (theme === "auto" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.classList.toggle("dark", dark);
 }
-applyDarkMode(darkMq.matches);
-darkMq.addEventListener("change", (e) => applyDarkMode(e.matches));
 
 // Lazy-load Cloud page — only fetched when user navigates to #cloud
 const Cloud = defineAsyncComponent(() => import("./Cloud.vue"));
 
-const pages: Record<string, ReturnType<typeof defineAsyncComponent> | typeof App> = {
+const pages: Record<
+  string,
+  ReturnType<typeof defineAsyncComponent> | typeof App
+> = {
   "": App,
   "#cloud": Cloud,
 };

@@ -222,6 +222,12 @@ export default {
     editorConfig: "Editor Configuration",
     beefreeJsonContent: "BeeFree JSON content",
     selectLanguage: "Select language",
+    selectTheme: "Select theme",
+  },
+  theme: {
+    auto: "Auto",
+    light: "Light",
+    dark: "Dark",
   },
   cloud: {
     title: "Templatical Cloud",
