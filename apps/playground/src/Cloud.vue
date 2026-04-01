@@ -1201,7 +1201,7 @@ onUnmounted(() => {
           </button>
         </div>
       </header>
-      <main class="flex flex-1 min-h-0 bg-gray-100 p-[15px] dark:bg-gray-950">
+      <main class="flex flex-1 min-h-0 bg-gray-100 p-[15px] dark:bg-gray-800">
         <div
           v-if="initError"
           class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center bg-white rounded-lg border border-gray-200 shadow-sm dark:bg-gray-800 dark:border-gray-700"

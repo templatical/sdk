@@ -5,6 +5,11 @@ import type { UseSavedModulesReturn } from "@templatical/core/cloud";
 import type { Block } from "@templatical/types";
 import { Loader2 } from "lucide-vue-next";
 import { computed, inject, ref, watch, type Ref } from "vue";
+import { useFocusTrap } from "../../composables";
+
+const dialogRef = ref<HTMLElement | null>(null);
+const isVisible = computed(() => props.visible);
+useFocusTrap(dialogRef, isVisible);
 
 const props = defineProps<{
   visible: boolean;
@@ -114,7 +119,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <div
         v-if="visible"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center"
+        class="tpl tpl:fixed tpl:inset-0 tpl:z-modal tpl:flex tpl:items-center tpl:justify-center"
         style="
           background-color: var(--tpl-overlay);
           backdrop-filter: blur(8px);
@@ -124,6 +129,11 @@ function handleKeydown(event: KeyboardEvent): void {
         @keydown="handleKeydown"
       >
         <div
+          ref="dialogRef"
+          role="dialog"
+          aria-modal="true"
+          :aria-busy="isSaving"
+          aria-labelledby="tpl-save-module-title"
           class="tpl-scale-in tpl:mx-4 tpl:w-full tpl:max-w-sm tpl:rounded-[var(--tpl-radius-lg)] tpl:p-5"
           style="
             background-color: var(--tpl-bg-elevated);
@@ -131,6 +141,7 @@ function handleKeydown(event: KeyboardEvent): void {
           "
         >
           <h3
+            id="tpl-save-module-title"
             class="tpl:mb-4 tpl:text-sm tpl:font-semibold"
             style="color: var(--tpl-text)"
           >
@@ -197,6 +208,7 @@ function handleKeydown(event: KeyboardEvent): void {
           <!-- Error message -->
           <p
             v-if="error"
+            role="alert"
             class="tpl:mb-3 tpl:text-xs"
             style="color: var(--tpl-danger)"
           >

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from "../composables/useI18n";
 import { useMergeTag } from "../composables/useMergeTag";
 import {
   getLogicMergeTagKeyword,
@@ -22,6 +23,7 @@ const props = defineProps<{
 }>();
 
 const { syntax } = useMergeTag();
+const { t } = useI18n();
 
 const isValid = computed(() =>
   isLogicMergeTagValue(props.node.attrs.value, syntax),
@@ -107,29 +109,37 @@ function handleKeydown(event: KeyboardEvent): void {
     <!-- Display mode: valid merge tag -->
     <span
       v-else-if="isValid"
+      role="button"
+      tabindex="0"
+      :aria-label="t.mergeTag.editValue"
       class="tpl-tooltip tpl:cursor-pointer"
       :data-tooltip="node.attrs.value"
       @click.stop="startEditing"
+      @keydown.enter.stop="startEditing"
+      @keydown.space.prevent.stop="startEditing"
     >
       {{ displayKeyword }}
     </span>
     <!-- Display mode: invalid (plain text) -->
-    <span v-else @click.stop="startEditing">
+    <span
+      v-else
+      role="button"
+      tabindex="0"
+      :aria-label="t.mergeTag.editValue"
+      @click.stop="startEditing"
+      @keydown.enter.stop="startEditing"
+      @keydown.space.prevent.stop="startEditing"
+    >
       {{ node.attrs.value }}
     </span>
     <button
       v-if="isValid"
       type="button"
-      class="tpl:flex tpl:size-4 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-none tpl:bg-transparent tpl:p-0 tpl:opacity-60 tpl:transition-all hover:tpl:opacity-100"
+      :aria-label="t.mergeTag.deleteMergeTag"
+      class="tpl-merge-tag-delete tpl:flex tpl:size-5 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-none tpl:bg-transparent tpl:p-0 tpl:opacity-60 tpl:transition-all hover:tpl:opacity-100"
       style="color: var(--tpl-primary)"
       contenteditable="false"
       @click.stop.prevent="deleteNode"
-      @mouseenter="
-        ($event.target as HTMLElement).style.color = 'var(--tpl-danger)'
-      "
-      @mouseleave="
-        ($event.target as HTMLElement).style.color = 'var(--tpl-primary)'
-      "
     >
       <svg
         width="10"
@@ -138,6 +148,7 @@ function handleKeydown(event: KeyboardEvent): void {
         fill="none"
         stroke="currentColor"
         stroke-width="3"
+        aria-hidden="true"
       >
         <line x1="18" y1="6" x2="6" y2="18" />
         <line x1="6" y1="6" x2="18" y2="18" />

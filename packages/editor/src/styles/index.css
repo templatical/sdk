@@ -18,6 +18,13 @@
     --font-sans:
         'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
         'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Z-index scale — semantic layers for stacking context */
+    --z-panel: 45;
+    --z-toast: 60;
+    --z-overlay: 100;
+    --z-popover: 9999;
+    --z-modal: 10000;
 }
 
 /* SDK-specific source paths for Tailwind scanning */
@@ -119,6 +126,11 @@
 
     --tpl-overlay: rgba(0, 0, 0, 0.7);
     --tpl-ring: 0 0 0 3px var(--tpl-primary-light);
+}
+
+.tpl[data-tpl-theme="dark"] .tpl-canvas-wrapper,
+.tpl[data-tpl-theme="dark"] .tpl-canvas {
+    background-color: var(--tpl-bg-elevated) !important;
 }
 
 /* SDK Base Styles */
@@ -363,13 +375,13 @@
         var(--tpl-primary) 15%,
         var(--tpl-bg)
     ) !important;
-    border-radius: 4px !important;
+    border-radius: var(--tpl-radius-sm) !important;
     box-shadow: none !important;
 }
 
 .tpl-dragging {
     @apply tpl:opacity-80;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--tpl-shadow-xl);
 }
 
 /* Tiptap Editor Styles - Targets generated HTML we can't add classes to */
@@ -451,7 +463,7 @@
     left: 50%;
     transform: translateX(-50%);
     padding: 4px 10px;
-    border-radius: 6px;
+    border-radius: var(--tpl-radius-sm);
     background-color: var(--tpl-text);
     color: var(--tpl-bg);
     font-size: 12px;
@@ -631,6 +643,11 @@
         var(--tpl-primary-light) 80%,
         var(--tpl-primary)
     );
+}
+
+/* Merge tag delete button — CSS hover replaces inline JS handlers */
+.tpl-merge-tag-delete:hover {
+    color: var(--tpl-danger) !important;
 }
 
 /* Reduced motion — disable non-essential animations for vestibular sensitivity */

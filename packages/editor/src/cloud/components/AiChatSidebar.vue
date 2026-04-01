@@ -152,7 +152,7 @@ function handleKeydown(event: KeyboardEvent): void {
   >
     <div
       v-if="visible"
-      class="tpl-ai-sidebar tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:z-[45] tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
+      class="tpl-ai-sidebar tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:z-panel tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
     >
       <!-- Header -->
       <div
@@ -262,7 +262,7 @@ function handleKeydown(event: KeyboardEvent): void {
                   class="tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3.5 tpl:py-2.5 tpl:text-sm tpl:whitespace-pre-wrap"
                   style="
                     max-width: 85%;
-                    background-color: white;
+                    background-color: var(--tpl-bg);
                     color: var(--tpl-text);
                     box-shadow: var(--tpl-shadow);
                   "
@@ -347,7 +347,7 @@ function handleKeydown(event: KeyboardEvent): void {
               style="
                 border-color: var(--tpl-border);
                 color: var(--tpl-primary);
-                background-color: white;
+                background-color: var(--tpl-bg);
                 box-shadow: var(--tpl-shadow);
               "
               @click="handleSuggestionClick(suggestion)"

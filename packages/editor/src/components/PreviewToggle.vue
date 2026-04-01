@@ -20,7 +20,9 @@ const { t } = useI18n();
       color: previewMode ? 'var(--tpl-primary)' : 'var(--tpl-text-muted)',
       backgroundColor: previewMode ? 'var(--tpl-primary-light)' : 'transparent',
     }"
+    :aria-label="previewMode ? t.previewMode.disable : t.previewMode.enable"
     :title="previewMode ? t.previewMode.disable : t.previewMode.enable"
+    :aria-pressed="previewMode"
     @click="emit('change', !previewMode)"
   >
     <Transition

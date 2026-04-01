@@ -153,7 +153,15 @@ const mergeTagBtnClass =
 <template>
   <!-- Formatted display (has merge tags, not editing) -->
   <div v-if="hasMergeTags && !isEditing">
-    <div :class="displayClass" @click="startEditing">
+    <div
+      role="button"
+      tabindex="0"
+      :aria-label="t.mergeTag.clickToEdit"
+      :class="displayClass"
+      @click="startEditing"
+      @keydown.enter="startEditing"
+      @keydown.space.prevent="startEditing"
+    >
       <template v-for="(seg, i) in segments" :key="i">
         <span
           v-if="seg.type === 'mergeTag'"
@@ -190,6 +198,7 @@ const mergeTagBtnClass =
       <button
         type="button"
         class="tpl:ml-auto tpl:flex tpl:size-4 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text-dim)] tpl:opacity-60 tpl:transition-all hover:tpl:text-[var(--tpl-danger)] hover:tpl:opacity-100"
+        :aria-label="t.mergeTag.remove"
         :title="t.mergeTag.remove"
         @click.stop="clearValue"
       >
@@ -201,6 +210,7 @@ const mergeTagBtnClass =
       type="button"
       :class="mergeTagBtnClass"
       class="tpl:mt-1.5"
+      :aria-label="t.mergeTag.insert"
       :title="t.mergeTag.insert"
       :disabled="isRequestingMergeTag"
       @click="insertMergeTag"
@@ -219,12 +229,14 @@ const mergeTagBtnClass =
       :rows="rows"
       @input="handleInput"
       @blur="stopEditing"
+      @keydown.escape="stopEditing"
     />
     <button
       v-if="mergeTagEnabled"
       type="button"
       :class="mergeTagBtnClass"
       class="tpl:mt-1.5"
+      :aria-label="t.mergeTag.insert"
       :title="t.mergeTag.insert"
       :disabled="isRequestingMergeTag"
       @click="insertMergeTag"

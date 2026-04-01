@@ -231,7 +231,13 @@ function handleFetchData(
                 >
                   <span
                     class="tpl:inline-flex tpl:size-3 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[8px] tpl:font-bold"
-                    style="background-color: rgba(255, 255, 255, 0.3)"
+                    style="
+                      background-color: color-mix(
+                        in srgb,
+                        var(--tpl-bg) 30%,
+                        transparent
+                      );
+                    "
                   >
                     {{ getBlockLockHolder(block.id)!.name.charAt(0) }}
                   </span>

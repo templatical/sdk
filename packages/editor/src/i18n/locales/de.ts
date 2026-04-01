@@ -98,6 +98,7 @@ export default {
 
   // Text editor toolbar
   textEditor: {
+    toolbar: "Textformatierung",
     bold: "Fett (Strg+B)",
     italic: "Kursiv (Strg+I)",
     underline: "Unterstrichen (Strg+U)",
@@ -121,6 +122,8 @@ export default {
     delete: "Block löschen",
     hiddenOnViewport: "Ausgeblendet auf {viewport}",
     saveAsModule: "Als Modul speichern",
+    conditionToggle: "Anzeigebedingung umschalten",
+    comments: "Kommentare ({count})",
   },
 
   // Toolbar - Section
@@ -436,6 +439,14 @@ export default {
   spacingControl: {
     lockAll: "Alle Seiten sperren",
     unlock: "Seiten entsperren",
+    decreaseTop: "Oben verringern",
+    increaseTop: "Oben erhöhen",
+    decreaseLeft: "Links verringern",
+    increaseLeft: "Links erhöhen",
+    decreaseRight: "Rechts verringern",
+    increaseRight: "Rechts erhöhen",
+    decreaseBottom: "Unten verringern",
+    increaseBottom: "Unten erhöhen",
   },
 
   // Merge-Tag
@@ -443,7 +454,9 @@ export default {
     clickToEdit: "Zum Bearbeiten klicken",
     remove: "Merge-Tag entfernen",
     insert: "Merge-Tag einfügen",
-    add: "Merge-Tag hinzuf\u00fcgen",
+    add: "Merge-Tag hinzufügen",
+    editValue: "Merge-Tag-Wert bearbeiten",
+    deleteMergeTag: "Merge-Tag löschen",
   },
 
   // Snapshot history (cloud)
@@ -701,6 +714,12 @@ export default {
     reconnecting: "Verbindung wird wiederhergestellt...",
     blockLockedBy: "Wird bearbeitet von {name}",
     usersOnline: "{count} Benutzer online",
+  },
+
+  // Seitenleiste
+  sidebarNav: {
+    browseModules: "Gespeicherte Module durchsuchen",
+    expandSidebar: "Block-Seitenleiste erweitern",
   },
 
   // Gespeicherte Module (cloud)

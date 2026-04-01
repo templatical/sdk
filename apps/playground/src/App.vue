@@ -1868,7 +1868,7 @@ onUnmounted(() => {
         </header>
 
         <main
-          class="flex flex-1 min-h-0 relative bg-gray-100 p-[15px] dark:bg-gray-950"
+          class="flex flex-1 min-h-0 relative bg-gray-100 p-[15px] dark:bg-gray-800"
         >
           <div
             v-if="initError"

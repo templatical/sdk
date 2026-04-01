@@ -95,6 +95,7 @@ export default {
 
   // Text editor toolbar
   textEditor: {
+    toolbar: "Text formatting",
     bold: "Bold (Ctrl+B)",
     italic: "Italic (Ctrl+I)",
     underline: "Underline (Ctrl+U)",
@@ -118,6 +119,8 @@ export default {
     delete: "Delete block",
     hiddenOnViewport: "Hidden on {viewport}",
     saveAsModule: "Save as Module",
+    conditionToggle: "Toggle display condition",
+    comments: "Comments ({count})",
   },
 
   // Toolbar - Section
@@ -431,6 +434,14 @@ export default {
   spacingControl: {
     lockAll: "Lock all sides",
     unlock: "Unlock sides",
+    decreaseTop: "Decrease top",
+    increaseTop: "Increase top",
+    decreaseLeft: "Decrease left",
+    increaseLeft: "Increase left",
+    decreaseRight: "Decrease right",
+    increaseRight: "Increase right",
+    decreaseBottom: "Decrease bottom",
+    increaseBottom: "Increase bottom",
   },
 
   // Merge Tag
@@ -439,6 +450,8 @@ export default {
     remove: "Remove merge tag",
     insert: "Insert merge tag",
     add: "Add merge tag",
+    editValue: "Edit merge tag value",
+    deleteMergeTag: "Delete merge tag",
   },
 
   // Snapshot history (cloud)
@@ -691,6 +704,12 @@ export default {
     reconnecting: "Reconnecting...",
     blockLockedBy: "Editing by {name}",
     usersOnline: "{count} users online",
+  },
+
+  // Sidebar
+  sidebarNav: {
+    browseModules: "Browse saved modules",
+    expandSidebar: "Expand block sidebar",
   },
 
   // Saved Modules (cloud)

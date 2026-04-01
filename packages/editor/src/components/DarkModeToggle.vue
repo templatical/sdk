@@ -30,7 +30,9 @@ const { t } = useI18n();
       color: darkMode ? 'var(--tpl-primary)' : 'var(--tpl-text-muted)',
       backgroundColor: darkMode ? 'var(--tpl-primary-light)' : 'transparent',
     }"
+    :aria-label="darkMode ? t.darkMode.disable : t.darkMode.enable"
     :title="darkMode ? t.darkMode.disable : t.darkMode.enable"
+    :aria-pressed="darkMode"
     @click="emit('change', !darkMode)"
   >
     <Transition

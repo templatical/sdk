@@ -1329,7 +1329,7 @@ defineExpose({
     >
       <div
         v-if="isInitializing || editor.state.isLoading"
-        class="tpl-loading tpl:absolute tpl:inset-0 tpl:z-[100] tpl:flex tpl:flex-col"
+        class="tpl-loading tpl:absolute tpl:inset-0 tpl:z-overlay tpl:flex tpl:flex-col"
         style="background-color: var(--tpl-bg)"
       >
         <!-- Skeleton header -->
@@ -1434,7 +1434,7 @@ defineExpose({
       <div
         v-if="initError && !isInitializing"
         role="alert"
-        class="tpl-error tpl:absolute tpl:inset-0 tpl:z-[100] tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-6 tpl:px-8"
+        class="tpl-error tpl:absolute tpl:inset-0 tpl:z-overlay tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-6 tpl:px-8"
         style="background-color: var(--tpl-bg)"
       >
         <div
@@ -1730,7 +1730,7 @@ defineExpose({
         v-if="collabUndoWarningVisible"
         role="status"
         aria-live="polite"
-        class="tpl:absolute tpl:top-16 tpl:left-1/2 tpl:z-[60] tpl:-translate-x-1/2 tpl:rounded-[var(--tpl-radius)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:shadow-lg"
+        class="tpl:absolute tpl:top-16 tpl:left-1/2 tpl:z-toast tpl:-translate-x-1/2 tpl:rounded-[var(--tpl-radius)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:shadow-lg"
         style="
           background-color: var(--tpl-warning-light);
           color: var(--tpl-text);

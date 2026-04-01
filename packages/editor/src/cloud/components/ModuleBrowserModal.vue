@@ -13,6 +13,11 @@ import {
   watch,
   type Ref,
 } from "vue";
+import { useFocusTrap } from "../../composables";
+
+const dialogRef = ref<HTMLElement | null>(null);
+const isVisible = computed(() => props.visible);
+useFocusTrap(dialogRef, isVisible);
 
 const props = defineProps<{
   visible: boolean;
@@ -171,7 +176,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <div
         v-if="visible"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center"
+        class="tpl tpl:fixed tpl:inset-0 tpl:z-modal tpl:flex tpl:items-center tpl:justify-center"
         style="
           background-color: var(--tpl-overlay);
           backdrop-filter: blur(8px);
@@ -181,6 +186,10 @@ function handleKeydown(event: KeyboardEvent): void {
         @keydown="handleKeydown"
       >
         <div
+          ref="dialogRef"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tpl-module-browser-title"
           class="tpl-scale-in tpl:mx-4 tpl:flex tpl:w-full tpl:max-w-[1000px] tpl:flex-col tpl:rounded-[var(--tpl-radius-lg)]"
           style="
             background-color: var(--tpl-bg-elevated);
@@ -194,12 +203,14 @@ function handleKeydown(event: KeyboardEvent): void {
             style="border-color: var(--tpl-border)"
           >
             <h3
+              id="tpl-module-browser-title"
               class="tpl:text-sm tpl:font-semibold"
               style="color: var(--tpl-text)"
             >
               {{ t.modules.browse }}
             </h3>
             <button
+              :aria-label="t.modules.close"
               class="tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-1 tpl:transition-colors tpl:duration-100"
               style="color: var(--tpl-text-dim)"
               @click="handleClose"
@@ -243,10 +254,12 @@ function handleKeydown(event: KeyboardEvent): void {
                   v-if="filteredModules.length > 0"
                   class="tpl:flex tpl:flex-col tpl:gap-1"
                 >
-                  <div
+                  <button
                     v-for="mod in filteredModules"
                     :key="mod.id"
-                    class="tpl:group/card tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-md)] tpl:border tpl:px-3 tpl:py-2 tpl:transition-all tpl:duration-[120ms]"
+                    type="button"
+                    :aria-pressed="selectedModuleId === mod.id"
+                    class="tpl:group/card tpl:w-full tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-md)] tpl:border tpl:bg-transparent tpl:px-3 tpl:py-2 tpl:text-left tpl:transition-all tpl:duration-[120ms]"
                     :style="{
                       borderColor:
                         selectedModuleId === mod.id
@@ -319,7 +332,7 @@ function handleKeydown(event: KeyboardEvent): void {
                         <Trash2 :size="12" :stroke-width="1.5" />
                       </button>
                     </div>
-                  </div>
+                  </button>
                 </div>
 
                 <!-- Empty state -->

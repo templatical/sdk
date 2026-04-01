@@ -24,7 +24,7 @@
 }
 
 html.dark body {
-    background-color: oklch(14.5% 0.007 285.82); /* gray-900 */
+    background-color: oklch(27.39% 0.015 261.09); /* gray-800 */
 }
 
 /* Dark mode surface variables */
