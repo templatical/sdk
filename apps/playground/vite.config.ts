@@ -6,7 +6,17 @@ import { resolve } from 'path';
 const packagesDir = resolve(__dirname, '../../packages');
 
 export default defineConfig({
-    plugins: [vue(), tailwindcss()],
+    plugins: [
+        vue({
+            template: {
+                compilerOptions: {
+                    // vanilla-colorful registers <hex-color-picker> as a native web component
+                    isCustomElement: (tag) => tag === 'hex-color-picker',
+                },
+            },
+        }),
+        tailwindcss(),
+    ],
     resolve: {
         // Deduplicate vue and @vue/reactivity so they share one reactive system.
         // Core package imports from @vue/reactivity; editor components import from vue.

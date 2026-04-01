@@ -3,7 +3,16 @@ import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue({
+      template: {
+        compilerOptions: {
+          // vanilla-colorful registers <hex-color-picker> as a native web component
+          isCustomElement: (tag) => tag === 'hex-color-picker',
+        },
+      },
+    }),
+  ],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),

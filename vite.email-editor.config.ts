@@ -4,7 +4,17 @@ import { resolve } from 'path';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-    plugins: [tailwindcss(), vue()],
+    plugins: [
+        tailwindcss(),
+        vue({
+            template: {
+                compilerOptions: {
+                    // vanilla-colorful registers <hex-color-picker> as a native web component
+                    isCustomElement: (tag) => tag === 'hex-color-picker',
+                },
+            },
+        }),
+    ],
     publicDir: false,
     define: {
         'process.env.NODE_ENV': JSON.stringify('production'),
