@@ -75,6 +75,41 @@
     --tpl-transition: 120ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Dark theme defaults — activated by data attribute, overridden by inline styles */
+.tpl[data-tpl-theme="dark"] {
+    --tpl-bg: oklch(16% 0.005 60);
+    --tpl-bg-elevated: oklch(21% 0.006 60);
+    --tpl-bg-hover: oklch(26% 0.007 60);
+    --tpl-bg-active: oklch(30% 0.008 60);
+    --tpl-border: oklch(30% 0.006 60);
+    --tpl-border-light: oklch(38% 0.008 60);
+    --tpl-text: oklch(93% 0.005 60);
+    --tpl-text-muted: oklch(65% 0.01 60);
+    --tpl-text-dim: oklch(50% 0.008 60);
+    --tpl-primary: oklch(73% 0.15 55);
+    --tpl-primary-hover: oklch(78% 0.14 55);
+    --tpl-primary-light: oklch(28% 0.05 55);
+    --tpl-secondary: oklch(63% 0.11 184.71);
+    --tpl-secondary-hover: oklch(68% 0.1 186.39);
+    --tpl-secondary-light: oklch(25% 0.03 186.82);
+    --tpl-success: oklch(65% 0.18 155.1);
+    --tpl-success-light: oklch(25% 0.04 163.51);
+    --tpl-warning: oklch(78% 0.16 70.08);
+    --tpl-warning-light: oklch(28% 0.04 73.59);
+    --tpl-danger: oklch(65% 0.22 25.33);
+    --tpl-danger-light: oklch(25% 0.04 17.72);
+
+    --tpl-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+    --tpl-shadow-md:
+        0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+    --tpl-shadow-lg:
+        0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+    --tpl-shadow-xl:
+        0 8px 32px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
+
+    --tpl-ring: 0 0 0 3px var(--tpl-primary-light);
+}
+
 /* SDK Base Styles */
 .tpl {
     @apply tpl:font-sans tpl:text-sm tpl:leading-normal tpl:antialiased;

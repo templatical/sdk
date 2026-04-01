@@ -111,6 +111,7 @@ const inputClass =
       <!-- Top -->
       <div class="tpl:flex tpl:items-center">
         <button
+          :aria-label="t.spacingControl.decreaseTop"
           :class="[stepperBtnClass, 'tpl:rounded-l-[var(--tpl-radius-sm)]']"
           @click="updateValue('top', -1)"
         >
@@ -129,6 +130,7 @@ const inputClass =
           "
         />
         <button
+          :aria-label="t.spacingControl.increaseTop"
           :class="[stepperBtnClass, 'tpl:rounded-r-[var(--tpl-radius-sm)]']"
           @click="updateValue('top', 1)"
         >
@@ -141,6 +143,7 @@ const inputClass =
         <!-- Left -->
         <div class="tpl:flex tpl:items-center">
           <button
+            :aria-label="t.spacingControl.decreaseLeft"
             :class="[stepperBtnClass, 'tpl:rounded-l-[var(--tpl-radius-sm)]']"
             @click="updateValue('left', -1)"
           >
@@ -159,6 +162,7 @@ const inputClass =
             "
           />
           <button
+            :aria-label="t.spacingControl.increaseLeft"
             :class="[stepperBtnClass, 'tpl:rounded-r-[var(--tpl-radius-sm)]']"
             @click="updateValue('left', 1)"
           >
@@ -174,6 +178,9 @@ const inputClass =
               ? 'tpl:border-[var(--tpl-primary)] tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary)]'
               : 'tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] hover:tpl:bg-[var(--tpl-bg-hover)]'
           "
+          :aria-label="
+            locked ? t.spacingControl.unlock : t.spacingControl.lockAll
+          "
           :title="locked ? t.spacingControl.unlock : t.spacingControl.lockAll"
           @click="toggleLock"
         >
@@ -184,6 +191,7 @@ const inputClass =
         <!-- Right -->
         <div class="tpl:flex tpl:items-center">
           <button
+            :aria-label="t.spacingControl.decreaseRight"
             :class="[stepperBtnClass, 'tpl:rounded-l-[var(--tpl-radius-sm)]']"
             @click="updateValue('right', -1)"
           >
@@ -202,6 +210,7 @@ const inputClass =
             "
           />
           <button
+            :aria-label="t.spacingControl.increaseRight"
             :class="[stepperBtnClass, 'tpl:rounded-r-[var(--tpl-radius-sm)]']"
             @click="updateValue('right', 1)"
           >
@@ -213,6 +222,7 @@ const inputClass =
       <!-- Bottom -->
       <div class="tpl:flex tpl:items-center">
         <button
+          :aria-label="t.spacingControl.decreaseBottom"
           :class="[stepperBtnClass, 'tpl:rounded-l-[var(--tpl-radius-sm)]']"
           @click="updateValue('bottom', -1)"
         >
@@ -231,6 +241,7 @@ const inputClass =
           "
         />
         <button
+          :aria-label="t.spacingControl.increaseBottom"
           :class="[stepperBtnClass, 'tpl:rounded-r-[var(--tpl-radius-sm)]']"
           @click="updateValue('bottom', 1)"
         >

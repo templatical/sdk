@@ -4,7 +4,7 @@
 
 @theme {
     --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
-    --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+    --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
     --color-primary: oklch(70% 0.16 55);
     --color-primary-hover: oklch(63% 0.17 55);
     --color-primary-dark: oklch(78% 0.14 55);
@@ -12,24 +12,110 @@
     --shadow-primary-ring: 0 0 0 3px oklch(70% 0.16 55 / 0.15);
     --shadow-primary-glow: 0 4px 12px oklch(70% 0.16 55 / 0.25);
     --shadow-primary-ring-subtle: 0 0 0 3px oklch(70% 0.16 55 / 0.12);
+    --shadow-btn: 0 1px 2px var(--pg-shadow-color, rgba(0,0,0,0.08));
+    --shadow-card: 0 4px 24px var(--pg-shadow-color-lg, rgba(0,0,0,0.06));
+    --shadow-float: 0 8px 24px var(--pg-shadow-color-lg, rgba(0,0,0,0.12));
+    --shadow-modal-sm: 0 16px 48px var(--pg-shadow-color-xl, rgba(0,0,0,0.15));
+    --shadow-modal: 0 24px 64px var(--pg-shadow-color-xl, rgba(0,0,0,0.2));
 }
 
 #app {
     height: 100%;
 }
 
+html.dark body {
+    background-color: oklch(27.39% 0.015 261.09); /* gray-800 */
+}
+
+/* Dark mode surface variables */
+:root {
+    --pg-shadow-color: rgba(0,0,0,0.08);
+    --pg-shadow-color-lg: rgba(0,0,0,0.06);
+    --pg-shadow-color-xl: rgba(0,0,0,0.15);
+}
+
+.dark {
+    --pg-shadow-color: rgba(0,0,0,0.4);
+    --pg-shadow-color-lg: rgba(0,0,0,0.35);
+    --pg-shadow-color-xl: rgba(0,0,0,0.5);
+}
+
 /* Shared playground patterns */
 
 .pg-toolbar-btn {
-    @apply inline-flex items-center gap-[5px] h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+    @apply inline-flex items-center gap-1.5 h-8 px-2.5 border border-gray-200 rounded-md bg-white text-gray-500 text-[13px] font-medium font-sans cursor-pointer transition-colors duration-150 whitespace-nowrap hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700;
+}
+
+@media (pointer: coarse) {
+    .pg-toolbar-btn,
+    .pg-cta,
+    select {
+        min-height: 44px;
+    }
+
+    .pg-toolbar-btn {
+        min-width: 44px;
+        justify-content: center;
+    }
+}
+
+.pg-theme-btn {
+    @apply flex items-center justify-center size-8 rounded-md border border-gray-200 text-gray-500 bg-white cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:border-gray-600;
+}
+
+.pg-locale-select {
+    @apply h-8 px-2 pr-7 text-[12px] font-medium text-gray-500 bg-white border border-gray-200 rounded-md cursor-pointer appearance-none bg-no-repeat transition-colors duration-150 hover:text-gray-900 hover:border-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:border-gray-600;
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%236b7280%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
+    background-position: right 6px center;
+}
+
+.dark .pg-locale-select {
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%239ca3af%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
+}
+
+/* Hide toolbar labels on narrow screens, show icon-only */
+@media (max-width: 767px) {
+    .pg-toolbar-label {
+        display: none;
+    }
+}
+
+.pg-select {
+    @apply w-full py-2 px-3 pr-8 text-[13px] font-sans bg-white border border-gray-200 rounded-lg text-gray-900 outline-none transition-[border-color,box-shadow] duration-150 cursor-pointer appearance-none bg-no-repeat focus:border-primary focus:shadow-primary-ring dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100;
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%236b7280%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
+    background-position: right 10px center;
+}
+
+.dark .pg-select {
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%2712%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%239ca3af%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27m6 9 6 6 6-6%27/%3E%3C/svg%3E');
+}
+
+.pg-form-label {
+    @apply block text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-[0.5px];
+}
+
+.pg-tab {
+    @apply h-7 px-2.5 text-[12px] font-medium rounded-md border-none cursor-pointer transition-colors duration-150;
+}
+
+.pg-tab-active {
+    @apply bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100;
+}
+
+.pg-tab-inactive {
+    @apply bg-transparent text-gray-400 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-500 dark:hover:text-gray-100 dark:hover:bg-gray-700;
+}
+
+.pg-cancel-btn {
+    @apply h-9 px-4 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-100;
 }
 
 .pg-input {
-    @apply w-full py-2.5 px-3.5 text-sm font-sans bg-white border border-gray-200 rounded-lg text-gray-900 outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-gray-400 focus:border-primary focus:shadow-primary-ring;
+    @apply w-full py-2.5 px-3.5 text-sm font-sans bg-white border border-gray-200 rounded-lg text-gray-900 outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-gray-400 focus:border-primary focus:shadow-primary-ring dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500;
 }
 
 .pg-cta {
-    @apply inline-flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium font-sans border-none rounded-lg cursor-pointer transition-[color,background-color,box-shadow,transform] duration-150 bg-primary text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:bg-primary-hover hover:-translate-y-px hover:shadow-primary-glow disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium font-sans border-none rounded-lg cursor-pointer transition-[color,background-color,box-shadow,transform] duration-150 bg-primary text-white shadow-btn hover:bg-primary-hover hover:-translate-y-px hover:shadow-primary-glow disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-dark dark:hover:bg-primary-dark-hover;
 }
 
 .pg-modal-backdrop {
@@ -37,7 +123,7 @@
 }
 
 .pg-modal-close {
-    @apply size-7 flex items-center justify-center border-none bg-transparent text-xl text-gray-500 cursor-pointer rounded-md transition-[background] duration-150 hover:bg-gray-50;
+    @apply size-7 flex items-center justify-center border-none bg-transparent text-xl text-gray-500 cursor-pointer rounded-md transition-[background] duration-150 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700;
 }
 
 /* Modal transitions */
@@ -133,12 +219,10 @@
     box-shadow: 0 0 0 2px oklch(70% 0.16 55 / 0.5),
                 0 0 20px 6px oklch(70% 0.16 55 / 0.12),
                 0 0 0 9999px rgba(0, 0, 0, 0.5);
-    transition: top 500ms cubic-bezier(0.4, 0, 0.2, 1),
-                left 500ms cubic-bezier(0.4, 0, 0.2, 1),
-                width 500ms cubic-bezier(0.4, 0, 0.2, 1),
-                height 500ms cubic-bezier(0.4, 0, 0.2, 1),
+    transition: transform 500ms cubic-bezier(0.4, 0, 0.2, 1),
                 border-radius 500ms cubic-bezier(0.4, 0, 0.2, 1),
                 opacity 400ms ease;
+    will-change: transform;
 }
 
 @keyframes pg-onboarding-tooltip-in {
@@ -200,6 +284,6 @@
     }
 
     .pg-onboarding-cursor {
-        animation-duration: 0.01ms !important;
+        animation: none !important;
     }
 }

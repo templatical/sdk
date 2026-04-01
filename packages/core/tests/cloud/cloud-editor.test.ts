@@ -71,6 +71,25 @@ describe("cloud useEditor", () => {
       expect(editor.state.isDirty).toBe(false);
       expect(editor.state.isSaving).toBe(false);
       expect(editor.state.isLoading).toBe(false);
+      expect(editor.state.uiTheme).toBe("auto");
+    });
+
+    it("setUiTheme changes UI theme", () => {
+      const editor = setup();
+      editor.setUiTheme("dark");
+      expect(editor.state.uiTheme).toBe("dark");
+      editor.setUiTheme("light");
+      expect(editor.state.uiTheme).toBe("light");
+      editor.setUiTheme("auto");
+      expect(editor.state.uiTheme).toBe("auto");
+    });
+
+    it("uiTheme is independent from darkMode", () => {
+      const editor = setup();
+      editor.setUiTheme("dark");
+      editor.setDarkMode(false);
+      expect(editor.state.uiTheme).toBe("dark");
+      expect(editor.state.darkMode).toBe(false);
     });
 
     it("selectBlock sets selectedBlockId", () => {

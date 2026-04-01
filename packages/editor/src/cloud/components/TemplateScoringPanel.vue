@@ -176,7 +176,7 @@ function totalFindings(): number {
   >
     <div
       v-if="visible"
-      class="tpl-scoring-panel tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:z-[45] tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
+      class="tpl-scoring-panel tpl:absolute tpl:top-14 tpl:right-0 tpl:bottom-0 tpl:z-panel tpl:flex tpl:w-[360px] tpl:flex-col tpl:border-l tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)]"
     >
       <!-- Header -->
       <div

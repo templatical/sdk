@@ -126,6 +126,8 @@ function handleConditionToggle(): void {
     <!-- Floating action bar — positioned to the right of selected block -->
     <div
       v-if="isSelected"
+      role="toolbar"
+      :aria-label="t.blockActions.drag"
       class="tpl-block-actions tpl-fade-in tpl:absolute tpl:-right-2 tpl:top-1/2 tpl:z-10 tpl:flex tpl:-translate-y-1/2 tpl:translate-x-full tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1"
       style="
         background-color: var(--tpl-bg-elevated);
@@ -197,6 +199,7 @@ function handleConditionToggle(): void {
           color: var(--tpl-primary);
           border: 1px solid var(--tpl-border);
         "
+        :aria-label="t.blockActions.conditionToggle"
         :title="block.displayCondition?.label"
         @click.stop="handleConditionToggle"
       >
@@ -213,6 +216,9 @@ function handleConditionToggle(): void {
         style="
           background-color: var(--tpl-primary-light);
           color: var(--tpl-primary);
+        "
+        :aria-label="
+          format(t.blockActions.comments, { count: String(blockCommentCount) })
         "
         @click.stop="openCommentsForBlock?.(block.id)"
       >

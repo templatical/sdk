@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useEmoji, useI18n, useMergeTag } from "../../composables";
+import { useEmoji, useFocusTrap, useI18n, useMergeTag } from "../../composables";
 import type { UseEditorReturn } from "@templatical/core";
 import type { TextBlock as TextBlockType } from "@templatical/types";
 import type { Editor } from "@tiptap/core";
@@ -31,6 +31,7 @@ import {
   shallowRef,
   watch,
   type ComputedRef,
+  type Ref,
 } from "vue";
 
 const props = defineProps<{
@@ -44,6 +45,7 @@ const emit = defineEmits<{
 
 const emailEditor = inject<UseEditorReturn>("editor");
 const themeStyles = inject<ComputedRef<Record<string, string>>>("themeStyles");
+const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
 const {
   mergeTags,
   isEnabled: mergeTagEnabled,
@@ -54,6 +56,9 @@ const {
 
 const showLinkDialog = ref(false);
 const linkUrl = ref("");
+const linkDialogRef = ref<HTMLElement | null>(null);
+useFocusTrap(linkDialogRef, showLinkDialog);
+let focusTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const {
   categories: emojiCategories,
@@ -156,8 +161,9 @@ async function initEditor(): Promise<void> {
     isLoading.value = false;
 
     // Focus after init
-    setTimeout(() => {
+    focusTimeout = setTimeout(() => {
       editor.value?.commands.focus("end");
+      focusTimeout = null;
     }, 0);
   } catch (error) {
     console.error("[TextEditor] Failed to initialize TipTap editor:", error);
@@ -203,6 +209,10 @@ function handleClickOutside(event: MouseEvent): void {
 useEventListener(document, "mousedown", handleClickOutside);
 
 onBeforeUnmount(() => {
+  if (focusTimeout) {
+    clearTimeout(focusTimeout);
+    focusTimeout = null;
+  }
   editor.value?.destroy();
 });
 
@@ -267,7 +277,10 @@ async function handleAddMergeTag(): Promise<void> {
   <div class="tpl-text-editor-wrapper tpl:relative">
     <Teleport to="body">
       <div
-        class="tpl tpl-text-toolbar tpl:fixed tpl:z-[9999] tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:shadow-lg"
+        :data-tpl-theme="tplUiTheme"
+        role="toolbar"
+        :aria-label="t.textEditor.toolbar"
+        class="tpl tpl-text-toolbar tpl:fixed tpl:z-popover tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:shadow-lg"
         :style="{
           ...themeStyles,
           top: `${toolbarPosition.top}px`,
@@ -281,9 +294,10 @@ async function handleAddMergeTag(): Promise<void> {
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
+              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
                 editor?.isActive('bold'),
             }"
+            :aria-label="t.textEditor.bold"
             :title="t.textEditor.bold"
             @click="editor?.chain().focus().toggleBold().run()"
           >
@@ -293,9 +307,10 @@ async function handleAddMergeTag(): Promise<void> {
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
+              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
                 editor?.isActive('italic'),
             }"
+            :aria-label="t.textEditor.italic"
             :title="t.textEditor.italic"
             @click="editor?.chain().focus().toggleItalic().run()"
           >
@@ -305,9 +320,10 @@ async function handleAddMergeTag(): Promise<void> {
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
+              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
                 editor?.isActive('underline'),
             }"
+            :aria-label="t.textEditor.underline"
             :title="t.textEditor.underline"
             @click="editor?.chain().focus().toggleUnderline().run()"
           >
@@ -317,9 +333,10 @@ async function handleAddMergeTag(): Promise<void> {
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
+              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
                 editor?.isActive('strike'),
             }"
+            :aria-label="t.textEditor.strikethrough"
             :title="t.textEditor.strikethrough"
             @click="editor?.chain().focus().toggleStrike().run()"
           >
@@ -327,15 +344,17 @@ async function handleAddMergeTag(): Promise<void> {
           </button>
           <span
             class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
+            aria-hidden="true"
           ></span>
           <!-- Subscript/Superscript -->
           <button
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
+              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
                 editor?.isActive('subscript'),
             }"
+            :aria-label="t.textEditor.subscript"
             :title="t.textEditor.subscript"
             @click="editor?.chain().focus().toggleSubscript().run()"
           >
@@ -345,9 +364,10 @@ async function handleAddMergeTag(): Promise<void> {
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
+              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
                 editor?.isActive('superscript'),
             }"
+            :aria-label="t.textEditor.superscript"
             :title="t.textEditor.superscript"
             @click="editor?.chain().focus().toggleSuperscript().run()"
           >
@@ -355,15 +375,17 @@ async function handleAddMergeTag(): Promise<void> {
           </button>
           <span
             class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
+            aria-hidden="true"
           ></span>
           <!-- Link -->
           <button
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
+              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
                 editor?.isActive('link'),
             }"
+            :aria-label="t.textEditor.addLink"
             :title="t.textEditor.addLink"
             @click="openLinkDialog"
           >
@@ -371,15 +393,17 @@ async function handleAddMergeTag(): Promise<void> {
           </button>
           <span
             class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
+            aria-hidden="true"
           ></span>
           <!-- Lists -->
           <button
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
+              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
                 editor?.isActive('bulletList'),
             }"
+            :aria-label="t.textEditor.bulletList"
             :title="t.textEditor.bulletList"
             @click="editor?.chain().focus().toggleBulletList().run()"
           >
@@ -389,9 +413,10 @@ async function handleAddMergeTag(): Promise<void> {
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-white':
+              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
                 editor?.isActive('orderedList'),
             }"
+            :aria-label="t.textEditor.numberedList"
             :title="t.textEditor.numberedList"
             @click="editor?.chain().focus().toggleOrderedList().run()"
           >
@@ -399,16 +424,18 @@ async function handleAddMergeTag(): Promise<void> {
           </button>
           <span
             class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
+            aria-hidden="true"
           ></span>
           <!-- Alignment -->
           <button
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-white': editor?.isActive({
+              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]': editor?.isActive({
                 textAlign: 'left',
               }),
             }"
+            :aria-label="t.textEditor.alignLeft"
             :title="t.textEditor.alignLeft"
             @click="editor?.chain().focus().setTextAlign('left').run()"
           >
@@ -418,10 +445,11 @@ async function handleAddMergeTag(): Promise<void> {
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-white': editor?.isActive({
+              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]': editor?.isActive({
                 textAlign: 'center',
               }),
             }"
+            :aria-label="t.textEditor.alignCenter"
             :title="t.textEditor.alignCenter"
             @click="editor?.chain().focus().setTextAlign('center').run()"
           >
@@ -431,10 +459,11 @@ async function handleAddMergeTag(): Promise<void> {
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-white': editor?.isActive({
+              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]': editor?.isActive({
                 textAlign: 'right',
               }),
             }"
+            :aria-label="t.textEditor.alignRight"
             :title="t.textEditor.alignRight"
             @click="editor?.chain().focus().setTextAlign('right').run()"
           >
@@ -443,10 +472,12 @@ async function handleAddMergeTag(): Promise<void> {
           <!-- Clear Formatting -->
           <span
             class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
+            aria-hidden="true"
           ></span>
           <button
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+            :aria-label="t.textEditor.clearFormatting"
             :title="t.textEditor.clearFormatting"
             @click="editor?.chain().focus().clearNodes().unsetAllMarks().run()"
           >
@@ -455,14 +486,16 @@ async function handleAddMergeTag(): Promise<void> {
           <!-- Emoji Picker -->
           <span
             class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
+            aria-hidden="true"
           ></span>
           <div class="tpl:relative">
             <button
               type="button"
               class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-white': showEmojiPicker,
+                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]': showEmojiPicker,
               }"
+              :aria-label="t.textEditor.insertEmoji"
               :title="t.textEditor.insertEmoji"
               @click="toggleEmojiPicker"
             >
@@ -505,6 +538,7 @@ async function handleAddMergeTag(): Promise<void> {
             v-if="mergeTagEnabled"
             type="button"
             class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+            :aria-label="t.mergeTag.add"
             :title="t.mergeTag.add"
             @click="handleAddMergeTag"
           >
@@ -525,31 +559,39 @@ async function handleAddMergeTag(): Promise<void> {
 
     <div
       v-if="isLoading"
-      class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:border-indigo-500 tpl:p-2"
+      class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:border-[var(--tpl-primary)] tpl:p-2"
     >
-      <div class="tpl:animate-pulse tpl:text-zinc-400">Loading...</div>
+      <div class="tpl:animate-pulse tpl:text-[var(--tpl-text-dim)]">
+        Loading...
+      </div>
     </div>
     <component
       :is="EditorContent"
       v-else-if="EditorContent && editor"
       :editor="editor as any"
-      class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:border-indigo-500 tpl:p-2"
+      class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:border-[var(--tpl-primary)] tpl:p-2"
     />
 
     <Teleport to="body">
       <div
         v-if="showLinkDialog"
-        class="tpl tpl-link-dialog tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center tpl:bg-black/50"
+        :data-tpl-theme="tplUiTheme"
+        class="tpl tpl-link-dialog tpl:fixed tpl:inset-0 tpl:z-modal tpl:flex tpl:items-center tpl:justify-center"
         :style="themeStyles"
         @click.self="closeLinkDialog"
       >
         <div
+          ref="linkDialogRef"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tpl-link-dialog-title"
           class="tpl:w-[400px] tpl:overflow-hidden tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:shadow-lg"
         >
           <div
             class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-5 tpl:py-4"
           >
             <h4
+              id="tpl-link-dialog-title"
               class="tpl:m-0 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
             >
               {{
@@ -560,6 +602,7 @@ async function handleAddMergeTag(): Promise<void> {
             </h4>
             <button
               type="button"
+              :aria-label="t.linkDialog.cancel"
               class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text-muted)] tpl:hover:bg-[var(--tpl-bg-hover)] tpl:hover:text-[var(--tpl-text)]"
               @click="closeLinkDialog"
             >
@@ -603,7 +646,7 @@ async function handleAddMergeTag(): Promise<void> {
               </button>
               <button
                 type="button"
-                class="tpl:inline-flex tpl:cursor-pointer tpl:items-center tpl:rounded-md tpl:border-none tpl:bg-[var(--tpl-primary)] tpl:px-4 tpl:py-2 tpl:text-[13px] tpl:font-medium tpl:text-white tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-primary-hover)]"
+                class="tpl:inline-flex tpl:cursor-pointer tpl:items-center tpl:rounded-md tpl:border-none tpl:bg-[var(--tpl-primary)] tpl:px-4 tpl:py-2 tpl:text-[13px] tpl:font-medium tpl:text-[var(--tpl-bg)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-primary-hover)]"
                 @click="insertLink"
               >
                 {{

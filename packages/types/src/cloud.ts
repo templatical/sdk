@@ -8,6 +8,7 @@ import type {
   SyntaxPresetName,
   TemplateContent,
   ThemeOverrides,
+  UiTheme,
   ViewportSize,
 } from "./index";
 
@@ -306,6 +307,7 @@ export interface EditorState {
   isDirty: boolean;
   isSaving: boolean;
   isLoading: boolean;
+  uiTheme: UiTheme;
 }
 
 export interface ApiResponse<T> {

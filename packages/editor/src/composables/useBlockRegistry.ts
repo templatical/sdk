@@ -110,7 +110,7 @@ export function useBlockRegistry(): UseBlockRegistryReturn {
   async function renderCustomBlockHtml(block: CustomBlock): Promise<string> {
     const definition = getDefinition(block.customType);
     if (!definition) {
-      return '<div style="color: #6c757d; padding: 16px; text-align: center; border: 1px dashed #dee2e6; border-radius: 4px; font-family: sans-serif; font-size: 14px;">Block definition not found</div>';
+      return '<div style="color: var(--tpl-text-muted, #6c757d); padding: 16px; text-align: center; border: 1px dashed var(--tpl-border, #dee2e6); border-radius: var(--tpl-radius-sm, 4px); font-family: var(--tpl-font-family, sans-serif); font-size: 14px;">Block definition not found</div>';
     }
 
     // Lazy-load liquidjs for template rendering

@@ -111,6 +111,8 @@ function cloneBlock(item: BlockTypeItem): Block {
 
 <template>
   <aside
+    :aria-expanded="isExpanded"
+    :aria-label="t.sidebarNav.expandSidebar"
     class="tpl-sidebar-rail tpl:absolute tpl:top-14 tpl:bottom-0 tpl:left-0 tpl:z-40 tpl:overflow-hidden"
     :style="{
       width: isExpanded ? '200px' : '48px',
@@ -134,8 +136,10 @@ function cloneBlock(item: BlockTypeItem): Block {
       class="tpl:border-b tpl:px-1 tpl:pb-1"
       style="border-color: var(--tpl-border)"
     >
-      <div
-        class="tpl:flex tpl:h-10 tpl:cursor-pointer tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)]"
+      <button
+        type="button"
+        :aria-label="t.sidebarNav.browseModules"
+        class="tpl:flex tpl:h-10 tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)]"
         :style="{
           justifyContent: isExpanded ? 'flex-start' : 'center',
         }"
@@ -158,7 +162,7 @@ function cloneBlock(item: BlockTypeItem): Block {
         >
           {{ savedModulesVisual!.headless.modules.value.length }}
         </span>
-      </div>
+      </button>
     </div>
     <draggable
       :list="blockTypes"

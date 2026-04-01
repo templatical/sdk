@@ -1,3 +1,4 @@
+export { useFocusTrap } from "./useFocusTrap";
 export { useI18n, type UseI18nReturn } from "./useI18n";
 export { useMergeTag, type UseMergeTagReturn } from "./useMergeTag";
 export {

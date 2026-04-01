@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from "vue";
+import { ref, onMounted, onUnmounted, watch, inject, type Ref } from "vue";
 import {
   EditorView,
   keymap,
@@ -7,7 +7,7 @@ import {
   highlightActiveLine,
   highlightActiveLineGutter,
 } from "@codemirror/view";
-import { EditorState } from "@codemirror/state";
+import { EditorState, Compartment } from "@codemirror/state";
 import { json } from "@codemirror/lang-json";
 import { defaultKeymap, indentWithTab } from "@codemirror/commands";
 import {
@@ -17,6 +17,9 @@ import {
   bracketMatching,
 } from "@codemirror/language";
 import { closeBrackets } from "@codemirror/autocomplete";
+import { oneDark } from "@codemirror/theme-one-dark";
+
+const isDark = inject<Ref<boolean>>("isDark", ref(false));
 
 const props = defineProps<{
   modelValue: string;
@@ -30,6 +33,11 @@ const emit = defineEmits<{
 const container = ref<HTMLElement | null>(null);
 let view: EditorView | null = null;
 let skipUpdate = false;
+const themeConf = new Compartment();
+
+function getThemeExtension(dark: boolean) {
+  return dark ? [oneDark] : [syntaxHighlighting(defaultHighlightStyle)];
+}
 
 onMounted(() => {
   if (!container.value) return;
@@ -46,8 +54,15 @@ onMounted(() => {
         bracketMatching(),
         closeBrackets(),
         json(),
-        syntaxHighlighting(defaultHighlightStyle),
+        themeConf.of(getThemeExtension(isDark.value)),
         keymap.of([...defaultKeymap, indentWithTab]),
+        ...(props.ariaLabel
+          ? [
+              EditorView.contentAttributes.of({
+                "aria-label": props.ariaLabel,
+              }),
+            ]
+          : []),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             skipUpdate = true;
@@ -58,6 +73,14 @@ onMounted(() => {
       ],
     }),
   });
+});
+
+watch(isDark, (dark) => {
+  if (view) {
+    view.dispatch({
+      effects: themeConf.reconfigure(getThemeExtension(dark)),
+    });
+  }
 });
 
 watch(
@@ -82,9 +105,6 @@ onUnmounted(() => {
 <template>
   <div
     ref="container"
-    role="textbox"
-    aria-multiline="true"
-    :aria-label="ariaLabel"
-    class="h-[min(480px,60vh)] border border-gray-200 rounded-lg overflow-auto text-sm"
+    class="h-[min(480px,60vh)] border border-gray-200 rounded-lg overflow-auto text-sm dark:border-gray-700"
   />
 </template>

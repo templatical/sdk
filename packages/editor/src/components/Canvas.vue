@@ -92,6 +92,9 @@ const viewportWidth = computed(() => {
   }
 });
 
+// Canvas dark mode preview: simulates how the email will appear in recipients'
+// dark-themed email clients. Uses CSS filter inversion — independent of the
+// editor UI theme (light/dark/auto) which is controlled via uiTheme config.
 const canvasStyle = computed(() => ({
   backgroundColor: props.content.settings.backgroundColor,
   fontFamily: props.content.settings.fontFamily,
@@ -176,15 +179,18 @@ function handleFetchData(
 
 <template>
   <div
-    class="tpl-canvas-wrapper tpl:rounded-lg tpl:bg-white tpl:transition-[width] tpl:duration-300"
+    class="tpl-canvas-wrapper tpl:rounded-lg tpl:transition-[width] tpl:duration-300"
     style="
       box-shadow: var(--tpl-shadow-xl);
       transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
     "
-    :style="{ width: `${viewportWidth}px` }"
+    :style="{
+      width: `${viewportWidth}px`,
+      backgroundColor: content.settings.backgroundColor,
+    }"
   >
     <div
-      class="tpl-canvas tpl:min-h-[500px] tpl:rounded-lg"
+      class="tpl-canvas tpl:rounded-lg"
       :class="{
         'tpl-canvas--dark-mode': darkMode,
         'tpl-preview-mode': previewMode,
@@ -203,7 +209,7 @@ function handleFetchData(
         :invert-swap="true"
         :inverted-swap-threshold="0.65"
         :disabled="previewMode"
-        class="tpl-canvas-blocks tpl:min-h-[500px]"
+        class="tpl-canvas-blocks"
       >
         <template #item="{ element: block }">
           <div v-show="!conditionPreview?.isHidden(block.id)">
@@ -225,7 +231,13 @@ function handleFetchData(
                 >
                   <span
                     class="tpl:inline-flex tpl:size-3 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[8px] tpl:font-bold"
-                    style="background-color: rgba(255, 255, 255, 0.3)"
+                    style="
+                      background-color: color-mix(
+                        in srgb,
+                        var(--tpl-bg) 30%,
+                        transparent
+                      );
+                    "
                   >
                     {{ getBlockLockHolder(block.id)!.name.charAt(0) }}
                   </span>

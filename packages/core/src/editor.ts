@@ -3,6 +3,7 @@ import type {
   TemplateContent,
   TemplateDefaults,
   TemplateSettings,
+  UiTheme,
   ViewportSize,
 } from "@templatical/types";
 import { createDefaultTemplateContent } from "@templatical/types";
@@ -21,6 +22,7 @@ export interface EditorState {
   darkMode: boolean;
   previewMode: boolean;
   isDirty: boolean;
+  uiTheme: UiTheme;
 }
 
 export interface UseEditorOptions {
@@ -39,6 +41,7 @@ export interface UseEditorReturn {
   setViewport: (viewport: ViewportSize) => void;
   setDarkMode: (darkMode: boolean) => void;
   setPreviewMode: (previewMode: boolean) => void;
+  setUiTheme: (theme: UiTheme) => void;
   updateBlock: (blockId: string, updates: Partial<Block>) => void;
   updateSettings: (updates: Partial<TemplateSettings>) => void;
   addBlock: (
@@ -71,6 +74,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     darkMode: false,
     previewMode: false,
     isDirty: false,
+    uiTheme: "auto",
   });
 
   const content = computed({
@@ -149,6 +153,10 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
 
   function setDarkMode(darkMode: boolean): void {
     state.darkMode = darkMode;
+  }
+
+  function setUiTheme(theme: UiTheme): void {
+    state.uiTheme = theme;
   }
 
   function setPreviewMode(previewMode: boolean): void {
@@ -258,6 +266,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     selectBlock,
     setViewport,
     setDarkMode,
+    setUiTheme,
     setPreviewMode,
     updateBlock,
     updateSettings,

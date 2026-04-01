@@ -6,8 +6,21 @@ import { resolve } from 'path';
 const packagesDir = resolve(__dirname, '../../packages');
 
 export default defineConfig({
-    plugins: [vue(), tailwindcss()],
+    plugins: [
+        vue({
+            template: {
+                compilerOptions: {
+                    // vanilla-colorful registers <hex-color-picker> as a native web component
+                    isCustomElement: (tag) => tag === 'hex-color-picker',
+                },
+            },
+        }),
+        tailwindcss(),
+    ],
     resolve: {
+        // Deduplicate vue and @vue/reactivity so they share one reactive system.
+        // Core package imports from @vue/reactivity; editor components import from vue.
+        dedupe: ['vue', '@vue/reactivity'],
         alias: {
             '@': resolve(__dirname, 'src'),
             // Resolve workspace packages to source for dev — avoids needing pre-built dist
@@ -36,7 +49,22 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         rollupOptions: {
-            external: ['mjml'],
+            output: {
+                manualChunks(id: string) {
+                    // Vue runtime — cached across navigations
+                    if (id.includes('/vue/') || id.includes('@vue/reactivity')) {
+                        return 'vue-runtime';
+                    }
+                    // VueUse — shared between App and Cloud pages
+                    if (id.includes('@vueuse/')) {
+                        return 'vueuse';
+                    }
+                    // Pusher — only needed when Cloud collaboration is active
+                    if (id.includes('pusher-js')) {
+                        return 'pusher';
+                    }
+                },
+            },
         },
     },
 });

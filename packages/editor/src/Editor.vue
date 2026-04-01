@@ -17,7 +17,11 @@ import {
   useConditionPreview,
 } from "@templatical/core";
 import type { EditorPlugin, EditorPluginContext } from "@templatical/core";
-import type { TemplateContent, ThemeOverrides } from "@templatical/types";
+import type {
+  TemplateContent,
+  ThemeOverrides,
+  UiTheme,
+} from "@templatical/types";
 import { resolveSyntax } from "@templatical/types";
 
 import { RotateCcw } from "lucide-vue-next";
@@ -31,6 +35,7 @@ import CustomBlockComponent from "./components/blocks/CustomBlock.vue";
 import { loadTranslations } from "./i18n";
 import { useBlockRegistry } from "./composables/useBlockRegistry";
 import { useFonts } from "./composables/useFonts";
+import { useUiTheme } from "./composables/useUiTheme";
 import "./styles/index.css";
 
 const props = defineProps<{
@@ -132,9 +137,14 @@ const autoSave = props.config.onChange
 // --- Display condition preview ---
 const conditionPreview = useConditionPreview(editor);
 
+// --- UI Theme ---
+editor.setUiTheme(props.config.uiTheme ?? "auto");
+const uiThemeRef = computed(() => editor.state.uiTheme);
+const { resolvedTheme } = useUiTheme(uiThemeRef);
+
 // --- Theme ---
 const themeOverrides = ref<ThemeOverrides>(props.config.theme ?? {});
-const themeVarMapping: Record<keyof ThemeOverrides, string> = {
+const themeVarMapping: Record<keyof Omit<ThemeOverrides, "dark">, string> = {
   bg: "--tpl-bg",
   bgElevated: "--tpl-bg-elevated",
   bgHover: "--tpl-bg-hover",
@@ -161,10 +171,20 @@ const themeVarMapping: Record<keyof ThemeOverrides, string> = {
 
 const themeStyles = computed(() => {
   const styles: Record<string, string> = {};
-  for (const [key, cssVar] of Object.entries(themeVarMapping)) {
-    const value = themeOverrides.value[key as keyof ThemeOverrides];
-    if (value) {
-      styles[cssVar] = value;
+  const base = themeOverrides.value;
+  const isDark = resolvedTheme.value === "dark";
+  // In dark mode, only apply consumer's dark overrides as inline styles.
+  // Base (light) overrides must NOT be inlined — they'd pin CSS variables to
+  // light values and prevent the CSS [data-tpl-theme="dark"] block from working.
+  const overrides = isDark ? base.dark : base;
+
+  if (overrides) {
+    for (const [key, cssVar] of Object.entries(themeVarMapping)) {
+      const k = key as keyof Omit<ThemeOverrides, "dark">;
+      const value = overrides[k];
+      if (value) {
+        styles[cssVar] = value;
+      }
     }
   }
   return styles;
@@ -251,6 +271,7 @@ provide("t", t);
 provide("translations", translations);
 provide("fontsManager", fontsManager);
 provide("themeStyles", themeStyles);
+provide("tplUiTheme", resolvedTheme);
 provide("blockDefaults", props.config.blockDefaults);
 
 // Block registry — register custom blocks from config
@@ -303,6 +324,7 @@ onUnmounted(() => {
 defineExpose({
   getContent: () => editor.content.value,
   setContent: (content: TemplateContent) => editor.setContent(content),
+  setTheme: (theme: UiTheme) => editor.setUiTheme(theme),
 });
 </script>
 
@@ -310,6 +332,7 @@ defineExpose({
   <div
     class="tpl tpl:relative tpl:h-full tpl:overflow-hidden"
     :class="{ 'tpl:dark': editor.state.darkMode }"
+    :data-tpl-theme="resolvedTheme"
     :style="themeStyles"
   >
     <!-- Wait for translations to load before rendering UI -->
@@ -332,6 +355,7 @@ defineExpose({
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
           box-shadow: var(--tpl-shadow-md);
+          border-bottom: 1px solid var(--tpl-border);
         "
       >
         <!-- Left: Logo -->
@@ -408,7 +432,7 @@ defineExpose({
             </button>
           </Transition>
         </div>
-        <div class="tpl:flex tpl:min-h-full tpl:justify-center tpl:p-8">
+        <div class="tpl:flex tpl:justify-center tpl:p-8">
           <Canvas
             :viewport="editor.state.viewport"
             :content="editor.content.value"

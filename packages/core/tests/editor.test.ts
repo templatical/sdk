@@ -57,6 +57,35 @@ describe('useEditor', () => {
         expect(editor.state.darkMode).toBe(true);
     });
 
+    it('defaults uiTheme to auto', () => {
+        const content = createDefaultTemplateContent();
+        const editor = useEditor({ content });
+        expect(editor.state.uiTheme).toBe('auto');
+    });
+
+    it('sets uiTheme to light', () => {
+        const content = createDefaultTemplateContent();
+        const editor = useEditor({ content });
+        editor.setUiTheme('light');
+        expect(editor.state.uiTheme).toBe('light');
+    });
+
+    it('sets uiTheme to dark', () => {
+        const content = createDefaultTemplateContent();
+        const editor = useEditor({ content });
+        editor.setUiTheme('dark');
+        expect(editor.state.uiTheme).toBe('dark');
+    });
+
+    it('uiTheme is independent from darkMode', () => {
+        const content = createDefaultTemplateContent();
+        const editor = useEditor({ content });
+        editor.setUiTheme('dark');
+        editor.setDarkMode(false);
+        expect(editor.state.uiTheme).toBe('dark');
+        expect(editor.state.darkMode).toBe(false);
+    });
+
     it('toggles preview mode and clears selection', () => {
         const editor = createEditorWithContent();
         const blockId = editor.state.content.blocks[0].id;

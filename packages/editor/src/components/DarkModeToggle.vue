@@ -1,3 +1,13 @@
+<!--
+  Canvas Dark Mode Preview Toggle
+
+  This toggle simulates how the email template will look when the recipient's
+  email client uses dark mode (e.g. Gmail, Outlook, Apple Mail in dark theme).
+  It applies a CSS filter (invert + hue-rotate) to the canvas area only.
+
+  This is NOT the editor UI theme toggle. The editor UI theme (light/dark/auto)
+  is controlled externally via the `uiTheme` config option or `editor.setTheme()`.
+-->
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
 import { Moon, Sun } from "lucide-vue-next";
@@ -20,7 +30,9 @@ const { t } = useI18n();
       color: darkMode ? 'var(--tpl-primary)' : 'var(--tpl-text-muted)',
       backgroundColor: darkMode ? 'var(--tpl-primary-light)' : 'transparent',
     }"
+    :aria-label="darkMode ? t.darkMode.disable : t.darkMode.enable"
     :title="darkMode ? t.darkMode.disable : t.darkMode.enable"
+    :aria-pressed="darkMode"
     @click="emit('change', !darkMode)"
   >
     <Transition

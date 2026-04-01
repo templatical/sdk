@@ -79,7 +79,9 @@ function getDescription(key: AiFeature): string {
               ? 'var(--tpl-primary)'
               : 'var(--tpl-bg-active)',
           color:
-            activeFeature === feature.key ? 'white' : 'var(--tpl-text-muted)',
+            activeFeature === feature.key
+              ? 'var(--tpl-bg)'
+              : 'var(--tpl-text-muted)',
         }"
       >
         <component :is="feature.icon" :size="15" :stroke-width="2" />
