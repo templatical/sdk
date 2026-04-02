@@ -17,7 +17,8 @@ import { init } from '@templatical/editor';
 const editor = init({
   container: '#editor',
   blockDefaults: {
-    text: { fontSize: 14, color: '#000000' },
+    title: { color: '#000000' },
+    paragraph: {},
     button: {
       backgroundColor: '#ff6600',
       textColor: '#ffffff',
@@ -58,7 +59,8 @@ Arrays are **replaced**, not merged. For example, setting `table.rows` replaces 
 
 | Key | Block Type |
 |-----|-----------|
-| `text` | Text |
+| `title` | Title |
+| `paragraph` | Paragraph |
 | `image` | Image |
 | `button` | Button |
 | `divider` | Divider |
@@ -130,13 +132,14 @@ The SDK exports the built-in default values for every block type and template se
 import {
   DEFAULT_BLOCK_DEFAULTS,
   DEFAULT_TEMPLATE_DEFAULTS,
-  TEXT_BLOCK_DEFAULTS,
+  TITLE_BLOCK_DEFAULTS,
+  PARAGRAPH_BLOCK_DEFAULTS,
   BUTTON_BLOCK_DEFAULTS,
 } from '@templatical/types';
 
 // Inspect the defaults for a single block type
-console.log(TEXT_BLOCK_DEFAULTS);
-// { content: '<p>Enter your text here</p>', fontSize: 16, color: '#333333', ... }
+console.log(TITLE_BLOCK_DEFAULTS);
+// { content: '<h1>Enter your heading here</h1>', level: 1, color: '#333333', ... }
 
 // Inspect template defaults
 console.log(DEFAULT_TEMPLATE_DEFAULTS);
@@ -156,7 +159,8 @@ const myButtonDefaults = {
 
 | Constant | Block Type |
 |----------|-----------|
-| `TEXT_BLOCK_DEFAULTS` | Text |
+| `TITLE_BLOCK_DEFAULTS` | Title |
+| `PARAGRAPH_BLOCK_DEFAULTS` | Paragraph |
 | `IMAGE_BLOCK_DEFAULTS` | Image |
 | `BUTTON_BLOCK_DEFAULTS` | Button |
 | `DIVIDER_BLOCK_DEFAULTS` | Divider |
@@ -182,18 +186,19 @@ These constants are the single source of truth used internally by the factory fu
 The underlying factory functions also accept defaults directly:
 
 ```ts
-import { createBlock, createTextBlock, createDefaultTemplateContent } from '@templatical/types';
+import { createBlock, createTitleBlock, createParagraphBlock, createDefaultTemplateContent } from '@templatical/types';
 import type { BlockDefaults } from '@templatical/types';
 
 // Single block with partial overrides
-const text = createTextBlock({ fontSize: 14, color: '#000' });
+const title = createTitleBlock({ level: 2, color: '#000' });
+const paragraph = createParagraphBlock({ content: '<p>Hello</p>' });
 
 // Via createBlock with full defaults map
 const defaults: BlockDefaults = {
-  text: { fontSize: 14 },
+  title: { color: '#000000' },
   button: { backgroundColor: '#ff6600' },
 };
-const block = createBlock('text', defaults);
+const block = createBlock('title', defaults);
 
 // Template with custom settings
 const content = createDefaultTemplateContent('Helvetica, sans-serif', {

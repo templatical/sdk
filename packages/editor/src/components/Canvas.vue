@@ -18,7 +18,8 @@ import draggable from "vuedraggable";
 
 import BlockWrapper from "./blocks/BlockWrapper.vue";
 import SectionBlock from "./blocks/SectionBlock.vue";
-import TextBlock from "./blocks/TextBlock.vue";
+import TitleBlock from "./blocks/TitleBlock.vue";
+import ParagraphBlock from "./blocks/ParagraphBlock.vue";
 import ImageBlock from "./blocks/ImageBlock.vue";
 import ButtonBlock from "./blocks/ButtonBlock.vue";
 import DividerBlock from "./blocks/DividerBlock.vue";
@@ -122,8 +123,10 @@ function getBlockComponent(block: Block): Component | null {
   switch (block.type) {
     case "section":
       return SectionBlock;
-    case "text":
-      return TextBlock;
+    case "title":
+      return TitleBlock;
+    case "paragraph":
+      return ParagraphBlock;
     case "image":
       return ImageBlock;
     case "button":

@@ -16,7 +16,7 @@ function createMockEditor(): UseEditorReturn {
 describe('handleOperation', () => {
   it('handles add_block operation', () => {
     const editor = createMockEditor();
-    const block = { id: 'b1', type: 'text' };
+    const block = { id: 'b1', type: 'paragraph' };
 
     handleOperation(editor, {
       operation: 'add_block',
@@ -28,7 +28,7 @@ describe('handleOperation', () => {
 
   it('handles add_block without optional params', () => {
     const editor = createMockEditor();
-    const block = { id: 'b1', type: 'text' };
+    const block = { id: 'b1', type: 'paragraph' };
 
     handleOperation(editor, {
       operation: 'add_block',

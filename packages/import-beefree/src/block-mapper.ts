@@ -1,5 +1,6 @@
 import {
-  createTextBlock,
+  createTitleBlock,
+  createParagraphBlock,
   createImageBlock,
   createButtonBlock,
   createDividerBlock,
@@ -13,6 +14,7 @@ import {
 } from "@templatical/types";
 import type {
   Block,
+  HeadingLevel,
   SocialPlatform,
   SocialIcon,
   MenuItemData,
@@ -38,9 +40,9 @@ import {
  * Maps BeeFree module type strings to short keys.
  */
 const MODULE_TYPE_MAP: Record<string, string> = {
-  "mailup-bee-newsletter-modules-text": "text",
-  "mailup-bee-newsletter-modules-paragraph": "text",
-  "mailup-bee-newsletter-modules-heading": "heading",
+  "mailup-bee-newsletter-modules-text": "paragraph",
+  "mailup-bee-newsletter-modules-paragraph": "paragraph",
+  "mailup-bee-newsletter-modules-heading": "title",
   "mailup-bee-newsletter-modules-list": "list",
   "mailup-bee-newsletter-modules-image": "image",
   "mailup-bee-newsletter-modules-button": "button",
@@ -113,21 +115,45 @@ function makeStyles(descriptor: BeeFreeeModuleDescriptor): Block["styles"] {
   };
 }
 
+function inlineStylesToHtml(
+  html: string,
+  style: Record<string, string | undefined>,
+): string {
+  const parts: string[] = [];
+  const fontSize = parsePxValue(style["font-size"]);
+  if (fontSize && fontSize !== 16) parts.push(`font-size: ${fontSize}px`);
+  const color = parseColor(style.color);
+  if (color && color !== "#1a1a1a") parts.push(`color: ${color}`);
+  const textAlign = style["text-align"];
+  if (textAlign && textAlign !== "left") parts.push(`text-align: ${textAlign}`);
+  const fontWeight = style["font-weight"];
+  if (fontWeight && fontWeight !== "normal")
+    parts.push(`font-weight: ${fontWeight}`);
+  const fontFamily = parseFontFamily(style["font-family"]);
+  if (fontFamily) parts.push(`font-family: ${fontFamily}`);
+  if (parts.length === 0) return html;
+  return `<div style="${parts.join("; ")}">${html}</div>`;
+}
+
 function convertText(descriptor: BeeFreeeModuleDescriptor): Block {
   const textContent =
     descriptor.text ?? descriptor.paragraph ?? descriptor.list;
   const html = textContent?.html ?? "";
   const style = textContent?.style ?? {};
 
-  return createTextBlock({
-    content: html,
-    fontSize: parsePxValue(style["font-size"]) || 16,
-    color: parseColor(style.color) || "#1a1a1a",
-    textAlign: toAlign(style["text-align"]),
-    fontWeight: toFontWeight(style["font-weight"]),
-    fontFamily: parseFontFamily(style["font-family"]) || undefined,
+  return createParagraphBlock({
+    content: inlineStylesToHtml(html, style),
     styles: makeStyles(descriptor),
   });
+}
+
+function parseHeadingLevel(tag: string): HeadingLevel {
+  const match = tag.match(/^h(\d)$/i);
+  if (match) {
+    const num = Number(match[1]);
+    if (num >= 1 && num <= 4) return num as HeadingLevel;
+  }
+  return 2;
 }
 
 function convertHeading(descriptor: BeeFreeeModuleDescriptor): Block {
@@ -137,11 +163,14 @@ function convertHeading(descriptor: BeeFreeeModuleDescriptor): Block {
   const style = heading.style ?? {};
   const tag = heading.title ?? "h2";
   const text = heading.text ?? "";
-  const content = text.startsWith("<") ? text : `<${tag}>${text}</${tag}>`;
+  // Strip heading tags — content goes inside TipTap, heading tag is rendered by the block
+  const content = text.startsWith("<")
+    ? text.replace(/^<h\d[^>]*>|<\/h\d>$/gi, "")
+    : text;
 
-  return createTextBlock({
-    content,
-    fontSize: parsePxValue(style["font-size"]) || 24,
+  return createTitleBlock({
+    content: content ? `<p>${content}</p>` : "<p></p>",
+    level: parseHeadingLevel(tag),
     color: parseColor(style.color) || "#1a1a1a",
     textAlign: toAlign(style["text-align"]),
     fontWeight: toFontWeight(style["font-weight"], "bold"),
@@ -385,11 +414,11 @@ export function convertModule(
   let isApproximation = false;
 
   switch (mappedType) {
-    case "text":
+    case "paragraph":
     case "list":
       block = convertText(descriptor);
       break;
-    case "heading":
+    case "title":
       block = convertHeading(descriptor);
       break;
     case "image":

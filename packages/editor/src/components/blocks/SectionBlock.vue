@@ -4,7 +4,8 @@ import ButtonBlock from "./ButtonBlock.vue";
 import CustomBlock from "./CustomBlock.vue";
 import DividerBlock from "./DividerBlock.vue";
 import ImageBlock from "./ImageBlock.vue";
-import TextBlock from "./TextBlock.vue";
+import TitleBlock from "./TitleBlock.vue";
+import ParagraphBlock from "./ParagraphBlock.vue";
 import { useI18n, type UseBlockRegistryReturn } from "../../composables";
 import type {
   UseConditionPreviewReturn,
@@ -75,8 +76,10 @@ function getBlockComponent(block: Block): Component | null {
   }
 
   switch (block.type) {
-    case "text":
-      return TextBlock;
+    case "title":
+      return TitleBlock;
+    case "paragraph":
+      return ParagraphBlock;
     case "image":
       return ImageBlock;
     case "button":

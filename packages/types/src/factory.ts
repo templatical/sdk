@@ -9,6 +9,7 @@ import type {
   HtmlBlock,
   ImageBlock,
   MenuBlock,
+  ParagraphBlock,
   SectionBlock,
   SocialIconsBlock,
   SpacerBlock,
@@ -16,7 +17,7 @@ import type {
   TableBlock,
   TableCellData,
   TableRowData,
-  TextBlock,
+  TitleBlock,
   VideoBlock,
 } from "./blocks";
 import type { CustomBlockDefinition, CustomBlockField } from "./custom-blocks";
@@ -29,11 +30,12 @@ import {
   HTML_BLOCK_DEFAULTS,
   IMAGE_BLOCK_DEFAULTS,
   MENU_BLOCK_DEFAULTS,
+  PARAGRAPH_BLOCK_DEFAULTS,
   SECTION_BLOCK_DEFAULTS,
   SOCIAL_ICONS_BLOCK_DEFAULTS,
   SPACER_BLOCK_DEFAULTS,
   TABLE_BLOCK_DEFAULTS,
-  TEXT_BLOCK_DEFAULTS,
+  TITLE_BLOCK_DEFAULTS,
   VIDEO_BLOCK_DEFAULTS,
 } from "./defaults";
 
@@ -60,13 +62,27 @@ function createDefaultStyles(padding = 10): BlockStyles {
   };
 }
 
-export function createTextBlock(partial: Partial<TextBlock> = {}): TextBlock {
-  const base: TextBlock = {
+export function createTitleBlock(
+  partial: Partial<TitleBlock> = {},
+): TitleBlock {
+  const base: TitleBlock = {
     id: generateId(),
-    type: "text",
-    ...TEXT_BLOCK_DEFAULTS,
+    type: "title",
+    ...TITLE_BLOCK_DEFAULTS,
     styles: createDefaultStyles(),
-  } as TextBlock;
+  } as TitleBlock;
+  return applyDefaults(base, partial);
+}
+
+export function createParagraphBlock(
+  partial: Partial<ParagraphBlock> = {},
+): ParagraphBlock {
+  const base: ParagraphBlock = {
+    id: generateId(),
+    type: "paragraph",
+    ...PARAGRAPH_BLOCK_DEFAULTS,
+    styles: createDefaultStyles(),
+  } as ParagraphBlock;
   return applyDefaults(base, partial);
 }
 
@@ -255,8 +271,10 @@ export function createBlock(
   switch (type) {
     case "section":
       return createSectionBlock(blockDefaults?.section);
-    case "text":
-      return createTextBlock(blockDefaults?.text);
+    case "title":
+      return createTitleBlock(blockDefaults?.title);
+    case "paragraph":
+      return createParagraphBlock(blockDefaults?.paragraph);
     case "image":
       return createImageBlock(blockDefaults?.image);
     case "button":

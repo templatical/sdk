@@ -1,6 +1,6 @@
 ---
 title: Block Types
-description: Reference for all 12 built-in block types in Templatical.
+description: Reference for all 14 built-in block types in Templatical.
 ---
 
 # Block Types
@@ -15,7 +15,8 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 
 | Need | Block | Notes |
 |------|-------|-------|
-| Formatted text, headings | [Text](#text) | Rich text editor with inline formatting |
+| Headings, titles | [Title](#title) | Fixed-size headings (H1-H4) with block-level formatting |
+| Body text, paragraphs | [Paragraph](#paragraph) | Rich text with inline formatting via TipTap |
 | Photos, banners, logos | [Image](#image) | Optional link wrapping, responsive width |
 | Call-to-action | [Button](#button) | Bulletproof buttons that work in all email clients |
 | Multi-column layout | [Section](#section) | The only block that holds other blocks |
@@ -28,18 +29,26 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 | Raw markup | [HTML](#html) | Escape hatch for custom code |
 | Domain-specific content | [Custom](#custom) | Your own block types with fields and Liquid templates |
 
-## Text
+## Title
 
-Rich text content rendered as HTML. The editor uses [Tiptap](https://tiptap.dev) for inline editing with formatting controls (bold, italic, links, alignment, etc.).
+A heading block with fixed size levels. Use titles for headings, section headers, and other prominent text.
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `content` | `string` | HTML content |
-| `fontSize` | `number` | Font size in px |
+| `level` | `1 \| 2 \| 3 \| 4` | Heading level (H1=36px, H2=28px, H3=22px, H4=18px) |
 | `color` | `string` | Text color |
 | `textAlign` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
 | `fontWeight` | `'normal' \| 'bold'` | Font weight |
 | `fontFamily` | `string` | Font family override |
+
+## Paragraph
+
+Body text rendered as HTML. The editor uses [Tiptap](https://tiptap.dev) for inline editing with formatting controls (bold, italic, links, alignment, font size, color, etc.). All formatting is applied inline -- there are no block-level formatting properties.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `content` | `string` | HTML content |
 
 ## Image
 

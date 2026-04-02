@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ref } from '@vue/reactivity';
-import { createDefaultTemplateContent, createTextBlock } from '@templatical/types';
+import { createDefaultTemplateContent, createParagraphBlock } from '@templatical/types';
 import { useHistory } from '../src';
 
 function createHistoryWithContent() {
@@ -24,7 +24,7 @@ describe('useHistory', () => {
         history.record();
         content.value = {
             ...content.value,
-            blocks: [createTextBlock()],
+            blocks: [createParagraphBlock()],
         };
         expect(history.canUndo.value).toBe(true);
     });
@@ -36,7 +36,7 @@ describe('useHistory', () => {
         history.record();
         content.value = {
             ...content.value,
-            blocks: [createTextBlock()],
+            blocks: [createParagraphBlock()],
         };
 
         history.undo();
@@ -47,7 +47,7 @@ describe('useHistory', () => {
     it('redoes changes', () => {
         const { content, history } = createHistoryWithContent();
         history.record();
-        const block = createTextBlock();
+        const block = createParagraphBlock();
         content.value = { ...content.value, blocks: [block] };
 
         history.undo();
@@ -66,7 +66,7 @@ describe('useHistory', () => {
     it('clears redo stack on new record', () => {
         const { content, history } = createHistoryWithContent();
         history.record();
-        content.value = { ...content.value, blocks: [createTextBlock()] };
+        content.value = { ...content.value, blocks: [createParagraphBlock()] };
         history.undo();
         expect(history.canRedo.value).toBe(true);
 
@@ -112,7 +112,7 @@ describe('recordDebounced', () => {
         const { content, history } = createHistoryWithContent();
 
         history.recordDebounced('block-1');
-        content.value = { ...content.value, blocks: [createTextBlock()] };
+        content.value = { ...content.value, blocks: [createParagraphBlock()] };
 
         history.recordDebounced('block-2');
 
@@ -124,7 +124,7 @@ describe('recordDebounced', () => {
     it('clears redo stack on record', () => {
         const { content, history } = createHistoryWithContent();
         history.record();
-        content.value = { ...content.value, blocks: [createTextBlock()] };
+        content.value = { ...content.value, blocks: [createParagraphBlock()] };
         history.undo();
         expect(history.canRedo.value).toBe(true);
 
@@ -201,7 +201,7 @@ describe('undo/redo edge cases', () => {
         const originalBlocks = JSON.parse(JSON.stringify(content.value.blocks));
 
         history.record(); // snapshot the original state
-        content.value = { ...content.value, blocks: [createTextBlock()] };
+        content.value = { ...content.value, blocks: [createParagraphBlock()] };
 
         expect(history.canUndo.value).toBe(true);
         history.undo();
@@ -276,9 +276,9 @@ describe('undo/redo edge cases', () => {
         const history = useHistory({ content, setContent, maxSize: 1 });
 
         history.record(); // snapshot 1
-        content.value = { ...content.value, blocks: [createTextBlock()] };
+        content.value = { ...content.value, blocks: [createParagraphBlock()] };
         history.record(); // snapshot 2 (should evict snapshot 1)
-        content.value = { ...content.value, blocks: [createTextBlock(), createTextBlock()] };
+        content.value = { ...content.value, blocks: [createParagraphBlock(), createParagraphBlock()] };
 
         // Only 1 undo should be possible
         history.undo();

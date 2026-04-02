@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
     generateId,
-    createTextBlock,
+    createTitleBlock,
+    createParagraphBlock,
     createImageBlock,
     createButtonBlock,
     createDividerBlock,
@@ -33,19 +34,32 @@ describe('generateId', () => {
 });
 
 describe('block factory functions', () => {
-    it('creates a text block with defaults', () => {
-        const block = createTextBlock();
-        expect(block.type).toBe('text');
-        expect(block.content).toBe('<p>Enter your text here</p>');
-        expect(block.fontSize).toBe(16);
+    it('creates a title block with defaults', () => {
+        const block = createTitleBlock();
+        expect(block.type).toBe('title');
+        expect(block.content).toBe('<p>Enter your title</p>');
+        expect(block.fontWeight).toBe('bold');
         expect(block.id).toMatch(/^[0-9a-f-]+$/);
     });
 
-    it('creates a text block with partial overrides', () => {
-        const block = createTextBlock({ fontSize: 24, color: '#000' });
-        expect(block.fontSize).toBe(24);
+    it('creates a title block with partial overrides', () => {
+        const block = createTitleBlock({ level: 3, color: '#000' });
+        expect(block.level).toBe(3);
         expect(block.color).toBe('#000');
-        expect(block.type).toBe('text');
+        expect(block.type).toBe('title');
+    });
+
+    it('creates a paragraph block with defaults', () => {
+        const block = createParagraphBlock();
+        expect(block.type).toBe('paragraph');
+        expect(block.content).toBe('<p>Enter your text here</p>');
+        expect(block.id).toMatch(/^[0-9a-f-]+$/);
+    });
+
+    it('creates a paragraph block with partial overrides', () => {
+        const block = createParagraphBlock({ content: '<p>Custom</p>' });
+        expect(block.content).toBe('<p>Custom</p>');
+        expect(block.type).toBe('paragraph');
     });
 
     it('creates an image block with defaults', () => {
@@ -141,7 +155,8 @@ describe('block factory functions', () => {
 
 describe('createBlock', () => {
     it('creates blocks by type string', () => {
-        expect(createBlock('text').type).toBe('text');
+        expect(createBlock('title').type).toBe('title');
+        expect(createBlock('paragraph').type).toBe('paragraph');
         expect(createBlock('image').type).toBe('image');
         expect(createBlock('button').type).toBe('button');
         expect(createBlock('section').type).toBe('section');
@@ -166,18 +181,18 @@ describe('createBlock', () => {
 
 describe('cloneBlock', () => {
     it('creates a deep copy with a new ID', () => {
-        const original = createTextBlock({ content: '<p>Test</p>' });
+        const original = createTitleBlock({ content: '<p>Test</p>' });
         const cloned = cloneBlock(original);
 
         expect(cloned.id).not.toBe(original.id);
-        expect(cloned.type).toBe('text');
-        if (cloned.type === 'text') {
+        expect(cloned.type).toBe('title');
+        if (cloned.type === 'title') {
             expect(cloned.content).toBe('<p>Test</p>');
         }
     });
 
     it('recursively clones section children with new IDs', () => {
-        const child = createTextBlock();
+        const child = createParagraphBlock();
         const section = createSectionBlock({ children: [[child]] });
         const cloned = cloneBlock(section);
 
@@ -197,7 +212,7 @@ describe('cloneBlock', () => {
     });
 
     it('recursively clones deeply nested sections (section within section)', () => {
-        const innerChild = createTextBlock({ content: '<p>Inner</p>' });
+        const innerChild = createParagraphBlock({ content: '<p>Inner</p>' });
         const innerSection = createSectionBlock({ children: [[innerChild]] });
         const outerSection = createSectionBlock({ children: [[innerSection]] });
 
@@ -215,7 +230,7 @@ describe('cloneBlock', () => {
     });
 
     it('ensures ALL nested IDs are unique after cloning', () => {
-        const child1 = createTextBlock();
+        const child1 = createParagraphBlock();
         const child2 = createImageBlock();
         const child3 = createButtonBlock();
         const section = createSectionBlock({
@@ -337,16 +352,27 @@ describe('createCustomBlock edge cases', () => {
 });
 
 describe('createBlock with blockDefaults', () => {
-    it('applies text defaults via createBlock', () => {
+    it('applies title defaults via createBlock', () => {
         const defaults: BlockDefaults = {
-            text: { fontSize: 24, color: '#000000' },
+            title: { level: 3, color: '#000000' },
         };
-        const block = createBlock('text', defaults);
-        expect(block.type).toBe('text');
-        if (block.type === 'text') {
-            expect(block.fontSize).toBe(24);
+        const block = createBlock('title', defaults);
+        expect(block.type).toBe('title');
+        if (block.type === 'title') {
+            expect(block.level).toBe(3);
             expect(block.color).toBe('#000000');
-            expect(block.content).toBe('<p>Enter your text here</p>');
+            expect(block.content).toBe('<p>Enter your title</p>');
+        }
+    });
+
+    it('applies paragraph defaults via createBlock', () => {
+        const defaults: BlockDefaults = {
+            paragraph: { content: '<p>Custom paragraph</p>' },
+        };
+        const block = createBlock('paragraph', defaults);
+        expect(block.type).toBe('paragraph');
+        if (block.type === 'paragraph') {
+            expect(block.content).toBe('<p>Custom paragraph</p>');
         }
     });
 
@@ -495,23 +521,23 @@ describe('createBlock with blockDefaults', () => {
     });
 
     it('returns default block when blockDefaults is undefined', () => {
-        const block = createBlock('text', undefined);
-        if (block.type === 'text') {
-            expect(block.fontSize).toBe(16);
+        const block = createBlock('title', undefined);
+        if (block.type === 'title') {
+            expect(block.level).toBe(2);
             expect(block.color).toBe('#1a1a1a');
         }
     });
 
     it('returns default block when blockDefaults is empty object', () => {
-        const block = createBlock('text', {});
-        if (block.type === 'text') {
-            expect(block.fontSize).toBe(16);
+        const block = createBlock('title', {});
+        if (block.type === 'title') {
+            expect(block.level).toBe(2);
         }
     });
 
     it('ignores defaults for other block types', () => {
         const defaults: BlockDefaults = {
-            text: { fontSize: 24 },
+            title: { level: 3 },
         };
         const block = createBlock('button', defaults);
         if (block.type === 'button') {
@@ -521,17 +547,17 @@ describe('createBlock with blockDefaults', () => {
 
     it('preserves id and type even when defaults try to override them', () => {
         const defaults: BlockDefaults = {
-            text: { content: 'Custom' } as any,
+            title: { content: 'Custom' } as any,
         };
-        const block = createBlock('text', defaults);
-        expect(block.type).toBe('text');
+        const block = createBlock('title', defaults);
+        expect(block.type).toBe('title');
         expect(block.id).toMatch(/^[0-9a-f-]+$/);
     });
 });
 
 describe('factory deep merge vs shallow spread', () => {
     it('deep merges styles.padding without losing styles.margin', () => {
-        const block = createTextBlock({
+        const block = createTitleBlock({
             styles: { padding: { top: 20, right: 20, bottom: 20, left: 20 } },
         } as any);
         expect(block.styles.padding.top).toBe(20);

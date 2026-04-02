@@ -96,7 +96,7 @@ const cleaned = convertMergeTagsToValues(editorHtml);
 ```
 
 ::: tip
-You typically don't need to call this directly -- the renderer calls it internally when processing text blocks. It's exported for advanced use cases where you're working with editor HTML outside the normal rendering pipeline.
+You typically don't need to call this directly -- the renderer calls it internally when processing title and paragraph blocks. It's exported for advanced use cases where you're working with editor HTML outside the normal rendering pipeline.
 :::
 
 ### `isHiddenOnAll(block)`

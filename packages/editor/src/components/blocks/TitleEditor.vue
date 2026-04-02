@@ -1,28 +1,10 @@
 <script setup lang="ts">
-import { useEmoji, useFocusTrap, useI18n, useMergeTag } from "../../composables";
+import { useFocusTrap, useI18n, useMergeTag } from "../../composables";
 import type { UseEditorReturn } from "@templatical/core";
-import type { TextBlock as TextBlockType } from "@templatical/types";
+import type { TitleBlock as TitleBlockType } from "@templatical/types";
 import type { Editor } from "@tiptap/core";
 import type { EditorContent as EditorContentComponent } from "@tiptap/vue-3";
-import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  Bold,
-  Italic,
-  Link,
-  List,
-  ListOrdered,
-  Loader2,
-  RemoveFormatting,
-  ScanLine,
-  Smile,
-  Strikethrough,
-  Subscript,
-  Superscript,
-  Underline,
-  X,
-} from "lucide-vue-next";
+import { Bold, Italic, Link, Loader2, ScanLine, X } from "lucide-vue-next";
 import { useEventListener } from "@vueuse/core";
 import {
   inject,
@@ -35,7 +17,7 @@ import {
 } from "vue";
 
 const props = defineProps<{
-  block: TextBlockType;
+  block: TitleBlockType;
   toolbarPosition: { top: number; left: number };
 }>();
 
@@ -60,22 +42,8 @@ const linkDialogRef = ref<HTMLElement | null>(null);
 useFocusTrap(linkDialogRef, showLinkDialog);
 let focusTimeout: ReturnType<typeof setTimeout> | null = null;
 
-const {
-  categories: emojiCategories,
-  isOpen: showEmojiPicker,
-  toggle: toggleEmojiPicker,
-  close: closeEmojiPicker,
-} = useEmoji();
-
 const { t } = useI18n();
 
-function insertEmoji(emoji: string): void {
-  editor.value?.chain().focus().insertContent(emoji).run();
-  closeEmojiPicker();
-}
-
-// Lazy-loaded editor instance - use Editor class directly instead of useEditor composable
-// because useEditor must be called synchronously during component setup
 const editor = shallowRef<Editor | null>(null);
 const EditorContent = shallowRef<typeof EditorContentComponent | null>(null);
 const isLoading = ref(true);
@@ -87,45 +55,34 @@ async function initEditor(): Promise<void> {
       { EditorContent: EC },
       { default: StarterKit },
       { default: Link },
-      { default: Underline },
-      { default: Subscript },
-      { default: Superscript },
-      { default: TextAlign },
       { MergeTagNode, LogicMergeTagNode },
     ] = await Promise.all([
       import("@tiptap/core"),
       import("@tiptap/vue-3"),
       import("@tiptap/starter-kit"),
       import("@tiptap/extension-link"),
-      import("@tiptap/extension-underline"),
-      import("@tiptap/extension-subscript"),
-      import("@tiptap/extension-superscript"),
-      import("@tiptap/extension-text-align"),
       import("../../extensions"),
     ]);
 
     EditorContent.value = EC;
 
-    // Build extensions array
     const extensions = [
       StarterKit.configure({
         heading: false,
         codeBlock: false,
         blockquote: false,
         horizontalRule: false,
+        bulletList: false,
+        orderedList: false,
+        listItem: false,
+        strike: false,
       }),
-      Underline,
-      Subscript,
-      Superscript,
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
           target: "_blank",
           rel: "noopener noreferrer",
         },
-      }),
-      TextAlign.configure({
-        types: ["paragraph", "heading"],
       }),
       MergeTagNode.configure({
         mergeTags,
@@ -136,15 +93,12 @@ async function initEditor(): Promise<void> {
       }),
     ];
 
-    // Deduplicate extensions by name (keep last occurrence) to prevent bundler-related duplicates
     const seen = new Map<string, number>();
     extensions.forEach((ext, i) => seen.set(ext.name, i));
     const uniqueExtensions = extensions.filter(
       (ext, i) => seen.get(ext.name) === i,
     );
 
-    // Use Editor class directly instead of useEditor composable
-    // useEditor must be called synchronously during setup, but we're in an async function
     editor.value = new TiptapEditor({
       extensions: uniqueExtensions,
       content: props.block.content,
@@ -160,13 +114,12 @@ async function initEditor(): Promise<void> {
 
     isLoading.value = false;
 
-    // Focus after init
     focusTimeout = setTimeout(() => {
       editor.value?.commands.focus("end");
       focusTimeout = null;
     }, 0);
   } catch (error) {
-    console.error("[TextEditor] Failed to initialize TipTap editor:", error);
+    console.error("[TitleEditor] Failed to initialize TipTap editor:", error);
     isLoading.value = false;
   }
 }
@@ -189,11 +142,6 @@ function handleClickOutside(event: MouseEvent): void {
   if (isRequestingMergeTag.value) return;
 
   const target = event.target as HTMLElement;
-
-  // Close emoji picker if clicking outside of it
-  if (showEmojiPicker.value && !target.closest(".tpl-emoji-picker")) {
-    closeEmojiPicker();
-  }
 
   if (
     target.closest(".tpl-text-editor-wrapper") ||
@@ -279,7 +227,7 @@ async function handleAddMergeTag(): Promise<void> {
       <div
         :data-tpl-theme="tplUiTheme"
         role="toolbar"
-        :aria-label="t.textEditor.toolbar"
+        :aria-label="t.titleEditor.toolbar"
         class="tpl tpl-text-toolbar tpl:fixed tpl:z-popover tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:shadow-lg"
         :style="{
           ...themeStyles,
@@ -289,7 +237,7 @@ async function handleAddMergeTag(): Promise<void> {
         }"
       >
         <template v-if="!isLoading && editor">
-          <!-- Text Formatting -->
+          <!-- Bold -->
           <button
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
@@ -297,12 +245,13 @@ async function handleAddMergeTag(): Promise<void> {
               'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
                 editor?.isActive('bold'),
             }"
-            :aria-label="t.textEditor.bold"
-            :title="t.textEditor.bold"
+            :aria-label="t.titleEditor.bold"
+            :title="t.titleEditor.bold"
             @click="editor?.chain().focus().toggleBold().run()"
           >
             <Bold :size="16" :stroke-width="2.5" />
           </button>
+          <!-- Italic -->
           <button
             type="button"
             class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
@@ -310,68 +259,11 @@ async function handleAddMergeTag(): Promise<void> {
               'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
                 editor?.isActive('italic'),
             }"
-            :aria-label="t.textEditor.italic"
-            :title="t.textEditor.italic"
+            :aria-label="t.titleEditor.italic"
+            :title="t.titleEditor.italic"
             @click="editor?.chain().focus().toggleItalic().run()"
           >
             <Italic :size="16" :stroke-width="2" />
-          </button>
-          <button
-            type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-            :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
-                editor?.isActive('underline'),
-            }"
-            :aria-label="t.textEditor.underline"
-            :title="t.textEditor.underline"
-            @click="editor?.chain().focus().toggleUnderline().run()"
-          >
-            <Underline :size="16" :stroke-width="2" />
-          </button>
-          <button
-            type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-            :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
-                editor?.isActive('strike'),
-            }"
-            :aria-label="t.textEditor.strikethrough"
-            :title="t.textEditor.strikethrough"
-            @click="editor?.chain().focus().toggleStrike().run()"
-          >
-            <Strikethrough :size="16" :stroke-width="2" />
-          </button>
-          <span
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
-          <!-- Subscript/Superscript -->
-          <button
-            type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-            :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
-                editor?.isActive('subscript'),
-            }"
-            :aria-label="t.textEditor.subscript"
-            :title="t.textEditor.subscript"
-            @click="editor?.chain().focus().toggleSubscript().run()"
-          >
-            <Subscript :size="16" :stroke-width="2" />
-          </button>
-          <button
-            type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-            :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
-                editor?.isActive('superscript'),
-            }"
-            :aria-label="t.textEditor.superscript"
-            :title="t.textEditor.superscript"
-            @click="editor?.chain().focus().toggleSuperscript().run()"
-          >
-            <Superscript :size="16" :stroke-width="2" />
           </button>
           <span
             class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
@@ -385,150 +277,12 @@ async function handleAddMergeTag(): Promise<void> {
               'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
                 editor?.isActive('link'),
             }"
-            :aria-label="t.textEditor.addLink"
-            :title="t.textEditor.addLink"
+            :aria-label="t.titleEditor.addLink"
+            :title="t.titleEditor.addLink"
             @click="openLinkDialog"
           >
             <Link :size="16" :stroke-width="2" />
           </button>
-          <span
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
-          <!-- Lists -->
-          <button
-            type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-            :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
-                editor?.isActive('bulletList'),
-            }"
-            :aria-label="t.textEditor.bulletList"
-            :title="t.textEditor.bulletList"
-            @click="editor?.chain().focus().toggleBulletList().run()"
-          >
-            <List :size="16" :stroke-width="2" />
-          </button>
-          <button
-            type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-            :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
-                editor?.isActive('orderedList'),
-            }"
-            :aria-label="t.textEditor.numberedList"
-            :title="t.textEditor.numberedList"
-            @click="editor?.chain().focus().toggleOrderedList().run()"
-          >
-            <ListOrdered :size="16" :stroke-width="2" />
-          </button>
-          <span
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
-          <!-- Alignment -->
-          <button
-            type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-            :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]': editor?.isActive({
-                textAlign: 'left',
-              }),
-            }"
-            :aria-label="t.textEditor.alignLeft"
-            :title="t.textEditor.alignLeft"
-            @click="editor?.chain().focus().setTextAlign('left').run()"
-          >
-            <AlignLeft :size="16" :stroke-width="2" />
-          </button>
-          <button
-            type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-            :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]': editor?.isActive({
-                textAlign: 'center',
-              }),
-            }"
-            :aria-label="t.textEditor.alignCenter"
-            :title="t.textEditor.alignCenter"
-            @click="editor?.chain().focus().setTextAlign('center').run()"
-          >
-            <AlignCenter :size="16" :stroke-width="2" />
-          </button>
-          <button
-            type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-            :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]': editor?.isActive({
-                textAlign: 'right',
-              }),
-            }"
-            :aria-label="t.textEditor.alignRight"
-            :title="t.textEditor.alignRight"
-            @click="editor?.chain().focus().setTextAlign('right').run()"
-          >
-            <AlignRight :size="16" :stroke-width="2" />
-          </button>
-          <!-- Clear Formatting -->
-          <span
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
-          <button
-            type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-            :aria-label="t.textEditor.clearFormatting"
-            :title="t.textEditor.clearFormatting"
-            @click="editor?.chain().focus().clearNodes().unsetAllMarks().run()"
-          >
-            <RemoveFormatting :size="16" :stroke-width="2" />
-          </button>
-          <!-- Emoji Picker -->
-          <span
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
-          <div class="tpl:relative">
-            <button
-              type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-              :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]': showEmojiPicker,
-              }"
-              :aria-label="t.textEditor.insertEmoji"
-              :title="t.textEditor.insertEmoji"
-              @click="toggleEmojiPicker"
-            >
-              <Smile :size="16" :stroke-width="2" />
-            </button>
-            <div
-              v-if="showEmojiPicker"
-              class="tpl-emoji-picker tpl:absolute tpl:top-full tpl:left-0 tpl:z-10 tpl:mt-2 tpl:w-72 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-2 tpl:shadow-lg"
-            >
-              <div
-                v-for="category in emojiCategories"
-                :key="category.key"
-                class="tpl:mb-2 tpl:last:mb-0"
-              >
-                <div
-                  class="tpl:mb-1.5 tpl:text-[10px] tpl:font-medium tpl:tracking-wide tpl:text-[var(--tpl-text-muted)] tpl:uppercase"
-                >
-                  {{ t.emoji[category.key] }}
-                </div>
-                <div class="tpl:grid tpl:grid-cols-10 tpl:gap-0.5">
-                  <button
-                    v-for="emoji in category.emojis"
-                    :key="emoji"
-                    type="button"
-                    class="tpl:flex tpl:size-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:text-base tpl:transition-all tpl:duration-100 tpl:hover:scale-125 tpl:hover:bg-[var(--tpl-bg-active)]"
-                    @click="insertEmoji(emoji)"
-                  >
-                    {{ emoji }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
           <!-- Add Merge Tag -->
           <span
             v-if="mergeTagEnabled"

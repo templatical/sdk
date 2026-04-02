@@ -41,7 +41,8 @@ A discriminated union of all block types:
 
 ```ts
 type Block =
-  | TextBlock
+  | TitleBlock
+  | ParagraphBlock
   | ImageBlock
   | ButtonBlock
   | SectionBlock
@@ -59,7 +60,7 @@ type Block =
 
 ```ts
 type BlockType =
-  | 'text' | 'image' | 'button' | 'section'
+  | 'title' | 'paragraph' | 'image' | 'button' | 'section'
   | 'divider' | 'video' | 'spacer' | 'social'
   | 'menu' | 'table' | 'html' | 'custom';
 ```
@@ -130,17 +131,26 @@ interface BlockVisibility {
 
 See [Blocks Guide](/guide/blocks) for detailed descriptions of each block type.
 
-### TextBlock
+### TitleBlock
 
 ```ts
-interface TextBlock extends BaseBlock {
-  type: 'text';
+interface TitleBlock extends BaseBlock {
+  type: 'title';
   content: string;          // HTML content
-  fontSize: number;
+  level: 1 | 2 | 3 | 4;   // H1=36px, H2=28px, H3=22px, H4=18px
   color: string;
   textAlign: 'left' | 'center' | 'right';
   fontWeight: 'normal' | 'bold';
   fontFamily?: string;
+}
+```
+
+### ParagraphBlock
+
+```ts
+interface ParagraphBlock extends BaseBlock {
+  type: 'paragraph';
+  content: string;          // HTML content (all formatting is inline via TipTap)
 }
 ```
 
@@ -434,7 +444,8 @@ All factory functions accept an optional partial override object and return a co
 
 ```ts
 import {
-  createTextBlock,
+  createTitleBlock,
+  createParagraphBlock,
   createImageBlock,
   createButtonBlock,
   createSectionBlock,
@@ -453,12 +464,12 @@ import {
 } from '@templatical/types';
 
 // Create with defaults
-const text = createTextBlock();
+const paragraph = createParagraphBlock();
 
 // Create with overrides
-const heading = createTextBlock({
+const heading = createTitleBlock({
   content: '<h1>Hello</h1>',
-  fontSize: 24,
+  level: 1,
   fontWeight: 'bold',
 });
 
@@ -479,13 +490,13 @@ const id = generateId();
 
 ```ts
 import {
-  isText, isImage, isButton, isSection,
+  isTitle, isParagraph, isImage, isButton, isSection,
   isDivider, isVideo, isSpacer, isSocialIcons,
   isMenu, isTable, isHtml, isCustomBlock,
 } from '@templatical/types';
 
-if (isText(block)) {
-  console.log(block.content); // TypeScript knows this is TextBlock
+if (isTitle(block)) {
+  console.log(block.level); // TypeScript knows this is TitleBlock
 }
 ```
 

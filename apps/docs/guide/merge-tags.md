@@ -166,6 +166,6 @@ const editor = init({
 
 ## Merge tags in other inputs
 
-Placeholders aren't limited to text blocks. The editor detects and highlights merge tags in other block inputs too — button text, button URL, image URL, image alt text, and link href values. The same label replacement and tooltip behavior applies in these fields.
+Placeholders aren't limited to title and paragraph blocks. The editor detects and highlights merge tags in other block inputs too — button text, button URL, image URL, image alt text, and link href values. The same label replacement and tooltip behavior applies in these fields.
 
 <img src="/images/button-merge-tag.png" alt="Merge tag in a button URL" style="max-width: 360px;" />

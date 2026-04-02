@@ -3,7 +3,8 @@ import {
   deepMergeDefaults,
   DEFAULT_BLOCK_DEFAULTS,
   DEFAULT_TEMPLATE_DEFAULTS,
-  TEXT_BLOCK_DEFAULTS,
+  TITLE_BLOCK_DEFAULTS,
+  PARAGRAPH_BLOCK_DEFAULTS,
   IMAGE_BLOCK_DEFAULTS,
   BUTTON_BLOCK_DEFAULTS,
   DIVIDER_BLOCK_DEFAULTS,
@@ -17,7 +18,8 @@ import {
   COUNTDOWN_BLOCK_DEFAULTS,
 } from "../src/defaults";
 import {
-  createTextBlock,
+  createTitleBlock,
+  createParagraphBlock,
   createImageBlock,
   createButtonBlock,
   createDividerBlock,
@@ -136,7 +138,8 @@ describe("deepMergeDefaults", () => {
 
 describe("DEFAULT_BLOCK_DEFAULTS", () => {
   const expectedKeys = [
-    "text",
+    "title",
+    "paragraph",
     "image",
     "button",
     "divider",
@@ -150,14 +153,15 @@ describe("DEFAULT_BLOCK_DEFAULTS", () => {
     "countdown",
   ];
 
-  it("contains all 12 block type keys", () => {
+  it("contains all 13 block type keys", () => {
     expect(Object.keys(DEFAULT_BLOCK_DEFAULTS).sort()).toEqual(
       expectedKeys.sort(),
     );
   });
 
   it("maps per-block constants correctly", () => {
-    expect(DEFAULT_BLOCK_DEFAULTS.text).toBe(TEXT_BLOCK_DEFAULTS);
+    expect(DEFAULT_BLOCK_DEFAULTS.title).toBe(TITLE_BLOCK_DEFAULTS);
+    expect(DEFAULT_BLOCK_DEFAULTS.paragraph).toBe(PARAGRAPH_BLOCK_DEFAULTS);
     expect(DEFAULT_BLOCK_DEFAULTS.image).toBe(IMAGE_BLOCK_DEFAULTS);
     expect(DEFAULT_BLOCK_DEFAULTS.button).toBe(BUTTON_BLOCK_DEFAULTS);
     expect(DEFAULT_BLOCK_DEFAULTS.divider).toBe(DIVIDER_BLOCK_DEFAULTS);
@@ -197,9 +201,14 @@ describe("per-block constants match factory output", () => {
     return rest;
   }
 
-  it("TEXT_BLOCK_DEFAULTS matches createTextBlock", () => {
-    const block = createTextBlock();
-    expect(stripMeta(block)).toEqual(TEXT_BLOCK_DEFAULTS);
+  it("TITLE_BLOCK_DEFAULTS matches createTitleBlock", () => {
+    const block = createTitleBlock();
+    expect(stripMeta(block)).toEqual(TITLE_BLOCK_DEFAULTS);
+  });
+
+  it("PARAGRAPH_BLOCK_DEFAULTS matches createParagraphBlock", () => {
+    const block = createParagraphBlock();
+    expect(stripMeta(block)).toEqual(PARAGRAPH_BLOCK_DEFAULTS);
   });
 
   it("IMAGE_BLOCK_DEFAULTS matches createImageBlock", () => {
@@ -263,10 +272,16 @@ describe("per-block constants match factory output", () => {
 });
 
 describe("default constants are not mutated by factories", () => {
-  it("TEXT_BLOCK_DEFAULTS is unchanged after creating a block with overrides", () => {
-    const before = JSON.parse(JSON.stringify(TEXT_BLOCK_DEFAULTS));
-    createTextBlock({ fontSize: 99 });
-    expect(TEXT_BLOCK_DEFAULTS).toEqual(before);
+  it("TITLE_BLOCK_DEFAULTS is unchanged after creating a block with overrides", () => {
+    const before = JSON.parse(JSON.stringify(TITLE_BLOCK_DEFAULTS));
+    createTitleBlock({ level: 4 });
+    expect(TITLE_BLOCK_DEFAULTS).toEqual(before);
+  });
+
+  it("PARAGRAPH_BLOCK_DEFAULTS is unchanged after creating a block with overrides", () => {
+    const before = JSON.parse(JSON.stringify(PARAGRAPH_BLOCK_DEFAULTS));
+    createParagraphBlock({ content: '<p>Override</p>' });
+    expect(PARAGRAPH_BLOCK_DEFAULTS).toEqual(before);
   });
 
   it("BUTTON_BLOCK_DEFAULTS is unchanged after creating a block with overrides", () => {

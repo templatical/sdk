@@ -7,11 +7,12 @@ import type {
   HtmlBlock,
   ImageBlock,
   MenuBlock,
+  ParagraphBlock,
   SectionBlock,
   SocialIconsBlock,
   SpacerBlock,
   TableBlock,
-  TextBlock,
+  TitleBlock,
   VideoBlock,
 } from "./blocks";
 
@@ -19,8 +20,12 @@ export function isSection(block: Block): block is SectionBlock {
   return block.type === "section";
 }
 
-export function isText(block: Block): block is TextBlock {
-  return block.type === "text";
+export function isTitle(block: Block): block is TitleBlock {
+  return block.type === "title";
+}
+
+export function isParagraph(block: Block): block is ParagraphBlock {
+  return block.type === "paragraph";
 }
 
 export function isImage(block: Block): block is ImageBlock {

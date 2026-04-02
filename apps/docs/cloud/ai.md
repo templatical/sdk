@@ -49,7 +49,7 @@ The AI can also generate prompt suggestions based on the current template conten
 
 ## Text Rewrite
 
-The text rewrite feature allows users to select text within a text block and rewrite it with AI assistance. Users can provide instructions like:
+The text rewrite feature allows users to select text within a title or paragraph block and rewrite it with AI assistance. Users can provide instructions like:
 
 - "Make this more concise"
 - "Change the tone to be more professional"

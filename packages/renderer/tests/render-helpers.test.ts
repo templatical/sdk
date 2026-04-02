@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  createTextBlock,
+  createParagraphBlock,
   createHtmlBlock,
   createDefaultTemplateContent,
 } from '@templatical/types';
@@ -9,7 +9,7 @@ import { renderToMjml } from '../src';
 describe('renderToMjml helpers', () => {
   it('wraps a non-section block in mj-section and mj-column', () => {
     const content = createDefaultTemplateContent();
-    content.blocks = [createTextBlock({ content: '<p>Hello</p>' })];
+    content.blocks = [createParagraphBlock({ content: '<p>Hello</p>' })];
     const result = renderToMjml(content);
     expect(result).toContain('<mj-section>');
     expect(result).toContain('<mj-column>');
@@ -62,7 +62,7 @@ describe('renderToMjml helpers', () => {
   it('filters out HTML blocks when allowHtmlBlocks is false', () => {
     const content = createDefaultTemplateContent();
     content.blocks = [
-      createTextBlock({ content: '<p>Keep me</p>' }),
+      createParagraphBlock({ content: '<p>Keep me</p>' }),
       createHtmlBlock({ content: '<div>Remove me</div>' }),
     ];
     const result = renderToMjml(content, { allowHtmlBlocks: false });
@@ -81,7 +81,7 @@ describe('renderToMjml helpers', () => {
 
   it('wraps blocks with display conditions in mj-raw', () => {
     const content = createDefaultTemplateContent();
-    const block = createTextBlock({ content: '<p>Conditional</p>' });
+    const block = createParagraphBlock({ content: '<p>Conditional</p>' });
     block.displayCondition = {
       before: '<!--[if mso]>',
       after: '<![endif]-->',

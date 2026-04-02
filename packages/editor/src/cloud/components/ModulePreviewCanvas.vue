@@ -9,7 +9,8 @@ import PreviewSectionBlock from "../../components/blocks/PreviewSectionBlock.vue
 import SocialIconsBlock from "../../components/blocks/SocialIconsBlock.vue";
 import SpacerBlock from "../../components/blocks/SpacerBlock.vue";
 import TableBlock from "../../components/blocks/TableBlock.vue";
-import TextBlock from "../../components/blocks/TextBlock.vue";
+import TitleBlock from "../../components/blocks/TitleBlock.vue";
+import ParagraphBlock from "../../components/blocks/ParagraphBlock.vue";
 import VideoBlock from "../../components/blocks/VideoBlock.vue";
 import type { useBlockRegistry } from "../../composables";
 import type { Block } from "@templatical/types";
@@ -33,8 +34,10 @@ function getBlockComponent(block: Block): Component | null {
   switch (block.type) {
     case "section":
       return PreviewSectionBlock;
-    case "text":
-      return TextBlock;
+    case "title":
+      return TitleBlock;
+    case "paragraph":
+      return ParagraphBlock;
     case "image":
       return ImageBlock;
     case "video":

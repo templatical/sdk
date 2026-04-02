@@ -2,7 +2,7 @@
 import { useMergeTag } from "../../composables/useMergeTag";
 import type {
   MergeTag,
-  TextBlock as TextBlockType,
+  ParagraphBlock as ParagraphBlockType,
   ViewportSize,
 } from "@templatical/types";
 import {
@@ -13,11 +13,13 @@ import { useEventListener } from "@vueuse/core";
 import { computed, defineAsyncComponent, inject, ref, watchEffect } from "vue";
 
 const props = defineProps<{
-  block: TextBlockType;
+  block: ParagraphBlockType;
   viewport: ViewportSize;
 }>();
 
-const TextEditor = defineAsyncComponent(() => import("./TextEditor.vue"));
+const ParagraphEditor = defineAsyncComponent(
+  () => import("./ParagraphEditor.vue"),
+);
 
 const mergeTags = inject<MergeTag[]>("mergeTags", []);
 const { syntax } = useMergeTag();
@@ -30,30 +32,17 @@ const resolvedContent = computed(() =>
 );
 
 const isEditing = ref(false);
-const textBlockRef = ref<HTMLElement | null>(null);
+const paragraphBlockRef = ref<HTMLElement | null>(null);
 const toolbarPosition = ref({ top: 0, left: 0 });
 
 function updateToolbarPosition(): void {
-  if (!textBlockRef.value) return;
-  const rect = textBlockRef.value.getBoundingClientRect();
+  if (!paragraphBlockRef.value) return;
+  const rect = paragraphBlockRef.value.getBoundingClientRect();
   toolbarPosition.value = {
     top: rect.top - 8,
     left: rect.left,
   };
 }
-
-const textStyle = computed(() => {
-  const style: Record<string, string> = {
-    fontSize: `${props.block.fontSize}px`,
-    color: props.block.color,
-    textAlign: props.block.textAlign,
-    fontWeight: props.block.fontWeight,
-  };
-  if (props.block.fontFamily) {
-    style.fontFamily = props.block.fontFamily;
-  }
-  return style;
-});
 
 function handleDoubleClick(): void {
   updateToolbarPosition();
@@ -82,12 +71,11 @@ watchEffect((onCleanup) => {
 
 <template>
   <div
-    ref="textBlockRef"
+    ref="paragraphBlockRef"
     class="tpl:min-h-[1em] tpl:w-full"
-    :style="textStyle"
     @dblclick="handleDoubleClick"
   >
-    <TextEditor
+    <ParagraphEditor
       v-if="isEditing"
       :block="block"
       :toolbar-position="toolbarPosition"

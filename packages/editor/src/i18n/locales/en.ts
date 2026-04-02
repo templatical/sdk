@@ -67,7 +67,8 @@ export default {
   blocks: {
     section: "Section",
     image: "Image",
-    text: "Text",
+    title: "Title",
+    paragraph: "Paragraph",
     button: "Button",
     divider: "Divider",
     video: "Video",
@@ -93,8 +94,16 @@ export default {
     delete: "Delete",
   },
 
-  // Text editor toolbar
-  textEditor: {
+  // Title editor toolbar
+  titleEditor: {
+    toolbar: "Title formatting",
+    bold: "Bold (Ctrl+B)",
+    italic: "Italic (Ctrl+I)",
+    addLink: "Add Link",
+  },
+
+  // Paragraph editor toolbar
+  paragraphEditor: {
     toolbar: "Text formatting",
     bold: "Bold (Ctrl+B)",
     italic: "Italic (Ctrl+I)",
@@ -110,6 +119,14 @@ export default {
     alignRight: "Align Right",
     clearFormatting: "Clear Formatting",
     insertEmoji: "Insert Emoji",
+    fontFamily: "Font Family",
+    defaultFont: "Default",
+    fontSize: "Font Size",
+    defaultSize: "Default",
+    textColor: "Text Color",
+    highlightColor: "Highlight Color",
+    lineHeight: "Line Height",
+    letterSpacing: "Letter Spacing",
   },
 
   // Block actions (BlockWrapper)
@@ -145,11 +162,15 @@ export default {
     urlLabel: "URL",
   },
 
-  // Toolbar - Text
-  text: {
+  // Toolbar - Title
+  title: {
+    level: "Heading Level",
+    heading1: "Heading 1 (36px)",
+    heading2: "Heading 2 (28px)",
+    heading3: "Heading 3 (22px)",
+    heading4: "Heading 4 (18px)",
     fontFamily: "Font Family",
     inheritFont: "Use template font",
-    fontSize: "Font Size",
     color: "Color",
     align: "Align",
     alignLeft: "Left",

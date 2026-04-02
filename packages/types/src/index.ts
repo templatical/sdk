@@ -26,9 +26,12 @@ export type {
   TableBlock,
   TableCellData,
   TableRowData,
-  TextBlock,
+  TitleBlock,
+  ParagraphBlock,
+  HeadingLevel,
   VideoBlock,
 } from "./blocks";
+export { HEADING_LEVEL_FONT_SIZE } from "./blocks";
 
 // Type guards
 export {
@@ -43,7 +46,8 @@ export {
   isSocialIcons,
   isSpacer,
   isTable,
-  isText,
+  isTitle,
+  isParagraph,
   isVideo,
 } from "./guards";
 
@@ -57,7 +61,8 @@ export {
   deepMergeDefaults,
   DEFAULT_BLOCK_DEFAULTS,
   DEFAULT_TEMPLATE_DEFAULTS,
-  TEXT_BLOCK_DEFAULTS,
+  TITLE_BLOCK_DEFAULTS,
+  PARAGRAPH_BLOCK_DEFAULTS,
   IMAGE_BLOCK_DEFAULTS,
   BUTTON_BLOCK_DEFAULTS,
   DIVIDER_BLOCK_DEFAULTS,
@@ -105,7 +110,8 @@ export {
   createSocialIconsBlock,
   createSpacerBlock,
   createTableBlock,
-  createTextBlock,
+  createTitleBlock,
+  createParagraphBlock,
   createVideoBlock,
   generateId,
 } from "./factory";

@@ -1,13 +1,14 @@
-import type { TextBlock } from "@templatical/types";
+import type { TitleBlock } from "@templatical/types";
+import { HEADING_LEVEL_FONT_SIZE } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { convertMergeTagsToValues } from "../escape";
 import { toPaddingString } from "../padding";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
- * Render a text block to MJML markup.
+ * Render a title block to MJML markup.
  */
-export function renderText(block: TextBlock, context: RenderContext): string {
+export function renderTitle(block: TitleBlock, context: RenderContext): string {
   if (isHiddenOnAll(block)) {
     return "";
   }
@@ -17,21 +18,22 @@ export function renderText(block: TextBlock, context: RenderContext): string {
     ? ` background-color="${block.styles.backgroundColor}"`
     : "";
   const content = convertMergeTagsToValues(block.content);
-  const fontSize = block.fontSize;
+  const fontSize = HEADING_LEVEL_FONT_SIZE[block.level];
   const color = block.color;
   const align = block.textAlign;
   const fontWeight = block.fontWeight;
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const visibilityAttr = getCssClassAttr(block);
+  const tag = `h${block.level}`;
 
   return `<mj-text
   font-size="${fontSize}px"
   color="${color}"
   align="${align}"
   font-weight="${fontWeight}"
-  line-height="1.5"
+  line-height="1.3"
   padding="${padding}"${bgColor}${fontFamilyAttr}${visibilityAttr}
->${content}</mj-text>`;
+><${tag} style="margin:0;font-size:inherit;font-weight:inherit;color:inherit;line-height:inherit">${content}</${tag}></mj-text>`;
 }
 
 function renderFontFamilyAttr(

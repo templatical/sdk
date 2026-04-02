@@ -46,14 +46,28 @@ export interface SectionBlock extends BaseBlock {
   children: Block[][];
 }
 
-export interface TextBlock extends BaseBlock {
-  type: "text";
+export type HeadingLevel = 1 | 2 | 3 | 4;
+
+export const HEADING_LEVEL_FONT_SIZE: Record<HeadingLevel, number> = {
+  1: 36,
+  2: 28,
+  3: 22,
+  4: 18,
+};
+
+export interface TitleBlock extends BaseBlock {
+  type: "title";
   content: string;
-  fontSize: number;
+  level: HeadingLevel;
   color: string;
   textAlign: "left" | "center" | "right";
   fontWeight: "normal" | "bold";
   fontFamily?: string;
+}
+
+export interface ParagraphBlock extends BaseBlock {
+  type: "paragraph";
+  content: string;
 }
 
 export interface ImageBlock extends BaseBlock {
@@ -232,7 +246,8 @@ export interface CustomBlock extends BaseBlock {
 
 export type Block =
   | SectionBlock
-  | TextBlock
+  | TitleBlock
+  | ParagraphBlock
   | ImageBlock
   | ButtonBlock
   | DividerBlock

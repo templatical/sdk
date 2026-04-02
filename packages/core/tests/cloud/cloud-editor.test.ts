@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { ref } from "vue";
 import { SdkError } from "@templatical/types";
 import {
-  createTextBlock,
+  createParagraphBlock,
   createSectionBlock,
   createImageBlock,
 } from "@templatical/types";
@@ -94,14 +94,14 @@ describe("cloud useEditor", () => {
 
     it("selectBlock sets selectedBlockId", () => {
       const editor = setup();
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       editor.addBlock(block);
       editor.selectBlock(block.id);
       expect(editor.state.selectedBlockId).toBe(block.id);
     });
 
     it("selectBlock ignores locked blocks", () => {
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       const editor = setup({ lockedBlocks: new Map([[block.id, true]]) });
       editor.addBlock(block);
       editor.selectBlock(block.id);
@@ -110,7 +110,7 @@ describe("cloud useEditor", () => {
 
     it("selectBlock with null clears selection", () => {
       const editor = setup();
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       editor.addBlock(block);
       editor.selectBlock(block.id);
       editor.selectBlock(null);
@@ -119,7 +119,7 @@ describe("cloud useEditor", () => {
 
     it("setPreviewMode clears selection when true", () => {
       const editor = setup();
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       editor.addBlock(block);
       editor.selectBlock(block.id);
       editor.setPreviewMode(true);
@@ -129,7 +129,7 @@ describe("cloud useEditor", () => {
 
     it("updateBlock patches block and marks dirty", () => {
       const editor = setup();
-      const block = createTextBlock({ content: "Hello" });
+      const block = createParagraphBlock({ content: "Hello" });
       editor.addBlock(block);
       editor.updateBlock(block.id, { content: "World" } as any);
       const found = editor.content.value.blocks.find((b) => b.id === block.id);
@@ -138,7 +138,7 @@ describe("cloud useEditor", () => {
     });
 
     it("updateBlock ignores locked blocks", () => {
-      const block = createTextBlock({ content: "Hello" });
+      const block = createParagraphBlock({ content: "Hello" });
       const editor = setup({ lockedBlocks: new Map([[block.id, true]]) });
       editor.addBlock(block);
       // Reset dirty from addBlock
@@ -149,7 +149,7 @@ describe("cloud useEditor", () => {
 
     it("removeBlock removes block and deselects if selected", () => {
       const editor = setup();
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       editor.addBlock(block);
       editor.selectBlock(block.id);
       editor.removeBlock(block.id);
@@ -158,7 +158,7 @@ describe("cloud useEditor", () => {
     });
 
     it("removeBlock ignores locked blocks", () => {
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       const editor = setup({ lockedBlocks: new Map([[block.id, true]]) });
       editor.addBlock(block);
       editor.removeBlock(block.id);
@@ -169,7 +169,7 @@ describe("cloud useEditor", () => {
   describe("addBlock", () => {
     it("adds block to root level", () => {
       const editor = setup();
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       editor.addBlock(block);
       expect(editor.content.value.blocks).toHaveLength(1);
       expect(editor.state.isDirty).toBe(true);
@@ -179,7 +179,7 @@ describe("cloud useEditor", () => {
       const editor = setup();
       const section = createSectionBlock();
       editor.addBlock(section);
-      const child = createTextBlock();
+      const child = createParagraphBlock();
       editor.addBlock(child, section.id, 0);
       expect(section.children[0]).toContainEqual(
         expect.objectContaining({ id: child.id }),
@@ -188,9 +188,9 @@ describe("cloud useEditor", () => {
 
     it("adds block at specific index", () => {
       const editor = setup();
-      const block1 = createTextBlock();
-      const block2 = createTextBlock();
-      const block3 = createTextBlock();
+      const block1 = createParagraphBlock();
+      const block2 = createParagraphBlock();
+      const block3 = createParagraphBlock();
       editor.addBlock(block1);
       editor.addBlock(block2);
       editor.addBlock(block3, undefined, undefined, 1);
@@ -201,8 +201,8 @@ describe("cloud useEditor", () => {
   describe("moveBlock", () => {
     it("moves block within root", () => {
       const editor = setup();
-      const b1 = createTextBlock();
-      const b2 = createTextBlock();
+      const b1 = createParagraphBlock();
+      const b2 = createParagraphBlock();
       editor.addBlock(b1);
       editor.addBlock(b2);
       editor.moveBlock(b1.id, 1);
@@ -213,7 +213,7 @@ describe("cloud useEditor", () => {
     it("moves block from root to section", () => {
       const editor = setup();
       const section = createSectionBlock();
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       editor.addBlock(section);
       editor.addBlock(block);
       editor.moveBlock(block.id, 0, section.id, 0);
@@ -226,7 +226,7 @@ describe("cloud useEditor", () => {
     it("moves block from section to root", () => {
       const editor = setup();
       const section = createSectionBlock();
-      const child = createTextBlock();
+      const child = createParagraphBlock();
       editor.addBlock(section);
       editor.addBlock(child, section.id, 0);
       editor.moveBlock(child.id, 1);
@@ -242,7 +242,7 @@ describe("cloud useEditor", () => {
     });
 
     it("includes root block ids from template", async () => {
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       const tpl = createMockTemplate({ blocks: [block] });
       vi.mocked(ApiClient.prototype.getTemplate).mockResolvedValue(tpl);
       const editor = setup();
@@ -251,7 +251,7 @@ describe("cloud useEditor", () => {
     });
 
     it("includes section children ids", async () => {
-      const child = createTextBlock();
+      const child = createParagraphBlock();
       const section = createSectionBlock();
       section.children[0] = [child];
       const tpl = createMockTemplate({ blocks: [section] });
@@ -302,7 +302,7 @@ describe("cloud useEditor", () => {
 
   describe("load", () => {
     it("calls api.getTemplate and populates state", async () => {
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       const tpl = createMockTemplate({ blocks: [block] });
       vi.mocked(ApiClient.prototype.getTemplate).mockResolvedValue(tpl);
       const editor = setup();
@@ -437,7 +437,7 @@ describe("cloud useEditor", () => {
 
     it("removeBlock on non-existent blockId leaves blocks unchanged", () => {
       const editor = setup();
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       editor.addBlock(block);
       editor.removeBlock("nonexistent");
       expect(editor.content.value.blocks).toHaveLength(1);
@@ -446,7 +446,7 @@ describe("cloud useEditor", () => {
 
     it("moveBlock with non-existent blockId leaves blocks unchanged", () => {
       const editor = setup();
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       editor.addBlock(block);
       editor.moveBlock("nonexistent", 0);
       expect(editor.content.value.blocks).toHaveLength(1);
@@ -512,7 +512,7 @@ describe("cloud useEditor", () => {
       vi.mocked(ApiClient.prototype.createTemplate).mockResolvedValue(tpl);
       const editor = setup();
       const customContent = {
-        blocks: [createTextBlock()],
+        blocks: [createParagraphBlock()],
         settings: { width: 800, backgroundColor: "#000", fontFamily: "Verdana" },
       } as any;
       await editor.create(customContent);
@@ -527,7 +527,7 @@ describe("cloud useEditor", () => {
       // Clear children to simulate edge case
       section.children = [];
       editor.addBlock(section);
-      const child = createTextBlock();
+      const child = createParagraphBlock();
       editor.addBlock(child, section.id, 2);
       expect(section.children[2]).toContainEqual(
         expect.objectContaining({ id: child.id }),
@@ -536,7 +536,7 @@ describe("cloud useEditor", () => {
 
     it("setPreviewMode(false) does not deselect currently selected block", () => {
       const editor = setup();
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       editor.addBlock(block);
       editor.selectBlock(block.id);
       editor.setPreviewMode(false);
@@ -546,7 +546,7 @@ describe("cloud useEditor", () => {
 
     it("moveBlock with invalid target section removes block from source", () => {
       const editor = setup();
-      const block = createTextBlock();
+      const block = createParagraphBlock();
       editor.addBlock(block);
       expect(editor.content.value.blocks).toHaveLength(1);
 
