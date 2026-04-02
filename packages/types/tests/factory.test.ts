@@ -38,7 +38,7 @@ describe('block factory functions', () => {
         const block = createTitleBlock();
         expect(block.type).toBe('title');
         expect(block.content).toBe('<p>Enter your title</p>');
-        expect(block.fontWeight).toBe('bold');
+        expect(block.level).toBe(2);
         expect(block.id).toMatch(/^[0-9a-f-]+$/);
     });
 

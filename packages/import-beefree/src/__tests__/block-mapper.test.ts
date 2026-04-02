@@ -88,7 +88,6 @@ describe("convertModule", () => {
         expect(block.level).toBe(1);
         expect(block.color).toBe("#111111");
         expect(block.textAlign).toBe("center");
-        expect(block.fontWeight).toBe("bold");
       }
       expect(entry.status).toBe("converted");
     });

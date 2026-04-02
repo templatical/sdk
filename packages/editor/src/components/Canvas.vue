@@ -99,8 +99,6 @@ const viewportWidth = computed(() => {
 const canvasStyle = computed(() => ({
   backgroundColor: props.content.settings.backgroundColor,
   fontFamily: props.content.settings.fontFamily,
-  filter: props.darkMode ? "invert(1) hue-rotate(180deg)" : "none",
-  transition: "filter 300ms ease",
 }));
 
 function handleCanvasClick(event: MouseEvent): void {
@@ -183,13 +181,13 @@ function handleFetchData(
 <template>
   <div
     class="tpl-canvas-wrapper tpl:rounded-lg tpl:transition-[width] tpl:duration-300"
-    style="
-      box-shadow: var(--tpl-shadow-xl);
-      transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
-    "
+    style="transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1)"
     :style="{
       width: `${viewportWidth}px`,
       backgroundColor: content.settings.backgroundColor,
+      boxShadow: darkMode ? 'none' : 'var(--tpl-shadow-xl)',
+      filter: darkMode ? 'invert(1) hue-rotate(180deg)' : 'none',
+      transition: 'filter 300ms ease',
     }"
   >
     <div
@@ -281,20 +279,20 @@ function handleFetchData(
             v-if="blocks.length === 0 && !previewMode"
             class="tpl-canvas-empty tpl:m-6 tpl:flex tpl:min-h-[400px] tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-xl tpl:border-2 tpl:border-dashed tpl:px-10 tpl:py-12 tpl:text-center"
             style="
-              border-color: var(--tpl-border-light);
+              border-color: var(--tpl-primary);
               background-color: var(--tpl-bg-elevated);
               font-family: var(--tpl-font-family);
             "
           >
             <div
               class="tpl-canvas-empty-icon tpl:mb-4"
-              style="color: var(--tpl-border-light)"
+              style="color: var(--tpl-primary)"
             >
               <SquarePlus :size="48" :stroke-width="1" />
             </div>
             <p
               class="tpl-canvas-empty-title tpl:m-0 tpl:mb-2 tpl:text-base tpl:font-semibold"
-              style="color: var(--tpl-text-muted)"
+              style="color: var(--tpl-primary)"
             >
               {{ t.canvas.noBlocks }}
             </p>

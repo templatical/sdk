@@ -154,7 +154,7 @@ describe('useBlockActions', () => {
 describe('useBlockActions with blockDefaults', () => {
     it('creates block with blockDefaults applied', () => {
         const defaults: BlockDefaults = {
-            title: { color: '#000000', fontWeight: 'normal' },
+            title: { color: '#000000' },
         };
         const opts = { ...createMockOptions(), blockDefaults: defaults };
         const actions = useBlockActions(opts);
@@ -163,7 +163,6 @@ describe('useBlockActions with blockDefaults', () => {
         expect(block.type).toBe('title');
         if (block.type === 'title') {
             expect(block.color).toBe('#000000');
-            expect(block.fontWeight).toBe('normal');
         }
     });
 

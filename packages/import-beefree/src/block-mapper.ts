@@ -202,7 +202,6 @@ function convertHeading(descriptor: BeeFreeeModuleDescriptor): Block {
     level: parseHeadingLevel(tag),
     color: parseColor(style.color) || "#1a1a1a",
     textAlign: toAlign(style["text-align"]),
-    fontWeight: toFontWeight(style["font-weight"], "bold"),
     fontFamily: parseFontFamily(style["font-family"]) || undefined,
     styles: makeStyles(descriptor),
   });

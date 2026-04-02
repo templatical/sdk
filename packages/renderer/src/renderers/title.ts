@@ -21,7 +21,6 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   const fontSize = HEADING_LEVEL_FONT_SIZE[block.level];
   const color = block.color;
   const align = block.textAlign;
-  const fontWeight = block.fontWeight;
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const visibilityAttr = getCssClassAttr(block);
   const tag = `h${block.level}`;
@@ -30,10 +29,9 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   font-size="${fontSize}px"
   color="${color}"
   align="${align}"
-  font-weight="${fontWeight}"
   line-height="1.3"
   padding="${padding}"${bgColor}${fontFamilyAttr}${visibilityAttr}
-><${tag} style="margin:0;font-size:inherit;font-weight:inherit;color:inherit;line-height:inherit">${content}</${tag}></mj-text>`;
+><${tag} style="margin:0;font-size:inherit;color:inherit;line-height:inherit">${content}</${tag}></mj-text>`;
 }
 
 function renderFontFamilyAttr(

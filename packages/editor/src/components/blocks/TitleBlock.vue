@@ -49,7 +49,6 @@ const titleStyle = computed(() => {
     fontSize: `${fontSize}px`,
     color: props.block.color,
     textAlign: props.block.textAlign,
-    fontWeight: props.block.fontWeight,
   };
   if (props.block.fontFamily) {
     style.fontFamily = props.block.fontFamily;

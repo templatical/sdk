@@ -22,7 +22,7 @@ const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
 
 describe('renderBlock', () => {
   it('renders title block with heading tag and font size from level', () => {
-    const block = createTitleBlock({ content: '<p>Hello</p>', level: 1, color: '#333', textAlign: 'center', fontWeight: 'bold' });
+    const block = createTitleBlock({ content: '<p>Hello</p>', level: 1, color: '#333', textAlign: 'center' });
     const result = renderBlock(block, ctx);
     expect(result).toContain('<mj-text');
     expect(result).toContain(`font-size="${HEADING_LEVEL_FONT_SIZE[1]}px"`);

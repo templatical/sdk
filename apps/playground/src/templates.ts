@@ -725,7 +725,6 @@ export function createProductLaunchTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>\u25b2 launchpad</p>",
         level: 2,
-        fontWeight: "bold",
         color: "#0d9488",
         textAlign: "center",
         fontFamily: "Arial, sans-serif",
@@ -734,7 +733,6 @@ export function createProductLaunchTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>Introducing Launchpad v2.0</p>",
         level: 2,
-        fontWeight: "bold",
         color: "#111827",
         textAlign: "center",
         styles: white(0, 40, 8, 40),
@@ -765,7 +763,6 @@ export function createProductLaunchTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>What\u2019s new in v2.0</p>",
         level: 3,
-        fontWeight: "bold",
         color: "#111827",
         textAlign: "center",
         styles: white(0, 20, 20, 20),
@@ -936,7 +933,6 @@ export function createNewsletterTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>The Weekly Brief</p>",
         level: 3,
-        fontWeight: "bold",
         color: "#111827",
         textAlign: "center",
         styles: white(32, 20, 4, 20),
@@ -1026,7 +1022,6 @@ export function createWelcomeTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>\u2726 flowwork</p>",
         level: 1,
-        fontWeight: "bold",
         color: "#2563eb",
         textAlign: "center",
         fontFamily: "Arial, sans-serif",
@@ -1036,7 +1031,6 @@ export function createWelcomeTemplate(): TemplateContent {
         content:
           '<p>Welcome to Flowwork, <span data-merge-tag="{{first_name}}">First Name</span>!</p>',
         level: 2,
-        fontWeight: "bold",
         color: "#111827",
         textAlign: "center",
         styles: white(0, 40, 8, 40),
@@ -1055,7 +1049,6 @@ export function createWelcomeTemplate(): TemplateContent {
             createTitleBlock({
               content: "<p>1</p>",
               level: 2,
-              fontWeight: "bold",
               color: "#2563eb",
               textAlign: "center",
               styles: pad(8, 8, 8, 8),
@@ -1080,7 +1073,6 @@ export function createWelcomeTemplate(): TemplateContent {
             createTitleBlock({
               content: "<p>2</p>",
               level: 2,
-              fontWeight: "bold",
               color: "#2563eb",
               textAlign: "center",
               styles: pad(8, 8, 8, 8),
@@ -1105,7 +1097,6 @@ export function createWelcomeTemplate(): TemplateContent {
             createTitleBlock({
               content: "<p>3</p>",
               level: 2,
-              fontWeight: "bold",
               color: "#2563eb",
               textAlign: "center",
               styles: pad(8, 8, 8, 8),
@@ -1180,7 +1171,6 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>\u25cf shopfront</p>",
         level: 3,
-        fontWeight: "bold",
         color: "#059669",
         textAlign: "center",
         fontFamily: "Arial, sans-serif",
@@ -1190,7 +1180,6 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>Order Confirmed</p>",
         level: 2,
-        fontWeight: "bold",
         color: "#111827",
         textAlign: "center",
         styles: white(0, 20, 8, 20),
@@ -1219,7 +1208,6 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>Order Summary</p>",
         level: 4,
-        fontWeight: "bold",
         color: "#111827",
         textAlign: "left",
         styles: white(16, 24, 12, 24),
@@ -1365,7 +1353,6 @@ export function createEventInvitationTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>\u25c6 config 2026</p>",
         level: 3,
-        fontWeight: "bold",
         color: "#7c3aed",
         textAlign: "center",
         fontFamily: "Arial, sans-serif",
@@ -1374,7 +1361,6 @@ export function createEventInvitationTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>You\u2019re Invited</p>",
         level: 2,
-        fontWeight: "bold",
         color: "#111827",
         textAlign: "center",
         styles: white(0, 40, 8, 40),
@@ -1464,7 +1450,6 @@ export function createEventInvitationTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>What to Expect</p>",
         level: 4,
-        fontWeight: "bold",
         color: "#111827",
         textAlign: "center",
         styles: white(16, 20, 16, 20),
@@ -1546,7 +1531,6 @@ export function createPasswordResetTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>\u25a0 vaultkey</p>",
         level: 3,
-        fontWeight: "bold",
         color: "#111827",
         textAlign: "center",
         fontFamily: "Arial, sans-serif",
@@ -1556,7 +1540,6 @@ export function createPasswordResetTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>Reset Your Password</p>",
         level: 3,
-        fontWeight: "bold",
         color: "#111827",
         textAlign: "center",
         styles: white(0, 40, 8, 40),
@@ -1638,7 +1621,6 @@ export function createBlackFridayTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>\u26a1 NEONSHOP</p>",
         level: 3,
-        fontWeight: "bold",
         color: "#fbbf24",
         textAlign: "center",
         fontFamily: "Arial, sans-serif",
@@ -1647,7 +1629,6 @@ export function createBlackFridayTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>BLACK FRIDAY</p>",
         level: 1,
-        fontWeight: "bold",
         color: "#ffffff",
         textAlign: "center",
         styles: { ...pad(0, 20, 0, 20), backgroundColor: "#111827" },
@@ -1657,7 +1638,6 @@ export function createBlackFridayTemplate(): TemplateContent {
         level: 4,
         color: "#fbbf24",
         textAlign: "center",
-        fontWeight: "bold",
         styles: { ...pad(4, 20, 8, 20), backgroundColor: "#111827" },
       }),
       createParagraphBlock({

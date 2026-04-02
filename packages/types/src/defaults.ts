@@ -44,7 +44,6 @@ export const TITLE_BLOCK_DEFAULTS: BlockDefaultsFor<TitleBlock> = {
   level: 2,
   color: "#1a1a1a",
   textAlign: "left",
-  fontWeight: "bold",
 };
 
 export const PARAGRAPH_BLOCK_DEFAULTS: BlockDefaultsFor<ParagraphBlock> = {

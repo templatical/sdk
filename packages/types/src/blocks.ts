@@ -61,7 +61,6 @@ export interface TitleBlock extends BaseBlock {
   level: HeadingLevel;
   color: string;
   textAlign: "left" | "center" | "right";
-  fontWeight: "normal" | "bold";
   fontFamily?: string;
 }
 

@@ -179,9 +179,6 @@ export default {
     alignLeft: "Links",
     alignCenter: "Zentriert",
     alignRight: "Rechts",
-    weight: "Schriftstärke",
-    normal: "Normal",
-    bold: "Fett",
   },
 
   // Emoji picker

@@ -579,17 +579,6 @@ function removeTableColumn(colIndex: number): void {
             @update:model-value="updateField('textAlign', $event)"
           />
         </div>
-        <div class="tpl:mb-3.5">
-          <label :class="labelClass">{{ t.title.weight }}</label>
-          <SlidingPillSelect
-            :options="[
-              { value: 'normal', label: t.title.normal },
-              { value: 'bold', label: t.title.bold },
-            ]"
-            :model-value="(block as TitleBlock).fontWeight"
-            @update:model-value="updateField('fontWeight', $event)"
-          />
-        </div>
       </template>
 
       <!-- Paragraph block: no text-specific sidebar controls — all formatting is in the TipTap toolbar -->
