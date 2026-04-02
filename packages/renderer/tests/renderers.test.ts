@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  createTextBlock,
+  createTitleBlock,
+  createParagraphBlock,
   createImageBlock,
   createButtonBlock,
   createDividerBlock,
@@ -12,6 +13,7 @@ import {
   createSectionBlock,
   createCountdownBlock,
   createVideoBlock,
+  HEADING_LEVEL_FONT_SIZE,
 } from '@templatical/types';
 import type { Block, CustomBlock } from '@templatical/types';
 import { renderBlock, RenderContext } from '../src';
@@ -19,17 +21,37 @@ import { renderBlock, RenderContext } from '../src';
 const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
 
 describe('renderBlock', () => {
-  it('renders text block', () => {
-    const block = createTextBlock({ content: '<p>Hello</p>', fontSize: 16, color: '#333' });
+  it('renders title block with heading tag and font size from level', () => {
+    const block = createTitleBlock({ content: '<p>Hello</p>', level: 1, color: '#333', textAlign: 'center' });
     const result = renderBlock(block, ctx);
     expect(result).toContain('<mj-text');
-    expect(result).toContain('font-size="16px"');
+    expect(result).toContain(`font-size="${HEADING_LEVEL_FONT_SIZE[1]}px"`);
     expect(result).toContain('color="#333"');
-    expect(result).toContain('<p>Hello</p>');
+    expect(result).toContain('<h1');
+    expect(result).toContain('Hello');
+    expect(result).toContain('</h1>');
   });
 
-  it('renders text block with merge tags converted', () => {
-    const block = createTextBlock({
+  it('renders title block level 3 with correct font size', () => {
+    const block = createTitleBlock({ content: '<p>Subheading</p>', level: 3 });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain(`font-size="${HEADING_LEVEL_FONT_SIZE[3]}px"`);
+    expect(result).toContain('<h3');
+    expect(result).toContain('</h3>');
+  });
+
+  it('renders paragraph block with content pass-through', () => {
+    const block = createParagraphBlock({ content: '<p>Hello</p>' });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('<mj-text');
+    expect(result).toContain('<p>Hello</p>');
+    // Paragraph does not have block-level font-size or color attributes
+    expect(result).not.toContain('font-size=');
+    expect(result).not.toContain('color=');
+  });
+
+  it('renders paragraph block with merge tags converted', () => {
+    const block = createParagraphBlock({
       content: 'Hi <span data-merge-tag="{{name}}">Name</span>',
     });
     const result = renderBlock(block, ctx);
@@ -152,7 +174,7 @@ describe('renderBlock', () => {
   });
 
   it('returns empty for blocks hidden on all viewports', () => {
-    const block = createTextBlock({
+    const block = createParagraphBlock({
       visibility: { desktop: false, tablet: false, mobile: false },
     });
     const result = renderBlock(block, ctx);
@@ -160,7 +182,7 @@ describe('renderBlock', () => {
   });
 
   it('adds visibility css classes', () => {
-    const block = createTextBlock({
+    const block = createParagraphBlock({
       visibility: { desktop: true, tablet: false, mobile: true },
     });
     const result = renderBlock(block, ctx);
@@ -168,7 +190,7 @@ describe('renderBlock', () => {
   });
 
   it('renders section with columns', () => {
-    const child = createTextBlock({ content: '<p>Column content</p>' });
+    const child = createParagraphBlock({ content: '<p>Column content</p>' });
     const block = createSectionBlock({
       columns: '2',
       children: [[child], []],

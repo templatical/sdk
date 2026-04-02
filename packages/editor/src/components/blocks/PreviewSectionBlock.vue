@@ -8,7 +8,8 @@ import MenuBlock from "./MenuBlock.vue";
 import SocialIconsBlock from "./SocialIconsBlock.vue";
 import SpacerBlock from "./SpacerBlock.vue";
 import TableBlock from "./TableBlock.vue";
-import TextBlock from "./TextBlock.vue";
+import TitleBlock from "./TitleBlock.vue";
+import ParagraphBlock from "./ParagraphBlock.vue";
 import VideoBlock from "./VideoBlock.vue";
 import type { useBlockRegistry } from "../../composables";
 import type {
@@ -64,8 +65,10 @@ function getBlockComponent(block: Block): Component | null {
   }
 
   switch (block.type) {
-    case "text":
-      return TextBlock;
+    case "title":
+      return TitleBlock;
+    case "paragraph":
+      return ParagraphBlock;
     case "image":
       return ImageBlock;
     case "video":

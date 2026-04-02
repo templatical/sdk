@@ -61,5 +61,5 @@ Your backend receives both the JSON (store it to let users edit later) and the M
 ## Next steps
 
 - [How Rendering Works](/getting-started/how-rendering-works) -- understand the JSON → MJML pipeline.
-- [Blocks](/guide/blocks) -- reference for all 12 block types.
+- [Blocks](/guide/blocks) -- reference for all 14 block types.
 - [Renderer API](/api/renderer-typescript) -- full `renderToMjml()` reference.

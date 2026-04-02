@@ -175,7 +175,7 @@ Both use dynamic `import()` for locale files. Locale normalization strips region
 - **Build:** tsup for types, core, renderer, import-beefree. Vite for editor, media-library packages and CDN bundles. **Build order matters:** media-library must build before types (types has devDep on media-library for type imports).
 - **TypeScript:** Strict mode, target ES2020, module resolution `bundler`.
 - **Vue 3** with TipTap 2 for rich text editing, VueDraggable for drag-and-drop, Tailwind CSS 4 for styling.
-- **Block types:** 13 types (Text, Image, Button, Section, Divider, Spacer, SocialIcons, Menu, Table, Html, Video, Countdown, Custom). Block IDs use UUID v7.
+- **Block types:** 14 types (Title, Paragraph, Image, Button, Section, Divider, Spacer, SocialIcons, Menu, Table, Html, Video, Countdown, Custom). Block IDs use UUID v7.
 
 ## Tests
 
@@ -189,7 +189,7 @@ Both use dynamic `import()` for locale files. Locale normalization strips region
 ### Test structure
 
 - **`describe`/`it` blocks** with clear, behavior-focused names (`"clears isDirty after save"`, not `"test save"`).
-- **Factory functions** for test data (e.g. `createTextBlock()`, `createMediaItem()`, `createMockAuthManager()`).
+- **Factory functions** for test data (e.g. `createTitleBlock()`, `createParagraphBlock()`, `createMediaItem()`, `createMockAuthManager()`).
 - **`beforeEach`** with `vi.mocked(X).mockClear()` for test isolation.
 
 ### Mocking patterns

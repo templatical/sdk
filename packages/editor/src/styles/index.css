@@ -128,9 +128,18 @@
     --tpl-ring: 0 0 0 3px var(--tpl-primary-light);
 }
 
-.tpl[data-tpl-theme="dark"] .tpl-canvas-wrapper,
-.tpl[data-tpl-theme="dark"] .tpl-canvas {
-    background-color: var(--tpl-bg-elevated) !important;
+/* Canvas always uses light-theme values regardless of UI theme.
+   The canvas represents the email preview — emails render on white backgrounds.
+   Dark mode preview is handled separately via CSS filter inversion. */
+.tpl[data-tpl-theme="dark"] .tpl-canvas-wrapper {
+    --tpl-bg-elevated: oklch(98% 0.004 60);
+    --tpl-border-light: oklch(86% 0.01 60);
+    --tpl-text: oklch(18% 0.01 60);
+    --tpl-text-muted: oklch(50% 0.015 60);
+    --tpl-text-dim: oklch(68% 0.012 60);
+    --tpl-primary-light: oklch(95% 0.04 55);
+    --tpl-primary-hover: oklch(60% 0.16 55);
+    color: var(--tpl-text);
 }
 
 /* SDK Base Styles */

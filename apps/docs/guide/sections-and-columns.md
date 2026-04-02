@@ -34,7 +34,8 @@ Use `createSectionBlock` from `@templatical/types`:
 ```ts
 import {
   createSectionBlock,
-  createTextBlock,
+  createTitleBlock,
+  createParagraphBlock,
   createImageBlock,
 } from '@templatical/types';
 
@@ -47,8 +48,8 @@ const hero = createSectionBlock({
   children: [
     [createImageBlock({ src: 'https://cdn.example.com/logo.png', width: 120 })],
     [
-      createTextBlock({ content: '<h1>Welcome</h1>', fontSize: 28 }),
-      createTextBlock({ content: '<p>Get started in minutes.</p>' }),
+      createTitleBlock({ content: '<h1>Welcome</h1>', level: 1 }),
+      createParagraphBlock({ content: '<p>Get started in minutes.</p>' }),
     ],
   ],
 });
@@ -91,7 +92,7 @@ section.children[1].push(
 
 ## Nesting
 
-Sections cannot be nested inside other sections. Each section sits at the top level of the template's block list. Within a column, you can place any non-section block type: text, images, buttons, tables, custom blocks, and so on.
+Sections cannot be nested inside other sections. Each section sits at the top level of the template's block list. Within a column, you can place any non-section block type: titles, paragraphs, images, buttons, tables, custom blocks, and so on.
 
 ## Responsive behavior
 
@@ -100,7 +101,7 @@ On desktop, columns render side-by-side at their defined widths. On smaller scre
 You can use the `visibility` property on individual blocks within columns to show or hide content per breakpoint:
 
 ```ts
-const block = createTextBlock({
+const block = createParagraphBlock({
   content: '<p>Desktop only sidebar content</p>',
 });
 

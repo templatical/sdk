@@ -15,7 +15,7 @@ features:
   - title: Drop-In Integration
     details: Works with React, Vue, Svelte, Angular, or plain JavaScript. One function call to mount, one to unmount. No framework lock-in.
   - title: Complete Block System
-    details: 12 built-in block types from text and images to tables and custom blocks. Sections handle multi-column layouts that stack on mobile.
+    details: 14 built-in block types from titles and paragraphs to tables and custom blocks. Sections handle multi-column layouts that stack on mobile.
   - title: Portable Templates
     details: Templates are JSON. Render to MJML or HTML with the included renderer — in the browser or on your server at send time.
   - title: Your Brand, Your Rules

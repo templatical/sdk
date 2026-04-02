@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { ref } from '@vue/reactivity';
-import { createDefaultTemplateContent, createTextBlock, createSectionBlock, createImageBlock } from '@templatical/types';
+import { createDefaultTemplateContent, createParagraphBlock, createSectionBlock, createImageBlock } from '@templatical/types';
 import { useEditor } from '../src';
 
 function createEditorWithContent() {
     const content = createDefaultTemplateContent();
     content.blocks = [
-        createTextBlock({ content: '<p>Hello</p>' }),
+        createParagraphBlock({ content: '<p>Hello</p>' }),
         createSectionBlock({
             children: [[createImageBlock({ src: 'test.png' })]],
         }),
@@ -36,7 +36,7 @@ describe('useEditor', () => {
 
         editor.selectBlock(blockId);
         expect(editor.state.selectedBlockId).toBe(blockId);
-        expect(editor.selectedBlock.value?.type).toBe('text');
+        expect(editor.selectedBlock.value?.type).toBe('paragraph');
 
         editor.selectBlock(null);
         expect(editor.state.selectedBlockId).toBeNull();
@@ -102,7 +102,7 @@ describe('useEditor', () => {
 
         editor.updateBlock(blockId, { content: '<p>Updated</p>' } as Partial<any>);
         const block = editor.state.content.blocks[0];
-        if (block.type === 'text') {
+        if (block.type === 'paragraph') {
             expect(block.content).toBe('<p>Updated</p>');
         }
         expect(editor.state.isDirty).toBe(true);
@@ -120,7 +120,7 @@ describe('useEditor', () => {
     it('adds block at root level', () => {
         const content = createDefaultTemplateContent();
         const editor = useEditor({ content });
-        const block = createTextBlock();
+        const block = createParagraphBlock();
 
         editor.addBlock(block);
         expect(editor.state.content.blocks).toHaveLength(1);
@@ -129,7 +129,7 @@ describe('useEditor', () => {
 
     it('adds block at specific index', () => {
         const editor = createEditorWithContent();
-        const newBlock = createTextBlock({ content: '<p>Inserted</p>' });
+        const newBlock = createParagraphBlock({ content: '<p>Inserted</p>' });
 
         editor.addBlock(newBlock, undefined, undefined, 0);
         expect(editor.state.content.blocks[0].id).toBe(newBlock.id);
@@ -138,7 +138,7 @@ describe('useEditor', () => {
     it('adds block inside section column', () => {
         const editor = createEditorWithContent();
         const section = editor.state.content.blocks[1];
-        const newBlock = createTextBlock({ content: '<p>In column</p>' });
+        const newBlock = createParagraphBlock({ content: '<p>In column</p>' });
 
         editor.addBlock(newBlock, section.id, 0);
         if (section.type === 'section') {
@@ -158,8 +158,8 @@ describe('useEditor', () => {
 
     it('moves block to new position', () => {
         const content = createDefaultTemplateContent();
-        const block1 = createTextBlock({ content: '<p>First</p>' });
-        const block2 = createTextBlock({ content: '<p>Second</p>' });
+        const block1 = createParagraphBlock({ content: '<p>First</p>' });
+        const block2 = createParagraphBlock({ content: '<p>Second</p>' });
         content.blocks = [block1, block2];
         const editor = useEditor({ content });
 
@@ -171,7 +171,7 @@ describe('useEditor', () => {
     it('sets content directly', () => {
         const editor = createEditorWithContent();
         const newContent = createDefaultTemplateContent();
-        newContent.blocks = [createTextBlock({ content: '<p>New</p>' })];
+        newContent.blocks = [createParagraphBlock({ content: '<p>New</p>' })];
 
         editor.setContent(newContent);
         expect(editor.state.content.blocks).toHaveLength(1);
@@ -191,8 +191,8 @@ describe('locked blocks', () => {
     function createEditorWithLockedBlocks() {
         const content = createDefaultTemplateContent();
         content.blocks = [
-            createTextBlock({ content: '<p>Locked</p>' }),
-            createTextBlock({ content: '<p>Unlocked</p>' }),
+            createParagraphBlock({ content: '<p>Locked</p>' }),
+            createParagraphBlock({ content: '<p>Unlocked</p>' }),
         ];
         const lockedBlockId = content.blocks[0].id;
         const lockedBlocks = ref(new Map([[lockedBlockId, { id: 'other-user' }]]));
@@ -231,7 +231,7 @@ describe('locked blocks', () => {
 
     it('isBlockLocked returns false when no lockedBlocks provided', () => {
         const content = createDefaultTemplateContent();
-        content.blocks = [createTextBlock()];
+        content.blocks = [createParagraphBlock()];
         const editor = useEditor({ content });
         expect(editor.isBlockLocked(content.blocks[0].id)).toBe(false);
     });
@@ -241,7 +241,7 @@ describe('edge cases', () => {
     it('addBlock to non-existent section does nothing', () => {
         const content = createDefaultTemplateContent();
         const editor = useEditor({ content });
-        const block = createTextBlock();
+        const block = createParagraphBlock();
         editor.addBlock(block, 'nonexistent-section', 0);
         expect(editor.state.content.blocks).toHaveLength(0);
     });
@@ -296,7 +296,7 @@ describe('edge cases', () => {
     it('addBlock with index equal to array length appends', () => {
         const editor = createEditorWithContent();
         const originalLength = editor.state.content.blocks.length;
-        const newBlock = createTextBlock({ content: '<p>Appended</p>' });
+        const newBlock = createParagraphBlock({ content: '<p>Appended</p>' });
 
         editor.addBlock(newBlock, undefined, undefined, originalLength);
         expect(editor.state.content.blocks).toHaveLength(originalLength + 1);
@@ -305,8 +305,8 @@ describe('edge cases', () => {
 
     it('moveBlock to same position keeps block order', () => {
         const content = createDefaultTemplateContent();
-        const block1 = createTextBlock({ content: '<p>First</p>' });
-        const block2 = createTextBlock({ content: '<p>Second</p>' });
+        const block1 = createParagraphBlock({ content: '<p>First</p>' });
+        const block2 = createParagraphBlock({ content: '<p>Second</p>' });
         content.blocks = [block1, block2];
         const editor = useEditor({ content });
 
@@ -317,8 +317,8 @@ describe('edge cases', () => {
 
     it('moveBlock to non-existent section removes block from source but does not insert', () => {
         const content = createDefaultTemplateContent();
-        const block1 = createTextBlock({ content: '<p>First</p>' });
-        const block2 = createTextBlock({ content: '<p>Second</p>' });
+        const block1 = createParagraphBlock({ content: '<p>First</p>' });
+        const block2 = createParagraphBlock({ content: '<p>Second</p>' });
         content.blocks = [block1, block2];
         const editor = useEditor({ content });
 

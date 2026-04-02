@@ -1,7 +1,8 @@
 import type { Block } from "@templatical/types";
 import {
   isSection,
-  isText,
+  isTitle,
+  isParagraph,
   isImage,
   isButton,
   isDivider,
@@ -14,7 +15,8 @@ import {
   isCustomBlock,
 } from "@templatical/types";
 import type { RenderContext } from "../render-context";
-import { renderText } from "./text";
+import { renderTitle } from "./title";
+import { renderParagraph } from "./paragraph";
 import { renderImage } from "./image";
 import { renderButton } from "./button";
 import { renderDivider } from "./divider";
@@ -36,8 +38,12 @@ export function renderBlock(block: Block, context: RenderContext): string {
     return renderSection(block, context, renderBlock);
   }
 
-  if (isText(block)) {
-    return renderText(block, context);
+  if (isTitle(block)) {
+    return renderTitle(block, context);
+  }
+
+  if (isParagraph(block)) {
+    return renderParagraph(block, context);
   }
 
   if (isImage(block)) {

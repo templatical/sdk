@@ -33,7 +33,7 @@ import type {
   TableBlock,
   TableCellData,
   TableRowData,
-  TextBlock,
+  TitleBlock,
   CountdownBlock,
   CustomBlockDefinition,
   CustomFont,
@@ -66,9 +66,10 @@ import {
   Smartphone,
   Table,
   Tablet,
+  Heading,
+  Pilcrow,
   Timer,
   Trash2,
-  Type,
   X,
 } from "lucide-vue-next";
 import { computed, inject, ref, watch } from "vue";
@@ -241,7 +242,8 @@ const blockTypeLabel = computed(() => {
   const labels: Record<string, string> = {
     section: t.blocks.section,
     image: t.blocks.image,
-    text: t.blocks.text,
+    title: t.blocks.title,
+    paragraph: t.blocks.paragraph,
     button: t.blocks.button,
     divider: t.blocks.divider,
     social: t.blocks.social,
@@ -398,7 +400,12 @@ function removeTableColumn(colIndex: number): void {
           :size="16"
           :stroke-width="1.5"
         />
-        <Type v-else-if="blockType === 'text'" :size="16" :stroke-width="1.5" />
+        <Heading v-if="blockType === 'title'" :size="16" :stroke-width="1.5" />
+        <Pilcrow
+          v-else-if="blockType === 'paragraph'"
+          :size="16"
+          :stroke-width="1.5"
+        />
         <Image
           v-else-if="blockType === 'image'"
           :size="16"
@@ -500,12 +507,30 @@ function removeTableColumn(colIndex: number): void {
         </div>
       </template>
 
-      <template v-else-if="blockType === 'text'">
+      <template v-else-if="blockType === 'title'">
         <div class="tpl:mb-3.5">
-          <label :class="labelClass">{{ t.text.fontFamily }}</label>
+          <label :class="labelClass">{{ t.title.level }}</label>
           <select
             :class="inputClass"
-            :value="(block as TextBlock).fontFamily || ''"
+            :value="(block as TitleBlock).level"
+            @change="
+              updateField(
+                'level',
+                Number(($event.target as HTMLSelectElement).value),
+              )
+            "
+          >
+            <option :value="1">{{ t.title.heading1 }}</option>
+            <option :value="2">{{ t.title.heading2 }}</option>
+            <option :value="3">{{ t.title.heading3 }}</option>
+            <option :value="4">{{ t.title.heading4 }}</option>
+          </select>
+        </div>
+        <div class="tpl:mb-3.5">
+          <label :class="labelClass">{{ t.title.fontFamily }}</label>
+          <select
+            :class="inputClass"
+            :value="(block as TitleBlock).fontFamily || ''"
             @change="
               updateField(
                 'fontFamily',
@@ -513,7 +538,7 @@ function removeTableColumn(colIndex: number): void {
               )
             "
           >
-            <option value="">{{ t.text.inheritFont }}</option>
+            <option value="">{{ t.title.inheritFont }}</option>
             <option
               v-for="font in fontFamilies"
               :key="font.value"
@@ -524,67 +549,40 @@ function removeTableColumn(colIndex: number): void {
           </select>
         </div>
         <div class="tpl:mb-3.5">
-          <label :class="labelClass">{{ t.text.fontSize }}</label>
-          <div class="tpl:flex tpl:items-stretch">
-            <input
-              type="number"
-              :class="inputGroupInputClass"
-              :value="(block as TextBlock).fontSize"
-              min="10"
-              max="72"
-              @input="
-                updateField(
-                  'fontSize',
-                  Number(($event.target as HTMLInputElement).value),
-                )
-              "
-            />
-            <span :class="inputSuffixClass">px</span>
-          </div>
-        </div>
-        <div class="tpl:mb-3.5">
-          <label :class="labelClass">{{ t.text.color }}</label>
+          <label :class="labelClass">{{ t.title.color }}</label>
           <ColorPicker
-            :model-value="(block as TextBlock).color"
+            :model-value="(block as TitleBlock).color"
             @update:model-value="updateField('color', $event)"
           />
         </div>
         <div class="tpl:mb-3.5">
-          <label :class="labelClass">{{ t.text.align }}</label>
+          <label :class="labelClass">{{ t.title.align }}</label>
           <SlidingPillSelect
             :options="[
               {
                 value: 'left',
-                label: t.text.alignLeft,
+                label: t.title.alignLeft,
                 icon: AlignLeft,
               },
               {
                 value: 'center',
-                label: t.text.alignCenter,
+                label: t.title.alignCenter,
                 icon: AlignCenter,
               },
               {
                 value: 'right',
-                label: t.text.alignRight,
+                label: t.title.alignRight,
                 icon: AlignRight,
               },
             ]"
-            :model-value="(block as TextBlock).textAlign"
+            :model-value="(block as TitleBlock).textAlign"
             @update:model-value="updateField('textAlign', $event)"
           />
         </div>
-        <div class="tpl:mb-3.5">
-          <label :class="labelClass">{{ t.text.weight }}</label>
-          <SlidingPillSelect
-            :options="[
-              { value: 'normal', label: t.text.normal },
-              { value: 'bold', label: t.text.bold },
-            ]"
-            :model-value="(block as TextBlock).fontWeight"
-            @update:model-value="updateField('fontWeight', $event)"
-          />
-        </div>
       </template>
+
+      <!-- Paragraph block: no text-specific sidebar controls — all formatting is in the TipTap toolbar -->
+      <template v-else-if="blockType === 'paragraph'"></template>
 
       <template v-else-if="blockType === 'image'">
         <div class="tpl:mb-3.5">
@@ -664,12 +662,12 @@ function removeTableColumn(colIndex: number): void {
           </select>
         </div>
         <div class="tpl:mb-3.5">
-          <label :class="labelClass">{{ t.text.align }}</label>
+          <label :class="labelClass">{{ t.title.align }}</label>
           <SlidingPillSelect
             :options="[
-              { value: 'left', label: t.text.alignLeft },
-              { value: 'center', label: t.text.alignCenter },
-              { value: 'right', label: t.text.alignRight },
+              { value: 'left', label: t.title.alignLeft },
+              { value: 'center', label: t.title.alignCenter },
+              { value: 'right', label: t.title.alignRight },
             ]"
             :model-value="(block as ImageBlock).align"
             @update:model-value="updateField('align', $event)"
@@ -965,17 +963,17 @@ function removeTableColumn(colIndex: number): void {
             :options="[
               {
                 value: 'left',
-                label: t.text.alignLeft,
+                label: t.title.alignLeft,
                 icon: AlignLeft,
               },
               {
                 value: 'center',
-                label: t.text.alignCenter,
+                label: t.title.alignCenter,
                 icon: AlignCenter,
               },
               {
                 value: 'right',
-                label: t.text.alignRight,
+                label: t.title.alignRight,
                 icon: AlignRight,
               },
             ]"
@@ -1111,7 +1109,7 @@ function removeTableColumn(colIndex: number): void {
               )
             "
           >
-            <option value="">{{ t.text.inheritFont }}</option>
+            <option value="">{{ t.title.inheritFont }}</option>
             <option
               v-for="font in fontFamilies"
               :key="font.value"
@@ -1162,17 +1160,17 @@ function removeTableColumn(colIndex: number): void {
             :options="[
               {
                 value: 'left',
-                label: t.text.alignLeft,
+                label: t.title.alignLeft,
                 icon: AlignLeft,
               },
               {
                 value: 'center',
-                label: t.text.alignCenter,
+                label: t.title.alignCenter,
                 icon: AlignCenter,
               },
               {
                 value: 'right',
-                label: t.text.alignRight,
+                label: t.title.alignRight,
                 icon: AlignRight,
               },
             ]"
@@ -1373,7 +1371,7 @@ function removeTableColumn(colIndex: number): void {
               )
             "
           >
-            <option value="">{{ t.text.inheritFont }}</option>
+            <option value="">{{ t.title.inheritFont }}</option>
             <option
               v-for="font in fontFamilies"
               :key="font.value"
@@ -1415,17 +1413,17 @@ function removeTableColumn(colIndex: number): void {
             :options="[
               {
                 value: 'left',
-                label: t.text.alignLeft,
+                label: t.title.alignLeft,
                 icon: AlignLeft,
               },
               {
                 value: 'center',
-                label: t.text.alignCenter,
+                label: t.title.alignCenter,
                 icon: AlignCenter,
               },
               {
                 value: 'right',
-                label: t.text.alignRight,
+                label: t.title.alignRight,
                 icon: AlignRight,
               },
             ]"
@@ -1827,9 +1825,15 @@ function removeTableColumn(colIndex: number): void {
       </template>
 
       <!-- Common block settings -->
-      <div class="tpl:mt-4 tpl:flex tpl:flex-col">
+      <div
+        class="tpl:flex tpl:flex-col"
+        :class="blockType === 'paragraph' ? '' : 'tpl:mt-4'"
+      >
         <!-- Spacing -->
-        <div class="tpl:border-t tpl:border-[var(--tpl-border)] tpl:py-3">
+        <div
+          class="tpl:py-3"
+          :class="blockType === 'paragraph' ? '' : 'tpl:border-t tpl:border-[var(--tpl-border)]'"
+        >
           <button
             type="button"
             class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"

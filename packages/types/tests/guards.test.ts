@@ -11,9 +11,11 @@ import {
     isSocialIcons,
     isSpacer,
     isTable,
-    isText,
+    isTitle,
+    isParagraph,
     isVideo,
-    createTextBlock,
+    createTitleBlock,
+    createParagraphBlock,
     createImageBlock,
     createButtonBlock,
     createDividerBlock,
@@ -31,12 +33,18 @@ describe('type guards', () => {
     it('isSection returns true for section blocks', () => {
         const block = createSectionBlock();
         expect(isSection(block)).toBe(true);
-        expect(isText(block)).toBe(false);
+        expect(isTitle(block)).toBe(false);
     });
 
-    it('isText returns true for text blocks', () => {
-        const block = createTextBlock();
-        expect(isText(block)).toBe(true);
+    it('isTitle returns true for title blocks', () => {
+        const block = createTitleBlock();
+        expect(isTitle(block)).toBe(true);
+        expect(isImage(block)).toBe(false);
+    });
+
+    it('isParagraph returns true for paragraph blocks', () => {
+        const block = createParagraphBlock();
+        expect(isParagraph(block)).toBe(true);
         expect(isImage(block)).toBe(false);
     });
 
@@ -101,17 +109,21 @@ describe('type guards', () => {
             styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
         };
         expect(isCustomBlock(block)).toBe(true);
-        expect(isText(block)).toBe(false);
+        expect(isTitle(block)).toBe(false);
     });
 });
 
 describe('type guards return false for wrong block types', () => {
-    it('isText returns false for image block', () => {
-        expect(isText(createImageBlock())).toBe(false);
+    it('isTitle returns false for image block', () => {
+        expect(isTitle(createImageBlock())).toBe(false);
     });
 
-    it('isImage returns false for text block', () => {
-        expect(isImage(createTextBlock())).toBe(false);
+    it('isParagraph returns false for image block', () => {
+        expect(isParagraph(createImageBlock())).toBe(false);
+    });
+
+    it('isImage returns false for title block', () => {
+        expect(isImage(createTitleBlock())).toBe(false);
     });
 
     it('isButton returns false for section block', () => {
@@ -134,8 +146,8 @@ describe('type guards return false for wrong block types', () => {
         expect(isSpacer(createDividerBlock())).toBe(false);
     });
 
-    it('isHtml returns false for text block', () => {
-        expect(isHtml(createTextBlock())).toBe(false);
+    it('isHtml returns false for title block', () => {
+        expect(isHtml(createTitleBlock())).toBe(false);
     });
 
     it('isMenu returns false for table block', () => {
@@ -146,15 +158,15 @@ describe('type guards return false for wrong block types', () => {
         expect(isTable(createMenuBlock())).toBe(false);
     });
 
-    it('isCountdown returns false for text block', () => {
-        expect(isCountdown(createTextBlock())).toBe(false);
+    it('isCountdown returns false for paragraph block', () => {
+        expect(isCountdown(createParagraphBlock())).toBe(false);
     });
 
-    it('isCustomBlock returns false for text block', () => {
-        expect(isCustomBlock(createTextBlock())).toBe(false);
+    it('isCustomBlock returns false for title block', () => {
+        expect(isCustomBlock(createTitleBlock())).toBe(false);
     });
 
-    it('isSection returns false for text block', () => {
-        expect(isSection(createTextBlock())).toBe(false);
+    it('isSection returns false for paragraph block', () => {
+        expect(isSection(createParagraphBlock())).toBe(false);
     });
 });

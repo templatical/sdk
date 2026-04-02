@@ -78,7 +78,7 @@ If you don't provide `onRequestMedia`, the editor shows a text input where users
 
 ### `mergeTags.onRequest`
 
-Called when the user clicks to insert a merge tag in a text block. Return a `Promise` that resolves to a `MergeTag` object or `null` if the user cancels.
+Called when the user clicks to insert a merge tag in a title or paragraph block. Return a `Promise` that resolves to a `MergeTag` object or `null` if the user cancels.
 
 ```ts
 import type { MergeTag } from '@templatical/types';

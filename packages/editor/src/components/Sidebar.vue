@@ -10,17 +10,18 @@ import { createBlock, createCustomBlock } from "@templatical/types";
 import {
   Code,
   Columns3,
+  Heading,
   Image,
   Minus,
   MoveVertical,
   Navigation,
   Package,
+  Pilcrow,
   Play,
   RectangleHorizontal,
   Share2,
   Table,
   Timer,
-  Type,
 } from "lucide-vue-next";
 import { computed, inject, ref } from "vue";
 import draggable from "vuedraggable";
@@ -61,7 +62,8 @@ const builtInBlockTypes = computed<BlockTypeItem[]>(() => {
   const types: BlockTypeItem[] = [
     { type: "section", label: t.blocks.section },
     { type: "image", label: t.blocks.image },
-    { type: "text", label: t.blocks.text },
+    { type: "title", label: t.blocks.title },
+    { type: "paragraph", label: t.blocks.paragraph },
     { type: "button", label: t.blocks.button },
     { type: "divider", label: t.blocks.divider },
     { type: "video", label: t.blocks.video },
@@ -189,8 +191,13 @@ function cloneBlock(item: BlockTypeItem): Block {
               :size="20"
               :stroke-width="1.5"
             />
-            <Type
-              v-else-if="blockType.type === 'text'"
+            <Heading
+              v-else-if="blockType.type === 'title'"
+              :size="20"
+              :stroke-width="1.5"
+            />
+            <Pilcrow
+              v-else-if="blockType.type === 'paragraph'"
               :size="20"
               :stroke-width="1.5"
             />

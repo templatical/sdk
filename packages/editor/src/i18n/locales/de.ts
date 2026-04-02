@@ -69,7 +69,8 @@ export default {
   blocks: {
     section: "Abschnitt",
     image: "Bild",
-    text: "Text",
+    title: "Titel",
+    paragraph: "Absatz",
     button: "Schaltfläche",
     divider: "Trennlinie",
     video: "Video",
@@ -96,8 +97,16 @@ export default {
     delete: "Löschen",
   },
 
-  // Text editor toolbar
-  textEditor: {
+  // Title editor toolbar
+  titleEditor: {
+    toolbar: "Titelformatierung",
+    bold: "Fett (Strg+B)",
+    italic: "Kursiv (Strg+I)",
+    addLink: "Link hinzufügen",
+  },
+
+  // Paragraph editor toolbar
+  paragraphEditor: {
     toolbar: "Textformatierung",
     bold: "Fett (Strg+B)",
     italic: "Kursiv (Strg+I)",
@@ -113,6 +122,14 @@ export default {
     alignRight: "Rechtsbündig",
     clearFormatting: "Formatierung entfernen",
     insertEmoji: "Emoji einfügen",
+    fontFamily: "Schriftart",
+    defaultFont: "Standard",
+    fontSize: "Schriftgröße",
+    defaultSize: "Standard",
+    textColor: "Textfarbe",
+    highlightColor: "Hervorhebungsfarbe",
+    lineHeight: "Zeilenhöhe",
+    letterSpacing: "Zeichenabstand",
   },
 
   // Block actions (BlockWrapper)
@@ -148,19 +165,20 @@ export default {
     urlLabel: "URL",
   },
 
-  // Toolbar - Text
-  text: {
+  // Toolbar - Title
+  title: {
+    level: "Überschriftenebene",
+    heading1: "Überschrift 1 (36px)",
+    heading2: "Überschrift 2 (28px)",
+    heading3: "Überschrift 3 (22px)",
+    heading4: "Überschrift 4 (18px)",
     fontFamily: "Schriftart",
     inheritFont: "Vorlagenschrift verwenden",
-    fontSize: "Schriftgröße",
     color: "Farbe",
     align: "Ausrichtung",
     alignLeft: "Links",
     alignCenter: "Zentriert",
     alignRight: "Rechts",
-    weight: "Schriftstärke",
-    normal: "Normal",
-    bold: "Fett",
   },
 
   // Emoji picker

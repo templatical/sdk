@@ -20,6 +20,10 @@
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
     "@tailwindcss/vite": "^4.2.2",
+    "@templatical/editor": "workspace:*",
+    "@tiptap/extension-color": "^3.22.0",
+    "@tiptap/extension-font-family": "^3.22.0",
+    "@tiptap/extension-text-style": "^3.22.0",
     "@vitejs/plugin-vue": "^6.0.5",
     "@vitest/coverage-v8": "^3.2.4",
     "@vue/reactivity": "^3.5.31",

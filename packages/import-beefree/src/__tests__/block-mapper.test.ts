@@ -11,7 +11,7 @@ function makeModule(
 
 describe("convertModule", () => {
   describe("text", () => {
-    it("converts text module with HTML content", () => {
+    it("converts text module with HTML content and inline styles", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-text", {
         style: {
@@ -32,19 +32,21 @@ describe("convertModule", () => {
 
       const { block, entry } = convertModule(mod, warnings);
 
-      expect(block.type).toBe("text");
-      if (block.type === "text") {
-        expect(block.content).toBe("<p>Hello World</p>");
-        expect(block.color).toBe("#555555");
-        expect(block.fontSize).toBe(14);
-        expect(block.textAlign).toBe("center");
+      expect(block.type).toBe("paragraph");
+      if (block.type === "paragraph") {
+        expect(block.content).toContain("Hello World");
+        expect(block.content).toContain("color: #555555");
+        expect(block.content).toContain("font-size: 14px");
+        expect(block.content).toContain("text-align: center");
+        // Styles should be on <p> and <span>, not on a <div> wrapper
+        expect(block.content).not.toContain("<div");
       }
       expect(entry.status).toBe("converted");
-      expect(entry.templaticalBlockType).toBe("text");
+      expect(entry.templaticalBlockType).toBe("paragraph");
       expect(warnings).toHaveLength(0);
     });
 
-    it("uses default styles when no text style provided", () => {
+    it("uses plain content when no non-default text style provided", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-text", {
         text: {
@@ -54,18 +56,16 @@ describe("convertModule", () => {
 
       const { block } = convertModule(mod, warnings);
 
-      expect(block.type).toBe("text");
-      if (block.type === "text") {
+      expect(block.type).toBe("paragraph");
+      if (block.type === "paragraph") {
+        // No inline wrapper when all styles are defaults
         expect(block.content).toBe("<p>Plain</p>");
-        expect(block.fontSize).toBe(16);
-        expect(block.color).toBe("#1a1a1a");
-        expect(block.textAlign).toBe("left");
       }
     });
   });
 
   describe("heading", () => {
-    it("converts heading module with text and tag", () => {
+    it("converts heading module to title block with level and styles", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-heading", {
         heading: {
@@ -82,13 +82,12 @@ describe("convertModule", () => {
 
       const { block, entry } = convertModule(mod, warnings);
 
-      expect(block.type).toBe("text");
-      if (block.type === "text") {
-        expect(block.content).toBe("<h1>Big Title</h1>");
-        expect(block.fontSize).toBe(32);
+      expect(block.type).toBe("title");
+      if (block.type === "title") {
+        expect(block.content).toBe("<p>Big Title</p>");
+        expect(block.level).toBe(1);
         expect(block.color).toBe("#111111");
         expect(block.textAlign).toBe("center");
-        expect(block.fontWeight).toBe("bold");
       }
       expect(entry.status).toBe("converted");
     });
@@ -456,47 +455,49 @@ describe("convertModule", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-text", {});
       const { block } = convertModule(mod, warnings);
-      expect(block.type).toBe("text");
-      if (block.type === "text") {
+      expect(block.type).toBe("paragraph");
+      if (block.type === "paragraph") {
         expect(block.content).toBe("");
       }
     });
 
-    it("convertHeading without heading falls back to convertText", () => {
+    it("convertHeading without heading falls back to convertText (paragraph)", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-heading", {
         text: { html: "<p>Fallback text</p>" },
       });
       const { block } = convertModule(mod, warnings);
-      expect(block.type).toBe("text");
-      if (block.type === "text") {
+      expect(block.type).toBe("paragraph");
+      if (block.type === "paragraph") {
         expect(block.content).toBe("<p>Fallback text</p>");
       }
     });
 
-    it("convertHeading without title defaults to h2 tag", () => {
+    it("convertHeading without title defaults to level 2", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-heading", {
         heading: { text: "Untitled" },
       });
       const { block } = convertModule(mod, warnings);
-      expect(block.type).toBe("text");
-      if (block.type === "text") {
-        expect(block.content).toBe("<h2>Untitled</h2>");
+      expect(block.type).toBe("title");
+      if (block.type === "title") {
+        expect(block.content).toBe("<p>Untitled</p>");
+        expect(block.level).toBe(2);
       }
     });
 
-    it("convertHeading does not double-wrap when text already has HTML tag", () => {
+    it("convertHeading strips heading tags from text that already has them", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-heading", {
         heading: { title: "h1", text: "<h1>Already Tagged</h1>" },
       });
       const { block } = convertModule(mod, warnings);
-      expect(block.type).toBe("text");
-      if (block.type === "text") {
-        expect(block.content).toBe("<h1>Already Tagged</h1>");
-        // Must NOT double-wrap to <h1><h1>...</h1></h1>
-        expect(block.content).not.toContain("<h1><h1>");
+      expect(block.type).toBe("title");
+      if (block.type === "title") {
+        expect(block.content).toBe("<p>Already Tagged</p>");
+        expect(block.level).toBe(1);
+        // Must NOT contain raw heading tags — they are rendered by the block itself
+        expect(block.content).not.toContain("<h1>");
       }
     });
   });

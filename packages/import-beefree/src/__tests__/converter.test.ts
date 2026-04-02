@@ -78,12 +78,13 @@ describe("convertBeeFreeTemplate", () => {
 
     expect(content.blocks).toHaveLength(1);
     const block = content.blocks[0];
-    expect(block.type).toBe("text");
-    if (block.type === "text") {
-      expect(block.content).toBe("<p>Hello World</p>");
-      expect(block.color).toBe("#555555");
-      expect(block.fontSize).toBe(14);
-      expect(block.textAlign).toBe("center");
+    expect(block.type).toBe("paragraph");
+    if (block.type === "paragraph") {
+      expect(block.content).toContain("Hello World");
+      expect(block.content).toContain("color: #555555");
+      expect(block.content).toContain("font-size: 14px");
+      expect(block.content).toContain("text-align: center");
+      expect(block.content).not.toContain("<div");
       expect(block.styles.padding).toEqual({
         top: 10,
         right: 20,
@@ -145,7 +146,7 @@ describe("convertBeeFreeTemplate", () => {
       expect(section.children[0]).toHaveLength(1);
       expect(section.children[1]).toHaveLength(1);
       expect(section.children[0][0].type).toBe("image");
-      expect(section.children[1][0].type).toBe("text");
+      expect(section.children[1][0].type).toBe("paragraph");
     }
   });
 
@@ -371,7 +372,7 @@ describe("convertBeeFreeTemplate", () => {
     // Verify block types are present
     const types = content.blocks.map((b) => b.type);
     expect(types).toContain("image");
-    expect(types).toContain("text");
+    expect(types).toContain("paragraph");
 
     // Report should be complete
     expect(report.summary.total).toBe(

@@ -97,10 +97,12 @@ describe('LogicMergeTagNode extension config', () => {
     expect(LogicMergeTagNode.config.atom).toBe(true);
   });
 
-  it('addAttributes returns value and keyword', () => {
+  it('addAttributes returns value and keyword with parseHTML extractors', () => {
     const attrs = (LogicMergeTagNode.config.addAttributes as Function).call({});
-    expect(attrs.value).toEqual({ default: '' });
-    expect(attrs.keyword).toEqual({ default: '' });
+    expect(attrs.value.default).toBe('');
+    expect(typeof attrs.value.parseHTML).toBe('function');
+    expect(attrs.keyword.default).toBe('');
+    expect(typeof attrs.keyword.parseHTML).toBe('function');
   });
 
   it('parseHTML returns array with tag span[data-logic-merge-tag]', () => {

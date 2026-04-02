@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createDefaultTemplateContent,
-  createTextBlock,
+  createParagraphBlock,
   createSectionBlock,
   createImageBlock,
 } from '@templatical/types';
@@ -21,7 +21,7 @@ describe('renderToMjml', () => {
 
   it('renders blocks inside body', () => {
     const content = createDefaultTemplateContent();
-    content.blocks = [createTextBlock({ content: '<p>Hello World</p>' })];
+    content.blocks = [createParagraphBlock({ content: '<p>Hello World</p>' })];
     const mjml = renderToMjml(content);
     expect(mjml).toContain('Hello World');
     expect(mjml).toContain('<mj-text');
@@ -29,7 +29,7 @@ describe('renderToMjml', () => {
 
   it('wraps non-section blocks in section/column', () => {
     const content = createDefaultTemplateContent();
-    content.blocks = [createTextBlock({ content: '<p>Test</p>' })];
+    content.blocks = [createParagraphBlock({ content: '<p>Test</p>' })];
     const mjml = renderToMjml(content);
     expect(mjml).toContain('<mj-section>');
     expect(mjml).toContain('<mj-column>');
@@ -39,7 +39,7 @@ describe('renderToMjml', () => {
     const content = createDefaultTemplateContent();
     content.blocks = [
       createSectionBlock({
-        children: [[createTextBlock({ content: '<p>In section</p>' })]],
+        children: [[createParagraphBlock({ content: '<p>In section</p>' })]],
       }),
     ];
     const mjml = renderToMjml(content);
@@ -72,7 +72,7 @@ describe('renderToMjml', () => {
   it('wraps blocks with display conditions', () => {
     const content = createDefaultTemplateContent();
     content.blocks = [
-      createTextBlock({
+      createParagraphBlock({
         content: '<p>Conditional</p>',
         displayCondition: {
           label: 'VIP',
@@ -90,7 +90,7 @@ describe('renderToMjml', () => {
   it('filters html blocks when not allowed', () => {
     const content = createDefaultTemplateContent();
     content.blocks = [
-      createTextBlock({ content: '<p>Keep</p>' }),
+      createParagraphBlock({ content: '<p>Keep</p>' }),
       { id: '1', type: 'html' as const, content: '<div>Remove</div>', styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } } },
     ];
     const mjml = renderToMjml(content, { allowHtmlBlocks: false });
@@ -168,10 +168,10 @@ describe('renderToMjml', () => {
   it('skips blocks that render to empty string', () => {
     const content = createDefaultTemplateContent();
     content.blocks = [
-      createTextBlock({
+      createParagraphBlock({
         content: '<p>Visible</p>',
       }),
-      createTextBlock({
+      createParagraphBlock({
         content: '<p>Hidden</p>',
         visibility: { desktop: false, tablet: false, mobile: false },
       }),

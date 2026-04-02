@@ -31,7 +31,8 @@ Every block type has a corresponding `create*Block()` function. Each accepts an 
 ```ts
 import {
   createDefaultTemplateContent,
-  createTextBlock,
+  createTitleBlock,
+  createParagraphBlock,
   createImageBlock,
   createButtonBlock,
   createDividerBlock,
@@ -40,9 +41,9 @@ import {
 const content = createDefaultTemplateContent();
 
 content.blocks = [
-  createTextBlock({
+  createTitleBlock({
     content: '<h1 style="text-align: center;">Welcome aboard</h1>',
-    fontSize: 24,
+    level: 1,
   }),
   createImageBlock({
     src: 'https://example.com/hero.jpg',
@@ -50,7 +51,7 @@ content.blocks = [
     width: 'full',
   }),
   createDividerBlock(),
-  createTextBlock({
+  createParagraphBlock({
     content: '<p>Thanks for signing up. Here is what happens next.</p>',
   }),
   createButtonBlock({
@@ -65,13 +66,21 @@ content.blocks = [
 
 ## Block factory reference
 
-### Text
+### Title
 
 ```ts
-createTextBlock({
-  content: '<p>Welcome, {{name}}!</p>',
-  fontSize: 18,
+createTitleBlock({
+  content: '<h1>Welcome, {{name}}!</h1>',
+  level: 1,
   textAlign: 'center',
+})
+```
+
+### Paragraph
+
+```ts
+createParagraphBlock({
+  content: '<p>Thanks for signing up. Here is what happens next.</p>',
 })
 ```
 
@@ -176,7 +185,7 @@ createVideoBlock({
 createSectionBlock({
   columns: '2',
   children: [
-    [createTextBlock({ content: '<p>Left column</p>' })],
+    [createParagraphBlock({ content: '<p>Left column</p>' })],
     [createImageBlock({ src: 'https://cdn.example.com/photo.jpg' })],
   ],
 })
@@ -197,7 +206,7 @@ Create any block by type string:
 ```ts
 import { createBlock } from '@templatical/types';
 
-const block = createBlock('text'); // TextBlock with defaults
+const block = createBlock('title'); // TitleBlock with defaults
 ```
 
 ### Cloning
@@ -216,10 +225,14 @@ const copy = cloneBlock(existingBlock);
 Narrow a `Block` union to a specific type:
 
 ```ts
-import { isText, isImage, isButton, isSection } from '@templatical/types';
+import { isTitle, isParagraph, isImage, isButton, isSection } from '@templatical/types';
 
-if (isText(block)) {
-  console.log(block.content); // TypeScript knows this is TextBlock
+if (isTitle(block)) {
+  console.log(block.level); // TypeScript knows this is TitleBlock
+}
+
+if (isParagraph(block)) {
+  console.log(block.content); // TypeScript knows this is ParagraphBlock
 }
 
 if (isImage(block)) {
@@ -227,7 +240,7 @@ if (isImage(block)) {
 }
 ```
 
-Every block type has a corresponding guard: `isText()`, `isImage()`, `isButton()`, `isDivider()`, `isSpacer()`, `isHtml()`, `isSocialIcons()`, `isMenu()`, `isTable()`, `isVideo()`, `isSection()`, `isCustomBlock()`.
+Every block type has a corresponding guard: `isTitle()`, `isParagraph()`, `isImage()`, `isButton()`, `isDivider()`, `isSpacer()`, `isHtml()`, `isSocialIcons()`, `isMenu()`, `isTable()`, `isVideo()`, `isSection()`, `isCustomBlock()`.
 
 ## Template settings
 
@@ -272,6 +285,6 @@ editor.setContent(newContent);
 
 ## Next steps
 
-- [Block Types](/guide/blocks) -- properties reference for all 12 block types.
+- [Block Types](/guide/blocks) -- properties reference for all 14 block types.
 - [How Rendering Works](/getting-started/how-rendering-works) -- the JSON → MJML pipeline.
 - [Custom Blocks](/guide/custom-blocks) -- define your own block types.

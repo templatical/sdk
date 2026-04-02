@@ -48,10 +48,10 @@ BeeFree block types map to Templatical equivalents:
 
 | BeeFree Module | Templatical Block | Status |
 |---|---|---|
-| Text | `text` | Converted |
-| Paragraph | `text` | Converted |
-| Heading | `text` | Converted (wrapped in heading tags) |
-| List | `text` | Converted |
+| Text | `paragraph` | Converted |
+| Paragraph | `paragraph` | Converted |
+| Heading | `title` | Converted |
+| List | `paragraph` | Converted |
 | Image | `image` | Converted |
 | Button | `button` | Converted |
 | Divider | `divider` | Converted |

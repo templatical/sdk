@@ -33,7 +33,8 @@ import {
   createSocialIconsBlock,
   createSpacerBlock,
   createTableBlock,
-  createTextBlock,
+  createTitleBlock,
+  createParagraphBlock,
   createCountdownBlock,
   createVideoBlock,
   isCustomBlock,
@@ -106,7 +107,8 @@ import SectionBlock from "../components/blocks/SectionBlock.vue";
 import SocialIconsBlock from "../components/blocks/SocialIconsBlock.vue";
 import SpacerBlock from "../components/blocks/SpacerBlock.vue";
 import TableBlock from "../components/blocks/TableBlock.vue";
-import TextBlock from "../components/blocks/TextBlock.vue";
+import TitleBlock from "../components/blocks/TitleBlock.vue";
+import ParagraphBlock from "../components/blocks/ParagraphBlock.vue";
 import VideoBlock from "../components/blocks/VideoBlock.vue";
 import CountdownBlockComponent from "../components/blocks/CountdownBlock.vue";
 import type { Translations } from "../i18n";
@@ -669,10 +671,15 @@ registry.registerBuiltIn("section", {
   createBlock: () => createSectionBlock(),
   sidebarItem: { type: "section", label: "Section", isCustom: false },
 });
-registry.registerBuiltIn("text", {
-  component: TextBlock,
-  createBlock: () => createTextBlock(),
-  sidebarItem: { type: "text", label: "Text", isCustom: false },
+registry.registerBuiltIn("title", {
+  component: TitleBlock,
+  createBlock: () => createTitleBlock(),
+  sidebarItem: { type: "title", label: "Title", isCustom: false },
+});
+registry.registerBuiltIn("paragraph", {
+  component: ParagraphBlock,
+  createBlock: () => createParagraphBlock(),
+  sidebarItem: { type: "paragraph", label: "Paragraph", isCustom: false },
 });
 registry.registerBuiltIn("image", {
   component: ImageBlock,

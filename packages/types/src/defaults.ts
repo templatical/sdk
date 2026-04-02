@@ -5,11 +5,12 @@ import type {
   HtmlBlock,
   ImageBlock,
   MenuBlock,
+  ParagraphBlock,
   SectionBlock,
   SocialIconsBlock,
   SpacerBlock,
   TableBlock,
-  TextBlock,
+  TitleBlock,
   VideoBlock,
 } from "./blocks";
 import type { TemplateSettings } from "./template";
@@ -17,7 +18,8 @@ import type { TemplateSettings } from "./template";
 type BlockDefaultsFor<T> = Partial<Omit<T, "id" | "type">>;
 
 export interface BlockDefaults {
-  text?: BlockDefaultsFor<TextBlock>;
+  title?: BlockDefaultsFor<TitleBlock>;
+  paragraph?: BlockDefaultsFor<ParagraphBlock>;
   image?: BlockDefaultsFor<ImageBlock>;
   button?: BlockDefaultsFor<ButtonBlock>;
   divider?: BlockDefaultsFor<DividerBlock>;
@@ -37,12 +39,15 @@ export type TemplateDefaults = Partial<TemplateSettings>;
 // Built-in default values — single source of truth for factories & consumers
 // ---------------------------------------------------------------------------
 
-export const TEXT_BLOCK_DEFAULTS: BlockDefaultsFor<TextBlock> = {
-  content: "<p>Enter your text here</p>",
-  fontSize: 16,
+export const TITLE_BLOCK_DEFAULTS: BlockDefaultsFor<TitleBlock> = {
+  content: "<p>Enter your title</p>",
+  level: 2,
   color: "#1a1a1a",
   textAlign: "left",
-  fontWeight: "normal",
+};
+
+export const PARAGRAPH_BLOCK_DEFAULTS: BlockDefaultsFor<ParagraphBlock> = {
+  content: "<p>Enter your text here</p>",
 };
 
 export const IMAGE_BLOCK_DEFAULTS: BlockDefaultsFor<ImageBlock> = {
@@ -138,7 +143,8 @@ export const COUNTDOWN_BLOCK_DEFAULTS: BlockDefaultsFor<CountdownBlock> = {
 };
 
 export const DEFAULT_BLOCK_DEFAULTS: Required<BlockDefaults> = {
-  text: TEXT_BLOCK_DEFAULTS,
+  title: TITLE_BLOCK_DEFAULTS,
+  paragraph: PARAGRAPH_BLOCK_DEFAULTS,
   image: IMAGE_BLOCK_DEFAULTS,
   button: BUTTON_BLOCK_DEFAULTS,
   divider: DIVIDER_BLOCK_DEFAULTS,

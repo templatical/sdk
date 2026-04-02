@@ -21,9 +21,9 @@ interface BlockStyles {
 ```
 
 ```ts
-import { createTextBlock } from '@templatical/types';
+import { createParagraphBlock } from '@templatical/types';
 
-const block = createTextBlock({
+const block = createParagraphBlock({
   content: '<p>Styled text</p>',
 });
 
@@ -140,7 +140,7 @@ Beyond individual block styles, the template itself has global settings that aff
 |---------|------|-------------|
 | `width` | `number` | Template content width in px (typically 600) |
 | `backgroundColor` | `string` | Outer background color behind the template |
-| `fontFamily` | `string` | Default font family for all text blocks |
+| `fontFamily` | `string` | Default font family for all blocks |
 
 These are configured through the editor's `init()` config or by modifying the template JSON directly:
 

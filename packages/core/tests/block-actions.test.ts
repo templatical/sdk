@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createTextBlock, createSectionBlock, type BlockDefaults } from '@templatical/types';
+import { createParagraphBlock, createTitleBlock, createSectionBlock, type BlockDefaults } from '@templatical/types';
 import { useBlockActions } from '../src';
 
 function createMockOptions() {
@@ -16,8 +16,8 @@ describe('useBlockActions', () => {
         const opts = createMockOptions();
         const actions = useBlockActions(opts);
 
-        const block = actions.createAndAddBlock('text');
-        expect(block.type).toBe('text');
+        const block = actions.createAndAddBlock('paragraph');
+        expect(block.type).toBe('paragraph');
         expect(opts.addBlock).toHaveBeenCalledWith(block, undefined, undefined);
         expect(opts.selectBlock).toHaveBeenCalledWith(block.id);
     });
@@ -37,11 +37,11 @@ describe('useBlockActions', () => {
     it('duplicates a block with new ID', () => {
         const opts = createMockOptions();
         const actions = useBlockActions(opts);
-        const original = createTextBlock({ content: '<p>Test</p>' });
+        const original = createParagraphBlock({ content: '<p>Test</p>' });
 
         const cloned = actions.duplicateBlock(original);
         expect(cloned.id).not.toBe(original.id);
-        expect(cloned.type).toBe('text');
+        expect(cloned.type).toBe('paragraph');
         expect(opts.addBlock).toHaveBeenCalled();
         expect(opts.selectBlock).toHaveBeenCalledWith(cloned.id);
     });
@@ -49,7 +49,7 @@ describe('useBlockActions', () => {
     it('duplicates section with new child IDs', () => {
         const opts = createMockOptions();
         const actions = useBlockActions(opts);
-        const child = createTextBlock();
+        const child = createParagraphBlock();
         const section = createSectionBlock({ children: [[child]] });
 
         const cloned = actions.duplicateBlock(section);
@@ -70,8 +70,8 @@ describe('useBlockActions', () => {
         const opts = createMockOptions();
         const actions = useBlockActions(opts);
 
-        actions.updateBlockProperty('block-1', 'type', 'text');
-        expect(opts.updateBlock).toHaveBeenCalledWith('block-1', { type: 'text' });
+        actions.updateBlockProperty('block-1', 'type', 'paragraph');
+        expect(opts.updateBlock).toHaveBeenCalledWith('block-1', { type: 'paragraph' });
     });
 
     it('duplicates section with empty columns preserving structure', () => {
@@ -94,9 +94,9 @@ describe('useBlockActions', () => {
     it('duplicates section ensuring all child block IDs are unique', () => {
         const opts = createMockOptions();
         const actions = useBlockActions(opts);
-        const child1 = createTextBlock({ content: '<p>A</p>' });
-        const child2 = createTextBlock({ content: '<p>B</p>' });
-        const child3 = createTextBlock({ content: '<p>C</p>' });
+        const child1 = createParagraphBlock({ content: '<p>A</p>' });
+        const child2 = createParagraphBlock({ content: '<p>B</p>' });
+        const child3 = createParagraphBlock({ content: '<p>C</p>' });
         const section = createSectionBlock({ children: [[child1, child2], [child3]] });
 
         const cloned = actions.duplicateBlock(section);
@@ -128,12 +128,12 @@ describe('useBlockActions', () => {
     it('duplicates a non-section block (simple block) with new ID', () => {
         const opts = createMockOptions();
         const actions = useBlockActions(opts);
-        const original = createTextBlock({ content: '<p>Simple</p>' });
+        const original = createParagraphBlock({ content: '<p>Simple</p>' });
 
         const cloned = actions.duplicateBlock(original);
         expect(cloned.id).not.toBe(original.id);
-        expect(cloned.type).toBe('text');
-        if (cloned.type === 'text' && original.type === 'text') {
+        expect(cloned.type).toBe('paragraph');
+        if (cloned.type === 'paragraph' && original.type === 'paragraph') {
             expect(cloned.content).toBe(original.content);
         }
         expect(opts.addBlock).toHaveBeenCalledWith(cloned, undefined, undefined);
@@ -143,7 +143,7 @@ describe('useBlockActions', () => {
     it('duplicateBlock does not modify the original block', () => {
         const opts = createMockOptions();
         const actions = useBlockActions(opts);
-        const original = createTextBlock({ content: '<p>Original</p>' });
+        const original = createParagraphBlock({ content: '<p>Original</p>' });
         const originalId = original.id;
 
         actions.duplicateBlock(original);
@@ -154,31 +154,30 @@ describe('useBlockActions', () => {
 describe('useBlockActions with blockDefaults', () => {
     it('creates block with blockDefaults applied', () => {
         const defaults: BlockDefaults = {
-            text: { fontSize: 24, color: '#000000' },
+            title: { color: '#000000' },
         };
         const opts = { ...createMockOptions(), blockDefaults: defaults };
         const actions = useBlockActions(opts);
 
-        const block = actions.createAndAddBlock('text');
-        expect(block.type).toBe('text');
-        if (block.type === 'text') {
-            expect(block.fontSize).toBe(24);
+        const block = actions.createAndAddBlock('title');
+        expect(block.type).toBe('title');
+        if (block.type === 'title') {
             expect(block.color).toBe('#000000');
         }
     });
 
     it('applies correct defaults per block type', () => {
         const defaults: BlockDefaults = {
-            text: { fontSize: 24 },
+            title: { color: '#ff0000' },
             button: { backgroundColor: '#ff0000' },
         };
         const opts = { ...createMockOptions(), blockDefaults: defaults };
         const actions = useBlockActions(opts);
 
-        const textBlock = actions.createAndAddBlock('text');
+        const titleBlock = actions.createAndAddBlock('title');
         const buttonBlock = actions.createAndAddBlock('button');
-        if (textBlock.type === 'text') {
-            expect(textBlock.fontSize).toBe(24);
+        if (titleBlock.type === 'title') {
+            expect(titleBlock.color).toBe('#ff0000');
         }
         if (buttonBlock.type === 'button') {
             expect(buttonBlock.backgroundColor).toBe('#ff0000');
@@ -188,7 +187,7 @@ describe('useBlockActions with blockDefaults', () => {
 
     it('does not apply blockDefaults for mismatched types', () => {
         const defaults: BlockDefaults = {
-            text: { fontSize: 24 },
+            title: { color: '#ff0000' },
         };
         const opts = { ...createMockOptions(), blockDefaults: defaults };
         const actions = useBlockActions(opts);
@@ -201,15 +200,15 @@ describe('useBlockActions with blockDefaults', () => {
 
     it('duplicateBlock ignores blockDefaults', () => {
         const defaults: BlockDefaults = {
-            text: { fontSize: 24 },
+            title: { color: '#ff0000' },
         };
         const opts = { ...createMockOptions(), blockDefaults: defaults };
         const actions = useBlockActions(opts);
 
-        const original = createTextBlock({ fontSize: 12 });
+        const original = createTitleBlock({ color: '#00ff00' });
         const cloned = actions.duplicateBlock(original);
-        if (cloned.type === 'text') {
-            expect(cloned.fontSize).toBe(12);
+        if (cloned.type === 'title') {
+            expect(cloned.color).toBe('#00ff00');
         }
     });
 
@@ -217,21 +216,21 @@ describe('useBlockActions with blockDefaults', () => {
         const opts = createMockOptions();
         const actions = useBlockActions(opts);
 
-        const block = actions.createAndAddBlock('text');
-        if (block.type === 'text') {
-            expect(block.fontSize).toBe(16);
+        const block = actions.createAndAddBlock('title');
+        if (block.type === 'title') {
+            expect(block.color).toBe('#1a1a1a');
         }
     });
 
     it('applies deep-merged styles via blockDefaults', () => {
         const defaults: BlockDefaults = {
-            text: { styles: { padding: { top: 30 } } },
+            paragraph: { styles: { padding: { top: 30 } } },
         };
         const opts = { ...createMockOptions(), blockDefaults: defaults };
         const actions = useBlockActions(opts);
 
-        const block = actions.createAndAddBlock('text');
-        if (block.type === 'text') {
+        const block = actions.createAndAddBlock('paragraph');
+        if (block.type === 'paragraph') {
             expect(block.styles.padding.top).toBe(30);
             expect(block.styles.padding.right).toBe(10);
             expect(block.styles.margin.top).toBe(0);
