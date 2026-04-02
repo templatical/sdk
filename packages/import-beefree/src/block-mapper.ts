@@ -115,24 +115,53 @@ function makeStyles(descriptor: BeeFreeeModuleDescriptor): Block["styles"] {
   };
 }
 
+/**
+ * Apply BeeFree text styles as TipTap-compatible inline markup.
+ * - text-align → added to each <p> tag's style attribute
+ * - color, font-size, font-weight, font-family → wrapped in <span style="..."> inside each <p>
+ */
 function inlineStylesToHtml(
   html: string,
   style: Record<string, string | undefined>,
 ): string {
-  const parts: string[] = [];
+  const spanParts: string[] = [];
   const fontSize = parsePxValue(style["font-size"]);
-  if (fontSize && fontSize !== 16) parts.push(`font-size: ${fontSize}px`);
+  if (fontSize && fontSize !== 16) spanParts.push(`font-size: ${fontSize}px`);
   const color = parseColor(style.color);
-  if (color && color !== "#1a1a1a") parts.push(`color: ${color}`);
-  const textAlign = style["text-align"];
-  if (textAlign && textAlign !== "left") parts.push(`text-align: ${textAlign}`);
+  if (color && color !== "#1a1a1a") spanParts.push(`color: ${color}`);
   const fontWeight = style["font-weight"];
   if (fontWeight && fontWeight !== "normal")
-    parts.push(`font-weight: ${fontWeight}`);
+    spanParts.push(`font-weight: ${fontWeight}`);
   const fontFamily = parseFontFamily(style["font-family"]);
-  if (fontFamily) parts.push(`font-family: ${fontFamily}`);
-  if (parts.length === 0) return html;
-  return `<div style="${parts.join("; ")}">${html}</div>`;
+  if (fontFamily) spanParts.push(`font-family: ${fontFamily}`);
+
+  const textAlign = style["text-align"];
+  const pStyle =
+    textAlign && textAlign !== "left" ? `text-align: ${textAlign}` : "";
+
+  if (!pStyle && spanParts.length === 0) return html;
+
+  const spanStyle = spanParts.join("; ");
+
+  // Apply styles to each <p> tag in the HTML
+  let result = html;
+
+  if (pStyle) {
+    // Add text-align to existing <p style="..."> or add style to plain <p>
+    result = result
+      .replace(/<p style="([^"]*)">/g, `<p style="$1; ${pStyle}">`)
+      .replace(/<p>/g, `<p style="${pStyle}">`);
+  }
+
+  if (spanStyle) {
+    // Wrap inner content of each <p> in a styled span
+    result = result.replace(
+      /<p([^>]*)>([\s\S]*?)<\/p>/g,
+      `<p$1><span style="${spanStyle}">$2</span></p>`,
+    );
+  }
+
+  return result;
 }
 
 function convertText(descriptor: BeeFreeeModuleDescriptor): Block {

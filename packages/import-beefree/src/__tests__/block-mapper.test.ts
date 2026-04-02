@@ -34,10 +34,12 @@ describe("convertModule", () => {
 
       expect(block.type).toBe("paragraph");
       if (block.type === "paragraph") {
-        expect(block.content).toContain("<p>Hello World</p>");
+        expect(block.content).toContain("Hello World");
         expect(block.content).toContain("color: #555555");
         expect(block.content).toContain("font-size: 14px");
         expect(block.content).toContain("text-align: center");
+        // Styles should be on <p> and <span>, not on a <div> wrapper
+        expect(block.content).not.toContain("<div");
       }
       expect(entry.status).toBe("converted");
       expect(entry.templaticalBlockType).toBe("paragraph");

@@ -109,10 +109,12 @@ describe('MergeTagNode extension config', () => {
     expect(MergeTagNode.config.atom).toBe(true);
   });
 
-  it('addAttributes returns label and value with default empty strings', () => {
+  it('addAttributes returns label and value with default empty strings and parseHTML extractors', () => {
     const attrs = (MergeTagNode.config.addAttributes as Function).call({});
-    expect(attrs.label).toEqual({ default: '' });
-    expect(attrs.value).toEqual({ default: '' });
+    expect(attrs.label.default).toBe('');
+    expect(typeof attrs.label.parseHTML).toBe('function');
+    expect(attrs.value.default).toBe('');
+    expect(typeof attrs.value.parseHTML).toBe('function');
   });
 
   it('parseHTML returns array with tag span[data-merge-tag]', () => {

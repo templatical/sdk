@@ -31,9 +31,15 @@ export const LogicMergeTagNode = Node.create<LogicMergeTagNodeOptions>({
     return {
       value: {
         default: "",
+        parseHTML: (element) =>
+          element.getAttribute("data-logic-merge-tag") || "",
       },
       keyword: {
         default: "",
+        parseHTML: (element) =>
+          element.getAttribute("data-keyword") ||
+          element.textContent ||
+          "",
       },
     };
   },

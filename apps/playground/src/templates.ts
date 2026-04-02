@@ -741,7 +741,7 @@ export function createProductLaunchTemplate(): TemplateContent {
       }),
       createParagraphBlock({
         content:
-          '<div style="color: #4b5563; text-align: center"><p>Hi <span data-merge-tag="{{first_name}}">First Name</span>,</p><p>We have been working on something big. Today we are launching Launchpad v2.0 \u2014 completely rebuilt with a new interface, faster performance, and the features you have been asking for.</p></div>',
+          '<p style="text-align: center"><span style="color: #4b5563">Hi <span data-merge-tag="{{first_name}}">First Name</span>,</span></p><p style="text-align: center"><span style="color: #4b5563">We have been working on something big. Today we are launching Launchpad v2.0 \u2014 completely rebuilt with a new interface, faster performance, and the features you have been asking for.</span></p>',
         styles: white(15, 15, 15, 15),
       }),
       createButtonBlock({
@@ -776,14 +776,14 @@ export function createProductLaunchTemplate(): TemplateContent {
           [
             createParagraphBlock({
               content:
-                '<div style="font-size: 14px; color: #4b5563"><p><strong>Redesigned Dashboard</strong></p><p>A cleaner, faster workspace that puts your most important metrics front and center.</p></div>',
+                '<p><span style="font-size: 14px; color: #4b5563"><strong>Redesigned Dashboard</strong></span></p><p><span style="font-size: 14px; color: #4b5563">A cleaner, faster workspace that puts your most important metrics front and center.</span></p>',
               styles: pad(0, 16, 16, 4),
             }),
           ],
           [
             createParagraphBlock({
               content:
-                '<div style="font-size: 14px; color: #4b5563"><p><strong>Team Collaboration</strong></p><p>Invite your team, assign roles, and work together in real-time with live cursors.</p></div>',
+                '<p><span style="font-size: 14px; color: #4b5563"><strong>Team Collaboration</strong></span></p><p><span style="font-size: 14px; color: #4b5563">Invite your team, assign roles, and work together in real-time with live cursors.</span></p>',
               styles: pad(0, 4, 16, 16),
             }),
           ],
@@ -796,14 +796,14 @@ export function createProductLaunchTemplate(): TemplateContent {
           [
             createParagraphBlock({
               content:
-                '<div style="font-size: 14px; color: #4b5563"><p><strong>API v3</strong></p><p>New REST and webhook endpoints with better rate limits, pagination, and error handling.</p></div>',
+                '<p><span style="font-size: 14px; color: #4b5563"><strong>API v3</strong></span></p><p><span style="font-size: 14px; color: #4b5563">New REST and webhook endpoints with better rate limits, pagination, and error handling.</span></p>',
               styles: pad(0, 16, 16, 4),
             }),
           ],
           [
             createParagraphBlock({
               content:
-                '<div style="font-size: 14px; color: #4b5563"><p><strong>Advanced Analytics</strong></p><p>Track opens, clicks, and conversions with our new built-in analytics dashboard.</p></div>',
+                '<p><span style="font-size: 14px; color: #4b5563"><strong>Advanced Analytics</strong></span></p><p><span style="font-size: 14px; color: #4b5563">Track opens, clicks, and conversions with our new built-in analytics dashboard.</span></p>',
               styles: pad(0, 4, 16, 16),
             }),
           ],
@@ -833,7 +833,7 @@ export function createProductLaunchTemplate(): TemplateContent {
       // ── Display Condition: VIP Partners ──
       createParagraphBlock({
         content:
-          '<div style="font-size: 14px; color: #7c3aed; text-align: center"><p><strong>Exclusive for VIP Partners:</strong> Get 6 months free on any v2.0 plan. Use code <strong>VIP2026</strong> at checkout.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 14px; color: #7c3aed"><strong>Exclusive for VIP Partners:</strong> Get 6 months free on any v2.0 plan. Use code <strong>VIP2026</strong> at checkout.</span></p>',
         styles: { ...pad(16, 32, 16, 32), backgroundColor: "#f5f3ff" },
         displayCondition: {
           label: "VIP Partners",
@@ -847,7 +847,7 @@ export function createProductLaunchTemplate(): TemplateContent {
       // ── Display Condition: Free Users ──
       createParagraphBlock({
         content:
-          '<div style="font-size: 14px; color: #059669; text-align: center"><p>You\u2019re currently on the <strong>Free</strong> plan. Upgrade to v2.0 Pro and get <strong>50% off your first 3 months</strong>.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 14px; color: #059669">You\u2019re currently on the <strong>Free</strong> plan. Upgrade to v2.0 Pro and get <strong>50% off your first 3 months</strong>.</span></p>',
         styles: { ...pad(16, 32, 16, 32), backgroundColor: "#ecfdf5" },
         displayCondition: {
           label: "Free Users",
@@ -861,7 +861,7 @@ export function createProductLaunchTemplate(): TemplateContent {
       // ── Display Condition: Beta Testers ──
       createParagraphBlock({
         content:
-          '<div style="font-size: 14px; color: #0d9488; text-align: center"><p>As a beta tester, you also get early access to Launchpad AI \u2014 our new assistant that drafts content for you.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 14px; color: #0d9488">As a beta tester, you also get early access to Launchpad AI \u2014 our new assistant that drafts content for you.</span></p>',
         styles: { ...pad(16, 32, 16, 32), backgroundColor: "#f0fdfa" },
         displayCondition: {
           label: "Beta Testers",
@@ -874,7 +874,7 @@ export function createProductLaunchTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<div style="font-size: 15px; color: #4b5563; text-align: center"><p>Ready to upgrade? Your existing data will be automatically migrated \u2014 no action needed.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 15px; color: #4b5563">Ready to upgrade? Your existing data will be automatically migrated \u2014 no action needed.</span></p>',
         styles: white(24, 40, 16, 40),
       }),
       createButtonBlock({
@@ -913,7 +913,7 @@ export function createProductLaunchTemplate(): TemplateContent {
       }),
       createParagraphBlock({
         content:
-          '<div style="font-size: 12px; color: #9ca3af; text-align: center"><p>Launchpad Inc. \u00b7 123 Main St, San Francisco, CA 94105<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Manage preferences</a></p></div>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Launchpad Inc. \u00b7 123 Main St, San Francisco, CA 94105<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Manage preferences</a></span></p>',
         styles: pad(8, 20, 32, 20),
       }),
     ],
@@ -943,7 +943,7 @@ export function createNewsletterTemplate(): TemplateContent {
       }),
       createParagraphBlock({
         content:
-          '<div style="font-size: 13px; color: #9ca3af; text-align: center"><p>March 24, 2026 \u00b7 Issue #42</p></div>',
+          '<p style="text-align: center"><span style="font-size: 13px; color: #9ca3af">March 24, 2026 \u00b7 Issue #42</span></p>',
         styles: white(0, 20, 20, 20),
       }),
       createDividerBlock({
@@ -983,12 +983,12 @@ export function createNewsletterTemplate(): TemplateContent {
       // Quick links section
       createParagraphBlock({
         content:
-          '<div style="font-size: 14px; font-weight: bold; color: #9ca3af"><p>Quick Links</p></div>',
+          '<p><span style="font-size: 14px; font-weight: bold; color: #9ca3af">Quick Links</span></p>',
         styles: white(20, 24, 12, 24),
       }),
       createParagraphBlock({
         content:
-          '<div style="font-size: 15px; color: #4b5563"><p><a href="https://example.com/link-1">Ship Fast, Fix Later: When Speed Beats Quality</a></p><p><a href="https://example.com/link-2">The State of Email in 2026</a></p><p><a href="https://example.com/link-3">A Practical Guide to Accessible Color Palettes</a></p></div>',
+          '<p><span style="font-size: 15px; color: #4b5563"><a href="https://example.com/link-1">Ship Fast, Fix Later: When Speed Beats Quality</a></span></p><p><span style="font-size: 15px; color: #4b5563"><a href="https://example.com/link-2">The State of Email in 2026</a></span></p><p><span style="font-size: 15px; color: #4b5563"><a href="https://example.com/link-3">A Practical Guide to Accessible Color Palettes</a></span></p>',
         styles: white(0, 24, 24, 24),
       }),
 
@@ -1003,7 +1003,7 @@ export function createNewsletterTemplate(): TemplateContent {
       // Footer
       createParagraphBlock({
         content:
-          '<div style="font-size: 12px; color: #9ca3af; text-align: center"><p>You are receiving this because you subscribed to The Weekly Brief.<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Update preferences</a></p></div>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">You are receiving this because you subscribed to The Weekly Brief.<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Update preferences</a></span></p>',
         styles: white(20, 24, 32, 24),
       }),
     ],
@@ -1043,7 +1043,7 @@ export function createWelcomeTemplate(): TemplateContent {
       }),
       createParagraphBlock({
         content:
-          '<div style="color: #4b5563; text-align: center"><p>You\u2019re signed up on the <strong><span data-merge-tag="{{plan_name}}">Plan</span></strong> plan. We\u2019re thrilled to have you on board. Here are three things to do first:</p></div>',
+          '<p style="text-align: center"><span style="color: #4b5563">You\u2019re signed up on the <strong><span data-merge-tag="{{plan_name}}">Plan</span></strong> plan. We\u2019re thrilled to have you on board. Here are three things to do first:</span></p>',
         styles: white(0, 40, 28, 40),
       }),
 
@@ -1064,7 +1064,7 @@ export function createWelcomeTemplate(): TemplateContent {
           [
             createParagraphBlock({
               content:
-                '<div style="font-size: 14px; color: #4b5563"><p><strong>Complete your profile</strong></p><p>Add your name, photo, and timezone so your team knows who you are.</p></div>',
+                '<p><span style="font-size: 14px; color: #4b5563"><strong>Complete your profile</strong></span></p><p><span style="font-size: 14px; color: #4b5563">Add your name, photo, and timezone so your team knows who you are.</span></p>',
               styles: pad(8, 16, 8, 0),
             }),
           ],
@@ -1089,7 +1089,7 @@ export function createWelcomeTemplate(): TemplateContent {
           [
             createParagraphBlock({
               content:
-                '<div style="font-size: 14px; color: #4b5563"><p><strong>Create your first project</strong></p><p>Projects are where your work lives. Start with one and you can always add more later.</p></div>',
+                '<p><span style="font-size: 14px; color: #4b5563"><strong>Create your first project</strong></span></p><p><span style="font-size: 14px; color: #4b5563">Projects are where your work lives. Start with one and you can always add more later.</span></p>',
               styles: pad(8, 16, 8, 0),
             }),
           ],
@@ -1114,7 +1114,7 @@ export function createWelcomeTemplate(): TemplateContent {
           [
             createParagraphBlock({
               content:
-                '<div style="font-size: 14px; color: #4b5563"><p><strong>Invite your team</strong></p><p>Flowwork works best with your whole team. Invite colleagues from Settings \u2192 Team.</p></div>',
+                '<p><span style="font-size: 14px; color: #4b5563"><strong>Invite your team</strong></span></p><p><span style="font-size: 14px; color: #4b5563">Flowwork works best with your whole team. Invite colleagues from Settings \u2192 Team.</span></p>',
               styles: pad(8, 16, 8, 0),
             }),
           ],
@@ -1127,7 +1127,7 @@ export function createWelcomeTemplate(): TemplateContent {
       // ── Logic Merge Tag: plan-specific CTA ──
       createParagraphBlock({
         content:
-          '<div style="font-size: 14px; color: #2563eb; text-align: center"><p><span data-logic-merge-tag="{% if plan_name == \'pro\' %}" data-logic-type="open"></span><strong>Pro tip:</strong> You have access to advanced integrations. <a href="https://example.com/integrations">Set up your first integration</a> to get the most out of Flowwork.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span><span data-logic-merge-tag="{% if plan_name == \'free\' %}" data-logic-type="open"></span>Want more features? <a href="https://example.com/upgrade">Upgrade to Pro</a> for advanced integrations, priority support, and unlimited projects.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></p></div>',
+          '<p style="text-align: center"><span style="font-size: 14px; color: #2563eb"><span data-logic-merge-tag="{% if plan_name == \'pro\' %}" data-logic-type="open"></span><strong>Pro tip:</strong> You have access to advanced integrations. <a href="https://example.com/integrations">Set up your first integration</a> to get the most out of Flowwork.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span><span data-logic-merge-tag="{% if plan_name == \'free\' %}" data-logic-type="open"></span>Want more features? <a href="https://example.com/upgrade">Upgrade to Pro</a> for advanced integrations, priority support, and unlimited projects.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></span></p>',
         styles: { ...pad(16, 32, 16, 32), backgroundColor: "#eff6ff" },
       }),
 
@@ -1152,13 +1152,13 @@ export function createWelcomeTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<div style="font-size: 14px; color: #6b7280; text-align: center"><p>Need help? Reply to this email or visit our <a href="https://example.com/docs">documentation</a>.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 14px; color: #6b7280">Need help? Reply to this email or visit our <a href="https://example.com/docs">documentation</a>.</span></p>',
         styles: white(16, 32, 16, 32),
       }),
 
       createParagraphBlock({
         content:
-          '<div style="font-size: 12px; color: #9ca3af; text-align: center"><p>Flowwork Inc. \u00b7 456 Market St, San Francisco, CA 94105<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></p></div>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Flowwork Inc. \u00b7 456 Market St, San Francisco, CA 94105<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></span></p>',
         styles: pad(8, 20, 32, 20),
       }),
     ],
@@ -1197,14 +1197,14 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       }),
       createParagraphBlock({
         content:
-          '<div style="font-size: 15px; color: #4b5563; text-align: center"><p>Thanks <span data-merge-tag="{{first_name}}">First Name</span>, your order <strong>#<span data-merge-tag="{{order_id}}">1042</span></strong> is confirmed and being prepared.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 15px; color: #4b5563">Thanks <span data-merge-tag="{{first_name}}">First Name</span>, your order <strong>#<span data-merge-tag="{{order_id}}">1042</span></strong> is confirmed and being prepared.</span></p>',
         styles: white(0, 40, 8, 40),
       }),
 
       // ── Logic Merge Tag: shipping method message ──
       createParagraphBlock({
         content:
-          '<div style="font-size: 14px; color: #059669; text-align: center"><p><span data-logic-merge-tag="{% if shipping_method == \'express\' %}" data-logic-type="open"></span>\ud83d\ude80 <strong>Express Shipping:</strong> Your order arrives tomorrow!<span data-logic-merge-tag="{% else %}" data-logic-type="else"></span>\ud83d\udce6 <strong>Standard Shipping:</strong> Estimated delivery in 3\u20135 business days.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></p></div>',
+          '<p style="text-align: center"><span style="font-size: 14px; color: #059669"><span data-logic-merge-tag="{% if shipping_method == \'express\' %}" data-logic-type="open"></span>\ud83d\ude80 <strong>Express Shipping:</strong> Your order arrives tomorrow!<span data-logic-merge-tag="{% else %}" data-logic-type="else"></span>\ud83d\udce6 <strong>Standard Shipping:</strong> Estimated delivery in 3\u20135 business days.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></span></p>',
         styles: { ...pad(12, 32, 12, 32), backgroundColor: "#ecfdf5" },
       }),
 
@@ -1277,14 +1277,14 @@ export function createOrderConfirmationTemplate(): TemplateContent {
           [
             createParagraphBlock({
               content:
-                '<div style="font-size: 13px; color: #4b5563"><p><strong>Shipping Address</strong></p><p><span data-merge-tag="{{first_name}}">Jane</span> <span data-merge-tag="{{last_name}}">Doe</span><br/>123 Main St, Apt 4B<br/>San Francisco, CA 94105</p></div>',
+                '<p><span style="font-size: 13px; color: #4b5563"><strong>Shipping Address</strong></span></p><p><span style="font-size: 13px; color: #4b5563"><span data-merge-tag="{{first_name}}">Jane</span> <span data-merge-tag="{{last_name}}">Doe</span><br/>123 Main St, Apt 4B<br/>San Francisco, CA 94105</span></p>',
               styles: pad(16, 8, 16, 0),
             }),
           ],
           [
             createParagraphBlock({
               content:
-                '<div style="font-size: 13px; color: #4b5563; text-align: right"><p><strong>Order Total</strong></p><p>Subtotal: $132.00<br/>Shipping: $5.99<br/><strong>Total: <span data-merge-tag="{{order_total}}">$137.99</span></strong></p></div>',
+                '<p style="text-align: right"><span style="font-size: 13px; color: #4b5563"><strong>Order Total</strong></span></p><p style="text-align: right"><span style="font-size: 13px; color: #4b5563">Subtotal: $132.00<br/>Shipping: $5.99<br/><strong>Total: <span data-merge-tag="{{order_total}}">$137.99</span></strong></span></p>',
               styles: pad(16, 0, 16, 8),
             }),
           ],
@@ -1295,7 +1295,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       // ── Logic Merge Tag: free shipping unlocked ──
       createParagraphBlock({
         content:
-          '<div style="font-size: 13px; color: #059669; text-align: center"><p><span data-logic-merge-tag="{% if order_total > 100 %}" data-logic-type="open"></span>\u2705 You unlocked <strong>free shipping</strong> on your next order! Orders over $100 always ship free.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></p></div>',
+          '<p style="text-align: center"><span style="font-size: 13px; color: #059669"><span data-logic-merge-tag="{% if order_total > 100 %}" data-logic-type="open"></span>\u2705 You unlocked <strong>free shipping</strong> on your next order! Orders over $100 always ship free.<span data-logic-merge-tag="{% endif %}" data-logic-type="close"></span></span></p>',
         styles: { ...pad(12, 32, 12, 32), backgroundColor: "#f0fdf4" },
       }),
 
@@ -1324,7 +1324,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       // ── Display Condition: VIP loyalty offer ──
       createParagraphBlock({
         content:
-          '<div style="font-size: 13px; color: #7c3aed; text-align: center"><p>\u2b50 As a <strong>VIP member</strong>, enjoy an extra <strong>10% off</strong> your next order. Use code <strong>VIPLOVE</strong> at checkout.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 13px; color: #7c3aed">\u2b50 As a <strong>VIP member</strong>, enjoy an extra <strong>10% off</strong> your next order. Use code <strong>VIPLOVE</strong> at checkout.</span></p>',
         styles: { ...pad(12, 32, 12, 32), backgroundColor: "#f5f3ff" },
         displayCondition: {
           label: "VIP Partners",
@@ -1337,13 +1337,13 @@ export function createOrderConfirmationTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<div style="font-size: 13px; color: #6b7280; text-align: center"><p>Questions about your order? <a href="https://example.com/support">Contact Support</a></p></div>',
+          '<p style="text-align: center"><span style="font-size: 13px; color: #6b7280">Questions about your order? <a href="https://example.com/support">Contact Support</a></span></p>',
         styles: white(0, 24, 8, 24),
       }),
 
       createParagraphBlock({
         content:
-          '<div style="font-size: 12px; color: #9ca3af; text-align: center"><p>Shopfront \u00b7 456 Commerce Ave, San Francisco, CA 94105<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></p></div>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Shopfront \u00b7 456 Commerce Ave, San Francisco, CA 94105<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></span></p>',
         styles: pad(16, 20, 32, 20),
       }),
     ],
@@ -1381,7 +1381,7 @@ export function createEventInvitationTemplate(): TemplateContent {
       }),
       createParagraphBlock({
         content:
-          '<div style="color: #4b5563; text-align: center"><p>Join designers, engineers, and product leaders for a full day of talks, workshops, and networking.</p></div>',
+          '<p style="text-align: center"><span style="color: #4b5563">Join designers, engineers, and product leaders for a full day of talks, workshops, and networking.</span></p>',
         styles: white(0, 48, 28, 48),
       }),
 
@@ -1412,7 +1412,7 @@ export function createEventInvitationTemplate(): TemplateContent {
       // ── Display Condition: Early Bird ──
       createParagraphBlock({
         content:
-          '<div style="font-size: 14px; color: #b45309; text-align: center"><p>\ud83c\udf1f <strong>Early bird pricing:</strong> Register before March 31 and save 40%. Use code <strong>EARLYBIRD</strong>.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 14px; color: #b45309">\ud83c\udf1f <strong>Early bird pricing:</strong> Register before March 31 and save 40%. Use code <strong>EARLYBIRD</strong>.</span></p>',
         styles: { ...pad(12, 32, 12, 32), backgroundColor: "#fffbeb" },
         displayCondition: {
           label: "Early Bird",
@@ -1426,7 +1426,7 @@ export function createEventInvitationTemplate(): TemplateContent {
       // ── Display Condition: Speakers ──
       createParagraphBlock({
         content:
-          '<div style="font-size: 14px; color: #7c3aed; text-align: center"><p>\ud83c\udfa4 <strong>Speaker info:</strong> Please arrive by 8:00 AM for sound check. Your backstage pass and speaker kit will be at the registration desk. <a href="https://example.com/speaker-guide">View speaker guide</a>.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 14px; color: #7c3aed">\ud83c\udfa4 <strong>Speaker info:</strong> Please arrive by 8:00 AM for sound check. Your backstage pass and speaker kit will be at the registration desk. <a href="https://example.com/speaker-guide">View speaker guide</a>.</span></p>',
         styles: { ...pad(12, 32, 12, 32), backgroundColor: "#f5f3ff" },
         displayCondition: {
           label: "Speakers",
@@ -1449,7 +1449,7 @@ export function createEventInvitationTemplate(): TemplateContent {
       }),
       createParagraphBlock({
         content:
-          '<div style="font-size: 13px; color: #9ca3af; text-align: center"><p>Free admission \u00b7 Limited spots available</p></div>',
+          '<p style="text-align: center"><span style="font-size: 13px; color: #9ca3af">Free admission \u00b7 Limited spots available</span></p>',
         styles: white(0, 20, 24, 20),
       }),
 
@@ -1476,14 +1476,14 @@ export function createEventInvitationTemplate(): TemplateContent {
           [
             createParagraphBlock({
               content:
-                '<div style="font-size: 14px; color: #4b5563"><p><strong>Keynote Talks</strong></p><p>Industry leaders share insights on the future of design and development.</p></div>',
+                '<p><span style="font-size: 14px; color: #4b5563"><strong>Keynote Talks</strong></span></p><p><span style="font-size: 14px; color: #4b5563">Industry leaders share insights on the future of design and development.</span></p>',
               styles: pad(0, 16, 12, 4),
             }),
           ],
           [
             createParagraphBlock({
               content:
-                '<div style="font-size: 14px; color: #4b5563"><p><strong>Hands-on Workshops</strong></p><p>Small-group sessions where you build real projects with expert guidance.</p></div>',
+                '<p><span style="font-size: 14px; color: #4b5563"><strong>Hands-on Workshops</strong></span></p><p><span style="font-size: 14px; color: #4b5563">Small-group sessions where you build real projects with expert guidance.</span></p>',
               styles: pad(0, 4, 12, 16),
             }),
           ],
@@ -1493,7 +1493,7 @@ export function createEventInvitationTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<div style="font-size: 14px; color: #6b7280; text-align: center"><p>Can\u2019t make it in person? <a href="https://example.com/livestream">Watch the livestream</a></p></div>',
+          '<p style="text-align: center"><span style="font-size: 14px; color: #6b7280">Can\u2019t make it in person? <a href="https://example.com/livestream">Watch the livestream</a></span></p>',
         styles: white(8, 24, 8, 24),
       }),
 
@@ -1524,7 +1524,7 @@ export function createEventInvitationTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<div style="font-size: 12px; color: #9ca3af; text-align: center"><p>Config Events \u00b7 San Francisco, CA<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></p></div>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">Config Events \u00b7 San Francisco, CA<br/><a href="{{unsubscribe_url}}">Unsubscribe</a></span></p>',
         styles: pad(8, 20, 32, 20),
       }),
     ],
@@ -1563,7 +1563,7 @@ export function createPasswordResetTemplate(): TemplateContent {
       }),
       createParagraphBlock({
         content:
-          '<div style="font-size: 15px; color: #4b5563; text-align: center"><p>Hi <span data-merge-tag="{{first_name}}">First Name</span>,</p><p>We received a request to reset the password for your account (<span data-merge-tag="{{email}}">email@example.com</span>). Click the button below to choose a new password. This link will expire in 1 hour.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 15px; color: #4b5563">Hi <span data-merge-tag="{{first_name}}">First Name</span>,</span></p><p style="text-align: center"><span style="font-size: 15px; color: #4b5563">We received a request to reset the password for your account (<span data-merge-tag="{{email}}">email@example.com</span>). Click the button below to choose a new password. This link will expire in 1 hour.</span></p>',
         styles: white(0, 48, 24, 48),
       }),
 
@@ -1580,7 +1580,7 @@ export function createPasswordResetTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<div style="font-size: 13px; color: #9ca3af; text-align: center"><p>If the button doesn\u2019t work, copy and paste this link into your browser:</p><p><a href="https://example.com/reset?token=abc123">https://example.com/reset?token=abc123</a></p></div>',
+          '<p style="text-align: center"><span style="font-size: 13px; color: #9ca3af">If the button doesn\u2019t work, copy and paste this link into your browser:</span></p><p style="text-align: center"><span style="font-size: 13px; color: #9ca3af"><a href="https://example.com/reset?token=abc123">https://example.com/reset?token=abc123</a></span></p>',
         styles: white(0, 40, 24, 40),
       }),
 
@@ -1595,7 +1595,7 @@ export function createPasswordResetTemplate(): TemplateContent {
       // ── Responsive: Desktop-only detailed security tips ──
       createParagraphBlock({
         content:
-          '<div style="font-size: 13px; color: #6b7280"><p><strong>Security Tips</strong></p><p>\u2022 Never share your password with anyone<br/>\u2022 Use a unique password for each service<br/>\u2022 Enable two-factor authentication for extra protection<br/>\u2022 Check that the URL starts with https://vaultkey.com before entering credentials</p></div>',
+          '<p><span style="font-size: 13px; color: #6b7280"><strong>Security Tips</strong></span></p><p><span style="font-size: 13px; color: #6b7280">\u2022 Never share your password with anyone<br/>\u2022 Use a unique password for each service<br/>\u2022 Enable two-factor authentication for extra protection<br/>\u2022 Check that the URL starts with https://vaultkey.com before entering credentials</span></p>',
         styles: white(16, 40, 16, 40),
         visibility: { desktop: true, tablet: true, mobile: false },
       }),
@@ -1603,20 +1603,20 @@ export function createPasswordResetTemplate(): TemplateContent {
       // ── Responsive: Mobile-only short security note ──
       createParagraphBlock({
         content:
-          '<div style="font-size: 13px; color: #6b7280; text-align: center"><p>\ud83d\udd12 Protect your account: never share this link and enable two-factor authentication.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 13px; color: #6b7280">\ud83d\udd12 Protect your account: never share this link and enable two-factor authentication.</span></p>',
         styles: white(16, 32, 16, 32),
         visibility: { desktop: false, tablet: false, mobile: true },
       }),
 
       createParagraphBlock({
         content:
-          '<div style="font-size: 13px; color: #6b7280; text-align: center"><p>If you didn\u2019t request this, you can safely ignore this email. Your password will not be changed.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 13px; color: #6b7280">If you didn\u2019t request this, you can safely ignore this email. Your password will not be changed.</span></p>',
         styles: white(16, 40, 16, 40),
       }),
 
       createParagraphBlock({
         content:
-          '<div style="font-size: 12px; color: #9ca3af; text-align: center"><p>VaultKey Security \u00b7 <a href="https://example.com/support">Help Center</a></p></div>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">VaultKey Security \u00b7 <a href="https://example.com/support">Help Center</a></span></p>',
         styles: pad(8, 20, 32, 20),
       }),
     ],
@@ -1662,7 +1662,7 @@ export function createBlackFridayTemplate(): TemplateContent {
       }),
       createParagraphBlock({
         content:
-          '<div style="font-size: 15px; color: #d1d5db; text-align: center"><p>Use code <strong>BF2026</strong> at checkout. Ends Monday at midnight.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 15px; color: #d1d5db">Use code <strong>BF2026</strong> at checkout. Ends Monday at midnight.</span></p>',
         styles: { ...pad(0, 40, 12, 40), backgroundColor: "#111827" },
       }),
 
@@ -1680,7 +1680,7 @@ export function createBlackFridayTemplate(): TemplateContent {
       // ── Display Condition: Enterprise special ──
       createParagraphBlock({
         content:
-          '<div style="font-size: 13px; color: #d1d5db; text-align: center"><p><strong>Enterprise exclusive:</strong> Bulk orders of 10+ units get an additional 15% off. <a href="https://example.com/enterprise" style="color: #fbbf24;">Contact sales</a></p></div>',
+          '<p style="text-align: center"><span style="font-size: 13px; color: #d1d5db"><strong>Enterprise exclusive:</strong> Bulk orders of 10+ units get an additional 15% off. <a href="https://example.com/enterprise" style="color: #fbbf24;">Contact sales</a></span></p>',
         styles: { ...pad(12, 32, 12, 32), backgroundColor: "#1f2937" },
         displayCondition: {
           label: "Enterprise",
@@ -1748,7 +1748,7 @@ export function createBlackFridayTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<div style="font-size: 13px; color: #6b7280; text-align: center"><p>Deal expires <strong>Monday, Nov 30 at 11:59 PM PT</strong>. Cannot be combined with other offers.</p></div>',
+          '<p style="text-align: center"><span style="font-size: 13px; color: #6b7280">Deal expires <strong>Monday, Nov 30 at 11:59 PM PT</strong>. Cannot be combined with other offers.</span></p>',
         styles: white(12, 32, 12, 32),
       }),
 
@@ -1779,7 +1779,7 @@ export function createBlackFridayTemplate(): TemplateContent {
 
       createParagraphBlock({
         content:
-          '<div style="font-size: 12px; color: #9ca3af; text-align: center"><p>NeonShop \u00b7 789 Retail Blvd, Los Angeles, CA 90012<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Preferences</a></p></div>',
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">NeonShop \u00b7 789 Retail Blvd, Los Angeles, CA 90012<br/><a href="{{unsubscribe_url}}">Unsubscribe</a> \u00b7 <a href="{{preferences_url}}">Preferences</a></span></p>',
         styles: pad(8, 20, 32, 20),
       }),
     ],

@@ -80,10 +80,11 @@ describe("convertBeeFreeTemplate", () => {
     const block = content.blocks[0];
     expect(block.type).toBe("paragraph");
     if (block.type === "paragraph") {
-      expect(block.content).toContain("<p>Hello World</p>");
+      expect(block.content).toContain("Hello World");
       expect(block.content).toContain("color: #555555");
       expect(block.content).toContain("font-size: 14px");
       expect(block.content).toContain("text-align: center");
+      expect(block.content).not.toContain("<div");
       expect(block.styles.padding).toEqual({
         top: 10,
         right: 20,
