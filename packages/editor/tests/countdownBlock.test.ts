@@ -77,9 +77,8 @@ describe('CountdownBlock.vue structure', () => {
     expect(componentSource).toContain("useI18n()");
   });
 
-  it('cleans up interval on unmount', () => {
-    expect(componentSource).toContain('onBeforeUnmount');
-    expect(componentSource).toContain('clearInterval');
+  it('uses useIntervalFn for automatic interval cleanup', () => {
+    expect(componentSource).toContain('useIntervalFn');
   });
 
   it('computes remaining time from targetDate', () => {

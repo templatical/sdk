@@ -1,5 +1,9 @@
-import { computed, watch } from "vue";
-import { useLocalStorage, useMediaQuery } from "@vueuse/core";
+import { computed } from "vue";
+import {
+  useLocalStorage,
+  useMediaQuery,
+  watchImmediate,
+} from "@vueuse/core";
 import en from "./en";
 import de from "./de";
 
@@ -21,13 +25,9 @@ export function usePlaygroundI18n() {
   );
   const t = computed(() => translations[locale.value] ?? en);
 
-  watch(
-    locale,
-    (lang) => {
-      document.documentElement.lang = lang;
-    },
-    { immediate: true },
-  );
+  watchImmediate(locale, (lang) => {
+    document.documentElement.lang = lang;
+  });
 
   return { locale, t };
 }
@@ -46,13 +46,9 @@ export function usePlaygroundTheme() {
     return theme.value === "dark";
   });
 
-  watch(
-    isDark,
-    (dark) => {
-      document.documentElement.classList.toggle("dark", dark);
-    },
-    { immediate: true },
-  );
+  watchImmediate(isDark, (dark) => {
+    document.documentElement.classList.toggle("dark", dark);
+  });
 
   return { theme, isDark };
 }

@@ -43,7 +43,9 @@ export function usePlanConfig(
       config.value = await apiClient.fetchConfig();
     } catch (error) {
       onError?.(
-        error instanceof Error ? error : new Error("Failed to fetch config"),
+        error instanceof Error
+          ? error
+          : new Error("Failed to fetch config", { cause: error }),
       );
     } finally {
       isLoading.value = false;

@@ -5,15 +5,15 @@ import type { Translations } from "../../i18n";
 import type { AuthManager } from "@templatical/core/cloud";
 import type { MergeTag, TemplateContent } from "@templatical/types";
 import {
-  AlertCircle,
-  Loader2,
+  CircleAlert,
+  LoaderCircle,
   Redo2,
   Send,
   Sparkles,
   Trash2,
   Undo2,
   X,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 import { inject, nextTick, ref, watch } from "vue";
 import { useIntervalFn, useTimeoutFn } from "@vueuse/core";
 
@@ -198,7 +198,7 @@ function handleKeydown(event: KeyboardEvent): void {
             v-if="aiChat.isLoadingHistory.value"
             class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
           >
-            <Loader2
+            <LoaderCircle
               class="tpl-spinner"
               :size="24"
               :stroke-width="2"
@@ -308,7 +308,7 @@ function handleKeydown(event: KeyboardEvent): void {
             color: var(--tpl-danger);
           "
         >
-          <AlertCircle
+          <CircleAlert
             :size="14"
             :stroke-width="2"
             class="tpl:mt-0.5 tpl:shrink-0"

@@ -23,7 +23,7 @@ Open-source Templatical email editor. Bun monorepo with 6 npm packages, a playgr
   └── @templatical/import-beefree
 
 @templatical/core + @templatical/types
-  └── @templatical/media-library  (+@vueuse/core, lucide-vue-next, vue-advanced-cropper; peer: vue, tailwindcss)
+  └── @templatical/media-library  (+@vueuse/core, @lucide/vue, vue-advanced-cropper; peer: vue, tailwindcss)
 
 @templatical/core + @templatical/types + @templatical/media-library
   └── @templatical/editor  (+tiptap, vuedraggable, liquidjs; peer: vue, tailwindcss)
@@ -80,7 +80,7 @@ Uses Prettier 3 with **default settings** (no `.prettierrc` or config in `packag
 
 ### TypeScript
 
-- Strict mode, target ES2020, module resolution `bundler` (from `tsconfig.base.json`).
+- Strict mode, target ES2022, module resolution `bundler` (from `tsconfig.base.json`).
 - Each package has its own `tsconfig.json` extending the base.
 - The `editor` and `media-library` packages use `vue-tsc` for typecheck (handles `.vue` SFCs). All others use plain `tsc`.
 - **Critical:** `@templatical/core` aliases `vue` to `@vue/reactivity` at build time. In tests, `vue` resolves to the full Vue package (it's a devDependency). Don't add Vue runtime imports in core or cloud source modules.
@@ -173,8 +173,8 @@ Both use dynamic `import()` for locale files. Locale normalization strips region
 ## Architecture
 
 - **Build:** tsup for types, core, renderer, import-beefree. Vite for editor, media-library packages and CDN bundles. **Build order matters:** media-library must build before types (types has devDep on media-library for type imports).
-- **TypeScript:** Strict mode, target ES2020, module resolution `bundler`.
-- **Vue 3** with TipTap 2 for rich text editing, VueDraggable for drag-and-drop, Tailwind CSS 4 for styling.
+- **TypeScript:** Strict mode, target ES2022, module resolution `bundler`.
+- **Vue 3** with TipTap 3 for rich text editing, VueDraggable for drag-and-drop, Tailwind CSS 4 for styling.
 - **Block types:** 14 types (Title, Paragraph, Image, Button, Section, Divider, Spacer, SocialIcons, Menu, Table, Html, Video, Countdown, Custom). Block IDs use UUID v7.
 
 ## Tests
@@ -292,7 +292,7 @@ Two audiences: **developers** who embed the editor into their SaaS products, and
 - **Spacing:** 3-level radius (7/10/14px), 5-level shadow system
 - **Motion:** 120ms spring easing `cubic-bezier(0.16, 1, 0.3, 1)`. All animations respect `prefers-reduced-motion`.
 - **CSS:** Tailwind CSS 4 with `tpl:` prefix to avoid consumer style conflicts. No preflight reset. All styles scoped via CSS custom properties.
-- **Icons:** lucide-vue-next
+- **Icons:** @lucide/vue
 
 ### Design Principles
 

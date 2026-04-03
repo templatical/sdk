@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
-import { Lock, LockOpen, Minus, Plus } from "lucide-vue-next";
+import { Lock, LockOpen, Minus, Plus } from "@lucide/vue";
 import { ref, watch } from "vue";
 
 const props = defineProps<{
@@ -121,6 +121,7 @@ const inputClass =
           type="number"
           :class="inputClass"
           :value="modelValue.top"
+          :aria-label="t.spacingControl.top"
           min="0"
           @input="
             setDirectValue(
@@ -153,6 +154,7 @@ const inputClass =
             type="number"
             :class="inputClass"
             :value="modelValue.left"
+            :aria-label="t.spacingControl.left"
             min="0"
             @input="
               setDirectValue(
@@ -201,6 +203,7 @@ const inputClass =
             type="number"
             :class="inputClass"
             :value="modelValue.right"
+            :aria-label="t.spacingControl.right"
             min="0"
             @input="
               setDirectValue(
@@ -232,6 +235,7 @@ const inputClass =
           type="number"
           :class="inputClass"
           :value="modelValue.bottom"
+          :aria-label="t.spacingControl.bottom"
           min="0"
           @input="
             setDirectValue(

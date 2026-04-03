@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
-import { Loader2 } from "lucide-vue-next";
+import { LoaderCircle } from "@lucide/vue";
 import { inject, ref, watch, type Ref } from "vue";
 
 const props = defineProps<{
@@ -142,7 +142,7 @@ function handleKeydown(event: KeyboardEvent): void {
                 v-if="isImporting"
                 class="tpl:flex tpl:items-center tpl:gap-1.5"
               >
-                <Loader2
+                <LoaderCircle
                   class="tpl:animate-spin"
                   :size="12"
                   :stroke-width="2"

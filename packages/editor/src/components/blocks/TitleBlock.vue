@@ -10,8 +10,8 @@ import {
   resolveHtmlLogicMergeTagLabels,
   resolveHtmlMergeTagLabels,
 } from "@templatical/types";
-import { useEventListener } from "@vueuse/core";
-import { computed, defineAsyncComponent, inject, ref, watchEffect } from "vue";
+import { useElementBounding } from "@vueuse/core";
+import { computed, defineAsyncComponent, inject, ref } from "vue";
 
 const props = defineProps<{
   block: TitleBlockType;
@@ -32,16 +32,12 @@ const resolvedContent = computed(() =>
 
 const isEditing = ref(false);
 const titleBlockRef = ref<HTMLElement | null>(null);
-const toolbarPosition = ref({ top: 0, left: 0 });
-
-function updateToolbarPosition(): void {
-  if (!titleBlockRef.value) return;
-  const rect = titleBlockRef.value.getBoundingClientRect();
-  toolbarPosition.value = {
-    top: rect.top - 8,
-    left: rect.left,
-  };
-}
+const { top: boundingTop, left: boundingLeft } =
+  useElementBounding(titleBlockRef);
+const toolbarPosition = computed(() => ({
+  top: boundingTop.value - 8,
+  left: boundingLeft.value,
+}));
 
 const titleStyle = computed(() => {
   const fontSize = HEADING_LEVEL_FONT_SIZE[props.block.level];
@@ -57,28 +53,12 @@ const titleStyle = computed(() => {
 });
 
 function handleDoubleClick(): void {
-  updateToolbarPosition();
   isEditing.value = true;
 }
 
 function handleEditorDone(): void {
   isEditing.value = false;
 }
-
-watchEffect((onCleanup) => {
-  if (!isEditing.value) return;
-  const stopScroll = useEventListener(
-    window,
-    "scroll",
-    updateToolbarPosition,
-    true,
-  );
-  const stopResize = useEventListener(window, "resize", updateToolbarPosition);
-  onCleanup(() => {
-    stopScroll();
-    stopResize();
-  });
-});
 </script>
 
 <template>

@@ -136,7 +136,9 @@ export function useDesignReference(
       const wrappedError =
         err instanceof Error
           ? err
-          : new Error("Failed to generate template from design");
+          : new Error("Failed to generate template from design", {
+              cause: err,
+            });
       error.value = wrappedError.message;
       onError?.(wrappedError);
 

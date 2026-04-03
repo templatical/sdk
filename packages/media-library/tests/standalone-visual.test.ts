@@ -132,12 +132,10 @@ describe('standalone visual', () => {
     const { ApiClient: MockApiClient } = await import(
       '@templatical/core/cloud'
     );
-    vi.mocked(MockApiClient).mockImplementation(
-      () =>
-        ({
-          fetchConfig: vi.fn().mockResolvedValue({ storage: {} }),
-        }) as any,
-    );
+    vi.mocked(MockApiClient).mockImplementation(function (this: any) {
+      this.fetchConfig = vi.fn().mockResolvedValue({ storage: {} });
+      return this;
+    } as any);
 
     const { loadMediaTranslations: mockLoadTranslations } = await import(
       '../src/i18n'

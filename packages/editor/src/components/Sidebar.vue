@@ -22,7 +22,7 @@ import {
   Share2,
   Table,
   Timer,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 import { computed, inject, ref } from "vue";
 import draggable from "vuedraggable";
 import CustomBlockIcon from "./CustomBlockIcon.vue";

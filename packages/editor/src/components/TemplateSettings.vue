@@ -11,7 +11,7 @@ import {
   inputSuffixClass,
   labelClass,
 } from "../constants/styleConstants";
-import { Circle, Eye, Info, Square } from "lucide-vue-next";
+import { Circle, Eye, Info, Square } from "@lucide/vue";
 import { computed, inject } from "vue";
 
 const props = defineProps<{

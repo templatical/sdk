@@ -3,7 +3,7 @@ import MediaFileIcon from "./MediaFileIcon.vue";
 import { useI18n } from "../../composables/useI18n";
 import { useMediaCategories } from "../../composables/useMediaCategories";
 import type { MediaConversion, MediaFolder, MediaItem } from "../../types";
-import { Folder } from "lucide-vue-next";
+import { Folder } from "@lucide/vue";
 import { computed } from "vue";
 
 const props = defineProps<{

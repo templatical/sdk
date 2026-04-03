@@ -28,27 +28,27 @@
     "@templatical/core": "workspace:*",
     "@templatical/media-library": "workspace:*",
     "@templatical/types": "workspace:*",
-    "@tiptap/core": "^2.0.0",
-    "@tiptap/extension-color": "^2.0.0",
-    "@tiptap/extension-font-family": "^2.0.0",
-    "@tiptap/extension-highlight": "^2.0.0",
-    "@tiptap/extension-link": "^2.0.0",
-    "@tiptap/extension-subscript": "^2.0.0",
-    "@tiptap/extension-superscript": "^2.0.0",
-    "@tiptap/extension-text-align": "^2.0.0",
-    "@tiptap/extension-text-style": "^2.0.0",
-    "@tiptap/extension-underline": "^2.0.0",
-    "@tiptap/starter-kit": "^2.0.0",
-    "@tiptap/vue-3": "^2.0.0",
+    "@tiptap/core": "^3.22.0",
+    "@tiptap/extension-color": "^3.22.0",
+    "@tiptap/extension-font-family": "^3.22.0",
+    "@tiptap/extension-highlight": "^3.22.0",
+    "@tiptap/extension-link": "^3.22.0",
+    "@tiptap/extension-subscript": "^3.22.0",
+    "@tiptap/extension-superscript": "^3.22.0",
+    "@tiptap/extension-text-align": "^3.22.0",
+    "@tiptap/extension-text-style": "^3.22.0",
+    "@tiptap/extension-underline": "^3.22.0",
+    "@tiptap/starter-kit": "^3.22.0",
+    "@tiptap/vue-3": "^3.22.0",
     "@vueuse/core": "^14.0.0",
     "liquidjs": "^10.0.0",
-    "lucide-vue-next": "^0.475.0",
+    "@lucide/vue": "^1.0.0",
     "vanilla-colorful": "^0.7.2",
     "vue-advanced-cropper": "^2.0.0",
     "vuedraggable": "^4.1.0"
   },
   "peerDependencies": {
-    "vue": "^3.4.0",
+    "vue": "^3.5.0",
     "tailwindcss": "^4.0.0",
     "@templatical/renderer": "^0.0.1"
   },
@@ -58,11 +58,11 @@
     }
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.0.0",
-    "typescript": "^5.7.0",
-    "vite": "^6.0.0",
-    "vitest": "^3.0.0",
+    "@vitejs/plugin-vue": "^6.0.0",
+    "typescript": "^6.0.0",
+    "vite": "^8.0.0",
+    "vitest": "^4.0.0",
     "vue": "^3.5.0",
-    "vue-tsc": "^2.0.0"
+    "vue-tsc": "^3.0.0"
   }
 }

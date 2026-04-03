@@ -5,7 +5,7 @@ import {
   getLogicMergeTagKeyword,
   isLogicMergeTagValue,
 } from "@templatical/types";
-import { ScanLine, X } from "lucide-vue-next";
+import { ScanLine, X } from "@lucide/vue";
 import { computed, nextTick, ref } from "vue";
 
 const props = withDefaults(

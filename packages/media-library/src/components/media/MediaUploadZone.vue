@@ -2,7 +2,7 @@
 import { useI18n } from "../../composables/useI18n";
 import { useMediaCategories } from "../../composables/useMediaCategories";
 import { useDropZone, useFileDialog } from "@vueuse/core";
-import { Loader2, Upload } from "lucide-vue-next";
+import { LoaderCircle, Upload } from "@lucide/vue";
 import { ref } from "vue";
 
 defineProps<{
@@ -73,7 +73,7 @@ onChange((fileList) => {
     @click="openFilePicker()"
   >
     <div v-if="isUploading" class="tpl:flex tpl:items-center tpl:gap-2">
-      <Loader2
+      <LoaderCircle
         class="tpl-spinner"
         :size="20"
         :stroke-width="2"

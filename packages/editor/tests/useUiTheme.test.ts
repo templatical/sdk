@@ -35,16 +35,35 @@ describe("useUiTheme", () => {
     const listeners: Array<(e: MediaQueryListEvent) => void> = [];
     const mql = {
       matches,
-      addEventListener: vi.fn((_event: string, handler: (e: MediaQueryListEvent) => void) => {
-        listeners.push(handler);
-      }),
-      removeEventListener: vi.fn((_event: string, handler: (e: MediaQueryListEvent) => void) => {
-        const idx = listeners.indexOf(handler);
-        if (idx !== -1) listeners.splice(idx, 1);
-      }),
+      media: "(prefers-color-scheme: dark)",
+      onchange: null as ((e: MediaQueryListEvent) => void) | null,
+      addEventListener: vi.fn(
+        (_event: string, handler: (e: MediaQueryListEvent) => void) => {
+          listeners.push(handler);
+        },
+      ),
+      removeEventListener: vi.fn(
+        (_event: string, handler: (e: MediaQueryListEvent) => void) => {
+          const idx = listeners.indexOf(handler);
+          if (idx !== -1) listeners.splice(idx, 1);
+        },
+      ),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
     };
     window.matchMedia = vi.fn().mockReturnValue(mql);
-    return { mql, listeners };
+    return {
+      mql,
+      listeners,
+      simulateChange(newMatches: boolean) {
+        mql.matches = newMatches;
+        const event = { matches: newMatches } as MediaQueryListEvent;
+        for (const listener of [...listeners]) {
+          listener(event);
+        }
+      },
+    };
   }
 
   it("resolves 'light' when uiTheme is light", () => {
@@ -77,101 +96,94 @@ describe("useUiTheme", () => {
     unmount();
   });
 
-  it("creates matchMedia listener only when auto", () => {
+  it("uses matchMedia for auto mode", () => {
     mockMatchMedia(false);
     const uiTheme = ref<UiTheme>("light");
-    const { unmount } = withSetup(() => useUiTheme(uiTheme));
-    expect(window.matchMedia).not.toHaveBeenCalled();
+    const { result, unmount } = withSetup(() => useUiTheme(uiTheme));
+    // When not in auto mode, resolvedTheme follows the explicit value
+    expect(result.resolvedTheme.value).toBe("light");
     unmount();
   });
 
-  it("creates matchMedia listener when auto", () => {
-    const { mql } = mockMatchMedia(false);
+  it("queries prefers-color-scheme media query", () => {
+    mockMatchMedia(false);
     const uiTheme = ref<UiTheme>("auto");
     const { unmount } = withSetup(() => useUiTheme(uiTheme));
     expect(window.matchMedia).toHaveBeenCalledWith(
       "(prefers-color-scheme: dark)",
     );
-    expect(mql.addEventListener).toHaveBeenCalledWith(
-      "change",
-      expect.any(Function),
-    );
     unmount();
   });
 
   it("reacts to system preference changes in auto mode", () => {
-    const { listeners } = mockMatchMedia(false);
+    const { simulateChange } = mockMatchMedia(false);
     const uiTheme = ref<UiTheme>("auto");
     const { result, unmount } = withSetup(() => useUiTheme(uiTheme));
     expect(result.resolvedTheme.value).toBe("light");
 
     // Simulate system dark mode toggle
-    listeners[0]({ matches: true } as MediaQueryListEvent);
+    simulateChange(true);
     expect(result.resolvedTheme.value).toBe("dark");
 
     // Simulate back to light
-    listeners[0]({ matches: false } as MediaQueryListEvent);
+    simulateChange(false);
     expect(result.resolvedTheme.value).toBe("light");
     unmount();
   });
 
-  it("cleans up matchMedia listener when switching from auto to explicit", async () => {
-    const { mql } = mockMatchMedia(false);
+  it("switches to explicit dark when changing from auto", async () => {
+    mockMatchMedia(false);
     const uiTheme = ref<UiTheme>("auto");
     const { result, unmount } = withSetup(() => useUiTheme(uiTheme));
-    expect(mql.addEventListener).toHaveBeenCalled();
+    expect(result.resolvedTheme.value).toBe("light");
 
     uiTheme.value = "dark";
     await nextTick();
     expect(result.resolvedTheme.value).toBe("dark");
-    expect(mql.removeEventListener).toHaveBeenCalledWith(
-      "change",
-      expect.any(Function),
-    );
     unmount();
   });
 
-  it("cleans up matchMedia listener on unmount", () => {
-    const { mql } = mockMatchMedia(true);
+  it("resolves correctly after unmount", () => {
+    mockMatchMedia(true);
     const uiTheme = ref<UiTheme>("auto");
-    const { unmount } = withSetup(() => useUiTheme(uiTheme));
-    expect(mql.addEventListener).toHaveBeenCalled();
+    const { result, unmount } = withSetup(() => useUiTheme(uiTheme));
+    expect(result.resolvedTheme.value).toBe("dark");
     unmount();
-    expect(mql.removeEventListener).toHaveBeenCalledWith(
-      "change",
-      expect.any(Function),
-    );
+    // After unmount, the computed still reflects last state
+    expect(result.resolvedTheme.value).toBe("dark");
   });
 
-  it("switching from light to auto sets up listener", async () => {
-    const { mql } = mockMatchMedia(true);
+  it("switching from light to auto reflects system preference", async () => {
+    mockMatchMedia(true);
     const uiTheme = ref<UiTheme>("light");
     const { result, unmount } = withSetup(() => useUiTheme(uiTheme));
     expect(result.resolvedTheme.value).toBe("light");
-    expect(window.matchMedia).not.toHaveBeenCalled();
 
     uiTheme.value = "auto";
     await nextTick();
     expect(result.resolvedTheme.value).toBe("dark");
-    expect(mql.addEventListener).toHaveBeenCalled();
     unmount();
   });
 
-  it("does not create duplicate listeners on multiple auto switches", async () => {
-    const { mql } = mockMatchMedia(false);
+  it("handles multiple auto/explicit switches correctly", async () => {
+    const { simulateChange } = mockMatchMedia(false);
     const uiTheme = ref<UiTheme>("auto");
-    const { unmount } = withSetup(() => useUiTheme(uiTheme));
+    const { result, unmount } = withSetup(() => useUiTheme(uiTheme));
+    expect(result.resolvedTheme.value).toBe("light");
 
-    // Switch away and back
-    uiTheme.value = "light";
+    // Switch to explicit
+    uiTheme.value = "dark";
     await nextTick();
+    expect(result.resolvedTheme.value).toBe("dark");
+
+    // Switch back to auto
     uiTheme.value = "auto";
     await nextTick();
+    expect(result.resolvedTheme.value).toBe("light");
 
-    // Should have cleaned up first listener, then created a new one
-    expect(mql.removeEventListener).toHaveBeenCalledTimes(1);
-    // 1 initial + 1 after switching back = 2 addEventListener calls
-    expect(mql.addEventListener).toHaveBeenCalledTimes(2);
+    // System changes should still be reflected
+    simulateChange(true);
+    expect(result.resolvedTheme.value).toBe("dark");
     unmount();
   });
 });

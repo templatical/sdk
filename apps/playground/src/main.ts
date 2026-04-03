@@ -13,12 +13,18 @@ import "./style.css";
 // Dark mode: pre-hydration to avoid flash. Full reactive control is in
 // usePlaygroundTheme() composable (auto/light/dark, persisted to localStorage).
 {
-  const raw = localStorage.getItem("tpl-playground-theme");
-  const theme = raw ? raw.replace(/^"|"$/g, "") : "auto";
-  const dark =
-    theme === "dark" ||
-    (theme === "auto" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
+  let dark = false;
+  try {
+    const raw = localStorage.getItem("tpl-playground-theme");
+    const theme = raw ? raw.replace(/^"|"$/g, "") : "auto";
+    dark =
+      theme === "dark" ||
+      (theme === "auto" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+  } catch {
+    // localStorage may be unavailable in private browsing or when storage is full
+    dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
   document.documentElement.classList.toggle("dark", dark);
 }
 

@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
-import { resolve } from 'path';
+import { resolve } from 'node:path';
 
-const packagesDir = resolve(__dirname, '../../packages');
+const packagesDir = resolve(import.meta.dirname, '../../packages');
 
 export default defineConfig({
     plugins: [
@@ -22,7 +22,7 @@ export default defineConfig({
         // Core package imports from @vue/reactivity; editor components import from vue.
         dedupe: ['vue', '@vue/reactivity'],
         alias: {
-            '@': resolve(__dirname, 'src'),
+            '@': resolve(import.meta.dirname, 'src'),
             // Resolve workspace packages to source for dev — avoids needing pre-built dist
             '@templatical/editor/src': resolve(packagesDir, 'editor/src'),
             '@templatical/editor': resolve(packagesDir, 'editor/src/index.ts'),
@@ -48,7 +48,7 @@ export default defineConfig({
     },
     build: {
         outDir: 'dist',
-        rollupOptions: {
+        rolldownOptions: {
             output: {
                 manualChunks(id: string) {
                     // Vue runtime — cached across navigations

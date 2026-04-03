@@ -7,7 +7,7 @@ import type {
 } from "@templatical/types";
 import { containsMergeTag } from "@templatical/types";
 import type { TemplaticalEditorConfig } from "../../index";
-import { Image } from "lucide-vue-next";
+import { Image } from "@lucide/vue";
 import { computed, inject } from "vue";
 
 const props = defineProps<{
@@ -63,8 +63,9 @@ const hasMergeTagSrc = computed(() =>
       >
         <img
           class="tpl:border-0"
+          loading="lazy"
           :src="block.placeholderUrl"
-          :alt="block.alt"
+          :alt="block.alt || t.image.altTextPlaceholder"
           :style="imageStyle"
         />
       </a>
@@ -109,8 +110,9 @@ const hasMergeTagSrc = computed(() =>
       >
         <img
           class="tpl:border-0"
+          loading="lazy"
           :src="block.src"
-          :alt="block.alt"
+          :alt="block.alt || t.image.altTextPlaceholder"
           :style="imageStyle"
         />
       </a>
@@ -134,6 +136,7 @@ const hasMergeTagSrc = computed(() =>
     >
       <button
         v-if="canBrowseMedia"
+        :aria-label="t.image.browseMedia"
         class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:cursor-pointer"
         style="
           border-color: var(--tpl-border);

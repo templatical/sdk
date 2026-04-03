@@ -2,7 +2,7 @@
 import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockRepeatableField } from "@templatical/types";
 import { labelClass } from "../../../constants/styleConstants";
-import { Lock, Plus, Trash2 } from "lucide-vue-next";
+import { Lock, Plus, Trash2 } from "@lucide/vue";
 import { computed } from "vue";
 import { resolveFieldComponent } from "./index";
 

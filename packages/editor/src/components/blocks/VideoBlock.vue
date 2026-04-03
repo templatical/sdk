@@ -6,7 +6,7 @@ import type {
 } from "@templatical/types";
 import { getVideoThumbnail } from "../../utils/videoThumbnail";
 import { containsMergeTag } from "@templatical/types";
-import { Video } from "lucide-vue-next";
+import { Video } from "@lucide/vue";
 import { computed } from "vue";
 
 const props = defineProps<{

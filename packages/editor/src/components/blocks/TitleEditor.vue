@@ -4,8 +4,8 @@ import type { UseEditorReturn } from "@templatical/core";
 import type { TitleBlock as TitleBlockType } from "@templatical/types";
 import type { Editor } from "@tiptap/core";
 import type { EditorContent as EditorContentComponent } from "@tiptap/vue-3";
-import { Bold, Italic, Link, Loader2, ScanLine, X } from "lucide-vue-next";
-import { useEventListener } from "@vueuse/core";
+import { Bold, Italic, Link, LoaderCircle, ScanLine, X } from "@lucide/vue";
+import { useEventListener, useTimeoutFn } from "@vueuse/core";
 import {
   inject,
   onBeforeUnmount,
@@ -40,7 +40,11 @@ const showLinkDialog = ref(false);
 const linkUrl = ref("");
 const linkDialogRef = ref<HTMLElement | null>(null);
 useFocusTrap(linkDialogRef, showLinkDialog);
-let focusTimeout: ReturnType<typeof setTimeout> | null = null;
+const { start: startFocusTimeout, stop: stopFocusTimeout } = useTimeoutFn(
+  () => editor.value?.commands.focus("end"),
+  0,
+  { immediate: false },
+);
 
 const { t } = useI18n();
 
@@ -114,10 +118,7 @@ async function initEditor(): Promise<void> {
 
     isLoading.value = false;
 
-    focusTimeout = setTimeout(() => {
-      editor.value?.commands.focus("end");
-      focusTimeout = null;
-    }, 0);
+    startFocusTimeout();
   } catch (error) {
     console.error("[TitleEditor] Failed to initialize TipTap editor:", error);
     isLoading.value = false;
@@ -132,7 +133,7 @@ watch(
     if (editor.value) {
       const currentContent = editor.value.getHTML();
       if (currentContent !== newContent) {
-        editor.value.commands.setContent(newContent, false);
+        editor.value.commands.setContent(newContent, { emitUpdate: false });
       }
     }
   },
@@ -157,10 +158,7 @@ function handleClickOutside(event: MouseEvent): void {
 useEventListener(document, "mousedown", handleClickOutside);
 
 onBeforeUnmount(() => {
-  if (focusTimeout) {
-    clearTimeout(focusTimeout);
-    focusTimeout = null;
-  }
+  stopFocusTimeout();
   editor.value?.destroy();
 });
 
@@ -304,7 +302,7 @@ async function handleAddMergeTag(): Promise<void> {
           <div
             class="tpl:flex tpl:items-center tpl:gap-2 tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
           >
-            <Loader2 class="tpl-spinner" :size="14" :stroke-width="2" />
+            <LoaderCircle class="tpl-spinner" :size="14" :stroke-width="2" />
             Loading editor...
           </div>
         </template>
@@ -400,7 +398,8 @@ async function handleAddMergeTag(): Promise<void> {
               </button>
               <button
                 type="button"
-                class="tpl:inline-flex tpl:cursor-pointer tpl:items-center tpl:rounded-md tpl:border-none tpl:bg-[var(--tpl-primary)] tpl:px-4 tpl:py-2 tpl:text-[13px] tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-primary-hover)]" style="color: #fff"
+                class="tpl:inline-flex tpl:cursor-pointer tpl:items-center tpl:rounded-md tpl:border-none tpl:bg-[var(--tpl-primary)] tpl:px-4 tpl:py-2 tpl:text-[13px] tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-primary-hover)]"
+                style="color: var(--tpl-bg)"
                 @click="insertLink"
               >
                 {{

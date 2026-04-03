@@ -31,12 +31,12 @@
   "dependencies": {
     "@templatical/types": "workspace:*",
     "@vue/reactivity": "^3.5.31",
-    "pusher-js": "^8.0.0"
+    "pusher-js": "^8.5.0"
   },
   "devDependencies": {
-    "tsup": "^8.0.0",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0",
+    "tsup": "^8.5.0",
+    "typescript": "^6.0.0",
+    "vitest": "^4.0.0",
     "vue": "^3.5.30"
   }
 }

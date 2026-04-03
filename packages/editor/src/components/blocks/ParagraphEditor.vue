@@ -18,7 +18,7 @@ import {
   Link,
   List,
   ListOrdered,
-  Loader2,
+  LoaderCircle,
   RemoveFormatting,
   ScanLine,
   Smile,
@@ -27,8 +27,8 @@ import {
   Superscript,
   Underline,
   X,
-} from "lucide-vue-next";
-import { useEventListener } from "@vueuse/core";
+} from "@lucide/vue";
+import { useEventListener, useTimeoutFn } from "@vueuse/core";
 import {
   inject,
   onBeforeUnmount,
@@ -67,7 +67,11 @@ const showLinkDialog = ref(false);
 const linkUrl = ref("");
 const linkDialogRef = ref<HTMLElement | null>(null);
 useFocusTrap(linkDialogRef, showLinkDialog);
-let focusTimeout: ReturnType<typeof setTimeout> | null = null;
+const { start: startFocusTimeout, stop: stopFocusTimeout } = useTimeoutFn(
+  () => editor.value?.commands.focus("end"),
+  0,
+  { immediate: false },
+);
 
 const {
   categories: emojiCategories,
@@ -138,7 +142,7 @@ async function initEditor(): Promise<void> {
       { default: SubscriptExt },
       { default: SuperscriptExt },
       { default: TextAlign },
-      { default: TextStyle },
+      { TextStyle },
       { default: Color },
       { default: FontFamily },
       { default: Highlight },
@@ -218,10 +222,7 @@ async function initEditor(): Promise<void> {
 
     isLoading.value = false;
 
-    focusTimeout = setTimeout(() => {
-      editor.value?.commands.focus("end");
-      focusTimeout = null;
-    }, 0);
+    startFocusTimeout();
   } catch (error) {
     console.error(
       "[ParagraphEditor] Failed to initialize TipTap editor:",
@@ -239,7 +240,7 @@ watch(
     if (editor.value) {
       const currentContent = editor.value.getHTML();
       if (currentContent !== newContent) {
-        editor.value.commands.setContent(newContent, false);
+        editor.value.commands.setContent(newContent, { emitUpdate: false });
       }
     }
   },
@@ -268,10 +269,7 @@ function handleClickOutside(event: MouseEvent): void {
 useEventListener(document, "mousedown", handleClickOutside);
 
 onBeforeUnmount(() => {
-  if (focusTimeout) {
-    clearTimeout(focusTimeout);
-    focusTimeout = null;
-  }
+  stopFocusTimeout();
   editor.value?.destroy();
 });
 
@@ -394,9 +392,7 @@ function setLetterSpacing(value: string): void {
 }
 
 function getCurrentHighlight(): string {
-  return (
-    (editor.value?.getAttributes("highlight").color as string) || ""
-  );
+  return (editor.value?.getAttributes("highlight").color as string) || "";
 }
 
 function setHighlight(color: string): void {
@@ -430,6 +426,7 @@ function setHighlight(color: string): void {
             <select
               class="tpl:h-8 tpl:w-32 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text)] tpl:outline-none"
               :value="getCurrentFontFamily()"
+              :aria-label="t.paragraphEditor.fontFamily"
               :title="t.paragraphEditor.fontFamily"
               @change="
                 setFontFamily(($event.target as HTMLSelectElement).value)
@@ -447,6 +444,7 @@ function setHighlight(color: string): void {
             <select
               class="tpl:h-8 tpl:w-20 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text)] tpl:outline-none"
               :value="getCurrentFontSize()"
+              :aria-label="t.paragraphEditor.fontSize"
               :title="t.paragraphEditor.fontSize"
               @change="setFontSize(($event.target as HTMLSelectElement).value)"
             >
@@ -464,6 +462,7 @@ function setHighlight(color: string): void {
                 type="color"
                 class="tpl:size-8 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-1"
                 :value="getCurrentColor() || '#000000'"
+                :aria-label="t.paragraphEditor.textColor"
                 :title="t.paragraphEditor.textColor"
                 @input="setColor(($event.target as HTMLInputElement).value)"
               />
@@ -473,14 +472,12 @@ function setHighlight(color: string): void {
                 type="color"
                 class="tpl:size-8 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:p-1"
                 :style="{
-                  backgroundColor:
-                    getCurrentHighlight() || 'var(--tpl-bg)',
+                  backgroundColor: getCurrentHighlight() || 'var(--tpl-bg)',
                 }"
                 :value="getCurrentHighlight() || '#ffff00'"
+                :aria-label="t.paragraphEditor.highlightColor"
                 :title="t.paragraphEditor.highlightColor"
-                @input="
-                  setHighlight(($event.target as HTMLInputElement).value)
-                "
+                @input="setHighlight(($event.target as HTMLInputElement).value)"
               />
             </div>
             <span
@@ -784,7 +781,7 @@ function setHighlight(color: string): void {
           <div
             class="tpl:flex tpl:items-center tpl:gap-2 tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
           >
-            <Loader2 class="tpl-spinner" :size="14" :stroke-width="2" />
+            <LoaderCircle class="tpl-spinner" :size="14" :stroke-width="2" />
             Loading editor...
           </div>
         </template>
@@ -880,7 +877,8 @@ function setHighlight(color: string): void {
               </button>
               <button
                 type="button"
-                class="tpl:inline-flex tpl:cursor-pointer tpl:items-center tpl:rounded-md tpl:border-none tpl:bg-[var(--tpl-primary)] tpl:px-4 tpl:py-2 tpl:text-[13px] tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-primary-hover)]" style="color: #fff"
+                class="tpl:inline-flex tpl:cursor-pointer tpl:items-center tpl:rounded-md tpl:border-none tpl:bg-[var(--tpl-primary)] tpl:px-4 tpl:py-2 tpl:text-[13px] tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-primary-hover)]"
+                style="color: var(--tpl-bg)"
                 @click="insertLink"
               >
                 {{

@@ -110,7 +110,8 @@ function buildAuthConfig(): TemplaticalCloudEditorConfig["auth"] {
         settings.value.authHeaders.trim(),
       );
     } catch {
-      // ignore invalid JSON
+      console.warn("[Cloud Playground] Invalid JSON in auth headers — ignored");
+      loadError.value = t.value.cloud.errors.invalidHeadersJson ?? "";
     }
   }
 
@@ -118,7 +119,8 @@ function buildAuthConfig(): TemplaticalCloudEditorConfig["auth"] {
     try {
       config.requestOptions!.body = JSON.parse(settings.value.authBody.trim());
     } catch {
-      // ignore invalid JSON
+      console.warn("[Cloud Playground] Invalid JSON in auth body — ignored");
+      loadError.value = t.value.cloud.errors.invalidBodyJson ?? "";
     }
   }
 
@@ -438,6 +440,7 @@ onUnmounted(() => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <rect x="2" y="3" width="20" height="14" rx="2" />
               <path d="M8 21h8" />
@@ -454,6 +457,7 @@ onUnmounted(() => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <circle cx="12" cy="12" r="4" />
               <path
@@ -471,6 +475,7 @@ onUnmounted(() => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
             </svg>
@@ -1147,6 +1152,7 @@ onUnmounted(() => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <rect x="2" y="3" width="20" height="14" rx="2" />
               <path d="M8 21h8" />
@@ -1163,6 +1169,7 @@ onUnmounted(() => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <circle cx="12" cy="12" r="4" />
               <path
@@ -1180,6 +1187,7 @@ onUnmounted(() => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
             </svg>

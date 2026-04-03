@@ -183,7 +183,9 @@ export class AuthManager {
       return this.accessToken;
     } catch (error) {
       const wrappedError =
-        error instanceof Error ? error : new Error("Token refresh failed");
+        error instanceof Error
+          ? error
+          : new Error("Token refresh failed", { cause: error });
       this.onError?.(wrappedError);
       throw wrappedError;
     }

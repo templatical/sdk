@@ -13,7 +13,9 @@ import {
 import {
   useClipboard,
   useFileDialog,
+  useIntervalFn,
   useLocalStorage,
+  usePreferredReducedMotion,
   useScrollLock,
   useTimeoutFn,
   onClickOutside,
@@ -104,7 +106,11 @@ function dismissFeatureOverlay(): void {
   }
   // Start onboarding after feature overlay closes
   if (!onboardingDismissed.value) {
-    setTimeout(() => startOnboarding(), 1000);
+    const id = setTimeout(() => {
+      pendingOnboardingTimers.delete(id);
+      startOnboarding();
+    }, 1000);
+    pendingOnboardingTimers.add(id);
   }
 }
 
@@ -426,7 +432,11 @@ function onScreenEnter(): void {
       initEditor();
       // Start onboarding after editor has mounted (slight delay to let user orient)
       if (!onboardingDismissed.value && !showFeatureOverlay.value) {
-        setTimeout(() => startOnboarding(), 1000);
+        const id = setTimeout(() => {
+          pendingOnboardingTimers.delete(id);
+          startOnboarding();
+        }, 1000);
+        pendingOnboardingTimers.add(id);
       }
     });
   }
@@ -748,6 +758,7 @@ const dataSourceModalRef = useModalTrap(
   computed(() => dataSourcePickerOpen.value && !!dataSourcePickerRequest.value),
 );
 const onboardingActive = ref(false);
+const pendingOnboardingTimers = new Set<ReturnType<typeof setTimeout>>();
 
 const featureModalRef = useModalTrap(showFeatureOverlay);
 const shareModalRef = useModalTrap(shareModalOpen);
@@ -835,7 +846,21 @@ const onboardingDismissed = useLocalStorage(
 const onboardingStepIndex = ref(0);
 const onboardingRect = ref<DOMRect | null>(null);
 const typedText = ref("");
-let typewriterTimer: ReturnType<typeof setInterval> | null = null;
+const prefersReducedMotion = usePreferredReducedMotion();
+let typewriterCharIndex = 0;
+const { pause: stopTypewriter, resume: resumeTypewriter } = useIntervalFn(
+  () => {
+    const fullText = onboardingStepData.value.text;
+    if (typewriterCharIndex < fullText.length) {
+      typedText.value = fullText.slice(0, typewriterCharIndex + 1);
+      typewriterCharIndex++;
+    } else {
+      stopTypewriter();
+    }
+  },
+  25,
+  { immediate: false },
+);
 
 const currentOnboardingStep = computed(
   () => onboardingSteps[onboardingStepIndex.value],
@@ -872,6 +897,14 @@ function updateOnboardingRect(): void {
   const selector = onboardingSelector[step] ?? `[data-onboarding="${step}"]`;
   const el = document.querySelector<HTMLElement>(selector);
   if (el) {
+    // Scroll toolbar items into view on mobile before measuring
+    if (!onboardingSelector[step]) {
+      el.scrollIntoView({
+        behavior: "instant",
+        block: "nearest",
+        inline: "nearest",
+      });
+    }
     onboardingRect.value = el.getBoundingClientRect();
   }
 }
@@ -880,29 +913,12 @@ function startTypewriter(): void {
   stopTypewriter();
   const fullText = onboardingStepData.value.text;
   typedText.value = "";
-  const prefersReduced = window.matchMedia(
-    "(prefers-reduced-motion: reduce)",
-  ).matches;
-  if (prefersReduced) {
+  if (prefersReducedMotion.value === "reduce") {
     typedText.value = fullText;
     return;
   }
-  let i = 0;
-  typewriterTimer = setInterval(() => {
-    if (i < fullText.length) {
-      typedText.value = fullText.slice(0, i + 1);
-      i++;
-    } else {
-      stopTypewriter();
-    }
-  }, 25);
-}
-
-function stopTypewriter(): void {
-  if (typewriterTimer !== null) {
-    clearInterval(typewriterTimer);
-    typewriterTimer = null;
-  }
+  typewriterCharIndex = 0;
+  resumeTypewriter();
 }
 
 function startOnboarding(): void {
@@ -997,6 +1013,8 @@ const onboardingSpotlightStyle = computed(() => {
 
 onUnmounted(() => {
   stopTypewriter();
+  pendingOnboardingTimers.forEach(clearTimeout);
+  pendingOnboardingTimers.clear();
   unmount();
 });
 </script>
@@ -1030,6 +1048,7 @@ onUnmounted(() => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <rect x="2" y="3" width="20" height="14" rx="2" />
               <path d="M8 21h8" />
@@ -1046,6 +1065,7 @@ onUnmounted(() => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <circle cx="12" cy="12" r="4" />
               <path
@@ -1063,6 +1083,7 @@ onUnmounted(() => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
               <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
             </svg>
@@ -1080,6 +1101,7 @@ onUnmounted(() => {
         <!-- Shared template loading -->
         <div
           v-if="shareLoadPending"
+          role="status"
           class="flex flex-col items-center gap-3 py-20"
         >
           <svg
@@ -1820,6 +1842,7 @@ onUnmounted(() => {
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
               >
                 <rect x="2" y="3" width="20" height="14" rx="2" />
                 <path d="M8 21h8" />
@@ -1835,6 +1858,7 @@ onUnmounted(() => {
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
               >
                 <circle cx="12" cy="12" r="4" />
                 <path
@@ -1851,6 +1875,7 @@ onUnmounted(() => {
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
               >
                 <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
               </svg>
@@ -2026,6 +2051,7 @@ onUnmounted(() => {
               <!-- Loading -->
               <div
                 v-if="shareLoading"
+                role="status"
                 class="flex flex-col items-center gap-3 py-4"
               >
                 <svg
@@ -2578,6 +2604,7 @@ onUnmounted(() => {
             <!-- Loading state: simulated API request -->
             <div
               v-if="dataSourcePickerFetching"
+              role="status"
               class="flex flex-col items-center justify-center gap-4 py-12 px-5"
             >
               <svg

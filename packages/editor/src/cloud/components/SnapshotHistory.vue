@@ -7,8 +7,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Loader2,
-} from "lucide-vue-next";
+  LoaderCircle,
+} from "@lucide/vue";
 import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
@@ -161,7 +161,7 @@ onClickOutside(dropdownRef, () => {
           v-if="isLoading"
           class="tpl:flex tpl:items-center tpl:justify-center tpl:py-8"
         >
-          <Loader2
+          <LoaderCircle
             class="tpl:animate-spin"
             :size="20"
             :stroke-width="2"

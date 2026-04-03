@@ -3,7 +3,7 @@ import MediaFolderTreeNode from "./MediaFolderTreeNode.vue";
 import { useI18n } from "../../composables/useI18n";
 import type { MediaViewMode } from "../../composable";
 import type { MediaFolder } from "../../types";
-import { File, Plus, Star } from "lucide-vue-next";
+import { File, Plus, Star } from "@lucide/vue";
 import { ref } from "vue";
 
 defineProps<{

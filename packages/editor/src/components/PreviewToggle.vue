@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
-import { Eye, EyeOff } from "lucide-vue-next";
+import { Eye, EyeOff } from "@lucide/vue";
 
 defineProps<{
   previewMode: boolean;

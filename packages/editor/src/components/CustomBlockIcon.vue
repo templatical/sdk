@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Box } from "lucide-vue-next";
+import { Box } from "@lucide/vue";
 import { computed } from "vue";
 
 const props = defineProps<{

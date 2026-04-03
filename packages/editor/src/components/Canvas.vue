@@ -12,7 +12,7 @@ import type {
   UseConditionPreviewReturn,
 } from "@templatical/core";
 import type { UseBlockRegistryReturn } from "../composables";
-import { ImageUp, Sparkles, SquarePlus } from "lucide-vue-next";
+import { ImageUp, Sparkles, SquarePlus } from "@lucide/vue";
 import { computed, inject, type Component } from "vue";
 import draggable from "vuedraggable";
 

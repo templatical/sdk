@@ -301,6 +301,8 @@ export default {
       authUrlRequired: "Auth-URL ist erforderlich",
       enterUuid: "Bitte geben Sie eine Vorlagen-UUID ein",
       initFailed: "Initialisierung fehlgeschlagen: {message}",
+      invalidHeadersJson: "Auth-Header enthalten ungültiges JSON — ignoriert",
+      invalidBodyJson: "Auth-Body enthält ungültiges JSON — ignoriert",
     },
   },
 } satisfies Translations;

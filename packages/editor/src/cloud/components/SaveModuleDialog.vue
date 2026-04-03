@@ -3,7 +3,7 @@ import { useI18n } from "../../composables";
 import type { UseEditorReturn } from "@templatical/core/cloud";
 import type { UseSavedModulesReturn } from "@templatical/core/cloud";
 import type { Block } from "@templatical/types";
-import { Loader2 } from "lucide-vue-next";
+import { LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref, watch, type Ref } from "vue";
 import { useFocusTrap } from "../../composables";
 
@@ -244,7 +244,7 @@ function handleKeydown(event: KeyboardEvent): void {
                 v-if="isSaving"
                 class="tpl:flex tpl:items-center tpl:gap-1.5"
               >
-                <Loader2
+                <LoaderCircle
                   class="tpl:animate-spin"
                   :size="12"
                   :stroke-width="2"

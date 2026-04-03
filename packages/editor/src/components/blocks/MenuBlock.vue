@@ -4,7 +4,7 @@ import type {
   MenuBlock as MenuBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { Navigation } from "lucide-vue-next";
+import { Navigation } from "@lucide/vue";
 import { computed } from "vue";
 
 const props = defineProps<{

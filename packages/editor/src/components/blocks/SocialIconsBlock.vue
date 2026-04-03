@@ -5,7 +5,7 @@ import type {
   SocialIconsBlock as SocialIconsBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { Share2 } from "lucide-vue-next";
+import { Share2 } from "@lucide/vue";
 import { computed } from "vue";
 
 const props = defineProps<{

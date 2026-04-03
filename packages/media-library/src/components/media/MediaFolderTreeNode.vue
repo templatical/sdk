@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
 import type { MediaFolder } from "../../types";
-import { ChevronRight, Folder, Pencil, Plus, Trash2 } from "lucide-vue-next";
+import { ChevronRight, Folder, Pencil, Plus, Trash2 } from "@lucide/vue";
 import { computed, ref } from "vue";
 
 const props = defineProps<{

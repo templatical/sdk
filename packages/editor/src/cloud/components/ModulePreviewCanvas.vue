@@ -75,8 +75,11 @@ function getBlockWrapperStyle(block: Block): Record<string, string> {
 
 <template>
   <div
-    class="tpl:pointer-events-none tpl:mx-auto tpl:w-[600px] tpl:select-none tpl:rounded-lg tpl:bg-white"
-    style="box-shadow: var(--tpl-shadow-sm)"
+    class="tpl:pointer-events-none tpl:mx-auto tpl:w-[600px] tpl:select-none tpl:rounded-lg"
+    style="
+      background-color: var(--tpl-canvas-bg);
+      box-shadow: var(--tpl-shadow-sm);
+    "
   >
     <div
       v-for="block in blocks"

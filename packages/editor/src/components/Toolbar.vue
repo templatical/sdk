@@ -71,7 +71,7 @@ import {
   Timer,
   Trash2,
   X,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 import { computed, inject, ref, watch } from "vue";
 import { useTimeoutFn } from "@vueuse/core";
 
@@ -1832,7 +1832,11 @@ function removeTableColumn(colIndex: number): void {
         <!-- Spacing -->
         <div
           class="tpl:py-3"
-          :class="blockType === 'paragraph' ? '' : 'tpl:border-t tpl:border-[var(--tpl-border)]'"
+          :class="
+            blockType === 'paragraph'
+              ? ''
+              : 'tpl:border-t tpl:border-[var(--tpl-border)]'
+          "
         >
           <button
             type="button"
@@ -2108,7 +2112,7 @@ function removeTableColumn(colIndex: number): void {
                 <div class="tpl:flex tpl:justify-end">
                   <button
                     type="button"
-                    class="tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-[var(--tpl-primary)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-white tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:opacity-50"
+                    class="tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-[var(--tpl-primary)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-bg)] tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:opacity-50"
                     :disabled="!customBefore.trim()"
                     @click="applyCustomCondition"
                   >

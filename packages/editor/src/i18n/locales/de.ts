@@ -457,6 +457,10 @@ export default {
   spacingControl: {
     lockAll: "Alle Seiten sperren",
     unlock: "Seiten entsperren",
+    top: "Oben",
+    right: "Rechts",
+    bottom: "Unten",
+    left: "Links",
     decreaseTop: "Oben verringern",
     increaseTop: "Oben erhöhen",
     decreaseLeft: "Links verringern",
@@ -465,6 +469,12 @@ export default {
     increaseRight: "Rechts erhöhen",
     decreaseBottom: "Unten verringern",
     increaseBottom: "Unten erhöhen",
+  },
+
+  // Color Picker
+  colorPicker: {
+    pickColor: "Farbe auswählen",
+    hexValue: "Hex-Farbwert",
   },
 
   // Merge-Tag

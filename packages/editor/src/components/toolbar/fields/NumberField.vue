@@ -2,7 +2,7 @@
 import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockNumberField } from "@templatical/types";
 import { inputClass, labelClass } from "../../../constants/styleConstants";
-import { Lock } from "lucide-vue-next";
+import { Lock } from "@lucide/vue";
 
 defineProps<{
   field: CustomBlockNumberField;

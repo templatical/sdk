@@ -139,7 +139,9 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
       comments.value = await api.getComments(templateId);
     } catch (err) {
       const wrappedError =
-        err instanceof Error ? err : new Error("Failed to load comments");
+        err instanceof Error
+          ? err
+          : new Error("Failed to load comments", { cause: err });
       onError?.(wrappedError);
     } finally {
       isLoading.value = false;
@@ -183,7 +185,9 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
       return comment;
     } catch (err) {
       const wrappedError =
-        err instanceof Error ? err : new Error("Failed to create comment");
+        err instanceof Error
+          ? err
+          : new Error("Failed to create comment", { cause: err });
       onError?.(wrappedError);
       return null;
     } finally {
@@ -218,7 +222,9 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
       return updated;
     } catch (err) {
       const wrappedError =
-        err instanceof Error ? err : new Error("Failed to update comment");
+        err instanceof Error
+          ? err
+          : new Error("Failed to update comment", { cause: err });
       onError?.(wrappedError);
       return null;
     } finally {
@@ -267,7 +273,9 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
       return true;
     } catch (err) {
       const wrappedError =
-        err instanceof Error ? err : new Error("Failed to delete comment");
+        err instanceof Error
+          ? err
+          : new Error("Failed to delete comment", { cause: err });
       onError?.(wrappedError);
       return false;
     } finally {
@@ -300,7 +308,7 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
       const wrappedError =
         err instanceof Error
           ? err
-          : new Error("Failed to toggle comment resolution");
+          : new Error("Failed to toggle comment resolution", { cause: err });
       onError?.(wrappedError);
       return null;
     } finally {
