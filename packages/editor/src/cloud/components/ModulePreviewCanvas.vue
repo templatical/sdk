@@ -13,6 +13,10 @@ import TitleBlock from "../../components/blocks/TitleBlock.vue";
 import ParagraphBlock from "../../components/blocks/ParagraphBlock.vue";
 import VideoBlock from "../../components/blocks/VideoBlock.vue";
 import type { useBlockRegistry } from "../../composables";
+import {
+  resolveBlockComponent,
+  getBlockWrapperStyle,
+} from "../../utils/blockComponentResolver";
 import type { Block } from "@templatical/types";
 import { inject, type Component } from "vue";
 
@@ -23,53 +27,24 @@ defineProps<{
 const blockRegistry =
   inject<ReturnType<typeof useBlockRegistry>>("blockRegistry");
 
+const modulePreviewComponentMap: Record<string, Component> = {
+  section: PreviewSectionBlock,
+  title: TitleBlock,
+  paragraph: ParagraphBlock,
+  image: ImageBlock,
+  video: VideoBlock,
+  button: ButtonBlock,
+  divider: DividerBlock,
+  social: SocialIconsBlock,
+  menu: MenuBlock,
+  table: TableBlock,
+  spacer: SpacerBlock,
+  html: HtmlBlock,
+  custom: CustomBlock,
+};
+
 function getBlockComponent(block: Block): Component | null {
-  if (blockRegistry) {
-    const component = blockRegistry.getComponent(block);
-    if (component) {
-      return component;
-    }
-  }
-
-  switch (block.type) {
-    case "section":
-      return PreviewSectionBlock;
-    case "title":
-      return TitleBlock;
-    case "paragraph":
-      return ParagraphBlock;
-    case "image":
-      return ImageBlock;
-    case "video":
-      return VideoBlock;
-    case "button":
-      return ButtonBlock;
-    case "divider":
-      return DividerBlock;
-    case "social":
-      return SocialIconsBlock;
-    case "menu":
-      return MenuBlock;
-    case "table":
-      return TableBlock;
-    case "spacer":
-      return SpacerBlock;
-    case "html":
-      return HtmlBlock;
-    case "custom":
-      return CustomBlock;
-    default:
-      return null;
-  }
-}
-
-function getBlockWrapperStyle(block: Block): Record<string, string> {
-  const { padding, margin, backgroundColor } = block.styles;
-  return {
-    padding: `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`,
-    margin: `${margin.top}px ${margin.right}px ${margin.bottom}px ${margin.left}px`,
-    backgroundColor: backgroundColor || "transparent",
-  };
+  return resolveBlockComponent(block, blockRegistry, modulePreviewComponentMap);
 }
 </script>
 

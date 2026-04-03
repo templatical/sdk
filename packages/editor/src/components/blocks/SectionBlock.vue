@@ -7,6 +7,7 @@ import ImageBlock from "./ImageBlock.vue";
 import TitleBlock from "./TitleBlock.vue";
 import ParagraphBlock from "./ParagraphBlock.vue";
 import { useI18n, type UseBlockRegistryReturn } from "../../composables";
+import { resolveBlockComponent } from "../../utils/blockComponentResolver";
 import type {
   UseConditionPreviewReturn,
   UseEditorReturn,
@@ -19,6 +20,15 @@ import type {
 } from "@templatical/types";
 import { computed, inject, type Component } from "vue";
 import draggable from "vuedraggable";
+
+const sectionBlockComponentMap: Record<string, Component> = {
+  title: TitleBlock,
+  paragraph: ParagraphBlock,
+  image: ImageBlock,
+  button: ButtonBlock,
+  divider: DividerBlock,
+  custom: CustomBlock,
+};
 
 const props = defineProps<{
   block: SectionBlockType;
@@ -68,29 +78,7 @@ function setColumnBlocks(colIndex: number, blocks: Block[]): void {
 }
 
 function getBlockComponent(block: Block): Component | null {
-  if (blockRegistry) {
-    const component = blockRegistry.getComponent(block);
-    if (component) {
-      return component;
-    }
-  }
-
-  switch (block.type) {
-    case "title":
-      return TitleBlock;
-    case "paragraph":
-      return ParagraphBlock;
-    case "image":
-      return ImageBlock;
-    case "button":
-      return ButtonBlock;
-    case "divider":
-      return DividerBlock;
-    case "custom":
-      return CustomBlock;
-    default:
-      return null;
-  }
+  return resolveBlockComponent(block, blockRegistry, sectionBlockComponentMap);
 }
 
 function handleFetchData(

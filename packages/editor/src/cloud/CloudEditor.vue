@@ -116,6 +116,7 @@ import { useBlockRegistry } from "../composables/useBlockRegistry";
 import { useI18n } from "../composables/useI18n";
 import { useDragDrop } from "../composables/useDragDrop";
 import { useUiTheme } from "../composables/useUiTheme";
+import { useThemeStyles } from "../composables/useThemeStyles";
 import { useVisualSavedModules } from "./composables/useSavedModules";
 import "../styles/index.css";
 
@@ -230,53 +231,6 @@ const { t, format } = useI18n(props.translations);
 
 const themeOverrides = ref<ThemeOverrides>({});
 
-const themeVarMapping: Record<keyof Omit<ThemeOverrides, "dark">, string> = {
-  bg: "--tpl-bg",
-  bgElevated: "--tpl-bg-elevated",
-  bgHover: "--tpl-bg-hover",
-  bgActive: "--tpl-bg-active",
-  border: "--tpl-border",
-  borderLight: "--tpl-border-light",
-  text: "--tpl-text",
-  textMuted: "--tpl-text-muted",
-  textDim: "--tpl-text-dim",
-  primary: "--tpl-primary",
-  primaryHover: "--tpl-primary-hover",
-  primaryLight: "--tpl-primary-light",
-  secondary: "--tpl-secondary",
-  secondaryHover: "--tpl-secondary-hover",
-  secondaryLight: "--tpl-secondary-light",
-  success: "--tpl-success",
-  successLight: "--tpl-success-light",
-  warning: "--tpl-warning",
-  warningLight: "--tpl-warning-light",
-  danger: "--tpl-danger",
-  dangerLight: "--tpl-danger-light",
-  canvasBg: "--tpl-canvas-bg",
-};
-
-const themeStyles = computed(() => {
-  const styles: Record<string, string> = {};
-  const base = themeOverrides.value;
-  const isDark = resolvedTheme.value === "dark";
-  const overrides = isDark ? base.dark : base;
-
-  if (overrides) {
-    for (const [key, cssVar] of Object.entries(themeVarMapping)) {
-      const k = key as keyof Omit<ThemeOverrides, "dark">;
-      const value = overrides[k];
-      if (value) {
-        styles[cssVar] = value;
-      }
-    }
-  }
-
-  // Add drop text for drag-and-drop ghost element
-  styles["--tpl-drop-text"] = `"${props.translations.canvas.dropHere}"`;
-
-  return styles;
-});
-
 function setThemeOverrides(overrides: ThemeOverrides): void {
   if (!planConfigInstance.hasFeature("theme_customization")) {
     return;
@@ -336,6 +290,14 @@ const editor = useEditor({
 editor.setUiTheme(props.config.uiTheme ?? "auto");
 const uiThemeRef = computed(() => editor.state.uiTheme);
 const { resolvedTheme } = useUiTheme(uiThemeRef);
+
+const { themeStyles } = useThemeStyles({
+  themeOverrides,
+  resolvedTheme,
+  extraStyles: () => ({
+    "--tpl-drop-text": `"${props.translations.canvas.dropHere}"`,
+  }),
+});
 
 // ---------------------------------------------------------------------------
 // 5. Collaboration composable
@@ -896,67 +858,46 @@ const isSaveExporting = ref(false);
 // Cloud UI state
 // ---------------------------------------------------------------------------
 
-const aiChatOpen = ref(false);
-const scoringPanelOpen = ref(false);
-const designReferenceOpen = ref(false);
-const commentsOpen = ref(false);
+type RightPanel = "ai-chat" | "scoring" | "design-reference" | "comments";
+const activePanel = ref<RightPanel | null>(null);
+
+const aiChatOpen = computed({
+  get: () => activePanel.value === "ai-chat",
+  set: (v) => (activePanel.value = v ? "ai-chat" : null),
+});
+const scoringPanelOpen = computed({
+  get: () => activePanel.value === "scoring",
+  set: (v) => (activePanel.value = v ? "scoring" : null),
+});
+const designReferenceOpen = computed({
+  get: () => activePanel.value === "design-reference",
+  set: (v) => (activePanel.value = v ? "design-reference" : null),
+});
+const commentsOpen = computed({
+  get: () => activePanel.value === "comments",
+  set: (v) => (activePanel.value = v ? "comments" : null),
+});
+
 const testEmailModalOpen = ref(false);
 const mediaLibraryOpen = ref(false);
 const mediaLibraryAccept = ref<MediaCategory[] | undefined>(undefined);
 const aiMenuOpen = ref(false);
 const aiMenuRef = ref<HTMLElement | null>(null);
 
-const rightPanelOpen = computed(
-  () =>
-    aiChatOpen.value ||
-    scoringPanelOpen.value ||
-    designReferenceOpen.value ||
-    commentsOpen.value,
-);
-
-// Mutual exclusion: only one right panel at a time
-watch(scoringPanelOpen, (isOpen) => {
-  if (isOpen) {
-    aiChatOpen.value = false;
-    designReferenceOpen.value = false;
-    commentsOpen.value = false;
-  }
-});
-watch(aiChatOpen, (isOpen) => {
-  if (isOpen) {
-    scoringPanelOpen.value = false;
-    designReferenceOpen.value = false;
-    commentsOpen.value = false;
-  }
-});
-watch(designReferenceOpen, (isOpen) => {
-  if (isOpen) {
-    aiChatOpen.value = false;
-    scoringPanelOpen.value = false;
-    commentsOpen.value = false;
-  }
-});
-watch(commentsOpen, (isOpen) => {
-  if (isOpen) {
-    aiChatOpen.value = false;
-    scoringPanelOpen.value = false;
-    designReferenceOpen.value = false;
-  }
-});
+const rightPanelOpen = computed(() => activePanel.value !== null);
 
 const activeAiFeature = computed<AiFeature | null>(() => {
-  if (aiChatOpen.value) return "ai-chat";
-  if (designReferenceOpen.value) return "design-reference";
-  if (scoringPanelOpen.value) return "scoring";
+  const p = activePanel.value;
+  if (p === "ai-chat" || p === "design-reference" || p === "scoring") return p;
   return null;
 });
 
 const aiButtonActive = computed(
   () =>
     aiMenuOpen.value ||
-    aiChatOpen.value ||
-    designReferenceOpen.value ||
-    scoringPanelOpen.value,
+    activePanel.value === "ai-chat" ||
+    activePanel.value === "design-reference" ||
+    activePanel.value === "scoring",
 );
 
 function toggleAiMenu(): void {
@@ -965,14 +906,7 @@ function toggleAiMenu(): void {
 
 function handleAiFeatureSelect(feature: AiFeature): void {
   aiMenuOpen.value = false;
-
-  if (feature === "ai-chat") {
-    aiChatOpen.value = !aiChatOpen.value;
-  } else if (feature === "design-reference") {
-    designReferenceOpen.value = !designReferenceOpen.value;
-  } else if (feature === "scoring") {
-    scoringPanelOpen.value = !scoringPanelOpen.value;
-  }
+  activePanel.value = activePanel.value === feature ? null : feature;
 }
 
 onClickOutside(aiMenuRef, () => {

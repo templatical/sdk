@@ -15,6 +15,7 @@ import type { UseBlockRegistryReturn } from "../composables";
 import { ImageUp, Sparkles, SquarePlus } from "@lucide/vue";
 import { computed, inject, type Component } from "vue";
 import draggable from "vuedraggable";
+import { resolveBlockComponent } from "../utils/blockComponentResolver";
 
 import BlockWrapper from "./blocks/BlockWrapper.vue";
 import SectionBlock from "./blocks/SectionBlock.vue";
@@ -31,6 +32,23 @@ import TableBlock from "./blocks/TableBlock.vue";
 import CustomBlock from "./blocks/CustomBlock.vue";
 import VideoBlock from "./blocks/VideoBlock.vue";
 import CountdownBlockComponent from "./blocks/CountdownBlock.vue";
+
+const blockComponentMap: Record<string, Component> = {
+  section: SectionBlock,
+  title: TitleBlock,
+  paragraph: ParagraphBlock,
+  image: ImageBlock,
+  button: ButtonBlock,
+  divider: DividerBlock,
+  spacer: SpacerBlock,
+  html: HtmlBlock,
+  social: SocialIconsBlock,
+  menu: MenuBlock,
+  table: TableBlock,
+  video: VideoBlock,
+  countdown: CountdownBlockComponent,
+  custom: CustomBlock,
+};
 
 const props = defineProps<{
   viewport: ViewportSize;
@@ -111,45 +129,7 @@ function handleCanvasClick(event: MouseEvent): void {
 }
 
 function getBlockComponent(block: Block): Component | null {
-  if (blockRegistry) {
-    const component = blockRegistry.getComponent(block);
-    if (component) {
-      return component;
-    }
-  }
-
-  switch (block.type) {
-    case "section":
-      return SectionBlock;
-    case "title":
-      return TitleBlock;
-    case "paragraph":
-      return ParagraphBlock;
-    case "image":
-      return ImageBlock;
-    case "button":
-      return ButtonBlock;
-    case "divider":
-      return DividerBlock;
-    case "spacer":
-      return SpacerBlock;
-    case "html":
-      return HtmlBlock;
-    case "social":
-      return SocialIconsBlock;
-    case "menu":
-      return MenuBlock;
-    case "table":
-      return TableBlock;
-    case "video":
-      return VideoBlock;
-    case "countdown":
-      return CountdownBlockComponent;
-    case "custom":
-      return CustomBlock;
-    default:
-      return null;
-  }
+  return resolveBlockComponent(block, blockRegistry, blockComponentMap);
 }
 
 function getBlockLockHolder(blockId: string): Collaborator | undefined {

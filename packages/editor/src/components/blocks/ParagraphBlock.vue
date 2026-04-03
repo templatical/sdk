@@ -33,9 +33,8 @@ const resolvedContent = computed(() =>
 
 const isEditing = ref(false);
 const paragraphBlockRef = ref<HTMLElement | null>(null);
-const { top: boundingTop, left: boundingLeft } = useElementBounding(
-  paragraphBlockRef,
-);
+const { top: boundingTop, left: boundingLeft } =
+  useElementBounding(paragraphBlockRef);
 const toolbarPosition = computed(() => ({
   top: boundingTop.value - 8,
   left: boundingLeft.value,

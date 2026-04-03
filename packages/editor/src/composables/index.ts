@@ -19,6 +19,12 @@ export {
 } from "./useDragDrop";
 
 export { useFonts, type FontOption, type UseFontsReturn } from "./useFonts";
+export { useThemeStyles, type UseThemeStylesOptions } from "./useThemeStyles";
+export {
+  useRichTextEditor,
+  type UseRichTextEditorOptions,
+  type UseRichTextEditorReturn,
+} from "./useRichTextEditor";
 
 // Re-export core composables for convenience
 export type { UseEditorReturn } from "@templatical/core";

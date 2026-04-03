@@ -1,14 +1,7 @@
 <script setup lang="ts">
-import {
-  useEmoji,
-  useFocusTrap,
-  useI18n,
-  useMergeTag,
-} from "../../composables";
-import type { UseEditorReturn } from "@templatical/core";
+import { useEmoji, useI18n } from "../../composables";
+import { useRichTextEditor } from "../../composables/useRichTextEditor";
 import type { ParagraphBlock as ParagraphBlockType } from "@templatical/types";
-import type { Editor } from "@tiptap/core";
-import type { EditorContent as EditorContentComponent } from "@tiptap/vue-3";
 import {
   AlignCenter,
   AlignLeft,
@@ -28,16 +21,7 @@ import {
   Underline,
   X,
 } from "@lucide/vue";
-import { useEventListener, useTimeoutFn } from "@vueuse/core";
-import {
-  inject,
-  onBeforeUnmount,
-  ref,
-  shallowRef,
-  watch,
-  type ComputedRef,
-  type Ref,
-} from "vue";
+import { inject, type ComputedRef, type Ref } from "vue";
 
 const props = defineProps<{
   block: ParagraphBlockType;
@@ -48,29 +32,11 @@ const emit = defineEmits<{
   (e: "done"): void;
 }>();
 
-const emailEditor = inject<UseEditorReturn>("editor");
 const themeStyles = inject<ComputedRef<Record<string, string>>>("themeStyles");
 const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
 const configFonts = inject<Array<{ label: string; value: string }>>(
   "fontFamilies",
   [],
-);
-const {
-  mergeTags,
-  isEnabled: mergeTagEnabled,
-  isRequesting: isRequestingMergeTag,
-  requestMergeTag,
-  syntax,
-} = useMergeTag();
-
-const showLinkDialog = ref(false);
-const linkUrl = ref("");
-const linkDialogRef = ref<HTMLElement | null>(null);
-useFocusTrap(linkDialogRef, showLinkDialog);
-const { start: startFocusTimeout, stop: stopFocusTimeout } = useTimeoutFn(
-  () => editor.value?.commands.focus("end"),
-  0,
-  { immediate: false },
 );
 
 const {
@@ -127,17 +93,36 @@ const letterSpacings = [
   { label: "3px", value: "3px" },
 ];
 
-const editor = shallowRef<Editor | null>(null);
-const EditorContent = shallowRef<typeof EditorContentComponent | null>(null);
-const isLoading = ref(true);
-
-async function initEditor(): Promise<void> {
-  try {
+const {
+  editor,
+  EditorContent,
+  isLoading,
+  showLinkDialog,
+  linkUrl,
+  linkDialogRef,
+  mergeTagEnabled,
+  openLinkDialog,
+  insertLink,
+  removeLink,
+  closeLinkDialog,
+  handleLinkKeydown,
+  handleAddMergeTag,
+} = useRichTextEditor({
+  blockId: () => props.block.id,
+  blockContent: () => props.block.content,
+  onDone: () => emit("done"),
+  editorName: "ParagraphEditor",
+  onClickOutsideSideEffect(target) {
+    if (showEmojiPicker.value && !target.closest(".tpl-emoji-picker")) {
+      closeEmojiPicker();
+    }
+  },
+  async loadExtensions({ mergeTags, syntax }) {
     const [
       { Editor: TiptapEditor },
       { EditorContent: EC },
       { default: StarterKit },
-      { default: Link },
+      { default: LinkExt },
       { default: UnderlineExt },
       { default: SubscriptExt },
       { default: SuperscriptExt },
@@ -163,171 +148,40 @@ async function initEditor(): Promise<void> {
       import("../../extensions"),
     ]);
 
-    EditorContent.value = EC;
-
-    const extensions = [
-      StarterKit.configure({
-        heading: false,
-        codeBlock: false,
-        blockquote: false,
-        horizontalRule: false,
-      }),
-      UnderlineExt,
-      SubscriptExt,
-      SuperscriptExt,
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          target: "_blank",
-          rel: "noopener noreferrer",
-        },
-      }),
-      TextAlign.configure({
-        types: ["paragraph"],
-      }),
-      TextStyle,
-      Color,
-      FontFamily,
-      Highlight.configure({ multicolor: true }),
-      FontSize,
-      LineHeight,
-      LetterSpacing,
-      MergeTagNode.configure({
-        mergeTags,
-        syntax,
-      }),
-      LogicMergeTagNode.configure({
-        syntax,
-      }),
-    ];
-
-    const seen = new Map<string, number>();
-    extensions.forEach((ext, i) => seen.set(ext.name, i));
-    const uniqueExtensions = extensions.filter(
-      (ext, i) => seen.get(ext.name) === i,
-    );
-
-    editor.value = new TiptapEditor({
-      extensions: uniqueExtensions,
-      content: props.block.content,
-      editable: true,
-      onUpdate: ({ editor: e }) => {
-        if (emailEditor) {
-          emailEditor.updateBlock(props.block.id, {
-            content: e.getHTML(),
-          });
-        }
-      },
-    });
-
-    isLoading.value = false;
-
-    startFocusTimeout();
-  } catch (error) {
-    console.error(
-      "[ParagraphEditor] Failed to initialize TipTap editor:",
-      error,
-    );
-    isLoading.value = false;
-  }
-}
-
-initEditor();
-
-watch(
-  () => props.block.content,
-  (newContent) => {
-    if (editor.value) {
-      const currentContent = editor.value.getHTML();
-      if (currentContent !== newContent) {
-        editor.value.commands.setContent(newContent, { emitUpdate: false });
-      }
-    }
+    return {
+      TiptapEditor,
+      EC,
+      extensions: [
+        StarterKit.configure({
+          heading: false,
+          codeBlock: false,
+          blockquote: false,
+          horizontalRule: false,
+        }),
+        UnderlineExt,
+        SubscriptExt,
+        SuperscriptExt,
+        LinkExt.configure({
+          openOnClick: false,
+          HTMLAttributes: {
+            target: "_blank",
+            rel: "noopener noreferrer",
+          },
+        }),
+        TextAlign.configure({ types: ["paragraph"] }),
+        TextStyle,
+        Color,
+        FontFamily,
+        Highlight.configure({ multicolor: true }),
+        FontSize,
+        LineHeight,
+        LetterSpacing,
+        MergeTagNode.configure({ mergeTags, syntax }),
+        LogicMergeTagNode.configure({ syntax }),
+      ],
+    };
   },
-);
-
-function handleClickOutside(event: MouseEvent): void {
-  if (isRequestingMergeTag.value) return;
-
-  const target = event.target as HTMLElement;
-
-  if (showEmojiPicker.value && !target.closest(".tpl-emoji-picker")) {
-    closeEmojiPicker();
-  }
-
-  if (
-    target.closest(".tpl-text-editor-wrapper") ||
-    target.closest(".tpl-text-toolbar") ||
-    target.closest(".tpl-link-dialog")
-  ) {
-    return;
-  }
-
-  emit("done");
-}
-
-useEventListener(document, "mousedown", handleClickOutside);
-
-onBeforeUnmount(() => {
-  stopFocusTimeout();
-  editor.value?.destroy();
 });
-
-function openLinkDialog(): void {
-  const previousUrl = editor.value?.getAttributes("link").href || "";
-  linkUrl.value = previousUrl;
-  showLinkDialog.value = true;
-}
-
-function insertLink(): void {
-  if (linkUrl.value) {
-    const url = linkUrl.value.startsWith("http")
-      ? linkUrl.value
-      : `https://${linkUrl.value}`;
-    editor.value
-      ?.chain()
-      .focus()
-      .extendMarkRange("link")
-      .setLink({ href: url })
-      .run();
-  }
-  closeLinkDialog();
-}
-
-function removeLink(): void {
-  editor.value?.chain().focus().extendMarkRange("link").unsetLink().run();
-  closeLinkDialog();
-}
-
-function closeLinkDialog(): void {
-  showLinkDialog.value = false;
-  linkUrl.value = "";
-}
-
-function handleLinkKeydown(event: KeyboardEvent): void {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    insertLink();
-  } else if (event.key === "Escape") {
-    closeLinkDialog();
-  }
-}
-
-async function handleAddMergeTag(): Promise<void> {
-  const mergeTag = await requestMergeTag();
-  if (mergeTag && editor.value) {
-    editor.value
-      .chain()
-      .focus()
-      .insertMergeTag({
-        label: mergeTag.label,
-        value: mergeTag.value,
-      })
-      .run();
-  } else {
-    editor.value?.commands.focus();
-  }
-}
 
 function getCurrentFontFamily(): string {
   return (editor.value?.getAttributes("textStyle").fontFamily as string) || "";
