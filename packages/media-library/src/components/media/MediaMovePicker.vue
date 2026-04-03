@@ -2,7 +2,7 @@
 import { useI18n } from "../../composables/useI18n";
 import type { MediaFolder } from "../../types";
 import { onClickOutside } from "@vueuse/core";
-import { File, Folder } from "lucide-vue-next";
+import { File, Folder } from "@lucide/vue";
 import { ref } from "vue";
 
 defineProps<{

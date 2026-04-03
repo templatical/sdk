@@ -1,28 +1,25 @@
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
-import { resolve } from 'path';
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
     plugins: [tailwindcss(), vue()],
     publicDir: false,
-    define: {
-        'process.env.NODE_ENV': JSON.stringify('production'),
-    },
     build: {
         lib: {
-            entry: resolve(__dirname, 'packages/media-library/src/standalone/visual.ts'),
+            entry: resolve(import.meta.dirname, 'packages/media-library/src/standalone/visual.ts'),
             name: 'TemplaticalMediaLibrary',
             fileName: (format) => `media-library.${format}.js`,
             cssFileName: 'media-library',
         },
-        outDir: resolve(__dirname, 'dist/media-library'),
+        outDir: resolve(import.meta.dirname, 'dist/media-library'),
         emptyOutDir: true,
-        minify: 'esbuild',
+        minify: true,
         target: 'es2022',
         sourcemap: true,
-        cssMinify: true,
-        rollupOptions: {
+        cssMinify: 'esbuild',
+        rolldownOptions: {
             output: [
                 {
                     format: 'iife',
@@ -38,7 +35,7 @@ export default defineConfig({
                     chunkFileNames: 'chunks/[name]-[hash].js',
                     assetFileNames: 'media-library.[ext]',
                     manualChunks: (id) => {
-                        if (id.includes('lucide-vue-next')) {
+                        if (id.includes('@lucide/vue')) {
                             return 'icons';
                         }
                         if (
@@ -59,10 +56,10 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            '@templatical/media-library': resolve(__dirname, 'packages/media-library/src/index.ts'),
-            '@templatical/core/cloud': resolve(__dirname, 'packages/core/src/cloud/index.ts'),
-            '@templatical/core': resolve(__dirname, 'packages/core/src/index.ts'),
-            '@templatical/types': resolve(__dirname, 'packages/types/src/index.ts'),
+            '@templatical/media-library': resolve(import.meta.dirname, 'packages/media-library/src/index.ts'),
+            '@templatical/core/cloud': resolve(import.meta.dirname, 'packages/core/src/cloud/index.ts'),
+            '@templatical/core': resolve(import.meta.dirname, 'packages/core/src/index.ts'),
+            '@templatical/types': resolve(import.meta.dirname, 'packages/types/src/index.ts'),
         },
     },
 });

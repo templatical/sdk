@@ -3,7 +3,8 @@ import type {
   CountdownBlock as CountdownBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { computed, onBeforeUnmount, ref } from "vue";
+import { useIntervalFn } from "@vueuse/core";
+import { computed, ref } from "vue";
 import { useI18n } from "../../composables/useI18n";
 
 const props = defineProps<{
@@ -14,17 +15,9 @@ const props = defineProps<{
 const { t } = useI18n();
 
 const now = ref(Date.now());
-let timer: ReturnType<typeof setInterval> | null = null;
-
-timer = setInterval(() => {
+useIntervalFn(() => {
   now.value = Date.now();
 }, 1000);
-
-onBeforeUnmount(() => {
-  if (timer) {
-    clearInterval(timer);
-  }
-});
 
 const targetTime = computed(() => {
   if (!props.block.targetDate) return null;
@@ -144,7 +137,7 @@ const separatorStyle = computed(() => ({
     :style="containerStyle"
     class="tpl:flex tpl:items-center tpl:justify-center tpl:gap-2 tpl:py-4"
   >
-    <template v-for="(segment, index) in segments" :key="segment.label">
+    <template v-for="(segment, index) in segments" :key="index">
       <span v-if="index > 0" :style="separatorStyle" class="tpl:self-start">
         {{ block.separator }}
       </span>

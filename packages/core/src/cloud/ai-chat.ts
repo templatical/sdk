@@ -343,7 +343,9 @@ export function useAiChat(options: UseAiChatOptions): UseAiChatReturn {
       return result;
     } catch (err) {
       const wrappedError =
-        err instanceof Error ? err : new Error("Failed to generate template");
+        err instanceof Error
+          ? err
+          : new Error("Failed to generate template", { cause: err });
       error.value = wrappedError.message;
       failedPrompt.value = prompt;
       onError?.(wrappedError);

@@ -9,19 +9,19 @@ import type { ScoringCategory, ScoringFinding } from "@templatical/types";
 import type { MergeTag } from "@templatical/types";
 import type { AuthManager } from "@templatical/core/cloud";
 import {
-  AlertCircle,
-  AlertTriangle,
+  CircleAlert,
+  TriangleAlert,
   ChevronDown,
   Eye,
   Info,
-  Loader2,
+  LoaderCircle,
   RefreshCw,
   ShieldCheck,
   ShieldX,
   Sparkles,
   X,
   Zap,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 import { inject, ref, watch } from "vue";
 
 const props = defineProps<{
@@ -227,7 +227,7 @@ function totalFindings(): number {
           v-else-if="scoring.error.value && !scoring.scoringResult.value"
           class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
         >
-          <AlertCircle
+          <CircleAlert
             :size="32"
             :stroke-width="1.5"
             style="color: var(--tpl-danger)"
@@ -296,7 +296,7 @@ function totalFindings(): number {
               color: var(--tpl-danger);
             "
           >
-            <AlertCircle
+            <CircleAlert
               :size="14"
               :stroke-width="2"
               class="tpl:mt-0.5 tpl:shrink-0"
@@ -401,9 +401,9 @@ function totalFindings(): number {
                   <component
                     :is="
                       finding.severity === 'high'
-                        ? AlertCircle
+                        ? CircleAlert
                         : finding.severity === 'medium'
-                          ? AlertTriangle
+                          ? TriangleAlert
                           : Info
                     "
                     :size="13"
@@ -455,7 +455,7 @@ function totalFindings(): number {
                         :disabled="scoring.fixingFindingId.value !== null"
                         @click="handleFix(finding)"
                       >
-                        <Loader2
+                        <LoaderCircle
                           v-if="scoring.fixingFindingId.value === finding.id"
                           class="tpl-spinner"
                           :size="11"

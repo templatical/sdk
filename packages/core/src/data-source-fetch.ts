@@ -37,7 +37,7 @@ export function useDataSourceFetch(options: {
         blockId: options.block.value.id,
       });
 
-      if (result === null || result === undefined) {
+      if (result == null) {
         return;
       }
 

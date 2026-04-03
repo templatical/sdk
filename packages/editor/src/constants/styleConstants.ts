@@ -26,4 +26,4 @@ export const cardClass =
   "tpl:rounded-[var(--tpl-radius)] tpl:bg-[var(--tpl-bg-elevated)] tpl:p-4 tpl:border tpl:border-[var(--tpl-border)] tpl:transition-colors tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-bg-hover)]";
 
 export const outlineBtnClass =
-  "tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:border tpl:cursor-pointer tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:text-[var(--tpl-primary)] tpl:bg-transparent tpl:border-[var(--tpl-primary)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-white";
+  "tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:border tpl:cursor-pointer tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:text-[var(--tpl-primary)] tpl:bg-transparent tpl:border-[var(--tpl-primary)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-[var(--tpl-bg)]";

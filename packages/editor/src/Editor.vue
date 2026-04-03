@@ -24,7 +24,7 @@ import type {
 } from "@templatical/types";
 import { resolveSyntax } from "@templatical/types";
 
-import { RotateCcw } from "lucide-vue-next";
+import { RotateCcw } from "@lucide/vue";
 import Canvas from "./components/Canvas.vue";
 import Sidebar from "./components/Sidebar.vue";
 import RightSidebar from "./components/RightSidebar.vue";

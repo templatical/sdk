@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
 import type { ViewportSize } from "@templatical/types";
-import { Monitor, Smartphone, Tablet } from "lucide-vue-next";
+import { Monitor, Smartphone, Tablet } from "@lucide/vue";
 import { computed } from "vue";
 
 const props = defineProps<{

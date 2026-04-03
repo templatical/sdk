@@ -81,15 +81,15 @@ import {
 } from "vue";
 import { onClickOutside, useEventListener, useTimeoutFn } from "@vueuse/core";
 import {
-  AlertCircle,
+  CircleAlert,
   Clock,
-  Loader2,
+  LoaderCircle,
   MessageCircle,
   RotateCcw,
   Save,
   Send,
   Sparkles,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 
 import Canvas from "../components/Canvas.vue";
 import Sidebar from "../components/Sidebar.vue";
@@ -1167,7 +1167,9 @@ async function initialize(): Promise<void> {
     emit("ready");
   } catch (error) {
     const wrappedError =
-      error instanceof Error ? error : new Error("Initialization failed");
+      error instanceof Error
+        ? error
+        : new Error("Initialization failed", { cause: error });
     initError.value = wrappedError;
     props.config.onError?.(wrappedError);
   } finally {
@@ -1448,7 +1450,7 @@ defineExpose({
           class="tpl:flex tpl:size-16 tpl:items-center tpl:justify-center tpl:rounded-full"
           style="background-color: var(--tpl-danger-light)"
         >
-          <AlertCircle
+          <CircleAlert
             :size="32"
             :stroke-width="1.5"
             style="color: var(--tpl-danger)"
@@ -1581,7 +1583,7 @@ defineExpose({
               : t.comments.button
           "
           :aria-expanded="commentsOpen"
-          class="tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-white tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+          class="tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-[var(--tpl-bg)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
           :style="{
             backgroundColor: commentsOpen
               ? 'var(--tpl-primary)'
@@ -1640,7 +1642,7 @@ defineExpose({
         <!-- Test email button -->
         <button
           v-if="testEmail.isEnabled.value && canSendTestEmail"
-          class="tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-white tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+          class="tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-[var(--tpl-bg)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
           style="
             background-color: transparent;
             color: var(--tpl-primary);
@@ -1654,13 +1656,18 @@ defineExpose({
             :size="16"
             :stroke-width="2"
           />
-          <Loader2 v-else class="tpl-spinner" :size="16" :stroke-width="2" />
+          <LoaderCircle
+            v-else
+            class="tpl-spinner"
+            :size="16"
+            :stroke-width="2"
+          />
           {{ t.testEmail.button }}
         </button>
 
         <!-- Save button -->
         <button
-          class="tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-white tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+          class="tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-[var(--tpl-bg)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
           style="
             background-color: transparent;
             color: var(--tpl-primary);
@@ -1676,7 +1683,12 @@ defineExpose({
             :size="16"
             :stroke-width="2"
           />
-          <Loader2 v-else class="tpl-spinner" :size="16" :stroke-width="2" />
+          <LoaderCircle
+            v-else
+            class="tpl-spinner"
+            :size="16"
+            :stroke-width="2"
+          />
           {{
             editor.state.isSaving || isSaveExporting
               ? t.header.saving

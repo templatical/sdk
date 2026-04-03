@@ -1,3 +1,4 @@
+import { useEventListener } from "@vueuse/core";
 import { watch, type Ref } from "vue";
 
 const FOCUSABLE_SELECTOR =
@@ -12,6 +13,7 @@ export function useFocusTrap(
   active: Ref<boolean>,
 ): void {
   let previouslyFocused: HTMLElement | null = null;
+  let cleanupListener: (() => void) | null = null;
 
   function getFocusableElements(): HTMLElement[] {
     if (!containerRef.value) return [];
@@ -57,11 +59,12 @@ export function useFocusTrap(
       }
     });
 
-    containerRef.value?.addEventListener("keydown", handleKeydown);
+    cleanupListener = useEventListener(containerRef, "keydown", handleKeydown);
   }
 
   function deactivate(): void {
-    containerRef.value?.removeEventListener("keydown", handleKeydown);
+    cleanupListener?.();
+    cleanupListener = null;
 
     if (previouslyFocused && previouslyFocused.focus) {
       previouslyFocused.focus();

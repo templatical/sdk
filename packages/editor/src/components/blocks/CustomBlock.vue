@@ -8,7 +8,7 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { useDebounceFn } from "@vueuse/core";
-import { AlertTriangle, Puzzle } from "lucide-vue-next";
+import { TriangleAlert, Puzzle } from "@lucide/vue";
 import { computed, inject, onMounted, ref, watch } from "vue";
 
 const props = defineProps<{
@@ -112,7 +112,7 @@ watch(
         background-color: var(--tpl-danger-light);
       "
     >
-      <AlertTriangle :size="24" style="color: var(--tpl-danger)" />
+      <TriangleAlert :size="24" style="color: var(--tpl-danger)" />
       <span class="tpl:text-sm" style="color: var(--tpl-text-muted)">
         {{ t.customBlocks.renderError }}
       </span>

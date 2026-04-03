@@ -150,7 +150,7 @@ function inlineStylesToHtml(
     // Add text-align to existing <p style="..."> or add style to plain <p>
     result = result
       .replace(/<p style="([^"]*)">/g, `<p style="$1; ${pStyle}">`)
-      .replace(/<p>/g, `<p style="${pStyle}">`);
+      .replaceAll("<p>", `<p style="${pStyle}">`);
   }
 
   if (spanStyle) {

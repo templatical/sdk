@@ -11,7 +11,7 @@ import {
   Table,
   Timer,
   Type,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 import type { Component } from "vue";
 
 export const blockTypeIcons: Record<string, Component> = {

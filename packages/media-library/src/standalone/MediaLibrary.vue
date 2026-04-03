@@ -25,7 +25,7 @@ import {
   List,
   PanelLeft,
   Search,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 import { computed, onMounted, provide, ref, watch } from "vue";
 
 const props = defineProps<{

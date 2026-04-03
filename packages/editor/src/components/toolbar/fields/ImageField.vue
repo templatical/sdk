@@ -3,7 +3,7 @@ import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockImageField } from "@templatical/types";
 import { inputClass, labelClass } from "../../../constants/styleConstants";
 import type { TemplaticalEditorConfig } from "../../../index";
-import { Image, Lock } from "lucide-vue-next";
+import { Image, Lock } from "@lucide/vue";
 import { computed, inject } from "vue";
 
 defineProps<{

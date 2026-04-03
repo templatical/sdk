@@ -10,7 +10,7 @@
 -->
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
-import { Moon, Sun } from "lucide-vue-next";
+import { Moon, Sun } from "@lucide/vue";
 
 defineProps<{
   darkMode: boolean;

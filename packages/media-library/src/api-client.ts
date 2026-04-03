@@ -41,7 +41,7 @@ export class MediaApiClient {
       const error: ApiError = await response.json().catch(() => ({
         message: `HTTP error ${response.status}`,
       }));
-      throw new Error(error.message);
+      throw new Error(error.message, { cause: error });
     }
 
     if (response.status === 204) {
@@ -72,7 +72,7 @@ export class MediaApiClient {
       const error: ApiError = await response.json().catch(() => ({
         message: `HTTP error ${response.status}`,
       }));
-      throw new Error(error.message);
+      throw new Error(error.message, { cause: error });
     }
 
     return response.json();
@@ -94,7 +94,7 @@ export class MediaApiClient {
       const error: ApiError = await response.json().catch(() => ({
         message: `HTTP error ${response.status}`,
       }));
-      throw new Error(error.message);
+      throw new Error(error.message, { cause: error });
     }
 
     const json: ApiResponse<MediaItem> = await response.json();
@@ -211,7 +211,7 @@ export class MediaApiClient {
       const error: ApiError = await response.json().catch(() => ({
         message: `HTTP error ${response.status}`,
       }));
-      throw new Error(error.message);
+      throw new Error(error.message, { cause: error });
     }
 
     return response.json();
@@ -257,7 +257,7 @@ export class MediaApiClient {
       const error: ApiError = await response.json().catch(() => ({
         message: `HTTP error ${response.status}`,
       }));
-      throw new Error(error.message);
+      throw new Error(error.message, { cause: error });
     }
 
     const json: ApiResponse<MediaItem> = await response.json();

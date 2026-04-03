@@ -2,7 +2,7 @@
 import { useI18n } from "../../composables";
 import type { UseAiConfigReturn } from "@templatical/core/cloud";
 import type { AiConfig } from "@templatical/types";
-import { ImageUp, ShieldCheck, Sparkles } from "lucide-vue-next";
+import { ImageUp, ShieldCheck, Sparkles } from "@lucide/vue";
 import { computed, inject } from "vue";
 
 export type AiFeature = "ai-chat" | "design-reference" | "scoring";

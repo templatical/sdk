@@ -38,14 +38,11 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
       label: {
         default: "",
         parseHTML: (element) =>
-          element.getAttribute("data-label") ||
-          element.textContent ||
-          "",
+          element.getAttribute("data-label") || element.textContent || "",
       },
       value: {
         default: "",
-        parseHTML: (element) =>
-          element.getAttribute("data-merge-tag") || "",
+        parseHTML: (element) => element.getAttribute("data-merge-tag") || "",
       },
     };
   },

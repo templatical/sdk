@@ -25,6 +25,7 @@ const pillOffset = computed(() => {
 
 <template>
   <div
+    role="radiogroup"
     class="tpl:relative tpl:grid tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1"
     :style="{
       gridTemplateColumns: `repeat(${options.length}, 1fr)`,
@@ -47,6 +48,9 @@ const pillOffset = computed(() => {
     <button
       v-for="option in options"
       :key="option.value"
+      role="radio"
+      :aria-checked="modelValue === option.value"
+      :aria-label="option.label"
       class="tpl:relative tpl:z-10 tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:py-[5px] tpl:text-xs tpl:font-medium"
       :style="{
         color:

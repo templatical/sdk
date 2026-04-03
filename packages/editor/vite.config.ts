@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { resolve } from 'path'
+import { resolve } from 'node:path'
 
 export default defineConfig({
   plugins: [
@@ -14,13 +14,14 @@ export default defineConfig({
     }),
   ],
   build: {
+    cssMinify: 'esbuild',
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: resolve(import.meta.dirname, 'src/index.ts'),
       name: 'TemplaticalEditor',
       fileName: 'templatical-editor',
       formats: ['es', 'umd'],
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: ['vue', '@templatical/core', '@templatical/core/cloud', '@templatical/media-library', '@templatical/types', '@templatical/renderer'],
       output: {
         globals: {

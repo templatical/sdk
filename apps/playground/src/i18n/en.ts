@@ -295,6 +295,8 @@ export default {
       authUrlRequired: "Auth URL is required",
       enterUuid: "Please enter a template UUID",
       initFailed: "Failed to initialize: {message}",
+      invalidHeadersJson: "Auth headers contain invalid JSON — ignored",
+      invalidBodyJson: "Auth body contains invalid JSON — ignored",
     },
   },
 } as const;

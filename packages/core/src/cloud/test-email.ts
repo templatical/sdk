@@ -91,7 +91,9 @@ export function useTestEmail(options: UseTestEmailOptions): UseTestEmailReturn {
       });
     } catch (err) {
       const wrappedError =
-        err instanceof Error ? err : new Error("Failed to send test email");
+        err instanceof Error
+          ? err
+          : new Error("Failed to send test email", { cause: err });
       error.value = wrappedError.message;
       onError?.(wrappedError);
       throw wrappedError;

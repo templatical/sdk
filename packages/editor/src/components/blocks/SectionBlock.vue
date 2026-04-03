@@ -138,7 +138,7 @@ function handleFetchData(
           ghost-class="tpl-ghost"
           :empty-insert-threshold="20"
           class="tpl:min-h-[60px]"
-          @update:model-value="(val) => setColumnBlocks(colIndex, val)"
+          @update:model-value="(val: Block[]) => setColumnBlocks(colIndex, val)"
         >
           <template #item="{ element: childBlock }">
             <div v-show="!conditionPreview?.isHidden(childBlock.id)">

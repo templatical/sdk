@@ -452,6 +452,10 @@ export default {
   spacingControl: {
     lockAll: "Lock all sides",
     unlock: "Unlock sides",
+    top: "Top",
+    right: "Right",
+    bottom: "Bottom",
+    left: "Left",
     decreaseTop: "Decrease top",
     increaseTop: "Increase top",
     decreaseLeft: "Decrease left",
@@ -460,6 +464,12 @@ export default {
     increaseRight: "Increase right",
     decreaseBottom: "Decrease bottom",
     increaseBottom: "Increase bottom",
+  },
+
+  // Color Picker
+  colorPicker: {
+    pickColor: "Pick a color",
+    hexValue: "Hex color value",
   },
 
   // Merge Tag

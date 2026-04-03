@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockBooleanField } from "@templatical/types";
-import { Lock } from "lucide-vue-next";
+import { Lock } from "@lucide/vue";
 
 defineProps<{
   field: CustomBlockBooleanField;
@@ -44,6 +44,7 @@ const { t } = useI18n();
         type="button"
         role="switch"
         :aria-checked="modelValue"
+        :aria-label="field.label"
         :class="[
           'tpl:relative tpl:inline-flex tpl:h-5 tpl:w-9 tpl:shrink-0 tpl:rounded-full tpl:border-2 tpl:border-transparent tpl:transition-colors tpl:duration-200',
           modelValue

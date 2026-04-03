@@ -1,25 +1,26 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import dts from 'vite-plugin-dts';
-import { resolve } from 'path';
+import { resolve } from 'node:path';
 
 export default defineConfig({
     plugins: [vue(), dts({ rollupTypes: true })],
     build: {
+        cssMinify: 'esbuild',
         lib: {
-            entry: resolve(__dirname, 'src/index.ts'),
+            entry: resolve(import.meta.dirname, 'src/index.ts'),
             name: 'TemplaticalMediaLibrary',
             fileName: 'templatical-media-library',
             formats: ['es', 'umd'],
         },
-        rollupOptions: {
+        rolldownOptions: {
             external: [
                 'vue',
                 '@templatical/core',
                 '@templatical/core/cloud',
                 '@templatical/types',
                 '@vueuse/core',
-                'lucide-vue-next',
+                '@lucide/vue',
                 'vue-advanced-cropper',
             ],
             output: {
@@ -29,7 +30,7 @@ export default defineConfig({
                     '@templatical/core/cloud': 'TemplaticalCoreCloud',
                     '@templatical/types': 'TemplaticalTypes',
                     '@vueuse/core': 'VueUseCore',
-                    'lucide-vue-next': 'LucideVueNext',
+                    '@lucide/vue': 'LucideVue',
                     'vue-advanced-cropper': 'VueAdvancedCropper',
                 },
             },

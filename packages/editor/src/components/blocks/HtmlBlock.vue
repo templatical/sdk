@@ -4,7 +4,7 @@ import type {
   HtmlBlock as HtmlBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { Code } from "lucide-vue-next";
+import { Code } from "@lucide/vue";
 import { computed } from "vue";
 
 const props = defineProps<{

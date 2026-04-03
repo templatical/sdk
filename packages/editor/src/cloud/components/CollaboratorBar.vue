@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Collaborator } from "@templatical/types";
 import { useI18n } from "../../composables";
-import { Wifi, WifiOff } from "lucide-vue-next";
+import { Wifi, WifiOff } from "@lucide/vue";
 import { computed } from "vue";
 
 const props = defineProps<{

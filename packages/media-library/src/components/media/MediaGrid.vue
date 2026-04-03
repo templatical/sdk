@@ -4,7 +4,7 @@ import { useI18n } from "../../composables/useI18n";
 import { useMediaCategories } from "../../composables/useMediaCategories";
 import type { MediaCategory, MediaItem } from "../../types";
 import { useIntersectionObserver } from "@vueuse/core";
-import { Check, File, Loader2, Pencil, RefreshCw } from "lucide-vue-next";
+import { Check, File, LoaderCircle, Pencil, RefreshCw } from "@lucide/vue";
 import { ref } from "vue";
 
 const props = defineProps<{
@@ -295,7 +295,7 @@ function formatDate(dateStr: string): string {
       v-if="isLoading && items.length > 0"
       class="tpl:flex tpl:justify-center tpl:py-4"
     >
-      <Loader2
+      <LoaderCircle
         class="tpl-spinner"
         :size="20"
         :stroke-width="2"

@@ -4,7 +4,7 @@ import { blockTypeIcons } from "../../utils/blockTypeIcons";
 import type { UseEditorReturn } from "@templatical/core/cloud";
 import type { UseSavedModulesReturn } from "@templatical/core/cloud";
 import type { SavedModule } from "@templatical/types";
-import { Package, Search, Trash2, X } from "lucide-vue-next";
+import { Package, Search, Trash2, X } from "@lucide/vue";
 import {
   computed,
   defineAsyncComponent,
@@ -312,6 +312,7 @@ function handleKeydown(event: KeyboardEvent): void {
                       </span>
                       <button
                         v-if="confirmDeleteId === mod.id"
+                        :aria-label="t.modules.deleteConfirm"
                         class="tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:duration-100"
                         style="
                           border-color: var(--tpl-danger);
@@ -326,6 +327,7 @@ function handleKeydown(event: KeyboardEvent): void {
                         v-else
                         class="tpl-module-delete-btn tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-0.5 tpl:transition-colors tpl:duration-100"
                         style="color: var(--tpl-text-dim)"
+                        :aria-label="t.modules.delete"
                         :title="t.modules.delete"
                         @click.stop="confirmDeleteId = mod.id"
                       >

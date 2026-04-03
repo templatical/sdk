@@ -5,7 +5,7 @@ import type {
   TableBlock as TableBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { Table } from "lucide-vue-next";
+import { Table } from "@lucide/vue";
 import { computed, inject } from "vue";
 
 const props = defineProps<{
@@ -86,7 +86,6 @@ function onCellBlur(rowId: string, cellId: string, event: FocusEvent): void {
             v-for="cell in headerRow.cells"
             :key="cell.id"
             :style="headerCellStyle"
-            role="textbox"
             :aria-label="t.table.cellPlaceholder"
             contenteditable="true"
             :data-placeholder="t.table.cellPlaceholder"
@@ -103,7 +102,6 @@ function onCellBlur(rowId: string, cellId: string, event: FocusEvent): void {
             v-for="cell in row.cells"
             :key="cell.id"
             :style="cellStyle"
-            role="textbox"
             :aria-label="t.table.cellPlaceholder"
             contenteditable="true"
             :data-placeholder="t.table.cellPlaceholder"

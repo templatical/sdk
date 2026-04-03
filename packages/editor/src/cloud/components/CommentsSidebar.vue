@@ -8,17 +8,17 @@ import type { Comment } from "@templatical/types";
 import type { AuthManager } from "@templatical/core/cloud";
 import {
   Check,
-  CheckCircle2,
+  CircleCheck,
   ChevronDown,
   ChevronUp,
-  Loader2,
+  LoaderCircle,
   MessageCircle,
   Pencil,
   Reply,
   Send,
   Trash2,
   X,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 import { computed, inject, nextTick, ref, watch } from "vue";
 
 const props = defineProps<{
@@ -348,7 +348,7 @@ defineExpose({ filterByBlock, focusNewComment });
           v-if="comments.isLoading.value"
           class="tpl:flex tpl:h-full tpl:items-center tpl:justify-center"
         >
-          <Loader2
+          <LoaderCircle
             class="tpl-spinner"
             :size="24"
             :stroke-width="2"
@@ -429,7 +429,7 @@ defineExpose({ filterByBlock, focusNewComment });
                     "
                     @click="handleResolve(thread.id)"
                   >
-                    <CheckCircle2
+                    <CircleCheck
                       :size="13"
                       :stroke-width="2"
                       class="tpl-resolve-icon"
@@ -559,7 +559,10 @@ defineExpose({ filterByBlock, focusNewComment });
                 </span>
                 <button
                   class="tpl:rounded tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-medium"
-                  style="background-color: var(--tpl-danger); color: white"
+                  style="
+                    background-color: var(--tpl-danger);
+                    color: var(--tpl-bg);
+                  "
                   @click="handleDelete(thread.id)"
                 >
                   {{ translations.comments.delete }}
@@ -739,7 +742,10 @@ defineExpose({ filterByBlock, focusNewComment });
                     </span>
                     <button
                       class="tpl:rounded tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-medium"
-                      style="background-color: var(--tpl-danger); color: white"
+                      style="
+                        background-color: var(--tpl-danger);
+                        color: var(--tpl-bg);
+                      "
                       @click="handleDelete(reply.id)"
                     >
                       {{ translations.comments.delete }}
@@ -837,7 +843,7 @@ defineExpose({ filterByBlock, focusNewComment });
             :disabled="!newCommentBody.trim() || comments.isSubmitting.value"
             @click="handleAddComment"
           >
-            <Loader2
+            <LoaderCircle
               v-if="comments.isSubmitting.value"
               class="tpl-spinner"
               :size="16"

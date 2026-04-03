@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { onClickOutside } from "@vueuse/core";
+import { useI18n } from "../composables/useI18n";
 import { colorTextClass } from "../constants/styleConstants";
 import "vanilla-colorful";
 
@@ -23,6 +24,8 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
 }>();
+
+const { t } = useI18n();
 
 const open = ref(false);
 const popoverRef = ref<HTMLElement>();
@@ -69,6 +72,8 @@ function onTextInput(e: Event) {
       ref="swatchRef"
       type="button"
       :disabled="disabled"
+      :aria-label="t.colorPicker.pickColor"
+      :aria-expanded="open"
       :class="[
         'tpl:shrink-0 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-0.5 tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]',
         disabled ? 'tpl:cursor-not-allowed' : 'tpl:cursor-pointer',
@@ -91,6 +96,7 @@ function onTextInput(e: Event) {
       :value="modelValue"
       :placeholder="placeholder"
       :disabled="disabled"
+      :aria-label="t.colorPicker.hexValue"
       @input="onTextInput"
     />
     <Transition
@@ -108,7 +114,9 @@ function onTextInput(e: Event) {
       >
         <hex-color-picker
           :color="internalColor"
+          :aria-label="t.colorPicker.pickColor"
           @color-changed="onPickerChange"
+          @keydown.escape="open = false"
         />
       </div>
     </Transition>

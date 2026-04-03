@@ -3,7 +3,7 @@ import TemplateSettingsPanel from "./TemplateSettings.vue";
 import Toolbar from "./Toolbar.vue";
 import { useI18n } from "../composables/useI18n";
 import type { Block, TemplateSettings } from "@templatical/types";
-import { LayoutTemplate, PanelTop, Settings } from "lucide-vue-next";
+import { LayoutTemplate, PanelTop, Settings } from "@lucide/vue";
 import { computed, ref, watch } from "vue";
 
 const props = defineProps<{

@@ -8,13 +8,13 @@ import type { Translations } from "../../i18n";
 import type { AuthManager } from "@templatical/core/cloud";
 import type { TemplateContent } from "@templatical/types";
 import {
-  AlertCircle,
+  CircleAlert,
   FileImage,
   FileText,
   ImageUp,
   Upload,
   X,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 import { computed, inject, ref, watch } from "vue";
 
 const props = defineProps<{
@@ -440,7 +440,7 @@ watch(
               color: var(--tpl-danger);
             "
           >
-            <AlertCircle
+            <CircleAlert
               :size="14"
               :stroke-width="2"
               class="tpl:mt-0.5 tpl:shrink-0"
