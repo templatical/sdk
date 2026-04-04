@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables";
+import { formatRelativeTime } from "../../utils/formatRelativeTime";
 import type { TemplateSnapshot } from "@templatical/types";
 import { onClickOutside } from "@vueuse/core";
 import {
@@ -81,19 +82,10 @@ function handleRestore(snapshotId: string): void {
 }
 
 function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
+  const result = formatRelativeTime(dateString, t.snapshotHistory, format, 7);
+  if (result !== null) return result;
 
-  if (minutes < 1) return t.snapshotHistory.justNow;
-  if (minutes < 60) return format(t.snapshotHistory.minutesAgo, { minutes });
-  if (hours < 24) return format(t.snapshotHistory.hoursAgo, { hours });
-  if (days < 7) return format(t.snapshotHistory.daysAgo, { days });
-
-  return date.toLocaleDateString(undefined, {
+  return new Date(dateString).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
     hour: "2-digit",

@@ -162,7 +162,10 @@ const mergeTagBtnClass =
       @keydown.enter="startEditing"
       @keydown.space.prevent="startEditing"
     >
-      <template v-for="(seg, i) in segments" :key="i">
+      <template
+        v-for="(seg, i) in segments"
+        :key="`${seg.type}-${i}-${seg.value}`"
+      >
         <span
           v-if="seg.type === 'mergeTag'"
           class="tpl-tooltip tpl:inline-flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[0.9em] tpl:font-medium"

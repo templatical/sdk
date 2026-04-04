@@ -7,25 +7,11 @@ import type {
   CustomBlockDefinition,
 } from "@templatical/types";
 import { createBlock, createCustomBlock } from "@templatical/types";
-import {
-  Code,
-  Columns3,
-  Heading,
-  Image,
-  Minus,
-  MoveVertical,
-  Navigation,
-  Package,
-  Pilcrow,
-  Play,
-  RectangleHorizontal,
-  Share2,
-  Table,
-  Timer,
-} from "@lucide/vue";
+import { Package } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
 import draggable from "vuedraggable";
 import CustomBlockIcon from "./CustomBlockIcon.vue";
+import { blockTypeIcons } from "../utils/blockTypeIcons";
 
 interface BlockTypeItem {
   type: BlockType | string;
@@ -186,68 +172,9 @@ function cloneBlock(item: BlockTypeItem): Block {
           <div
             class="tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:transition-transform tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:scale-105"
           >
-            <Image
-              v-if="blockType.type === 'image'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Heading
-              v-else-if="blockType.type === 'title'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Pilcrow
-              v-else-if="blockType.type === 'paragraph'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <RectangleHorizontal
-              v-else-if="blockType.type === 'button'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Minus
-              v-else-if="blockType.type === 'divider'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Play
-              v-else-if="blockType.type === 'video'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Columns3
-              v-else-if="blockType.type === 'section'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Share2
-              v-else-if="blockType.type === 'social'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Navigation
-              v-else-if="blockType.type === 'menu'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Table
-              v-else-if="blockType.type === 'table'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <MoveVertical
-              v-else-if="blockType.type === 'spacer'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Timer
-              v-else-if="blockType.type === 'countdown'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Code
-              v-else-if="blockType.type === 'html'"
+            <component
+              :is="blockTypeIcons[blockType.type]"
+              v-if="blockTypeIcons[blockType.type]"
               :size="20"
               :stroke-width="1.5"
             />

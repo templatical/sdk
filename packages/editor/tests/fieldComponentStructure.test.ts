@@ -135,3 +135,12 @@ describe("all field components", () => {
     });
   }
 });
+
+describe("RepeatableField.vue v-for key", () => {
+  const src = readComponent(`${fieldDir}/RepeatableField.vue`);
+
+  it("uses field.key-based key instead of bare index", () => {
+    expect(src).toContain(':key="`${field.key}-${index}`"');
+    expect(src).not.toMatch(/:key="index"/);
+  });
+});

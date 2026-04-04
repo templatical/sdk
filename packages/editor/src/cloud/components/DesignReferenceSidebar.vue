@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { MAX_UPLOAD_SIZE_BYTES } from "../../constants/timeouts";
 import LoadingTrack from "../../components/LoadingTrack.vue";
 import {
   useDesignReference,
@@ -73,7 +74,7 @@ function handleFileSelect(event: Event): void {
 
 function setFile(file: File): void {
   // Validate file size (10MB)
-  if (file.size > 10 * 1024 * 1024) {
+  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
     designReference.error.value = t.value.fileTooLarge;
     return;
   }

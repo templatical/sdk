@@ -1,4 +1,5 @@
 import { createApp, h, ref, type App, type Ref } from "vue";
+import { INIT_TIMEOUT_MS } from "./constants/timeouts";
 import type {
   BlockDefaults,
   CustomBlockDefinition,
@@ -162,7 +163,7 @@ export async function initCloud(
   const readyPromise = new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => {
       reject(new Error("[Templatical] Cloud editor initialization timed out"));
-    }, 30000);
+    }, INIT_TIMEOUT_MS);
 
     cloudAppInstance = createApp({
       setup() {

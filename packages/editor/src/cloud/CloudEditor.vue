@@ -118,6 +118,10 @@ import { useDragDrop } from "../composables/useDragDrop";
 import { useUiTheme } from "../composables/useUiTheme";
 import { useThemeStyles } from "../composables/useThemeStyles";
 import { useVisualSavedModules } from "./composables/useSavedModules";
+import {
+  COLLAB_UNDO_WARNING_MS,
+  DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
+} from "../constants/timeouts";
 import "../styles/index.css";
 
 // Cloud async components
@@ -551,7 +555,7 @@ function showCollabUndoWarning(): void {
   collabUndoWarningVisible.value = true;
   useTimeoutFn(() => {
     collabUndoWarningVisible.value = false;
-  }, 4000);
+  }, COLLAB_UNDO_WARNING_MS);
 }
 
 // ---------------------------------------------------------------------------
@@ -569,7 +573,7 @@ const autoSave = useAutoSave({
       }
     }
   },
-  debounce: props.config.autoSaveDebounce ?? 5000,
+  debounce: props.config.autoSaveDebounce ?? DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
   enabled: () =>
     props.config.autoSave !== false &&
     planConfigInstance.hasFeature("auto_save"),
@@ -1228,7 +1232,7 @@ async function saveTemplate(): Promise<SaveResult> {
 useEventListener(document, "keydown", handleKeydown);
 
 onMounted(() => {
-  isMac.value = navigator.platform.toUpperCase().includes("MAC");
+  isMac.value = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
   initialize();
 });
 

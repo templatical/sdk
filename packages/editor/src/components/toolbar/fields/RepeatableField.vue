@@ -76,7 +76,7 @@ function updateItemField(index: number, key: string, value: unknown): void {
     <div class="tpl:flex tpl:flex-col tpl:gap-2">
       <div
         v-for="(item, index) in items"
-        :key="index"
+        :key="`${field.key}-${index}`"
         class="tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:p-3"
       >
         <div class="tpl:mb-2 tpl:flex tpl:items-center tpl:justify-between">

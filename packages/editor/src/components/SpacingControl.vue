@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
 import { Lock, LockOpen, Minus, Plus } from "@lucide/vue";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
   modelValue: SpacingValue;
@@ -21,27 +21,20 @@ interface SpacingValue {
   left: number;
 }
 
-const locked = ref(
-  props.modelValue.top === props.modelValue.right &&
+const isUniform = computed(
+  () =>
+    props.modelValue.top === props.modelValue.right &&
     props.modelValue.right === props.modelValue.bottom &&
     props.modelValue.bottom === props.modelValue.left,
 );
 
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    if (locked.value) {
-      const allSame =
-        newValue.top === newValue.right &&
-        newValue.right === newValue.bottom &&
-        newValue.bottom === newValue.left;
-      if (!allSame) {
-        locked.value = false;
-      }
-    }
-  },
-  { deep: true },
-);
+const locked = ref(isUniform.value);
+
+watch(isUniform, (uniform) => {
+  if (!uniform && locked.value) {
+    locked.value = false;
+  }
+});
 
 function updateValue(direction: keyof SpacingValue, delta: number): void {
   const currentValue = props.modelValue[direction];

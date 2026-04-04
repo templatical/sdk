@@ -5,6 +5,8 @@ import { blockTypeIcons } from '../src/utils/blockTypeIcons';
 
 const expectedKeys = [
   'section',
+  'title',
+  'paragraph',
   'image',
   'text',
   'button',
@@ -19,8 +21,8 @@ const expectedKeys = [
 ];
 
 describe('blockTypeIcons', () => {
-  it('has exactly 12 entries', () => {
-    expect(Object.keys(blockTypeIcons)).toHaveLength(12);
+  it('has exactly 14 entries', () => {
+    expect(Object.keys(blockTypeIcons)).toHaveLength(14);
   });
 
   it('contains all expected keys', () => {
