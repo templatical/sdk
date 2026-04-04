@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useEmoji, useI18n } from "../../composables";
 import { useRichTextEditor } from "../../composables/useRichTextEditor";
+import type { Editor } from "@tiptap/vue-3";
 import type { ParagraphBlock as ParagraphBlockType } from "@templatical/types";
 import {
   AlignCenter,
@@ -653,7 +654,7 @@ function setHighlight(color: string): void {
     <component
       :is="EditorContent"
       v-else-if="EditorContent && editor"
-      :editor="editor as any"
+      :editor="editor as Editor"
       class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:border-[var(--tpl-primary)] tpl:p-2"
     />
 

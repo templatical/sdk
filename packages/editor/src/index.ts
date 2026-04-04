@@ -129,7 +129,9 @@ export function init(config: TemplaticalEditorConfig): TemplaticalEditor {
 
 let cloudAppInstance: App | null = null;
 
-const cloudEditorRef: Ref<any> = ref(null);
+const cloudEditorRef: Ref<InstanceType<
+  typeof import("./cloud/CloudEditor.vue").default
+> | null> = ref(null);
 
 export async function initCloud(
   config: import("./cloud/CloudEditor.vue").TemplaticalCloudEditorConfig,

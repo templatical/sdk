@@ -188,6 +188,12 @@ describe("TitleEditor.vue uses useRichTextEditor", () => {
     expect(src).not.toContain("useEventListener");
     expect(src).not.toContain("onBeforeUnmount");
   });
+
+  it("casts editor to Editor from @tiptap/vue-3, not any", () => {
+    expect(src).toContain('import type { Editor } from "@tiptap/vue-3"');
+    expect(src).toContain("editor as Editor");
+    expect(src).not.toContain("editor as any");
+  });
 });
 
 describe("ParagraphEditor.vue uses useRichTextEditor", () => {
@@ -228,5 +234,11 @@ describe("ParagraphEditor.vue uses useRichTextEditor", () => {
     expect(src).not.toContain("import { useMergeTag");
     expect(src).not.toContain("useEventListener");
     expect(src).not.toContain("onBeforeUnmount");
+  });
+
+  it("casts editor to Editor from @tiptap/vue-3, not any", () => {
+    expect(src).toContain('import type { Editor } from "@tiptap/vue-3"');
+    expect(src).toContain("editor as Editor");
+    expect(src).not.toContain("editor as any");
   });
 });

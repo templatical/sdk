@@ -11,7 +11,7 @@ import TableBlock from "./TableBlock.vue";
 import TitleBlock from "./TitleBlock.vue";
 import ParagraphBlock from "./ParagraphBlock.vue";
 import VideoBlock from "./VideoBlock.vue";
-import type { useBlockRegistry } from "../../composables";
+import type { UseBlockRegistryReturn } from "../../composables";
 import {
   resolveBlockComponent,
   getBlockWrapperStyle,
@@ -44,8 +44,7 @@ const props = defineProps<{
 
 defineOptions({ name: "PreviewSectionBlock" });
 
-const blockRegistry =
-  inject<ReturnType<typeof useBlockRegistry>>("blockRegistry");
+const blockRegistry = inject<UseBlockRegistryReturn>("blockRegistry");
 
 const columnWidths = computed(() => {
   switch (props.block.columns) {

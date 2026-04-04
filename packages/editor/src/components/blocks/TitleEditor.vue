@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables";
 import { useRichTextEditor } from "../../composables/useRichTextEditor";
+import type { Editor } from "@tiptap/vue-3";
 import type { TitleBlock as TitleBlockType } from "@templatical/types";
 import { Bold, Italic, Link, LoaderCircle, ScanLine, X } from "@lucide/vue";
 import { inject, type ComputedRef, type Ref } from "vue";
@@ -183,7 +184,7 @@ const {
     <component
       :is="EditorContent"
       v-else-if="EditorContent && editor"
-      :editor="editor as any"
+      :editor="editor as Editor"
       class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:border-[var(--tpl-primary)] tpl:p-2"
     />
 

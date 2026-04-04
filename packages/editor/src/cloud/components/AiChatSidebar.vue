@@ -56,6 +56,10 @@ const { pause: pauseReveal, resume: resumeReveal } = useIntervalFn(
   { immediate: false },
 );
 
+const { start: startRevealTimeout } = useTimeoutFn(() => resumeReveal(), 100, {
+  immediate: false,
+});
+
 watch(
   () => aiChat.suggestions.value?.length ?? 0,
   (count) => {
@@ -66,7 +70,7 @@ watch(
     }
 
     visibleSuggestionCount.value = 0;
-    useTimeoutFn(() => resumeReveal(), 100);
+    startRevealTimeout();
   },
 );
 

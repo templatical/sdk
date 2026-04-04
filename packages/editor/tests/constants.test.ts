@@ -67,3 +67,54 @@ describe("CloudEditor.vue deprecated API fix", () => {
     expect(src).toMatch(/navigator\.userAgent/);
   });
 });
+
+// ── useTimeoutFn setup-time pattern ──────────────────────────────────────────
+
+describe("useTimeoutFn called at setup time, not inside callbacks", () => {
+  it("CloudEditor.vue calls useTimeoutFn at setup time for collab undo warning", () => {
+    const src = readSrc("cloud/CloudEditor.vue");
+    // Should have a setup-time useTimeoutFn with { immediate: false }
+    expect(src).toMatch(
+      /const \{ start: startCollabUndoWarningTimeout \} = useTimeoutFn/,
+    );
+    // Should NOT call useTimeoutFn inside showCollabUndoWarning
+    expect(src).not.toMatch(
+      /function showCollabUndoWarning[\s\S]*?useTimeoutFn\(/,
+    );
+  });
+
+  it("AiChatSidebar.vue calls useTimeoutFn at setup time for reveal delay", () => {
+    const src = readSrc("cloud/components/AiChatSidebar.vue");
+    // Should have a setup-time useTimeoutFn with { immediate: false }
+    expect(src).toMatch(
+      /const \{ start: startRevealTimeout \} = useTimeoutFn/,
+    );
+    // Should NOT call useTimeoutFn inside a watch callback
+    expect(src).not.toMatch(/watch\([\s\S]*?useTimeoutFn\(/);
+  });
+});
+
+// ── Type safety improvements ─────────────────────────────────────────────────
+
+describe("cloudEditorRef typed without Ref<any>", () => {
+  it("index.ts does not use Ref<any> for cloudEditorRef", () => {
+    const src = readSrc("index.ts");
+    expect(src).not.toMatch(/cloudEditorRef:\s*Ref<any>/);
+    expect(src).toContain("cloudEditorRef: Ref<InstanceType<");
+    expect(src).toContain('typeof import("./cloud/CloudEditor.vue").default');
+  });
+});
+
+describe("UseBlockRegistryReturn used instead of ReturnType<typeof useBlockRegistry>", () => {
+  it("PreviewSectionBlock.vue imports UseBlockRegistryReturn", () => {
+    const src = readSrc("components/blocks/PreviewSectionBlock.vue");
+    expect(src).toContain("UseBlockRegistryReturn");
+    expect(src).not.toContain("ReturnType<typeof useBlockRegistry>");
+  });
+
+  it("ModulePreviewCanvas.vue imports UseBlockRegistryReturn", () => {
+    const src = readSrc("cloud/components/ModulePreviewCanvas.vue");
+    expect(src).toContain("UseBlockRegistryReturn");
+    expect(src).not.toContain("ReturnType<typeof useBlockRegistry>");
+  });
+});

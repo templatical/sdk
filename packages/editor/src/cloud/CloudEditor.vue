@@ -540,6 +540,14 @@ editor.updateSettings = (updates) => {
 let collabUndoWarningFired = false;
 const collabUndoWarningVisible = ref(false);
 
+const { start: startCollabUndoWarningTimeout } = useTimeoutFn(
+  () => {
+    collabUndoWarningVisible.value = false;
+  },
+  COLLAB_UNDO_WARNING_MS,
+  { immediate: false },
+);
+
 function showCollabUndoWarning(): void {
   if (
     collabUndoWarningFired ||
@@ -553,9 +561,7 @@ function showCollabUndoWarning(): void {
 
   collabUndoWarningFired = true;
   collabUndoWarningVisible.value = true;
-  useTimeoutFn(() => {
-    collabUndoWarningVisible.value = false;
-  }, COLLAB_UNDO_WARNING_MS);
+  startCollabUndoWarningTimeout();
 }
 
 // ---------------------------------------------------------------------------
