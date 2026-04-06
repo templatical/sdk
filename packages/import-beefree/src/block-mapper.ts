@@ -76,7 +76,6 @@ const SOCIAL_PLATFORM_MAP: Record<string, SocialPlatform> = {
 };
 
 type Align = "left" | "center" | "right";
-type FontWeight = "normal" | "bold";
 type LineStyle = "solid" | "dashed" | "dotted";
 
 function toAlign(value: string | undefined, fallback: Align = "left"): Align {
@@ -84,13 +83,6 @@ function toAlign(value: string | undefined, fallback: Align = "left"): Align {
   return fallback;
 }
 
-function toFontWeight(
-  value: string | undefined,
-  fallback: FontWeight = "normal",
-): FontWeight {
-  if (value === "bold") return "bold";
-  return fallback;
-}
 
 function toLineStyle(
   value: string | undefined,
