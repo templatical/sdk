@@ -15,11 +15,13 @@ This guide walks you through setting up Templatical Cloud in your application.
 
 ## Installation
 
-If you haven't already installed the editor, add it to your project:
+If you haven't already installed the editor, add it along with the cloud dependencies:
 
 ```bash
-npm install @templatical/editor
+npm install @templatical/editor @templatical/media-library pusher-js
 ```
+
+`@templatical/media-library` provides the built-in media browser and `pusher-js` enables real-time collaboration. Both are optional peer dependencies — only needed when using `initCloud()`.
 
 ## Authentication Endpoint
 

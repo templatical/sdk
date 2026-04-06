@@ -40,7 +40,6 @@ bun add @templatical/editor @templatical/renderer
 | `@templatical/import-beefree` | Converts BeeFree JSON templates to Templatical format | Optional |
 
 `@templatical/types` and `@templatical/core` are direct dependencies of `@templatical/editor` and are installed automatically.
-
 ## Framework integration
 
 Templatical mounts into any DOM element. It creates its own isolated application internally, so it works with any framework — or no framework at all.

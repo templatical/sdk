@@ -72,7 +72,6 @@
       "dependencies": {
         "@templatical/types": "workspace:*",
         "@vue/reactivity": "^3.5.31",
-        "pusher-js": "^8.5.0",
       },
       "devDependencies": {
         "tsup": "^8.5.0",
@@ -80,6 +79,12 @@
         "vitest": "^4.0.0",
         "vue": "^3.5.30",
       },
+      "peerDependencies": {
+        "pusher-js": "^8.5.0",
+      },
+      "optionalPeers": [
+        "pusher-js",
+      ],
     },
     "packages/editor": {
       "name": "@templatical/editor",
@@ -87,7 +92,6 @@
       "dependencies": {
         "@lucide/vue": "^1.0.0",
         "@templatical/core": "workspace:*",
-        "@templatical/media-library": "workspace:*",
         "@templatical/types": "workspace:*",
         "@tiptap/core": "^3.22.0",
         "@tiptap/extension-color": "^3.22.0",
@@ -104,7 +108,6 @@
         "@vueuse/core": "^14.0.0",
         "liquidjs": "^10.0.0",
         "vanilla-colorful": "^0.7.2",
-        "vue-advanced-cropper": "^2.0.0",
         "vuedraggable": "^4.1.0",
       },
       "devDependencies": {
@@ -116,11 +119,13 @@
         "vue-tsc": "^3.0.0",
       },
       "peerDependencies": {
+        "@templatical/media-library": "workspace:*",
         "@templatical/renderer": "^0.0.1",
         "tailwindcss": "^4.0.0",
         "vue": "^3.5.0",
       },
       "optionalPeers": [
+        "@templatical/media-library",
         "@templatical/renderer",
       ],
     },
@@ -1226,8 +1231,6 @@
 
     "punycode.js": ["punycode.js@2.3.1", "", {}, "sha512-uxFIHU0YlHYhDQtV4R9J6a52SLx28BCjT+4ieh7IGbgwVJWO+km431c4yRlREUAsAmt/uMjQUyQHNEPf0M39CA=="],
 
-    "pusher-js": ["pusher-js@8.5.0", "", { "dependencies": { "tweetnacl": "^1.0.3" } }, "sha512-V7uzGi9bqOOOyM/6IkJdpFyjGZj7llz1v0oWnYkZKcYLvbz6VcHVLmzKqkvegjuMumpfIEKGLmWHwFb39XFCpw=="],
-
     "quansync": ["quansync@0.2.11", "", {}, "sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA=="],
 
     "queue-microtask": ["queue-microtask@1.2.3", "", {}, "sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A=="],
@@ -1349,8 +1352,6 @@
     "tslib": ["tslib@2.8.1", "", {}, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
 
     "tsup": ["tsup@8.5.1", "", { "dependencies": { "bundle-require": "^5.1.0", "cac": "^6.7.14", "chokidar": "^4.0.3", "consola": "^3.4.0", "debug": "^4.4.0", "esbuild": "^0.27.0", "fix-dts-default-cjs-exports": "^1.0.0", "joycon": "^3.1.1", "picocolors": "^1.1.1", "postcss-load-config": "^6.0.1", "resolve-from": "^5.0.0", "rollup": "^4.34.8", "source-map": "^0.7.6", "sucrase": "^3.35.0", "tinyexec": "^0.3.2", "tinyglobby": "^0.2.11", "tree-kill": "^1.2.2" }, "peerDependencies": { "@microsoft/api-extractor": "^7.36.0", "@swc/core": "^1", "postcss": "^8.4.12", "typescript": ">=4.5.0" }, "optionalPeers": ["@microsoft/api-extractor", "@swc/core", "postcss", "typescript"], "bin": { "tsup": "dist/cli-default.js", "tsup-node": "dist/cli-node.js" } }, "sha512-xtgkqwdhpKWr3tKPmCkvYmS9xnQK3m3XgxZHwSUjvfTjp7YfXe5tT3GgWi0F2N+ZSMsOeWeZFh7ZZFg5iPhing=="],
-
-    "tweetnacl": ["tweetnacl@1.0.3", "", {}, "sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw=="],
 
     "type-check": ["type-check@0.4.0", "", { "dependencies": { "prelude-ls": "^1.2.1" } }, "sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew=="],
 

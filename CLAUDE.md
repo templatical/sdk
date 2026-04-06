@@ -18,15 +18,15 @@ Open-source Templatical email editor. Bun monorepo with 6 npm packages, a playgr
 
 ```
 @templatical/types  (no deps, devDep on media-library for type imports in cloud.ts)
-  ├── @templatical/core  (+@vue/reactivity, pusher-js)
+  ├── @templatical/core  (+@vue/reactivity; peer: pusher-js [optional, cloud-only])
   ├── @templatical/renderer  (peer: mjml)
   └── @templatical/import-beefree
 
 @templatical/core + @templatical/types
   └── @templatical/media-library  (+@vueuse/core, @lucide/vue, vue-advanced-cropper; peer: vue, tailwindcss)
 
-@templatical/core + @templatical/types + @templatical/media-library
-  └── @templatical/editor  (+tiptap, vuedraggable, liquidjs; peer: vue, tailwindcss)
+@templatical/core + @templatical/types
+  └── @templatical/editor  (+tiptap, vuedraggable, liquidjs; peer: vue, tailwindcss, @templatical/media-library [optional, cloud-only])
 ```
 
 **Media types** (`MediaItem`, `MediaFolder`, etc.) are canonically defined in `@templatical/media-library`. The `@templatical/types` package imports them via devDependency for use in cloud config interfaces (`TemplaticalConfig`, `PlanConfig`). **Build order:** media-library before types.

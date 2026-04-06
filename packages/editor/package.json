@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "@templatical/core": "workspace:*",
-    "@templatical/media-library": "workspace:*",
     "@templatical/types": "workspace:*",
     "@tiptap/core": "^3.22.0",
     "@tiptap/extension-color": "^3.22.0",
@@ -44,16 +43,19 @@
     "liquidjs": "^10.0.0",
     "@lucide/vue": "^1.0.0",
     "vanilla-colorful": "^0.7.2",
-    "vue-advanced-cropper": "^2.0.0",
     "vuedraggable": "^4.1.0"
   },
   "peerDependencies": {
     "vue": "^3.5.0",
     "tailwindcss": "^4.0.0",
-    "@templatical/renderer": "^0.0.1"
+    "@templatical/renderer": "^0.0.1",
+    "@templatical/media-library": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@templatical/renderer": {
+      "optional": true
+    },
+    "@templatical/media-library": {
       "optional": true
     }
   },
