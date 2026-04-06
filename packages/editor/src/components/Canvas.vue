@@ -12,6 +12,7 @@ import type {
   UseConditionPreviewReturn,
 } from "@templatical/core";
 import type { UseBlockRegistryReturn } from "../composables";
+import type { CloudPlanConfig, CloudAiConfig } from "../types/cloud-injects";
 import { ImageUp, Sparkles, SquarePlus } from "@lucide/vue";
 import { computed, inject, type Component } from "vue";
 import draggable from "vuedraggable";
@@ -76,9 +77,9 @@ const blockRegistry = inject<UseBlockRegistryReturn>(
 
 // Cloud-only injects — null in OSS mode
 
-const planConfig = inject<any>("planConfig", null);
+const planConfig = inject<CloudPlanConfig | null>("planConfig", null);
 
-const aiConfig = inject<any>("aiConfig", null);
+const aiConfig = inject<CloudAiConfig | null>("aiConfig", null);
 
 const canUseAi = computed(
   () => planConfig?.hasFeature("ai_generation") ?? false,

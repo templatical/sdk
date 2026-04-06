@@ -15,6 +15,11 @@ import {
   Trash2,
 } from "@lucide/vue";
 import { computed, inject } from "vue";
+import type {
+  CloudComments,
+  CloudPlanConfig,
+  CloudSavedModules,
+} from "../../types/cloud-injects";
 
 const props = defineProps<{
   block: Block;
@@ -55,15 +60,18 @@ const conditionPreview = inject<UseConditionPreviewReturn>("conditionPreview");
 
 // Cloud-only injects — null in OSS mode
 
-const commentsInstance = inject<any>("comments", null);
+const commentsInstance = inject<CloudComments | null>("comments", null);
 const openCommentsForBlock = inject<(blockId: string) => void>(
   "openCommentsForBlock",
   undefined as never,
 );
 
-const savedModulesVisual = inject<any>("savedModules", null);
+const savedModulesVisual = inject<CloudSavedModules | null>(
+  "savedModules",
+  null,
+);
 
-const planConfig = inject<any>("planConfig", null);
+const planConfig = inject<CloudPlanConfig | null>("planConfig", null);
 
 const canSaveAsModule = computed(
   () => !!savedModulesVisual && !!planConfig?.hasFeature("saved_modules"),

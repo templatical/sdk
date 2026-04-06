@@ -22,7 +22,7 @@ const config = inject<TemplaticalEditorConfig>("config");
 const canBrowseMedia = computed(() => !!config?.onRequestMedia);
 
 async function browseMedia(): Promise<void> {
-  const result = await config?.onRequestMedia?.();
+  const result = await config?.onRequestMedia?.({ accept: ["images"] });
   if (result) {
     emit("update:modelValue", result.url);
   }

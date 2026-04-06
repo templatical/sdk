@@ -14,8 +14,10 @@ import type {
   ThemeOverrides,
   UiTheme,
 } from "@templatical/types";
+import type { MediaRequestContext } from "@templatical/media-library";
 import type { EditorPlugin } from "@templatical/core";
 import Editor from "./Editor.vue";
+import { loadTranslations } from "./i18n";
 import { useFonts } from "./composables";
 
 // ---------------------------------------------------------------------------
@@ -30,7 +32,9 @@ export interface TemplaticalEditorConfig {
   onSave?: (content: TemplateContent) => void;
   onError?: (error: Error) => void;
 
-  onRequestMedia?: () => Promise<MediaResult | null>;
+  onRequestMedia?: (
+    context?: MediaRequestContext,
+  ) => Promise<MediaResult | null>;
 
   mergeTags?: MergeTagsConfig;
   displayConditions?: DisplayConditionsConfig;
@@ -68,7 +72,9 @@ export interface TemplaticalCloudEditor extends TemplaticalEditor {
 let appInstance: App | null = null;
 const editorRef: Ref<InstanceType<typeof Editor> | null> = ref(null);
 
-export function init(config: TemplaticalEditorConfig): TemplaticalEditor {
+export async function init(
+  config: TemplaticalEditorConfig,
+): Promise<TemplaticalEditor> {
   const container =
     typeof config.container === "string"
       ? document.querySelector(config.container)
@@ -84,11 +90,19 @@ export function init(config: TemplaticalEditorConfig): TemplaticalEditor {
     unmount();
   }
 
+  // Load translations before mounting so child components can use useI18n synchronously
+  const translations = await loadTranslations(config.locale ?? "en");
+
+  // Create fonts manager to pass to Editor
+  const fontsManager = useFonts(config.fonts);
+
   appInstance = createApp({
     setup() {
       return () =>
         h(Editor, {
           config,
+          translations,
+          fontsManager,
           ref: editorRef,
         });
     },
@@ -292,11 +306,6 @@ export type {
   SaveResult,
   Template,
 } from "@templatical/types";
-export type {
-  EditorPlugin,
-  EditorPluginContext,
-  ToolbarAction,
-  SidebarPanel,
-} from "@templatical/core";
+export type { EditorPlugin, EditorPluginContext } from "@templatical/core";
 export type { UseFontsReturn, FontOption } from "./composables/useFonts";
 export { useFonts } from "./composables/useFonts";

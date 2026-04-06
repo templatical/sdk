@@ -50,7 +50,7 @@ Templatical mounts into any DOM element. It creates its own isolated application
 import { init, unmount } from '@templatical/editor';
 import '@templatical/editor/style.css';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   onChange(content) {
     console.log('Content changed', content);
@@ -73,14 +73,18 @@ export function EmailEditor() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    editorRef.current = init({
+    let cancelled = false;
+    init({
       container: containerRef.current,
       onChange(content) {
         console.log('Content changed', content);
       },
+    }).then((ed) => {
+      if (!cancelled) editorRef.current = ed;
     });
 
     return () => {
+      cancelled = true;
       editorRef.current?.unmount();
     };
   }, []);
@@ -98,10 +102,10 @@ import type { TemplaticalEditor } from '@templatical/editor';
 const container = ref<HTMLElement>();
 let editor: TemplaticalEditor | null = null;
 
-onMounted(() => {
+onMounted(async () => {
   if (!container.value) return;
 
-  editor = init({
+  editor = await init({
     container: container.value,
     onChange(content) {
       console.log('Content changed', content);
@@ -128,8 +132,8 @@ onUnmounted(() => {
   let containerEl: HTMLElement;
   let editor: TemplaticalEditor | null = null;
 
-  onMount(() => {
-    editor = init({
+  onMount(async () => {
+    editor = await init({
       container: containerEl,
       onChange(content) {
         console.log('Content changed', content);
@@ -161,8 +165,8 @@ export class EmailEditorComponent implements OnInit, OnDestroy {
 
   private editor: TemplaticalEditor | null = null;
 
-  ngOnInit(): void {
-    this.editor = init({
+  async ngOnInit(): Promise<void> {
+    this.editor = await init({
       container: this.containerRef.nativeElement,
       onChange(content) {
         console.log('Content changed', content);

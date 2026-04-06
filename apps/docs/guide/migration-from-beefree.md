@@ -29,7 +29,7 @@ const beefreeJson = await fetch('/api/beefree-templates/123').then(r => r.json()
 const { content, report } = convertBeeFreeTemplate(beefreeJson);
 
 // Use in the editor
-const editor = init({
+const editor = await init({
   container: '#editor',
   content,
 });

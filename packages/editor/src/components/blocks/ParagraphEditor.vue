@@ -23,6 +23,7 @@ import {
   X,
 } from "@lucide/vue";
 import { inject, type ComputedRef, type Ref } from "vue";
+import type { UseFontsReturn } from "../../composables/useFonts";
 
 const props = defineProps<{
   block: ParagraphBlockType;
@@ -35,10 +36,7 @@ const emit = defineEmits<{
 
 const themeStyles = inject<ComputedRef<Record<string, string>>>("themeStyles");
 const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
-const configFonts = inject<Array<{ label: string; value: string }>>(
-  "fontFamilies",
-  [],
-);
+const fontsManager = inject<UseFontsReturn>("fontsManager")!;
 
 const {
   categories: emojiCategories,
@@ -54,18 +52,7 @@ function insertEmoji(emoji: string): void {
   closeEmojiPicker();
 }
 
-const fontFamilies = configFonts.length
-  ? configFonts
-  : [
-      { label: "Arial", value: "Arial, sans-serif" },
-      { label: "Helvetica", value: "Helvetica, sans-serif" },
-      { label: "Georgia", value: "Georgia, serif" },
-      { label: "Times New Roman", value: "'Times New Roman', serif" },
-      { label: "Courier New", value: "'Courier New', monospace" },
-      { label: "Verdana", value: "Verdana, sans-serif" },
-      { label: "Tahoma", value: "Tahoma, sans-serif" },
-      { label: "Trebuchet MS", value: "'Trebuchet MS', sans-serif" },
-    ];
+const fontFamilies = fontsManager.fonts;
 
 const fontSizes = [
   "10px",
@@ -98,6 +85,8 @@ const {
   editor,
   EditorContent,
   isLoading,
+  initError,
+  retry,
   showLinkDialog,
   linkUrl,
   linkDialogRef,
@@ -650,6 +639,20 @@ function setHighlight(color: string): void {
       <div class="tpl:animate-pulse tpl:text-[var(--tpl-text-dim)]">
         Loading...
       </div>
+    </div>
+    <div
+      v-else-if="initError"
+      class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:p-2 tpl:text-center tpl:text-xs"
+      style="border-color: var(--tpl-danger); color: var(--tpl-text-muted)"
+    >
+      {{ t.errors?.editorLoadFailed ?? "Failed to load editor." }}
+      <button
+        class="tpl:ml-1 tpl:cursor-pointer tpl:border-none tpl:bg-transparent tpl:p-0 tpl:underline"
+        style="color: var(--tpl-primary)"
+        @click="retry"
+      >
+        {{ t.errors?.retry ?? "Retry" }}
+      </button>
     </div>
     <component
       :is="EditorContent"

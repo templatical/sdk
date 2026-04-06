@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
-import { useMergeTag } from "../composables/useMergeTag";
-import {
-  getLogicMergeTagKeyword,
-  isLogicMergeTagValue,
-} from "@templatical/types";
+import { useMergeTagField } from "../composables/useMergeTagField";
 import { inputClass } from "../constants/styleConstants";
 import { ScanLine, X } from "@lucide/vue";
-import { computed, nextTick, ref } from "vue";
+import { ref } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -29,121 +25,24 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const {
-  isEnabled: mergeTagEnabled,
-  isRequesting: isRequestingMergeTag,
-  isMergeTagValue,
-  getMergeTagLabel,
-  requestMergeTag,
-  syntax,
-} = useMergeTag();
-
-const isEditing = ref(false);
 const inputRef = ref<HTMLInputElement | null>(null);
-let insertingMergeTag = false;
 
-type Segment =
-  | { type: "text"; value: string }
-  | { type: "mergeTag"; value: string; label: string }
-  | { type: "logicMergeTag"; value: string; keyword: string };
-
-const segments = computed((): Segment[] => {
-  const val = props.modelValue;
-  if (!val) return [];
-
-  const result: Segment[] = [];
-  const combinedSource = `(${syntax.value.source}|${syntax.logic.source})`;
-  const regex = new RegExp(combinedSource, "g");
-  let lastIndex = 0;
-  let match;
-
-  while ((match = regex.exec(val)) !== null) {
-    if (match.index > lastIndex) {
-      result.push({
-        type: "text",
-        value: val.slice(lastIndex, match.index),
-      });
-    }
-
-    const matched = match[0];
-    if (isMergeTagValue(matched)) {
-      result.push({
-        type: "mergeTag",
-        value: matched,
-        label: getMergeTagLabel(matched),
-      });
-    } else if (isLogicMergeTagValue(matched, syntax)) {
-      result.push({
-        type: "logicMergeTag",
-        value: matched,
-        keyword: getLogicMergeTagKeyword(matched, syntax),
-      });
-    } else {
-      result.push({ type: "text", value: matched });
-    }
-
-    lastIndex = match.index + matched.length;
-  }
-
-  if (lastIndex < val.length) {
-    result.push({ type: "text", value: val.slice(lastIndex) });
-  }
-
-  return result;
+const {
+  segments,
+  hasMergeTags,
+  mergeTagEnabled,
+  isRequestingMergeTag,
+  isEditing,
+  startEditing,
+  stopEditing,
+  handleInput,
+  clearValue,
+  insertMergeTag,
+} = useMergeTagField({
+  modelValue: () => props.modelValue,
+  emit: (value) => emit("update:modelValue", value),
+  elementRef: inputRef,
 });
-
-const hasMergeTags = computed(() =>
-  segments.value.some(
-    (s) => s.type === "mergeTag" || s.type === "logicMergeTag",
-  ),
-);
-
-function startEditing(): void {
-  isEditing.value = true;
-  nextTick(() => {
-    inputRef.value?.focus();
-    const len = props.modelValue?.length || 0;
-    inputRef.value?.setSelectionRange(len, len);
-  });
-}
-
-function stopEditing(): void {
-  if (insertingMergeTag) return;
-  isEditing.value = false;
-}
-
-function handleInput(event: Event): void {
-  emit("update:modelValue", (event.target as HTMLInputElement).value);
-}
-
-function clearValue(): void {
-  emit("update:modelValue", "");
-}
-
-async function insertMergeTag(): Promise<void> {
-  const cursorPos =
-    isEditing.value && inputRef.value
-      ? (inputRef.value.selectionStart ?? props.modelValue.length)
-      : props.modelValue.length;
-
-  insertingMergeTag = true;
-  const mergeTag = await requestMergeTag();
-  insertingMergeTag = false;
-
-  if (mergeTag) {
-    const before = props.modelValue.slice(0, cursorPos);
-    const after = props.modelValue.slice(cursorPos);
-    const newValue = before + mergeTag.value + after;
-    emit("update:modelValue", newValue);
-
-    isEditing.value = true;
-    nextTick(() => {
-      const newPos = cursorPos + mergeTag.value.length;
-      inputRef.value?.focus();
-      inputRef.value?.setSelectionRange(newPos, newPos);
-    });
-  }
-}
 
 const displayClass =
   "tpl:flex tpl:w-full tpl:min-h-10 tpl:cursor-pointer tpl:items-center tpl:flex-wrap tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:shadow-xs tpl:bg-[var(--tpl-bg)] tpl:border-[var(--tpl-border)] tpl:px-3.5 tpl:py-1.5 tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]";

@@ -9,13 +9,13 @@ The main entry point is the `init()` function from `@templatical/editor`.
 
 ## `init(config)`
 
-Creates and mounts the editor into a container element.
+Creates and mounts the editor into a container element. Returns a promise that resolves when the editor is ready.
 
 ```ts
 import { init } from '@templatical/editor';
 import '@templatical/editor/style.css';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   content: savedTemplate,
   onChange(content) {
@@ -160,7 +160,7 @@ const analyticsPlugin: EditorPlugin = {
   },
 };
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   plugins: [analyticsPlugin],
 });

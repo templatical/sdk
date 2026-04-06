@@ -147,7 +147,7 @@ These are configured through the editor's `init()` config or by modifying the te
 ```ts
 import { init } from '@templatical/editor';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   content: {
     settings: {

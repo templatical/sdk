@@ -13,14 +13,13 @@ import SpacerToolbar from "./toolbar/SpacerToolbar.vue";
 import TableToolbar from "./toolbar/TableToolbar.vue";
 import TitleToolbar from "./toolbar/TitleToolbar.vue";
 import { useI18n } from "../composables/useI18n";
-import type { TemplaticalEditorConfig } from "../index";
+import type { UseFontsReturn } from "../composables/useFonts";
 import type {
   Block,
   ButtonBlock,
   CountdownBlock,
   CustomBlock,
   CustomBlockDefinition,
-  CustomFont,
   DividerBlock,
   HtmlBlock,
   ImageBlock,
@@ -62,7 +61,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const config = inject<TemplaticalEditorConfig>("config");
+const fontsManager = inject<UseFontsReturn>("fontsManager")!;
 const customBlockDefinitions = inject<CustomBlockDefinition[]>(
   "customBlockDefinitions",
   [],
@@ -106,27 +105,8 @@ const blockTypeLabel = computed(() => {
   return labels[blockType.value] || blockType.value;
 });
 
-// Font families - use injected config or defaults
-const fontFamilies = computed<Array<{ value: string; label: string }>>(() => {
-  const configFonts = (config?.theme as Record<string, unknown>)?.fonts as
-    | CustomFont[]
-    | undefined;
-  if (configFonts && configFonts.length > 0) {
-    return configFonts.map((f) => ({
-      value: typeof f === "string" ? f : f.name,
-      label: typeof f === "string" ? f : f.name,
-    }));
-  }
-  return [
-    { value: "Arial", label: "Arial" },
-    { value: "Helvetica", label: "Helvetica" },
-    { value: "Georgia", label: "Georgia" },
-    { value: "Times New Roman", label: "Times New Roman" },
-    { value: "Courier New", label: "Courier New" },
-    { value: "Verdana", label: "Verdana" },
-    { value: "Trebuchet MS", label: "Trebuchet MS" },
-  ];
-});
+// Font families from shared fontsManager (provided by Editor.vue / CloudEditor.vue)
+const fontFamilies = fontsManager.fonts;
 
 function handleUpdate(updates: Partial<Block>): void {
   emit("update", updates);

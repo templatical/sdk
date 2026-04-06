@@ -271,7 +271,7 @@ Pass previously saved JSON back to the editor:
 ```ts
 const saved = await fetch('/api/templates/123').then(r => r.json());
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   content: saved,
 });

@@ -239,7 +239,7 @@ const defaultsPresets: DefaultsPreset[] = [
     templateDefaults: {
       width: 640,
       backgroundColor: "#f8f9fa",
-      fontFamily: "Georgia, 'Times New Roman', serif",
+      fontFamily: "Georgia",
     },
   },
   {
@@ -260,7 +260,7 @@ const defaultsPresets: DefaultsPreset[] = [
     templateDefaults: {
       width: 600,
       backgroundColor: "#ffeaa7",
-      fontFamily: "'Trebuchet MS', 'Lucida Grande', sans-serif",
+      fontFamily: "Trebuchet MS",
     },
   },
   {
@@ -280,7 +280,7 @@ const defaultsPresets: DefaultsPreset[] = [
     templateDefaults: {
       width: 560,
       backgroundColor: "#ffffff",
-      fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+      fontFamily: "Helvetica",
     },
   },
 ];
@@ -601,12 +601,12 @@ function cancelMediaPicker(): void {
 
 const initError = ref("");
 
-function initEditor(): void {
+async function initEditor(): Promise<void> {
   if (!editorContainer.value) return;
 
   initError.value = "";
   try {
-    editor.value = init({
+    editor.value = await init({
       container: editorContainer.value,
       ...currentSerializableConfig,
       mergeTags: {

@@ -22,7 +22,7 @@ The `syntax` property is optional and defaults to `'liquid'`.
 ```ts
 import { init } from '@templatical/editor';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   mergeTags: {
     tags: [
@@ -153,7 +153,7 @@ The `value` regex detects data placeholders. The `logic` regex detects control f
 For large or context-dependent tag lists, use the `onRequest` callback instead of (or in addition to) a static `tags` array. The editor calls this function when the user clicks to insert a merge tag. Use it to open a custom picker modal, fetch available placeholders from your API, or build a context-aware tag list based on the current user. Return the selected `MergeTag` or `null` to cancel.
 
 ```ts
-const editor = init({
+const editor = await init({
   container: '#editor',
   mergeTags: {
     onRequest: async () => {

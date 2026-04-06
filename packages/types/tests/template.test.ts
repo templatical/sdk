@@ -7,17 +7,17 @@ describe('createDefaultTemplateContent', () => {
         expect(content.blocks).toEqual([]);
         expect(content.settings.width).toBe(600);
         expect(content.settings.backgroundColor).toBe('#ffffff');
-        expect(content.settings.fontFamily).toBe('Arial, sans-serif');
+        expect(content.settings.fontFamily).toBe('Arial');
     });
 
     it('accepts custom default font family', () => {
-        const content = createDefaultTemplateContent('Helvetica, sans-serif');
-        expect(content.settings.fontFamily).toBe('Helvetica, sans-serif');
+        const content = createDefaultTemplateContent('Helvetica');
+        expect(content.settings.fontFamily).toBe('Helvetica');
     });
 
     it('uses default font family when called with no arguments', () => {
         const content = createDefaultTemplateContent();
-        expect(content.settings.fontFamily).toBe('Arial, sans-serif');
+        expect(content.settings.fontFamily).toBe('Arial');
     });
 
     it('accepts empty string as font family', () => {
@@ -51,20 +51,20 @@ describe('createDefaultTemplateContent', () => {
         expect(content.settings).toEqual({
             width: 600,
             backgroundColor: '#ffffff',
-            fontFamily: 'Arial, sans-serif',
+            fontFamily: 'Arial',
         });
     });
 });
 
 describe('createDefaultTemplateContent with templateDefaults', () => {
     it('applies templateDefaults overrides', () => {
-        const content = createDefaultTemplateContent('Arial, sans-serif', {
+        const content = createDefaultTemplateContent('Arial', {
             width: 640,
             backgroundColor: '#f5f5f5',
         });
         expect(content.settings.width).toBe(640);
         expect(content.settings.backgroundColor).toBe('#f5f5f5');
-        expect(content.settings.fontFamily).toBe('Arial, sans-serif');
+        expect(content.settings.fontFamily).toBe('Arial');
     });
 
     it('templateDefaults fontFamily overrides defaultFontFamily parameter', () => {
@@ -75,30 +75,30 @@ describe('createDefaultTemplateContent with templateDefaults', () => {
     });
 
     it('applies preheaderText from templateDefaults', () => {
-        const content = createDefaultTemplateContent('Arial, sans-serif', {
+        const content = createDefaultTemplateContent('Arial', {
             preheaderText: 'Hello world',
         });
         expect(content.settings.preheaderText).toBe('Hello world');
     });
 
     it('returns defaults when templateDefaults is undefined', () => {
-        const content = createDefaultTemplateContent('Arial, sans-serif', undefined);
+        const content = createDefaultTemplateContent('Arial', undefined);
         expect(content.settings.width).toBe(600);
         expect(content.settings.backgroundColor).toBe('#ffffff');
     });
 
     it('returns defaults when templateDefaults is empty', () => {
-        const content = createDefaultTemplateContent('Arial, sans-serif', {});
+        const content = createDefaultTemplateContent('Arial', {});
         expect(content.settings.width).toBe(600);
         expect(content.settings.backgroundColor).toBe('#ffffff');
     });
 
     it('only overrides specified properties', () => {
-        const content = createDefaultTemplateContent('Arial, sans-serif', {
+        const content = createDefaultTemplateContent('Arial', {
             width: 700,
         });
         expect(content.settings.width).toBe(700);
         expect(content.settings.backgroundColor).toBe('#ffffff');
-        expect(content.settings.fontFamily).toBe('Arial, sans-serif');
+        expect(content.settings.fontFamily).toBe('Arial');
     });
 });

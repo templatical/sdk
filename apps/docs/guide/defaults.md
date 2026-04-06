@@ -14,7 +14,7 @@ Pass a `blockDefaults` object to `init()`. Each key maps to a block type and acc
 ```ts
 import { init } from '@templatical/editor';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   blockDefaults: {
     title: { color: '#000000' },
@@ -89,7 +89,7 @@ Each block type key accepts `Partial<Omit<BlockType, 'id' | 'type'>>` — you ca
 Pass a `templateDefaults` object to override the default template settings used when creating a new empty template:
 
 ```ts
-const editor = init({
+const editor = await init({
   container: '#editor',
   templateDefaults: {
     width: 640,

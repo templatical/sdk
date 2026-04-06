@@ -789,4 +789,8 @@ export default {
     invalidFileType:
       "This file type is not supported. Upload a PNG, JPG, WebP, or PDF.",
   },
+  errors: {
+    editorLoadFailed: "Failed to load editor.",
+    retry: "Retry",
+  },
 } as const;

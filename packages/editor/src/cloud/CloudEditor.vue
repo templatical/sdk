@@ -22,30 +22,14 @@ import type {
   MediaItem,
   MediaRequestContext,
 } from "@templatical/media-library";
-import {
-  cloneBlock,
-  createButtonBlock,
-  createDividerBlock,
-  createHtmlBlock,
-  createImageBlock,
-  createMenuBlock,
-  createSectionBlock,
-  createSocialIconsBlock,
-  createSpacerBlock,
-  createTableBlock,
-  createTitleBlock,
-  createParagraphBlock,
-  createCountdownBlock,
-  createVideoBlock,
-  isCustomBlock,
-  resolveSyntax,
-} from "@templatical/types";
+import { cloneBlock, isCustomBlock, resolveSyntax } from "@templatical/types";
 import type { EditorPlugin } from "@templatical/core";
 import {
   useAutoSave,
   useBlockActions,
   useConditionPreview,
   useHistory,
+  useHistoryInterceptor,
 } from "@templatical/core";
 import {
   AuthManager,
@@ -53,6 +37,7 @@ import {
   resolveWebSocketConfig,
   useAiConfig,
   useCollaboration,
+  useCollaborationBroadcast,
   useCommentListener,
   useComments,
   useEditor,
@@ -113,6 +98,7 @@ import VideoBlock from "../components/blocks/VideoBlock.vue";
 import CountdownBlockComponent from "../components/blocks/CountdownBlock.vue";
 import type { Translations } from "../i18n";
 import { useBlockRegistry } from "../composables/useBlockRegistry";
+import { registerBuiltInBlocks } from "../utils/registerBuiltInBlocks";
 import { useI18n } from "../composables/useI18n";
 import { useDragDrop } from "../composables/useDragDrop";
 import { useUiTheme } from "../composables/useUiTheme";
@@ -361,75 +347,7 @@ if (props.config.collaboration?.enabled) {
   );
 
   // Wrap editor methods to broadcast operations to peers
-  const originalAddBlock = editor.addBlock;
-  const originalUpdateBlock = editor.updateBlock;
-  const originalRemoveBlock = editor.removeBlock;
-  const originalMoveBlock = editor.moveBlock;
-  const originalUpdateSettings = editor.updateSettings;
-  const originalSetContent = editor.setContent;
-
-  editor.addBlock = (block, targetSectionId?, columnIndex?) => {
-    originalAddBlock(block, targetSectionId, columnIndex);
-    collaboration!._broadcastOperation({
-      operation: "add_block",
-      data: {
-        block,
-        section_id: targetSectionId,
-        column_index: columnIndex,
-      },
-      timestamp: Date.now(),
-    });
-  };
-
-  editor.updateBlock = (blockId, updates) => {
-    originalUpdateBlock(blockId, updates);
-    collaboration!._broadcastOperation({
-      operation: "update_block",
-      data: { block_id: blockId, updates },
-      timestamp: Date.now(),
-    });
-  };
-
-  editor.removeBlock = (blockId) => {
-    originalRemoveBlock(blockId);
-    collaboration!._broadcastOperation({
-      operation: "delete_block",
-      data: { block_id: blockId },
-      timestamp: Date.now(),
-    });
-  };
-
-  editor.moveBlock = (blockId, newIndex, targetSectionId?, columnIndex?) => {
-    originalMoveBlock(blockId, newIndex, targetSectionId, columnIndex);
-    collaboration!._broadcastOperation({
-      operation: "move_block",
-      data: {
-        block_id: blockId,
-        index: newIndex,
-        section_id: targetSectionId,
-        column_index: columnIndex,
-      },
-      timestamp: Date.now(),
-    });
-  };
-
-  editor.updateSettings = (updates) => {
-    originalUpdateSettings(updates);
-    collaboration!._broadcastOperation({
-      operation: "update_settings",
-      data: { updates },
-      timestamp: Date.now(),
-    });
-  };
-
-  editor.setContent = (content, markDirty?) => {
-    originalSetContent(content, markDirty);
-    collaboration!._broadcastOperation({
-      operation: "set_content",
-      data: { content },
-      timestamp: Date.now(),
-    });
-  };
+  useCollaborationBroadcast(editor, collaboration);
 }
 
 const isCollaborationEnabled = computed(
@@ -502,36 +420,7 @@ const history = useHistory({
 });
 
 // Wrap editor mutation methods to record history snapshots
-const historyOriginalAddBlock = editor.addBlock;
-const historyOriginalRemoveBlock = editor.removeBlock;
-const historyOriginalMoveBlock = editor.moveBlock;
-const historyOriginalUpdateBlock = editor.updateBlock;
-const historyOriginalUpdateSettings = editor.updateSettings;
-
-editor.addBlock = (block, targetSectionId?, columnIndex?, index?) => {
-  history.record();
-  historyOriginalAddBlock(block, targetSectionId, columnIndex, index);
-};
-
-editor.removeBlock = (blockId) => {
-  history.record();
-  historyOriginalRemoveBlock(blockId);
-};
-
-editor.moveBlock = (blockId, newIndex, targetSectionId?, columnIndex?) => {
-  history.record();
-  historyOriginalMoveBlock(blockId, newIndex, targetSectionId, columnIndex);
-};
-
-editor.updateBlock = (blockId, updates) => {
-  history.recordDebounced(blockId);
-  historyOriginalUpdateBlock(blockId, updates);
-};
-
-editor.updateSettings = (updates) => {
-  history.record();
-  historyOriginalUpdateSettings(updates);
-};
+useHistoryInterceptor(editor, history);
 
 // ---------------------------------------------------------------------------
 // 15. Collab undo warning
@@ -638,70 +527,20 @@ const savedModulesVisual = useVisualSavedModules(savedModulesHeadless);
 const registry = useBlockRegistry();
 
 // Register all built-in block types
-registry.registerBuiltIn("section", {
-  component: SectionBlock,
-  createBlock: () => createSectionBlock(),
-  sidebarItem: { type: "section", label: "Section", isCustom: false },
-});
-registry.registerBuiltIn("title", {
-  component: TitleBlock,
-  createBlock: () => createTitleBlock(),
-  sidebarItem: { type: "title", label: "Title", isCustom: false },
-});
-registry.registerBuiltIn("paragraph", {
-  component: ParagraphBlock,
-  createBlock: () => createParagraphBlock(),
-  sidebarItem: { type: "paragraph", label: "Paragraph", isCustom: false },
-});
-registry.registerBuiltIn("image", {
-  component: ImageBlock,
-  createBlock: () => createImageBlock(),
-  sidebarItem: { type: "image", label: "Image", isCustom: false },
-});
-registry.registerBuiltIn("button", {
-  component: ButtonBlock,
-  createBlock: () => createButtonBlock(),
-  sidebarItem: { type: "button", label: "Button", isCustom: false },
-});
-registry.registerBuiltIn("divider", {
-  component: DividerBlock,
-  createBlock: () => createDividerBlock(),
-  sidebarItem: { type: "divider", label: "Divider", isCustom: false },
-});
-registry.registerBuiltIn("video", {
-  component: VideoBlock,
-  createBlock: () => createVideoBlock(),
-  sidebarItem: { type: "video", label: "Video", isCustom: false },
-});
-registry.registerBuiltIn("social", {
-  component: SocialIconsBlock,
-  createBlock: () => createSocialIconsBlock(),
-  sidebarItem: { type: "social", label: "Social", isCustom: false },
-});
-registry.registerBuiltIn("menu", {
-  component: MenuBlock,
-  createBlock: () => createMenuBlock(),
-  sidebarItem: { type: "menu", label: "Menu", isCustom: false },
-});
-registry.registerBuiltIn("table", {
-  component: TableBlock,
-  createBlock: () => createTableBlock(),
-  sidebarItem: { type: "table", label: "Table", isCustom: false },
-});
-registry.registerBuiltIn("spacer", {
-  component: SpacerBlock,
-  createBlock: () => createSpacerBlock(),
-  sidebarItem: { type: "spacer", label: "Spacer", isCustom: false },
-});
-registry.registerBuiltIn("html", {
-  component: HtmlBlock,
-  createBlock: () => createHtmlBlock(),
-  sidebarItem: { type: "html", label: "HTML", isCustom: false },
-});
-registry.registerBuiltIn("countdown", {
-  component: CountdownBlockComponent,
-  createBlock: () => createCountdownBlock(),
-  sidebarItem: { type: "countdown", label: "Countdown", isCustom: false },
+registerBuiltInBlocks(registry, {
+  section: SectionBlock,
+  title: TitleBlock,
+  paragraph: ParagraphBlock,
+  image: ImageBlock,
+  button: ButtonBlock,
+  divider: DividerBlock,
+  video: VideoBlock,
+  social: SocialIconsBlock,
+  menu: MenuBlock,
+  table: TableBlock,
+  spacer: SpacerBlock,
+  html: HtmlBlock,
+  countdown: CountdownBlockComponent,
 });
 
 // ---------------------------------------------------------------------------
@@ -1243,6 +1082,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  props.fontsManager.cleanupFontLinks();
   websocket.disconnect();
   history.destroy();
   autoSave.destroy();

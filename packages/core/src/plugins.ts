@@ -34,31 +34,4 @@ export interface EditorPluginContext {
   ): void;
   updateSettings(updates: Partial<TemplateSettings>): void;
   selectBlock(blockId: string | null): void;
-
-  registerToolbarAction(action: ToolbarAction): void;
-  registerSidebarPanel(panel: SidebarPanel): void;
-  registerBlockAction(action: BlockContextAction): void;
-}
-
-export interface ToolbarAction {
-  id: string;
-  icon: string;
-  label: string;
-  onClick: () => void;
-  position?: "left" | "right";
-}
-
-export interface SidebarPanel {
-  id: string;
-  icon: string;
-  label: string;
-  component: unknown;
-  position?: "left" | "right";
-}
-
-export interface BlockContextAction {
-  id: string;
-  icon: string;
-  label: string;
-  onClick: (blockId: string) => void;
 }

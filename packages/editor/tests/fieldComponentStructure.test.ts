@@ -70,20 +70,16 @@ describe("TextareaField.vue structure", () => {
 describe("MergeTagInput.vue structure", () => {
   const src = readComponent("components/MergeTagInput.vue");
 
-  it("imports useMergeTag composable", () => {
-    expect(src).toContain("useMergeTag");
+  it("uses useMergeTagField composable instead of inline logic", () => {
+    expect(src).toContain("useMergeTagField");
+    expect(src).not.toContain("const segments = computed");
+    expect(src).not.toContain("async function insertMergeTag");
   });
 
-  it("has segments computed property", () => {
-    expect(src).toMatch(/const segments = computed/);
-  });
-
-  it("has hasMergeTags computed property", () => {
-    expect(src).toMatch(/const hasMergeTags = computed/);
-  });
-
-  it("has insertMergeTag function", () => {
-    expect(src).toMatch(/async function insertMergeTag/);
+  it("destructures segments, hasMergeTags, and merge tag functions", () => {
+    expect(src).toContain("segments,");
+    expect(src).toContain("hasMergeTags,");
+    expect(src).toContain("insertMergeTag,");
   });
 
   it("displays merge tag segments", () => {
@@ -94,20 +90,16 @@ describe("MergeTagInput.vue structure", () => {
 describe("MergeTagTextarea.vue structure", () => {
   const src = readComponent("components/MergeTagTextarea.vue");
 
-  it("imports useMergeTag composable", () => {
-    expect(src).toContain("useMergeTag");
+  it("uses useMergeTagField composable instead of inline logic", () => {
+    expect(src).toContain("useMergeTagField");
+    expect(src).not.toContain("const segments = computed");
+    expect(src).not.toContain("async function insertMergeTag");
   });
 
-  it("has segments computed property", () => {
-    expect(src).toMatch(/const segments = computed/);
-  });
-
-  it("has hasMergeTags computed property", () => {
-    expect(src).toMatch(/const hasMergeTags = computed/);
-  });
-
-  it("has insertMergeTag function", () => {
-    expect(src).toMatch(/async function insertMergeTag/);
+  it("destructures segments, hasMergeTags, and merge tag functions", () => {
+    expect(src).toContain("segments,");
+    expect(src).toContain("hasMergeTags,");
+    expect(src).toContain("insertMergeTag,");
   });
 
   it("displays merge tag segments", () => {

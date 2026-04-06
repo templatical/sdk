@@ -800,4 +800,8 @@ export default {
     invalidFileType:
       "Dieser Dateityp wird nicht unterstützt. Laden Sie eine PNG-, JPG-, WebP- oder PDF-Datei hoch.",
   },
+  errors: {
+    editorLoadFailed: "Editor konnte nicht geladen werden.",
+    retry: "Erneut versuchen",
+  },
 } as const;

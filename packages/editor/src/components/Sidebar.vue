@@ -12,6 +12,10 @@ import { computed, inject, ref } from "vue";
 import draggable from "vuedraggable";
 import CustomBlockIcon from "./CustomBlockIcon.vue";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
+import type {
+  CloudPlanConfig,
+  CloudSavedModules,
+} from "../types/cloud-injects";
 
 interface BlockTypeItem {
   type: BlockType | string;
@@ -32,9 +36,12 @@ const blockDefaults = inject<BlockDefaults | undefined>(
 
 // Cloud-only injects — null in OSS mode
 
-const savedModulesVisual = inject<any>("savedModules", null);
+const savedModulesVisual = inject<CloudSavedModules | null>(
+  "savedModules",
+  null,
+);
 
-const planConfig = inject<any>("planConfig", null);
+const planConfig = inject<CloudPlanConfig | null>("planConfig", null);
 
 const showModulesSection = computed(
   () => !!savedModulesVisual && !!planConfig?.hasFeature("saved_modules"),

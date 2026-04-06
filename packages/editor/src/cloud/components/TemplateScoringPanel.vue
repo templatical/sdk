@@ -120,36 +120,44 @@ watch(
   },
 );
 
+const fixError = ref<string | null>(null);
+
 async function handleFix(finding: ScoringFinding): Promise<void> {
   if (!finding.blockId) {
     return;
   }
 
-  // Get the block content from the editor
-  const block = editor.content.value.blocks.find(
-    (b) => b.id === finding.blockId,
-  );
-  if (!block) {
-    return;
-  }
+  fixError.value = null;
 
-  // Extract HTML content from the block (text blocks have content property)
-  const blockContent = (block as unknown as Record<string, unknown>).content as
-    | string
-    | undefined;
-  if (!blockContent) {
-    return;
-  }
+  try {
+    // Get the block content from the editor
+    const block = editor.content.value.blocks.find(
+      (b) => b.id === finding.blockId,
+    );
+    if (!block) {
+      return;
+    }
 
-  const fixedContent = await scoring.fixFinding(
-    blockContent,
-    finding,
-    mergeTags,
-  );
+    // Extract HTML content from the block (text blocks have content property)
+    const blockContent = (block as unknown as Record<string, unknown>)
+      .content as string | undefined;
+    if (!blockContent) {
+      return;
+    }
 
-  if (fixedContent) {
-    editor.updateBlock(finding.blockId, { content: fixedContent });
-    scoring.removeFinding(finding.category, finding.id);
+    const fixedContent = await scoring.fixFinding(
+      blockContent,
+      finding,
+      mergeTags,
+    );
+
+    if (fixedContent) {
+      editor.updateBlock(finding.blockId, { content: fixedContent });
+      scoring.removeFinding(finding.category, finding.id);
+    }
+  } catch (error) {
+    fixError.value =
+      error instanceof Error ? error.message : "Failed to apply fix";
   }
 }
 
@@ -468,6 +476,13 @@ function totalFindings(): number {
                             : translations.scoring.fix
                         }}
                       </button>
+                      <p
+                        v-if="fixError"
+                        class="tpl:mt-1.5 tpl:text-[11px]"
+                        style="color: var(--tpl-danger)"
+                      >
+                        {{ fixError }}
+                      </p>
                     </div>
                   </div>
                 </div>

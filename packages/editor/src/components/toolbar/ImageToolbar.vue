@@ -43,7 +43,7 @@ function updateField(field: string, value: unknown): void {
 }
 
 async function openMediaBrowser(): Promise<void> {
-  const result = await config?.onRequestMedia?.();
+  const result = await config?.onRequestMedia?.({ accept: ["images"] });
   if (result) {
     updateField("src", result.url);
     if (result.alt) {

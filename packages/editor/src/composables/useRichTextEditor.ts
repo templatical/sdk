@@ -37,6 +37,8 @@ export interface UseRichTextEditorReturn {
   editor: ShallowRef<Editor | null>;
   EditorContent: ShallowRef<typeof EditorContentComponent | null>;
   isLoading: Ref<boolean>;
+  initError: Ref<string | null>;
+  retry: () => void;
   showLinkDialog: Ref<boolean>;
   linkUrl: Ref<string>;
   linkDialogRef: Ref<HTMLElement | null>;
@@ -79,8 +81,12 @@ export function useRichTextEditor(
   const editor = shallowRef<Editor | null>(null);
   const EditorContent = shallowRef<typeof EditorContentComponent | null>(null);
   const isLoading = ref(true);
+  const initError = ref<string | null>(null);
 
   async function initEditor(): Promise<void> {
+    initError.value = null;
+    isLoading.value = true;
+
     try {
       const { TiptapEditor, EC, extensions } = await options.loadExtensions({
         mergeTags,
@@ -115,8 +121,16 @@ export function useRichTextEditor(
         `[${options.editorName ?? "RichTextEditor"}] Failed to initialize TipTap editor:`,
         error,
       );
+      initError.value =
+        error instanceof Error ? error.message : "Failed to load editor";
       isLoading.value = false;
     }
+  }
+
+  function retry(): void {
+    editor.value?.destroy();
+    editor.value = null;
+    initEditor();
   }
 
   initEditor();
@@ -218,6 +232,8 @@ export function useRichTextEditor(
     editor,
     EditorContent,
     isLoading,
+    initError,
+    retry,
     showLinkDialog,
     linkUrl,
     linkDialogRef,

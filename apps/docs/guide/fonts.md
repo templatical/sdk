@@ -29,7 +29,7 @@ const fonts: FontsConfig = {
   ],
 };
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   fonts,
 });

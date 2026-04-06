@@ -118,3 +118,279 @@ describe("UseBlockRegistryReturn used instead of ReturnType<typeof useBlockRegis
     expect(src).not.toContain("ReturnType<typeof useBlockRegistry>");
   });
 });
+
+// ── Plugin extension stubs removed ───────────────────────────────────────────
+
+describe("plugin extension no-op stubs removed", () => {
+  it("Editor.vue plugin context does not contain registerToolbarAction", () => {
+    const src = readSrc("Editor.vue");
+    expect(src).not.toContain("registerToolbarAction");
+    expect(src).not.toContain("registerSidebarPanel");
+    expect(src).not.toContain("registerBlockAction");
+  });
+
+  it("plugins.ts does not export ToolbarAction, SidebarPanel, or BlockContextAction", () => {
+    const src = readFileSync(
+      resolve(__dirname, "../../core/src/plugins.ts"),
+      "utf-8",
+    );
+    expect(src).not.toContain("ToolbarAction");
+    expect(src).not.toContain("SidebarPanel");
+    expect(src).not.toContain("BlockContextAction");
+  });
+
+  it("index.ts does not re-export ToolbarAction or SidebarPanel", () => {
+    const src = readSrc("index.ts");
+    expect(src).not.toContain("ToolbarAction");
+    expect(src).not.toContain("SidebarPanel");
+  });
+});
+
+// ── onRequestMedia unified signature ─────────────────────────────────────────
+
+describe("onRequestMedia signature unified with optional context", () => {
+  it("OSS config accepts optional MediaRequestContext parameter", () => {
+    const src = readSrc("index.ts");
+    expect(src).toContain("onRequestMedia?: (");
+    expect(src).toContain("context?: MediaRequestContext");
+    expect(src).toContain("Promise<MediaResult | null>");
+  });
+
+  it("ImageBlock.vue passes accept context", () => {
+    const src = readSrc("components/blocks/ImageBlock.vue");
+    expect(src).toContain('onRequestMedia?.({ accept: ["images"] })');
+  });
+
+  it("ImageToolbar.vue passes accept context", () => {
+    const src = readSrc("components/toolbar/ImageToolbar.vue");
+    expect(src).toContain('onRequestMedia?.({ accept: ["images"] })');
+  });
+
+  it("ImageField.vue passes accept context", () => {
+    const src = readSrc("components/toolbar/fields/ImageField.vue");
+    expect(src).toContain('onRequestMedia?.({ accept: ["images"] })');
+  });
+
+  it("no call sites use parameterless onRequestMedia?()", () => {
+    const files = [
+      readSrc("components/blocks/ImageBlock.vue"),
+      readSrc("components/toolbar/ImageToolbar.vue"),
+      readSrc("components/toolbar/fields/ImageField.vue"),
+    ];
+    for (const src of files) {
+      expect(src).not.toMatch(/onRequestMedia\?\.\(\)/);
+    }
+  });
+});
+
+// ── History interceptor composable extraction ────────────────────────────────
+
+describe("useHistoryInterceptor replaces manual wrapping", () => {
+  it("Editor.vue uses useHistoryInterceptor", () => {
+    const src = readSrc("Editor.vue");
+    expect(src).toContain("useHistoryInterceptor(editor, history)");
+    expect(src).not.toContain("const originalAddBlock = editor.addBlock");
+    expect(src).not.toContain("const originalRemoveBlock = editor.removeBlock");
+  });
+
+  it("CloudEditor.vue uses useHistoryInterceptor", () => {
+    const src = readSrc("cloud/CloudEditor.vue");
+    expect(src).toContain("useHistoryInterceptor(editor, history)");
+    expect(src).not.toContain(
+      "const historyOriginalAddBlock = editor.addBlock",
+    );
+  });
+
+  it("CloudEditor.vue uses useCollaborationBroadcast", () => {
+    const src = readSrc("cloud/CloudEditor.vue");
+    expect(src).toContain("useCollaborationBroadcast(editor, collaboration)");
+    expect(src).not.toContain("const originalAddBlock = editor.addBlock");
+    expect(src).not.toContain(
+      "const originalUpdateBlock = editor.updateBlock",
+    );
+  });
+});
+
+// ── useMergeTagField composable extraction ───────────────────────────────────
+
+describe("useMergeTagField extracts shared logic from MergeTag components", () => {
+  it("composable exports MergeTagSegment type and useMergeTagField function", () => {
+    const src = readSrc("composables/useMergeTagField.ts");
+    expect(src).toContain("export type MergeTagSegment");
+    expect(src).toContain("export function useMergeTagField");
+  });
+
+  it("composable contains segment parsing logic", () => {
+    const src = readSrc("composables/useMergeTagField.ts");
+    expect(src).toContain("const segments = computed");
+    expect(src).toContain("const hasMergeTags = computed");
+    expect(src).toContain("async function insertMergeTag");
+    expect(src).toContain("isMergeTagValue");
+    expect(src).toContain("isLogicMergeTagValue");
+  });
+
+  it("MergeTagInput.vue no longer has inline segment logic", () => {
+    const src = readSrc("components/MergeTagInput.vue");
+    expect(src).not.toContain("type Segment =");
+    expect(src).not.toContain("isLogicMergeTagValue");
+    expect(src).not.toContain("getLogicMergeTagKeyword");
+  });
+
+  it("MergeTagTextarea.vue no longer has inline segment logic", () => {
+    const src = readSrc("components/MergeTagTextarea.vue");
+    expect(src).not.toContain("type Segment =");
+    expect(src).not.toContain("isLogicMergeTagValue");
+    expect(src).not.toContain("getLogicMergeTagKeyword");
+  });
+});
+
+// ── Cloud inject types ───────────────────────────────────────────────────────
+
+describe("cloud-only injects use typed interfaces instead of any", () => {
+  it("Canvas.vue uses CloudPlanConfig and CloudAiConfig", () => {
+    const src = readSrc("components/Canvas.vue");
+    expect(src).toContain("inject<CloudPlanConfig | null>");
+    expect(src).toContain("inject<CloudAiConfig | null>");
+    expect(src).not.toContain("inject<any>");
+  });
+
+  it("Sidebar.vue uses CloudSavedModules and CloudPlanConfig", () => {
+    const src = readSrc("components/Sidebar.vue");
+    expect(src).toContain("inject<CloudSavedModules | null>");
+    expect(src).toContain("inject<CloudPlanConfig | null>");
+    expect(src).not.toContain("inject<any>");
+  });
+
+  it("BlockWrapper.vue uses CloudComments, CloudSavedModules, and CloudPlanConfig", () => {
+    const src = readSrc("components/blocks/BlockWrapper.vue");
+    expect(src).toContain("inject<CloudComments | null>");
+    expect(src).toContain("inject<CloudSavedModules | null>");
+    expect(src).toContain("inject<CloudPlanConfig | null>");
+    expect(src).not.toContain("inject<any>");
+  });
+});
+
+// ── Font link cleanup ────────────────────────────────────────────────────────
+
+describe("font link cleanup on unmount", () => {
+  it("useFonts exposes cleanupFontLinks function", () => {
+    const src = readSrc("composables/useFonts.ts");
+    expect(src).toContain("function cleanupFontLinks(): void");
+    expect(src).toContain("cleanupFontLinks,");
+  });
+
+  it("useFonts tracks created link elements", () => {
+    const src = readSrc("composables/useFonts.ts");
+    expect(src).toContain("createdLinks.push(link)");
+    expect(src).toContain("link.remove()");
+  });
+
+  it("Editor.vue calls cleanupFontLinks on unmount", () => {
+    const src = readSrc("Editor.vue");
+    expect(src).toContain("fontsManager.cleanupFontLinks()");
+  });
+
+  it("CloudEditor.vue calls cleanupFontLinks on unmount", () => {
+    const src = readSrc("cloud/CloudEditor.vue");
+    expect(src).toContain("fontsManager.cleanupFontLinks()");
+  });
+});
+
+// ── handleFix error handling ─────────────────────────────────────────────────
+
+describe("TemplateScoringPanel handleFix error handling", () => {
+  it("wraps handleFix in try/catch", () => {
+    const src = readSrc("cloud/components/TemplateScoringPanel.vue");
+    expect(src).toContain("try {");
+    expect(src).toContain("} catch (error) {");
+    expect(src).toContain("fixError.value =");
+  });
+
+  it("displays fixError in the template", () => {
+    const src = readSrc("cloud/components/TemplateScoringPanel.vue");
+    expect(src).toContain("v-if=\"fixError\"");
+  });
+});
+
+// ── TipTap init error with retry ─────────────────────────────────────────────
+
+describe("useRichTextEditor init error and retry", () => {
+  it("composable exports initError ref and retry function", () => {
+    const src = readSrc("composables/useRichTextEditor.ts");
+    expect(src).toContain("initError: Ref<string | null>");
+    expect(src).toContain("retry: () => void");
+    expect(src).toContain("initError,");
+    expect(src).toContain("retry,");
+  });
+
+  it("sets initError on catch and clears it on retry", () => {
+    const src = readSrc("composables/useRichTextEditor.ts");
+    expect(src).toContain("initError.value =");
+    expect(src).toContain("function retry(): void");
+    expect(src).toContain("initError.value = null");
+  });
+
+  it("TitleEditor.vue destructures initError and retry", () => {
+    const src = readSrc("components/blocks/TitleEditor.vue");
+    expect(src).toContain("initError,");
+    expect(src).toContain("retry,");
+    expect(src).toContain('v-else-if="initError"');
+    expect(src).toContain("@click=\"retry\"");
+  });
+
+  it("ParagraphEditor.vue destructures initError and retry", () => {
+    const src = readSrc("components/blocks/ParagraphEditor.vue");
+    expect(src).toContain("initError,");
+    expect(src).toContain("retry,");
+    expect(src).toContain('v-else-if="initError"');
+    expect(src).toContain("@click=\"retry\"");
+  });
+});
+
+// ── Unified useI18n pattern ──────────────────────────────────────────────────
+
+describe("Editor.vue uses unified useI18n pattern", () => {
+  const src = readSrc("Editor.vue");
+
+  it("uses useI18n composable instead of custom t() function", () => {
+    expect(src).toContain("useI18n(props.translations)");
+    expect(src).not.toContain("function t(key: string");
+    expect(src).not.toContain('key.split(".")');
+  });
+
+  it("receives translations as a prop", () => {
+    expect(src).toContain("translations: Translations");
+  });
+
+  it("receives fontsManager as a prop", () => {
+    expect(src).toContain("fontsManager: UseFontsReturn");
+  });
+
+  it("uses typed dot access for translations in template", () => {
+    expect(src).toContain("t.header.title");
+    expect(src).toContain("t.footer.poweredBy");
+    expect(src).toContain("t.footer.openSource");
+    expect(src).toContain("t.blockSettings.restoreHiddenBlocks");
+    expect(src).not.toMatch(/t\(".*"\)/);
+  });
+
+  it("no longer has isReady loading guard", () => {
+    expect(src).not.toContain("isReady");
+    expect(src).not.toContain("initTranslations");
+  });
+});
+
+describe("init() is async and loads translations before mount", () => {
+  it("init returns Promise<TemplaticalEditor>", () => {
+    const src = readSrc("index.ts");
+    expect(src).toContain("async function init(");
+    expect(src).toContain("Promise<TemplaticalEditor>");
+  });
+
+  it("loads translations before creating the app", () => {
+    const src = readSrc("index.ts");
+    expect(src).toContain("await loadTranslations(");
+    expect(src).toContain("translations,");
+    expect(src).toContain("fontsManager,");
+  });
+});
