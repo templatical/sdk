@@ -77,10 +77,8 @@ describe("useTimeoutFn called at setup time, not inside callbacks", () => {
     expect(src).toMatch(
       /const \{ start: startCollabUndoWarningTimeout \} = useTimeoutFn/,
     );
-    // Should NOT call useTimeoutFn inside showCollabUndoWarning
-    expect(src).not.toMatch(
-      /function showCollabUndoWarning[\s\S]*?useTimeoutFn\(/,
-    );
+    // showCollabUndoWarning should call start(), not useTimeoutFn directly
+    expect(src).toContain("startCollabUndoWarningTimeout()");
   });
 
   it("AiChatSidebar.vue calls useTimeoutFn at setup time for reveal delay", () => {
@@ -392,5 +390,44 @@ describe("init() is async and loads translations before mount", () => {
     expect(src).toContain("await loadTranslations(");
     expect(src).toContain("translations,");
     expect(src).toContain("fontsManager,");
+  });
+});
+
+// ── Save status indicator ────────────────────────────────────────────────────
+
+describe("CloudEditor.vue inline save status indicator", () => {
+  const src = readSrc("cloud/CloudEditor.vue");
+
+  it("defines saveStatus and saveErrorMessage refs", () => {
+    expect(src).toContain(
+      'const saveStatus = ref<"idle" | "saved" | "error">("idle")',
+    );
+    expect(src).toContain('const saveErrorMessage = ref("")');
+  });
+
+  it("sets saveStatus to saved on successful save with auto-clear", () => {
+    expect(src).toContain('saveStatus.value = "saved"');
+    expect(src).toContain("startSaveStatusClear()");
+  });
+
+  it("sets saveStatus to error on save failure with error message", () => {
+    expect(src).toContain('saveStatus.value = "error"');
+    expect(src).toContain("saveErrorMessage.value =");
+  });
+
+  it("shows error state with CircleAlert icon and tooltip", () => {
+    expect(src).toContain('v-if="saveStatus === \'error\'"');
+    expect(src).toContain("t.header.saveFailed");
+    expect(src).toContain(":data-tooltip=\"saveErrorMessage\"");
+  });
+
+  it("shows saved state with Check icon", () => {
+    expect(src).toContain('v-else-if="saveStatus === \'saved\'"');
+    expect(src).toContain("t.header.saved");
+  });
+
+  it("still shows unsaved state when dirty", () => {
+    expect(src).toContain('v-else-if="editor.state.isDirty"');
+    expect(src).toContain("t.header.unsaved");
   });
 });

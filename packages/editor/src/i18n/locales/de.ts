@@ -21,6 +21,8 @@ export default {
     title: "Templatical",
     unsaved: "Nicht gespeichert",
     saving: "Speichern...",
+    saved: "Gespeichert",
+    saveFailed: "Speichern fehlgeschlagen",
     save: "Speichern",
     templatesUsed: "{used}/{max} Vorlagen verwendet",
   },

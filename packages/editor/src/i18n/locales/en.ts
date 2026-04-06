@@ -20,6 +20,8 @@ export default {
     title: "Templatical",
     unsaved: "Unsaved",
     saving: "Saving...",
+    saved: "Saved",
+    saveFailed: "Save failed",
     save: "Save",
     templatesUsed: "{used}/{max} templates used",
   },

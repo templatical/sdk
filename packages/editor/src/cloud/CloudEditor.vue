@@ -66,6 +66,7 @@ import {
 } from "vue";
 import { onClickOutside, useEventListener, useTimeoutFn } from "@vueuse/core";
 import {
+  Check,
   CircleAlert,
   Clock,
   LoaderCircle,
@@ -702,6 +703,16 @@ const templateCount = computed(
   () => planConfigInstance.config.value?.template_count ?? 0,
 );
 const isSaveExporting = ref(false);
+const saveStatus = ref<"idle" | "saved" | "error">("idle");
+const saveErrorMessage = ref("");
+
+const { start: startSaveStatusClear } = useTimeoutFn(
+  () => {
+    saveStatus.value = "idle";
+  },
+  3000,
+  { immediate: false },
+);
 
 // ---------------------------------------------------------------------------
 // Cloud UI state
@@ -820,7 +831,9 @@ function handleKeydown(event: KeyboardEvent): void {
   // Cmd+S / Ctrl+S: save
   if (event.key === "s") {
     event.preventDefault();
-    saveTemplate().catch((err) => props.config.onError?.(err as Error));
+    saveTemplate().catch((err) => {
+      props.config.onError?.(err as Error);
+    });
     return;
   }
 
@@ -1040,6 +1053,7 @@ async function preRenderCustomBlocks(content: TemplateContent): Promise<void> {
 
 async function saveTemplate(): Promise<SaveResult> {
   isSaveExporting.value = true;
+  saveStatus.value = "idle";
   try {
     // Pre-render custom blocks so backend can include them in MJML export
     await preRenderCustomBlocks(editor.content.value);
@@ -1062,7 +1076,15 @@ async function saveTemplate(): Promise<SaveResult> {
 
     props.config.onSave?.(saveResult);
 
+    saveStatus.value = "saved";
+    startSaveStatusClear();
+
     return saveResult;
+  } catch (error) {
+    saveStatus.value = "error";
+    saveErrorMessage.value =
+      error instanceof Error ? error.message : "Save failed";
+    throw error;
   } finally {
     isSaveExporting.value = false;
   }
@@ -1345,8 +1367,28 @@ defineExpose({
       <div
         class="tpl-header-right tpl:flex tpl:min-w-[200px] tpl:items-center tpl:justify-end tpl:gap-3"
       >
+        <!-- Save status indicator -->
         <div
-          v-if="editor.state.isDirty"
+          v-if="saveStatus === 'error'"
+          aria-live="assertive"
+          class="tpl-tooltip tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs"
+          style="color: var(--tpl-danger)"
+          :data-tooltip="saveErrorMessage"
+        >
+          <CircleAlert :size="12" :stroke-width="2.5" />
+          {{ t.header.saveFailed }}
+        </div>
+        <div
+          v-else-if="saveStatus === 'saved'"
+          aria-live="polite"
+          class="tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs"
+          style="color: var(--tpl-success)"
+        >
+          <Check :size="12" :stroke-width="2.5" />
+          {{ t.header.saved }}
+        </div>
+        <div
+          v-else-if="editor.state.isDirty"
           aria-live="polite"
           class="tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs"
           style="color: var(--tpl-text-muted)"
@@ -1460,7 +1502,9 @@ defineExpose({
           :disabled="
             editor.state.isSaving || isSaveExporting || !editor.state.isDirty
           "
-          @click="saveTemplate()"
+          @click="
+            saveTemplate().catch((err) => props.config.onError?.(err as Error))
+          "
         >
           <Save
             v-if="!editor.state.isSaving && !isSaveExporting"
