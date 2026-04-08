@@ -35,6 +35,24 @@ describe('useBlockRegistry', () => {
       expect(registry.isRegistered('text')).toBe(true);
     });
 
+    it('supports multiple sequential registrations without data loss', () => {
+      const registry = useBlockRegistry();
+      const types = ['text', 'image', 'button', 'divider', 'spacer'];
+
+      for (const type of types) {
+        registry.registerBuiltIn(type, {
+          component: DummyComponent,
+          createBlock: () => createMockBlock(type),
+          sidebarItem: { type, label: type, isCustom: false },
+        });
+      }
+
+      for (const type of types) {
+        expect(registry.isRegistered(type)).toBe(true);
+      }
+      expect(registry.getSidebarItems()).toHaveLength(types.length);
+    });
+
     it('getComponent returns the registered component', () => {
       const registry = useBlockRegistry();
 

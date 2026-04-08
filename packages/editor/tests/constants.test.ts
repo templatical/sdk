@@ -56,15 +56,96 @@ describe("constant consumers", () => {
   });
 });
 
-describe("CloudEditor.vue deprecated API fix", () => {
+describe("CloudEditor.vue dead provides cleanup", () => {
   const src = readSrc("cloud/CloudEditor.vue");
 
-  it("does not use deprecated navigator.platform", () => {
-    expect(src).not.toContain("navigator.platform");
+  it("does not provide dragDrop (unused inject)", () => {
+    expect(src).not.toContain('provide("dragDrop"');
   });
 
-  it("uses navigator.userAgent for Mac detection", () => {
-    expect(src).toMatch(/navigator\.userAgent/);
+  it("has all provides in the provides section, not scattered across the file", () => {
+    const providesSection = src.indexOf(
+      "Provides — all synchronous",
+    );
+    const translationsProvide = src.indexOf('provide("translations"');
+    expect(translationsProvide).toBeGreaterThan(providesSection);
+  });
+});
+
+describe("CloudEditor.vue platform detection removed", () => {
+  const src = readSrc("cloud/CloudEditor.vue");
+
+  it("does not use navigator.platform or navigator.userAgent for modifier key detection", () => {
+    expect(src).not.toContain("navigator.platform");
+    expect(src).not.toContain("navigator.userAgent");
+    expect(src).not.toContain("isMac");
+  });
+
+  it("uses shared handleEditorKeydown from keyboardShortcuts utility", () => {
+    expect(src).toContain(
+      'import { handleEditorKeydown } from "../utils/keyboardShortcuts"',
+    );
+    expect(src).toContain("handleEditorKeydown(event,");
+  });
+});
+
+// ── Unmount guards on async lifecycle functions ──────────────────────────────
+
+describe("CloudEditor.vue async functions guard against post-unmount execution", () => {
+  const src = readSrc("cloud/CloudEditor.vue");
+
+  it("declares a _destroyed flag", () => {
+    expect(src).toContain("let _destroyed = false");
+  });
+
+  it("sets _destroyed = true in onUnmounted before cleanup", () => {
+    const unmountedIdx = src.indexOf("onUnmounted(");
+    const destroyedIdx = src.indexOf("_destroyed = true");
+    expect(destroyedIdx).toBeGreaterThan(unmountedIdx);
+    // _destroyed should be set before websocket.disconnect etc.
+    const disconnectIdx = src.indexOf(
+      "websocket.disconnect()",
+      unmountedIdx,
+    );
+    expect(destroyedIdx).toBeLessThan(disconnectIdx);
+  });
+
+  it("initialize() checks _destroyed after every await", () => {
+    const initFn = src.slice(
+      src.indexOf("async function initialize()"),
+      src.indexOf("// Error display helpers"),
+    );
+    // 3 await points, 3 guards + catch guard + finally guard
+    const guardCount = (initFn.match(/if \(_destroyed\)/g) || []).length;
+    expect(guardCount).toBeGreaterThanOrEqual(4);
+  });
+
+  it("createTemplate() checks _destroyed after await", () => {
+    const fn = src.slice(
+      src.indexOf("async function createTemplate"),
+      src.indexOf("async function loadTemplate"),
+    );
+    expect(fn).toContain("if (_destroyed)");
+  });
+
+  it("loadTemplate() checks _destroyed after await", () => {
+    const fn = src.slice(
+      src.indexOf("async function loadTemplate"),
+      src.indexOf("async function preRenderCustomBlocks") !== -1
+        ? src.indexOf("async function preRenderCustomBlocks")
+        : src.indexOf("function preRenderCustomBlocks"),
+    );
+    expect(fn).toContain("if (_destroyed)");
+  });
+
+  it("saveTemplate() checks _destroyed after each await and guards catch/finally", () => {
+    const fn = src.slice(
+      src.indexOf("async function saveTemplate"),
+      src.indexOf("// ----", src.indexOf("async function saveTemplate")),
+    );
+    const guardCount = (fn.match(/_destroyed/g) || []).length;
+    // 3 await guards + catch guard + finally guard = 5
+    expect(guardCount).toBeGreaterThanOrEqual(5);
   });
 });
 
@@ -147,11 +228,10 @@ describe("plugin extension no-op stubs removed", () => {
 // ── onRequestMedia unified signature ─────────────────────────────────────────
 
 describe("onRequestMedia signature unified with optional context", () => {
-  it("OSS config accepts optional MediaRequestContext parameter", () => {
+  it("OSS config uses named OnRequestMedia type", () => {
     const src = readSrc("index.ts");
-    expect(src).toContain("onRequestMedia?: (");
-    expect(src).toContain("context?: MediaRequestContext");
-    expect(src).toContain("Promise<MediaResult | null>");
+    expect(src).toContain("onRequestMedia?: OnRequestMedia");
+    expect(src).toContain("export type OnRequestMedia");
   });
 
   it("ImageBlock.vue passes accept context", () => {
@@ -167,6 +247,29 @@ describe("onRequestMedia signature unified with optional context", () => {
   it("ImageField.vue passes accept context", () => {
     const src = readSrc("components/toolbar/fields/ImageField.vue");
     expect(src).toContain('onRequestMedia?.({ accept: ["images"] })');
+  });
+
+  it("consumers inject onRequestMedia directly, not via config wrapper", () => {
+    const consumers = [
+      readSrc("components/blocks/ImageBlock.vue"),
+      readSrc("components/toolbar/ImageToolbar.vue"),
+      readSrc("components/toolbar/fields/ImageField.vue"),
+    ];
+    for (const src of consumers) {
+      expect(src).toContain('inject<OnRequestMedia | null>("onRequestMedia"');
+      expect(src).not.toContain('inject<TemplaticalEditorConfig>');
+      expect(src).not.toContain('provide("config"');
+    }
+  });
+
+  it("neither editor provides a config wrapper object", () => {
+    const oss = readSrc("Editor.vue");
+    const cloud = readSrc("cloud/CloudEditor.vue");
+    expect(oss).not.toContain('provide("config"');
+    expect(cloud).not.toContain('provide("config"');
+    // Both provide onRequestMedia directly
+    expect(oss).toContain('provide("onRequestMedia"');
+    expect(cloud).toContain('provide("onRequestMedia"');
   });
 
   it("no call sites use parameterless onRequestMedia?()", () => {
@@ -245,11 +348,24 @@ describe("useMergeTagField extracts shared logic from MergeTag components", () =
 // ── Cloud inject types ───────────────────────────────────────────────────────
 
 describe("cloud-only injects use typed interfaces instead of any", () => {
+  it("Canvas.vue computes lock holder once per block via scoped v-for", () => {
+    const src = readSrc("components/Canvas.vue");
+    expect(src).toContain("v-for=\"lockHolder in [getBlockLock(block.id)]\"");
+    expect(src).not.toContain("getBlockLockHolder(block.id)!");
+  });
+
   it("Canvas.vue uses CloudPlanConfig and CloudAiConfig", () => {
     const src = readSrc("components/Canvas.vue");
     expect(src).toContain("inject<CloudPlanConfig | null>");
     expect(src).toContain("inject<CloudAiConfig | null>");
     expect(src).not.toContain("inject<any>");
+  });
+
+  it("Canvas.vue injects blockRegistry with null default, not unsafe cast", () => {
+    const src = readSrc("components/Canvas.vue");
+    expect(src).toContain('inject<UseBlockRegistryReturn | null>');
+    expect(src).not.toContain("undefined as unknown as");
+    expect(src).not.toContain("undefined as never");
   });
 
   it("Sidebar.vue uses CloudSavedModules and CloudPlanConfig", () => {
@@ -265,6 +381,25 @@ describe("cloud-only injects use typed interfaces instead of any", () => {
     expect(src).toContain("inject<CloudSavedModules | null>");
     expect(src).toContain("inject<CloudPlanConfig | null>");
     expect(src).not.toContain("inject<any>");
+  });
+});
+
+// ── BlockWrapper uses shared getBlockWrapperStyle utility ────────────────────
+
+describe("BlockWrapper.vue uses shared getBlockWrapperStyle", () => {
+  const src = readSrc("components/blocks/BlockWrapper.vue");
+
+  it("imports getBlockWrapperStyle from blockComponentResolver", () => {
+    expect(src).toContain(
+      'import { getBlockWrapperStyle } from "../../utils/blockComponentResolver"',
+    );
+  });
+
+  it("calls getBlockWrapperStyle instead of inlining style computation", () => {
+    expect(src).toContain("getBlockWrapperStyle(props.block)");
+    expect(src).not.toMatch(
+      /padding\.top.*px.*padding\.right.*px.*padding\.bottom.*px/,
+    );
   });
 });
 
@@ -294,19 +429,102 @@ describe("font link cleanup on unmount", () => {
   });
 });
 
-// ── handleFix error handling ─────────────────────────────────────────────────
+// ── Rich text editors use i18n for all loading/error strings ─────────────────
 
-describe("TemplateScoringPanel handleFix error handling", () => {
-  it("wraps handleFix in try/catch", () => {
-    const src = readSrc("cloud/components/TemplateScoringPanel.vue");
-    expect(src).toContain("try {");
-    expect(src).toContain("} catch (error) {");
-    expect(src).toContain("fixError.value =");
+describe("ParagraphEditor and TitleEditor use i18n for loading/error states", () => {
+  const paragraphSrc = readSrc("components/blocks/ParagraphEditor.vue");
+  const titleSrc = readSrc("components/blocks/TitleEditor.vue");
+
+  it("ParagraphEditor has no hardcoded English loading/error strings", () => {
+    expect(paragraphSrc).not.toContain('"Loading editor..."');
+    expect(paragraphSrc).not.toContain('"Loading..."');
+    expect(paragraphSrc).not.toContain('"Failed to load editor."');
+    expect(paragraphSrc).not.toContain('"Retry"');
   });
 
-  it("displays fixError in the template", () => {
-    const src = readSrc("cloud/components/TemplateScoringPanel.vue");
-    expect(src).toContain("v-if=\"fixError\"");
+  it("TitleEditor has no hardcoded English loading/error strings", () => {
+    expect(titleSrc).not.toContain('"Loading editor..."');
+    expect(titleSrc).not.toContain('"Loading..."');
+    expect(titleSrc).not.toContain('"Failed to load editor."');
+    expect(titleSrc).not.toContain('"Retry"');
+  });
+
+  it("both use t.errors.editorLoading for loading state", () => {
+    expect(paragraphSrc).toContain("t.errors.editorLoading");
+    expect(titleSrc).toContain("t.errors.editorLoading");
+  });
+
+  it("both use t.errors.editorLoadFailed without optional chaining", () => {
+    expect(paragraphSrc).toContain("t.errors.editorLoadFailed");
+    expect(paragraphSrc).not.toContain("t.errors?.editorLoadFailed");
+    expect(titleSrc).toContain("t.errors.editorLoadFailed");
+    expect(titleSrc).not.toContain("t.errors?.editorLoadFailed");
+  });
+
+  it("both use t.errors.retry without optional chaining", () => {
+    expect(paragraphSrc).toContain("t.errors.retry");
+    expect(paragraphSrc).not.toContain("t.errors?.retry");
+    expect(titleSrc).toContain("t.errors.retry");
+    expect(titleSrc).not.toContain("t.errors?.retry");
+  });
+});
+
+// ── Rich text toolbar button class extraction ───────────────────────────────
+
+describe("ParagraphEditor and TitleEditor use shared toolbar button class", () => {
+  const paragraphSrc = readSrc("components/blocks/ParagraphEditor.vue");
+  const titleSrc = readSrc("components/blocks/TitleEditor.vue");
+  const cssSrc = readSrc("styles/index.css");
+
+  it("shared stylesheet defines .tpl-text-toolbar-btn and active modifier", () => {
+    expect(cssSrc).toContain(".tpl-text-toolbar-btn");
+    expect(cssSrc).toContain(".tpl-text-toolbar-btn--active");
+  });
+
+  it("ParagraphEditor uses the shared class instead of inline Tailwind", () => {
+    expect(paragraphSrc).toContain('class="tpl-text-toolbar-btn"');
+    expect(paragraphSrc).toContain("'tpl-text-toolbar-btn--active':");
+    expect(paragraphSrc).not.toContain(
+      "tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent",
+    );
+  });
+
+  it("TitleEditor uses the shared class instead of inline Tailwind", () => {
+    expect(titleSrc).toContain('class="tpl-text-toolbar-btn"');
+    expect(titleSrc).toContain("'tpl-text-toolbar-btn--active':");
+    expect(titleSrc).not.toContain(
+      "tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent",
+    );
+  });
+});
+
+// ── handleFix error handling ─────────────────────────────────────────────────
+
+describe("TemplateScoringPanel scoring instance is provided, not local", () => {
+  const panelSrc = readSrc("cloud/components/TemplateScoringPanel.vue");
+  const cloudSrc = readSrc("cloud/CloudEditor.vue");
+
+  it("panel injects scoring instead of instantiating useTemplateScoring", () => {
+    expect(panelSrc).toContain('inject<UseTemplateScoringReturn>("scoring")');
+    expect(panelSrc).not.toContain("useTemplateScoring({");
+  });
+
+  it("CloudEditor instantiates and provides scoring", () => {
+    expect(cloudSrc).toContain("useTemplateScoring({");
+    expect(cloudSrc).toContain('provide("scoring"');
+  });
+});
+
+describe("TemplateScoringPanel handleFix error handling", () => {
+  const src = readSrc("cloud/components/TemplateScoringPanel.vue");
+
+  it("delegates error handling to the composable (no local try/catch)", () => {
+    expect(src).not.toMatch(/catch\s*\(\s*error\s*\)/);
+    expect(src).not.toMatch(/const fixError\s*=\s*ref/);
+  });
+
+  it("displays composable fixError in the template", () => {
+    expect(src).toContain('v-if="scoring.fixError.value"');
   });
 });
 
@@ -429,5 +647,63 @@ describe("CloudEditor.vue inline save status indicator", () => {
   it("still shows unsaved state when dirty", () => {
     expect(src).toContain('v-else-if="editor.state.isDirty"');
     expect(src).toContain("t.header.unsaved");
+  });
+});
+
+// ── TemplateScoringPanel uses composable error state ─────────────────────────
+
+describe("TemplateScoringPanel.vue error handling", () => {
+  const src = readSrc("cloud/components/TemplateScoringPanel.vue");
+
+  it("does not define a local fixError ref (uses composable state)", () => {
+    expect(src).not.toMatch(/const fixError\s*=\s*ref/);
+  });
+
+  it("uses scoring.fixError.value for per-finding error display", () => {
+    expect(src).toContain("scoring.fixError.value");
+  });
+
+  it("does not have a local try/catch for fix errors", () => {
+    // handleFix should not catch errors locally — the composable handles it
+    expect(src).not.toMatch(/catch\s*\(\s*error\s*\)/);
+  });
+});
+
+// ── Cloud components use useI18n() composable ────────────────────────────────
+
+describe("cloud components use useI18n() instead of direct inject", () => {
+  it("CommentsSidebar.vue uses useI18n and format()", () => {
+    const src = readSrc("cloud/components/CommentsSidebar.vue");
+    expect(src).toContain('import { useI18n } from "../../composables/useI18n"');
+    expect(src).toContain("const { t, format } = useI18n()");
+    expect(src).not.toContain('inject<Translations>("translations")');
+    expect(src).not.toContain("import type { Translations }");
+  });
+
+  it("CommentsSidebar.vue uses format() instead of .replace() for interpolation", () => {
+    const src = readSrc("cloud/components/CommentsSidebar.vue");
+    expect(src).toContain("format(t.comments.resolvedBy,");
+    expect(src).toContain("format(t.comments.replyOne,");
+    expect(src).toContain("format(t.comments.replyMany,");
+    expect(src).not.toMatch(/t\.comments\.\w+\.replace\(/);
+  });
+
+  it("TemplateScoringPanel.vue uses useI18n()", () => {
+    const src = readSrc("cloud/components/TemplateScoringPanel.vue");
+    expect(src).toContain('import { useI18n } from "../../composables/useI18n"');
+    expect(src).toContain("const { t } = useI18n()");
+    expect(src).not.toContain('inject<Translations>("translations")');
+    expect(src).not.toContain("import type { Translations }");
+  });
+
+  it("DesignReferenceSidebar.vue uses useI18n() with t.designReference prefix", () => {
+    const src = readSrc("cloud/components/DesignReferenceSidebar.vue");
+    expect(src).toContain('import { useI18n } from "../../composables/useI18n"');
+    expect(src).toContain("const { t } = useI18n()");
+    expect(src).not.toContain('inject<Translations>("translations")');
+    expect(src).not.toContain("import type { Translations }");
+    // No computed alias wrapping translations — uses t.designReference.xxx directly
+    expect(src).not.toContain("computed(() => translations.designReference)");
+    expect(src).toContain("t.designReference.title");
   });
 });

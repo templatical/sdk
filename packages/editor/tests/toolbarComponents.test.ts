@@ -70,6 +70,26 @@ describe("Toolbar.vue dispatcher structure", () => {
     expect(src).toMatch(/<CountdownToolbar[\s\S]*?:font-families/);
   });
 
+  it("uses blockTypeIcons map for dynamic icon rendering", () => {
+    expect(src).toContain(
+      'import { blockTypeIcons } from "../utils/blockTypeIcons"',
+    );
+    expect(src).toContain(':is="blockTypeIcons[blockType]"');
+  });
+
+  it("does not use individual Lucide icon components for block type icons", () => {
+    expect(src).not.toContain("import {" + "\n" + "  Code," + "\n" + "  Columns3,");
+    expect(src).not.toContain("<Columns3");
+    expect(src).not.toContain("<Heading");
+    expect(src).not.toContain("<Pilcrow");
+    expect(src).not.toContain("<MoveVertical");
+    expect(src).not.toContain("<Timer");
+  });
+
+  it("falls back to Code icon for custom blocks", () => {
+    expect(src).toContain('<Code v-else-if="isCustom"');
+  });
+
   it("does not pass fontFamilies to toolbars that do not need it", () => {
     // SectionToolbar, ImageToolbar, DividerToolbar, SocialToolbar, SpacerToolbar, HtmlToolbar
     const sectionMatch = src.match(
@@ -139,8 +159,9 @@ describe("ImageToolbar.vue structure", () => {
     expect(src).toContain("block: ImageBlock");
   });
 
-  it("injects config for media browser", () => {
-    expect(src).toContain('inject<TemplaticalEditorConfig>("config")');
+  it("injects onRequestMedia directly instead of full config", () => {
+    expect(src).toContain('inject<OnRequestMedia | null>("onRequestMedia"');
+    expect(src).not.toContain('inject<TemplaticalEditorConfig>("config")');
   });
 
   it("has openMediaBrowser function", () => {

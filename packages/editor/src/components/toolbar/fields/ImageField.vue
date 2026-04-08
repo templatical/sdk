@@ -2,7 +2,7 @@
 import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockImageField } from "@templatical/types";
 import { inputClass, labelClass } from "../../../constants/styleConstants";
-import type { TemplaticalEditorConfig } from "../../../index";
+import type { OnRequestMedia } from "../../../index";
 import { Image, Lock } from "@lucide/vue";
 import { computed, inject } from "vue";
 
@@ -17,12 +17,12 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const config = inject<TemplaticalEditorConfig>("config");
+const onRequestMedia = inject<OnRequestMedia | null>("onRequestMedia", null);
 
-const canBrowseMedia = computed(() => !!config?.onRequestMedia);
+const canBrowseMedia = computed(() => !!onRequestMedia);
 
 async function browseMedia(): Promise<void> {
-  const result = await config?.onRequestMedia?.({ accept: ["images"] });
+  const result = await onRequestMedia?.({ accept: ["images"] });
   if (result) {
     emit("update:modelValue", result.url);
   }

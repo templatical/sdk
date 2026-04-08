@@ -7,6 +7,7 @@ import {
 } from "@templatical/types";
 import { InputRule, mergeAttributes, Node, PasteRule } from "@tiptap/core";
 import { VueNodeViewRenderer } from "@tiptap/vue-3";
+import { isNodeSelected } from "./isNodeSelected";
 
 export interface LogicMergeTagNodeOptions {
   syntax: SyntaxPreset;
@@ -71,44 +72,15 @@ export const LogicMergeTagNode = Node.create<LogicMergeTagNodeOptions>({
   },
 
   addNodeView() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TipTap's VueNodeViewRenderer expects
+    // a narrower component type than what Vue SFC default exports provide. This is a known interop gap.
     return VueNodeViewRenderer(LogicMergeTagNodeView as any);
   },
 
   addKeyboardShortcuts() {
-    const isLogicMergeTagSelected = (): boolean => {
-      const { selection } = this.editor.state;
-      const { $from, $to } = selection;
-
-      let hasMergeTag = false;
-      this.editor.state.doc.nodesBetween($from.pos, $to.pos, (node) => {
-        if (node.type.name === this.name) {
-          hasMergeTag = true;
-          return false;
-        }
-      });
-
-      if (hasMergeTag) {
-        return true;
-      }
-
-      if ($from.pos > 0) {
-        const nodeBefore = $from.nodeBefore;
-        if (nodeBefore?.type.name === this.name) {
-          return true;
-        }
-      }
-
-      const nodeAfter = $from.nodeAfter;
-      if (nodeAfter?.type.name === this.name) {
-        return true;
-      }
-
-      return false;
-    };
-
     return {
-      Backspace: () => isLogicMergeTagSelected(),
-      Delete: () => isLogicMergeTagSelected(),
+      Backspace: () => isNodeSelected(this.editor, this.name),
+      Delete: () => isNodeSelected(this.editor, this.name),
     };
   },
 

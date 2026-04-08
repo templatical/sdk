@@ -331,9 +331,9 @@ function setHighlight(color: string): void {
             <!-- Bold/Italic/Underline/Strikethrough -->
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                'tpl-text-toolbar-btn--active':
                   editor?.isActive('bold'),
               }"
               :aria-label="t.paragraphEditor.bold"
@@ -344,9 +344,9 @@ function setHighlight(color: string): void {
             </button>
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                'tpl-text-toolbar-btn--active':
                   editor?.isActive('italic'),
               }"
               :aria-label="t.paragraphEditor.italic"
@@ -357,9 +357,9 @@ function setHighlight(color: string): void {
             </button>
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                'tpl-text-toolbar-btn--active':
                   editor?.isActive('underline'),
               }"
               :aria-label="t.paragraphEditor.underline"
@@ -370,9 +370,9 @@ function setHighlight(color: string): void {
             </button>
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                'tpl-text-toolbar-btn--active':
                   editor?.isActive('strike'),
               }"
               :aria-label="t.paragraphEditor.strikethrough"
@@ -388,9 +388,9 @@ function setHighlight(color: string): void {
             <!-- Subscript/Superscript -->
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                'tpl-text-toolbar-btn--active':
                   editor?.isActive('subscript'),
               }"
               :aria-label="t.paragraphEditor.subscript"
@@ -401,9 +401,9 @@ function setHighlight(color: string): void {
             </button>
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                'tpl-text-toolbar-btn--active':
                   editor?.isActive('superscript'),
               }"
               :aria-label="t.paragraphEditor.superscript"
@@ -419,9 +419,9 @@ function setHighlight(color: string): void {
             <!-- Link -->
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                'tpl-text-toolbar-btn--active':
                   editor?.isActive('link'),
               }"
               :aria-label="t.paragraphEditor.addLink"
@@ -436,9 +436,9 @@ function setHighlight(color: string): void {
             <!-- Lists -->
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                'tpl-text-toolbar-btn--active':
                   editor?.isActive('bulletList'),
               }"
               :aria-label="t.paragraphEditor.bulletList"
@@ -449,9 +449,9 @@ function setHighlight(color: string): void {
             </button>
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                'tpl-text-toolbar-btn--active':
                   editor?.isActive('orderedList'),
               }"
               :aria-label="t.paragraphEditor.numberedList"
@@ -467,9 +467,9 @@ function setHighlight(color: string): void {
             <!-- Alignment -->
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                'tpl-text-toolbar-btn--active':
                   editor?.isActive({ textAlign: 'left' }),
               }"
               :aria-label="t.paragraphEditor.alignLeft"
@@ -480,9 +480,9 @@ function setHighlight(color: string): void {
             </button>
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                'tpl-text-toolbar-btn--active':
                   editor?.isActive({ textAlign: 'center' }),
               }"
               :aria-label="t.paragraphEditor.alignCenter"
@@ -493,9 +493,9 @@ function setHighlight(color: string): void {
             </button>
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :class="{
-                'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                'tpl-text-toolbar-btn--active':
                   editor?.isActive({ textAlign: 'right' }),
               }"
               :aria-label="t.paragraphEditor.alignRight"
@@ -547,7 +547,7 @@ function setHighlight(color: string): void {
             <!-- Clear Formatting -->
             <button
               type="button"
-              class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl-text-toolbar-btn"
               :aria-label="t.paragraphEditor.clearFormatting"
               :title="t.paragraphEditor.clearFormatting"
               @click="
@@ -564,9 +564,9 @@ function setHighlight(color: string): void {
             <div class="tpl:relative">
               <button
                 type="button"
-                class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+                class="tpl-text-toolbar-btn"
                 :class="{
-                  'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+                  'tpl-text-toolbar-btn--active':
                     showEmojiPicker,
                 }"
                 :aria-label="t.paragraphEditor.insertEmoji"
@@ -626,7 +626,7 @@ function setHighlight(color: string): void {
             class="tpl:flex tpl:items-center tpl:gap-2 tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
           >
             <LoaderCircle class="tpl-spinner" :size="14" :stroke-width="2" />
-            Loading editor...
+            {{ t.errors.editorLoading }}
           </div>
         </template>
       </div>
@@ -637,7 +637,7 @@ function setHighlight(color: string): void {
       class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:border-[var(--tpl-primary)] tpl:p-2"
     >
       <div class="tpl:animate-pulse tpl:text-[var(--tpl-text-dim)]">
-        Loading...
+        {{ t.errors.editorLoading }}
       </div>
     </div>
     <div
@@ -645,13 +645,13 @@ function setHighlight(color: string): void {
       class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:p-2 tpl:text-center tpl:text-xs"
       style="border-color: var(--tpl-danger); color: var(--tpl-text-muted)"
     >
-      {{ t.errors?.editorLoadFailed ?? "Failed to load editor." }}
+      {{ t.errors.editorLoadFailed }}
       <button
         class="tpl:ml-1 tpl:cursor-pointer tpl:border-none tpl:bg-transparent tpl:p-0 tpl:underline"
         style="color: var(--tpl-primary)"
         @click="retry"
       >
-        {{ t.errors?.retry ?? "Retry" }}
+        {{ t.errors.retry }}
       </button>
     </div>
     <component

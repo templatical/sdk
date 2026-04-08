@@ -24,6 +24,7 @@ import type {
 } from "@templatical/media-library";
 import { cloneBlock, isCustomBlock, resolveSyntax } from "@templatical/types";
 import type { EditorPlugin } from "@templatical/core";
+import { handleEditorKeydown } from "../utils/keyboardShortcuts";
 import {
   useAutoSave,
   useBlockActions,
@@ -46,6 +47,7 @@ import {
   usePlanConfig,
   useSavedModules,
   useSnapshotHistory,
+  useTemplateScoring,
   useTestEmail,
   useWebSocket,
   type UseCollaborationReturn,
@@ -212,8 +214,6 @@ const emit = defineEmits<{
 // i18n — translations are pre-loaded and passed as prop (same as old editor)
 // ---------------------------------------------------------------------------
 
-provide("translations", props.translations);
-
 const { t, format } = useI18n(props.translations);
 
 // ---------------------------------------------------------------------------
@@ -240,6 +240,10 @@ function setUiTheme(theme: UiTheme): void {
 const isInitializing = ref(true);
 const isAuthReady = ref(false);
 const initError = ref<Error | null>(null);
+
+// Tracks whether the component has been unmounted. Checked after every await
+// in async lifecycle functions to prevent post-unmount side effects.
+let _destroyed = false;
 
 // ---------------------------------------------------------------------------
 // 1. AuthManager
@@ -522,7 +526,16 @@ const savedModulesHeadless = useSavedModules({
 const savedModulesVisual = useVisualSavedModules(savedModulesHeadless);
 
 // ---------------------------------------------------------------------------
-// 20. Block registry
+// 20. Template scoring
+// ---------------------------------------------------------------------------
+
+const scoringInstance = useTemplateScoring({
+  authManager,
+  getTemplateId: () => editor.state.template?.id ?? null,
+});
+
+// ---------------------------------------------------------------------------
+// 21. Block registry
 // ---------------------------------------------------------------------------
 
 const registry = useBlockRegistry();
@@ -548,10 +561,10 @@ registerBuiltInBlocks(registry, {
 // 21. Provides — all synchronous, matching what child components inject
 // ---------------------------------------------------------------------------
 
+provide("translations", props.translations);
 provide("editor", editor);
 provide("history", history);
 provide("blockActions", blockActions);
-provide("dragDrop", dragDrop);
 provide("conditionPreview", conditionPreview);
 provide("fontsManager", props.fontsManager);
 provide("themeStyles", themeStyles);
@@ -575,7 +588,6 @@ provide(
 
 // Media — provide config-like object for ImageField + separate provide
 provide("onRequestMedia", handleRequestMedia);
-provide("config", { onRequestMedia: handleRequestMedia });
 
 // Cloud-specific provides
 provide("authManager", authManager);
@@ -589,6 +601,7 @@ provide("comments", commentsInstance);
 provide("openCommentsForBlock", openCommentsForBlock);
 provide("savedModules", savedModulesVisual);
 provide("savedModulesHeadless", savedModulesHeadless);
+provide("scoring", scoringInstance);
 
 // ---------------------------------------------------------------------------
 // Snapshot history
@@ -821,39 +834,19 @@ function openCommentsForBlock(blockId: string): void {
 // Keyboard shortcuts
 // ---------------------------------------------------------------------------
 
-const isMac = ref(false);
-
 function handleKeydown(event: KeyboardEvent): void {
-  const modifier = isMac.value ? event.metaKey : event.ctrlKey;
-
-  if (!modifier) return;
-
-  // Cmd+S / Ctrl+S: save
-  if (event.key === "s") {
-    event.preventDefault();
-    saveTemplate().catch((err) => {
-      props.config.onError?.(err as Error);
-    });
-    return;
-  }
-
-  // Cmd+Z / Ctrl+Z: undo/redo
-  if (event.key.toLowerCase() === "z") {
-    // Let TipTap handle its own undo/redo when text is focused
-    const target = event.target as HTMLElement;
-    if (target.closest(".tpl-text-editable")) {
-      return;
-    }
-
-    event.preventDefault();
-
-    if (event.shiftKey) {
-      history.redo();
-    } else {
-      showCollabUndoWarning();
-      history.undo();
-    }
-  }
+  handleEditorKeydown(event, {
+    history,
+    selectBlock: (id) => editor.selectBlock(id),
+    getSelectedBlockId: () => editor.state.selectedBlockId,
+    removeBlock: (id) => editor.removeBlock(id),
+    onSave: () => {
+      saveTemplate().catch((err) => {
+        props.config.onError?.(err as Error);
+      });
+    },
+    onBeforeUndo: () => showCollabUndoWarning(),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -903,10 +896,12 @@ async function initialize(): Promise<void> {
   try {
     // Auth
     await authManager.initialize();
+    if (_destroyed) return;
     isAuthReady.value = true;
 
     // Health check
     const healthResult = await performHealthCheck({ authManager });
+    if (_destroyed) return;
 
     if (!healthResult.api.ok) {
       throw new Error("Health check failed: API is not reachable");
@@ -928,6 +923,7 @@ async function initialize(): Promise<void> {
 
     // Plan config
     await planConfigInstance.fetchConfig();
+    if (_destroyed) return;
 
     // Update fonts
     props.fontsManager.setCustomFontsEnabled(
@@ -962,6 +958,7 @@ async function initialize(): Promise<void> {
 
     emit("ready");
   } catch (error) {
+    if (_destroyed) return;
     const wrappedError =
       error instanceof Error
         ? error
@@ -969,7 +966,9 @@ async function initialize(): Promise<void> {
     initError.value = wrappedError;
     props.config.onError?.(wrappedError);
   } finally {
-    isInitializing.value = false;
+    if (!_destroyed) {
+      isInitializing.value = false;
+    }
   }
 }
 
@@ -1006,6 +1005,7 @@ function getWebSocketConfig() {
 
 async function createTemplate(content?: TemplateContent): Promise<Template> {
   const template = await editor.create(content);
+  if (_destroyed) return template;
   props.config.onCreate?.(template);
   initSnapshotHistory();
   websocket.connect(template.id, getWebSocketConfig());
@@ -1014,6 +1014,7 @@ async function createTemplate(content?: TemplateContent): Promise<Template> {
 
 async function loadTemplate(templateId: string): Promise<Template> {
   const template = await editor.load(templateId);
+  if (_destroyed) return template;
   props.config.onLoad?.(template);
   initSnapshotHistory();
   websocket.connect(template.id, getWebSocketConfig());
@@ -1057,8 +1058,11 @@ async function saveTemplate(): Promise<SaveResult> {
   try {
     // Pre-render custom blocks so backend can include them in MJML export
     await preRenderCustomBlocks(editor.content.value);
+    if (_destroyed) throw new Error("Component unmounted during save");
 
     const template = await editor.save();
+    if (_destroyed) throw new Error("Component unmounted during save");
+
     initSnapshotHistory();
 
     if (snapshotHistoryInstance.value) {
@@ -1066,6 +1070,7 @@ async function saveTemplate(): Promise<SaveResult> {
     }
 
     const exportResult = await exporter.exportHtml(template.id);
+    if (_destroyed) throw new Error("Component unmounted during save");
 
     const saveResult: SaveResult = {
       templateId: template.id,
@@ -1081,12 +1086,16 @@ async function saveTemplate(): Promise<SaveResult> {
 
     return saveResult;
   } catch (error) {
-    saveStatus.value = "error";
-    saveErrorMessage.value =
-      error instanceof Error ? error.message : "Save failed";
+    if (!_destroyed) {
+      saveStatus.value = "error";
+      saveErrorMessage.value =
+        error instanceof Error ? error.message : "Save failed";
+    }
     throw error;
   } finally {
-    isSaveExporting.value = false;
+    if (!_destroyed) {
+      isSaveExporting.value = false;
+    }
   }
 }
 
@@ -1099,11 +1108,11 @@ async function saveTemplate(): Promise<SaveResult> {
 useEventListener(document, "keydown", handleKeydown);
 
 onMounted(() => {
-  isMac.value = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
   initialize();
 });
 
 onUnmounted(() => {
+  _destroyed = true;
   props.fontsManager.cleanupFontLinks();
   websocket.disconnect();
   history.destroy();

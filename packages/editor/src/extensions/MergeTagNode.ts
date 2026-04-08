@@ -3,6 +3,7 @@ import type { MergeTag, SyntaxPreset } from "@templatical/types";
 import { getMergeTagLabel, SYNTAX_PRESETS } from "@templatical/types";
 import { InputRule, mergeAttributes, Node, PasteRule } from "@tiptap/core";
 import { VueNodeViewRenderer } from "@tiptap/vue-3";
+import { isNodeSelected } from "./isNodeSelected";
 
 export interface MergeTagNodeOptions {
   mergeTags: MergeTag[];
@@ -69,6 +70,8 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
   },
 
   addNodeView() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TipTap's VueNodeViewRenderer expects
+    // a narrower component type than what Vue SFC default exports provide. This is a known interop gap.
     return VueNodeViewRenderer(MergeTagNodeView as any);
   },
 
@@ -86,43 +89,9 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
   },
 
   addKeyboardShortcuts() {
-    const isMergeTagSelected = (): boolean => {
-      const { selection } = this.editor.state;
-      const { $from, $to } = selection;
-
-      // Check if selection contains a merge tag node
-      let hasMergeTag = false;
-      this.editor.state.doc.nodesBetween($from.pos, $to.pos, (node) => {
-        if (node.type.name === this.name) {
-          hasMergeTag = true;
-          return false;
-        }
-      });
-
-      if (hasMergeTag) {
-        return true;
-      }
-
-      // Check if cursor is right after a merge tag (for Backspace)
-      if ($from.pos > 0) {
-        const nodeBefore = $from.nodeBefore;
-        if (nodeBefore?.type.name === this.name) {
-          return true;
-        }
-      }
-
-      // Check if cursor is right before a merge tag (for Delete)
-      const nodeAfter = $from.nodeAfter;
-      if (nodeAfter?.type.name === this.name) {
-        return true;
-      }
-
-      return false;
-    };
-
     return {
-      Backspace: () => isMergeTagSelected(),
-      Delete: () => isMergeTagSelected(),
+      Backspace: () => isNodeSelected(this.editor, this.name),
+      Delete: () => isNodeSelected(this.editor, this.name),
     };
   },
 

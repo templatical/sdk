@@ -3,8 +3,8 @@ import MergeTagInput from "../MergeTagInput.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import { useI18n } from "../../composables/useI18n";
 import { inputClass, labelClass } from "../../constants/styleConstants";
-import type { TemplaticalEditorConfig } from "../../index";
 import type { ImageBlock, SyntaxPreset } from "@templatical/types";
+import type { OnRequestMedia } from "../../index";
 import { containsMergeTag, SYNTAX_PRESETS } from "@templatical/types";
 import { Image } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
@@ -19,13 +19,13 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const config = inject<TemplaticalEditorConfig>("config");
+const onRequestMedia = inject<OnRequestMedia | null>("onRequestMedia", null);
 const mergeTagSyntax = inject<SyntaxPreset>(
   "mergeTagSyntax",
   SYNTAX_PRESETS.liquid,
 );
 
-const canBrowseMedia = computed(() => !!config?.onRequestMedia);
+const canBrowseMedia = computed(() => !!onRequestMedia);
 
 const pulseSrc = ref(false);
 const pulseAlt = ref(false);
@@ -43,7 +43,7 @@ function updateField(field: string, value: unknown): void {
 }
 
 async function openMediaBrowser(): Promise<void> {
-  const result = await config?.onRequestMedia?.({ accept: ["images"] });
+  const result = await onRequestMedia?.({ accept: ["images"] });
   if (result) {
     updateField("src", result.url);
     if (result.alt) {

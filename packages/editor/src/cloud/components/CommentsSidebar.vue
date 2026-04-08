@@ -4,7 +4,7 @@ import type {
   UseCommentsReturn,
   UseEditorReturn,
 } from "@templatical/core/cloud";
-import type { Translations } from "../../i18n";
+import { useI18n } from "../../composables/useI18n";
 import type { Comment } from "@templatical/types";
 import type { AuthManager } from "@templatical/core/cloud";
 import {
@@ -31,7 +31,7 @@ const emit = defineEmits<{
   (e: "filterBlock", blockId: string | null): void;
 }>();
 
-const translations = inject<Translations>("translations")!;
+const { t, format } = useI18n();
 const editor = inject<UseEditorReturn>("editor")!;
 const authManager = inject<AuthManager>("authManager")!;
 const comments = inject<UseCommentsReturn>("comments")!;
@@ -212,7 +212,7 @@ function isOwnComment(comment: Comment): boolean {
 
 function formatTime(dateString: string): string {
   return (
-    formatRelativeTime(dateString, translations.snapshotHistory) ?? dateString
+    formatRelativeTime(dateString, t.snapshotHistory) ?? dateString
   );
 }
 
@@ -271,7 +271,7 @@ defineExpose({ filterByBlock, focusNewComment });
           style="color: var(--tpl-text)"
         >
           <MessageCircle :size="13" :stroke-width="2" />
-          <span>{{ translations.comments.title }}</span>
+          <span>{{ t.comments.title }}</span>
           <span
             v-if="comments.unresolvedCount.value > 0"
             class="tpl:ml-1 tpl:inline-flex tpl:size-5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold"
@@ -300,14 +300,14 @@ defineExpose({ filterByBlock, focusNewComment });
           "
           @click="setFilter('unresolved')"
         >
-          {{ translations.comments.filterUnresolved }}
+          {{ t.comments.filterUnresolved }}
         </button>
         <button
           class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:duration-150"
           :class="filterMode === 'all' ? 'tpl-comment-filter--active' : ''"
           @click="setFilter('all')"
         >
-          {{ translations.comments.filterAll }}
+          {{ t.comments.filterAll }}
         </button>
         <button
           v-if="editor.state.selectedBlockId"
@@ -315,7 +315,7 @@ defineExpose({ filterByBlock, focusNewComment });
           :class="filterMode === 'block' ? 'tpl-comment-filter--active' : ''"
           @click="setFilter('block', editor.state.selectedBlockId ?? undefined)"
         >
-          {{ translations.comments.filterBlock }}
+          {{ t.comments.filterBlock }}
         </button>
       </div>
 
@@ -350,8 +350,8 @@ defineExpose({ filterByBlock, focusNewComment });
           >
             {{
               filterMode === "all"
-                ? translations.comments.noCommentsHint
-                : translations.comments.noComments
+                ? t.comments.noCommentsHint
+                : t.comments.noComments
             }}
           </p>
         </div>
@@ -378,7 +378,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   >
                     {{
                       isOwnComment(thread)
-                        ? translations.comments.ownedByYou
+                        ? t.comments.ownedByYou
                         : thread.author_name
                     }}
                   </span>
@@ -393,7 +393,7 @@ defineExpose({ filterByBlock, focusNewComment });
                     class="tpl:text-[10px] tpl:italic"
                     style="color: var(--tpl-text-dim)"
                   >
-                    ({{ translations.comments.edited }})
+                    ({{ t.comments.edited }})
                   </span>
                 </div>
                 <div class="tpl:flex tpl:items-center tpl:gap-0.5">
@@ -402,8 +402,8 @@ defineExpose({ filterByBlock, focusNewComment });
                     class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
                     :title="
                       thread.resolved_at
-                        ? translations.comments.unresolve
-                        : translations.comments.resolve
+                        ? t.comments.unresolve
+                        : t.comments.resolve
                     "
                     @click="handleResolve(thread.id)"
                   >
@@ -422,7 +422,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   <button
                     v-if="isOwnComment(thread)"
                     class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
-                    :title="translations.comments.edit"
+                    :title="t.comments.edit"
                     @click="startEdit(thread)"
                   >
                     <Pencil :size="12" :stroke-width="2" />
@@ -431,7 +431,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   <button
                     v-if="isOwnComment(thread)"
                     class="tpl-comment-action tpl-comment-delete tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
-                    :title="translations.comments.delete"
+                    :title="t.comments.delete"
                     @click="confirmDelete(thread.id)"
                   >
                     <Trash2 :size="12" :stroke-width="2" />
@@ -449,10 +449,9 @@ defineExpose({ filterByBlock, focusNewComment });
                   <Check :size="10" :stroke-width="2.5" />
                   <span>
                     {{
-                      translations.comments.resolvedBy.replace(
-                        "{name}",
-                        thread.resolved_by_name ?? "",
-                      )
+                      format(t.comments.resolvedBy, {
+                        name: thread.resolved_by_name ?? "",
+                      })
                     }}
                   </span>
                 </div>
@@ -467,7 +466,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   color: var(--tpl-warning);
                 "
               >
-                {{ translations.comments.missingBlock }}
+                {{ t.comments.missingBlock }}
               </span>
               <button
                 v-else-if="thread.block_id"
@@ -504,14 +503,14 @@ defineExpose({ filterByBlock, focusNewComment });
                     :disabled="!editBody.trim() || comments.isSubmitting.value"
                     @click="handleEdit(thread.id)"
                   >
-                    {{ translations.comments.save }}
+                    {{ t.comments.save }}
                   </button>
                   <button
                     class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:duration-150"
                     style="color: var(--tpl-text-muted)"
                     @click="cancelEdit()"
                   >
-                    {{ translations.comments.cancel }}
+                    {{ t.comments.cancel }}
                   </button>
                 </div>
               </div>
@@ -533,7 +532,7 @@ defineExpose({ filterByBlock, focusNewComment });
                 "
               >
                 <span class="tpl:flex-1">
-                  {{ translations.comments.deleteConfirm }}
+                  {{ t.comments.deleteConfirm }}
                 </span>
                 <button
                   class="tpl:rounded tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-medium"
@@ -543,14 +542,14 @@ defineExpose({ filterByBlock, focusNewComment });
                   "
                   @click="handleDelete(thread.id)"
                 >
-                  {{ translations.comments.delete }}
+                  {{ t.comments.delete }}
                 </button>
                 <button
                   class="tpl:text-xs tpl:font-medium"
                   style="color: var(--tpl-text-muted)"
                   @click="cancelDelete()"
                 >
-                  {{ translations.comments.cancel }}
+                  {{ t.comments.cancel }}
                 </button>
               </div>
 
@@ -561,7 +560,7 @@ defineExpose({ filterByBlock, focusNewComment });
               >
                 <button
                   class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
-                  :title="translations.comments.reply"
+                  :title="t.comments.reply"
                   @click="startReply(thread.id)"
                 >
                   <Reply
@@ -584,14 +583,12 @@ defineExpose({ filterByBlock, focusNewComment });
                   </template>
                   {{
                     (thread.replies?.length ?? 0) === 1
-                      ? translations.comments.replyOne.replace(
-                          "{count}",
-                          String(thread.replies?.length ?? 0),
-                        )
-                      : translations.comments.replyMany.replace(
-                          "{count}",
-                          String(thread.replies?.length ?? 0),
-                        )
+                      ? format(t.comments.replyOne, {
+                          count: String(thread.replies?.length ?? 0),
+                        })
+                      : format(t.comments.replyMany, {
+                          count: String(thread.replies?.length ?? 0),
+                        })
                   }}
                 </button>
               </div>
@@ -624,7 +621,7 @@ defineExpose({ filterByBlock, focusNewComment });
                       >
                         {{
                           isOwnComment(reply)
-                            ? translations.comments.ownedByYou
+                            ? t.comments.ownedByYou
                             : reply.author_name
                         }}
                       </span>
@@ -639,14 +636,14 @@ defineExpose({ filterByBlock, focusNewComment });
                         class="tpl:text-[10px] tpl:italic"
                         style="color: var(--tpl-text-dim)"
                       >
-                        ({{ translations.comments.edited }})
+                        ({{ t.comments.edited }})
                       </span>
                     </div>
                     <div class="tpl:flex tpl:items-center tpl:gap-0.5">
                       <button
                         v-if="isOwnComment(reply)"
                         class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
-                        :title="translations.comments.edit"
+                        :title="t.comments.edit"
                         @click="startEdit(reply)"
                       >
                         <Pencil :size="11" :stroke-width="2" />
@@ -654,7 +651,7 @@ defineExpose({ filterByBlock, focusNewComment });
                       <button
                         v-if="isOwnComment(reply)"
                         class="tpl-comment-action tpl-comment-delete tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
-                        :title="translations.comments.delete"
+                        :title="t.comments.delete"
                         @click="confirmDelete(reply.id)"
                       >
                         <Trash2 :size="11" :stroke-width="2" />
@@ -687,14 +684,14 @@ defineExpose({ filterByBlock, focusNewComment });
                         "
                         @click="handleEdit(reply.id)"
                       >
-                        {{ translations.comments.save }}
+                        {{ t.comments.save }}
                       </button>
                       <button
                         class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium"
                         style="color: var(--tpl-text-muted)"
                         @click="cancelEdit()"
                       >
-                        {{ translations.comments.cancel }}
+                        {{ t.comments.cancel }}
                       </button>
                     </div>
                   </div>
@@ -716,7 +713,7 @@ defineExpose({ filterByBlock, focusNewComment });
                     "
                   >
                     <span class="tpl:flex-1">
-                      {{ translations.comments.deleteConfirm }}
+                      {{ t.comments.deleteConfirm }}
                     </span>
                     <button
                       class="tpl:rounded tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-medium"
@@ -726,14 +723,14 @@ defineExpose({ filterByBlock, focusNewComment });
                       "
                       @click="handleDelete(reply.id)"
                     >
-                      {{ translations.comments.delete }}
+                      {{ t.comments.delete }}
                     </button>
                     <button
                       class="tpl:text-xs tpl:font-medium"
                       style="color: var(--tpl-text-muted)"
                       @click="cancelDelete()"
                     >
-                      {{ translations.comments.cancel }}
+                      {{ t.comments.cancel }}
                     </button>
                   </div>
                 </div>
@@ -755,7 +752,7 @@ defineExpose({ filterByBlock, focusNewComment });
                       background-color: var(--tpl-bg);
                       color: var(--tpl-text);
                     "
-                    :placeholder="translations.comments.replyPlaceholder"
+                    :placeholder="t.comments.replyPlaceholder"
                     rows="2"
                     @keydown="handleReplyKeydown($event, thread.id)"
                   />
@@ -795,7 +792,7 @@ defineExpose({ filterByBlock, focusNewComment });
             color: var(--tpl-warning);
           "
         >
-          {{ translations.comments.saveTemplateFirst }}
+          {{ t.comments.saveTemplateFirst }}
         </div>
         <div
           v-else
@@ -810,7 +807,7 @@ defineExpose({ filterByBlock, focusNewComment });
             v-model="newCommentBody"
             class="tpl:max-h-24 tpl:min-h-[48px] tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-xs tpl:outline-none"
             style="color: var(--tpl-text)"
-            :placeholder="translations.comments.placeholder"
+            :placeholder="t.comments.placeholder"
             :disabled="comments.isSubmitting.value"
             rows="2"
             @keydown="handleNewCommentKeydown"

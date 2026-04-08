@@ -6,7 +6,7 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { containsMergeTag } from "@templatical/types";
-import type { TemplaticalEditorConfig } from "../../index";
+import type { OnRequestMedia } from "../../index";
 import { Image } from "@lucide/vue";
 import { computed, inject } from "vue";
 
@@ -21,11 +21,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { syntax } = useMergeTag();
-const config = inject<TemplaticalEditorConfig>("config");
-const canBrowseMedia = computed(() => !!config?.onRequestMedia);
+const onRequestMedia = inject<OnRequestMedia | null>("onRequestMedia", null);
+const canBrowseMedia = computed(() => !!onRequestMedia);
 
 async function browseMedia(): Promise<void> {
-  const result = await config?.onRequestMedia?.({ accept: ["images"] });
+  const result = await onRequestMedia?.({ accept: ["images"] });
   if (result) {
     const updates: Partial<ImageBlockType> = { src: result.url };
     if (result.alt) updates.alt = result.alt;

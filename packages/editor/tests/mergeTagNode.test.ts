@@ -137,6 +137,25 @@ describe('MergeTagNode extension config', () => {
   });
 });
 
+describe('MergeTagNode source structure', () => {
+  const { readFileSync } = require('node:fs');
+  const { resolve } = require('node:path');
+  const src = readFileSync(
+    resolve(__dirname, '../src/extensions/MergeTagNode.ts'),
+    'utf-8',
+  );
+
+  it('imports isNodeSelected from shared module', () => {
+    expect(src).toContain('import { isNodeSelected } from "./isNodeSelected"');
+    expect(src).not.toContain('const isMergeTagSelected');
+  });
+
+  it('has eslint-disable comment explaining the VueNodeViewRenderer cast', () => {
+    expect(src).toContain('eslint-disable-next-line @typescript-eslint/no-explicit-any');
+    expect(src).toContain('TipTap\'s VueNodeViewRenderer');
+  });
+});
+
 describe('MergeTagNode renderHTML attributes', () => {
   it('uses data-merge-tag attribute for value', () => {
     // The renderHTML builds: { 'data-merge-tag': value, 'data-label': label }

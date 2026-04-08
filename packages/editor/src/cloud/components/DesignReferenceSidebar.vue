@@ -5,7 +5,7 @@ import {
   useDesignReference,
   type UseEditorReturn,
 } from "@templatical/core/cloud";
-import type { Translations } from "../../i18n";
+import { useI18n } from "../../composables/useI18n";
 import type { AuthManager } from "@templatical/core/cloud";
 import type { TemplateContent } from "@templatical/types";
 import {
@@ -28,7 +28,7 @@ const emit = defineEmits<{
   (e: "apply", content: TemplateContent): void;
 }>();
 
-const translations = inject<Translations>("translations")!;
+const { t } = useI18n();
 const editor = inject<UseEditorReturn>("editor")!;
 const authManager = inject<AuthManager>("authManager")!;
 
@@ -46,8 +46,6 @@ const prompt = ref("");
 const filePreviewUrl = ref<string | null>(null);
 const showConfirmation = ref(false);
 const isDragging = ref(false);
-
-const t = computed(() => translations.designReference);
 
 const canGenerate = computed(() => {
   if (designReference.isGenerating.value) {
@@ -75,7 +73,7 @@ function handleFileSelect(event: Event): void {
 function setFile(file: File): void {
   // Validate file size (10MB)
   if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-    designReference.error.value = t.value.fileTooLarge;
+    designReference.error.value = t.designReference.fileTooLarge;
     return;
   }
 
@@ -83,12 +81,12 @@ function setFile(file: File): void {
   if (activeTab.value === "image") {
     const validTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
     if (!validTypes.includes(file.type)) {
-      designReference.error.value = t.value.invalidFileType;
+      designReference.error.value = t.designReference.invalidFileType;
       return;
     }
   } else if (activeTab.value === "pdf") {
     if (file.type !== "application/pdf") {
-      designReference.error.value = t.value.invalidFileType;
+      designReference.error.value = t.designReference.invalidFileType;
       return;
     }
   }
@@ -203,7 +201,7 @@ watch(
           style="color: var(--tpl-primary)"
         >
           <ImageUp :size="13" :stroke-width="2" />
-          <span>{{ t.title }}</span>
+          <span>{{ t.designReference.title }}</span>
         </div>
         <button
           class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
@@ -226,7 +224,7 @@ watch(
           >
             <LoadingTrack />
             <p class="tpl:text-sm" style="color: var(--tpl-text-muted)">
-              {{ t.generating }}
+              {{ t.designReference.generating }}
             </p>
           </div>
         </div>
@@ -252,7 +250,7 @@ watch(
               @click="selectTab('image')"
             >
               <FileImage :size="12" :stroke-width="2" />
-              {{ t.uploadImage }}
+              {{ t.designReference.uploadImage }}
             </button>
             <button
               class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
@@ -268,7 +266,7 @@ watch(
               @click="selectTab('pdf')"
             >
               <FileText :size="12" :stroke-width="2" />
-              {{ t.uploadPdf }}
+              {{ t.designReference.uploadPdf }}
             </button>
           </div>
 
@@ -348,13 +346,13 @@ watch(
                 class="tpl:text-center tpl:text-xs"
                 style="color: var(--tpl-text-muted)"
               >
-                {{ t.dropHint }}
+                {{ t.designReference.dropHint }}
               </span>
               <span
                 class="tpl:text-center tpl:text-[11px]"
                 style="color: var(--tpl-text-dim)"
               >
-                {{ activeTab === "image" ? t.acceptedImages : t.acceptedPdf }}
+                {{ activeTab === "image" ? t.designReference.acceptedImages : t.designReference.acceptedPdf }}
               </span>
             </div>
             <input
@@ -376,7 +374,7 @@ watch(
               class="tpl:text-xs tpl:font-medium"
               style="color: var(--tpl-text-muted)"
             >
-              {{ t.promptLabel }}
+              {{ t.designReference.promptLabel }}
             </label>
             <textarea
               v-model="prompt"
@@ -387,7 +385,7 @@ watch(
                 color: var(--tpl-text);
                 background-color: var(--tpl-bg);
               "
-              :placeholder="t.promptPlaceholder"
+              :placeholder="t.designReference.promptPlaceholder"
               rows="3"
             />
           </div>
@@ -405,7 +403,7 @@ watch(
               class="tpl:text-xs tpl:leading-snug"
               style="color: var(--tpl-text)"
             >
-              {{ t.replaceWarning }}
+              {{ t.designReference.replaceWarning }}
             </p>
             <div class="tpl:flex tpl:gap-2">
               <button
@@ -417,7 +415,7 @@ watch(
                 "
                 @click="cancelConfirmation"
               >
-                {{ t.replaceCancel }}
+                {{ t.designReference.replaceCancel }}
               </button>
               <button
                 class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90"
@@ -427,7 +425,7 @@ watch(
                 "
                 @click="handleGenerate"
               >
-                {{ t.replaceConfirm }}
+                {{ t.designReference.replaceConfirm }}
               </button>
             </div>
           </div>
@@ -446,7 +444,7 @@ watch(
               :stroke-width="2"
               class="tpl:mt-0.5 tpl:shrink-0"
             />
-            <span>{{ t.error }}</span>
+            <span>{{ t.designReference.error }}</span>
           </div>
 
           <!-- Generate button -->
@@ -458,7 +456,7 @@ watch(
             @click="handleGenerate"
           >
             <ImageUp :size="16" :stroke-width="2" />
-            {{ t.generate }}
+            {{ t.designReference.generate }}
           </button>
 
           <!-- AI disclaimer -->
@@ -466,7 +464,7 @@ watch(
             class="tpl:m-0 tpl:pt-1 tpl:text-center tpl:text-[11px]"
             style="color: var(--tpl-text-dim)"
           >
-            {{ translations.aiMenu.disclaimer }}
+            {{ t.aiMenu.disclaimer }}
           </p>
         </div>
       </div>

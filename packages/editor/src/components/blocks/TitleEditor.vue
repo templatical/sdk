@@ -104,9 +104,9 @@ const {
           <!-- Bold -->
           <button
             type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+            class="tpl-text-toolbar-btn"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+              'tpl-text-toolbar-btn--active':
                 editor?.isActive('bold'),
             }"
             :aria-label="t.titleEditor.bold"
@@ -118,9 +118,9 @@ const {
           <!-- Italic -->
           <button
             type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+            class="tpl-text-toolbar-btn"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+              'tpl-text-toolbar-btn--active':
                 editor?.isActive('italic'),
             }"
             :aria-label="t.titleEditor.italic"
@@ -136,9 +136,9 @@ const {
           <!-- Link -->
           <button
             type="button"
-            class="tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+            class="tpl-text-toolbar-btn"
             :class="{
-              'tpl:!bg-[var(--tpl-primary)] tpl:!text-[var(--tpl-bg)]':
+              'tpl-text-toolbar-btn--active':
                 editor?.isActive('link'),
             }"
             :aria-label="t.titleEditor.addLink"
@@ -169,7 +169,7 @@ const {
             class="tpl:flex tpl:items-center tpl:gap-2 tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
           >
             <LoaderCircle class="tpl-spinner" :size="14" :stroke-width="2" />
-            Loading editor...
+            {{ t.errors.editorLoading }}
           </div>
         </template>
       </div>
@@ -180,7 +180,7 @@ const {
       class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:border-[var(--tpl-primary)] tpl:p-2"
     >
       <div class="tpl:animate-pulse tpl:text-[var(--tpl-text-dim)]">
-        Loading...
+        {{ t.errors.editorLoading }}
       </div>
     </div>
     <div
@@ -188,13 +188,13 @@ const {
       class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:p-2 tpl:text-center tpl:text-xs"
       style="border-color: var(--tpl-danger); color: var(--tpl-text-muted)"
     >
-      {{ t.errors?.editorLoadFailed ?? "Failed to load editor." }}
+      {{ t.errors.editorLoadFailed }}
       <button
         class="tpl:ml-1 tpl:cursor-pointer tpl:border-none tpl:bg-transparent tpl:p-0 tpl:underline"
         style="color: var(--tpl-primary)"
         @click="retry"
       >
-        {{ t.errors?.retry ?? "Retry" }}
+        {{ t.errors.retry }}
       </button>
     </div>
     <component

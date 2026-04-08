@@ -12,6 +12,7 @@ import { computed, inject, ref } from "vue";
 import draggable from "vuedraggable";
 import CustomBlockIcon from "./CustomBlockIcon.vue";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
+import { getBlockTypeLabel } from "../utils/blockTypeLabels";
 import type {
   CloudPlanConfig,
   CloudSavedModules,
@@ -51,25 +52,33 @@ const isExpanded = ref(false);
 
 const isCloudMode = computed(() => !!planConfig);
 
+const builtInBlockTypeOrder: string[] = [
+  "section",
+  "image",
+  "title",
+  "paragraph",
+  "button",
+  "divider",
+  "video",
+  "social",
+  "menu",
+  "table",
+  "spacer",
+  "html",
+];
+
 const builtInBlockTypes = computed<BlockTypeItem[]>(() => {
-  const types: BlockTypeItem[] = [
-    { type: "section", label: t.blocks.section },
-    { type: "image", label: t.blocks.image },
-    { type: "title", label: t.blocks.title },
-    { type: "paragraph", label: t.blocks.paragraph },
-    { type: "button", label: t.blocks.button },
-    { type: "divider", label: t.blocks.divider },
-    { type: "video", label: t.blocks.video },
-    { type: "social", label: t.blocks.social },
-    { type: "menu", label: t.blocks.menu },
-    { type: "table", label: t.blocks.table },
-    { type: "spacer", label: t.blocks.spacer },
-    { type: "html", label: t.blocks.html },
-  ];
+  const types: BlockTypeItem[] = builtInBlockTypeOrder.map((type) => ({
+    type,
+    label: getBlockTypeLabel(type, t),
+  }));
 
   // Countdown requires Templatical Cloud for server-side GIF rendering
   if (isCloudMode.value) {
-    types.splice(-1, 0, { type: "countdown", label: t.blocks.countdown });
+    types.splice(-1, 0, {
+      type: "countdown",
+      label: getBlockTypeLabel("countdown", t),
+    });
   }
 
   return types;
@@ -89,7 +98,7 @@ const blockTypes = computed<BlockTypeItem[]>(() => [
   ...customBlockItems.value,
 ]);
 
-function cloneBlock(item: BlockTypeItem): Block {
+function createBlockFromItem(item: BlockTypeItem): Block {
   if (item.isCustom) {
     const customType = item.type.replace("custom:", "");
     const definition = customBlockDefinitions.find(
@@ -162,7 +171,7 @@ function cloneBlock(item: BlockTypeItem): Block {
     <draggable
       :list="blockTypes"
       :group="{ name: 'blocks', pull: 'clone', put: false }"
-      :clone="cloneBlock"
+      :clone="createBlockFromItem"
       :sort="false"
       item-key="type"
       :animation="150"

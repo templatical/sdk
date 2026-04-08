@@ -803,6 +803,7 @@ export default {
       "Dieser Dateityp wird nicht unterstützt. Laden Sie eine PNG-, JPG-, WebP- oder PDF-Datei hoch.",
   },
   errors: {
+    editorLoading: "Editor wird geladen...",
     editorLoadFailed: "Editor konnte nicht geladen werden.",
     retry: "Erneut versuchen",
   },

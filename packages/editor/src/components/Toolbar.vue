@@ -31,23 +31,10 @@ import type {
   TitleBlock,
 } from "@templatical/types";
 import { isCustomBlock } from "@templatical/types";
-import {
-  Code,
-  Columns3,
-  Copy,
-  Heading,
-  Image,
-  Minus,
-  MoveVertical,
-  Navigation,
-  Pilcrow,
-  RectangleHorizontal,
-  Share2,
-  Table,
-  Timer,
-  Trash2,
-} from "@lucide/vue";
+import { Code, Copy, Trash2 } from "@lucide/vue";
 import { computed, inject } from "vue";
+import { blockTypeIcons } from "../utils/blockTypeIcons";
+import { getBlockTypeLabel } from "../utils/blockTypeLabels";
 
 const props = defineProps<{
   block: Block;
@@ -88,21 +75,7 @@ const blockTypeLabel = computed(() => {
     );
   }
 
-  const labels: Record<string, string> = {
-    section: t.blocks.section,
-    image: t.blocks.image,
-    title: t.blocks.title,
-    paragraph: t.blocks.paragraph,
-    button: t.blocks.button,
-    divider: t.blocks.divider,
-    social: t.blocks.social,
-    menu: t.blocks.menu,
-    table: t.blocks.table,
-    spacer: t.blocks.spacer,
-    countdown: t.blocks.countdown,
-    html: t.blocks.html,
-  };
-  return labels[blockType.value] || blockType.value;
+  return getBlockTypeLabel(blockType.value, t);
 });
 
 // Font families from shared fontsManager (provided by Editor.vue / CloudEditor.vue)
@@ -123,58 +96,12 @@ function handleUpdate(updates: Partial<Block>): void {
       <div
         class="tpl:flex tpl:items-center tpl:gap-2 tpl:text-[var(--tpl-primary)]"
       >
-        <Columns3
-          v-if="blockType === 'section'"
+        <component
+          :is="blockTypeIcons[blockType]"
+          v-if="blockTypeIcons[blockType]"
           :size="16"
           :stroke-width="1.5"
         />
-        <Heading v-if="blockType === 'title'" :size="16" :stroke-width="1.5" />
-        <Pilcrow
-          v-else-if="blockType === 'paragraph'"
-          :size="16"
-          :stroke-width="1.5"
-        />
-        <Image
-          v-else-if="blockType === 'image'"
-          :size="16"
-          :stroke-width="1.5"
-        />
-        <RectangleHorizontal
-          v-else-if="blockType === 'button'"
-          :size="16"
-          :stroke-width="1.5"
-        />
-        <Minus
-          v-else-if="blockType === 'divider'"
-          :size="16"
-          :stroke-width="1.5"
-        />
-        <Share2
-          v-else-if="blockType === 'social'"
-          :size="16"
-          :stroke-width="1.5"
-        />
-        <Navigation
-          v-else-if="blockType === 'menu'"
-          :size="16"
-          :stroke-width="1.5"
-        />
-        <Table
-          v-else-if="blockType === 'table'"
-          :size="16"
-          :stroke-width="1.5"
-        />
-        <MoveVertical
-          v-else-if="blockType === 'spacer'"
-          :size="16"
-          :stroke-width="1.5"
-        />
-        <Timer
-          v-else-if="blockType === 'countdown'"
-          :size="16"
-          :stroke-width="1.5"
-        />
-        <Code v-else-if="blockType === 'html'" :size="16" :stroke-width="1.5" />
         <Code v-else-if="isCustom" :size="16" :stroke-width="1.5" />
         <h3
           class="tpl:m-0 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"

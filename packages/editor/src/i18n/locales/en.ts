@@ -792,6 +792,7 @@ export default {
       "This file type is not supported. Upload a PNG, JPG, WebP, or PDF.",
   },
   errors: {
+    editorLoading: "Loading editor...",
     editorLoadFailed: "Failed to load editor.",
     retry: "Retry",
   },

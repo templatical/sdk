@@ -8,7 +8,6 @@ const expectedKeys = [
   'title',
   'paragraph',
   'image',
-  'text',
   'button',
   'divider',
   'video',
@@ -21,8 +20,12 @@ const expectedKeys = [
 ];
 
 describe('blockTypeIcons', () => {
-  it('has exactly 14 entries', () => {
-    expect(Object.keys(blockTypeIcons)).toHaveLength(14);
+  it('has exactly 13 entries', () => {
+    expect(Object.keys(blockTypeIcons)).toHaveLength(13);
+  });
+
+  it('does not contain invalid block types', () => {
+    expect(blockTypeIcons).not.toHaveProperty('text');
   });
 
   it('contains all expected keys', () => {

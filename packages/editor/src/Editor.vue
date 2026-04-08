@@ -11,6 +11,7 @@ import {
   useConditionPreview,
 } from "@templatical/core";
 import type { EditorPlugin, EditorPluginContext } from "@templatical/core";
+import { handleEditorKeydown } from "./utils/keyboardShortcuts";
 import type {
   TemplateContent,
   ThemeOverrides,
@@ -110,46 +111,14 @@ const { themeStyles } = useThemeStyles({
 
 // --- Keyboard shortcuts ---
 function handleKeyboard(e: KeyboardEvent): void {
-  const isCmd = e.metaKey || e.ctrlKey;
-
-  if (isCmd && e.key === "z" && !e.shiftKey) {
-    e.preventDefault();
-    history.undo();
-  }
-
-  if (isCmd && e.key === "z" && e.shiftKey) {
-    e.preventDefault();
-    history.redo();
-  }
-
-  if (isCmd && e.key === "s") {
-    e.preventDefault();
-    props.config.onSave?.(JSON.parse(JSON.stringify(editor.state.content)));
-  }
-
-  if (e.key === "Escape") {
-    editor.selectBlock(null);
-  }
-
-  if (
-    (e.key === "Delete" || e.key === "Backspace") &&
-    editor.state.selectedBlockId &&
-    !isEditingText(e)
-  ) {
-    e.preventDefault();
-    history.record();
-    editor.removeBlock(editor.state.selectedBlockId);
-  }
-}
-
-function isEditingText(e: KeyboardEvent): boolean {
-  const target = e.target as HTMLElement;
-  return (
-    target.isContentEditable ||
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.tagName === "SELECT"
-  );
+  handleEditorKeydown(e, {
+    history,
+    selectBlock: (id) => editor.selectBlock(id),
+    getSelectedBlockId: () => editor.state.selectedBlockId,
+    removeBlock: (id) => editor.removeBlock(id),
+    onSave: () =>
+      props.config.onSave?.(JSON.parse(JSON.stringify(editor.state.content))),
+  });
 }
 
 // --- Plugin system ---
@@ -181,7 +150,6 @@ provide("editor", editor);
 provide("history", history);
 provide("blockActions", blockActions);
 provide("conditionPreview", conditionPreview);
-provide("config", props.config);
 provide("translations", props.translations);
 provide("fontsManager", fontsManager);
 provide("themeStyles", themeStyles);

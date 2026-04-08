@@ -70,9 +70,9 @@ const { t } = useI18n();
 
 const editor = inject<UseEditorReturn>("editor")!;
 const conditionPreview = inject<UseConditionPreviewReturn>("conditionPreview");
-const blockRegistry = inject<UseBlockRegistryReturn>(
+const blockRegistry = inject<UseBlockRegistryReturn | null>(
   "blockRegistry",
-  undefined as unknown as UseBlockRegistryReturn,
+  null,
 );
 
 // Cloud-only injects — null in OSS mode
@@ -133,12 +133,8 @@ function getBlockComponent(block: Block): Component | null {
   return resolveBlockComponent(block, blockRegistry, blockComponentMap);
 }
 
-function getBlockLockHolder(blockId: string): Collaborator | undefined {
-  return props.lockedBlocks?.get(blockId);
-}
-
-function isBlockLocked(blockId: string): boolean {
-  return props.lockedBlocks?.has(blockId) ?? false;
+function getBlockLock(blockId: string): Collaborator | null {
+  return props.lockedBlocks?.get(blockId) ?? null;
 }
 
 function handleFetchData(
@@ -194,21 +190,25 @@ function handleFetchData(
         class="tpl-canvas-blocks"
       >
         <template #item="{ element: block }">
-          <div v-show="!conditionPreview?.isHidden(block.id)">
+          <div
+            v-show="!conditionPreview?.isHidden(block.id)"
+            v-for="lockHolder in [getBlockLock(block.id)]"
+            :key="block.id"
+          >
             <div class="tpl:relative">
               <!-- Collaboration lock overlay -->
               <div
-                v-if="isBlockLocked(block.id)"
+                v-if="lockHolder"
                 class="tpl-collab-lock tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[4] tpl:rounded-sm"
                 :style="{
-                  outline: `2px solid ${getBlockLockHolder(block.id)!.color}`,
+                  outline: `2px solid ${lockHolder.color}`,
                   outlineOffset: '-1px',
                 }"
               >
                 <span
                   class="tpl:absolute tpl:-top-0.5 tpl:left-1/2 tpl:z-[5] tpl:flex tpl:-translate-x-1/2 tpl:-translate-y-full tpl:items-center tpl:gap-1 tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:text-white tpl:whitespace-nowrap"
                   :style="{
-                    backgroundColor: getBlockLockHolder(block.id)!.color,
+                    backgroundColor: lockHolder.color,
                   }"
                 >
                   <span
@@ -221,9 +221,9 @@ function handleFetchData(
                       );
                     "
                   >
-                    {{ getBlockLockHolder(block.id)!.name.charAt(0) }}
+                    {{ lockHolder.name.charAt(0) }}
                   </span>
-                  {{ getBlockLockHolder(block.id)!.name }}
+                  {{ lockHolder.name }}
                 </span>
               </div>
               <BlockWrapper
@@ -231,12 +231,12 @@ function handleFetchData(
                 :is-selected="
                   !previewMode &&
                   selectedBlockId === block.id &&
-                  !isBlockLocked(block.id)
+                  !lockHolder
                 "
                 :viewport="viewport"
                 :preview-mode="previewMode"
                 @select="
-                  previewMode || isBlockLocked(block.id)
+                  previewMode || lockHolder
                     ? undefined
                     : emit('select-block', block.id)
                 "

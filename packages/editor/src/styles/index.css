@@ -393,6 +393,21 @@
     box-shadow: var(--tpl-shadow-xl);
 }
 
+/* Rich text toolbar buttons (ParagraphEditor, TitleEditor) */
+.tpl-text-toolbar-btn {
+    @apply tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:transition-all tpl:duration-150;
+    color: var(--tpl-text);
+}
+
+.tpl-text-toolbar-btn:hover {
+    background-color: var(--tpl-bg-active);
+}
+
+.tpl-text-toolbar-btn--active {
+    background-color: var(--tpl-primary) !important;
+    color: var(--tpl-bg) !important;
+}
+
 /* Tiptap Editor Styles - Targets generated HTML we can't add classes to */
 .tpl-text-content,
 .tpl-text-editable .tiptap {

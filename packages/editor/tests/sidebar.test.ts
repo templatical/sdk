@@ -35,3 +35,11 @@ describe("Sidebar.vue icon rendering", () => {
     expect(src).not.toContain("RectangleHorizontal,");
   });
 });
+
+describe("Sidebar.vue block creation function", () => {
+  it("uses createBlockFromItem (not cloneBlock) as the draggable clone handler", () => {
+    expect(src).toContain("function createBlockFromItem(item: BlockTypeItem)");
+    expect(src).toContain(":clone=\"createBlockFromItem\"");
+    expect(src).not.toContain("function cloneBlock");
+  });
+});

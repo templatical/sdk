@@ -6,7 +6,7 @@ import type {
   CustomBlockDefinition,
 } from "@templatical/types";
 import { createCustomBlock } from "@templatical/types";
-import { type Component, shallowRef } from "vue";
+import { type Component, shallowRef, triggerRef } from "vue";
 
 export interface SidebarItem {
   type: string;
@@ -44,9 +44,8 @@ export function useBlockRegistry(): UseBlockRegistryReturn {
     type: string,
     registration: BlockRegistration,
   ): void {
-    const map = new Map(registry.value);
-    map.set(type, registration);
-    registry.value = map;
+    registry.value.set(type, registration);
+    triggerRef(registry);
   }
 
   function registerCustom(
@@ -67,9 +66,8 @@ export function useBlockRegistry(): UseBlockRegistryReturn {
       definition,
     };
 
-    const map = new Map(registry.value);
-    map.set(registrationKey, registration);
-    registry.value = map;
+    registry.value.set(registrationKey, registration);
+    triggerRef(registry);
   }
 
   function getComponent(block: Block): Component | undefined {

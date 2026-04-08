@@ -32,9 +32,7 @@ export interface TemplaticalEditorConfig {
   onSave?: (content: TemplateContent) => void;
   onError?: (error: Error) => void;
 
-  onRequestMedia?: (
-    context?: MediaRequestContext,
-  ) => Promise<MediaResult | null>;
+  onRequestMedia?: OnRequestMedia;
 
   mergeTags?: MergeTagsConfig;
   displayConditions?: DisplayConditionsConfig;
@@ -50,6 +48,11 @@ export interface TemplaticalEditorConfig {
 
   plugins?: EditorPlugin[];
 }
+
+/** Function type for media browser requests, used by both OSS and Cloud editors. */
+export type OnRequestMedia = (
+  context?: MediaRequestContext,
+) => Promise<MediaResult | null>;
 
 export interface TemplaticalEditor {
   getContent(): TemplateContent;

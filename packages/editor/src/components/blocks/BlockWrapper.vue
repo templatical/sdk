@@ -15,6 +15,7 @@ import {
   Trash2,
 } from "@lucide/vue";
 import { computed, inject } from "vue";
+import { getBlockWrapperStyle } from "../../utils/blockComponentResolver";
 import type {
   CloudComments,
   CloudPlanConfig,
@@ -84,14 +85,7 @@ const blockCommentCount = computed(() => {
   return commentsInstance.commentCountByBlock.value.get(props.block.id) ?? 0;
 });
 
-const wrapperStyle = computed(() => {
-  const { padding, margin, backgroundColor } = props.block.styles;
-  return {
-    padding: `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`,
-    margin: `${margin.top}px ${margin.right}px ${margin.bottom}px ${margin.left}px`,
-    backgroundColor: backgroundColor || "transparent",
-  };
-});
+const wrapperStyle = computed(() => getBlockWrapperStyle(props.block));
 
 function handleClick(event: MouseEvent): void {
   if (props.previewMode) {

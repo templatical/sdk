@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import LoadingTrack from "../../components/LoadingTrack.vue";
 import {
-  useTemplateScoring,
   type UseEditorReturn,
+  type UseTemplateScoringReturn,
 } from "@templatical/core/cloud";
-import type { Translations } from "../../i18n";
+import { useI18n } from "../../composables/useI18n";
 import type { ScoringCategory, ScoringFinding } from "@templatical/types";
 import type { MergeTag } from "@templatical/types";
-import type { AuthManager } from "@templatical/core/cloud";
 import {
   CircleAlert,
   TriangleAlert,
@@ -32,15 +31,10 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const translations = inject<Translations>("translations")!;
+const { t } = useI18n();
 const editor = inject<UseEditorReturn>("editor")!;
-const authManager = inject<AuthManager>("authManager")!;
+const scoring = inject<UseTemplateScoringReturn>("scoring")!;
 const mergeTags = inject<MergeTag[]>("mergeTags", []);
-
-const scoring = useTemplateScoring({
-  authManager,
-  getTemplateId: () => editor.state.template?.id ?? null,
-});
 
 const expandedCategories = ref<Record<string, boolean>>({
   spam: true,
@@ -120,44 +114,35 @@ watch(
   },
 );
 
-const fixError = ref<string | null>(null);
-
 async function handleFix(finding: ScoringFinding): Promise<void> {
   if (!finding.blockId) {
     return;
   }
 
-  fixError.value = null;
+  // Get the block content from the editor
+  const block = editor.content.value.blocks.find(
+    (b) => b.id === finding.blockId,
+  );
+  if (!block) {
+    return;
+  }
 
-  try {
-    // Get the block content from the editor
-    const block = editor.content.value.blocks.find(
-      (b) => b.id === finding.blockId,
-    );
-    if (!block) {
-      return;
-    }
+  // Extract HTML content from the block (text blocks have content property)
+  const blockContent = (block as unknown as Record<string, unknown>)
+    .content as string | undefined;
+  if (!blockContent) {
+    return;
+  }
 
-    // Extract HTML content from the block (text blocks have content property)
-    const blockContent = (block as unknown as Record<string, unknown>)
-      .content as string | undefined;
-    if (!blockContent) {
-      return;
-    }
+  const fixedContent = await scoring.fixFinding(
+    blockContent,
+    finding,
+    mergeTags,
+  );
 
-    const fixedContent = await scoring.fixFinding(
-      blockContent,
-      finding,
-      mergeTags,
-    );
-
-    if (fixedContent) {
-      editor.updateBlock(finding.blockId, { content: fixedContent });
-      scoring.removeFinding(finding.category, finding.id);
-    }
-  } catch (error) {
-    fixError.value =
-      error instanceof Error ? error.message : "Failed to apply fix";
+  if (fixedContent) {
+    editor.updateBlock(finding.blockId, { content: fixedContent });
+    scoring.removeFinding(finding.category, finding.id);
   }
 }
 
@@ -195,14 +180,14 @@ function totalFindings(): number {
           style="color: var(--tpl-primary)"
         >
           <ShieldCheck :size="13" :stroke-width="2" />
-          <span>{{ translations.scoring.title }}</span>
+          <span>{{ t.scoring.title }}</span>
         </div>
         <div class="tpl:flex tpl:items-center tpl:gap-1">
           <button
             v-if="scoring.scoringResult.value && !scoring.isScoring.value"
             class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
             style="color: var(--tpl-text-muted)"
-            :title="translations.scoring.rescore"
+            :title="t.scoring.rescore"
             @click="triggerScore()"
           >
             <RefreshCw :size="14" :stroke-width="2" />
@@ -225,7 +210,7 @@ function totalFindings(): number {
           class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
         >
           <p class="tpl:text-sm" style="color: var(--tpl-text-muted)">
-            {{ translations.scoring.scoring }}
+            {{ t.scoring.scoring }}
           </p>
           <LoadingTrack class="tpl:w-3/4" />
         </div>
@@ -244,7 +229,7 @@ function totalFindings(): number {
             class="tpl:max-w-[240px] tpl:text-sm"
             style="color: var(--tpl-text-muted)"
           >
-            {{ translations.scoring.error }}
+            {{ t.scoring.error }}
           </p>
           <button
             class="tpl:mt-2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
@@ -255,7 +240,7 @@ function totalFindings(): number {
             @click="triggerScore()"
           >
             <RefreshCw :size="12" :stroke-width="2" />
-            {{ translations.scoring.rescore }}
+            {{ t.scoring.rescore }}
           </button>
         </div>
 
@@ -283,7 +268,7 @@ function totalFindings(): number {
               class="tpl:text-xs tpl:font-medium tpl:uppercase tpl:tracking-wider"
               style="color: var(--tpl-text-muted)"
             >
-              {{ translations.scoring.overallScore }}
+              {{ t.scoring.overallScore }}
             </span>
             <span
               v-if="totalFindings() > 0"
@@ -291,7 +276,7 @@ function totalFindings(): number {
               style="color: var(--tpl-text-dim)"
             >
               {{ totalFindings() }}
-              {{ translations.scoring.findings }}
+              {{ t.scoring.findings }}
             </span>
           </div>
 
@@ -309,7 +294,7 @@ function totalFindings(): number {
               :stroke-width="2"
               class="tpl:mt-0.5 tpl:shrink-0"
             />
-            <span>{{ translations.scoring.fixError }}</span>
+            <span>{{ t.scoring.fixError }}</span>
           </div>
 
           <!-- Category cards -->
@@ -339,7 +324,7 @@ function totalFindings(): number {
                 class="tpl:flex-1 tpl:text-xs tpl:font-medium"
                 style="color: var(--tpl-text)"
               >
-                {{ translations.scoring.categories[category] }}
+                {{ t.scoring.categories[category] }}
               </span>
               <span
                 class="tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-semibold tpl:tabular-nums"
@@ -394,7 +379,7 @@ function totalFindings(): number {
                 class="tpl:px-3 tpl:py-3 tpl:text-center tpl:text-xs"
                 style="color: var(--tpl-text-dim)"
               >
-                {{ translations.scoring.noFindings }}
+                {{ t.scoring.noFindings }}
               </div>
               <div
                 v-for="finding in scoring.scoringResult.value.categories[
@@ -431,7 +416,7 @@ function totalFindings(): number {
                           backgroundColor: severityBgColor(finding.severity),
                         }"
                       >
-                        {{ translations.scoring.severity[finding.severity] }}
+                        {{ t.scoring.severity[finding.severity] }}
                       </span>
                       <span
                         class="tpl:text-xs tpl:leading-snug"
@@ -472,16 +457,16 @@ function totalFindings(): number {
                         <Sparkles v-else :size="11" :stroke-width="2" />
                         {{
                           scoring.fixingFindingId.value === finding.id
-                            ? translations.scoring.fixing
-                            : translations.scoring.fix
+                            ? t.scoring.fixing
+                            : t.scoring.fix
                         }}
                       </button>
                       <p
-                        v-if="fixError"
+                        v-if="scoring.fixError.value"
                         class="tpl:mt-1.5 tpl:text-[11px]"
                         style="color: var(--tpl-danger)"
                       >
-                        {{ fixError }}
+                        {{ scoring.fixError.value }}
                       </p>
                     </div>
                   </div>
@@ -505,7 +490,7 @@ function totalFindings(): number {
             class="tpl:max-w-[240px] tpl:text-sm"
             style="color: var(--tpl-text-muted)"
           >
-            {{ translations.scoring.emptyState }}
+            {{ t.scoring.emptyState }}
           </p>
         </div>
 
@@ -514,7 +499,7 @@ function totalFindings(): number {
           class="tpl:m-0 tpl:px-4 tpl:pb-2 tpl:pt-2 tpl:text-center tpl:text-[11px]"
           style="color: var(--tpl-text-dim)"
         >
-          {{ translations.aiMenu.disclaimer }}
+          {{ t.aiMenu.disclaimer }}
         </p>
       </div>
     </div>
