@@ -26,6 +26,13 @@ export {
   type UseRichTextEditorReturn,
 } from "./useRichTextEditor";
 
+export {
+  useEditorCore,
+  type BaseEditorReturn,
+  type UseEditorCoreOptions,
+  type UseEditorCoreReturn,
+} from "./useEditorCore";
+
 // Re-export core composables for convenience
 export type { UseEditorReturn } from "@templatical/core";
 export type { UseBlockActionsReturn } from "@templatical/core";

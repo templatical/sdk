@@ -190,25 +190,21 @@ function handleFetchData(
         class="tpl-canvas-blocks"
       >
         <template #item="{ element: block }">
-          <div
-            v-show="!conditionPreview?.isHidden(block.id)"
-            v-for="lockHolder in [getBlockLock(block.id)]"
-            :key="block.id"
-          >
+          <div v-show="!conditionPreview?.isHidden(block.id)">
             <div class="tpl:relative">
               <!-- Collaboration lock overlay -->
               <div
-                v-if="lockHolder"
+                v-if="getBlockLock(block.id)"
                 class="tpl-collab-lock tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[4] tpl:rounded-sm"
                 :style="{
-                  outline: `2px solid ${lockHolder.color}`,
+                  outline: `2px solid ${getBlockLock(block.id)!.color}`,
                   outlineOffset: '-1px',
                 }"
               >
                 <span
                   class="tpl:absolute tpl:-top-0.5 tpl:left-1/2 tpl:z-[5] tpl:flex tpl:-translate-x-1/2 tpl:-translate-y-full tpl:items-center tpl:gap-1 tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:text-white tpl:whitespace-nowrap"
                   :style="{
-                    backgroundColor: lockHolder.color,
+                    backgroundColor: getBlockLock(block.id)!.color,
                   }"
                 >
                   <span
@@ -221,9 +217,9 @@ function handleFetchData(
                       );
                     "
                   >
-                    {{ lockHolder.name.charAt(0) }}
+                    {{ getBlockLock(block.id)!.name.charAt(0) }}
                   </span>
-                  {{ lockHolder.name }}
+                  {{ getBlockLock(block.id)!.name }}
                 </span>
               </div>
               <BlockWrapper
@@ -231,12 +227,12 @@ function handleFetchData(
                 :is-selected="
                   !previewMode &&
                   selectedBlockId === block.id &&
-                  !lockHolder
+                  !getBlockLock(block.id)
                 "
                 :viewport="viewport"
                 :preview-mode="previewMode"
                 @select="
-                  previewMode || lockHolder
+                  previewMode || getBlockLock(block.id)
                     ? undefined
                     : emit('select-block', block.id)
                 "

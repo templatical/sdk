@@ -1,23 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, provide, ref } from "vue";
-import { useEventListener } from "@vueuse/core";
+import { onMounted, onUnmounted } from "vue";
 import type { TemplaticalEditorConfig } from "./index";
-import {
-  useEditor,
-  useHistory,
-  useHistoryInterceptor,
-  useBlockActions,
-  useAutoSave,
-  useConditionPreview,
-} from "@templatical/core";
-import type { EditorPlugin, EditorPluginContext } from "@templatical/core";
-import { handleEditorKeydown } from "./utils/keyboardShortcuts";
-import type {
-  TemplateContent,
-  ThemeOverrides,
-  UiTheme,
-} from "@templatical/types";
-import { resolveSyntax } from "@templatical/types";
+import { useEditor } from "@templatical/core";
+import type { TemplateContent, UiTheme } from "@templatical/types";
+import { useEditorCore } from "./composables/useEditorCore";
+import type { Translations } from "./i18n";
+import type { UseFontsReturn } from "./composables/useFonts";
 
 import { RotateCcw } from "@lucide/vue";
 import Canvas from "./components/Canvas.vue";
@@ -26,27 +14,6 @@ import RightSidebar from "./components/RightSidebar.vue";
 import ViewportToggle from "./components/ViewportToggle.vue";
 import PreviewToggle from "./components/PreviewToggle.vue";
 import DarkModeToggle from "./components/DarkModeToggle.vue";
-import ButtonBlock from "./components/blocks/ButtonBlock.vue";
-import CountdownBlockComponent from "./components/blocks/CountdownBlock.vue";
-import CustomBlockComponent from "./components/blocks/CustomBlock.vue";
-import DividerBlock from "./components/blocks/DividerBlock.vue";
-import HtmlBlock from "./components/blocks/HtmlBlock.vue";
-import ImageBlock from "./components/blocks/ImageBlock.vue";
-import MenuBlock from "./components/blocks/MenuBlock.vue";
-import ParagraphBlock from "./components/blocks/ParagraphBlock.vue";
-import SectionBlock from "./components/blocks/SectionBlock.vue";
-import SocialIconsBlock from "./components/blocks/SocialIconsBlock.vue";
-import SpacerBlock from "./components/blocks/SpacerBlock.vue";
-import TableBlock from "./components/blocks/TableBlock.vue";
-import TitleBlock from "./components/blocks/TitleBlock.vue";
-import VideoBlock from "./components/blocks/VideoBlock.vue";
-import type { Translations } from "./i18n";
-import { useBlockRegistry } from "./composables/useBlockRegistry";
-import { useI18n } from "./composables/useI18n";
-import { registerBuiltInBlocks } from "./utils/registerBuiltInBlocks";
-import type { UseFontsReturn } from "./composables/useFonts";
-import { useUiTheme } from "./composables/useUiTheme";
-import { useThemeStyles } from "./composables/useThemeStyles";
 import "./styles/index.css";
 
 const props = defineProps<{
@@ -55,163 +22,47 @@ const props = defineProps<{
   fontsManager: UseFontsReturn;
 }>();
 
-// --- i18n ---
-const { t } = useI18n(props.translations);
-
-// --- Font management (received as prop from init()) ---
-const fontsManager = props.fontsManager;
-
 // --- Core editor state ---
 const editor = useEditor({
   content: props.config.content!,
   templateDefaults: props.config.templateDefaults,
 });
 
-// --- History (undo/redo) ---
-const history = useHistory({
-  content: editor.content,
-  setContent: editor.setContent,
+// --- Shared editor core (composables, provides, plugins, keyboard) ---
+const core = useEditorCore({
+  editor,
+  config: {
+    uiTheme: props.config.uiTheme,
+    theme: props.config.theme,
+    blockDefaults: props.config.blockDefaults,
+    customBlocks: props.config.customBlocks,
+    mergeTags: props.config.mergeTags,
+    displayConditions: props.config.displayConditions,
+    onRequestMedia: props.config.onRequestMedia,
+    onSave: props.config.onSave
+      ? () =>
+          props.config.onSave!(
+            JSON.parse(JSON.stringify(editor.state.content)),
+          )
+      : undefined,
+    plugins: props.config.plugins,
+  },
+  translations: props.translations,
+  fontsManager: props.fontsManager,
+  autoSaveOptions: props.config.onChange
+    ? { onChange: props.config.onChange }
+    : null,
 });
-
-// Wrap editor mutation methods to record history snapshots
-useHistoryInterceptor(editor, history);
-
-// --- Block actions ---
-const blockActions = useBlockActions({
-  addBlock: editor.addBlock,
-  removeBlock: editor.removeBlock,
-  updateBlock: editor.updateBlock,
-  selectBlock: editor.selectBlock,
-  blockDefaults: props.config.blockDefaults,
-});
-
-// --- Auto-save (debounced onChange for OSS mode) ---
-const autoSave = props.config.onChange
-  ? useAutoSave({
-      content: editor.content,
-      isDirty: () => editor.state.isDirty,
-      onChange: props.config.onChange,
-    })
-  : null;
-
-// --- Display condition preview ---
-const conditionPreview = useConditionPreview(editor);
-
-// --- UI Theme ---
-editor.setUiTheme(props.config.uiTheme ?? "auto");
-const uiThemeRef = computed(() => editor.state.uiTheme);
-const { resolvedTheme } = useUiTheme(uiThemeRef);
-
-// --- Theme ---
-const themeOverrides = ref<ThemeOverrides>(props.config.theme ?? {});
-const { themeStyles } = useThemeStyles({
-  themeOverrides,
-  resolvedTheme,
-});
-
-// --- Keyboard shortcuts ---
-function handleKeyboard(e: KeyboardEvent): void {
-  handleEditorKeydown(e, {
-    history,
-    selectBlock: (id) => editor.selectBlock(id),
-    getSelectedBlockId: () => editor.state.selectedBlockId,
-    removeBlock: (id) => editor.removeBlock(id),
-    onSave: () =>
-      props.config.onSave?.(JSON.parse(JSON.stringify(editor.state.content))),
-  });
-}
-
-// --- Plugin system ---
-const installedPlugins: EditorPlugin[] = [];
-
-function installPlugins(): void {
-  const plugins = props.config.plugins ?? [];
-  const context: EditorPluginContext = {
-    state: editor.state,
-    content: editor.content,
-    selectedBlockId: editor.state.selectedBlockId,
-    viewport: editor.state.viewport,
-    addBlock: editor.addBlock,
-    updateBlock: editor.updateBlock,
-    removeBlock: editor.removeBlock,
-    moveBlock: editor.moveBlock,
-    updateSettings: editor.updateSettings,
-    selectBlock: editor.selectBlock,
-  };
-
-  for (const plugin of plugins) {
-    plugin.install(context);
-    installedPlugins.push(plugin);
-  }
-}
-
-// --- Provide to child components ---
-provide("editor", editor);
-provide("history", history);
-provide("blockActions", blockActions);
-provide("conditionPreview", conditionPreview);
-provide("translations", props.translations);
-provide("fontsManager", fontsManager);
-provide("themeStyles", themeStyles);
-provide("tplUiTheme", resolvedTheme);
-provide("blockDefaults", props.config.blockDefaults);
-
-// Block registry — register built-in + custom blocks
-const registry = useBlockRegistry();
-registerBuiltInBlocks(registry, {
-  section: SectionBlock,
-  title: TitleBlock,
-  paragraph: ParagraphBlock,
-  image: ImageBlock,
-  button: ButtonBlock,
-  divider: DividerBlock,
-  video: VideoBlock,
-  social: SocialIconsBlock,
-  menu: MenuBlock,
-  table: TableBlock,
-  spacer: SpacerBlock,
-  html: HtmlBlock,
-  countdown: CountdownBlockComponent,
-});
-if (props.config.customBlocks?.length) {
-  for (const definition of props.config.customBlocks) {
-    registry.registerCustom(definition, CustomBlockComponent);
-  }
-}
-provide("blockRegistry", registry);
-provide("customBlockDefinitions", props.config.customBlocks ?? []);
-
-// Merge tags
-const mergeTagSyntax = resolveSyntax(props.config.mergeTags?.syntax);
-provide("mergeTags", props.config.mergeTags?.tags ?? []);
-provide("mergeTagSyntax", mergeTagSyntax);
-provide("onRequestMergeTag", props.config.mergeTags?.onRequest ?? null);
-
-// Media
-provide("onRequestMedia", props.config.onRequestMedia ?? null);
-
-// Display conditions
-provide("displayConditions", props.config.displayConditions?.conditions ?? []);
-provide(
-  "allowCustomConditions",
-  props.config.displayConditions?.allowCustom ?? false,
-);
 
 // --- Lifecycle ---
-useEventListener(document, "keydown", handleKeyboard);
-
 onMounted(async () => {
-  installPlugins();
-  await fontsManager.loadCustomFonts();
+  core.installPlugins();
+  await props.fontsManager.loadCustomFonts();
 });
 
 onUnmounted(() => {
-  fontsManager.cleanupFontLinks();
-  autoSave?.destroy();
-  history.destroy();
-  for (const plugin of installedPlugins) {
-    plugin.destroy?.();
-  }
+  props.fontsManager.cleanupFontLinks();
+  core.destroy();
 });
 
 // --- Public API (accessed via template ref from init()) ---
@@ -226,8 +77,8 @@ defineExpose({
   <div
     class="tpl tpl:relative tpl:h-full tpl:overflow-hidden"
     :class="{ 'tpl:dark': editor.state.darkMode }"
-    :data-tpl-theme="resolvedTheme"
-    :style="themeStyles"
+    :data-tpl-theme="core.resolvedTheme.value"
+    :style="core.themeStyles.value"
   >
     <!-- Header — absolute, full width, above everything -->
     <header
@@ -252,7 +103,7 @@ defineExpose({
           class="tpl:text-sm tpl:font-semibold"
           style="color: var(--tpl-text); letter-spacing: -0.01em"
         >
-          {{ t.header.title }}
+          {{ core.t.header.title }}
         </span>
       </div>
 
@@ -299,7 +150,7 @@ defineExpose({
       <div class="tpl:sticky tpl:top-0 tpl:z-40 tpl:h-0">
         <Transition name="tpl-restore-btn">
           <button
-            v-if="conditionPreview.hasHiddenBlocks.value"
+            v-if="core.conditionPreview.hasHiddenBlocks.value"
             class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:-translate-x-1/2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-full tpl:border tpl:px-3.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:whitespace-nowrap tpl:shadow-md tpl:hover:opacity-80"
             style="
               background-color: var(--tpl-warning-light);
@@ -307,10 +158,10 @@ defineExpose({
               border-color: var(--tpl-warning);
               backdrop-filter: blur(8px);
             "
-            @click="conditionPreview.reset()"
+            @click="core.conditionPreview.reset()"
           >
             <RotateCcw :size="13" :stroke-width="2" />
-            {{ t.blockSettings.restoreHiddenBlocks }}
+            {{ core.t.blockSettings.restoreHiddenBlocks }}
           </button>
         </Transition>
       </div>
@@ -326,7 +177,7 @@ defineExpose({
       </div>
     </div>
 
-    <!-- Footer — OSS branding (not shown in CloudEditor) -->
+    <!-- Footer — OSS branding -->
     <footer
       class="tpl:pointer-events-none tpl:absolute tpl:bottom-0 tpl:z-50 tpl:flex tpl:h-8 tpl:items-center tpl:justify-end tpl:pr-4 tpl:text-[9px] tpl:opacity-90 tpl:transition-all tpl:duration-300"
       :class="[
@@ -348,7 +199,7 @@ defineExpose({
           -webkit-backdrop-filter: blur(8px);
         "
       >
-        <span>{{ t.footer.poweredBy }}</span>
+        <span>{{ core.t.footer.poweredBy }}</span>
         <a
           href="https://templatical.com"
           target="_blank"
@@ -372,14 +223,14 @@ defineExpose({
           class="tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80"
           style="color: var(--tpl-text-dim); text-decoration: none"
         >
-          {{ t.footer.openSource }}
+          {{ core.t.footer.openSource }}
         </a>
       </div>
     </footer>
 
-    <!-- Right sidebar — absolute, below header -->
+    <!-- Right sidebar — persisted with v-show -->
     <RightSidebar
-      v-if="!editor.state.previewMode"
+      v-show="!editor.state.previewMode"
       :selected-block="editor.selectedBlock.value"
       :settings="editor.content.value.settings"
       @update-block="
@@ -388,16 +239,14 @@ defineExpose({
       @delete-block="
         () => {
           if (editor.state.selectedBlockId) {
-            history.record();
-            blockActions.deleteBlock(editor.state.selectedBlockId);
+            core.blockActions.deleteBlock(editor.state.selectedBlockId);
           }
         }
       "
       @duplicate-block="
         () => {
           if (editor.selectedBlock.value) {
-            history.record();
-            blockActions.duplicateBlock(editor.selectedBlock.value);
+            core.blockActions.duplicateBlock(editor.selectedBlock.value);
           }
         }
       "

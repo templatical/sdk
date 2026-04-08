@@ -346,39 +346,34 @@ describe("handleEditorKeydown", () => {
 
 // ── Source structure regression tests ────────────────────────────────────────
 
-describe("Editor.vue uses shared keyboard shortcuts", () => {
+describe("Editor.vue delegates keyboard shortcuts to useEditorCore", () => {
   const src = readSrc("Editor.vue");
 
-  it("imports handleEditorKeydown", () => {
-    expect(src).toContain(
-      'import { handleEditorKeydown } from "./utils/keyboardShortcuts"',
-    );
-  });
-
-  it("does not define isEditingText locally", () => {
+  it("uses useEditorCore which handles keyboard shortcuts", () => {
+    expect(src).toContain("useEditorCore(");
+    expect(src).not.toContain("function handleKeyboard");
     expect(src).not.toContain("function isEditingText");
   });
 
-  it("does not have inline modifier key detection", () => {
-    expect(src).not.toContain("e.metaKey || e.ctrlKey");
-  });
-});
-
-describe("CloudEditor.vue uses shared keyboard shortcuts", () => {
-  const src = readSrc("cloud/CloudEditor.vue");
-
-  it("imports handleEditorKeydown", () => {
-    expect(src).toContain(
+  it("useEditorCore imports handleEditorKeydown", () => {
+    const coreSrc = readSrc("composables/useEditorCore.ts");
+    expect(coreSrc).toContain(
       'import { handleEditorKeydown } from "../utils/keyboardShortcuts"',
     );
   });
+});
 
-  it("does not have platform-specific modifier detection", () => {
+describe("CloudEditor.vue delegates keyboard shortcuts to useEditorCore", () => {
+  const src = readSrc("cloud/CloudEditor.vue");
+
+  it("uses useEditorCore which handles keyboard shortcuts", () => {
+    expect(src).toContain("useEditorCore(");
+    expect(src).not.toContain("function handleKeydown");
     expect(src).not.toContain("isMac");
     expect(src).not.toContain("navigator.userAgent");
   });
 
-  it("passes onBeforeUndo for collab warning", () => {
+  it("passes onBeforeUndo for collab warning via keyboardOptions", () => {
     expect(src).toContain("onBeforeUndo:");
     expect(src).toContain("showCollabUndoWarning()");
   });

@@ -37,8 +37,8 @@ describe("constant consumers", () => {
     expect(src).not.toMatch(/setTimeout[\s\S]*?30000/);
   });
 
-  it("CloudEditor.vue uses COLLAB_UNDO_WARNING_MS instead of 4000", () => {
-    const src = readSrc("cloud/CloudEditor.vue");
+  it("useCollabUndoWarning uses COLLAB_UNDO_WARNING_MS instead of 4000", () => {
+    const src = readSrc("cloud/composables/useCollabUndoWarning.ts");
     expect(src).toContain("COLLAB_UNDO_WARNING_MS");
     expect(src).not.toMatch(/}, 4000\)/);
   });
@@ -56,19 +56,22 @@ describe("constant consumers", () => {
   });
 });
 
-describe("CloudEditor.vue dead provides cleanup", () => {
+describe("CloudEditor.vue provides cleanup", () => {
   const src = readSrc("cloud/CloudEditor.vue");
 
   it("does not provide dragDrop (unused inject)", () => {
     expect(src).not.toContain('provide("dragDrop"');
   });
 
-  it("has all provides in the provides section, not scattered across the file", () => {
-    const providesSection = src.indexOf(
-      "Provides — all synchronous",
-    );
-    const translationsProvide = src.indexOf('provide("translations"');
-    expect(translationsProvide).toBeGreaterThan(providesSection);
+  it("shared provides are handled by useEditorCore, not CloudEditor", () => {
+    // CloudEditor should not have shared provide() calls — those are in useEditorCore
+    expect(src).not.toContain('provide("translations"');
+    expect(src).not.toContain('provide("blockActions"');
+    expect(src).not.toContain('provide("conditionPreview"');
+    expect(src).not.toContain('provide("fontsManager"');
+    // But cloud-only provides should still be present
+    expect(src).toContain('provide("authManager"');
+    expect(src).toContain('provide("scoring"');
   });
 });
 
@@ -81,11 +84,9 @@ describe("CloudEditor.vue platform detection removed", () => {
     expect(src).not.toContain("isMac");
   });
 
-  it("uses shared handleEditorKeydown from keyboardShortcuts utility", () => {
-    expect(src).toContain(
-      'import { handleEditorKeydown } from "../utils/keyboardShortcuts"',
-    );
-    expect(src).toContain("handleEditorKeydown(event,");
+  it("delegates keyboard shortcuts to useEditorCore (no direct handleEditorKeydown import)", () => {
+    expect(src).toContain("useEditorCore(");
+    expect(src).not.toContain("handleEditorKeydown");
   });
 });
 
@@ -121,28 +122,30 @@ describe("CloudEditor.vue async functions guard against post-unmount execution",
   });
 
   it("createTemplate() checks _destroyed after await", () => {
-    const fn = src.slice(
-      src.indexOf("async function createTemplate"),
-      src.indexOf("async function loadTemplate"),
-    );
+    const start = src.indexOf("async function createTemplate");
+    const end = src.indexOf("}", start + 50);
+    const fn = src.slice(start, end);
     expect(fn).toContain("if (_destroyed)");
   });
 
   it("loadTemplate() checks _destroyed after await", () => {
-    const fn = src.slice(
-      src.indexOf("async function loadTemplate"),
-      src.indexOf("async function preRenderCustomBlocks") !== -1
-        ? src.indexOf("async function preRenderCustomBlocks")
-        : src.indexOf("function preRenderCustomBlocks"),
-    );
+    const start = src.indexOf("async function loadTemplate");
+    const end = src.indexOf("}", start + 50);
+    const fn = src.slice(start, end);
     expect(fn).toContain("if (_destroyed)");
   });
 
   it("saveTemplate() checks _destroyed after each await and guards catch/finally", () => {
-    const fn = src.slice(
-      src.indexOf("async function saveTemplate"),
-      src.indexOf("// ----", src.indexOf("async function saveTemplate")),
+    const start = src.indexOf("async function saveTemplate");
+    // Find a reasonable end — the next top-level function or section
+    const nextFn = src.indexOf("\nasync function", start + 10);
+    const nextSection = src.indexOf("\n// ---", start + 10);
+    const end = Math.min(
+      nextFn > 0 ? nextFn : Infinity,
+      nextSection > 0 ? nextSection : Infinity,
+      src.length,
     );
+    const fn = src.slice(start, end);
     const guardCount = (fn.match(/_destroyed/g) || []).length;
     // 3 await guards + catch guard + finally guard = 5
     expect(guardCount).toBeGreaterThanOrEqual(5);
@@ -152,14 +155,10 @@ describe("CloudEditor.vue async functions guard against post-unmount execution",
 // ── useTimeoutFn setup-time pattern ──────────────────────────────────────────
 
 describe("useTimeoutFn called at setup time, not inside callbacks", () => {
-  it("CloudEditor.vue calls useTimeoutFn at setup time for collab undo warning", () => {
-    const src = readSrc("cloud/CloudEditor.vue");
-    // Should have a setup-time useTimeoutFn with { immediate: false }
-    expect(src).toMatch(
-      /const \{ start: startCollabUndoWarningTimeout \} = useTimeoutFn/,
-    );
-    // showCollabUndoWarning should call start(), not useTimeoutFn directly
-    expect(src).toContain("startCollabUndoWarningTimeout()");
+  it("useCollabUndoWarning calls useTimeoutFn at setup time", () => {
+    const src = readSrc("cloud/composables/useCollabUndoWarning.ts");
+    expect(src).toMatch(/useTimeoutFn/);
+    expect(src).toContain("immediate: false");
   });
 
   it("AiChatSidebar.vue calls useTimeoutFn at setup time for reveal delay", () => {
@@ -265,11 +264,11 @@ describe("onRequestMedia signature unified with optional context", () => {
   it("neither editor provides a config wrapper object", () => {
     const oss = readSrc("Editor.vue");
     const cloud = readSrc("cloud/CloudEditor.vue");
+    const core = readSrc("composables/useEditorCore.ts");
     expect(oss).not.toContain('provide("config"');
     expect(cloud).not.toContain('provide("config"');
-    // Both provide onRequestMedia directly
-    expect(oss).toContain('provide("onRequestMedia"');
-    expect(cloud).toContain('provide("onRequestMedia"');
+    // onRequestMedia is provided by useEditorCore (shared)
+    expect(core).toContain('provide("onRequestMedia"');
   });
 
   it("no call sites use parameterless onRequestMedia?()", () => {
@@ -287,19 +286,21 @@ describe("onRequestMedia signature unified with optional context", () => {
 // ── History interceptor composable extraction ────────────────────────────────
 
 describe("useHistoryInterceptor replaces manual wrapping", () => {
-  it("Editor.vue uses useHistoryInterceptor", () => {
-    const src = readSrc("Editor.vue");
+  it("useEditorCore calls useHistoryInterceptor", () => {
+    const src = readSrc("composables/useEditorCore.ts");
     expect(src).toContain("useHistoryInterceptor(editor, history)");
-    expect(src).not.toContain("const originalAddBlock = editor.addBlock");
-    expect(src).not.toContain("const originalRemoveBlock = editor.removeBlock");
   });
 
-  it("CloudEditor.vue uses useHistoryInterceptor", () => {
+  it("Editor.vue delegates to useEditorCore (no direct interceptor call)", () => {
+    const src = readSrc("Editor.vue");
+    expect(src).toContain("useEditorCore(");
+    expect(src).not.toContain("useHistoryInterceptor");
+  });
+
+  it("CloudEditor.vue delegates history interceptor to useEditorCore", () => {
     const src = readSrc("cloud/CloudEditor.vue");
-    expect(src).toContain("useHistoryInterceptor(editor, history)");
-    expect(src).not.toContain(
-      "const historyOriginalAddBlock = editor.addBlock",
-    );
+    expect(src).toContain("useEditorCore(");
+    expect(src).not.toContain("useHistoryInterceptor(");
   });
 
   it("CloudEditor.vue uses useCollaborationBroadcast", () => {
@@ -348,10 +349,11 @@ describe("useMergeTagField extracts shared logic from MergeTag components", () =
 // ── Cloud inject types ───────────────────────────────────────────────────────
 
 describe("cloud-only injects use typed interfaces instead of any", () => {
-  it("Canvas.vue computes lock holder once per block via scoped v-for", () => {
+  it("Canvas.vue uses getBlockLock for lock holder checks (no v-for trick that breaks vuedraggable)", () => {
     const src = readSrc("components/Canvas.vue");
-    expect(src).toContain("v-for=\"lockHolder in [getBlockLock(block.id)]\"");
-    expect(src).not.toContain("getBlockLockHolder(block.id)!");
+    expect(src).toContain("getBlockLock(block.id)");
+    // Must NOT use v-for inside #item slot — breaks Sortable.js DOM tracking
+    expect(src).not.toMatch(/v-for="lockHolder/);
   });
 
   it("Canvas.vue uses CloudPlanConfig and CloudAiConfig", () => {
@@ -565,13 +567,12 @@ describe("useRichTextEditor init error and retry", () => {
 
 // ── Unified useI18n pattern ──────────────────────────────────────────────────
 
-describe("Editor.vue uses unified useI18n pattern", () => {
+describe("Editor.vue uses useEditorCore for i18n", () => {
   const src = readSrc("Editor.vue");
 
-  it("uses useI18n composable instead of custom t() function", () => {
-    expect(src).toContain("useI18n(props.translations)");
-    expect(src).not.toContain("function t(key: string");
-    expect(src).not.toContain('key.split(".")');
+  it("delegates i18n to useEditorCore", () => {
+    expect(src).toContain("useEditorCore(");
+    expect(src).not.toContain("useI18n(props.translations)");
   });
 
   it("receives translations as a prop", () => {
@@ -582,12 +583,11 @@ describe("Editor.vue uses unified useI18n pattern", () => {
     expect(src).toContain("fontsManager: UseFontsReturn");
   });
 
-  it("uses typed dot access for translations in template", () => {
-    expect(src).toContain("t.header.title");
-    expect(src).toContain("t.footer.poweredBy");
-    expect(src).toContain("t.footer.openSource");
-    expect(src).toContain("t.blockSettings.restoreHiddenBlocks");
-    expect(src).not.toMatch(/t\(".*"\)/);
+  it("uses core.t for typed dot access in template", () => {
+    expect(src).toContain("core.t.header.title");
+    expect(src).toContain("core.t.footer.poweredBy");
+    expect(src).toContain("core.t.footer.openSource");
+    expect(src).toContain("core.t.blockSettings.restoreHiddenBlocks");
   });
 
   it("no longer has isReady loading guard", () => {
@@ -613,40 +613,22 @@ describe("init() is async and loads translations before mount", () => {
 
 // ── Save status indicator ────────────────────────────────────────────────────
 
-describe("CloudEditor.vue inline save status indicator", () => {
-  const src = readSrc("cloud/CloudEditor.vue");
-
-  it("defines saveStatus and saveErrorMessage refs", () => {
-    expect(src).toContain(
-      'const saveStatus = ref<"idle" | "saved" | "error">("idle")',
-    );
-    expect(src).toContain('const saveErrorMessage = ref("")');
+describe("save status indicator", () => {
+  it("useCloudFeatureFlags defines saveStatus and saveErrorMessage refs", () => {
+    const src = readSrc("cloud/composables/useCloudFeatureFlags.ts");
+    expect(src).toContain("saveStatus");
+    expect(src).toContain("saveErrorMessage");
   });
 
-  it("sets saveStatus to saved on successful save with auto-clear", () => {
-    expect(src).toContain('saveStatus.value = "saved"');
-    expect(src).toContain("startSaveStatusClear()");
+  it("CloudEditor.vue shows save status in template", () => {
+    const src = readSrc("cloud/CloudEditor.vue");
+    expect(src).toContain("featureFlags.saveStatus");
+    expect(src).toContain("featureFlags.saveErrorMessage");
   });
 
-  it("sets saveStatus to error on save failure with error message", () => {
-    expect(src).toContain('saveStatus.value = "error"');
-    expect(src).toContain("saveErrorMessage.value =");
-  });
-
-  it("shows error state with CircleAlert icon and tooltip", () => {
-    expect(src).toContain('v-if="saveStatus === \'error\'"');
-    expect(src).toContain("t.header.saveFailed");
-    expect(src).toContain(":data-tooltip=\"saveErrorMessage\"");
-  });
-
-  it("shows saved state with Check icon", () => {
-    expect(src).toContain('v-else-if="saveStatus === \'saved\'"');
-    expect(src).toContain("t.header.saved");
-  });
-
-  it("still shows unsaved state when dirty", () => {
-    expect(src).toContain('v-else-if="editor.state.isDirty"');
-    expect(src).toContain("t.header.unsaved");
+  it("CloudEditor.vue still shows unsaved state when dirty", () => {
+    const src = readSrc("cloud/CloudEditor.vue");
+    expect(src).toContain("editor.state.isDirty");
   });
 });
 

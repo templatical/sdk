@@ -63,20 +63,24 @@ describe("registerBuiltInBlocks utility", () => {
 });
 
 describe("registerBuiltInBlocks consumers", () => {
-  it("Editor.vue uses registerBuiltInBlocks", () => {
-    const src = readSrc("Editor.vue");
-    expect(src).toContain("registerBuiltInBlocks(registry,");
-    expect(src).toContain(
-      'import { registerBuiltInBlocks } from "./utils/registerBuiltInBlocks"',
-    );
-  });
-
-  it("CloudEditor.vue uses registerBuiltInBlocks", () => {
-    const src = readSrc("cloud/CloudEditor.vue");
-    expect(src).toContain("registerBuiltInBlocks(registry,");
+  it("useEditorCore calls registerBuiltInBlocks", () => {
+    const src = readSrc("composables/useEditorCore.ts");
+    expect(src).toContain("registerBuiltInBlocks(registry, BLOCK_COMPONENT_MAP)");
     expect(src).toContain(
       'import { registerBuiltInBlocks } from "../utils/registerBuiltInBlocks"',
     );
+  });
+
+  it("Editor.vue delegates to useEditorCore", () => {
+    const src = readSrc("Editor.vue");
+    expect(src).toContain("useEditorCore(");
+    expect(src).not.toContain("registerBuiltInBlocks(");
+  });
+
+  it("CloudEditor.vue delegates to useEditorCore (no direct registerBuiltInBlocks call)", () => {
+    const src = readSrc("cloud/CloudEditor.vue");
+    expect(src).toContain("useEditorCore(");
+    expect(src).not.toContain("registerBuiltInBlocks(");
   });
 
   it("CloudEditor.vue no longer imports factory functions directly", () => {
@@ -86,8 +90,8 @@ describe("registerBuiltInBlocks consumers", () => {
     expect(src).not.toContain("createImageBlock");
   });
 
-  it("Editor.vue passes all 13 block components in the map", () => {
-    const src = readSrc("Editor.vue");
+  it("useEditorCore defines BLOCK_COMPONENT_MAP with all 13 block components", () => {
+    const src = readSrc("composables/useEditorCore.ts");
     const expectedKeys = [
       "section: SectionBlock",
       "title: TitleBlock",
