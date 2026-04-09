@@ -7,14 +7,14 @@ import type {
   TemplateContent,
   ViewportSize,
 } from "@templatical/types";
-import type {
-  UseEditorReturn,
-  UseConditionPreviewReturn,
-} from "@templatical/core";
-import type { UseBlockRegistryReturn } from "../composables";
-import type { CloudPlanConfig, CloudAiConfig } from "../types/cloud-injects";
 import { ImageUp, Sparkles, SquarePlus } from "@lucide/vue";
 import { computed, inject, type Component } from "vue";
+import {
+  EDITOR_KEY,
+  CONDITION_PREVIEW_KEY,
+  BLOCK_REGISTRY_KEY,
+  CAPABILITIES_KEY,
+} from "../keys";
 import draggable from "vuedraggable";
 import { resolveBlockComponent } from "../utils/blockComponentResolver";
 
@@ -68,27 +68,21 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const editor = inject<UseEditorReturn>("editor")!;
-const conditionPreview = inject<UseConditionPreviewReturn>("conditionPreview");
-const blockRegistry = inject<UseBlockRegistryReturn | null>(
-  "blockRegistry",
-  null,
-);
+const editor = inject(EDITOR_KEY)!;
+const conditionPreview = inject(CONDITION_PREVIEW_KEY);
+const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 
-// Cloud-only injects — null in OSS mode
+const caps = inject(CAPABILITIES_KEY, {});
 
-const planConfig = inject<CloudPlanConfig | null>("planConfig", null);
-
-const aiConfig = inject<CloudAiConfig | null>("aiConfig", null);
-
-const canUseAi = computed(
-  () => planConfig?.hasFeature("ai_generation") ?? false,
-);
 const canUseAiChat = computed(
-  () => canUseAi.value && aiConfig?.isFeatureEnabled("chat"),
+  () =>
+    (caps.plan?.hasFeature("ai_generation") ?? false) &&
+    (caps.ai?.isFeatureEnabled("chat") ?? false),
 );
 const canUseDesignToTemplate = computed(
-  () => canUseAi.value && aiConfig?.isFeatureEnabled("designToTemplate"),
+  () =>
+    (caps.plan?.hasFeature("ai_generation") ?? false) &&
+    (caps.ai?.isFeatureEnabled("designToTemplate") ?? false),
 );
 
 const blocks = computed({

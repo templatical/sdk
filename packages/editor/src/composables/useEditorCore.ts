@@ -38,6 +38,27 @@ import type {
 import { resolveSyntax } from "@templatical/types";
 import type { Translations } from "../i18n";
 import type { OnRequestMedia } from "../index";
+import type { EditorCapabilities } from "../types/editor-capabilities";
+import {
+  TRANSLATIONS_KEY,
+  EDITOR_KEY,
+  HISTORY_KEY,
+  BLOCK_ACTIONS_KEY,
+  CONDITION_PREVIEW_KEY,
+  FONTS_MANAGER_KEY,
+  THEME_STYLES_KEY,
+  UI_THEME_KEY,
+  BLOCK_DEFAULTS_KEY,
+  BLOCK_REGISTRY_KEY,
+  CUSTOM_BLOCK_DEFINITIONS_KEY,
+  MERGE_TAGS_KEY,
+  MERGE_TAG_SYNTAX_KEY,
+  ON_REQUEST_MERGE_TAG_KEY,
+  ON_REQUEST_MEDIA_KEY,
+  DISPLAY_CONDITIONS_KEY,
+  ALLOW_CUSTOM_CONDITIONS_KEY,
+  CAPABILITIES_KEY,
+} from "../keys";
 import type { UseFontsReturn } from "./useFonts";
 import { useI18n, type UseI18nReturn } from "./useI18n";
 import { useUiTheme } from "./useUiTheme";
@@ -158,6 +179,9 @@ export interface UseEditorCoreOptions {
 
   /** Extra keyboard shortcut hooks (Cloud passes onBeforeUndo for collab warning) */
   keyboardOptions?: { onBeforeUndo?: () => void };
+
+  /** Cloud capabilities exposed to OSS components. Empty in OSS mode. */
+  capabilities?: EditorCapabilities;
 }
 
 export interface UseEditorCoreReturn {
@@ -295,31 +319,35 @@ export function useEditorCore(
 
   useEventListener(document, "keydown", handleKeyboard);
 
-  // --- Provides (17 shared keys) ---
-  provide("translations", translations);
-  provide("editor", editor);
-  provide("history", history);
-  provide("blockActions", blockActions);
-  provide("conditionPreview", conditionPreview);
-  provide("fontsManager", fontsManager);
-  provide("themeStyles", themeStyles);
-  provide("tplUiTheme", resolvedTheme);
-  provide("blockDefaults", config.blockDefaults);
-  provide("blockRegistry", registry);
-  provide("customBlockDefinitions", config.customBlocks ?? []);
+  // --- Provides (18 shared keys) ---
+  provide(TRANSLATIONS_KEY, translations);
+  provide(EDITOR_KEY, editor);
+  provide(HISTORY_KEY, history);
+  provide(BLOCK_ACTIONS_KEY, blockActions);
+  provide(CONDITION_PREVIEW_KEY, conditionPreview);
+  provide(FONTS_MANAGER_KEY, fontsManager);
+  provide(THEME_STYLES_KEY, themeStyles);
+  provide(UI_THEME_KEY, resolvedTheme);
+  provide(BLOCK_DEFAULTS_KEY, config.blockDefaults);
+  provide(BLOCK_REGISTRY_KEY, registry);
+  provide(CUSTOM_BLOCK_DEFINITIONS_KEY, config.customBlocks ?? []);
 
   const mergeTagSyntax = resolveSyntax(config.mergeTags?.syntax);
-  provide("mergeTags", config.mergeTags?.tags ?? []);
-  provide("mergeTagSyntax", mergeTagSyntax);
-  provide("onRequestMergeTag", config.mergeTags?.onRequest ?? null);
+  provide(MERGE_TAGS_KEY, config.mergeTags?.tags ?? []);
+  provide(MERGE_TAG_SYNTAX_KEY, mergeTagSyntax);
+  provide(ON_REQUEST_MERGE_TAG_KEY, config.mergeTags?.onRequest ?? null);
 
-  provide("onRequestMedia", config.onRequestMedia ?? null);
+  provide(ON_REQUEST_MEDIA_KEY, config.onRequestMedia ?? null);
 
-  provide("displayConditions", config.displayConditions?.conditions ?? []);
+  provide(DISPLAY_CONDITIONS_KEY, config.displayConditions?.conditions ?? []);
   provide(
-    "allowCustomConditions",
+    ALLOW_CUSTOM_CONDITIONS_KEY,
     config.displayConditions?.allowCustom ?? false,
   );
+
+  // Default empty capabilities for OSS mode.
+  // CloudEditor overrides this via provide() after cloud composables are ready.
+  provide(CAPABILITIES_KEY, options.capabilities ?? {});
 
   // --- Cleanup ---
   function destroy(): void {

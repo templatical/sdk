@@ -12,7 +12,7 @@ import TableBlock from "../../components/blocks/TableBlock.vue";
 import TitleBlock from "../../components/blocks/TitleBlock.vue";
 import ParagraphBlock from "../../components/blocks/ParagraphBlock.vue";
 import VideoBlock from "../../components/blocks/VideoBlock.vue";
-import type { UseBlockRegistryReturn } from "../../composables";
+import { BLOCK_REGISTRY_KEY } from "../../keys";
 import {
   resolveBlockComponent,
   getBlockWrapperStyle,
@@ -24,7 +24,7 @@ defineProps<{
   blocks: Block[];
 }>();
 
-const blockRegistry = inject<UseBlockRegistryReturn>("blockRegistry");
+const blockRegistry = inject(BLOCK_REGISTRY_KEY);
 
 const modulePreviewComponentMap: Record<string, Component> = {
   section: PreviewSectionBlock,

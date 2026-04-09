@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import TplModal from "./TplModal.vue";
 import { useI18n } from "../../composables";
-import type { UseEditorReturn } from "@templatical/core/cloud";
-import type { UseSavedModulesReturn } from "@templatical/core/cloud";
+import { EDITOR_KEY, SAVED_MODULES_HEADLESS_KEY } from "../../keys";
 import type { Block } from "@templatical/types";
 import { LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref, watch } from "vue";
@@ -18,8 +17,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const editor = inject<UseEditorReturn>("editor")!;
-const savedModules = inject<UseSavedModulesReturn>("savedModulesHeadless")!;
+const editor = inject(EDITOR_KEY)!;
+const savedModules = inject(SAVED_MODULES_HEADLESS_KEY)!;
 
 const moduleName = ref("");
 const selectedBlockIds = ref<Set<string>>(new Set());

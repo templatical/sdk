@@ -6,9 +6,9 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { containsMergeTag } from "@templatical/types";
-import type { OnRequestMedia } from "../../index";
 import { Image } from "@lucide/vue";
 import { computed, inject } from "vue";
+import { ON_REQUEST_MEDIA_KEY } from "../../keys";
 
 const props = defineProps<{
   block: ImageBlockType;
@@ -21,7 +21,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { syntax } = useMergeTag();
-const onRequestMedia = inject<OnRequestMedia | null>("onRequestMedia", null);
+const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
 const canBrowseMedia = computed(() => !!onRequestMedia);
 
 async function browseMedia(): Promise<void> {

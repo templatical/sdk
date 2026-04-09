@@ -13,13 +13,11 @@ import SpacerToolbar from "./toolbar/SpacerToolbar.vue";
 import TableToolbar from "./toolbar/TableToolbar.vue";
 import TitleToolbar from "./toolbar/TitleToolbar.vue";
 import { useI18n } from "../composables/useI18n";
-import type { UseFontsReturn } from "../composables/useFonts";
 import type {
   Block,
   ButtonBlock,
   CountdownBlock,
   CustomBlock,
-  CustomBlockDefinition,
   DividerBlock,
   HtmlBlock,
   ImageBlock,
@@ -35,6 +33,7 @@ import { Code, Copy, Trash2 } from "@lucide/vue";
 import { computed, inject } from "vue";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
 import { getBlockTypeLabel } from "../utils/blockTypeLabels";
+import { FONTS_MANAGER_KEY, CUSTOM_BLOCK_DEFINITIONS_KEY } from "../keys";
 
 const props = defineProps<{
   block: Block;
@@ -48,11 +47,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const fontsManager = inject<UseFontsReturn>("fontsManager")!;
-const customBlockDefinitions = inject<CustomBlockDefinition[]>(
-  "customBlockDefinitions",
-  [],
-);
+const fontsManager = inject(FONTS_MANAGER_KEY)!;
+const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 
 const blockType = computed(() => props.block.type);
 

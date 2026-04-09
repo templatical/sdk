@@ -73,7 +73,7 @@ describe("useRichTextEditor composable structure", () => {
 
 describe("useRichTextEditor implementation", () => {
   it("injects editor from context", () => {
-    expect(composableSrc).toContain('inject<UseEditorReturn>("editor")');
+    expect(composableSrc).toContain('inject(EDITOR_KEY)');
   });
 
   it("delegates link dialog to useRichTextLinkDialog", () => {

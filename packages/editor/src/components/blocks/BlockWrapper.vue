@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import type {
-  UseBlockActionsReturn,
-  UseConditionPreviewReturn,
-} from "@templatical/core";
 import { useI18n } from "../../composables/useI18n";
 import type { Block, ViewportSize } from "@templatical/types";
 import {
@@ -16,11 +12,11 @@ import {
 } from "@lucide/vue";
 import { computed, inject } from "vue";
 import { getBlockWrapperStyle } from "../../utils/blockComponentResolver";
-import type {
-  CloudComments,
-  CloudPlanConfig,
-  CloudSavedModules,
-} from "../../types/cloud-injects";
+import {
+  BLOCK_ACTIONS_KEY,
+  CONDITION_PREVIEW_KEY,
+  CAPABILITIES_KEY,
+} from "../../keys";
 
 const props = defineProps<{
   block: Block;
@@ -56,34 +52,16 @@ const hiddenLabel = computed(() => {
 
 const hasDisplayCondition = computed(() => !!props.block.displayCondition);
 
-const blockActions = inject<UseBlockActionsReturn>("blockActions");
-const conditionPreview = inject<UseConditionPreviewReturn>("conditionPreview");
+const blockActions = inject(BLOCK_ACTIONS_KEY);
+const conditionPreview = inject(CONDITION_PREVIEW_KEY);
 
-// Cloud-only injects — null in OSS mode
+const caps = inject(CAPABILITIES_KEY, {});
 
-const commentsInstance = inject<CloudComments | null>("comments", null);
-const openCommentsForBlock = inject<((blockId: string) => void) | null>(
-  "openCommentsForBlock",
-  null,
+const canSaveAsModule = computed(() => !!caps.savedModules);
+
+const blockCommentCount = computed(
+  () => caps.comments?.getBlockCount(props.block.id) ?? 0,
 );
-
-const savedModulesVisual = inject<CloudSavedModules | null>(
-  "savedModules",
-  null,
-);
-
-const planConfig = inject<CloudPlanConfig | null>("planConfig", null);
-
-const canSaveAsModule = computed(
-  () => !!savedModulesVisual && !!planConfig?.hasFeature("saved_modules"),
-);
-
-const blockCommentCount = computed(() => {
-  if (!commentsInstance) {
-    return 0;
-  }
-  return commentsInstance.commentCountByBlock.value.get(props.block.id) ?? 0;
-});
 
 const wrapperStyle = computed(() => getBlockWrapperStyle(props.block));
 
@@ -104,7 +82,7 @@ function handleDuplicate(): void {
 }
 
 function handleSaveAsModule(): void {
-  savedModulesVisual?.openSaveDialog(props.block.id);
+  caps.savedModules?.openSaveDialog(props.block.id);
 }
 
 function handleConditionToggle(): void {
@@ -222,7 +200,7 @@ function handleConditionToggle(): void {
         :aria-label="
           format(t.blockActions.comments, { count: String(blockCommentCount) })
         "
-        @click.stop="openCommentsForBlock?.(block.id)"
+        @click.stop="caps.comments?.openForBlock(block.id)"
       >
         <MessageCircle :size="10" :stroke-width="2.5" />
         {{ blockCommentCount }}

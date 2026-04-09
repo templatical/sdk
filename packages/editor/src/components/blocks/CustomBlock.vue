@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import CustomBlockIcon from "../CustomBlockIcon.vue";
 import LoadingTrack from "../LoadingTrack.vue";
-import { useI18n, type UseBlockRegistryReturn } from "../../composables";
+import { useI18n } from "../../composables";
 import { useDataSourceFetch } from "@templatical/core";
 import type {
   CustomBlock as CustomBlockType,
@@ -10,6 +10,7 @@ import type {
 import { useDebounceFn } from "@vueuse/core";
 import { TriangleAlert, Puzzle } from "@lucide/vue";
 import { computed, inject, onMounted, ref, watch } from "vue";
+import { BLOCK_REGISTRY_KEY } from "../../keys";
 
 const props = defineProps<{
   block: CustomBlockType;
@@ -28,7 +29,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const blockRegistry = inject<UseBlockRegistryReturn>("blockRegistry");
+const blockRegistry = inject(BLOCK_REGISTRY_KEY);
 
 const renderedHtml = ref("");
 const hasError = ref(false);

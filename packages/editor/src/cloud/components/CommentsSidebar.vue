@@ -1,12 +1,8 @@
 <script setup lang="ts">
 import { formatRelativeTime } from "../../utils/formatRelativeTime";
-import type {
-  UseCommentsReturn,
-  UseEditorReturn,
-} from "@templatical/core/cloud";
+import { EDITOR_KEY, AUTH_MANAGER_KEY, COMMENTS_KEY } from "../../keys";
 import { useI18n } from "../../composables/useI18n";
 import type { Comment } from "@templatical/types";
-import type { AuthManager } from "@templatical/core/cloud";
 import {
   Check,
   CircleCheck,
@@ -32,9 +28,9 @@ const emit = defineEmits<{
 }>();
 
 const { t, format } = useI18n();
-const editor = inject<UseEditorReturn>("editor")!;
-const authManager = inject<AuthManager>("authManager")!;
-const comments = inject<UseCommentsReturn>("comments")!;
+const editor = inject(EDITOR_KEY)!;
+const authManager = inject(AUTH_MANAGER_KEY)!;
+const comments = inject(COMMENTS_KEY)!;
 
 type FilterMode = "all" | "unresolved" | "block";
 const filterMode = ref<FilterMode>("unresolved");

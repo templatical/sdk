@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
-import type {
-  Block,
-  BlockDefaults,
-  BlockType,
-  CustomBlockDefinition,
-} from "@templatical/types";
+import type { Block, BlockType } from "@templatical/types";
 import { createBlock, createCustomBlock } from "@templatical/types";
 import { Package } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
@@ -13,10 +8,11 @@ import draggable from "vuedraggable";
 import CustomBlockIcon from "./CustomBlockIcon.vue";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
 import { getBlockTypeLabel } from "../utils/blockTypeLabels";
-import type {
-  CloudPlanConfig,
-  CloudSavedModules,
-} from "../types/cloud-injects";
+import {
+  CUSTOM_BLOCK_DEFINITIONS_KEY,
+  BLOCK_DEFAULTS_KEY,
+  CAPABILITIES_KEY,
+} from "../keys";
 
 interface BlockTypeItem {
   type: BlockType | string;
@@ -26,31 +22,16 @@ interface BlockTypeItem {
 }
 
 const { t } = useI18n();
-const customBlockDefinitions = inject<CustomBlockDefinition[]>(
-  "customBlockDefinitions",
-  [],
-);
-const blockDefaults = inject<BlockDefaults | undefined>(
-  "blockDefaults",
-  undefined,
-);
+const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
+const blockDefaults = inject(BLOCK_DEFAULTS_KEY, undefined);
 
-// Cloud-only injects — null in OSS mode
-
-const savedModulesVisual = inject<CloudSavedModules | null>(
-  "savedModules",
-  null,
-);
-
-const planConfig = inject<CloudPlanConfig | null>("planConfig", null);
+const caps = inject(CAPABILITIES_KEY, {});
 
 const showModulesSection = computed(
-  () => !!savedModulesVisual && !!planConfig?.hasFeature("saved_modules"),
+  () => (caps.savedModules?.moduleCount.value ?? 0) > 0,
 );
 
 const isExpanded = ref(false);
-
-const isCloudMode = computed(() => !!planConfig);
 
 const builtInBlockTypeOrder: string[] = [
   "section",
@@ -74,7 +55,7 @@ const builtInBlockTypes = computed<BlockTypeItem[]>(() => {
   }));
 
   // Countdown requires Templatical Cloud for server-side GIF rendering
-  if (isCloudMode.value) {
+  if (caps.plan) {
     types.splice(-1, 0, {
       type: "countdown",
       label: getBlockTypeLabel("countdown", t),
@@ -133,10 +114,7 @@ function createBlockFromItem(item: BlockTypeItem): Block {
   >
     <!-- Saved Modules browser trigger (cloud only) -->
     <div
-      v-if="
-        showModulesSection &&
-        savedModulesVisual!.headless.modules.value.length > 0
-      "
+      v-if="showModulesSection"
       class="tpl:border-b tpl:px-1 tpl:pb-1"
       style="border-color: var(--tpl-border)"
     >
@@ -147,7 +125,7 @@ function createBlockFromItem(item: BlockTypeItem): Block {
         :style="{
           justifyContent: isExpanded ? 'flex-start' : 'center',
         }"
-        @click="savedModulesVisual!.openBrowserModal()"
+        @click="caps.savedModules?.openBrowser()"
       >
         <Package :size="20" :stroke-width="1.5" class="tpl:shrink-0" />
         <span
@@ -164,7 +142,7 @@ function createBlockFromItem(item: BlockTypeItem): Block {
             color: var(--tpl-text-muted);
           "
         >
-          {{ savedModulesVisual!.headless.modules.value.length }}
+          {{ caps.savedModules?.moduleCount.value ?? 0 }}
         </span>
       </button>
     </div>

@@ -2,9 +2,9 @@
 import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockImageField } from "@templatical/types";
 import { inputClass } from "../../../constants/styleConstants";
-import type { OnRequestMedia } from "../../../index";
 import { Image } from "@lucide/vue";
 import { computed, inject } from "vue";
+import { ON_REQUEST_MEDIA_KEY } from "../../../keys";
 import FieldWrapper from "./FieldWrapper.vue";
 
 defineProps<{
@@ -18,7 +18,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const onRequestMedia = inject<OnRequestMedia | null>("onRequestMedia", null);
+const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
 
 const canBrowseMedia = computed(() => !!onRequestMedia);
 

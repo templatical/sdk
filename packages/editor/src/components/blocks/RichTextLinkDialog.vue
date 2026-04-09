@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
 import { X } from "@lucide/vue";
-import { inject, type ComputedRef, type Ref } from "vue";
+import { inject } from "vue";
+import { THEME_STYLES_KEY, UI_THEME_KEY } from "../../keys";
 
 defineProps<{
   visible: boolean;
@@ -20,8 +21,8 @@ const emit = defineEmits<{
   (e: "keydown", event: KeyboardEvent): void;
 }>();
 
-const themeStyles = inject<ComputedRef<Record<string, string>>>("themeStyles");
-const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
+const themeStyles = inject(THEME_STYLES_KEY);
+const tplUiTheme = inject(UI_THEME_KEY);
 
 const { t } = useI18n();
 </script>

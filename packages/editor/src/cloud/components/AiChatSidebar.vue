@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import LoadingTrack from "../../components/LoadingTrack.vue";
-import { useAiChat, type UseEditorReturn } from "@templatical/core/cloud";
-import type { Translations } from "../../i18n";
-import type { AuthManager } from "@templatical/core/cloud";
-import type { MergeTag, TemplateContent } from "@templatical/types";
+import { useAiChat } from "@templatical/core/cloud";
+import {
+  TRANSLATIONS_KEY,
+  EDITOR_KEY,
+  AUTH_MANAGER_KEY,
+  MERGE_TAGS_KEY,
+} from "../../keys";
+import type { TemplateContent } from "@templatical/types";
 import {
   CircleAlert,
   LoaderCircle,
@@ -26,10 +30,10 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const translations = inject<Translations>("translations")!;
-const editor = inject<UseEditorReturn>("editor")!;
-const authManager = inject<AuthManager>("authManager")!;
-const mergeTags = inject<MergeTag[]>("mergeTags", []);
+const translations = inject(TRANSLATIONS_KEY)!;
+const editor = inject(EDITOR_KEY)!;
+const authManager = inject(AUTH_MANAGER_KEY)!;
+const mergeTags = inject(MERGE_TAGS_KEY, []);
 
 const aiChat = useAiChat({
   authManager,

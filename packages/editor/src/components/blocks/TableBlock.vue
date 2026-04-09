@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
-import type { UseEditorReturn } from "@templatical/core";
 import type {
   TableBlock as TableBlockType,
   ViewportSize,
 } from "@templatical/types";
 import { Table } from "@lucide/vue";
 import { computed, inject } from "vue";
+import { EDITOR_KEY } from "../../keys";
 
 const props = defineProps<{
   block: TableBlockType;
@@ -14,7 +14,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const editor = inject<UseEditorReturn>("editor")!;
+const editor = inject(EDITOR_KEY)!;
 
 const hasRows = computed(() => props.block.rows.length > 0);
 

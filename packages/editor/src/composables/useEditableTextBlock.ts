@@ -1,10 +1,10 @@
-import type { MergeTag } from "@templatical/types";
 import {
   resolveHtmlLogicMergeTagLabels,
   resolveHtmlMergeTagLabels,
 } from "@templatical/types";
 import { useElementBounding } from "@vueuse/core";
 import { computed, inject, ref, type ComputedRef, type Ref } from "vue";
+import { MERGE_TAGS_KEY } from "../keys";
 import { useMergeTag } from "./useMergeTag";
 
 export interface UseEditableTextBlockReturn {
@@ -19,7 +19,7 @@ export interface UseEditableTextBlockReturn {
 export function useEditableTextBlock(
   blockContent: () => string,
 ): UseEditableTextBlockReturn {
-  const mergeTags = inject<MergeTag[]>("mergeTags", []);
+  const mergeTags = inject(MERGE_TAGS_KEY, []);
   const { syntax } = useMergeTag();
 
   const resolvedContent = computed(() =>

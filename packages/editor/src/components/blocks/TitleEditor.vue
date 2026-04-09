@@ -3,7 +3,8 @@ import { useI18n } from "../../composables";
 import { useRichTextEditor } from "../../composables/useRichTextEditor";
 import type { TitleBlock as TitleBlockType } from "@templatical/types";
 import { Bold, Italic, Link, LoaderCircle, ScanLine } from "@lucide/vue";
-import { inject, type ComputedRef, type Ref } from "vue";
+import { inject } from "vue";
+import { THEME_STYLES_KEY, UI_THEME_KEY } from "../../keys";
 import RichTextLinkDialog from "./RichTextLinkDialog.vue";
 import RichTextEditorContent from "./RichTextEditorContent.vue";
 
@@ -16,8 +17,8 @@ const emit = defineEmits<{
   (e: "done"): void;
 }>();
 
-const themeStyles = inject<ComputedRef<Record<string, string>>>("themeStyles");
-const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
+const themeStyles = inject(THEME_STYLES_KEY);
+const tplUiTheme = inject(UI_THEME_KEY);
 
 const { t } = useI18n();
 

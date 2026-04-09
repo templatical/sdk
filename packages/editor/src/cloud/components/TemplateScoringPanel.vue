@@ -1,12 +1,8 @@
 <script setup lang="ts">
 import LoadingTrack from "../../components/LoadingTrack.vue";
-import {
-  type UseEditorReturn,
-  type UseTemplateScoringReturn,
-} from "@templatical/core/cloud";
+import { EDITOR_KEY, SCORING_KEY, MERGE_TAGS_KEY } from "../../keys";
 import { useI18n } from "../../composables/useI18n";
 import type { ScoringCategory, ScoringFinding } from "@templatical/types";
-import type { MergeTag } from "@templatical/types";
 import {
   CircleAlert,
   TriangleAlert,
@@ -32,9 +28,9 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const editor = inject<UseEditorReturn>("editor")!;
-const scoring = inject<UseTemplateScoringReturn>("scoring")!;
-const mergeTags = inject<MergeTag[]>("mergeTags", []);
+const editor = inject(EDITOR_KEY)!;
+const scoring = inject(SCORING_KEY)!;
+const mergeTags = inject(MERGE_TAGS_KEY, []);
 
 const expandedCategories = ref<Record<string, boolean>>({
   spam: true,

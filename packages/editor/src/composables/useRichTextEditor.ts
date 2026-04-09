@@ -1,4 +1,3 @@
-import type { UseEditorReturn } from "@templatical/core";
 import type { Editor } from "@tiptap/core";
 import type { EditorContent as EditorContentComponent } from "@tiptap/vue-3";
 import type { Extension, Mark, Node } from "@tiptap/core";
@@ -12,6 +11,7 @@ import {
   type Ref,
   type ShallowRef,
 } from "vue";
+import { EDITOR_KEY } from "../keys";
 import { useMergeTag } from "./useMergeTag";
 import { useRichTextLinkDialog } from "./useRichTextLinkDialog";
 
@@ -57,7 +57,7 @@ export interface UseRichTextEditorReturn {
 export function useRichTextEditor(
   options: UseRichTextEditorOptions,
 ): UseRichTextEditorReturn {
-  const emailEditor = inject<UseEditorReturn>("editor");
+  const emailEditor = inject(EDITOR_KEY);
 
   const {
     mergeTags,

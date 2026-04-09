@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useFocusTrap } from "../../composables";
-import { computed, inject, ref, type Ref } from "vue";
+import { UI_THEME_KEY } from "../../keys";
+import { computed, inject, ref } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -15,7 +16,7 @@ const dialogRef = ref<HTMLElement | null>(null);
 const isVisible = computed(() => props.visible);
 useFocusTrap(dialogRef, isVisible);
 
-const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
+const tplUiTheme = inject(UI_THEME_KEY);
 
 function handleKeydown(event: KeyboardEvent): void {
   if (event.key === "Escape") {

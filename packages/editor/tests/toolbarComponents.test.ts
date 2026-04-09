@@ -160,7 +160,7 @@ describe("ImageToolbar.vue structure", () => {
   });
 
   it("injects onRequestMedia directly instead of full config", () => {
-    expect(src).toContain('inject<OnRequestMedia | null>("onRequestMedia"');
+    expect(src).toContain('inject(ON_REQUEST_MEDIA_KEY');
     expect(src).not.toContain('inject<TemplaticalEditorConfig>("config")');
   });
 
@@ -424,7 +424,7 @@ describe("CommonBlockSettings.vue structure", () => {
   });
 
   it("injects displayConditions and allowCustomConditions", () => {
-    expect(src).toContain('inject<DisplayCondition[]>("displayConditions"');
-    expect(src).toContain('inject<boolean>("allowCustomConditions"');
+    expect(src).toContain('inject(DISPLAY_CONDITIONS_KEY');
+    expect(src).toContain('inject(ALLOW_CUSTOM_CONDITIONS_KEY');
   });
 });

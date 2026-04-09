@@ -70,8 +70,8 @@ describe("CloudEditor.vue provides cleanup", () => {
     expect(src).not.toContain('provide("conditionPreview"');
     expect(src).not.toContain('provide("fontsManager"');
     // But cloud-only provides should still be present
-    expect(src).toContain('provide("authManager"');
-    expect(src).toContain('provide("scoring"');
+    expect(src).toContain('provide(AUTH_MANAGER_KEY');
+    expect(src).toContain('provide(SCORING_KEY');
   });
 });
 
@@ -184,15 +184,15 @@ describe("cloudEditorRef typed without Ref<any>", () => {
 });
 
 describe("UseBlockRegistryReturn used instead of ReturnType<typeof useBlockRegistry>", () => {
-  it("PreviewSectionBlock.vue imports UseBlockRegistryReturn", () => {
+  it("PreviewSectionBlock.vue uses BLOCK_REGISTRY_KEY (typed InjectionKey)", () => {
     const src = readSrc("components/blocks/PreviewSectionBlock.vue");
-    expect(src).toContain("UseBlockRegistryReturn");
+    expect(src).toContain("BLOCK_REGISTRY_KEY");
     expect(src).not.toContain("ReturnType<typeof useBlockRegistry>");
   });
 
-  it("ModulePreviewCanvas.vue imports UseBlockRegistryReturn", () => {
+  it("ModulePreviewCanvas.vue uses BLOCK_REGISTRY_KEY (typed InjectionKey)", () => {
     const src = readSrc("cloud/components/ModulePreviewCanvas.vue");
-    expect(src).toContain("UseBlockRegistryReturn");
+    expect(src).toContain("BLOCK_REGISTRY_KEY");
     expect(src).not.toContain("ReturnType<typeof useBlockRegistry>");
   });
 });
@@ -255,7 +255,7 @@ describe("onRequestMedia signature unified with optional context", () => {
       readSrc("components/toolbar/fields/ImageField.vue"),
     ];
     for (const src of consumers) {
-      expect(src).toContain('inject<OnRequestMedia | null>("onRequestMedia"');
+      expect(src).toContain('inject(ON_REQUEST_MEDIA_KEY');
       expect(src).not.toContain('inject<TemplaticalEditorConfig>');
       expect(src).not.toContain('provide("config"');
     }
@@ -268,7 +268,7 @@ describe("onRequestMedia signature unified with optional context", () => {
     expect(oss).not.toContain('provide("config"');
     expect(cloud).not.toContain('provide("config"');
     // onRequestMedia is provided by useEditorCore (shared)
-    expect(core).toContain('provide("onRequestMedia"');
+    expect(core).toContain('provide(ON_REQUEST_MEDIA_KEY');
   });
 
   it("no call sites use parameterless onRequestMedia?()", () => {
@@ -356,33 +356,36 @@ describe("cloud-only injects use typed interfaces instead of any", () => {
     expect(src).not.toMatch(/v-for="lockHolder/);
   });
 
-  it("Canvas.vue uses CloudPlanConfig and CloudAiConfig", () => {
+  it("Canvas.vue uses EditorCapabilities instead of cloud injects", () => {
     const src = readSrc("components/Canvas.vue");
-    expect(src).toContain("inject<CloudPlanConfig | null>");
-    expect(src).toContain("inject<CloudAiConfig | null>");
-    expect(src).not.toContain("inject<any>");
+    expect(src).toContain('inject(CAPABILITIES_KEY');
+    expect(src).not.toContain("cloud-injects");
+    expect(src).not.toContain("CloudPlanConfig");
+    expect(src).not.toContain("CloudAiConfig");
   });
 
   it("Canvas.vue injects blockRegistry with null default, not unsafe cast", () => {
     const src = readSrc("components/Canvas.vue");
-    expect(src).toContain('inject<UseBlockRegistryReturn | null>');
+    expect(src).toContain("inject(BLOCK_REGISTRY_KEY");
     expect(src).not.toContain("undefined as unknown as");
     expect(src).not.toContain("undefined as never");
   });
 
-  it("Sidebar.vue uses CloudSavedModules and CloudPlanConfig", () => {
+  it("Sidebar.vue uses EditorCapabilities instead of cloud injects", () => {
     const src = readSrc("components/Sidebar.vue");
-    expect(src).toContain("inject<CloudSavedModules | null>");
-    expect(src).toContain("inject<CloudPlanConfig | null>");
-    expect(src).not.toContain("inject<any>");
+    expect(src).toContain('inject(CAPABILITIES_KEY');
+    expect(src).not.toContain("cloud-injects");
+    expect(src).not.toContain("CloudSavedModules");
+    expect(src).not.toContain("CloudPlanConfig");
   });
 
-  it("BlockWrapper.vue uses CloudComments, CloudSavedModules, and CloudPlanConfig", () => {
+  it("BlockWrapper.vue uses EditorCapabilities instead of cloud injects", () => {
     const src = readSrc("components/blocks/BlockWrapper.vue");
-    expect(src).toContain("inject<CloudComments | null>");
-    expect(src).toContain("inject<CloudSavedModules | null>");
-    expect(src).toContain("inject<CloudPlanConfig | null>");
-    expect(src).not.toContain("inject<any>");
+    expect(src).toContain('inject(CAPABILITIES_KEY');
+    expect(src).not.toContain("cloud-injects");
+    expect(src).not.toContain("CloudComments");
+    expect(src).not.toContain("CloudSavedModules");
+    expect(src).not.toContain("CloudPlanConfig");
   });
 });
 
@@ -509,13 +512,13 @@ describe("TemplateScoringPanel scoring instance is provided, not local", () => {
   const cloudSrc = readSrc("cloud/CloudEditor.vue");
 
   it("panel injects scoring instead of instantiating useTemplateScoring", () => {
-    expect(panelSrc).toContain('inject<UseTemplateScoringReturn>("scoring")');
+    expect(panelSrc).toContain('inject(SCORING_KEY)');
     expect(panelSrc).not.toContain("useTemplateScoring({");
   });
 
   it("CloudEditor instantiates and provides scoring", () => {
     expect(cloudSrc).toContain("useTemplateScoring({");
-    expect(cloudSrc).toContain('provide("scoring"');
+    expect(cloudSrc).toContain('provide(SCORING_KEY');
   });
 });
 

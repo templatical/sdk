@@ -1,5 +1,6 @@
 import type { Translations } from "../i18n";
 import { type Ref, inject, isRef } from "vue";
+import { TRANSLATIONS_KEY } from "../keys";
 
 export interface UseI18nReturn {
   /** Current translations object */
@@ -16,8 +17,7 @@ export interface UseI18nReturn {
  */
 export function useI18n(translationsOverride?: Translations): UseI18nReturn {
   const injected: Translations | Ref<Translations> | null =
-    translationsOverride ??
-    inject<Translations | Ref<Translations> | null>("translations", null);
+    translationsOverride ?? inject(TRANSLATIONS_KEY, null);
 
   if (!injected) {
     throw new Error(

@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { MAX_UPLOAD_SIZE_BYTES } from "../../constants/timeouts";
 import LoadingTrack from "../../components/LoadingTrack.vue";
-import {
-  useDesignReference,
-  type UseEditorReturn,
-} from "@templatical/core/cloud";
+import { useDesignReference } from "@templatical/core/cloud";
+import { EDITOR_KEY, AUTH_MANAGER_KEY } from "../../keys";
 import { useI18n } from "../../composables/useI18n";
-import type { AuthManager } from "@templatical/core/cloud";
 import type { TemplateContent } from "@templatical/types";
 import {
   CircleAlert,
@@ -29,8 +26,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const editor = inject<UseEditorReturn>("editor")!;
-const authManager = inject<AuthManager>("authManager")!;
+const editor = inject(EDITOR_KEY)!;
+const authManager = inject(AUTH_MANAGER_KEY)!;
 
 const designReference = useDesignReference({
   authManager,

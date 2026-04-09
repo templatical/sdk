@@ -6,6 +6,10 @@ import { labelClass, DEFAULT_BG_COLOR } from "../../constants/styleConstants";
 import type { Block, DisplayCondition } from "@templatical/types";
 import { ChevronDown, Monitor, Smartphone, Tablet } from "@lucide/vue";
 import { computed, inject, reactive, ref, watch } from "vue";
+import {
+  DISPLAY_CONDITIONS_KEY,
+  ALLOW_CUSTOM_CONDITIONS_KEY,
+} from "../../keys";
 
 const props = defineProps<{
   block: Block;
@@ -18,8 +22,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const displayConditions = inject<DisplayCondition[]>("displayConditions", []);
-const allowCustomConditions = inject<boolean>("allowCustomConditions", false);
+const displayConditions = inject(DISPLAY_CONDITIONS_KEY, []);
+const allowCustomConditions = inject(ALLOW_CUSTOM_CONDITIONS_KEY, false);
 
 const openSections = reactive(
   new Set<"spacing" | "bg" | "display" | "css" | "condition">(),

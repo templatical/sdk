@@ -2,8 +2,7 @@
 import TplModal from "./TplModal.vue";
 import { useI18n } from "../../composables";
 import { blockTypeIcons } from "../../utils/blockTypeIcons";
-import type { UseEditorReturn } from "@templatical/core/cloud";
-import type { UseSavedModulesReturn } from "@templatical/core/cloud";
+import { SAVED_MODULES_HEADLESS_KEY, EDITOR_KEY } from "../../keys";
 import type { SavedModule } from "@templatical/types";
 import { Package, Search, Trash2, X } from "@lucide/vue";
 import { computed, defineAsyncComponent, inject, ref, watch } from "vue";
@@ -22,8 +21,8 @@ const ModulePreviewCanvas = defineAsyncComponent(
 );
 
 const { t } = useI18n();
-const savedModules = inject<UseSavedModulesReturn>("savedModulesHeadless")!;
-const editor = inject<UseEditorReturn>("editor")!;
+const savedModules = inject(SAVED_MODULES_HEADLESS_KEY)!;
+const editor = inject(EDITOR_KEY)!;
 
 const searchQuery = ref("");
 const selectedModuleId = ref<string | null>(null);

@@ -60,7 +60,7 @@ describe("TplModal.vue structure", () => {
   });
 
   it("injects tplUiTheme and applies it to backdrop", () => {
-    expect(src).toContain('inject<Ref<"light" | "dark">>("tplUiTheme")');
+    expect(src).toContain('inject(UI_THEME_KEY)');
     expect(src).toContain(':data-tpl-theme="tplUiTheme"');
   });
 

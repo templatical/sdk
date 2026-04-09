@@ -6,12 +6,8 @@ import DividerBlock from "./DividerBlock.vue";
 import ImageBlock from "./ImageBlock.vue";
 import TitleBlock from "./TitleBlock.vue";
 import ParagraphBlock from "./ParagraphBlock.vue";
-import { useI18n, type UseBlockRegistryReturn } from "../../composables";
+import { useI18n } from "../../composables";
 import { resolveBlockComponent } from "../../utils/blockComponentResolver";
-import type {
-  UseConditionPreviewReturn,
-  UseEditorReturn,
-} from "@templatical/core";
 import type {
   Block,
   CustomBlock as CustomBlockType,
@@ -20,6 +16,11 @@ import type {
 } from "@templatical/types";
 import { computed, inject, type Component } from "vue";
 import draggable from "vuedraggable";
+import {
+  EDITOR_KEY,
+  CONDITION_PREVIEW_KEY,
+  BLOCK_REGISTRY_KEY,
+} from "../../keys";
 
 const sectionBlockComponentMap: Record<string, Component> = {
   title: TitleBlock,
@@ -36,9 +37,9 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const editor = inject<UseEditorReturn>("editor")!;
-const conditionPreview = inject<UseConditionPreviewReturn>("conditionPreview");
-const blockRegistry = inject<UseBlockRegistryReturn>("blockRegistry");
+const editor = inject(EDITOR_KEY)!;
+const conditionPreview = inject(CONDITION_PREVIEW_KEY);
+const blockRegistry = inject(BLOCK_REGISTRY_KEY);
 
 const columnWidths = computed(() => {
   switch (props.block.columns) {

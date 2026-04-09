@@ -11,7 +11,6 @@ import TableBlock from "./TableBlock.vue";
 import TitleBlock from "./TitleBlock.vue";
 import ParagraphBlock from "./ParagraphBlock.vue";
 import VideoBlock from "./VideoBlock.vue";
-import type { UseBlockRegistryReturn } from "../../composables";
 import {
   resolveBlockComponent,
   getBlockWrapperStyle,
@@ -21,6 +20,7 @@ import type {
   SectionBlock as SectionBlockType,
 } from "@templatical/types";
 import { computed, inject, type Component } from "vue";
+import { BLOCK_REGISTRY_KEY } from "../../keys";
 
 const previewBlockComponentMap: Record<string, Component> = {
   title: TitleBlock,
@@ -44,7 +44,7 @@ const props = defineProps<{
 
 defineOptions({ name: "PreviewSectionBlock" });
 
-const blockRegistry = inject<UseBlockRegistryReturn>("blockRegistry");
+const blockRegistry = inject(BLOCK_REGISTRY_KEY);
 
 const columnWidths = computed(() => {
   switch (props.block.columns) {

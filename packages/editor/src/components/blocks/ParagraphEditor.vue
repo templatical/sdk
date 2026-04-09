@@ -20,8 +20,8 @@ import {
   Superscript,
   Underline,
 } from "@lucide/vue";
-import { inject, type ComputedRef, type Ref } from "vue";
-import type { UseFontsReturn } from "../../composables/useFonts";
+import { inject } from "vue";
+import { THEME_STYLES_KEY, UI_THEME_KEY, FONTS_MANAGER_KEY } from "../../keys";
 import {
   DEFAULT_TEXT_COLOR,
   DEFAULT_HIGHLIGHT_COLOR,
@@ -38,9 +38,9 @@ const emit = defineEmits<{
   (e: "done"): void;
 }>();
 
-const themeStyles = inject<ComputedRef<Record<string, string>>>("themeStyles");
-const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
-const fontsManager = inject<UseFontsReturn>("fontsManager")!;
+const themeStyles = inject(THEME_STYLES_KEY);
+const tplUiTheme = inject(UI_THEME_KEY);
+const fontsManager = inject(FONTS_MANAGER_KEY)!;
 
 const {
   categories: emojiCategories,

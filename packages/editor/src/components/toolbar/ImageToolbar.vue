@@ -3,11 +3,11 @@ import MergeTagInput from "../MergeTagInput.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import { useI18n } from "../../composables/useI18n";
 import { inputClass, labelClass } from "../../constants/styleConstants";
-import type { ImageBlock, SyntaxPreset } from "@templatical/types";
-import type { OnRequestMedia } from "../../index";
+import type { ImageBlock } from "@templatical/types";
 import { containsMergeTag, SYNTAX_PRESETS } from "@templatical/types";
 import { Image } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
+import { ON_REQUEST_MEDIA_KEY, MERGE_TAG_SYNTAX_KEY } from "../../keys";
 import { useTimeoutFn } from "@vueuse/core";
 
 defineProps<{
@@ -19,11 +19,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const onRequestMedia = inject<OnRequestMedia | null>("onRequestMedia", null);
-const mergeTagSyntax = inject<SyntaxPreset>(
-  "mergeTagSyntax",
-  SYNTAX_PRESETS.liquid,
-);
+const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
+const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
 
 const canBrowseMedia = computed(() => !!onRequestMedia);
 

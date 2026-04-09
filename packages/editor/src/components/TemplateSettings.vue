@@ -2,7 +2,6 @@
 import ColorPicker from "./ColorPicker.vue";
 import MergeTagTextarea from "./MergeTagTextarea.vue";
 import { useI18n } from "../composables/useI18n";
-import type { UseFontsReturn } from "../composables/useFonts";
 import type { TemplateSettings } from "@templatical/types";
 import {
   cardClass,
@@ -14,6 +13,7 @@ import {
 } from "../constants/styleConstants";
 import { Circle, Eye, Info, Square } from "@lucide/vue";
 import { computed, inject } from "vue";
+import { FONTS_MANAGER_KEY } from "../keys";
 
 const props = defineProps<{
   settings: TemplateSettings;
@@ -27,7 +27,7 @@ const PREHEADER_MAX_LENGTH = 150;
 
 const { t } = useI18n();
 
-const fontsManager = inject<UseFontsReturn>("fontsManager")!;
+const fontsManager = inject(FONTS_MANAGER_KEY)!;
 const fontFamilies = computed(() => fontsManager.fonts.value);
 
 // If current font is not in available list (e.g., custom font when disabled), use default

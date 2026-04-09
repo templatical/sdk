@@ -65,6 +65,16 @@ import {
 import type { Translations } from "../i18n";
 
 import { useEditorCore } from "../composables/useEditorCore";
+import type { EditorCapabilities } from "../types/editor-capabilities";
+import {
+  ON_REQUEST_MEDIA_KEY,
+  AUTH_MANAGER_KEY,
+  AI_CONFIG_KEY,
+  COMMENTS_KEY,
+  SAVED_MODULES_HEADLESS_KEY,
+  SCORING_KEY,
+  CAPABILITIES_KEY,
+} from "../keys";
 import type { UseSnapshotPreviewReturn } from "./composables/useSnapshotPreview";
 import { useSnapshotPreview } from "./composables/useSnapshotPreview";
 import { useCloudPanelState } from "./composables/useCloudPanelState";
@@ -436,22 +446,33 @@ const scoringInstance = useTemplateScoring({
 });
 
 // ---------------------------------------------------------------------------
-// 10. Cloud-only provides (9 keys)
+// 10. Cloud-only provides
 // ---------------------------------------------------------------------------
 
-provide("onRequestMedia", mediaLib.handleRequestMedia);
-provide("authManager", authManager);
-provide(
-  "projectId",
-  computed(() => authManager.projectId),
-);
-provide("planConfig", planConfigInstance);
-provide("aiConfig", aiConfig);
-provide("comments", commentsInstance);
-provide("openCommentsForBlock", openCommentsForBlock);
-provide("savedModules", savedModulesVisual);
-provide("savedModulesHeadless", savedModulesHeadless);
-provide("scoring", scoringInstance);
+provide(ON_REQUEST_MEDIA_KEY, mediaLib.handleRequestMedia);
+provide(AUTH_MANAGER_KEY, authManager);
+provide(AI_CONFIG_KEY, aiConfig);
+provide(COMMENTS_KEY, commentsInstance);
+provide(SAVED_MODULES_HEADLESS_KEY, savedModulesHeadless);
+provide(SCORING_KEY, scoringInstance);
+
+// Override the default empty capabilities from useEditorCore with cloud capabilities.
+// OSS components use this single inject instead of individual cloud injects.
+provide(CAPABILITIES_KEY, {
+  plan: planConfigInstance,
+  ai: aiConfig,
+  comments: {
+    getBlockCount: (blockId: string) =>
+      commentsInstance.commentCountByBlock.value.get(blockId) ?? 0,
+    openForBlock: openCommentsForBlock,
+  },
+  savedModules: {
+    openSaveDialog: (blockId: string) =>
+      savedModulesVisual.openSaveDialog(blockId),
+    openBrowser: () => savedModulesVisual.openBrowserModal(),
+    moduleCount: computed(() => savedModulesHeadless.modules.value.length),
+  },
+} satisfies EditorCapabilities);
 
 // ---------------------------------------------------------------------------
 // Theme overrides (plan-gated)

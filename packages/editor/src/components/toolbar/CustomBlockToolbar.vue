@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
 import { useDataSourceFetch } from "@templatical/core";
-import type {
-  CustomBlock,
-  CustomBlockDefinition,
-  CustomBlockField,
-} from "@templatical/types";
+import type { CustomBlock, CustomBlockField } from "@templatical/types";
 import { CircleAlert, RefreshCw } from "@lucide/vue";
 import { computed, inject } from "vue";
+import { CUSTOM_BLOCK_DEFINITIONS_KEY } from "../../keys";
 import { resolveFieldComponent } from "./fields";
 
 const props = defineProps<{
@@ -21,10 +18,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const customBlockDefinitions = inject<CustomBlockDefinition[]>(
-  "customBlockDefinitions",
-  [],
-);
+const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 
 const definition = computed(() =>
   customBlockDefinitions.find((d) => d.type === props.block.customType),
