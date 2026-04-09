@@ -136,9 +136,10 @@ describe('LogicMergeTagNode source structure', () => {
     expect(src).not.toContain('const isLogicMergeTagSelected');
   });
 
-  it('has eslint-disable comment explaining the VueNodeViewRenderer cast', () => {
-    expect(src).toContain('eslint-disable-next-line @typescript-eslint/no-explicit-any');
-    expect(src).toContain('TipTap\'s VueNodeViewRenderer');
+  it('uses renderVueNodeView wrapper instead of direct VueNodeViewRenderer cast', () => {
+    expect(src).toContain('import { renderVueNodeView } from "./renderVueNodeView"');
+    expect(src).toContain('renderVueNodeView(LogicMergeTagNodeView)');
+    expect(src).not.toContain('as any');
   });
 });
 

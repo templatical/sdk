@@ -211,9 +211,7 @@ function isOwnComment(comment: Comment): boolean {
 }
 
 function formatTime(dateString: string): string {
-  return (
-    formatRelativeTime(dateString, t.snapshotHistory) ?? dateString
-  );
+  return formatRelativeTime(dateString, t.snapshotHistory) ?? dateString;
 }
 
 function handleNewCommentKeydown(event: KeyboardEvent): void {

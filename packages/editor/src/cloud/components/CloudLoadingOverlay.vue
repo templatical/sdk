@@ -89,12 +89,8 @@ defineProps<{
         <div
           class="tpl-shimmer tpl:h-8 tpl:rounded-[var(--tpl-radius-sm)]"
         ></div>
-        <div
-          class="tpl-shimmer tpl:h-32 tpl:rounded-[var(--tpl-radius)]"
-        ></div>
-        <div
-          class="tpl-shimmer tpl:h-32 tpl:rounded-[var(--tpl-radius)]"
-        ></div>
+        <div class="tpl-shimmer tpl:h-32 tpl:rounded-[var(--tpl-radius)]"></div>
+        <div class="tpl-shimmer tpl:h-32 tpl:rounded-[var(--tpl-radius)]"></div>
       </div>
     </div>
   </div>

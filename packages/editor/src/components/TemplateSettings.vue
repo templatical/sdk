@@ -10,6 +10,7 @@ import {
   inputGroupInputClass,
   inputSuffixClass,
   labelClass,
+  DEFAULT_BG_COLOR,
 } from "../constants/styleConstants";
 import { Circle, Eye, Info, Square } from "@lucide/vue";
 import { computed, inject } from "vue";
@@ -141,7 +142,7 @@ const widthPresets = [
           }}</label>
           <ColorPicker
             :model-value="settings.backgroundColor"
-            placeholder="#ffffff"
+            :placeholder="DEFAULT_BG_COLOR"
             @update:model-value="emit('update', { backgroundColor: $event })"
           />
         </div>

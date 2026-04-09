@@ -456,18 +456,20 @@ describe("ParagraphEditor and TitleEditor use i18n for loading/error states", ()
     expect(titleSrc).toContain("t.errors.editorLoading");
   });
 
-  it("both use t.errors.editorLoadFailed without optional chaining", () => {
-    expect(paragraphSrc).toContain("t.errors.editorLoadFailed");
-    expect(paragraphSrc).not.toContain("t.errors?.editorLoadFailed");
-    expect(titleSrc).toContain("t.errors.editorLoadFailed");
-    expect(titleSrc).not.toContain("t.errors?.editorLoadFailed");
+  it("RichTextEditorContent uses t.errors.editorLoadFailed without optional chaining", () => {
+    const editorContentSrc = readSrc(
+      "components/blocks/RichTextEditorContent.vue",
+    );
+    expect(editorContentSrc).toContain("t.errors.editorLoadFailed");
+    expect(editorContentSrc).not.toContain("t.errors?.editorLoadFailed");
   });
 
-  it("both use t.errors.retry without optional chaining", () => {
-    expect(paragraphSrc).toContain("t.errors.retry");
-    expect(paragraphSrc).not.toContain("t.errors?.retry");
-    expect(titleSrc).toContain("t.errors.retry");
-    expect(titleSrc).not.toContain("t.errors?.retry");
+  it("RichTextEditorContent uses t.errors.retry without optional chaining", () => {
+    const editorContentSrc = readSrc(
+      "components/blocks/RichTextEditorContent.vue",
+    );
+    expect(editorContentSrc).toContain("t.errors.retry");
+    expect(editorContentSrc).not.toContain("t.errors?.retry");
   });
 });
 
@@ -548,20 +550,26 @@ describe("useRichTextEditor init error and retry", () => {
     expect(src).toContain("initError.value = null");
   });
 
-  it("TitleEditor.vue destructures initError and retry", () => {
+  it("TitleEditor.vue passes initError and retry to RichTextEditorContent", () => {
     const src = readSrc("components/blocks/TitleEditor.vue");
     expect(src).toContain("initError,");
     expect(src).toContain("retry,");
-    expect(src).toContain('v-else-if="initError"');
-    expect(src).toContain("@click=\"retry\"");
+    expect(src).toContain(":init-error=");
+    expect(src).toContain("@retry=");
   });
 
-  it("ParagraphEditor.vue destructures initError and retry", () => {
+  it("ParagraphEditor.vue passes initError and retry to RichTextEditorContent", () => {
     const src = readSrc("components/blocks/ParagraphEditor.vue");
     expect(src).toContain("initError,");
     expect(src).toContain("retry,");
+    expect(src).toContain(":init-error=");
+    expect(src).toContain("@retry=");
+  });
+
+  it("RichTextEditorContent.vue renders initError and retry in template", () => {
+    const src = readSrc("components/blocks/RichTextEditorContent.vue");
     expect(src).toContain('v-else-if="initError"');
-    expect(src).toContain("@click=\"retry\"");
+    expect(src).toContain("@click=\"emit('retry')\"");
   });
 });
 

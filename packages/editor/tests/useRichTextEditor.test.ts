@@ -7,6 +7,11 @@ const composableSrc = readFileSync(
   "utf-8",
 );
 
+const linkDialogSrc = readFileSync(
+  resolve(__dirname, "../src/composables/useRichTextLinkDialog.ts"),
+  "utf-8",
+);
+
 describe("useRichTextEditor composable structure", () => {
   it("exports UseRichTextEditorOptions interface with required fields", () => {
     expect(composableSrc).toContain("blockId: () => string");
@@ -71,8 +76,9 @@ describe("useRichTextEditor implementation", () => {
     expect(composableSrc).toContain('inject<UseEditorReturn>("editor")');
   });
 
-  it("sets up useFocusTrap on linkDialogRef", () => {
-    expect(composableSrc).toContain(
+  it("delegates link dialog to useRichTextLinkDialog", () => {
+    expect(composableSrc).toContain("useRichTextLinkDialog(editor)");
+    expect(linkDialogSrc).toContain(
       "useFocusTrap(linkDialogRef, showLinkDialog)",
     );
   });
@@ -126,12 +132,12 @@ describe("useRichTextEditor implementation", () => {
   });
 
   it("openLinkDialog reads current link href", () => {
-    expect(composableSrc).toContain('getAttributes("link").href');
+    expect(linkDialogSrc).toContain('getAttributes("link").href');
   });
 
   it("insertLink auto-prepends https:// when missing", () => {
-    expect(composableSrc).toContain('startsWith("http")');
-    expect(composableSrc).toContain("`https://${linkUrl.value}`");
+    expect(linkDialogSrc).toContain('startsWith("http")');
+    expect(linkDialogSrc).toContain("`https://${linkUrl.value}`");
   });
 
   it("handleAddMergeTag inserts merge tag via editor chain", () => {
@@ -189,10 +195,9 @@ describe("TitleEditor.vue uses useRichTextEditor", () => {
     expect(src).not.toContain("onBeforeUnmount");
   });
 
-  it("casts editor to Editor from @tiptap/vue-3, not any", () => {
-    expect(src).toContain('import type { Editor } from "@tiptap/vue-3"');
-    expect(src).toContain("editor as Editor");
-    expect(src).not.toContain("editor as any");
+  it("delegates editor content rendering to RichTextEditorContent", () => {
+    expect(src).toContain("RichTextEditorContent");
+    expect(src).toContain("RichTextLinkDialog");
   });
 });
 
@@ -235,6 +240,21 @@ describe("ParagraphEditor.vue uses useRichTextEditor", () => {
     expect(src).not.toContain("useEventListener");
     expect(src).not.toContain("onBeforeUnmount");
   });
+
+  it("delegates editor content rendering to RichTextEditorContent", () => {
+    expect(src).toContain("RichTextEditorContent");
+    expect(src).toContain("RichTextLinkDialog");
+  });
+});
+
+describe("RichTextEditorContent.vue casts editor correctly", () => {
+  const src = readFileSync(
+    resolve(
+      __dirname,
+      "../src/components/blocks/RichTextEditorContent.vue",
+    ),
+    "utf-8",
+  );
 
   it("casts editor to Editor from @tiptap/vue-3, not any", () => {
     expect(src).toContain('import type { Editor } from "@tiptap/vue-3"');

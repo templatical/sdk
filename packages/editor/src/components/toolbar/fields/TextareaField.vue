@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockTextareaField } from "@templatical/types";
-import { labelClass } from "../../../constants/styleConstants";
-import { Lock } from "@lucide/vue";
+import FieldWrapper from "./FieldWrapper.vue";
 import MergeTagTextarea from "../../MergeTagTextarea.vue";
 
 defineProps<{
@@ -22,18 +21,11 @@ const readOnlyTextareaClass =
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">
-      {{ field.label }}
-      <Lock
-        v-if="readOnly"
-        :size="12"
-        class="tpl:inline tpl:text-[var(--tpl-text-dim)]"
-      />
-      <span v-if="field.required" class="tpl:text-[var(--tpl-danger)]">
-        *
-      </span>
-    </label>
+  <FieldWrapper
+    :label="field.label"
+    :required="field.required"
+    :read-only="readOnly"
+  >
     <textarea
       v-if="readOnly"
       :value="modelValue"
@@ -49,5 +41,5 @@ const readOnlyTextareaClass =
       :placeholder="field.placeholder"
       @update:model-value="emit('update:modelValue', $event)"
     />
-  </div>
+  </FieldWrapper>
 </template>

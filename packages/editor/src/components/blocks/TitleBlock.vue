@@ -1,17 +1,11 @@
 <script setup lang="ts">
-import { useMergeTag } from "../../composables/useMergeTag";
+import { useEditableTextBlock } from "../../composables/useEditableTextBlock";
 import type {
-  MergeTag,
   TitleBlock as TitleBlockType,
   ViewportSize,
 } from "@templatical/types";
 import { HEADING_LEVEL_FONT_SIZE } from "@templatical/types";
-import {
-  resolveHtmlLogicMergeTagLabels,
-  resolveHtmlMergeTagLabels,
-} from "@templatical/types";
-import { useElementBounding } from "@vueuse/core";
-import { computed, defineAsyncComponent, inject, ref } from "vue";
+import { computed, defineAsyncComponent } from "vue";
 
 const props = defineProps<{
   block: TitleBlockType;
@@ -20,24 +14,14 @@ const props = defineProps<{
 
 const TitleEditor = defineAsyncComponent(() => import("./TitleEditor.vue"));
 
-const mergeTags = inject<MergeTag[]>("mergeTags", []);
-const { syntax } = useMergeTag();
-
-const resolvedContent = computed(() =>
-  resolveHtmlLogicMergeTagLabels(
-    resolveHtmlMergeTagLabels(props.block.content, mergeTags),
-    syntax,
-  ),
-);
-
-const isEditing = ref(false);
-const titleBlockRef = ref<HTMLElement | null>(null);
-const { top: boundingTop, left: boundingLeft } =
-  useElementBounding(titleBlockRef);
-const toolbarPosition = computed(() => ({
-  top: boundingTop.value - 8,
-  left: boundingLeft.value,
-}));
+const {
+  isEditing,
+  blockRef,
+  toolbarPosition,
+  resolvedContent,
+  handleDoubleClick,
+  handleEditorDone,
+} = useEditableTextBlock(() => props.block.content);
 
 const titleStyle = computed(() => {
   const fontSize = HEADING_LEVEL_FONT_SIZE[props.block.level];
@@ -51,19 +35,11 @@ const titleStyle = computed(() => {
   }
   return style;
 });
-
-function handleDoubleClick(): void {
-  isEditing.value = true;
-}
-
-function handleEditorDone(): void {
-  isEditing.value = false;
-}
 </script>
 
 <template>
   <div
-    ref="titleBlockRef"
+    ref="blockRef"
     class="tpl:min-h-[1em] tpl:w-full"
     :style="titleStyle"
     @dblclick="handleDoubleClick"

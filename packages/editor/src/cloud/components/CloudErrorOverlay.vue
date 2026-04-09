@@ -53,16 +53,10 @@ function isNotFoundError(error: Error): boolean {
     <div
       class="tpl:flex tpl:flex-col tpl:items-center tpl:gap-2 tpl:text-center"
     >
-      <h2
-        class="tpl:text-lg tpl:font-semibold"
-        style="color: var(--tpl-text)"
-      >
+      <h2 class="tpl:text-lg tpl:font-semibold" style="color: var(--tpl-text)">
         {{ t.error.title }}
       </h2>
-      <p
-        class="tpl:max-w-md tpl:text-sm"
-        style="color: var(--tpl-text-muted)"
-      >
+      <p class="tpl:max-w-md tpl:text-sm" style="color: var(--tpl-text-muted)">
         {{ getErrorMessage(error) }}
       </p>
     </div>

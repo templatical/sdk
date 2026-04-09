@@ -1,5 +1,12 @@
 import type { CustomFont, FontsConfig } from "@templatical/types";
-import { computed, ref, type ComputedRef, type Ref } from "vue";
+import {
+  computed,
+  getCurrentScope,
+  onScopeDispose,
+  ref,
+  type ComputedRef,
+  type Ref,
+} from "vue";
 
 export interface FontOption {
   value: string;
@@ -150,7 +157,9 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
 
     const loadPromises = customFonts.value.map(async (font) => {
       try {
-        const existingLink = document.querySelector(`link[href="${font.url}"]`);
+        const existingLink = document.querySelector(
+          `link[data-custom-font="${CSS.escape(font.name)}"]`,
+        );
         if (existingLink) {
           return;
         }
@@ -182,6 +191,10 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
       link.remove();
     }
     createdLinks.length = 0;
+  }
+
+  if (getCurrentScope()) {
+    onScopeDispose(cleanupFontLinks);
   }
 
   return {

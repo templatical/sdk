@@ -2,7 +2,10 @@
 import { computed, ref } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import { useI18n } from "../composables/useI18n";
-import { colorTextClass } from "../constants/styleConstants";
+import {
+  colorTextClass,
+  DEFAULT_TEXT_COLOR,
+} from "../constants/styleConstants";
 import "vanilla-colorful";
 
 const props = withDefaults(
@@ -14,7 +17,7 @@ const props = withDefaults(
     disabled?: boolean;
   }>(),
   {
-    placeholder: "#000000",
+    placeholder: DEFAULT_TEXT_COLOR,
     size: "default",
     swatchOnly: false,
     disabled: false,
@@ -40,7 +43,7 @@ onClickOutside(
 );
 
 const internalColor = computed({
-  get: () => props.modelValue || "#000000",
+  get: () => props.modelValue || DEFAULT_TEXT_COLOR,
   set: (val) => emit("update:modelValue", val),
 });
 

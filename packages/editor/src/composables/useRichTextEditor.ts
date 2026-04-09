@@ -12,8 +12,8 @@ import {
   type Ref,
   type ShallowRef,
 } from "vue";
-import { useFocusTrap } from "./useFocusTrap";
 import { useMergeTag } from "./useMergeTag";
+import { useRichTextLinkDialog } from "./useRichTextLinkDialog";
 
 export interface MergeTagContext {
   mergeTags: ReturnType<typeof useMergeTag>["mergeTags"];
@@ -67,10 +67,16 @@ export function useRichTextEditor(
     syntax,
   } = useMergeTag();
 
-  const showLinkDialog = ref(false);
-  const linkUrl = ref("");
-  const linkDialogRef = ref<HTMLElement | null>(null);
-  useFocusTrap(linkDialogRef, showLinkDialog);
+  const {
+    showLinkDialog,
+    linkUrl,
+    linkDialogRef,
+    openLinkDialog,
+    insertLink,
+    removeLink,
+    closeLinkDialog,
+    handleLinkKeydown,
+  } = useRichTextLinkDialog(editor);
 
   const { start: startFocusTimeout, stop: stopFocusTimeout } = useTimeoutFn(
     () => editor.value?.commands.focus("end"),
@@ -171,46 +177,6 @@ export function useRichTextEditor(
     stopFocusTimeout();
     editor.value?.destroy();
   });
-
-  function openLinkDialog(): void {
-    const previousUrl = editor.value?.getAttributes("link").href || "";
-    linkUrl.value = previousUrl;
-    showLinkDialog.value = true;
-  }
-
-  function insertLink(): void {
-    if (linkUrl.value) {
-      const url = linkUrl.value.startsWith("http")
-        ? linkUrl.value
-        : `https://${linkUrl.value}`;
-      editor.value
-        ?.chain()
-        .focus()
-        .extendMarkRange("link")
-        .setLink({ href: url })
-        .run();
-    }
-    closeLinkDialog();
-  }
-
-  function removeLink(): void {
-    editor.value?.chain().focus().extendMarkRange("link").unsetLink().run();
-    closeLinkDialog();
-  }
-
-  function closeLinkDialog(): void {
-    showLinkDialog.value = false;
-    linkUrl.value = "";
-  }
-
-  function handleLinkKeydown(event: KeyboardEvent): void {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      insertLink();
-    } else if (event.key === "Escape") {
-      closeLinkDialog();
-    }
-  }
 
   async function handleAddMergeTag(): Promise<void> {
     const mergeTag = await requestMergeTag();

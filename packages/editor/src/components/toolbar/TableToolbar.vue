@@ -7,6 +7,7 @@ import {
   inputGroupInputClass,
   inputSuffixClass,
   labelClass,
+  DEFAULT_TABLE_ROW_BG,
 } from "../../constants/styleConstants";
 import type {
   TableBlock,
@@ -154,7 +155,7 @@ function removeTableColumn(colIndex: number): void {
   <div v-if="block.hasHeaderRow" class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.table.headerBackgroundColor }}</label>
     <ColorPicker
-      :model-value="block.headerBackgroundColor || '#f2f2f2'"
+      :model-value="block.headerBackgroundColor || DEFAULT_TABLE_ROW_BG"
       :placeholder="t.table.noHeaderBg"
       @update:model-value="updateField('headerBackgroundColor', $event || null)"
     />

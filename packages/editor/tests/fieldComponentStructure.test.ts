@@ -107,6 +107,32 @@ describe("MergeTagTextarea.vue structure", () => {
   });
 });
 
+describe("FieldWrapper.vue structure", () => {
+  const src = readComponent(`${fieldDir}/FieldWrapper.vue`);
+
+  it("renders required indicator with danger color", () => {
+    expect(src).toContain("required");
+    expect(src).toContain("tpl:text-[var(--tpl-danger)]");
+  });
+
+  it("renders Lock icon for readOnly state", () => {
+    expect(src).toContain("Lock");
+    expect(src).toContain("readOnly");
+  });
+
+  it("uses labelClass from constants", () => {
+    expect(src).toContain("labelClass");
+  });
+
+  it("has a default slot for field content", () => {
+    expect(src).toContain("<slot />");
+  });
+});
+
+const fieldsUsingFieldWrapper = allFieldFiles.filter(
+  (f) => f !== "BooleanField.vue",
+);
+
 describe("all field components", () => {
   for (const file of allFieldFiles) {
     describe(file, () => {
@@ -116,10 +142,18 @@ describe("all field components", () => {
         expect(src).toMatch(/readOnly\??:/);
       });
 
-      it("has required field indicator with danger color", () => {
-        expect(src).toContain("field.required");
-        expect(src).toContain("tpl:text-[var(--tpl-danger)]");
-      });
+      if (fieldsUsingFieldWrapper.includes(file)) {
+        it("uses FieldWrapper for label/required/readOnly", () => {
+          expect(src).toContain("FieldWrapper");
+          expect(src).toContain(":label=");
+          expect(src).toContain(":required=");
+        });
+      } else {
+        it("has required field indicator with danger color", () => {
+          expect(src).toContain("field.required");
+          expect(src).toContain("tpl:text-[var(--tpl-danger)]");
+        });
+      }
 
       it("emits update:modelValue", () => {
         expect(src).toContain("update:modelValue");

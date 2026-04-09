@@ -41,9 +41,7 @@ const core = useEditorCore({
     onRequestMedia: props.config.onRequestMedia,
     onSave: props.config.onSave
       ? () =>
-          props.config.onSave!(
-            JSON.parse(JSON.stringify(editor.state.content)),
-          )
+          props.config.onSave!(JSON.parse(JSON.stringify(editor.state.content)))
       : undefined,
     plugins: props.config.plugins,
   },

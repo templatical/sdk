@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockImageField } from "@templatical/types";
-import { inputClass, labelClass } from "../../../constants/styleConstants";
+import { inputClass } from "../../../constants/styleConstants";
 import type { OnRequestMedia } from "../../../index";
-import { Image, Lock } from "@lucide/vue";
+import { Image } from "@lucide/vue";
 import { computed, inject } from "vue";
+import FieldWrapper from "./FieldWrapper.vue";
 
 defineProps<{
   field: CustomBlockImageField;
@@ -30,18 +31,11 @@ async function browseMedia(): Promise<void> {
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">
-      {{ field.label }}
-      <Lock
-        v-if="readOnly"
-        :size="12"
-        class="tpl:inline tpl:text-[var(--tpl-text-dim)]"
-      />
-      <span v-if="field.required" class="tpl:text-[var(--tpl-danger)]">
-        *
-      </span>
-    </label>
+  <FieldWrapper
+    :label="field.label"
+    :required="field.required"
+    :read-only="readOnly"
+  >
     <input
       v-if="readOnly"
       type="url"
@@ -74,5 +68,5 @@ async function browseMedia(): Promise<void> {
       <Image :size="14" :stroke-width="1.5" />
       {{ t.image.browseMedia }}
     </button>
-  </div>
+  </FieldWrapper>
 </template>

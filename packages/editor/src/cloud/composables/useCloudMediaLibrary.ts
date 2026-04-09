@@ -1,4 +1,4 @@
-import type { Ref } from "vue";
+import { onScopeDispose, type Ref } from "vue";
 import type {
   MediaCategory,
   MediaItem,
@@ -7,9 +7,7 @@ import type {
 import type { MediaResult } from "@templatical/types";
 
 export interface UseCloudMediaLibraryOptions {
-  onRequestMedia?: (
-    context: MediaRequestContext,
-  ) => Promise<MediaItem | null>;
+  onRequestMedia?: (context: MediaRequestContext) => Promise<MediaItem | null>;
   mediaLibraryOpen: Ref<boolean>;
   mediaLibraryAccept: Ref<MediaCategory[] | undefined>;
 }
@@ -56,6 +54,13 @@ export function useCloudMediaLibrary(
     mediaResolve?.(null);
     mediaResolve = null;
   }
+
+  onScopeDispose(() => {
+    if (mediaResolve) {
+      mediaResolve(null);
+      mediaResolve = null;
+    }
+  });
 
   return {
     handleRequestMedia,

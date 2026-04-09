@@ -2,8 +2,8 @@ import MergeTagNodeView from "./MergeTagNodeView.vue";
 import type { MergeTag, SyntaxPreset } from "@templatical/types";
 import { getMergeTagLabel, SYNTAX_PRESETS } from "@templatical/types";
 import { InputRule, mergeAttributes, Node, PasteRule } from "@tiptap/core";
-import { VueNodeViewRenderer } from "@tiptap/vue-3";
 import { isNodeSelected } from "./isNodeSelected";
+import { renderVueNodeView } from "./renderVueNodeView";
 
 export interface MergeTagNodeOptions {
   mergeTags: MergeTag[];
@@ -70,9 +70,7 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
   },
 
   addNodeView() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TipTap's VueNodeViewRenderer expects
-    // a narrower component type than what Vue SFC default exports provide. This is a known interop gap.
-    return VueNodeViewRenderer(MergeTagNodeView as any);
+    return renderVueNodeView(MergeTagNodeView);
   },
 
   addCommands() {

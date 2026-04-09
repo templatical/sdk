@@ -352,7 +352,11 @@ watch(
                 class="tpl:text-center tpl:text-[11px]"
                 style="color: var(--tpl-text-dim)"
               >
-                {{ activeTab === "image" ? t.designReference.acceptedImages : t.designReference.acceptedPdf }}
+                {{
+                  activeTab === "image"
+                    ? t.designReference.acceptedImages
+                    : t.designReference.acceptedPdf
+                }}
               </span>
             </div>
             <input

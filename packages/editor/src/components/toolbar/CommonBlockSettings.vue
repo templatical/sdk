@@ -2,10 +2,10 @@
 import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
 import { useI18n } from "../../composables/useI18n";
-import { labelClass } from "../../constants/styleConstants";
+import { labelClass, DEFAULT_BG_COLOR } from "../../constants/styleConstants";
 import type { Block, DisplayCondition } from "@templatical/types";
 import { ChevronDown, Monitor, Smartphone, Tablet } from "@lucide/vue";
-import { computed, inject, ref, watch } from "vue";
+import { computed, inject, reactive, ref, watch } from "vue";
 
 const props = defineProps<{
   block: Block;
@@ -21,11 +21,19 @@ const { t } = useI18n();
 const displayConditions = inject<DisplayCondition[]>("displayConditions", []);
 const allowCustomConditions = inject<boolean>("allowCustomConditions", false);
 
-const spacingOpen = ref(false);
-const bgOpen = ref(false);
-const displayOpen = ref(false);
-const cssOpen = ref(false);
-const conditionOpen = ref(false);
+const openSections = reactive(
+  new Set<"spacing" | "bg" | "display" | "css" | "condition">(),
+);
+
+function toggleSection(
+  key: "spacing" | "bg" | "display" | "css" | "condition",
+): void {
+  if (openSections.has(key)) {
+    openSections.delete(key);
+  } else {
+    openSections.add(key);
+  }
+}
 
 const hasDisplayConditions = computed(
   () => displayConditions.length > 0 || allowCustomConditions,
@@ -122,17 +130,19 @@ function updateStyle(field: string, value: unknown): void {
       <button
         type="button"
         class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        @click="spacingOpen = !spacingOpen"
+        @click="toggleSection('spacing')"
       >
         <ChevronDown
           class="tpl:transition-transform tpl:duration-200"
-          :class="spacingOpen ? 'tpl:rotate-0' : 'tpl:-rotate-90'"
+          :class="
+            openSections.has('spacing') ? 'tpl:rotate-0' : 'tpl:-rotate-90'
+          "
           :size="12"
           :stroke-width="2"
         />
         <span>{{ t.blockSettings.spacing }}</span>
       </button>
-      <div v-show="spacingOpen" class="tpl:mt-3">
+      <div v-show="openSections.has('spacing')" class="tpl:mt-3">
         <SpacingControl
           :label="t.blockSettings.padding"
           :model-value="block.styles.padding"
@@ -153,21 +163,21 @@ function updateStyle(field: string, value: unknown): void {
       <button
         type="button"
         class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        @click="bgOpen = !bgOpen"
+        @click="toggleSection('bg')"
       >
         <ChevronDown
           class="tpl:transition-transform tpl:duration-200"
-          :class="bgOpen ? 'tpl:rotate-0' : 'tpl:-rotate-90'"
+          :class="openSections.has('bg') ? 'tpl:rotate-0' : 'tpl:-rotate-90'"
           :size="12"
           :stroke-width="2"
         />
         <span>{{ t.blockSettings.background }}</span>
       </button>
-      <div v-show="bgOpen" class="tpl:mt-3">
+      <div v-show="openSections.has('bg')" class="tpl:mt-3">
         <label :class="labelClass">{{ t.blockSettings.color }}</label>
         <ColorPicker
           size="large"
-          :model-value="block.styles.backgroundColor || '#ffffff'"
+          :model-value="block.styles.backgroundColor || DEFAULT_BG_COLOR"
           @update:model-value="updateStyle('backgroundColor', $event)"
         />
       </div>
@@ -178,17 +188,19 @@ function updateStyle(field: string, value: unknown): void {
       <button
         type="button"
         class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        @click="displayOpen = !displayOpen"
+        @click="toggleSection('display')"
       >
         <ChevronDown
           class="tpl:transition-transform tpl:duration-200"
-          :class="displayOpen ? 'tpl:rotate-0' : 'tpl:-rotate-90'"
+          :class="
+            openSections.has('display') ? 'tpl:rotate-0' : 'tpl:-rotate-90'
+          "
           :size="12"
           :stroke-width="2"
         />
         <span>{{ t.blockSettings.display }}</span>
       </button>
-      <div v-show="displayOpen" class="tpl:mt-3 tpl:space-y-2">
+      <div v-show="openSections.has('display')" class="tpl:mt-3 tpl:space-y-2">
         <label
           class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text)]"
         >
@@ -257,17 +269,17 @@ function updateStyle(field: string, value: unknown): void {
       <button
         type="button"
         class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        @click="cssOpen = !cssOpen"
+        @click="toggleSection('css')"
       >
         <ChevronDown
           class="tpl:transition-transform tpl:duration-200"
-          :class="cssOpen ? 'tpl:rotate-0' : 'tpl:-rotate-90'"
+          :class="openSections.has('css') ? 'tpl:rotate-0' : 'tpl:-rotate-90'"
           :size="12"
           :stroke-width="2"
         />
         <span>{{ t.blockSettings.customCss }}</span>
       </button>
-      <div v-show="cssOpen" class="tpl:mt-3">
+      <div v-show="openSections.has('css')" class="tpl:mt-3">
         <label :class="labelClass">{{ t.blockSettings.css }}</label>
         <textarea
           :value="block.customCss || ''"
@@ -291,17 +303,22 @@ function updateStyle(field: string, value: unknown): void {
       <button
         type="button"
         class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        @click="conditionOpen = !conditionOpen"
+        @click="toggleSection('condition')"
       >
         <ChevronDown
           class="tpl:transition-transform tpl:duration-200"
-          :class="conditionOpen ? 'tpl:rotate-0' : 'tpl:-rotate-90'"
+          :class="
+            openSections.has('condition') ? 'tpl:rotate-0' : 'tpl:-rotate-90'
+          "
           :size="12"
           :stroke-width="2"
         />
         <span>{{ t.blockSettings.displayCondition }}</span>
       </button>
-      <div v-show="conditionOpen" class="tpl:mt-3 tpl:space-y-2">
+      <div
+        v-show="openSections.has('condition')"
+        class="tpl:mt-3 tpl:space-y-2"
+      >
         <select
           class="tpl:w-full tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:outline-none tpl:transition-all tpl:duration-150 tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
           :class="

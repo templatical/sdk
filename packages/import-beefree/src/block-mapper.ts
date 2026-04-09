@@ -83,7 +83,6 @@ function toAlign(value: string | undefined, fallback: Align = "left"): Align {
   return fallback;
 }
 
-
 function toLineStyle(
   value: string | undefined,
   fallback: LineStyle = "solid",

@@ -15,9 +15,16 @@ export interface UseI18nReturn {
  * @param translationsOverride - Optional translations to use instead of injected value
  */
 export function useI18n(translationsOverride?: Translations): UseI18nReturn {
-  const injected =
+  const injected: Translations | Ref<Translations> | null =
     translationsOverride ??
-    inject<Translations | Ref<Translations>>("translations")!;
+    inject<Translations | Ref<Translations> | null>("translations", null);
+
+  if (!injected) {
+    throw new Error(
+      "useI18n() requires a translations provider. Ensure the component is a descendant of Editor or CloudEditor.",
+    );
+  }
+
   const t = isRef(injected) ? injected.value : injected;
 
   /**

@@ -1,6 +1,9 @@
 import { computed, ref, type ComputedRef, type Ref } from "vue";
 import { useTimeoutFn } from "@vueuse/core";
-import type { UsePlanConfigReturn, UseAiConfigReturn } from "@templatical/core/cloud";
+import type {
+  UsePlanConfigReturn,
+  UseAiConfigReturn,
+} from "@templatical/core/cloud";
 
 export interface UseCloudFeatureFlagsOptions {
   planConfigInstance: UsePlanConfigReturn;

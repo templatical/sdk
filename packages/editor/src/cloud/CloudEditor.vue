@@ -74,6 +74,7 @@ import { useCloudMediaLibrary } from "./composables/useCloudMediaLibrary";
 import { useVisualSavedModules } from "./composables/useSavedModules";
 import { useDragDrop } from "../composables/useDragDrop";
 import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "../constants/timeouts";
+import { headerBtnClass } from "../constants/styleConstants";
 
 import Canvas from "../components/Canvas.vue";
 import Sidebar from "../components/Sidebar.vue";
@@ -883,27 +884,37 @@ defineExpose({
 
         <!-- Comments button -->
         <button
-          v-if="commentsInstance.isEnabled.value && featureFlags.hasTemplateSaved.value"
+          v-if="
+            commentsInstance.isEnabled.value &&
+            featureFlags.hasTemplateSaved.value
+          "
           :aria-label="
             commentsInstance.unresolvedCount.value > 0
               ? `${core.t.comments.button} (${commentsInstance.unresolvedCount.value})`
               : core.t.comments.button
           "
           :aria-expanded="panelState.commentsOpen.value"
-          class="tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-[var(--tpl-bg)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+          :class="headerBtnClass"
           :style="{
             backgroundColor: panelState.commentsOpen.value
               ? 'var(--tpl-primary)'
               : 'transparent',
-            color: panelState.commentsOpen.value ? 'var(--tpl-bg)' : 'var(--tpl-primary)',
+            color: panelState.commentsOpen.value
+              ? 'var(--tpl-bg)'
+              : 'var(--tpl-primary)',
             borderColor: 'var(--tpl-primary)',
           }"
-          @click="panelState.commentsOpen.value = !panelState.commentsOpen.value"
+          @click="
+            panelState.commentsOpen.value = !panelState.commentsOpen.value
+          "
         >
           <MessageCircle :size="16" :stroke-width="2" />
           {{ core.t.comments.button }}
           <span
-            v-if="commentsInstance.unresolvedCount.value > 0 && !panelState.commentsOpen.value"
+            v-if="
+              commentsInstance.unresolvedCount.value > 0 &&
+              !panelState.commentsOpen.value
+            "
             class="tpl:inline-flex tpl:size-4.5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold"
             style="background-color: var(--tpl-primary); color: var(--tpl-bg)"
           >
@@ -913,14 +924,21 @@ defineExpose({
 
         <!-- AI button + menu -->
         <div
-          v-if="featureFlags.canUseAiGeneration.value && featureFlags.hasTemplateSaved.value"
+          v-if="
+            featureFlags.canUseAiGeneration.value &&
+            featureFlags.hasTemplateSaved.value
+          "
           :ref="(el) => (panelState.aiMenuRef.value = el as HTMLElement | null)"
           class="tpl:relative"
         >
           <button
             :aria-expanded="panelState.aiMenuOpen.value"
             class="tpl-ai-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-4 tpl:py-2 tpl:text-sm tpl:font-semibold tpl:whitespace-nowrap tpl:transition-all tpl:duration-200"
-            :class="panelState.aiButtonActive.value ? 'tpl-ai-btn--active' : 'tpl-ai-btn--idle'"
+            :class="
+              panelState.aiButtonActive.value
+                ? 'tpl-ai-btn--active'
+                : 'tpl-ai-btn--idle'
+            "
             @click.stop="panelState.toggleAiMenu"
           >
             <Sparkles :size="16" :stroke-width="2" class="tpl-ai-btn-icon" />
@@ -948,14 +966,18 @@ defineExpose({
 
         <!-- Test email button -->
         <button
-          v-if="testEmail.isEnabled.value && featureFlags.canSendTestEmail.value"
-          class="tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-[var(--tpl-bg)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+          v-if="
+            testEmail.isEnabled.value && featureFlags.canSendTestEmail.value
+          "
+          :class="headerBtnClass"
           style="
             background-color: transparent;
             color: var(--tpl-primary);
             border-color: var(--tpl-primary);
           "
-          :disabled="testEmail.isSending.value || !featureFlags.hasTemplateSaved.value"
+          :disabled="
+            testEmail.isSending.value || !featureFlags.hasTemplateSaved.value
+          "
           @click="panelState.testEmailModalOpen.value = true"
         >
           <Send
@@ -974,14 +996,16 @@ defineExpose({
 
         <!-- Save button -->
         <button
-          class="tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-[var(--tpl-bg)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+          :class="headerBtnClass"
           style="
             background-color: transparent;
             color: var(--tpl-primary);
             border-color: var(--tpl-primary);
           "
           :disabled="
-            editor.state.isSaving || featureFlags.isSaveExporting.value || !editor.state.isDirty
+            editor.state.isSaving ||
+            featureFlags.isSaveExporting.value ||
+            !editor.state.isDirty
           "
           @click="
             saveTemplate().catch((err) => props.config.onError?.(err as Error))
@@ -1044,7 +1068,9 @@ defineExpose({
           : panelState.rightPanelOpen.value
             ? 'tpl:left-12 tpl:right-[680px]'
             : 'tpl:left-12 tpl:right-[320px]',
-        snapshotPreview.isPreviewingSnapshot.value ? 'tpl:top-[104px]' : 'tpl:top-14',
+        snapshotPreview.isPreviewingSnapshot.value
+          ? 'tpl:top-[104px]'
+          : 'tpl:top-14',
       ]"
     >
       <!-- Restore hidden blocks button -->
@@ -1144,7 +1170,9 @@ defineExpose({
       @update-block="
         (updates) => editor.updateBlock(editor.selectedBlock.value!.id, updates)
       "
-      @delete-block="core.blockActions.deleteBlock(editor.selectedBlock.value!.id)"
+      @delete-block="
+        core.blockActions.deleteBlock(editor.selectedBlock.value!.id)
+      "
       @duplicate-block="
         core.blockActions.duplicateBlock(editor.selectedBlock.value!)
       "

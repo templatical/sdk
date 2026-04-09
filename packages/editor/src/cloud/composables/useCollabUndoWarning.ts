@@ -1,4 +1,4 @@
-import { ref, type ComputedRef, type Ref } from "vue";
+import { type ComputedRef, type Ref, ref } from "vue";
 import { useTimeoutFn } from "@vueuse/core";
 import { COLLAB_UNDO_WARNING_MS } from "../../constants/timeouts";
 
@@ -21,7 +21,7 @@ export function useCollabUndoWarning(
 ): UseCollabUndoWarningReturn {
   const { isCollaborationEnabled, getCollaboratorCount, canUndo } = options;
 
-  let collabUndoWarningFired = false;
+  const collabUndoWarningFired = ref(false);
   const collabUndoWarningVisible = ref(false);
 
   const { start: startCollabUndoWarningTimeout } = useTimeoutFn(
@@ -34,7 +34,7 @@ export function useCollabUndoWarning(
 
   function showCollabUndoWarning(): void {
     if (
-      collabUndoWarningFired ||
+      collabUndoWarningFired.value ||
       !isCollaborationEnabled.value ||
       getCollaboratorCount() === 0 ||
       !canUndo.value
@@ -42,7 +42,7 @@ export function useCollabUndoWarning(
       return;
     }
 
-    collabUndoWarningFired = true;
+    collabUndoWarningFired.value = true;
     collabUndoWarningVisible.value = true;
     startCollabUndoWarningTimeout();
   }

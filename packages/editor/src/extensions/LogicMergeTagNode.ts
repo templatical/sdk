@@ -6,8 +6,8 @@ import {
   SYNTAX_PRESETS,
 } from "@templatical/types";
 import { InputRule, mergeAttributes, Node, PasteRule } from "@tiptap/core";
-import { VueNodeViewRenderer } from "@tiptap/vue-3";
 import { isNodeSelected } from "./isNodeSelected";
+import { renderVueNodeView } from "./renderVueNodeView";
 
 export interface LogicMergeTagNodeOptions {
   syntax: SyntaxPreset;
@@ -72,9 +72,7 @@ export const LogicMergeTagNode = Node.create<LogicMergeTagNodeOptions>({
   },
 
   addNodeView() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TipTap's VueNodeViewRenderer expects
-    // a narrower component type than what Vue SFC default exports provide. This is a known interop gap.
-    return VueNodeViewRenderer(LogicMergeTagNodeView as any);
+    return renderVueNodeView(LogicMergeTagNodeView);
   },
 
   addKeyboardShortcuts() {

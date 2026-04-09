@@ -62,9 +62,9 @@ const conditionPreview = inject<UseConditionPreviewReturn>("conditionPreview");
 // Cloud-only injects — null in OSS mode
 
 const commentsInstance = inject<CloudComments | null>("comments", null);
-const openCommentsForBlock = inject<(blockId: string) => void>(
+const openCommentsForBlock = inject<((blockId: string) => void) | null>(
   "openCommentsForBlock",
-  undefined as never,
+  null,
 );
 
 const savedModulesVisual = inject<CloudSavedModules | null>(

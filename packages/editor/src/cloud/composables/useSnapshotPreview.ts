@@ -1,8 +1,5 @@
 import { computed, shallowRef, ref, type ComputedRef, type Ref } from "vue";
-import type {
-  TemplateContent,
-  TemplateSnapshot,
-} from "@templatical/types";
+import type { TemplateContent, TemplateSnapshot } from "@templatical/types";
 import type {
   UseHistoryReturn,
   UseConditionPreviewReturn,
@@ -99,9 +96,7 @@ export function useSnapshotPreview(
       await editor.createSnapshot();
     }
 
-    contentBeforePreview.value = JSON.parse(
-      JSON.stringify(editor.content.value),
-    );
+    contentBeforePreview.value = structuredClone(editor.content.value);
 
     autoSave?.pause();
     previewingSnapshot.value = snapshot;
@@ -111,15 +106,16 @@ export function useSnapshotPreview(
   async function confirmRestoreSnapshot(): Promise<void> {
     if (!previewingSnapshot.value || !snapshotHistoryInstance.value) return;
 
-    await snapshotHistoryInstance.value.restoreSnapshot(
-      previewingSnapshot.value.id,
-    );
-    await snapshotHistoryInstance.value.loadSnapshots();
-
-    previewingSnapshot.value = null;
-    contentBeforePreview.value = null;
-
-    autoSave?.resume();
+    try {
+      await snapshotHistoryInstance.value.restoreSnapshot(
+        previewingSnapshot.value.id,
+      );
+      await snapshotHistoryInstance.value.loadSnapshots();
+    } finally {
+      previewingSnapshot.value = null;
+      contentBeforePreview.value = null;
+      autoSave?.resume();
+    }
   }
 
   function cancelPreview(): void {

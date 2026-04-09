@@ -1,4 +1,12 @@
-import { computed, provide, ref, watch, type Component, type ComputedRef, type Ref } from "vue";
+import {
+  computed,
+  provide,
+  ref,
+  watch,
+  type Component,
+  type ComputedRef,
+  type Ref,
+} from "vue";
 import { useEventListener } from "@vueuse/core";
 import {
   useHistory,
@@ -34,7 +42,10 @@ import type { UseFontsReturn } from "./useFonts";
 import { useI18n, type UseI18nReturn } from "./useI18n";
 import { useUiTheme } from "./useUiTheme";
 import { useThemeStyles } from "./useThemeStyles";
-import { useBlockRegistry, type UseBlockRegistryReturn } from "./useBlockRegistry";
+import {
+  useBlockRegistry,
+  type UseBlockRegistryReturn,
+} from "./useBlockRegistry";
 import { registerBuiltInBlocks } from "../utils/registerBuiltInBlocks";
 import { handleEditorKeydown } from "../utils/keyboardShortcuts";
 
@@ -166,7 +177,9 @@ export interface UseEditorCoreReturn {
   destroy: () => void;
 }
 
-export function useEditorCore(options: UseEditorCoreOptions): UseEditorCoreReturn {
+export function useEditorCore(
+  options: UseEditorCoreOptions,
+): UseEditorCoreReturn {
   const { editor, config, translations, fontsManager } = options;
 
   // --- i18n ---
