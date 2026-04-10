@@ -203,42 +203,6 @@ describe("UseBlockRegistryReturn used instead of ReturnType<typeof useBlockRegis
   });
 });
 
-// ── Plugin extension stubs removed ───────────────────────────────────────────
-
-describe("plugin extension no-op stubs removed", () => {
-  it("Editor.vue plugin context does not contain registerToolbarAction", () => {
-    const src = readSrc("Editor.vue");
-    expect(src).not.toContain("registerToolbarAction");
-    expect(src).not.toContain("registerSidebarPanel");
-    expect(src).not.toContain("registerBlockAction");
-    // Plugin lifecycle is handled via useEditorCore
-    expect(src).toContain("useEditorCore(");
-    expect(src).toContain("core.installPlugins()");
-  });
-
-  it("plugins.ts exports only EditorPlugin and EditorPluginContext", () => {
-    const src = readFileSync(
-      resolve(__dirname, "../../core/src/plugins.ts"),
-      "utf-8",
-    );
-    expect(src).not.toContain("ToolbarAction");
-    expect(src).not.toContain("SidebarPanel");
-    expect(src).not.toContain("BlockContextAction");
-    // Only the core plugin interfaces remain
-    expect(src).toContain("interface EditorPlugin");
-    expect(src).toContain("interface EditorPluginContext");
-  });
-
-  it("index.ts re-exports EditorPlugin and EditorPluginContext, not stubs", () => {
-    const src = readSrc("index.ts");
-    expect(src).not.toContain("ToolbarAction");
-    expect(src).not.toContain("SidebarPanel");
-    // Core plugin types are re-exported
-    expect(src).toContain("EditorPlugin");
-    expect(src).toContain("EditorPluginContext");
-  });
-});
-
 // ── onRequestMedia unified signature ─────────────────────────────────────────
 
 describe("onRequestMedia signature unified with optional context", () => {
@@ -303,7 +267,7 @@ describe("onRequestMedia signature unified with optional context", () => {
 describe("useHistoryInterceptor replaces manual wrapping", () => {
   it("useEditorCore calls useHistoryInterceptor", () => {
     const src = readSrc("composables/useEditorCore.ts");
-    expect(src).toContain("useHistoryInterceptor(editor, history)");
+    expect(src).toContain("useHistoryInterceptor(editor as unknown as CoreUseEditorReturn, history)");
   });
 
   it("Editor.vue delegates to useEditorCore (no direct interceptor call)", () => {

@@ -43,18 +43,21 @@ const core = useEditorCore({
       ? () =>
           props.config.onSave!(JSON.parse(JSON.stringify(editor.state.content)))
       : undefined,
-    plugins: props.config.plugins,
   },
   translations: props.translations,
   fontsManager: props.fontsManager,
   autoSaveOptions: props.config.onChange
-    ? { onChange: props.config.onChange }
+    ? {
+        onChange: () =>
+          props.config.onChange!(
+            JSON.parse(JSON.stringify(editor.state.content)),
+          ),
+      }
     : null,
 });
 
 // --- Lifecycle ---
 onMounted(async () => {
-  core.installPlugins();
   await props.fontsManager.loadCustomFonts();
 });
 

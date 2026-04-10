@@ -26,6 +26,3 @@ export { useDataSourceFetch } from "./data-source-fetch";
 
 // History interceptor
 export { useHistoryInterceptor } from "./history-interceptor";
-
-// Plugin system
-export type { EditorPlugin, EditorPluginContext } from "./plugins";

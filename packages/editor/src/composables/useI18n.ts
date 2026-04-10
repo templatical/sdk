@@ -16,8 +16,9 @@ export interface UseI18nReturn {
  * @param translationsOverride - Optional translations to use instead of injected value
  */
 export function useI18n(translationsOverride?: Translations): UseI18nReturn {
-  const injected: Translations | Ref<Translations> | null =
-    translationsOverride ?? inject(TRANSLATIONS_KEY, null);
+  const injected: Translations | Ref<Translations> | undefined =
+    translationsOverride ??
+    (inject(TRANSLATIONS_KEY) as Translations | Ref<Translations> | undefined);
 
   if (!injected) {
     throw new Error(
@@ -25,7 +26,7 @@ export function useI18n(translationsOverride?: Translations): UseI18nReturn {
     );
   }
 
-  const t = isRef(injected) ? injected.value : injected;
+  const t: Translations = isRef(injected) ? injected.value : injected;
 
   /**
    * Format a string with placeholders.

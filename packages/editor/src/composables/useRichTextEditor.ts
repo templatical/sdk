@@ -1,5 +1,7 @@
-import type { Editor } from "@tiptap/core";
-import type { EditorContent as EditorContentComponent } from "@tiptap/vue-3";
+import type {
+  Editor,
+  EditorContent as EditorContentComponent,
+} from "@tiptap/vue-3";
 import type { Extension, Mark, Node } from "@tiptap/core";
 import { useEventListener, useTimeoutFn } from "@vueuse/core";
 import {
@@ -67,6 +69,8 @@ export function useRichTextEditor(
     syntax,
   } = useMergeTag();
 
+  const editor = shallowRef<Editor | null>(null);
+
   const {
     showLinkDialog,
     linkUrl,
@@ -83,8 +87,6 @@ export function useRichTextEditor(
     0,
     { immediate: false },
   );
-
-  const editor = shallowRef<Editor | null>(null);
   const EditorContent = shallowRef<typeof EditorContentComponent | null>(null);
   const isLoading = ref(true);
   const initError = ref<string | null>(null);

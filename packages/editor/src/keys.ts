@@ -10,8 +10,8 @@ import type {
   DisplayCondition,
   MergeTag,
   SyntaxPreset,
-  Translations,
 } from "@templatical/types";
+import type { Translations } from "./i18n";
 import type {
   AuthManager,
   UseAiConfigReturn,

@@ -15,7 +15,7 @@ import type {
   UiTheme,
 } from "@templatical/types";
 import type { MediaRequestContext } from "@templatical/media-library";
-import type { EditorPlugin } from "@templatical/core";
+
 import Editor from "./Editor.vue";
 import { loadTranslations } from "./i18n";
 import { useFonts } from "./composables";
@@ -45,8 +45,6 @@ export interface TemplaticalEditorConfig {
   theme?: ThemeOverrides;
   uiTheme?: UiTheme;
   locale?: string;
-
-  plugins?: EditorPlugin[];
 }
 
 /** Function type for media browser requests, used by both OSS and Cloud editors. */
@@ -309,7 +307,7 @@ export type {
   SaveResult,
   Template,
 } from "@templatical/types";
-export type { EditorPlugin, EditorPluginContext } from "@templatical/core";
+
 export type { UseFontsReturn, FontOption } from "./composables/useFonts";
 export { useFonts } from "./composables/useFonts";
 export type { EditorCapabilities } from "./types/editor-capabilities";

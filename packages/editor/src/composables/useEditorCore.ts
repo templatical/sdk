@@ -5,6 +5,7 @@ import {
   watch,
   type Component,
   type ComputedRef,
+  type DeepReadonly,
   type Ref,
 } from "vue";
 import { useEventListener } from "@vueuse/core";
@@ -16,13 +17,12 @@ import {
   useConditionPreview,
 } from "@templatical/core";
 import type {
-  EditorPlugin,
-  EditorPluginContext,
   UseHistoryReturn,
   UseBlockActionsReturn,
   UseConditionPreviewReturn,
   UseAutoSaveReturn,
 } from "@templatical/core";
+import type { UseEditorReturn as CoreUseEditorReturn } from "@templatical/core";
 import type {
   Block,
   BlockDefaults,
@@ -107,20 +107,21 @@ const BLOCK_COMPONENT_MAP: Record<string, Component> = {
  * Cloud adds extra methods (create, load, save, etc.) that useEditorCore doesn't need.
  */
 export interface BaseEditorReturn {
-  state: {
-    readonly content: TemplateContent;
-    readonly selectedBlockId: string | null;
-    readonly viewport: ViewportSize;
-    readonly darkMode: boolean;
-    readonly previewMode: boolean;
-    readonly uiTheme: UiTheme;
-    readonly isDirty: boolean;
-    readonly template?: { id: string } | null;
-    readonly isLoading?: boolean;
-    readonly isSaving?: boolean;
-  };
+  state: DeepReadonly<{
+    content: TemplateContent;
+    selectedBlockId: string | null;
+    viewport: ViewportSize;
+    darkMode: boolean;
+    previewMode: boolean;
+    uiTheme: UiTheme;
+    isDirty: boolean;
+    template?: { id: string } | null;
+    isLoading?: boolean;
+    isSaving?: boolean;
+  }>;
   content: Ref<TemplateContent>;
   selectedBlock: Ref<Block | null>;
+  savedBlockIds?: Ref<Set<string>>;
   setContent: (content: TemplateContent, markDirty?: boolean) => void;
   selectBlock: (blockId: string | null) => void;
   setViewport: (viewport: ViewportSize) => void;
@@ -158,7 +159,6 @@ export interface UseEditorCoreOptions {
     displayConditions?: DisplayConditionsConfig;
     onRequestMedia?: OnRequestMedia | null;
     onSave?: () => void;
-    plugins?: EditorPlugin[];
   };
 
   translations: Translations;
@@ -195,8 +195,6 @@ export interface UseEditorCoreReturn {
   themeStyles: ComputedRef<Record<string, string>>;
   themeOverrides: Ref<ThemeOverrides>;
   registry: UseBlockRegistryReturn;
-  installedPlugins: EditorPlugin[];
-  installPlugins: () => void;
   registerCustomBlocks: (definitions: CustomBlockDefinition[]) => void;
   destroy: () => void;
 }
@@ -229,7 +227,7 @@ export function useEditorCore(
       editor.setContent(content, markDirty),
     ...options.historyOptions,
   });
-  useHistoryInterceptor(editor, history);
+  useHistoryInterceptor(editor as unknown as CoreUseEditorReturn, history);
 
   // --- Block actions ---
   const blockActions = useBlockActions({
@@ -241,7 +239,9 @@ export function useEditorCore(
   });
 
   // --- Condition preview ---
-  const conditionPreview = useConditionPreview(editor);
+  const conditionPreview = useConditionPreview(
+    editor as unknown as CoreUseEditorReturn,
+  );
 
   // --- Auto-save ---
   const autoSave =
@@ -278,30 +278,6 @@ export function useEditorCore(
   function registerCustomBlocks(definitions: CustomBlockDefinition[]): void {
     for (const definition of definitions) {
       registry.registerCustom(definition, CustomBlockComponent);
-    }
-  }
-
-  // --- Plugin system ---
-  const installedPlugins: EditorPlugin[] = [];
-
-  function installPlugins(): void {
-    const plugins = config.plugins ?? [];
-    const context: EditorPluginContext = {
-      state: editor.state,
-      content: editor.content,
-      selectedBlockId: editor.state.selectedBlockId,
-      viewport: editor.state.viewport,
-      addBlock: editor.addBlock,
-      updateBlock: editor.updateBlock,
-      removeBlock: editor.removeBlock,
-      moveBlock: editor.moveBlock,
-      updateSettings: editor.updateSettings,
-      selectBlock: editor.selectBlock,
-    };
-
-    for (const plugin of plugins) {
-      plugin.install(context);
-      installedPlugins.push(plugin);
     }
   }
 
@@ -353,9 +329,6 @@ export function useEditorCore(
   function destroy(): void {
     autoSave?.destroy();
     history.destroy();
-    for (const plugin of installedPlugins) {
-      plugin.destroy?.();
-    }
   }
 
   return {
@@ -369,8 +342,6 @@ export function useEditorCore(
     themeStyles,
     themeOverrides,
     registry,
-    installedPlugins,
-    installPlugins,
     registerCustomBlocks,
     destroy,
   };

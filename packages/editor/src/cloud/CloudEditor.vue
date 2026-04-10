@@ -20,7 +20,7 @@ import type {
 } from "@templatical/media-library";
 import { cloneBlock, isCustomBlock } from "@templatical/types";
 import type { CustomBlock } from "@templatical/types";
-import type { EditorPlugin } from "@templatical/core";
+
 import {
   AuthManager,
   performHealthCheck,
@@ -172,8 +172,6 @@ export interface TemplaticalCloudEditorConfig {
   displayConditions?: DisplayConditionsConfig;
   customBlocks?: CustomBlockDefinition[];
   fonts?: FontsConfig;
-  plugins?: EditorPlugin[];
-
   onChange?: (content: TemplateContent) => void;
   onSave?: (result: SaveResult) => void;
   onCreate?: (template: Template) => void;
@@ -322,7 +320,6 @@ const core = useEditorCore({
         props.config.onError?.(err as Error);
       });
     },
-    plugins: props.config.plugins,
   },
   translations: props.translations,
   fontsManager: props.fontsManager,
@@ -396,7 +393,7 @@ const mediaLib = useCloudMediaLibrary({
   mediaLibraryAccept: panelState.mediaLibraryAccept,
 });
 
-const dragDrop = useDragDrop({
+const _dragDrop = useDragDrop({
   onBlockMove: editor.moveBlock,
   onBlockAdd: editor.addBlock,
 });
@@ -727,7 +724,6 @@ async function saveTemplate(): Promise<SaveResult> {
 // ---------------------------------------------------------------------------
 
 onMounted(() => {
-  core.installPlugins();
   initialize();
 });
 

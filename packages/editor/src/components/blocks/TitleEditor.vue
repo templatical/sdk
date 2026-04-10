@@ -45,13 +45,11 @@ const {
   editorName: "TitleEditor",
   async loadExtensions({ mergeTags, syntax }) {
     const [
-      { Editor: TiptapEditor },
-      { EditorContent: EC },
+      { Editor: TiptapEditor, EditorContent: EC },
       { default: StarterKit },
       { default: LinkExt },
       { MergeTagNode, LogicMergeTagNode },
     ] = await Promise.all([
-      import("@tiptap/core"),
       import("@tiptap/vue-3"),
       import("@tiptap/starter-kit"),
       import("@tiptap/extension-link"),

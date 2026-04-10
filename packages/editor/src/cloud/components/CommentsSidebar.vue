@@ -73,7 +73,7 @@ const isBlockFilterUnsaved = computed(() => {
   if (filterMode.value !== "block" || !filterBlockId.value) {
     return false;
   }
-  return !editor.savedBlockIds.value.has(filterBlockId.value);
+  return !(editor.savedBlockIds?.value.has(filterBlockId.value) ?? true);
 });
 
 const filteredComments = computed(() => {

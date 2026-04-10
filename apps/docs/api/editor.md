@@ -53,7 +53,7 @@ unmount();
 | `theme` | `ThemeOverrides` | No | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming) |
 | `uiTheme` | `'light' \| 'dark' \| 'auto'` | No | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'` |
 | `locale` | `string` | No | Locale code (e.g. `'en'`, `'de'`). Defaults to `'en'` |
-| `plugins` | `EditorPlugin[]` | No | Editor plugins. See [Plugin System](#plugin-system) |
+
 
 ## TemplaticalEditor
 
@@ -103,68 +103,6 @@ const mjml = editor.toMjml?.();
 ```
 
 To compile MJML to HTML, use any MJML library (e.g., [mjml](https://www.npmjs.com/package/mjml) for Node.js).
-
-## Plugin System
-
-Plugins extend the editor with custom toolbar actions, sidebar panels, and block context actions.
-
-::: warning Work in progress
-The plugin registration methods (`registerToolbarAction`, `registerSidebarPanel`, `registerBlockAction`) are defined in the type system and available in the plugin context, but their UI rendering is not yet implemented. You can use plugins today for reading state, reacting to changes, and calling mutation methods — but registered actions won't appear in the UI until a future release.
-:::
-
-### EditorPlugin
-
-```ts
-interface EditorPlugin {
-  name: string;
-  install(context: EditorPluginContext): void | Promise<void>;
-  destroy?(): void;
-}
-```
-
-### EditorPluginContext
-
-The context passed to `install()`:
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `state` | `DeepReadonly<EditorState>` | Current editor state |
-| `content` | `Ref<TemplateContent>` | Reactive template content |
-| `selectedBlockId` | `Ref<string \| null>` | Currently selected block ID |
-| `viewport` | `Ref<ViewportSize>` | Current viewport |
-| `addBlock` | `(block, sectionId?, colIdx?, idx?) => void` | Add a block |
-| `updateBlock` | `(blockId, updates) => void` | Update a block |
-| `removeBlock` | `(blockId) => void` | Remove a block |
-| `moveBlock` | `(blockId, newIdx, sectionId?, colIdx?) => void` | Move a block |
-| `updateSettings` | `(updates) => void` | Update template settings |
-| `selectBlock` | `(blockId \| null) => void` | Select a block |
-| `registerToolbarAction` | `(action: ToolbarAction) => void` | Add a toolbar button |
-| `registerSidebarPanel` | `(panel: SidebarPanel) => void` | Add a sidebar panel |
-| `registerBlockAction` | `(action: BlockContextAction) => void` | Add a block context menu action |
-
-### Example Plugin
-
-```ts
-const analyticsPlugin: EditorPlugin = {
-  name: 'analytics',
-  install(ctx) {
-    ctx.registerToolbarAction({
-      id: 'analytics',
-      icon: 'bar-chart',
-      label: 'Analytics',
-      onClick() {
-        const blockCount = ctx.content.value.blocks.length;
-        console.log(`Template has ${blockCount} blocks`);
-      },
-    });
-  },
-};
-
-const editor = await init({
-  container: '#editor',
-  plugins: [analyticsPlugin],
-});
-```
 
 ## Core Composables
 
