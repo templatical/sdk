@@ -1,7 +1,9 @@
 {
   "name": "@templatical/editor",
-  "version": "0.0.1",
-  "publishConfig": { "access": "public" },
+  "version": "0.0.2",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Vue 3 visual drag-and-drop email editor powered by Templatical",
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",
@@ -50,7 +52,7 @@
   "peerDependencies": {
     "vue": "^3.5.0",
     "tailwindcss": "^4.0.0",
-    "@templatical/renderer": "^0.0.1",
+    "@templatical/renderer": "^0.0.2",
     "@templatical/media-library": "workspace:*"
   },
   "peerDependenciesMeta": {
