@@ -71,11 +71,12 @@ const {
 interface Collaborator {
   id: string;
   name: string;
-  avatar?: string;
+  color: string;
+  selectedBlockId: string | null;
 }
 ```
 
 ## Requirements
 
 - Collaboration requires WebSocket connectivity. The SDK connects automatically using the WebSocket configuration provided in the auth token response.
-- Each user must have a `user` object in their token response (see [Authentication](/cloud/authentication)) for their name and avatar to display correctly.
+- Each user must have a `user` object in their token response (see [Authentication](/cloud/authentication)) for their name to display correctly. Each collaborator is assigned an automatic `color` for visual identification.

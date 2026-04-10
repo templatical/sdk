@@ -34,7 +34,7 @@ The tenant is determined at token generation time. Your server-side token endpoi
 
 ```php
 Route::post('/api/templatical/token', function (Request $request) {
-    $response = Http::post('https://cloud.templatical.com/api/v1/auth/token', [
+    $response = Http::post('https://templatical.com/api/v1/auth/token', [
         'client_id' => config('templatical.client_id'),
         'client_secret' => config('templatical.client_secret'),
         'tenant' => $request->user()->organization->templatical_tenant_slug,

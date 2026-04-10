@@ -74,7 +74,7 @@ All blocks extend this interface.
 ```ts
 interface BaseBlock {
   id: string;
-  type: BlockType;
+  type: string;
   styles: BlockStyles;
   customCss?: string;
   visibility?: BlockVisibility;
@@ -140,7 +140,6 @@ interface TitleBlock extends BaseBlock {
   level: 1 | 2 | 3 | 4;   // H1=36px, H2=28px, H3=22px, H4=18px
   color: string;
   textAlign: 'left' | 'center' | 'right';
-  fontWeight: 'normal' | 'bold';
   fontFamily?: string;
 }
 ```
@@ -413,6 +412,7 @@ interface ThemeOverrides {
   danger?: string;
   dangerLight?: string;
   canvasBg?: string;
+  dark?: Omit<ThemeOverrides, 'dark'>;
 }
 ```
 
@@ -470,7 +470,6 @@ const paragraph = createParagraphBlock();
 const heading = createTitleBlock({
   content: '<h1>Hello</h1>',
   level: 1,
-  fontWeight: 'bold',
 });
 
 // Create any block by type string

@@ -17,7 +17,7 @@ features:
   - title: Complete Block System
     details: 14 built-in block types from titles and paragraphs to tables and custom blocks. Sections handle multi-column layouts that stack on mobile.
   - title: Portable Templates
-    details: Templates are JSON. Render to MJML or HTML with the included renderer — in the browser or on your server at send time.
+    details: Templates are JSON. Render to MJML with the included renderer — in the browser or on your server. Compile to HTML with any MJML library.
   - title: Your Brand, Your Rules
-    details: 27 color tokens, custom fonts, dark mode, merge tags, display conditions, and a plugin system. The editor adapts to your product, not the other way around.
+    details: 22 color tokens, custom fonts, dark mode, merge tags, display conditions, and a plugin system. The editor adapts to your product, not the other way around.
 ---

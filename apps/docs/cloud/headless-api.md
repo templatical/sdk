@@ -35,8 +35,8 @@ Direct authentication should only be used in server-side code. Never expose cred
 
 ```js
 const template = await api.createTemplate({
-  settings: { width: 600 },
-  sections: [],
+  blocks: [],
+  settings: { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial' },
 });
 ```
 
@@ -50,8 +50,8 @@ const template = await api.getTemplate('template-id');
 
 ```js
 const updated = await api.updateTemplate('template-id', {
+  blocks: modifiedBlocks,
   settings: template.content.settings,
-  sections: modifiedSections,
 });
 ```
 
@@ -71,7 +71,8 @@ With custom fonts:
 
 ```js
 const { html } = await api.exportTemplate('template-id', {
-  fonts: { 'Inter': 'https://fonts.googleapis.com/css2?family=Inter' },
+  customFonts: [{ name: 'Inter', url: 'https://fonts.googleapis.com/css2?family=Inter' }],
+  defaultFallback: 'Arial, sans-serif',
 });
 ```
 
@@ -98,10 +99,17 @@ const comments = await api.getComments('template-id');
 const comment = await api.createComment('template-id', {
   body: 'This section needs a stronger CTA',
   block_id: 'block-uuid',
+  user_id: 'user-123',
+  user_name: 'Jane Smith',
+  user_signature: 'hmac-signature',
 });
 
 // Resolve a comment
-await api.resolveComment('template-id', 'comment-id');
+await api.resolveComment('template-id', 'comment-id', {
+  user_id: 'user-123',
+  user_name: 'Jane Smith',
+  user_signature: 'hmac-signature',
+});
 ```
 
 ## Saved Modules
@@ -125,6 +133,9 @@ await api.deleteModule('module-id');
 ```js
 await api.sendTestEmail('template-id', {
   recipient: 'test@example.com',
+  html: '<html>...</html>',
+  allowed_emails: ['test@example.com'],
+  signature: 'hmac-signature',
 });
 ```
 
@@ -141,7 +152,10 @@ All routes are scoped to a project and tenant:
 
 | Route | Method | Description |
 |-------|--------|-------------|
+| `config` | GET | Get plan configuration |
+| `broadcasting/auth` | POST | Authenticate WebSocket connection |
 | `templates` | POST | Create template |
+| `templates/import/from-beefree` | POST | Import BeeFree template |
 | `templates/{id}` | GET | Get template |
 | `templates/{id}` | PUT | Update template |
 | `templates/{id}` | DELETE | Delete template |
@@ -155,6 +169,13 @@ All routes are scoped to a project and tenant:
 | `templates/{id}/comments/{id}` | PUT | Update comment |
 | `templates/{id}/comments/{id}` | DELETE | Delete comment |
 | `templates/{id}/comments/{id}/resolve` | POST | Resolve comment |
+| `templates/{id}/ai/generate` | POST | AI content generation |
+| `templates/{id}/ai/conversation-messages` | GET | AI conversation history |
+| `templates/{id}/ai/suggestions` | POST | AI prompt suggestions |
+| `templates/{id}/ai/rewrite-text` | POST | AI text rewrite |
+| `templates/{id}/ai/score` | POST | Template quality scoring |
+| `templates/{id}/ai/fix-finding` | POST | AI fix scoring finding |
+| `templates/{id}/ai/generate-from-design` | POST | Design-to-template conversion |
 | `saved-modules` | GET | List modules |
 | `saved-modules` | POST | Create module |
 | `saved-modules/{id}` | PUT | Update module |
@@ -162,4 +183,13 @@ All routes are scoped to a project and tenant:
 | `media/browse` | GET | Browse media |
 | `media/upload` | POST | Upload media |
 | `media/delete` | POST | Delete media |
+| `media/move` | POST | Move media to folder |
+| `media/check-usage` | POST | Check media usage in templates |
+| `media/frequently-used` | GET | Get frequently used media |
+| `media/import-from-url` | POST | Import media from URL |
 | `media/{id}` | PUT | Update media metadata |
+| `media/{id}/replace` | POST | Replace media file |
+| `media-folders` | GET | List media folders |
+| `media-folders` | POST | Create media folder |
+| `media-folders/{id}` | PUT | Rename media folder |
+| `media-folders/{id}` | DELETE | Delete media folder |

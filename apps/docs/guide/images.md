@@ -40,7 +40,7 @@ interface MediaResult {
   alt?: string;
 }
 
-onRequestMedia?: () => Promise<MediaResult | null>;
+onRequestMedia?: (context?: MediaRequestContext) => Promise<MediaResult | null>;
 ```
 
 

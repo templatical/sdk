@@ -18,12 +18,12 @@ export default defineConfig({
     publicDir: false,
     build: {
         lib: {
-            entry: resolve(import.meta.dirname, 'packages/editor/src/index.ts'),
+            entry: resolve(import.meta.dirname, 'src/index.ts'),
             name: 'TemplaticalEmailEditor',
             fileName: (format) => `email-editor.${format}.js`,
             cssFileName: 'email-editor',
         },
-        outDir: resolve(import.meta.dirname, 'dist/email-editor'),
+        outDir: resolve(import.meta.dirname, 'dist/cdn'),
         emptyOutDir: true,
         minify: true,
         target: 'es2022',
@@ -99,10 +99,10 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            '@templatical/media-library': resolve(import.meta.dirname, 'packages/media-library/src/index.ts'),
-            '@templatical/core/cloud': resolve(import.meta.dirname, 'packages/core/src/cloud/index.ts'),
-            '@templatical/core': resolve(import.meta.dirname, 'packages/core/src/index.ts'),
-            '@templatical/types': resolve(import.meta.dirname, 'packages/types/src/index.ts'),
+            '@templatical/media-library': resolve(import.meta.dirname, '../media-library/src/index.ts'),
+            '@templatical/core/cloud': resolve(import.meta.dirname, '../core/src/cloud/index.ts'),
+            '@templatical/core': resolve(import.meta.dirname, '../core/src/index.ts'),
+            '@templatical/types': resolve(import.meta.dirname, '../types/src/index.ts'),
         },
     },
 });

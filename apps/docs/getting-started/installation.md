@@ -46,7 +46,7 @@ Templatical mounts into any DOM element. It creates its own isolated application
 
 ::: code-group
 ```ts [Vanilla JS]
-import { init, unmount } from '@templatical/editor';
+import { init } from '@templatical/editor';
 import '@templatical/editor/style.css';
 
 const editor = await init({
@@ -199,13 +199,13 @@ import type { TemplateContent, Block, ThemeOverrides, FontsConfig } from '@templ
 If you prefer not to use a package manager, load the editor directly via script tags:
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@templatical/editor@0.1.0/dist/email-editor/email-editor.css" />
-<script src="https://unpkg.com/@templatical/editor@0.1.0/dist/email-editor/email-editor.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@templatical/editor/dist/cdn/email-editor.css" />
+<script src="https://unpkg.com/@templatical/editor/dist/cdn/email-editor.js"></script>
 
 <div id="editor" style="height: 100vh;"></div>
 
 <script>
-  const editor = Templatical.init({
+  const editor = TemplaticalEmailEditor.init({
     container: '#editor',
     onChange(content) {
       console.log('Template updated', content);

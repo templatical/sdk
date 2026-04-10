@@ -45,10 +45,12 @@ unmount();
 | `onChange` | `(content: TemplateContent) => void` | No | Called when template content changes (debounced) |
 | `onSave` | `(content: TemplateContent) => void` | No | Called when the user triggers a save action |
 | `onError` | `(error: Error) => void` | No | Called when an error occurs |
-| `onRequestMedia` | `() => Promise<MediaResult \| null>` | No | Called when user wants to pick an image. Return `{ url, alt? }` or `null` |
+| `onRequestMedia` | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No | Called when user wants to pick an image. Return `{ url, alt? }` or `null` |
 | `mergeTags` | `MergeTagsConfig` | No | Merge tag configuration. See [Merge Tags](/guide/merge-tags) |
 | `displayConditions` | `DisplayConditionsConfig` | No | Display condition configuration. See [Display Conditions](/guide/display-conditions) |
 | `customBlocks` | `CustomBlockDefinition[]` | No | Custom block type definitions. See [Custom Blocks](/guide/custom-blocks) |
+| `blockDefaults` | `BlockDefaults` | No | Default property overrides for new blocks. See [Defaults](/guide/defaults) |
+| `templateDefaults` | `TemplateDefaults` | No | Default template settings for empty templates. See [Defaults](/guide/defaults) |
 | `fonts` | `FontsConfig` | No | Font configuration. See [Custom Fonts](/guide/fonts) |
 | `theme` | `ThemeOverrides` | No | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming) |
 | `uiTheme` | `'light' \| 'dark' \| 'auto'` | No | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'` |
@@ -132,6 +134,7 @@ import { useHistory } from '@templatical/core';
 const history = useHistory({
   content: editor.content,
   setContent: editor.setContent,
+  isRemoteOperation: () => false, // skip recording during remote/collab updates
   maxSize: 50,
 });
 
@@ -156,6 +159,7 @@ const actions = useBlockActions({
 const newBlock = actions.createAndAddBlock('text');
 actions.duplicateBlock(existingBlock);
 actions.deleteBlock(blockId);
+actions.updateBlockProperty(blockId, 'content', '<p>Updated</p>');
 ```
 
 ### `useAutoSave(options)`
@@ -170,11 +174,14 @@ const autoSave = useAutoSave({
   isDirty: () => editor.state.isDirty,
   onChange: (content) => saveToServer(content),
   debounce: 1000,
+  enabled: true,    // boolean or () => boolean
 });
 
 autoSave.flush();   // Save immediately
+autoSave.cancel();  // Cancel pending debounced save
 autoSave.pause();   // Pause auto-save
 autoSave.resume();  // Resume
+autoSave.destroy(); // Stop watching and clean up
 ```
 
 ### `useConditionPreview()`

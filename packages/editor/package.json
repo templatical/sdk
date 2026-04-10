@@ -21,6 +21,8 @@
   ],
   "scripts": {
     "build": "vite build",
+    "build:cdn": "vite build --config vite.cdn.config.ts",
+    "build:all": "vite build && vite build --config vite.cdn.config.ts",
     "test": "vitest run",
     "typecheck": "vue-tsc --noEmit"
   },

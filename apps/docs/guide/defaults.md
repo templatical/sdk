@@ -113,7 +113,7 @@ In other words, `templateDefaults` are fallbacks for missing content, not overri
 |----------|---------|-------------|
 | `width` | `600` | Template width in pixels |
 | `backgroundColor` | `#ffffff` | Template background color |
-| `fontFamily` | `Arial, sans-serif` | Default font family |
+| `fontFamily` | `Arial` | Default font family |
 | `preheaderText` | — | Email preheader text |
 
 ### TypeScript Type
@@ -139,11 +139,11 @@ import {
 
 // Inspect the defaults for a single block type
 console.log(TITLE_BLOCK_DEFAULTS);
-// { content: '<h1>Enter your heading here</h1>', level: 1, color: '#333333', ... }
+// { content: '<p>Enter your title</p>', level: 2, color: '#1a1a1a', ... }
 
 // Inspect template defaults
 console.log(DEFAULT_TEMPLATE_DEFAULTS);
-// { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
+// { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial' }
 
 // Build a custom preset by extending a single block's defaults
 const myButtonDefaults = {

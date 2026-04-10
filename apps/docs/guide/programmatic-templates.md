@@ -15,7 +15,7 @@ Templatical provides factory functions for every block type. Use them to build t
 import { createDefaultTemplateContent } from '@templatical/types';
 
 const content = createDefaultTemplateContent();
-// { blocks: [], settings: { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' } }
+// { blocks: [], settings: { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial' } }
 ```
 
 `createDefaultTemplateContent()` accepts an optional font family string:

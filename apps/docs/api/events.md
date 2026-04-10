@@ -66,7 +66,7 @@ import type { MediaResult } from '@templatical/types';
 
 const editor = await init({
   container: '#editor',
-  async onRequestMedia(): Promise<MediaResult | null> {
+  async onRequestMedia(context?): Promise<MediaResult | null> {
     const image = await openMediaPicker();
     if (!image) return null;
     return { url: image.url, alt: image.alt };

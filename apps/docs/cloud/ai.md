@@ -16,12 +16,13 @@ const editor = await initCloud({
   container: '#editor',
   auth: { url: '/api/templatical/token' },
 
-  // Enable all AI features (default)
-  ai: true,
+  // Enable all AI features (default when omitted)
+  ai: {},
 
   // Or configure individually
   ai: {
     chat: true,              // AI chat for content generation
+    rewrite: true,           // Text rewrite in title/paragraph blocks
     scoring: true,           // Template quality scoring
     designToTemplate: true,  // Design-to-template conversion
   },
@@ -133,6 +134,9 @@ const {
 
 // Generate from an uploaded image
 await generate({ imageUpload: file });
+
+// Generate from an uploaded PDF
+await generate({ pdfUpload: pdfFile });
 
 // Generate from a prompt
 await generate({ prompt: 'A product launch email with hero image and pricing table' });
