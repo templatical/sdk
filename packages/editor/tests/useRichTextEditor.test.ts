@@ -220,10 +220,10 @@ describe("ParagraphEditor.vue uses useRichTextEditor", () => {
     expect(src).toContain('editorName: "ParagraphEditor"');
   });
 
-  it("provides onClickOutsideSideEffect for emoji picker", () => {
-    expect(src).toContain("onClickOutsideSideEffect(target)");
-    expect(src).toContain(".tpl-emoji-picker");
-    expect(src).toContain("closeEmojiPicker()");
+  it("delegates toolbar to ParagraphToolbar component", () => {
+    expect(src).toContain("ParagraphToolbar");
+    expect(src).not.toContain("useEmoji");
+    expect(src).not.toContain("closeEmojiPicker");
   });
 
   it("loads paragraph-specific extensions (underline, subscript, etc.)", () => {

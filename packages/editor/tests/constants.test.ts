@@ -454,8 +454,9 @@ describe("ParagraphEditor and TitleEditor use i18n for loading/error states", ()
     expect(titleSrc).not.toContain('"Retry"');
   });
 
-  it("both use t.errors.editorLoading for loading state", () => {
-    expect(paragraphSrc).toContain("t.errors.editorLoading");
+  it("toolbar and title editor use t.errors.editorLoading for loading state", () => {
+    const toolbarSrc = readSrc("components/blocks/ParagraphToolbar.vue");
+    expect(toolbarSrc).toContain("t.errors.editorLoading");
     expect(titleSrc).toContain("t.errors.editorLoading");
   });
 
@@ -488,10 +489,11 @@ describe("ParagraphEditor and TitleEditor use shared toolbar button class", () =
     expect(cssSrc).toContain(".tpl-text-toolbar-btn--active");
   });
 
-  it("ParagraphEditor uses the shared class instead of inline Tailwind", () => {
-    expect(paragraphSrc).toContain('class="tpl-text-toolbar-btn"');
-    expect(paragraphSrc).toContain("'tpl-text-toolbar-btn--active':");
-    expect(paragraphSrc).not.toContain(
+  it("ParagraphToolbar uses the shared class instead of inline Tailwind", () => {
+    const toolbarSrc = readSrc("components/blocks/ParagraphToolbar.vue");
+    expect(toolbarSrc).toContain('class="tpl-text-toolbar-btn"');
+    expect(toolbarSrc).toContain("'tpl-text-toolbar-btn--active':");
+    expect(toolbarSrc).not.toContain(
       "tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent",
     );
   });
