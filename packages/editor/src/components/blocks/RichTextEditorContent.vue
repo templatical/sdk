@@ -28,13 +28,11 @@ const { t } = useI18n();
   </div>
   <div
     v-else-if="initError"
-    class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:p-2 tpl:text-center tpl:text-xs"
-    style="border-color: var(--tpl-danger); color: var(--tpl-text-muted)"
+    class="tpl-text-editable tpl:min-h-[1.5em] tpl:rounded tpl:border tpl:border-dashed tpl:p-2 tpl:text-center tpl:text-xs tpl:border-[var(--tpl-danger)] tpl:text-[var(--tpl-text-muted)]"
   >
     {{ t.errors.editorLoadFailed }}
     <button
-      class="tpl:ml-1 tpl:cursor-pointer tpl:border-none tpl:bg-transparent tpl:p-0 tpl:underline"
-      style="color: var(--tpl-primary)"
+      class="tpl:ml-1 tpl:cursor-pointer tpl:border-none tpl:bg-transparent tpl:p-0 tpl:underline tpl:text-[var(--tpl-primary)]"
       @click="emit('retry')"
     >
       {{ t.errors.retry }}

@@ -194,15 +194,13 @@ watch(
         class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
       >
         <div
-          class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium"
-          style="color: var(--tpl-primary)"
+          class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-primary)]"
         >
           <ImageUp :size="13" :stroke-width="2" />
           <span>{{ t.designReference.title }}</span>
         </div>
         <button
-          class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
-          style="color: var(--tpl-text-muted)"
+          class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
           @click="emit('close')"
         >
           <X :size="14" :stroke-width="2" />
@@ -220,7 +218,7 @@ watch(
             class="tpl:flex tpl:w-full tpl:flex-col tpl:items-center tpl:gap-3"
           >
             <LoadingTrack />
-            <p class="tpl:text-sm" style="color: var(--tpl-text-muted)">
+            <p class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
               {{ t.designReference.generating }}
             </p>
           </div>
@@ -230,8 +228,7 @@ watch(
         <div v-else class="tpl:flex tpl:flex-col tpl:gap-4">
           <!-- Source tabs -->
           <div
-            class="tpl:flex tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1"
-            style="background-color: var(--tpl-bg-hover)"
+            class="tpl:flex tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-bg-hover)]"
           >
             <button
               class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
@@ -272,11 +269,7 @@ watch(
             <!-- Preview -->
             <div v-if="selectedFile" class="tpl:flex tpl:flex-col tpl:gap-2">
               <div
-                class="tpl:relative tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)]"
-                style="
-                  border: 1px solid var(--tpl-border);
-                  background-color: var(--tpl-bg);
-                "
+                class="tpl:relative tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
               >
                 <!-- Image preview -->
                 <img
@@ -293,23 +286,15 @@ watch(
                   <FileText
                     :size="32"
                     :stroke-width="1.5"
-                    style="color: var(--tpl-text-dim)"
+                    class="tpl:text-[var(--tpl-text-dim)]"
                   />
-                  <span
-                    class="tpl:text-xs"
-                    style="color: var(--tpl-text-muted)"
-                  >
+                  <span class="tpl:text-xs tpl:text-[var(--tpl-text-muted)]">
                     {{ selectedFile.name }}
                   </span>
                 </div>
                 <!-- Remove button -->
                 <button
-                  class="tpl:absolute tpl:top-2 tpl:right-2 tpl:rounded-full tpl:p-1 tpl:transition-colors tpl:duration-150"
-                  style="
-                    background-color: var(--tpl-bg);
-                    color: var(--tpl-text-muted);
-                    box-shadow: var(--tpl-shadow);
-                  "
+                  class="tpl:absolute tpl:top-2 tpl:right-2 tpl:rounded-full tpl:p-1 tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] tpl:shadow-[var(--tpl-shadow)]"
                   @click="clearFile"
                 >
                   <X :size="12" :stroke-width="2" />
@@ -337,17 +322,15 @@ watch(
               <Upload
                 :size="24"
                 :stroke-width="1.5"
-                style="color: var(--tpl-text-dim)"
+                class="tpl:text-[var(--tpl-text-dim)]"
               />
               <span
-                class="tpl:text-center tpl:text-xs"
-                style="color: var(--tpl-text-muted)"
+                class="tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
               >
                 {{ t.designReference.dropHint }}
               </span>
               <span
-                class="tpl:text-center tpl:text-[11px]"
-                style="color: var(--tpl-text-dim)"
+                class="tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
               >
                 {{
                   activeTab === "image"
@@ -372,20 +355,14 @@ watch(
           <!-- Prompt textarea -->
           <div class="tpl:flex tpl:flex-col tpl:gap-1.5">
             <label
-              class="tpl:text-xs tpl:font-medium"
-              style="color: var(--tpl-text-muted)"
+              class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
             >
               {{ t.designReference.promptLabel }}
             </label>
             <textarea
               v-model="prompt"
-              class="tpl:min-h-[72px] tpl:w-full tpl:resize-none tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:font-sans tpl:text-sm tpl:outline-none tpl:transition-colors tpl:duration-150"
+              class="tpl:min-h-[72px] tpl:w-full tpl:resize-none tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:font-sans tpl:text-sm tpl:outline-none tpl:transition-colors tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
               :class="['tpl-design-prompt-input']"
-              style="
-                border-color: var(--tpl-border);
-                color: var(--tpl-text);
-                background-color: var(--tpl-bg);
-              "
               :placeholder="t.designReference.promptPlaceholder"
               rows="3"
             />
@@ -394,36 +371,21 @@ watch(
           <!-- Confirmation overlay -->
           <div
             v-if="showConfirmation"
-            class="tpl:flex tpl:flex-col tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:px-3 tpl:py-3"
-            style="
-              background-color: var(--tpl-warning-light);
-              border: 1px solid var(--tpl-warning);
-            "
+            class="tpl:flex tpl:flex-col tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:px-3 tpl:py-3 tpl:bg-[var(--tpl-warning-light)] tpl:border tpl:border-[var(--tpl-warning)]"
           >
-            <p
-              class="tpl:text-xs tpl:leading-snug"
-              style="color: var(--tpl-text)"
-            >
+            <p class="tpl:text-xs tpl:leading-snug tpl:text-[var(--tpl-text)]">
               {{ t.designReference.replaceWarning }}
             </p>
             <div class="tpl:flex tpl:gap-2">
               <button
-                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
-                style="
-                  background-color: transparent;
-                  color: var(--tpl-text-muted);
-                  border: 1px solid var(--tpl-border);
-                "
+                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:text-[var(--tpl-text-muted)] tpl:border tpl:border-[var(--tpl-border)]"
+                style="background-color: transparent"
                 @click="cancelConfirmation"
               >
                 {{ t.designReference.replaceCancel }}
               </button>
               <button
-                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90"
-                style="
-                  background-color: var(--tpl-primary);
-                  color: var(--tpl-bg);
-                "
+                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
                 @click="handleGenerate"
               >
                 {{ t.designReference.replaceConfirm }}
@@ -434,11 +396,7 @@ watch(
           <!-- Error message -->
           <div
             v-if="designReference.error.value"
-            class="tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs"
-            style="
-              background-color: var(--tpl-danger-light);
-              color: var(--tpl-danger);
-            "
+            class="tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-danger-light)] tpl:text-[var(--tpl-danger)]"
           >
             <CircleAlert
               :size="14"
@@ -451,8 +409,7 @@ watch(
           <!-- Generate button -->
           <button
             v-if="!showConfirmation"
-            class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
-            style="background-color: var(--tpl-primary); color: var(--tpl-bg)"
+            class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
             :disabled="!canGenerate"
             @click="handleGenerate"
           >
@@ -462,8 +419,7 @@ watch(
 
           <!-- AI disclaimer -->
           <p
-            class="tpl:m-0 tpl:pt-1 tpl:text-center tpl:text-[11px]"
-            style="color: var(--tpl-text-dim)"
+            class="tpl:m-0 tpl:pt-1 tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
           >
             {{ t.aiMenu.disclaimer }}
           </p>

@@ -115,8 +115,7 @@ function createBlockFromItem(item: BlockTypeItem): Block {
     <!-- Saved Modules browser trigger (cloud only) -->
     <div
       v-if="showModulesSection"
-      class="tpl:border-b tpl:px-1 tpl:pb-1"
-      style="border-color: var(--tpl-border)"
+      class="tpl:border-b tpl:px-1 tpl:pb-1 tpl:border-[var(--tpl-border)]"
     >
       <button
         type="button"
@@ -136,11 +135,7 @@ function createBlockFromItem(item: BlockTypeItem): Block {
         </span>
         <span
           v-if="isExpanded"
-          class="tpl:shrink-0 tpl:rounded-full tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium"
-          style="
-            background-color: var(--tpl-bg-hover);
-            color: var(--tpl-text-muted);
-          "
+          class="tpl:shrink-0 tpl:rounded-full tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
         >
           {{ caps.savedModules?.moduleCount.value ?? 0 }}
         </span>

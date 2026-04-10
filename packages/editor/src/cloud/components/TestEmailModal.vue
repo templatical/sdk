@@ -69,8 +69,7 @@ function handleKeydown(event: KeyboardEvent): void {
     >
       <h3
         id="tpl-test-email-title"
-        class="tpl:mb-4 tpl:text-sm tpl:font-semibold"
-        style="color: var(--tpl-text)"
+        class="tpl:mb-4 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
       >
         {{ t.testEmail.title }}
       </h3>
@@ -78,8 +77,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <!-- Recipient -->
       <div class="tpl:mb-3">
         <label
-          class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium"
-          style="color: var(--tpl-text-muted)"
+          class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
         >
           {{ t.testEmail.recipientLabel }}
         </label>
@@ -88,22 +86,12 @@ function handleKeydown(event: KeyboardEvent): void {
           type="text"
           :value="recipient"
           disabled
-          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:opacity-70 tpl:shadow-xs tpl:outline-none"
-          style="
-            border-color: var(--tpl-border);
-            background-color: var(--tpl-bg);
-            color: var(--tpl-text);
-          "
+          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:opacity-70 tpl:shadow-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
         />
         <select
           v-else
           v-model="recipient"
-          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-xs tpl:outline-none"
-          style="
-            border-color: var(--tpl-border);
-            background-color: var(--tpl-bg);
-            color: var(--tpl-text);
-          "
+          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
           :disabled="isSending"
         >
           <option v-for="email in allowedEmails" :key="email" :value="email">
@@ -116,8 +104,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <p
         v-if="error"
         role="alert"
-        class="tpl:mb-3 tpl:text-xs"
-        style="color: var(--tpl-danger)"
+        class="tpl:mb-3 tpl:text-xs tpl:text-[var(--tpl-danger)]"
       >
         {{ error }}
       </p>
@@ -126,12 +113,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <div class="tpl:flex tpl:justify-end tpl:gap-2">
         <button
           type="button"
-          class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150"
-          style="
-            border-color: var(--tpl-border);
-            color: var(--tpl-text);
-            background-color: var(--tpl-bg);
-          "
+          class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
           :disabled="isSending"
           :class="{
             'tpl:cursor-not-allowed tpl:opacity-50': isSending,
@@ -142,8 +124,7 @@ function handleKeydown(event: KeyboardEvent): void {
         </button>
         <button
           type="button"
-          class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
-          style="background-color: var(--tpl-primary); color: var(--tpl-bg)"
+          class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
           :disabled="!recipient || isSending"
           @click="handleSend"
         >

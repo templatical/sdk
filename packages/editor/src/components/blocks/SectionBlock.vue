@@ -149,8 +149,7 @@ function handleFetchData(
         </draggable>
         <div
           v-if="getColumnBlocks(colIndex).length === 0"
-          class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:flex tpl:items-center tpl:justify-center tpl:text-xs"
-          style="color: var(--tpl-text-dim)"
+          class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:flex tpl:items-center tpl:justify-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
         >
           <span>{{ t.section.dropHere }}</span>
         </div>

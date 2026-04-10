@@ -80,9 +80,8 @@ const hasMergeTagSrc = computed(() =>
     <!-- Placeholder visual (no preview image) -->
     <div
       v-else-if="block.src && hasMergeTagSrc"
-      class="tpl:!flex tpl:min-h-[120px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-center"
+      class="tpl:!flex tpl:min-h-[120px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-center tpl:bg-[var(--tpl-bg-elevated)]"
       style="
-        background-color: var(--tpl-bg-elevated);
         border-color: color-mix(in srgb, var(--tpl-primary) 40%, transparent);
       "
       :style="imageStyle"
@@ -90,11 +89,12 @@ const hasMergeTagSrc = computed(() =>
       <Image
         :size="32"
         :stroke-width="1.5"
-        style="color: var(--tpl-primary); opacity: 0.5"
+        class="tpl:text-[var(--tpl-primary)]"
+        style="opacity: 0.5"
       />
       <span
-        class="tpl:max-w-full tpl:truncate tpl:px-3 tpl:text-xs tpl:font-medium"
-        style="color: var(--tpl-primary); opacity: 0.7"
+        class="tpl:max-w-full tpl:truncate tpl:px-3 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-primary)]"
+        style="opacity: 0.7"
       >
         {{ block.src }}
       </span>
@@ -127,22 +127,12 @@ const hasMergeTagSrc = computed(() =>
     <!-- Empty state -->
     <div
       v-else
-      class="tpl:flex tpl:min-h-[100px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-sm"
-      style="
-        border-color: var(--tpl-border-light);
-        background-color: var(--tpl-bg-hover);
-        color: var(--tpl-text-dim);
-      "
+      class="tpl:flex tpl:min-h-[100px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-sm tpl:border-[var(--tpl-border-light)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-dim)]"
     >
       <button
         v-if="canBrowseMedia"
         :aria-label="t.image.browseMedia"
-        class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:cursor-pointer"
-        style="
-          border-color: var(--tpl-border);
-          color: var(--tpl-primary);
-          background-color: var(--tpl-bg);
-        "
+        class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:cursor-pointer tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-primary)] tpl:bg-[var(--tpl-bg)]"
         @click.stop="browseMedia"
       >
         <Image :size="14" :stroke-width="1.5" />

@@ -115,8 +115,7 @@ function onCellBlur(rowId: string, cellId: string, event: FocusEvent): void {
     </table>
     <div
       v-else
-      class="tpl:flex tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:text-sm"
-      style="border-color: var(--tpl-border); color: var(--tpl-text-dim)"
+      class="tpl:flex tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:text-sm tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text-dim)]"
     >
       <Table :size="16" />
       <span>{{ t.table.empty }}</span>

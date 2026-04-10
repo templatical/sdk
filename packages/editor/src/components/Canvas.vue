@@ -248,43 +248,30 @@ function handleFetchData(
         <template #footer>
           <div
             v-if="blocks.length === 0 && !previewMode"
-            class="tpl-canvas-empty tpl:m-6 tpl:flex tpl:min-h-[400px] tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-xl tpl:border-2 tpl:border-dashed tpl:px-10 tpl:py-12 tpl:text-center"
-            style="
-              border-color: var(--tpl-primary);
-              background-color: var(--tpl-bg-elevated);
-              font-family: var(--tpl-font-family);
-            "
+            class="tpl-canvas-empty tpl:m-6 tpl:flex tpl:min-h-[400px] tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-xl tpl:border-2 tpl:border-dashed tpl:px-10 tpl:py-12 tpl:text-center tpl:border-[var(--tpl-primary)] tpl:bg-[var(--tpl-bg-elevated)] tpl:font-[var(--tpl-font-family)]"
           >
             <div
-              class="tpl-canvas-empty-icon tpl:mb-4"
-              style="color: var(--tpl-primary)"
+              class="tpl-canvas-empty-icon tpl:mb-4 tpl:text-[var(--tpl-primary)]"
             >
               <SquarePlus :size="48" :stroke-width="1" />
             </div>
             <p
-              class="tpl-canvas-empty-title tpl:m-0 tpl:mb-2 tpl:text-base tpl:font-semibold"
-              style="color: var(--tpl-primary)"
+              class="tpl-canvas-empty-title tpl:m-0 tpl:mb-2 tpl:text-base tpl:font-semibold tpl:text-[var(--tpl-primary)]"
             >
               {{ t.canvas.noBlocks }}
             </p>
             <p
-              class="tpl-canvas-empty-text tpl:m-0 tpl:text-sm"
-              style="color: var(--tpl-text-dim)"
+              class="tpl-canvas-empty-text tpl:m-0 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
             >
               {{ t.canvas.dragHint }}
             </p>
             <p
               v-if="canUseAiChat"
-              class="tpl:m-0 tpl:mt-2 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm"
-              style="color: var(--tpl-text-dim)"
+              class="tpl:m-0 tpl:mt-2 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
             >
               {{ t.canvas.aiHintChat }}
               <button
-                class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:duration-150"
-                style="
-                  background-color: var(--tpl-primary-light);
-                  color: var(--tpl-primary-hover);
-                "
+                class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
                 @click="emit('open-ai-chat')"
               >
                 <Sparkles :size="14" :stroke-width="2" />
@@ -294,16 +281,11 @@ function handleFetchData(
             </p>
             <p
               v-if="canUseDesignToTemplate"
-              class="tpl:m-0 tpl:mt-4 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm"
-              style="color: var(--tpl-text-dim)"
+              class="tpl:m-0 tpl:mt-4 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
             >
               {{ t.canvas.aiHintDesign }}
               <button
-                class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:duration-150"
-                style="
-                  background-color: var(--tpl-primary-light);
-                  color: var(--tpl-primary-hover);
-                "
+                class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
                 @click="emit('open-design-reference')"
               >
                 <ImageUp :size="14" :stroke-width="2" />

@@ -7,13 +7,11 @@ defineProps<{
 <template>
   <div
     v-if="visible"
-    class="tpl-loading tpl:absolute tpl:inset-0 tpl:z-overlay tpl:flex tpl:flex-col"
-    style="background-color: var(--tpl-bg)"
+    class="tpl-loading tpl:absolute tpl:inset-0 tpl:z-overlay tpl:flex tpl:flex-col tpl:bg-[var(--tpl-bg)]"
   >
     <!-- Skeleton header -->
     <div
-      class="tpl:flex tpl:h-14 tpl:shrink-0 tpl:items-center tpl:justify-between tpl:px-4"
-      style="border-bottom: 1px solid var(--tpl-border)"
+      class="tpl:flex tpl:h-14 tpl:shrink-0 tpl:items-center tpl:justify-between tpl:px-4 tpl:border-b tpl:border-[var(--tpl-border)]"
     >
       <div
         class="tpl-shimmer tpl:h-5 tpl:w-28 tpl:rounded-[var(--tpl-radius-sm)]"
@@ -31,8 +29,7 @@ defineProps<{
     <div class="tpl:flex tpl:flex-1 tpl:overflow-hidden">
       <!-- Left sidebar rail -->
       <div
-        class="tpl:flex tpl:w-12 tpl:shrink-0 tpl:flex-col tpl:items-center tpl:gap-4 tpl:py-5"
-        style="border-right: 1px solid var(--tpl-border)"
+        class="tpl:flex tpl:w-12 tpl:shrink-0 tpl:flex-col tpl:items-center tpl:gap-4 tpl:py-5 tpl:border-r tpl:border-[var(--tpl-border)]"
       >
         <div
           v-for="n in 5"
@@ -42,15 +39,10 @@ defineProps<{
       </div>
       <!-- Canvas area -->
       <div
-        class="tpl:flex tpl:flex-1 tpl:items-start tpl:justify-center tpl:overflow-auto tpl:p-8"
-        style="background-color: var(--tpl-canvas-bg)"
+        class="tpl:flex tpl:flex-1 tpl:items-start tpl:justify-center tpl:overflow-auto tpl:p-8 tpl:bg-[var(--tpl-canvas-bg)]"
       >
         <div
-          class="tpl:w-full tpl:max-w-[600px] tpl:rounded-[var(--tpl-radius)] tpl:p-6"
-          style="
-            background-color: var(--tpl-bg);
-            box-shadow: var(--tpl-shadow-sm);
-          "
+          class="tpl:w-full tpl:max-w-[600px] tpl:rounded-[var(--tpl-radius)] tpl:p-6 tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-sm)]"
         >
           <div class="tpl:space-y-2 tpl:py-4">
             <div class="tpl-shimmer tpl:h-3 tpl:w-3/4 tpl:rounded"></div>
@@ -83,8 +75,7 @@ defineProps<{
       </div>
       <!-- Right panel -->
       <div
-        class="tpl:flex tpl:w-[320px] tpl:shrink-0 tpl:flex-col tpl:gap-4 tpl:p-4"
-        style="border-left: 1px solid var(--tpl-border)"
+        class="tpl:flex tpl:w-[320px] tpl:shrink-0 tpl:flex-col tpl:gap-4 tpl:p-4 tpl:border-l tpl:border-[var(--tpl-border)]"
       >
         <div
           class="tpl-shimmer tpl:h-8 tpl:rounded-[var(--tpl-radius-sm)]"

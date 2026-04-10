@@ -115,8 +115,7 @@ function handleKeydown(event: KeyboardEvent): void {
     >
       <h3
         id="tpl-save-module-title"
-        class="tpl:mb-4 tpl:text-sm tpl:font-semibold"
-        style="color: var(--tpl-text)"
+        class="tpl:mb-4 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
       >
         {{ t.modules.saveAsModule }}
       </h3>
@@ -124,8 +123,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <!-- Module name -->
       <div class="tpl:mb-3">
         <label
-          class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium"
-          style="color: var(--tpl-text-muted)"
+          class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
         >
           {{ t.modules.moduleName }}
         </label>
@@ -133,12 +131,7 @@ function handleKeydown(event: KeyboardEvent): void {
           v-model="moduleName"
           type="text"
           :placeholder="t.modules.moduleNamePlaceholder"
-          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-xs tpl:outline-none"
-          style="
-            border-color: var(--tpl-border);
-            background-color: var(--tpl-bg);
-            color: var(--tpl-text);
-          "
+          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
           :disabled="isSaving"
         />
       </div>
@@ -146,14 +139,12 @@ function handleKeydown(event: KeyboardEvent): void {
       <!-- Block selection -->
       <div class="tpl:mb-3">
         <label
-          class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium"
-          style="color: var(--tpl-text-muted)"
+          class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
         >
           {{ t.modules.selectBlocks }}
         </label>
         <div
-          class="tpl:max-h-40 tpl:space-y-1 tpl:overflow-y-auto tpl:rounded-md tpl:border tpl:p-2"
-          style="border-color: var(--tpl-border)"
+          class="tpl:max-h-40 tpl:space-y-1 tpl:overflow-y-auto tpl:rounded-md tpl:border tpl:p-2 tpl:border-[var(--tpl-border)]"
         >
           <label
             v-for="(block, index) in topLevelBlocks"
@@ -182,8 +173,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <p
         v-if="error"
         role="alert"
-        class="tpl:mb-3 tpl:text-xs"
-        style="color: var(--tpl-danger)"
+        class="tpl:mb-3 tpl:text-xs tpl:text-[var(--tpl-danger)]"
       >
         {{ error }}
       </p>
@@ -192,12 +182,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <div class="tpl:flex tpl:justify-end tpl:gap-2">
         <button
           type="button"
-          class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150"
-          style="
-            border-color: var(--tpl-border);
-            color: var(--tpl-text);
-            background-color: var(--tpl-bg);
-          "
+          class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
           :disabled="isSaving"
           :class="{
             'tpl:cursor-not-allowed tpl:opacity-50': isSaving,
@@ -208,8 +193,7 @@ function handleKeydown(event: KeyboardEvent): void {
         </button>
         <button
           type="button"
-          class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
-          style="background-color: var(--tpl-primary); color: var(--tpl-bg)"
+          class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
           :disabled="!canSave"
           @click="handleSave"
         >

@@ -165,20 +165,17 @@ function handleKeydown(event: KeyboardEvent): void {
     >
       <!-- Header -->
       <div
-        class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:px-5 tpl:py-4"
-        style="border-color: var(--tpl-border)"
+        class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:px-5 tpl:py-4 tpl:border-[var(--tpl-border)]"
       >
         <h3
           id="tpl-module-browser-title"
-          class="tpl:text-sm tpl:font-semibold"
-          style="color: var(--tpl-text)"
+          class="tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
         >
           {{ t.modules.browse }}
         </h3>
         <button
           :aria-label="t.modules.close"
-          class="tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-1 tpl:transition-colors tpl:duration-100"
-          style="color: var(--tpl-text-dim)"
+          class="tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-1 tpl:transition-colors tpl:duration-100 tpl:text-[var(--tpl-text-dim)]"
           @click="handleClose"
         >
           <X :size="16" :stroke-width="2" />
@@ -197,19 +194,13 @@ function handleKeydown(event: KeyboardEvent): void {
               <Search
                 :size="14"
                 :stroke-width="2"
-                class="tpl:pointer-events-none tpl:absolute tpl:left-3 tpl:top-1/2 tpl:-translate-y-1/2"
-                style="color: var(--tpl-text-dim)"
+                class="tpl:pointer-events-none tpl:absolute tpl:left-3 tpl:top-1/2 tpl:-translate-y-1/2 tpl:text-[var(--tpl-text-dim)]"
               />
               <input
                 v-model="searchQuery"
                 type="text"
                 :placeholder="t.modules.search"
-                class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:pl-9 tpl:pr-3 tpl:text-sm tpl:outline-none"
-                style="
-                  border-color: var(--tpl-border);
-                  background-color: var(--tpl-bg);
-                  color: var(--tpl-text);
-                "
+                class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:pl-9 tpl:pr-3 tpl:text-sm tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
               />
             </div>
           </div>
@@ -240,17 +231,12 @@ function handleKeydown(event: KeyboardEvent): void {
               >
                 <div class="tpl:flex tpl:items-center tpl:gap-2">
                   <span
-                    class="tpl:flex-1 tpl:truncate tpl:text-xs tpl:font-semibold"
-                    style="color: var(--tpl-text)"
+                    class="tpl:flex-1 tpl:truncate tpl:text-xs tpl:font-semibold tpl:text-[var(--tpl-text)]"
                   >
                     {{ mod.name }}
                   </span>
                   <span
-                    class="tpl:shrink-0 tpl:rounded-full tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium"
-                    style="
-                      background-color: var(--tpl-bg-hover);
-                      color: var(--tpl-text-muted);
-                    "
+                    class="tpl:shrink-0 tpl:rounded-full tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
                   >
                     {{
                       t.modules.blockCount.replace(
@@ -267,32 +253,26 @@ function handleKeydown(event: KeyboardEvent): void {
                     :key="icon.type"
                     :size="14"
                     :stroke-width="1.5"
-                    style="color: var(--tpl-text-dim)"
+                    class="tpl:text-[var(--tpl-text-dim)]"
                   />
                   <span
                     v-if="getRemainingTypeCount(mod) > 0"
-                    class="tpl:text-[10px]"
-                    style="color: var(--tpl-text-dim)"
+                    class="tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
                   >
                     +{{ getRemainingTypeCount(mod) }}
                   </span>
                   <button
                     v-if="confirmDeleteId === mod.id"
                     :aria-label="t.modules.deleteConfirm"
-                    class="tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:duration-100"
-                    style="
-                      border-color: var(--tpl-danger);
-                      color: var(--tpl-danger);
-                      background-color: transparent;
-                    "
+                    class="tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:duration-100 tpl:border-[var(--tpl-danger)] tpl:text-[var(--tpl-danger)]"
+                    style="background-color: transparent"
                     @click.stop="handleDelete(mod.id)"
                   >
                     {{ t.modules.deleteConfirm }}
                   </button>
                   <button
                     v-else
-                    class="tpl-module-delete-btn tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-0.5 tpl:transition-colors tpl:duration-100"
-                    style="color: var(--tpl-text-dim)"
+                    class="tpl-module-delete-btn tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-0.5 tpl:transition-colors tpl:duration-100 tpl:text-[var(--tpl-text-dim)]"
                     :aria-label="t.modules.delete"
                     :title="t.modules.delete"
                     @click.stop="confirmDeleteId = mod.id"
@@ -311,12 +291,9 @@ function handleKeydown(event: KeyboardEvent): void {
               <Package
                 :size="32"
                 :stroke-width="1"
-                style="color: var(--tpl-text-dim)"
+                class="tpl:text-[var(--tpl-text-dim)]"
               />
-              <p
-                class="tpl:mt-2 tpl:text-xs"
-                style="color: var(--tpl-text-dim)"
-              >
+              <p class="tpl:mt-2 tpl:text-xs tpl:text-[var(--tpl-text-dim)]">
                 {{
                   searchQuery ? t.modules.noModules : t.modules.noModulesHint
                 }}
@@ -327,8 +304,7 @@ function handleKeydown(event: KeyboardEvent): void {
 
         <!-- Right panel: preview -->
         <div
-          class="tpl:flex tpl:flex-1 tpl:flex-col tpl:overflow-hidden tpl:border-l"
-          style="border-color: var(--tpl-border)"
+          class="tpl:flex tpl:flex-1 tpl:flex-col tpl:overflow-hidden tpl:border-l tpl:border-[var(--tpl-border)]"
         >
           <div
             v-if="selectedModule"
@@ -348,11 +324,10 @@ function handleKeydown(event: KeyboardEvent): void {
             <Package
               :size="32"
               :stroke-width="1"
-              style="color: var(--tpl-text-dim)"
+              class="tpl:text-[var(--tpl-text-dim)]"
             />
             <p
-              class="tpl:mt-2 tpl:text-center tpl:text-xs"
-              style="color: var(--tpl-text-dim)"
+              class="tpl:mt-2 tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
             >
               {{ t.modules.selectToPreview }}
             </p>
@@ -362,24 +337,17 @@ function handleKeydown(event: KeyboardEvent): void {
 
       <!-- Footer -->
       <div
-        class="tpl:flex tpl:items-center tpl:justify-between tpl:border-t tpl:px-5 tpl:py-3"
-        style="border-color: var(--tpl-border)"
+        class="tpl:flex tpl:items-center tpl:justify-between tpl:border-t tpl:px-5 tpl:py-3 tpl:border-[var(--tpl-border)]"
       >
         <div class="tpl:flex tpl:items-center tpl:gap-2">
           <label
-            class="tpl:shrink-0 tpl:text-xs"
-            style="color: var(--tpl-text-dim)"
+            class="tpl:shrink-0 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
           >
             {{ t.modules.insertPosition }}
           </label>
           <select
             v-model="insertPosition"
-            class="tpl:h-7 tpl:max-w-[220px] tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none"
-            style="
-              border-color: var(--tpl-border);
-              background-color: var(--tpl-bg);
-              color: var(--tpl-text);
-            "
+            class="tpl:h-7 tpl:max-w-[220px] tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
           >
             <option
               v-for="opt in positionOptions"
@@ -393,20 +361,14 @@ function handleKeydown(event: KeyboardEvent): void {
         <div class="tpl:flex tpl:gap-2">
           <button
             type="button"
-            class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150"
-            style="
-              border-color: var(--tpl-border);
-              color: var(--tpl-text);
-              background-color: var(--tpl-bg);
-            "
+            class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
             @click="handleClose"
           >
             {{ t.modules.close }}
           </button>
           <button
             type="button"
-            class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
-            style="background-color: var(--tpl-primary); color: var(--tpl-bg)"
+            class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
             :disabled="!selectedModule"
             @click="handleInsert"
           >

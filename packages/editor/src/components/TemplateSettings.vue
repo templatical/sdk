@@ -73,8 +73,7 @@ const widthPresets = [
             t.templateSettings.widthPreset
           }}</label>
           <div
-            class="tpl:grid tpl:grid-cols-4 tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1"
-            style="background-color: var(--tpl-bg-hover)"
+            class="tpl:grid tpl:grid-cols-4 tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-bg-hover)]"
           >
             <button
               v-for="preset in widthPresets"

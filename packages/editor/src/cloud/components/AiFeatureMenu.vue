@@ -50,14 +50,8 @@ function getDescription(key: AiFeature): string {
 
 <template>
   <div
-    class="tpl-ai-feature-menu tpl:w-[280px] tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)] tpl:py-1"
-    style="
-      background-color: var(--tpl-bg-elevated);
-      border: 1px solid var(--tpl-border);
-      box-shadow: var(--tpl-shadow-lg);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    "
+    class="tpl-ai-feature-menu tpl:w-[280px] tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)] tpl:py-1 tpl:bg-[var(--tpl-bg-elevated)] tpl:border tpl:border-[var(--tpl-border)] tpl:shadow-[var(--tpl-shadow-lg)]"
+    style="backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px)"
   >
     <button
       v-for="feature in features"
@@ -87,15 +81,11 @@ function getDescription(key: AiFeature): string {
         <component :is="feature.icon" :size="15" :stroke-width="2" />
       </div>
       <div class="tpl:flex tpl:min-w-0 tpl:flex-col tpl:gap-0.5">
-        <span
-          class="tpl:text-sm tpl:font-medium"
-          style="color: var(--tpl-text)"
-        >
+        <span class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text)]">
           {{ getTitle(feature.key) }}
         </span>
         <span
-          class="tpl:text-xs tpl:leading-snug"
-          style="color: var(--tpl-text-muted)"
+          class="tpl:text-xs tpl:leading-snug tpl:text-[var(--tpl-text-muted)]"
         >
           {{ getDescription(feature.key) }}
         </span>

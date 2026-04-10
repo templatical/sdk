@@ -7,8 +7,7 @@
       class="tpl:flex tpl:size-16 tpl:items-center tpl:justify-center tpl:rounded-full tpl:bg-white/90 tpl:shadow-lg"
     >
       <svg
-        class="tpl:ml-1"
-        style="color: var(--tpl-danger)"
+        class="tpl:ml-1 tpl:text-[var(--tpl-danger)]"
         width="28"
         height="28"
         viewBox="0 0 24 24"

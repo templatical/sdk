@@ -20,21 +20,16 @@ const hasContent = computed(() => props.block.content.trim().length > 0);
 <template>
   <div class="tpl:w-full">
     <div
-      class="tpl:flex tpl:min-h-[80px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4"
-      style="
-        border-color: var(--tpl-border);
-        background-color: var(--tpl-bg-hover);
-      "
+      class="tpl:flex tpl:min-h-[80px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)]"
     >
-      <Code :size="24" style="color: var(--tpl-text-dim)" />
+      <Code :size="24" class="tpl:text-[var(--tpl-text-dim)]" />
       <span
         v-if="hasContent"
-        class="tpl:text-sm"
-        style="color: var(--tpl-text-muted)"
+        class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]"
       >
         {{ t.html.preview }}
       </span>
-      <span v-else class="tpl:text-sm" style="color: var(--tpl-text-dim)">
+      <span v-else class="tpl:text-sm tpl:text-[var(--tpl-text-dim)]">
         {{ t.html.empty }}
       </span>
     </div>

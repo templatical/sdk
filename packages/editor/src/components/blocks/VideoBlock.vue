@@ -65,9 +65,8 @@ const mergeTagLabel = computed(() => {
     <!-- Placeholder visual (no preview image) -->
     <div
       v-else-if="hasMergeTagUrl"
-      class="tpl:relative tpl:!flex tpl:min-h-[150px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-center"
+      class="tpl:relative tpl:!flex tpl:min-h-[150px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-center tpl:bg-[var(--tpl-bg-elevated)]"
       style="
-        background-color: var(--tpl-bg-elevated);
         border-color: color-mix(in srgb, var(--tpl-primary) 40%, transparent);
       "
       :style="thumbnailStyle"
@@ -75,11 +74,12 @@ const mergeTagLabel = computed(() => {
       <Video
         :size="36"
         :stroke-width="1.5"
-        style="color: var(--tpl-primary); opacity: 0.5"
+        class="tpl:text-[var(--tpl-primary)]"
+        style="opacity: 0.5"
       />
       <span
-        class="tpl:max-w-full tpl:truncate tpl:px-3 tpl:text-xs tpl:font-medium"
-        style="color: var(--tpl-primary); opacity: 0.7"
+        class="tpl:max-w-full tpl:truncate tpl:px-3 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-primary)]"
+        style="opacity: 0.7"
       >
         {{ mergeTagLabel }}
       </span>
@@ -114,17 +114,12 @@ const mergeTagLabel = computed(() => {
     <!-- Empty state -->
     <div
       v-else
-      class="tpl:flex tpl:min-h-[150px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-sm"
-      style="
-        border-color: var(--tpl-border-light);
-        background-color: var(--tpl-bg-hover);
-        color: var(--tpl-text-dim);
-      "
+      class="tpl:flex tpl:min-h-[150px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-sm tpl:border-[var(--tpl-border-light)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-dim)]"
     >
       <Video
         :size="40"
         :stroke-width="1.5"
-        style="color: var(--tpl-border-light)"
+        class="tpl:text-[var(--tpl-border-light)]"
       />
       <span>{{ t.video.addVideo }}</span>
     </div>

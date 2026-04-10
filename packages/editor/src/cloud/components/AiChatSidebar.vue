@@ -177,16 +177,14 @@ function handleKeydown(event: KeyboardEvent): void {
         <div class="tpl:flex tpl:items-center tpl:gap-1">
           <button
             v-if="(aiChat.messages.value?.length ?? 0) > 0"
-            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
-            style="color: var(--tpl-text-muted)"
+            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
             :title="translations.aiChat.clear"
             @click="aiChat.clearChat()"
           >
             <Trash2 :size="14" :stroke-width="2" />
           </button>
           <button
-            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
-            style="color: var(--tpl-text-muted)"
+            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
             @click="emit('close')"
           >
             <X :size="14" :stroke-width="2" />
@@ -207,12 +205,11 @@ function handleKeydown(event: KeyboardEvent): void {
             class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
           >
             <LoaderCircle
-              class="tpl-spinner"
+              class="tpl-spinner tpl:text-[var(--tpl-text-muted)]"
               :size="24"
               :stroke-width="2"
-              style="color: var(--tpl-text-muted)"
             />
-            <p class="tpl:text-sm" style="color: var(--tpl-text-muted)">
+            <p class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
               {{ translations.aiChat.loadingHistory }}
             </p>
           </div>
@@ -225,11 +222,10 @@ function handleKeydown(event: KeyboardEvent): void {
             <Sparkles
               :size="32"
               :stroke-width="1.5"
-              style="color: var(--tpl-text-dim)"
+              class="tpl:text-[var(--tpl-text-dim)]"
             />
             <p
-              class="tpl:max-w-[240px] tpl:text-sm"
-              style="color: var(--tpl-text-muted)"
+              class="tpl:max-w-[240px] tpl:text-sm tpl:text-[var(--tpl-text-muted)]"
             >
               {{ translations.aiChat.placeholder }}
             </p>
@@ -367,26 +363,20 @@ function handleKeydown(event: KeyboardEvent): void {
       </div>
 
       <!-- Input area -->
-      <div class="tpl:border-t tpl:p-3" style="border-color: var(--tpl-border)">
+      <div class="tpl:border-t tpl:p-3 tpl:border-[var(--tpl-border)]">
         <div
-          class="tpl-ai-input-wrapper tpl:flex tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2"
-          style="
-            border-color: var(--tpl-border);
-            background-color: var(--tpl-bg);
-          "
+          class="tpl-ai-input-wrapper tpl:flex tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
         >
           <textarea
             v-model="promptInput"
-            class="tpl:max-h-32 tpl:min-h-[64px] tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-sm tpl:outline-none"
-            style="color: var(--tpl-text)"
+            class="tpl:max-h-32 tpl:min-h-[64px] tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-sm tpl:outline-none tpl:text-[var(--tpl-text)]"
             :placeholder="translations.aiChat.inputPlaceholder"
             :disabled="aiChat.isGenerating.value"
             rows="3"
             @keydown="handleKeydown"
           />
           <button
-            class="tpl-ai-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:duration-150 tpl:disabled:opacity-40"
-            style="color: var(--tpl-primary)"
+            class="tpl-ai-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:duration-150 tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
             :disabled="!promptInput.trim() || aiChat.isGenerating.value"
             @click="handleSend"
           >
@@ -396,8 +386,7 @@ function handleKeydown(event: KeyboardEvent): void {
 
         <!-- AI disclaimer -->
         <p
-          class="tpl:m-0 tpl:px-1 tpl:pt-2 tpl:text-center tpl:text-[11px]"
-          style="color: var(--tpl-text-dim)"
+          class="tpl:m-0 tpl:px-1 tpl:pt-2 tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
         >
           {{ translations.aiMenu.disclaimer }}
         </p>

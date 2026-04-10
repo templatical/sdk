@@ -105,8 +105,7 @@ onClickOutside(dropdownRef, () => {
   >
     <!-- Go to older snapshot -->
     <button
-      class="tpl:flex tpl:size-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:transition-colors tpl:duration-150 hover:tpl:bg-[var(--tpl-bg-hover)] disabled:tpl:cursor-not-allowed disabled:tpl:opacity-30 disabled:hover:tpl:bg-transparent"
-      style="color: var(--tpl-text-muted)"
+      class="tpl:flex tpl:size-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:transition-colors tpl:duration-150 hover:tpl:bg-[var(--tpl-bg-hover)] disabled:tpl:cursor-not-allowed disabled:tpl:opacity-30 disabled:hover:tpl:bg-transparent tpl:text-[var(--tpl-text-muted)]"
       :disabled="!canGoOlder"
       :title="t.snapshotHistory.olderSnapshot"
       @click.stop="goOlder"
@@ -116,8 +115,7 @@ onClickOutside(dropdownRef, () => {
 
     <!-- History dropdown toggle -->
     <button
-      class="tpl:flex tpl:h-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-1.5 tpl:transition-colors tpl:duration-150 hover:tpl:bg-[var(--tpl-bg-hover)]"
-      style="color: var(--tpl-text-muted)"
+      class="tpl:flex tpl:h-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-1.5 tpl:transition-colors tpl:duration-150 hover:tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
       :title="t.snapshotHistory.tooltip"
       @click.stop="toggleDropdown"
     >
@@ -133,18 +131,11 @@ onClickOutside(dropdownRef, () => {
     <Transition name="tpl-dropdown">
       <div
         v-if="isOpen"
-        class="tpl-scale-in tpl:absolute tpl:top-full tpl:left-1/2 tpl:z-50 tpl:mt-2 tpl:w-72 tpl:-translate-x-1/2 tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)]"
-        style="
-          background-color: var(--tpl-bg-elevated);
-          border: 1px solid var(--tpl-border);
-          box-shadow: var(--tpl-shadow-lg);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-        "
+        class="tpl-scale-in tpl:absolute tpl:top-full tpl:left-1/2 tpl:z-50 tpl:mt-2 tpl:w-72 tpl:-translate-x-1/2 tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)] tpl:bg-[var(--tpl-bg-elevated)] tpl:border tpl:border-[var(--tpl-border)] tpl:shadow-[var(--tpl-shadow-lg)]"
+        style="backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px)"
       >
         <div
-          class="tpl:border-b tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-semibold"
-          style="color: var(--tpl-text); border-color: var(--tpl-border)"
+          class="tpl:border-b tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-semibold tpl:text-[var(--tpl-text)] tpl:border-[var(--tpl-border)]"
         >
           {{ t.snapshotHistory.dropdownTitle }}
         </div>
@@ -154,17 +145,15 @@ onClickOutside(dropdownRef, () => {
           class="tpl:flex tpl:items-center tpl:justify-center tpl:py-8"
         >
           <LoaderCircle
-            class="tpl:animate-spin"
+            class="tpl:animate-spin tpl:text-[var(--tpl-primary)]"
             :size="20"
             :stroke-width="2"
-            style="color: var(--tpl-primary)"
           />
         </div>
 
         <div
           v-else-if="snapshots.length === 0"
-          class="tpl:px-3 tpl:py-6 tpl:text-center tpl:text-xs"
-          style="color: var(--tpl-text-muted)"
+          class="tpl:px-3 tpl:py-6 tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
         >
           {{ t.snapshotHistory.noSnapshots }}
         </div>
@@ -173,27 +162,19 @@ onClickOutside(dropdownRef, () => {
           <button
             v-for="snapshot in snapshots"
             :key="snapshot.id"
-            class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:border-b tpl:border-l-2 tpl:border-l-transparent tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-all tpl:duration-150 last:tpl:border-b-0 hover:tpl:border-l-[var(--tpl-primary)] hover:tpl:bg-[var(--tpl-bg-hover)]"
-            style="
-              background-color: transparent;
-              border-bottom-color: var(--tpl-border-light);
-            "
+            class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:border-b tpl:border-b-[var(--tpl-border-light)] tpl:border-l-2 tpl:border-l-transparent tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-all tpl:duration-150 last:tpl:border-b-0 hover:tpl:border-l-[var(--tpl-primary)] hover:tpl:bg-[var(--tpl-bg-hover)]"
+            style="background-color: transparent"
             :disabled="isRestoring"
             @click="handleRestore(snapshot.id)"
           >
             <div class="tpl:flex tpl:flex-col tpl:gap-0.5">
               <div
-                class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs tpl:font-medium"
-                style="color: var(--tpl-text)"
+                class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)]"
               >
                 <span>{{ formatDate(snapshot.created_at) }}</span>
                 <span
                   v-if="snapshot.is_autosave"
-                  class="tpl:rounded tpl:px-1 tpl:py-0.5 tpl:text-[10px] tpl:font-normal"
-                  style="
-                    background-color: var(--tpl-bg-active);
-                    color: var(--tpl-text-muted);
-                  "
+                  class="tpl:rounded tpl:px-1 tpl:py-0.5 tpl:text-[10px] tpl:font-normal tpl:bg-[var(--tpl-bg-active)] tpl:text-[var(--tpl-text-muted)]"
                 >
                   {{ t.snapshotHistory.auto }}
                 </span>
@@ -206,8 +187,7 @@ onClickOutside(dropdownRef, () => {
 
     <!-- Go to newer snapshot -->
     <button
-      class="tpl:flex tpl:size-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:transition-colors tpl:duration-150 hover:tpl:bg-[var(--tpl-bg-hover)] disabled:tpl:cursor-not-allowed disabled:tpl:opacity-30 disabled:hover:tpl:bg-transparent"
-      style="color: var(--tpl-text-muted)"
+      class="tpl:flex tpl:size-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:transition-colors tpl:duration-150 hover:tpl:bg-[var(--tpl-bg-hover)] disabled:tpl:cursor-not-allowed disabled:tpl:opacity-30 disabled:hover:tpl:bg-transparent tpl:text-[var(--tpl-text-muted)]"
       :disabled="!canGoNewer"
       :title="t.snapshotHistory.newerSnapshot"
       @click.stop="goNewer"

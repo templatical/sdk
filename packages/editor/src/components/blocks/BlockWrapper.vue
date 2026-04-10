@@ -108,12 +108,7 @@ function handleConditionToggle(): void {
       v-if="isSelected"
       role="toolbar"
       :aria-label="t.blockActions.drag"
-      class="tpl-block-actions tpl-fade-in tpl:absolute tpl:-right-2 tpl:top-1/2 tpl:z-10 tpl:flex tpl:-translate-y-1/2 tpl:translate-x-full tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1"
-      style="
-        background-color: var(--tpl-bg-elevated);
-        box-shadow: var(--tpl-shadow-md);
-        border: 1px solid var(--tpl-border);
-      "
+      class="tpl-block-actions tpl-fade-in tpl:absolute tpl:-right-2 tpl:top-1/2 tpl:z-10 tpl:flex tpl:-translate-y-1/2 tpl:translate-x-full tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-bg-elevated)] tpl:shadow-[var(--tpl-shadow-md)] tpl:border tpl:border-[var(--tpl-border)]"
     >
       <button
         class="tpl-block-btn tpl-block-action-btn tpl:flex tpl:size-7 tpl:cursor-grab tpl:items-center tpl:justify-center tpl:rounded-sm tpl:border-none tpl:transition-colors tpl:duration-150 tpl:active:cursor-grabbing"
@@ -153,12 +148,7 @@ function handleConditionToggle(): void {
       class="tpl-block-hidden-overlay tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[5] tpl:flex tpl:items-center tpl:justify-center tpl:rounded-sm"
     >
       <span
-        class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-2 tpl:py-1 tpl:text-[10px] tpl:font-medium"
-        style="
-          background-color: var(--tpl-bg-elevated);
-          color: var(--tpl-text-muted);
-          box-shadow: var(--tpl-shadow-sm);
-        "
+        class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-2 tpl:py-1 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-bg-elevated)] tpl:text-[var(--tpl-text-muted)] tpl:shadow-[var(--tpl-shadow-sm)]"
       >
         <EyeOff :size="12" :stroke-width="1.5" />
         {{
@@ -173,12 +163,7 @@ function handleConditionToggle(): void {
       class="tpl:absolute tpl:-left-1 tpl:top-1/2 tpl:z-[5] tpl:-translate-x-full tpl:-translate-y-1/2"
     >
       <button
-        class="tpl-condition-toggle tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1 tpl:transition-colors tpl:duration-150"
-        style="
-          background-color: var(--tpl-bg-elevated);
-          color: var(--tpl-primary);
-          border: 1px solid var(--tpl-border);
-        "
+        class="tpl-condition-toggle tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1 tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-bg-elevated)] tpl:text-[var(--tpl-primary)] tpl:border tpl:border-[var(--tpl-border)]"
         :aria-label="t.blockActions.conditionToggle"
         :title="block.displayCondition?.label"
         @click.stop="handleConditionToggle"
@@ -192,11 +177,7 @@ function handleConditionToggle(): void {
       class="tpl:absolute tpl:-right-1 tpl:-top-1 tpl:z-[5] tpl:translate-x-full"
     >
       <button
-        class="tpl-comment-indicator tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-0.5 tpl:rounded-full tpl:border-none tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-semibold tpl:transition-colors tpl:duration-150"
-        style="
-          background-color: var(--tpl-primary-light);
-          color: var(--tpl-primary);
-        "
+        class="tpl-comment-indicator tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-0.5 tpl:rounded-full tpl:border-none tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary)]"
         :aria-label="
           format(t.blockActions.comments, { count: String(blockCommentCount) })
         "

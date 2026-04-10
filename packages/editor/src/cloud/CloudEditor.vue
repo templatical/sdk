@@ -809,8 +809,7 @@ defineExpose({
       >
         <div
           v-if="!featureFlags.isWhiteLabeled.value"
-          class="tpl-logo tpl:flex tpl:items-center tpl:gap-2.5 tpl:text-sm tpl:font-semibold"
-          style="color: var(--tpl-text)"
+          class="tpl-logo tpl:flex tpl:items-center tpl:gap-2.5 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
         >
           <img
             :src="authManager.resolveUrl('/logo.svg')"
@@ -823,8 +822,7 @@ defineExpose({
         </div>
         <span
           v-if="featureFlags.templateLimit.value !== null"
-          class="tpl:text-xs tpl:opacity-60"
-          style="color: var(--tpl-text-muted)"
+          class="tpl:text-xs tpl:opacity-60 tpl:text-[var(--tpl-text-muted)]"
         >
           {{
             core.format(core.t.header.templatesUsed, {
@@ -874,8 +872,7 @@ defineExpose({
         <div
           v-if="featureFlags.saveStatus.value === 'error'"
           aria-live="assertive"
-          class="tpl-tooltip tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs"
-          style="color: var(--tpl-danger)"
+          class="tpl-tooltip tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs tpl:text-[var(--tpl-danger)]"
           :data-tooltip="featureFlags.saveErrorMessage.value"
         >
           <CircleAlert :size="12" :stroke-width="2.5" />
@@ -884,8 +881,7 @@ defineExpose({
         <div
           v-else-if="featureFlags.saveStatus.value === 'saved'"
           aria-live="polite"
-          class="tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs"
-          style="color: var(--tpl-success)"
+          class="tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs tpl:text-[var(--tpl-success)]"
         >
           <Check :size="12" :stroke-width="2.5" />
           {{ core.t.header.saved }}
@@ -893,12 +889,10 @@ defineExpose({
         <div
           v-else-if="editor.state.isDirty"
           aria-live="polite"
-          class="tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs"
-          style="color: var(--tpl-text-muted)"
+          class="tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
         >
           <span
-            class="tpl-pulse tpl:size-1.5 tpl:rounded-full"
-            style="background-color: var(--tpl-primary)"
+            class="tpl-pulse tpl:size-1.5 tpl:rounded-full tpl:bg-[var(--tpl-primary)]"
           ></span>
           {{ core.t.header.unsaved }}
         </div>
@@ -936,8 +930,7 @@ defineExpose({
               commentsInstance.unresolvedCount.value > 0 &&
               !panelState.commentsOpen.value
             "
-            class="tpl:inline-flex tpl:size-4.5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold"
-            style="background-color: var(--tpl-primary); color: var(--tpl-bg)"
+            class="tpl:inline-flex tpl:size-4.5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
           >
             {{ commentsInstance.unresolvedCount.value }}
           </span>
@@ -1131,7 +1124,7 @@ defineExpose({
     <!-- Footer — powered-by branding (hidden when white-labeled) -->
     <footer
       v-if="!featureFlags.isWhiteLabeled.value"
-      class="tpl:pointer-events-none tpl:absolute tpl:bottom-0 tpl:z-50 tpl:flex tpl:h-8 tpl:items-center tpl:justify-end tpl:pr-4 tpl:text-[9px] tpl:opacity-90 tpl:transition-all tpl:duration-300"
+      class="tpl:pointer-events-none tpl:absolute tpl:bottom-0 tpl:z-50 tpl:flex tpl:h-8 tpl:items-center tpl:justify-end tpl:pr-4 tpl:text-[9px] tpl:opacity-90 tpl:transition-all tpl:duration-300 tpl:text-[var(--tpl-text-dim)]"
       :class="[
         editor.state.previewMode
           ? 'tpl:left-0 tpl:right-0'
@@ -1139,7 +1132,6 @@ defineExpose({
             ? 'tpl:left-12 tpl:right-[680px]'
             : 'tpl:left-12 tpl:right-[320px]',
       ]"
-      style="color: var(--tpl-text-dim)"
     >
       <div
         class="tpl:pointer-events-auto tpl:flex tpl:items-center tpl:gap-1.5 tpl:rounded-tl-lg tpl:p-1"
@@ -1158,8 +1150,8 @@ defineExpose({
           href="https://templatical.com"
           target="_blank"
           rel="noopener noreferrer"
-          class="tpl:inline-flex tpl:items-center tpl:gap-1 tpl:font-medium tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80"
-          style="color: var(--tpl-text-muted); text-decoration: none"
+          class="tpl:inline-flex tpl:items-center tpl:gap-1 tpl:font-medium tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80 tpl:text-[var(--tpl-text-muted)]"
+          style="text-decoration: none"
         >
           <img
             width="14"
@@ -1169,13 +1161,13 @@ defineExpose({
           />
           Templatical
         </a>
-        <span style="color: var(--tpl-border)">·</span>
+        <span class="tpl:text-[var(--tpl-border)]">·</span>
         <a
           href="https://github.com/templatical/sdk"
           target="_blank"
           rel="noopener noreferrer"
-          class="tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80"
-          style="color: var(--tpl-text-dim); text-decoration: none"
+          class="tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80 tpl:text-[var(--tpl-text-dim)]"
+          style="text-decoration: none"
         >
           {{ core.t.footer.openSource }}
         </a>

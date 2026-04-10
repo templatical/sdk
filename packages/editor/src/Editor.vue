@@ -80,13 +80,11 @@ defineExpose({
   >
     <!-- Header — absolute, full width, above everything -->
     <header
-      class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[1fr_auto_1fr] tpl:items-center tpl:px-4"
+      class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[1fr_auto_1fr] tpl:items-center tpl:px-4 tpl:shadow-[var(--tpl-shadow-md)] tpl:border-b tpl:border-[var(--tpl-border)]"
       style="
         background-color: color-mix(in srgb, var(--tpl-bg) 80%, transparent);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        box-shadow: var(--tpl-shadow-md);
-        border-bottom: 1px solid var(--tpl-border);
       "
     >
       <!-- Left: Logo -->
@@ -98,8 +96,8 @@ defineExpose({
           alt="Templatical"
         />
         <span
-          class="tpl:text-sm tpl:font-semibold"
-          style="color: var(--tpl-text); letter-spacing: -0.01em"
+          class="tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
+          style="letter-spacing: -0.01em"
         >
           {{ core.t.header.title }}
         </span>
@@ -132,11 +130,8 @@ defineExpose({
 
     <!-- Canvas area — absolute, fills remaining space -->
     <div
-      class="tpl-body tpl:absolute tpl:bottom-0 tpl:overflow-auto tpl:transition-all tpl:duration-300"
-      style="
-        transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
-        background-color: var(--tpl-canvas-bg);
-      "
+      class="tpl-body tpl:absolute tpl:bottom-0 tpl:overflow-auto tpl:transition-all tpl:duration-300 tpl:bg-[var(--tpl-canvas-bg)]"
+      style="transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1)"
       :class="[
         editor.state.previewMode
           ? 'tpl:left-0 tpl:right-0'
@@ -149,13 +144,8 @@ defineExpose({
         <Transition name="tpl-restore-btn">
           <button
             v-if="core.conditionPreview.hasHiddenBlocks.value"
-            class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:-translate-x-1/2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-full tpl:border tpl:px-3.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:whitespace-nowrap tpl:shadow-md tpl:hover:opacity-80"
-            style="
-              background-color: var(--tpl-warning-light);
-              color: var(--tpl-warning);
-              border-color: var(--tpl-warning);
-              backdrop-filter: blur(8px);
-            "
+            class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:-translate-x-1/2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-full tpl:border tpl:px-3.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:whitespace-nowrap tpl:shadow-md tpl:hover:opacity-80 tpl:bg-[var(--tpl-warning-light)] tpl:text-[var(--tpl-warning)] tpl:border-[var(--tpl-warning)]"
+            style="backdrop-filter: blur(8px)"
             @click="core.conditionPreview.reset()"
           >
             <RotateCcw :size="13" :stroke-width="2" />
@@ -177,13 +167,12 @@ defineExpose({
 
     <!-- Footer — OSS branding -->
     <footer
-      class="tpl:pointer-events-none tpl:absolute tpl:bottom-0 tpl:z-50 tpl:flex tpl:h-8 tpl:items-center tpl:justify-end tpl:pr-4 tpl:text-[9px] tpl:opacity-90 tpl:transition-all tpl:duration-300"
+      class="tpl:pointer-events-none tpl:absolute tpl:bottom-0 tpl:z-50 tpl:flex tpl:h-8 tpl:items-center tpl:justify-end tpl:pr-4 tpl:text-[9px] tpl:opacity-90 tpl:transition-all tpl:duration-300 tpl:text-[var(--tpl-text-dim)]"
       :class="[
         editor.state.previewMode
           ? 'tpl:left-0 tpl:right-0'
           : 'tpl:left-12 tpl:right-[320px]',
       ]"
-      style="color: var(--tpl-text-dim)"
     >
       <div
         class="tpl:pointer-events-auto tpl:flex tpl:items-center tpl:gap-1.5 tpl:rounded-tl-lg tpl:p-1"
@@ -202,8 +191,8 @@ defineExpose({
           href="https://templatical.com"
           target="_blank"
           rel="noopener noreferrer"
-          class="tpl:inline-flex tpl:items-center tpl:gap-1 tpl:font-medium tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80"
-          style="color: var(--tpl-text-muted); text-decoration: none"
+          class="tpl:inline-flex tpl:items-center tpl:gap-1 tpl:font-medium tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80 tpl:text-[var(--tpl-text-muted)]"
+          style="text-decoration: none"
         >
           <img
             width="14"
@@ -213,13 +202,13 @@ defineExpose({
           />
           Templatical
         </a>
-        <span style="color: var(--tpl-border)">·</span>
+        <span class="tpl:text-[var(--tpl-border)]">·</span>
         <a
           href="https://github.com/templatical/sdk"
           target="_blank"
           rel="noopener noreferrer"
-          class="tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80"
-          style="color: var(--tpl-text-dim); text-decoration: none"
+          class="tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80 tpl:text-[var(--tpl-text-dim)]"
+          style="text-decoration: none"
         >
           {{ core.t.footer.openSource }}
         </a>
