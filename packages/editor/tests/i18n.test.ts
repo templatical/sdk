@@ -1,7 +1,7 @@
 import './dom-stubs';
 
 import { describe, expect, it } from 'vitest';
-import { createApp, defineComponent, h, ref } from 'vue';
+import { createApp, defineComponent, h, ref, type InjectionKey } from 'vue';
 import en from '../src/i18n/locales/en';
 import de from '../src/i18n/locales/de';
 import {
@@ -12,10 +12,11 @@ import {
 } from '../src/i18n';
 import type { Translations } from '../src/i18n';
 import { useI18n } from '../src/composables/useI18n';
+import { TRANSLATIONS_KEY } from '../src/keys';
 
 function withProvide<T>(
   setup: () => T,
-  provides: Record<string, unknown> = {},
+  provides: Record<string | symbol, unknown> = {},
 ): T {
   let result: T;
   const app = createApp(
@@ -28,6 +29,9 @@ function withProvide<T>(
   );
   for (const [key, value] of Object.entries(provides)) {
     app.provide(key, value);
+  }
+  for (const sym of Object.getOwnPropertySymbols(provides)) {
+    app.provide(sym as InjectionKey<unknown>, provides[sym]);
   }
   app.mount(document.createElement('div'));
   app.unmount();
@@ -178,7 +182,7 @@ describe('useI18n', () => {
   describe('injection path', () => {
     it('injects plain translations from context when no override', () => {
       const { t } = withProvide(() => useI18n(), {
-        translations: en,
+        [TRANSLATIONS_KEY as symbol]: en,
       });
       expect(t.header.title).toBe('Templatical');
     });
@@ -186,28 +190,28 @@ describe('useI18n', () => {
     it('unwraps Ref<Translations> from inject', () => {
       const translationsRef = ref(en);
       const { t } = withProvide(() => useI18n(), {
-        translations: translationsRef,
+        [TRANSLATIONS_KEY as symbol]: translationsRef,
       });
       expect(t.header.title).toBe('Templatical');
     });
 
     it('injects German translations from context', () => {
       const { t } = withProvide(() => useI18n(), {
-        translations: de,
+        [TRANSLATIONS_KEY as symbol]: de,
       });
       expect(t.loading.initializing).toBe('Initialisieren...');
     });
 
     it('override takes precedence over injected', () => {
       const { t } = withProvide(() => useI18n(de), {
-        translations: en,
+        [TRANSLATIONS_KEY as symbol]: en,
       });
       expect(t.loading.initializing).toBe('Initialisieren...');
     });
 
     it('format works with injected translations', () => {
       const { format } = withProvide(() => useI18n(), {
-        translations: en,
+        [TRANSLATIONS_KEY as symbol]: en,
       });
       expect(format('{a} + {b}', { a: '1', b: '2' })).toBe('1 + 2');
     });
@@ -215,7 +219,7 @@ describe('useI18n', () => {
     it('format handles Ref-injected translations', () => {
       const translationsRef = ref(en);
       const { format } = withProvide(() => useI18n(), {
-        translations: translationsRef,
+        [TRANSLATIONS_KEY as symbol]: translationsRef,
       });
       expect(
         format(en.header.templatesUsed, { used: 5, max: 20 }),

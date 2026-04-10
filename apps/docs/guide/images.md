@@ -20,7 +20,7 @@ The editor calls this function whenever the user clicks the button. Return a `Me
 ```ts
 import { init } from '@templatical/editor';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   async onRequestMedia() {
     // Open your own modal, file browser, or asset manager
@@ -40,7 +40,7 @@ interface MediaResult {
   alt?: string;
 }
 
-onRequestMedia?: () => Promise<MediaResult | null>;
+onRequestMedia?: (context?: MediaRequestContext) => Promise<MediaResult | null>;
 ```
 
 

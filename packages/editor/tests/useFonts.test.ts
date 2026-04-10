@@ -80,9 +80,9 @@ describe('useFonts', () => {
       expect(defaultFont.value).toBe('Arial, sans-serif');
     });
 
-    it('returns configured default font', () => {
+    it('returns configured default font as bare name', () => {
       const { defaultFont } = useFonts({ defaultFont: 'Georgia' });
-      expect(defaultFont.value).toBe('Georgia, serif');
+      expect(defaultFont.value).toBe('Georgia');
     });
 
     it('falls back to Arial when default font is custom but custom fonts disabled', () => {
@@ -109,9 +109,9 @@ describe('useFonts', () => {
   });
 
   describe('getDefaultFont', () => {
-    it('returns matching font value for configured default', () => {
+    it('returns matching font value for configured default as bare name', () => {
       const { getDefaultFont } = useFonts({ defaultFont: 'Helvetica' });
-      expect(getDefaultFont()).toBe('Helvetica, sans-serif');
+      expect(getDefaultFont()).toBe('Helvetica');
     });
 
     it('returns fallback for unavailable font', () => {
@@ -144,7 +144,7 @@ describe('useFonts', () => {
 
     it('is case-insensitive for matching', () => {
       const { getDefaultFont } = useFonts({ defaultFont: 'arial' });
-      expect(getDefaultFont()).toBe('Arial, sans-serif');
+      expect(getDefaultFont()).toBe('Arial');
     });
   });
 
@@ -152,7 +152,7 @@ describe('useFonts', () => {
     it('recognizes built-in fonts', () => {
       // isFontAvailable is internal but drives getDefaultFont behavior
       const { getDefaultFont } = useFonts({ defaultFont: 'Georgia' });
-      expect(getDefaultFont()).toBe('Georgia, serif');
+      expect(getDefaultFont()).toBe('Georgia');
     });
 
     it('recognizes custom fonts', () => {
@@ -178,7 +178,7 @@ describe('useFonts', () => {
 
       setCustomFontsEnabled(false);
       // Georgia is built-in so it should still work
-      expect(getDefaultFont()).toBe('Georgia, serif');
+      expect(getDefaultFont()).toBe('Georgia');
     });
 
     it('rejects custom font as default when custom fonts disabled', () => {
@@ -197,7 +197,7 @@ describe('useFonts', () => {
       const { getFontWithFallback } = useFonts();
       expect(getFontWithFallback('Arial')).toBe('Arial, sans-serif');
       expect(getFontWithFallback('Georgia')).toBe('Georgia, serif');
-      expect(getFontWithFallback('Courier New')).toBe('Courier New, monospace');
+      expect(getFontWithFallback('Courier New')).toBe("'Courier New', monospace");
     });
 
     it('returns custom font with quotes and fallback', () => {

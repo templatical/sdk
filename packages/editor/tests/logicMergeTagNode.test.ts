@@ -100,9 +100,9 @@ describe('LogicMergeTagNode extension config', () => {
   it('addAttributes returns value and keyword with parseHTML extractors', () => {
     const attrs = (LogicMergeTagNode.config.addAttributes as Function).call({});
     expect(attrs.value.default).toBe('');
-    expect(typeof attrs.value.parseHTML).toBe('function');
+    expect(attrs.value.parseHTML).toEqual(expect.any(Function));
     expect(attrs.keyword.default).toBe('');
-    expect(typeof attrs.keyword.parseHTML).toBe('function');
+    expect(attrs.keyword.parseHTML).toEqual(expect.any(Function));
   });
 
   it('parseHTML returns array with tag span[data-logic-merge-tag]', () => {
@@ -120,6 +120,26 @@ describe('LogicMergeTagNode extension config', () => {
   it('has no mergeTags in default options (only syntax)', () => {
     const options = (LogicMergeTagNode.config.addOptions as Function).call({});
     expect(Object.keys(options)).toEqual(['syntax']);
+  });
+});
+
+describe('LogicMergeTagNode source structure', () => {
+  const { readFileSync } = require('node:fs');
+  const { resolve } = require('node:path');
+  const src = readFileSync(
+    resolve(__dirname, '../src/extensions/LogicMergeTagNode.ts'),
+    'utf-8',
+  );
+
+  it('imports isNodeSelected from shared module', () => {
+    expect(src).toContain('import { isNodeSelected } from "./isNodeSelected"');
+    expect(src).not.toContain('const isLogicMergeTagSelected');
+  });
+
+  it('uses renderVueNodeView wrapper instead of direct VueNodeViewRenderer cast', () => {
+    expect(src).toContain('import { renderVueNodeView } from "./renderVueNodeView"');
+    expect(src).toContain('renderVueNodeView(LogicMergeTagNodeView)');
+    expect(src).not.toContain('as any');
   });
 });
 

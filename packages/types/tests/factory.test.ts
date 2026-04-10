@@ -185,6 +185,7 @@ describe('cloneBlock', () => {
         const cloned = cloneBlock(original);
 
         expect(cloned.id).not.toBe(original.id);
+        expect(cloned.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
         expect(cloned.type).toBe('title');
         if (cloned.type === 'title') {
             expect(cloned.content).toBe('<p>Test</p>');
@@ -197,8 +198,10 @@ describe('cloneBlock', () => {
         const cloned = cloneBlock(section);
 
         expect(cloned.id).not.toBe(section.id);
+        expect(cloned.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
         if (cloned.type === 'section') {
             expect(cloned.children[0][0].id).not.toBe(child.id);
+            expect(cloned.children[0][0].id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
         }
     });
 
@@ -219,12 +222,15 @@ describe('cloneBlock', () => {
         const cloned = cloneBlock(outerSection);
 
         expect(cloned.id).not.toBe(outerSection.id);
+        expect(cloned.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
         if (cloned.type === 'section') {
             const clonedInner = cloned.children[0][0];
             expect(clonedInner.id).not.toBe(innerSection.id);
+            expect(clonedInner.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
             if (clonedInner.type === 'section') {
                 const clonedInnerChild = clonedInner.children[0][0];
                 expect(clonedInnerChild.id).not.toBe(innerChild.id);
+                expect(clonedInnerChild.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
             }
         }
     });
@@ -262,6 +268,7 @@ describe('cloneBlock', () => {
         const block = createImageBlock({ src: 'https://example.com/img.png' });
         const cloned = cloneBlock(block);
         expect(cloned.id).not.toBe(block.id);
+        expect(cloned.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
         if (cloned.type === 'image') {
             expect(cloned.src).toBe('https://example.com/img.png');
         }

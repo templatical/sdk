@@ -15,11 +15,13 @@ This guide walks you through setting up Templatical Cloud in your application.
 
 ## Installation
 
-If you haven't already installed the editor, add it to your project:
+If you haven't already installed the editor, add it along with the cloud dependencies:
 
 ```bash
-npm install @templatical/editor
+npm install @templatical/editor @templatical/media-library pusher-js
 ```
+
+`@templatical/media-library` provides the built-in media browser and `pusher-js` enables real-time collaboration. Both are optional peer dependencies — only needed when using `initCloud()`.
 
 ## Authentication Endpoint
 
@@ -32,7 +34,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 Route::post('/api/templatical/token', function (Request $request) {
-    $response = Http::post('https://cloud.templatical.com/api/v1/auth/token', [
+    $response = Http::post('https://templatical.com/api/v1/auth/token', [
         'client_id' => config('templatical.client_id'),
         'client_secret' => config('templatical.client_secret'),
         'tenant' => $request->user()->tenant_id,
@@ -46,7 +48,7 @@ Route::post('/api/templatical/token', function (Request $request) {
 
 ```js
 app.post('/api/templatical/token', async (req, res) => {
-  const response = await fetch('https://cloud.templatical.com/api/v1/auth/token', {
+  const response = await fetch('https://templatical.com/api/v1/auth/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -93,7 +95,7 @@ const editor = await initCloud({
   },
 
   // Cloud features (all optional)
-  ai: true,                    // Enable AI assistant
+  ai: {},                       // Enable all AI features
   collaboration: {             // Enable real-time collaboration
     enabled: true,
   },
@@ -102,7 +104,7 @@ const editor = await initCloud({
 
   // Callbacks
   onChange: (content) => { /* template changed */ },
-  onSave: (result) => { /* template saved */ },
+  onSave: (result) => { /* SaveResult: { templateId, html, mjml, content } */ },
   onError: (error) => { /* handle errors */ },
   onComment: (event) => { /* comment created/updated/deleted */ },
 });
@@ -151,12 +153,13 @@ Verify your Cloud connection is working:
 import { performHealthCheck } from '@templatical/core/cloud';
 
 const result = await performHealthCheck({
-  baseUrl: 'https://cloud.templatical.com',
+  baseUrl: 'https://templatical.com',
 });
 
-console.log(result.overall); // true if all services are reachable
-console.log(result.api);     // { ok: true, latency: 42 }
-console.log(result.websocket); // { ok: true }
+console.log(result.overall);    // true if all services are reachable
+console.log(result.api);        // { ok: true, latency: 42 }
+console.log(result.websocket);  // { ok: true }
+console.log(result.auth);       // { ok: true }
 ```
 
 ## Next Steps

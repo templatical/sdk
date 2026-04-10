@@ -37,7 +37,7 @@ npm install @templatical/editor @templatical/renderer
     import { init } from '@templatical/editor';
     import '@templatical/editor/style.css';
 
-    const editor = init({
+    const editor = await init({
       container: '#editor',
     });
 

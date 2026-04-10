@@ -14,7 +14,7 @@ Define available conditions through the editor config:
 ```ts
 import { init } from '@templatical/editor';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   displayConditions: {
     conditions: [

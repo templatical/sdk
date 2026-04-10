@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import { useI18n } from "../composables/useI18n";
-import { colorTextClass } from "../constants/styleConstants";
+import {
+  colorTextClass,
+  DEFAULT_TEXT_COLOR,
+} from "../constants/styleConstants";
 import "vanilla-colorful";
 
 const props = withDefaults(
@@ -14,7 +17,7 @@ const props = withDefaults(
     disabled?: boolean;
   }>(),
   {
-    placeholder: "#000000",
+    placeholder: DEFAULT_TEXT_COLOR,
     size: "default",
     swatchOnly: false,
     disabled: false,
@@ -39,25 +42,17 @@ onClickOutside(
   { ignore: [swatchRef] },
 );
 
-const internalColor = ref(props.modelValue || "#000000");
-
-watch(
-  () => props.modelValue,
-  (val) => {
-    internalColor.value = val || "#000000";
-  },
-);
+const internalColor = computed({
+  get: () => props.modelValue || DEFAULT_TEXT_COLOR,
+  set: (val) => emit("update:modelValue", val),
+});
 
 function onPickerChange(e: Event) {
-  const value = (e as CustomEvent).detail.value;
-  internalColor.value = value;
-  emit("update:modelValue", value);
+  internalColor.value = (e as CustomEvent).detail.value;
 }
 
 function onTextInput(e: Event) {
-  const value = (e.target as HTMLInputElement).value;
-  internalColor.value = value;
-  emit("update:modelValue", value);
+  internalColor.value = (e.target as HTMLInputElement).value;
 }
 </script>
 

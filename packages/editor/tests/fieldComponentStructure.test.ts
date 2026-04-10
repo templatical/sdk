@@ -70,20 +70,16 @@ describe("TextareaField.vue structure", () => {
 describe("MergeTagInput.vue structure", () => {
   const src = readComponent("components/MergeTagInput.vue");
 
-  it("imports useMergeTag composable", () => {
-    expect(src).toContain("useMergeTag");
+  it("uses useMergeTagField composable instead of inline logic", () => {
+    expect(src).toContain("useMergeTagField");
+    expect(src).not.toContain("const segments = computed");
+    expect(src).not.toContain("async function insertMergeTag");
   });
 
-  it("has segments computed property", () => {
-    expect(src).toMatch(/const segments = computed/);
-  });
-
-  it("has hasMergeTags computed property", () => {
-    expect(src).toMatch(/const hasMergeTags = computed/);
-  });
-
-  it("has insertMergeTag function", () => {
-    expect(src).toMatch(/async function insertMergeTag/);
+  it("destructures segments, hasMergeTags, and merge tag functions", () => {
+    expect(src).toContain("segments,");
+    expect(src).toContain("hasMergeTags,");
+    expect(src).toContain("insertMergeTag,");
   });
 
   it("displays merge tag segments", () => {
@@ -94,26 +90,48 @@ describe("MergeTagInput.vue structure", () => {
 describe("MergeTagTextarea.vue structure", () => {
   const src = readComponent("components/MergeTagTextarea.vue");
 
-  it("imports useMergeTag composable", () => {
-    expect(src).toContain("useMergeTag");
+  it("uses useMergeTagField composable instead of inline logic", () => {
+    expect(src).toContain("useMergeTagField");
+    expect(src).not.toContain("const segments = computed");
+    expect(src).not.toContain("async function insertMergeTag");
   });
 
-  it("has segments computed property", () => {
-    expect(src).toMatch(/const segments = computed/);
-  });
-
-  it("has hasMergeTags computed property", () => {
-    expect(src).toMatch(/const hasMergeTags = computed/);
-  });
-
-  it("has insertMergeTag function", () => {
-    expect(src).toMatch(/async function insertMergeTag/);
+  it("destructures segments, hasMergeTags, and merge tag functions", () => {
+    expect(src).toContain("segments,");
+    expect(src).toContain("hasMergeTags,");
+    expect(src).toContain("insertMergeTag,");
   });
 
   it("displays merge tag segments", () => {
     expect(src).toContain("seg.type === 'mergeTag'");
   });
 });
+
+describe("FieldWrapper.vue structure", () => {
+  const src = readComponent(`${fieldDir}/FieldWrapper.vue`);
+
+  it("renders required indicator with danger color", () => {
+    expect(src).toContain("required");
+    expect(src).toContain("tpl:text-[var(--tpl-danger)]");
+  });
+
+  it("renders Lock icon for readOnly state", () => {
+    expect(src).toContain("Lock");
+    expect(src).toContain("readOnly");
+  });
+
+  it("uses labelClass from constants", () => {
+    expect(src).toContain("labelClass");
+  });
+
+  it("has a default slot for field content", () => {
+    expect(src).toContain("<slot />");
+  });
+});
+
+const fieldsUsingFieldWrapper = allFieldFiles.filter(
+  (f) => f !== "BooleanField.vue",
+);
 
 describe("all field components", () => {
   for (const file of allFieldFiles) {
@@ -124,14 +142,31 @@ describe("all field components", () => {
         expect(src).toMatch(/readOnly\??:/);
       });
 
-      it("has required field indicator with danger color", () => {
-        expect(src).toContain("field.required");
-        expect(src).toContain("tpl:text-[var(--tpl-danger)]");
-      });
+      if (fieldsUsingFieldWrapper.includes(file)) {
+        it("uses FieldWrapper for label/required/readOnly", () => {
+          expect(src).toContain("FieldWrapper");
+          expect(src).toContain(":label=");
+          expect(src).toContain(":required=");
+        });
+      } else {
+        it("has required field indicator with danger color", () => {
+          expect(src).toContain("field.required");
+          expect(src).toContain("tpl:text-[var(--tpl-danger)]");
+        });
+      }
 
       it("emits update:modelValue", () => {
         expect(src).toContain("update:modelValue");
       });
     });
   }
+});
+
+describe("RepeatableField.vue v-for key", () => {
+  const src = readComponent(`${fieldDir}/RepeatableField.vue`);
+
+  it("uses field.key-based key instead of bare index", () => {
+    expect(src).toContain(':key="`${field.key}-${index}`"');
+    expect(src).not.toMatch(/:key="index"/);
+  });
 });

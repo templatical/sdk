@@ -1,9 +1,5 @@
 import { computed } from "vue";
-import {
-  useLocalStorage,
-  useMediaQuery,
-  watchImmediate,
-} from "@vueuse/core";
+import { useLocalStorage, useMediaQuery, watchImmediate } from "@vueuse/core";
 import en from "./en";
 import de from "./de";
 

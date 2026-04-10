@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { UseEditorReturn } from "@templatical/core";
 import type {
   SpacerBlock as SpacerBlockType,
   ViewportSize,
 } from "@templatical/types";
 import { computed, inject } from "vue";
+import { EDITOR_KEY } from "../../keys";
 
 const props = defineProps<{
   block: SpacerBlockType;
   viewport: ViewportSize;
 }>();
 
-const editor = inject<UseEditorReturn>("editor")!;
+const editor = inject(EDITOR_KEY)!;
 
 const spacerStyle = computed(() => ({
   height: `${props.block.height}px`,

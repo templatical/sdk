@@ -14,7 +14,7 @@ Pass custom block definitions through the editor config. The example below creat
 ```ts
 import { init } from '@templatical/editor';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   customBlocks: [
     {

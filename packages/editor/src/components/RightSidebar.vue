@@ -40,22 +40,19 @@ watch(
 
 <template>
   <aside
-    class="tpl-right-sidebar tpl:absolute tpl:top-14 tpl:bottom-0 tpl:z-40 tpl:flex tpl:w-[320px] tpl:flex-col tpl:bg-[var(--tpl-bg-elevated)] tpl:transition-all tpl:duration-200"
-    style="border-left: 1px solid var(--tpl-border)"
+    class="tpl-right-sidebar tpl:absolute tpl:top-14 tpl:bottom-0 tpl:z-40 tpl:flex tpl:w-[320px] tpl:flex-col tpl:bg-[var(--tpl-bg-elevated)] tpl:transition-all tpl:duration-200 tpl:border-l tpl:border-[var(--tpl-border)]"
     :class="shiftedLeft ? 'tpl:right-[360px]' : 'tpl:right-0'"
   >
     <div
       role="tablist"
-      class="tpl:relative tpl:flex tpl:border-b tpl:border-[var(--tpl-border)]"
-      style="background-color: var(--tpl-bg-hover)"
+      class="tpl:relative tpl:flex tpl:border-b tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)]"
     >
       <div
         class="tpl:absolute tpl:bottom-0 tpl:left-0 tpl:h-full tpl:w-1/2 tpl:p-1.5 tpl:transition-transform tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]"
         :class="pillOffset"
       >
         <div
-          class="tpl:h-full tpl:w-full tpl:rounded-[var(--tpl-radius-sm)] tpl:bg-[var(--tpl-bg)]"
-          style="box-shadow: var(--tpl-shadow)"
+          class="tpl:h-full tpl:w-full tpl:rounded-[var(--tpl-radius-sm)] tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow)]"
         ></div>
       </div>
       <button

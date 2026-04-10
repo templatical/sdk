@@ -39,7 +39,6 @@ A heading block with fixed size levels. Use titles for headings, section headers
 | `level` | `1 \| 2 \| 3 \| 4` | Heading level (H1=36px, H2=28px, H3=22px, H4=18px) |
 | `color` | `string` | Text color |
 | `textAlign` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
-| `fontWeight` | `'normal' \| 'bold'` | Font weight |
 | `fontFamily` | `string` | Font family override |
 
 ## Paragraph
@@ -141,7 +140,7 @@ A horizontal navigation menu with text links.
 | `fontSize` | `number` | Font size in px |
 | `fontFamily` | `string` | Font family override |
 | `color` | `string` | Text color |
-| `linkColor` | `string` | Link color |
+| `linkColor` | `string` (optional) | Link color |
 | `textAlign` | `'left' \| 'center' \| 'right'` | Alignment |
 | `separator` | `string` | Character between items |
 | `separatorColor` | `string` | Separator color |
@@ -169,7 +168,7 @@ A data table with optional header row styling.
 |----------|------|-------------|
 | `rows` | `TableRowData[]` | Table rows |
 | `hasHeaderRow` | `boolean` | Style first row as header |
-| `headerBackgroundColor` | `string` | Header row background |
+| `headerBackgroundColor` | `string` (optional) | Header row background |
 | `borderColor` | `string` | Border color |
 | `borderWidth` | `number` | Border width in px |
 | `cellPadding` | `number` | Cell padding in px |
@@ -212,6 +211,6 @@ A user-defined block type powered by field definitions and a Liquid template. Se
 | Property | Type | Description |
 |----------|------|-------------|
 | `customType` | `string` | Unique identifier for the custom block type |
-| `fieldValues` | `Record<string, any>` | Current values for defined fields |
+| `fieldValues` | `Record<string, unknown>` | Current values for defined fields |
 | `renderedHtml` | `string` | Cached rendered output |
 | `dataSourceFetched` | `boolean` | Whether the data source has been fetched |

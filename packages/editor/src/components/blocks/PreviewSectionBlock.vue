@@ -11,12 +11,31 @@ import TableBlock from "./TableBlock.vue";
 import TitleBlock from "./TitleBlock.vue";
 import ParagraphBlock from "./ParagraphBlock.vue";
 import VideoBlock from "./VideoBlock.vue";
-import type { useBlockRegistry } from "../../composables";
+import {
+  resolveBlockComponent,
+  getBlockWrapperStyle,
+} from "../../utils/blockComponentResolver";
 import type {
   Block,
   SectionBlock as SectionBlockType,
 } from "@templatical/types";
 import { computed, inject, type Component } from "vue";
+import { BLOCK_REGISTRY_KEY } from "../../keys";
+
+const previewBlockComponentMap: Record<string, Component> = {
+  title: TitleBlock,
+  paragraph: ParagraphBlock,
+  image: ImageBlock,
+  video: VideoBlock,
+  button: ButtonBlock,
+  divider: DividerBlock,
+  social: SocialIconsBlock,
+  menu: MenuBlock,
+  table: TableBlock,
+  spacer: SpacerBlock,
+  html: HtmlBlock,
+  custom: CustomBlock,
+};
 
 const props = defineProps<{
   block: SectionBlockType;
@@ -25,8 +44,7 @@ const props = defineProps<{
 
 defineOptions({ name: "PreviewSectionBlock" });
 
-const blockRegistry =
-  inject<ReturnType<typeof useBlockRegistry>>("blockRegistry");
+const blockRegistry = inject(BLOCK_REGISTRY_KEY);
 
 const columnWidths = computed(() => {
   switch (props.block.columns) {
@@ -57,50 +75,7 @@ function getColumnBlocks(colIndex: number): Block[] {
 }
 
 function getBlockComponent(block: Block): Component | null {
-  if (blockRegistry) {
-    const component = blockRegistry.getComponent(block);
-    if (component) {
-      return component;
-    }
-  }
-
-  switch (block.type) {
-    case "title":
-      return TitleBlock;
-    case "paragraph":
-      return ParagraphBlock;
-    case "image":
-      return ImageBlock;
-    case "video":
-      return VideoBlock;
-    case "button":
-      return ButtonBlock;
-    case "divider":
-      return DividerBlock;
-    case "social":
-      return SocialIconsBlock;
-    case "menu":
-      return MenuBlock;
-    case "table":
-      return TableBlock;
-    case "spacer":
-      return SpacerBlock;
-    case "html":
-      return HtmlBlock;
-    case "custom":
-      return CustomBlock;
-    default:
-      return null;
-  }
-}
-
-function getBlockWrapperStyle(block: Block): Record<string, string> {
-  const { padding, margin, backgroundColor } = block.styles;
-  return {
-    padding: `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`,
-    margin: `${margin.top}px ${margin.right}px ${margin.bottom}px ${margin.left}px`,
-    backgroundColor: backgroundColor || "transparent",
-  };
+  return resolveBlockComponent(block, blockRegistry, previewBlockComponentMap);
 }
 </script>
 

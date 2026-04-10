@@ -15,7 +15,7 @@ Templatical provides factory functions for every block type. Use them to build t
 import { createDefaultTemplateContent } from '@templatical/types';
 
 const content = createDefaultTemplateContent();
-// { blocks: [], settings: { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' } }
+// { blocks: [], settings: { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial' } }
 ```
 
 `createDefaultTemplateContent()` accepts an optional font family string:
@@ -271,7 +271,7 @@ Pass previously saved JSON back to the editor:
 ```ts
 const saved = await fetch('/api/templates/123').then(r => r.json());
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   content: saved,
 });

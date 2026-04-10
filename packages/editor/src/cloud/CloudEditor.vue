@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import type { AiFeature } from "./components/AiFeatureMenu.vue";
 import type {
   Block,
   CollaborationConfig,
   CommentEvent,
-  CustomBlock,
   CustomBlockDefinition,
   DisplayConditionsConfig,
   FontsConfig,
@@ -13,46 +11,23 @@ import type {
   SaveResult,
   Template,
   TemplateContent,
-  TemplateSnapshot,
   ThemeOverrides,
   UiTheme,
 } from "@templatical/types";
 import type {
-  MediaCategory,
   MediaItem,
   MediaRequestContext,
 } from "@templatical/media-library";
-import {
-  cloneBlock,
-  createButtonBlock,
-  createDividerBlock,
-  createHtmlBlock,
-  createImageBlock,
-  createMenuBlock,
-  createSectionBlock,
-  createSocialIconsBlock,
-  createSpacerBlock,
-  createTableBlock,
-  createTitleBlock,
-  createParagraphBlock,
-  createCountdownBlock,
-  createVideoBlock,
-  isCustomBlock,
-  resolveSyntax,
-} from "@templatical/types";
-import type { EditorPlugin } from "@templatical/core";
-import {
-  useAutoSave,
-  useBlockActions,
-  useConditionPreview,
-  useHistory,
-} from "@templatical/core";
+import { cloneBlock, isCustomBlock } from "@templatical/types";
+import type { CustomBlock } from "@templatical/types";
+
 import {
   AuthManager,
   performHealthCheck,
   resolveWebSocketConfig,
   useAiConfig,
   useCollaboration,
+  useCollaborationBroadcast,
   useCommentListener,
   useComments,
   useEditor,
@@ -60,14 +35,13 @@ import {
   useMcpListener,
   usePlanConfig,
   useSavedModules,
-  useSnapshotHistory,
+  useTemplateScoring,
   useTestEmail,
   useWebSocket,
   type UseCollaborationReturn,
-  type UseSnapshotHistoryReturn,
 } from "@templatical/core/cloud";
 import type { UseFontsReturn } from "../composables/useFonts";
-import type { McpOperationPayload, MediaResult } from "@templatical/types";
+import type { McpOperationPayload } from "@templatical/types";
 import {
   computed,
   defineAsyncComponent,
@@ -76,13 +50,11 @@ import {
   onUnmounted,
   provide,
   ref,
-  shallowRef,
   watch,
 } from "vue";
-import { onClickOutside, useEventListener, useTimeoutFn } from "@vueuse/core";
 import {
+  Check,
   CircleAlert,
-  Clock,
   LoaderCircle,
   MessageCircle,
   RotateCcw,
@@ -90,6 +62,29 @@ import {
   Send,
   Sparkles,
 } from "@lucide/vue";
+import type { Translations } from "../i18n";
+
+import { useEditorCore } from "../composables/useEditorCore";
+import type { EditorCapabilities } from "../types/editor-capabilities";
+import {
+  ON_REQUEST_MEDIA_KEY,
+  AUTH_MANAGER_KEY,
+  AI_CONFIG_KEY,
+  COMMENTS_KEY,
+  SAVED_MODULES_HEADLESS_KEY,
+  SCORING_KEY,
+  CAPABILITIES_KEY,
+} from "../keys";
+import type { UseSnapshotPreviewReturn } from "./composables/useSnapshotPreview";
+import { useSnapshotPreview } from "./composables/useSnapshotPreview";
+import { useCloudPanelState } from "./composables/useCloudPanelState";
+import { useCollabUndoWarning } from "./composables/useCollabUndoWarning";
+import { useCloudFeatureFlags } from "./composables/useCloudFeatureFlags";
+import { useCloudMediaLibrary } from "./composables/useCloudMediaLibrary";
+import { useVisualSavedModules } from "./composables/useSavedModules";
+import { useDragDrop } from "../composables/useDragDrop";
+import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "../constants/timeouts";
+import { headerBtnClass } from "../constants/styleConstants";
 
 import Canvas from "../components/Canvas.vue";
 import Sidebar from "../components/Sidebar.vue";
@@ -97,26 +92,10 @@ import RightSidebar from "../components/RightSidebar.vue";
 import ViewportToggle from "../components/ViewportToggle.vue";
 import PreviewToggle from "../components/PreviewToggle.vue";
 import DarkModeToggle from "../components/DarkModeToggle.vue";
-import CustomBlockComponent from "../components/blocks/CustomBlock.vue";
-import ButtonBlock from "../components/blocks/ButtonBlock.vue";
-import DividerBlock from "../components/blocks/DividerBlock.vue";
-import HtmlBlock from "../components/blocks/HtmlBlock.vue";
-import ImageBlock from "../components/blocks/ImageBlock.vue";
-import MenuBlock from "../components/blocks/MenuBlock.vue";
-import SectionBlock from "../components/blocks/SectionBlock.vue";
-import SocialIconsBlock from "../components/blocks/SocialIconsBlock.vue";
-import SpacerBlock from "../components/blocks/SpacerBlock.vue";
-import TableBlock from "../components/blocks/TableBlock.vue";
-import TitleBlock from "../components/blocks/TitleBlock.vue";
-import ParagraphBlock from "../components/blocks/ParagraphBlock.vue";
-import VideoBlock from "../components/blocks/VideoBlock.vue";
-import CountdownBlockComponent from "../components/blocks/CountdownBlock.vue";
-import type { Translations } from "../i18n";
-import { useBlockRegistry } from "../composables/useBlockRegistry";
-import { useI18n } from "../composables/useI18n";
-import { useDragDrop } from "../composables/useDragDrop";
-import { useUiTheme } from "../composables/useUiTheme";
-import { useVisualSavedModules } from "./composables/useSavedModules";
+import CloudLoadingOverlay from "./components/CloudLoadingOverlay.vue";
+import CloudErrorOverlay from "./components/CloudErrorOverlay.vue";
+import SnapshotPreviewBanner from "./components/SnapshotPreviewBanner.vue";
+import CollabUndoToast from "./components/CollabUndoToast.vue";
 import "../styles/index.css";
 
 // Cloud async components
@@ -193,8 +172,6 @@ export interface TemplaticalCloudEditorConfig {
   displayConditions?: DisplayConditionsConfig;
   customBlocks?: CustomBlockDefinition[];
   fonts?: FontsConfig;
-  plugins?: EditorPlugin[];
-
   onChange?: (content: TemplateContent) => void;
   onSave?: (result: SaveResult) => void;
   onCreate?: (template: Template) => void;
@@ -217,78 +194,6 @@ const emit = defineEmits<{
 }>();
 
 // ---------------------------------------------------------------------------
-// i18n — translations are pre-loaded and passed as prop (same as old editor)
-// ---------------------------------------------------------------------------
-
-provide("translations", props.translations);
-
-const { t, format } = useI18n(props.translations);
-
-// ---------------------------------------------------------------------------
-// Theme
-// ---------------------------------------------------------------------------
-
-const themeOverrides = ref<ThemeOverrides>({});
-
-const themeVarMapping: Record<keyof Omit<ThemeOverrides, "dark">, string> = {
-  bg: "--tpl-bg",
-  bgElevated: "--tpl-bg-elevated",
-  bgHover: "--tpl-bg-hover",
-  bgActive: "--tpl-bg-active",
-  border: "--tpl-border",
-  borderLight: "--tpl-border-light",
-  text: "--tpl-text",
-  textMuted: "--tpl-text-muted",
-  textDim: "--tpl-text-dim",
-  primary: "--tpl-primary",
-  primaryHover: "--tpl-primary-hover",
-  primaryLight: "--tpl-primary-light",
-  secondary: "--tpl-secondary",
-  secondaryHover: "--tpl-secondary-hover",
-  secondaryLight: "--tpl-secondary-light",
-  success: "--tpl-success",
-  successLight: "--tpl-success-light",
-  warning: "--tpl-warning",
-  warningLight: "--tpl-warning-light",
-  danger: "--tpl-danger",
-  dangerLight: "--tpl-danger-light",
-  canvasBg: "--tpl-canvas-bg",
-};
-
-const themeStyles = computed(() => {
-  const styles: Record<string, string> = {};
-  const base = themeOverrides.value;
-  const isDark = resolvedTheme.value === "dark";
-  const overrides = isDark ? base.dark : base;
-
-  if (overrides) {
-    for (const [key, cssVar] of Object.entries(themeVarMapping)) {
-      const k = key as keyof Omit<ThemeOverrides, "dark">;
-      const value = overrides[k];
-      if (value) {
-        styles[cssVar] = value;
-      }
-    }
-  }
-
-  // Add drop text for drag-and-drop ghost element
-  styles["--tpl-drop-text"] = `"${props.translations.canvas.dropHere}"`;
-
-  return styles;
-});
-
-function setThemeOverrides(overrides: ThemeOverrides): void {
-  if (!planConfigInstance.hasFeature("theme_customization")) {
-    return;
-  }
-  themeOverrides.value = overrides;
-}
-
-function setUiTheme(theme: UiTheme): void {
-  editor.setUiTheme(theme);
-}
-
-// ---------------------------------------------------------------------------
 // Cloud initialization state
 // ---------------------------------------------------------------------------
 
@@ -296,8 +201,12 @@ const isInitializing = ref(true);
 const isAuthReady = ref(false);
 const initError = ref<Error | null>(null);
 
+// Tracks whether the component has been unmounted. Checked after every await
+// in async lifecycle functions to prevent post-unmount side effects.
+let _destroyed = false;
+
 // ---------------------------------------------------------------------------
-// 1. AuthManager
+// 1. AuthManager + PlanConfig (infrastructure)
 // ---------------------------------------------------------------------------
 
 const authManager = new AuthManager({
@@ -305,23 +214,19 @@ const authManager = new AuthManager({
   onError: props.config.onError,
 });
 
-// ---------------------------------------------------------------------------
-// 2. Plan config
-// ---------------------------------------------------------------------------
-
 const planConfigInstance = usePlanConfig({
   authManager,
   onError: props.config.onError,
 });
 
 // ---------------------------------------------------------------------------
-// 3. Collaboration locked blocks ref
+// 2. Collaboration locked blocks ref
 // ---------------------------------------------------------------------------
 
 const collaborationLockedBlocks = ref<Map<string, unknown>>(new Map());
 
 // ---------------------------------------------------------------------------
-// 4. Cloud editor (API-backed)
+// 3. Cloud editor (API-backed)
 // ---------------------------------------------------------------------------
 
 const editor = useEditor({
@@ -332,34 +237,14 @@ const editor = useEditor({
   lockedBlocks: collaborationLockedBlocks,
 });
 
-// UI theme (dark/light/auto) — independent from canvas dark mode
-editor.setUiTheme(props.config.uiTheme ?? "auto");
-const uiThemeRef = computed(() => editor.state.uiTheme);
-const { resolvedTheme } = useUiTheme(uiThemeRef);
-
 // ---------------------------------------------------------------------------
-// 5. Collaboration composable
-// ---------------------------------------------------------------------------
-
-let collaboration:
-  | (UseCollaborationReturn & {
-      _broadcastOperation: (payload: McpOperationPayload) => void;
-      _isProcessingRemoteOperation: () => boolean;
-    })
-  | null = null;
-
-// ---------------------------------------------------------------------------
-// 6. WebSocket
+// 4. WebSocket + MCP listener
 // ---------------------------------------------------------------------------
 
 const websocket = useWebSocket({
   authManager,
   onError: props.config.onError,
 });
-
-// ---------------------------------------------------------------------------
-// 7. MCP listener
-// ---------------------------------------------------------------------------
 
 if (props.config.mcp?.enabled) {
   useMcpListener({
@@ -370,8 +255,16 @@ if (props.config.mcp?.enabled) {
 }
 
 // ---------------------------------------------------------------------------
-// 8. Collaboration mode — wrap editor methods for broadcasting
+// 5. Collaboration — MUST be before useEditorCore so broadcast wraps
+//    editor methods first, then useHistoryInterceptor wraps AFTER
 // ---------------------------------------------------------------------------
+
+let collaboration:
+  | (UseCollaborationReturn & {
+      _broadcastOperation: (payload: McpOperationPayload) => void;
+      _isProcessingRemoteOperation: () => boolean;
+    })
+  | null = null;
 
 if (props.config.collaboration?.enabled) {
   collaboration = useCollaboration({
@@ -395,75 +288,7 @@ if (props.config.collaboration?.enabled) {
   );
 
   // Wrap editor methods to broadcast operations to peers
-  const originalAddBlock = editor.addBlock;
-  const originalUpdateBlock = editor.updateBlock;
-  const originalRemoveBlock = editor.removeBlock;
-  const originalMoveBlock = editor.moveBlock;
-  const originalUpdateSettings = editor.updateSettings;
-  const originalSetContent = editor.setContent;
-
-  editor.addBlock = (block, targetSectionId?, columnIndex?) => {
-    originalAddBlock(block, targetSectionId, columnIndex);
-    collaboration!._broadcastOperation({
-      operation: "add_block",
-      data: {
-        block,
-        section_id: targetSectionId,
-        column_index: columnIndex,
-      },
-      timestamp: Date.now(),
-    });
-  };
-
-  editor.updateBlock = (blockId, updates) => {
-    originalUpdateBlock(blockId, updates);
-    collaboration!._broadcastOperation({
-      operation: "update_block",
-      data: { block_id: blockId, updates },
-      timestamp: Date.now(),
-    });
-  };
-
-  editor.removeBlock = (blockId) => {
-    originalRemoveBlock(blockId);
-    collaboration!._broadcastOperation({
-      operation: "delete_block",
-      data: { block_id: blockId },
-      timestamp: Date.now(),
-    });
-  };
-
-  editor.moveBlock = (blockId, newIndex, targetSectionId?, columnIndex?) => {
-    originalMoveBlock(blockId, newIndex, targetSectionId, columnIndex);
-    collaboration!._broadcastOperation({
-      operation: "move_block",
-      data: {
-        block_id: blockId,
-        index: newIndex,
-        section_id: targetSectionId,
-        column_index: columnIndex,
-      },
-      timestamp: Date.now(),
-    });
-  };
-
-  editor.updateSettings = (updates) => {
-    originalUpdateSettings(updates);
-    collaboration!._broadcastOperation({
-      operation: "update_settings",
-      data: { updates },
-      timestamp: Date.now(),
-    });
-  };
-
-  editor.setContent = (content, markDirty?) => {
-    originalSetContent(content, markDirty);
-    collaboration!._broadcastOperation({
-      operation: "set_content",
-      data: { content },
-      timestamp: Date.now(),
-    });
-  };
+  useCollaborationBroadcast(editor, collaboration);
 }
 
 const isCollaborationEnabled = computed(
@@ -473,45 +298,111 @@ const isCollaborationEnabled = computed(
 );
 
 // ---------------------------------------------------------------------------
-// 9. Condition preview
+// 6. useEditorCore — shared composables, provides, plugins, keyboard
 // ---------------------------------------------------------------------------
 
-const conditionPreview = useConditionPreview(editor);
+// Forward references for circular dependencies resolved after setup
+let snapshotPreviewRef: UseSnapshotPreviewReturn | null = null;
+let collabWarningRef: ReturnType<typeof useCollabUndoWarning> | null = null;
 
-// ---------------------------------------------------------------------------
-// 10. Block actions
-// ---------------------------------------------------------------------------
-
-const blockActions = useBlockActions({
-  addBlock: editor.addBlock,
-  removeBlock: editor.removeBlock,
-  updateBlock: editor.updateBlock,
-  selectBlock: editor.selectBlock,
-  blockDefaults: props.config.blockDefaults,
+const core = useEditorCore({
+  editor,
+  config: {
+    uiTheme: props.config.uiTheme,
+    theme: undefined, // Cloud applies theme in initialize() after plan check
+    blockDefaults: props.config.blockDefaults,
+    customBlocks: [], // Cloud defers registration to initialize()
+    mergeTags: props.config.mergeTags,
+    displayConditions: props.config.displayConditions,
+    onRequestMedia: null, // Cloud uses handleRequestMedia via media library composable
+    onSave: () => {
+      saveTemplate().catch((err) => {
+        props.config.onError?.(err as Error);
+      });
+    },
+  },
+  translations: props.translations,
+  fontsManager: props.fontsManager,
+  historyOptions: collaboration
+    ? { isRemoteOperation: () => collaboration!._isProcessingRemoteOperation() }
+    : undefined,
+  autoSaveOptions: {
+    onChange: async () => {
+      if (editor.hasTemplate()) {
+        await editor.createSnapshot();
+        snapshotPreviewRef?.snapshotHistoryInstance.value?.loadSnapshots();
+      }
+    },
+    debounce: props.config.autoSaveDebounce ?? DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
+    enabled: () =>
+      props.config.autoSave !== false &&
+      planConfigInstance.hasFeature("auto_save"),
+  },
+  themeExtraStyles: () => ({
+    "--tpl-drop-text": `"${props.translations.canvas.dropHere}"`,
+  }),
+  keyboardOptions: {
+    onBeforeUndo: () => collabWarningRef?.showCollabUndoWarning(),
+  },
 });
 
 // ---------------------------------------------------------------------------
-// 11. Drag-drop
+// 7. Collab undo warning (created after core so it can use core.history.canUndo)
 // ---------------------------------------------------------------------------
 
-const dragDrop = useDragDrop({
+const collabWarning = useCollabUndoWarning({
+  isCollaborationEnabled,
+  getCollaboratorCount: () => collaboration?.collaborators.value.length ?? 0,
+  canUndo: core.history.canUndo,
+});
+collabWarningRef = collabWarning;
+
+// ---------------------------------------------------------------------------
+// 8. Snapshot preview (needs core.autoSave for pause/resume)
+// ---------------------------------------------------------------------------
+
+const snapshotPreview = useSnapshotPreview({
+  authManager,
+  editor,
+  history: core.history,
+  conditionPreview: core.conditionPreview,
+  autoSave: core.autoSave,
+  onError: props.config.onError,
+});
+
+// Connect forward reference for autoSave onChange
+snapshotPreviewRef = snapshotPreview;
+
+// ---------------------------------------------------------------------------
+// 9. Remaining cloud composables
+// ---------------------------------------------------------------------------
+
+const panelState = useCloudPanelState();
+
+const aiConfig = useAiConfig(props.config.ai);
+
+const featureFlags = useCloudFeatureFlags({
+  planConfigInstance,
+  aiConfig,
+  editor,
+});
+
+const mediaLib = useCloudMediaLibrary({
+  onRequestMedia: props.config.onRequestMedia,
+  mediaLibraryOpen: panelState.mediaLibraryOpen,
+  mediaLibraryAccept: panelState.mediaLibraryAccept,
+});
+
+const _dragDrop = useDragDrop({
   onBlockMove: editor.moveBlock,
   onBlockAdd: editor.addBlock,
 });
-
-// ---------------------------------------------------------------------------
-// 12. Exporter
-// ---------------------------------------------------------------------------
 
 const exporter = useExport({
   authManager,
   getFontsConfig: () => props.config.fonts,
   canUseCustomFonts: () => planConfigInstance.hasFeature("custom_fonts"),
 });
-
-// ---------------------------------------------------------------------------
-// 13. Test email
-// ---------------------------------------------------------------------------
 
 const testEmail = useTestEmail({
   authManager,
@@ -522,115 +413,6 @@ const testEmail = useTestEmail({
   isAuthReady,
   onBeforeTestEmail: props.config.onBeforeTestEmail,
 });
-
-// ---------------------------------------------------------------------------
-// 14. History (undo/redo)
-// ---------------------------------------------------------------------------
-
-const history = useHistory({
-  content: editor.content,
-  setContent: (content, markDirty?) => editor.setContent(content, markDirty),
-  isRemoteOperation: collaboration
-    ? () => collaboration!._isProcessingRemoteOperation()
-    : undefined,
-});
-
-// Wrap editor mutation methods to record history snapshots
-const historyOriginalAddBlock = editor.addBlock;
-const historyOriginalRemoveBlock = editor.removeBlock;
-const historyOriginalMoveBlock = editor.moveBlock;
-const historyOriginalUpdateBlock = editor.updateBlock;
-const historyOriginalUpdateSettings = editor.updateSettings;
-
-editor.addBlock = (block, targetSectionId?, columnIndex?, index?) => {
-  history.record();
-  historyOriginalAddBlock(block, targetSectionId, columnIndex, index);
-};
-
-editor.removeBlock = (blockId) => {
-  history.record();
-  historyOriginalRemoveBlock(blockId);
-};
-
-editor.moveBlock = (blockId, newIndex, targetSectionId?, columnIndex?) => {
-  history.record();
-  historyOriginalMoveBlock(blockId, newIndex, targetSectionId, columnIndex);
-};
-
-editor.updateBlock = (blockId, updates) => {
-  history.recordDebounced(blockId);
-  historyOriginalUpdateBlock(blockId, updates);
-};
-
-editor.updateSettings = (updates) => {
-  history.record();
-  historyOriginalUpdateSettings(updates);
-};
-
-// ---------------------------------------------------------------------------
-// 15. Collab undo warning
-// ---------------------------------------------------------------------------
-
-let collabUndoWarningFired = false;
-const collabUndoWarningVisible = ref(false);
-
-function showCollabUndoWarning(): void {
-  if (
-    collabUndoWarningFired ||
-    !collaboration ||
-    !isCollaborationEnabled.value ||
-    collaboration.collaborators.value.length === 0 ||
-    !history.canUndo.value
-  ) {
-    return;
-  }
-
-  collabUndoWarningFired = true;
-  collabUndoWarningVisible.value = true;
-  useTimeoutFn(() => {
-    collabUndoWarningVisible.value = false;
-  }, 4000);
-}
-
-// ---------------------------------------------------------------------------
-// 16. Auto-save
-// ---------------------------------------------------------------------------
-
-const autoSave = useAutoSave({
-  content: editor.content,
-  isDirty: () => editor.state.isDirty,
-  onChange: async () => {
-    if (editor.hasTemplate()) {
-      await editor.createSnapshot();
-      if (snapshotHistoryInstance.value) {
-        snapshotHistoryInstance.value.loadSnapshots();
-      }
-    }
-  },
-  debounce: props.config.autoSaveDebounce ?? 5000,
-  enabled: () =>
-    props.config.autoSave !== false &&
-    planConfigInstance.hasFeature("auto_save"),
-});
-
-// Pause/resume auto-save during history navigation
-watch(history.isNavigating, (navigating) => {
-  if (navigating) {
-    autoSave.pause();
-  } else {
-    autoSave.resume();
-  }
-});
-
-// ---------------------------------------------------------------------------
-// 17. AI config
-// ---------------------------------------------------------------------------
-
-const aiConfig = useAiConfig(props.config.ai);
-
-// ---------------------------------------------------------------------------
-// 18. Comments
-// ---------------------------------------------------------------------------
 
 const commentsInstance = useComments({
   authManager,
@@ -649,335 +431,75 @@ useCommentListener({
   channel: websocket.channel,
 });
 
-// ---------------------------------------------------------------------------
-// 19. Saved modules
-// ---------------------------------------------------------------------------
-
 const savedModulesHeadless = useSavedModules({
   authManager,
   onError: props.config.onError,
 });
 const savedModulesVisual = useVisualSavedModules(savedModulesHeadless);
 
-// ---------------------------------------------------------------------------
-// 20. Block registry
-// ---------------------------------------------------------------------------
-
-const registry = useBlockRegistry();
-
-// Register all built-in block types
-registry.registerBuiltIn("section", {
-  component: SectionBlock,
-  createBlock: () => createSectionBlock(),
-  sidebarItem: { type: "section", label: "Section", isCustom: false },
-});
-registry.registerBuiltIn("title", {
-  component: TitleBlock,
-  createBlock: () => createTitleBlock(),
-  sidebarItem: { type: "title", label: "Title", isCustom: false },
-});
-registry.registerBuiltIn("paragraph", {
-  component: ParagraphBlock,
-  createBlock: () => createParagraphBlock(),
-  sidebarItem: { type: "paragraph", label: "Paragraph", isCustom: false },
-});
-registry.registerBuiltIn("image", {
-  component: ImageBlock,
-  createBlock: () => createImageBlock(),
-  sidebarItem: { type: "image", label: "Image", isCustom: false },
-});
-registry.registerBuiltIn("button", {
-  component: ButtonBlock,
-  createBlock: () => createButtonBlock(),
-  sidebarItem: { type: "button", label: "Button", isCustom: false },
-});
-registry.registerBuiltIn("divider", {
-  component: DividerBlock,
-  createBlock: () => createDividerBlock(),
-  sidebarItem: { type: "divider", label: "Divider", isCustom: false },
-});
-registry.registerBuiltIn("video", {
-  component: VideoBlock,
-  createBlock: () => createVideoBlock(),
-  sidebarItem: { type: "video", label: "Video", isCustom: false },
-});
-registry.registerBuiltIn("social", {
-  component: SocialIconsBlock,
-  createBlock: () => createSocialIconsBlock(),
-  sidebarItem: { type: "social", label: "Social", isCustom: false },
-});
-registry.registerBuiltIn("menu", {
-  component: MenuBlock,
-  createBlock: () => createMenuBlock(),
-  sidebarItem: { type: "menu", label: "Menu", isCustom: false },
-});
-registry.registerBuiltIn("table", {
-  component: TableBlock,
-  createBlock: () => createTableBlock(),
-  sidebarItem: { type: "table", label: "Table", isCustom: false },
-});
-registry.registerBuiltIn("spacer", {
-  component: SpacerBlock,
-  createBlock: () => createSpacerBlock(),
-  sidebarItem: { type: "spacer", label: "Spacer", isCustom: false },
-});
-registry.registerBuiltIn("html", {
-  component: HtmlBlock,
-  createBlock: () => createHtmlBlock(),
-  sidebarItem: { type: "html", label: "HTML", isCustom: false },
-});
-registry.registerBuiltIn("countdown", {
-  component: CountdownBlockComponent,
-  createBlock: () => createCountdownBlock(),
-  sidebarItem: { type: "countdown", label: "Countdown", isCustom: false },
+const scoringInstance = useTemplateScoring({
+  authManager,
+  getTemplateId: () => editor.state.template?.id ?? null,
 });
 
 // ---------------------------------------------------------------------------
-// 21. Provides — all synchronous, matching what child components inject
+// 10. Cloud-only provides
 // ---------------------------------------------------------------------------
 
-provide("editor", editor);
-provide("history", history);
-provide("blockActions", blockActions);
-provide("dragDrop", dragDrop);
-provide("conditionPreview", conditionPreview);
-provide("fontsManager", props.fontsManager);
-provide("themeStyles", themeStyles);
-provide("tplUiTheme", resolvedTheme);
-provide("blockDefaults", props.config.blockDefaults);
-provide("blockRegistry", registry);
-provide("customBlockDefinitions", props.config.customBlocks ?? []);
+provide(ON_REQUEST_MEDIA_KEY, mediaLib.handleRequestMedia);
+provide(AUTH_MANAGER_KEY, authManager);
+provide(AI_CONFIG_KEY, aiConfig);
+provide(COMMENTS_KEY, commentsInstance);
+provide(SAVED_MODULES_HEADLESS_KEY, savedModulesHeadless);
+provide(SCORING_KEY, scoringInstance);
 
-// Merge tags
-const mergeTagSyntax = resolveSyntax(props.config.mergeTags?.syntax);
-provide("mergeTags", props.config.mergeTags?.tags ?? []);
-provide("mergeTagSyntax", mergeTagSyntax);
-provide("onRequestMergeTag", props.config.mergeTags?.onRequest ?? null);
-
-// Display conditions
-provide("displayConditions", props.config.displayConditions?.conditions ?? []);
-provide(
-  "allowCustomConditions",
-  props.config.displayConditions?.allowCustom ?? false,
-);
-
-// Media — provide config-like object for ImageField + separate provide
-provide("onRequestMedia", handleRequestMedia);
-provide("config", { onRequestMedia: handleRequestMedia });
-
-// Cloud-specific provides
-provide("authManager", authManager);
-provide(
-  "projectId",
-  computed(() => authManager.projectId),
-);
-provide("planConfig", planConfigInstance);
-provide("aiConfig", aiConfig);
-provide("comments", commentsInstance);
-provide("openCommentsForBlock", openCommentsForBlock);
-provide("savedModules", savedModulesVisual);
-provide("savedModulesHeadless", savedModulesHeadless);
+// Override the default empty capabilities from useEditorCore with cloud capabilities.
+// OSS components use this single inject instead of individual cloud injects.
+provide(CAPABILITIES_KEY, {
+  plan: planConfigInstance,
+  ai: aiConfig,
+  comments: {
+    getBlockCount: (blockId: string) =>
+      commentsInstance.commentCountByBlock.value.get(blockId) ?? 0,
+    openForBlock: openCommentsForBlock,
+  },
+  savedModules: {
+    openSaveDialog: (blockId: string) =>
+      savedModulesVisual.openSaveDialog(blockId),
+    openBrowser: () => savedModulesVisual.openBrowserModal(),
+    moduleCount: computed(() => savedModulesHeadless.modules.value.length),
+  },
+} satisfies EditorCapabilities);
 
 // ---------------------------------------------------------------------------
-// Snapshot history
+// Theme overrides (plan-gated)
 // ---------------------------------------------------------------------------
 
-const snapshotHistoryInstance = shallowRef<UseSnapshotHistoryReturn | null>(
-  null,
-);
-const previewingSnapshot = ref<TemplateSnapshot | null>(null);
-const contentBeforePreview = ref<TemplateContent | null>(null);
-
-const isPreviewingSnapshot = computed(() => previewingSnapshot.value !== null);
-const snapshotHistorySnapshots = computed(
-  () => snapshotHistoryInstance.value?.snapshots.value ?? [],
-);
-const snapshotHistoryIsLoading = computed(
-  () => snapshotHistoryInstance.value?.isLoading.value ?? false,
-);
-const snapshotHistoryIsRestoring = computed(
-  () => snapshotHistoryInstance.value?.isRestoring.value ?? false,
-);
-
-function initSnapshotHistory(): void {
-  if (editor.state.template?.id && !snapshotHistoryInstance.value) {
-    snapshotHistoryInstance.value = useSnapshotHistory({
-      authManager,
-      templateId: editor.state.template.id,
-      onRestore: handleRestore,
-      onError: props.config.onError,
-    });
-    snapshotHistoryInstance.value.loadSnapshots();
-  }
-}
-
-function handleRestore(template: { content: TemplateContent }): void {
-  editor.setContent(template.content, false);
-  history.clear();
-  conditionPreview.reset();
-}
-
-async function handleSnapshotNavigate(
-  snapshot: TemplateSnapshot,
-): Promise<void> {
-  if (previewingSnapshot.value) {
-    previewingSnapshot.value = snapshot;
-    editor.setContent(snapshot.content, false);
+function setThemeOverrides(overrides: ThemeOverrides): void {
+  if (!planConfigInstance.hasFeature("theme_customization")) {
     return;
   }
-
-  if (editor.state.isDirty && editor.hasTemplate()) {
-    await editor.createSnapshot();
-  }
-
-  contentBeforePreview.value = JSON.parse(JSON.stringify(editor.content.value));
-
-  autoSave.pause();
-  previewingSnapshot.value = snapshot;
-  editor.setContent(snapshot.content, false);
+  core.themeOverrides.value = overrides;
 }
 
-async function confirmRestoreSnapshot(): Promise<void> {
-  if (!previewingSnapshot.value || !snapshotHistoryInstance.value) return;
-
-  await snapshotHistoryInstance.value.restoreSnapshot(
-    previewingSnapshot.value.id,
-  );
-  await snapshotHistoryInstance.value.loadSnapshots();
-
-  previewingSnapshot.value = null;
-  contentBeforePreview.value = null;
-
-  autoSave.resume();
-}
-
-function cancelPreview(): void {
-  if (!previewingSnapshot.value || !contentBeforePreview.value) return;
-
-  editor.setContent(contentBeforePreview.value, false);
-
-  previewingSnapshot.value = null;
-  contentBeforePreview.value = null;
-
-  autoSave.resume();
-}
-
-async function loadSnapshotHistory(): Promise<void> {
-  if (snapshotHistoryInstance.value) {
-    await snapshotHistoryInstance.value.loadSnapshots();
-  }
+function setUiTheme(theme: UiTheme): void {
+  editor.setUiTheme(theme);
 }
 
 // ---------------------------------------------------------------------------
-// Feature flags and computed state
+// Comments sidebar ref for block filtering
 // ---------------------------------------------------------------------------
 
-const canUseAiGeneration = computed(
-  () =>
-    planConfigInstance.hasFeature("ai_generation") &&
-    aiConfig.hasAnyMenuFeature.value,
-);
-const canSendTestEmail = computed(() =>
-  planConfigInstance.hasFeature("test_email"),
-);
-const hasTemplateSaved = computed(() => !!editor.state.template?.id);
-const isWhiteLabeled = computed(() =>
-  planConfigInstance.hasFeature("white_label"),
-);
-const templateLimit = computed(
-  () => planConfigInstance.config.value?.limits.max_templates ?? null,
-);
-const templateCount = computed(
-  () => planConfigInstance.config.value?.template_count ?? 0,
-);
-const isSaveExporting = ref(false);
-
-// ---------------------------------------------------------------------------
-// Cloud UI state
-// ---------------------------------------------------------------------------
-
-const aiChatOpen = ref(false);
-const scoringPanelOpen = ref(false);
-const designReferenceOpen = ref(false);
-const commentsOpen = ref(false);
-const testEmailModalOpen = ref(false);
-const mediaLibraryOpen = ref(false);
-const mediaLibraryAccept = ref<MediaCategory[] | undefined>(undefined);
-const aiMenuOpen = ref(false);
-const aiMenuRef = ref<HTMLElement | null>(null);
-
-const rightPanelOpen = computed(
-  () =>
-    aiChatOpen.value ||
-    scoringPanelOpen.value ||
-    designReferenceOpen.value ||
-    commentsOpen.value,
+const commentsSidebarRef = ref<InstanceType<typeof CommentsSidebar> | null>(
+  null,
 );
 
-// Mutual exclusion: only one right panel at a time
-watch(scoringPanelOpen, (isOpen) => {
-  if (isOpen) {
-    aiChatOpen.value = false;
-    designReferenceOpen.value = false;
-    commentsOpen.value = false;
-  }
-});
-watch(aiChatOpen, (isOpen) => {
-  if (isOpen) {
-    scoringPanelOpen.value = false;
-    designReferenceOpen.value = false;
-    commentsOpen.value = false;
-  }
-});
-watch(designReferenceOpen, (isOpen) => {
-  if (isOpen) {
-    aiChatOpen.value = false;
-    scoringPanelOpen.value = false;
-    commentsOpen.value = false;
-  }
-});
-watch(commentsOpen, (isOpen) => {
-  if (isOpen) {
-    aiChatOpen.value = false;
-    scoringPanelOpen.value = false;
-    designReferenceOpen.value = false;
-  }
-});
-
-const activeAiFeature = computed<AiFeature | null>(() => {
-  if (aiChatOpen.value) return "ai-chat";
-  if (designReferenceOpen.value) return "design-reference";
-  if (scoringPanelOpen.value) return "scoring";
-  return null;
-});
-
-const aiButtonActive = computed(
-  () =>
-    aiMenuOpen.value ||
-    aiChatOpen.value ||
-    designReferenceOpen.value ||
-    scoringPanelOpen.value,
-);
-
-function toggleAiMenu(): void {
-  aiMenuOpen.value = !aiMenuOpen.value;
+function openCommentsForBlock(blockId: string): void {
+  panelState.commentsOpen.value = true;
+  nextTick(() => {
+    commentsSidebarRef.value?.filterByBlock(blockId);
+  });
 }
-
-function handleAiFeatureSelect(feature: AiFeature): void {
-  aiMenuOpen.value = false;
-
-  if (feature === "ai-chat") {
-    aiChatOpen.value = !aiChatOpen.value;
-  } else if (feature === "design-reference") {
-    designReferenceOpen.value = !designReferenceOpen.value;
-  } else if (feature === "scoring") {
-    scoringPanelOpen.value = !scoringPanelOpen.value;
-  }
-}
-
-onClickOutside(aiMenuRef, () => {
-  aiMenuOpen.value = false;
-});
 
 // ---------------------------------------------------------------------------
 // Test email handler
@@ -986,7 +508,7 @@ onClickOutside(aiMenuRef, () => {
 async function handleSendTestEmail(recipient: string): Promise<void> {
   try {
     await testEmail.sendTestEmail(recipient);
-    testEmailModalOpen.value = false;
+    panelState.testEmailModalOpen.value = false;
   } catch {
     // Error is already handled in the composable
   }
@@ -1009,232 +531,16 @@ function handleModuleInsert(
 }
 
 // ---------------------------------------------------------------------------
-// Comments sidebar ref for block filtering
+// Custom blocks pre-render for save
 // ---------------------------------------------------------------------------
 
-const commentsSidebarRef = ref<InstanceType<typeof CommentsSidebar> | null>(
-  null,
-);
-
-function openCommentsForBlock(blockId: string): void {
-  commentsOpen.value = true;
-  nextTick(() => {
-    commentsSidebarRef.value?.filterByBlock(blockId);
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Keyboard shortcuts
-// ---------------------------------------------------------------------------
-
-const isMac = ref(false);
-
-function handleKeydown(event: KeyboardEvent): void {
-  const modifier = isMac.value ? event.metaKey : event.ctrlKey;
-
-  if (!modifier) return;
-
-  // Cmd+S / Ctrl+S: save
-  if (event.key === "s") {
-    event.preventDefault();
-    saveTemplate().catch((err) => props.config.onError?.(err as Error));
-    return;
-  }
-
-  // Cmd+Z / Ctrl+Z: undo/redo
-  if (event.key.toLowerCase() === "z") {
-    // Let TipTap handle its own undo/redo when text is focused
-    const target = event.target as HTMLElement;
-    if (target.closest(".tpl-text-editable")) {
-      return;
-    }
-
-    event.preventDefault();
-
-    if (event.shiftKey) {
-      history.redo();
-    } else {
-      showCollabUndoWarning();
-      history.undo();
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Media library handler
-// ---------------------------------------------------------------------------
-
-let mediaResolve: ((result: MediaResult | null) => void) | null = null;
-
-async function handleRequestMedia(): Promise<MediaResult | null> {
-  // If consumer provides a custom media handler, use it
-  if (props.config.onRequestMedia) {
-    const item = await props.config.onRequestMedia({ accept: ["images"] });
-    if (!item) return null;
-    return { url: item.url, alt: item.alt_text || undefined };
-  }
-
-  // Otherwise open the built-in media library
-  mediaLibraryAccept.value = ["images"];
-  mediaLibraryOpen.value = true;
-  return new Promise<MediaResult | null>((resolve) => {
-    mediaResolve = (result) => {
-      resolve(result);
-    };
-  });
-}
-
-function handleMediaSelect(item: MediaItem): void {
-  mediaLibraryOpen.value = false;
-  mediaResolve?.({ url: item.url, alt: item.alt_text || undefined });
-  mediaResolve = null;
-}
-
-function handleMediaLibraryClose(): void {
-  mediaLibraryOpen.value = false;
-  mediaResolve?.(null);
-  mediaResolve = null;
-}
-
-// ---------------------------------------------------------------------------
-// Cloud initialization (async — auth, health check, plan config, features)
-// ---------------------------------------------------------------------------
-
-async function initialize(): Promise<void> {
-  isInitializing.value = true;
-  initError.value = null;
-
-  try {
-    // Auth
-    await authManager.initialize();
-    isAuthReady.value = true;
-
-    // Health check
-    const healthResult = await performHealthCheck({ authManager });
-
-    if (!healthResult.api.ok) {
-      throw new Error("Health check failed: API is not reachable");
-    }
-
-    if (!healthResult.auth.ok) {
-      throw new Error(
-        `Health check failed: authentication error${healthResult.auth.error ? ` - ${healthResult.auth.error}` : ""}`,
-      );
-    }
-
-    if (!healthResult.websocket.ok) {
-      console.warn(
-        "[Templatical] WebSocket health check failed:",
-        healthResult.websocket.error ?? "unknown error",
-        "— real-time features will be disabled.",
-      );
-    }
-
-    // Plan config
-    await planConfigInstance.fetchConfig();
-
-    // Update fonts
-    props.fontsManager.setCustomFontsEnabled(
-      planConfigInstance.hasFeature("custom_fonts"),
-    );
-
-    // Register custom blocks if feature is enabled and definitions provided
-    if (
-      props.config.customBlocks?.length &&
-      planConfigInstance.hasFeature("custom_blocks")
-    ) {
-      for (const definition of props.config.customBlocks) {
-        registry.registerCustom(definition, CustomBlockComponent);
-      }
-    }
-
-    // Apply theme
-    if (
-      props.config.theme &&
-      planConfigInstance.hasFeature("theme_customization")
-    ) {
-      themeOverrides.value = props.config.theme;
-    }
-
-    // Load saved modules
-    if (
-      props.config.modules !== false &&
-      planConfigInstance.hasFeature("saved_modules")
-    ) {
-      savedModulesHeadless.loadModules();
-    }
-
-    emit("ready");
-  } catch (error) {
-    const wrappedError =
-      error instanceof Error
-        ? error
-        : new Error("Initialization failed", { cause: error });
-    initError.value = wrappedError;
-    props.config.onError?.(wrappedError);
-  } finally {
-    isInitializing.value = false;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Error display helpers
-// ---------------------------------------------------------------------------
-
-function getErrorMessage(error: Error): string {
-  if (
-    "isUnauthorized" in error &&
-    (error as { isUnauthorized: boolean }).isUnauthorized
-  ) {
-    return t.error.authFailed;
-  }
-  if ("isNotFound" in error && (error as { isNotFound: boolean }).isNotFound) {
-    return t.error.templateNotFound;
-  }
-  return t.error.defaultMessage;
-}
-
-function isNotFoundError(error: Error): boolean {
-  return (
-    "isNotFound" in error && !!(error as { isNotFound: boolean }).isNotFound
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Template lifecycle methods
-// ---------------------------------------------------------------------------
-
-function getWebSocketConfig() {
-  return resolveWebSocketConfig(planConfigInstance.config.value!.websocket);
-}
-
-async function createTemplate(content?: TemplateContent): Promise<Template> {
-  const template = await editor.create(content);
-  props.config.onCreate?.(template);
-  initSnapshotHistory();
-  websocket.connect(template.id, getWebSocketConfig());
-  return template;
-}
-
-async function loadTemplate(templateId: string): Promise<Template> {
-  const template = await editor.load(templateId);
-  props.config.onLoad?.(template);
-  initSnapshotHistory();
-  websocket.connect(template.id, getWebSocketConfig());
-  return template;
-}
-
-/**
- * Pre-renders all custom blocks in the content by adding `renderedHtml`
- * so the backend can include them in MJML export output.
- */
 async function preRenderCustomBlocks(content: TemplateContent): Promise<void> {
   const renderBlock = async (block: Block): Promise<void> => {
     if (isCustomBlock(block)) {
       const customBlock = block as CustomBlock;
       try {
         customBlock.renderedHtml =
-          await registry.renderCustomBlock(customBlock);
+          await core.registry.renderCustomBlock(customBlock);
       } catch {
         customBlock.renderedHtml = `<!-- Custom block render error: ${customBlock.customType} -->`;
       }
@@ -1255,20 +561,136 @@ async function preRenderCustomBlocks(content: TemplateContent): Promise<void> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Cloud initialization
+// ---------------------------------------------------------------------------
+
+async function initialize(): Promise<void> {
+  isInitializing.value = true;
+  initError.value = null;
+
+  try {
+    // Auth
+    await authManager.initialize();
+    if (_destroyed) return;
+    isAuthReady.value = true;
+
+    // Health check
+    const healthResult = await performHealthCheck({ authManager });
+    if (_destroyed) return;
+
+    if (!healthResult.api.ok) {
+      throw new Error("Health check failed: API is not reachable");
+    }
+
+    if (!healthResult.auth.ok) {
+      throw new Error(
+        `Health check failed: authentication error${healthResult.auth.error ? ` - ${healthResult.auth.error}` : ""}`,
+      );
+    }
+
+    if (!healthResult.websocket.ok) {
+      console.warn(
+        "[Templatical] WebSocket health check failed:",
+        healthResult.websocket.error ?? "unknown error",
+        "-- real-time features will be disabled.",
+      );
+    }
+
+    // Plan config
+    await planConfigInstance.fetchConfig();
+    if (_destroyed) return;
+
+    // Update fonts
+    props.fontsManager.setCustomFontsEnabled(
+      planConfigInstance.hasFeature("custom_fonts"),
+    );
+
+    // Register custom blocks if feature is enabled and definitions provided
+    if (
+      props.config.customBlocks?.length &&
+      planConfigInstance.hasFeature("custom_blocks")
+    ) {
+      core.registerCustomBlocks(props.config.customBlocks);
+    }
+
+    // Apply theme
+    if (
+      props.config.theme &&
+      planConfigInstance.hasFeature("theme_customization")
+    ) {
+      core.themeOverrides.value = props.config.theme;
+    }
+
+    // Load saved modules
+    if (
+      props.config.modules !== false &&
+      planConfigInstance.hasFeature("saved_modules")
+    ) {
+      savedModulesHeadless.loadModules();
+    }
+
+    emit("ready");
+  } catch (error) {
+    if (_destroyed) return;
+    const wrappedError =
+      error instanceof Error
+        ? error
+        : new Error("Initialization failed", { cause: error });
+    initError.value = wrappedError;
+    props.config.onError?.(wrappedError);
+  } finally {
+    if (!_destroyed) {
+      isInitializing.value = false;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Template lifecycle methods
+// ---------------------------------------------------------------------------
+
+function getWebSocketConfig() {
+  return resolveWebSocketConfig(planConfigInstance.config.value!.websocket);
+}
+
+async function createTemplate(content?: TemplateContent): Promise<Template> {
+  const template = await editor.create(content);
+  if (_destroyed) return template;
+  props.config.onCreate?.(template);
+  snapshotPreview.initSnapshotHistory();
+  websocket.connect(template.id, getWebSocketConfig());
+  return template;
+}
+
+async function loadTemplate(templateId: string): Promise<Template> {
+  const template = await editor.load(templateId);
+  if (_destroyed) return template;
+  props.config.onLoad?.(template);
+  snapshotPreview.initSnapshotHistory();
+  websocket.connect(template.id, getWebSocketConfig());
+  return template;
+}
+
 async function saveTemplate(): Promise<SaveResult> {
-  isSaveExporting.value = true;
+  featureFlags.isSaveExporting.value = true;
+  featureFlags.saveStatus.value = "idle";
   try {
     // Pre-render custom blocks so backend can include them in MJML export
     await preRenderCustomBlocks(editor.content.value);
+    if (_destroyed) throw new Error("Component unmounted during save");
 
     const template = await editor.save();
-    initSnapshotHistory();
+    if (_destroyed) throw new Error("Component unmounted during save");
 
-    if (snapshotHistoryInstance.value) {
-      snapshotHistoryInstance.value.loadSnapshots();
+    snapshotPreview.initSnapshotHistory();
+
+    if (snapshotPreview.snapshotHistoryInstance.value) {
+      snapshotPreview.snapshotHistoryInstance.value.loadSnapshots();
     }
 
     const exportResult = await exporter.exportHtml(template.id);
+    if (_destroyed) throw new Error("Component unmounted during save");
 
     const saveResult: SaveResult = {
       templateId: template.id,
@@ -1279,29 +701,37 @@ async function saveTemplate(): Promise<SaveResult> {
 
     props.config.onSave?.(saveResult);
 
+    featureFlags.saveStatus.value = "saved";
+    featureFlags.startSaveStatusClear();
+
     return saveResult;
+  } catch (error) {
+    if (!_destroyed) {
+      featureFlags.saveStatus.value = "error";
+      featureFlags.saveErrorMessage.value =
+        error instanceof Error ? error.message : "Save failed";
+    }
+    throw error;
   } finally {
-    isSaveExporting.value = false;
+    if (!_destroyed) {
+      featureFlags.isSaveExporting.value = false;
+    }
   }
 }
-
-// ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 
-useEventListener(document, "keydown", handleKeydown);
-
 onMounted(() => {
-  isMac.value = navigator.platform.toUpperCase().includes("MAC");
   initialize();
 });
 
 onUnmounted(() => {
+  _destroyed = true;
+  props.fontsManager.cleanupFontLinks();
   websocket.disconnect();
-  history.destroy();
-  autoSave.destroy();
+  core.destroy();
   props.config.onUnmount?.();
 });
 
@@ -1324,8 +754,9 @@ defineExpose({
 <template>
   <div
     class="tpl tpl:relative tpl:h-full tpl:overflow-hidden"
-    :data-tpl-theme="resolvedTheme"
-    :style="themeStyles"
+    :class="{ 'tpl:dark': editor.state.darkMode }"
+    :data-tpl-theme="core.resolvedTheme.value"
+    :style="core.themeStyles.value"
   >
     <!-- Loading overlay -->
     <Transition
@@ -1336,99 +767,9 @@ defineExpose({
       leave-from-class="tpl:opacity-100"
       leave-to-class="tpl:opacity-0"
     >
-      <div
-        v-if="isInitializing || editor.state.isLoading"
-        class="tpl-loading tpl:absolute tpl:inset-0 tpl:z-overlay tpl:flex tpl:flex-col"
-        style="background-color: var(--tpl-bg)"
-      >
-        <!-- Skeleton header -->
-        <div
-          class="tpl:flex tpl:h-14 tpl:shrink-0 tpl:items-center tpl:justify-between tpl:px-4"
-          style="border-bottom: 1px solid var(--tpl-border)"
-        >
-          <div
-            class="tpl-shimmer tpl:h-5 tpl:w-28 tpl:rounded-[var(--tpl-radius-sm)]"
-          ></div>
-          <div class="tpl:flex tpl:gap-3">
-            <div
-              class="tpl-shimmer tpl:h-8 tpl:w-20 tpl:rounded-[var(--tpl-radius-sm)]"
-            ></div>
-            <div
-              class="tpl-shimmer tpl:h-8 tpl:w-20 tpl:rounded-[var(--tpl-radius-sm)]"
-            ></div>
-          </div>
-        </div>
-        <!-- Skeleton body -->
-        <div class="tpl:flex tpl:flex-1 tpl:overflow-hidden">
-          <!-- Left sidebar rail -->
-          <div
-            class="tpl:flex tpl:w-12 tpl:shrink-0 tpl:flex-col tpl:items-center tpl:gap-4 tpl:py-5"
-            style="border-right: 1px solid var(--tpl-border)"
-          >
-            <div
-              v-for="n in 5"
-              :key="n"
-              class="tpl-shimmer tpl:size-7 tpl:rounded-[var(--tpl-radius-sm)]"
-            ></div>
-          </div>
-          <!-- Canvas area -->
-          <div
-            class="tpl:flex tpl:flex-1 tpl:items-start tpl:justify-center tpl:overflow-auto tpl:p-8"
-            style="background-color: var(--tpl-canvas-bg)"
-          >
-            <div
-              class="tpl:w-full tpl:max-w-[600px] tpl:rounded-[var(--tpl-radius)] tpl:p-6"
-              style="
-                background-color: var(--tpl-bg);
-                box-shadow: var(--tpl-shadow-sm);
-              "
-            >
-              <div class="tpl:space-y-2 tpl:py-4">
-                <div class="tpl-shimmer tpl:h-3 tpl:w-3/4 tpl:rounded"></div>
-                <div class="tpl-shimmer tpl:h-3 tpl:w-full tpl:rounded"></div>
-                <div class="tpl-shimmer tpl:h-3 tpl:w-5/6 tpl:rounded"></div>
-              </div>
-              <div class="tpl:py-4">
-                <div
-                  class="tpl-shimmer tpl:h-44 tpl:w-full tpl:rounded-[var(--tpl-radius-sm)]"
-                ></div>
-              </div>
-              <div class="tpl:space-y-2 tpl:py-4">
-                <div class="tpl-shimmer tpl:h-3 tpl:w-full tpl:rounded"></div>
-                <div class="tpl-shimmer tpl:h-3 tpl:w-2/3 tpl:rounded"></div>
-              </div>
-              <div class="tpl:flex tpl:justify-center tpl:py-4">
-                <div
-                  class="tpl-shimmer tpl:h-10 tpl:w-36 tpl:rounded-[var(--tpl-radius-sm)]"
-                ></div>
-              </div>
-              <div class="tpl:space-y-2 tpl:py-4">
-                <div
-                  class="tpl-shimmer tpl:mx-auto tpl:h-2.5 tpl:w-1/2 tpl:rounded"
-                ></div>
-                <div
-                  class="tpl-shimmer tpl:mx-auto tpl:h-2.5 tpl:w-1/3 tpl:rounded"
-                ></div>
-              </div>
-            </div>
-          </div>
-          <!-- Right panel -->
-          <div
-            class="tpl:flex tpl:w-[320px] tpl:shrink-0 tpl:flex-col tpl:gap-4 tpl:p-4"
-            style="border-left: 1px solid var(--tpl-border)"
-          >
-            <div
-              class="tpl-shimmer tpl:h-8 tpl:rounded-[var(--tpl-radius-sm)]"
-            ></div>
-            <div
-              class="tpl-shimmer tpl:h-32 tpl:rounded-[var(--tpl-radius)]"
-            ></div>
-            <div
-              class="tpl-shimmer tpl:h-32 tpl:rounded-[var(--tpl-radius)]"
-            ></div>
-          </div>
-        </div>
-      </div>
+      <CloudLoadingOverlay
+        :visible="isInitializing || editor.state.isLoading"
+      />
     </Transition>
 
     <!-- Error overlay -->
@@ -1440,52 +781,16 @@ defineExpose({
       leave-from-class="tpl:opacity-100"
       leave-to-class="tpl:opacity-0"
     >
-      <div
-        v-if="initError && !isInitializing"
-        role="alert"
-        class="tpl-error tpl:absolute tpl:inset-0 tpl:z-overlay tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-6 tpl:px-8"
-        style="background-color: var(--tpl-bg)"
-      >
-        <div
-          class="tpl:flex tpl:size-16 tpl:items-center tpl:justify-center tpl:rounded-full"
-          style="background-color: var(--tpl-danger-light)"
-        >
-          <CircleAlert
-            :size="32"
-            :stroke-width="1.5"
-            style="color: var(--tpl-danger)"
-          />
-        </div>
-        <div
-          class="tpl:flex tpl:flex-col tpl:items-center tpl:gap-2 tpl:text-center"
-        >
-          <h2
-            class="tpl:text-lg tpl:font-semibold"
-            style="color: var(--tpl-text)"
-          >
-            {{ t.error.title }}
-          </h2>
-          <p
-            class="tpl:max-w-md tpl:text-sm"
-            style="color: var(--tpl-text-muted)"
-          >
-            {{ getErrorMessage(initError) }}
-          </p>
-        </div>
-        <button
-          v-if="!isNotFoundError(initError)"
-          class="tpl-btn tpl-btn-primary tpl:inline-flex tpl:items-center tpl:gap-2 tpl:rounded-md tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90"
-          style="background-color: var(--tpl-primary); color: var(--tpl-bg)"
-          @click="initialize"
-        >
-          {{ t.error.retry }}
-        </button>
-      </div>
+      <CloudErrorOverlay
+        :error="initError"
+        :visible="!!initError && !isInitializing"
+        @retry="initialize"
+      />
     </Transition>
 
-    <!-- Header -->
+    <!-- Header — absolute, full width, above everything -->
     <header
-      class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:flex tpl:h-14 tpl:items-center tpl:justify-between tpl:px-4"
+      class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[1fr_auto_1fr] tpl:items-center tpl:px-4"
       style="
         background-color: color-mix(in srgb, var(--tpl-bg) 80%, transparent);
         backdrop-filter: blur(12px);
@@ -1499,9 +804,8 @@ defineExpose({
         class="tpl-header-left tpl:flex tpl:min-w-[200px] tpl:items-center tpl:gap-3"
       >
         <div
-          v-if="!isWhiteLabeled"
-          class="tpl-logo tpl:flex tpl:items-center tpl:gap-2.5 tpl:text-sm tpl:font-semibold"
-          style="color: var(--tpl-text)"
+          v-if="!featureFlags.isWhiteLabeled.value"
+          class="tpl-logo tpl:flex tpl:items-center tpl:gap-2.5 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
         >
           <img
             :src="authManager.resolveUrl('/logo.svg')"
@@ -1510,17 +814,16 @@ defineExpose({
             height="24"
             class="tpl:shrink-0"
           />
-          <span style="letter-spacing: -0.01em">{{ t.header.title }}</span>
+          <span style="letter-spacing: -0.01em">{{ core.t.header.title }}</span>
         </div>
         <span
-          v-if="templateLimit !== null"
-          class="tpl:text-xs tpl:opacity-60"
-          style="color: var(--tpl-text-muted)"
+          v-if="featureFlags.templateLimit.value !== null"
+          class="tpl:text-xs tpl:opacity-60 tpl:text-[var(--tpl-text-muted)]"
         >
           {{
-            format(t.header.templatesUsed, {
-              used: templateCount,
-              max: templateLimit,
+            core.format(core.t.header.templatesUsed, {
+              used: featureFlags.templateCount.value,
+              max: featureFlags.templateLimit.value,
             })
           }}
         </span>
@@ -1548,12 +851,12 @@ defineExpose({
           :is-connected="websocket.isConnected.value"
         />
         <SnapshotHistory
-          v-if="snapshotHistoryInstance"
-          :snapshots="snapshotHistorySnapshots"
-          :is-loading="snapshotHistoryIsLoading"
-          :is-restoring="snapshotHistoryIsRestoring"
-          @load="loadSnapshotHistory"
-          @navigate="handleSnapshotNavigate"
+          v-if="snapshotPreview.snapshotHistoryInstance.value"
+          :snapshots="snapshotPreview.snapshotHistorySnapshots.value"
+          :is-loading="snapshotPreview.snapshotHistoryIsLoading.value"
+          :is-restoring="snapshotPreview.snapshotHistoryIsRestoring.value"
+          @load="snapshotPreview.loadSnapshotHistory"
+          @navigate="snapshotPreview.handleSnapshotNavigate"
         />
       </div>
 
@@ -1561,44 +864,69 @@ defineExpose({
       <div
         class="tpl-header-right tpl:flex tpl:min-w-[200px] tpl:items-center tpl:justify-end tpl:gap-3"
       >
+        <!-- Save status indicator -->
         <div
-          v-if="editor.state.isDirty"
+          v-if="featureFlags.saveStatus.value === 'error'"
+          aria-live="assertive"
+          class="tpl-tooltip tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs tpl:text-[var(--tpl-danger)]"
+          :data-tooltip="featureFlags.saveErrorMessage.value"
+        >
+          <CircleAlert :size="12" :stroke-width="2.5" />
+          {{ core.t.header.saveFailed }}
+        </div>
+        <div
+          v-else-if="featureFlags.saveStatus.value === 'saved'"
           aria-live="polite"
-          class="tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs"
-          style="color: var(--tpl-text-muted)"
+          class="tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs tpl:text-[var(--tpl-success)]"
+        >
+          <Check :size="12" :stroke-width="2.5" />
+          {{ core.t.header.saved }}
+        </div>
+        <div
+          v-else-if="editor.state.isDirty"
+          aria-live="polite"
+          class="tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
         >
           <span
-            class="tpl-pulse tpl:size-1.5 tpl:rounded-full"
-            style="background-color: var(--tpl-primary)"
+            class="tpl-pulse tpl:size-1.5 tpl:rounded-full tpl:bg-[var(--tpl-primary)]"
           ></span>
-          {{ t.header.unsaved }}
+          {{ core.t.header.unsaved }}
         </div>
 
         <!-- Comments button -->
         <button
-          v-if="commentsInstance.isEnabled.value && hasTemplateSaved"
+          v-if="
+            commentsInstance.isEnabled.value &&
+            featureFlags.hasTemplateSaved.value
+          "
           :aria-label="
             commentsInstance.unresolvedCount.value > 0
-              ? `${t.comments.button} (${commentsInstance.unresolvedCount.value})`
-              : t.comments.button
+              ? `${core.t.comments.button} (${commentsInstance.unresolvedCount.value})`
+              : core.t.comments.button
           "
-          :aria-expanded="commentsOpen"
-          class="tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-[var(--tpl-bg)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+          :aria-expanded="panelState.commentsOpen.value"
+          :class="headerBtnClass"
           :style="{
-            backgroundColor: commentsOpen
+            backgroundColor: panelState.commentsOpen.value
               ? 'var(--tpl-primary)'
               : 'transparent',
-            color: commentsOpen ? 'var(--tpl-bg)' : 'var(--tpl-primary)',
+            color: panelState.commentsOpen.value
+              ? 'var(--tpl-bg)'
+              : 'var(--tpl-primary)',
             borderColor: 'var(--tpl-primary)',
           }"
-          @click="commentsOpen = !commentsOpen"
+          @click="
+            panelState.commentsOpen.value = !panelState.commentsOpen.value
+          "
         >
           <MessageCircle :size="16" :stroke-width="2" />
-          {{ t.comments.button }}
+          {{ core.t.comments.button }}
           <span
-            v-if="commentsInstance.unresolvedCount.value > 0 && !commentsOpen"
-            class="tpl:inline-flex tpl:size-4.5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold"
-            style="background-color: var(--tpl-primary); color: var(--tpl-bg)"
+            v-if="
+              commentsInstance.unresolvedCount.value > 0 &&
+              !panelState.commentsOpen.value
+            "
+            class="tpl:inline-flex tpl:size-4.5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
           >
             {{ commentsInstance.unresolvedCount.value }}
           </span>
@@ -1606,18 +934,25 @@ defineExpose({
 
         <!-- AI button + menu -->
         <div
-          v-if="canUseAiGeneration && hasTemplateSaved"
-          ref="aiMenuRef"
+          v-if="
+            featureFlags.canUseAiGeneration.value &&
+            featureFlags.hasTemplateSaved.value
+          "
+          :ref="(el) => (panelState.aiMenuRef.value = el as HTMLElement | null)"
           class="tpl:relative"
         >
           <button
-            :aria-expanded="aiMenuOpen"
+            :aria-expanded="panelState.aiMenuOpen.value"
             class="tpl-ai-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-4 tpl:py-2 tpl:text-sm tpl:font-semibold tpl:whitespace-nowrap tpl:transition-all tpl:duration-200"
-            :class="aiButtonActive ? 'tpl-ai-btn--active' : 'tpl-ai-btn--idle'"
-            @click.stop="toggleAiMenu"
+            :class="
+              panelState.aiButtonActive.value
+                ? 'tpl-ai-btn--active'
+                : 'tpl-ai-btn--idle'
+            "
+            @click.stop="panelState.toggleAiMenu"
           >
             <Sparkles :size="16" :stroke-width="2" class="tpl-ai-btn-icon" />
-            {{ t.aiChat.button }}
+            {{ core.t.aiChat.button }}
           </button>
           <Transition
             enter-active-class="tpl:transition-all tpl:duration-150 tpl:ease-out"
@@ -1628,12 +963,12 @@ defineExpose({
             leave-to-class="tpl:scale-95 tpl:opacity-0"
           >
             <div
-              v-if="aiMenuOpen"
+              v-if="panelState.aiMenuOpen.value"
               class="tpl:absolute tpl:right-0 tpl:top-full tpl:z-50 tpl:mt-1 tpl:origin-top-right"
             >
               <AiFeatureMenu
-                :active-feature="activeAiFeature"
-                @select="handleAiFeatureSelect"
+                :active-feature="panelState.activeAiFeature.value"
+                @select="panelState.handleAiFeatureSelect"
               />
             </div>
           </Transition>
@@ -1641,15 +976,19 @@ defineExpose({
 
         <!-- Test email button -->
         <button
-          v-if="testEmail.isEnabled.value && canSendTestEmail"
-          class="tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-[var(--tpl-bg)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+          v-if="
+            testEmail.isEnabled.value && featureFlags.canSendTestEmail.value
+          "
+          :class="headerBtnClass"
           style="
             background-color: transparent;
             color: var(--tpl-primary);
             border-color: var(--tpl-primary);
           "
-          :disabled="testEmail.isSending.value || !hasTemplateSaved"
-          @click="testEmailModalOpen = true"
+          :disabled="
+            testEmail.isSending.value || !featureFlags.hasTemplateSaved.value
+          "
+          @click="panelState.testEmailModalOpen.value = true"
         >
           <Send
             v-if="!testEmail.isSending.value"
@@ -1662,24 +1001,28 @@ defineExpose({
             :size="16"
             :stroke-width="2"
           />
-          {{ t.testEmail.button }}
+          {{ core.t.testEmail.button }}
         </button>
 
         <!-- Save button -->
         <button
-          class="tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-[var(--tpl-bg)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+          :class="headerBtnClass"
           style="
             background-color: transparent;
             color: var(--tpl-primary);
             border-color: var(--tpl-primary);
           "
           :disabled="
-            editor.state.isSaving || isSaveExporting || !editor.state.isDirty
+            editor.state.isSaving ||
+            featureFlags.isSaveExporting.value ||
+            !editor.state.isDirty
           "
-          @click="saveTemplate()"
+          @click="
+            saveTemplate().catch((err) => props.config.onError?.(err as Error))
+          "
         >
           <Save
-            v-if="!editor.state.isSaving && !isSaveExporting"
+            v-if="!editor.state.isSaving && !featureFlags.isSaveExporting.value"
             :size="16"
             :stroke-width="2"
           />
@@ -1690,51 +1033,20 @@ defineExpose({
             :stroke-width="2"
           />
           {{
-            editor.state.isSaving || isSaveExporting
-              ? t.header.saving
-              : t.header.save
+            editor.state.isSaving || featureFlags.isSaveExporting.value
+              ? core.t.header.saving
+              : core.t.header.save
           }}
         </button>
       </div>
     </header>
 
     <!-- Snapshot preview banner -->
-    <div
-      v-if="isPreviewingSnapshot"
-      class="tpl-preview-banner tpl:absolute tpl:top-14 tpl:right-0 tpl:left-0 tpl:z-40 tpl:flex tpl:items-center tpl:justify-center tpl:gap-4 tpl:px-4 tpl:py-3"
-      style="
-        background-color: var(--tpl-primary-light);
-        border-bottom: 1px solid var(--tpl-primary);
-      "
-    >
-      <div
-        class="tpl:flex tpl:items-center tpl:gap-2 tpl:text-sm"
-        style="color: var(--tpl-text)"
-      >
-        <Clock :size="18" :stroke-width="2" style="color: var(--tpl-primary)" />
-        <span>{{ t.snapshotPreview.message }}</span>
-      </div>
-      <div class="tpl:flex tpl:items-center tpl:gap-2">
-        <button
-          class="tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:duration-150"
-          style="
-            background-color: transparent;
-            color: var(--tpl-text-muted);
-            border: 1px solid var(--tpl-border);
-          "
-          @click="cancelPreview"
-        >
-          {{ t.snapshotPreview.cancel }}
-        </button>
-        <button
-          class="tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90"
-          style="background-color: var(--tpl-primary); color: var(--tpl-bg)"
-          @click="confirmRestoreSnapshot"
-        >
-          {{ t.snapshotPreview.restore }}
-        </button>
-      </div>
-    </div>
+    <SnapshotPreviewBanner
+      :visible="snapshotPreview.isPreviewingSnapshot.value"
+      @cancel="snapshotPreview.cancelPreview"
+      @confirm="snapshotPreview.confirmRestoreSnapshot"
+    />
 
     <!-- Collaboration undo warning toast -->
     <Transition
@@ -1745,19 +1057,9 @@ defineExpose({
       leave-from-class="tpl:translate-y-0 tpl:opacity-100"
       leave-to-class="tpl:translate-y-[-8px] tpl:opacity-0"
     >
-      <div
-        v-if="collabUndoWarningVisible"
-        role="status"
-        aria-live="polite"
-        class="tpl:absolute tpl:top-16 tpl:left-1/2 tpl:z-toast tpl:-translate-x-1/2 tpl:rounded-[var(--tpl-radius)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:shadow-lg"
-        style="
-          background-color: var(--tpl-warning-light);
-          color: var(--tpl-text);
-          border: 1px solid var(--tpl-warning);
-        "
-      >
-        {{ t.history.collabWarning }}
-      </div>
+      <CollabUndoToast
+        :visible="collabWarning.collabUndoWarningVisible.value"
+      />
     </Transition>
 
     <!-- Left sidebar -->
@@ -1773,17 +1075,19 @@ defineExpose({
       :class="[
         editor.state.previewMode
           ? 'tpl:left-0 tpl:right-0'
-          : rightPanelOpen
+          : panelState.rightPanelOpen.value
             ? 'tpl:left-12 tpl:right-[680px]'
             : 'tpl:left-12 tpl:right-[320px]',
-        isPreviewingSnapshot ? 'tpl:top-[104px]' : 'tpl:top-14',
+        snapshotPreview.isPreviewingSnapshot.value
+          ? 'tpl:top-[104px]'
+          : 'tpl:top-14',
       ]"
     >
       <!-- Restore hidden blocks button -->
       <div class="tpl:sticky tpl:top-0 tpl:z-40 tpl:h-0">
         <Transition name="tpl-restore-btn">
           <button
-            v-if="conditionPreview.hasHiddenBlocks.value"
+            v-if="core.conditionPreview.hasHiddenBlocks.value"
             class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:-translate-x-1/2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-full tpl:border tpl:px-3.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:whitespace-nowrap tpl:shadow-md tpl:hover:opacity-80"
             style="
               background-color: var(--tpl-warning-light);
@@ -1791,10 +1095,10 @@ defineExpose({
               border-color: var(--tpl-warning);
               backdrop-filter: blur(8px);
             "
-            @click="conditionPreview.reset()"
+            @click="core.conditionPreview.reset()"
           >
             <RotateCcw :size="13" :stroke-width="2" />
-            {{ t.blockSettings.restoreHiddenBlocks }}
+            {{ core.t.blockSettings.restoreHiddenBlocks }}
           </button>
         </Transition>
       </div>
@@ -1807,24 +1111,79 @@ defineExpose({
           :preview-mode="editor.state.previewMode"
           :locked-blocks="collaboration?.lockedBlocks.value ?? undefined"
           @select-block="editor.selectBlock"
-          @open-ai-chat="aiChatOpen = true"
-          @open-design-reference="designReferenceOpen = true"
+          @open-ai-chat="panelState.aiChatOpen.value = true"
+          @open-design-reference="panelState.designReferenceOpen.value = true"
         />
       </main>
     </div>
 
-    <!-- Right sidebar -->
+    <!-- Footer — powered-by branding (hidden when white-labeled) -->
+    <footer
+      v-if="!featureFlags.isWhiteLabeled.value"
+      class="tpl:pointer-events-none tpl:absolute tpl:bottom-0 tpl:z-50 tpl:flex tpl:h-8 tpl:items-center tpl:justify-end tpl:pr-4 tpl:text-[9px] tpl:opacity-90 tpl:transition-all tpl:duration-300 tpl:text-[var(--tpl-text-dim)]"
+      :class="[
+        editor.state.previewMode
+          ? 'tpl:left-0 tpl:right-0'
+          : panelState.rightPanelOpen.value
+            ? 'tpl:left-12 tpl:right-[680px]'
+            : 'tpl:left-12 tpl:right-[320px]',
+      ]"
+    >
+      <div
+        class="tpl:pointer-events-auto tpl:flex tpl:items-center tpl:gap-1.5 tpl:rounded-tl-lg tpl:p-1"
+        style="
+          background-color: color-mix(
+            in srgb,
+            var(--tpl-canvas-bg) 85%,
+            transparent
+          );
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+        "
+      >
+        <span>{{ core.t.footer.poweredBy }}</span>
+        <a
+          href="https://templatical.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="tpl:inline-flex tpl:items-center tpl:gap-1 tpl:font-medium tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80 tpl:text-[var(--tpl-text-muted)]"
+          style="text-decoration: none"
+        >
+          <img
+            width="14"
+            height="14"
+            src="https://templatical.com/logo.svg"
+            alt=""
+          />
+          Templatical
+        </a>
+        <span class="tpl:text-[var(--tpl-border)]">·</span>
+        <a
+          href="https://github.com/templatical/sdk"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80 tpl:text-[var(--tpl-text-dim)]"
+          style="text-decoration: none"
+        >
+          {{ core.t.footer.openSource }}
+        </a>
+      </div>
+    </footer>
+
+    <!-- Right sidebar — persisted with v-show -->
     <RightSidebar
       v-show="!editor.state.previewMode"
       :selected-block="editor.selectedBlock.value"
       :settings="editor.content.value.settings"
-      :shifted-left="rightPanelOpen"
+      :shifted-left="panelState.rightPanelOpen.value"
       @update-block="
         (updates) => editor.updateBlock(editor.selectedBlock.value!.id, updates)
       "
-      @delete-block="blockActions.deleteBlock(editor.selectedBlock.value!.id)"
+      @delete-block="
+        core.blockActions.deleteBlock(editor.selectedBlock.value!.id)
+      "
       @duplicate-block="
-        blockActions.duplicateBlock(editor.selectedBlock.value!)
+        core.blockActions.duplicateBlock(editor.selectedBlock.value!)
       "
       @update-settings="editor.updateSettings"
     />
@@ -1832,48 +1191,48 @@ defineExpose({
     <!-- Cloud sidebars + modals — only mount after cloud init completes -->
     <template v-if="!isInitializing && isAuthReady">
       <AiChatSidebar
-        :visible="aiChatOpen"
+        :visible="panelState.aiChatOpen.value"
         :on-apply="
           (content: TemplateContent) => {
-            history.record();
+            core.history.record();
             editor.setContent(content);
-            conditionPreview.reset();
+            core.conditionPreview.reset();
           }
         "
-        @close="aiChatOpen = false"
+        @close="panelState.aiChatOpen.value = false"
       />
 
       <TemplateScoringPanel
-        :visible="scoringPanelOpen"
-        @close="scoringPanelOpen = false"
+        :visible="panelState.scoringPanelOpen.value"
+        @close="panelState.scoringPanelOpen.value = false"
       />
 
       <DesignReferenceSidebar
-        :visible="designReferenceOpen"
+        :visible="panelState.designReferenceOpen.value"
         :has-existing-blocks="editor.content.value.blocks.length > 0"
-        @close="designReferenceOpen = false"
+        @close="panelState.designReferenceOpen.value = false"
         @apply="
           (content: TemplateContent) => {
-            history.record();
+            core.history.record();
             editor.setContent(content);
-            conditionPreview.reset();
+            core.conditionPreview.reset();
           }
         "
       />
 
       <CommentsSidebar
         ref="commentsSidebarRef"
-        :visible="commentsOpen"
-        @close="commentsOpen = false"
+        :visible="panelState.commentsOpen.value"
+        @close="panelState.commentsOpen.value = false"
       />
 
       <TestEmailModal
-        :visible="testEmailModalOpen"
+        :visible="panelState.testEmailModalOpen.value"
         :allowed-emails="testEmail.allowedEmails.value"
         :is-sending="testEmail.isSending.value"
         :error="testEmail.error.value"
         @send="handleSendTestEmail"
-        @close="testEmailModalOpen = false"
+        @close="panelState.testEmailModalOpen.value = false"
       />
 
       <SaveModuleDialog
@@ -1900,10 +1259,10 @@ defineExpose({
       />
 
       <MediaLibraryModal
-        :visible="mediaLibraryOpen"
-        :accept="mediaLibraryAccept"
-        @select="handleMediaSelect"
-        @close="handleMediaLibraryClose"
+        :visible="panelState.mediaLibraryOpen.value"
+        :accept="panelState.mediaLibraryAccept.value"
+        @select="mediaLib.handleMediaSelect"
+        @close="mediaLib.handleMediaLibraryClose"
       />
     </template>
   </div>

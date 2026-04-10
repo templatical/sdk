@@ -29,7 +29,7 @@ const beefreeJson = await fetch('/api/beefree-templates/123').then(r => r.json()
 const { content, report } = convertBeeFreeTemplate(beefreeJson);
 
 // Use in the editor
-const editor = init({
+const editor = await init({
   container: '#editor',
   content,
 });
@@ -82,7 +82,7 @@ Column widths that don't match a standard ratio are mapped to the closest availa
 
 Global template settings are converted where possible:
 
-- **Width** -- BeeFree `page.body.content.computedStyle.messageWidth` maps to `settings.width`
+- **Width** -- BeeFree `page.body.content.style.width` maps to `settings.width`
 - **Background color** -- Row and body background colors are preserved
 - **Font family** -- The default font family carries over to `settings.fontFamily`
 

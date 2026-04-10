@@ -2,7 +2,6 @@
 import ColorPicker from "./ColorPicker.vue";
 import MergeTagTextarea from "./MergeTagTextarea.vue";
 import { useI18n } from "../composables/useI18n";
-import type { UseFontsReturn } from "../composables/useFonts";
 import type { TemplateSettings } from "@templatical/types";
 import {
   cardClass,
@@ -10,9 +9,11 @@ import {
   inputGroupInputClass,
   inputSuffixClass,
   labelClass,
+  DEFAULT_BG_COLOR,
 } from "../constants/styleConstants";
 import { Circle, Eye, Info, Square } from "@lucide/vue";
 import { computed, inject } from "vue";
+import { FONTS_MANAGER_KEY } from "../keys";
 
 const props = defineProps<{
   settings: TemplateSettings;
@@ -26,7 +27,7 @@ const PREHEADER_MAX_LENGTH = 150;
 
 const { t } = useI18n();
 
-const fontsManager = inject<UseFontsReturn>("fontsManager")!;
+const fontsManager = inject(FONTS_MANAGER_KEY)!;
 const fontFamilies = computed(() => fontsManager.fonts.value);
 
 // If current font is not in available list (e.g., custom font when disabled), use default
@@ -72,8 +73,7 @@ const widthPresets = [
             t.templateSettings.widthPreset
           }}</label>
           <div
-            class="tpl:grid tpl:grid-cols-4 tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1"
-            style="background-color: var(--tpl-bg-hover)"
+            class="tpl:grid tpl:grid-cols-4 tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-bg-hover)]"
           >
             <button
               v-for="preset in widthPresets"
@@ -141,7 +141,7 @@ const widthPresets = [
           }}</label>
           <ColorPicker
             :model-value="settings.backgroundColor"
-            placeholder="#ffffff"
+            :placeholder="DEFAULT_BG_COLOR"
             @update:model-value="emit('update', { backgroundColor: $event })"
           />
         </div>

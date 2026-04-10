@@ -1,11 +1,9 @@
 <script setup lang="ts">
+import { MAX_UPLOAD_SIZE_BYTES } from "../../constants/timeouts";
 import LoadingTrack from "../../components/LoadingTrack.vue";
-import {
-  useDesignReference,
-  type UseEditorReturn,
-} from "@templatical/core/cloud";
-import type { Translations } from "../../i18n";
-import type { AuthManager } from "@templatical/core/cloud";
+import { useDesignReference } from "@templatical/core/cloud";
+import { EDITOR_KEY, AUTH_MANAGER_KEY } from "../../keys";
+import { useI18n } from "../../composables/useI18n";
 import type { TemplateContent } from "@templatical/types";
 import {
   CircleAlert,
@@ -27,9 +25,9 @@ const emit = defineEmits<{
   (e: "apply", content: TemplateContent): void;
 }>();
 
-const translations = inject<Translations>("translations")!;
-const editor = inject<UseEditorReturn>("editor")!;
-const authManager = inject<AuthManager>("authManager")!;
+const { t } = useI18n();
+const editor = inject(EDITOR_KEY)!;
+const authManager = inject(AUTH_MANAGER_KEY)!;
 
 const designReference = useDesignReference({
   authManager,
@@ -45,8 +43,6 @@ const prompt = ref("");
 const filePreviewUrl = ref<string | null>(null);
 const showConfirmation = ref(false);
 const isDragging = ref(false);
-
-const t = computed(() => translations.designReference);
 
 const canGenerate = computed(() => {
   if (designReference.isGenerating.value) {
@@ -73,8 +69,8 @@ function handleFileSelect(event: Event): void {
 
 function setFile(file: File): void {
   // Validate file size (10MB)
-  if (file.size > 10 * 1024 * 1024) {
-    designReference.error.value = t.value.fileTooLarge;
+  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+    designReference.error.value = t.designReference.fileTooLarge;
     return;
   }
 
@@ -82,12 +78,12 @@ function setFile(file: File): void {
   if (activeTab.value === "image") {
     const validTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
     if (!validTypes.includes(file.type)) {
-      designReference.error.value = t.value.invalidFileType;
+      designReference.error.value = t.designReference.invalidFileType;
       return;
     }
   } else if (activeTab.value === "pdf") {
     if (file.type !== "application/pdf") {
-      designReference.error.value = t.value.invalidFileType;
+      designReference.error.value = t.designReference.invalidFileType;
       return;
     }
   }
@@ -198,15 +194,13 @@ watch(
         class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
       >
         <div
-          class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium"
-          style="color: var(--tpl-primary)"
+          class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-primary)]"
         >
           <ImageUp :size="13" :stroke-width="2" />
-          <span>{{ t.title }}</span>
+          <span>{{ t.designReference.title }}</span>
         </div>
         <button
-          class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
-          style="color: var(--tpl-text-muted)"
+          class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
           @click="emit('close')"
         >
           <X :size="14" :stroke-width="2" />
@@ -224,8 +218,8 @@ watch(
             class="tpl:flex tpl:w-full tpl:flex-col tpl:items-center tpl:gap-3"
           >
             <LoadingTrack />
-            <p class="tpl:text-sm" style="color: var(--tpl-text-muted)">
-              {{ t.generating }}
+            <p class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
+              {{ t.designReference.generating }}
             </p>
           </div>
         </div>
@@ -234,8 +228,7 @@ watch(
         <div v-else class="tpl:flex tpl:flex-col tpl:gap-4">
           <!-- Source tabs -->
           <div
-            class="tpl:flex tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1"
-            style="background-color: var(--tpl-bg-hover)"
+            class="tpl:flex tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-bg-hover)]"
           >
             <button
               class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
@@ -251,7 +244,7 @@ watch(
               @click="selectTab('image')"
             >
               <FileImage :size="12" :stroke-width="2" />
-              {{ t.uploadImage }}
+              {{ t.designReference.uploadImage }}
             </button>
             <button
               class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
@@ -267,7 +260,7 @@ watch(
               @click="selectTab('pdf')"
             >
               <FileText :size="12" :stroke-width="2" />
-              {{ t.uploadPdf }}
+              {{ t.designReference.uploadPdf }}
             </button>
           </div>
 
@@ -276,11 +269,7 @@ watch(
             <!-- Preview -->
             <div v-if="selectedFile" class="tpl:flex tpl:flex-col tpl:gap-2">
               <div
-                class="tpl:relative tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)]"
-                style="
-                  border: 1px solid var(--tpl-border);
-                  background-color: var(--tpl-bg);
-                "
+                class="tpl:relative tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
               >
                 <!-- Image preview -->
                 <img
@@ -297,23 +286,15 @@ watch(
                   <FileText
                     :size="32"
                     :stroke-width="1.5"
-                    style="color: var(--tpl-text-dim)"
+                    class="tpl:text-[var(--tpl-text-dim)]"
                   />
-                  <span
-                    class="tpl:text-xs"
-                    style="color: var(--tpl-text-muted)"
-                  >
+                  <span class="tpl:text-xs tpl:text-[var(--tpl-text-muted)]">
                     {{ selectedFile.name }}
                   </span>
                 </div>
                 <!-- Remove button -->
                 <button
-                  class="tpl:absolute tpl:top-2 tpl:right-2 tpl:rounded-full tpl:p-1 tpl:transition-colors tpl:duration-150"
-                  style="
-                    background-color: var(--tpl-bg);
-                    color: var(--tpl-text-muted);
-                    box-shadow: var(--tpl-shadow);
-                  "
+                  class="tpl:absolute tpl:top-2 tpl:right-2 tpl:rounded-full tpl:p-1 tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] tpl:shadow-[var(--tpl-shadow)]"
                   @click="clearFile"
                 >
                   <X :size="12" :stroke-width="2" />
@@ -341,19 +322,21 @@ watch(
               <Upload
                 :size="24"
                 :stroke-width="1.5"
-                style="color: var(--tpl-text-dim)"
+                class="tpl:text-[var(--tpl-text-dim)]"
               />
               <span
-                class="tpl:text-center tpl:text-xs"
-                style="color: var(--tpl-text-muted)"
+                class="tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
               >
-                {{ t.dropHint }}
+                {{ t.designReference.dropHint }}
               </span>
               <span
-                class="tpl:text-center tpl:text-[11px]"
-                style="color: var(--tpl-text-dim)"
+                class="tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
               >
-                {{ activeTab === "image" ? t.acceptedImages : t.acceptedPdf }}
+                {{
+                  activeTab === "image"
+                    ? t.designReference.acceptedImages
+                    : t.designReference.acceptedPdf
+                }}
               </span>
             </div>
             <input
@@ -372,21 +355,15 @@ watch(
           <!-- Prompt textarea -->
           <div class="tpl:flex tpl:flex-col tpl:gap-1.5">
             <label
-              class="tpl:text-xs tpl:font-medium"
-              style="color: var(--tpl-text-muted)"
+              class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
             >
-              {{ t.promptLabel }}
+              {{ t.designReference.promptLabel }}
             </label>
             <textarea
               v-model="prompt"
-              class="tpl:min-h-[72px] tpl:w-full tpl:resize-none tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:font-sans tpl:text-sm tpl:outline-none tpl:transition-colors tpl:duration-150"
+              class="tpl:min-h-[72px] tpl:w-full tpl:resize-none tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:font-sans tpl:text-sm tpl:outline-none tpl:transition-colors tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
               :class="['tpl-design-prompt-input']"
-              style="
-                border-color: var(--tpl-border);
-                color: var(--tpl-text);
-                background-color: var(--tpl-bg);
-              "
-              :placeholder="t.promptPlaceholder"
+              :placeholder="t.designReference.promptPlaceholder"
               rows="3"
             />
           </div>
@@ -394,39 +371,24 @@ watch(
           <!-- Confirmation overlay -->
           <div
             v-if="showConfirmation"
-            class="tpl:flex tpl:flex-col tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:px-3 tpl:py-3"
-            style="
-              background-color: var(--tpl-warning-light);
-              border: 1px solid var(--tpl-warning);
-            "
+            class="tpl:flex tpl:flex-col tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:px-3 tpl:py-3 tpl:bg-[var(--tpl-warning-light)] tpl:border tpl:border-[var(--tpl-warning)]"
           >
-            <p
-              class="tpl:text-xs tpl:leading-snug"
-              style="color: var(--tpl-text)"
-            >
-              {{ t.replaceWarning }}
+            <p class="tpl:text-xs tpl:leading-snug tpl:text-[var(--tpl-text)]">
+              {{ t.designReference.replaceWarning }}
             </p>
             <div class="tpl:flex tpl:gap-2">
               <button
-                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
-                style="
-                  background-color: transparent;
-                  color: var(--tpl-text-muted);
-                  border: 1px solid var(--tpl-border);
-                "
+                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:text-[var(--tpl-text-muted)] tpl:border tpl:border-[var(--tpl-border)]"
+                style="background-color: transparent"
                 @click="cancelConfirmation"
               >
-                {{ t.replaceCancel }}
+                {{ t.designReference.replaceCancel }}
               </button>
               <button
-                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90"
-                style="
-                  background-color: var(--tpl-primary);
-                  color: var(--tpl-bg);
-                "
+                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
                 @click="handleGenerate"
               >
-                {{ t.replaceConfirm }}
+                {{ t.designReference.replaceConfirm }}
               </button>
             </div>
           </div>
@@ -434,38 +396,32 @@ watch(
           <!-- Error message -->
           <div
             v-if="designReference.error.value"
-            class="tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs"
-            style="
-              background-color: var(--tpl-danger-light);
-              color: var(--tpl-danger);
-            "
+            class="tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-danger-light)] tpl:text-[var(--tpl-danger)]"
           >
             <CircleAlert
               :size="14"
               :stroke-width="2"
               class="tpl:mt-0.5 tpl:shrink-0"
             />
-            <span>{{ t.error }}</span>
+            <span>{{ t.designReference.error }}</span>
           </div>
 
           <!-- Generate button -->
           <button
             v-if="!showConfirmation"
-            class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
-            style="background-color: var(--tpl-primary); color: var(--tpl-bg)"
+            class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
             :disabled="!canGenerate"
             @click="handleGenerate"
           >
             <ImageUp :size="16" :stroke-width="2" />
-            {{ t.generate }}
+            {{ t.designReference.generate }}
           </button>
 
           <!-- AI disclaimer -->
           <p
-            class="tpl:m-0 tpl:pt-1 tpl:text-center tpl:text-[11px]"
-            style="color: var(--tpl-text-dim)"
+            class="tpl:m-0 tpl:pt-1 tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
           >
-            {{ translations.aiMenu.disclaimer }}
+            {{ t.aiMenu.disclaimer }}
           </p>
         </div>
       </div>

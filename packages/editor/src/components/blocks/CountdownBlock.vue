@@ -137,7 +137,7 @@ const separatorStyle = computed(() => ({
     :style="containerStyle"
     class="tpl:flex tpl:items-center tpl:justify-center tpl:gap-2 tpl:py-4"
   >
-    <template v-for="(segment, index) in segments" :key="index">
+    <template v-for="(segment, index) in segments" :key="segment.label">
       <span v-if="index > 0" :style="separatorStyle" class="tpl:self-start">
         {{ block.separator }}
       </span>

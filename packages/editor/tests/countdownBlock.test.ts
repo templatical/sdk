@@ -97,4 +97,9 @@ describe('CountdownBlock.vue structure', () => {
   it('supports custom font family', () => {
     expect(componentSource).toContain('block.fontFamily');
   });
+
+  it('uses segment.label as v-for key instead of index', () => {
+    expect(componentSource).toContain(':key="segment.label"');
+    expect(componentSource).not.toMatch(/:key="index"/);
+  });
 });

@@ -377,7 +377,7 @@ describe('useEditor with templateDefaults', () => {
         });
         expect(editor.state.content.settings.width).toBe(640);
         expect(editor.state.content.settings.backgroundColor).toBe('#f5f5f5');
-        expect(editor.state.content.settings.fontFamily).toBe('Arial, sans-serif');
+        expect(editor.state.content.settings.fontFamily).toBe('Arial');
     });
 
     it('applies templateDefaults with custom fontFamily', () => {
@@ -424,7 +424,7 @@ describe('useEditor with templateDefaults', () => {
         });
         expect(editor.state.content.settings.width).toBe(600);
         expect(editor.state.content.settings.backgroundColor).toBe('#ffffff');
-        expect(editor.state.content.settings.fontFamily).toBe('Arial, sans-serif');
+        expect(editor.state.content.settings.fontFamily).toBe('Arial');
     });
 
     it('applies preheaderText from templateDefaults', () => {

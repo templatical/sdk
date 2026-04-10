@@ -1,31 +1,18 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
-import type {
-  Block,
-  BlockDefaults,
-  BlockType,
-  CustomBlockDefinition,
-} from "@templatical/types";
+import type { Block, BlockType } from "@templatical/types";
 import { createBlock, createCustomBlock } from "@templatical/types";
-import {
-  Code,
-  Columns3,
-  Heading,
-  Image,
-  Minus,
-  MoveVertical,
-  Navigation,
-  Package,
-  Pilcrow,
-  Play,
-  RectangleHorizontal,
-  Share2,
-  Table,
-  Timer,
-} from "@lucide/vue";
+import { Package } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
 import draggable from "vuedraggable";
 import CustomBlockIcon from "./CustomBlockIcon.vue";
+import { blockTypeIcons } from "../utils/blockTypeIcons";
+import { getBlockTypeLabel } from "../utils/blockTypeLabels";
+import {
+  CUSTOM_BLOCK_DEFINITIONS_KEY,
+  BLOCK_DEFAULTS_KEY,
+  CAPABILITIES_KEY,
+} from "../keys";
 
 interface BlockTypeItem {
   type: BlockType | string;
@@ -35,48 +22,44 @@ interface BlockTypeItem {
 }
 
 const { t } = useI18n();
-const customBlockDefinitions = inject<CustomBlockDefinition[]>(
-  "customBlockDefinitions",
-  [],
-);
-const blockDefaults = inject<BlockDefaults | undefined>(
-  "blockDefaults",
-  undefined,
-);
+const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
+const blockDefaults = inject(BLOCK_DEFAULTS_KEY, undefined);
 
-// Cloud-only injects — null in OSS mode
-
-const savedModulesVisual = inject<any>("savedModules", null);
-
-const planConfig = inject<any>("planConfig", null);
+const caps = inject(CAPABILITIES_KEY, {});
 
 const showModulesSection = computed(
-  () => !!savedModulesVisual && !!planConfig?.hasFeature("saved_modules"),
+  () => (caps.savedModules?.moduleCount.value ?? 0) > 0,
 );
 
 const isExpanded = ref(false);
 
-const isCloudMode = computed(() => !!planConfig);
+const builtInBlockTypeOrder: string[] = [
+  "section",
+  "image",
+  "title",
+  "paragraph",
+  "button",
+  "divider",
+  "video",
+  "social",
+  "menu",
+  "table",
+  "spacer",
+  "html",
+];
 
 const builtInBlockTypes = computed<BlockTypeItem[]>(() => {
-  const types: BlockTypeItem[] = [
-    { type: "section", label: t.blocks.section },
-    { type: "image", label: t.blocks.image },
-    { type: "title", label: t.blocks.title },
-    { type: "paragraph", label: t.blocks.paragraph },
-    { type: "button", label: t.blocks.button },
-    { type: "divider", label: t.blocks.divider },
-    { type: "video", label: t.blocks.video },
-    { type: "social", label: t.blocks.social },
-    { type: "menu", label: t.blocks.menu },
-    { type: "table", label: t.blocks.table },
-    { type: "spacer", label: t.blocks.spacer },
-    { type: "html", label: t.blocks.html },
-  ];
+  const types: BlockTypeItem[] = builtInBlockTypeOrder.map((type) => ({
+    type,
+    label: getBlockTypeLabel(type, t),
+  }));
 
   // Countdown requires Templatical Cloud for server-side GIF rendering
-  if (isCloudMode.value) {
-    types.splice(-1, 0, { type: "countdown", label: t.blocks.countdown });
+  if (caps.plan) {
+    types.splice(-1, 0, {
+      type: "countdown",
+      label: getBlockTypeLabel("countdown", t),
+    });
   }
 
   return types;
@@ -96,7 +79,7 @@ const blockTypes = computed<BlockTypeItem[]>(() => [
   ...customBlockItems.value,
 ]);
 
-function cloneBlock(item: BlockTypeItem): Block {
+function createBlockFromItem(item: BlockTypeItem): Block {
   if (item.isCustom) {
     const customType = item.type.replace("custom:", "");
     const definition = customBlockDefinitions.find(
@@ -131,12 +114,8 @@ function cloneBlock(item: BlockTypeItem): Block {
   >
     <!-- Saved Modules browser trigger (cloud only) -->
     <div
-      v-if="
-        showModulesSection &&
-        savedModulesVisual!.headless.modules.value.length > 0
-      "
-      class="tpl:border-b tpl:px-1 tpl:pb-1"
-      style="border-color: var(--tpl-border)"
+      v-if="showModulesSection"
+      class="tpl:border-b tpl:px-1 tpl:pb-1 tpl:border-[var(--tpl-border)]"
     >
       <button
         type="button"
@@ -145,7 +124,7 @@ function cloneBlock(item: BlockTypeItem): Block {
         :style="{
           justifyContent: isExpanded ? 'flex-start' : 'center',
         }"
-        @click="savedModulesVisual!.openBrowserModal()"
+        @click="caps.savedModules?.openBrowser()"
       >
         <Package :size="20" :stroke-width="1.5" class="tpl:shrink-0" />
         <span
@@ -156,20 +135,16 @@ function cloneBlock(item: BlockTypeItem): Block {
         </span>
         <span
           v-if="isExpanded"
-          class="tpl:shrink-0 tpl:rounded-full tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium"
-          style="
-            background-color: var(--tpl-bg-hover);
-            color: var(--tpl-text-muted);
-          "
+          class="tpl:shrink-0 tpl:rounded-full tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
         >
-          {{ savedModulesVisual!.headless.modules.value.length }}
+          {{ caps.savedModules?.moduleCount.value ?? 0 }}
         </span>
       </button>
     </div>
     <draggable
       :list="blockTypes"
       :group="{ name: 'blocks', pull: 'clone', put: false }"
-      :clone="cloneBlock"
+      :clone="createBlockFromItem"
       :sort="false"
       item-key="type"
       :animation="150"
@@ -186,68 +161,9 @@ function cloneBlock(item: BlockTypeItem): Block {
           <div
             class="tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:transition-transform tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:scale-105"
           >
-            <Image
-              v-if="blockType.type === 'image'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Heading
-              v-else-if="blockType.type === 'title'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Pilcrow
-              v-else-if="blockType.type === 'paragraph'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <RectangleHorizontal
-              v-else-if="blockType.type === 'button'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Minus
-              v-else-if="blockType.type === 'divider'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Play
-              v-else-if="blockType.type === 'video'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Columns3
-              v-else-if="blockType.type === 'section'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Share2
-              v-else-if="blockType.type === 'social'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Navigation
-              v-else-if="blockType.type === 'menu'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Table
-              v-else-if="blockType.type === 'table'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <MoveVertical
-              v-else-if="blockType.type === 'spacer'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Timer
-              v-else-if="blockType.type === 'countdown'"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <Code
-              v-else-if="blockType.type === 'html'"
+            <component
+              :is="blockTypeIcons[blockType.type]"
+              v-if="blockTypeIcons[blockType.type]"
               :size="20"
               :stroke-width="1.5"
             />

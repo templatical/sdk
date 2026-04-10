@@ -5,6 +5,11 @@ import {
   SYNTAX_PRESETS,
 } from "@templatical/types";
 import { inject, ref, type Ref } from "vue";
+import {
+  MERGE_TAGS_KEY,
+  MERGE_TAG_SYNTAX_KEY,
+  ON_REQUEST_MERGE_TAG_KEY,
+} from "../keys";
 
 export interface UseMergeTagReturn {
   /** Available merge tags from config */
@@ -28,11 +33,9 @@ export interface UseMergeTagReturn {
  * Provides utilities for detecting, displaying, and requesting merge tags.
  */
 export function useMergeTag(): UseMergeTagReturn {
-  const mergeTags = inject<MergeTag[]>("mergeTags", []);
-  const syntax = inject<SyntaxPreset>("mergeTagSyntax", SYNTAX_PRESETS.liquid);
-  const onRequestMergeTag = inject<
-    (() => Promise<MergeTag | null>) | undefined
-  >("onRequestMergeTag");
+  const mergeTags = inject(MERGE_TAGS_KEY, []);
+  const syntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
+  const onRequestMergeTag = inject(ON_REQUEST_MERGE_TAG_KEY);
 
   const isRequesting = ref(false);
 

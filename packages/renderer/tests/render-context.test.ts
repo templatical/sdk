@@ -14,9 +14,16 @@ describe('RenderContext', () => {
     expect(ctx.containerWidth).toBe(600);
   });
 
-  it('returns font family as-is when no custom fonts', () => {
+  it('resolves built-in font to include fallback stack', () => {
     const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
-    expect(ctx.resolveFontFamily('Helvetica')).toBe('Helvetica');
+    expect(ctx.resolveFontFamily('Helvetica')).toBe('Helvetica, sans-serif');
+    expect(ctx.resolveFontFamily('Georgia')).toBe('Georgia, serif');
+    expect(ctx.resolveFontFamily('Courier New')).toBe("'Courier New', monospace");
+  });
+
+  it('returns unknown font family as-is', () => {
+    const ctx = new RenderContext(600, [], 'Arial, sans-serif', true);
+    expect(ctx.resolveFontFamily('UnknownFont')).toBe('UnknownFont');
   });
 
   it('resolves custom font with fallback', () => {

@@ -1,5 +1,6 @@
 import type { Translations } from "../i18n";
 import { type Ref, inject, isRef } from "vue";
+import { TRANSLATIONS_KEY } from "../keys";
 
 export interface UseI18nReturn {
   /** Current translations object */
@@ -15,10 +16,17 @@ export interface UseI18nReturn {
  * @param translationsOverride - Optional translations to use instead of injected value
  */
 export function useI18n(translationsOverride?: Translations): UseI18nReturn {
-  const injected =
+  const injected: Translations | Ref<Translations> | undefined =
     translationsOverride ??
-    inject<Translations | Ref<Translations>>("translations")!;
-  const t = isRef(injected) ? injected.value : injected;
+    (inject(TRANSLATIONS_KEY) as Translations | Ref<Translations> | undefined);
+
+  if (!injected) {
+    throw new Error(
+      "useI18n() requires a translations provider. Ensure the component is a descendant of Editor or CloudEditor.",
+    );
+  }
+
+  const t: Translations = isRef(injected) ? injected.value : injected;
 
   /**
    * Format a string with placeholders.

@@ -36,7 +36,7 @@ const editor = await initCloud({
     return {
       id: selected.id,
       url: selected.url,
-      name: selected.name,
+      filename: selected.filename,
       width: selected.width,
       height: selected.height,
     };
@@ -54,6 +54,7 @@ import { init } from '@templatical/media-library';
 const mediaLibrary = init({
   container: '#media-library',
   auth: {
+    mode: 'proxy',
     url: '/api/templatical/token',
   },
   onSelect: (item) => {
@@ -72,14 +73,15 @@ import { MediaApiClient } from '@templatical/media-library';
 const client = new MediaApiClient(authManager);
 
 // Browse images
-const { items, total } = await client.browse({ page: 1, perPage: 20, folder: 'headers' });
+const response = await client.browseMedia({ folder_id: 'folder-id', search: 'hero', category: 'images' });
+// response: { data: MediaItem[], meta: { path, per_page, next_cursor, prev_cursor } }
 
 // Upload
-const item = await client.upload(file);
+const item = await client.uploadMedia(file, folderId);
 
-// Delete
-await client.delete(itemId);
+// Delete (accepts an array of IDs)
+await client.deleteMedia(['item-id-1', 'item-id-2']);
 
-// Check usage before deleting
-const usage = await client.checkUsage(itemId);
+// Check usage before deleting (accepts an array of IDs)
+const usage = await client.checkMediaUsage(['item-id-1']);
 ```

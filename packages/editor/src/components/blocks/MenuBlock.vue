@@ -65,8 +65,7 @@ function getLinkColor(itemColor?: string): string {
     </div>
     <div
       v-else
-      class="tpl:flex tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:text-sm"
-      style="border-color: var(--tpl-border); color: var(--tpl-text-dim)"
+      class="tpl:flex tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:text-sm tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text-dim)]"
     >
       <Navigation :size="16" />
       <span>{{ t.menu.addLinks }}</span>

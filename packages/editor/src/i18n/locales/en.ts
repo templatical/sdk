@@ -20,6 +20,8 @@ export default {
     title: "Templatical",
     unsaved: "Unsaved",
     saving: "Saving...",
+    saved: "Saved",
+    saveFailed: "Save failed",
     save: "Save",
     templatesUsed: "{used}/{max} templates used",
   },
@@ -788,5 +790,10 @@ export default {
     fileTooLarge: "File is too large. Maximum size is 10MB.",
     invalidFileType:
       "This file type is not supported. Upload a PNG, JPG, WebP, or PDF.",
+  },
+  errors: {
+    editorLoading: "Loading editor...",
+    editorLoadFailed: "Failed to load editor.",
+    retry: "Retry",
   },
 } as const;

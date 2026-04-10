@@ -180,7 +180,7 @@ describe("DEFAULT_TEMPLATE_DEFAULTS", () => {
   it("has expected values", () => {
     expect(DEFAULT_TEMPLATE_DEFAULTS.width).toBe(600);
     expect(DEFAULT_TEMPLATE_DEFAULTS.backgroundColor).toBe("#ffffff");
-    expect(DEFAULT_TEMPLATE_DEFAULTS.fontFamily).toBe("Arial, sans-serif");
+    expect(DEFAULT_TEMPLATE_DEFAULTS.fontFamily).toBe("Arial");
   });
 
   it("matches createDefaultTemplateContent output", () => {

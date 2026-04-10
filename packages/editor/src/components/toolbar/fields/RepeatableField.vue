@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockRepeatableField } from "@templatical/types";
-import { labelClass } from "../../../constants/styleConstants";
-import { Lock, Plus, Trash2 } from "@lucide/vue";
+import { Plus, Trash2 } from "@lucide/vue";
 import { computed } from "vue";
 import { resolveFieldComponent } from "./index";
+import FieldWrapper from "./FieldWrapper.vue";
 
 const props = defineProps<{
   field: CustomBlockRepeatableField;
@@ -60,23 +60,15 @@ function updateItemField(index: number, key: string, value: unknown): void {
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">
-      {{ field.label }}
-      <Lock
-        v-if="readOnly"
-        :size="12"
-        class="tpl:inline tpl:text-[var(--tpl-text-dim)]"
-      />
-      <span v-if="field.required" class="tpl:text-[var(--tpl-danger)]">
-        *
-      </span>
-    </label>
-
+  <FieldWrapper
+    :label="field.label"
+    :required="field.required"
+    :read-only="readOnly"
+  >
     <div class="tpl:flex tpl:flex-col tpl:gap-2">
       <div
         v-for="(item, index) in items"
-        :key="index"
+        :key="`${field.key}-${index}`"
         class="tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:p-3"
       >
         <div class="tpl:mb-2 tpl:flex tpl:items-center tpl:justify-between">
@@ -124,5 +116,5 @@ function updateItemField(index: number, key: string, value: unknown): void {
         {{ t.customBlocks.fields.maxItemsReached }}
       </p>
     </div>
-  </div>
+  </FieldWrapper>
 </template>

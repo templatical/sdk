@@ -1,4 +1,5 @@
 import { createApp, h, ref, type App, type Ref } from "vue";
+import { INIT_TIMEOUT_MS } from "./constants/timeouts";
 import type {
   BlockDefaults,
   CustomBlockDefinition,
@@ -13,8 +14,10 @@ import type {
   ThemeOverrides,
   UiTheme,
 } from "@templatical/types";
-import type { EditorPlugin } from "@templatical/core";
+import type { MediaRequestContext } from "@templatical/media-library";
+
 import Editor from "./Editor.vue";
+import { loadTranslations } from "./i18n";
 import { useFonts } from "./composables";
 
 // ---------------------------------------------------------------------------
@@ -29,7 +32,7 @@ export interface TemplaticalEditorConfig {
   onSave?: (content: TemplateContent) => void;
   onError?: (error: Error) => void;
 
-  onRequestMedia?: () => Promise<MediaResult | null>;
+  onRequestMedia?: OnRequestMedia;
 
   mergeTags?: MergeTagsConfig;
   displayConditions?: DisplayConditionsConfig;
@@ -42,9 +45,12 @@ export interface TemplaticalEditorConfig {
   theme?: ThemeOverrides;
   uiTheme?: UiTheme;
   locale?: string;
-
-  plugins?: EditorPlugin[];
 }
+
+/** Function type for media browser requests, used by both OSS and Cloud editors. */
+export type OnRequestMedia = (
+  context?: MediaRequestContext,
+) => Promise<MediaResult | null>;
 
 export interface TemplaticalEditor {
   getContent(): TemplateContent;
@@ -67,7 +73,9 @@ export interface TemplaticalCloudEditor extends TemplaticalEditor {
 let appInstance: App | null = null;
 const editorRef: Ref<InstanceType<typeof Editor> | null> = ref(null);
 
-export function init(config: TemplaticalEditorConfig): TemplaticalEditor {
+export async function init(
+  config: TemplaticalEditorConfig,
+): Promise<TemplaticalEditor> {
   const container =
     typeof config.container === "string"
       ? document.querySelector(config.container)
@@ -83,11 +91,19 @@ export function init(config: TemplaticalEditorConfig): TemplaticalEditor {
     unmount();
   }
 
+  // Load translations before mounting so child components can use useI18n synchronously
+  const translations = await loadTranslations(config.locale ?? "en");
+
+  // Create fonts manager to pass to Editor
+  const fontsManager = useFonts(config.fonts);
+
   appInstance = createApp({
     setup() {
       return () =>
         h(Editor, {
           config,
+          translations,
+          fontsManager,
           ref: editorRef,
         });
     },
@@ -128,7 +144,9 @@ export function init(config: TemplaticalEditorConfig): TemplaticalEditor {
 
 let cloudAppInstance: App | null = null;
 
-const cloudEditorRef: Ref<any> = ref(null);
+const cloudEditorRef: Ref<InstanceType<
+  typeof import("./cloud/CloudEditor.vue").default
+> | null> = ref(null);
 
 export async function initCloud(
   config: import("./cloud/CloudEditor.vue").TemplaticalCloudEditorConfig,
@@ -162,7 +180,7 @@ export async function initCloud(
   const readyPromise = new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => {
       reject(new Error("[Templatical] Cloud editor initialization timed out"));
-    }, 30000);
+    }, INIT_TIMEOUT_MS);
 
     cloudAppInstance = createApp({
       setup() {
@@ -289,11 +307,27 @@ export type {
   SaveResult,
   Template,
 } from "@templatical/types";
-export type {
-  EditorPlugin,
-  EditorPluginContext,
-  ToolbarAction,
-  SidebarPanel,
-} from "@templatical/core";
+
 export type { UseFontsReturn, FontOption } from "./composables/useFonts";
 export { useFonts } from "./composables/useFonts";
+export type { EditorCapabilities } from "./types/editor-capabilities";
+export {
+  TRANSLATIONS_KEY,
+  EDITOR_KEY,
+  HISTORY_KEY,
+  BLOCK_ACTIONS_KEY,
+  CONDITION_PREVIEW_KEY,
+  FONTS_MANAGER_KEY,
+  THEME_STYLES_KEY,
+  UI_THEME_KEY,
+  BLOCK_DEFAULTS_KEY,
+  BLOCK_REGISTRY_KEY,
+  CUSTOM_BLOCK_DEFINITIONS_KEY,
+  MERGE_TAGS_KEY,
+  MERGE_TAG_SYNTAX_KEY,
+  ON_REQUEST_MERGE_TAG_KEY,
+  ON_REQUEST_MEDIA_KEY,
+  DISPLAY_CONDITIONS_KEY,
+  ALLOW_CUSTOM_CONDITIONS_KEY,
+  CAPABILITIES_KEY,
+} from "./keys";

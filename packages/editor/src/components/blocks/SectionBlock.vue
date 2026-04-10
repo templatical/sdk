@@ -6,11 +6,8 @@ import DividerBlock from "./DividerBlock.vue";
 import ImageBlock from "./ImageBlock.vue";
 import TitleBlock from "./TitleBlock.vue";
 import ParagraphBlock from "./ParagraphBlock.vue";
-import { useI18n, type UseBlockRegistryReturn } from "../../composables";
-import type {
-  UseConditionPreviewReturn,
-  UseEditorReturn,
-} from "@templatical/core";
+import { useI18n } from "../../composables";
+import { resolveBlockComponent } from "../../utils/blockComponentResolver";
 import type {
   Block,
   CustomBlock as CustomBlockType,
@@ -19,6 +16,20 @@ import type {
 } from "@templatical/types";
 import { computed, inject, type Component } from "vue";
 import draggable from "vuedraggable";
+import {
+  EDITOR_KEY,
+  CONDITION_PREVIEW_KEY,
+  BLOCK_REGISTRY_KEY,
+} from "../../keys";
+
+const sectionBlockComponentMap: Record<string, Component> = {
+  title: TitleBlock,
+  paragraph: ParagraphBlock,
+  image: ImageBlock,
+  button: ButtonBlock,
+  divider: DividerBlock,
+  custom: CustomBlock,
+};
 
 const props = defineProps<{
   block: SectionBlockType;
@@ -26,9 +37,9 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const editor = inject<UseEditorReturn>("editor")!;
-const conditionPreview = inject<UseConditionPreviewReturn>("conditionPreview");
-const blockRegistry = inject<UseBlockRegistryReturn>("blockRegistry");
+const editor = inject(EDITOR_KEY)!;
+const conditionPreview = inject(CONDITION_PREVIEW_KEY);
+const blockRegistry = inject(BLOCK_REGISTRY_KEY);
 
 const columnWidths = computed(() => {
   switch (props.block.columns) {
@@ -68,29 +79,7 @@ function setColumnBlocks(colIndex: number, blocks: Block[]): void {
 }
 
 function getBlockComponent(block: Block): Component | null {
-  if (blockRegistry) {
-    const component = blockRegistry.getComponent(block);
-    if (component) {
-      return component;
-    }
-  }
-
-  switch (block.type) {
-    case "title":
-      return TitleBlock;
-    case "paragraph":
-      return ParagraphBlock;
-    case "image":
-      return ImageBlock;
-    case "button":
-      return ButtonBlock;
-    case "divider":
-      return DividerBlock;
-    case "custom":
-      return CustomBlock;
-    default:
-      return null;
-  }
+  return resolveBlockComponent(block, blockRegistry, sectionBlockComponentMap);
 }
 
 function handleFetchData(
@@ -160,8 +149,7 @@ function handleFetchData(
         </draggable>
         <div
           v-if="getColumnBlocks(colIndex).length === 0"
-          class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:flex tpl:items-center tpl:justify-center tpl:text-xs"
-          style="color: var(--tpl-text-dim)"
+          class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:flex tpl:items-center tpl:justify-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
         >
           <span>{{ t.section.dropHere }}</span>
         </div>

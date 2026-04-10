@@ -52,6 +52,9 @@ const {
 } = useComments({
   authManager,
   getTemplateId: () => templateId,
+  getSocketId: () => socketId,             // WebSocket socket ID for echo prevention
+  isAuthReady: () => true,                 // Gate loading until auth is ready
+  hasCommentingFeature: () => true,        // Gate based on plan features
   onComment: (event) => { /* comment event */ },
   onError: (error) => { /* handle error */ },
 });

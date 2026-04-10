@@ -76,18 +76,15 @@ describe('MergeTagNode regex patterns', () => {
   });
 
   describe('MergeTagNode configuration', () => {
-    it('extension is inline and atom', () => {
-      // These are static properties we can verify from the source
-      // The node config: group: 'inline', inline: true, atom: true
-      // We verify the regex patterns are derived from syntax presets
-      expect(liquidValue.source).toBeTruthy();
-      expect(typeof liquidValue.source).toBe('string');
+    it('liquid value regex source is a valid pattern string', () => {
+      // Verify the regex pattern is a non-empty string that compiles
+      expect(liquidValue.source).toMatch(/\{/);
+      expect(new RegExp(liquidValue.source)).toBeInstanceOf(RegExp);
     });
 
     it('parseHTML targets span[data-merge-tag]', () => {
-      // The parseHTML selector - verify the convention
-      const selector = 'span[data-merge-tag]';
-      expect(selector).toContain('data-merge-tag');
+      const rules = (MergeTagNode.config.parseHTML as Function).call({});
+      expect(rules[0].tag).toBe('span[data-merge-tag]');
     });
   });
 });
@@ -112,9 +109,9 @@ describe('MergeTagNode extension config', () => {
   it('addAttributes returns label and value with default empty strings and parseHTML extractors', () => {
     const attrs = (MergeTagNode.config.addAttributes as Function).call({});
     expect(attrs.label.default).toBe('');
-    expect(typeof attrs.label.parseHTML).toBe('function');
+    expect(attrs.label.parseHTML).toEqual(expect.any(Function));
     expect(attrs.value.default).toBe('');
-    expect(typeof attrs.value.parseHTML).toBe('function');
+    expect(attrs.value.parseHTML).toEqual(expect.any(Function));
   });
 
   it('parseHTML returns array with tag span[data-merge-tag]', () => {
@@ -127,13 +124,33 @@ describe('MergeTagNode extension config', () => {
   it('addCommands has insertMergeTag command', () => {
     const commands = (MergeTagNode.config.addCommands as Function).call({ name: 'mergeTagNode' });
     expect(commands).toHaveProperty('insertMergeTag');
-    expect(typeof commands.insertMergeTag).toBe('function');
+    expect(commands.insertMergeTag).toEqual(expect.any(Function));
   });
 
   it('default options use liquid syntax', () => {
     const options = (MergeTagNode.config.addOptions as Function).call({});
     expect(options.syntax).toEqual(SYNTAX_PRESETS.liquid);
     expect(options.mergeTags).toEqual([]);
+  });
+});
+
+describe('MergeTagNode source structure', () => {
+  const { readFileSync } = require('node:fs');
+  const { resolve } = require('node:path');
+  const src = readFileSync(
+    resolve(__dirname, '../src/extensions/MergeTagNode.ts'),
+    'utf-8',
+  );
+
+  it('imports isNodeSelected from shared module', () => {
+    expect(src).toContain('import { isNodeSelected } from "./isNodeSelected"');
+    expect(src).not.toContain('const isMergeTagSelected');
+  });
+
+  it('uses renderVueNodeView wrapper instead of direct VueNodeViewRenderer cast', () => {
+    expect(src).toContain('import { renderVueNodeView } from "./renderVueNodeView"');
+    expect(src).toContain('renderVueNodeView(MergeTagNodeView)');
+    expect(src).not.toContain('as any');
   });
 });
 

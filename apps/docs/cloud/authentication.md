@@ -35,9 +35,9 @@ const editor = await initCloud({
   container: '#editor',
   auth: {
     url: '/api/templatical/token',
-    baseUrl: 'https://cloud.templatical.com', // Default
+    baseUrl: 'https://templatical.com',        // Default
     requestOptions: {
-      method: 'POST',                         // Default: GET
+      method: 'POST',                         // Default: POST
       headers: {
         'X-Custom-Header': 'value',
       },
@@ -55,11 +55,11 @@ const editor = await initCloud({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `url` | `string` | — | **Required.** Your token endpoint URL |
-| `baseUrl` | `string` | `https://cloud.templatical.com` | Templatical Cloud API base URL |
-| `requestOptions.method` | `'GET' \| 'POST'` | `'GET'` | HTTP method for token requests |
+| `baseUrl` | `string` | `https://templatical.com` | Templatical Cloud API base URL |
+| `requestOptions.method` | `'GET' \| 'POST'` | `'POST'` | HTTP method for token requests |
 | `requestOptions.headers` | `Record<string, string>` | `{}` | Additional headers sent with token requests |
 | `requestOptions.body` | `Record<string, unknown>` | `{}` | Body payload for POST token requests |
-| `requestOptions.credentials` | `RequestCredentials` | — | Fetch credentials mode (`same-origin`, `include`) |
+| `requestOptions.credentials` | `RequestCredentials` | `'include'` | Fetch credentials mode (`same-origin`, `include`) |
 
 ## Token Response Format
 
@@ -67,28 +67,35 @@ Your token endpoint must return a JSON response with this structure:
 
 ```json
 {
-  "access_token": "eyJhbGciOiJSUzI1NiIs...",
+  "token": "eyJhbGciOiJSUzI1NiIs...",
+  "expires_at": 1720000000,
   "project_id": "proj_abc123",
-  "tenant_id": "ten_xyz789",
-  "tenant_slug": "acme-corp",
-  "expires_in": 3600,
+  "tenant": "acme-corp",
   "test_email": {
-    "allowed_emails": ["team@example.com"]
+    "allowed_emails": ["team@example.com"],
+    "signature": "hmac-signature-here"
   },
   "user": {
     "id": "user_123",
     "name": "Jane Smith",
-    "avatar": "https://example.com/avatar.jpg"
-  },
-  "websocket": {
-    "host": "ws.templatical.com",
-    "port": 443,
-    "app_key": "app-key-here"
+    "signature": "hmac-signature-here"
   }
 }
 ```
 
-The `user` object is used for collaboration (showing who is editing) and comments (attributing authorship). The `websocket` config enables real-time features.
+| Field | Type | Description |
+|-------|------|-------------|
+| `token` | `string` | **Required.** The JWT access token |
+| `expires_at` | `number` | **Required.** Unix timestamp when the token expires |
+| `project_id` | `string` | **Required.** The project ID |
+| `tenant` | `string` | **Required.** The tenant slug |
+| `user` | `object` | Optional. Used for collaboration presence and comment attribution |
+| `user.id` | `string` | User identifier |
+| `user.name` | `string` | Display name shown in collaboration UI |
+| `user.signature` | `string` | HMAC signature for user verification |
+| `test_email` | `object` | Optional. Configuration for the test email feature |
+| `test_email.allowed_emails` | `string[]` | Email addresses allowed to receive test emails |
+| `test_email.signature` | `string` | HMAC signature for test email verification |
 
 ## Direct Authentication
 
@@ -97,12 +104,15 @@ For server-side or testing scenarios, you can authenticate directly with API cre
 ```js
 import { createSdkAuthManager } from '@templatical/core/cloud';
 
-const auth = createSdkAuthManager({
-  mode: 'direct',
-  clientId: 'your-client-id',
-  clientSecret: 'your-client-secret',
-  tenant: 'tenant-slug',
-});
+const auth = createSdkAuthManager(
+  {
+    mode: 'direct',
+    clientId: 'your-client-id',
+    clientSecret: 'your-client-secret',
+    tenant: 'tenant-slug',
+  },
+  (error) => console.error('Auth error:', error), // optional onError callback
+);
 ```
 
 ::: warning

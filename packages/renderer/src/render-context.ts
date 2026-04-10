@@ -1,5 +1,16 @@
 import type { CustomFont } from "@templatical/types";
 
+const BUILT_IN_FONT_FALLBACKS: Record<string, string> = {
+  arial: "Arial, sans-serif",
+  helvetica: "Helvetica, sans-serif",
+  georgia: "Georgia, serif",
+  "times new roman": "'Times New Roman', serif",
+  verdana: "Verdana, sans-serif",
+  "trebuchet ms": "'Trebuchet MS', sans-serif",
+  "courier new": "'Courier New', monospace",
+  tahoma: "Tahoma, sans-serif",
+};
+
 /**
  * Immutable context passed through the block rendering chain.
  */
@@ -30,12 +41,19 @@ export class RenderContext {
    * Otherwise returns the original font family string.
    */
   resolveFontFamily(fontFamily: string): string {
+    // Check custom fonts first
     for (const customFont of this.customFonts) {
       if (customFont.name.toLowerCase() === fontFamily.toLowerCase()) {
         const fallback = customFont.fallback ?? this.defaultFallbackFont;
 
         return `'${customFont.name}', ${fallback}`;
       }
+    }
+
+    // Resolve built-in fonts to include fallback stacks
+    const builtIn = BUILT_IN_FONT_FALLBACKS[fontFamily.toLowerCase()];
+    if (builtIn) {
+      return builtIn;
     }
 
     return fontFamily;

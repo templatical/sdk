@@ -15,7 +15,7 @@ export interface TemplateContent {
 }
 
 export function createDefaultTemplateContent(
-  defaultFontFamily = "Arial, sans-serif",
+  defaultFontFamily = "Arial",
   templateDefaults?: TemplateDefaults,
 ): TemplateContent {
   return {

@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import LoadingTrack from "../../components/LoadingTrack.vue";
-import {
-  useTemplateScoring,
-  type UseEditorReturn,
-} from "@templatical/core/cloud";
-import type { Translations } from "../../i18n";
+import { EDITOR_KEY, SCORING_KEY, MERGE_TAGS_KEY } from "../../keys";
+import { useI18n } from "../../composables/useI18n";
 import type { ScoringCategory, ScoringFinding } from "@templatical/types";
-import type { MergeTag } from "@templatical/types";
-import type { AuthManager } from "@templatical/core/cloud";
 import {
   CircleAlert,
   TriangleAlert,
@@ -32,15 +27,10 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const translations = inject<Translations>("translations")!;
-const editor = inject<UseEditorReturn>("editor")!;
-const authManager = inject<AuthManager>("authManager")!;
-const mergeTags = inject<MergeTag[]>("mergeTags", []);
-
-const scoring = useTemplateScoring({
-  authManager,
-  getTemplateId: () => editor.state.template?.id ?? null,
-});
+const { t } = useI18n();
+const editor = inject(EDITOR_KEY)!;
+const scoring = inject(SCORING_KEY)!;
+const mergeTags = inject(MERGE_TAGS_KEY, []);
 
 const expandedCategories = ref<Record<string, boolean>>({
   spam: true,
@@ -183,25 +173,22 @@ function totalFindings(): number {
         class="tpl:flex tpl:items-center tpl:justify-between tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
       >
         <div
-          class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium"
-          style="color: var(--tpl-primary)"
+          class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-primary)]"
         >
           <ShieldCheck :size="13" :stroke-width="2" />
-          <span>{{ translations.scoring.title }}</span>
+          <span>{{ t.scoring.title }}</span>
         </div>
         <div class="tpl:flex tpl:items-center tpl:gap-1">
           <button
             v-if="scoring.scoringResult.value && !scoring.isScoring.value"
-            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
-            style="color: var(--tpl-text-muted)"
-            :title="translations.scoring.rescore"
+            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
+            :title="t.scoring.rescore"
             @click="triggerScore()"
           >
             <RefreshCw :size="14" :stroke-width="2" />
           </button>
           <button
-            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150"
-            style="color: var(--tpl-text-muted)"
+            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
             @click="emit('close')"
           >
             <X :size="14" :stroke-width="2" />
@@ -216,8 +203,8 @@ function totalFindings(): number {
           v-if="scoring.isScoring.value"
           class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
         >
-          <p class="tpl:text-sm" style="color: var(--tpl-text-muted)">
-            {{ translations.scoring.scoring }}
+          <p class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
+            {{ t.scoring.scoring }}
           </p>
           <LoadingTrack class="tpl:w-3/4" />
         </div>
@@ -230,24 +217,19 @@ function totalFindings(): number {
           <CircleAlert
             :size="32"
             :stroke-width="1.5"
-            style="color: var(--tpl-danger)"
+            class="tpl:text-[var(--tpl-danger)]"
           />
           <p
-            class="tpl:max-w-[240px] tpl:text-sm"
-            style="color: var(--tpl-text-muted)"
+            class="tpl:max-w-[240px] tpl:text-sm tpl:text-[var(--tpl-text-muted)]"
           >
-            {{ translations.scoring.error }}
+            {{ t.scoring.error }}
           </p>
           <button
-            class="tpl:mt-2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
-            style="
-              border-color: var(--tpl-border);
-              color: var(--tpl-text-muted);
-            "
+            class="tpl:mt-2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text-muted)]"
             @click="triggerScore()"
           >
             <RefreshCw :size="12" :stroke-width="2" />
-            {{ translations.scoring.rescore }}
+            {{ t.scoring.rescore }}
           </button>
         </div>
 
@@ -272,49 +254,41 @@ function totalFindings(): number {
               {{ scoring.scoringResult.value.score }}
             </span>
             <span
-              class="tpl:text-xs tpl:font-medium tpl:uppercase tpl:tracking-wider"
-              style="color: var(--tpl-text-muted)"
+              class="tpl:text-xs tpl:font-medium tpl:uppercase tpl:tracking-wider tpl:text-[var(--tpl-text-muted)]"
             >
-              {{ translations.scoring.overallScore }}
+              {{ t.scoring.overallScore }}
             </span>
             <span
               v-if="totalFindings() > 0"
-              class="tpl:text-xs"
-              style="color: var(--tpl-text-dim)"
+              class="tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
             >
               {{ totalFindings() }}
-              {{ translations.scoring.findings }}
+              {{ t.scoring.findings }}
             </span>
           </div>
 
           <!-- Fix error -->
           <div
             v-if="scoring.fixError.value"
-            class="tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs"
-            style="
-              background-color: var(--tpl-danger-light);
-              color: var(--tpl-danger);
-            "
+            class="tpl:flex tpl:items-start tpl:gap-2 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-danger-light)] tpl:text-[var(--tpl-danger)]"
           >
             <CircleAlert
               :size="14"
               :stroke-width="2"
               class="tpl:mt-0.5 tpl:shrink-0"
             />
-            <span>{{ translations.scoring.fixError }}</span>
+            <span>{{ t.scoring.fixError }}</span>
           </div>
 
           <!-- Category cards -->
           <div
             v-for="category in categoryOrder"
             :key="category"
-            class="tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)] tpl:border"
-            style="border-color: var(--tpl-border)"
+            class="tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)]"
           >
             <!-- Category header -->
             <button
-              class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-2.5 tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-colors tpl:duration-100"
-              style="background-color: var(--tpl-bg)"
+              class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-2.5 tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-colors tpl:duration-100 tpl:bg-[var(--tpl-bg)]"
               @click="toggleCategory(category)"
             >
               <component
@@ -328,10 +302,9 @@ function totalFindings(): number {
                 }"
               />
               <span
-                class="tpl:flex-1 tpl:text-xs tpl:font-medium"
-                style="color: var(--tpl-text)"
+                class="tpl:flex-1 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)]"
               >
-                {{ translations.scoring.categories[category] }}
+                {{ t.scoring.categories[category] }}
               </span>
               <span
                 class="tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-semibold tpl:tabular-nums"
@@ -351,8 +324,7 @@ function totalFindings(): number {
                   scoring.scoringResult.value.categories[category].findings
                     .length > 0
                 "
-                class="tpl:text-[10px]"
-                style="color: var(--tpl-text-dim)"
+                class="tpl:text-[10px] tpl:text-[var(--tpl-text-dim)]"
               >
                 {{
                   scoring.scoringResult.value.categories[category].findings
@@ -362,39 +334,35 @@ function totalFindings(): number {
               <ChevronDown
                 :size="12"
                 :stroke-width="2"
-                class="tpl:transition-transform tpl:duration-200"
+                class="tpl:transition-transform tpl:duration-200 tpl:text-[var(--tpl-text-dim)]"
                 :class="
                   expandedCategories[category]
                     ? 'tpl:rotate-0'
                     : 'tpl:-rotate-90'
                 "
-                style="color: var(--tpl-text-dim)"
               />
             </button>
 
             <!-- Findings list -->
             <div
               v-if="expandedCategories[category]"
-              class="tpl:border-t"
-              style="border-color: var(--tpl-border)"
+              class="tpl:border-t tpl:border-[var(--tpl-border)]"
             >
               <div
                 v-if="
                   scoring.scoringResult.value.categories[category].findings
                     .length === 0
                 "
-                class="tpl:px-3 tpl:py-3 tpl:text-center tpl:text-xs"
-                style="color: var(--tpl-text-dim)"
+                class="tpl:px-3 tpl:py-3 tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
               >
-                {{ translations.scoring.noFindings }}
+                {{ t.scoring.noFindings }}
               </div>
               <div
                 v-for="finding in scoring.scoringResult.value.categories[
                   category
                 ].findings"
                 :key="finding.id"
-                class="tpl:border-t tpl:px-3 tpl:py-2.5 first:tpl:border-t-0"
-                style="border-color: var(--tpl-border-light)"
+                class="tpl:border-t tpl:px-3 tpl:py-2.5 first:tpl:border-t-0 tpl:border-[var(--tpl-border-light)]"
               >
                 <div class="tpl:flex tpl:items-start tpl:gap-2">
                   <!-- Severity icon -->
@@ -423,11 +391,10 @@ function totalFindings(): number {
                           backgroundColor: severityBgColor(finding.severity),
                         }"
                       >
-                        {{ translations.scoring.severity[finding.severity] }}
+                        {{ t.scoring.severity[finding.severity] }}
                       </span>
                       <span
-                        class="tpl:text-xs tpl:leading-snug"
-                        style="color: var(--tpl-text)"
+                        class="tpl:text-xs tpl:leading-snug tpl:text-[var(--tpl-text)]"
                       >
                         {{ finding.message }}
                       </span>
@@ -435,8 +402,7 @@ function totalFindings(): number {
                     <!-- Suggestion -->
                     <p
                       v-if="finding.suggestion"
-                      class="tpl:mt-1 tpl:text-[11px] tpl:leading-snug"
-                      style="color: var(--tpl-text-dim)"
+                      class="tpl:mt-1 tpl:text-[11px] tpl:leading-snug tpl:text-[var(--tpl-text-dim)]"
                     >
                       {{ finding.suggestion }}
                     </p>
@@ -446,12 +412,8 @@ function totalFindings(): number {
                       class="tpl:mt-2 tpl:flex tpl:justify-center"
                     >
                       <button
-                        class="tpl-scoring-fix-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded tpl:border tpl:px-3 tpl:py-1.5 tpl:text-[11px] tpl:font-medium tpl:transition-all tpl:duration-150 tpl:disabled:opacity-50"
-                        style="
-                          border-color: var(--tpl-border);
-                          color: var(--tpl-primary);
-                          background-color: transparent;
-                        "
+                        class="tpl-scoring-fix-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded tpl:border tpl:px-3 tpl:py-1.5 tpl:text-[11px] tpl:font-medium tpl:transition-all tpl:duration-150 tpl:disabled:opacity-50 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-primary)]"
+                        style="background-color: transparent"
                         :disabled="scoring.fixingFindingId.value !== null"
                         @click="handleFix(finding)"
                       >
@@ -464,10 +426,16 @@ function totalFindings(): number {
                         <Sparkles v-else :size="11" :stroke-width="2" />
                         {{
                           scoring.fixingFindingId.value === finding.id
-                            ? translations.scoring.fixing
-                            : translations.scoring.fix
+                            ? t.scoring.fixing
+                            : t.scoring.fix
                         }}
                       </button>
+                      <p
+                        v-if="scoring.fixError.value"
+                        class="tpl:mt-1.5 tpl:text-[11px] tpl:text-[var(--tpl-danger)]"
+                      >
+                        {{ scoring.fixError.value }}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -484,22 +452,20 @@ function totalFindings(): number {
           <ShieldCheck
             :size="32"
             :stroke-width="1.5"
-            style="color: var(--tpl-text-dim)"
+            class="tpl:text-[var(--tpl-text-dim)]"
           />
           <p
-            class="tpl:max-w-[240px] tpl:text-sm"
-            style="color: var(--tpl-text-muted)"
+            class="tpl:max-w-[240px] tpl:text-sm tpl:text-[var(--tpl-text-muted)]"
           >
-            {{ translations.scoring.emptyState }}
+            {{ t.scoring.emptyState }}
           </p>
         </div>
 
         <!-- AI disclaimer -->
         <p
-          class="tpl:m-0 tpl:px-4 tpl:pb-2 tpl:pt-2 tpl:text-center tpl:text-[11px]"
-          style="color: var(--tpl-text-dim)"
+          class="tpl:m-0 tpl:px-4 tpl:pb-2 tpl:pt-2 tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
         >
-          {{ translations.aiMenu.disclaimer }}
+          {{ t.aiMenu.disclaimer }}
         </p>
       </div>
     </div>

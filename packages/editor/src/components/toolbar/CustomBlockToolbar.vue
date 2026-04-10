@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
 import { useDataSourceFetch } from "@templatical/core";
-import type {
-  CustomBlock,
-  CustomBlockDefinition,
-  CustomBlockField,
-} from "@templatical/types";
+import type { CustomBlock, CustomBlockField } from "@templatical/types";
 import { CircleAlert, RefreshCw } from "@lucide/vue";
 import { computed, inject } from "vue";
+import { CUSTOM_BLOCK_DEFINITIONS_KEY } from "../../keys";
 import { resolveFieldComponent } from "./fields";
 
 const props = defineProps<{
@@ -21,10 +18,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const customBlockDefinitions = inject<CustomBlockDefinition[]>(
-  "customBlockDefinitions",
-  [],
-);
+const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 
 const definition = computed(() =>
   customBlockDefinitions.find((d) => d.type === props.block.customType),
@@ -85,8 +79,7 @@ function updateField(key: string, value: unknown): void {
       <button
         v-if="needsFetch && !isFetching"
         type="button"
-        class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-md tpl:px-3 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-bg)] tpl:transition-all tpl:duration-150"
-        style="background-color: var(--tpl-primary)"
+        class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-md tpl:px-3 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-bg)] tpl:transition-all tpl:duration-150 tpl:bg-[var(--tpl-primary)]"
         @click="fetchData"
       >
         {{

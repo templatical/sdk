@@ -30,10 +30,18 @@
   },
   "dependencies": {
     "@templatical/types": "workspace:*",
-    "@vue/reactivity": "^3.5.31",
+    "@vue/reactivity": "^3.5.31"
+  },
+  "peerDependencies": {
     "pusher-js": "^8.5.0"
   },
+  "peerDependenciesMeta": {
+    "pusher-js": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "pusher-js": "^8.5.0",
     "tsup": "^8.5.0",
     "typescript": "^6.0.0",
     "vitest": "^4.0.0",

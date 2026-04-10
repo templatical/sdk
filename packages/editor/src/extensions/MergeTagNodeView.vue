@@ -58,10 +58,9 @@ function handleKeydown(event: KeyboardEvent): void {
 <template>
   <NodeViewWrapper
     as="span"
-    class="tpl-merge-tag-node tpl:group tpl:mx-0.5 tpl:inline-flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[0.9em] tpl:font-medium tpl:select-none"
+    class="tpl-merge-tag-node tpl:group tpl:mx-0.5 tpl:inline-flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[0.9em] tpl:font-medium tpl:select-none tpl:text-[var(--tpl-primary)]"
     style="
       background-color: color-mix(in srgb, var(--tpl-primary) 20%, transparent);
-      color: var(--tpl-primary);
     "
     contenteditable="false"
   >
@@ -71,8 +70,7 @@ function handleKeydown(event: KeyboardEvent): void {
       ref="inputRef"
       v-model="editValue"
       type="text"
-      class="tpl:w-32 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-0.5 tpl:py-0 tpl:text-[1em] tpl:font-medium tpl:outline-none"
-      style="color: var(--tpl-primary)"
+      class="tpl:w-32 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-0.5 tpl:py-0 tpl:text-[1em] tpl:font-medium tpl:outline-none tpl:text-[var(--tpl-primary)]"
       @blur="finishEditing"
       @keydown="handleKeydown"
     />
@@ -93,8 +91,7 @@ function handleKeydown(event: KeyboardEvent): void {
     <button
       type="button"
       :aria-label="t.mergeTag.deleteMergeTag"
-      class="tpl-merge-tag-delete tpl:flex tpl:size-5 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-none tpl:bg-transparent tpl:p-0 tpl:opacity-60 tpl:transition-all hover:tpl:opacity-100"
-      style="color: var(--tpl-primary)"
+      class="tpl-merge-tag-delete tpl:flex tpl:size-5 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-none tpl:bg-transparent tpl:p-0 tpl:opacity-60 tpl:transition-all hover:tpl:opacity-100 tpl:text-[var(--tpl-primary)]"
       contenteditable="false"
       @click.stop.prevent="deleteNode"
     >

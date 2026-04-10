@@ -18,15 +18,15 @@ Open-source Templatical email editor. Bun monorepo with 6 npm packages, a playgr
 
 ```
 @templatical/types  (no deps, devDep on media-library for type imports in cloud.ts)
-  ├── @templatical/core  (+@vue/reactivity, pusher-js)
+  ├── @templatical/core  (+@vue/reactivity; peer: pusher-js [optional, cloud-only])
   ├── @templatical/renderer  (peer: mjml)
   └── @templatical/import-beefree
 
 @templatical/core + @templatical/types
   └── @templatical/media-library  (+@vueuse/core, @lucide/vue, vue-advanced-cropper; peer: vue, tailwindcss)
 
-@templatical/core + @templatical/types + @templatical/media-library
-  └── @templatical/editor  (+tiptap, vuedraggable, liquidjs; peer: vue, tailwindcss)
+@templatical/core + @templatical/types
+  └── @templatical/editor  (+tiptap, vuedraggable, liquidjs; peer: vue, tailwindcss, @templatical/media-library [optional, cloud-only])
 ```
 
 **Media types** (`MediaItem`, `MediaFolder`, etc.) are canonically defined in `@templatical/media-library`. The `@templatical/types` package imports them via devDependency for use in cloud config interfaces (`TemplaticalConfig`, `PlanConfig`). **Build order:** media-library before types.
@@ -135,7 +135,7 @@ Cloud modules live in `packages/core/src/cloud/`. They provide features that con
 
 **Note:** Media functionality (`useMediaLibrary`, `MediaApiClient`) has moved to `@templatical/media-library`. It is NOT exported from `@templatical/core/cloud`.
 
-Used by `@templatical/editor`'s `initCloud()`.
+Used by `@templatical/editor`'s `initCloud()`. The editor's cloud composables (`src/cloud/composables/`) are separate from these — they are editor-specific extractions, not core cloud modules.
 
 ## Media Library (`@templatical/media-library`)
 
@@ -158,12 +158,17 @@ Standalone package for media management. Lives in `packages/media-library/`. Bui
 - Keep `manualChunks` in `vite.email-editor.config.ts` up to date when adding new cloud components.
 - Use type-only imports for runtime-lazy packages.
 - Don't statically import packages >20KB gzipped that are only used conditionally.
+- **Never use `v-for` inside vuedraggable's `#item` slot** for scoped variable tricks (e.g. `v-for="x in [computedValue]"`). Sortable.js requires a static single root element per item — `v-for` breaks DOM tracking and prevents drag-and-drop reordering between items.
+- Use `inject()` with explicit `null` defaults and null checks — never use `undefined as unknown as T` casts to bypass type safety.
+- Cloud-only composables instantiated in `CloudEditor.vue` should be provided via `provide()`/`inject()` to child components (like `useComments`, `useTemplateScoring`) rather than re-instantiated in each child. This preserves state across component mount/unmount cycles.
+- Async functions in components (`initialize()`, `saveTemplate()`, etc.) must guard against post-unmount execution with a `_destroyed` flag checked after every `await` point. This prevents zombie WebSocket connections, stale `emit()` calls, and dead ref writes.
+- When extracting shared logic into composables that call `provide()`, the composable must be called from `setup()` context (Vue requirement). The `useEditorCore` composable demonstrates this pattern.
 
 ### i18n
 
 Two separate i18n systems, same pattern. Supported locales: `en`, `de`.
 
-- **`@templatical/editor`** — `src/i18n/` with `loadTranslations(locale)`, `getBaseLocale()`, `isLocaleSupported()`, `getSupportedLocales()`. Translations are deeply nested objects. Composable: `useI18n(override?)` with `format(template, values)` for `{placeholder}` substitution. Injected via `"translations"` key.
+- **`@templatical/editor`** — `src/i18n/` with `loadTranslations(locale)`, `getBaseLocale()`, `isLocaleSupported()`, `getSupportedLocales()`. Translations are deeply nested objects. Composable: `useI18n(override?)` with `format(template, values)` for `{placeholder}` substitution. Injected via `"translations"` key. **All components must use `useI18n()`** — never `inject<Translations>("translations")` directly. Use `format()` for string interpolation instead of `.replace()`.
 - **`@templatical/media-library`** — `src/i18n/` with `loadMediaTranslations(locale)`. Flat namespace under `mediaLibrary.*`. Same `useI18n(override?)` pattern. Injected via `"translations"` key.
 
 Both use dynamic `import()` for locale files. Locale normalization strips region codes (`en-US` → `en`) and falls back to `en` for unsupported locales. When adding new i18n keys, add to both `en.ts` and `de.ts` — tests verify key parity between locales.
@@ -176,6 +181,37 @@ Both use dynamic `import()` for locale files. Locale normalization strips region
 - **TypeScript:** Strict mode, target ES2022, module resolution `bundler`.
 - **Vue 3** with TipTap 3 for rich text editing, VueDraggable for drag-and-drop, Tailwind CSS 4 for styling.
 - **Block types:** 14 types (Title, Paragraph, Image, Button, Section, Divider, Spacer, SocialIcons, Menu, Table, Html, Video, Countdown, Custom). Block IDs use UUID v7.
+
+### Editor architecture (`@templatical/editor`)
+
+Both the OSS `Editor.vue` and cloud `CloudEditor.vue` share a common base via the `useEditorCore` composable:
+
+- **`useEditorCore`** (`src/composables/useEditorCore.ts`) — instantiates 10 shared composables (useI18n, useHistory, useHistoryInterceptor, useBlockActions, useConditionPreview, useAutoSave, useUiTheme, useThemeStyles, useBlockRegistry, keyboard handler), registers all 13 built-in block types, manages plugins (install/destroy lifecycle), and calls all 17 shared `provide()` keys. Both editors call `useEditorCore()` passing their own `useEditor()` return value — OSS from `@templatical/core`, Cloud from `@templatical/core/cloud`. The composable accepts a `BaseEditorReturn` structural type that both satisfy.
+
+- **`Editor.vue`** (~280 lines) — calls `useEditor()` + `useEditorCore()`, mounts/unmounts. No cloud logic.
+
+- **`CloudEditor.vue`** (~1260 lines) — calls cloud `useEditor()`, sets up collaboration/broadcast **before** `useEditorCore()` (ordering matters — broadcast wraps editor methods, then history interceptor wraps after), then instantiates cloud-specific composables.
+
+- **Cloud composables** (`src/cloud/composables/`): `useSnapshotPreview`, `useCloudPanelState`, `useCollabUndoWarning`, `useCloudFeatureFlags`, `useCloudMediaLibrary`. These extract logical chunks from CloudEditor for testability and readability.
+
+- **Cloud components** (`src/cloud/components/`): `CloudLoadingOverlay`, `CloudErrorOverlay`, `SnapshotPreviewBanner`, `CollabUndoToast`. Extracted template regions with simple prop/event interfaces.
+
+### Shared utilities (`src/utils/`)
+
+- **`keyboardShortcuts.ts`** — `handleEditorKeydown()` with permissive `metaKey || ctrlKey` modifier, `isEditingText()` guard. Used by `useEditorCore`. Supports `onSave`, `onBeforeUndo` hooks. Undo/redo defers to TipTap when editing text.
+- **`blockTypeIcons.ts`** — maps block type strings to Lucide icon components. Used by `Sidebar.vue` and `Toolbar.vue` for dynamic icon rendering.
+- **`blockTypeLabels.ts`** — `getBlockTypeLabel(type, translations)` for i18n block type names. Used by `Sidebar.vue` and `Toolbar.vue`.
+- **`blockComponentResolver.ts`** — `resolveBlockComponent()` for registry-first component lookup, `getBlockWrapperStyle()` for shared style computation.
+- **`registerBuiltInBlocks.ts`** — registers all 13 built-in block types into the block registry.
+
+### Key types
+
+- **`BaseEditorReturn`** (`src/composables/useEditorCore.ts`) — structural type shared by both OSS and Cloud `UseEditorReturn`. Cloud extends it with `create`, `load`, `save`, `createSnapshot`, `hasTemplate`, `savedBlockIds`.
+- **`OnRequestMedia`** (`src/index.ts`) — named function type for media browser requests: `(context?: MediaRequestContext) => Promise<MediaResult | null>`. Used by both editors and all media-consuming components. Components inject it directly via `inject<OnRequestMedia | null>("onRequestMedia", null)` — there is no `provide("config")` wrapper.
+
+### Shared CSS classes (`src/styles/index.css`)
+
+- **`.tpl-text-toolbar-btn`** / **`.tpl-text-toolbar-btn--active`** — shared rich text toolbar button styles used by `ParagraphEditor.vue` and `TitleEditor.vue`. Avoids repeating the same Tailwind class string across 17 buttons.
 
 ## Tests
 
@@ -242,7 +278,7 @@ When adding a new function or composable:
 
 **`@templatical/media-library`** — Mock `MediaApiClient` for composable tests. Use `createMediaItem()` / `createFolder()` factories. Test both API success and error paths. For image crop, mock `document.createElement('canvas')` and canvas context.
 
-**`@templatical/editor`** — Import `dom-stubs.ts` before Vue in any test that touches Vue components or extensions. Use `withProvide()` for composables that use `inject()`. For TipTap extensions, test the config object properties directly (name, group, attributes, parseHTML) — don't instantiate a full editor. For component structure tests, read `.vue` source files with `node:fs` and assert on content patterns.
+**`@templatical/editor`** — Import `dom-stubs.ts` before Vue in any test that touches Vue components or extensions. Use `withProvide()` for composables that use `inject()`. For TipTap extensions, test the config object properties directly (name, group, attributes, parseHTML) — don't instantiate a full editor. For component structure tests, read `.vue`/`.ts` source files with `node:fs` and assert on content patterns. When testing for patterns that moved to `useEditorCore`, check `composables/useEditorCore.ts` instead of `Editor.vue`/`CloudEditor.vue`.
 
 ### Editor package DOM stubs
 

@@ -1,122 +1,20 @@
 import { useToggle } from "@vueuse/core";
+import { shallowRef, watch } from "vue";
+import type { EmojiCategory, EmojiCategoryKey } from "./emojiData";
 
-export type EmojiCategoryKey = "smileys" | "gestures" | "objects";
-
-export interface EmojiCategory {
-  key: EmojiCategoryKey;
-  emojis: string[];
-}
-
-const emojiCategories: EmojiCategory[] = [
-  {
-    key: "smileys",
-    emojis: [
-      "\u{1F600}",
-      "\u{1F603}",
-      "\u{1F604}",
-      "\u{1F601}",
-      "\u{1F605}",
-      "\u{1F602}",
-      "\u{1F923}",
-      "\u{1F60A}",
-      "\u{1F607}",
-      "\u{1F642}",
-      "\u{1F609}",
-      "\u{1F60D}",
-      "\u{1F970}",
-      "\u{1F618}",
-      "\u{1F60B}",
-      "\u{1F60E}",
-      "\u{1F929}",
-      "\u{1F973}",
-      "\u{1F60F}",
-      "\u{1F622}",
-      "\u{1F62D}",
-      "\u{1F624}",
-      "\u{1F621}",
-      "\u{1F92F}",
-      "\u{1F631}",
-      "\u{1F914}",
-      "\u{1F92B}",
-      "\u{1F917}",
-      "\u{1FAE1}",
-      "\u{1F44B}",
-    ],
-  },
-  {
-    key: "gestures",
-    emojis: [
-      "\u{1F44D}",
-      "\u{1F44E}",
-      "\u{1F44F}",
-      "\u{1F64C}",
-      "\u{1F91D}",
-      "\u270C\uFE0F",
-      "\u{1F91E}",
-      "\u{1FAF6}",
-      "\u2764\uFE0F",
-      "\u{1F9E1}",
-      "\u{1F49B}",
-      "\u{1F49A}",
-      "\u{1F499}",
-      "\u{1F49C}",
-      "\u{1F5A4}",
-      "\u{1F4AF}",
-      "\u2728",
-      "\u2B50",
-      "\u{1F31F}",
-      "\u{1F4AB}",
-      "\u{1F525}",
-      "\u{1F4A5}",
-      "\u{1F4AA}",
-      "\u{1F440}",
-      "\u{1F441}\uFE0F",
-      "\u{1F389}",
-      "\u{1F38A}",
-      "\u{1F381}",
-      "\u{1F3C6}",
-      "\u{1F947}",
-    ],
-  },
-  {
-    key: "objects",
-    emojis: [
-      "\u{1F4E7}",
-      "\u2709\uFE0F",
-      "\u{1F4E8}",
-      "\u{1F4E9}",
-      "\u{1F4EC}",
-      "\u{1F4F1}",
-      "\u{1F4BB}",
-      "\u{1F5A5}\uFE0F",
-      "\u{1F4CA}",
-      "\u{1F4C8}",
-      "\u{1F4C9}",
-      "\u{1F4C5}",
-      "\u{1F5D3}\uFE0F",
-      "\u23F0",
-      "\u23F3",
-      "\u{1F4A1}",
-      "\u{1F514}",
-      "\u{1F4E2}",
-      "\u{1F3AF}",
-      "\u2705",
-      "\u274C",
-      "\u26A0\uFE0F",
-      "\u{1F4B2}",
-      "\u{1F4B5}",
-      "\u{1F4B0}",
-      "\u{1F6D2}",
-      "\u{1F6CD}\uFE0F",
-      "\u{1F4E6}",
-      "\u{1F680}",
-      "\u2708\uFE0F",
-    ],
-  },
-];
+export type { EmojiCategoryKey, EmojiCategory };
 
 export function useEmoji() {
   const [isOpen, toggleValue] = useToggle(false);
+  const categories = shallowRef<EmojiCategory[]>([]);
+
+  // Lazy-load emoji data on first open
+  watch(isOpen, async (open) => {
+    if (open && categories.value.length === 0) {
+      const { emojiCategories } = await import("./emojiData");
+      categories.value = emojiCategories;
+    }
+  });
 
   function toggle(): void {
     toggleValue();
@@ -127,7 +25,7 @@ export function useEmoji() {
   }
 
   return {
-    categories: emojiCategories,
+    categories,
     isOpen,
     toggle,
     close,

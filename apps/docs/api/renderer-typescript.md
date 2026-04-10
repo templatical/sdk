@@ -60,6 +60,13 @@ import {
   isHiddenOnAll,
   toPaddingString,
   generateSocialIconDataUri,
+  renderBlock,
+  getCssClassAttr,
+  getCssClasses,
+  getWidthPercentages,
+  getWidthPixels,
+  SOCIAL_ICONS,
+  RenderContext,
 } from '@templatical/renderer';
 ```
 
@@ -126,6 +133,26 @@ Generates a base64-encoded SVG data URI for a social media platform icon. Used i
 const uri = generateSocialIconDataUri('twitter', 'circle', 32);
 // 'data:image/svg+xml,...'
 ```
+
+### `renderBlock(block, context)`
+
+Renders a single block to its MJML representation. Used internally by `renderToMjml()` but exported for advanced use cases where you need to render individual blocks.
+
+### `RenderContext`
+
+The context object passed to block renderers. Contains render options and font configuration.
+
+### `getCssClassAttr(block)` / `getCssClasses(block)`
+
+Generate CSS class attributes from a block's visibility settings. Used internally for responsive hiding.
+
+### `getWidthPercentages(layout)` / `getWidthPixels(layout, containerWidth)`
+
+Calculate column widths for a given `ColumnLayout`. Returns an array of percentage or pixel values per column.
+
+### `SOCIAL_ICONS`
+
+A map of all built-in social platform SVG icon data, keyed by platform and style.
 
 ## Compiling MJML to HTML
 

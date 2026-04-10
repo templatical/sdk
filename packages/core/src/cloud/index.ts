@@ -63,6 +63,7 @@ export type {
 
 // Collaboration
 export { useCollaboration } from "./collaboration";
+export { useCollaborationBroadcast } from "./collaboration-broadcast";
 export type {
   UseCollaborationOptions,
   UseCollaborationReturn,

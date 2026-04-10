@@ -24,11 +24,5 @@ export type { UseConditionPreviewReturn } from "./condition-preview";
 // Custom block data source fetching
 export { useDataSourceFetch } from "./data-source-fetch";
 
-// Plugin system
-export type {
-  BlockContextAction,
-  EditorPlugin,
-  EditorPluginContext,
-  SidebarPanel,
-  ToolbarAction,
-} from "./plugins";
+// History interceptor
+export { useHistoryInterceptor } from "./history-interceptor";

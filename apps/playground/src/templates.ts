@@ -675,7 +675,7 @@ export function createProductLaunchTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#ffffff",
-      fontFamily: "Arial, sans-serif",
+      fontFamily: "Arial",
       preheaderText: "Introducing Launchpad v2.0 — rebuilt from the ground up.",
     },
     blocks: [
@@ -727,7 +727,7 @@ export function createProductLaunchTemplate(): TemplateContent {
         level: 2,
         color: "#0d9488",
         textAlign: "center",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "Arial",
         styles: white(15, 15, 15, 15),
       }),
       createTitleBlock({
@@ -925,7 +925,7 @@ export function createNewsletterTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#ffffff",
-      fontFamily: "Georgia, serif",
+      fontFamily: "Georgia",
       preheaderText:
         "This week: design systems, shipping fast, and staying sane.",
     },
@@ -1014,7 +1014,7 @@ export function createWelcomeTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#ffffff",
-      fontFamily: "Arial, sans-serif",
+      fontFamily: "Arial",
       preheaderText:
         "Welcome to Flowwork — here is everything you need to get started.",
     },
@@ -1024,7 +1024,7 @@ export function createWelcomeTemplate(): TemplateContent {
         level: 1,
         color: "#2563eb",
         textAlign: "center",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "Arial",
         styles: white(15, 15, 15, 15),
       }),
       createTitleBlock({
@@ -1164,7 +1164,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#ffffff",
-      fontFamily: "Arial, sans-serif",
+      fontFamily: "Arial",
       preheaderText: "Your order #{{order_id}} has been confirmed.",
     },
     blocks: [
@@ -1173,7 +1173,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
         level: 3,
         color: "#059669",
         textAlign: "center",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "Arial",
         styles: white(28, 20, 16, 20),
       }),
 
@@ -1346,7 +1346,7 @@ export function createEventInvitationTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#ffffff",
-      fontFamily: "Arial, sans-serif",
+      fontFamily: "Arial",
       preheaderText: "You are invited — join us for Config 2026 on April 15.",
     },
     blocks: [
@@ -1355,7 +1355,7 @@ export function createEventInvitationTemplate(): TemplateContent {
         level: 3,
         color: "#7c3aed",
         textAlign: "center",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "Arial",
         styles: white(32, 20, 8, 20),
       }),
       createTitleBlock({
@@ -1524,7 +1524,7 @@ export function createPasswordResetTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#ffffff",
-      fontFamily: "Arial, sans-serif",
+      fontFamily: "Arial",
       preheaderText: "Reset your password \u2014 this link expires in 1 hour.",
     },
     blocks: [
@@ -1533,7 +1533,7 @@ export function createPasswordResetTemplate(): TemplateContent {
         level: 3,
         color: "#111827",
         textAlign: "center",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "Arial",
         styles: white(32, 20, 24, 20),
       }),
 
@@ -1614,7 +1614,7 @@ export function createBlackFridayTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#111827",
-      fontFamily: "Arial, sans-serif",
+      fontFamily: "Arial",
       preheaderText: "Up to 50% off everything \u2014 Black Friday starts now.",
     },
     blocks: [
@@ -1623,7 +1623,7 @@ export function createBlackFridayTemplate(): TemplateContent {
         level: 3,
         color: "#fbbf24",
         textAlign: "center",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "Arial",
         styles: { ...pad(28, 20, 12, 20), backgroundColor: "#111827" },
       }),
       createTitleBlock({

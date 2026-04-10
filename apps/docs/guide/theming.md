@@ -14,7 +14,7 @@ Pass a `ThemeOverrides` object to `init()` to customize the editor's color palet
 ```ts
 import { init } from '@templatical/editor';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   theme: {
     primary: '#6d28d9',
@@ -72,7 +72,7 @@ Set `uiTheme` in the init config. The default is `'auto'`, which follows the use
 ```ts
 import { init } from '@templatical/editor';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   uiTheme: 'dark', // 'light' | 'dark' | 'auto'
 });
@@ -93,7 +93,7 @@ editor.setTheme('auto'); // follow system preference
 Customize the dark palette separately from the light palette using the `dark` key inside `theme`:
 
 ```ts
-const editor = init({
+const editor = await init({
   container: '#editor',
   uiTheme: 'auto',
   theme: {

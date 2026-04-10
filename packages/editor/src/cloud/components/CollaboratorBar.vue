@@ -62,8 +62,7 @@ function getInitials(name: string): string {
       <div
         v-for="collaborator in visibleCollaborators"
         :key="collaborator.id"
-        class="tpl-collaborator-avatar tpl:relative tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-2 tpl:text-[10px] tpl:font-bold tpl:text-white tpl:transition-transform tpl:duration-150 tpl:hover:z-10 tpl:hover:scale-110"
-        style="border-color: var(--tpl-bg)"
+        class="tpl-collaborator-avatar tpl:relative tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-2 tpl:text-[10px] tpl:font-bold tpl:text-white tpl:transition-transform tpl:duration-150 tpl:hover:z-10 tpl:hover:scale-110 tpl:border-[var(--tpl-bg)]"
         :style="{ backgroundColor: collaborator.color }"
         :title="collaborator.name"
       >
@@ -71,12 +70,7 @@ function getInitials(name: string): string {
       </div>
       <div
         v-if="overflowCount > 0"
-        class="tpl:relative tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-2 tpl:text-[9px] tpl:font-bold"
-        style="
-          border-color: var(--tpl-bg);
-          background-color: var(--tpl-bg-hover);
-          color: var(--tpl-text-muted);
-        "
+        class="tpl:relative tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-2 tpl:text-[9px] tpl:font-bold tpl:border-[var(--tpl-bg)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
         :title="overflowNames"
       >
         +{{ overflowCount }}

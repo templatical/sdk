@@ -21,6 +21,8 @@ export default {
     title: "Templatical",
     unsaved: "Nicht gespeichert",
     saving: "Speichern...",
+    saved: "Gespeichert",
+    saveFailed: "Speichern fehlgeschlagen",
     save: "Speichern",
     templatesUsed: "{used}/{max} Vorlagen verwendet",
   },
@@ -799,5 +801,10 @@ export default {
     fileTooLarge: "Datei ist zu groß. Maximale Größe ist 10 MB.",
     invalidFileType:
       "Dieser Dateityp wird nicht unterstützt. Laden Sie eine PNG-, JPG-, WebP- oder PDF-Datei hoch.",
+  },
+  errors: {
+    editorLoading: "Editor wird geladen...",
+    editorLoadFailed: "Editor konnte nicht geladen werden.",
+    retry: "Erneut versuchen",
   },
 } as const;

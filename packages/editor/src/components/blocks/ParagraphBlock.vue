@@ -1,16 +1,10 @@
 <script setup lang="ts">
-import { useMergeTag } from "../../composables/useMergeTag";
+import { useEditableTextBlock } from "../../composables/useEditableTextBlock";
 import type {
-  MergeTag,
   ParagraphBlock as ParagraphBlockType,
   ViewportSize,
 } from "@templatical/types";
-import {
-  resolveHtmlLogicMergeTagLabels,
-  resolveHtmlMergeTagLabels,
-} from "@templatical/types";
-import { useElementBounding } from "@vueuse/core";
-import { computed, defineAsyncComponent, inject, ref } from "vue";
+import { defineAsyncComponent } from "vue";
 
 const props = defineProps<{
   block: ParagraphBlockType;
@@ -21,38 +15,19 @@ const ParagraphEditor = defineAsyncComponent(
   () => import("./ParagraphEditor.vue"),
 );
 
-const mergeTags = inject<MergeTag[]>("mergeTags", []);
-const { syntax } = useMergeTag();
-
-const resolvedContent = computed(() =>
-  resolveHtmlLogicMergeTagLabels(
-    resolveHtmlMergeTagLabels(props.block.content, mergeTags),
-    syntax,
-  ),
-);
-
-const isEditing = ref(false);
-const paragraphBlockRef = ref<HTMLElement | null>(null);
-const { top: boundingTop, left: boundingLeft } = useElementBounding(
-  paragraphBlockRef,
-);
-const toolbarPosition = computed(() => ({
-  top: boundingTop.value - 8,
-  left: boundingLeft.value,
-}));
-
-function handleDoubleClick(): void {
-  isEditing.value = true;
-}
-
-function handleEditorDone(): void {
-  isEditing.value = false;
-}
+const {
+  isEditing,
+  blockRef,
+  toolbarPosition,
+  resolvedContent,
+  handleDoubleClick,
+  handleEditorDone,
+} = useEditableTextBlock(() => props.block.content);
 </script>
 
 <template>
   <div
-    ref="paragraphBlockRef"
+    ref="blockRef"
     class="tpl:min-h-[1em] tpl:w-full"
     @dblclick="handleDoubleClick"
   >

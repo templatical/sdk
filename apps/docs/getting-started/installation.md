@@ -40,17 +40,16 @@ bun add @templatical/editor @templatical/renderer
 | `@templatical/import-beefree` | Converts BeeFree JSON templates to Templatical format | Optional |
 
 `@templatical/types` and `@templatical/core` are direct dependencies of `@templatical/editor` and are installed automatically.
-
 ## Framework integration
 
 Templatical mounts into any DOM element. It creates its own isolated application internally, so it works with any framework — or no framework at all.
 
 ::: code-group
 ```ts [Vanilla JS]
-import { init, unmount } from '@templatical/editor';
+import { init } from '@templatical/editor';
 import '@templatical/editor/style.css';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   onChange(content) {
     console.log('Content changed', content);
@@ -73,14 +72,18 @@ export function EmailEditor() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    editorRef.current = init({
+    let cancelled = false;
+    init({
       container: containerRef.current,
       onChange(content) {
         console.log('Content changed', content);
       },
+    }).then((ed) => {
+      if (!cancelled) editorRef.current = ed;
     });
 
     return () => {
+      cancelled = true;
       editorRef.current?.unmount();
     };
   }, []);
@@ -98,10 +101,10 @@ import type { TemplaticalEditor } from '@templatical/editor';
 const container = ref<HTMLElement>();
 let editor: TemplaticalEditor | null = null;
 
-onMounted(() => {
+onMounted(async () => {
   if (!container.value) return;
 
-  editor = init({
+  editor = await init({
     container: container.value,
     onChange(content) {
       console.log('Content changed', content);
@@ -128,8 +131,8 @@ onUnmounted(() => {
   let containerEl: HTMLElement;
   let editor: TemplaticalEditor | null = null;
 
-  onMount(() => {
-    editor = init({
+  onMount(async () => {
+    editor = await init({
       container: containerEl,
       onChange(content) {
         console.log('Content changed', content);
@@ -161,8 +164,8 @@ export class EmailEditorComponent implements OnInit, OnDestroy {
 
   private editor: TemplaticalEditor | null = null;
 
-  ngOnInit(): void {
-    this.editor = init({
+  async ngOnInit(): Promise<void> {
+    this.editor = await init({
       container: this.containerRef.nativeElement,
       onChange(content) {
         console.log('Content changed', content);
@@ -196,19 +199,16 @@ import type { TemplateContent, Block, ThemeOverrides, FontsConfig } from '@templ
 If you prefer not to use a package manager, load the editor directly via script tags:
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@templatical/editor@0.1.0/dist/email-editor/email-editor.css" />
-<script src="https://unpkg.com/@templatical/editor@0.1.0/dist/email-editor/email-editor.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@templatical/editor/dist/cdn/editor.css" />
+<script type="module">
+  import { init } from 'https://unpkg.com/@templatical/editor/dist/cdn/editor.js';
 
-<div id="editor" style="height: 100vh;"></div>
-
-<script>
-  const editor = Templatical.init({
+  const editor = await init({
     container: '#editor',
-    onChange(content) {
-      console.log('Template updated', content);
-    },
   });
 </script>
+
+<div id="editor" style="height: 100vh;"></div>
 ```
 
-The CDN build is fully self-contained — everything is bundled in a single file. No additional scripts needed.
+The CDN build is fully self-contained — all dependencies are bundled. Heavy libraries (TipTap, Vue, Pusher, etc.) are code-split into separate chunks and loaded on demand.

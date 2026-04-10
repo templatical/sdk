@@ -246,7 +246,7 @@ export default defineConfig({
     footer: {
       message:
         'Released under the <a href="https://github.com/templatical/editor/blob/main/LICENSE">FSL-1.1-MIT License</a>.',
-      copyright: "Copyright © 2024-present Templatical",
+      copyright: "Copyright © 2026-present Templatical",
     },
   },
 });

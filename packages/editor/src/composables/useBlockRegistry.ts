@@ -6,7 +6,7 @@ import type {
   CustomBlockDefinition,
 } from "@templatical/types";
 import { createCustomBlock } from "@templatical/types";
-import { type Component, shallowRef } from "vue";
+import { type Component, shallowRef, triggerRef } from "vue";
 
 export interface SidebarItem {
   type: string;
@@ -44,9 +44,8 @@ export function useBlockRegistry(): UseBlockRegistryReturn {
     type: string,
     registration: BlockRegistration,
   ): void {
-    const map = new Map(registry.value);
-    map.set(type, registration);
-    registry.value = map;
+    registry.value.set(type, registration);
+    triggerRef(registry);
   }
 
   function registerCustom(
@@ -67,9 +66,8 @@ export function useBlockRegistry(): UseBlockRegistryReturn {
       definition,
     };
 
-    const map = new Map(registry.value);
-    map.set(registrationKey, registration);
-    registry.value = map;
+    registry.value.set(registrationKey, registration);
+    triggerRef(registry);
   }
 
   function getComponent(block: Block): Component | undefined {
@@ -107,20 +105,34 @@ export function useBlockRegistry(): UseBlockRegistryReturn {
     return registry.value.get(key)?.definition;
   }
 
+  function renderErrorHtml(message: string): string {
+    return `<div style="color: var(--tpl-text-muted); padding: 16px; text-align: center; border: 1px dashed var(--tpl-border); border-radius: var(--tpl-radius-sm); font-family: var(--tpl-font-family); font-size: 14px;">${message}</div>`;
+  }
+
   async function renderCustomBlockHtml(block: CustomBlock): Promise<string> {
     const definition = getDefinition(block.customType);
     if (!definition) {
-      return '<div style="color: var(--tpl-text-muted, #6c757d); padding: 16px; text-align: center; border: 1px dashed var(--tpl-border, #dee2e6); border-radius: var(--tpl-radius-sm, 4px); font-family: var(--tpl-font-family, sans-serif); font-size: 14px;">Block definition not found</div>';
+      return renderErrorHtml("Block definition not found");
     }
 
-    // Lazy-load liquidjs for template rendering
-    const { Liquid } = await import("liquidjs");
-    const engine = new Liquid({
-      strictVariables: false,
-      strictFilters: false,
-    });
+    try {
+      const { Liquid } = await import("liquidjs");
+      const engine = new Liquid({
+        strictVariables: false,
+        strictFilters: false,
+      });
 
-    return await engine.parseAndRender(definition.template, block.fieldValues);
+      return await engine.parseAndRender(
+        definition.template,
+        block.fieldValues,
+      );
+    } catch (error) {
+      console.error(
+        `[BlockRegistry] Failed to render custom block "${block.customType}":`,
+        error,
+      );
+      return renderErrorHtml(`Render error: ${block.customType}`);
+    }
   }
 
   function isRegistered(type: string): boolean {

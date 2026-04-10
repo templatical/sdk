@@ -1,5 +1,12 @@
 import type { CustomFont, FontsConfig } from "@templatical/types";
-import { computed, ref, type ComputedRef, type Ref } from "vue";
+import {
+  computed,
+  getCurrentScope,
+  onScopeDispose,
+  ref,
+  type ComputedRef,
+  type Ref,
+} from "vue";
 
 export interface FontOption {
   value: string;
@@ -16,19 +23,30 @@ export interface UseFontsReturn {
   isLoaded: Ref<boolean>;
   setCustomFontsEnabled: (enabled: boolean) => void;
   loadCustomFonts: () => Promise<void>;
+  cleanupFontLinks: () => void;
   getFontWithFallback: (fontName: string) => string;
   getDefaultFont: () => string;
 }
 
 const BUILT_IN_FONTS: FontOption[] = [
-  { value: "Arial, sans-serif", label: "Arial" },
-  { value: "Helvetica, sans-serif", label: "Helvetica" },
-  { value: "Georgia, serif", label: "Georgia" },
-  { value: "Times New Roman, serif", label: "Times New Roman" },
-  { value: "Verdana, sans-serif", label: "Verdana" },
-  { value: "Trebuchet MS, sans-serif", label: "Trebuchet MS" },
-  { value: "Courier New, monospace", label: "Courier New" },
+  { value: "Arial", label: "Arial" },
+  { value: "Helvetica", label: "Helvetica" },
+  { value: "Georgia", label: "Georgia" },
+  { value: "Times New Roman", label: "Times New Roman" },
+  { value: "Verdana", label: "Verdana" },
+  { value: "Trebuchet MS", label: "Trebuchet MS" },
+  { value: "Courier New", label: "Courier New" },
 ];
+
+const BUILT_IN_FONT_STACKS: Record<string, string> = {
+  arial: "Arial, sans-serif",
+  helvetica: "Helvetica, sans-serif",
+  georgia: "Georgia, serif",
+  "times new roman": "'Times New Roman', serif",
+  verdana: "Verdana, sans-serif",
+  "trebuchet ms": "'Trebuchet MS', sans-serif",
+  "courier new": "'Courier New', monospace",
+};
 
 const DEFAULT_FALLBACK = "Arial, sans-serif";
 
@@ -106,6 +124,10 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
   const defaultFont = computed(() => getDefaultFont());
 
   function getFontWithFallback(fontName: string): string {
+    if (!fontName) {
+      return defaultFallback.value;
+    }
+
     const customFont = customFonts.value.find(
       (font) => font.name.toLowerCase() === fontName.toLowerCase(),
     );
@@ -115,20 +137,17 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
       return `'${customFont.name}', ${fallback}`;
     }
 
-    const builtInFont = BUILT_IN_FONTS.find(
-      (font) =>
-        font.label.toLowerCase() === fontName.toLowerCase() ||
-        font.value.toLowerCase().startsWith(fontName.toLowerCase()),
-    );
-
-    if (builtInFont) {
-      return builtInFont.value;
+    const builtInStack = BUILT_IN_FONT_STACKS[fontName.toLowerCase()];
+    if (builtInStack) {
+      return builtInStack;
     }
 
     return fontName.includes(",")
       ? fontName
       : `${fontName}, ${defaultFallback.value}`;
   }
+
+  const createdLinks: HTMLLinkElement[] = [];
 
   async function loadCustomFonts(): Promise<void> {
     if (customFonts.value.length === 0) {
@@ -138,7 +157,9 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
 
     const loadPromises = customFonts.value.map(async (font) => {
       try {
-        const existingLink = document.querySelector(`link[href="${font.url}"]`);
+        const existingLink = document.querySelector(
+          `link[data-custom-font="${CSS.escape(font.name)}"]`,
+        );
         if (existingLink) {
           return;
         }
@@ -154,6 +175,8 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
             reject(new Error(`Failed to load font: ${font.name}`));
           document.head.appendChild(link);
         });
+
+        createdLinks.push(link);
       } catch (error) {
         console.warn(`Failed to load custom font "${font.name}":`, error);
       }
@@ -161,6 +184,17 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
 
     await Promise.allSettled(loadPromises);
     isLoaded.value = true;
+  }
+
+  function cleanupFontLinks(): void {
+    for (const link of createdLinks) {
+      link.remove();
+    }
+    createdLinks.length = 0;
+  }
+
+  if (getCurrentScope()) {
+    onScopeDispose(cleanupFontLinks);
   }
 
   return {
@@ -172,6 +206,7 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
     isLoaded,
     setCustomFontsEnabled,
     loadCustomFonts,
+    cleanupFontLinks,
     getFontWithFallback,
     getDefaultFont,
   };

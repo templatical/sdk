@@ -9,13 +9,13 @@ The main entry point is the `init()` function from `@templatical/editor`.
 
 ## `init(config)`
 
-Creates and mounts the editor into a container element.
+Creates and mounts the editor into a container element. Returns a promise that resolves when the editor is ready.
 
 ```ts
 import { init } from '@templatical/editor';
 import '@templatical/editor/style.css';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   content: savedTemplate,
   onChange(content) {
@@ -45,15 +45,17 @@ unmount();
 | `onChange` | `(content: TemplateContent) => void` | No | Called when template content changes (debounced) |
 | `onSave` | `(content: TemplateContent) => void` | No | Called when the user triggers a save action |
 | `onError` | `(error: Error) => void` | No | Called when an error occurs |
-| `onRequestMedia` | `() => Promise<MediaResult \| null>` | No | Called when user wants to pick an image. Return `{ url, alt? }` or `null` |
+| `onRequestMedia` | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No | Called when user wants to pick an image. Return `{ url, alt? }` or `null` |
 | `mergeTags` | `MergeTagsConfig` | No | Merge tag configuration. See [Merge Tags](/guide/merge-tags) |
 | `displayConditions` | `DisplayConditionsConfig` | No | Display condition configuration. See [Display Conditions](/guide/display-conditions) |
 | `customBlocks` | `CustomBlockDefinition[]` | No | Custom block type definitions. See [Custom Blocks](/guide/custom-blocks) |
+| `blockDefaults` | `BlockDefaults` | No | Default property overrides for new blocks. See [Defaults](/guide/defaults) |
+| `templateDefaults` | `TemplateDefaults` | No | Default template settings for empty templates. See [Defaults](/guide/defaults) |
 | `fonts` | `FontsConfig` | No | Font configuration. See [Custom Fonts](/guide/fonts) |
 | `theme` | `ThemeOverrides` | No | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming) |
 | `uiTheme` | `'light' \| 'dark' \| 'auto'` | No | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'` |
 | `locale` | `string` | No | Locale code (e.g. `'en'`, `'de'`). Defaults to `'en'` |
-| `plugins` | `EditorPlugin[]` | No | Editor plugins. See [Plugin System](#plugin-system) |
+
 
 ## TemplaticalEditor
 
@@ -104,68 +106,6 @@ const mjml = editor.toMjml?.();
 
 To compile MJML to HTML, use any MJML library (e.g., [mjml](https://www.npmjs.com/package/mjml) for Node.js).
 
-## Plugin System
-
-Plugins extend the editor with custom toolbar actions, sidebar panels, and block context actions.
-
-::: warning Work in progress
-The plugin registration methods (`registerToolbarAction`, `registerSidebarPanel`, `registerBlockAction`) are defined in the type system and available in the plugin context, but their UI rendering is not yet implemented. You can use plugins today for reading state, reacting to changes, and calling mutation methods — but registered actions won't appear in the UI until a future release.
-:::
-
-### EditorPlugin
-
-```ts
-interface EditorPlugin {
-  name: string;
-  install(context: EditorPluginContext): void | Promise<void>;
-  destroy?(): void;
-}
-```
-
-### EditorPluginContext
-
-The context passed to `install()`:
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `state` | `DeepReadonly<EditorState>` | Current editor state |
-| `content` | `Ref<TemplateContent>` | Reactive template content |
-| `selectedBlockId` | `Ref<string \| null>` | Currently selected block ID |
-| `viewport` | `Ref<ViewportSize>` | Current viewport |
-| `addBlock` | `(block, sectionId?, colIdx?, idx?) => void` | Add a block |
-| `updateBlock` | `(blockId, updates) => void` | Update a block |
-| `removeBlock` | `(blockId) => void` | Remove a block |
-| `moveBlock` | `(blockId, newIdx, sectionId?, colIdx?) => void` | Move a block |
-| `updateSettings` | `(updates) => void` | Update template settings |
-| `selectBlock` | `(blockId \| null) => void` | Select a block |
-| `registerToolbarAction` | `(action: ToolbarAction) => void` | Add a toolbar button |
-| `registerSidebarPanel` | `(panel: SidebarPanel) => void` | Add a sidebar panel |
-| `registerBlockAction` | `(action: BlockContextAction) => void` | Add a block context menu action |
-
-### Example Plugin
-
-```ts
-const analyticsPlugin: EditorPlugin = {
-  name: 'analytics',
-  install(ctx) {
-    ctx.registerToolbarAction({
-      id: 'analytics',
-      icon: 'bar-chart',
-      label: 'Analytics',
-      onClick() {
-        const blockCount = ctx.content.value.blocks.length;
-        console.log(`Template has ${blockCount} blocks`);
-      },
-    });
-  },
-};
-
-const editor = init({
-  container: '#editor',
-  plugins: [analyticsPlugin],
-});
-```
-
 ## Core Composables
 
 For advanced use cases, you can use the composables from `@templatical/core` directly.
@@ -194,6 +134,7 @@ import { useHistory } from '@templatical/core';
 const history = useHistory({
   content: editor.content,
   setContent: editor.setContent,
+  isRemoteOperation: () => false, // skip recording during remote/collab updates
   maxSize: 50,
 });
 
@@ -218,6 +159,7 @@ const actions = useBlockActions({
 const newBlock = actions.createAndAddBlock('text');
 actions.duplicateBlock(existingBlock);
 actions.deleteBlock(blockId);
+actions.updateBlockProperty(blockId, 'content', '<p>Updated</p>');
 ```
 
 ### `useAutoSave(options)`
@@ -232,11 +174,14 @@ const autoSave = useAutoSave({
   isDirty: () => editor.state.isDirty,
   onChange: (content) => saveToServer(content),
   debounce: 1000,
+  enabled: true,    // boolean or () => boolean
 });
 
 autoSave.flush();   // Save immediately
+autoSave.cancel();  // Cancel pending debounced save
 autoSave.pause();   // Pause auto-save
 autoSave.resume();  // Resume
+autoSave.destroy(); // Stop watching and clean up
 ```
 
 ### `useConditionPreview()`

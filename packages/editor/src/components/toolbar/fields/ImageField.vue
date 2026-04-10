@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from "../../../composables/useI18n";
 import type { CustomBlockImageField } from "@templatical/types";
-import { inputClass, labelClass } from "../../../constants/styleConstants";
-import type { TemplaticalEditorConfig } from "../../../index";
-import { Image, Lock } from "@lucide/vue";
+import { inputClass } from "../../../constants/styleConstants";
+import { Image } from "@lucide/vue";
 import { computed, inject } from "vue";
+import { ON_REQUEST_MEDIA_KEY } from "../../../keys";
+import FieldWrapper from "./FieldWrapper.vue";
 
 defineProps<{
   field: CustomBlockImageField;
@@ -17,12 +18,12 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const config = inject<TemplaticalEditorConfig>("config");
+const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
 
-const canBrowseMedia = computed(() => !!config?.onRequestMedia);
+const canBrowseMedia = computed(() => !!onRequestMedia);
 
 async function browseMedia(): Promise<void> {
-  const result = await config?.onRequestMedia?.();
+  const result = await onRequestMedia?.({ accept: ["images"] });
   if (result) {
     emit("update:modelValue", result.url);
   }
@@ -30,18 +31,11 @@ async function browseMedia(): Promise<void> {
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">
-      {{ field.label }}
-      <Lock
-        v-if="readOnly"
-        :size="12"
-        class="tpl:inline tpl:text-[var(--tpl-text-dim)]"
-      />
-      <span v-if="field.required" class="tpl:text-[var(--tpl-danger)]">
-        *
-      </span>
-    </label>
+  <FieldWrapper
+    :label="field.label"
+    :required="field.required"
+    :read-only="readOnly"
+  >
     <input
       v-if="readOnly"
       type="url"
@@ -63,16 +57,11 @@ async function browseMedia(): Promise<void> {
     />
     <button
       v-if="canBrowseMedia && !readOnly"
-      class="tpl:mt-2 tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
-      style="
-        border-color: var(--tpl-border);
-        color: var(--tpl-primary);
-        background-color: var(--tpl-bg);
-      "
+      class="tpl:mt-2 tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-primary)] tpl:bg-[var(--tpl-bg)]"
       @click="browseMedia()"
     >
       <Image :size="14" :stroke-width="1.5" />
       {{ t.image.browseMedia }}
     </button>
-  </div>
+  </FieldWrapper>
 </template>

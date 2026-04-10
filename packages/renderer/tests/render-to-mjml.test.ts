@@ -117,8 +117,10 @@ describe('renderToMjml', () => {
     const content = createDefaultTemplateContent();
     content.blocks = [];
     const mjml = renderToMjml(content);
+    expect(mjml).toContain('<mjml>');
     expect(mjml).toContain('<mj-body');
     expect(mjml).toContain('</mj-body>');
+    expect(mjml).toContain('</mjml>');
     expect(mjml).not.toContain('<mj-text');
   });
 
@@ -126,6 +128,8 @@ describe('renderToMjml', () => {
     const content = createDefaultTemplateContent();
     content.settings.preheaderText = '';
     const mjml = renderToMjml(content);
+    expect(mjml).toContain('<mjml>');
+    expect(mjml).toContain('<mj-body');
     expect(mjml).not.toContain('<mj-preview>');
   });
 
@@ -133,6 +137,8 @@ describe('renderToMjml', () => {
     const content = createDefaultTemplateContent();
     content.settings.preheaderText = '   ';
     const mjml = renderToMjml(content);
+    expect(mjml).toContain('<mjml>');
+    expect(mjml).toContain('<mj-body');
     expect(mjml).not.toContain('<mj-preview>');
   });
 
@@ -162,6 +168,8 @@ describe('renderToMjml', () => {
     // preheaderText is optional and undefined by default
     expect(content.settings.preheaderText).toBeUndefined();
     const mjml = renderToMjml(content);
+    expect(mjml).toContain('<mjml>');
+    expect(mjml).toContain('<mj-body');
     expect(mjml).not.toContain('<mj-preview>');
   });
 

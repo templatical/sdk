@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import CustomBlockIcon from "../CustomBlockIcon.vue";
 import LoadingTrack from "../LoadingTrack.vue";
-import { useI18n, type UseBlockRegistryReturn } from "../../composables";
+import { useI18n } from "../../composables";
 import { useDataSourceFetch } from "@templatical/core";
 import type {
   CustomBlock as CustomBlockType,
@@ -10,6 +10,7 @@ import type {
 import { useDebounceFn } from "@vueuse/core";
 import { TriangleAlert, Puzzle } from "@lucide/vue";
 import { computed, inject, onMounted, ref, watch } from "vue";
+import { BLOCK_REGISTRY_KEY } from "../../keys";
 
 const props = defineProps<{
   block: CustomBlockType;
@@ -28,7 +29,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const blockRegistry = inject<UseBlockRegistryReturn>("blockRegistry");
+const blockRegistry = inject(BLOCK_REGISTRY_KEY);
 
 const renderedHtml = ref("");
 const hasError = ref(false);
@@ -92,28 +93,20 @@ watch(
   <div class="tpl:w-full">
     <div
       v-if="!hasDefinition"
-      class="tpl:flex tpl:min-h-[80px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4"
-      style="
-        border-color: var(--tpl-warning);
-        background-color: var(--tpl-warning-light);
-      "
+      class="tpl:flex tpl:min-h-[80px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:border-[var(--tpl-warning)] tpl:bg-[var(--tpl-warning-light)]"
     >
-      <Puzzle :size="24" style="color: var(--tpl-warning)" />
-      <span class="tpl:text-sm" style="color: var(--tpl-text-muted)">
+      <Puzzle :size="24" class="tpl:text-[var(--tpl-warning)]" />
+      <span class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
         {{ t.customBlocks.definitionNotFound }}
       </span>
     </div>
 
     <div
       v-else-if="hasError"
-      class="tpl:flex tpl:min-h-[80px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4"
-      style="
-        border-color: var(--tpl-danger);
-        background-color: var(--tpl-danger-light);
-      "
+      class="tpl:flex tpl:min-h-[80px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border tpl:border-dashed tpl:py-4 tpl:border-[var(--tpl-danger)] tpl:bg-[var(--tpl-danger-light)]"
     >
-      <TriangleAlert :size="24" style="color: var(--tpl-danger)" />
-      <span class="tpl:text-sm" style="color: var(--tpl-text-muted)">
+      <TriangleAlert :size="24" class="tpl:text-[var(--tpl-danger)]" />
+      <span class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
         {{ t.customBlocks.renderError }}
       </span>
     </div>
@@ -133,11 +126,7 @@ watch(
         <button
           v-if="!isFetching"
           type="button"
-          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-2 tpl:text-sm tpl:font-semibold tpl:shadow-sm tpl:transition-all tpl:duration-150 hover:tpl:border-[var(--tpl-primary)] hover:tpl:shadow-md"
-          style="
-            background-color: var(--tpl-primary-light);
-            color: var(--tpl-primary-hover);
-          "
+          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-2 tpl:text-sm tpl:font-semibold tpl:shadow-sm tpl:transition-all tpl:duration-150 hover:tpl:border-[var(--tpl-primary)] hover:tpl:shadow-md tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
           @click.stop="fetchData"
         >
           <CustomBlockIcon

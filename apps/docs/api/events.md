@@ -14,7 +14,7 @@ The editor communicates with your application through callback functions passed 
 Called whenever the template content changes. The callback receives the full `TemplateContent` object. Changes are debounced internally.
 
 ```ts
-const editor = init({
+const editor = await init({
   container: '#editor',
   onChange(content) {
     // Save to your backend
@@ -32,7 +32,7 @@ const editor = init({
 Called when the user explicitly triggers a save (e.g. via keyboard shortcut). Use this for immediate saves vs. the debounced `onChange`.
 
 ```ts
-const editor = init({
+const editor = await init({
   container: '#editor',
   onSave(content) {
     saveTemplate(content);
@@ -46,7 +46,7 @@ const editor = init({
 Called when an error occurs within the editor.
 
 ```ts
-const editor = init({
+const editor = await init({
   container: '#editor',
   onError(error) {
     console.error('Editor error:', error.message);
@@ -64,9 +64,9 @@ Called when the user clicks to select an image (e.g. in the image block settings
 ```ts
 import type { MediaResult } from '@templatical/types';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
-  async onRequestMedia(): Promise<MediaResult | null> {
+  async onRequestMedia(context?): Promise<MediaResult | null> {
     const image = await openMediaPicker();
     if (!image) return null;
     return { url: image.url, alt: image.alt };
@@ -83,7 +83,7 @@ Called when the user clicks to insert a merge tag in a title or paragraph block.
 ```ts
 import type { MergeTag } from '@templatical/types';
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   mergeTags: {
     tags: [
@@ -108,7 +108,7 @@ If you provide `mergeTags.tags` without `onRequest`, the editor uses a built-in 
 ```ts
 let saveTimeout: ReturnType<typeof setTimeout>;
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   onChange(content) {
     clearTimeout(saveTimeout);
@@ -128,7 +128,7 @@ const editor = init({
 ```ts
 let isDirty = false;
 
-const editor = init({
+const editor = await init({
   container: '#editor',
   onChange() {
     isDirty = true;

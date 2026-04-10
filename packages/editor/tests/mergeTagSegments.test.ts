@@ -283,3 +283,31 @@ describe("merge tag segment parsing", () => {
     });
   });
 });
+
+describe("MergeTagInput.vue v-for key", () => {
+  const { readFileSync } = require("node:fs");
+  const { resolve } = require("node:path");
+  const src = readFileSync(
+    resolve(__dirname, "../src/components/MergeTagInput.vue"),
+    "utf-8",
+  );
+
+  it("uses composite key instead of index", () => {
+    expect(src).toContain(":key=\"`${seg.type}-${i}-${seg.value}`\"");
+    expect(src).not.toMatch(/:key="i"/);
+  });
+});
+
+describe("MergeTagTextarea.vue v-for key", () => {
+  const { readFileSync } = require("node:fs");
+  const { resolve } = require("node:path");
+  const src = readFileSync(
+    resolve(__dirname, "../src/components/MergeTagTextarea.vue"),
+    "utf-8",
+  );
+
+  it("uses composite key instead of index", () => {
+    expect(src).toContain(":key=\"`${seg.type}-${i}-${seg.value}`\"");
+    expect(src).not.toMatch(/:key="i"/);
+  });
+});
