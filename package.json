@@ -6,6 +6,7 @@
     "apps/*"
   ],
   "scripts": {
+    "build": "bun run --filter '@templatical/media-library' build && bun run --filter '@templatical/types' build && bun run --filter '@templatical/core' --filter '@templatical/renderer' --filter '@templatical/import-beefree' build && bun run --filter '@templatical/editor' build:all",
     "test": "bun run --filter './packages/*' test",
     "test:coverage": "bun run --filter './packages/*' test -- --coverage",
     "lint": "eslint packages/*/src apps/*/src",
