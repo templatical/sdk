@@ -5,28 +5,28 @@
     "": {
       "name": "templatical",
       "dependencies": {
-        "@vueuse/core": "latest",
-        "liquidjs": "latest",
-        "vue": "latest",
-        "vue-advanced-cropper": "latest",
+        "@vueuse/core": "^14.2.1",
+        "liquidjs": "^10.25.5",
+        "vue": "^3.5.32",
+        "vue-advanced-cropper": "^2.8.9",
       },
       "devDependencies": {
-        "@changesets/cli": "latest",
-        "@tailwindcss/vite": "latest",
+        "@changesets/cli": "^2.30.0",
+        "@tailwindcss/vite": "^4.2.2",
         "@templatical/editor": "workspace:*",
-        "@tiptap/extension-color": "latest",
-        "@tiptap/extension-font-family": "latest",
-        "@tiptap/extension-text-style": "latest",
-        "@vitejs/plugin-vue": "latest",
-        "@vitest/coverage-v8": "latest",
-        "@vue/reactivity": "latest",
-        "eslint": "latest",
-        "eslint-plugin-vue": "latest",
-        "prettier": "latest",
-        "typescript": "latest",
-        "typescript-eslint": "latest",
-        "vite": "latest",
-        "vue-eslint-parser": "latest",
+        "@tiptap/extension-color": "^3.22.3",
+        "@tiptap/extension-font-family": "^3.22.3",
+        "@tiptap/extension-text-style": "^3.22.3",
+        "@vitejs/plugin-vue": "^6.0.5",
+        "@vitest/coverage-v8": "^4.1.3",
+        "@vue/reactivity": "^3.5.32",
+        "eslint": "^10.2.0",
+        "eslint-plugin-vue": "^10.8.0",
+        "prettier": "^3.8.1",
+        "typescript": "^6.0.2",
+        "typescript-eslint": "^8.58.1",
+        "vite": "^8.0.7",
+        "vue-eslint-parser": "^10.4.0",
       },
     },
     "apps/docs": {
@@ -74,6 +74,7 @@
         "@vue/reactivity": "^3.5.31",
       },
       "devDependencies": {
+        "pusher-js": "^8.5.0",
         "tsup": "^8.5.0",
         "typescript": "^6.0.0",
         "vitest": "^4.0.0",
@@ -1231,6 +1232,8 @@
 
     "punycode.js": ["punycode.js@2.3.1", "", {}, "sha512-uxFIHU0YlHYhDQtV4R9J6a52SLx28BCjT+4ieh7IGbgwVJWO+km431c4yRlREUAsAmt/uMjQUyQHNEPf0M39CA=="],
 
+    "pusher-js": ["pusher-js@8.5.0", "", { "dependencies": { "tweetnacl": "^1.0.3" } }, "sha512-V7uzGi9bqOOOyM/6IkJdpFyjGZj7llz1v0oWnYkZKcYLvbz6VcHVLmzKqkvegjuMumpfIEKGLmWHwFb39XFCpw=="],
+
     "quansync": ["quansync@0.2.11", "", {}, "sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA=="],
 
     "queue-microtask": ["queue-microtask@1.2.3", "", {}, "sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A=="],
@@ -1352,6 +1355,8 @@
     "tslib": ["tslib@2.8.1", "", {}, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
 
     "tsup": ["tsup@8.5.1", "", { "dependencies": { "bundle-require": "^5.1.0", "cac": "^6.7.14", "chokidar": "^4.0.3", "consola": "^3.4.0", "debug": "^4.4.0", "esbuild": "^0.27.0", "fix-dts-default-cjs-exports": "^1.0.0", "joycon": "^3.1.1", "picocolors": "^1.1.1", "postcss-load-config": "^6.0.1", "resolve-from": "^5.0.0", "rollup": "^4.34.8", "source-map": "^0.7.6", "sucrase": "^3.35.0", "tinyexec": "^0.3.2", "tinyglobby": "^0.2.11", "tree-kill": "^1.2.2" }, "peerDependencies": { "@microsoft/api-extractor": "^7.36.0", "@swc/core": "^1", "postcss": "^8.4.12", "typescript": ">=4.5.0" }, "optionalPeers": ["@microsoft/api-extractor", "@swc/core", "postcss", "typescript"], "bin": { "tsup": "dist/cli-default.js", "tsup-node": "dist/cli-node.js" } }, "sha512-xtgkqwdhpKWr3tKPmCkvYmS9xnQK3m3XgxZHwSUjvfTjp7YfXe5tT3GgWi0F2N+ZSMsOeWeZFh7ZZFg5iPhing=="],
+
+    "tweetnacl": ["tweetnacl@1.0.3", "", {}, "sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw=="],
 
     "type-check": ["type-check@0.4.0", "", { "dependencies": { "prelude-ls": "^1.2.1" } }, "sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew=="],
 

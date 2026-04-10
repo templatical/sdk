@@ -199,19 +199,16 @@ import type { TemplateContent, Block, ThemeOverrides, FontsConfig } from '@templ
 If you prefer not to use a package manager, load the editor directly via script tags:
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@templatical/editor/dist/cdn/email-editor.css" />
-<script src="https://unpkg.com/@templatical/editor/dist/cdn/email-editor.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@templatical/editor/dist/cdn/editor.css" />
+<script type="module">
+  import { init } from 'https://unpkg.com/@templatical/editor/dist/cdn/editor.js';
 
-<div id="editor" style="height: 100vh;"></div>
-
-<script>
-  const editor = TemplaticalEmailEditor.init({
+  const editor = await init({
     container: '#editor',
-    onChange(content) {
-      console.log('Template updated', content);
-    },
   });
 </script>
+
+<div id="editor" style="height: 100vh;"></div>
 ```
 
-The CDN build is fully self-contained — everything is bundled in a single file. No additional scripts needed.
+The CDN build is fully self-contained — all dependencies are bundled. Heavy libraries (TipTap, Vue, Pusher, etc.) are code-split into separate chunks and loaded on demand.
