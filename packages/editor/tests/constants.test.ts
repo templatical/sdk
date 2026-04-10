@@ -61,6 +61,10 @@ describe("CloudEditor.vue provides cleanup", () => {
 
   it("does not provide dragDrop (unused inject)", () => {
     expect(src).not.toContain('provide("dragDrop"');
+    // CloudEditor still has its cloud-only provides
+    expect(src).toContain('provide(AUTH_MANAGER_KEY');
+    expect(src).toContain('provide(AI_CONFIG_KEY');
+    expect(src).toContain('provide(COMMENTS_KEY');
   });
 
   it("shared provides are handled by useEditorCore, not CloudEditor", () => {
@@ -82,6 +86,8 @@ describe("CloudEditor.vue platform detection removed", () => {
     expect(src).not.toContain("navigator.platform");
     expect(src).not.toContain("navigator.userAgent");
     expect(src).not.toContain("isMac");
+    // Keyboard handling is delegated to useEditorCore which uses permissive metaKey || ctrlKey
+    expect(src).toContain("useEditorCore(");
   });
 
   it("delegates keyboard shortcuts to useEditorCore (no direct handleEditorKeydown import)", () => {
@@ -205,9 +211,12 @@ describe("plugin extension no-op stubs removed", () => {
     expect(src).not.toContain("registerToolbarAction");
     expect(src).not.toContain("registerSidebarPanel");
     expect(src).not.toContain("registerBlockAction");
+    // Plugin lifecycle is handled via useEditorCore
+    expect(src).toContain("useEditorCore(");
+    expect(src).toContain("core.installPlugins()");
   });
 
-  it("plugins.ts does not export ToolbarAction, SidebarPanel, or BlockContextAction", () => {
+  it("plugins.ts exports only EditorPlugin and EditorPluginContext", () => {
     const src = readFileSync(
       resolve(__dirname, "../../core/src/plugins.ts"),
       "utf-8",
@@ -215,12 +224,18 @@ describe("plugin extension no-op stubs removed", () => {
     expect(src).not.toContain("ToolbarAction");
     expect(src).not.toContain("SidebarPanel");
     expect(src).not.toContain("BlockContextAction");
+    // Only the core plugin interfaces remain
+    expect(src).toContain("interface EditorPlugin");
+    expect(src).toContain("interface EditorPluginContext");
   });
 
-  it("index.ts does not re-export ToolbarAction or SidebarPanel", () => {
+  it("index.ts re-exports EditorPlugin and EditorPluginContext, not stubs", () => {
     const src = readSrc("index.ts");
     expect(src).not.toContain("ToolbarAction");
     expect(src).not.toContain("SidebarPanel");
+    // Core plugin types are re-exported
+    expect(src).toContain("EditorPlugin");
+    expect(src).toContain("EditorPluginContext");
   });
 });
 
@@ -331,15 +346,17 @@ describe("useMergeTagField extracts shared logic from MergeTag components", () =
     expect(src).toContain("isLogicMergeTagValue");
   });
 
-  it("MergeTagInput.vue no longer has inline segment logic", () => {
+  it("MergeTagInput.vue uses useMergeTagField composable instead of inline segment logic", () => {
     const src = readSrc("components/MergeTagInput.vue");
+    expect(src).toContain("useMergeTagField");
     expect(src).not.toContain("type Segment =");
     expect(src).not.toContain("isLogicMergeTagValue");
     expect(src).not.toContain("getLogicMergeTagKeyword");
   });
 
-  it("MergeTagTextarea.vue no longer has inline segment logic", () => {
+  it("MergeTagTextarea.vue uses useMergeTagField composable instead of inline segment logic", () => {
     const src = readSrc("components/MergeTagTextarea.vue");
+    expect(src).toContain("useMergeTagField");
     expect(src).not.toContain("type Segment =");
     expect(src).not.toContain("isLogicMergeTagValue");
     expect(src).not.toContain("getLogicMergeTagKeyword");

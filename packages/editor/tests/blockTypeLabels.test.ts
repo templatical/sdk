@@ -36,27 +36,24 @@ describe("getBlockTypeLabel", () => {
     expect(getBlockTypeLabel("custom", mockTranslations)).toBe("custom");
   });
 
-  it("covers all 13 built-in block types", () => {
-    const allTypes = [
-      "section",
-      "image",
-      "title",
-      "paragraph",
-      "button",
-      "divider",
-      "video",
-      "social",
-      "menu",
-      "table",
-      "spacer",
-      "countdown",
-      "html",
-    ];
-    for (const type of allTypes) {
-      const label = getBlockTypeLabel(type, mockTranslations);
-      expect(label).not.toBe(type); // Should not fall back to raw type
-      expect(typeof label).toBe("string");
-      expect(label.length).toBeGreaterThan(0);
+  it("covers all 13 built-in block types with correct translations", () => {
+    const expectedLabels: Record<string, string> = {
+      section: "Section",
+      image: "Image",
+      title: "Title",
+      paragraph: "Paragraph",
+      button: "Button",
+      divider: "Divider",
+      video: "Video",
+      social: "Social",
+      menu: "Menu",
+      table: "Table",
+      spacer: "Spacer",
+      countdown: "Countdown",
+      html: "HTML",
+    };
+    for (const [type, expected] of Object.entries(expectedLabels)) {
+      expect(getBlockTypeLabel(type, mockTranslations)).toBe(expected);
     }
   });
 });

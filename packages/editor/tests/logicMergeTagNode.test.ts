@@ -100,9 +100,9 @@ describe('LogicMergeTagNode extension config', () => {
   it('addAttributes returns value and keyword with parseHTML extractors', () => {
     const attrs = (LogicMergeTagNode.config.addAttributes as Function).call({});
     expect(attrs.value.default).toBe('');
-    expect(typeof attrs.value.parseHTML).toBe('function');
+    expect(attrs.value.parseHTML).toEqual(expect.any(Function));
     expect(attrs.keyword.default).toBe('');
-    expect(typeof attrs.keyword.parseHTML).toBe('function');
+    expect(attrs.keyword.parseHTML).toEqual(expect.any(Function));
   });
 
   it('parseHTML returns array with tag span[data-logic-merge-tag]', () => {

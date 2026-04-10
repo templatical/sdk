@@ -60,6 +60,11 @@ describe("registerBuiltInBlocks utility", () => {
     expect(src).toContain("isCustom: false");
     expect(src).not.toContain("isCustom: true");
   });
+
+  it("defines exactly 13 built-in block types", () => {
+    const typeMatches = src.match(/type: "/g);
+    expect(typeMatches).toHaveLength(13);
+  });
 });
 
 describe("registerBuiltInBlocks consumers", () => {
@@ -88,6 +93,8 @@ describe("registerBuiltInBlocks consumers", () => {
     expect(src).not.toContain("createSectionBlock");
     expect(src).not.toContain("createTitleBlock");
     expect(src).not.toContain("createImageBlock");
+    // Block registration is handled by useEditorCore
+    expect(src).toContain("useEditorCore(");
   });
 
   it("useEditorCore defines BLOCK_COMPONENT_MAP with all 13 block components", () => {

@@ -27,12 +27,16 @@ describe('renderToMjml helpers', () => {
     const content = createDefaultTemplateContent();
     content.settings.preheaderText = '';
     const result = renderToMjml(content);
+    expect(result).toContain('<mjml>');
+    expect(result).toContain('<mj-body');
     expect(result).not.toContain('<mj-preview>');
   });
 
   it('excludes mj-preview when preheaderText is undefined', () => {
     const content = createDefaultTemplateContent();
     const result = renderToMjml(content);
+    expect(result).toContain('<mjml>');
+    expect(result).toContain('<mj-body');
     expect(result).not.toContain('<mj-preview>');
   });
 
@@ -56,6 +60,8 @@ describe('renderToMjml helpers', () => {
   it('renders no mj-font tags when no custom fonts provided', () => {
     const content = createDefaultTemplateContent();
     const result = renderToMjml(content);
+    expect(result).toContain('<mjml>');
+    expect(result).toContain('<mj-body');
     expect(result).not.toContain('<mj-font');
   });
 

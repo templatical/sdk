@@ -371,6 +371,9 @@ describe("CloudEditor.vue delegates keyboard shortcuts to useEditorCore", () => 
     expect(src).not.toContain("function handleKeydown");
     expect(src).not.toContain("isMac");
     expect(src).not.toContain("navigator.userAgent");
+    // The @keydown binding comes from useEditorCore's event listener
+    const coreSrc = readSrc("composables/useEditorCore.ts");
+    expect(coreSrc).toContain('useEventListener(document, "keydown", handleKeyboard)');
   });
 
   it("passes onBeforeUndo for collab warning via keyboardOptions", () => {

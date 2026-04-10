@@ -78,6 +78,8 @@ describe("Toolbar.vue dispatcher structure", () => {
   });
 
   it("does not use individual Lucide icon components for block type icons", () => {
+    // Uses dynamic blockTypeIcons map instead of individual icon imports
+    expect(src).toContain(':is="blockTypeIcons[blockType]"');
     expect(src).not.toContain("import {" + "\n" + "  Code," + "\n" + "  Columns3,");
     expect(src).not.toContain("<Columns3");
     expect(src).not.toContain("<Heading");
@@ -96,6 +98,8 @@ describe("Toolbar.vue dispatcher structure", () => {
       /<SectionToolbar[\s\S]*?(?=\/>|<\/SectionToolbar>)/,
     );
     expect(sectionMatch?.[0]).not.toContain(":font-families");
+    // SectionToolbar still receives its required props
+    expect(sectionMatch?.[0]).toContain(":block=");
   });
 });
 

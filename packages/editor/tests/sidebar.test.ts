@@ -30,6 +30,8 @@ describe("Sidebar.vue icon rendering", () => {
   });
 
   it("no longer imports individual Lucide icons that are in the map", () => {
+    // Uses blockTypeIcons map for all built-in icons
+    expect(src).toContain('import { blockTypeIcons } from "../utils/blockTypeIcons"');
     expect(src).not.toContain("Heading,");
     expect(src).not.toContain("Pilcrow,");
     expect(src).not.toContain("RectangleHorizontal,");

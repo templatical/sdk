@@ -41,6 +41,7 @@ describe('useBlockActions', () => {
 
         const cloned = actions.duplicateBlock(original);
         expect(cloned.id).not.toBe(original.id);
+        expect(cloned.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
         expect(cloned.type).toBe('paragraph');
         expect(opts.addBlock).toHaveBeenCalled();
         expect(opts.selectBlock).toHaveBeenCalledWith(cloned.id);
@@ -55,6 +56,7 @@ describe('useBlockActions', () => {
         const cloned = actions.duplicateBlock(section);
         if (cloned.type === 'section') {
             expect(cloned.children[0][0].id).not.toBe(child.id);
+            expect(cloned.children[0][0].id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
         }
     });
 
@@ -81,6 +83,7 @@ describe('useBlockActions', () => {
 
         const cloned = actions.duplicateBlock(section);
         expect(cloned.id).not.toBe(section.id);
+        expect(cloned.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
         expect(cloned.type).toBe('section');
         if (cloned.type === 'section') {
             expect(cloned.children).toHaveLength(2);
@@ -132,6 +135,7 @@ describe('useBlockActions', () => {
 
         const cloned = actions.duplicateBlock(original);
         expect(cloned.id).not.toBe(original.id);
+        expect(cloned.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
         expect(cloned.type).toBe('paragraph');
         if (cloned.type === 'paragraph' && original.type === 'paragraph') {
             expect(cloned.content).toBe(original.content);

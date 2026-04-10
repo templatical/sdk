@@ -103,13 +103,17 @@ describe("TplModal consumers", () => {
     expect(moduleBrowserSrc).not.toContain("<Teleport");
   });
 
-  it("consumers no longer import useFocusTrap directly", () => {
+  it("consumers no longer import useFocusTrap directly (TplModal handles it)", () => {
+    // TplModal encapsulates focus trap internally
+    expect(src).toContain("useFocusTrap");
     expect(testEmailSrc).not.toContain("useFocusTrap");
     expect(saveModuleSrc).not.toContain("useFocusTrap");
     expect(moduleBrowserSrc).not.toContain("useFocusTrap");
   });
 
-  it("consumers no longer inject tplUiTheme directly", () => {
+  it("consumers no longer inject tplUiTheme directly (TplModal handles it)", () => {
+    // TplModal encapsulates theme injection internally
+    expect(src).toContain("inject(UI_THEME_KEY)");
     expect(testEmailSrc).not.toContain("tplUiTheme");
     expect(saveModuleSrc).not.toContain("tplUiTheme");
     expect(moduleBrowserSrc).not.toContain("tplUiTheme");
