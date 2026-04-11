@@ -41,8 +41,8 @@ bun install
 bun run build
 
 # CDN bundles (IIFE/ES for script-tag usage)
-bun run build:email-editor           # → dist/email-editor/
-bun run build:media-library           # → dist/media-library/
+bun run build:email-editor           # → packages/editor/dist/cdn/
+bun run build:media-library           # → packages/media-library/dist/cdn/
 bun run build:all-sdk                 # both CDN builds
 
 # Test (Vitest 3, all packages)
@@ -112,10 +112,10 @@ Each package's `tsconfig.json` has `paths` mapping sibling `@templatical/*` impo
 
 ## CDN Builds
 
-Root-level Vite configs produce standalone bundles for CDN/script-tag usage:
+Each package with a CDN build has a `vite.cdn.config.ts` alongside its main `vite.config.ts`:
 
-- **`vite.email-editor.config.ts`** — Builds `@templatical/editor` as IIFE (`TemplaticalEmailEditor` global) + ES with code-split chunks (icons, vue, tiptap, pusher, draggable, media-library, features). Output: `dist/email-editor/`.
-- **`vite.media-library.config.ts`** — Builds `@templatical/media-library` standalone visual SDK as IIFE (`TemplaticalMediaLibrary` global) + ES with code-split chunks. Output: `dist/media-library/`.
+- **`packages/editor/vite.cdn.config.ts`** — Builds `@templatical/editor` as ES with code-split chunks (icons, vue, tiptap, pusher, draggable, media-library, features). Output: `packages/editor/dist/cdn/`.
+- **`packages/media-library/vite.cdn.config.ts`** — Builds `@templatical/media-library` standalone visual SDK as IIFE (`TemplaticalMediaLibrary` global) + ES with code-split chunks. Output: `packages/media-library/dist/cdn/`.
 
 Both CDN configs resolve `@templatical/media-library`, `@templatical/core`, and `@templatical/types` to source via aliases.
 
@@ -155,7 +155,7 @@ Standalone package for media management. Lives in `packages/media-library/`. Bui
 - Use `tpl:` prefix for all SDK CSS classes (Tailwind prefix).
 - Lazy-load heavy libraries via dynamic `import()` (e.g. `pusher-js`).
 - Use `defineAsyncComponent` for non-critical UI panels (sidebars, modals).
-- Keep `manualChunks` in `vite.email-editor.config.ts` up to date when adding new cloud components.
+- Keep `manualChunks` in `packages/editor/vite.cdn.config.ts` up to date when adding new cloud components.
 - Use type-only imports for runtime-lazy packages.
 - Don't statically import packages >20KB gzipped that are only used conditionally.
 - **Never use `v-for` inside vuedraggable's `#item` slot** for scoped variable tricks (e.g. `v-for="x in [computedValue]"`). Sortable.js requires a static single root element per item — `v-for` breaks DOM tracking and prevents drag-and-drop reordering between items.

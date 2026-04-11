@@ -411,6 +411,62 @@ describe("convertBeeFreeTemplate", () => {
     expect(content.blocks).toHaveLength(0);
   });
 
+  it("resolves 2-column equal-width row to layout '2'", () => {
+    const template: BeeFreeTemplate = {
+      page: {
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 6,
+                modules: [
+                  {
+                    type: "mailup-bee-newsletter-modules-spacer",
+                    descriptor: { spacer: { style: { height: "10px" } } },
+                  },
+                ],
+              },
+              {
+                "grid-columns": 6,
+                modules: [
+                  {
+                    type: "mailup-bee-newsletter-modules-spacer",
+                    descriptor: { spacer: { style: { height: "10px" } } },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const { content } = convertBeeFreeTemplate(template);
+
+    expect(content.blocks).toHaveLength(1);
+    const section = content.blocks[0];
+    expect(section.type).toBe("section");
+    if (section.type === "section") {
+      expect(section.columns).toBe("2");
+    }
+  });
+
+  it("warns about synced rows", () => {
+    const template: BeeFreeTemplate = {
+      page: {
+        rows: [
+          {
+            synced: true,
+            columns: [{ "grid-columns": 12, modules: [] }],
+          },
+        ],
+      },
+    };
+
+    const { report } = convertBeeFreeTemplate(template);
+    expect(report.warnings.some((w) => w.includes("synced"))).toBe(true);
+  });
+
   it("warns about multiple web fonts", () => {
     const template: BeeFreeTemplate = {
       page: {

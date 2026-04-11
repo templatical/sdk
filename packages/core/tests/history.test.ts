@@ -285,3 +285,112 @@ describe('undo/redo edge cases', () => {
         expect(history.canUndo.value).toBe(false);
     });
 });
+
+describe('debounce timeout clears pending', () => {
+    it('pendingDebounce is cleared after debounce timeout for existing blockId', () => {
+        vi.useFakeTimers();
+        try {
+            const { history } = createHistoryWithContent();
+
+            // First call creates the pending debounce
+            history.recordDebounced('block-1');
+            expect(history.canUndo.value).toBe(true);
+
+            // Second call with same blockId resets the timer
+            history.recordDebounced('block-1');
+
+            // Advance past DEBOUNCE_MS (300ms)
+            vi.advanceTimersByTime(350);
+
+            // Now recording with the same blockId should create a NEW snapshot
+            // because pendingDebounce was cleared by the timeout
+            history.recordDebounced('block-1');
+
+            // Should have 2 undo entries: one from first call, one from the new call after timeout
+            let count = 0;
+            while (history.canUndo.value) {
+                history.undo();
+                count++;
+            }
+            expect(count).toBe(2);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('pendingDebounce is cleared after debounce timeout for new blockId', () => {
+        vi.useFakeTimers();
+        try {
+            const { history } = createHistoryWithContent();
+
+            history.recordDebounced('block-1');
+
+            // Advance past DEBOUNCE_MS (300ms)
+            vi.advanceTimersByTime(350);
+
+            // pendingDebounce should be null now, so same blockId creates new snapshot
+            history.recordDebounced('block-1');
+
+            let count = 0;
+            while (history.canUndo.value) {
+                history.undo();
+                count++;
+            }
+            expect(count).toBe(2);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+});
+
+describe('setNavigating timeout', () => {
+    it('isNavigating resets to false after NAVIGATE_IDLE_MS', () => {
+        vi.useFakeTimers();
+        try {
+            const { history } = createHistoryWithContent();
+            history.record();
+            history.undo();
+
+            expect(history.isNavigating.value).toBe(true);
+
+            // Advance past NAVIGATE_IDLE_MS (1500ms)
+            vi.advanceTimersByTime(1600);
+
+            expect(history.isNavigating.value).toBe(false);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('multiple undo/redo resets the navigating timeout', () => {
+        vi.useFakeTimers();
+        try {
+            const { content, history } = createHistoryWithContent();
+            history.record();
+            content.value = { ...content.value, blocks: [createParagraphBlock()] };
+            history.record();
+
+            history.undo();
+            expect(history.isNavigating.value).toBe(true);
+
+            // Advance partway through timeout
+            vi.advanceTimersByTime(1000);
+            expect(history.isNavigating.value).toBe(true);
+
+            // Redo resets the timeout
+            history.redo();
+            expect(history.isNavigating.value).toBe(true);
+
+            // Advance 1000ms again (total 2000ms since first undo, but only 1000ms since redo)
+            vi.advanceTimersByTime(1000);
+            // Still navigating because redo reset the timer
+            expect(history.isNavigating.value).toBe(true);
+
+            // Advance past the remaining 500ms
+            vi.advanceTimersByTime(600);
+            expect(history.isNavigating.value).toBe(false);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+});

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { useBlockRegistry } from '../src/composables/useBlockRegistry';
 import type { Block, CustomBlockDefinition } from '@templatical/types';
 import { defineComponent } from 'vue';
@@ -204,6 +204,64 @@ describe('useBlockRegistry', () => {
 
       const html = await registry.renderCustomBlock(block);
       expect(html).toContain('Hello World');
+    });
+
+    it('returns error HTML when Liquid rendering throws', async () => {
+      const registry = useBlockRegistry();
+      const def: CustomBlockDefinition = {
+        type: 'broken',
+        name: 'Broken Block',
+        // Invalid Liquid syntax to trigger a parse error
+        template: '{% invalid_tag_that_does_not_exist %}',
+        fields: [],
+      } as CustomBlockDefinition;
+
+      registry.registerCustom(def, DummyComponent);
+
+      const block = {
+        id: 'b1',
+        type: 'custom',
+        customType: 'broken',
+        fieldValues: {},
+      } as any;
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const html = await registry.renderCustomBlock(block);
+
+      expect(html).toContain('Render error: broken');
+      expect(html).toContain('border: 1px dashed');
+      expect(consoleSpy).toHaveBeenCalledTimes(1);
+      expect(consoleSpy.mock.calls[0][0]).toContain('[BlockRegistry] Failed to render custom block "broken"');
+
+      consoleSpy.mockRestore();
+    });
+
+    it('returns error HTML when Liquid import fails', async () => {
+      const registry = useBlockRegistry();
+      const def = createCustomBlockDef('widget', 'Widget');
+
+      registry.registerCustom(def, DummyComponent);
+
+      const block = {
+        id: 'b1',
+        type: 'custom',
+        customType: 'widget',
+        fieldValues: {},
+      } as any;
+
+      // Mock liquidjs to throw on import
+      vi.doMock('liquidjs', () => {
+        throw new Error('Module not found');
+      });
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const html = await registry.renderCustomBlock(block);
+      expect(html).toContain('Render error: widget');
+
+      consoleSpy.mockRestore();
+      vi.doUnmock('liquidjs');
     });
   });
 

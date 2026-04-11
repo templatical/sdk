@@ -52,8 +52,8 @@ const hiddenLabel = computed(() => {
 
 const hasDisplayCondition = computed(() => !!props.block.displayCondition);
 
-const blockActions = inject(BLOCK_ACTIONS_KEY);
-const conditionPreview = inject(CONDITION_PREVIEW_KEY);
+const blockActions = inject(BLOCK_ACTIONS_KEY, null);
+const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 
 const caps = inject(CAPABILITIES_KEY, {});
 

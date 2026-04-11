@@ -29,7 +29,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const blockRegistry = inject(BLOCK_REGISTRY_KEY);
+const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 
 const renderedHtml = ref("");
 const hasError = ref(false);

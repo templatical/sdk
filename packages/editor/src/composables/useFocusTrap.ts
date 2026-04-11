@@ -1,5 +1,5 @@
 import { useEventListener } from "@vueuse/core";
-import { watch, type Ref } from "vue";
+import { onScopeDispose, watch, type Ref } from "vue";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -72,7 +72,7 @@ export function useFocusTrap(
     }
   }
 
-  watch(
+  const stopWatch = watch(
     [active, containerRef],
     ([isActive, container]) => {
       if (isActive && container) {
@@ -83,4 +83,9 @@ export function useFocusTrap(
     },
     { flush: "post" },
   );
+
+  onScopeDispose(() => {
+    stopWatch();
+    deactivate();
+  });
 }

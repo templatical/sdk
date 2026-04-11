@@ -35,6 +35,8 @@ const designReference = useDesignReference({
   onApply: (content) => emit("apply", content),
 });
 
+const fileInput = ref<HTMLInputElement | null>(null);
+
 type SourceTab = "image" | "pdf";
 
 const activeTab = ref<SourceTab>("image");
@@ -314,7 +316,7 @@ watch(
                   ? 'var(--tpl-primary-light)'
                   : 'var(--tpl-bg)',
               }"
-              @click="($refs.fileInput as HTMLInputElement)?.click()"
+              @click="fileInput?.click()"
               @dragover="handleDragOver"
               @dragleave="handleDragLeave"
               @drop="handleDrop"

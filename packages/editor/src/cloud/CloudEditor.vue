@@ -81,7 +81,6 @@ import { useCloudPanelState } from "./composables/useCloudPanelState";
 import { useCollabUndoWarning } from "./composables/useCollabUndoWarning";
 import { useCloudFeatureFlags } from "./composables/useCloudFeatureFlags";
 import { useCloudMediaLibrary } from "./composables/useCloudMediaLibrary";
-import { useVisualSavedModules } from "./composables/useSavedModules";
 import { useDragDrop } from "../composables/useDragDrop";
 import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "../constants/timeouts";
 import { headerBtnClass } from "../constants/styleConstants";
@@ -435,7 +434,9 @@ const savedModulesHeadless = useSavedModules({
   authManager,
   onError: props.config.onError,
 });
-const savedModulesVisual = useVisualSavedModules(savedModulesHeadless);
+const showSaveModuleDialog = ref(false);
+const saveModulePreSelectedBlockId = ref<string | null>(null);
+const showModuleBrowserModal = ref(false);
 
 const scoringInstance = useTemplateScoring({
   authManager,
@@ -464,9 +465,13 @@ provide(CAPABILITIES_KEY, {
     openForBlock: openCommentsForBlock,
   },
   savedModules: {
-    openSaveDialog: (blockId: string) =>
-      savedModulesVisual.openSaveDialog(blockId),
-    openBrowser: () => savedModulesVisual.openBrowserModal(),
+    openSaveDialog: (blockId: string) => {
+      saveModulePreSelectedBlockId.value = blockId ?? null;
+      showSaveModuleDialog.value = true;
+    },
+    openBrowser: () => {
+      showModuleBrowserModal.value = true;
+    },
     moduleCount: computed(() => savedModulesHeadless.modules.value.length),
   },
 } satisfies EditorCapabilities);
@@ -527,7 +532,7 @@ function handleModuleInsert(
     const position = insertIndex !== undefined ? insertIndex + i : undefined;
     editor.addBlock(cloned, undefined, undefined, position);
   }
-  savedModulesVisual.closeBrowserModal();
+  showModuleBrowserModal.value = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -1240,11 +1245,12 @@ defineExpose({
           planConfigInstance.hasFeature('saved_modules') &&
           props.config.modules !== false
         "
-        :visible="savedModulesVisual.showSaveDialog.value ?? false"
-        :pre-selected-block-id="
-          savedModulesVisual.preSelectedBlockId.value ?? null
+        :visible="showSaveModuleDialog"
+        :pre-selected-block-id="saveModulePreSelectedBlockId"
+        @close="
+          showSaveModuleDialog = false;
+          saveModulePreSelectedBlockId = null;
         "
-        @close="savedModulesVisual.closeSaveDialog()"
         @saved="savedModulesHeadless.loadModules()"
       />
 
@@ -1253,8 +1259,8 @@ defineExpose({
           planConfigInstance.hasFeature('saved_modules') &&
           props.config.modules !== false
         "
-        :visible="savedModulesVisual.showBrowserModal.value ?? false"
-        @close="savedModulesVisual.closeBrowserModal()"
+        :visible="showModuleBrowserModal"
+        @close="showModuleBrowserModal = false"
         @insert="handleModuleInsert"
       />
 

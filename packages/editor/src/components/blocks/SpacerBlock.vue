@@ -3,15 +3,15 @@ import type {
   SpacerBlock as SpacerBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { computed, inject } from "vue";
-import { EDITOR_KEY } from "../../keys";
+import { computed } from "vue";
+import { EDITOR_KEY, requireInject } from "../../keys";
 
 const props = defineProps<{
   block: SpacerBlockType;
   viewport: ViewportSize;
 }>();
 
-const editor = inject(EDITOR_KEY)!;
+const editor = requireInject(EDITOR_KEY, "SpacerBlock");
 
 const spacerStyle = computed(() => ({
   height: `${props.block.height}px`,

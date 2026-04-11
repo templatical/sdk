@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import MediaBreadcrumb from "./media/MediaBreadcrumb.vue";
-import type { CropData } from "./media/MediaEditModal.vue";
 import MediaEditModal from "./media/MediaEditModal.vue";
 import MediaFolderTree from "./media/MediaFolderTree.vue";
 import MediaGrid from "./media/MediaGrid.vue";
@@ -12,11 +11,12 @@ import MediaUploadZone from "./media/MediaUploadZone.vue";
 import StorageProgressRing from "./media/StorageProgressRing.vue";
 import { useI18n } from "../composables/useI18n";
 import { useMediaCategories } from "../composables/useMediaCategories";
+import { useMediaLibraryUI } from "../composables/useMediaLibraryUI";
 import type { UsePlanConfigReturn } from "@templatical/core/cloud";
 import { useMediaLibrary } from "../composable";
-import type { MediaCategory, MediaConversion, MediaItem } from "../types";
+import type { MediaCategory, MediaItem } from "../types";
 import type { AuthManager } from "@templatical/core/cloud";
-import { useClipboard, useDebounceFn, useEventListener } from "@vueuse/core";
+import { useEventListener } from "@vueuse/core";
 import {
   Check,
   Copy,
@@ -27,7 +27,7 @@ import {
   Search,
   X,
 } from "@lucide/vue";
-import { computed, inject, ref, watch, type ComputedRef, type Ref } from "vue";
+import { computed, inject, watch, type ComputedRef, type Ref } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -64,61 +64,18 @@ const storageLimitBytes = computed(
 
 const { isAcceptedMimeType, availableCategories } = useMediaCategories();
 
-const categoryLabels: Record<string, () => string> = {
-  images: () => t.mediaLibrary.filterImages,
-  documents: () => t.mediaLibrary.filterDocuments,
-  videos: () => t.mediaLibrary.filterVideos,
-  audio: () => t.mediaLibrary.filterAudio,
-};
-
-function getCategoryLabel(category: string): string {
-  return categoryLabels[category]?.() ?? category;
-}
-
-const layoutMode = ref<"grid" | "list">("grid");
-const showSidebar = ref(false);
-
-const searchInput = ref("");
-const selectedConversion = ref<MediaConversion>("original");
-
 const library = useMediaLibrary({
   projectId: projectId.value,
   authManager,
 });
 
-const selectedUrl = computed(() => {
-  const item = library.previewItem.value;
-  if (!item) return null;
-
-  switch (selectedConversion.value) {
-    case "small":
-      return item.small_url || item.url;
-    case "medium":
-      return item.medium_url || item.url;
-    case "large":
-      return item.large_url || item.url;
-    default:
-      return item.url;
-  }
+const ui = useMediaLibraryUI({
+  library,
+  canUseMediaFolders,
+  translations: t,
 });
 
-const hasFrequentlyUsed = computed(() => {
-  return library.frequentlyUsedItems.value.length > 0;
-});
-
-const displayItems = computed(() => {
-  if (library.viewMode.value === "frequently-used") {
-    return library.frequentlyUsedItems.value;
-  }
-  return library.items.value;
-});
-
-const hasUsedFiles = computed(() => {
-  return Object.values(library.deleteUsageInfo.value).some(
-    (info) => info.template_count > 0,
-  );
-});
-
+// Modal-specific: load on open, reset on close
 watch(
   () => props.visible,
   (visible) => {
@@ -126,59 +83,20 @@ watch(
       library.loadItems();
       library.loadFrequentlyUsed();
     } else {
-      library.clearSelection();
-      library.cancelDelete();
-      library.cancelReplace();
-      searchInput.value = "";
-      library.categoryFilter.value = null;
-      library.sortOption.value = "newest";
-      library.viewMode.value = "files";
-      editingItem.value = null;
-      showImportUrlModal.value = false;
-      selectedConversion.value = "original";
-      // Note: showSidebar is intentionally NOT reset to preserve user preference
+      ui.resetUI();
     }
   },
 );
 
-// Load folders on demand when sidebar is shown
-watch(showSidebar, (show) => {
-  if (show && canUseMediaFolders.value) {
-    library.loadFolders();
-  }
-});
-
-// Reset conversion selection when a different item is selected
-watch(
-  () => library.previewItem.value?.id,
-  () => {
-    selectedConversion.value = "original";
-  },
-);
-
-const debouncedSearch = useDebounceFn((value: string) => {
-  library.search(value);
-}, 300);
-
-function handleSearchInput(value: string): void {
-  searchInput.value = value;
-  debouncedSearch(value);
-}
-
+// Modal-specific: escape key
 function handleKeydown(event: KeyboardEvent): void {
   if (event.key === "Escape") {
     emit("close");
   }
 }
+useEventListener(document, "keydown", handleKeydown);
 
-async function handleUpload(files: File[]): Promise<void> {
-  await library.uploadFiles(files);
-}
-
-function handleSelect(item: MediaItem): void {
-  library.selectItem(item);
-}
-
+// Modal-specific: accept filter + selection
 function isConfirmable(): boolean {
   if (!library.previewItem.value) {
     return false;
@@ -193,85 +111,15 @@ function isConfirmable(): boolean {
 
 function confirmSelection(): void {
   if (isConfirmable()) {
-    // Emit the item with url replaced by the selected conversion URL
     const item = library.previewItem.value!;
     const itemWithSelectedUrl: MediaItem = {
       ...item,
-      url: selectedUrl.value || item.url,
+      url: ui.selectedUrl.value || item.url,
     };
     emit("select", itemWithSelectedUrl);
     emit("close");
   }
 }
-
-async function handleCreateFolder(
-  name: string,
-  parentId?: string | null,
-): Promise<void> {
-  await library.createFolder(name, parentId);
-}
-
-async function handleRenameFolder(
-  folderId: string,
-  name: string,
-): Promise<void> {
-  await library.renameFolder(folderId, name);
-}
-
-async function handleDeleteFolder(folderId: string): Promise<void> {
-  await library.deleteFolder(folderId);
-}
-
-const editingItem = ref<MediaItem | null>(null);
-
-function handleEditItem(item: MediaItem): void {
-  editingItem.value = item;
-}
-
-async function handleEditSave(
-  mediaId: string,
-  filename: string,
-  altText?: string,
-  cropData?: CropData,
-): Promise<void> {
-  if (cropData) {
-    await library.replaceMediaDirectly(mediaId, cropData.file);
-  }
-  await library.updateFile(mediaId, filename, altText);
-  editingItem.value = null;
-}
-
-const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true });
-
-const showImportUrlModal = ref(false);
-
-async function handleImportFromUrl(url: string): Promise<void> {
-  const result = await library.importFromUrl(url);
-  if (result) {
-    showImportUrlModal.value = false;
-  }
-}
-
-const showMovePicker = ref(false);
-
-async function handleMoveToFolder(folderId: string | null): Promise<void> {
-  showMovePicker.value = false;
-  await library.moveSelected(folderId);
-}
-
-async function handleDeleteClick(): Promise<void> {
-  await library.checkUsageBeforeDelete();
-}
-
-function handleReplaceItem(item: MediaItem): void {
-  library.checkUsageBeforeReplace(item);
-}
-
-async function handleReplaceFile(file: File): Promise<void> {
-  await library.replaceFile(file);
-}
-
-useEventListener(document, "keydown", handleKeydown);
 </script>
 
 <template>
@@ -321,7 +169,7 @@ useEventListener(document, "keydown", handleKeydown);
               />
               <div class="tpl:relative">
                 <input
-                  :value="searchInput"
+                  :value="ui.searchInput.value"
                   type="text"
                   class="tpl:w-52 tpl:rounded-md tpl:border tpl:py-1.5 tpl:pr-3 tpl:pl-8 tpl:text-xs tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:outline-none tpl:focus:shadow-[var(--tpl-ring)]"
                   style="
@@ -331,7 +179,9 @@ useEventListener(document, "keydown", handleKeydown);
                   "
                   :placeholder="t.mediaLibrary.searchPlaceholder"
                   @input="
-                    handleSearchInput(($event.target as HTMLInputElement).value)
+                    ui.handleSearchInput(
+                      ($event.target as HTMLInputElement).value,
+                    )
                   "
                 />
                 <Search
@@ -363,7 +213,7 @@ useEventListener(document, "keydown", handleKeydown);
               leave-to-class="tpl:-ml-48 tpl:opacity-0"
             >
               <div
-                v-if="canUseMediaFolders && showSidebar"
+                v-if="canUseMediaFolders && ui.showSidebar.value"
                 class="tpl:flex tpl:w-48 tpl:shrink-0 tpl:flex-col tpl:border-r"
                 style="
                   border-color: var(--tpl-border);
@@ -374,11 +224,11 @@ useEventListener(document, "keydown", handleKeydown);
                   :folders="library.folders.value"
                   :current-folder-id="library.currentFolderId.value"
                   :view-mode="library.viewMode.value"
-                  :has-frequently-used="hasFrequentlyUsed"
+                  :has-frequently-used="ui.hasFrequentlyUsed.value"
                   @navigate="library.navigateToFolder"
-                  @create-folder="handleCreateFolder"
-                  @rename-folder="handleRenameFolder"
-                  @delete-folder="handleDeleteFolder"
+                  @create-folder="ui.handleCreateFolder"
+                  @rename-folder="ui.handleRenameFolder"
+                  @delete-folder="ui.handleDeleteFolder"
                   @show-frequently-used="library.showFrequentlyUsed"
                 />
               </div>
@@ -397,22 +247,22 @@ useEventListener(document, "keydown", handleKeydown);
                     v-if="canUseMediaFolders"
                     class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:transition-all tpl:duration-150"
                     :style="{
-                      color: showSidebar
+                      color: ui.showSidebar.value
                         ? 'var(--tpl-primary)'
                         : 'var(--tpl-text-muted)',
-                      backgroundColor: showSidebar
+                      backgroundColor: ui.showSidebar.value
                         ? 'var(--tpl-bg)'
                         : 'transparent',
-                      border: showSidebar
+                      border: ui.showSidebar.value
                         ? '1px solid var(--tpl-border)'
                         : '1px solid transparent',
                     }"
                     :title="
-                      showSidebar
+                      ui.showSidebar.value
                         ? t.mediaLibrary.hideFolders
                         : t.mediaLibrary.showFolders
                     "
-                    @click="showSidebar = !showSidebar"
+                    @click="ui.showSidebar.value = !ui.showSidebar.value"
                   >
                     <PanelLeft :size="16" :stroke-width="2" />
                   </button>
@@ -445,16 +295,16 @@ useEventListener(document, "keydown", handleKeydown);
                       class="tpl:flex tpl:size-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:transition-all tpl:duration-150"
                       :style="{
                         color:
-                          layoutMode === 'grid'
+                          ui.layoutMode.value === 'grid'
                             ? 'var(--tpl-primary)'
                             : 'var(--tpl-text-muted)',
                         backgroundColor:
-                          layoutMode === 'grid'
+                          ui.layoutMode.value === 'grid'
                             ? 'var(--tpl-bg-elevated)'
                             : 'transparent',
                       }"
                       :title="t.mediaLibrary.viewGrid"
-                      @click="layoutMode = 'grid'"
+                      @click="ui.layoutMode.value = 'grid'"
                     >
                       <Grid2x2 :size="14" :stroke-width="2" />
                     </button>
@@ -462,16 +312,16 @@ useEventListener(document, "keydown", handleKeydown);
                       class="tpl:flex tpl:size-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:transition-all tpl:duration-150"
                       :style="{
                         color:
-                          layoutMode === 'list'
+                          ui.layoutMode.value === 'list'
                             ? 'var(--tpl-primary)'
                             : 'var(--tpl-text-muted)',
                         backgroundColor:
-                          layoutMode === 'list'
+                          ui.layoutMode.value === 'list'
                             ? 'var(--tpl-bg-elevated)'
                             : 'transparent',
                       }"
                       :title="t.mediaLibrary.viewList"
-                      @click="layoutMode = 'list'"
+                      @click="ui.layoutMode.value = 'list'"
                     >
                       <List :size="14" :stroke-width="2" />
                     </button>
@@ -502,7 +352,7 @@ useEventListener(document, "keydown", handleKeydown);
                       :key="category"
                       :value="category"
                     >
-                      {{ getCategoryLabel(category) }}
+                      {{ ui.getCategoryLabel(category) }}
                     </option>
                   </select>
                   <select
@@ -549,7 +399,7 @@ useEventListener(document, "keydown", handleKeydown);
                   <MediaUploadZone
                     :is-uploading="library.isUploading.value"
                     :upload-progress="library.uploadProgress.value"
-                    @upload="handleUpload"
+                    @upload="ui.handleUpload"
                   />
                   <button
                     v-if="canImportFromUrl"
@@ -559,7 +409,7 @@ useEventListener(document, "keydown", handleKeydown);
                       color: var(--tpl-text-muted);
                       background-color: var(--tpl-bg);
                     "
-                    @click="showImportUrlModal = true"
+                    @click="ui.showImportUrlModal.value = true"
                   >
                     <Link :size="14" :stroke-width="2" />
                     {{ t.mediaLibrary.importFromUrl }}
@@ -568,19 +418,19 @@ useEventListener(document, "keydown", handleKeydown);
 
                 <!-- Image grid -->
                 <MediaGrid
-                  :items="displayItems"
+                  :items="ui.displayItems.value"
                   :selected-ids="library.selectedItems.value"
                   :is-loading="library.isLoading.value"
                   :has-more="
                     library.viewMode.value === 'files' && library.hasMore.value
                   "
                   :accept="accept"
-                  :layout="layoutMode"
-                  @select="handleSelect"
+                  :layout="ui.layoutMode.value"
+                  @select="ui.handleSelect"
                   @toggle="library.toggleSelection"
                   @load-more="library.loadMore"
-                  @edit="handleEditItem"
-                  @replace="handleReplaceItem"
+                  @edit="ui.handleEditItem"
+                  @replace="ui.handleReplaceItem"
                 />
               </div>
             </div>
@@ -588,19 +438,19 @@ useEventListener(document, "keydown", handleKeydown);
 
           <!-- Import from URL Modal -->
           <MediaImportUrlModal
-            :visible="showImportUrlModal"
+            :visible="ui.showImportUrlModal.value"
             :is-importing="library.isImportingFromUrl.value"
             :error="library.importFromUrlError.value"
-            @import="handleImportFromUrl"
-            @close="showImportUrlModal = false"
+            @import="ui.handleImportFromUrl"
+            @close="ui.showImportUrlModal.value = false"
           />
 
           <!-- Edit Modal -->
           <MediaEditModal
-            :visible="!!editingItem"
-            :item="editingItem"
-            @save="handleEditSave"
-            @close="editingItem = null"
+            :visible="!!ui.editingItem.value"
+            :item="ui.editingItem.value"
+            @save="ui.handleEditSave"
+            @close="ui.editingItem.value = null"
           />
 
           <!-- Replace Modal -->
@@ -610,7 +460,7 @@ useEventListener(document, "keydown", handleKeydown);
             :usage-info="library.replaceUsageInfo.value"
             :is-replacing="library.isReplacing.value"
             :error="library.replaceError.value"
-            @replace="handleReplaceFile"
+            @replace="ui.handleReplaceFile"
             @close="library.cancelReplace"
           />
 
@@ -648,13 +498,13 @@ useEventListener(document, "keydown", handleKeydown);
                 </h3>
                 <p
                   class="tpl:text-xs"
-                  :class="hasUsedFiles ? 'tpl:mb-2' : 'tpl:mb-4'"
+                  :class="ui.hasUsedFiles.value ? 'tpl:mb-2' : 'tpl:mb-4'"
                   style="color: var(--tpl-text-muted)"
                 >
                   {{ t.mediaLibrary.deleteWarningMessage }}
                 </p>
                 <p
-                  v-if="hasUsedFiles"
+                  v-if="ui.hasUsedFiles.value"
                   class="tpl:mb-4 tpl:text-xs"
                   style="color: var(--tpl-text-muted)"
                 >
@@ -662,7 +512,7 @@ useEventListener(document, "keydown", handleKeydown);
                 </p>
 
                 <div
-                  v-if="hasUsedFiles"
+                  v-if="ui.hasUsedFiles.value"
                   class="tpl:mb-4 tpl:max-h-32 tpl:overflow-y-auto tpl:rounded tpl:border tpl:p-2"
                   style="border-color: var(--tpl-border)"
                 >
@@ -675,7 +525,7 @@ useEventListener(document, "keydown", handleKeydown);
                     <template v-if="info.template_count > 0">
                       <span class="tpl:font-medium">
                         {{
-                          displayItems.find((i) => i.id === mediaId)
+                          ui.displayItems.value.find((i) => i.id === mediaId)
                             ?.filename || mediaId
                         }}
                       </span>
@@ -714,7 +564,7 @@ useEventListener(document, "keydown", handleKeydown);
                     @click="library.confirmDelete"
                   >
                     {{
-                      hasUsedFiles
+                      ui.hasUsedFiles.value
                         ? t.mediaLibrary.deleteAnyway
                         : t.mediaLibrary.confirmDelete
                     }}
@@ -734,7 +584,7 @@ useEventListener(document, "keydown", handleKeydown);
             >
               <MediaPreviewPanel
                 v-if="library.previewItem.value"
-                v-model:selected-conversion="selectedConversion"
+                v-model:selected-conversion="ui.selectedConversion.value"
                 :item="library.previewItem.value"
                 :folders="library.folders.value"
               />
@@ -749,17 +599,23 @@ useEventListener(document, "keydown", handleKeydown);
                   v-if="library.previewItem.value"
                   class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
                   :style="{
-                    borderColor: copied
+                    borderColor: ui.copied.value
                       ? 'var(--tpl-success)'
                       : 'var(--tpl-border)',
-                    color: copied ? 'var(--tpl-success)' : 'var(--tpl-text)',
+                    color: ui.copied.value
+                      ? 'var(--tpl-success)'
+                      : 'var(--tpl-text)',
                     backgroundColor: 'var(--tpl-bg)',
                   }"
-                  @click="copy(selectedUrl!)"
+                  @click="ui.copy(ui.selectedUrl.value!)"
                 >
-                  <Copy v-if="!copied" :size="12" :stroke-width="2" />
+                  <Copy v-if="!ui.copied.value" :size="12" :stroke-width="2" />
                   <Check v-else :size="12" :stroke-width="2" />
-                  {{ copied ? t.mediaLibrary.copied : t.mediaLibrary.copyUrl }}
+                  {{
+                    ui.copied.value
+                      ? t.mediaLibrary.copied
+                      : t.mediaLibrary.copyUrl
+                  }}
                 </button>
                 <div v-if="canUseMediaFolders" class="tpl:relative">
                   <button
@@ -769,16 +625,16 @@ useEventListener(document, "keydown", handleKeydown);
                       color: var(--tpl-text);
                       background-color: var(--tpl-bg);
                     "
-                    @click="showMovePicker = !showMovePicker"
+                    @click="ui.showMovePicker.value = !ui.showMovePicker.value"
                   >
                     {{ t.mediaLibrary.moveSelected }}
                   </button>
                   <MediaMovePicker
-                    v-if="showMovePicker"
+                    v-if="ui.showMovePicker.value"
                     :folders="library.folders.value"
                     :current-folder-id="library.currentFolderId.value"
-                    @select="handleMoveToFolder"
-                    @close="showMovePicker = false"
+                    @select="ui.handleMoveToFolder"
+                    @close="ui.showMovePicker.value = false"
                   />
                 </div>
               </div>
@@ -792,7 +648,7 @@ useEventListener(document, "keydown", handleKeydown);
                     color: var(--tpl-danger);
                     background-color: var(--tpl-danger-light);
                   "
-                  @click="handleDeleteClick"
+                  @click="ui.handleDeleteClick"
                 >
                   {{ t.mediaLibrary.deleteSelected }}
                 </button>

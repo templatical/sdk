@@ -96,6 +96,11 @@ describe("extractPadding", () => {
     expect(result).toEqual({ top: 10, right: 20, bottom: 10, left: 20 });
   });
 
+  it("handles shorthand padding with 3 values", () => {
+    const result = extractPadding({ padding: "10px 20px 30px" });
+    expect(result).toEqual({ top: 10, right: 20, bottom: 30, left: 20 });
+  });
+
   it("handles shorthand padding with 4 values", () => {
     const result = extractPadding({ padding: "10px 20px 30px 40px" });
     expect(result).toEqual({ top: 10, right: 20, bottom: 30, left: 40 });

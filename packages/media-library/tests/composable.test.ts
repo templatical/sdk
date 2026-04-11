@@ -1114,5 +1114,58 @@ describe('useMediaLibrary', () => {
       expect(result).toEqual(updated);
       expect(lib.items.value[0].filename).toBe('direct.jpg');
     });
+
+    it('replaceMediaDirectly updates frequently used items', async () => {
+      const updated = createMediaItem('m1', { filename: 'updated.jpg' });
+      vi.mocked(MediaApiClient.prototype.replaceMedia).mockResolvedValue(updated);
+
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      lib.items.value = [createMediaItem('m1')];
+      lib.frequentlyUsedItems.value = [createMediaItem('m1')];
+      lib.previewItem.value = createMediaItem('m1');
+
+      await lib.replaceMediaDirectly('m1', new File(['data'], 'updated.jpg'));
+
+      expect(lib.frequentlyUsedItems.value[0].filename).toBe('updated.jpg');
+      expect(lib.previewItem.value?.filename).toBe('updated.jpg');
+    });
+
+    it('replaceMediaDirectly calls onError on failure', async () => {
+      vi.mocked(MediaApiClient.prototype.replaceMedia).mockRejectedValue(
+        new Error('Direct replace failed'),
+      );
+
+      const onError = vi.fn();
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+        onError,
+      });
+
+      const result = await lib.replaceMediaDirectly('m1', new File(['data'], 'file.jpg'));
+
+      expect(result).toBeNull();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    it('replaceMediaDirectly does not update preview when different id', async () => {
+      const updated = createMediaItem('m2', { filename: 'other.jpg' });
+      vi.mocked(MediaApiClient.prototype.replaceMedia).mockResolvedValue(updated);
+
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      lib.previewItem.value = createMediaItem('m1');
+
+      await lib.replaceMediaDirectly('m2', new File(['data'], 'other.jpg'));
+
+      expect(lib.previewItem.value?.id).toBe('m1');
+    });
   });
 });

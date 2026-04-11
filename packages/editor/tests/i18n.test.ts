@@ -225,5 +225,13 @@ describe('useI18n', () => {
         format(en.header.templatesUsed, { used: 5, max: 20 }),
       ).toBe('5/20 templates used');
     });
+
+    it('throws when no translations injected and no override', () => {
+      expect(() => {
+        withProvide(() => useI18n(), {});
+      }).toThrow(
+        'useI18n() requires a translations provider',
+      );
+    });
   });
 });

@@ -16,9 +16,9 @@ export interface UseI18nReturn {
  * @param translationsOverride - Optional translations to use instead of injected value
  */
 export function useI18n(translationsOverride?: Translations): UseI18nReturn {
-  const injected: Translations | Ref<Translations> | undefined =
+  const injected =
     translationsOverride ??
-    (inject(TRANSLATIONS_KEY) as Translations | Ref<Translations> | undefined);
+    (inject(TRANSLATIONS_KEY, null) as Translations | Ref<Translations> | null);
 
   if (!injected) {
     throw new Error(

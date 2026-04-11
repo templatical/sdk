@@ -173,7 +173,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   );
 }
 
-export function deepMergeDefaults<T extends Record<string, unknown>>(
+export function deepMergeDefaults<T extends object>(
   base: T,
   overrides: Partial<T>,
 ): T {
@@ -189,8 +189,8 @@ export function deepMergeDefaults<T extends Record<string, unknown>>(
 
     if (isPlainObject(baseVal) && isPlainObject(overrideVal)) {
       result[key] = deepMergeDefaults(
-        baseVal as Record<string, unknown>,
-        overrideVal as Record<string, unknown>,
+        baseVal,
+        overrideVal as Partial<typeof baseVal>,
       ) as T[keyof T];
     } else {
       result[key] = overrideVal as T[keyof T];

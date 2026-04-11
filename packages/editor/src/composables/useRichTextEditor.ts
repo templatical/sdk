@@ -59,7 +59,7 @@ export interface UseRichTextEditorReturn {
 export function useRichTextEditor(
   options: UseRichTextEditorOptions,
 ): UseRichTextEditorReturn {
-  const emailEditor = inject(EDITOR_KEY);
+  const emailEditor = inject(EDITOR_KEY, null);
 
   const {
     mergeTags,
@@ -143,7 +143,7 @@ export function useRichTextEditor(
 
   initEditor();
 
-  watch(
+  const stopContentWatch = watch(
     () => options.blockContent(),
     (newContent) => {
       if (editor.value) {
@@ -176,6 +176,7 @@ export function useRichTextEditor(
   useEventListener(document, "mousedown", handleClickOutside);
 
   onBeforeUnmount(() => {
+    stopContentWatch();
     stopFocusTimeout();
     editor.value?.destroy();
   });

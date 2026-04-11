@@ -35,7 +35,7 @@ export interface UseMergeTagReturn {
 export function useMergeTag(): UseMergeTagReturn {
   const mergeTags = inject(MERGE_TAGS_KEY, []);
   const syntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
-  const onRequestMergeTag = inject(ON_REQUEST_MERGE_TAG_KEY);
+  const onRequestMergeTag = inject(ON_REQUEST_MERGE_TAG_KEY, null);
 
   const isRequesting = ref(false);
 

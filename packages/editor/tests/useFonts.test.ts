@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import './dom-stubs';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { effectScope } from 'vue';
 import { useFonts } from '../src/composables/useFonts';
 
 describe('useFonts', () => {
@@ -290,6 +292,280 @@ describe('useFonts', () => {
       expect(fonts.value.length).toBe(7); // only built-in
       setCustomFontsEnabled(true);
       expect(fonts.value.length).toBe(8); // back to 8
+    });
+  });
+
+  describe('loadCustomFonts with DOM', () => {
+    let appendedLinks: any[];
+    let createElementSpy: ReturnType<typeof vi.fn>;
+    let querySelectorSpy: ReturnType<typeof vi.fn>;
+    let appendChildSpy: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      appendedLinks = [];
+
+      // Set up CSS.escape
+      (globalThis as any).CSS = { escape: (value: string) => value };
+
+      // Set up document.head if not present
+      if (!(document as any).head) {
+        (document as any).head = { appendChild: () => {} };
+      }
+
+      querySelectorSpy = vi.fn(() => null);
+      (document as any).querySelector = querySelectorSpy;
+
+      createElementSpy = vi.fn((tag: string) => {
+        if (tag === 'link') {
+          return {
+            rel: '',
+            href: '',
+            onload: null as (() => void) | null,
+            onerror: null as (() => void) | null,
+            setAttribute: vi.fn(),
+            remove: vi.fn(),
+          };
+        }
+        return { nodeType: 1, tagName: tag.toUpperCase() };
+      });
+      (document as any).createElement = createElementSpy;
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      delete (globalThis as any).CSS;
+    });
+
+    function setupAppendChild(options?: {
+      triggerOnload?: boolean;
+      triggerOnerror?: boolean;
+    }) {
+      const { triggerOnload = true, triggerOnerror = false } = options ?? {};
+      appendChildSpy = vi.fn((child: any) => {
+        appendedLinks.push(child);
+        if (triggerOnerror && child.onerror) {
+          child.onerror();
+        } else if (triggerOnload && child.onload) {
+          child.onload();
+        }
+        return child;
+      });
+      (document as any).head.appendChild = appendChildSpy;
+    }
+
+    it('creates link elements with correct attributes for custom fonts', async () => {
+      setupAppendChild({ triggerOnload: true });
+
+      const { loadCustomFonts, isLoaded } = useFonts({
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+      });
+
+      await loadCustomFonts();
+
+      expect(createElementSpy).toHaveBeenCalledWith('link');
+      expect(appendedLinks.length).toBe(1);
+
+      const link = appendedLinks[0];
+      expect(link.rel).toBe('stylesheet');
+      expect(link.href).toBe('https://fonts.com/roboto.css');
+      expect(link.setAttribute).toHaveBeenCalledWith('data-custom-font', 'Roboto');
+      expect(isLoaded.value).toBe(true);
+    });
+
+    it('skips creating link when font already exists in DOM', async () => {
+      querySelectorSpy.mockReturnValue({} as Element); // existing link found
+      setupAppendChild({ triggerOnload: true });
+
+      const { loadCustomFonts, isLoaded } = useFonts({
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+      });
+
+      await loadCustomFonts();
+
+      expect(createElementSpy).not.toHaveBeenCalled();
+      expect(appendChildSpy).not.toHaveBeenCalled();
+      expect(isLoaded.value).toBe(true);
+    });
+
+    it('handles font load error gracefully with console.warn', async () => {
+      setupAppendChild({ triggerOnerror: true });
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const { loadCustomFonts, isLoaded } = useFonts({
+        customFonts: [{ name: 'BadFont', url: 'https://fonts.com/bad.css' }],
+      });
+
+      await loadCustomFonts();
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Failed to load custom font "BadFont":',
+        expect.any(Error),
+      );
+      expect(isLoaded.value).toBe(true);
+      warnSpy.mockRestore();
+    });
+
+    it('loads multiple fonts and sets isLoaded after all settle', async () => {
+      setupAppendChild({ triggerOnload: true });
+
+      const { loadCustomFonts, isLoaded } = useFonts({
+        customFonts: [
+          { name: 'Roboto', url: 'https://fonts.com/roboto.css' },
+          { name: 'Lato', url: 'https://fonts.com/lato.css' },
+        ],
+      });
+
+      await loadCustomFonts();
+
+      expect(appendedLinks.length).toBe(2);
+      expect(isLoaded.value).toBe(true);
+    });
+
+    it('loads some fonts successfully even when others fail', async () => {
+      let callCount = 0;
+      appendChildSpy = vi.fn((child: any) => {
+        appendedLinks.push(child);
+        callCount++;
+        if (callCount === 1 && child.onload) {
+          child.onload();
+        } else if (child.onerror) {
+          child.onerror();
+        }
+        return child;
+      });
+      (document as any).head.appendChild = appendChildSpy;
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const { loadCustomFonts, isLoaded } = useFonts({
+        customFonts: [
+          { name: 'GoodFont', url: 'https://fonts.com/good.css' },
+          { name: 'BadFont', url: 'https://fonts.com/bad.css' },
+        ],
+      });
+
+      await loadCustomFonts();
+
+      expect(isLoaded.value).toBe(true);
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Failed to load custom font "BadFont":',
+        expect.any(Error),
+      );
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe('cleanupFontLinks', () => {
+    it('calls remove on each created link and clears internal array', async () => {
+      (globalThis as any).CSS = { escape: (value: string) => value };
+      if (!(document as any).head) {
+        (document as any).head = { appendChild: () => {} };
+      }
+
+      const createdLinks: any[] = [];
+
+      (document as any).querySelector = vi.fn(() => null);
+      (document as any).createElement = vi.fn((tag: string) => {
+        if (tag === 'link') {
+          const mockLink = {
+            rel: '',
+            href: '',
+            onload: null as (() => void) | null,
+            onerror: null as (() => void) | null,
+            setAttribute: vi.fn(),
+            remove: vi.fn(),
+          };
+          createdLinks.push(mockLink);
+          return mockLink;
+        }
+        return { nodeType: 1, tagName: tag.toUpperCase() };
+      });
+      (document as any).head.appendChild = vi.fn((child: any) => {
+        if (child.onload) {
+          child.onload();
+        }
+        return child;
+      });
+
+      const { loadCustomFonts, cleanupFontLinks } = useFonts({
+        customFonts: [
+          { name: 'FontA', url: 'https://fonts.com/a.css' },
+          { name: 'FontB', url: 'https://fonts.com/b.css' },
+        ],
+      });
+
+      await loadCustomFonts();
+
+      expect(createdLinks.length).toBe(2);
+
+      cleanupFontLinks();
+
+      for (const link of createdLinks) {
+        expect(link.remove).toHaveBeenCalled();
+      }
+
+      // Calling cleanup again should not call remove again (array was cleared)
+      const removeCalls = createdLinks.map((l) => l.remove.mock.calls.length);
+      cleanupFontLinks();
+      for (let i = 0; i < createdLinks.length; i++) {
+        expect(createdLinks[i].remove.mock.calls.length).toBe(removeCalls[i]);
+      }
+
+      delete (globalThis as any).CSS;
+    });
+  });
+
+  describe('onScopeDispose cleanup', () => {
+    it('registers cleanup when created inside an effect scope', async () => {
+      (globalThis as any).CSS = { escape: (value: string) => value };
+      if (!(document as any).head) {
+        (document as any).head = { appendChild: () => {} };
+      }
+
+      const createdLinks: any[] = [];
+
+      (document as any).querySelector = vi.fn(() => null);
+      (document as any).createElement = vi.fn((tag: string) => {
+        if (tag === 'link') {
+          const mockLink = {
+            rel: '',
+            href: '',
+            onload: null as (() => void) | null,
+            onerror: null as (() => void) | null,
+            setAttribute: vi.fn(),
+            remove: vi.fn(),
+          };
+          createdLinks.push(mockLink);
+          return mockLink;
+        }
+        return { nodeType: 1, tagName: tag.toUpperCase() };
+      });
+      (document as any).head.appendChild = vi.fn((child: any) => {
+        if (child.onload) {
+          child.onload();
+        }
+        return child;
+      });
+
+      const scope = effectScope();
+      let loadFn: (() => Promise<void>) | undefined;
+
+      scope.run(() => {
+        const { loadCustomFonts } = useFonts({
+          customFonts: [{ name: 'ScopedFont', url: 'https://fonts.com/scoped.css' }],
+        });
+        loadFn = loadCustomFonts;
+      });
+
+      await loadFn!();
+      expect(createdLinks.length).toBe(1);
+
+      // Stopping the scope triggers onScopeDispose, which calls cleanupFontLinks
+      scope.stop();
+
+      expect(createdLinks[0].remove).toHaveBeenCalled();
+
+      delete (globalThis as any).CSS;
     });
   });
 });
