@@ -254,8 +254,9 @@ export function useEditorCore(
       : null;
 
   // Pause/resume auto-save during history navigation (undo/redo)
+  let stopNavigatingWatch: (() => void) | null = null;
   if (autoSave) {
-    watch(history.isNavigating, (navigating) => {
+    stopNavigatingWatch = watch(history.isNavigating, (navigating) => {
       if (navigating) {
         autoSave.pause();
       } else {
@@ -327,6 +328,7 @@ export function useEditorCore(
 
   // --- Cleanup ---
   function destroy(): void {
+    stopNavigatingWatch?.();
     autoSave?.destroy();
     history.destroy();
   }

@@ -154,12 +154,168 @@ describe('MergeTagNode source structure', () => {
   });
 });
 
-describe('MergeTagNode renderHTML attributes', () => {
-  it('uses data-merge-tag attribute for value', () => {
-    // The renderHTML builds: { 'data-merge-tag': value, 'data-label': label }
-    const value = '{{ first_name }}';
-    const attrs = { 'data-merge-tag': value, 'data-label': 'First Name' };
-    expect(attrs['data-merge-tag']).toBe(value);
-    expect(attrs['data-label']).toBe('First Name');
+describe('MergeTagNode addAttributes parseHTML', () => {
+  const attrs = (MergeTagNode.config.addAttributes as Function).call({});
+
+  describe('label parseHTML', () => {
+    it('extracts data-label attribute from element', () => {
+      const element = {
+        getAttribute: (name: string) =>
+          name === 'data-label' ? 'First Name' : null,
+        textContent: 'fallback',
+      };
+      expect(attrs.label.parseHTML(element)).toBe('First Name');
+    });
+
+    it('falls back to textContent when data-label is missing', () => {
+      const element = {
+        getAttribute: () => null,
+        textContent: 'Text Fallback',
+      };
+      expect(attrs.label.parseHTML(element)).toBe('Text Fallback');
+    });
+
+    it('returns empty string when both data-label and textContent are empty', () => {
+      const element = {
+        getAttribute: () => '',
+        textContent: '',
+      };
+      expect(attrs.label.parseHTML(element)).toBe('');
+    });
+
+    it('prefers data-label over textContent', () => {
+      const element = {
+        getAttribute: (name: string) =>
+          name === 'data-label' ? 'Label' : null,
+        textContent: 'Content',
+      };
+      expect(attrs.label.parseHTML(element)).toBe('Label');
+    });
+  });
+
+  describe('value parseHTML', () => {
+    it('extracts data-merge-tag attribute from element', () => {
+      const element = {
+        getAttribute: (name: string) =>
+          name === 'data-merge-tag' ? '{{ first_name }}' : null,
+      };
+      expect(attrs.value.parseHTML(element)).toBe('{{ first_name }}');
+    });
+
+    it('returns empty string when data-merge-tag is missing', () => {
+      const element = {
+        getAttribute: () => null,
+      };
+      expect(attrs.value.parseHTML(element)).toBe('');
+    });
+
+    it('returns empty string when data-merge-tag is empty', () => {
+      const element = {
+        getAttribute: () => '',
+      };
+      expect(attrs.value.parseHTML(element)).toBe('');
+    });
+  });
+});
+
+describe('MergeTagNode renderHTML', () => {
+  const renderHTML = MergeTagNode.config.renderHTML as Function;
+
+  it('renders span with data-merge-tag and data-label using found merge tag label', () => {
+    const mergeTags = [
+      { label: 'First Name', value: '{{ first_name }}' },
+      { label: 'Email', value: '{{ email }}' },
+    ];
+    const context = {
+      node: { attrs: { value: '{{ first_name }}', label: '' } },
+      HTMLAttributes: {},
+    };
+    const result = renderHTML.call(
+      { options: { mergeTags } },
+      context,
+    );
+    expect(result[0]).toBe('span');
+    expect(result[1]['data-merge-tag']).toBe('{{ first_name }}');
+    expect(result[1]['data-label']).toBe('First Name');
+    expect(result[2]).toBe('First Name');
+  });
+
+  it('uses value as label when merge tag is not found in mergeTags list', () => {
+    const context = {
+      node: { attrs: { value: '{{ unknown }}', label: '' } },
+      HTMLAttributes: {},
+    };
+    const result = renderHTML.call(
+      { options: { mergeTags: [] } },
+      context,
+    );
+    expect(result[1]['data-merge-tag']).toBe('{{ unknown }}');
+    expect(result[1]['data-label']).toBe('{{ unknown }}');
+    expect(result[2]).toBe('{{ unknown }}');
+  });
+
+  it('merges HTMLAttributes into the output', () => {
+    const context = {
+      node: { attrs: { value: '{{ name }}', label: '' } },
+      HTMLAttributes: { class: 'custom-class', id: 'tag-1' },
+    };
+    const result = renderHTML.call(
+      { options: { mergeTags: [] } },
+      context,
+    );
+    expect(result[1].class).toBe('custom-class');
+    expect(result[1].id).toBe('tag-1');
+    expect(result[1]['data-merge-tag']).toBe('{{ name }}');
+  });
+});
+
+describe('MergeTagNode addCommands', () => {
+  it('insertMergeTag calls commands.insertContent with correct type and attrs', () => {
+    const commands = (MergeTagNode.config.addCommands as Function).call({
+      name: 'mergeTagNode',
+    });
+    const mergeTag = { label: 'First Name', value: '{{ first_name }}' };
+    const mockInsertContent = vi.fn().mockReturnValue(true);
+    const result = commands.insertMergeTag(mergeTag)({
+      commands: { insertContent: mockInsertContent },
+    });
+    expect(mockInsertContent).toHaveBeenCalledWith({
+      type: 'mergeTagNode',
+      attrs: mergeTag,
+    });
+    expect(result).toBe(true);
+  });
+});
+
+describe('MergeTagNode addKeyboardShortcuts', () => {
+  it('registers Backspace and Delete shortcuts', () => {
+    const shortcuts = (MergeTagNode.config.addKeyboardShortcuts as Function).call({
+      editor: {},
+      name: 'mergeTagNode',
+    });
+    expect(shortcuts).toHaveProperty('Backspace');
+    expect(shortcuts).toHaveProperty('Delete');
+    expect(shortcuts.Backspace).toEqual(expect.any(Function));
+    expect(shortcuts.Delete).toEqual(expect.any(Function));
+  });
+});
+
+describe('MergeTagNode addInputRules', () => {
+  it('returns an array with one input rule', () => {
+    const rules = (MergeTagNode.config.addInputRules as Function).call({
+      options: { syntax: SYNTAX_PRESETS.liquid, mergeTags: [] },
+      type: { create: vi.fn() },
+    });
+    expect(rules).toHaveLength(1);
+  });
+});
+
+describe('MergeTagNode addPasteRules', () => {
+  it('returns an array with one paste rule', () => {
+    const rules = (MergeTagNode.config.addPasteRules as Function).call({
+      options: { syntax: SYNTAX_PRESETS.liquid, mergeTags: [] },
+      type: { create: vi.fn() },
+    });
+    expect(rules).toHaveLength(1);
   });
 });

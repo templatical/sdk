@@ -44,7 +44,7 @@ const props = defineProps<{
 
 defineOptions({ name: "PreviewSectionBlock" });
 
-const blockRegistry = inject(BLOCK_REGISTRY_KEY);
+const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 
 const columnWidths = computed(() => {
   switch (props.block.columns) {

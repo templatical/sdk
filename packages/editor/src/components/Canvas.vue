@@ -14,6 +14,7 @@ import {
   CONDITION_PREVIEW_KEY,
   BLOCK_REGISTRY_KEY,
   CAPABILITIES_KEY,
+  requireInject,
 } from "../keys";
 import draggable from "vuedraggable";
 import { resolveBlockComponent } from "../utils/blockComponentResolver";
@@ -68,8 +69,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const editor = inject(EDITOR_KEY)!;
-const conditionPreview = inject(CONDITION_PREVIEW_KEY);
+const editor = requireInject(EDITOR_KEY, "Canvas");
+const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 
 const caps = inject(CAPABILITIES_KEY, {});

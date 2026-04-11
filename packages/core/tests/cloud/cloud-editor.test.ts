@@ -84,14 +84,6 @@ describe("cloud useEditor", () => {
       expect(editor.state.uiTheme).toBe("auto");
     });
 
-    it("uiTheme is independent from darkMode", () => {
-      const editor = setup();
-      editor.setUiTheme("dark");
-      editor.setDarkMode(false);
-      expect(editor.state.uiTheme).toBe("dark");
-      expect(editor.state.darkMode).toBe(false);
-    });
-
     it("selectBlock sets selectedBlockId", () => {
       const editor = setup();
       const block = createParagraphBlock();
@@ -108,13 +100,60 @@ describe("cloud useEditor", () => {
       expect(editor.state.selectedBlockId).toBeNull();
     });
 
-    it("selectBlock with null clears selection", () => {
+    it("setViewport changes viewport", () => {
+      const editor = setup();
+      editor.setViewport("mobile");
+      expect(editor.state.viewport).toBe("mobile");
+    });
+
+    it("setDarkMode changes dark mode", () => {
+      const editor = setup();
+      editor.setDarkMode(true);
+      expect(editor.state.darkMode).toBe(true);
+    });
+
+    it("setContent with default markDirty sets isDirty", () => {
+      const editor = setup();
+      const block = createParagraphBlock();
+      editor.setContent({ blocks: [block], settings: editor.content.value.settings });
+      expect(editor.state.isDirty).toBe(true);
+    });
+
+    it("selectedBlock resolves block from selectedBlockId", () => {
       const editor = setup();
       const block = createParagraphBlock();
       editor.addBlock(block);
       editor.selectBlock(block.id);
-      editor.selectBlock(null);
-      expect(editor.state.selectedBlockId).toBeNull();
+      expect(editor.selectedBlock.value?.id).toBe(block.id);
+      expect(editor.selectedBlock.value?.type).toBe("paragraph");
+    });
+
+    it("selectedBlock returns null for non-existent selectedBlockId", () => {
+      const editor = setup();
+      // Add a block then select a non-existent ID by manipulating state
+      const block = createParagraphBlock();
+      editor.addBlock(block);
+      editor.selectBlock(block.id);
+      editor.removeBlock(block.id);
+      // selectedBlockId was cleared by removeBlock, but let's test via content.value setter
+      expect(editor.selectedBlock.value).toBeNull();
+    });
+
+    it("selectedBlock finds block inside section column", () => {
+      const editor = setup();
+      const section = createSectionBlock();
+      editor.addBlock(section);
+      const child = createParagraphBlock();
+      editor.addBlock(child, section.id, 0);
+      editor.selectBlock(child.id);
+      expect(editor.selectedBlock.value?.id).toBe(child.id);
+    });
+
+    it("content.value setter marks dirty", () => {
+      const editor = setup();
+      expect(editor.state.isDirty).toBe(false);
+      editor.content.value = { blocks: [], settings: editor.content.value.settings };
+      expect(editor.state.isDirty).toBe(true);
     });
 
     it("setPreviewMode clears selection when true", () => {
@@ -125,6 +164,15 @@ describe("cloud useEditor", () => {
       editor.setPreviewMode(true);
       expect(editor.state.previewMode).toBe(true);
       expect(editor.state.selectedBlockId).toBeNull();
+    });
+
+    it("updateSettings merges settings and marks dirty", () => {
+      const editor = setup();
+      const originalWidth = editor.content.value.settings.width;
+      editor.updateSettings({ width: 700, backgroundColor: "#f0f0f0" });
+      expect(editor.content.value.settings.width).toBe(700);
+      expect(editor.content.value.settings.backgroundColor).toBe("#f0f0f0");
+      expect(editor.state.isDirty).toBe(true);
     });
 
     it("updateBlock patches block and marks dirty", () => {
@@ -186,16 +234,32 @@ describe("cloud useEditor", () => {
       );
     });
 
-    it("adds block at specific index", () => {
+    it("adds block at specific index at root level", () => {
       const editor = setup();
-      const block1 = createParagraphBlock();
-      const block2 = createParagraphBlock();
-      const block3 = createParagraphBlock();
-      editor.addBlock(block1);
-      editor.addBlock(block2);
-      editor.addBlock(block3, undefined, undefined, 1);
-      expect(editor.content.value.blocks[1].id).toBe(block3.id);
+      const b1 = createParagraphBlock();
+      const b2 = createParagraphBlock();
+      editor.addBlock(b1);
+      editor.addBlock(b2);
+      const inserted = createImageBlock();
+      editor.addBlock(inserted, undefined, undefined, 0);
+      expect(editor.content.value.blocks[0].id).toBe(inserted.id);
+      expect(editor.content.value.blocks).toHaveLength(3);
     });
+
+    it("adds block at specific index within section column", () => {
+      const editor = setup();
+      const section = createSectionBlock();
+      editor.addBlock(section);
+      const first = createParagraphBlock();
+      const second = createParagraphBlock();
+      editor.addBlock(first, section.id, 0);
+      editor.addBlock(second, section.id, 0);
+      const inserted = createImageBlock();
+      editor.addBlock(inserted, section.id, 0, 0);
+      expect(section.children[0][0].id).toBe(inserted.id);
+      expect(section.children[0]).toHaveLength(3);
+    });
+
   });
 
   describe("moveBlock", () => {
@@ -474,20 +538,6 @@ describe("cloud useEditor", () => {
       expect(editor.state.isDirty).toBe(true);
     });
 
-    it("setContent with markDirty=false does not set isDirty", () => {
-      const editor = setup();
-      const newContent = { blocks: [], settings: editor.content.value.settings };
-      editor.setContent(newContent as any, false);
-      expect(editor.state.isDirty).toBe(false);
-    });
-
-    it("selectedBlock returns null for non-existent selectedBlockId", () => {
-      const editor = setup();
-      // Force a selectedBlockId that doesn't match any block
-      editor.selectBlock(null);
-      expect(editor.selectedBlock.value).toBeNull();
-    });
-
     it("save after failed save recovers on retry", async () => {
       const tpl = createMockTemplate();
       vi.mocked(ApiClient.prototype.createTemplate).mockResolvedValue(tpl);
@@ -561,6 +611,32 @@ describe("cloud useEditor", () => {
       expect(editor.state.isDirty).toBe(true);
       editor.setContent(editor.content.value, false);
       expect(editor.state.isDirty).toBe(true);
+    });
+
+    it("isBlockLocked returns false when lockedBlocks ref is not provided", () => {
+      const editor = useEditor({
+        authManager: createMockAuthManager(),
+      });
+      expect(editor.isBlockLocked("any-id")).toBe(false);
+    });
+
+    it("addBlock to non-existent section does nothing", () => {
+      const editor = setup();
+      const block = createParagraphBlock();
+      editor.addBlock(block, "nonexistent-section", 0);
+      expect(editor.content.value.blocks).toHaveLength(0);
+    });
+
+    it("removeBlock on non-selected block does not clear selection", () => {
+      const editor = setup();
+      const b1 = createParagraphBlock();
+      const b2 = createParagraphBlock();
+      editor.addBlock(b1);
+      editor.addBlock(b2);
+      editor.selectBlock(b1.id);
+      editor.removeBlock(b2.id);
+      expect(editor.state.selectedBlockId).toBe(b1.id);
+      expect(editor.content.value.blocks).toHaveLength(1);
     });
   });
 });

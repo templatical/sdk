@@ -1,4 +1,4 @@
-import type { InjectionKey, ComputedRef } from "vue";
+import { inject, type InjectionKey, type ComputedRef } from "vue";
 import type {
   UseHistoryReturn,
   UseBlockActionsReturn,
@@ -101,3 +101,20 @@ export const SAVED_MODULES_HEADLESS_KEY: InjectionKey<UseSavedModulesReturn> =
 
 export const SCORING_KEY: InjectionKey<UseTemplateScoringReturn> =
   Symbol("scoring");
+
+// ---------------------------------------------------------------------------
+// Helper for required injections with explicit null default + throw
+// ---------------------------------------------------------------------------
+
+export function requireInject<T>(
+  key: InjectionKey<T>,
+  componentName: string,
+): T {
+  const value = inject(key, null) as T | null;
+  if (value === null || value === undefined) {
+    throw new Error(
+      `${componentName} requires a provider for ${key.description ?? "unknown key"}. Ensure it is a descendant of Editor or CloudEditor.`,
+    );
+  }
+  return value;
+}

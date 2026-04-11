@@ -174,6 +174,275 @@ describe('standalone visual', () => {
     // Clean up the hanging promise
     initPromise.catch(() => {});
   });
+
+  it('unmount after init calls app.unmount', async () => {
+    const mockAuthManager = {
+      projectId: 'proj-1',
+      tenantSlug: 'acme',
+      initialize: vi.fn().mockResolvedValue(undefined),
+      authenticatedFetch: vi.fn(),
+    };
+
+    const { createSdkAuthManager: mockCreateAuth } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(mockCreateAuth).mockReturnValue(mockAuthManager as any);
+
+    const { ApiClient: MockApiClient } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(MockApiClient).mockImplementation(function (this: any) {
+      this.fetchConfig = vi.fn().mockResolvedValue({ storage: {} });
+      return this;
+    } as any);
+
+    const { loadMediaTranslations: mockLoadTranslations } = await import(
+      '../src/i18n'
+    );
+    vi.mocked(mockLoadTranslations).mockResolvedValue({} as any);
+
+    const { createApp: mockCreateApp } = await import('vue');
+    const mockApp = {
+      mount: vi.fn(),
+      unmount: vi.fn(),
+    };
+    vi.mocked(mockCreateApp).mockImplementation((...args: any[]) => {
+      const component = args[0] as any;
+      if (component?.setup) {
+        component.setup();
+      }
+      return mockApp as any;
+    });
+
+    const container = document.createElement('div');
+
+    const initPromise = initFn({
+      container,
+      auth: { projectId: 'p1', token: 't1' },
+    } as any);
+
+    await new Promise((r) => setTimeout(r, 50));
+    initPromise.catch(() => {});
+
+    // Now unmount — should call app.unmount
+    unmountFn();
+    expect(mockApp.unmount).toHaveBeenCalled();
+  });
+
+  it('unmount is idempotent after first call', async () => {
+    const mockAuthManager = {
+      projectId: 'proj-1',
+      tenantSlug: 'acme',
+      initialize: vi.fn().mockResolvedValue(undefined),
+      authenticatedFetch: vi.fn(),
+    };
+
+    const { createSdkAuthManager: mockCreateAuth } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(mockCreateAuth).mockReturnValue(mockAuthManager as any);
+
+    const { ApiClient: MockApiClient } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(MockApiClient).mockImplementation(function (this: any) {
+      this.fetchConfig = vi.fn().mockResolvedValue({ storage: {} });
+      return this;
+    } as any);
+
+    const { loadMediaTranslations: mockLoadTranslations } = await import(
+      '../src/i18n'
+    );
+    vi.mocked(mockLoadTranslations).mockResolvedValue({} as any);
+
+    const { createApp: mockCreateApp } = await import('vue');
+    const mockApp = {
+      mount: vi.fn(),
+      unmount: vi.fn(),
+    };
+    vi.mocked(mockCreateApp).mockImplementation((...args: any[]) => {
+      const component = args[0] as any;
+      if (component?.setup) {
+        component.setup();
+      }
+      return mockApp as any;
+    });
+
+    const container = document.createElement('div');
+
+    const initPromise = initFn({
+      container,
+      auth: { projectId: 'p1', token: 't1' },
+    } as any);
+
+    await new Promise((r) => setTimeout(r, 50));
+    initPromise.catch(() => {});
+
+    unmountFn();
+    expect(mockApp.unmount).toHaveBeenCalledTimes(1);
+
+    // Second unmount is safe, does not call app.unmount again
+    unmountFn();
+    expect(mockApp.unmount).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-init unmounts previous app before creating new one', async () => {
+    const mockAuthManager = {
+      projectId: 'proj-1',
+      tenantSlug: 'acme',
+      initialize: vi.fn().mockResolvedValue(undefined),
+      authenticatedFetch: vi.fn(),
+    };
+
+    const { createSdkAuthManager: mockCreateAuth } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(mockCreateAuth).mockReturnValue(mockAuthManager as any);
+
+    const { ApiClient: MockApiClient } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(MockApiClient).mockImplementation(function (this: any) {
+      this.fetchConfig = vi.fn().mockResolvedValue({ storage: {} });
+      return this;
+    } as any);
+
+    const { loadMediaTranslations: mockLoadTranslations } = await import(
+      '../src/i18n'
+    );
+    vi.mocked(mockLoadTranslations).mockResolvedValue({} as any);
+
+    const { createApp: mockCreateApp } = await import('vue');
+    const firstApp = { mount: vi.fn(), unmount: vi.fn() };
+    const secondApp = { mount: vi.fn(), unmount: vi.fn() };
+    let callCount = 0;
+    vi.mocked(mockCreateApp).mockImplementation((...args: any[]) => {
+      const component = args[0] as any;
+      if (component?.setup) {
+        component.setup();
+      }
+      callCount++;
+      return (callCount === 1 ? firstApp : secondApp) as any;
+    });
+
+    const container = document.createElement('div');
+
+    // First init
+    const firstInit = initFn({
+      container,
+      auth: { projectId: 'p1', token: 't1' },
+    } as any);
+    await new Promise((r) => setTimeout(r, 50));
+    firstInit.catch(() => {});
+
+    // Second init should unmount first app
+    const secondInit = initFn({
+      container,
+      auth: { projectId: 'p1', token: 't1' },
+    } as any);
+    await new Promise((r) => setTimeout(r, 50));
+    secondInit.catch(() => {});
+
+    expect(firstApp.unmount).toHaveBeenCalled();
+    expect(secondApp.mount).toHaveBeenCalledWith(container);
+  });
+
+  it('passes locale to loadMediaTranslations', async () => {
+    const mockAuthManager = {
+      projectId: 'proj-1',
+      tenantSlug: 'acme',
+      initialize: vi.fn().mockResolvedValue(undefined),
+      authenticatedFetch: vi.fn(),
+    };
+
+    const { createSdkAuthManager: mockCreateAuth } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(mockCreateAuth).mockReturnValue(mockAuthManager as any);
+
+    const { ApiClient: MockApiClient } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(MockApiClient).mockImplementation(function (this: any) {
+      this.fetchConfig = vi.fn().mockResolvedValue({ storage: {} });
+      return this;
+    } as any);
+
+    const { loadMediaTranslations: mockLoadTranslations } = await import(
+      '../src/i18n'
+    );
+    vi.mocked(mockLoadTranslations).mockResolvedValue({} as any);
+
+    const { createApp: mockCreateApp } = await import('vue');
+    vi.mocked(mockCreateApp).mockImplementation((...args: any[]) => {
+      const component = args[0] as any;
+      if (component?.setup) {
+        component.setup();
+      }
+      return { mount: vi.fn(), unmount: vi.fn() } as any;
+    });
+
+    const container = document.createElement('div');
+
+    const initPromise = initFn({
+      container,
+      auth: { projectId: 'p1', token: 't1' },
+      locale: 'de',
+    } as any);
+
+    await new Promise((r) => setTimeout(r, 50));
+    initPromise.catch(() => {});
+
+    expect(mockLoadTranslations).toHaveBeenCalledWith('de');
+  });
+
+  it('defaults locale to en when not specified', async () => {
+    const mockAuthManager = {
+      projectId: 'proj-1',
+      tenantSlug: 'acme',
+      initialize: vi.fn().mockResolvedValue(undefined),
+      authenticatedFetch: vi.fn(),
+    };
+
+    const { createSdkAuthManager: mockCreateAuth } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(mockCreateAuth).mockReturnValue(mockAuthManager as any);
+
+    const { ApiClient: MockApiClient } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(MockApiClient).mockImplementation(function (this: any) {
+      this.fetchConfig = vi.fn().mockResolvedValue({ storage: {} });
+      return this;
+    } as any);
+
+    const { loadMediaTranslations: mockLoadTranslations } = await import(
+      '../src/i18n'
+    );
+    vi.mocked(mockLoadTranslations).mockResolvedValue({} as any);
+
+    const { createApp: mockCreateApp } = await import('vue');
+    vi.mocked(mockCreateApp).mockImplementation((...args: any[]) => {
+      const component = args[0] as any;
+      if (component?.setup) {
+        component.setup();
+      }
+      return { mount: vi.fn(), unmount: vi.fn() } as any;
+    });
+
+    const container = document.createElement('div');
+
+    const initPromise = initFn({
+      container,
+      auth: { projectId: 'p1', token: 't1' },
+    } as any);
+
+    await new Promise((r) => setTimeout(r, 50));
+    initPromise.catch(() => {});
+
+    expect(mockLoadTranslations).toHaveBeenCalledWith('en');
+  });
 });
 
 describe('applyTheme', () => {

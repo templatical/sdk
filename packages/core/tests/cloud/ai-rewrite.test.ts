@@ -299,4 +299,96 @@ describe('useAiRewrite', () => {
       expect(redone).toBe('<p>second rewrite</p>');
     });
   });
+
+  describe('rewrite error branches', () => {
+    it('handles non-403 error with message from response JSON', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Internal server error' }),
+      } as unknown as Response);
+
+      const rw = useAiRewrite({ authManager, getTemplateId: () => 'tmpl-1' });
+      const result = await rw.rewrite('content', 'instruction', mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(rw.error.value).toBe('Internal server error');
+      expect(rw.isRewriting.value).toBe(false);
+    });
+
+    it('handles non-403 error when response.json() rejects', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        json: () => Promise.reject(new Error('not JSON')),
+      } as unknown as Response);
+
+      const rw = useAiRewrite({ authManager, getTemplateId: () => 'tmpl-1' });
+      const result = await rw.rewrite('content', 'instruction', mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(rw.error.value).toBe('Failed to rewrite text');
+      expect(rw.isRewriting.value).toBe(false);
+    });
+
+    it('skips malformed JSON in SSE data lines', async () => {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode('data: not valid json\n\n'));
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: 'text', text: 'hello' })}\n\n`,
+            ),
+          );
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: 'done', content: '<p>hello</p>' })}\n\n`,
+            ),
+          );
+          controller.close();
+        },
+      });
+
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: stream,
+        json: () => Promise.resolve({}),
+      } as unknown as Response);
+
+      const rw = useAiRewrite({ authManager, getTemplateId: () => 'tmpl-1' });
+      const result = await rw.rewrite('content', 'instruction', mockMergeTags);
+
+      expect(result).toBe('<p>hello</p>');
+      expect(rw.streamingText.value).toBe('hello');
+      expect(rw.error.value).toBeNull();
+    });
+
+    it('uses fallback message when stream error event has no message', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([{ type: 'error' }]),
+      );
+
+      const rw = useAiRewrite({ authManager, getTemplateId: () => 'tmpl-1' });
+      const result = await rw.rewrite('content', 'instruction', mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(rw.error.value).toBe('Failed to rewrite text');
+      expect(rw.isRewriting.value).toBe(false);
+    });
+
+    it('sets error to generic message when caught error is not an Error instance', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockRejectedValueOnce(
+        'string error',
+      );
+
+      const rw = useAiRewrite({ authManager, getTemplateId: () => 'tmpl-1' });
+      const result = await rw.rewrite('content', 'instruction', mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(rw.error.value).toBe('Failed to rewrite text');
+      expect(rw.isRewriting.value).toBe(false);
+    });
+  });
 });

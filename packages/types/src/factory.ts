@@ -39,12 +39,12 @@ import {
   VIDEO_BLOCK_DEFAULTS,
 } from "./defaults";
 
-function applyDefaults<T>(base: T, partial: Partial<T> | undefined): T {
+function applyDefaults<T extends object>(
+  base: T,
+  partial: Partial<T> | undefined,
+): T {
   if (!partial || Object.keys(partial).length === 0) return base;
-  return deepMergeDefaults(
-    base as unknown as Record<string, unknown>,
-    partial as unknown as Record<string, unknown>,
-  ) as unknown as T;
+  return deepMergeDefaults(base, partial);
 }
 
 export function generateId(): string {

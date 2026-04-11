@@ -140,11 +140,8 @@ describe('renderBlock', () => {
       iconSize: 'medium',
     });
     const result = renderBlock(block, ctx);
+    // Smoke test: dispatch works — detail assertions in social.test.ts
     expect(result).toContain('<mj-social');
-    expect(result).toContain('<mj-social-element');
-    expect(result).toContain('href="https://facebook.com"');
-    expect(result).toContain('href="https://twitter.com"');
-    expect(result).toContain('data:image/svg+xml;base64,');
   });
 
   it('renders menu block', () => {
@@ -200,11 +197,6 @@ describe('renderBlock', () => {
     expect(result).toContain('<mj-column width="50%"');
     expect(result).toContain('Column content');
     expect(result).toContain('&nbsp;');
-  });
-
-  it('renders empty string for empty social icons', () => {
-    const block = createSocialIconsBlock({ icons: [] });
-    expect(renderBlock(block, ctx)).toBe('');
   });
 
   it('renders empty string for empty menu', () => {
@@ -325,5 +317,106 @@ describe('renderBlock', () => {
     const block = createVideoBlock({ url: '', thumbnailUrl: '' });
     const result = renderBlock(block, ctx);
     expect(result).toBe('');
+  });
+
+  it('returns empty for title block hidden on all viewports', () => {
+    const block = createTitleBlock({
+      content: '<p>Hidden</p>',
+      visibility: { desktop: false, tablet: false, mobile: false },
+    });
+    expect(renderBlock(block, ctx)).toBe('');
+  });
+
+  it('returns empty for button block hidden on all viewports', () => {
+    const block = createButtonBlock({
+      visibility: { desktop: false, tablet: false, mobile: false },
+    });
+    expect(renderBlock(block, ctx)).toBe('');
+  });
+
+  it('returns empty for image block hidden on all viewports', () => {
+    const block = createImageBlock({
+      visibility: { desktop: false, tablet: false, mobile: false },
+    });
+    expect(renderBlock(block, ctx)).toBe('');
+  });
+
+  it('returns empty for spacer block hidden on all viewports', () => {
+    const block = createSpacerBlock({
+      visibility: { desktop: false, tablet: false, mobile: false },
+    });
+    expect(renderBlock(block, ctx)).toBe('');
+  });
+
+  it('returns empty for divider block hidden on all viewports', () => {
+    const block = createDividerBlock({
+      visibility: { desktop: false, tablet: false, mobile: false },
+    });
+    expect(renderBlock(block, ctx)).toBe('');
+  });
+
+  it('returns empty for html block hidden on all viewports', () => {
+    const block = createHtmlBlock({
+      content: '<div>Hidden</div>',
+      visibility: { desktop: false, tablet: false, mobile: false },
+    });
+    expect(renderBlock(block, ctx)).toBe('');
+  });
+
+  it('returns empty for section block hidden on all viewports', () => {
+    const child = createParagraphBlock({ content: '<p>Hidden</p>' });
+    const block = createSectionBlock({
+      children: [[child]],
+      visibility: { desktop: false, tablet: false, mobile: false },
+    });
+    expect(renderBlock(block, ctx)).toBe('');
+  });
+
+  it('section filters out html blocks when html is not allowed', () => {
+    const noHtmlCtx = new RenderContext(600, [], 'Arial, sans-serif', false);
+    const htmlChild = createHtmlBlock({ content: '<div>Custom</div>' });
+    const textChild = createParagraphBlock({ content: '<p>Visible</p>' });
+    const block = createSectionBlock({
+      children: [[htmlChild, textChild]],
+    });
+    const result = renderBlock(block, noHtmlCtx);
+    expect(result).toContain('Visible');
+    expect(result).not.toContain('Custom');
+  });
+
+  it('title renders font-family when specified', () => {
+    const block = createTitleBlock({
+      content: '<p>Hello</p>',
+      fontFamily: 'Georgia, serif',
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('font-family="Georgia, serif"');
+  });
+
+  it('button renders font-family when specified', () => {
+    const block = createButtonBlock({
+      fontFamily: 'Verdana, sans-serif',
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('font-family="Verdana, sans-serif"');
+  });
+
+  it('menu renders font-family when specified', () => {
+    const block = createMenuBlock({
+      items: [
+        { id: '1', text: 'Home', url: '/', openInNewTab: false, bold: false, underline: false },
+      ],
+      fontFamily: 'Courier New, monospace',
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('font-family="Courier New, monospace"');
+  });
+
+  it('table renders font-family when specified', () => {
+    const block = createTableBlock({
+      fontFamily: 'Times New Roman, serif',
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('font-family="Times New Roman, serif"');
   });
 });

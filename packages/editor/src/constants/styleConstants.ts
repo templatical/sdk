@@ -31,6 +31,43 @@ export const outlineBtnClass =
 export const headerBtnClass =
   "tpl-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3.5 tpl:py-2 tpl:text-sm tpl:font-medium tpl:whitespace-nowrap tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary)] hover:tpl:text-[var(--tpl-bg)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50";
 
+// Rich text toolbar presets
+export const FONT_SIZE_OPTIONS = [
+  "10px",
+  "12px",
+  "14px",
+  "16px",
+  "18px",
+  "20px",
+  "24px",
+  "28px",
+  "32px",
+  "36px",
+  "48px",
+  "64px",
+];
+
+export const LINE_HEIGHT_OPTIONS = [
+  "1",
+  "1.2",
+  "1.4",
+  "1.5",
+  "1.6",
+  "1.8",
+  "2",
+  "2.5",
+];
+
+export const LETTER_SPACING_OPTIONS = [
+  { label: "Normal", value: "normal" },
+  { label: "-0.5px", value: "-0.5px" },
+  { label: "0.5px", value: "0.5px" },
+  { label: "1px", value: "1px" },
+  { label: "1.5px", value: "1.5px" },
+  { label: "2px", value: "2px" },
+  { label: "3px", value: "3px" },
+];
+
 // Default color constants
 export const DEFAULT_TEXT_COLOR = "#000000";
 export const DEFAULT_BG_COLOR = "#ffffff";

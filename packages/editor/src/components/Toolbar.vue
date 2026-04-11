@@ -33,7 +33,11 @@ import { Code, Copy, Trash2 } from "@lucide/vue";
 import { computed, inject } from "vue";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
 import { getBlockTypeLabel } from "../utils/blockTypeLabels";
-import { FONTS_MANAGER_KEY, CUSTOM_BLOCK_DEFINITIONS_KEY } from "../keys";
+import {
+  FONTS_MANAGER_KEY,
+  CUSTOM_BLOCK_DEFINITIONS_KEY,
+  requireInject,
+} from "../keys";
 
 const props = defineProps<{
   block: Block;
@@ -47,7 +51,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const fontsManager = inject(FONTS_MANAGER_KEY)!;
+const fontsManager = requireInject(FONTS_MANAGER_KEY, "Toolbar");
 const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 
 const blockType = computed(() => props.block.type);

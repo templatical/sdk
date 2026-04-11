@@ -12,8 +12,8 @@ import {
   DEFAULT_BG_COLOR,
 } from "../constants/styleConstants";
 import { Circle, Eye, Info, Square } from "@lucide/vue";
-import { computed, inject } from "vue";
-import { FONTS_MANAGER_KEY } from "../keys";
+import { computed } from "vue";
+import { FONTS_MANAGER_KEY, requireInject } from "../keys";
 
 const props = defineProps<{
   settings: TemplateSettings;
@@ -27,7 +27,7 @@ const PREHEADER_MAX_LENGTH = 150;
 
 const { t } = useI18n();
 
-const fontsManager = inject(FONTS_MANAGER_KEY)!;
+const fontsManager = requireInject(FONTS_MANAGER_KEY, "TemplateSettings");
 const fontFamilies = computed(() => fontsManager.fonts.value);
 
 // If current font is not in available list (e.g., custom font when disabled), use default

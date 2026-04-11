@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import MediaBreadcrumb from "../components/media/MediaBreadcrumb.vue";
-import type { CropData } from "../components/media/MediaEditModal.vue";
 import MediaEditModal from "../components/media/MediaEditModal.vue";
 import MediaFolderTree from "../components/media/MediaFolderTree.vue";
 import MediaGrid from "../components/media/MediaGrid.vue";
@@ -11,12 +10,12 @@ import MediaReplaceModal from "../components/media/MediaReplaceModal.vue";
 import MediaUploadZone from "../components/media/MediaUploadZone.vue";
 import StorageProgressRing from "../components/media/StorageProgressRing.vue";
 import { useMediaLibrary } from "../composable";
-import type { PlanConfig, PlanFeatures } from "@templatical/types";
-import type { MediaConversion, MediaItem } from "../types";
-import type { AuthManager } from "@templatical/core/cloud";
 import { useMediaCategories } from "../composables/useMediaCategories";
+import { useMediaLibraryUI } from "../composables/useMediaLibraryUI";
+import type { PlanConfig, PlanFeatures } from "@templatical/types";
+import type { MediaItem } from "../types";
+import type { AuthManager } from "@templatical/core/cloud";
 import type { MediaTranslations } from "../i18n";
-import { useClipboard, useDebounceFn } from "@vueuse/core";
 import {
   Check,
   Copy,
@@ -26,7 +25,7 @@ import {
   PanelLeft,
   Search,
 } from "@lucide/vue";
-import { computed, onMounted, provide, ref, watch } from "vue";
+import { computed, onMounted, provide, ref } from "vue";
 
 const props = defineProps<{
   authManager: AuthManager;
@@ -80,94 +79,19 @@ const storageLimitBytes = computed(
 
 const { availableCategories } = useMediaCategories();
 
-const categoryLabels: Record<string, () => string> = {
-  images: () => t.value.mediaLibrary.filterImages,
-  documents: () => t.value.mediaLibrary.filterDocuments,
-  videos: () => t.value.mediaLibrary.filterVideos,
-  audio: () => t.value.mediaLibrary.filterAudio,
-};
-
-function getCategoryLabel(category: string): string {
-  return categoryLabels[category]?.() ?? category;
-}
-
-const layoutMode = ref<"grid" | "list">("grid");
-const showSidebar = ref(false);
-
-const searchInput = ref("");
-const selectedConversion = ref<MediaConversion>("original");
-
 const library = useMediaLibrary({
   projectId: props.projectId,
   authManager: props.authManager,
   onError: props.onError,
 });
 
-const selectedUrl = computed(() => {
-  const item = library.previewItem.value;
-  if (!item) return null;
-
-  switch (selectedConversion.value) {
-    case "small":
-      return item.small_url || item.url;
-    case "medium":
-      return item.medium_url || item.url;
-    case "large":
-      return item.large_url || item.url;
-    default:
-      return item.url;
-  }
+const ui = useMediaLibraryUI({
+  library,
+  canUseMediaFolders,
+  translations: t,
 });
 
-const hasFrequentlyUsed = computed(() => {
-  return library.frequentlyUsedItems.value.length > 0;
-});
-
-const displayItems = computed(() => {
-  if (library.viewMode.value === "frequently-used") {
-    return library.frequentlyUsedItems.value;
-  }
-  return library.items.value;
-});
-
-const hasUsedFiles = computed(() => {
-  return Object.values(library.deleteUsageInfo.value).some(
-    (info) => info.template_count > 0,
-  );
-});
-
-// Load folders on demand when sidebar is shown
-watch(showSidebar, (show) => {
-  if (show && canUseMediaFolders.value) {
-    library.loadFolders();
-  }
-});
-
-// Reset conversion selection when a different item is selected
-watch(
-  () => library.previewItem.value?.id,
-  () => {
-    selectedConversion.value = "original";
-  },
-);
-
-const debouncedSearch = useDebounceFn((value: string) => {
-  library.search(value);
-}, 300);
-
-function handleSearchInput(value: string): void {
-  searchInput.value = value;
-  debouncedSearch(value);
-}
-
-async function handleUpload(files: File[]): Promise<void> {
-  await library.uploadFiles(files);
-}
-
-function handleSelect(item: MediaItem): void {
-  library.selectItem(item);
-}
-
+// Standalone-specific: confirm selection via callback
 function confirmSelection(): void {
   if (!library.previewItem.value) {
     return;
@@ -176,76 +100,9 @@ function confirmSelection(): void {
   const item = library.previewItem.value;
   const itemWithSelectedUrl: MediaItem = {
     ...item,
-    url: selectedUrl.value || item.url,
+    url: ui.selectedUrl.value || item.url,
   };
   props.onSelect?.(itemWithSelectedUrl);
-}
-
-async function handleCreateFolder(
-  name: string,
-  parentId?: string | null,
-): Promise<void> {
-  await library.createFolder(name, parentId);
-}
-
-async function handleRenameFolder(
-  folderId: string,
-  name: string,
-): Promise<void> {
-  await library.renameFolder(folderId, name);
-}
-
-async function handleDeleteFolder(folderId: string): Promise<void> {
-  await library.deleteFolder(folderId);
-}
-
-const editingItem = ref<MediaItem | null>(null);
-
-function handleEditItem(item: MediaItem): void {
-  editingItem.value = item;
-}
-
-async function handleEditSave(
-  mediaId: string,
-  filename: string,
-  altText?: string,
-  cropData?: CropData,
-): Promise<void> {
-  if (cropData) {
-    await library.replaceMediaDirectly(mediaId, cropData.file);
-  }
-  await library.updateFile(mediaId, filename, altText);
-  editingItem.value = null;
-}
-
-const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true });
-
-const showImportUrlModal = ref(false);
-
-async function handleImportFromUrl(url: string): Promise<void> {
-  const result = await library.importFromUrl(url);
-  if (result) {
-    showImportUrlModal.value = false;
-  }
-}
-
-const showMovePicker = ref(false);
-
-async function handleMoveToFolder(folderId: string | null): Promise<void> {
-  showMovePicker.value = false;
-  await library.moveSelected(folderId);
-}
-
-async function handleDeleteClick(): Promise<void> {
-  await library.checkUsageBeforeDelete();
-}
-
-function handleReplaceItem(item: MediaItem): void {
-  library.checkUsageBeforeReplace(item);
-}
-
-async function handleReplaceFile(file: File): Promise<void> {
-  await library.replaceFile(file);
 }
 
 onMounted(() => {
@@ -281,7 +138,7 @@ onMounted(() => {
         />
         <div class="tpl:relative">
           <input
-            :value="searchInput"
+            :value="ui.searchInput.value"
             type="text"
             class="tpl:w-52 tpl:rounded-md tpl:border tpl:py-1.5 tpl:pr-3 tpl:pl-8 tpl:text-xs tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:outline-none tpl:focus:shadow-[var(--tpl-ring)]"
             style="
@@ -291,7 +148,7 @@ onMounted(() => {
             "
             :placeholder="t.mediaLibrary.searchPlaceholder"
             @input="
-              handleSearchInput(($event.target as HTMLInputElement).value)
+              ui.handleSearchInput(($event.target as HTMLInputElement).value)
             "
           />
           <Search
@@ -316,7 +173,7 @@ onMounted(() => {
         leave-to-class="tpl:-ml-48 tpl:opacity-0"
       >
         <div
-          v-if="canUseMediaFolders && showSidebar"
+          v-if="canUseMediaFolders && ui.showSidebar.value"
           class="tpl:flex tpl:w-48 tpl:shrink-0 tpl:flex-col tpl:border-r"
           style="
             border-color: var(--tpl-border);
@@ -327,11 +184,11 @@ onMounted(() => {
             :folders="library.folders.value"
             :current-folder-id="library.currentFolderId.value"
             :view-mode="library.viewMode.value"
-            :has-frequently-used="hasFrequentlyUsed"
+            :has-frequently-used="ui.hasFrequentlyUsed.value"
             @navigate="library.navigateToFolder"
-            @create-folder="handleCreateFolder"
-            @rename-folder="handleRenameFolder"
-            @delete-folder="handleDeleteFolder"
+            @create-folder="ui.handleCreateFolder"
+            @rename-folder="ui.handleRenameFolder"
+            @delete-folder="ui.handleDeleteFolder"
             @show-frequently-used="library.showFrequentlyUsed"
           />
         </div>
@@ -350,20 +207,22 @@ onMounted(() => {
               v-if="canUseMediaFolders"
               class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:transition-all tpl:duration-150"
               :style="{
-                color: showSidebar
+                color: ui.showSidebar.value
                   ? 'var(--tpl-primary)'
                   : 'var(--tpl-text-muted)',
-                backgroundColor: showSidebar ? 'var(--tpl-bg)' : 'transparent',
-                border: showSidebar
+                backgroundColor: ui.showSidebar.value
+                  ? 'var(--tpl-bg)'
+                  : 'transparent',
+                border: ui.showSidebar.value
                   ? '1px solid var(--tpl-border)'
                   : '1px solid transparent',
               }"
               :title="
-                showSidebar
+                ui.showSidebar.value
                   ? t.mediaLibrary.hideFolders
                   : t.mediaLibrary.showFolders
               "
-              @click="showSidebar = !showSidebar"
+              @click="ui.showSidebar.value = !ui.showSidebar.value"
             >
               <PanelLeft :size="16" :stroke-width="2" />
             </button>
@@ -396,16 +255,16 @@ onMounted(() => {
                 class="tpl:flex tpl:size-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:transition-all tpl:duration-150"
                 :style="{
                   color:
-                    layoutMode === 'grid'
+                    ui.layoutMode.value === 'grid'
                       ? 'var(--tpl-primary)'
                       : 'var(--tpl-text-muted)',
                   backgroundColor:
-                    layoutMode === 'grid'
+                    ui.layoutMode.value === 'grid'
                       ? 'var(--tpl-bg-elevated)'
                       : 'transparent',
                 }"
                 :title="t.mediaLibrary.viewGrid"
-                @click="layoutMode = 'grid'"
+                @click="ui.layoutMode.value = 'grid'"
               >
                 <Grid2x2 :size="14" :stroke-width="2" />
               </button>
@@ -413,16 +272,16 @@ onMounted(() => {
                 class="tpl:flex tpl:size-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:transition-all tpl:duration-150"
                 :style="{
                   color:
-                    layoutMode === 'list'
+                    ui.layoutMode.value === 'list'
                       ? 'var(--tpl-primary)'
                       : 'var(--tpl-text-muted)',
                   backgroundColor:
-                    layoutMode === 'list'
+                    ui.layoutMode.value === 'list'
                       ? 'var(--tpl-bg-elevated)'
                       : 'transparent',
                 }"
                 :title="t.mediaLibrary.viewList"
-                @click="layoutMode = 'list'"
+                @click="ui.layoutMode.value = 'list'"
               >
                 <List :size="14" :stroke-width="2" />
               </button>
@@ -453,7 +312,7 @@ onMounted(() => {
                 :key="category"
                 :value="category"
               >
-                {{ getCategoryLabel(category) }}
+                {{ ui.getCategoryLabel(category) }}
               </option>
             </select>
             <select
@@ -500,7 +359,7 @@ onMounted(() => {
             <MediaUploadZone
               :is-uploading="library.isUploading.value"
               :upload-progress="library.uploadProgress.value"
-              @upload="handleUpload"
+              @upload="ui.handleUpload"
             />
             <button
               v-if="canImportFromUrl"
@@ -510,7 +369,7 @@ onMounted(() => {
                 color: var(--tpl-text-muted);
                 background-color: var(--tpl-bg);
               "
-              @click="showImportUrlModal = true"
+              @click="ui.showImportUrlModal.value = true"
             >
               <Link :size="14" :stroke-width="2" />
               {{ t.mediaLibrary.importFromUrl }}
@@ -519,18 +378,18 @@ onMounted(() => {
 
           <!-- Image grid -->
           <MediaGrid
-            :items="displayItems"
+            :items="ui.displayItems.value"
             :selected-ids="library.selectedItems.value"
             :is-loading="library.isLoading.value"
             :has-more="
               library.viewMode.value === 'files' && library.hasMore.value
             "
-            :layout="layoutMode"
-            @select="handleSelect"
+            :layout="ui.layoutMode.value"
+            @select="ui.handleSelect"
             @toggle="library.toggleSelection"
             @load-more="library.loadMore"
-            @edit="handleEditItem"
-            @replace="handleReplaceItem"
+            @edit="ui.handleEditItem"
+            @replace="ui.handleReplaceItem"
           />
         </div>
       </div>
@@ -538,19 +397,19 @@ onMounted(() => {
 
     <!-- Import from URL Modal -->
     <MediaImportUrlModal
-      :visible="showImportUrlModal"
+      :visible="ui.showImportUrlModal.value"
       :is-importing="library.isImportingFromUrl.value"
       :error="library.importFromUrlError.value"
-      @import="handleImportFromUrl"
-      @close="showImportUrlModal = false"
+      @import="ui.handleImportFromUrl"
+      @close="ui.showImportUrlModal.value = false"
     />
 
     <!-- Edit Modal -->
     <MediaEditModal
-      :visible="!!editingItem"
-      :item="editingItem"
-      @save="handleEditSave"
-      @close="editingItem = null"
+      :visible="!!ui.editingItem.value"
+      :item="ui.editingItem.value"
+      @save="ui.handleEditSave"
+      @close="ui.editingItem.value = null"
     />
 
     <!-- Replace Modal -->
@@ -560,7 +419,7 @@ onMounted(() => {
       :usage-info="library.replaceUsageInfo.value"
       :is-replacing="library.isReplacing.value"
       :error="library.replaceError.value"
-      @replace="handleReplaceFile"
+      @replace="ui.handleReplaceFile"
       @close="library.cancelReplace"
     />
 
@@ -598,13 +457,13 @@ onMounted(() => {
           </h3>
           <p
             class="tpl:text-xs"
-            :class="hasUsedFiles ? 'tpl:mb-2' : 'tpl:mb-4'"
+            :class="ui.hasUsedFiles.value ? 'tpl:mb-2' : 'tpl:mb-4'"
             style="color: var(--tpl-text-muted)"
           >
             {{ t.mediaLibrary.deleteWarningMessage }}
           </p>
           <p
-            v-if="hasUsedFiles"
+            v-if="ui.hasUsedFiles.value"
             class="tpl:mb-4 tpl:text-xs"
             style="color: var(--tpl-text-muted)"
           >
@@ -612,7 +471,7 @@ onMounted(() => {
           </p>
 
           <div
-            v-if="hasUsedFiles"
+            v-if="ui.hasUsedFiles.value"
             class="tpl:mb-4 tpl:max-h-32 tpl:overflow-y-auto tpl:rounded tpl:border tpl:p-2"
             style="border-color: var(--tpl-border)"
           >
@@ -625,8 +484,8 @@ onMounted(() => {
               <template v-if="info.template_count > 0">
                 <span class="tpl:font-medium">
                   {{
-                    displayItems.find((i) => i.id === mediaId)?.filename ||
-                    mediaId
+                    ui.displayItems.value.find((i) => i.id === mediaId)
+                      ?.filename || mediaId
                   }}
                 </span>
                 <span style="color: var(--tpl-text-muted)">
@@ -664,7 +523,7 @@ onMounted(() => {
               @click="library.confirmDelete"
             >
               {{
-                hasUsedFiles
+                ui.hasUsedFiles.value
                   ? t.mediaLibrary.deleteAnyway
                   : t.mediaLibrary.confirmDelete
               }}
@@ -682,7 +541,7 @@ onMounted(() => {
       <div class="tpl:flex tpl:min-w-0 tpl:flex-1 tpl:items-center tpl:gap-3">
         <MediaPreviewPanel
           v-if="library.previewItem.value"
-          v-model:selected-conversion="selectedConversion"
+          v-model:selected-conversion="ui.selectedConversion.value"
           :item="library.previewItem.value"
           :folders="library.folders.value"
         />
@@ -697,15 +556,19 @@ onMounted(() => {
             v-if="library.previewItem.value"
             class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
             :style="{
-              borderColor: copied ? 'var(--tpl-success)' : 'var(--tpl-border)',
-              color: copied ? 'var(--tpl-success)' : 'var(--tpl-text)',
+              borderColor: ui.copied.value
+                ? 'var(--tpl-success)'
+                : 'var(--tpl-border)',
+              color: ui.copied.value ? 'var(--tpl-success)' : 'var(--tpl-text)',
               backgroundColor: 'var(--tpl-bg)',
             }"
-            @click="copy(selectedUrl!)"
+            @click="ui.copy(ui.selectedUrl.value!)"
           >
-            <Copy v-if="!copied" :size="12" :stroke-width="2" />
+            <Copy v-if="!ui.copied.value" :size="12" :stroke-width="2" />
             <Check v-else :size="12" :stroke-width="2" />
-            {{ copied ? t.mediaLibrary.copied : t.mediaLibrary.copyUrl }}
+            {{
+              ui.copied.value ? t.mediaLibrary.copied : t.mediaLibrary.copyUrl
+            }}
           </button>
           <div v-if="canUseMediaFolders" class="tpl:relative">
             <button
@@ -715,16 +578,16 @@ onMounted(() => {
                 color: var(--tpl-text);
                 background-color: var(--tpl-bg);
               "
-              @click="showMovePicker = !showMovePicker"
+              @click="ui.showMovePicker.value = !ui.showMovePicker.value"
             >
               {{ t.mediaLibrary.moveSelected }}
             </button>
             <MediaMovePicker
-              v-if="showMovePicker"
+              v-if="ui.showMovePicker.value"
               :folders="library.folders.value"
               :current-folder-id="library.currentFolderId.value"
-              @select="handleMoveToFolder"
-              @close="showMovePicker = false"
+              @select="ui.handleMoveToFolder"
+              @close="ui.showMovePicker.value = false"
             />
           </div>
         </div>
@@ -738,7 +601,7 @@ onMounted(() => {
               color: var(--tpl-danger);
               background-color: var(--tpl-danger-light);
             "
-            @click="handleDeleteClick"
+            @click="ui.handleDeleteClick"
           >
             {{ t.mediaLibrary.deleteSelected }}
           </button>

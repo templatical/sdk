@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useEmoji, useI18n } from "../../composables";
+import EmojiPickerDropdown from "./EmojiPickerDropdown.vue";
+import { useI18n } from "../../composables";
 import type { Editor } from "@tiptap/core";
 import {
   AlignCenter,
@@ -13,17 +14,24 @@ import {
   LoaderCircle,
   RemoveFormatting,
   ScanLine,
-  Smile,
   Strikethrough,
   Subscript,
   Superscript,
   Underline,
 } from "@lucide/vue";
 import { inject } from "vue";
-import { THEME_STYLES_KEY, UI_THEME_KEY, FONTS_MANAGER_KEY } from "../../keys";
+import {
+  THEME_STYLES_KEY,
+  UI_THEME_KEY,
+  FONTS_MANAGER_KEY,
+  requireInject,
+} from "../../keys";
 import {
   DEFAULT_TEXT_COLOR,
   DEFAULT_HIGHLIGHT_COLOR,
+  FONT_SIZE_OPTIONS,
+  LINE_HEIGHT_OPTIONS,
+  LETTER_SPACING_OPTIONS,
 } from "../../constants/styleConstants";
 
 const props = defineProps<{
@@ -38,52 +46,17 @@ const emit = defineEmits<{
   (e: "add-merge-tag"): void;
 }>();
 
-const themeStyles = inject(THEME_STYLES_KEY);
-const tplUiTheme = inject(UI_THEME_KEY);
-const fontsManager = inject(FONTS_MANAGER_KEY)!;
-
-const {
-  categories: emojiCategories,
-  isOpen: showEmojiPicker,
-  toggle: toggleEmojiPicker,
-  close: closeEmojiPicker,
-} = useEmoji();
+const themeStyles = inject(THEME_STYLES_KEY, null);
+const tplUiTheme = inject(UI_THEME_KEY, null);
+const fontsManager = requireInject(FONTS_MANAGER_KEY, "ParagraphToolbar");
 
 const { t } = useI18n();
 
-function insertEmoji(emoji: string): void {
-  props.editor?.chain().focus().insertContent(emoji).run();
-  closeEmojiPicker();
-}
-
 const fontFamilies = fontsManager.fonts;
 
-const fontSizes = [
-  "10px",
-  "12px",
-  "14px",
-  "16px",
-  "18px",
-  "20px",
-  "24px",
-  "28px",
-  "32px",
-  "36px",
-  "48px",
-  "64px",
-];
-
-const lineHeights = ["1", "1.2", "1.4", "1.5", "1.6", "1.8", "2", "2.5"];
-
-const letterSpacings = [
-  { label: "Normal", value: "normal" },
-  { label: "-0.5px", value: "-0.5px" },
-  { label: "0.5px", value: "0.5px" },
-  { label: "1px", value: "1px" },
-  { label: "1.5px", value: "1.5px" },
-  { label: "2px", value: "2px" },
-  { label: "3px", value: "3px" },
-];
+function insertEmoji(emoji: string): void {
+  props.editor?.chain().focus().insertContent(emoji).run();
+}
 
 function getCurrentFontFamily(): string {
   return (props.editor?.getAttributes("textStyle").fontFamily as string) || "";
@@ -202,7 +175,7 @@ function setHighlight(color: string): void {
             @change="setFontSize(($event.target as HTMLSelectElement).value)"
           >
             <option value="">{{ t.paragraphEditor.defaultSize }}</option>
-            <option v-for="size in fontSizes" :key="size" :value="size">
+            <option v-for="size in FONT_SIZE_OPTIONS" :key="size" :value="size">
               {{ size }}
             </option>
           </select>
@@ -419,7 +392,7 @@ function setHighlight(color: string): void {
             @change="setLineHeight(($event.target as HTMLSelectElement).value)"
           >
             <option value="">LH</option>
-            <option v-for="lh in lineHeights" :key="lh" :value="lh">
+            <option v-for="lh in LINE_HEIGHT_OPTIONS" :key="lh" :value="lh">
               {{ lh }}
             </option>
           </select>
@@ -434,7 +407,7 @@ function setHighlight(color: string): void {
           >
             <option value="">LS</option>
             <option
-              v-for="ls in letterSpacings"
+              v-for="ls in LETTER_SPACING_OPTIONS"
               :key="ls.value"
               :value="ls.value"
             >
@@ -460,47 +433,7 @@ function setHighlight(color: string): void {
             class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
             aria-hidden="true"
           ></span>
-          <div class="tpl:relative">
-            <button
-              type="button"
-              class="tpl-text-toolbar-btn"
-              :class="{
-                'tpl-text-toolbar-btn--active': showEmojiPicker,
-              }"
-              :aria-label="t.paragraphEditor.insertEmoji"
-              :title="t.paragraphEditor.insertEmoji"
-              @click="toggleEmojiPicker"
-            >
-              <Smile :size="16" :stroke-width="2" />
-            </button>
-            <div
-              v-if="showEmojiPicker"
-              class="tpl-emoji-picker tpl:absolute tpl:top-full tpl:left-0 tpl:z-10 tpl:mt-2 tpl:w-72 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-2 tpl:shadow-lg"
-            >
-              <div
-                v-for="category in emojiCategories"
-                :key="category.key"
-                class="tpl:mb-2 tpl:last:mb-0"
-              >
-                <div
-                  class="tpl:mb-1.5 tpl:text-[10px] tpl:font-medium tpl:tracking-wide tpl:text-[var(--tpl-text-muted)] tpl:uppercase"
-                >
-                  {{ t.emoji[category.key] }}
-                </div>
-                <div class="tpl:grid tpl:grid-cols-10 tpl:gap-0.5">
-                  <button
-                    v-for="emoji in category.emojis"
-                    :key="emoji"
-                    type="button"
-                    class="tpl:flex tpl:size-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:text-base tpl:transition-all tpl:duration-100 tpl:hover:scale-125 tpl:hover:bg-[var(--tpl-bg-active)]"
-                    @click="insertEmoji(emoji)"
-                  >
-                    {{ emoji }}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <EmojiPickerDropdown @insert="insertEmoji" />
           <!-- Add Merge Tag -->
           <span
             v-if="mergeTagEnabled"

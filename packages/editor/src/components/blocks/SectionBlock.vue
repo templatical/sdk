@@ -20,6 +20,7 @@ import {
   EDITOR_KEY,
   CONDITION_PREVIEW_KEY,
   BLOCK_REGISTRY_KEY,
+  requireInject,
 } from "../../keys";
 
 const sectionBlockComponentMap: Record<string, Component> = {
@@ -37,9 +38,9 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const editor = inject(EDITOR_KEY)!;
-const conditionPreview = inject(CONDITION_PREVIEW_KEY);
-const blockRegistry = inject(BLOCK_REGISTRY_KEY);
+const editor = requireInject(EDITOR_KEY, "SectionBlock");
+const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
+const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 
 const columnWidths = computed(() => {
   switch (props.block.columns) {

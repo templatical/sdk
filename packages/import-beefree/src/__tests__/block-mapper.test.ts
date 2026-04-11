@@ -502,6 +502,40 @@ describe("convertModule", () => {
     });
   });
 
+  describe("menu — no descriptor", () => {
+    it("returns default MenuBlock when menu descriptor has no .menu property", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-menu", {});
+
+      const { block, entry } = convertModule(mod, warnings);
+
+      expect(block.type).toBe("menu");
+      if (block.type === "menu") {
+        expect(block.items).toHaveLength(0);
+      }
+      expect(entry.status).toBe("approximated");
+      expect(entry.templaticalBlockType).toBe("menu");
+    });
+  });
+
+  describe("table — no descriptor", () => {
+    it("returns default TableBlock when table descriptor has no .table property", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-table", {});
+
+      const { block, entry } = convertModule(mod, warnings);
+
+      expect(block.type).toBe("table");
+      if (block.type === "table") {
+        // Default table block has 3 rows from createDefaultTableRows(3, 3)
+        expect(block.rows).toHaveLength(3);
+        expect(block.rows[0].cells).toHaveLength(3);
+      }
+      expect(entry.status).toBe("converted");
+      expect(entry.templaticalBlockType).toBe("table");
+    });
+  });
+
   describe("unknown type", () => {
     it("falls back to HTML block with html-fallback status", () => {
       const warnings: string[] = [];

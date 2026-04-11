@@ -437,3 +437,125 @@ describe('useEditor with templateDefaults', () => {
         expect(editor.state.content.settings.preheaderText).toBe('Check out our latest deals!');
     });
 });
+
+describe('content computed setter', () => {
+    it('setting content.value marks editor dirty', () => {
+        const content = createDefaultTemplateContent();
+        const editor = useEditor({ content });
+        expect(editor.state.isDirty).toBe(false);
+
+        const newContent = createDefaultTemplateContent();
+        newContent.blocks = [createParagraphBlock({ content: '<p>Via setter</p>' })];
+        editor.content.value = newContent;
+
+        expect(editor.state.isDirty).toBe(true);
+        expect(editor.state.content.blocks).toHaveLength(1);
+        expect(editor.state.content.blocks[0].type).toBe('paragraph');
+    });
+
+    it('setting content.value replaces entire content', () => {
+        const editor = createEditorWithContent();
+        const newContent = createDefaultTemplateContent();
+        newContent.settings.width = 999;
+        newContent.blocks = [];
+
+        editor.content.value = newContent;
+
+        expect(editor.state.content.settings.width).toBe(999);
+        expect(editor.state.content.blocks).toHaveLength(0);
+    });
+});
+
+describe('addBlock to section column at specific index', () => {
+    it('inserts block at index 0 in section column', () => {
+        const content = createDefaultTemplateContent();
+        const block1 = createParagraphBlock({ content: '<p>First</p>' });
+        const block2 = createParagraphBlock({ content: '<p>Second</p>' });
+        const section = createSectionBlock({
+            children: [[block1, block2]],
+        });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        const inserted = createImageBlock({ src: 'inserted.png' });
+        editor.addBlock(inserted, section.id, 0, 0);
+
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            expect(sec.children[0]).toHaveLength(3);
+            expect(sec.children[0][0].id).toBe(inserted.id);
+            expect(sec.children[0][1].id).toBe(block1.id);
+            expect(sec.children[0][2].id).toBe(block2.id);
+        }
+    });
+
+    it('inserts block at middle index in section column', () => {
+        const content = createDefaultTemplateContent();
+        const block1 = createParagraphBlock({ content: '<p>First</p>' });
+        const block2 = createParagraphBlock({ content: '<p>Second</p>' });
+        const section = createSectionBlock({
+            children: [[block1, block2]],
+        });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        const inserted = createImageBlock({ src: 'middle.png' });
+        editor.addBlock(inserted, section.id, 0, 1);
+
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            expect(sec.children[0]).toHaveLength(3);
+            expect(sec.children[0][0].id).toBe(block1.id);
+            expect(sec.children[0][1].id).toBe(inserted.id);
+            expect(sec.children[0][2].id).toBe(block2.id);
+        }
+    });
+});
+
+describe('moveBlock into section column', () => {
+    it('moves root block into section column', () => {
+        const content = createDefaultTemplateContent();
+        const rootBlock = createParagraphBlock({ content: '<p>Root</p>' });
+        const sectionChild = createImageBlock({ src: 'child.png' });
+        const section = createSectionBlock({
+            children: [[sectionChild]],
+        });
+        content.blocks = [rootBlock, section];
+        const editor = useEditor({ content });
+
+        editor.moveBlock(rootBlock.id, 0, section.id, 0);
+
+        // Root block removed from root
+        expect(editor.state.content.blocks).toHaveLength(1);
+        expect(editor.state.content.blocks[0].id).toBe(section.id);
+
+        // Block inserted into section column at index 0
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            expect(sec.children[0]).toHaveLength(2);
+            expect(sec.children[0][0].id).toBe(rootBlock.id);
+            expect(sec.children[0][1].id).toBe(sectionChild.id);
+        }
+    });
+
+    it('moves root block into empty section column (initializes array)', () => {
+        const content = createDefaultTemplateContent();
+        const rootBlock = createParagraphBlock({ content: '<p>Root</p>' });
+        const section = createSectionBlock({
+            children: [[]],
+        });
+        // Clear column to simulate undefined
+        (section as any).children[1] = undefined;
+        content.blocks = [rootBlock, section];
+        const editor = useEditor({ content });
+
+        editor.moveBlock(rootBlock.id, 0, section.id, 1);
+
+        expect(editor.state.content.blocks).toHaveLength(1);
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            expect(sec.children[1]).toHaveLength(1);
+            expect(sec.children[1][0].id).toBe(rootBlock.id);
+        }
+    });
+});

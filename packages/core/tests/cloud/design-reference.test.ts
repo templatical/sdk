@@ -226,5 +226,195 @@ describe('useDesignReference', () => {
       expect(onError).toHaveBeenCalled();
       expect(dr.isGenerating.value).toBe(false);
     });
+
+    it('handles non-403 error with message from response body', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Internal server error' }),
+      } as unknown as Response);
+
+      const dr = useDesignReference({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+        onError,
+      });
+
+      const result = await dr.generate({ prompt: 'test' });
+
+      expect(result).toBeNull();
+      expect(dr.error.value).toBe('Internal server error');
+      expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Internal server error' }));
+      expect(dr.isGenerating.value).toBe(false);
+    });
+
+    it('handles non-403 error when response json parsing fails', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        json: () => Promise.reject(new Error('not json')),
+      } as unknown as Response);
+
+      const dr = useDesignReference({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+        onError,
+      });
+
+      const result = await dr.generate({ prompt: 'test' });
+
+      expect(result).toBeNull();
+      expect(dr.error.value).toBe('Failed to generate template from design');
+      expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Failed to generate template from design' }));
+      expect(dr.isGenerating.value).toBe(false);
+    });
+
+    it('handles response with no readable body', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: null,
+      } as unknown as Response);
+
+      const dr = useDesignReference({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+        onError,
+      });
+
+      const result = await dr.generate({ prompt: 'test' });
+
+      expect(result).toBeNull();
+      expect(dr.error.value).toBe('Failed to read stream');
+      expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'Failed to read stream' }));
+      expect(dr.isGenerating.value).toBe(false);
+    });
+
+    it('skips SSE lines that do not start with data prefix', async () => {
+      const resultContent = { rows: [{ id: 'r1' }] } as unknown as TemplateContent;
+
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode('event: message\n'));
+          controller.enqueue(encoder.encode(': this is a comment\n'));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done', content: resultContent })}\n`));
+          controller.enqueue(encoder.encode('\n'));
+          controller.close();
+        },
+      });
+
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: stream,
+      } as unknown as Response);
+
+      const dr = useDesignReference({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+        onError,
+      });
+
+      const result = await dr.generate({ prompt: 'test' });
+
+      expect(result).toEqual(resultContent);
+      expect(onApply).toHaveBeenCalledWith(resultContent);
+    });
+
+    it('skips SSE data lines with invalid JSON', async () => {
+      const resultContent = { rows: [{ id: 'r1' }] } as unknown as TemplateContent;
+
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode('data: {not valid json\n'));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done', content: resultContent })}\n`));
+          controller.enqueue(encoder.encode('\n'));
+          controller.close();
+        },
+      });
+
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: stream,
+      } as unknown as Response);
+
+      const dr = useDesignReference({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+        onError,
+      });
+
+      const result = await dr.generate({ prompt: 'test' });
+
+      expect(result).toEqual(resultContent);
+      expect(onApply).toHaveBeenCalledWith(resultContent);
+    });
+
+    it('returns null when done event has no content', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([{ type: 'done' }]),
+      );
+
+      const dr = useDesignReference({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+        onError,
+      });
+
+      const result = await dr.generate({ prompt: 'test' });
+
+      expect(result).toBeNull();
+      expect(onApply).not.toHaveBeenCalled();
+      expect(dr.isGenerating.value).toBe(false);
+      expect(dr.error.value).toBeNull();
+    });
+
+    it('wraps non-Error thrown values', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockRejectedValueOnce('string error');
+
+      const dr = useDesignReference({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+        onError,
+      });
+
+      const result = await dr.generate({ prompt: 'test' });
+
+      expect(result).toBeNull();
+      expect(dr.error.value).toBe('Failed to generate template from design');
+      expect(onError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Failed to generate template from design' }),
+      );
+      expect(dr.isGenerating.value).toBe(false);
+    });
+
+    it('handles error event with default message', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([{ type: 'error' }]),
+      );
+
+      const dr = useDesignReference({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+        onError,
+      });
+
+      const result = await dr.generate({ prompt: 'test' });
+
+      expect(result).toBeNull();
+      expect(dr.error.value).toBe('Failed to generate template from design');
+      expect(onError).toHaveBeenCalled();
+    });
   });
 });

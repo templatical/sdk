@@ -312,5 +312,293 @@ describe('useTemplateScoring', () => {
 
       expect(result).toBeNull();
     });
+
+    it('handles 403 error', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        json: () => Promise.resolve({ message: 'Forbidden' }),
+      } as unknown as Response);
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const finding = {
+        id: 'f1',
+        severity: 'warning' as const,
+        message: 'Spammy',
+        blockId: 'b1',
+        category: 'spam' as const,
+        suggestion: 'Remove spam',
+      };
+
+      const result = await scoring.fixFinding('<p>content</p>', finding, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.fixError.value).toBe('ai_generation_not_available');
+      expect(scoring.fixingFindingId.value).toBeNull();
+    });
+
+    it('handles non-403 HTTP error with message from response', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Server broke' }),
+      } as unknown as Response);
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const finding = {
+        id: 'f1',
+        severity: 'warning' as const,
+        message: 'Spammy',
+        blockId: 'b1',
+        category: 'spam' as const,
+        suggestion: 'Remove spam',
+      };
+
+      const result = await scoring.fixFinding('<p>content</p>', finding, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.fixError.value).toBe('Server broke');
+      expect(scoring.fixingFindingId.value).toBeNull();
+    });
+
+    it('handles non-403 HTTP error when json parse fails', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        json: () => Promise.reject(new Error('not json')),
+      } as unknown as Response);
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const finding = {
+        id: 'f1',
+        severity: 'warning' as const,
+        message: 'Spammy',
+        blockId: 'b1',
+        category: 'spam' as const,
+        suggestion: 'Remove spam',
+      };
+
+      const result = await scoring.fixFinding('<p>content</p>', finding, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.fixError.value).toBe('Failed to fix finding');
+      expect(scoring.fixingFindingId.value).toBeNull();
+    });
+
+    it('handles null body in response', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: null,
+        json: () => Promise.resolve({}),
+      } as unknown as Response);
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const finding = {
+        id: 'f1',
+        severity: 'warning' as const,
+        message: 'Spammy',
+        blockId: 'b1',
+        category: 'spam' as const,
+        suggestion: 'Remove spam',
+      };
+
+      const result = await scoring.fixFinding('<p>content</p>', finding, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.fixError.value).toBe('Failed to read stream');
+      expect(scoring.fixingFindingId.value).toBeNull();
+    });
+
+    it('skips malformed SSE JSON lines', async () => {
+      // Create a stream with a malformed JSON line followed by a valid done event
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode('data: {not valid json}\n\ndata: {"type":"done","content":"<p>fixed</p>"}\n\n'));
+          controller.close();
+        },
+      });
+
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: stream,
+        json: () => Promise.resolve({}),
+      } as unknown as Response);
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const finding = {
+        id: 'f1',
+        severity: 'warning' as const,
+        message: 'Spammy',
+        blockId: 'b1',
+        category: 'spam' as const,
+        suggestion: 'Remove spam',
+      };
+
+      const result = await scoring.fixFinding('<p>content</p>', finding, mockMergeTags);
+
+      expect(result).toBe('<p>fixed</p>');
+    });
+
+    it('handles SSE error event without message', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([{ type: 'error' }]),
+      );
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const finding = {
+        id: 'f1',
+        severity: 'warning' as const,
+        message: 'Spammy',
+        blockId: 'b1',
+        category: 'spam' as const,
+        suggestion: 'Remove spam',
+      };
+
+      const result = await scoring.fixFinding('<p>content</p>', finding, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.fixError.value).toBe('Failed to fix finding');
+    });
+
+    it('handles non-Error throw in catch', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockRejectedValueOnce('string error');
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const finding = {
+        id: 'f1',
+        severity: 'warning' as const,
+        message: 'Spammy',
+        blockId: 'b1',
+        category: 'spam' as const,
+        suggestion: 'Remove spam',
+      };
+
+      const result = await scoring.fixFinding('<p>content</p>', finding, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.fixError.value).toBe('Failed to fix finding');
+      expect(scoring.fixingFindingId.value).toBeNull();
+    });
+
+    it('returns null when done event has no content', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([{ type: 'done' }]),
+      );
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const finding = {
+        id: 'f1',
+        severity: 'warning' as const,
+        message: 'Spammy',
+        blockId: 'b1',
+        category: 'spam' as const,
+        suggestion: 'Remove spam',
+      };
+
+      const result = await scoring.fixFinding('<p>content</p>', finding, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.fixingFindingId.value).toBeNull();
+    });
+  });
+
+  describe('score — additional branches', () => {
+    it('handles non-Error throw in catch', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockRejectedValueOnce(42);
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const result = await scoring.score(mockContent, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.error.value).toBe('Failed to score template');
+      expect(scoring.isScoring.value).toBe(false);
+    });
+
+    it('handles non-403 HTTP error when json parse fails', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        json: () => Promise.reject(new Error('not json')),
+      } as unknown as Response);
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const result = await scoring.score(mockContent, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.error.value).toBe('Failed to score template');
+    });
+
+    it('handles SSE error event without message', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([{ type: 'error' }]),
+      );
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const result = await scoring.score(mockContent, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.error.value).toBe('Failed to score template');
+    });
+
+    it('skips malformed SSE JSON lines in score', async () => {
+      const encoder = new TextEncoder();
+      const sseResult = {
+        score: 75,
+        categories: {
+          spam: { score: 75, findings: [] },
+          readability: { score: 75, findings: [] },
+          accessibility: { score: 75, findings: [] },
+          bestPractices: { score: 75, findings: [] },
+        },
+      };
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(`data: not-json\n\ndata: ${JSON.stringify({ type: 'done', result: sseResult })}\n\n`));
+          controller.close();
+        },
+      });
+
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        body: stream,
+        json: () => Promise.resolve({}),
+      } as unknown as Response);
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const result = await scoring.score(mockContent, mockMergeTags);
+
+      expect(result).not.toBeNull();
+      expect(result!.score).toBe(75);
+    });
+
+    it('returns null when done event has no result', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(
+        createSSEResponse([{ type: 'done' }]),
+      );
+
+      const scoring = useTemplateScoring({ authManager, getTemplateId: () => 'tmpl-1' });
+
+      const result = await scoring.score(mockContent, mockMergeTags);
+
+      expect(result).toBeNull();
+      expect(scoring.scoringResult.value).toBeNull();
+      expect(scoring.isScoring.value).toBe(false);
+    });
   });
 });

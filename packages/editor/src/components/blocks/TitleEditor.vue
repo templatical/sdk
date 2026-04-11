@@ -17,8 +17,8 @@ const emit = defineEmits<{
   (e: "done"): void;
 }>();
 
-const themeStyles = inject(THEME_STYLES_KEY);
-const tplUiTheme = inject(UI_THEME_KEY);
+const themeStyles = inject(THEME_STYLES_KEY, null);
+const tplUiTheme = inject(UI_THEME_KEY, null);
 
 const { t } = useI18n();
 
