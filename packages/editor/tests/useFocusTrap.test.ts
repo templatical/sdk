@@ -347,4 +347,19 @@ describe("useFocusTrap", () => {
     // No error thrown, cleanup still called
     expect(mockCleanup).toHaveBeenCalledTimes(1);
   });
+
+  it("registers onScopeDispose cleanup when used in effectScope", async () => {
+    const { effectScope, onScopeDispose } = await import("vue");
+    const container = createMockContainer([createFocusableElement("button")]);
+    const active = ref(false);
+    const containerRef = ref<HTMLElement | null>(container);
+
+    const scope = effectScope();
+    scope.run(() => {
+      useFocusTrap(containerRef, active);
+    });
+
+    // Stopping the scope should not throw (cleanup runs safely even when inactive)
+    expect(() => scope.stop()).not.toThrow();
+  });
 });

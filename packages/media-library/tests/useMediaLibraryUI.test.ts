@@ -403,4 +403,50 @@ describe("useMediaLibraryUI", () => {
       expect(library.cancelReplace).toHaveBeenCalled();
     });
   });
+
+  describe("Ref translations", () => {
+    it("works with Ref-wrapped translations", () => {
+      const library = createMockLibrary();
+      const translations = ref({
+        mediaLibrary: {
+          filterImages: "Bilder",
+          filterDocuments: "Dokumente",
+          filterVideos: "Videos",
+          filterAudio: "Audio",
+        },
+      });
+
+      const ui = useMediaLibraryUI({
+        library: library as any,
+        canUseMediaFolders: computed(() => true),
+        translations,
+      });
+
+      expect(ui.getCategoryLabel("images")).toBe("Bilder");
+      expect(ui.getCategoryLabel("documents")).toBe("Dokumente");
+    });
+  });
+
+  describe("watcher: showSidebar loads folders", () => {
+    it("does not load folders when canUseMediaFolders is false", () => {
+      const library = createMockLibrary();
+      const translations = {
+        mediaLibrary: {
+          filterImages: "Images",
+          filterDocuments: "Documents",
+          filterVideos: "Videos",
+          filterAudio: "Audio",
+        },
+      };
+
+      const ui = useMediaLibraryUI({
+        library: library as any,
+        canUseMediaFolders: computed(() => false),
+        translations,
+      });
+
+      ui.showSidebar.value = true;
+      expect(library.loadFolders).not.toHaveBeenCalled();
+    });
+  });
 });

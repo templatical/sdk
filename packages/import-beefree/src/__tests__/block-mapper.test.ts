@@ -294,7 +294,59 @@ describe("convertModule", () => {
     });
   });
 
+  describe("heading edge cases", () => {
+    it("falls back to level 2 for out-of-range heading level (h5)", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-heading", {
+        heading: {
+          title: "h5",
+          text: "Small Title",
+        },
+      });
+
+      const { block } = convertModule(mod, warnings);
+      expect(block.type).toBe("title");
+      if (block.type === "title") {
+        expect(block.level).toBe(2);
+      }
+    });
+
+    it("falls back to level 2 for non-heading tag", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-heading", {
+        heading: {
+          title: "span",
+          text: "Not a heading tag",
+        },
+      });
+
+      const { block } = convertModule(mod, warnings);
+      expect(block.type).toBe("title");
+      if (block.type === "title") {
+        expect(block.level).toBe(2);
+      }
+    });
+  });
+
   describe("video", () => {
+    it("converts video without video descriptor to empty video block", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-video", {
+        style: {
+          "padding-top": "10px",
+          "padding-right": "10px",
+          "padding-bottom": "10px",
+          "padding-left": "10px",
+        },
+      });
+
+      const { block } = convertModule(mod, warnings);
+      expect(block.type).toBe("video");
+      if (block.type === "video") {
+        expect(block.url).toBe("");
+      }
+    });
+
     it("converts video with src and thumbnail", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-video", {

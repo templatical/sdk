@@ -368,4 +368,40 @@ describe("useAutoSave", () => {
       expect(onChange).not.toHaveBeenCalled();
     });
   });
+
+  describe("scheduleOnChange edge cases", () => {
+    it("does not schedule when not enabled", () => {
+      const content = ref(makeContent());
+      const onChange = vi.fn();
+      useAutoSave({
+        content,
+        isDirty: () => true,
+        onChange,
+        debounce: 100,
+        enabled: () => false,
+      });
+
+      content.value.settings.width = 700;
+      vi.advanceTimersByTime(100);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("does not fire onChange when isDirty returns false at timeout", () => {
+      const content = ref(makeContent());
+      const onChange = vi.fn();
+      let dirty = true;
+      useAutoSave({
+        content,
+        isDirty: () => dirty,
+        onChange,
+        debounce: 100,
+      });
+
+      content.value.settings.width = 700;
+      // isDirty becomes false before timeout fires
+      dirty = false;
+      vi.advanceTimersByTime(100);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+  });
 });
