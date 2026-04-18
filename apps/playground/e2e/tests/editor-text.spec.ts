@@ -32,7 +32,7 @@ test.describe("Editor text editing", () => {
     page,
   }) => {
     await editorPage.doubleClickBlock("paragraph");
-    await page.keyboard.press("Meta+a");
+    await page.keyboard.press("ControlOrMeta+a");
     const toolbar = page.locator(SELECTORS.textToolbar);
     // Bold button has tpl-text-toolbar-btn class
     const boldBtn = toolbar.locator(SELECTORS.textToolbarBtn).first();
@@ -47,7 +47,7 @@ test.describe("Editor text editing", () => {
     page,
   }) => {
     await editorPage.doubleClickBlock("paragraph");
-    await page.keyboard.press("Meta+a");
+    await page.keyboard.press("ControlOrMeta+a");
     const toolbar = page.locator(SELECTORS.textToolbar);
     const italicBtn = toolbar.locator(SELECTORS.textToolbarBtn).nth(1);
     await italicBtn.click();
@@ -61,7 +61,7 @@ test.describe("Editor text editing", () => {
     page,
   }) => {
     await editorPage.doubleClickBlock("paragraph");
-    await page.keyboard.press("Meta+a");
+    await page.keyboard.press("ControlOrMeta+a");
     const toolbar = page.locator(SELECTORS.textToolbar);
     const centerBtn = toolbar.getByRole("button", { name: /center/i });
     await expect(centerBtn).toBeVisible();
@@ -123,7 +123,7 @@ test.describe("Editor text editing", () => {
     page,
   }) => {
     await editorPage.doubleClickBlock("paragraph");
-    await page.keyboard.press("Meta+a");
+    await page.keyboard.press("ControlOrMeta+a");
     const toolbar = page.locator(SELECTORS.textToolbar);
     const linkBtn = toolbar.getByRole("button", { name: /link/i });
     await expect(linkBtn).toBeVisible();

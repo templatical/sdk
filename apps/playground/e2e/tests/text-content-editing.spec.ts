@@ -12,7 +12,7 @@ test.describe("Text content editing", () => {
     const editable = editorPage.getEditableFor("paragraph");
     await editable.click();
 
-    await page.keyboard.press("Meta+a");
+    await page.keyboard.press("ControlOrMeta+a");
     await page.keyboard.type("Hello E2E Test");
 
     // Exit edit mode — clicking another block commits the content.
@@ -32,7 +32,7 @@ test.describe("Text content editing", () => {
     const editable = editorPage.getEditableFor("title");
     await editable.click();
 
-    await page.keyboard.press("Meta+a");
+    await page.keyboard.press("ControlOrMeta+a");
     await page.keyboard.type("New Title Text");
 
     await editorPage.getBlockByType("paragraph").first().click();
@@ -49,10 +49,10 @@ test.describe("Text content editing", () => {
     const editable = editorPage.getEditableFor("paragraph");
     await editable.click();
 
-    await page.keyboard.press("Meta+a");
+    await page.keyboard.press("ControlOrMeta+a");
     await page.keyboard.type("Bold text");
-    await page.keyboard.press("Meta+a");
-    await page.keyboard.press("Meta+b");
+    await page.keyboard.press("ControlOrMeta+a");
+    await page.keyboard.press("ControlOrMeta+b");
 
     await editorPage.getBlockByType("title").first().click();
 
@@ -72,7 +72,7 @@ test.describe("Text content editing", () => {
     const editable = editorPage.getEditableFor("paragraph");
     await editable.click();
 
-    await page.keyboard.press("Meta+a");
+    await page.keyboard.press("ControlOrMeta+a");
     await page.keyboard.type(testText);
 
     await editorPage.getBlockByType("title").first().click();
