@@ -1932,6 +1932,7 @@ onUnmounted(() => {
           <Transition name="pg-modal">
             <div
               v-if="!cloudBannerDismissed"
+              data-testid="cloud-banner"
               class="absolute bottom-4 left-1/2 -translate-x-1/2 z-[99] flex items-center gap-3 py-2.5 pl-4 pr-2.5 bg-white border border-gray-200 rounded-xl shadow-float max-w-[520px] w-[calc(100%-2rem)] dark:bg-gray-800 dark:border-gray-700"
             >
               <div class="flex items-center gap-2.5 flex-1 min-w-0">
@@ -1967,6 +1968,7 @@ onUnmounted(() => {
                 >{{ t.cloudBanner.floatingCta }}</a
               >
               <button
+                data-testid="cloud-banner-dismiss"
                 :aria-label="t.common.dismiss"
                 class="shrink-0 size-7 flex items-center justify-center border-none bg-transparent text-gray-400 cursor-pointer rounded-md transition-colors duration-150 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
                 @click="cloudBannerDismissed = true"
@@ -2751,6 +2753,7 @@ onUnmounted(() => {
                 </p>
               </div>
               <button
+                data-testid="feature-overlay-close"
                 :aria-label="t.common.close"
                 class="pg-modal-close"
                 @click="dismissFeatureOverlay"
@@ -3004,12 +3007,14 @@ onUnmounted(() => {
               class="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-800/50"
             >
               <button
+                data-testid="onboarding-skip"
                 class="text-[13px] text-gray-400 bg-transparent border-none cursor-pointer font-sans transition-colors duration-150 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                 @click="dismissOnboarding"
               >
                 {{ t.onboarding.skip }}
               </button>
               <button
+                data-testid="onboarding-next"
                 class="inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-primary text-white text-[13px] font-medium font-sans border-none cursor-pointer transition-all duration-150 hover:bg-primary-hover"
                 @click="nextOnboardingStep"
               >

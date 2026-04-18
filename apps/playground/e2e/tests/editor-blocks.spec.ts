@@ -25,14 +25,10 @@ test.describe("Editor blocks", () => {
 
   test("add block via drag from sidebar to canvas", async ({
     editorReady: { editorPage },
-    page,
   }) => {
     const countBefore = await editorPage.getBlockCount();
-    await editorPage.dragBlockFromSidebar("Spacer");
-    // Wait for block to appear
-    await page.waitForTimeout(500);
-    const countAfter = await editorPage.getBlockCount();
-    expect(countAfter).toBe(countBefore + 1);
+    await editorPage.dragBlockFromSidebar("spacer");
+    expect(await editorPage.getBlockCount()).toBe(countBefore + 1);
   });
 
   test("click block selects it", async ({
@@ -87,29 +83,18 @@ test.describe("Editor blocks", () => {
 
   test("all blocks have data-block-type attribute", async ({
     editorReady: { editorPage },
-    page,
   }) => {
-    const blocks = editorPage.getBlocks();
-    const count = await blocks.count();
-    expect(count).toBeGreaterThan(0);
-    for (let i = 0; i < count; i++) {
-      const type = await blocks.nth(i).getAttribute("data-block-type");
-      expect(type).toBeTruthy();
-    }
+    const types = await editorPage.getBlockTypes();
+    expect(types.length).toBeGreaterThan(0);
+    expect(types.every((t) => t.length > 0)).toBe(true);
   });
 
   test("all blocks have unique data-block-id", async ({
     editorReady: { editorPage },
   }) => {
-    const blocks = editorPage.getBlocks();
-    const count = await blocks.count();
-    const ids = new Set<string>();
-    for (let i = 0; i < count; i++) {
-      const id = await blocks.nth(i).getAttribute("data-block-id");
-      expect(id).toBeTruthy();
-      expect(ids.has(id!)).toBe(false);
-      ids.add(id!);
-    }
-    expect(ids.size).toBe(count);
+    const ids = await editorPage.getBlockIds();
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.every((id) => id.length > 0)).toBe(true);
   });
 });

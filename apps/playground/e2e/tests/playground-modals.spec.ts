@@ -83,49 +83,28 @@ test.describe("Playground modals", () => {
     const dialog = page.locator('[role="dialog"]').last();
     await expect(dialog).toBeVisible();
     await page.keyboard.press("Escape");
-    await page.waitForTimeout(300);
-    // Config dialog should be gone
-    await expect(dialog).not.toBeVisible();
+    await expect(dialog).toBeHidden();
   });
 
-  test("feature overlay shows on template with features", async ({
+  test("feature overlay shows and dismisses", async ({
     chooserPage,
     editorPage,
     page,
   }) => {
+    // Feature overlay opens the first time a template is loaded. Clear the
+    // dismissed flag BEFORE navigation so App.vue sees a virgin user.
+    await page.addInitScript(() => {
+      localStorage.removeItem("tpl-playground-features-dismissed");
+      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
+    });
     await chooserPage.goto();
-    await page.evaluate(() =>
-      localStorage.removeItem("tpl-playground-features-dismissed"),
-    );
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
-    const overlay = page.locator(SELECTORS.featureOverlay);
-    const visible = await overlay
-      .isVisible({ timeout: 3000 })
-      .catch(() => false);
-    if (visible) {
-      await expect(overlay).toBeVisible();
-    }
-  });
 
-  test("feature overlay dismisses", async ({
-    chooserPage,
-    editorPage,
-    page,
-  }) => {
-    await chooserPage.goto();
-    await page.evaluate(() =>
-      localStorage.removeItem("tpl-playground-features-dismissed"),
-    );
-    await chooserPage.selectFirstTemplate();
-    await editorPage.waitForReady();
     const overlay = page.locator(SELECTORS.featureOverlay);
-    const visible = await overlay
-      .isVisible({ timeout: 3000 })
-      .catch(() => false);
-    if (visible) {
-      await page.keyboard.press("Escape");
-      await expect(overlay).toHaveCount(0);
-    }
+    await expect(overlay).toBeVisible();
+
+    await page.locator(SELECTORS.featureOverlayClose).click();
+    await expect(overlay).toHaveCount(0);
   });
 });

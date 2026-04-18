@@ -47,9 +47,8 @@ test.describe("Template chooser", () => {
     const count = await cards.count();
 
     for (let i = 0; i < count; i++) {
-      const label = await cards.nth(i).getAttribute("aria-label");
-      expect(label).toBeTruthy();
-      expect(label!.length).toBeGreaterThan(5);
+      const label = (await cards.nth(i).getAttribute("aria-label")) ?? "";
+      expect(label.length).toBeGreaterThan(5);
     }
   });
 
@@ -59,8 +58,8 @@ test.describe("Template chooser", () => {
   }) => {
     await chooserPage.goto();
     const blank = page.locator(SELECTORS.blankTemplateCard);
-    const label = await blank.getAttribute("aria-label");
-    expect(label).toBeTruthy();
+    const label = (await blank.getAttribute("aria-label")) ?? "";
+    expect(label.length).toBeGreaterThan(0);
   });
 
   test("selecting a template opens editor with blocks", async ({
@@ -108,11 +107,9 @@ test.describe("Template chooser", () => {
     const count = await cards.count();
 
     for (let i = 0; i < count; i++) {
-      // Each card has a preview area (140px height div with wireframe)
       const previewArea = cards.nth(i).locator("div").first();
       const box = await previewArea.boundingBox();
-      expect(box).toBeTruthy();
-      expect(box!.height).toBeGreaterThan(50);
+      expect(box?.height ?? 0).toBeGreaterThan(50);
     }
   });
 });

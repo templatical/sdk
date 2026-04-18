@@ -72,15 +72,12 @@ test.describe("Section columns", () => {
     blankEditorReady: { editorPage },
     page,
   }) => {
-    // Add a section to blank canvas
-    await editorPage.dragBlockFromSidebar("Section");
-    await page.waitForTimeout(500);
+    await editorPage.dragBlockFromSidebar("section");
 
     const section = page.locator(blockByType("section")).first();
-    // Empty section should show "Drop here" placeholder text
-    const dropHint = section.locator("span");
-    const hintText = await dropHint.first().textContent();
-    expect(hintText).toBeTruthy();
+    const dropHint = section.locator("span").first();
+    const hintText = (await dropHint.textContent())?.trim() ?? "";
+    expect(hintText.length).toBeGreaterThan(0);
   });
 
   test("drag block into second column of section", async ({
@@ -95,21 +92,15 @@ test.describe("Section columns", () => {
       return;
     }
 
-    // Count total blocks inside all sections before
     const totalBlocksBefore = await sections
       .first()
       .locator(".tpl-block")
       .count();
 
-    // Drag a divider into second column (colIndex=1)
-    await editorPage.dragBlockFromSidebarToSection("Divider", 0, 1);
-    await page.waitForTimeout(500);
+    await editorPage.dragBlockFromSidebarToSection("divider", 0, 1);
 
-    // Total blocks inside section should increase
-    const totalBlocksAfter = await sections
-      .first()
-      .locator(".tpl-block")
-      .count();
-    expect(totalBlocksAfter).toBe(totalBlocksBefore + 1);
+    expect(
+      await sections.first().locator(".tpl-block").count(),
+    ).toBe(totalBlocksBefore + 1);
   });
 });

@@ -309,6 +309,64 @@ apps/playground/e2e/
 
 Tests use page objects (`ChooserPage`, `EditorPage`) accessed via Playwright fixtures. Selectors are centralized in `e2e/helpers/selectors.ts` using `data-testid` attributes added to `apps/playground/src/App.vue`.
 
+### Flakiness rules
+
+- **Never `page.waitForTimeout()`.** Wait on concrete state: `locator.waitFor()`, `expect(locator).toBeVisible()`, or `expect.poll(() => ...).toBe(...)`.
+- **Never `isVisible().catch(() => false)`.** It swallows errors and makes passes meaningless. If an element is optional, check and assert both branches. If it's required, hard-assert.
+- **Never `.toBeTruthy()` / `.toBeDefined()` / `typeof x === 'string'` as the sole assertion.** Pair with a value check. Same rule as Vitest (see Tests section).
+- **Never `force: true`** on click/drag. Hides real interaction failures. If an element is covered, fix the selector or wait for the overlay to close.
+- **Never compare `innerHTML` for equality.** Whitespace, dynamic IDs, and compiler markers drift. Assert on semantic properties (textContent, attribute values, element counts) or a normalized fingerprint.
+- **Never pixel-hardcode drag positions.** Compute from `boundingBox()` and use relative offsets (e.g. `box.height * 0.1`).
+- **Prefer `.toBe()` / `.toEqual()` / `.toHaveText()` over loose matchers.** Use `toBeHidden()` for disappearance, not `not.toBeVisible()` with a timeout.
+
+### Selector priority
+
+Order of preference when picking a selector:
+
+1. `data-testid` — add one to the source if missing. Cheap, stable, locale-independent.
+2. Semantic data attributes (`data-block-type`, `data-block-id`, `data-palette-type`).
+3. ARIA roles + accessible name (`getByRole("button", { name: /save/i })`).
+4. Stable SDK class names prefixed with `tpl-` or `pg-`.
+5. Last resort: structural CSS (`.absolute.bottom-4 button`) — avoid.
+
+Never use `.first()` / `.nth()` without a semantic anchor. Never use text-based locators for content that varies by locale — add a testid instead. When a test needs an element with no good selector, add one in the source rather than working around it.
+
+### State waits
+
+- **Hydration gate.** `EditorPage.waitForReady()` waits for the editor container AND either a rendered block or the empty-state placeholder — not just the DOM shell.
+- **App bootstrap state (localStorage, cookies) must be set via `page.addInitScript()` before navigation.** Setting it after `page.goto()` races with the app's mount-time read.
+- **Overlay/modal dismissal.** After clicking a dismiss button, wait for the overlay to go hidden (`waitFor({ state: "hidden" })` or `toHaveCount(0)`). Don't assume the click is synchronous.
+- **Text input (TipTap).** Click `[contenteditable="true"]` (the ProseMirror root), not the outer `.tpl-text-editable` wrapper — clicking the wrapper doesn't reliably focus the editor.
+- **Drag-and-drop via Sortable.js.** Sortable listens to pointer events and needs multiple intermediate `mousemove` events. Playwright's `locator.dragTo()` emits only two, which is often insufficient. For canvas block reordering, drive the mouse manually in ~20 steps (`page.mouse.down()` → loop `mouse.move()` → `mouse.up()`). `dragTo` works fine for palette-to-canvas drops (HTML5 drag events).
+
+### Page objects self-verify
+
+Mutating methods on `EditorPage` (drag, reorder, viewport switch) wait for the resulting state before returning, using `expect.poll()`. Callers then only assert business-level outcomes, not the fact that "something happened."
+
+```ts
+// Good — caller doesn't re-wait.
+async dragBlockFromSidebar(blockType: string) {
+  const countBefore = await this.getBlocks().count();
+  await sidebarItem.dragTo(canvas);
+  await expect.poll(() => this.getBlocks().count()).toBe(countBefore + 1);
+}
+
+// Bad — caller has to guess how long to wait.
+async dragBlockFromSidebar(blockType: string) {
+  await sidebarItem.dragTo(canvas);
+}
+```
+
+### Adding a testid when one is missing
+
+If a test needs to target an element with no stable selector, add `data-testid` to the source rather than working around it. Conventions:
+
+- Overlays/modals: `data-testid="<feature>-overlay"` + `data-testid="<feature>-close"` (or `-dismiss`) for the dismiss button.
+- Palette / list items: `data-<semantic>-type` (e.g. `data-palette-type`, `data-block-type`) when the item has a discriminator.
+- Inputs/buttons inside a panel: `data-testid="<panel>-<action>"`.
+
+Add the selector to `apps/playground/e2e/helpers/selectors.ts` so it's centralized. Never reach for `.nth()` / `.last()` as a substitute for a missing testid.
+
 ### Playwright MCP
 
 Configured in `.mcp.json` at repo root. Provides browser interaction tools for Claude Code debugging and test authoring. Available after Claude Code restart.

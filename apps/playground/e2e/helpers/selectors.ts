@@ -70,10 +70,20 @@ export const SELECTORS = {
 
   // Feature overlay
   featureOverlay: '[data-testid="feature-overlay"]',
+  featureOverlayClose: '[data-testid="feature-overlay-close"]',
+
+  // Cloud banner (floating upsell)
+  cloudBanner: '[data-testid="cloud-banner"]',
+  cloudBannerDismiss: '[data-testid="cloud-banner-dismiss"]',
 
   // Onboarding
   onboardingSpotlight: ".pg-onboarding-spotlight",
   onboardingTooltip: ".pg-onboarding-tooltip",
+  onboardingSkip: '[data-testid="onboarding-skip"]',
+  onboardingNext: '[data-testid="onboarding-next"]',
+
+  // Rich-text editable root (TipTap wrapper)
+  textEditable: ".tpl-text-editable",
 
   // Modals
   modalBackdrop: ".pg-modal-backdrop",
@@ -82,6 +92,11 @@ export const SELECTORS = {
 /** Dynamic selector for block by type */
 export function blockByType(type: string) {
   return `[data-block-type="${type}"]`;
+}
+
+/** Dynamic selector for sidebar palette entry by block type */
+export function paletteByType(type: string) {
+  return `[data-palette-type="${type}"]`;
 }
 
 /** Dynamic selector for config tab */

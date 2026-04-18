@@ -63,12 +63,10 @@ test.describe("Editor text editing", () => {
     await editorPage.doubleClickBlock("paragraph");
     await page.keyboard.press("Meta+a");
     const toolbar = page.locator(SELECTORS.textToolbar);
-    // Alignment buttons — look for buttons with alignment-related icons
     const centerBtn = toolbar.getByRole("button", { name: /center/i });
-    if (await centerBtn.isVisible().catch(() => false)) {
-      await centerBtn.click();
-      await expect(centerBtn).toHaveClass(/active/);
-    }
+    await expect(centerBtn).toBeVisible();
+    await centerBtn.click();
+    await expect(centerBtn).toHaveClass(/active/);
   });
 
   test("font family select present in toolbar", async ({
@@ -78,11 +76,9 @@ test.describe("Editor text editing", () => {
     await editorPage.doubleClickBlock("paragraph");
     const toolbar = page.locator(SELECTORS.textToolbar);
     await expect(toolbar).toBeVisible();
-    // Wait for toolbar content to fully render (v-if on editor ready)
-    await page.waitForTimeout(500);
-    // Font family is a select element inside the toolbar
-    const selects = toolbar.locator("select");
-    expect(await selects.count()).toBeGreaterThanOrEqual(1);
+    // Toolbar mounts its inner controls (font select, color inputs) only
+    // once the TipTap editor is ready. Wait for the first select to render.
+    await expect(toolbar.locator("select").first()).toBeVisible();
   });
 
   test("color inputs present in toolbar", async ({
@@ -130,13 +126,12 @@ test.describe("Editor text editing", () => {
     await page.keyboard.press("Meta+a");
     const toolbar = page.locator(SELECTORS.textToolbar);
     const linkBtn = toolbar.getByRole("button", { name: /link/i });
-    if (await linkBtn.isVisible().catch(() => false)) {
-      await linkBtn.click();
-      await expect(
-        page.locator(
-          'input[type="url"], input[placeholder*="http"], input[placeholder*="URL"], input[placeholder*="url"]',
-        ),
-      ).toBeVisible({ timeout: 2000 });
-    }
+    await expect(linkBtn).toBeVisible();
+    await linkBtn.click();
+    await expect(
+      page.locator(
+        'input[type="url"], input[placeholder*="http"], input[placeholder*="URL"], input[placeholder*="url"]',
+      ),
+    ).toBeVisible();
   });
 });

@@ -89,11 +89,8 @@ test.describe("Block-specific settings", () => {
     const radiusInput = panel.locator('input[type="number"]').first();
     await radiusInput.fill("20");
     await radiusInput.press("Tab");
-    await page.waitForTimeout(300);
 
-    // Value should persist
-    const value = await radiusInput.inputValue();
-    expect(value).toBe("20");
+    await expect(radiusInput).toHaveValue("20");
   });
 
   test("selecting different block types shows different toolbars", async ({
@@ -102,15 +99,27 @@ test.describe("Block-specific settings", () => {
   }) => {
     const panel = page.locator(SELECTORS.rightPanelContent);
 
-    // Select image block
+    // Capture a normalized snapshot of the toolbar fingerprint for each
+    // block type — list of input/select/button names. This is resilient to
+    // whitespace and dynamic IDs, unlike comparing innerHTML directly, but
+    // still changes when the actual set of controls changes.
     await editorPage.selectBlockByType("image");
-    const imageHtml = await panel.innerHTML();
+    const imageFingerprint = await panel.evaluate((el) =>
+      Array.from(el.querySelectorAll("input, select, button"))
+        .map((n) => `${n.tagName}:${(n as HTMLElement).getAttribute("type") ?? (n as HTMLElement).getAttribute("aria-label") ?? ""}`)
+        .sort()
+        .join("|"),
+    );
+    expect(imageFingerprint.length).toBeGreaterThan(0);
 
-    // Select button block
     await editorPage.selectBlockByType("button");
-    const buttonHtml = await panel.innerHTML();
-
-    // Different block types should show different toolbar content
-    expect(imageHtml).not.toBe(buttonHtml);
+    const buttonFingerprint = await panel.evaluate((el) =>
+      Array.from(el.querySelectorAll("input, select, button"))
+        .map((n) => `${n.tagName}:${(n as HTMLElement).getAttribute("type") ?? (n as HTMLElement).getAttribute("aria-label") ?? ""}`)
+        .sort()
+        .join("|"),
+    );
+    expect(buttonFingerprint.length).toBeGreaterThan(0);
+    expect(buttonFingerprint).not.toBe(imageFingerprint);
   });
 });

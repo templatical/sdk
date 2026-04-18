@@ -153,6 +153,7 @@ function createBlockFromItem(item: BlockTypeItem): Block {
     >
       <template #item="{ element: blockType }">
         <div
+          :data-palette-type="blockType.type"
           class="tpl:flex tpl:h-10 tpl:cursor-grab tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)] active:tpl:cursor-grabbing"
           :style="{
             justifyContent: isExpanded ? 'flex-start' : 'center',

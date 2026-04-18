@@ -93,23 +93,25 @@ test.describe("Editor right sidebar", () => {
     expect(await controls.count()).toBeGreaterThan(0);
   });
 
-  test("switching back to content tab preserves state", async ({
+  test("switching back to content tab preserves selection", async ({
     editorReady: { editorPage },
     page,
   }) => {
-    // Select a block
     await editorPage.selectBlock(0);
-    const panelBefore = await page
-      .locator(SELECTORS.rightPanelContent)
-      .innerHTML();
+    const selectedId = await page
+      .locator(SELECTORS.blockSelected)
+      .first()
+      .getAttribute("data-block-id");
 
-    // Switch to settings and back
     await page.locator(SELECTORS.rightTabSettings).click();
+    await expect(page.locator(SELECTORS.rightPanelSettings)).toBeVisible();
     await page.locator(SELECTORS.rightTabContent).click();
+    await expect(page.locator(SELECTORS.rightPanelContent)).toBeVisible();
 
-    const panelAfter = await page
-      .locator(SELECTORS.rightPanelContent)
-      .innerHTML();
-    expect(panelAfter).toBe(panelBefore);
+    const stillSelected = await page
+      .locator(SELECTORS.blockSelected)
+      .first()
+      .getAttribute("data-block-id");
+    expect(stillSelected).toBe(selectedId);
   });
 });
