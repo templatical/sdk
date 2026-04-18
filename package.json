@@ -15,10 +15,15 @@
     "lint": "eslint packages/*/src apps/*/src",
     "format": "prettier --write 'packages/*/src/**/*.{ts,vue}' 'apps/*/src/**/*.{ts,vue}'",
     "typecheck": "bun run --filter './packages/*' typecheck",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
     "ci": "bun run format && bun run lint && bun run typecheck && bun run test"
   },
   "devDependencies": {
     "@changesets/cli": "^2.30.0",
+    "@playwright/mcp": "^0.0.70",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/vite": "^4.2.2",
     "@templatical/editor": "workspace:*",
     "@tiptap/extension-color": "^3.22.3",

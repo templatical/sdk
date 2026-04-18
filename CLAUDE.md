@@ -284,6 +284,93 @@ When adding a new function or composable:
 
 The `packages/editor/tests/dom-stubs.ts` file provides minimal DOM stubs for tests that import Vue or TipTap extensions. **Always import it first** — before any Vue imports — because Vue captures `document` at module load time. The stubs include a `style` property on elements for ProseMirror compatibility.
 
+## E2E Tests
+
+**Playwright.** Browser-level smoke tests against the playground app. Lives in `apps/playground/e2e/`.
+
+```bash
+bun run test:e2e          # Run all e2e tests (headless)
+bun run test:e2e:headed   # Run with visible browser
+bun run test:e2e:ui       # Open Playwright UI mode
+```
+
+### Structure
+
+```
+apps/playground/e2e/
+  helpers/selectors.ts       -- Centralized data-testid selectors
+  pages/chooser.page.ts      -- Template chooser page object
+  pages/editor.page.ts       -- Editor page object
+  fixtures/editor.fixture.ts -- Extended test with page object fixtures
+  tests/smoke.spec.ts        -- Core smoke tests
+```
+
+### Page object pattern
+
+Tests use page objects (`ChooserPage`, `EditorPage`) accessed via Playwright fixtures. Selectors are centralized in `e2e/helpers/selectors.ts` using `data-testid` attributes added to `apps/playground/src/App.vue`.
+
+### Flakiness rules
+
+- **Never `page.waitForTimeout()`.** Wait on concrete state: `locator.waitFor()`, `expect(locator).toBeVisible()`, or `expect.poll(() => ...).toBe(...)`.
+- **Never `isVisible().catch(() => false)`.** It swallows errors and makes passes meaningless. If an element is optional, check and assert both branches. If it's required, hard-assert.
+- **Never `.toBeTruthy()` / `.toBeDefined()` / `typeof x === 'string'` as the sole assertion.** Pair with a value check. Same rule as Vitest (see Tests section).
+- **Never `force: true`** on click/drag. Hides real interaction failures. If an element is covered, fix the selector or wait for the overlay to close.
+- **Never compare `innerHTML` for equality.** Whitespace, dynamic IDs, and compiler markers drift. Assert on semantic properties (textContent, attribute values, element counts) or a normalized fingerprint.
+- **Never pixel-hardcode drag positions.** Compute from `boundingBox()` and use relative offsets (e.g. `box.height * 0.1`).
+- **Prefer `.toBe()` / `.toEqual()` / `.toHaveText()` over loose matchers.** Use `toBeHidden()` for disappearance, not `not.toBeVisible()` with a timeout.
+
+### Selector priority
+
+Order of preference when picking a selector:
+
+1. `data-testid` — add one to the source if missing. Cheap, stable, locale-independent.
+2. Semantic data attributes (`data-block-type`, `data-block-id`, `data-palette-type`).
+3. ARIA roles + accessible name (`getByRole("button", { name: /save/i })`).
+4. Stable SDK class names prefixed with `tpl-` or `pg-`.
+5. Last resort: structural CSS (`.absolute.bottom-4 button`) — avoid.
+
+Never use `.first()` / `.nth()` without a semantic anchor. Never use text-based locators for content that varies by locale — add a testid instead. When a test needs an element with no good selector, add one in the source rather than working around it.
+
+### State waits
+
+- **Hydration gate.** `EditorPage.waitForReady()` waits for the editor container AND either a rendered block or the empty-state placeholder — not just the DOM shell.
+- **App bootstrap state (localStorage, cookies) must be set via `page.addInitScript()` before navigation.** Setting it after `page.goto()` races with the app's mount-time read.
+- **Overlay/modal dismissal.** After clicking a dismiss button, wait for the overlay to go hidden (`waitFor({ state: "hidden" })` or `toHaveCount(0)`). Don't assume the click is synchronous.
+- **Text input (TipTap).** Click `[contenteditable="true"]` (the ProseMirror root), not the outer `.tpl-text-editable` wrapper — clicking the wrapper doesn't reliably focus the editor.
+- **Drag-and-drop via Sortable.js.** Sortable listens to pointer events and needs multiple intermediate `mousemove` events. Playwright's `locator.dragTo()` emits only two, which is often insufficient. For canvas block reordering, drive the mouse manually in ~20 steps (`page.mouse.down()` → loop `mouse.move()` → `mouse.up()`). `dragTo` works fine for palette-to-canvas drops (HTML5 drag events).
+
+### Page objects self-verify
+
+Mutating methods on `EditorPage` (drag, reorder, viewport switch) wait for the resulting state before returning, using `expect.poll()`. Callers then only assert business-level outcomes, not the fact that "something happened."
+
+```ts
+// Good — caller doesn't re-wait.
+async dragBlockFromSidebar(blockType: string) {
+  const countBefore = await this.getBlocks().count();
+  await sidebarItem.dragTo(canvas);
+  await expect.poll(() => this.getBlocks().count()).toBe(countBefore + 1);
+}
+
+// Bad — caller has to guess how long to wait.
+async dragBlockFromSidebar(blockType: string) {
+  await sidebarItem.dragTo(canvas);
+}
+```
+
+### Adding a testid when one is missing
+
+If a test needs to target an element with no stable selector, add `data-testid` to the source rather than working around it. Conventions:
+
+- Overlays/modals: `data-testid="<feature>-overlay"` + `data-testid="<feature>-close"` (or `-dismiss`) for the dismiss button.
+- Palette / list items: `data-<semantic>-type` (e.g. `data-palette-type`, `data-block-type`) when the item has a discriminator.
+- Inputs/buttons inside a panel: `data-testid="<panel>-<action>"`.
+
+Add the selector to `apps/playground/e2e/helpers/selectors.ts` so it's centralized. Never reach for `.nth()` / `.last()` as a substitute for a missing testid.
+
+### Playwright MCP
+
+Configured in `.mcp.json` at repo root. Provides browser interaction tools for Claude Code debugging and test authoring. Available after Claude Code restart.
+
 ## Changesets
 
 Versioning and publishing use `@changesets/cli`. CI (`.github/workflows/publish.yml`) runs `@changesets/action` to create release PRs and `bunx changeset publish` to publish to npm.
@@ -295,13 +382,14 @@ GitHub Actions (`.github/workflows/ci.yml`) on push to main + PRs:
 ```
 lint ──────┐
 typecheck ─┤──→ test (build + test)
-           └──→ build
+           ├──→ build ──→ e2e
 ```
 
 1. **Lint** (parallel) — `bun run format --check` (Prettier) + `bun run lint` (ESLint)
 2. **Typecheck** (parallel) — `bun run typecheck` (tsc/vue-tsc --noEmit per package, no build needed)
 3. **Test** (after lint + typecheck) — `bun run build` then `bun run test` (tests import from dist)
 4. **Build** (after lint + typecheck) — `bun run build` (tsup/vite per package in dependency order)
+5. **E2E** (after build) — Installs Chromium, runs `bun run test:e2e` against playground. Uploads HTML report as artifact on failure.
 
 All four gates must pass. Lint and typecheck run in parallel first; test and build only run if both pass. Run checks locally before pushing: `bun run format --check && bun run lint && bun run typecheck && bun run build && bun run test`.
 

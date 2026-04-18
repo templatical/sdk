@@ -170,7 +170,6 @@ export async function initCloud(
   const { default: CloudEditor } = await import("./cloud/CloudEditor.vue");
 
   // Load translations before mounting so child components can use useI18n synchronously
-  const { loadTranslations } = await import("./i18n");
   const translations = await loadTranslations(config.locale ?? "en");
 
   // Create fonts manager to pass to CloudEditor
