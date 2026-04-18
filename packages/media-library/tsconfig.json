@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "./dist",
+    "jsx": "preserve",
+    "paths": {
+      "@templatical/types": ["../types/src/index.ts"],
+      "@templatical/core": ["../core/src/index.ts"],
+      "@templatical/core/cloud": ["../core/src/cloud/index.ts"],
+      "@templatical/media-library": ["./src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

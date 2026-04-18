@@ -1,0 +1,127 @@
+<script setup lang="ts">
+import VideoPlayButton from "./VideoPlayButton.vue";
+import { useI18n, useMergeTag } from "../../composables";
+import type {
+  VideoBlock as VideoBlockType,
+  ViewportSize,
+} from "@templatical/types";
+import { getVideoThumbnail } from "../../utils/videoThumbnail";
+import { containsMergeTag } from "@templatical/types";
+import { Video } from "@lucide/vue";
+import { computed } from "vue";
+
+const props = defineProps<{
+  block: VideoBlockType;
+  viewport: ViewportSize;
+}>();
+
+const { t } = useI18n();
+const { syntax } = useMergeTag();
+
+const hasMergeTagUrl = computed(
+  () =>
+    containsMergeTag(props.block.url, syntax) ||
+    containsMergeTag(props.block.thumbnailUrl, syntax),
+);
+
+const effectiveThumbnail = computed(() => {
+  if (hasMergeTagUrl.value) return null;
+  return getVideoThumbnail(props.block.url, props.block.thumbnailUrl);
+});
+
+const containerStyle = computed(() => ({
+  textAlign: props.block.align,
+}));
+
+const thumbnailStyle = computed(() => ({
+  maxWidth: "100%",
+  width: props.block.width === "full" ? "100%" : `${props.block.width}px`,
+  display: "block",
+  margin: props.block.align === "center" ? "0 auto" : undefined,
+  marginLeft: props.block.align === "right" ? "auto" : undefined,
+}));
+
+const mergeTagLabel = computed(() => {
+  if (containsMergeTag(props.block.url, syntax)) return props.block.url;
+  return props.block.thumbnailUrl;
+});
+</script>
+
+<template>
+  <div class="tpl:w-full" :style="containerStyle">
+    <!-- Placeholder with preview image provided -->
+    <div
+      v-if="hasMergeTagUrl && block.placeholderUrl"
+      class="tpl:relative tpl:inline-block"
+      :style="thumbnailStyle"
+    >
+      <img
+        class="tpl:w-full tpl:border-0"
+        :src="block.placeholderUrl"
+        :alt="block.alt"
+      />
+      <VideoPlayButton />
+    </div>
+    <!-- Placeholder visual (no preview image) -->
+    <div
+      v-else-if="hasMergeTagUrl"
+      class="tpl:relative tpl:!flex tpl:min-h-[150px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-center tpl:bg-[var(--tpl-bg-elevated)]"
+      style="
+        border-color: color-mix(in srgb, var(--tpl-primary) 40%, transparent);
+      "
+      :style="thumbnailStyle"
+    >
+      <Video
+        :size="36"
+        :stroke-width="1.5"
+        class="tpl:text-[var(--tpl-primary)]"
+        style="opacity: 0.5"
+      />
+      <span
+        class="tpl:max-w-full tpl:truncate tpl:px-3 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-primary)]"
+        style="opacity: 0.7"
+      >
+        {{ mergeTagLabel }}
+      </span>
+    </div>
+    <!-- Normal video thumbnail -->
+    <template v-else-if="effectiveThumbnail">
+      <a
+        v-if="block.url"
+        :href="block.url"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="tpl:group tpl:relative tpl:inline-block"
+        :style="thumbnailStyle"
+        @click.prevent
+      >
+        <img
+          class="tpl:w-full tpl:border-0"
+          :src="effectiveThumbnail"
+          :alt="block.alt"
+        />
+        <VideoPlayButton hover-effect />
+      </a>
+      <div v-else class="tpl:relative tpl:inline-block" :style="thumbnailStyle">
+        <img
+          class="tpl:w-full tpl:border-0"
+          :src="effectiveThumbnail"
+          :alt="block.alt"
+        />
+        <VideoPlayButton />
+      </div>
+    </template>
+    <!-- Empty state -->
+    <div
+      v-else
+      class="tpl:flex tpl:min-h-[150px] tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-sm tpl:border-[var(--tpl-border-light)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-dim)]"
+    >
+      <Video
+        :size="40"
+        :stroke-width="1.5"
+        class="tpl:text-[var(--tpl-border-light)]"
+      />
+      <span>{{ t.video.addVideo }}</span>
+    </div>
+  </div>
+</template>

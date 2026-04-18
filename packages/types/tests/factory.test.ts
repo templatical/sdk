@@ -1,0 +1,581 @@
+import { describe, expect, it } from 'vitest';
+import {
+    generateId,
+    createTitleBlock,
+    createParagraphBlock,
+    createImageBlock,
+    createButtonBlock,
+    createDividerBlock,
+    createSectionBlock,
+    createVideoBlock,
+    createSocialIconsBlock,
+    createSpacerBlock,
+    createHtmlBlock,
+    createMenuBlock,
+    createTableBlock,
+    createCountdownBlock,
+    createCustomBlock,
+    createBlock,
+    cloneBlock,
+    type CustomBlockDefinition,
+    type BlockDefaults,
+} from '../src';
+
+describe('generateId', () => {
+    it('returns a UUID string', () => {
+        const id = generateId();
+        expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    });
+
+    it('returns unique IDs', () => {
+        const ids = new Set(Array.from({ length: 100 }, () => generateId()));
+        expect(ids.size).toBe(100);
+    });
+});
+
+describe('block factory functions', () => {
+    it('creates a title block with defaults', () => {
+        const block = createTitleBlock();
+        expect(block.type).toBe('title');
+        expect(block.content).toBe('<p>Enter your title</p>');
+        expect(block.level).toBe(2);
+        expect(block.id).toMatch(/^[0-9a-f-]+$/);
+    });
+
+    it('creates a title block with partial overrides', () => {
+        const block = createTitleBlock({ level: 3, color: '#000' });
+        expect(block.level).toBe(3);
+        expect(block.color).toBe('#000');
+        expect(block.type).toBe('title');
+    });
+
+    it('creates a paragraph block with defaults', () => {
+        const block = createParagraphBlock();
+        expect(block.type).toBe('paragraph');
+        expect(block.content).toBe('<p>Enter your text here</p>');
+        expect(block.id).toMatch(/^[0-9a-f-]+$/);
+    });
+
+    it('creates a paragraph block with partial overrides', () => {
+        const block = createParagraphBlock({ content: '<p>Custom</p>' });
+        expect(block.content).toBe('<p>Custom</p>');
+        expect(block.type).toBe('paragraph');
+    });
+
+    it('creates an image block with defaults', () => {
+        const block = createImageBlock();
+        expect(block.type).toBe('image');
+        expect(block.src).toBe('');
+        expect(block.width).toBe('full');
+    });
+
+    it('creates a button block with defaults', () => {
+        const block = createButtonBlock();
+        expect(block.type).toBe('button');
+        expect(block.text).toBe('Click Here');
+        expect(block.backgroundColor).toBe('#333333');
+    });
+
+    it('creates a divider block with defaults', () => {
+        const block = createDividerBlock();
+        expect(block.type).toBe('divider');
+        expect(block.lineStyle).toBe('solid');
+    });
+
+    it('creates a section block with defaults', () => {
+        const block = createSectionBlock();
+        expect(block.type).toBe('section');
+        expect(block.columns).toBe('1');
+        expect(block.children).toEqual([[]]);
+    });
+
+    it('creates a video block with defaults', () => {
+        const block = createVideoBlock();
+        expect(block.type).toBe('video');
+        expect(block.url).toBe('');
+    });
+
+    it('creates a social icons block with defaults', () => {
+        const block = createSocialIconsBlock();
+        expect(block.type).toBe('social');
+        expect(block.icons).toEqual([]);
+    });
+
+    it('creates a spacer block with defaults', () => {
+        const block = createSpacerBlock();
+        expect(block.type).toBe('spacer');
+        expect(block.height).toBe(24);
+    });
+
+    it('creates an html block with defaults', () => {
+        const block = createHtmlBlock();
+        expect(block.type).toBe('html');
+        expect(block.content).toBe('');
+    });
+
+    it('creates a menu block with defaults', () => {
+        const block = createMenuBlock();
+        expect(block.type).toBe('menu');
+        expect(block.items).toEqual([]);
+    });
+
+    it('creates a table block with 3x3 grid', () => {
+        const block = createTableBlock();
+        expect(block.type).toBe('table');
+        expect(block.rows).toHaveLength(3);
+        expect(block.rows[0].cells).toHaveLength(3);
+    });
+
+    it('creates a countdown block with defaults', () => {
+        const block = createCountdownBlock();
+        expect(block.type).toBe('countdown');
+        expect(block.showDays).toBe(true);
+    });
+
+    it('creates a custom block from definition', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'product-card',
+            name: 'Product Card',
+            fields: [
+                { key: 'title', label: 'Title', type: 'text', default: 'Hello' },
+                { key: 'count', label: 'Count', type: 'number', default: 5 },
+                { key: 'active', label: 'Active', type: 'boolean' },
+            ],
+            template: '<div>{{title}}</div>',
+        };
+
+        const block = createCustomBlock(definition);
+        expect(block.type).toBe('custom');
+        expect(block.customType).toBe('product-card');
+        expect(block.fieldValues.title).toBe('Hello');
+        expect(block.fieldValues.count).toBe(5);
+        expect(block.fieldValues.active).toBe(false);
+    });
+});
+
+describe('createBlock', () => {
+    it('creates blocks by type string', () => {
+        expect(createBlock('title').type).toBe('title');
+        expect(createBlock('paragraph').type).toBe('paragraph');
+        expect(createBlock('image').type).toBe('image');
+        expect(createBlock('button').type).toBe('button');
+        expect(createBlock('section').type).toBe('section');
+        expect(createBlock('divider').type).toBe('divider');
+        expect(createBlock('spacer').type).toBe('spacer');
+        expect(createBlock('html').type).toBe('html');
+        expect(createBlock('social').type).toBe('social');
+        expect(createBlock('menu').type).toBe('menu');
+        expect(createBlock('table').type).toBe('table');
+        expect(createBlock('video').type).toBe('video');
+        expect(createBlock('countdown').type).toBe('countdown');
+    });
+
+    it('throws for unknown block type', () => {
+        expect(() => createBlock('unknown' as never)).toThrow('Unknown block type: unknown');
+    });
+
+    it('throws for custom block type (requires definition)', () => {
+        expect(() => createBlock('custom' as never)).toThrow('Unknown block type: custom');
+    });
+});
+
+describe('cloneBlock', () => {
+    it('creates a deep copy with a new ID', () => {
+        const original = createTitleBlock({ content: '<p>Test</p>' });
+        const cloned = cloneBlock(original);
+
+        expect(cloned.id).not.toBe(original.id);
+        expect(cloned.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+        expect(cloned.type).toBe('title');
+        if (cloned.type === 'title') {
+            expect(cloned.content).toBe('<p>Test</p>');
+        }
+    });
+
+    it('recursively clones section children with new IDs', () => {
+        const child = createParagraphBlock();
+        const section = createSectionBlock({ children: [[child]] });
+        const cloned = cloneBlock(section);
+
+        expect(cloned.id).not.toBe(section.id);
+        expect(cloned.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+        if (cloned.type === 'section') {
+            expect(cloned.children[0][0].id).not.toBe(child.id);
+            expect(cloned.children[0][0].id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+        }
+    });
+
+    it('does not mutate the original', () => {
+        const original = createButtonBlock({ text: 'Original' });
+        const cloned = cloneBlock(original);
+        if (cloned.type === 'button') {
+            (cloned as { text: string }).text = 'Modified';
+        }
+        expect(original.text).toBe('Original');
+    });
+
+    it('recursively clones deeply nested sections (section within section)', () => {
+        const innerChild = createParagraphBlock({ content: '<p>Inner</p>' });
+        const innerSection = createSectionBlock({ children: [[innerChild]] });
+        const outerSection = createSectionBlock({ children: [[innerSection]] });
+
+        const cloned = cloneBlock(outerSection);
+
+        expect(cloned.id).not.toBe(outerSection.id);
+        expect(cloned.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+        if (cloned.type === 'section') {
+            const clonedInner = cloned.children[0][0];
+            expect(clonedInner.id).not.toBe(innerSection.id);
+            expect(clonedInner.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+            if (clonedInner.type === 'section') {
+                const clonedInnerChild = clonedInner.children[0][0];
+                expect(clonedInnerChild.id).not.toBe(innerChild.id);
+                expect(clonedInnerChild.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+            }
+        }
+    });
+
+    it('ensures ALL nested IDs are unique after cloning', () => {
+        const child1 = createParagraphBlock();
+        const child2 = createImageBlock();
+        const child3 = createButtonBlock();
+        const section = createSectionBlock({
+            columns: '3',
+            children: [[child1], [child2], [child3]],
+        });
+        const cloned = cloneBlock(section);
+
+        const originalIds = [section.id, child1.id, child2.id, child3.id];
+        const clonedIds: string[] = [cloned.id];
+        if (cloned.type === 'section') {
+            for (const col of cloned.children) {
+                for (const block of col) {
+                    clonedIds.push(block.id);
+                }
+            }
+        }
+
+        // No cloned ID should match any original ID
+        for (const clonedId of clonedIds) {
+            expect(originalIds).not.toContain(clonedId);
+        }
+
+        // All cloned IDs should be unique among themselves
+        expect(new Set(clonedIds).size).toBe(clonedIds.length);
+    });
+
+    it('clones non-section block without touching children', () => {
+        const block = createImageBlock({ src: 'https://example.com/img.png' });
+        const cloned = cloneBlock(block);
+        expect(cloned.id).not.toBe(block.id);
+        expect(cloned.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+        if (cloned.type === 'image') {
+            expect(cloned.src).toBe('https://example.com/img.png');
+        }
+    });
+});
+
+describe('createCustomBlock edge cases', () => {
+    it('creates custom block with empty fields array', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'empty-block',
+            name: 'Empty Block',
+            fields: [],
+            template: '<div></div>',
+        };
+        const block = createCustomBlock(definition);
+        expect(block.fieldValues).toEqual({});
+        expect(block.customType).toBe('empty-block');
+    });
+
+    it('creates custom block with repeatable field defaults to empty array', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'list-block',
+            name: 'List Block',
+            fields: [
+                {
+                    key: 'items',
+                    label: 'Items',
+                    type: 'repeatable',
+                    fields: [{ key: 'name', label: 'Name', type: 'text' }],
+                },
+            ],
+            template: '<div></div>',
+        };
+        const block = createCustomBlock(definition);
+        expect(block.fieldValues.items).toEqual([]);
+    });
+
+    it('creates custom block with all field types using defaults', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'full-block',
+            name: 'Full Block',
+            fields: [
+                { key: 'title', label: 'Title', type: 'text' },
+                { key: 'desc', label: 'Desc', type: 'textarea' },
+                { key: 'img', label: 'Image', type: 'image' },
+                { key: 'clr', label: 'Color', type: 'color' },
+                { key: 'num', label: 'Number', type: 'number' },
+                { key: 'sel', label: 'Select', type: 'select', options: [{ label: 'A', value: 'a' }] },
+                { key: 'flag', label: 'Flag', type: 'boolean' },
+            ],
+            template: '<div></div>',
+        };
+        const block = createCustomBlock(definition);
+        expect(block.fieldValues.title).toBe('');
+        expect(block.fieldValues.desc).toBe('');
+        expect(block.fieldValues.img).toBe('');
+        expect(block.fieldValues.clr).toBe('');
+        expect(block.fieldValues.num).toBe(0);
+        expect(block.fieldValues.sel).toBe('');
+        expect(block.fieldValues.flag).toBe(false);
+    });
+
+    it('creates custom block with dataSource sets dataSourceFetched', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'data-block',
+            name: 'Data Block',
+            fields: [],
+            template: '<div></div>',
+            dataSource: {
+                label: 'Fetch Data',
+                onFetch: async () => null,
+            },
+        };
+        const block = createCustomBlock(definition);
+        expect(block.dataSourceFetched).toBe(false);
+    });
+
+    it('creates custom block without dataSource does not set dataSourceFetched', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'simple-block',
+            name: 'Simple Block',
+            fields: [],
+            template: '<div></div>',
+        };
+        const block = createCustomBlock(definition);
+        expect(block).not.toHaveProperty('dataSourceFetched');
+    });
+});
+
+describe('createBlock with blockDefaults', () => {
+    it('applies title defaults via createBlock', () => {
+        const defaults: BlockDefaults = {
+            title: { level: 3, color: '#000000' },
+        };
+        const block = createBlock('title', defaults);
+        expect(block.type).toBe('title');
+        if (block.type === 'title') {
+            expect(block.level).toBe(3);
+            expect(block.color).toBe('#000000');
+            expect(block.content).toBe('<p>Enter your title</p>');
+        }
+    });
+
+    it('applies paragraph defaults via createBlock', () => {
+        const defaults: BlockDefaults = {
+            paragraph: { content: '<p>Custom paragraph</p>' },
+        };
+        const block = createBlock('paragraph', defaults);
+        expect(block.type).toBe('paragraph');
+        if (block.type === 'paragraph') {
+            expect(block.content).toBe('<p>Custom paragraph</p>');
+        }
+    });
+
+    it('applies button defaults with deep-merged nested styles', () => {
+        const defaults: BlockDefaults = {
+            button: {
+                backgroundColor: '#ff6600',
+                styles: { padding: { top: 20, right: 10, bottom: 20, left: 10 } },
+            },
+        };
+        const block = createBlock('button', defaults);
+        if (block.type === 'button') {
+            expect(block.backgroundColor).toBe('#ff6600');
+            expect(block.textColor).toBe('#ffffff');
+            expect(block.styles.padding.top).toBe(20);
+            expect(block.styles.padding.right).toBe(10);
+            expect(block.styles.margin.top).toBe(0);
+        }
+    });
+
+    it('deep merges buttonPadding', () => {
+        const defaults: BlockDefaults = {
+            button: { buttonPadding: { top: 20 } },
+        };
+        const block = createBlock('button', defaults);
+        if (block.type === 'button') {
+            expect(block.buttonPadding.top).toBe(20);
+            expect(block.buttonPadding.right).toBe(24);
+            expect(block.buttonPadding.bottom).toBe(12);
+        }
+    });
+
+    it('replaces arrays in table rows', () => {
+        const customRows = [
+            { id: 'r1', cells: [{ id: 'c1', content: 'Custom' }] },
+        ];
+        const defaults: BlockDefaults = {
+            table: { rows: customRows },
+        };
+        const block = createBlock('table', defaults);
+        if (block.type === 'table') {
+            expect(block.rows).toEqual(customRows);
+            expect(block.hasHeaderRow).toBe(true);
+        }
+    });
+
+    it('applies divider defaults', () => {
+        const defaults: BlockDefaults = {
+            divider: { color: '#eeeeee', thickness: 2 },
+        };
+        const block = createBlock('divider', defaults);
+        if (block.type === 'divider') {
+            expect(block.color).toBe('#eeeeee');
+            expect(block.thickness).toBe(2);
+            expect(block.lineStyle).toBe('solid');
+        }
+    });
+
+    it('applies spacer defaults', () => {
+        const defaults: BlockDefaults = {
+            spacer: { height: 40 },
+        };
+        const block = createBlock('spacer', defaults);
+        if (block.type === 'spacer') {
+            expect(block.height).toBe(40);
+        }
+    });
+
+    it('applies image defaults', () => {
+        const defaults: BlockDefaults = {
+            image: { alt: 'Default alt', width: '300px' },
+        };
+        const block = createBlock('image', defaults);
+        if (block.type === 'image') {
+            expect(block.alt).toBe('Default alt');
+            expect(block.width).toBe('300px');
+            expect(block.align).toBe('center');
+        }
+    });
+
+    it('applies video defaults', () => {
+        const defaults: BlockDefaults = {
+            video: { alt: 'Watch now' },
+        };
+        const block = createBlock('video', defaults);
+        if (block.type === 'video') {
+            expect(block.alt).toBe('Watch now');
+            expect(block.url).toBe('');
+        }
+    });
+
+    it('applies social defaults', () => {
+        const defaults: BlockDefaults = {
+            social: { iconSize: 'large', spacing: 20 },
+        };
+        const block = createBlock('social', defaults);
+        if (block.type === 'social') {
+            expect(block.iconSize).toBe('large');
+            expect(block.spacing).toBe(20);
+            expect(block.iconStyle).toBe('solid');
+        }
+    });
+
+    it('applies html defaults', () => {
+        const defaults: BlockDefaults = {
+            html: { content: '<div>Default</div>' },
+        };
+        const block = createBlock('html', defaults);
+        if (block.type === 'html') {
+            expect(block.content).toBe('<div>Default</div>');
+        }
+    });
+
+    it('applies menu defaults', () => {
+        const defaults: BlockDefaults = {
+            menu: { separator: '-', fontSize: 16 },
+        };
+        const block = createBlock('menu', defaults);
+        if (block.type === 'menu') {
+            expect(block.separator).toBe('-');
+            expect(block.fontSize).toBe(16);
+            expect(block.color).toBe('#1a1a1a');
+        }
+    });
+
+    it('applies section defaults', () => {
+        const defaults: BlockDefaults = {
+            section: { columns: '2' },
+        };
+        const block = createBlock('section', defaults);
+        if (block.type === 'section') {
+            expect(block.columns).toBe('2');
+        }
+    });
+
+    it('applies countdown defaults', () => {
+        const defaults: BlockDefaults = {
+            countdown: { digitFontSize: 48, digitColor: '#000000' },
+        };
+        const block = createBlock('countdown', defaults);
+        if (block.type === 'countdown') {
+            expect(block.digitFontSize).toBe(48);
+            expect(block.digitColor).toBe('#000000');
+            expect(block.labelColor).toBe('#6b7280');
+        }
+    });
+
+    it('returns default block when blockDefaults is undefined', () => {
+        const block = createBlock('title', undefined);
+        if (block.type === 'title') {
+            expect(block.level).toBe(2);
+            expect(block.color).toBe('#1a1a1a');
+        }
+    });
+
+    it('returns default block when blockDefaults is empty object', () => {
+        const block = createBlock('title', {});
+        if (block.type === 'title') {
+            expect(block.level).toBe(2);
+        }
+    });
+
+    it('ignores defaults for other block types', () => {
+        const defaults: BlockDefaults = {
+            title: { level: 3 },
+        };
+        const block = createBlock('button', defaults);
+        if (block.type === 'button') {
+            expect(block.fontSize).toBe(15);
+        }
+    });
+
+    it('preserves id and type even when defaults try to override them', () => {
+        const defaults: BlockDefaults = {
+            title: { content: 'Custom' } as any,
+        };
+        const block = createBlock('title', defaults);
+        expect(block.type).toBe('title');
+        expect(block.id).toMatch(/^[0-9a-f-]+$/);
+    });
+});
+
+describe('factory deep merge vs shallow spread', () => {
+    it('deep merges styles.padding without losing styles.margin', () => {
+        const block = createTitleBlock({
+            styles: { padding: { top: 20, right: 20, bottom: 20, left: 20 } },
+        } as any);
+        expect(block.styles.padding.top).toBe(20);
+        expect(block.styles.margin.top).toBe(0);
+    });
+
+    it('deep merges partial padding preserving other padding values', () => {
+        const block = createButtonBlock({
+            styles: { padding: { top: 30 } },
+        } as any);
+        expect(block.styles.padding.top).toBe(30);
+        expect(block.styles.padding.right).toBe(10);
+    });
+});

@@ -1,0 +1,704 @@
+/**
+ * Templatical SDK Styles
+ *
+ * This is the standalone stylesheet for the Templatical SDK.
+ * Contains only essential styles that cannot be inlined with Tailwind.
+ */
+
+@import url('https://fonts.bunny.net/css?family=geist:400,500,600');
+@import 'tailwindcss/theme.css' layer(theme) theme(inline) prefix(tpl);
+/* Preflight deliberately omitted — SDK must not reset consumer styles */
+/* Utilities are intentionally NOT in a @layer so they won't be overridden
+   by unlayered consumer CSS resets (e.g. * { margin: 0 }). */
+@import 'tailwindcss/utilities.css' prefix(tpl);
+
+@layer theme, base, components;
+
+@theme inline {
+    --font-sans:
+        'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Z-index scale — semantic layers for stacking context */
+    --z-panel: 45;
+    --z-toast: 60;
+    --z-overlay: 100;
+    --z-popover: 9999;
+    --z-modal: 10000;
+}
+
+/* SDK-specific source paths for Tailwind scanning */
+@source '../**/*.vue';
+@source '../**/*.ts';
+/* Media library components (imported via @templatical/media-library) */
+@source '../../../media-library/src/**/*.vue';
+@source '../../../media-library/src/**/*.ts';
+
+/* SDK CSS Variables - Default theme, can be overridden via inline styles */
+.tpl {
+    /* Warm palette */
+    --tpl-bg: oklch(99.5% 0.002 60);
+    --tpl-bg-elevated: oklch(98% 0.004 60);
+    --tpl-bg-hover: oklch(96% 0.006 60);
+    --tpl-bg-active: oklch(93.5% 0.008 60);
+    --tpl-border: oklch(92% 0.006 60);
+    --tpl-border-light: oklch(86% 0.01 60);
+    --tpl-text: oklch(18% 0.01 60);
+    --tpl-text-muted: oklch(50% 0.015 60);
+    --tpl-text-dim: oklch(68% 0.012 60);
+    --tpl-primary: oklch(70% 0.16 55);
+    --tpl-primary-hover: oklch(63% 0.17 55);
+    --tpl-primary-light: oklch(95% 0.04 55);
+    --tpl-secondary: oklch(60% 0.118 184.71);
+    --tpl-secondary-hover: oklch(53.2% 0.105 186.39);
+    --tpl-secondary-light: oklch(93.8% 0.03 186.82);
+    --tpl-success: oklch(62.8% 0.194 155.1);
+    --tpl-success-light: oklch(93.6% 0.043 163.51);
+    --tpl-warning: oklch(76.9% 0.168 70.08);
+    --tpl-warning-light: oklch(95% 0.038 73.59);
+    --tpl-danger: oklch(63.7% 0.237 25.33);
+    --tpl-danger-light: oklch(93.6% 0.032 17.72);
+    --tpl-canvas-bg: oklch(97.5% 0.003 60);
+
+    /* 3-level radius */
+    --tpl-radius: 10px;
+    --tpl-radius-sm: 7px;
+    --tpl-radius-lg: 14px;
+
+    /* Font — Geist */
+    --tpl-font-family:
+        'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* 5-level shadow system */
+    --tpl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+    --tpl-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
+    --tpl-shadow-md:
+        0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+    --tpl-shadow-lg:
+        0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    --tpl-shadow-xl:
+        0 8px 32px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06);
+
+    /* Modal overlay */
+    --tpl-overlay: rgba(0, 0, 0, 0.5);
+
+    /* Focus ring with amber accent */
+    --tpl-ring: 0 0 0 3px var(--tpl-primary-light);
+
+    /* Spring easing transition */
+    --tpl-transition: 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Dark theme defaults — activated by data attribute, overridden by inline styles */
+.tpl[data-tpl-theme="dark"] {
+    --tpl-bg: oklch(16% 0.005 60);
+    --tpl-bg-elevated: oklch(21% 0.006 60);
+    --tpl-bg-hover: oklch(26% 0.007 60);
+    --tpl-bg-active: oklch(30% 0.008 60);
+    --tpl-border: oklch(30% 0.006 60);
+    --tpl-border-light: oklch(38% 0.008 60);
+    --tpl-text: oklch(93% 0.005 60);
+    --tpl-text-muted: oklch(65% 0.01 60);
+    --tpl-text-dim: oklch(50% 0.008 60);
+    --tpl-primary: oklch(73% 0.15 55);
+    --tpl-primary-hover: oklch(78% 0.14 55);
+    --tpl-primary-light: oklch(28% 0.05 55);
+    --tpl-secondary: oklch(63% 0.11 184.71);
+    --tpl-secondary-hover: oklch(68% 0.1 186.39);
+    --tpl-secondary-light: oklch(25% 0.03 186.82);
+    --tpl-success: oklch(65% 0.18 155.1);
+    --tpl-success-light: oklch(25% 0.04 163.51);
+    --tpl-warning: oklch(78% 0.16 70.08);
+    --tpl-warning-light: oklch(28% 0.04 73.59);
+    --tpl-danger: oklch(65% 0.22 25.33);
+    --tpl-danger-light: oklch(25% 0.04 17.72);
+    --tpl-canvas-bg: oklch(10% 0.003 60);
+
+    --tpl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --tpl-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+    --tpl-shadow-md:
+        0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+    --tpl-shadow-lg:
+        0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+    --tpl-shadow-xl:
+        0 8px 32px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
+
+    --tpl-overlay: rgba(0, 0, 0, 0.7);
+    --tpl-ring: 0 0 0 3px var(--tpl-primary-light);
+}
+
+/* Canvas always uses light-theme values regardless of UI theme.
+   The canvas represents the email preview — emails render on white backgrounds.
+   Dark mode preview is handled separately via CSS filter inversion. */
+.tpl[data-tpl-theme="dark"] .tpl-canvas-wrapper {
+    --tpl-bg-elevated: oklch(98% 0.004 60);
+    --tpl-border-light: oklch(86% 0.01 60);
+    --tpl-text: oklch(18% 0.01 60);
+    --tpl-text-muted: oklch(50% 0.015 60);
+    --tpl-text-dim: oklch(68% 0.012 60);
+    --tpl-primary-light: oklch(95% 0.04 55);
+    --tpl-primary-hover: oklch(60% 0.16 55);
+    color: var(--tpl-text);
+}
+
+/* SDK Base Styles */
+.tpl {
+    @apply tpl:flex tpl:h-full tpl:flex-col tpl:font-sans tpl:text-sm tpl:leading-normal tpl:antialiased;
+    min-height: 600px;
+    background-color: var(--tpl-bg);
+    color: var(--tpl-text);
+    font-family: var(--tpl-font-family);
+}
+
+/* Form element reset - Preflight is omitted so form elements use browser defaults */
+.tpl button,
+.tpl input,
+.tpl select,
+.tpl textarea {
+    font-family: inherit;
+}
+
+.tpl button {
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+/* Focus ring — visible only for keyboard navigation */
+.tpl button:focus-visible,
+.tpl input:focus-visible,
+.tpl select:focus-visible,
+.tpl textarea:focus-visible {
+    outline: none;
+    box-shadow: var(--tpl-ring);
+}
+
+/* Scrollbar Styles - Thinner, more transparent */
+.tpl ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.tpl ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tpl ::-webkit-scrollbar-thumb {
+    background-color: color-mix(
+        in srgb,
+        var(--tpl-border-light) 60%,
+        transparent
+    );
+    @apply tpl:rounded;
+}
+
+.tpl ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--tpl-border-light);
+}
+
+/* Animations - Keyframes cannot be inlined */
+@keyframes tpl-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes tpl-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes tpl-dot-bounce {
+    0%,
+    80%,
+    100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+    40% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.tpl-pulse {
+    animation: tpl-pulse 2s infinite;
+}
+
+.tpl-spinner {
+    animation: tpl-spin 1s linear infinite;
+}
+
+.tpl-dot {
+    animation: tpl-dot-bounce 1.2s ease-in-out infinite;
+}
+
+@keyframes tpl-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes tpl-scale-in {
+    from {
+        opacity: 0;
+        transform: scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes tpl-slide-in-right {
+    from {
+        transform: translateX(16px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes tpl-slide-in-up {
+    from {
+        transform: translateY(8px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes tpl-shimmer {
+    from {
+        background-position: -200% 0;
+    }
+    to {
+        background-position: 200% 0;
+    }
+}
+
+.tpl-fade-in {
+    animation: tpl-fade-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tpl-scale-in {
+    animation: tpl-scale-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tpl-slide-in-right {
+    animation: tpl-slide-in-right 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tpl-slide-in-up {
+    animation: tpl-slide-in-up 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tpl-shimmer {
+    animation: tpl-shimmer 1.5s infinite linear;
+    background: linear-gradient(
+        90deg,
+        var(--tpl-bg-hover) 25%,
+        var(--tpl-bg-active) 50%,
+        var(--tpl-bg-hover) 75%
+    );
+    background-size: 200% 100%;
+}
+
+/* Preview mode — hide all editor chrome */
+.tpl-preview-mode .tpl-block--idle,
+.tpl-preview-mode .tpl-block--idle:hover,
+.tpl-preview-mode .tpl-block--selected {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.tpl-preview-mode .tpl-block {
+    cursor: default;
+    pointer-events: none;
+}
+
+.tpl-preview-mode .tpl-block-actions,
+.tpl-preview-mode .tpl-block-hidden-overlay,
+.tpl-preview-mode .tpl-condition-toggle,
+.tpl-preview-mode .tpl-comment-indicator,
+.tpl-preview-mode .tpl-collab-lock {
+    display: none;
+}
+
+/* Drag and drop styles - Required by Sortable.js */
+.tpl-ghost {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 12px 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-top: 2px dotted
+        color-mix(in srgb, var(--tpl-primary) 50%, transparent) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.tpl-ghost > * {
+    display: none !important;
+}
+
+.tpl-ghost::before {
+    content: var(--tpl-drop-text, 'Drop here');
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    padding: 2px 8px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    color: var(--tpl-primary) !important;
+    background-color: color-mix(
+        in srgb,
+        var(--tpl-primary) 15%,
+        var(--tpl-bg)
+    ) !important;
+    border-radius: var(--tpl-radius-sm) !important;
+    box-shadow: none !important;
+}
+
+.tpl-dragging {
+    @apply tpl:opacity-80;
+    box-shadow: var(--tpl-shadow-xl);
+}
+
+/* Rich text toolbar buttons (ParagraphEditor, TitleEditor) */
+.tpl-text-toolbar-btn {
+    @apply tpl:flex tpl:size-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:p-0 tpl:transition-all tpl:duration-150;
+    color: var(--tpl-text);
+}
+
+.tpl-text-toolbar-btn:hover {
+    background-color: var(--tpl-bg-active);
+}
+
+.tpl-text-toolbar-btn--active {
+    background-color: var(--tpl-primary) !important;
+    color: var(--tpl-bg) !important;
+}
+
+/* Tiptap Editor Styles - Targets generated HTML we can't add classes to */
+.tpl-text-content,
+.tpl-text-editable .tiptap {
+    @apply tpl:outline-none;
+}
+
+.tpl-text-editable {
+    @apply tpl:rounded tpl:border tpl:border-dashed tpl:p-2;
+    border-color: var(--tpl-primary);
+    min-height: 1.5em;
+}
+
+.tpl-text-content p,
+.tpl-text-editable .tiptap p {
+    @apply tpl:m-0 tpl:mb-2 tpl:last:mb-0;
+}
+
+.tpl-text-content ul,
+.tpl-text-content ol,
+.tpl-text-editable .tiptap ul,
+.tpl-text-editable .tiptap ol {
+    @apply tpl:my-2 tpl:pl-6;
+}
+
+.tpl-text-content li,
+.tpl-text-editable .tiptap li {
+    @apply tpl:my-1;
+}
+
+.tpl-text-content s,
+.tpl-text-editable .tiptap s {
+    @apply tpl:line-through;
+}
+
+.tpl-text-content sub,
+.tpl-text-editable .tiptap sub {
+    @apply tpl:align-sub tpl:text-[0.75em];
+}
+
+.tpl-text-content sup,
+.tpl-text-editable .tiptap sup {
+    @apply tpl:align-super tpl:text-[0.75em];
+}
+
+.tpl-text-content a,
+.tpl-text-editable a {
+    color: var(--tpl-primary);
+    @apply tpl:underline;
+}
+
+/* Merge tag styles - Uses theme color */
+.tpl-text-content span[data-merge-tag],
+.tpl-text-editable span[data-merge-tag] {
+    @apply tpl:mx-0.5 tpl:inline-flex tpl:items-center tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[0.9em] tpl:font-medium;
+    background-color: color-mix(in srgb, var(--tpl-primary) 20%, transparent);
+    color: var(--tpl-primary);
+}
+
+/* Logic merge tag styles - Outlined border style */
+.tpl-text-content span[data-logic-merge-tag],
+.tpl-text-editable span[data-logic-merge-tag] {
+    @apply tpl:mx-0.5 tpl:inline-flex tpl:items-center tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[0.8em] tpl:font-bold tpl:tracking-wide tpl:uppercase;
+    background-color: transparent;
+    border: 1.5px solid color-mix(in srgb, var(--tpl-primary) 50%, transparent);
+    color: var(--tpl-primary);
+}
+
+/* CSS Tooltip - Used by merge tag badges */
+.tpl-tooltip {
+    position: relative;
+}
+
+.tpl-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 10px;
+    border-radius: var(--tpl-radius-sm);
+    background-color: var(--tpl-text);
+    color: var(--tpl-bg);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: normal;
+    max-width: 220px;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 150ms ease;
+    text-transform: none;
+    z-index: 50;
+}
+
+.tpl-tooltip::before {
+    content: '';
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-bottom-color: var(--tpl-text);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 150ms ease;
+    z-index: 50;
+}
+
+.tpl-tooltip:hover::after,
+.tpl-tooltip:hover::before {
+    opacity: 1;
+}
+
+/* Media Library Modal */
+.tpl.tpl-media-overlay {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    height: 100%;
+    background-color: var(--tpl-overlay);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: var(--tpl-text);
+}
+
+/* TipTap Text Editor Toolbar - override .tpl base styles */
+.tpl.tpl-text-toolbar {
+    display: flex;
+    flex-direction: row;
+    min-height: 0;
+    height: auto;
+}
+
+/* TipTap Link Dialog - override .tpl base styles */
+.tpl.tpl-link-dialog {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    height: 100%;
+    background-color: var(--tpl-overlay);
+}
+
+.tpl-upload-zone-active {
+    border-color: var(--tpl-primary) !important;
+    background-color: var(--tpl-primary-light) !important;
+}
+
+/* AI button — comet border animation */
+@property --tpl-comet-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@property --tpl-comet-start {
+    syntax: '<percentage>';
+    initial-value: 100%;
+    inherits: false;
+}
+
+@keyframes tpl-ai-comet {
+    /* invisible — start=100% collapses the gradient */
+    0% {
+        --tpl-comet-angle: 0deg;
+        --tpl-comet-start: 100%;
+    }
+    /* tiny head dot appears */
+    1% {
+        --tpl-comet-angle: 24deg;
+        --tpl-comet-start: 88%;
+    }
+    /* trace in — tail extends while head races ahead */
+    5% {
+        --tpl-comet-angle: 120deg;
+        --tpl-comet-start: 60%;
+    }
+    /* full comet rotating */
+    25% {
+        --tpl-comet-angle: 600deg;
+        --tpl-comet-start: 60%;
+    }
+    /* trace out — tail retracts as comet finishes 2nd orbit */
+    33% {
+        --tpl-comet-angle: 720deg;
+        --tpl-comet-start: 100%;
+    }
+    /* stays hidden until next cycle */
+    100% {
+        --tpl-comet-angle: 720deg;
+        --tpl-comet-start: 100%;
+    }
+}
+
+.tpl-ai-btn--idle {
+    position: relative;
+    background-color: var(--tpl-primary-light);
+    color: var(--tpl-primary-hover);
+    box-shadow: none;
+    z-index: 0;
+}
+
+.tpl-ai-btn--idle::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: conic-gradient(
+        from var(--tpl-comet-angle),
+        transparent 0%,
+        transparent var(--tpl-comet-start),
+        color-mix(in srgb, var(--tpl-primary) 40%, transparent) 80%,
+        var(--tpl-primary) 90%,
+        var(--tpl-primary) 97%,
+        transparent 100%
+    );
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: tpl-ai-comet 20s linear 3s infinite;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.tpl-ai-btn--idle:hover {
+    transform: translateY(-1px);
+    background-color: var(--tpl-primary);
+    color: var(--tpl-bg);
+    box-shadow:
+        0 0 0 3px color-mix(in srgb, var(--tpl-primary) 20%, transparent),
+        0 4px 16px color-mix(in srgb, var(--tpl-primary) 30%, transparent) !important;
+}
+
+.tpl-ai-btn--idle:hover::before {
+    animation: none;
+}
+
+.tpl-ai-btn--active {
+    background-color: var(--tpl-primary-light);
+    color: var(--tpl-primary-hover);
+    border: 1px solid var(--tpl-primary);
+}
+
+.tpl-ai-btn--active .tpl-ai-btn-icon {
+    fill: color-mix(in srgb, var(--tpl-primary) 25%, transparent);
+}
+
+.tpl-ai-btn--active:hover {
+    background-color: color-mix(
+        in srgb,
+        var(--tpl-primary-light) 80%,
+        var(--tpl-primary)
+    );
+}
+
+/* Merge tag delete button — CSS hover replaces inline JS handlers */
+.tpl-merge-tag-delete:hover {
+    color: var(--tpl-danger) !important;
+}
+
+/* Reduced motion — disable non-essential animations for vestibular sensitivity */
+@media (prefers-reduced-motion: reduce) {
+    .tpl-pulse,
+    .tpl-dot,
+    .tpl-shimmer,
+    .tpl-fade-in,
+    .tpl-scale-in,
+    .tpl-slide-in-right,
+    .tpl-slide-in-up,
+    .tpl-ai-btn--idle::before {
+        animation: none;
+    }
+
+    .tpl-shimmer {
+        background: var(--tpl-bg-hover);
+    }
+
+    .tpl *,
+    .tpl *::before,
+    .tpl *::after {
+        transition-duration: 0.01ms !important;
+    }
+
+    /* Keep spinner functional but reduce to subtle opacity pulse */
+    .tpl-spinner {
+        animation: tpl-spin 1s linear infinite;
+    }
+}
