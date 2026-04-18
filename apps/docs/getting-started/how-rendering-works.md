@@ -60,10 +60,10 @@ Templatical separates template editing from template rendering. The editor produ
     |----------|---------|
     | Node.js | [mjml](https://www.npmjs.com/package/mjml) (official) |
     | PHP | [spatie/mjml-php](https://github.com/spatie/mjml-php) |
-    | Python | [mrml-python](https://github.com/alsuren/mjml-python) |
+    | Python | [mrml-python](https://github.com/jdrouet/mrml/tree/main/packages/mrml-python) |
     | Ruby | [mrml-ruby](https://github.com/hardpixel/mrml-ruby) |
     | Rust | [mrml](https://github.com/jdrouet/mrml) |
-    | .NET | [Mjml.Net](https://github.com/SebastianStehworte/mjml-net) |
+    | .NET | [Mjml.Net](https://github.com/SebastianStehle/mjml-net) |
     | Elixir | [mjml_nif](https://github.com/adoptoposs/mjml_nif) |
 
     See the full list on [mjml.io/community](https://mjml.io/community).
