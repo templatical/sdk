@@ -284,6 +284,35 @@ When adding a new function or composable:
 
 The `packages/editor/tests/dom-stubs.ts` file provides minimal DOM stubs for tests that import Vue or TipTap extensions. **Always import it first** — before any Vue imports — because Vue captures `document` at module load time. The stubs include a `style` property on elements for ProseMirror compatibility.
 
+## E2E Tests
+
+**Playwright.** Browser-level smoke tests against the playground app. Lives in `apps/playground/e2e/`.
+
+```bash
+bun run test:e2e          # Run all e2e tests (headless)
+bun run test:e2e:headed   # Run with visible browser
+bun run test:e2e:ui       # Open Playwright UI mode
+```
+
+### Structure
+
+```
+apps/playground/e2e/
+  helpers/selectors.ts       -- Centralized data-testid selectors
+  pages/chooser.page.ts      -- Template chooser page object
+  pages/editor.page.ts       -- Editor page object
+  fixtures/editor.fixture.ts -- Extended test with page object fixtures
+  tests/smoke.spec.ts        -- Core smoke tests
+```
+
+### Page object pattern
+
+Tests use page objects (`ChooserPage`, `EditorPage`) accessed via Playwright fixtures. Selectors are centralized in `e2e/helpers/selectors.ts` using `data-testid` attributes added to `apps/playground/src/App.vue`.
+
+### Playwright MCP
+
+Configured in `.mcp.json` at repo root. Provides browser interaction tools for Claude Code debugging and test authoring. Available after Claude Code restart.
+
 ## Changesets
 
 Versioning and publishing use `@changesets/cli`. CI (`.github/workflows/publish.yml`) runs `@changesets/action` to create release PRs and `bunx changeset publish` to publish to npm.
@@ -295,13 +324,14 @@ GitHub Actions (`.github/workflows/ci.yml`) on push to main + PRs:
 ```
 lint ──────┐
 typecheck ─┤──→ test (build + test)
-           └──→ build
+           ├──→ build ──→ e2e
 ```
 
 1. **Lint** (parallel) — `bun run format --check` (Prettier) + `bun run lint` (ESLint)
 2. **Typecheck** (parallel) — `bun run typecheck` (tsc/vue-tsc --noEmit per package, no build needed)
 3. **Test** (after lint + typecheck) — `bun run build` then `bun run test` (tests import from dist)
 4. **Build** (after lint + typecheck) — `bun run build` (tsup/vite per package in dependency order)
+5. **E2E** (after build) — Installs Chromium, runs `bun run test:e2e` against playground. Uploads HTML report as artifact on failure.
 
 All four gates must pass. Lint and typecheck run in parallel first; test and build only run if both pass. Run checks locally before pushing: `bun run format --check && bun run lint && bun run typecheck && bun run build && bun run test`.
 

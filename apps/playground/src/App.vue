@@ -1028,6 +1028,7 @@ onUnmounted(() => {
       <main
         v-if="screen === 'chooser'"
         key="chooser"
+        data-testid="chooser-screen"
         class="relative flex flex-col items-center justify-center min-h-screen bg-white py-12 dark:bg-gray-900"
       >
         <div class="absolute top-4 right-4 flex items-center gap-1.5">
@@ -1167,6 +1168,7 @@ onUnmounted(() => {
             <button
               v-for="(tpl, i) in templates"
               :key="tpl.name"
+              data-testid="template-card"
               :aria-label="format(t.a11y.chooseTemplate, { name: tpl.name })"
               class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
               :style="{ animationDelay: `${i * 40}ms` }"
@@ -1380,6 +1382,7 @@ onUnmounted(() => {
             </button>
 
             <button
+              data-testid="blank-template-card"
               :aria-label="t.a11y.startFromScratch"
               class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
               :style="{ animationDelay: `${templates.length * 40}ms` }"
@@ -1517,12 +1520,18 @@ onUnmounted(() => {
       </main>
 
       <!-- Editor Screen -->
-      <div v-else key="editor" class="flex flex-col h-full">
+      <div
+        v-else
+        key="editor"
+        data-testid="editor-screen"
+        class="flex flex-col h-full"
+      >
         <header
           class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-2 overflow-x-auto"
         >
           <div class="flex items-center gap-2">
             <button
+              data-testid="toolbar-back"
               class="pg-toolbar-btn no-underline"
               :title="t.a11y.backToTemplates"
               @click="backToChooser"
@@ -1545,6 +1554,7 @@ onUnmounted(() => {
               <span class="pg-toolbar-label">{{ t.toolbar.templates }}</span>
             </button>
             <button
+              data-testid="toolbar-config"
               data-onboarding="config"
               class="pg-toolbar-btn"
               :title="t.toolbar.config"
@@ -1601,6 +1611,7 @@ onUnmounted(() => {
               <span class="pg-toolbar-label">{{ t.toolbar.features }}</span>
             </button>
             <button
+              data-testid="toolbar-tour"
               class="pg-toolbar-btn"
               :title="t.toolbar.tour"
               @click="restartOnboarding"
@@ -1634,6 +1645,7 @@ onUnmounted(() => {
           <div class="flex items-center gap-1">
             <!-- View JSON -->
             <button
+              data-testid="toolbar-json"
               data-onboarding="json"
               class="pg-toolbar-btn"
               :title="t.toolbar.json"
@@ -1660,6 +1672,7 @@ onUnmounted(() => {
             <!-- Export dropdown -->
             <div
               ref="exportDropdownRef"
+              data-testid="toolbar-export"
               data-onboarding="export"
               class="relative"
               @keydown.escape="exportMenuOpen = false"
@@ -1739,6 +1752,7 @@ onUnmounted(() => {
             </div>
 
             <button
+              data-testid="toolbar-share"
               data-onboarding="share"
               class="pg-toolbar-btn"
               :title="t.toolbar.share"
@@ -1827,6 +1841,7 @@ onUnmounted(() => {
               </svg>
             </a>
             <button
+              data-testid="toolbar-theme"
               class="pg-theme-btn"
               :title="t.theme[uiTheme]"
               :aria-label="t.a11y.selectTheme"
@@ -1882,6 +1897,7 @@ onUnmounted(() => {
             </button>
             <select
               v-model="locale"
+              data-testid="locale-select"
               :aria-label="t.a11y.selectLanguage"
               class="pg-locale-select"
             >
@@ -1907,6 +1923,7 @@ onUnmounted(() => {
           <div
             v-else
             ref="editorContainer"
+            data-testid="editor-container"
             data-onboarding="canvas"
             class="flex-1 min-w-0 isolate rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700"
           />
@@ -1973,6 +1990,7 @@ onUnmounted(() => {
         >
           <div
             ref="jsonModalRef"
+            data-testid="json-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="json-modal-title"
@@ -2709,6 +2727,7 @@ onUnmounted(() => {
         >
           <div
             ref="featureModalRef"
+            data-testid="feature-overlay"
             role="dialog"
             aria-modal="true"
             aria-labelledby="features-modal-title"

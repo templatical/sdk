@@ -8,3 +8,6 @@ coverage
 apps/playground/.env
 apps/docs/.vitepress/cache
 apps/docs/.vitepress/dist
+playwright-report/
+test-results/
+blob-report/
