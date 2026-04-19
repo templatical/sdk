@@ -6,6 +6,9 @@ import { defineConfig } from 'vite';
 export default defineConfig({
     plugins: [tailwindcss(), vue()],
     publicDir: false,
+    define: {
+        'process.env.NODE_ENV': JSON.stringify('production'),
+    },
     build: {
         outDir: resolve(import.meta.dirname, 'dist/cdn'),
         emptyOutDir: true,
@@ -13,13 +16,16 @@ export default defineConfig({
         target: 'es2022',
         sourcemap: true,
         cssMinify: 'esbuild',
+        lib: {
+            entry: resolve(import.meta.dirname, 'src/standalone/visual.ts'),
+            formats: ['es'],
+            fileName: () => 'media-library.js',
+            cssFileName: 'media-library',
+        },
         rolldownOptions: {
-            input: resolve(import.meta.dirname, 'src/standalone/visual.ts'),
+            external: [],
             output: {
-                format: 'es',
-                entryFileNames: 'media-library.js',
                 chunkFileNames: 'chunks/[name]-[hash].js',
-                assetFileNames: 'media-library.[ext]',
                 manualChunks: (id) => {
                     if (id.includes('@lucide/vue')) {
                         return 'icons';

@@ -16,6 +16,11 @@ export default defineConfig({
         }),
     ],
     publicDir: false,
+    // Vite's lib mode does not replace `process.env.NODE_ENV`. Some deps
+    // (vuedraggable/sortablejs) reference it unguarded — define it explicitly.
+    define: {
+        'process.env.NODE_ENV': JSON.stringify('production'),
+    },
     build: {
         outDir: resolve(import.meta.dirname, 'dist/cdn'),
         emptyOutDir: true,
@@ -23,13 +28,17 @@ export default defineConfig({
         target: 'es2022',
         sourcemap: true,
         cssMinify: 'esbuild',
+        lib: {
+            entry: resolve(import.meta.dirname, 'src/index.ts'),
+            formats: ['es'],
+            fileName: () => 'editor.js',
+            cssFileName: 'editor',
+        },
         rolldownOptions: {
-            input: resolve(import.meta.dirname, 'src/index.ts'),
+            // CDN bundle is self-contained — don't externalize peerDeps.
+            external: [],
             output: {
-                format: 'es',
-                entryFileNames: 'editor.js',
                 chunkFileNames: 'chunks/[name]-[hash].js',
-                assetFileNames: 'editor.[ext]',
                 manualChunks: (id) => {
                     if (id.includes('@lucide/vue')) {
                         return 'icons';
