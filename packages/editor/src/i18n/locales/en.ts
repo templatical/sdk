@@ -48,6 +48,7 @@ export default {
 
   // Viewport toggle
   viewport: {
+    label: "Viewport",
     desktop: "Desktop",
     tablet: "Tablet",
     mobile: "Mobile",
@@ -740,6 +741,8 @@ export default {
   sidebarNav: {
     browseModules: "Browse saved modules",
     expandSidebar: "Expand block sidebar",
+    palette: "Block palette",
+    insertBlock: "Insert {block} block",
   },
 
   // Saved Modules (cloud)

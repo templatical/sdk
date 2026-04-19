@@ -29,7 +29,7 @@ const pillOffset = computed(() => {
 <template>
   <div
     role="radiogroup"
-    aria-label="Viewport"
+    :aria-label="t.viewport.label"
     class="tpl:relative tpl:grid tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1"
     :style="{
       gridTemplateColumns: `repeat(${viewports.length}, 1fr)`,

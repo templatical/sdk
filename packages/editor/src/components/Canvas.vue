@@ -18,6 +18,7 @@ import {
 } from "../keys";
 import draggable from "vuedraggable";
 import { resolveBlockComponent } from "../utils/blockComponentResolver";
+import { readableTextColor } from "../utils/readableTextColor";
 
 import BlockWrapper from "./blocks/BlockWrapper.vue";
 import SectionBlock from "./blocks/SectionBlock.vue";
@@ -153,14 +154,14 @@ function handleFetchData(
 <template>
   <div
     data-testid="canvas-wrapper"
-    class="tpl-canvas-wrapper tpl:rounded-lg tpl:transition-[width] tpl:duration-300"
-    style="transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1)"
+    class="tpl-canvas-wrapper tpl:rounded-lg"
     :style="{
       width: `${viewportWidth}px`,
       backgroundColor: content.settings.backgroundColor,
       boxShadow: darkMode ? 'none' : 'var(--tpl-shadow-xl)',
       filter: darkMode ? 'invert(1) hue-rotate(180deg)' : 'none',
-      transition: 'filter 300ms ease',
+      transition:
+        'width 300ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 300ms ease',
     }"
   >
     <div
@@ -198,9 +199,10 @@ function handleFetchData(
                 }"
               >
                 <span
-                  class="tpl:absolute tpl:-top-0.5 tpl:left-1/2 tpl:z-[5] tpl:flex tpl:-translate-x-1/2 tpl:-translate-y-full tpl:items-center tpl:gap-1 tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:text-white tpl:whitespace-nowrap"
+                  class="tpl:absolute tpl:-top-0.5 tpl:left-1/2 tpl:z-[5] tpl:flex tpl:-translate-x-1/2 tpl:-translate-y-full tpl:items-center tpl:gap-1 tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:whitespace-nowrap"
                   :style="{
                     backgroundColor: getBlockLock(block.id)!.color,
+                    color: readableTextColor(getBlockLock(block.id)!.color),
                   }"
                 >
                   <span

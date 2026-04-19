@@ -45,3 +45,50 @@ describe("Sidebar.vue block creation function", () => {
     expect(src).not.toContain("function cloneBlock");
   });
 });
+
+describe("Sidebar.vue keyboard accessibility", () => {
+  it("renders palette items as buttons with type=button", () => {
+    const itemSlot = src.slice(
+      src.indexOf("#item=\"{ element: blockType }\""),
+    );
+    expect(itemSlot).toContain("<button");
+    expect(itemSlot).toContain('type="button"');
+  });
+
+  it("palette items have localized aria-label via sidebarNav.insertBlock", () => {
+    expect(src).toContain(
+      'format(t.sidebarNav.insertBlock, { block: blockType.label })',
+    );
+  });
+
+  it("click and keydown on palette item insert the block", () => {
+    expect(src).toContain('@click="insertBlockFromItem(blockType)"');
+    expect(src).toContain('@keydown="handlePaletteKeydown($event, blockType)"');
+  });
+
+  it("keyboard handler activates on Enter and Space", () => {
+    expect(src).toContain('event.key === "Enter"');
+    expect(src).toContain('event.key === " "');
+  });
+
+  it("insert uses EDITOR_KEY addBlock + selectBlock", () => {
+    expect(src).toContain("EDITOR_KEY");
+    expect(src).toContain("editor.addBlock(block)");
+    expect(src).toContain("editor.selectBlock(block.id)");
+  });
+});
+
+describe("Sidebar.vue aria semantics", () => {
+  it("uses aria-label for the palette landmark instead of aria-expanded", () => {
+    expect(src).toContain(':aria-label="t.sidebarNav.palette"');
+    expect(src).not.toContain(':aria-expanded="isExpanded"');
+  });
+
+  it("drops the misleading expandSidebar label on the aside", () => {
+    // aside landmark should describe what it is, not what happens on hover
+    const asideOpen = src.indexOf("<aside");
+    const asideClose = src.indexOf(">", asideOpen);
+    const asideTag = src.slice(asideOpen, asideClose);
+    expect(asideTag).not.toContain("expandSidebar");
+  });
+});

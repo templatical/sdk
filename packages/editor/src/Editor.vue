@@ -133,8 +133,8 @@ defineExpose({
 
     <!-- Canvas area — absolute, fills remaining space -->
     <div
-      class="tpl-body tpl:absolute tpl:bottom-0 tpl:overflow-auto tpl:transition-all tpl:duration-300 tpl:bg-[var(--tpl-canvas-bg)]"
-      style="transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1)"
+      class="tpl-body tpl:absolute tpl:bottom-0 tpl:overflow-auto tpl:bg-[var(--tpl-canvas-bg)]"
+      style="transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1)"
       :class="[
         editor.state.previewMode
           ? 'tpl:left-0 tpl:right-0'

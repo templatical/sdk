@@ -50,6 +50,7 @@ export default {
 
   // Viewport toggle
   viewport: {
+    label: "Ansichtsgröße",
     desktop: "Desktop",
     tablet: "Tablet",
     mobile: "Mobil",
@@ -750,6 +751,8 @@ export default {
   sidebarNav: {
     browseModules: "Gespeicherte Module durchsuchen",
     expandSidebar: "Block-Seitenleiste erweitern",
+    palette: "Blockpalette",
+    insertBlock: "{block}-Block einfügen",
   },
 
   // Gespeicherte Module (cloud)

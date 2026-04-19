@@ -177,13 +177,13 @@ function handleConditionToggle(): void {
       class="tpl:absolute tpl:-right-1 tpl:-top-1 tpl:z-[5] tpl:translate-x-full"
     >
       <button
-        class="tpl-comment-indicator tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-0.5 tpl:rounded-full tpl:border-none tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary)]"
+        class="tpl-comment-indicator tpl:flex tpl:min-h-6 tpl:min-w-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-0.5 tpl:rounded-full tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary)]"
         :aria-label="
           format(t.blockActions.comments, { count: String(blockCommentCount) })
         "
         @click.stop="caps.comments?.openForBlock(block.id)"
       >
-        <MessageCircle :size="10" :stroke-width="2.5" />
+        <MessageCircle :size="12" :stroke-width="2.5" />
         {{ blockCommentCount }}
       </button>
     </div>
