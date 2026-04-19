@@ -48,9 +48,7 @@ function relativeLuminance([r, g, b]: [number, number, number]): number {
       ? normalized / 12.92
       : Math.pow((normalized + 0.055) / 1.055, 2.4);
   };
-  return (
-    0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
-  );
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
 }
 
 function contrastRatio(l1: number, l2: number): number {

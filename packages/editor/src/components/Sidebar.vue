@@ -102,10 +102,7 @@ function insertBlockFromItem(item: BlockTypeItem): void {
   editor.selectBlock(block.id);
 }
 
-function handlePaletteKeydown(
-  event: KeyboardEvent,
-  item: BlockTypeItem,
-): void {
+function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
     insertBlockFromItem(item);
@@ -173,7 +170,9 @@ function handlePaletteKeydown(
         <button
           type="button"
           :data-palette-type="blockType.type"
-          :aria-label="format(t.sidebarNav.insertBlock, { block: blockType.label })"
+          :aria-label="
+            format(t.sidebarNav.insertBlock, { block: blockType.label })
+          "
           class="tpl:flex tpl:h-10 tpl:w-full tpl:cursor-grab tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)] active:tpl:cursor-grabbing"
           :style="{
             justifyContent: isExpanded ? 'flex-start' : 'center',
