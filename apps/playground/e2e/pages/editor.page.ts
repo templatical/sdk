@@ -292,11 +292,28 @@ export class EditorPage {
         : name === "Tablet"
           ? SELECTORS.viewportTablet
           : SELECTORS.viewportMobile;
-    const widthBefore = await this.getCanvasWrapperWidth();
+    // Arm a transitionend listener before the click so we catch the exact
+    // settled frame. Canvas.vue animates `width` with a 300ms spring-bounce
+    // curve — polling for "width changed" fires mid-flight and returns an
+    // overshoot value. Fallback timeout covers the same-viewport no-op case
+    // where no transition runs.
+    const settled = this.page.evaluate((testId) => {
+      return new Promise<void>((resolve) => {
+        const el = document.querySelector(`[data-testid="${testId}"]`);
+        if (!el) return resolve();
+        const done = () => {
+          el.removeEventListener("transitionend", handler);
+          resolve();
+        };
+        const handler = (e: Event) => {
+          if ((e as TransitionEvent).propertyName === "width") done();
+        };
+        el.addEventListener("transitionend", handler);
+        setTimeout(done, 600);
+      });
+    }, "canvas-wrapper");
     await this.page.locator(selector).click();
-    await expect
-      .poll(() => this.getCanvasWrapperWidth(), { timeout: 2000 })
-      .not.toBe(widthBefore);
+    await settled;
   }
 
   async toggleDarkMode(): Promise<void> {
