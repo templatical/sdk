@@ -10,12 +10,13 @@ import {
   MessageCircle,
   Trash2,
 } from "@lucide/vue";
-import { computed, inject } from "vue";
+import { computed, inject, nextTick, ref } from "vue";
 import { getBlockWrapperStyle } from "../../utils/blockComponentResolver";
 import {
   BLOCK_ACTIONS_KEY,
   CONDITION_PREVIEW_KEY,
   CAPABILITIES_KEY,
+  KEYBOARD_REORDER_KEY,
 } from "../../keys";
 
 const props = defineProps<{
@@ -30,6 +31,67 @@ const emit = defineEmits<{
 }>();
 
 const { t, format } = useI18n();
+
+const keyboardReorder = inject(KEYBOARD_REORDER_KEY, null);
+const dragButtonRef = ref<HTMLButtonElement | null>(null);
+
+const isLifted = computed(
+  () => keyboardReorder?.liftedBlockId.value === props.block.id,
+);
+
+const dragAriaLabel = computed(() =>
+  isLifted.value
+    ? format(t.blockActions.dragLifted, {
+        block: props.block.type,
+      })
+    : t.blockActions.drag,
+);
+
+async function refocusDragButton(): Promise<void> {
+  await nextTick();
+  dragButtonRef.value?.focus();
+}
+
+function handleDragKeydown(event: KeyboardEvent): void {
+  if (!keyboardReorder) return;
+
+  if (event.key === " " || event.key === "Enter") {
+    event.preventDefault();
+    event.stopPropagation();
+    if (isLifted.value) {
+      keyboardReorder.drop(props.block.id);
+    } else {
+      keyboardReorder.lift(props.block.id);
+    }
+    return;
+  }
+
+  if (!isLifted.value) return;
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    event.stopPropagation();
+    keyboardReorder.cancel();
+    refocusDragButton();
+    return;
+  }
+
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    event.stopPropagation();
+    keyboardReorder.moveUp(props.block.id);
+    refocusDragButton();
+    return;
+  }
+
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    event.stopPropagation();
+    keyboardReorder.moveDown(props.block.id);
+    refocusDragButton();
+  }
+}
+
 
 const isHiddenOnViewport = computed(() => {
   if (!props.viewport || !props.block.visibility) {
@@ -96,6 +158,7 @@ function handleConditionToggle(): void {
     :class="{
       'tpl-block--selected': isSelected,
       'tpl-block--idle': !isSelected,
+      'tpl-block--lifted': isLifted,
     }"
     :style="wrapperStyle"
     :data-block-id="block.id"
@@ -111,9 +174,13 @@ function handleConditionToggle(): void {
       class="tpl-block-actions tpl-fade-in tpl:absolute tpl:-right-2 tpl:top-1/2 tpl:z-10 tpl:flex tpl:-translate-y-1/2 tpl:translate-x-full tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-bg-elevated)] tpl:shadow-[var(--tpl-shadow-md)] tpl:border tpl:border-[var(--tpl-border)]"
     >
       <button
+        ref="dragButtonRef"
         class="tpl-block-btn tpl-block-action-btn tpl:flex tpl:size-7 tpl:cursor-grab tpl:items-center tpl:justify-center tpl:rounded-sm tpl:border-none tpl:transition-colors tpl:duration-150 tpl:active:cursor-grabbing"
-        :aria-label="t.blockActions.drag"
+        :aria-label="dragAriaLabel"
+        :aria-pressed="isLifted"
+        aria-keyshortcuts="Space Enter ArrowUp ArrowDown Escape"
         :title="t.blockActions.drag"
+        @keydown="handleDragKeydown"
       >
         <GripVertical :size="14" :stroke-width="1.5" />
       </button>

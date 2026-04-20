@@ -1175,6 +1175,17 @@ defineExpose({
       </div>
     </footer>
 
+    <!-- Keyboard reorder announcement region (visually hidden, screen-reader live) -->
+    <div
+      class="tpl-sr-only"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      :aria-label="core.t.landmarks.reorderAnnouncements"
+    >
+      {{ core.keyboardReorder.announcement.value }}
+    </div>
+
     <!-- Right sidebar — persisted with v-show -->
     <RightSidebar
       v-show="!editor.state.previewMode"

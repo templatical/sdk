@@ -154,6 +154,8 @@ function handleFetchData(
 <template>
   <div
     data-testid="canvas-wrapper"
+    role="region"
+    :aria-label="t.landmarks.canvas"
     class="tpl-canvas-wrapper tpl:rounded-lg"
     :style="{
       width: `${viewportWidth}px`,

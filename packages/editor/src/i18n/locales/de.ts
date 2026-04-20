@@ -133,17 +133,24 @@ export default {
     highlightColor: "Hervorhebungsfarbe",
     lineHeight: "Zeilenhöhe",
     letterSpacing: "Zeichenabstand",
+    emojiItemLabel: "Emoji {emoji} einfügen",
+    closeEmojiPicker: "Emoji-Auswahl schließen",
   },
 
   // Block actions (BlockWrapper)
   blockActions: {
-    drag: "Zum Sortieren ziehen",
+    drag: "Zum Sortieren ziehen oder Leertaste drücken, um mit der Tastatur zu verschieben",
+    dragLifted: "{block} wird verschoben. Pfeiltasten zum Positionieren, Leer- oder Eingabetaste zum Ablegen, Esc zum Abbrechen.",
     duplicate: "Block duplizieren",
     delete: "Block löschen",
     hiddenOnViewport: "Ausgeblendet auf {viewport}",
     saveAsModule: "Als Modul speichern",
     conditionToggle: "Anzeigebedingung umschalten",
     comments: "Kommentare ({count})",
+    lifted: "{block} angehoben. Position {position} von {total}.",
+    moved: "{block} auf Position {position} von {total} verschoben.",
+    dropped: "{block} auf Position {position} von {total} abgelegt.",
+    cancelled: "Verschieben abgebrochen. {block} auf Position {position} zurückgesetzt.",
   },
 
   // Toolbar - Section
@@ -753,6 +760,14 @@ export default {
     expandSidebar: "Block-Seitenleiste erweitern",
     palette: "Blockpalette",
     insertBlock: "{block}-Block einfügen",
+  },
+
+  // Landmark-Bezeichnungen für Hilfstechnologien
+  landmarks: {
+    canvas: "E-Mail-Leinwand",
+    blockToolbar: "Blockeigenschaften",
+    rightSidebar: "Blockeigenschaften und Vorlageneinstellungen",
+    reorderAnnouncements: "Block-Neuanordnungsmeldungen",
   },
 
   // Gespeicherte Module (cloud)

@@ -66,10 +66,12 @@ const { t } = useI18n();
         <div class="tpl:p-5">
           <div class="tpl:mb-4 tpl:last:mb-0">
             <label
+              for="tpl-link-dialog-url"
               class="tpl:mb-1.5 tpl:block tpl:text-xs tpl:font-medium tpl:tracking-wide tpl:text-[var(--tpl-text-muted)] tpl:uppercase"
               >{{ t.linkDialog.urlLabel }}</label
             >
             <input
+              id="tpl-link-dialog-url"
               v-model="linkUrl"
               type="url"
               class="tpl:w-full tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2.5 tpl:text-sm tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:outline-none tpl:placeholder:text-[var(--tpl-text-dim)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
