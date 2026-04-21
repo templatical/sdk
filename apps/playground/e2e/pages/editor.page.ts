@@ -102,7 +102,7 @@ export class EditorPage {
 
   async duplicateSelectedBlock(): Promise<void> {
     const actions = this.page.locator(SELECTORS.blockActions);
-    await actions.locator(".tpl-block-action-btn").nth(1).click();
+    await actions.getByRole("button", { name: /duplicate/i }).click();
   }
 
   async deleteSelectedBlock(): Promise<void> {

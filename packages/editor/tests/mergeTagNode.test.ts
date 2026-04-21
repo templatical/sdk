@@ -134,26 +134,6 @@ describe('MergeTagNode extension config', () => {
   });
 });
 
-describe('MergeTagNode source structure', () => {
-  const { readFileSync } = require('node:fs');
-  const { resolve } = require('node:path');
-  const src = readFileSync(
-    resolve(__dirname, '../src/extensions/MergeTagNode.ts'),
-    'utf-8',
-  );
-
-  it('imports isNodeSelected from shared module', () => {
-    expect(src).toContain('import { isNodeSelected } from "./isNodeSelected"');
-    expect(src).not.toContain('const isMergeTagSelected');
-  });
-
-  it('uses renderVueNodeView wrapper instead of direct VueNodeViewRenderer cast', () => {
-    expect(src).toContain('import { renderVueNodeView } from "./renderVueNodeView"');
-    expect(src).toContain('renderVueNodeView(MergeTagNodeView)');
-    expect(src).not.toContain('as any');
-  });
-});
-
 describe('MergeTagNode addAttributes parseHTML', () => {
   const attrs = (MergeTagNode.config.addAttributes as Function).call({});
 

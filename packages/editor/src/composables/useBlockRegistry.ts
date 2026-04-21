@@ -7,6 +7,7 @@ import type {
 } from "@templatical/types";
 import { createCustomBlock } from "@templatical/types";
 import { type Component, shallowRef, triggerRef } from "vue";
+import { logger } from "../utils/logger";
 
 export interface SidebarItem {
   type: string;
@@ -127,8 +128,8 @@ export function useBlockRegistry(): UseBlockRegistryReturn {
         block.fieldValues,
       );
     } catch (error) {
-      console.error(
-        `[BlockRegistry] Failed to render custom block "${block.customType}":`,
+      logger.error(
+        `Failed to render custom block "${block.customType}":`,
         error,
       );
       return renderErrorHtml(`Render error: ${block.customType}`);

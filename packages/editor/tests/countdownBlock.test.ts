@@ -1,105 +1,135 @@
-import './dom-stubs';
+// @vitest-environment happy-dom
+import { describe, expect, it } from 'vitest';
+import { createCountdownBlock } from '@templatical/types';
+import CountdownBlock from '../src/components/blocks/CountdownBlock.vue';
+import { mountEditor } from './helpers/mount';
 
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+const FUTURE_DATE = new Date(Date.now() + 2 * 86_400_000 + 3 * 3_600_000).toISOString(); // ~2d 3h ahead
+const PAST_DATE = new Date(Date.now() - 60_000).toISOString();
 
-const componentSource = readFileSync(
-  resolve(__dirname, '../src/components/blocks/CountdownBlock.vue'),
-  'utf-8',
-);
+function mount(overrides: Parameters<typeof createCountdownBlock>[0] = {}) {
+  const block = createCountdownBlock({
+    labelDays: 'days',
+    labelHours: 'hrs',
+    labelMinutes: 'min',
+    labelSeconds: 'sec',
+    ...overrides,
+  });
+  return mountEditor(CountdownBlock, {
+    props: { block, viewport: 'desktop' as const },
+  });
+}
 
-describe('CountdownBlock.vue structure', () => {
-  it('accepts block and viewport props', () => {
-    expect(componentSource).toContain('block: CountdownBlockType');
-    expect(componentSource).toContain('viewport: ViewportSize');
+describe('CountdownBlock', () => {
+  it('shows setDate prompt when no targetDate is set', () => {
+    const wrapper = mount({ targetDate: '' });
+    expect(wrapper.text()).toContain('countdown.setDate');
   });
 
-  it('imports CountdownBlock type from @templatical/types', () => {
-    expect(componentSource).toContain('CountdownBlock as CountdownBlockType');
+  it('renders four zero-padded segments for a future date with all units enabled', () => {
+    const wrapper = mount({ targetDate: FUTURE_DATE });
+    const digits = wrapper.findAll('.tpl\\:text-center > div:first-child');
+    expect(digits).toHaveLength(4);
+    for (const d of digits) {
+      expect(d.text()).toMatch(/^\d{2}$/);
+    }
   });
 
-  it('shows empty state when no targetDate is set', () => {
-    expect(componentSource).toContain('!block.targetDate');
-    expect(componentSource).toContain('t.countdown.setDate');
+  it('days segment reflects remaining full days to targetDate', () => {
+    const wrapper = mount({ targetDate: FUTURE_DATE });
+    const firstDigit = wrapper.find('.tpl\\:text-center > div:first-child');
+    expect(firstDigit.text()).toBe('02');
   });
 
-  it('shows expired hidden state', () => {
-    expect(componentSource).toContain('isExpired && block.hideOnExpiry');
-    expect(componentSource).toContain('t.countdown.hidden');
+  it('omits disabled units from rendered segments', () => {
+    const wrapper = mount({
+      targetDate: FUTURE_DATE,
+      showDays: false,
+      showSeconds: false,
+    });
+    const segments = wrapper.findAll('.tpl\\:gap-2 .tpl\\:text-center');
+    expect(segments).toHaveLength(2); // hours + minutes only
   });
 
-  it('shows expired message state', () => {
-    expect(componentSource).toContain('isExpired');
-    expect(componentSource).toContain('block.expiredMessage');
+  it('renders separators between (but not before first) segments', () => {
+    const wrapper = mount({ targetDate: FUTURE_DATE, separator: '|' });
+    const html = wrapper.html();
+    // 4 segments → 3 separators
+    const matches = html.match(/\|/g) ?? [];
+    expect(matches.length).toBe(3);
   });
 
-  it('renders segments with digits and labels', () => {
-    expect(componentSource).toContain('segment.value');
-    expect(componentSource).toContain('segment.label');
+  it('shows expiredMessage once targetDate has passed', () => {
+    const wrapper = mount({
+      targetDate: PAST_DATE,
+      expiredMessage: 'Campaign closed',
+      hideOnExpiry: false,
+    });
+    expect(wrapper.text()).toContain('Campaign closed');
+    // No digit segments rendered in expired-with-message branch.
+    expect(wrapper.findAll('.tpl\\:gap-2 .tpl\\:text-center')).toHaveLength(0);
   });
 
-  it('renders separator between segments', () => {
-    expect(componentSource).toContain('block.separator');
+  it('shows hidden placeholder when expired and hideOnExpiry is true', () => {
+    const wrapper = mount({
+      targetDate: PAST_DATE,
+      hideOnExpiry: true,
+      expiredMessage: 'Should not show',
+    });
+    expect(wrapper.text()).not.toContain('Should not show');
+    expect(wrapper.text()).toContain('countdown.hidden');
   });
 
-  it('applies digit styling from block properties', () => {
-    expect(componentSource).toContain('block.digitFontSize');
-    expect(componentSource).toContain('block.digitColor');
+  it('applies digitColor and digitFontSize to digit elements', () => {
+    const wrapper = mount({
+      targetDate: FUTURE_DATE,
+      digitColor: '#ff0000',
+      digitFontSize: 48,
+    });
+    const digit = wrapper.find('.tpl\\:text-center > div:first-child');
+    const style = digit.attributes('style') ?? '';
+    expect(style).toContain('color: #ff0000');
+    expect(style).toContain('font-size: 48px');
   });
 
-  it('applies label styling from block properties', () => {
-    expect(componentSource).toContain('block.labelFontSize');
-    expect(componentSource).toContain('block.labelColor');
+  it('applies labelColor and labelFontSize to label elements', () => {
+    const wrapper = mount({
+      targetDate: FUTURE_DATE,
+      labelColor: '#00ff00',
+      labelFontSize: 10,
+    });
+    const label = wrapper.find('.tpl\\:text-center > div:last-child');
+    const style = label.attributes('style') ?? '';
+    expect(style).toContain('color: #00ff00');
+    expect(style).toContain('font-size: 10px');
   });
 
-  it('applies background color from block properties', () => {
-    expect(componentSource).toContain('block.backgroundColor');
+  it('applies backgroundColor to the container', () => {
+    const wrapper = mount({
+      targetDate: FUTURE_DATE,
+      backgroundColor: '#123456',
+    });
+    const container = wrapper.find('.tpl\\:flex.tpl\\:items-center.tpl\\:justify-center.tpl\\:gap-2');
+    expect(container.attributes('style')).toContain('background-color: #123456');
   });
 
-  it('respects showDays toggle', () => {
-    expect(componentSource).toContain('block.showDays');
+  it('invalid targetDate renders zero-valued segments (targetTime null → zero remaining)', () => {
+    const wrapper = mount({ targetDate: 'not-a-date' });
+    const digits = wrapper.findAll('.tpl\\:text-center > div:first-child');
+    expect(digits.map((d) => d.text())).toEqual(['00', '00', '00', '00']);
   });
 
-  it('respects showHours toggle', () => {
-    expect(componentSource).toContain('block.showHours');
-  });
-
-  it('respects showMinutes toggle', () => {
-    expect(componentSource).toContain('block.showMinutes');
-  });
-
-  it('respects showSeconds toggle', () => {
-    expect(componentSource).toContain('block.showSeconds');
-  });
-
-  it('uses useI18n composable', () => {
-    expect(componentSource).toContain("useI18n()");
-  });
-
-  it('uses useIntervalFn for automatic interval cleanup', () => {
-    expect(componentSource).toContain('useIntervalFn');
-  });
-
-  it('computes remaining time from targetDate', () => {
-    expect(componentSource).toContain('targetTime');
-    expect(componentSource).toContain('remaining');
-    expect(componentSource).toContain('days:');
-    expect(componentSource).toContain('hours:');
-    expect(componentSource).toContain('minutes:');
-    expect(componentSource).toContain('seconds:');
-  });
-
-  it('pads digit values to 2 characters', () => {
-    expect(componentSource).toContain("padStart(2");
-  });
-
-  it('supports custom font family', () => {
-    expect(componentSource).toContain('block.fontFamily');
-  });
-
-  it('uses segment.label as v-for key instead of index', () => {
-    expect(componentSource).toContain(':key="segment.label"');
-    expect(componentSource).not.toMatch(/:key="index"/);
+  it('renders configured unit labels on each segment', () => {
+    const wrapper = mount({
+      targetDate: FUTURE_DATE,
+      labelDays: 'D',
+      labelHours: 'H',
+      labelMinutes: 'M',
+      labelSeconds: 'S',
+    });
+    const labels = wrapper
+      .findAll('.tpl\\:text-center > div:last-child')
+      .map((e) => e.text());
+    expect(labels).toEqual(['D', 'H', 'M', 'S']);
   });
 });

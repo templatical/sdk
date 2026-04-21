@@ -62,6 +62,8 @@ export const SELECTORS = {
   // Export
   exportMenu: '[role="menu"]',
   exportMenuItem: '[role="menuitem"]',
+  exportJsonItem: '[data-testid="export-json"]',
+  exportMjmlItem: '[data-testid="export-mjml"]',
 
   // JSON modal
   jsonModal: '[data-testid="json-modal"]',

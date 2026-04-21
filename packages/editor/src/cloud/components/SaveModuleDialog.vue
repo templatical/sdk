@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import TplModal from "./TplModal.vue";
 import { useI18n } from "../../composables";
-import { EDITOR_KEY, SAVED_MODULES_HEADLESS_KEY } from "../../keys";
+import {
+  EDITOR_KEY,
+  SAVED_MODULES_HEADLESS_KEY,
+  requireInject,
+} from "../../keys";
 import type { Block } from "@templatical/types";
 import { LoaderCircle } from "@lucide/vue";
-import { computed, inject, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -17,8 +21,11 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const editor = inject(EDITOR_KEY)!;
-const savedModules = inject(SAVED_MODULES_HEADLESS_KEY)!;
+const editor = requireInject(EDITOR_KEY, "SaveModuleDialog");
+const savedModules = requireInject(
+  SAVED_MODULES_HEADLESS_KEY,
+  "SaveModuleDialog",
+);
 
 const moduleName = ref("");
 const selectedBlockIds = ref<Set<string>>(new Set());

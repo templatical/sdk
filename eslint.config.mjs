@@ -61,6 +61,11 @@ export default tseslint.config(
       "vue/html-closing-bracket-spacing": "off",
       "vue/html-quotes": "off",
       "vue/multiline-html-element-content-newline": "off",
+
+      // Composable-return props (like `panelState`) contain mutable refs by
+      // design. Vue's lint rule can't distinguish that from replacing the
+      // prop itself, which it treats the same way. Disable the false positive.
+      "vue/no-mutating-props": "off",
     },
   },
 );

@@ -7,6 +7,7 @@ import {
   type ComputedRef,
   type Ref,
 } from "vue";
+import { logger } from "../utils/logger";
 
 export interface FontOption {
   value: string;
@@ -178,7 +179,7 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
 
         createdLinks.push(link);
       } catch (error) {
-        console.warn(`Failed to load custom font "${font.name}":`, error);
+        logger.warn(`Failed to load custom font "${font.name}":`, error);
       }
     });
 

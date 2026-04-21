@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import ColorPicker from "../ColorPicker.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
+import FieldRow from "./FieldRow.vue";
+import CheckboxItem from "./CheckboxItem.vue";
+import NumberWithSuffix from "./NumberWithSuffix.vue";
 import { useI18n } from "../../composables/useI18n";
-import {
-  inputClass,
-  inputGroupInputClass,
-  inputSuffixClass,
-  labelClass,
-} from "../../constants/styleConstants";
+import { inputClass } from "../../constants/styleConstants";
 import type { CountdownBlock } from "@templatical/types";
+import { computed } from "vue";
 
 defineProps<{
   block: CountdownBlock;
@@ -21,15 +20,49 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-function updateField(field: string, value: unknown): void {
+const TIMEZONES = [
+  "UTC",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Europe/London",
+  "Europe/Berlin",
+  "Europe/Paris",
+  "Europe/Moscow",
+  "Asia/Dubai",
+  "Asia/Kolkata",
+  "Asia/Shanghai",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+  "Pacific/Auckland",
+];
+
+const SEPARATORS = [
+  { value: ":", label: ":" },
+  { value: "-", label: "-" },
+  { value: " ", label: "␣" },
+];
+
+type UnitKey = "Days" | "Hours" | "Minutes" | "Seconds";
+const UNITS: UnitKey[] = ["Days", "Hours", "Minutes", "Seconds"];
+
+const unitItems = computed(() =>
+  UNITS.map((unit) => ({
+    unit,
+    showKey: `show${unit}` as const,
+    labelKey: `label${unit}` as const,
+    translationKey: unit.toLowerCase() as "days" | "hours" | "minutes" | "seconds",
+  })),
+);
+
+function updateField(field: keyof CountdownBlock, value: unknown): void {
   emit("update", { [field]: value } as Partial<CountdownBlock>);
 }
 </script>
 
 <template>
-  <!-- Target Date -->
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.countdown.targetDate }}</label>
+  <FieldRow :label="t.countdown.targetDate">
     <input
       type="datetime-local"
       :class="inputClass"
@@ -38,11 +71,9 @@ function updateField(field: string, value: unknown): void {
         updateField('targetDate', ($event.target as HTMLInputElement).value)
       "
     />
-  </div>
+  </FieldRow>
 
-  <!-- Timezone -->
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.countdown.timezone }}</label>
+  <FieldRow :label="t.countdown.timezone">
     <select
       :class="inputClass"
       :value="block.timezone"
@@ -50,109 +81,31 @@ function updateField(field: string, value: unknown): void {
         updateField('timezone', ($event.target as HTMLSelectElement).value)
       "
     >
-      <option value="UTC">UTC</option>
-      <option value="America/New_York">America/New_York</option>
-      <option value="America/Chicago">America/Chicago</option>
-      <option value="America/Denver">America/Denver</option>
-      <option value="America/Los_Angeles">America/Los_Angeles</option>
-      <option value="Europe/London">Europe/London</option>
-      <option value="Europe/Berlin">Europe/Berlin</option>
-      <option value="Europe/Paris">Europe/Paris</option>
-      <option value="Europe/Moscow">Europe/Moscow</option>
-      <option value="Asia/Dubai">Asia/Dubai</option>
-      <option value="Asia/Kolkata">Asia/Kolkata</option>
-      <option value="Asia/Shanghai">Asia/Shanghai</option>
-      <option value="Asia/Tokyo">Asia/Tokyo</option>
-      <option value="Australia/Sydney">Australia/Sydney</option>
-      <option value="Pacific/Auckland">Pacific/Auckland</option>
+      <option v-for="tz in TIMEZONES" :key="tz" :value="tz">{{ tz }}</option>
     </select>
-  </div>
+  </FieldRow>
 
-  <!-- Display Toggles -->
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.countdown.display }}</label>
+  <FieldRow :label="t.countdown.display">
     <div class="tpl:grid tpl:grid-cols-2 tpl:gap-2">
-      <label
-        class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-[12px] tpl:text-[var(--tpl-text)]"
-      >
-        <input
-          type="checkbox"
-          class="tpl:size-3.5 tpl:cursor-pointer tpl:accent-[var(--tpl-primary)]"
-          :checked="block.showDays"
-          @change="
-            updateField('showDays', ($event.target as HTMLInputElement).checked)
-          "
-        />
-        {{ t.countdown.days }}
-      </label>
-      <label
-        class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-[12px] tpl:text-[var(--tpl-text)]"
-      >
-        <input
-          type="checkbox"
-          class="tpl:size-3.5 tpl:cursor-pointer tpl:accent-[var(--tpl-primary)]"
-          :checked="block.showHours"
-          @change="
-            updateField(
-              'showHours',
-              ($event.target as HTMLInputElement).checked,
-            )
-          "
-        />
-        {{ t.countdown.hours }}
-      </label>
-      <label
-        class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-[12px] tpl:text-[var(--tpl-text)]"
-      >
-        <input
-          type="checkbox"
-          class="tpl:size-3.5 tpl:cursor-pointer tpl:accent-[var(--tpl-primary)]"
-          :checked="block.showMinutes"
-          @change="
-            updateField(
-              'showMinutes',
-              ($event.target as HTMLInputElement).checked,
-            )
-          "
-        />
-        {{ t.countdown.minutes }}
-      </label>
-      <label
-        class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-[12px] tpl:text-[var(--tpl-text)]"
-      >
-        <input
-          type="checkbox"
-          class="tpl:size-3.5 tpl:cursor-pointer tpl:accent-[var(--tpl-primary)]"
-          :checked="block.showSeconds"
-          @change="
-            updateField(
-              'showSeconds',
-              ($event.target as HTMLInputElement).checked,
-            )
-          "
-        />
-        {{ t.countdown.seconds }}
-      </label>
+      <CheckboxItem
+        v-for="item in unitItems"
+        :key="item.unit"
+        :model-value="block[item.showKey]"
+        :label="t.countdown[item.translationKey]"
+        @update:model-value="updateField(item.showKey, $event)"
+      />
     </div>
-  </div>
+  </FieldRow>
 
-  <!-- Separator -->
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.countdown.separator }}</label>
+  <FieldRow :label="t.countdown.separator">
     <SlidingPillSelect
-      :options="[
-        { value: ':', label: ':' },
-        { value: '-', label: '-' },
-        { value: ' ', label: '␣' },
-      ]"
+      :options="SEPARATORS"
       :model-value="block.separator"
       @update:model-value="updateField('separator', $event)"
     />
-  </div>
+  </FieldRow>
 
-  <!-- Font Family -->
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.countdown.fontFamily }}</label>
+  <FieldRow :label="t.countdown.fontFamily">
     <select
       :class="inputClass"
       :value="block.fontFamily || ''"
@@ -172,123 +125,68 @@ function updateField(field: string, value: unknown): void {
         {{ font.label }}
       </option>
     </select>
+  </FieldRow>
+
+  <div class="tpl:grid tpl:grid-cols-2 tpl:gap-3">
+    <FieldRow :label="t.countdown.digitFontSize">
+      <NumberWithSuffix
+        :model-value="block.digitFontSize"
+        :min="12"
+        :max="72"
+        suffix="px"
+        @update:model-value="updateField('digitFontSize', $event)"
+      />
+    </FieldRow>
+    <FieldRow :label="t.countdown.labelFontSize">
+      <NumberWithSuffix
+        :model-value="block.labelFontSize"
+        :min="8"
+        :max="24"
+        suffix="px"
+        @update:model-value="updateField('labelFontSize', $event)"
+      />
+    </FieldRow>
   </div>
 
-  <!-- Digit Size / Label Size -->
   <div class="tpl:grid tpl:grid-cols-2 tpl:gap-3">
-    <div class="tpl:mb-3.5">
-      <label :class="labelClass">{{ t.countdown.digitFontSize }}</label>
-      <div class="tpl:flex tpl:items-stretch">
-        <input
-          type="number"
-          :class="inputGroupInputClass"
-          :value="block.digitFontSize"
-          min="12"
-          max="72"
-          @input="
-            updateField(
-              'digitFontSize',
-              Number(($event.target as HTMLInputElement).value),
-            )
-          "
-        />
-        <span :class="inputSuffixClass">px</span>
-      </div>
-    </div>
-    <div class="tpl:mb-3.5">
-      <label :class="labelClass">{{ t.countdown.labelFontSize }}</label>
-      <div class="tpl:flex tpl:items-stretch">
-        <input
-          type="number"
-          :class="inputGroupInputClass"
-          :value="block.labelFontSize"
-          min="8"
-          max="24"
-          @input="
-            updateField(
-              'labelFontSize',
-              Number(($event.target as HTMLInputElement).value),
-            )
-          "
-        />
-        <span :class="inputSuffixClass">px</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Digit Color / Label Color -->
-  <div class="tpl:grid tpl:grid-cols-2 tpl:gap-3">
-    <div class="tpl:mb-3.5">
-      <label :class="labelClass">{{ t.countdown.digitColor }}</label>
+    <FieldRow :label="t.countdown.digitColor">
       <ColorPicker
         :model-value="block.digitColor"
         @update:model-value="updateField('digitColor', $event)"
       />
-    </div>
-    <div class="tpl:mb-3.5">
-      <label :class="labelClass">{{ t.countdown.labelColor }}</label>
+    </FieldRow>
+    <FieldRow :label="t.countdown.labelColor">
       <ColorPicker
         :model-value="block.labelColor"
         @update:model-value="updateField('labelColor', $event)"
       />
-    </div>
+    </FieldRow>
   </div>
 
-  <!-- Background -->
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.countdown.background }}</label>
+  <FieldRow :label="t.countdown.background">
     <ColorPicker
       :model-value="block.backgroundColor"
       @update:model-value="updateField('backgroundColor', $event)"
     />
-  </div>
+  </FieldRow>
 
-  <!-- Labels -->
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.countdown.labels }}</label>
+  <FieldRow :label="t.countdown.labels">
     <div class="tpl:grid tpl:grid-cols-2 tpl:gap-2">
       <input
+        v-for="item in unitItems"
+        :key="item.unit"
         type="text"
         :class="inputClass"
-        :value="block.labelDays"
-        :placeholder="t.countdown.days"
+        :value="block[item.labelKey]"
+        :placeholder="t.countdown[item.translationKey]"
         @input="
-          updateField('labelDays', ($event.target as HTMLInputElement).value)
-        "
-      />
-      <input
-        type="text"
-        :class="inputClass"
-        :value="block.labelHours"
-        :placeholder="t.countdown.hours"
-        @input="
-          updateField('labelHours', ($event.target as HTMLInputElement).value)
-        "
-      />
-      <input
-        type="text"
-        :class="inputClass"
-        :value="block.labelMinutes"
-        :placeholder="t.countdown.minutes"
-        @input="
-          updateField('labelMinutes', ($event.target as HTMLInputElement).value)
-        "
-      />
-      <input
-        type="text"
-        :class="inputClass"
-        :value="block.labelSeconds"
-        :placeholder="t.countdown.seconds"
-        @input="
-          updateField('labelSeconds', ($event.target as HTMLInputElement).value)
+          updateField(item.labelKey, ($event.target as HTMLInputElement).value)
         "
       />
     </div>
-  </div>
+  </FieldRow>
 
-  <!-- Expiry -->
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.countdown.expiry }}</label>
+  <FieldRow :label="t.countdown.expiry">
     <input
       type="text"
       :class="inputClass"
@@ -298,10 +196,9 @@ function updateField(field: string, value: unknown): void {
         updateField('expiredMessage', ($event.target as HTMLInputElement).value)
       "
     />
-  </div>
+  </FieldRow>
 
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.countdown.expiredImageUrl }}</label>
+  <FieldRow :label="t.countdown.expiredImageUrl">
     <input
       type="url"
       :class="inputClass"
@@ -314,19 +211,12 @@ function updateField(field: string, value: unknown): void {
         )
       "
     />
-  </div>
+  </FieldRow>
 
-  <label
-    class="tpl:mb-3.5 tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-[12px] tpl:text-[var(--tpl-text)]"
-  >
-    <input
-      type="checkbox"
-      class="tpl:size-3.5 tpl:cursor-pointer tpl:accent-[var(--tpl-primary)]"
-      :checked="block.hideOnExpiry"
-      @change="
-        updateField('hideOnExpiry', ($event.target as HTMLInputElement).checked)
-      "
-    />
-    {{ t.countdown.hideOnExpiry }}
-  </label>
+  <CheckboxItem
+    :model-value="block.hideOnExpiry"
+    :label="t.countdown.hideOnExpiry"
+    class="tpl:mb-3.5"
+    @update:model-value="updateField('hideOnExpiry', $event)"
+  />
 </template>

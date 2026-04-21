@@ -83,7 +83,7 @@ test.describe("Text content editing", () => {
     await editorPage.openExportMenu();
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.locator(SELECTORS.exportMenuItem).first().click(),
+      page.locator(SELECTORS.exportJsonItem).click(),
     ]);
     const content = await (await download.createReadStream()).toArray();
     const json = Buffer.concat(content).toString("utf-8");

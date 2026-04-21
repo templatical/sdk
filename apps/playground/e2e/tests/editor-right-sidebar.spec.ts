@@ -63,9 +63,10 @@ test.describe("Editor right sidebar", () => {
   }) => {
     await editorPage.selectBlock(0);
     const panel = page.locator(SELECTORS.rightPanelContent);
-    // Header should have action buttons (duplicate + delete)
-    const headerButtons = panel.locator("button").first();
-    await expect(headerButtons).toBeVisible();
+    await expect(
+      panel.getByRole("button", { name: /duplicate/i }),
+    ).toBeVisible();
+    await expect(panel.getByRole("button", { name: /delete/i })).toBeVisible();
   });
 
   test("settings tab switches panel", async ({ editorReady, page }) => {

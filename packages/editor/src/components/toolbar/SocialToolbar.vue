@@ -7,6 +7,8 @@ import {
   inputGroupInputClass,
   inputSuffixClass,
   labelClass,
+  removeItemBtnClass,
+  addItemBtnClass,
 } from "../../constants/styleConstants";
 import {
   socialIcons,
@@ -92,7 +94,7 @@ function removeSocialIcon(iconId: string): void {
             </option>
           </select>
           <button
-            class="tpl:flex tpl:size-8 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-150 tpl:hover:border-[var(--tpl-danger)] tpl:hover:bg-[var(--tpl-danger-light)] tpl:hover:text-[var(--tpl-danger)]"
+            :class="removeItemBtnClass"
             :title="t.social.removeIcon"
             @click="removeSocialIcon(icon.id)"
           >
@@ -106,10 +108,7 @@ function removeSocialIcon(iconId: string): void {
           @update:model-value="updateSocialIcon(icon.id, 'url', $event)"
         />
       </div>
-      <button
-        class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:border-dashed tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-150 tpl:hover:border-[var(--tpl-primary)] tpl:hover:text-[var(--tpl-primary)]"
-        @click="addSocialIcon"
-      >
+      <button :class="addItemBtnClass" @click="addSocialIcon">
         <Plus :size="14" :stroke-width="2" />
         {{ t.social.addIcon }}
       </button>

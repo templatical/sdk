@@ -120,7 +120,7 @@ function handleFetchData(
           :group="{
             name: 'blocks',
             pull: true,
-            put: (to: any, from: any, el: HTMLElement) =>
+            put: (_to: unknown, _from: unknown, el: HTMLElement) =>
               el.dataset.blockType !== 'section',
           }"
           item-key="id"
@@ -150,6 +150,7 @@ function handleFetchData(
         </draggable>
         <div
           v-if="getColumnBlocks(colIndex).length === 0"
+          data-testid="section-drop-hint"
           class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:flex tpl:items-center tpl:justify-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
         >
           <span>{{ t.section.dropHere }}</span>

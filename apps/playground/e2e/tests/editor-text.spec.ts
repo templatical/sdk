@@ -34,12 +34,10 @@ test.describe("Editor text editing", () => {
     await editorPage.doubleClickBlock("paragraph");
     await page.keyboard.press("ControlOrMeta+a");
     const toolbar = page.locator(SELECTORS.textToolbar);
-    // Bold button has tpl-text-toolbar-btn class
-    const boldBtn = toolbar.locator(SELECTORS.textToolbarBtn).first();
+    const boldBtn = toolbar.getByRole("button", { name: /bold/i });
+    await expect(boldBtn).toBeVisible();
     await boldBtn.click();
-    await expect(
-      toolbar.locator(SELECTORS.textToolbarBtnActive).first(),
-    ).toBeVisible();
+    await expect(boldBtn).toHaveClass(/tpl-text-toolbar-btn--active/);
   });
 
   test("italic toggles on click", async ({
@@ -49,10 +47,8 @@ test.describe("Editor text editing", () => {
     await editorPage.doubleClickBlock("paragraph");
     await page.keyboard.press("ControlOrMeta+a");
     const toolbar = page.locator(SELECTORS.textToolbar);
-    const italicBtn = toolbar.locator(SELECTORS.textToolbarBtn).nth(1);
+    const italicBtn = toolbar.getByRole("button", { name: /italic/i });
     await italicBtn.click();
-    // The default alignment button also carries the active class, so assert
-    // on the italic button directly rather than total active count.
     await expect(italicBtn).toHaveClass(/tpl-text-toolbar-btn--active/);
   });
 

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables";
-import { AI_CONFIG_KEY } from "../../keys";
+import { AI_CONFIG_KEY, requireInject } from "../../keys";
 import type { AiConfig } from "@templatical/types";
 import { ImageUp, ShieldCheck, Sparkles } from "@lucide/vue";
-import { computed, inject } from "vue";
+import { computed } from "vue";
 
 export type AiFeature = "ai-chat" | "design-reference" | "scoring";
 
@@ -17,7 +17,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const aiConfig = inject(AI_CONFIG_KEY)!;
+const aiConfig = requireInject(AI_CONFIG_KEY, "AiFeatureMenu");
 
 const configKeyMap: Record<AiFeature, keyof AiConfig> = {
   "ai-chat": "chat",

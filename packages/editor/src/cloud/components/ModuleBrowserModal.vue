@@ -2,10 +2,14 @@
 import TplModal from "./TplModal.vue";
 import { useI18n } from "../../composables";
 import { blockTypeIcons } from "../../utils/blockTypeIcons";
-import { SAVED_MODULES_HEADLESS_KEY, EDITOR_KEY } from "../../keys";
+import {
+  SAVED_MODULES_HEADLESS_KEY,
+  EDITOR_KEY,
+  requireInject,
+} from "../../keys";
 import type { SavedModule } from "@templatical/types";
 import { Package, Search, Trash2, X } from "@lucide/vue";
-import { computed, defineAsyncComponent, inject, ref, watch } from "vue";
+import { computed, defineAsyncComponent, ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -21,8 +25,11 @@ const ModulePreviewCanvas = defineAsyncComponent(
 );
 
 const { t } = useI18n();
-const savedModules = inject(SAVED_MODULES_HEADLESS_KEY)!;
-const editor = inject(EDITOR_KEY)!;
+const savedModules = requireInject(
+  SAVED_MODULES_HEADLESS_KEY,
+  "ModuleBrowserModal",
+);
+const editor = requireInject(EDITOR_KEY, "ModuleBrowserModal");
 
 const searchQuery = ref("");
 const selectedModuleId = ref<string | null>(null);
