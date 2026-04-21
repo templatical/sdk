@@ -1,5 +1,15 @@
 # @templatical/playground
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [6f234f4]
+  - @templatical/editor@0.0.4
+  - @templatical/types@0.0.4
+  - @templatical/renderer@0.0.4
+  - @templatical/import-beefree@0.0.4
+
 ## 0.0.2
 
 ### Patch Changes
