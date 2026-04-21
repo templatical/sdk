@@ -1,5 +1,13 @@
 # @templatical/media-library
 
+## 0.0.4
+
+### Patch Changes
+
+- 6f234f4: Fix CDN version of Editor + Style and animation fixes
+  - @templatical/types@0.0.4
+  - @templatical/core@0.0.4
+
 ## 0.0.3
 
 ### Patch Changes
