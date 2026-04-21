@@ -99,12 +99,12 @@ const mergeTagBtnClass =
       </template>
       <button
         type="button"
-        class="tpl:ml-auto tpl:flex tpl:size-4 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text-dim)] tpl:opacity-60 tpl:transition-all hover:tpl:text-[var(--tpl-danger)] hover:tpl:opacity-100"
+        class="tpl:ml-auto tpl:flex tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-[var(--tpl-text-dim)] tpl:opacity-60 tpl:transition-all hover:tpl:text-[var(--tpl-danger)] hover:tpl:opacity-100"
         :aria-label="t.mergeTag.remove"
         :title="t.mergeTag.remove"
         @click.stop="clearValue"
       >
-        <X :size="10" :stroke-width="3" />
+        <X :size="12" :stroke-width="2.5" />
       </button>
     </div>
     <button

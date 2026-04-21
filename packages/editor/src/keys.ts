@@ -22,6 +22,7 @@ import type {
 import type { BaseEditorReturn } from "./composables/useEditorCore";
 import type { UseFontsReturn } from "./composables/useFonts";
 import type { UseBlockRegistryReturn } from "./composables/useBlockRegistry";
+import type { UseKeyboardReorderReturn } from "./composables/useKeyboardReorder";
 import type { EditorCapabilities } from "./types/editor-capabilities";
 import type { OnRequestMedia } from "./index";
 
@@ -83,6 +84,9 @@ export const ALLOW_CUSTOM_CONDITIONS_KEY: InjectionKey<boolean> = Symbol(
 
 export const CAPABILITIES_KEY: InjectionKey<EditorCapabilities> =
   Symbol("capabilities");
+
+export const KEYBOARD_REORDER_KEY: InjectionKey<UseKeyboardReorderReturn> =
+  Symbol("keyboardReorder");
 
 // ---------------------------------------------------------------------------
 // Cloud-only keys (provided by CloudEditor, consumed by cloud components)

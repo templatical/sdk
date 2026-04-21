@@ -112,10 +112,10 @@ Each package's `tsconfig.json` has `paths` mapping sibling `@templatical/*` impo
 
 ## CDN Builds
 
-Each package with a CDN build has a `vite.cdn.config.ts` alongside its main `vite.config.ts`:
+Each package with a CDN build has a `vite.cdn.config.ts` alongside its main `vite.config.ts`. Both configs use Vite's `build.lib` mode with `formats: ['es']` and `external: []` so exports are preserved and all deps (including peer deps) are bundled inline for a self-contained CDN drop. Code-splitting and dynamic `import()` still work in lib mode because the format is ES-only.
 
 - **`packages/editor/vite.cdn.config.ts`** — Builds `@templatical/editor` as ES with code-split chunks (icons, vue, tiptap, pusher, draggable, media-library, features). Output: `packages/editor/dist/cdn/`.
-- **`packages/media-library/vite.cdn.config.ts`** — Builds `@templatical/media-library` standalone visual SDK as IIFE (`TemplaticalMediaLibrary` global) + ES with code-split chunks. Output: `packages/media-library/dist/cdn/`.
+- **`packages/media-library/vite.cdn.config.ts`** — Builds `@templatical/media-library` standalone visual SDK as an ES module. The entry (`src/standalone/visual.ts`) also assigns `window.TemplaticalMedia = { init, unmount }` for `<script>`-tag consumers. Output: `packages/media-library/dist/cdn/`.
 
 Both CDN configs resolve `@templatical/media-library`, `@templatical/core`, and `@templatical/types` to source via aliases.
 

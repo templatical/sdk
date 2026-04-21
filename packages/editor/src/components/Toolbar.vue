@@ -88,6 +88,7 @@ function handleUpdate(updates: Partial<Block>): void {
 
 <template>
   <aside
+    :aria-label="t.landmarks.blockToolbar"
     class="tpl:flex tpl:w-full tpl:flex-1 tpl:flex-col tpl:bg-[var(--tpl-bg-elevated)]"
   >
     <div

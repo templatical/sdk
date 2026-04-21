@@ -12,6 +12,7 @@ import {
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   BLOCK_DEFAULTS_KEY,
   CAPABILITIES_KEY,
+  EDITOR_KEY,
 } from "../keys";
 
 interface BlockTypeItem {
@@ -21,9 +22,10 @@ interface BlockTypeItem {
   icon?: string;
 }
 
-const { t } = useI18n();
+const { t, format } = useI18n();
 const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 const blockDefaults = inject(BLOCK_DEFAULTS_KEY, undefined);
+const editor = inject(EDITOR_KEY, null);
 
 const caps = inject(CAPABILITIES_KEY, {});
 
@@ -92,12 +94,25 @@ function createBlockFromItem(item: BlockTypeItem): Block {
 
   return createBlock(item.type as BlockType, blockDefaults);
 }
+
+function insertBlockFromItem(item: BlockTypeItem): void {
+  if (!editor) return;
+  const block = createBlockFromItem(item);
+  editor.addBlock(block);
+  editor.selectBlock(block.id);
+}
+
+function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    insertBlockFromItem(item);
+  }
+}
 </script>
 
 <template>
   <aside
-    :aria-expanded="isExpanded"
-    :aria-label="t.sidebarNav.expandSidebar"
+    :aria-label="t.sidebarNav.palette"
     class="tpl-sidebar-rail tpl:absolute tpl:top-14 tpl:bottom-0 tpl:left-0 tpl:z-40 tpl:overflow-hidden"
     :style="{
       width: isExpanded ? '200px' : '48px',
@@ -152,12 +167,18 @@ function createBlockFromItem(item: BlockTypeItem): Block {
       class="tpl:flex tpl:flex-col tpl:gap-0.5 tpl:p-1"
     >
       <template #item="{ element: blockType }">
-        <div
+        <button
+          type="button"
           :data-palette-type="blockType.type"
-          class="tpl:flex tpl:h-10 tpl:cursor-grab tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)] active:tpl:cursor-grabbing"
+          :aria-label="
+            format(t.sidebarNav.insertBlock, { block: blockType.label })
+          "
+          class="tpl:flex tpl:h-10 tpl:w-full tpl:cursor-grab tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)] active:tpl:cursor-grabbing"
           :style="{
             justifyContent: isExpanded ? 'flex-start' : 'center',
           }"
+          @click="insertBlockFromItem(blockType)"
+          @keydown="handlePaletteKeydown($event, blockType)"
         >
           <div
             class="tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:transition-transform tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:scale-105"
@@ -180,7 +201,7 @@ function createBlockFromItem(item: BlockTypeItem): Block {
           >
             {{ blockType.label }}
           </span>
-        </div>
+        </button>
       </template>
     </draggable>
   </aside>

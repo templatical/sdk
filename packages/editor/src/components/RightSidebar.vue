@@ -40,6 +40,7 @@ watch(
 
 <template>
   <aside
+    :aria-label="t.landmarks.rightSidebar"
     class="tpl-right-sidebar tpl:absolute tpl:top-14 tpl:bottom-0 tpl:z-40 tpl:flex tpl:w-[320px] tpl:flex-col tpl:bg-[var(--tpl-bg-elevated)] tpl:transition-all tpl:duration-200 tpl:border-l tpl:border-[var(--tpl-border)]"
     :class="shiftedLeft ? 'tpl:right-[360px]' : 'tpl:right-0'"
   >
@@ -110,11 +111,11 @@ watch(
         <div class="tpl:mb-4 tpl:text-[var(--tpl-text-dim)]">
           <LayoutTemplate :size="40" :stroke-width="1.5" />
         </div>
-        <h4
+        <h3
           class="tpl:m-0 tpl:mb-2 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
         >
           {{ t.sidebar.noSelection }}
-        </h4>
+        </h3>
         <p class="tpl:m-0 tpl:text-sm tpl:leading-normal">
           {{ t.sidebar.noSelectionHint }}
         </p>

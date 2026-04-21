@@ -1072,9 +1072,9 @@ defineExpose({
 
     <!-- Canvas body -->
     <div
-      class="tpl-body tpl:absolute tpl:bottom-0 tpl:overflow-auto tpl:transition-all tpl:duration-300"
+      class="tpl-body tpl:absolute tpl:bottom-0 tpl:overflow-auto"
       style="
-        transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
         background-color: var(--tpl-canvas-bg);
       "
       :class="[
@@ -1174,6 +1174,17 @@ defineExpose({
         </a>
       </div>
     </footer>
+
+    <!-- Keyboard reorder announcement region (visually hidden, screen-reader live) -->
+    <div
+      class="tpl-sr-only"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      :aria-label="core.t.landmarks.reorderAnnouncements"
+    >
+      {{ core.keyboardReorder.announcement.value }}
+    </div>
 
     <!-- Right sidebar — persisted with v-show -->
     <RightSidebar

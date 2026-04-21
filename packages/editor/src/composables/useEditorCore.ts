@@ -58,9 +58,14 @@ import {
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
   CAPABILITIES_KEY,
+  KEYBOARD_REORDER_KEY,
 } from "../keys";
 import type { UseFontsReturn } from "./useFonts";
 import { useI18n, type UseI18nReturn } from "./useI18n";
+import {
+  useKeyboardReorder,
+  type UseKeyboardReorderReturn,
+} from "./useKeyboardReorder";
 import { useUiTheme } from "./useUiTheme";
 import { useThemeStyles } from "./useThemeStyles";
 import {
@@ -195,6 +200,7 @@ export interface UseEditorCoreReturn {
   themeStyles: ComputedRef<Record<string, string>>;
   themeOverrides: Ref<ThemeOverrides>;
   registry: UseBlockRegistryReturn;
+  keyboardReorder: UseKeyboardReorderReturn;
   registerCustomBlocks: (definitions: CustomBlockDefinition[]) => void;
   destroy: () => void;
 }
@@ -265,6 +271,9 @@ export function useEditorCore(
     });
   }
 
+  // --- Keyboard reorder (GitHub-style lift/move/drop via keyboard) ---
+  const keyboardReorder = useKeyboardReorder(editor, { t, format });
+
   // --- Block registry ---
   const registry = useBlockRegistry();
   registerBuiltInBlocks(registry, BLOCK_COMPONENT_MAP);
@@ -326,6 +335,8 @@ export function useEditorCore(
   // CloudEditor overrides this via provide() after cloud composables are ready.
   provide(CAPABILITIES_KEY, options.capabilities ?? {});
 
+  provide(KEYBOARD_REORDER_KEY, keyboardReorder);
+
   // --- Cleanup ---
   function destroy(): void {
     stopNavigatingWatch?.();
@@ -344,6 +355,7 @@ export function useEditorCore(
     themeStyles,
     themeOverrides,
     registry,
+    keyboardReorder,
     registerCustomBlocks,
     destroy,
   };

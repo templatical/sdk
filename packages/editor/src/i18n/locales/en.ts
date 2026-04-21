@@ -48,6 +48,7 @@ export default {
 
   // Viewport toggle
   viewport: {
+    label: "Viewport",
     desktop: "Desktop",
     tablet: "Tablet",
     mobile: "Mobile",
@@ -129,17 +130,24 @@ export default {
     highlightColor: "Highlight Color",
     lineHeight: "Line Height",
     letterSpacing: "Letter Spacing",
+    emojiItemLabel: "Insert emoji {emoji}",
+    closeEmojiPicker: "Close emoji picker",
   },
 
   // Block actions (BlockWrapper)
   blockActions: {
-    drag: "Drag to reorder",
+    drag: "Drag to reorder, or press Space to move with keyboard",
+    dragLifted: "Moving {block}. Use up and down arrow keys to reposition, Space or Enter to drop, Escape to cancel.",
     duplicate: "Duplicate block",
     delete: "Delete block",
     hiddenOnViewport: "Hidden on {viewport}",
     saveAsModule: "Save as Module",
     conditionToggle: "Toggle display condition",
     comments: "Comments ({count})",
+    lifted: "{block} lifted. Position {position} of {total}.",
+    moved: "{block} moved to position {position} of {total}.",
+    dropped: "{block} dropped at position {position} of {total}.",
+    cancelled: "Move cancelled. {block} returned to position {position}.",
   },
 
   // Toolbar - Section
@@ -740,6 +748,16 @@ export default {
   sidebarNav: {
     browseModules: "Browse saved modules",
     expandSidebar: "Expand block sidebar",
+    palette: "Block palette",
+    insertBlock: "Insert {block} block",
+  },
+
+  // Landmark region labels for assistive technology
+  landmarks: {
+    canvas: "Email canvas",
+    blockToolbar: "Block properties",
+    rightSidebar: "Block properties and template settings",
+    reorderAnnouncements: "Block reorder announcements",
   },
 
   // Saved Modules (cloud)
