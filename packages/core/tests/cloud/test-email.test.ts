@@ -189,7 +189,7 @@ describe('useTestEmail', () => {
       await expect(sendTestEmail('user@test.com')).rejects.toThrow('Save failed');
 
       expect(error.value).toBe('Save failed');
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
     });
 
     it('resets isSending after error', async () => {

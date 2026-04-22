@@ -200,7 +200,7 @@ describe('useAiChat', () => {
       expect(chat.error.value).toBe('Something broke');
       expect(chat.failedPrompt.value).toBe('try this');
       expect(chat.messages.value).toHaveLength(0);
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
       expect(chat.isGenerating.value).toBe(false);
     });
 
@@ -244,7 +244,7 @@ describe('useAiChat', () => {
 
       expect(result).toBeNull();
       expect(chat.error.value).toBe('Failed to read stream');
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
     });
 
     it('sets error when done event has no content', async () => {

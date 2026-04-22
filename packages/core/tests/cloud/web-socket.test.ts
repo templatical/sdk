@@ -122,7 +122,7 @@ describe('useWebSocket', () => {
 
       expect(ws.isConnected.value).toBe(false);
       expect(ws.channel.value).toBeNull();
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
     });
 
     it('does not reconnect if already connected', async () => {

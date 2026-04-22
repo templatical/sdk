@@ -201,7 +201,7 @@ describe('useDesignReference', () => {
 
       expect(result).toBeNull();
       expect(dr.error.value).toBe('Design generation failed');
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
       expect(dr.isGenerating.value).toBe(false);
     });
 
@@ -223,7 +223,7 @@ describe('useDesignReference', () => {
 
       expect(result).toBeNull();
       expect(dr.error.value).toBe('ai_generation_not_available');
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
       expect(dr.isGenerating.value).toBe(false);
     });
 
@@ -414,7 +414,7 @@ describe('useDesignReference', () => {
 
       expect(result).toBeNull();
       expect(dr.error.value).toBe('Failed to generate template from design');
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 });

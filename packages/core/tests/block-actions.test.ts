@@ -43,7 +43,7 @@ describe('useBlockActions', () => {
         expect(cloned.id).not.toBe(original.id);
         expect(cloned.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
         expect(cloned.type).toBe('paragraph');
-        expect(opts.addBlock).toHaveBeenCalled();
+        expect(opts.addBlock).toHaveBeenCalledWith(cloned, undefined, undefined);
         expect(opts.selectBlock).toHaveBeenCalledWith(cloned.id);
     });
 
@@ -90,7 +90,7 @@ describe('useBlockActions', () => {
             expect(cloned.children[0]).toEqual([]);
             expect(cloned.children[1]).toEqual([]);
         }
-        expect(opts.addBlock).toHaveBeenCalled();
+        expect(opts.addBlock).toHaveBeenCalledWith(cloned, undefined, undefined);
         expect(opts.selectBlock).toHaveBeenCalledWith(cloned.id);
     });
 
