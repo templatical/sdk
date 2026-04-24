@@ -19,12 +19,6 @@
   <a href="https://play.templatical.com">Playground</a> · <a href="https://docs.templatical.com">Documentation</a> · <a href="https://templatical.com">Website</a>
 </p>
 
-<br />
-
-<p align="center">
-  <img src="https://templatical.com/images/editor-preview.png" alt="Templatical Editor" width="720" />
-</p>
-
 ## Quick Start
 
 ```bash
