@@ -62,7 +62,7 @@ For guides, API reference, and examples, visit **[docs.templatical.com](https://
 
 ```bash
 git clone https://github.com/templatical/sdk.git
-cd editor
+cd sdk
 bun install
 bun run build
 bun run test
