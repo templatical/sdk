@@ -50,7 +50,7 @@ const editor = init({
 | [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) | Email editor | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/core`](https://www.npmjs.com/package/@templatical/core) | Framework-agnostic editor logic, state, history, plugins | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/types`](https://www.npmjs.com/package/@templatical/types) | Shared TypeScript types and block factories | [MIT](./LICENSE-MIT) |
-| [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) | JSON → MJML | [MIT](./LICENSE-MIT) |
+| [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) | Editor JSON to MJML renderer | [MIT](./LICENSE-MIT) |
 | [`@templatical/media-library`](https://www.npmjs.com/package/@templatical/media-library) | Media library management | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert BeeFree templates to Templatical format | [MIT](./LICENSE-MIT) |
 
