@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+        />
+        <meta
+            name="theme-color"
+            media="(prefers-color-scheme: light)"
+            content="#fdfdfc"
+        />
+        <meta
+            name="theme-color"
+            media="(prefers-color-scheme: dark)"
+            content="#1a1918"
+        />
+        <title>Templatical Cloud — Email editor, leveled up</title>
+        <meta
+            name="description"
+            content="Templatical Cloud adds AI, real-time collaboration, media management, and template scoring to the open-source Templatical email editor."
+        />
+        <meta
+            property="og:title"
+            content="Templatical Cloud — Email editor, leveled up"
+        />
+        <meta
+            property="og:description"
+            content="AI, collaboration, media, scoring and more — built on top of the open-source Templatical editor."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://cloud.templatical.com" />
+        <meta
+            property="og:image"
+            content="https://cloud.templatical.com/og-image.png"
+        />
+        <meta name="twitter:card" content="summary_large_image" />
+        <link rel="canonical" href="https://cloud.templatical.com" />
+        <link
+            rel="icon"
+            type="image/svg+xml"
+            href="https://templatical.com/logo-small.svg"
+        />
+        <link rel="preconnect" href="https://fonts.bunny.net" crossorigin />
+        <link rel="preconnect" href="https://templatical.com" crossorigin />
+        <link
+            href="https://fonts.bunny.net/css?family=geist:400,500,600&display=swap"
+            rel="stylesheet"
+        />
+        <script>
+            (function () {
+                try {
+                    var stored = localStorage.getItem('tpl-cloud-theme');
+                    var prefersDark =
+                        window.matchMedia &&
+                        window.matchMedia('(prefers-color-scheme: dark)')
+                            .matches;
+                    var theme =
+                        stored || (prefersDark ? 'dark' : 'light');
+                    document.documentElement.dataset.theme = theme;
+                } catch (_) {}
+            })();
+        </script>
+    </head>
+    <body>
+        <div id="app"></div>
+        <script type="module" src="/src/main.ts"></script>
+    </body>
+</html>
