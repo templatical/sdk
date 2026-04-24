@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { useRoute, RouterLink } from 'vue-router';
+import { computed, ref, toRef, watch } from 'vue';
+import { RouterLink } from 'vue-router';
 import { features, findFeature } from '@/features';
 import Icon from '@/components/shared/Icon.vue';
 import MarkdownRender from '@/components/shared/MarkdownRender.vue';
 import Button from '@/components/shared/Button.vue';
 
-const route = useRoute();
-const slug = computed(() => String(route.params.slug ?? ''));
+const props = defineProps<{ slug: string }>();
+const slug = toRef(props, 'slug');
 const feature = computed(() => findFeature(slug.value));
 
 const contentModules = import.meta.glob('../content/features/*.md', {

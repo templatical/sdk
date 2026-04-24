@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { onKeyStroke, useMediaQuery } from '@vueuse/core';
+import { computed, ref, watch } from 'vue';
+import { onKeyStroke, useMediaQuery, useWindowScroll } from '@vueuse/core';
 import { RouterLink, useRoute } from 'vue-router';
 import Icon from '../shared/Icon.vue';
 import ThemeToggle from './ThemeToggle.vue';
@@ -25,6 +25,9 @@ watch(isDesktop, (wide) => {
     if (wide) navOpen.value = false;
 });
 
+const { y: scrollY } = useWindowScroll();
+const atTop = computed(() => scrollY.value < 8);
+
 const links = [
     { to: '/features', label: 'Features' },
     { to: '/compare', label: 'OSS vs Cloud' },
@@ -34,7 +37,8 @@ const links = [
 
 <template>
     <header
-        class="sticky top-0 z-50 border-b border-border bg-bg"
+        class="site-header sticky top-0 z-50"
+        :class="{ 'site-header--scrolled': !atTop || navOpen }"
     >
         <div
             class="mx-auto flex h-16 max-w-6xl items-center justify-between px-6"
@@ -120,3 +124,25 @@ const links = [
         </Transition>
     </header>
 </template>
+
+<style scoped>
+.site-header {
+    background-color: transparent;
+    border-bottom: 1px solid transparent;
+    transition:
+        background-color 280ms var(--spring),
+        border-color 280ms var(--spring),
+        backdrop-filter 280ms var(--spring);
+}
+.site-header--scrolled {
+    background-color: color-mix(in oklch, var(--bg) 78%, transparent);
+    border-bottom-color: var(--border);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+}
+@supports not (backdrop-filter: blur(1px)) {
+    .site-header--scrolled {
+        background-color: var(--bg);
+    }
+}
+</style>
