@@ -55,6 +55,12 @@ const html = computed(() => marked.parse(props.source) as string);
     color: var(--primary);
     text-decoration: underline;
     text-underline-offset: 3px;
+    overflow-wrap: anywhere;
+}
+.prose-content :deep(h1),
+.prose-content :deep(h2),
+.prose-content :deep(h3) {
+    overflow-wrap: anywhere;
 }
 .prose-content :deep(strong) {
     color: var(--text);
@@ -80,11 +86,12 @@ const html = computed(() => marked.parse(props.source) as string);
     padding: 0;
 }
 .prose-content :deep(blockquote) {
-    border-left: 3px solid var(--primary);
-    padding-left: 1rem;
-    margin: 1rem 0;
-    color: var(--text-muted);
+    margin: 1.5rem 0 1.5rem 1.5rem;
+    color: var(--text);
     font-style: italic;
+}
+.prose-content :deep(blockquote p) {
+    color: var(--text);
 }
 .prose-content :deep(hr) {
     border: none;

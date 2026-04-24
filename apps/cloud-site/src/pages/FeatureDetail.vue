@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute, RouterLink } from 'vue-router';
 import { features, findFeature } from '@/features';
 import Icon from '@/components/shared/Icon.vue';
@@ -13,16 +13,21 @@ const feature = computed(() => findFeature(slug.value));
 const contentModules = import.meta.glob('../content/features/*.md', {
     query: '?raw',
     import: 'default',
-    eager: true,
 });
 
-const content = computed(() => {
-    const key = `../content/features/${slug.value}.md`;
-    return (contentModules[key] as string | undefined) ?? '';
-});
+const content = ref('');
+
+watch(
+    slug,
+    async (s) => {
+        const loader = contentModules[`../content/features/${s}.md`];
+        content.value = loader ? ((await loader()) as string) : '';
+    },
+    { immediate: true },
+);
 
 const nextFeature = computed(() => {
-    if (!feature.value) return features[0];
+    if (features.length < 2 || !feature.value) return null;
     const idx = features.findIndex((f) => f.slug === feature.value!.slug);
     return features[(idx + 1) % features.length];
 });
@@ -37,19 +42,17 @@ const nextFeature = computed(() => {
             <Icon name="arrow" :size="14" class="rotate-180" />
             All features
         </RouterLink>
-        <div class="mt-6 flex items-center gap-4">
-            <span
-                class="inline-flex size-12 shrink-0 items-center justify-center rounded-md bg-primary-light text-primary-hover"
+        <div class="mt-8">
+            <Icon
+                :name="feature.icon"
+                :size="24"
+                class="text-primary-hover"
                 aria-hidden="true"
-            >
-                <Icon :name="feature.icon" :size="24" />
-            </span>
-            <div class="min-w-0">
-                <h1 class="text-3xl font-semibold tracking-tight text-text sm:text-4xl">
-                    {{ feature.title }}
-                </h1>
-                <p class="mt-1 text-base text-text-muted">{{ feature.tagline }}</p>
-            </div>
+            />
+            <h1 class="mt-4 text-3xl font-semibold tracking-tight text-text sm:text-4xl">
+                {{ feature.title }}
+            </h1>
+            <p class="mt-2 text-base text-text-muted">{{ feature.tagline }}</p>
         </div>
         <p class="mt-8 text-lg leading-relaxed text-text-muted">
             {{ feature.summary }}
@@ -69,7 +72,7 @@ const nextFeature = computed(() => {
         </div>
     </section>
 
-    <template v-if="feature">
+    <template v-if="feature && nextFeature">
         <section class="mx-auto max-w-3xl px-6 pb-20">
             <RouterLink
                 :to="`/features/${nextFeature.slug}`"

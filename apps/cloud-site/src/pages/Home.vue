@@ -94,19 +94,19 @@ const highlights = features.slice(0, 6);
                     stays open source.
                 </p>
             </div>
-            <pre class="overflow-x-auto rounded-md border border-border bg-bg-subtle p-5 text-sm leading-relaxed"><code><span class="text-text-dim">// Self-hosted OSS</span>
-<span class="text-secondary">import</span> { <span class="text-primary">init</span> } <span class="text-secondary">from</span> <span class="text-success">'@templatical/editor'</span>;
+            <pre class="whitespace-pre-wrap break-words rounded-md border border-border bg-bg-subtle p-5 font-mono text-sm leading-relaxed text-text"><code><span class="tok-comment">// Self-hosted OSS</span>
+<span class="tok-keyword">import</span> { <span class="tok-fn">init</span> } <span class="tok-keyword">from</span> <span class="tok-string">'@templatical/editor'</span>;
 
-<span class="text-secondary">const</span> editor = <span class="text-secondary">await</span> <span class="text-primary">init</span>({
-  container: <span class="text-success">'#editor'</span>,
+<span class="tok-keyword">const</span> editor = <span class="tok-keyword">await</span> <span class="tok-fn">init</span>({
+  container: <span class="tok-string">'#editor'</span>,
 });
 
-<span class="text-text-dim">// When ready — flip a switch.</span>
-<span class="text-secondary">import</span> { <span class="text-primary">initCloud</span> } <span class="text-secondary">from</span> <span class="text-success">'@templatical/editor'</span>;
+<span class="tok-comment">// When ready — flip a switch.</span>
+<span class="tok-keyword">import</span> { <span class="tok-fn">initCloud</span> } <span class="tok-keyword">from</span> <span class="tok-string">'@templatical/editor'</span>;
 
-<span class="text-secondary">const</span> editor = <span class="text-secondary">await</span> <span class="text-primary">initCloud</span>({
-  container: <span class="text-success">'#editor'</span>,
-  auth: { url: <span class="text-success">'/api/token'</span> },
+<span class="tok-keyword">const</span> editor = <span class="tok-keyword">await</span> <span class="tok-fn">initCloud</span>({
+  container: <span class="tok-string">'#editor'</span>,
+  auth: { url: <span class="tok-string">'/api/token'</span> },
 });</code></pre>
         </div>
     </section>

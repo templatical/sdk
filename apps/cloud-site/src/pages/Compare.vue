@@ -91,27 +91,17 @@ const categories = Array.from(new Set(rows.map((r) => r.category)));
                         >
                             <th
                                 scope="row"
-                                class="sticky left-0 border-r border-border bg-bg-elevated px-6 py-3 text-left font-normal text-text md:border-r-0"
+                                class="sticky left-0 border-r border-border bg-bg-elevated px-6 py-3 text-left font-normal text-text [overflow-wrap:anywhere] md:border-r-0"
                             >
                                 {{ row.feature }}
                             </th>
                             <td class="px-6 py-3">
                                 <template v-if="row.oss === true">
-                                    <span
-                                        class="inline-flex size-6 items-center justify-center rounded-full bg-success/15 text-success"
-                                        aria-hidden="true"
-                                    >
-                                        <Icon name="check" :size="14" />
-                                    </span>
+                                    <Icon name="check" :size="16" class="text-text" aria-hidden="true" />
                                     <span class="sr-only">Included</span>
                                 </template>
                                 <template v-else-if="row.oss === false">
-                                    <span
-                                        class="inline-flex size-6 items-center justify-center rounded-full bg-bg-hover text-text-dim"
-                                        aria-hidden="true"
-                                    >
-                                        <Icon name="minus" :size="14" />
-                                    </span>
+                                    <span aria-hidden="true" class="text-text-dim">—</span>
                                     <span class="sr-only">Not included</span>
                                 </template>
                                 <template v-else>
@@ -120,12 +110,7 @@ const categories = Array.from(new Set(rows.map((r) => r.category)));
                             </td>
                             <td class="px-6 py-3">
                                 <template v-if="row.cloud === true">
-                                    <span
-                                        class="inline-flex size-6 items-center justify-center rounded-full bg-primary/20 text-primary-hover"
-                                        aria-hidden="true"
-                                    >
-                                        <Icon name="check" :size="14" />
-                                    </span>
+                                    <Icon name="check" :size="16" class="text-primary-hover" aria-hidden="true" />
                                     <span class="sr-only">Included</span>
                                 </template>
                                 <template v-else-if="row.cloud === false">

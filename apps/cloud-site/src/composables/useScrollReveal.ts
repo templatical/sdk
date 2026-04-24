@@ -4,7 +4,12 @@ export function useScrollReveal(selector = '.reveal') {
     let observer: IntersectionObserver | null = null;
 
     onMounted(() => {
-        if (typeof IntersectionObserver === 'undefined') return;
+        if (typeof IntersectionObserver === 'undefined') {
+            for (const el of document.querySelectorAll(selector)) {
+                el.classList.add('reveal--in');
+            }
+            return;
+        }
         observer = new IntersectionObserver(
             (entries) => {
                 for (const entry of entries) {

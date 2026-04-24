@@ -78,6 +78,12 @@ pre,
     color: var(--text-muted);
 }
 
+/* Minimal token colors for the hero code snippet */
+.tok-comment { color: var(--text-dim); font-style: italic; }
+.tok-keyword { color: var(--secondary); }
+.tok-fn      { color: var(--primary); }
+.tok-string  { color: var(--success); }
+
 body {
     min-height: 100vh;
     margin: 0;
@@ -139,7 +145,7 @@ a {
 
 .reveal {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(12px);
     transition:
         opacity 600ms var(--spring),
         transform 600ms var(--spring);
@@ -148,6 +154,14 @@ a {
 .reveal--in {
     opacity: 1;
     transform: translateY(0);
+}
+
+/* No-JS / pre-hydration fallback: don't hide content if the observer never runs. */
+@media (scripting: none) {
+    .reveal {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 .intro > * {

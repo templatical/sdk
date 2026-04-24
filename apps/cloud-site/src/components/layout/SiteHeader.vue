@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { onKeyStroke } from '@vueuse/core';
+import { onKeyStroke, useMediaQuery } from '@vueuse/core';
 import { RouterLink, useRoute } from 'vue-router';
 import Icon from '../shared/Icon.vue';
 import ThemeToggle from './ThemeToggle.vue';
@@ -18,6 +18,11 @@ onKeyStroke('Escape', () => {
 
 watch(() => route.path, () => {
     navOpen.value = false;
+});
+
+const isDesktop = useMediaQuery('(min-width: 768px)');
+watch(isDesktop, (wide) => {
+    if (wide) navOpen.value = false;
 });
 
 const links = [
