@@ -6,7 +6,9 @@ import {
   EDITOR_KEY,
   AUTH_MANAGER_KEY,
   MERGE_TAGS_KEY,
+  requireInject,
 } from "../../keys";
+import { useAliveFlag } from "../../composables/useAliveFlag";
 import type { TemplateContent } from "@templatical/types";
 import {
   CircleAlert,
@@ -30,10 +32,11 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const translations = inject(TRANSLATIONS_KEY)!;
-const editor = inject(EDITOR_KEY)!;
-const authManager = inject(AUTH_MANAGER_KEY)!;
+const translations = requireInject(TRANSLATIONS_KEY, "AiChatSidebar");
+const editor = requireInject(EDITOR_KEY, "AiChatSidebar");
+const authManager = requireInject(AUTH_MANAGER_KEY, "AiChatSidebar");
 const mergeTags = inject(MERGE_TAGS_KEY, []);
+const aliveFlag = useAliveFlag();
 
 const aiChat = useAiChat({
   authManager,
@@ -97,6 +100,7 @@ watch(
     if (isVisible && !historyLoaded.value) {
       historyLoaded.value = true;
       await aiChat.loadConversation();
+      if (!aliveFlag.alive) return;
 
       if (
         (aiChat.messages.value?.length ?? 0) === 0 &&
@@ -120,6 +124,7 @@ async function handleSend(): Promise<void> {
   scrollToBottom();
 
   await aiChat.sendPrompt(prompt, editor.content.value, mergeTags);
+  if (!aliveFlag.alive) return;
 
   if (aiChat.failedPrompt.value) {
     promptInput.value = aiChat.failedPrompt.value;

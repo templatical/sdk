@@ -5,6 +5,7 @@ import { Plus, Trash2 } from "@lucide/vue";
 import { computed } from "vue";
 import { resolveFieldComponent } from "./index";
 import FieldWrapper from "./FieldWrapper.vue";
+import { addItemBtnClass } from "../../../constants/styleConstants";
 
 const props = defineProps<{
   field: CustomBlockRepeatableField;
@@ -102,7 +103,7 @@ function updateItemField(index: number, key: string, value: unknown): void {
       <button
         v-if="canAdd && !readOnly"
         type="button"
-        class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:border-dashed tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-150 tpl:hover:border-[var(--tpl-primary)] tpl:hover:text-[var(--tpl-primary)]"
+        :class="addItemBtnClass"
         @click="addItem"
       >
         <Plus :size="14" :stroke-width="2" />

@@ -16,6 +16,7 @@ import {
 import { EDITOR_KEY } from "../keys";
 import { useMergeTag } from "./useMergeTag";
 import { useRichTextLinkDialog } from "./useRichTextLinkDialog";
+import { logger } from "../utils/logger";
 
 export interface MergeTagContext {
   mergeTags: ReturnType<typeof useMergeTag>["mergeTags"];
@@ -125,7 +126,7 @@ export function useRichTextEditor(
       isLoading.value = false;
       startFocusTimeout();
     } catch (error) {
-      console.error(
+      logger.error(
         `[${options.editorName ?? "RichTextEditor"}] Failed to initialize TipTap editor:`,
         error,
       );

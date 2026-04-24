@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
-import { labelClass } from "../../constants/styleConstants";
+import { labelClass, monoTextareaClass } from "../../constants/styleConstants";
 import type { HtmlBlock } from "@templatical/types";
 import { Info } from "@lucide/vue";
 
@@ -22,7 +22,7 @@ const { t } = useI18n();
       :value="block.content"
       :placeholder="'<div>...</div>'"
       rows="10"
-      class="tpl:w-full tpl:resize-y tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-2.5 tpl:py-2 tpl:font-mono tpl:text-xs tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:outline-none tpl:placeholder:text-[var(--tpl-text-dim)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
+      :class="monoTextareaClass"
       @input="
         emit('update', {
           content: ($event.target as HTMLTextAreaElement).value,

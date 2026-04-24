@@ -398,6 +398,7 @@ describe('useFonts', () => {
       await loadCustomFonts();
 
       expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
         'Failed to load custom font "BadFont":',
         expect.any(Error),
       );
@@ -448,6 +449,7 @@ describe('useFonts', () => {
 
       expect(isLoaded.value).toBe(true);
       expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
         'Failed to load custom font "BadFont":',
         expect.any(Error),
       );

@@ -2,7 +2,7 @@
 import { MAX_UPLOAD_SIZE_BYTES } from "../../constants/timeouts";
 import LoadingTrack from "../../components/LoadingTrack.vue";
 import { useDesignReference } from "@templatical/core/cloud";
-import { EDITOR_KEY, AUTH_MANAGER_KEY } from "../../keys";
+import { EDITOR_KEY, AUTH_MANAGER_KEY, requireInject } from "../../keys";
 import { useI18n } from "../../composables/useI18n";
 import type { TemplateContent } from "@templatical/types";
 import {
@@ -13,7 +13,7 @@ import {
   Upload,
   X,
 } from "@lucide/vue";
-import { computed, inject, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -26,8 +26,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const editor = inject(EDITOR_KEY)!;
-const authManager = inject(AUTH_MANAGER_KEY)!;
+const editor = requireInject(EDITOR_KEY, "DesignReferenceSidebar");
+const authManager = requireInject(AUTH_MANAGER_KEY, "DesignReferenceSidebar");
 
 const designReference = useDesignReference({
   authManager,

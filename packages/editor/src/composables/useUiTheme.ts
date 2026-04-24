@@ -1,8 +1,12 @@
 import { useMediaQuery } from "@vueuse/core";
-import { computed, type Ref } from "vue";
+import { computed, type ComputedRef, type Ref } from "vue";
 import type { UiTheme } from "@templatical/types";
 
-export function useUiTheme(uiTheme: Ref<UiTheme>) {
+export interface UseUiThemeReturn {
+  resolvedTheme: ComputedRef<"light" | "dark">;
+}
+
+export function useUiTheme(uiTheme: Ref<UiTheme>): UseUiThemeReturn {
   const systemPrefersDark = useMediaQuery("(prefers-color-scheme: dark)");
 
   const resolvedTheme = computed<"light" | "dark">(() => {

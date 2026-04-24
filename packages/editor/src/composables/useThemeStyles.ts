@@ -32,13 +32,15 @@ export interface UseThemeStylesOptions {
   extraStyles?: () => Record<string, string>;
 }
 
+export interface UseThemeStylesReturn {
+  themeStyles: ComputedRef<Record<string, string>>;
+}
+
 export function useThemeStyles({
   themeOverrides,
   resolvedTheme,
   extraStyles,
-}: UseThemeStylesOptions): {
-  themeStyles: ComputedRef<Record<string, string>>;
-} {
+}: UseThemeStylesOptions): UseThemeStylesReturn {
   const themeStyles = computed(() => {
     const styles: Record<string, string> = {};
     const base = themeOverrides.value;

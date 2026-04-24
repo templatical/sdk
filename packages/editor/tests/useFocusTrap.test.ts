@@ -10,11 +10,6 @@ vi.mock("@vueuse/core", () => ({
 import { useEventListener } from "@vueuse/core";
 import { useFocusTrap } from "../src/composables/useFocusTrap";
 
-vi.stubGlobal("requestAnimationFrame", (cb: Function) => {
-  cb();
-  return 0;
-});
-
 function createFocusableElement(tag = "button") {
   return {
     tagName: tag.toUpperCase(),
@@ -56,6 +51,10 @@ describe("useFocusTrap", () => {
   beforeEach(() => {
     vi.mocked(useEventListener).mockClear();
     mockCleanup.mockClear();
+    vi.stubGlobal("requestAnimationFrame", (cb: Function) => {
+      cb();
+      return 0;
+    });
   });
 
   it("does not error when container is null and active is true", async () => {
@@ -359,7 +358,13 @@ describe("useFocusTrap", () => {
       useFocusTrap(containerRef, active);
     });
 
-    // Stopping the scope should not throw (cleanup runs safely even when inactive)
-    expect(() => scope.stop()).not.toThrow();
+    scope.stop();
+    // After scope disposal, activating has no effect (watchers are torn down).
+    const focusCountBefore = (document.activeElement as HTMLElement | null)
+      ?.tagName;
+    active.value = true;
+    expect((document.activeElement as HTMLElement | null)?.tagName).toBe(
+      focusCountBefore,
+    );
   });
 });

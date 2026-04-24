@@ -232,7 +232,8 @@ describe('useBlockRegistry', () => {
       expect(html).toContain('Render error: broken');
       expect(html).toContain('border: 1px dashed');
       expect(consoleSpy).toHaveBeenCalledTimes(1);
-      expect(consoleSpy.mock.calls[0][0]).toContain('[BlockRegistry] Failed to render custom block "broken"');
+      expect(consoleSpy.mock.calls[0][0]).toBe('[Templatical]');
+      expect(consoleSpy.mock.calls[0][1]).toContain('Failed to render custom block "broken"');
 
       consoleSpy.mockRestore();
     });

@@ -310,23 +310,3 @@ export type {
 export type { UseFontsReturn, FontOption } from "./composables/useFonts";
 export { useFonts } from "./composables/useFonts";
 export type { EditorCapabilities } from "./types/editor-capabilities";
-export {
-  TRANSLATIONS_KEY,
-  EDITOR_KEY,
-  HISTORY_KEY,
-  BLOCK_ACTIONS_KEY,
-  CONDITION_PREVIEW_KEY,
-  FONTS_MANAGER_KEY,
-  THEME_STYLES_KEY,
-  UI_THEME_KEY,
-  BLOCK_DEFAULTS_KEY,
-  BLOCK_REGISTRY_KEY,
-  CUSTOM_BLOCK_DEFINITIONS_KEY,
-  MERGE_TAGS_KEY,
-  MERGE_TAG_SYNTAX_KEY,
-  ON_REQUEST_MERGE_TAG_KEY,
-  ON_REQUEST_MEDIA_KEY,
-  DISPLAY_CONDITIONS_KEY,
-  ALLOW_CUSTOM_CONDITIONS_KEY,
-  CAPABILITIES_KEY,
-} from "./keys";

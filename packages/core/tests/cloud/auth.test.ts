@@ -405,7 +405,7 @@ describe('createSdkAuthManager', () => {
     );
 
     await expect(auth.initialize()).rejects.toThrow();
-    expect(onError).toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledWith(expect.any(Error));
   });
 });
 

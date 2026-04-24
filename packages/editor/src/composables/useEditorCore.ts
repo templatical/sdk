@@ -22,7 +22,6 @@ import type {
   UseConditionPreviewReturn,
   UseAutoSaveReturn,
 } from "@templatical/core";
-import type { UseEditorReturn as CoreUseEditorReturn } from "@templatical/core";
 import type {
   Block,
   BlockDefaults,
@@ -233,7 +232,7 @@ export function useEditorCore(
       editor.setContent(content, markDirty),
     ...options.historyOptions,
   });
-  useHistoryInterceptor(editor as unknown as CoreUseEditorReturn, history);
+  useHistoryInterceptor(editor, history);
 
   // --- Block actions ---
   const blockActions = useBlockActions({
@@ -245,9 +244,7 @@ export function useEditorCore(
   });
 
   // --- Condition preview ---
-  const conditionPreview = useConditionPreview(
-    editor as unknown as CoreUseEditorReturn,
-  );
+  const conditionPreview = useConditionPreview(editor);
 
   // --- Auto-save ---
   const autoSave =

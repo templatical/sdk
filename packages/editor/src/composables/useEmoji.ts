@@ -1,10 +1,17 @@
 import { useToggle } from "@vueuse/core";
-import { shallowRef, watch } from "vue";
+import { shallowRef, watch, type ShallowRef, type Ref } from "vue";
 import type { EmojiCategory, EmojiCategoryKey } from "./emojiData";
 
 export type { EmojiCategoryKey, EmojiCategory };
 
-export function useEmoji() {
+export interface UseEmojiReturn {
+  categories: ShallowRef<EmojiCategory[]>;
+  isOpen: Ref<boolean>;
+  toggle: () => void;
+  close: () => void;
+}
+
+export function useEmoji(): UseEmojiReturn {
   const [isOpen, toggleValue] = useToggle(false);
   const categories = shallowRef<EmojiCategory[]>([]);
 

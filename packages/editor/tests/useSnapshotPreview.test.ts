@@ -10,12 +10,6 @@ vi.mock("@templatical/core/cloud", () => ({
 import { useSnapshotHistory } from "@templatical/core/cloud";
 import { useSnapshotPreview } from "../src/cloud/composables/useSnapshotPreview";
 
-// structuredClone cannot clone Vue reactive refs, so stub it with JSON round-trip
-vi.stubGlobal(
-  "structuredClone",
-  (val: unknown) => JSON.parse(JSON.stringify(val)),
-);
-
 function createMockEditor() {
   return {
     state: {
@@ -83,6 +77,12 @@ function createOptions(overrides: Record<string, any> = {}) {
 describe("useSnapshotPreview", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // structuredClone cannot clone Vue reactive refs, so stub with JSON round-trip.
+    // Must re-stub per test: global afterEach calls vi.unstubAllGlobals().
+    vi.stubGlobal(
+      "structuredClone",
+      (val: unknown) => JSON.parse(JSON.stringify(val)),
+    );
   });
 
   describe("initial state", () => {

@@ -173,7 +173,7 @@ describe('useSnapshotHistory', () => {
       expect(isRestoring.value).toBe(false);
       expect(onRestore).toHaveBeenCalledWith(template);
       // onError is called because the thrown error propagates through catch
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 });

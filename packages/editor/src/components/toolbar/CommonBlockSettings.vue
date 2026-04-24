@@ -1,15 +1,23 @@
 <script setup lang="ts">
 import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
+import CollapsibleSection from "./CollapsibleSection.vue";
 import { useI18n } from "../../composables/useI18n";
-import { labelClass, DEFAULT_BG_COLOR } from "../../constants/styleConstants";
+import {
+  labelClass,
+  monoTextareaClass,
+  DEFAULT_BG_COLOR,
+} from "../../constants/styleConstants";
 import type { Block, DisplayCondition } from "@templatical/types";
-import { ChevronDown, Monitor, Smartphone, Tablet } from "@lucide/vue";
-import { computed, inject, reactive, ref, watch } from "vue";
+import { Monitor, Smartphone, Tablet } from "@lucide/vue";
+import { computed, inject, reactive, ref, watch, type Component } from "vue";
 import {
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
 } from "../../keys";
+
+type SectionKey = "spacing" | "bg" | "display" | "css" | "condition";
+type VisibilityKey = "desktop" | "tablet" | "mobile";
 
 const props = defineProps<{
   block: Block;
@@ -25,32 +33,28 @@ const { t } = useI18n();
 const displayConditions = inject(DISPLAY_CONDITIONS_KEY, []);
 const allowCustomConditions = inject(ALLOW_CUSTOM_CONDITIONS_KEY, false);
 
-const openSections = reactive(
-  new Set<"spacing" | "bg" | "display" | "css" | "condition">(),
-);
+const openSections = reactive(new Set<SectionKey>());
+const customConditionMode = ref(false);
+const customBefore = ref("");
+const customAfter = ref("");
 
-function toggleSection(
-  key: "spacing" | "bg" | "display" | "css" | "condition",
-): void {
-  if (openSections.has(key)) {
-    openSections.delete(key);
-  } else {
-    openSections.add(key);
-  }
+const VISIBILITY_ITEMS: { key: VisibilityKey; icon: Component; labelKey: "showOnDesktop" | "showOnTablet" | "showOnMobile" }[] = [
+  { key: "desktop", icon: Monitor, labelKey: "showOnDesktop" },
+  { key: "tablet", icon: Tablet, labelKey: "showOnTablet" },
+  { key: "mobile", icon: Smartphone, labelKey: "showOnMobile" },
+];
+
+function toggleSection(key: SectionKey): void {
+  if (openSections.has(key)) openSections.delete(key);
+  else openSections.add(key);
 }
 
 const hasDisplayConditions = computed(
   () => displayConditions.length > 0 || allowCustomConditions,
 );
 
-const customConditionMode = ref(false);
-const customBefore = ref("");
-const customAfter = ref("");
-
 const isCustomCondition = computed(() => {
-  if (!props.block.displayCondition) {
-    return false;
-  }
+  if (!props.block.displayCondition) return false;
   return !displayConditions.some(
     (c) => c.label === props.block.displayCondition?.label,
   );
@@ -68,9 +72,7 @@ function startCustomCondition(): void {
 }
 
 function applyCustomCondition(): void {
-  if (!customBefore.value.trim()) {
-    return;
-  }
+  if (!customBefore.value.trim()) return;
   emit("update", {
     displayCondition: {
       label: t.blockSettings.customCondition,
@@ -104,9 +106,7 @@ const groupedDisplayConditions = computed(() => {
   const groups: Record<string, DisplayCondition[]> = {};
   for (const condition of displayConditions) {
     const group = condition.group ?? "";
-    if (!groups[group]) {
-      groups[group] = [];
-    }
+    if (!groups[group]) groups[group] = [];
     groups[group].push(condition);
   }
   return groups;
@@ -114,215 +114,109 @@ const groupedDisplayConditions = computed(() => {
 
 function updateStyle(field: string, value: unknown): void {
   emit("update", {
-    styles: {
-      ...props.block.styles,
-      [field]: value,
-    },
+    styles: { ...props.block.styles, [field]: value },
   });
+}
+
+function isVisible(key: VisibilityKey): boolean {
+  return props.block.visibility?.[key] !== false;
+}
+
+function toggleVisibility(key: VisibilityKey): void {
+  const next: Record<VisibilityKey, boolean> = {
+    desktop: isVisible("desktop"),
+    tablet: isVisible("tablet"),
+    mobile: isVisible("mobile"),
+  };
+  next[key] = !next[key];
+  emit("update", { visibility: next });
 }
 </script>
 
 <template>
   <div class="tpl:flex tpl:flex-col" :class="isFirstSection ? '' : 'tpl:mt-4'">
-    <!-- Spacing -->
-    <div
-      class="tpl:py-3"
-      :class="
-        isFirstSection ? '' : 'tpl:border-t tpl:border-[var(--tpl-border)]'
-      "
+    <CollapsibleSection
+      :title="t.blockSettings.spacing"
+      :open="openSections.has('spacing')"
+      :no-border="isFirstSection"
+      @toggle="toggleSection('spacing')"
     >
-      <button
-        type="button"
-        class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        @click="toggleSection('spacing')"
-      >
-        <ChevronDown
-          class="tpl:transition-transform tpl:duration-200"
-          :class="
-            openSections.has('spacing') ? 'tpl:rotate-0' : 'tpl:-rotate-90'
-          "
-          :size="12"
-          :stroke-width="2"
-        />
-        <span>{{ t.blockSettings.spacing }}</span>
-      </button>
-      <div v-show="openSections.has('spacing')" class="tpl:mt-3">
+      <SpacingControl
+        :label="t.blockSettings.padding"
+        :model-value="block.styles.padding"
+        @update:model-value="updateStyle('padding', $event)"
+      />
+      <div class="tpl:mt-4">
         <SpacingControl
-          :label="t.blockSettings.padding"
-          :model-value="block.styles.padding"
-          @update:model-value="updateStyle('padding', $event)"
-        />
-        <div class="tpl:mt-4">
-          <SpacingControl
-            :label="t.blockSettings.margin"
-            :model-value="block.styles.margin"
-            @update:model-value="updateStyle('margin', $event)"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Background -->
-    <div class="tpl:border-t tpl:border-[var(--tpl-border)] tpl:py-3">
-      <button
-        type="button"
-        class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        @click="toggleSection('bg')"
-      >
-        <ChevronDown
-          class="tpl:transition-transform tpl:duration-200"
-          :class="openSections.has('bg') ? 'tpl:rotate-0' : 'tpl:-rotate-90'"
-          :size="12"
-          :stroke-width="2"
-        />
-        <span>{{ t.blockSettings.background }}</span>
-      </button>
-      <div v-show="openSections.has('bg')" class="tpl:mt-3">
-        <label :class="labelClass">{{ t.blockSettings.color }}</label>
-        <ColorPicker
-          size="large"
-          :model-value="block.styles.backgroundColor || DEFAULT_BG_COLOR"
-          @update:model-value="updateStyle('backgroundColor', $event)"
+          :label="t.blockSettings.margin"
+          :model-value="block.styles.margin"
+          @update:model-value="updateStyle('margin', $event)"
         />
       </div>
-    </div>
+    </CollapsibleSection>
 
-    <!-- Display -->
-    <div class="tpl:border-t tpl:border-[var(--tpl-border)] tpl:py-3">
-      <button
-        type="button"
-        class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        @click="toggleSection('display')"
-      >
-        <ChevronDown
-          class="tpl:transition-transform tpl:duration-200"
-          :class="
-            openSections.has('display') ? 'tpl:rotate-0' : 'tpl:-rotate-90'
-          "
-          :size="12"
-          :stroke-width="2"
-        />
-        <span>{{ t.blockSettings.display }}</span>
-      </button>
-      <div v-show="openSections.has('display')" class="tpl:mt-3 tpl:space-y-2">
-        <label
-          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text)]"
-        >
-          <input
-            type="checkbox"
-            class="tpl:accent-[var(--tpl-primary)]"
-            :checked="block.visibility?.desktop !== false"
-            @change="
-              emit('update', {
-                visibility: {
-                  desktop: block.visibility?.desktop !== false ? false : true,
-                  tablet: block.visibility?.tablet !== false,
-                  mobile: block.visibility?.mobile !== false,
-                },
-              })
-            "
-          />
-          <Monitor :size="14" :stroke-width="1.5" />
-          {{ t.blockSettings.showOnDesktop }}
-        </label>
-        <label
-          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text)]"
-        >
-          <input
-            type="checkbox"
-            class="tpl:accent-[var(--tpl-primary)]"
-            :checked="block.visibility?.tablet !== false"
-            @change="
-              emit('update', {
-                visibility: {
-                  desktop: block.visibility?.desktop !== false,
-                  tablet: block.visibility?.tablet !== false ? false : true,
-                  mobile: block.visibility?.mobile !== false,
-                },
-              })
-            "
-          />
-          <Tablet :size="14" :stroke-width="1.5" />
-          {{ t.blockSettings.showOnTablet }}
-        </label>
-        <label
-          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text)]"
-        >
-          <input
-            type="checkbox"
-            class="tpl:accent-[var(--tpl-primary)]"
-            :checked="block.visibility?.mobile !== false"
-            @change="
-              emit('update', {
-                visibility: {
-                  desktop: block.visibility?.desktop !== false,
-                  tablet: block.visibility?.tablet !== false,
-                  mobile: block.visibility?.mobile !== false ? false : true,
-                },
-              })
-            "
-          />
-          <Smartphone :size="14" :stroke-width="1.5" />
-          {{ t.blockSettings.showOnMobile }}
-        </label>
-      </div>
-    </div>
-
-    <!-- Custom CSS -->
-    <div class="tpl:border-t tpl:border-[var(--tpl-border)] tpl:py-3">
-      <button
-        type="button"
-        class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        @click="toggleSection('css')"
-      >
-        <ChevronDown
-          class="tpl:transition-transform tpl:duration-200"
-          :class="openSections.has('css') ? 'tpl:rotate-0' : 'tpl:-rotate-90'"
-          :size="12"
-          :stroke-width="2"
-        />
-        <span>{{ t.blockSettings.customCss }}</span>
-      </button>
-      <div v-show="openSections.has('css')" class="tpl:mt-3">
-        <label :class="labelClass">{{ t.blockSettings.css }}</label>
-        <textarea
-          :value="block.customCss || ''"
-          :placeholder="t.blockSettings.cssPlaceholder"
-          rows="3"
-          class="tpl:w-full tpl:resize-y tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-2.5 tpl:py-2 tpl:font-mono tpl:text-xs tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:outline-none tpl:placeholder:text-[var(--tpl-text-dim)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
-          @input="
-            emit('update', {
-              customCss: ($event.target as HTMLTextAreaElement).value,
-            })
-          "
-        />
-      </div>
-    </div>
-
-    <!-- Display Conditions -->
-    <div
-      v-if="hasDisplayConditions"
-      class="tpl:border-t tpl:border-[var(--tpl-border)] tpl:py-3"
+    <CollapsibleSection
+      :title="t.blockSettings.background"
+      :open="openSections.has('bg')"
+      @toggle="toggleSection('bg')"
     >
-      <button
-        type="button"
-        class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        @click="toggleSection('condition')"
-      >
-        <ChevronDown
-          class="tpl:transition-transform tpl:duration-200"
-          :class="
-            openSections.has('condition') ? 'tpl:rotate-0' : 'tpl:-rotate-90'
-          "
-          :size="12"
-          :stroke-width="2"
-        />
-        <span>{{ t.blockSettings.displayCondition }}</span>
-      </button>
-      <div
-        v-show="openSections.has('condition')"
-        class="tpl:mt-3 tpl:space-y-2"
-      >
+      <label :class="labelClass">{{ t.blockSettings.color }}</label>
+      <ColorPicker
+        size="large"
+        :model-value="block.styles.backgroundColor || DEFAULT_BG_COLOR"
+        @update:model-value="updateStyle('backgroundColor', $event)"
+      />
+    </CollapsibleSection>
+
+    <CollapsibleSection
+      :title="t.blockSettings.display"
+      :open="openSections.has('display')"
+      @toggle="toggleSection('display')"
+    >
+      <div class="tpl:space-y-2">
+        <label
+          v-for="item in VISIBILITY_ITEMS"
+          :key="item.key"
+          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text)]"
+        >
+          <input
+            type="checkbox"
+            class="tpl:accent-[var(--tpl-primary)]"
+            :checked="isVisible(item.key)"
+            @change="toggleVisibility(item.key)"
+          />
+          <component :is="item.icon" :size="14" :stroke-width="1.5" />
+          {{ t.blockSettings[item.labelKey] }}
+        </label>
+      </div>
+    </CollapsibleSection>
+
+    <CollapsibleSection
+      :title="t.blockSettings.customCss"
+      :open="openSections.has('css')"
+      @toggle="toggleSection('css')"
+    >
+      <label :class="labelClass">{{ t.blockSettings.css }}</label>
+      <textarea
+        :value="block.customCss || ''"
+        :placeholder="t.blockSettings.cssPlaceholder"
+        rows="3"
+        :class="monoTextareaClass"
+        @input="
+          emit('update', {
+            customCss: ($event.target as HTMLTextAreaElement).value,
+          })
+        "
+      />
+    </CollapsibleSection>
+
+    <CollapsibleSection
+      v-if="hasDisplayConditions"
+      :title="t.blockSettings.displayCondition"
+      :open="openSections.has('condition')"
+      @toggle="toggleSection('condition')"
+    >
+      <div class="tpl:space-y-2">
         <select
           class="tpl:w-full tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:outline-none tpl:transition-all tpl:duration-150 tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
           :class="
@@ -385,7 +279,6 @@ function updateStyle(field: string, value: unknown): void {
           </option>
         </select>
 
-        <!-- Custom condition fields -->
         <template v-if="customConditionMode || isCustomCondition">
           <div class="tpl:space-y-2">
             <div>
@@ -396,7 +289,7 @@ function updateStyle(field: string, value: unknown): void {
               <textarea
                 v-model="customBefore"
                 rows="2"
-                class="tpl:w-full tpl:resize-y tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-2.5 tpl:py-2 tpl:font-mono tpl:text-xs tpl:text-[var(--tpl-text)] tpl:outline-none tpl:transition-all tpl:duration-150 tpl:placeholder:text-[var(--tpl-text-dim)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
+                :class="monoTextareaClass"
               />
             </div>
             <div>
@@ -407,7 +300,7 @@ function updateStyle(field: string, value: unknown): void {
               <textarea
                 v-model="customAfter"
                 rows="2"
-                class="tpl:w-full tpl:resize-y tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-2.5 tpl:py-2 tpl:font-mono tpl:text-xs tpl:text-[var(--tpl-text)] tpl:outline-none tpl:transition-all tpl:duration-150 tpl:placeholder:text-[var(--tpl-text-dim)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
+                :class="monoTextareaClass"
               />
             </div>
             <div class="tpl:flex tpl:justify-end">
@@ -423,7 +316,6 @@ function updateStyle(field: string, value: unknown): void {
           </div>
         </template>
 
-        <!-- Preset condition details -->
         <template v-else-if="block.displayCondition && !isCustomCondition">
           <p
             v-if="block.displayCondition.description"
@@ -444,6 +336,6 @@ function updateStyle(field: string, value: unknown): void {
           </div>
         </template>
       </div>
-    </div>
+    </CollapsibleSection>
   </div>
 </template>

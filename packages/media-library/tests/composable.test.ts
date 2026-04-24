@@ -149,7 +149,7 @@ describe('useMediaLibrary', () => {
 
       await lib.loadItems();
 
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
     });
 
     it('resets isLoading on error', async () => {
@@ -382,7 +382,7 @@ describe('useMediaLibrary', () => {
       );
       await lib.loadMore();
 
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
       expect(lib.isLoading.value).toBe(false);
     });
   });
@@ -541,7 +541,7 @@ describe('useMediaLibrary', () => {
       const result = await lib.uploadFile(new File(['data'], 'photo.jpg'));
 
       expect(result).toBeNull();
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
     });
 
     it('tracks progress during multi-file upload', async () => {
@@ -967,7 +967,7 @@ describe('useMediaLibrary', () => {
 
       await lib.renameFolder('f1', 'Bad Name');
 
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
@@ -1000,7 +1000,7 @@ describe('useMediaLibrary', () => {
 
       await lib.loadFrequentlyUsed();
 
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 
@@ -1085,7 +1085,7 @@ describe('useMediaLibrary', () => {
       expect(result).toBeNull();
       expect(lib.replaceError.value).toBe('Replace failed');
       expect(lib.isReplacing.value).toBe(false);
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
     });
 
     it('replaceFile returns null when no pending item', async () => {

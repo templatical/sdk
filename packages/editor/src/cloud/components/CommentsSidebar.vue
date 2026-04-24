@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { formatRelativeTime } from "../../utils/formatRelativeTime";
-import { EDITOR_KEY, AUTH_MANAGER_KEY, COMMENTS_KEY } from "../../keys";
+import {
+  EDITOR_KEY,
+  AUTH_MANAGER_KEY,
+  COMMENTS_KEY,
+  requireInject,
+} from "../../keys";
 import { useI18n } from "../../composables/useI18n";
 import type { Comment } from "@templatical/types";
 import {
@@ -16,7 +21,7 @@ import {
   Trash2,
   X,
 } from "@lucide/vue";
-import { computed, inject, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -28,9 +33,9 @@ const emit = defineEmits<{
 }>();
 
 const { t, format } = useI18n();
-const editor = inject(EDITOR_KEY)!;
-const authManager = inject(AUTH_MANAGER_KEY)!;
-const comments = inject(COMMENTS_KEY)!;
+const editor = requireInject(EDITOR_KEY, "CommentsSidebar");
+const authManager = requireInject(AUTH_MANAGER_KEY, "CommentsSidebar");
+const comments = requireInject(COMMENTS_KEY, "CommentsSidebar");
 
 type FilterMode = "all" | "unresolved" | "block";
 const filterMode = ref<FilterMode>("unresolved");

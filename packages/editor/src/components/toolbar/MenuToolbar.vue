@@ -2,16 +2,19 @@
 import ColorPicker from "../ColorPicker.vue";
 import MergeTagInput from "../MergeTagInput.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
+import FieldRow from "./FieldRow.vue";
+import NumberWithSuffix from "./NumberWithSuffix.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
   inputClass,
-  inputGroupInputClass,
-  inputSuffixClass,
   labelClass,
+  removeItemBtnClass,
+  addItemBtnClass,
 } from "../../constants/styleConstants";
 import type { MenuBlock, MenuItemData } from "@templatical/types";
 import { generateId } from "@templatical/types";
 import { AlignCenter, AlignLeft, AlignRight, Plus, X } from "@lucide/vue";
+import { computed } from "vue";
 
 const props = defineProps<{
   block: MenuBlock;
@@ -24,7 +27,19 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-function updateField(field: string, value: unknown): void {
+const ITEM_TOGGLES = computed(() => [
+  { key: "openInNewTab" as const, label: t.menu.openInNewTab },
+  { key: "bold" as const, label: t.menu.bold },
+  { key: "underline" as const, label: t.menu.underline },
+]);
+
+const ALIGN_OPTIONS = computed(() => [
+  { value: "left", label: t.title.alignLeft, icon: AlignLeft },
+  { value: "center", label: t.title.alignCenter, icon: AlignCenter },
+  { value: "right", label: t.title.alignRight, icon: AlignRight },
+]);
+
+function updateField(field: keyof MenuBlock, value: unknown): void {
   emit("update", { [field]: value } as Partial<MenuBlock>);
 }
 
@@ -59,8 +74,7 @@ function removeMenuItem(itemId: string): void {
 </script>
 
 <template>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.menu.items }}</label>
+  <FieldRow :label="t.menu.items">
     <div class="tpl:flex tpl:flex-col tpl:gap-2">
       <div
         v-for="item in block.items"
@@ -83,7 +97,7 @@ function removeMenuItem(itemId: string): void {
             "
           />
           <button
-            class="tpl:flex tpl:size-8 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-150 tpl:hover:border-[var(--tpl-danger)] tpl:hover:bg-[var(--tpl-danger-light)] tpl:hover:text-[var(--tpl-danger)]"
+            :class="removeItemBtnClass"
             :title="t.menu.removeItem"
             @click="removeMenuItem(item.id)"
           >
@@ -99,56 +113,28 @@ function removeMenuItem(itemId: string): void {
         <div
           class="tpl:flex tpl:items-center tpl:gap-3 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
         >
-          <label class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1"
-            ><input
+          <label
+            v-for="toggle in ITEM_TOGGLES"
+            :key="toggle.key"
+            class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1"
+          >
+            <input
               type="checkbox"
-              :checked="item.openInNewTab"
+              :checked="item[toggle.key]"
               class="tpl:accent-[var(--tpl-primary)]"
               @change="
                 updateMenuItem(
                   item.id,
-                  'openInNewTab',
+                  toggle.key,
                   ($event.target as HTMLInputElement).checked,
                 )
               "
             />
-            {{ t.menu.openInNewTab }}</label
-          >
-          <label class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1"
-            ><input
-              type="checkbox"
-              :checked="item.bold"
-              class="tpl:accent-[var(--tpl-primary)]"
-              @change="
-                updateMenuItem(
-                  item.id,
-                  'bold',
-                  ($event.target as HTMLInputElement).checked,
-                )
-              "
-            />
-            {{ t.menu.bold }}</label
-          >
-          <label class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1"
-            ><input
-              type="checkbox"
-              :checked="item.underline"
-              class="tpl:accent-[var(--tpl-primary)]"
-              @change="
-                updateMenuItem(
-                  item.id,
-                  'underline',
-                  ($event.target as HTMLInputElement).checked,
-                )
-              "
-            />
-            {{ t.menu.underline }}</label
-          >
+            {{ toggle.label }}
+          </label>
         </div>
         <div class="tpl:flex tpl:items-center tpl:gap-2">
-          <label class="tpl:text-xs tpl:text-[var(--tpl-text-muted)]">{{
-            t.menu.color
-          }}</label>
+          <label :class="labelClass" class="tpl:!mb-0">{{ t.menu.color }}</label>
           <ColorPicker
             swatch-only
             :model-value="item.color || block.linkColor || block.color"
@@ -156,17 +142,14 @@ function removeMenuItem(itemId: string): void {
           />
         </div>
       </div>
-      <button
-        class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:border-dashed tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-150 tpl:hover:border-[var(--tpl-primary)] tpl:hover:text-[var(--tpl-primary)]"
-        @click="addMenuItem"
-      >
+      <button :class="addItemBtnClass" @click="addMenuItem">
         <Plus :size="14" :stroke-width="2" />
         {{ t.menu.addItem }}
       </button>
     </div>
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.menu.fontFamily }}</label>
+  </FieldRow>
+
+  <FieldRow :label="t.menu.fontFamily">
     <select
       :class="inputClass"
       :value="block.fontFamily || ''"
@@ -186,54 +169,41 @@ function removeMenuItem(itemId: string): void {
         {{ font.label }}
       </option>
     </select>
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.menu.fontSize }}</label>
-    <div class="tpl:flex tpl:items-stretch">
-      <input
-        type="number"
-        :class="inputGroupInputClass"
-        :value="block.fontSize"
-        min="8"
-        max="48"
-        @input="
-          updateField(
-            'fontSize',
-            Number(($event.target as HTMLInputElement).value),
-          )
-        "
-      />
-      <span :class="inputSuffixClass">px</span>
-    </div>
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.menu.color }}</label>
+  </FieldRow>
+
+  <FieldRow :label="t.menu.fontSize">
+    <NumberWithSuffix
+      :model-value="block.fontSize"
+      :min="8"
+      :max="48"
+      suffix="px"
+      @update:model-value="updateField('fontSize', $event)"
+    />
+  </FieldRow>
+
+  <FieldRow :label="t.menu.color">
     <ColorPicker
       :model-value="block.color"
       @update:model-value="updateField('color', $event)"
     />
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.menu.linkColor }}</label>
+  </FieldRow>
+
+  <FieldRow :label="t.menu.linkColor">
     <ColorPicker
       :model-value="block.linkColor || block.color"
       @update:model-value="updateField('linkColor', $event || undefined)"
     />
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.menu.textAlign }}</label>
+  </FieldRow>
+
+  <FieldRow :label="t.menu.textAlign">
     <SlidingPillSelect
-      :options="[
-        { value: 'left', label: t.title.alignLeft, icon: AlignLeft },
-        { value: 'center', label: t.title.alignCenter, icon: AlignCenter },
-        { value: 'right', label: t.title.alignRight, icon: AlignRight },
-      ]"
+      :options="ALIGN_OPTIONS"
       :model-value="block.textAlign"
       @update:model-value="updateField('textAlign', $event)"
     />
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.menu.separator }}</label>
+  </FieldRow>
+
+  <FieldRow :label="t.menu.separator">
     <input
       type="text"
       :class="inputClass"
@@ -242,31 +212,22 @@ function removeMenuItem(itemId: string): void {
         updateField('separator', ($event.target as HTMLInputElement).value)
       "
     />
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.menu.separatorColor }}</label>
+  </FieldRow>
+
+  <FieldRow :label="t.menu.separatorColor">
     <ColorPicker
       :model-value="block.separatorColor"
       @update:model-value="updateField('separatorColor', $event)"
     />
-  </div>
-  <div class="tpl:mb-3.5">
-    <label :class="labelClass">{{ t.menu.spacing }}</label>
-    <div class="tpl:flex tpl:items-stretch">
-      <input
-        type="number"
-        :class="inputGroupInputClass"
-        :value="block.spacing"
-        min="0"
-        max="50"
-        @input="
-          updateField(
-            'spacing',
-            Number(($event.target as HTMLInputElement).value),
-          )
-        "
-      />
-      <span :class="inputSuffixClass">px</span>
-    </div>
-  </div>
+  </FieldRow>
+
+  <FieldRow :label="t.menu.spacing">
+    <NumberWithSuffix
+      :model-value="block.spacing"
+      :min="0"
+      :max="50"
+      suffix="px"
+      @update:model-value="updateField('spacing', $event)"
+    />
+  </FieldRow>
 </template>

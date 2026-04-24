@@ -1,15 +1,9 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
   handleEditorKeydown,
   isEditingText,
   type KeyboardShortcutHandlers,
 } from "../src/utils/keyboardShortcuts";
-
-function readSrc(relativePath: string): string {
-  return readFileSync(resolve(__dirname, "..", "src", relativePath), "utf-8");
-}
 
 function createMockHandlers(
   overrides: Partial<KeyboardShortcutHandlers> = {},
@@ -344,40 +338,3 @@ describe("handleEditorKeydown", () => {
   });
 });
 
-// ── Source structure regression tests ────────────────────────────────────────
-
-describe("Editor.vue delegates keyboard shortcuts to useEditorCore", () => {
-  const src = readSrc("Editor.vue");
-
-  it("uses useEditorCore which handles keyboard shortcuts", () => {
-    expect(src).toContain("useEditorCore(");
-    expect(src).not.toContain("function handleKeyboard");
-    expect(src).not.toContain("function isEditingText");
-  });
-
-  it("useEditorCore imports handleEditorKeydown", () => {
-    const coreSrc = readSrc("composables/useEditorCore.ts");
-    expect(coreSrc).toContain(
-      'import { handleEditorKeydown } from "../utils/keyboardShortcuts"',
-    );
-  });
-});
-
-describe("CloudEditor.vue delegates keyboard shortcuts to useEditorCore", () => {
-  const src = readSrc("cloud/CloudEditor.vue");
-
-  it("uses useEditorCore which handles keyboard shortcuts", () => {
-    expect(src).toContain("useEditorCore(");
-    expect(src).not.toContain("function handleKeydown");
-    expect(src).not.toContain("isMac");
-    expect(src).not.toContain("navigator.userAgent");
-    // The @keydown binding comes from useEditorCore's event listener
-    const coreSrc = readSrc("composables/useEditorCore.ts");
-    expect(coreSrc).toContain('useEventListener(document, "keydown", handleKeyboard)');
-  });
-
-  it("passes onBeforeUndo for collab warning via keyboardOptions", () => {
-    expect(src).toContain("onBeforeUndo:");
-    expect(src).toContain("showCollabUndoWarning()");
-  });
-});

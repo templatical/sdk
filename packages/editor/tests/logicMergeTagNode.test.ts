@@ -123,26 +123,6 @@ describe('LogicMergeTagNode extension config', () => {
   });
 });
 
-describe('LogicMergeTagNode source structure', () => {
-  const { readFileSync } = require('node:fs');
-  const { resolve } = require('node:path');
-  const src = readFileSync(
-    resolve(__dirname, '../src/extensions/LogicMergeTagNode.ts'),
-    'utf-8',
-  );
-
-  it('imports isNodeSelected from shared module', () => {
-    expect(src).toContain('import { isNodeSelected } from "./isNodeSelected"');
-    expect(src).not.toContain('const isLogicMergeTagSelected');
-  });
-
-  it('uses renderVueNodeView wrapper instead of direct VueNodeViewRenderer cast', () => {
-    expect(src).toContain('import { renderVueNodeView } from "./renderVueNodeView"');
-    expect(src).toContain('renderVueNodeView(LogicMergeTagNodeView)');
-    expect(src).not.toContain('as any');
-  });
-});
-
 describe('isLogicMergeTagValue', () => {
   it('returns true for valid logic tags', () => {
     expect(isLogicMergeTagValue('{% if active %}', liquidSyntax)).toBe(true);

@@ -75,7 +75,8 @@ test.describe("Section columns", () => {
     await editorPage.dragBlockFromSidebar("section");
 
     const section = page.locator(blockByType("section")).first();
-    const dropHint = section.locator("span").first();
+    const dropHint = section.locator('[data-testid="section-drop-hint"]').first();
+    await expect(dropHint).toBeVisible();
     const hintText = (await dropHint.textContent())?.trim() ?? "";
     expect(hintText.length).toBeGreaterThan(0);
   });

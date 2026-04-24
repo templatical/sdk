@@ -1,121 +1,75 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+// @vitest-environment happy-dom
+import { describe, expect, it } from 'vitest';
+import { nextTick, h } from 'vue';
+import TplModal from '../src/cloud/components/TplModal.vue';
+import { mountEditor } from './helpers/mount';
 
-const src = readFileSync(
-  resolve(__dirname, "../src/cloud/components/TplModal.vue"),
-  "utf-8",
-);
+function mountModal(visible: boolean) {
+  return mountEditor(TplModal, {
+    props: { visible },
+    slots: { default: () => h('p', { 'data-testid': 'content' }, 'Modal body') },
+    attachTo: document.body,
+    global: {
+      stubs: {
+        Teleport: true,
+      },
+    },
+  });
+}
 
-describe("TplModal.vue structure", () => {
-  it("accepts visible boolean prop", () => {
-    expect(src).toContain("visible: boolean");
+describe('TplModal', () => {
+  it('renders nothing when visible=false', () => {
+    const wrapper = mountModal(false);
+    expect(wrapper.find('[data-testid="content"]').exists()).toBe(false);
   });
 
-  it("emits close and keydown events", () => {
-    expect(src).toMatch(/\(e: "close"\)/);
-    expect(src).toMatch(/\(e: "keydown", event: KeyboardEvent\)/);
+  it('renders the slotted content when visible=true', () => {
+    const wrapper = mountModal(true);
+    const content = wrapper.find('[data-testid="content"]');
+    expect(content.exists()).toBe(true);
+    expect(content.text()).toBe('Modal body');
   });
 
-  it("uses Teleport to body", () => {
-    expect(src).toContain('<Teleport to="body">');
+  it('wraps content in a backdrop div with overlay styles', () => {
+    const wrapper = mountModal(true);
+    const backdrop = wrapper.find('.tpl\\:fixed.tpl\\:inset-0');
+    expect(backdrop.exists()).toBe(true);
+    expect(backdrop.attributes('style')).toContain('var(--tpl-overlay)');
   });
 
-  it("uses Transition with correct animation classes", () => {
-    expect(src).toContain("tpl:transition tpl:duration-150");
-    expect(src).toContain("tpl:opacity-0");
-    expect(src).toContain("tpl:opacity-100");
-    expect(src).toContain("tpl:transition tpl:duration-100");
+  it('emits close on backdrop (self) click', async () => {
+    const wrapper = mountModal(true);
+    await wrapper.find('.tpl\\:fixed.tpl\\:inset-0').trigger('click');
+
+    expect(wrapper.emitted('close')).toBeTruthy();
+    expect(wrapper.emitted('close')!.length).toBe(1);
   });
 
-  it("renders backdrop with correct classes and styles", () => {
-    expect(src).toContain(
-      "tpl tpl:fixed tpl:inset-0 tpl:z-modal tpl:flex tpl:items-center tpl:justify-center",
-    );
-    expect(src).toContain("background-color: var(--tpl-overlay)");
-    expect(src).toContain("backdrop-filter: blur(8px)");
+  it('does NOT emit close when click originates inside the dialog (not self)', async () => {
+    const wrapper = mountModal(true);
+    await wrapper.find('[data-testid="content"]').trigger('click');
+
+    expect(wrapper.emitted('close')).toBeFalsy();
   });
 
-  it("uses v-if on visible prop for conditional rendering", () => {
-    expect(src).toContain('v-if="visible"');
+  it('emits close when Escape is pressed', async () => {
+    const wrapper = mountModal(true);
+    await wrapper
+      .find('.tpl\\:fixed.tpl\\:inset-0')
+      .trigger('keydown', { key: 'Escape' });
+
+    expect(wrapper.emitted('close')).toBeTruthy();
   });
 
-  it("emits close on backdrop click.self", () => {
-    expect(src).toContain("@click.self=\"emit('close')\"");
-  });
+  it('forwards non-Escape keydowns via the keydown event', async () => {
+    const wrapper = mountModal(true);
+    await wrapper
+      .find('.tpl\\:fixed.tpl\\:inset-0')
+      .trigger('keydown', { key: 'a' });
 
-  it("handles Escape key to emit close", () => {
-    expect(src).toContain('event.key === "Escape"');
-    expect(src).toContain('emit("close")');
-  });
-
-  it("forwards keydown event for consumer handling", () => {
-    expect(src).toContain('emit("keydown", event)');
-  });
-
-  it("sets up useFocusTrap on dialogRef", () => {
-    expect(src).toContain("useFocusTrap");
-    expect(src).toContain("const dialogRef = ref<HTMLElement | null>(null)");
-    expect(src).toContain("useFocusTrap(dialogRef, isVisible)");
-  });
-
-  it("injects tplUiTheme and applies it to backdrop", () => {
-    expect(src).toContain('inject(UI_THEME_KEY)');
-    expect(src).toContain(':data-tpl-theme="tplUiTheme"');
-  });
-
-  it("uses default slot for modal content", () => {
-    expect(src).toContain("<slot />");
-  });
-});
-
-// ── Consumers use TplModal ────────────────────────────────────────────────────
-
-describe("TplModal consumers", () => {
-  const testEmailSrc = readFileSync(
-    resolve(__dirname, "../src/cloud/components/TestEmailModal.vue"),
-    "utf-8",
-  );
-  const saveModuleSrc = readFileSync(
-    resolve(__dirname, "../src/cloud/components/SaveModuleDialog.vue"),
-    "utf-8",
-  );
-  const moduleBrowserSrc = readFileSync(
-    resolve(__dirname, "../src/cloud/components/ModuleBrowserModal.vue"),
-    "utf-8",
-  );
-
-  it("TestEmailModal uses TplModal instead of raw Teleport", () => {
-    expect(testEmailSrc).toContain("import TplModal from");
-    expect(testEmailSrc).toContain("<TplModal");
-    expect(testEmailSrc).not.toContain("<Teleport");
-  });
-
-  it("SaveModuleDialog uses TplModal instead of raw Teleport", () => {
-    expect(saveModuleSrc).toContain("import TplModal from");
-    expect(saveModuleSrc).toContain("<TplModal");
-    expect(saveModuleSrc).not.toContain("<Teleport");
-  });
-
-  it("ModuleBrowserModal uses TplModal instead of raw Teleport", () => {
-    expect(moduleBrowserSrc).toContain("import TplModal from");
-    expect(moduleBrowserSrc).toContain("<TplModal");
-    expect(moduleBrowserSrc).not.toContain("<Teleport");
-  });
-
-  it("consumers no longer import useFocusTrap directly (TplModal handles it)", () => {
-    // TplModal encapsulates focus trap internally
-    expect(src).toContain("useFocusTrap");
-    expect(testEmailSrc).not.toContain("useFocusTrap");
-    expect(saveModuleSrc).not.toContain("useFocusTrap");
-    expect(moduleBrowserSrc).not.toContain("useFocusTrap");
-  });
-
-  it("consumers no longer inject tplUiTheme directly (TplModal handles it)", () => {
-    // TplModal encapsulates theme injection internally
-    expect(src).toContain("inject(UI_THEME_KEY)");
-    expect(testEmailSrc).not.toContain("tplUiTheme");
-    expect(saveModuleSrc).not.toContain("tplUiTheme");
-    expect(moduleBrowserSrc).not.toContain("tplUiTheme");
+    expect(wrapper.emitted('keydown')).toBeTruthy();
+    const [event] = wrapper.emitted('keydown')![0] as [KeyboardEvent];
+    expect(event.key).toBe('a');
+    expect(wrapper.emitted('close')).toBeFalsy();
   });
 });

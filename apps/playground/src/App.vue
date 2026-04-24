@@ -1728,6 +1728,7 @@ onUnmounted(() => {
               >
                 <button
                   role="menuitem"
+                  data-testid="export-json"
                   tabindex="-1"
                   class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 bg-transparent border-none cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 focus-visible:bg-gray-50 focus-visible:text-gray-900 focus-visible:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100 dark:focus-visible:bg-gray-700 dark:focus-visible:text-gray-100"
                   @click="
@@ -1739,6 +1740,7 @@ onUnmounted(() => {
                 </button>
                 <button
                   role="menuitem"
+                  data-testid="export-mjml"
                   tabindex="-1"
                   class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 bg-transparent border-none cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 focus-visible:bg-gray-50 focus-visible:text-gray-900 focus-visible:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100 dark:focus-visible:bg-gray-700 dark:focus-visible:text-gray-100"
                   @click="

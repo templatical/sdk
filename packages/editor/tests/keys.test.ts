@@ -26,12 +26,13 @@ function withProvide<T>(
 
 describe("requireInject", () => {
   it("returns value when provider exists", () => {
+    const provided = { state: { content: { foo: 1 } } };
     const result = withProvide(
       () => requireInject(EDITOR_KEY, "TestComponent"),
-      { [EDITOR_KEY]: { state: { content: {} } } },
+      { [EDITOR_KEY]: provided },
     );
-    expect(result).toBeDefined();
-    expect(result.state).toBeDefined();
+    expect(result).toBe(provided);
+    expect(result.state.content).toEqual({ foo: 1 });
   });
 
   it("throws with component name when provider missing", () => {

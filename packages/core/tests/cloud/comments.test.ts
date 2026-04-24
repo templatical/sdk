@@ -192,7 +192,7 @@ describe('useComments', () => {
 
       await loadComments();
 
-      expect(onError).toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledWith(expect.any(Error));
     });
   });
 

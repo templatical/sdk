@@ -1,58 +1,78 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
-import en from "../src/i18n/locales/en";
-import de from "../src/i18n/locales/de";
+// @vitest-environment happy-dom
+import { describe, expect, it, vi } from 'vitest';
+import EmojiPickerDropdown from '../src/components/blocks/EmojiPickerDropdown.vue';
+import { mountEditor } from './helpers/mount';
+import en from '../src/i18n/locales/en';
+import de from '../src/i18n/locales/de';
 
-const src = readFileSync(
-  resolve(
-    __dirname,
-    "..",
-    "src",
-    "components",
-    "blocks",
-    "EmojiPickerDropdown.vue",
-  ),
-  "utf-8",
-);
+function mountDropdown() {
+  return mountEditor(EmojiPickerDropdown, {
+    attachTo: document.body,
+  });
+}
 
-describe("EmojiPickerDropdown structure", () => {
-  it("wires focus trap to the picker element", () => {
-    expect(src).toContain("useFocusTrap(pickerRef, isOpenRef)");
+describe('EmojiPickerDropdown', () => {
+  it('starts closed (no picker panel in DOM)', () => {
+    const wrapper = mountDropdown();
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+    expect(wrapper.find('button[aria-haspopup="dialog"]').attributes('aria-expanded')).toBe('false');
   });
 
-  it("closes on outside click of the root", () => {
-    expect(src).toContain("onClickOutside(rootRef");
+  it('opens the picker on trigger click', async () => {
+    const wrapper = mountDropdown();
+    await wrapper.find('button[aria-haspopup="dialog"]').trigger('click');
+
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true);
+    expect(wrapper.find('button[aria-haspopup="dialog"]').attributes('aria-expanded')).toBe('true');
   });
 
-  it("closes on Escape keydown", () => {
-    expect(src).toContain("@keydown.esc");
-    expect(src).toContain("closeEmojiPicker");
+  it('toggles closed on second click', async () => {
+    const wrapper = mountDropdown();
+    const trigger = wrapper.find('button[aria-haspopup="dialog"]');
+    await trigger.trigger('click');
+    await trigger.trigger('click');
+
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
   });
 
-  it("exposes aria-expanded and aria-controls on the trigger button", () => {
-    expect(src).toContain(':aria-expanded="showEmojiPicker"');
-    expect(src).toContain('aria-controls="tpl-emoji-picker"');
+  it('closes on Escape keydown inside the picker', async () => {
+    const wrapper = mountDropdown();
+    await wrapper.find('button[aria-haspopup="dialog"]').trigger('click');
+    await wrapper.find('[role="dialog"]').trigger('keydown', { key: 'Escape' });
+
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
   });
 
-  it("marks each emoji button with a localized aria-label template", () => {
-    expect(src).toContain("t.paragraphEditor.emojiItemLabel");
-    expect(src).toContain("emoji }");
-  });
+  it('clicking an emoji emits insert and closes the picker', async () => {
+    const wrapper = mountDropdown();
+    await wrapper.find('button[aria-haspopup="dialog"]').trigger('click');
 
-  it("applies role=dialog to the dropdown panel", () => {
-    expect(src).toContain('role="dialog"');
+    // Emoji data loads lazily via dynamic import; poll until the grid populates.
+    await vi.waitUntil(
+      () => wrapper.findAll('[role="dialog"] button').length > 0,
+      { timeout: 2000 },
+    );
+
+    const emojiButtons = wrapper.findAll('[role="dialog"] button');
+    const first = emojiButtons[0];
+    const emojiChar = first.text();
+    await first.trigger('click');
+
+    const emitted = wrapper.emitted('insert');
+    expect(emitted).toHaveLength(1);
+    expect(emitted![0]).toEqual([emojiChar]);
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
   });
 });
 
-describe("EmojiPickerDropdown i18n", () => {
-  it("exposes emojiItemLabel in en + de with the {emoji} placeholder", () => {
-    expect(en.paragraphEditor.emojiItemLabel).toContain("{emoji}");
-    expect(de.paragraphEditor.emojiItemLabel).toContain("{emoji}");
+describe('emoji picker i18n', () => {
+  it('en and de expose emojiItemLabel with {emoji} placeholder', () => {
+    expect(en.paragraphEditor.emojiItemLabel).toContain('{emoji}');
+    expect(de.paragraphEditor.emojiItemLabel).toContain('{emoji}');
   });
 
-  it("exposes closeEmojiPicker label in en + de", () => {
-    expect(en.paragraphEditor.closeEmojiPicker.length).toBeGreaterThan(0);
-    expect(de.paragraphEditor.closeEmojiPicker.length).toBeGreaterThan(0);
+  it('en and de expose non-empty insertEmoji label', () => {
+    expect(en.paragraphEditor.insertEmoji.length).toBeGreaterThan(0);
+    expect(de.paragraphEditor.insertEmoji.length).toBeGreaterThan(0);
   });
 });

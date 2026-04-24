@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import EmojiPickerDropdown from "./EmojiPickerDropdown.vue";
+import ToolbarIconButton from "../toolbar/ToolbarIconButton.vue";
+import ToolbarSeparator from "../toolbar/ToolbarSeparator.vue";
+import ToolbarSelect from "../toolbar/ToolbarSelect.vue";
 import { useI18n } from "../../composables";
 import type { Editor } from "@tiptap/core";
 import {
@@ -58,40 +61,26 @@ function insertEmoji(emoji: string): void {
   props.editor?.chain().focus().insertContent(emoji).run();
 }
 
-function getCurrentFontFamily(): string {
-  return (props.editor?.getAttributes("textStyle").fontFamily as string) || "";
-}
-
-function getCurrentFontSize(): string {
-  return (props.editor?.getAttributes("textStyle").fontSize as string) || "";
-}
-
-function getCurrentColor(): string {
-  return (props.editor?.getAttributes("textStyle").color as string) || "";
+function textStyleAttr(attr: string): string {
+  return (props.editor?.getAttributes("textStyle")[attr] as string) || "";
 }
 
 function setFontFamily(family: string): void {
-  if (family) {
-    props.editor?.chain().focus().setFontFamily(family).run();
-  } else {
-    props.editor?.chain().focus().unsetFontFamily().run();
-  }
+  const chain = props.editor?.chain().focus();
+  if (family) chain?.setFontFamily(family).run();
+  else chain?.unsetFontFamily().run();
 }
 
 function setFontSize(size: string): void {
-  if (size) {
-    props.editor?.chain().focus().setFontSize(size).run();
-  } else {
-    props.editor?.chain().focus().unsetFontSize().run();
-  }
+  const chain = props.editor?.chain().focus();
+  if (size) chain?.setFontSize(size).run();
+  else chain?.unsetFontSize().run();
 }
 
 function setColor(color: string): void {
-  if (color) {
-    props.editor?.chain().focus().setColor(color).run();
-  } else {
-    props.editor?.chain().focus().unsetColor().run();
-  }
+  const chain = props.editor?.chain().focus();
+  if (color) chain?.setColor(color).run();
+  else chain?.unsetColor().run();
 }
 
 function getCurrentLineHeight(): string {
@@ -99,25 +88,15 @@ function getCurrentLineHeight(): string {
 }
 
 function setLineHeight(value: string): void {
-  if (value) {
-    props.editor?.chain().focus().setLineHeight(value).run();
-  } else {
-    props.editor?.chain().focus().unsetLineHeight().run();
-  }
-}
-
-function getCurrentLetterSpacing(): string {
-  return (
-    (props.editor?.getAttributes("textStyle").letterSpacing as string) || ""
-  );
+  const chain = props.editor?.chain().focus();
+  if (value) chain?.setLineHeight(value).run();
+  else chain?.unsetLineHeight().run();
 }
 
 function setLetterSpacing(value: string): void {
-  if (value && value !== "normal") {
-    props.editor?.chain().focus().setLetterSpacing(value).run();
-  } else {
-    props.editor?.chain().focus().unsetLetterSpacing().run();
-  }
+  const chain = props.editor?.chain().focus();
+  if (value && value !== "normal") chain?.setLetterSpacing(value).run();
+  else chain?.unsetLetterSpacing().run();
 }
 
 function getCurrentHighlight(): string {
@@ -125,11 +104,9 @@ function getCurrentHighlight(): string {
 }
 
 function setHighlight(color: string): void {
-  if (color) {
-    props.editor?.chain().focus().setHighlight({ color }).run();
-  } else {
-    props.editor?.chain().focus().unsetHighlight().run();
-  }
+  const chain = props.editor?.chain().focus();
+  if (color) chain?.setHighlight({ color }).run();
+  else chain?.unsetHighlight().run();
 }
 </script>
 
@@ -151,43 +128,28 @@ function setHighlight(color: string): void {
       <template v-if="!isLoading && editor">
         <!-- Row 1: Font family, Font size, Text color, Bold/Italic/Underline/Strikethrough -->
         <div class="tpl:flex tpl:items-center tpl:gap-1">
-          <select
-            class="tpl:h-8 tpl:w-32 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text)] tpl:outline-none"
-            :value="getCurrentFontFamily()"
-            :aria-label="t.paragraphEditor.fontFamily"
-            :title="t.paragraphEditor.fontFamily"
-            @change="setFontFamily(($event.target as HTMLSelectElement).value)"
-          >
-            <option value="">{{ t.paragraphEditor.defaultFont }}</option>
-            <option
-              v-for="font in fontFamilies"
-              :key="font.value"
-              :value="font.value"
-            >
-              {{ font.label }}
-            </option>
-          </select>
-          <select
-            class="tpl:h-8 tpl:w-20 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-2 tpl:text-xs tpl:text-[var(--tpl-text)] tpl:outline-none"
-            :value="getCurrentFontSize()"
-            :aria-label="t.paragraphEditor.fontSize"
-            :title="t.paragraphEditor.fontSize"
-            @change="setFontSize(($event.target as HTMLSelectElement).value)"
-          >
-            <option value="">{{ t.paragraphEditor.defaultSize }}</option>
-            <option v-for="size in FONT_SIZE_OPTIONS" :key="size" :value="size">
-              {{ size }}
-            </option>
-          </select>
-          <span
-            class="tpl:mx-1 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
+          <ToolbarSelect
+            :model-value="textStyleAttr('fontFamily')"
+            :options="fontFamilies"
+            :label="t.paragraphEditor.fontFamily"
+            :placeholder="t.paragraphEditor.defaultFont"
+            width-class="tpl:w-32"
+            @update:model-value="setFontFamily"
+          />
+          <ToolbarSelect
+            :model-value="textStyleAttr('fontSize')"
+            :options="FONT_SIZE_OPTIONS"
+            :label="t.paragraphEditor.fontSize"
+            :placeholder="t.paragraphEditor.defaultSize"
+            width-class="tpl:w-20"
+            @update:model-value="setFontSize"
+          />
+          <ToolbarSeparator />
           <div class="tpl:relative">
             <input
               type="color"
               class="tpl:size-8 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-1"
-              :value="getCurrentColor() || DEFAULT_TEXT_COLOR"
+              :value="textStyleAttr('color') || DEFAULT_TEXT_COLOR"
               :aria-label="t.paragraphEditor.textColor"
               :title="t.paragraphEditor.textColor"
               @input="setColor(($event.target as HTMLInputElement).value)"
@@ -206,250 +168,124 @@ function setHighlight(color: string): void {
               @input="setHighlight(($event.target as HTMLInputElement).value)"
             />
           </div>
-          <span
-            class="tpl:mx-1 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
-          <!-- Bold/Italic/Underline/Strikethrough -->
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive('bold'),
-            }"
-            :aria-label="t.paragraphEditor.bold"
-            :title="t.paragraphEditor.bold"
-            @click="editor?.chain().focus().toggleBold().run()"
-          >
-            <Bold :size="16" :stroke-width="2.5" />
-          </button>
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive('italic'),
-            }"
-            :aria-label="t.paragraphEditor.italic"
-            :title="t.paragraphEditor.italic"
-            @click="editor?.chain().focus().toggleItalic().run()"
-          >
-            <Italic :size="16" :stroke-width="2" />
-          </button>
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive('underline'),
-            }"
-            :aria-label="t.paragraphEditor.underline"
-            :title="t.paragraphEditor.underline"
-            @click="editor?.chain().focus().toggleUnderline().run()"
-          >
-            <Underline :size="16" :stroke-width="2" />
-          </button>
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive('strike'),
-            }"
-            :aria-label="t.paragraphEditor.strikethrough"
-            :title="t.paragraphEditor.strikethrough"
-            @click="editor?.chain().focus().toggleStrike().run()"
-          >
-            <Strikethrough :size="16" :stroke-width="2" />
-          </button>
-          <span
-            class="tpl:mx-1 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
-          <!-- Subscript/Superscript -->
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive('subscript'),
-            }"
-            :aria-label="t.paragraphEditor.subscript"
-            :title="t.paragraphEditor.subscript"
-            @click="editor?.chain().focus().toggleSubscript().run()"
-          >
-            <Subscript :size="16" :stroke-width="2" />
-          </button>
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive('superscript'),
-            }"
-            :aria-label="t.paragraphEditor.superscript"
-            :title="t.paragraphEditor.superscript"
-            @click="editor?.chain().focus().toggleSuperscript().run()"
-          >
-            <Superscript :size="16" :stroke-width="2" />
-          </button>
-          <span
-            class="tpl:mx-1 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
-          <!-- Link -->
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive('link'),
-            }"
-            :aria-label="t.paragraphEditor.addLink"
-            :title="t.paragraphEditor.addLink"
+          <ToolbarSeparator />
+          <ToolbarIconButton
+            :icon="Bold"
+            :label="t.paragraphEditor.bold"
+            :active="editor.isActive('bold')"
+            :stroke-width="2.5"
+            @click="editor.chain().focus().toggleBold().run()"
+          />
+          <ToolbarIconButton
+            :icon="Italic"
+            :label="t.paragraphEditor.italic"
+            :active="editor.isActive('italic')"
+            @click="editor.chain().focus().toggleItalic().run()"
+          />
+          <ToolbarIconButton
+            :icon="Underline"
+            :label="t.paragraphEditor.underline"
+            :active="editor.isActive('underline')"
+            @click="editor.chain().focus().toggleUnderline().run()"
+          />
+          <ToolbarIconButton
+            :icon="Strikethrough"
+            :label="t.paragraphEditor.strikethrough"
+            :active="editor.isActive('strike')"
+            @click="editor.chain().focus().toggleStrike().run()"
+          />
+          <ToolbarSeparator />
+          <ToolbarIconButton
+            :icon="Subscript"
+            :label="t.paragraphEditor.subscript"
+            :active="editor.isActive('subscript')"
+            @click="editor.chain().focus().toggleSubscript().run()"
+          />
+          <ToolbarIconButton
+            :icon="Superscript"
+            :label="t.paragraphEditor.superscript"
+            :active="editor.isActive('superscript')"
+            @click="editor.chain().focus().toggleSuperscript().run()"
+          />
+          <ToolbarSeparator />
+          <ToolbarIconButton
+            :icon="Link"
+            :label="t.paragraphEditor.addLink"
+            :active="editor.isActive('link')"
             @click="emit('open-link-dialog')"
-          >
-            <Link :size="16" :stroke-width="2" />
-          </button>
+          />
         </div>
         <!-- Row 2: Lists, Alignment, LH, LS, Clear, Emoji, Merge tags -->
         <div class="tpl:flex tpl:items-center tpl:gap-1">
-          <!-- Lists -->
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive('bulletList'),
-            }"
-            :aria-label="t.paragraphEditor.bulletList"
-            :title="t.paragraphEditor.bulletList"
-            @click="editor?.chain().focus().toggleBulletList().run()"
-          >
-            <List :size="16" :stroke-width="2" />
-          </button>
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive('orderedList'),
-            }"
-            :aria-label="t.paragraphEditor.numberedList"
-            :title="t.paragraphEditor.numberedList"
-            @click="editor?.chain().focus().toggleOrderedList().run()"
-          >
-            <ListOrdered :size="16" :stroke-width="2" />
-          </button>
-          <span
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
-          <!-- Alignment -->
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive({
-                textAlign: 'left',
-              }),
-            }"
-            :aria-label="t.paragraphEditor.alignLeft"
-            :title="t.paragraphEditor.alignLeft"
-            @click="editor?.chain().focus().setTextAlign('left').run()"
-          >
-            <AlignLeft :size="16" :stroke-width="2" />
-          </button>
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive({
-                textAlign: 'center',
-              }),
-            }"
-            :aria-label="t.paragraphEditor.alignCenter"
-            :title="t.paragraphEditor.alignCenter"
-            @click="editor?.chain().focus().setTextAlign('center').run()"
-          >
-            <AlignCenter :size="16" :stroke-width="2" />
-          </button>
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :class="{
-              'tpl-text-toolbar-btn--active': editor?.isActive({
-                textAlign: 'right',
-              }),
-            }"
-            :aria-label="t.paragraphEditor.alignRight"
-            :title="t.paragraphEditor.alignRight"
-            @click="editor?.chain().focus().setTextAlign('right').run()"
-          >
-            <AlignRight :size="16" :stroke-width="2" />
-          </button>
-          <span
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
-          <!-- Line Height -->
-          <select
-            class="tpl:h-8 tpl:w-16 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-1 tpl:text-xs tpl:text-[var(--tpl-text)] tpl:outline-none"
-            :value="getCurrentLineHeight()"
-            :title="t.paragraphEditor.lineHeight"
-            @change="setLineHeight(($event.target as HTMLSelectElement).value)"
-          >
-            <option value="">LH</option>
-            <option v-for="lh in LINE_HEIGHT_OPTIONS" :key="lh" :value="lh">
-              {{ lh }}
-            </option>
-          </select>
-          <!-- Letter Spacing -->
-          <select
-            class="tpl:h-8 tpl:w-20 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-1 tpl:text-xs tpl:text-[var(--tpl-text)] tpl:outline-none"
-            :value="getCurrentLetterSpacing()"
-            :title="t.paragraphEditor.letterSpacing"
-            @change="
-              setLetterSpacing(($event.target as HTMLSelectElement).value)
-            "
-          >
-            <option value="">LS</option>
-            <option
-              v-for="ls in LETTER_SPACING_OPTIONS"
-              :key="ls.value"
-              :value="ls.value"
-            >
-              {{ ls.label }}
-            </option>
-          </select>
-          <span
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
-          <!-- Clear Formatting -->
-          <button
-            type="button"
-            class="tpl-text-toolbar-btn"
-            :aria-label="t.paragraphEditor.clearFormatting"
-            :title="t.paragraphEditor.clearFormatting"
-            @click="editor?.chain().focus().clearNodes().unsetAllMarks().run()"
-          >
-            <RemoveFormatting :size="16" :stroke-width="2" />
-          </button>
-          <!-- Emoji Picker -->
-          <span
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-            aria-hidden="true"
-          ></span>
+          <ToolbarIconButton
+            :icon="List"
+            :label="t.paragraphEditor.bulletList"
+            :active="editor.isActive('bulletList')"
+            @click="editor.chain().focus().toggleBulletList().run()"
+          />
+          <ToolbarIconButton
+            :icon="ListOrdered"
+            :label="t.paragraphEditor.numberedList"
+            :active="editor.isActive('orderedList')"
+            @click="editor.chain().focus().toggleOrderedList().run()"
+          />
+          <ToolbarSeparator />
+          <ToolbarIconButton
+            :icon="AlignLeft"
+            :label="t.paragraphEditor.alignLeft"
+            :active="editor.isActive({ textAlign: 'left' })"
+            @click="editor.chain().focus().setTextAlign('left').run()"
+          />
+          <ToolbarIconButton
+            :icon="AlignCenter"
+            :label="t.paragraphEditor.alignCenter"
+            :active="editor.isActive({ textAlign: 'center' })"
+            @click="editor.chain().focus().setTextAlign('center').run()"
+          />
+          <ToolbarIconButton
+            :icon="AlignRight"
+            :label="t.paragraphEditor.alignRight"
+            :active="editor.isActive({ textAlign: 'right' })"
+            @click="editor.chain().focus().setTextAlign('right').run()"
+          />
+          <ToolbarSeparator />
+          <ToolbarSelect
+            :model-value="getCurrentLineHeight()"
+            :options="LINE_HEIGHT_OPTIONS"
+            :label="t.paragraphEditor.lineHeight"
+            placeholder="LH"
+            width-class="tpl:w-16"
+            @update:model-value="setLineHeight"
+          />
+          <ToolbarSelect
+            :model-value="textStyleAttr('letterSpacing')"
+            :options="LETTER_SPACING_OPTIONS"
+            :label="t.paragraphEditor.letterSpacing"
+            placeholder="LS"
+            width-class="tpl:w-20"
+            @update:model-value="setLetterSpacing"
+          />
+          <ToolbarSeparator />
+          <ToolbarIconButton
+            :icon="RemoveFormatting"
+            :label="t.paragraphEditor.clearFormatting"
+            @click="editor.chain().focus().clearNodes().unsetAllMarks().run()"
+          />
+          <ToolbarSeparator />
           <EmojiPickerDropdown @insert="insertEmoji" />
-          <!-- Add Merge Tag -->
-          <span
-            v-if="mergeTagEnabled"
-            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
-          ></span>
-          <button
-            v-if="mergeTagEnabled"
-            type="button"
-            class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-            :aria-label="t.mergeTag.add"
-            :title="t.mergeTag.add"
-            @click="emit('add-merge-tag')"
-          >
-            <ScanLine :size="16" :stroke-width="2" />
-            {{ t.mergeTag.add }}
-          </button>
+          <template v-if="mergeTagEnabled">
+            <ToolbarSeparator />
+            <button
+              type="button"
+              class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              :aria-label="t.mergeTag.add"
+              :title="t.mergeTag.add"
+              @click="emit('add-merge-tag')"
+            >
+              <ScanLine :size="16" :stroke-width="2" />
+              {{ t.mergeTag.add }}
+            </button>
+          </template>
         </div>
       </template>
       <template v-else>

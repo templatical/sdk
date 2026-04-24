@@ -103,7 +103,7 @@ test.describe("Playground config & export", () => {
     await editorPage.openExportMenu();
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.locator(SELECTORS.exportMenuItem).first().click(),
+      page.locator(SELECTORS.exportJsonItem).click(),
     ]);
     expect(download.suggestedFilename()).toContain(".json");
     const content = await (await download.createReadStream()).toArray();
@@ -119,7 +119,7 @@ test.describe("Playground config & export", () => {
     await editorPage.openExportMenu();
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.locator(SELECTORS.exportMenuItem).nth(1).click(),
+      page.locator(SELECTORS.exportMjmlItem).click(),
     ]);
     expect(download.suggestedFilename()).toContain(".mjml");
     const content = await (await download.createReadStream()).toArray();

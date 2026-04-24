@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import LoadingTrack from "../../components/LoadingTrack.vue";
-import { EDITOR_KEY, SCORING_KEY, MERGE_TAGS_KEY } from "../../keys";
+import {
+  EDITOR_KEY,
+  SCORING_KEY,
+  MERGE_TAGS_KEY,
+  requireInject,
+} from "../../keys";
+import {
+  scoreColor,
+  scoreBgColor,
+  severityColor,
+  severityBgColor,
+} from "../utils/scoringStyles";
 import { useI18n } from "../../composables/useI18n";
 import type { ScoringCategory, ScoringFinding } from "@templatical/types";
 import {
@@ -28,8 +39,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const editor = inject(EDITOR_KEY)!;
-const scoring = inject(SCORING_KEY)!;
+const editor = requireInject(EDITOR_KEY, "TemplateScoringPanel");
+const scoring = requireInject(SCORING_KEY, "TemplateScoringPanel");
 const mergeTags = inject(MERGE_TAGS_KEY, []);
 
 const expandedCategories = ref<Record<string, boolean>>({
@@ -56,46 +67,6 @@ const categoryIcons: Record<ScoringCategory, typeof ShieldCheck> = {
   accessibility: Sparkles,
   bestPractices: Zap,
 };
-
-function scoreColor(score: number): string {
-  if (score >= 80) {
-    return "var(--tpl-success)";
-  }
-  if (score >= 60) {
-    return "var(--tpl-warning)";
-  }
-  return "var(--tpl-danger)";
-}
-
-function scoreBgColor(score: number): string {
-  if (score >= 80) {
-    return "var(--tpl-success-light)";
-  }
-  if (score >= 60) {
-    return "var(--tpl-warning-light)";
-  }
-  return "var(--tpl-danger-light)";
-}
-
-function severityColor(severity: string): string {
-  if (severity === "high") {
-    return "var(--tpl-danger)";
-  }
-  if (severity === "medium") {
-    return "var(--tpl-warning)";
-  }
-  return "var(--tpl-text-muted)";
-}
-
-function severityBgColor(severity: string): string {
-  if (severity === "high") {
-    return "var(--tpl-danger-light)";
-  }
-  if (severity === "medium") {
-    return "var(--tpl-warning-light)";
-  }
-  return "var(--tpl-bg-hover)";
-}
 
 function triggerScore(): void {
   scoring.score(editor.content.value, mergeTags);

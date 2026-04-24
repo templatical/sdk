@@ -1,264 +1,387 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+// @vitest-environment happy-dom
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { defineComponent, h, ref } from 'vue';
+import { mount } from '@vue/test-utils';
+import { EDITOR_KEY, MERGE_TAGS_KEY, ON_REQUEST_MERGE_TAG_KEY } from '../src/keys';
+import { useRichTextEditor } from '../src/composables/useRichTextEditor';
+import { makeStubTranslations } from './helpers/translations';
 
-const composableSrc = readFileSync(
-  resolve(__dirname, "../src/composables/useRichTextEditor.ts"),
-  "utf-8",
-);
+// --- Lightweight TipTap stubs ---------------------------------------------------
 
-const linkDialogSrc = readFileSync(
-  resolve(__dirname, "../src/composables/useRichTextLinkDialog.ts"),
-  "utf-8",
-);
+interface StubEditorOpts {
+  extensions: any[];
+  content: string;
+  editable: boolean;
+  onUpdate?: (ctx: { editor: StubEditor }) => void;
+}
 
-describe("useRichTextEditor composable structure", () => {
-  it("exports UseRichTextEditorOptions interface with required fields", () => {
-    expect(composableSrc).toContain("blockId: () => string");
-    expect(composableSrc).toContain("blockContent: () => string");
-    expect(composableSrc).toContain("loadExtensions: (ctx: MergeTagContext)");
-    expect(composableSrc).toContain("onDone: () => void");
-  });
+class StubEditor {
+  extensions: any[];
+  private html: string;
+  onUpdate: StubEditorOpts['onUpdate'];
+  destroyed = false;
+  focusCalls: string[] = [];
+  commands = {
+    focus: (pos?: string) => {
+      this.focusCalls.push(pos ?? '');
+      return this;
+    },
+    setContent: (html: string, _opts?: { emitUpdate?: boolean }) => {
+      this.html = html;
+      return this;
+    },
+  };
 
-  it("exports optional onClickOutsideSideEffect callback", () => {
-    expect(composableSrc).toContain(
-      "onClickOutsideSideEffect?: (target: HTMLElement) => void",
-    );
-  });
+  constructor(opts: StubEditorOpts) {
+    this.extensions = opts.extensions;
+    this.html = opts.content;
+    this.onUpdate = opts.onUpdate;
+  }
 
-  it("exports optional editorName for error logging", () => {
-    expect(composableSrc).toContain("editorName?: string");
-  });
+  getHTML(): string {
+    return this.html;
+  }
 
-  it("exports MergeTagContext with mergeTags and syntax", () => {
-    expect(composableSrc).toContain("export interface MergeTagContext");
-    expect(composableSrc).toMatch(/mergeTags:.*useMergeTag.*\["mergeTags"\]/);
-    expect(composableSrc).toMatch(/syntax:.*useMergeTag.*\["syntax"\]/);
-  });
+  setHTMLExternally(html: string): void {
+    this.html = html;
+    this.onUpdate?.({ editor: this });
+  }
 
-  it("returns editor and EditorContent shallow refs", () => {
-    expect(composableSrc).toContain(
-      "editor: ShallowRef<Editor | null>",
-    );
-    expect(composableSrc).toContain(
-      "EditorContent: ShallowRef<typeof EditorContentComponent | null>",
-    );
-  });
+  chain() {
+    const self = this;
+    const chainObj: any = {
+      focus: () => chainObj,
+      insertMergeTag: (tag: { label: string; value: string }) => {
+        self.html += `<merge-tag data-label="${tag.label}" data-value="${tag.value}"/>`;
+        return chainObj;
+      },
+      run: () => true,
+    };
+    return chainObj;
+  }
 
-  it("returns isLoading state ref", () => {
-    expect(composableSrc).toContain("isLoading: Ref<boolean>");
-  });
+  destroy(): void {
+    this.destroyed = true;
+  }
+}
 
-  it("returns link dialog state and functions", () => {
-    expect(composableSrc).toContain("showLinkDialog: Ref<boolean>");
-    expect(composableSrc).toContain("linkUrl: Ref<string>");
-    expect(composableSrc).toContain("linkDialogRef: Ref<HTMLElement | null>");
-    expect(composableSrc).toContain("openLinkDialog: () => void");
-    expect(composableSrc).toContain("insertLink: () => void");
-    expect(composableSrc).toContain("removeLink: () => void");
-    expect(composableSrc).toContain("closeLinkDialog: () => void");
-    expect(composableSrc).toContain(
-      "handleLinkKeydown: (event: KeyboardEvent) => void",
-    );
-  });
-
-  it("returns merge tag state and handler", () => {
-    expect(composableSrc).toContain("mergeTagEnabled:");
-    expect(composableSrc).toContain("isRequestingMergeTag:");
-    expect(composableSrc).toContain(
-      "handleAddMergeTag: () => Promise<void>",
-    );
-  });
+const StubEditorContent = defineComponent({
+  name: 'EditorContent',
+  render: () => h('div', { class: 'stub-editor-content' }),
 });
 
-describe("useRichTextEditor implementation", () => {
-  it("injects editor from context", () => {
-    expect(composableSrc).toContain('inject(EDITOR_KEY, null)');
+function makeLoadExtensions(overrides: Partial<{
+  extensions: any[];
+  throwError: unknown;
+}> = {}) {
+  const { extensions = [{ name: 'bold' }, { name: 'italic' }], throwError = null } = overrides;
+  return vi.fn(async () => {
+    if (throwError !== null) throw throwError;
+    return {
+      TiptapEditor: StubEditor as any,
+      EC: StubEditorContent as any,
+      extensions,
+    };
   });
+}
 
-  it("delegates link dialog to useRichTextLinkDialog", () => {
-    expect(composableSrc).toContain("useRichTextLinkDialog(editor)");
-    expect(linkDialogSrc).toContain(
-      "useFocusTrap(linkDialogRef, showLinkDialog)",
-    );
-  });
+function mountRichText(
+  options: Partial<Parameters<typeof useRichTextEditor>[0]> & {
+    blockId?: string;
+    blockContent?: string;
+  } = {},
+  provides: Record<symbol, unknown> = {},
+) {
+  const blockContent = ref(options.blockContent ?? '<p>Hello</p>');
+  const updateBlock = vi.fn();
+  const emailEditor = {
+    updateBlock,
+  } as any;
+  const onDone = options.onDone ?? vi.fn();
+  const onClickOutsideSideEffect = options.onClickOutsideSideEffect;
+  const loadExtensions = options.loadExtensions ?? makeLoadExtensions();
 
-  it("sets up useTimeoutFn at setup time for focus", () => {
-    expect(composableSrc).toContain("useTimeoutFn(");
-    expect(composableSrc).toContain('focus("end")');
-  });
-
-  it("calls initEditor which invokes loadExtensions with merge tag context", () => {
-    expect(composableSrc).toContain(
-      "await options.loadExtensions({",
-    );
-    expect(composableSrc).toContain("mergeTags,");
-    expect(composableSrc).toContain("syntax,");
-  });
-
-  it("deduplicates extensions by name", () => {
-    expect(composableSrc).toContain("const seen = new Map<string, number>()");
-    expect(composableSrc).toContain("seen.get(ext.name) === i");
-  });
-
-  it("watches block content for external updates", () => {
-    expect(composableSrc).toContain("options.blockContent()");
-    expect(composableSrc).toContain("setContent(newContent, { emitUpdate: false })");
-  });
-
-  it("handles click outside with optional side effect callback", () => {
-    expect(composableSrc).toContain(
-      "options.onClickOutsideSideEffect?.(target)",
-    );
-    expect(composableSrc).toContain(".tpl-text-editor-wrapper");
-    expect(composableSrc).toContain(".tpl-text-toolbar");
-    expect(composableSrc).toContain(".tpl-link-dialog");
-  });
-
-  it("calls onDone when clicking outside editor areas", () => {
-    expect(composableSrc).toContain("options.onDone()");
-  });
-
-  it("registers document mousedown listener via useEventListener", () => {
-    expect(composableSrc).toContain(
-      'useEventListener(document, "mousedown", handleClickOutside)',
-    );
-  });
-
-  it("cleans up on unmount: stops timeout and destroys editor", () => {
-    expect(composableSrc).toContain("onBeforeUnmount(() => {");
-    expect(composableSrc).toContain("stopFocusTimeout()");
-    expect(composableSrc).toContain("editor.value?.destroy()");
-  });
-
-  it("openLinkDialog reads current link href", () => {
-    expect(linkDialogSrc).toContain('getAttributes("link").href');
-  });
-
-  it("insertLink auto-prepends https:// when missing", () => {
-    expect(linkDialogSrc).toContain('startsWith("http")');
-    expect(linkDialogSrc).toContain("`https://${linkUrl.value}`");
-  });
-
-  it("handleAddMergeTag inserts merge tag via editor chain", () => {
-    expect(composableSrc).toContain("requestMergeTag()");
-    expect(composableSrc).toContain(".insertMergeTag(");
-  });
-
-  it("logs error with editorName on init failure", () => {
-    expect(composableSrc).toContain("options.editorName");
-    expect(composableSrc).toContain("RichTextEditor");
-  });
-});
-
-// ── Consumers use useRichTextEditor ───────────────────────────────────────────
-
-describe("TitleEditor.vue uses useRichTextEditor", () => {
-  const src = readFileSync(
-    resolve(
-      __dirname,
-      "../src/components/blocks/TitleEditor.vue",
-    ),
-    "utf-8",
+  let captured!: ReturnType<typeof useRichTextEditor>;
+  const wrapper = mount(
+    defineComponent({
+      setup() {
+        captured = useRichTextEditor({
+          blockId: () => options.blockId ?? 'block-1',
+          blockContent: () => blockContent.value,
+          loadExtensions,
+          onDone,
+          onClickOutsideSideEffect,
+          editorName: 'TestEditor',
+        });
+        return () => h('div', { class: 'tpl-text-editor-wrapper' });
+      },
+    }),
+    {
+      attachTo: document.body,
+      global: {
+        provide: {
+          [EDITOR_KEY]: emailEditor,
+          [MERGE_TAGS_KEY]: [] as any[],
+          [ON_REQUEST_MERGE_TAG_KEY]: null,
+          translations: makeStubTranslations(),
+          ...provides,
+        },
+      },
+    },
   );
 
-  it("imports useRichTextEditor", () => {
-    expect(src).toContain(
-      'import { useRichTextEditor } from "../../composables/useRichTextEditor"',
-    );
+  return {
+    wrapper,
+    api: () => captured,
+    blockContent,
+    updateBlock,
+    loadExtensions,
+    onDone,
+    emailEditor,
+    destroy: () => wrapper.unmount(),
+  };
+}
+
+async function flushAsync() {
+  await new Promise((r) => setTimeout(r, 0));
+  await new Promise((r) => setTimeout(r, 0));
+}
+
+describe('useRichTextEditor', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
   });
 
-  it("destructures all needed return values", () => {
-    expect(src).toContain("editor,");
-    expect(src).toContain("EditorContent,");
-    expect(src).toContain("isLoading,");
-    expect(src).toContain("showLinkDialog,");
-    expect(src).toContain("linkUrl,");
-    expect(src).toContain("openLinkDialog,");
-    expect(src).toContain("handleAddMergeTag,");
+  describe('initialization', () => {
+    it('starts with isLoading=true and no editor instance', () => {
+      const ctx = mountRichText();
+      expect(ctx.api().isLoading.value).toBe(true);
+      expect(ctx.api().editor.value).toBeNull();
+      expect(ctx.api().initError.value).toBeNull();
+    });
+
+    it('after load, creates a TipTap editor with the current blockContent', async () => {
+      const ctx = mountRichText({ blockContent: '<p>Hello world</p>' });
+      await flushAsync();
+
+      expect(ctx.api().isLoading.value).toBe(false);
+      expect(ctx.api().editor.value).not.toBeNull();
+      expect(ctx.api().editor.value!.getHTML()).toBe('<p>Hello world</p>');
+    });
+
+    it('deduplicates extensions by name (keeps the last occurrence)', async () => {
+      const extA = { name: 'bold', marker: 'A' };
+      const extB = { name: 'bold', marker: 'B' };
+      const loadExtensions = makeLoadExtensions({
+        extensions: [extA, extB, { name: 'italic', marker: 'C' }],
+      });
+      const ctx = mountRichText({ loadExtensions });
+      await flushAsync();
+
+      const ext = ctx.api().editor.value!.extensions;
+      const boldExtensions = ext.filter((e: any) => e.name === 'bold');
+      expect(boldExtensions).toHaveLength(1);
+      expect(boldExtensions[0].marker).toBe('B');
+      expect(ext.map((e: any) => e.name).sort()).toEqual(['bold', 'italic']);
+    });
+
+    it('exposes EditorContent component after load', async () => {
+      const ctx = mountRichText();
+      await flushAsync();
+      expect(ctx.api().EditorContent.value).toBe(StubEditorContent);
+    });
   });
 
-  it("passes TitleEditor as editorName", () => {
-    expect(src).toContain('editorName: "TitleEditor"');
+  describe('init error handling', () => {
+    it('sets initError to the Error message and isLoading=false on load failure', async () => {
+      const loadExtensions = makeLoadExtensions({ throwError: new Error('cdn down') });
+      const ctx = mountRichText({ loadExtensions });
+      await flushAsync();
+
+      expect(ctx.api().initError.value).toBe('cdn down');
+      expect(ctx.api().isLoading.value).toBe(false);
+      expect(ctx.api().editor.value).toBeNull();
+    });
+
+    it('sets a generic message when loadExtensions throws a non-Error', async () => {
+      const loadExtensions = makeLoadExtensions({ throwError: 'weird-string' });
+      const ctx = mountRichText({ loadExtensions });
+      await flushAsync();
+
+      expect(ctx.api().initError.value).toBe('Failed to load editor');
+    });
+
+    it('retry() clears initError, destroys prior editor, and re-runs init', async () => {
+      const err = new Error('transient');
+      const loadExtensions = vi
+        .fn()
+        .mockImplementationOnce(async () => {
+          throw err;
+        })
+        .mockImplementationOnce(async () => ({
+          TiptapEditor: StubEditor as any,
+          EC: StubEditorContent as any,
+          extensions: [{ name: 'bold' }],
+        }));
+      const ctx = mountRichText({ loadExtensions });
+      await flushAsync();
+      expect(ctx.api().initError.value).toBe('transient');
+
+      ctx.api().retry();
+      await flushAsync();
+
+      expect(ctx.api().initError.value).toBeNull();
+      expect(ctx.api().editor.value).not.toBeNull();
+      expect(loadExtensions).toHaveBeenCalledTimes(2);
+    });
   });
 
-  it("provides loadExtensions with title-specific StarterKit config", () => {
-    expect(src).toContain("bulletList: false");
-    expect(src).toContain("orderedList: false");
-    expect(src).toContain("listItem: false");
-    expect(src).toContain("strike: false");
+  describe('content sync', () => {
+    it('forwards onUpdate to emailEditor.updateBlock with new HTML', async () => {
+      const ctx = mountRichText({ blockId: 'abc' });
+      await flushAsync();
+
+      const tipTap = ctx.api().editor.value as unknown as StubEditor;
+      tipTap.setHTMLExternally('<p>Edited</p>');
+
+      expect(ctx.updateBlock).toHaveBeenCalledWith('abc', { content: '<p>Edited</p>' });
+    });
+
+    it('pushes external blockContent changes into the editor when they differ', async () => {
+      const ctx = mountRichText({ blockContent: '<p>Initial</p>' });
+      await flushAsync();
+
+      const setContentSpy = vi.spyOn(ctx.api().editor.value!.commands, 'setContent');
+      ctx.blockContent.value = '<p>Changed</p>';
+      await flushAsync();
+
+      expect(setContentSpy).toHaveBeenCalledWith('<p>Changed</p>', {
+        emitUpdate: false,
+      });
+    });
+
+    it('does NOT call setContent when external change equals current HTML (prevents feedback loop)', async () => {
+      const ctx = mountRichText({ blockContent: '<p>Same</p>' });
+      await flushAsync();
+
+      const setContentSpy = vi.spyOn(ctx.api().editor.value!.commands, 'setContent');
+      ctx.blockContent.value = '<p>Same</p>';
+      await flushAsync();
+
+      expect(setContentSpy).not.toHaveBeenCalled();
+    });
   });
 
-  it("does not import useMergeTag, useFocusTrap, useEventListener directly", () => {
-    expect(src).not.toContain("import { useMergeTag");
-    expect(src).not.toContain("useEventListener");
-    expect(src).not.toContain("onBeforeUnmount");
+  describe('click-outside handling', () => {
+    it('calls onDone on mousedown outside the editor wrapper', async () => {
+      const ctx = mountRichText();
+      await flushAsync();
+
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+      outside.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+
+      expect(ctx.onDone).toHaveBeenCalledOnce();
+    });
+
+    it('does NOT call onDone when mousedown originates inside the editor wrapper', async () => {
+      const ctx = mountRichText();
+      await flushAsync();
+
+      const inside = ctx.wrapper.find('.tpl-text-editor-wrapper').element as HTMLElement;
+      inside.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+
+      expect(ctx.onDone).not.toHaveBeenCalled();
+    });
+
+    it('invokes onClickOutsideSideEffect for every outside mousedown', async () => {
+      const onClickOutsideSideEffect = vi.fn();
+      const ctx = mountRichText({ onClickOutsideSideEffect });
+      await flushAsync();
+
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+      outside.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+
+      expect(onClickOutsideSideEffect).toHaveBeenCalledOnce();
+    });
+
+    it('suppresses onDone while a merge-tag request is pending', async () => {
+      const onRequestMergeTag = vi.fn(() => new Promise<null>(() => {})); // never resolves
+      const ctx = mountRichText(
+        {},
+        {
+          [MERGE_TAGS_KEY]: [] as any[],
+          [ON_REQUEST_MERGE_TAG_KEY]: onRequestMergeTag,
+        },
+      );
+      await flushAsync();
+
+      ctx.api().handleAddMergeTag();
+      await flushAsync();
+
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+      outside.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+
+      expect(ctx.onDone).not.toHaveBeenCalled();
+    });
   });
 
-  it("delegates editor content rendering to RichTextEditorContent", () => {
-    expect(src).toContain("RichTextEditorContent");
-    expect(src).toContain("RichTextLinkDialog");
-  });
-});
+  describe('handleAddMergeTag', () => {
+    it('inserts a merge tag when onRequestMergeTag resolves with one', async () => {
+      const tag = { label: 'First Name', value: '{{first_name}}' };
+      const onRequestMergeTag = vi.fn().mockResolvedValue(tag);
+      const ctx = mountRichText(
+        {},
+        { [ON_REQUEST_MERGE_TAG_KEY]: onRequestMergeTag },
+      );
+      await flushAsync();
 
-describe("ParagraphEditor.vue uses useRichTextEditor", () => {
-  const src = readFileSync(
-    resolve(
-      __dirname,
-      "../src/components/blocks/ParagraphEditor.vue",
-    ),
-    "utf-8",
-  );
+      await ctx.api().handleAddMergeTag();
 
-  it("imports useRichTextEditor", () => {
-    expect(src).toContain(
-      'import { useRichTextEditor } from "../../composables/useRichTextEditor"',
-    );
-  });
+      expect(onRequestMergeTag).toHaveBeenCalledOnce();
+      expect(ctx.api().editor.value!.getHTML()).toContain('data-label="First Name"');
+      expect(ctx.api().editor.value!.getHTML()).toContain('data-value="{{first_name}}"');
+    });
 
-  it("passes ParagraphEditor as editorName", () => {
-    expect(src).toContain('editorName: "ParagraphEditor"');
-  });
+    it('focuses the editor (without insert) when request returns null', async () => {
+      const onRequestMergeTag = vi.fn().mockResolvedValue(null);
+      const ctx = mountRichText(
+        {},
+        { [ON_REQUEST_MERGE_TAG_KEY]: onRequestMergeTag },
+      );
+      await flushAsync();
 
-  it("delegates toolbar to ParagraphToolbar component", () => {
-    expect(src).toContain("ParagraphToolbar");
-    expect(src).not.toContain("useEmoji");
-    expect(src).not.toContain("closeEmojiPicker");
-  });
+      await ctx.api().handleAddMergeTag();
 
-  it("loads paragraph-specific extensions (underline, subscript, etc.)", () => {
-    expect(src).toContain("@tiptap/extension-underline");
-    expect(src).toContain("@tiptap/extension-subscript");
-    expect(src).toContain("@tiptap/extension-superscript");
-    expect(src).toContain("@tiptap/extension-text-align");
-    expect(src).toContain("@tiptap/extension-color");
-    expect(src).toContain("@tiptap/extension-font-family");
+      expect((ctx.api().editor.value as unknown as StubEditor).focusCalls).toContain('');
+    });
   });
 
-  it("does not import useMergeTag, useFocusTrap, useEventListener directly", () => {
-    expect(src).not.toContain("import { useMergeTag");
-    expect(src).not.toContain("useEventListener");
-    expect(src).not.toContain("onBeforeUnmount");
-  });
+  describe('destroy / cleanup', () => {
+    it('destroys the TipTap editor when the host component unmounts', async () => {
+      const ctx = mountRichText();
+      await flushAsync();
+      const editor = ctx.api().editor.value as unknown as StubEditor;
 
-  it("delegates editor content rendering to RichTextEditorContent", () => {
-    expect(src).toContain("RichTextEditorContent");
-    expect(src).toContain("RichTextLinkDialog");
-  });
-});
+      ctx.destroy();
 
-describe("RichTextEditorContent.vue casts editor correctly", () => {
-  const src = readFileSync(
-    resolve(
-      __dirname,
-      "../src/components/blocks/RichTextEditorContent.vue",
-    ),
-    "utf-8",
-  );
+      expect(editor.destroyed).toBe(true);
+    });
 
-  it("casts editor to Editor from @tiptap/vue-3, not any", () => {
-    expect(src).toContain('import type { Editor } from "@tiptap/vue-3"');
-    expect(src).toContain("editor as Editor");
-    expect(src).not.toContain("editor as any");
+    it('stops the blockContent watcher (no setContent after unmount)', async () => {
+      const ctx = mountRichText({ blockContent: '<p>A</p>' });
+      await flushAsync();
+
+      const editor = ctx.api().editor.value as unknown as StubEditor;
+      const setContentSpy = vi.spyOn(editor.commands, 'setContent');
+
+      ctx.destroy();
+      ctx.blockContent.value = '<p>B</p>';
+      await flushAsync();
+
+      expect(setContentSpy).not.toHaveBeenCalled();
+    });
   });
 });
