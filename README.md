@@ -47,10 +47,10 @@ const editor = init({
 
 | Package | Description | License |
 |---------|-------------|---------|
-| [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) | Vue 3 visual editor | [FSL-1.1-MIT](./LICENSE) |
+| [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) | Email editor | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/core`](https://www.npmjs.com/package/@templatical/core) | Framework-agnostic editor logic, state, history, plugins | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/types`](https://www.npmjs.com/package/@templatical/types) | Shared TypeScript types and block factories | [MIT](./LICENSE-MIT) |
-| [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) | JSON → MJML → HTML renderer (browser + Node.js) | [MIT](./LICENSE-MIT) |
+| [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) | JSON → MJML | [MIT](./LICENSE-MIT) |
 | [`@templatical/media-library`](https://www.npmjs.com/package/@templatical/media-library) | Media library management | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert BeeFree templates to Templatical format | [MIT](./LICENSE-MIT) |
 
@@ -61,7 +61,7 @@ For guides, API reference, and examples, visit **[docs.templatical.com](https://
 ## Contributing
 
 ```bash
-git clone https://github.com/templatical/editor.git
+git clone https://github.com/templatical/sdk.git
 cd editor
 bun install
 bun run build
