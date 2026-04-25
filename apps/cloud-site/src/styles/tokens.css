@@ -1,0 +1,76 @@
+/**
+ * Design tokens mirrored from packages/editor/src/styles/index.css
+ * OKLch palette, 120ms spring motion, 3-level radius, 5-level shadow.
+ */
+
+:root,
+[data-theme='light'] {
+    --bg: oklch(99.5% 0.002 60);
+    --bg-elevated: oklch(98% 0.004 60);
+    --bg-hover: oklch(96% 0.006 60);
+    --bg-active: oklch(93.5% 0.008 60);
+    --bg-subtle: oklch(97.5% 0.003 60);
+    --border: oklch(92% 0.006 60);
+    --border-strong: oklch(86% 0.01 60);
+    --text: oklch(18% 0.01 60);
+    --text-muted: oklch(50% 0.015 60);
+    --text-dim: oklch(68% 0.012 60);
+    --primary: oklch(70% 0.16 55);
+    --primary-hover: oklch(63% 0.17 55);
+    --primary-light: oklch(95% 0.04 55);
+    --primary-contrast: oklch(18% 0.01 60);
+    --secondary: oklch(60% 0.118 184.71);
+    --secondary-hover: oklch(53.2% 0.105 186.39);
+    --secondary-light: oklch(93.8% 0.03 186.82);
+    --success: oklch(62.8% 0.194 155.1);
+    --danger: oklch(63.7% 0.237 25.33);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
+    --shadow-md:
+        0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+    --shadow-lg:
+        0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+    --shadow-xl:
+        0 8px 32px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06);
+
+    --ring: 0 0 0 3px var(--primary-light);
+    --radius: 10px;
+    --radius-sm: 7px;
+    --radius-lg: 14px;
+    --spring: cubic-bezier(0.16, 1, 0.3, 1);
+    --transition: 120ms var(--spring);
+
+    color-scheme: light;
+}
+
+[data-theme='dark'] {
+    --bg: oklch(16% 0.005 60);
+    --bg-elevated: oklch(21% 0.006 60);
+    --bg-hover: oklch(26% 0.007 60);
+    --bg-active: oklch(30% 0.008 60);
+    --bg-subtle: oklch(19% 0.005 60);
+    --border: oklch(30% 0.006 60);
+    --border-strong: oklch(38% 0.008 60);
+    --text: oklch(93% 0.005 60);
+    --text-muted: oklch(65% 0.01 60);
+    --text-dim: oklch(50% 0.008 60);
+    --primary: oklch(73% 0.15 55);
+    --primary-hover: oklch(78% 0.14 55);
+    --primary-light: oklch(28% 0.05 55);
+    --primary-contrast: oklch(12% 0.005 60);
+    --secondary: oklch(63% 0.11 184.71);
+    --secondary-hover: oklch(68% 0.1 186.39);
+    --secondary-light: oklch(25% 0.03 186.82);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+    --shadow-md:
+        0 2px 8px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-lg:
+        0 4px 16px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+    --shadow-xl:
+        0 8px 32px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.4);
+
+    color-scheme: dark;
+}
