@@ -1,5 +1,15 @@
 # @templatical/editor
 
+## 0.0.6
+
+### Patch Changes
+
+- 41c11bb: Dependency update
+  - @templatical/types@0.0.6
+  - @templatical/core@0.0.6
+  - @templatical/renderer@0.0.6
+  - @templatical/media-library@0.0.6
+
 ## 0.0.5
 
 ### Patch Changes
