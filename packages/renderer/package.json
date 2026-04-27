@@ -21,6 +21,21 @@
     "dist"
   ],
   "license": "MIT",
+  "homepage": "https://templatical.com",
+  "bugs": "https://github.com/templatical/sdk/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/renderer"
+  },
+  "keywords": [
+    "email",
+    "email-template",
+    "mjml",
+    "templatical",
+    "renderer",
+    "html-email"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "publishConfig": {

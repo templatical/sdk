@@ -31,6 +31,21 @@
     "dist"
   ],
   "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://templatical.com",
+  "bugs": "https://github.com/templatical/sdk/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/media-library"
+  },
+  "keywords": [
+    "media-library",
+    "media-manager",
+    "image-upload",
+    "vue",
+    "templatical",
+    "asset-manager"
+  ],
   "main": "./dist/templatical-media-library.umd.cjs",
   "module": "./dist/templatical-media-library.js",
   "peerDependencies": {

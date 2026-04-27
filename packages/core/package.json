@@ -29,6 +29,21 @@
     "dist"
   ],
   "license": "SEE LICENSE IN LICENSE",
+  "homepage": "https://templatical.com",
+  "bugs": "https://github.com/templatical/sdk/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/core"
+  },
+  "keywords": [
+    "email",
+    "email-editor",
+    "templatical",
+    "editor-core",
+    "vue-reactivity",
+    "framework-agnostic"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "peerDependencies": {
