@@ -56,10 +56,18 @@ const emit = defineEmits<{
   (e: "update:saveModulePreSelectedBlockId", value: string | null): void;
   (e: "update:showModuleBrowserModal", value: boolean): void;
   (e: "send-test-email", recipient: string): void;
-  (e: "module-insert", module: { content: Block[] }, insertIndex: number | undefined): void;
+  (
+    e: "module-insert",
+    module: { content: Block[] },
+    insertIndex: number | undefined,
+  ): void;
 }>();
 
-function applyContent(content: TemplateContent, core: UseEditorCoreReturn, editor: CloudUseEditorReturn): void {
+function applyContent(
+  content: TemplateContent,
+  core: UseEditorCoreReturn,
+  editor: CloudUseEditorReturn,
+): void {
   core.history.record();
   editor.setContent(content);
   core.conditionPreview.reset();

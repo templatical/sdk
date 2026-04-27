@@ -1925,7 +1925,6 @@ onUnmounted(() => {
             data-onboarding="canvas"
             class="flex-1 min-w-0 isolate rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700"
           />
-
         </main>
       </div>
     </Transition>

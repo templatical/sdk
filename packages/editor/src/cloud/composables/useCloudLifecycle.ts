@@ -55,9 +55,7 @@ export function useCloudLifecycle(
     return resolveWebSocketConfig(planConfigInstance.config.value!.websocket);
   }
 
-  async function createTemplate(
-    content?: TemplateContent,
-  ): Promise<Template> {
+  async function createTemplate(content?: TemplateContent): Promise<Template> {
     const template = await editor.create(content);
     if (isDestroyed()) return template;
     config.onCreate?.(template);

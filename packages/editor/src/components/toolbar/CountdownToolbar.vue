@@ -52,7 +52,11 @@ const unitItems = computed(() =>
     unit,
     showKey: `show${unit}` as const,
     labelKey: `label${unit}` as const,
-    translationKey: unit.toLowerCase() as "days" | "hours" | "minutes" | "seconds",
+    translationKey: unit.toLowerCase() as
+      | "days"
+      | "hours"
+      | "minutes"
+      | "seconds",
   })),
 );
 

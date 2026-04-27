@@ -12,8 +12,7 @@ function isProduction(): boolean {
   // `process.env.NODE_ENV` is replaced statically by Vite/tsup in consumer builds.
   // Guard access so pure browser environments (no process) don't throw.
   return (
-    typeof process !== "undefined" &&
-    process.env?.NODE_ENV === "production"
+    typeof process !== "undefined" && process.env?.NODE_ENV === "production"
   );
 }
 

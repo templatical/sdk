@@ -20,6 +20,8 @@
     "@vue/reactivity": "^3.5.33",
     "eslint": "^10.2.1",
     "eslint-plugin-vue": "^10.9.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.3",
     "syncpack": "^14.0.0",
     "typescript": "^6.0.3",
@@ -38,13 +40,15 @@
     "deps:fix": "syncpack fix && syncpack format",
     "deps:update": "syncpack update",
     "format": "prettier --write 'packages/*/src/**/*.{ts,vue}' 'apps/*/src/**/*.{ts,vue}'",
+    "format:check": "prettier --check 'packages/*/src/**/*.{ts,vue}' 'apps/*/src/**/*.{ts,vue}'",
     "lint": "eslint packages/*/src apps/*/src",
     "test": "bun run --filter './packages/*' test",
     "test:coverage": "bun run --filter './packages/*' test -- --coverage",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
-    "typecheck": "bun run --filter './packages/*' typecheck && bun run --filter '@templatical/playground' typecheck"
+    "typecheck": "bun run --filter './packages/*' typecheck && bun run --filter '@templatical/playground' typecheck",
+    "prepare": "husky"
   },
   "workspaces": [
     "packages/*",

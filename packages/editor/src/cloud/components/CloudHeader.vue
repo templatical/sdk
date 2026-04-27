@@ -33,9 +33,7 @@ const CollaboratorBar = defineAsyncComponent(
 const SnapshotHistory = defineAsyncComponent(
   () => import("./SnapshotHistory.vue"),
 );
-const AiFeatureMenu = defineAsyncComponent(
-  () => import("./AiFeatureMenu.vue"),
-);
+const AiFeatureMenu = defineAsyncComponent(() => import("./AiFeatureMenu.vue"));
 
 defineProps<{
   editor: CloudUseEditorReturn;
@@ -257,12 +255,7 @@ defineEmits<{
         @click="panelState.testEmailModalOpen.value = true"
       >
         <Send v-if="!testEmail.isSending.value" :size="16" :stroke-width="2" />
-        <LoaderCircle
-          v-else
-          class="tpl-spinner"
-          :size="16"
-          :stroke-width="2"
-        />
+        <LoaderCircle v-else class="tpl-spinner" :size="16" :stroke-width="2" />
         {{ core.t.testEmail.button }}
       </button>
 
