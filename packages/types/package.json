@@ -1,7 +1,7 @@
 {
   "name": "@templatical/types",
   "description": "Shared TypeScript types, block factory functions, and event emitter for Templatical email editor",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "devDependencies": {
     "@templatical/media-library": "workspace:*",
     "tsup": "^8.5.1",
