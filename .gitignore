@@ -12,3 +12,4 @@ playwright-report/
 test-results/
 blob-report/
 .playwright-mcp
+CLAUDE.md
