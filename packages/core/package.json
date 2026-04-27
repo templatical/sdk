@@ -1,15 +1,18 @@
 {
   "name": "@templatical/core",
-  "version": "0.0.5",
-  "publishConfig": {
-    "access": "public"
-  },
   "description": "Framework-agnostic editor logic for Templatical email editor",
-  "license": "SEE LICENSE IN LICENSE",
-  "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "version": "0.0.5",
+  "dependencies": {
+    "@templatical/types": "workspace:*",
+    "@vue/reactivity": "^3.5.33"
+  },
+  "devDependencies": {
+    "pusher-js": "^8.5.0",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5",
+    "vue": "^3.5.33"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -25,15 +28,9 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "tsup",
-    "test": "vitest run --config vitest.config.ts",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@templatical/types": "workspace:*",
-    "@vue/reactivity": "^3.5.31"
-  },
+  "license": "SEE LICENSE IN LICENSE",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "peerDependencies": {
     "pusher-js": "^8.5.0"
   },
@@ -42,11 +39,14 @@
       "optional": true
     }
   },
-  "devDependencies": {
-    "pusher-js": "^8.5.0",
-    "tsup": "^8.5.0",
-    "typescript": "^6.0.0",
-    "vitest": "^4.0.0",
-    "vue": "^3.5.30"
-  }
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts"
 }

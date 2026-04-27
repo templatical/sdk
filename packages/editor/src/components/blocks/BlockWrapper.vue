@@ -92,7 +92,6 @@ function handleDragKeydown(event: KeyboardEvent): void {
   }
 }
 
-
 const isHiddenOnViewport = computed(() => {
   if (!props.viewport || !props.block.visibility) {
     return false;

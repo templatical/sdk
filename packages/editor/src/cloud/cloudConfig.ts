@@ -15,7 +15,10 @@ import type {
   ThemeOverrides,
   UiTheme,
 } from "@templatical/types";
-import type { MediaItem, MediaRequestContext } from "@templatical/media-library";
+import type {
+  MediaItem,
+  MediaRequestContext,
+} from "@templatical/media-library";
 
 export interface TemplaticalCloudEditorConfig {
   container: string | HTMLElement;

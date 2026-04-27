@@ -211,9 +211,9 @@ defineExpose({
         !editor.state.isDirty
       "
       @save="
-        lifecycle.saveTemplate().catch((err: Error) =>
-          props.config.onError?.(err),
-        )
+        lifecycle
+          .saveTemplate()
+          .catch((err: Error) => props.config.onError?.(err))
       "
     />
 

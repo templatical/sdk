@@ -137,7 +137,8 @@ export default {
   // Block actions (BlockWrapper)
   blockActions: {
     drag: "Drag to reorder, or press Space to move with keyboard",
-    dragLifted: "Moving {block}. Use up and down arrow keys to reposition, Space or Enter to drop, Escape to cancel.",
+    dragLifted:
+      "Moving {block}. Use up and down arrow keys to reposition, Space or Enter to drop, Escape to cancel.",
     duplicate: "Duplicate block",
     delete: "Delete block",
     hiddenOnViewport: "Hidden on {viewport}",

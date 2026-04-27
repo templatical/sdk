@@ -1,0 +1,94 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":prHourlyLimit2",
+    "group:monorepos",
+    "group:recommended"
+  ],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "schedule": ["before 6am on monday"],
+  "timezone": "Europe/Berlin",
+  "prConcurrentLimit": 5,
+  "postUpdateOptions": ["bunDedupe"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"],
+    "schedule": ["at any time"],
+    "prPriority": 10
+  },
+  "ignorePaths": ["**/node_modules/**", "**/dist/**"],
+  "ignoreDeps": [],
+  "packageRules": [
+    {
+      "description": "Never bump internal workspace packages",
+      "matchPackagePatterns": ["^@templatical/"],
+      "enabled": false
+    },
+    {
+      "description": "Major bumps land in their own PR with a breaking label",
+      "matchUpdateTypes": ["major"],
+      "groupName": null,
+      "addLabels": ["breaking"],
+      "automerge": false
+    },
+    {
+      "description": "Group Vue ecosystem (non-major)",
+      "matchPackageNames": ["vue", "vue-tsc", "@vue/reactivity"],
+      "matchPackagePatterns": ["^@vue/", "^@vitejs/", "^vue-", "^eslint-plugin-vue$", "^vue-eslint-parser$"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "vue ecosystem"
+    },
+    {
+      "description": "Group TipTap (non-major)",
+      "matchPackagePatterns": ["^@tiptap/"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "tiptap"
+    },
+    {
+      "description": "Group Tailwind (non-major)",
+      "matchPackagePatterns": ["^tailwindcss", "^@tailwindcss/"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "tailwind"
+    },
+    {
+      "description": "Group ESLint + Prettier (non-major)",
+      "matchPackageNames": ["eslint", "prettier", "typescript-eslint"],
+      "matchPackagePatterns": ["^eslint-", "^@typescript-eslint/"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "lint + format"
+    },
+    {
+      "description": "Group Vitest + Playwright (non-major)",
+      "matchPackageNames": ["vitest"],
+      "matchPackagePatterns": ["^@vitest/", "^@playwright/", "^playwright"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "test tooling"
+    },
+    {
+      "description": "Group Vite + tsup (non-major)",
+      "matchPackageNames": ["vite", "tsup", "tsdown"],
+      "matchPackagePatterns": ["^vite-plugin-", "^@vitejs/"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "build tooling"
+    },
+    {
+      "description": "Auto-merge devDependency patch + minor updates",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true
+    },
+    {
+      "description": "Pin GitHub Actions to digests",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true
+    }
+  ]
+}

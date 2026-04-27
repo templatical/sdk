@@ -1,11 +1,4 @@
-import {
-  computed,
-  provide,
-  ref,
-  watch,
-  type ComputedRef,
-  type Ref,
-} from "vue";
+import { computed, provide, ref, watch, type ComputedRef, type Ref } from "vue";
 import {
   AuthManager,
   performHealthCheck,
@@ -40,7 +33,10 @@ import type {
   UiTheme,
 } from "@templatical/types";
 
-import { useEditorCore, type UseEditorCoreReturn } from "../../composables/useEditorCore";
+import {
+  useEditorCore,
+  type UseEditorCoreReturn,
+} from "../../composables/useEditorCore";
 import { useDragDrop } from "../../composables/useDragDrop";
 import type { UseFontsReturn } from "../../composables/useFonts";
 import type { Translations } from "../../i18n";
@@ -57,11 +53,23 @@ import {
 import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "../../constants/timeouts";
 import { logger } from "../../utils/logger";
 
-import { useSnapshotPreview, type UseSnapshotPreviewReturn } from "./useSnapshotPreview";
-import { useCloudPanelState, type UseCloudPanelStateReturn } from "./useCloudPanelState";
+import {
+  useSnapshotPreview,
+  type UseSnapshotPreviewReturn,
+} from "./useSnapshotPreview";
+import {
+  useCloudPanelState,
+  type UseCloudPanelStateReturn,
+} from "./useCloudPanelState";
 import { useCollabUndoWarning } from "./useCollabUndoWarning";
-import { useCloudFeatureFlags, type UseCloudFeatureFlagsReturn } from "./useCloudFeatureFlags";
-import { useCloudMediaLibrary, type UseCloudMediaLibraryReturn } from "./useCloudMediaLibrary";
+import {
+  useCloudFeatureFlags,
+  type UseCloudFeatureFlagsReturn,
+} from "./useCloudFeatureFlags";
+import {
+  useCloudMediaLibrary,
+  type UseCloudMediaLibraryReturn,
+} from "./useCloudMediaLibrary";
 
 import type { TemplaticalCloudEditorConfig } from "../cloudConfig";
 
@@ -470,7 +478,10 @@ export function useCloudInitialization(
         core.registerCustomBlocks(config.customBlocks);
       }
 
-      if (config.theme && planConfigInstance.hasFeature("theme_customization")) {
+      if (
+        config.theme &&
+        planConfigInstance.hasFeature("theme_customization")
+      ) {
         core.themeOverrides.value = config.theme;
       }
 

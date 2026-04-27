@@ -140,7 +140,8 @@ export default {
   // Block actions (BlockWrapper)
   blockActions: {
     drag: "Zum Sortieren ziehen oder Leertaste drücken, um mit der Tastatur zu verschieben",
-    dragLifted: "{block} wird verschoben. Pfeiltasten zum Positionieren, Leer- oder Eingabetaste zum Ablegen, Esc zum Abbrechen.",
+    dragLifted:
+      "{block} wird verschoben. Pfeiltasten zum Positionieren, Leer- oder Eingabetaste zum Ablegen, Esc zum Abbrechen.",
     duplicate: "Block duplizieren",
     delete: "Block löschen",
     hiddenOnViewport: "Ausgeblendet auf {viewport}",
@@ -150,7 +151,8 @@ export default {
     lifted: "{block} angehoben. Position {position} von {total}.",
     moved: "{block} auf Position {position} von {total} verschoben.",
     dropped: "{block} auf Position {position} von {total} abgelegt.",
-    cancelled: "Verschieben abgebrochen. {block} auf Position {position} zurückgesetzt.",
+    cancelled:
+      "Verschieben abgebrochen. {block} auf Position {position} zurückgesetzt.",
   },
 
   // Toolbar - Section

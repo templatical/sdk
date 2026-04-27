@@ -112,12 +112,7 @@ export function useKeyboardReorder(
     if (!location) return;
     const target = location.index + delta;
     if (target < 0 || target >= location.total) return;
-    editor.moveBlock(
-      blockId,
-      target,
-      location.sectionId,
-      location.columnIndex,
-    );
+    editor.moveBlock(blockId, target, location.sectionId, location.columnIndex);
     announce(
       i18n.format(i18n.t.blockActions.moved, {
         block: blockLabel(blockId),

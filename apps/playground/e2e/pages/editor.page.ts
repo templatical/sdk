@@ -45,14 +45,6 @@ export class EditorPage {
       }
       await onboarding.waitFor({ state: "hidden" });
     }
-
-    const cloudBannerDismiss = this.page.locator(SELECTORS.cloudBannerDismiss);
-    if (await cloudBannerDismiss.isVisible()) {
-      await cloudBannerDismiss.click();
-      await this.page
-        .locator(SELECTORS.cloudBanner)
-        .waitFor({ state: "hidden" });
-    }
   }
 
   // --- Block operations ---

@@ -1,15 +1,39 @@
 {
   "name": "@templatical/editor",
-  "version": "0.0.5",
-  "publishConfig": {
-    "access": "public"
-  },
   "description": "Vue 3 visual drag-and-drop email editor powered by Templatical",
-  "license": "SEE LICENSE IN LICENSE",
-  "type": "module",
-  "main": "./dist/templatical-editor.umd.cjs",
-  "module": "./dist/templatical-editor.js",
-  "types": "./dist/index.d.ts",
+  "version": "0.0.5",
+  "dependencies": {
+    "@lucide/vue": "^1.11.0",
+    "@templatical/core": "workspace:*",
+    "@templatical/types": "workspace:*",
+    "@tiptap/core": "^3.22.4",
+    "@tiptap/extension-color": "^3.22.4",
+    "@tiptap/extension-font-family": "^3.22.4",
+    "@tiptap/extension-highlight": "^3.22.4",
+    "@tiptap/extension-link": "^3.22.4",
+    "@tiptap/extension-subscript": "^3.22.4",
+    "@tiptap/extension-superscript": "^3.22.4",
+    "@tiptap/extension-text-align": "^3.22.4",
+    "@tiptap/extension-text-style": "^3.22.4",
+    "@tiptap/extension-underline": "^3.22.4",
+    "@tiptap/starter-kit": "^3.22.4",
+    "@tiptap/vue-3": "^3.22.4",
+    "@vueuse/core": "^14.2.1",
+    "liquidjs": "^10.25.7",
+    "vanilla-colorful": "^0.7.2",
+    "vuedraggable": "^4.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.6",
+    "@vue/test-utils": "^2.4.8",
+    "happy-dom": "^20.9.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.10",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^4.1.5",
+    "vue": "^3.5.33",
+    "vue-tsc": "^3.2.7"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -21,39 +45,14 @@
   "files": [
     "dist"
   ],
-  "scripts": {
-    "build": "vite build",
-    "build:cdn": "vite build --config vite.cdn.config.ts",
-    "build:all": "vite build && vite build --config vite.cdn.config.ts",
-    "test": "vitest run",
-    "typecheck": "vue-tsc --noEmit"
-  },
-  "dependencies": {
-    "@templatical/core": "workspace:*",
-    "@templatical/types": "workspace:*",
-    "@tiptap/core": "^3.22.0",
-    "@tiptap/extension-color": "^3.22.0",
-    "@tiptap/extension-font-family": "^3.22.0",
-    "@tiptap/extension-highlight": "^3.22.0",
-    "@tiptap/extension-link": "^3.22.0",
-    "@tiptap/extension-subscript": "^3.22.0",
-    "@tiptap/extension-superscript": "^3.22.0",
-    "@tiptap/extension-text-align": "^3.22.0",
-    "@tiptap/extension-text-style": "^3.22.0",
-    "@tiptap/extension-underline": "^3.22.0",
-    "@tiptap/starter-kit": "^3.22.0",
-    "@tiptap/vue-3": "^3.22.0",
-    "@vueuse/core": "^14.0.0",
-    "liquidjs": "^10.0.0",
-    "@lucide/vue": "^1.0.0",
-    "vanilla-colorful": "^0.7.2",
-    "vuedraggable": "^4.1.0"
-  },
+  "license": "SEE LICENSE IN LICENSE",
+  "main": "./dist/templatical-editor.umd.cjs",
+  "module": "./dist/templatical-editor.js",
   "peerDependencies": {
-    "vue": "^3.5.0",
-    "tailwindcss": "^4.0.0",
+    "@templatical/media-library": "workspace:*",
     "@templatical/renderer": "^0.0.5",
-    "@templatical/media-library": "workspace:*"
+    "tailwindcss": "^4.2.4",
+    "vue": "^3.5.0"
   },
   "peerDependenciesMeta": {
     "@templatical/renderer": {
@@ -63,14 +62,16 @@
       "optional": true
     }
   },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.0",
-    "@vue/test-utils": "^2.4.6",
-    "happy-dom": "^20.9.0",
-    "typescript": "^6.0.0",
-    "vite": "^8.0.0",
-    "vitest": "^4.0.0",
-    "vue": "^3.5.0",
-    "vue-tsc": "^3.0.0"
-  }
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vite build",
+    "build:all": "vite build && vite build --config vite.cdn.config.ts",
+    "build:cdn": "vite build --config vite.cdn.config.ts",
+    "test": "vitest run",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts"
 }

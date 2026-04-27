@@ -134,7 +134,9 @@ function removeMenuItem(itemId: string): void {
           </label>
         </div>
         <div class="tpl:flex tpl:items-center tpl:gap-2">
-          <label :class="labelClass" class="tpl:!mb-0">{{ t.menu.color }}</label>
+          <label :class="labelClass" class="tpl:!mb-0">{{
+            t.menu.color
+          }}</label>
           <ColorPicker
             swatch-only
             :model-value="item.color || block.linkColor || block.color"

@@ -79,9 +79,7 @@ function handleInsert(emoji: string): void {
             v-for="emoji in category.emojis"
             :key="emoji"
             type="button"
-            :aria-label="
-              format(t.paragraphEditor.emojiItemLabel, { emoji })
-            "
+            :aria-label="format(t.paragraphEditor.emojiItemLabel, { emoji })"
             class="tpl:flex tpl:size-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:text-base tpl:transition-all tpl:duration-100 tpl:hover:scale-125 tpl:hover:bg-[var(--tpl-bg-active)]"
             @click="handleInsert(emoji)"
           >

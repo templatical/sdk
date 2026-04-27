@@ -14,8 +14,6 @@ export default {
     description:
       "Echtzeit-Zusammenarbeit, KI-Schreibassistent, Versionsverlauf, Vorlagenbewertung, Medienbibliothek und mehr.",
     cta: "Cloud Playground testen",
-    floatingFeatures: "Zusammenarbeit, KI-Tools oder Versionsverlauf",
-    floatingCta: "Cloud testen",
   },
   toolbar: {
     templates: "Vorlagen",
@@ -96,10 +94,6 @@ export default {
     title: "Funktionen in dieser Vorlage",
     subtitle: "{name} zeigt diese SDK-F\u00e4higkeiten",
     dismiss: "Verstanden, mit Bearbeitung beginnen",
-  },
-  floatingBanner: {
-    before: "Ben\u00f6tigen Sie ",
-    after: "? Testen Sie die Cloud-Version.",
   },
   shareModal: {
     title: "Vorlage teilen",

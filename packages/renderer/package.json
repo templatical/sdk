@@ -1,15 +1,15 @@
 {
   "name": "@templatical/renderer",
-  "version": "0.0.5",
-  "publishConfig": {
-    "access": "public"
-  },
   "description": "Render Templatical email templates to MJML",
-  "license": "MIT",
-  "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "version": "0.0.5",
+  "dependencies": {
+    "@templatical/types": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,17 +20,17 @@
   "files": [
     "dist"
   ],
+  "license": "MIT",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@templatical/types": "workspace:*"
-  },
-  "devDependencies": {
-    "tsup": "^8.5.0",
-    "typescript": "^6.0.0",
-    "vitest": "^4.0.0"
-  }
+  "type": "module",
+  "types": "./dist/index.d.ts"
 }

@@ -38,7 +38,11 @@ const customConditionMode = ref(false);
 const customBefore = ref("");
 const customAfter = ref("");
 
-const VISIBILITY_ITEMS: { key: VisibilityKey; icon: Component; labelKey: "showOnDesktop" | "showOnTablet" | "showOnMobile" }[] = [
+const VISIBILITY_ITEMS: {
+  key: VisibilityKey;
+  icon: Component;
+  labelKey: "showOnDesktop" | "showOnTablet" | "showOnMobile";
+}[] = [
   { key: "desktop", icon: Monitor, labelKey: "showOnDesktop" },
   { key: "tablet", icon: Tablet, labelKey: "showOnTablet" },
   { key: "mobile", icon: Smartphone, labelKey: "showOnMobile" },

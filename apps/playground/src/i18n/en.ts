@@ -12,8 +12,6 @@ export default {
     description:
       "Real-time collaboration, AI writing assistant, version history, template scoring, media library, and more.",
     cta: "Try Cloud Playground",
-    floatingFeatures: "collaboration, AI tools, or version history",
-    floatingCta: "Try Cloud",
   },
   toolbar: {
     templates: "Templates",
@@ -92,10 +90,6 @@ export default {
     title: "Features in this template",
     subtitle: "{name} showcases these SDK capabilities",
     dismiss: "Got it, start editing",
-  },
-  floatingBanner: {
-    before: "Need ",
-    after: "? Try the Cloud version.",
   },
   shareModal: {
     title: "Share Template",
