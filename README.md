@@ -24,7 +24,13 @@
 </p>
 
 <p align="center">
-  <img src=".github/assets/demo.gif" alt="Templatical editor demo" width="900" />
+  <a href="https://play.templatical.com">
+    <img src="https://templatical.com/preview.png" alt="Templatical editor preview" width="900" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://play.templatical.com"><b>▶ Try it live in the playground</b></a>
 </p>
 
 ---
@@ -150,7 +156,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide and [CLAUDE.md](./CL
 
 ## Sponsors
 
-Templatical is built and maintained by a solo developer. If your company uses it in production, consider [sponsoring on GitHub](https://github.com/sponsors/templatical) — it directly funds new features, faster releases, and continued open development.
+Templatical is built and maintained by a solo developer. If your company uses it in production, consider [sponsoring on GitHub](https://github.com/sponsors/orkhanahmadov) — it directly funds new features, faster releases, and continued open development.
 
 ## License
 
