@@ -74,10 +74,6 @@ export const SELECTORS = {
   featureOverlay: '[data-testid="feature-overlay"]',
   featureOverlayClose: '[data-testid="feature-overlay-close"]',
 
-  // Cloud banner (floating upsell)
-  cloudBanner: '[data-testid="cloud-banner"]',
-  cloudBannerDismiss: '[data-testid="cloud-banner-dismiss"]',
-
   // Onboarding
   onboardingSpotlight: ".pg-onboarding-spotlight",
   onboardingTooltip: ".pg-onboarding-tooltip",

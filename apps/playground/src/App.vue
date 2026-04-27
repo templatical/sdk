@@ -78,7 +78,6 @@ function tplDesc(tpl: TemplateOption): string {
 
 type Screen = "chooser" | "editor";
 const screen = ref<Screen>("chooser");
-const cloudBannerDismissed = ref(false);
 const showBeefreeImport = ref(false);
 const beefreeJson = ref("");
 const beefreeError = ref("");
@@ -224,7 +223,6 @@ const defaultsPresets: DefaultsPreset[] = [
   {
     key: "corporate",
     blockDefaults: {
-      text: { fontSize: 15, color: "#1a1a2e" },
       button: {
         backgroundColor: "#0f3460",
         textColor: "#ffffff",
@@ -245,7 +243,6 @@ const defaultsPresets: DefaultsPreset[] = [
   {
     key: "playful",
     blockDefaults: {
-      text: { fontSize: 16, color: "#2d3436" },
       button: {
         backgroundColor: "#e17055",
         textColor: "#ffffff",
@@ -266,7 +263,6 @@ const defaultsPresets: DefaultsPreset[] = [
   {
     key: "minimal",
     blockDefaults: {
-      text: { fontSize: 14, color: "#111111" },
       button: {
         backgroundColor: "#111111",
         textColor: "#ffffff",
@@ -1930,55 +1926,6 @@ onUnmounted(() => {
             class="flex-1 min-w-0 isolate rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700"
           />
 
-          <!-- Floating cloud upsell banner -->
-          <Transition name="pg-modal">
-            <div
-              v-if="!cloudBannerDismissed"
-              data-testid="cloud-banner"
-              class="absolute bottom-4 left-1/2 -translate-x-1/2 z-[99] flex items-center gap-3 py-2.5 pl-4 pr-2.5 bg-white border border-gray-200 rounded-xl shadow-float max-w-[520px] w-[calc(100%-2rem)] dark:bg-gray-800 dark:border-gray-700"
-            >
-              <div class="flex items-center gap-2.5 flex-1 min-w-0">
-                <div
-                  class="shrink-0 flex items-center justify-center size-7 rounded-md bg-primary/10 text-primary"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                  </svg>
-                </div>
-                <span
-                  class="text-[13px] text-gray-600 leading-snug dark:text-gray-400"
-                  >{{ t.floatingBanner.before
-                  }}<strong
-                    class="text-gray-900 font-semibold dark:text-gray-100"
-                    >{{ t.cloudBanner.floatingFeatures }}</strong
-                  >{{ t.floatingBanner.after }}</span
-                >
-              </div>
-              <a
-                href="#cloud"
-                class="shrink-0 inline-flex items-center h-7 px-3 rounded-md bg-primary text-white text-xs font-medium no-underline whitespace-nowrap transition-colors duration-150 hover:bg-primary-hover"
-                >{{ t.cloudBanner.floatingCta }}</a
-              >
-              <button
-                data-testid="cloud-banner-dismiss"
-                :aria-label="t.common.dismiss"
-                class="shrink-0 size-7 flex items-center justify-center border-none bg-transparent text-gray-400 cursor-pointer rounded-md transition-colors duration-150 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-                @click="cloudBannerDismissed = true"
-              >
-                &times;
-              </button>
-            </div>
-          </Transition>
         </main>
       </div>
     </Transition>
@@ -2419,7 +2366,7 @@ onUnmounted(() => {
             <div class="flex-1 overflow-auto p-5">
               <button
                 class="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 cursor-pointer transition-[border-color,color] duration-150 bg-transparent hover:border-primary hover:text-gray-900 dark:border-gray-600 dark:text-gray-400 dark:hover:text-gray-100"
-                @click="openBeefreeFile"
+                @click="() => openBeefreeFile()"
               >
                 <svg
                   width="24"

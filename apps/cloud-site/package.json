@@ -1,25 +1,25 @@
 {
   "name": "@templatical/cloud-site",
   "version": "0.0.1",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite-ssg build",
-    "preview": "vite preview"
-  },
   "dependencies": {
     "@vueuse/core": "^14.2.1",
     "marked": "^15.0.7",
-    "vue": "^3.5.32",
+    "vue": "^3.5.33",
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.2.2",
-    "@vitejs/plugin-vue": "^6.0.5",
+    "@tailwindcss/vite": "^4.2.4",
+    "@vitejs/plugin-vue": "^6.0.6",
     "tailwindcss": "^4.2.2",
-    "typescript": "^6.0.2",
-    "vite": "^8.0.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.10",
     "vite-ssg": "^28.0.0"
-  }
+  },
+  "private": true,
+  "scripts": {
+    "build": "vite-ssg build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "type": "module"
 }
