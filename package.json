@@ -41,7 +41,7 @@
     "deps:update": "syncpack update",
     "format": "prettier --write 'packages/*/src/**/*.{ts,vue}' 'apps/*/src/**/*.{ts,vue}'",
     "format:check": "prettier --check 'packages/*/src/**/*.{ts,vue}' 'apps/*/src/**/*.{ts,vue}'",
-    "lint": "eslint packages/*/src apps/*/src",
+    "lint": "eslint packages/*/src apps/*/src --cache --cache-location node_modules/.cache/eslint/",
     "prepare": "husky",
     "test": "bun run --filter './packages/*' test",
     "test:coverage": "bun run --filter './packages/*' test -- --coverage",
