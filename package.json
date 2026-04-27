@@ -29,6 +29,9 @@
     "vite": "^8.0.10",
     "vue-eslint-parser": "^10.4.0"
   },
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "private": true,
   "scripts": {
     "build": "bun run --filter '@templatical/media-library' build:all && bun run --filter '@templatical/types' build && bun run --filter '@templatical/core' --filter '@templatical/renderer' --filter '@templatical/import-beefree' build && bun run --filter '@templatical/editor' build:all",

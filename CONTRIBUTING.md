@@ -14,7 +14,7 @@ Thank you for your interest in contributing to Templatical! This document provid
 ### Prerequisites
 
 - [Bun](https://bun.sh/) >= 1.0
-- Node.js >= 20 (for compatibility)
+- Node.js >= 22 (for compatibility)
 
 ### Commands
 
