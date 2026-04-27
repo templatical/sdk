@@ -42,13 +42,13 @@
     "format": "prettier --write 'packages/*/src/**/*.{ts,vue}' 'apps/*/src/**/*.{ts,vue}'",
     "format:check": "prettier --check 'packages/*/src/**/*.{ts,vue}' 'apps/*/src/**/*.{ts,vue}'",
     "lint": "eslint packages/*/src apps/*/src",
+    "prepare": "husky",
     "test": "bun run --filter './packages/*' test",
     "test:coverage": "bun run --filter './packages/*' test -- --coverage",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
-    "typecheck": "bun run --filter './packages/*' typecheck && bun run --filter '@templatical/playground' typecheck",
-    "prepare": "husky"
+    "typecheck": "bun run --filter './packages/*' typecheck && bun run --filter '@templatical/playground' typecheck"
   },
   "workspaces": [
     "packages/*",
