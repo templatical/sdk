@@ -1,6 +1,6 @@
 # @templatical/core
 
-> Framework-agnostic editor logic — state, history, plugins, auto-save. The reactive engine behind `@templatical/editor`.
+> Framework-agnostic editor logic — state, history, auto-save. The reactive engine behind `@templatical/editor`.
 
 [![npm version](https://img.shields.io/npm/v/@templatical/core?label=npm&color=cb3837)](https://www.npmjs.com/package/@templatical/core)
 [![License](https://img.shields.io/badge/license-FSL--1.1--MIT-blue)](https://github.com/templatical/sdk/blob/main/LICENSE)

@@ -45,6 +45,12 @@ export interface TemplaticalEditorConfig {
   theme?: ThemeOverrides;
   uiTheme?: UiTheme;
   locale?: string;
+
+  /**
+   * Show the "Powered by Templatical" footer. Defaults to `true`.
+   * Set to `false` to hide the footer (no attribution required by the license).
+   */
+  branding?: boolean;
 }
 
 /** Function type for media browser requests, used by both OSS and Cloud editors. */

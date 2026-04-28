@@ -37,21 +37,29 @@
 
 **Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (so they render correctly in every email client), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. It's an open-source alternative to Beefree and Unlayer, with an optional Cloud tier for AI rewrites and real-time collaboration.
 
-## Features
+## Power features
+
+Things that are usually paid features in commercial editors — open-source in Templatical:
+
+- **Custom blocks with API-backed data sources** — register your own block types whose content is rendered from a static template *or* fetched live from your API at preview time. Paid tier elsewhere ($750–$2,500/mo).
+- **Merge tags with pluggable syntax** — `{{handlebars}}`, `{liquid}`, `${js}`, or your own — with automatic human-readable label replacement directly in the editor canvas. Build your CRM-aware tag picker in minutes.
+- **Display conditions** — show/hide blocks based on recipient attributes, with live preview in the editor.
+- **Full theming via design tokens** — 27 OKLch tokens, custom fonts, dark mode, complete theme overrides. No CSS hacking, no paid tier.
+- **Template & block defaults** — define your brand once. New templates and new blocks pick up your brand automatically.
+
+> **Cloud features** — AI rewrite, AI chat, real-time collaboration with block locking, comments, snapshots, and more — are part of the Templatical Cloud tier currently in development. The Cloud implementation is also open code in `@templatical/core/cloud`. [Learn more about Cloud →](https://docs.templatical.com/cloud/)
+
+## And the table-stakes (still important)
 
 - **Drop-in mount** — one `init()` call, one `unmount()`. No framework lock-in.
 - **14 block types** — Title, Paragraph, Image, Button, Section, Divider, Spacer, Social Icons, Menu, Table, HTML, Video, Countdown, Custom.
 - **JSON templates** — portable, versionable, store anywhere, render anywhere.
 - **MJML output** — works with any email provider (Postmark, Resend, SES, Mailgun, anything).
 - **Framework-agnostic** — first-class examples for React, Vue, Svelte, Angular, vanilla.
-- **Theming** — 27 OKLch design tokens, custom fonts, dark mode, full theme overrides.
-- **Custom blocks** — plugin system for your own block types and inspectors.
-- **Display conditions, merge tags, liquid syntax** — built-in personalization.
 - **Tailwind 4 with `tpl:` prefix** — no preflight reset, no style leaks into your app.
 - **Bilingual** — en/de built in, easy to add more locales.
-- **TypeScript strict** — full types for blocks, config, callbacks, plugins.
+- **TypeScript strict** — full types for blocks, config, and callbacks.
 - **Battle-tested** — ~1,400 unit tests + Playwright E2E coverage.
-- **Optional Cloud tier** — AI chat/rewrite, real-time collaboration, comments, snapshots.
 
 ## Quick Start
 
@@ -86,7 +94,7 @@ const mjml = editor.toMjml();
 | Package | Description | License |
 |---------|-------------|---------|
 | [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) | Vue 3 visual drag-and-drop editor | [FSL-1.1-MIT](./LICENSE) |
-| [`@templatical/core`](https://www.npmjs.com/package/@templatical/core) | Framework-agnostic editor logic, state, history, plugins | [FSL-1.1-MIT](./LICENSE) |
+| [`@templatical/core`](https://www.npmjs.com/package/@templatical/core) | Framework-agnostic editor logic, state, history | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/media-library`](https://www.npmjs.com/package/@templatical/media-library) | Media library — composable, components, standalone SDK | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/types`](https://www.npmjs.com/package/@templatical/types) | Shared TypeScript types and block factories | [MIT](./LICENSE-MIT) |
 | [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) | JSON → MJML → HTML renderer (browser + Node) | [MIT](./LICENSE-MIT) |
@@ -94,18 +102,18 @@ const mjml = editor.toMjml();
 
 ## How does it compare?
 
-|  | **Templatical** | Beefree | Unlayer | GrapesJS MJML |
+|  | **Templatical** | Beefree SDK | Unlayer | GrapesJS + MJML |
 |---|---|---|---|---|
-| Open source | ✅ FSL → MIT | ❌ | Limited | ✅ MIT |
-| Self-hostable | ✅ | ❌ | Paid only | ✅ |
-| MJML output | ✅ native | ❌ | ❌ | ✅ |
-| Framework-agnostic embed | ✅ | ✅ | ✅ | ✅ |
-| Custom blocks (plugin API) | ✅ | Limited | Limited | ✅ |
-| Real-time collaboration | ✅ Cloud | ❌ | ❌ | ❌ |
-| AI rewrite | ✅ Cloud | ❌ | ✅ | ❌ |
-| Embed pricing | Free / Cloud | $$$$ | $$$ | Free |
+| Open source | ✅ FSL → MIT | ❌ Closed source | ⚠️ Wrapper only (MIT) | ✅ BSD-3 |
+| Self-hostable | ✅ | ❌ Iframe-only | ❌ Iframe-only | ✅ |
+| MJML output | ✅ Native | ❌ Proprietary JSON | ❌ Proprietary JSON | ✅ |
+| Custom blocks | ✅ Open API | Paid tier (Superpowers, $2.5k/mo) | Paid tier (Scale, $750/mo) | ✅ Open API |
+| Real-time collaboration | ✅ Cloud / OSS code | Paid tier ($2.5k/mo) | Team-level only | ❌ |
+| AI rewrite | ✅ Cloud / OSS code | Paid tier | Paid tier (Scale+) | ❌ |
+| Comments / review | ✅ Cloud / OSS code | Paid tier | Audit tab only | ❌ |
+| Embed price floor (paid) | Free / self-host | $350–$5,000+/mo | $250–$2,000+/mo | Free |
 
-[Full comparison →](https://docs.templatical.com/comparison)
+[Full comparison with prose, sources, and "when *not* to choose Templatical" →](https://docs.templatical.com/comparison)
 
 ## Why FSL-1.1-MIT?
 
@@ -136,7 +144,6 @@ Full docs: **[docs.templatical.com](https://docs.templatical.com)** (English + D
 - Built-in Unlayer template importer
 - Plain-text email auto-generation
 - More locales (community contributions welcome)
-- Plugin marketplace
 
 Track progress on [GitHub Issues](https://github.com/templatical/sdk/issues) or open a [Discussion](https://github.com/templatical/sdk/discussions) to propose something.
 

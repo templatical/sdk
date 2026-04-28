@@ -1506,7 +1506,7 @@ onUnmounted(() => {
             >
             <span class="text-gray-200 dark:text-gray-700">&middot;</span>
             <a
-              href="https://github.com/templatical/editor"
+              href="https://github.com/templatical/sdk"
               target="_blank"
               rel="noopener noreferrer"
               >GitHub</a
@@ -1786,7 +1786,7 @@ onUnmounted(() => {
               >{{ t.toolbar.docs }}</a
             >
             <a
-              href="https://github.com/templatical/editor"
+              href="https://github.com/templatical/sdk"
               target="_blank"
               rel="noopener noreferrer"
               class="pg-toolbar-btn px-2 no-underline"

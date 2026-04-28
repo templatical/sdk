@@ -91,21 +91,8 @@ defineExpose({
         -webkit-backdrop-filter: blur(12px);
       "
     >
-      <!-- Left: Logo -->
-      <div class="tpl:flex tpl:items-center tpl:gap-2.5">
-        <img
-          width="24"
-          height="24"
-          src="https://templatical.com/logo.svg"
-          alt="Templatical"
-        />
-        <span
-          class="tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
-          style="letter-spacing: -0.01em"
-        >
-          {{ core.t.header.title }}
-        </span>
-      </div>
+      <!-- Left: empty (reserved for embedder customization) -->
+      <div class="tpl:flex tpl:items-center tpl:gap-2.5"></div>
 
       <!-- Center: viewport + preview + dark mode -->
       <div class="tpl:flex tpl:items-center tpl:justify-center tpl:gap-10">
@@ -170,6 +157,7 @@ defineExpose({
     </div>
 
     <EditorFooter
+      v-if="config.branding !== false"
       :position-class="[
         editor.state.previewMode
           ? 'tpl:left-0 tpl:right-0'

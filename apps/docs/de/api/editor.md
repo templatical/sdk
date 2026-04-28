@@ -55,6 +55,7 @@ unmount();
 | `theme` | `ThemeOverrides` | No | Überschreibungen für Farb-Tokens. Unterstützt einen `dark`-Schlüssel für Dark-Mode-Überschreibungen. Siehe [Theming](/de/guide/theming) |
 | `uiTheme` | `'light' \| 'dark' \| 'auto'` | No | UI-Farbschema. `'auto'` folgt den Systemeinstellungen. Standardwert ist `'auto'` |
 | `locale` | `string` | No | Locale-Code (z. B. `'en'`, `'de'`). Standardwert ist `'en'` |
+| `branding` | `boolean` | No | Zeigt den "Powered by Templatical"-Footer. Standardwert `true`. Auf `false` setzen, um ihn auszublenden |
 
 
 ## TemplaticalEditor
