@@ -1523,7 +1523,7 @@ onUnmounted(() => {
         class="flex flex-col h-full"
       >
         <header
-          class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-2 overflow-x-auto"
+          class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-2"
         >
           <div class="flex items-center gap-2">
             <button
