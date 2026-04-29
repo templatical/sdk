@@ -195,7 +195,6 @@ defineExpose({
     <CloudHeader
       :editor="editor"
       :core="core"
-      :auth-manager="authManager"
       :feature-flags="featureFlags"
       :panel-state="panelState"
       :snapshot-preview="snapshotPreview"
@@ -294,7 +293,7 @@ defineExpose({
     </div>
 
     <EditorFooter
-      v-if="!featureFlags.isWhiteLabeled.value"
+      v-if="config.branding !== false && !featureFlags.isWhiteLabeled.value"
       :position-class="[
         editor.state.previewMode
           ? 'tpl:left-0 tpl:right-0'
