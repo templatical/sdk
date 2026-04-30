@@ -11,7 +11,7 @@ export default defineConfig({
             entry: resolve(import.meta.dirname, 'src/index.ts'),
             name: 'TemplaticalMediaLibrary',
             fileName: 'templatical-media-library',
-            formats: ['es', 'umd'],
+            formats: ['es'],
         },
         rolldownOptions: {
             external: [
@@ -23,17 +23,6 @@ export default defineConfig({
                 '@lucide/vue',
                 'vue-advanced-cropper',
             ],
-            output: {
-                globals: {
-                    vue: 'Vue',
-                    '@templatical/core': 'TemplaticalCore',
-                    '@templatical/core/cloud': 'TemplaticalCoreCloud',
-                    '@templatical/types': 'TemplaticalTypes',
-                    '@vueuse/core': 'VueUseCore',
-                    '@lucide/vue': 'LucideVue',
-                    'vue-advanced-cropper': 'VueAdvancedCropper',
-                },
-            },
         },
     },
 });

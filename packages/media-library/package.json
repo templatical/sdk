@@ -23,8 +23,7 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/templatical-media-library.js",
-      "require": "./dist/templatical-media-library.umd.cjs"
+      "import": "./dist/templatical-media-library.js"
     },
     "./style.css": "./dist/style.css"
   },
@@ -41,7 +40,6 @@
     "vue"
   ],
   "license": "SEE LICENSE IN LICENSE",
-  "main": "./dist/templatical-media-library.umd.cjs",
   "module": "./dist/templatical-media-library.js",
   "peerDependencies": {
     "tailwindcss": "^4.0.0",

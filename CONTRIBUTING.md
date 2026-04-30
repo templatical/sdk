@@ -67,7 +67,7 @@ cd apps/playground && pnpm run dev
 Run the docs site while iterating on docs:
 
 ```bash
-cd apps/docs && pnpm run docs:dev
+cd apps/docs && pnpm run dev
 ```
 
 ## Tests

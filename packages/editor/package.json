@@ -38,8 +38,7 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/templatical-editor.js",
-      "require": "./dist/templatical-editor.umd.cjs"
+      "import": "./dist/templatical-editor.js"
     },
     "./style.css": "./dist/style.css"
   },
@@ -60,7 +59,6 @@
     "wysiwyg"
   ],
   "license": "SEE LICENSE IN LICENSE",
-  "main": "./dist/templatical-editor.umd.cjs",
   "module": "./dist/templatical-editor.js",
   "peerDependencies": {
     "@templatical/media-library": "workspace:*",

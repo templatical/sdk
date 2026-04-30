@@ -17,13 +17,11 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     },
     "./cloud": {
       "types": "./dist/cloud/index.d.ts",
-      "import": "./dist/cloud/index.js",
-      "require": "./dist/cloud/index.cjs"
+      "import": "./dist/cloud/index.js"
     }
   },
   "files": [
@@ -39,7 +37,6 @@
     "vue-reactivity"
   ],
   "license": "SEE LICENSE IN LICENSE",
-  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "peerDependencies": {
     "pusher-js": "^8.5.0"
