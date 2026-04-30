@@ -23,10 +23,12 @@ export default defineConfig({
       entry: resolve(import.meta.dirname, 'src/index.ts'),
       name: 'TemplaticalEditor',
       fileName: 'templatical-editor',
+      cssFileName: 'style',
       formats: ['es'],
     },
+    cssCodeSplit: false,
     rolldownOptions: {
-      external: ['vue', '@templatical/core', '@templatical/core/cloud', '@templatical/media-library', '@templatical/types', '@templatical/renderer'],
+      external: ['@templatical/core', '@templatical/core/cloud', '@templatical/media-library', '@templatical/types', '@templatical/renderer'],
     },
   },
 })
