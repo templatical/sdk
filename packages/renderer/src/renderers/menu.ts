@@ -2,6 +2,7 @@ import type { MenuBlock, MenuItemData } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { escapeHtml, escapeAttr } from "../escape";
 import { toPaddingString } from "../padding";
+import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -18,9 +19,7 @@ export function renderMenu(block: MenuBlock, context: RenderContext): string {
   }
 
   const padding = toPaddingString(block.styles.padding);
-  const bgColor = block.styles.backgroundColor
-    ? ` background-color="${block.styles.backgroundColor}"`
-    : "";
+  const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const visibilityAttr = getCssClassAttr(block);
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const align = block.textAlign;

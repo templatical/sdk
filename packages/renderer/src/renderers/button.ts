@@ -2,6 +2,7 @@ import type { ButtonBlock } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { escapeAttr, escapeHtml } from "../escape";
 import { toPaddingString } from "../padding";
+import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -16,9 +17,7 @@ export function renderButton(
   }
 
   const padding = toPaddingString(block.styles.padding);
-  const bgColor = block.styles.backgroundColor
-    ? ` container-background-color="${block.styles.backgroundColor}"`
-    : "";
+  const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const buttonPadding = toPaddingString(block.buttonPadding);
 
   const href = escapeAttr(block.url);

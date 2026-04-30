@@ -2,6 +2,7 @@ import type { Block, SectionBlock } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { getWidthPercentages, getWidthPixels } from "../columns";
 import { toPaddingString } from "../padding";
+import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -25,9 +26,7 @@ export function renderSection(
   const columnWidths = getWidthPercentages(columnsLayout);
   const columnWidthsPx = getWidthPixels(columnsLayout, context.containerWidth);
   const padding = toPaddingString(block.styles.padding);
-  const bgColor = block.styles.backgroundColor
-    ? ` background-color="${block.styles.backgroundColor}"`
-    : "";
+  const bgColor = bgAttr(block.styles.backgroundColor, "native");
   const visibilityAttr = getCssClassAttr(block);
 
   const children = block.children;
