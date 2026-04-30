@@ -22,6 +22,7 @@
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/test-utils": "^2.4.8",
     "@vueuse/core": "^14.2.1",
+    "es-module-lexer": "^2.1.0",
     "happy-dom": "^20.9.0",
     "liquidjs": "^10.25.7",
     "tailwindcss": "^4.2.4",
@@ -84,7 +85,8 @@
     "build:all": "vite build && vite build --config vite.cdn.config.ts",
     "build:cdn": "vite build --config vite.cdn.config.ts",
     "test": "vitest run",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "verify:pack": "node scripts/verify-pack.mjs"
   },
   "type": "module",
   "types": "./dist/index.d.ts"

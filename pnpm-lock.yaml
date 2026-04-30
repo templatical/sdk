@@ -289,6 +289,9 @@ importers:
       '@vueuse/core':
         specifier: ^14.2.1
         version: 14.2.1(vue@3.5.33(typescript@6.0.3))
+      es-module-lexer:
+        specifier: ^2.1.0
+        version: 2.1.0
       happy-dom:
         specifier: ^20.9.0
         version: 20.9.0
