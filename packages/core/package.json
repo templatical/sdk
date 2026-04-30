@@ -1,7 +1,7 @@
 {
   "name": "@templatical/core",
   "description": "Framework-agnostic editor logic for Templatical email editor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*",
