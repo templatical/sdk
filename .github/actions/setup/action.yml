@@ -1,15 +1,15 @@
 name: Setup
-description: Install Bun, restore install cache, and run bun install --frozen-lockfile
+description: Install pnpm + Node, restore install cache, and run pnpm install --frozen-lockfile
 
 runs:
   using: composite
   steps:
-    - uses: oven-sh/setup-bun@v2
-    - uses: actions/cache@v4
+    - uses: pnpm/action-setup@v4
       with:
-        path: ~/.bun/install/cache
-        key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-        restore-keys: |
-          bun-${{ runner.os }}-
-    - run: bun install --frozen-lockfile
+        run_install: false
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: '.nvmrc'
+        cache: 'pnpm'
+    - run: pnpm install --frozen-lockfile
       shell: bash

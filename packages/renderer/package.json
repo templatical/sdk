@@ -2,6 +2,7 @@
   "name": "@templatical/renderer",
   "description": "Render Templatical email templates to MJML",
   "version": "0.0.6",
+  "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*"
   },
@@ -13,18 +14,30 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
+  "homepage": "https://templatical.com",
+  "keywords": [
+    "email",
+    "email-template",
+    "html-email",
+    "mjml",
+    "renderer",
+    "templatical"
+  ],
   "license": "MIT",
-  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/renderer"
   },
   "scripts": {
     "build": "tsup",

@@ -73,6 +73,13 @@ function applyContent(
   core.conditionPreview.reset();
 }
 
+function handleModuleInsert(
+  mod: { content: Block[] },
+  idx: number | undefined,
+): void {
+  emit("module-insert", mod, idx);
+}
+
 interface CommentsSidebarInstance {
   filterByBlock: (blockId: string) => void;
 }
@@ -140,10 +147,7 @@ defineExpose({ filterCommentsByBlock });
     "
     :visible="showModuleBrowserModal"
     @close="emit('update:showModuleBrowserModal', false)"
-    @insert="
-      (mod: { content: Block[] }, idx: number | undefined) =>
-        emit('module-insert', mod, idx)
-    "
+    @insert="handleModuleInsert"
   />
 
   <MediaLibraryModal

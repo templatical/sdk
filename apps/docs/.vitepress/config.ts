@@ -92,7 +92,18 @@ const enSidebar: DefaultTheme.SidebarMulti = {
     },
     {
       text: "Migration",
-      items: [{ text: "From BeeFree", link: "/guide/migration-from-beefree" }],
+      items: [
+        { text: "From BeeFree", link: "/guide/migration-from-beefree" },
+        { text: "From Unlayer", link: "/guide/migration-from-unlayer" },
+        { text: "From hand-written MJML", link: "/guide/migration-from-mjml" },
+      ],
+    },
+    {
+      text: "Resources",
+      items: [
+        { text: "Showcase", link: "/showcase" },
+        { text: "License FAQ", link: "/license-faq" },
+      ],
     },
   ],
 };
@@ -191,6 +202,18 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       text: "Migration",
       items: [
         { text: "Von BeeFree", link: "/de/guide/migration-from-beefree" },
+        { text: "Von Unlayer", link: "/de/guide/migration-from-unlayer" },
+        {
+          text: "Von handgeschriebenem MJML",
+          link: "/de/guide/migration-from-mjml",
+        },
+      ],
+    },
+    {
+      text: "Ressourcen",
+      items: [
+        { text: "Showcase", link: "/de/showcase" },
+        { text: "Lizenz-FAQ", link: "/de/license-faq" },
       ],
     },
   ],
@@ -266,7 +289,7 @@ export default defineConfig({
     socialLinks: [
       {
         icon: "github",
-        link: "https://github.com/templatical/editor",
+        link: "https://github.com/templatical/sdk",
       },
     ],
 
@@ -285,12 +308,12 @@ export default defineConfig({
         sidebar: enSidebar,
         editLink: {
           pattern:
-            "https://github.com/templatical/editor/edit/main/apps/docs/:path",
+            "https://github.com/templatical/sdk/edit/main/apps/docs/:path",
           text: "Edit this page on GitHub",
         },
         footer: {
           message:
-            'Released under the <a href="https://github.com/templatical/editor/blob/main/LICENSE">FSL-1.1-MIT License</a>.',
+            'Released under the <a href="https://github.com/templatical/sdk/blob/main/LICENSE">FSL-1.1-MIT License</a>.',
           copyright: "Copyright © 2026-present Templatical",
         },
       },
@@ -306,12 +329,12 @@ export default defineConfig({
         sidebar: deSidebar,
         editLink: {
           pattern:
-            "https://github.com/templatical/editor/edit/main/apps/docs/:path",
+            "https://github.com/templatical/sdk/edit/main/apps/docs/:path",
           text: "Diese Seite auf GitHub bearbeiten",
         },
         footer: {
           message:
-            'Veröffentlicht unter der <a href="https://github.com/templatical/editor/blob/main/LICENSE">FSL-1.1-MIT-Lizenz</a>.',
+            'Veröffentlicht unter der <a href="https://github.com/templatical/sdk/blob/main/LICENSE">FSL-1.1-MIT-Lizenz</a>.',
           copyright: "Copyright © 2026-present Templatical",
         },
         docFooter: {

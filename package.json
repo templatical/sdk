@@ -32,13 +32,17 @@
   "engines": {
     "node": ">=22.0.0"
   },
+  "packageManager": "pnpm@10.33.2",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
   "private": true,
   "scripts": {
-    "build": "bun run --filter '@templatical/media-library' build:all && bun run --filter '@templatical/types' build && bun run --filter '@templatical/core' --filter '@templatical/renderer' --filter '@templatical/import-beefree' build && bun run --filter '@templatical/editor' build:all",
-    "build:all-sdk": "bun run build:email-editor && bun run build:media-library",
-    "build:email-editor": "bun run --filter '@templatical/editor' build:cdn",
-    "build:media-library": "bun run --filter '@templatical/media-library' build:cdn",
-    "ci": "bun run format && bun run lint && bun run typecheck && bun run test",
+    "build": "pnpm --filter '@templatical/media-library' run build:all && pnpm --filter '@templatical/types' run build && pnpm --filter '@templatical/core' --filter '@templatical/renderer' --filter '@templatical/import-beefree' run build && pnpm --filter '@templatical/editor' run build:all",
+    "build:all-sdk": "pnpm run build:email-editor && pnpm run build:media-library",
+    "build:email-editor": "pnpm --filter '@templatical/editor' run build:cdn",
+    "build:media-library": "pnpm --filter '@templatical/media-library' run build:cdn",
+    "ci": "pnpm run format && pnpm run lint && pnpm run typecheck && pnpm run test",
     "deps:check": "syncpack lint && syncpack format --check",
     "deps:fix": "syncpack fix && syncpack format",
     "deps:update": "syncpack update",
@@ -46,15 +50,11 @@
     "format:check": "prettier --check 'packages/*/src/**/*.{ts,vue}' 'apps/*/src/**/*.{ts,vue}'",
     "lint": "eslint packages/*/src apps/*/src --cache --cache-location node_modules/.cache/eslint/",
     "prepare": "husky",
-    "test": "bun run --filter './packages/*' test",
-    "test:coverage": "bun run --filter './packages/*' test -- --coverage",
+    "test": "pnpm --filter './packages/*' run test",
+    "test:coverage": "pnpm --filter './packages/*' run test -- --coverage",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
-    "typecheck": "bun run --filter './packages/*' typecheck && bun run --filter '@templatical/playground' typecheck"
-  },
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ]
+    "typecheck": "pnpm --filter './packages/*' run typecheck && pnpm --filter '@templatical/playground' run typecheck"
+  }
 }

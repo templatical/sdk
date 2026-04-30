@@ -7,9 +7,9 @@
   },
   "private": true,
   "scripts": {
-    "docs:build": "vitepress build",
-    "docs:dev": "vitepress dev",
-    "docs:preview": "vitepress preview"
+    "build": "vitepress build",
+    "dev": "vitepress dev",
+    "preview": "vitepress preview"
   },
   "type": "module"
 }

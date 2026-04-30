@@ -2,6 +2,7 @@
   "name": "@templatical/core",
   "description": "Framework-agnostic editor logic for Templatical email editor",
   "version": "0.0.6",
+  "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*",
     "@vue/reactivity": "^3.5.33"
@@ -16,20 +17,26 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     },
     "./cloud": {
       "types": "./dist/cloud/index.d.ts",
-      "import": "./dist/cloud/index.js",
-      "require": "./dist/cloud/index.cjs"
+      "import": "./dist/cloud/index.js"
     }
   },
   "files": [
     "dist"
   ],
+  "homepage": "https://templatical.com",
+  "keywords": [
+    "editor-core",
+    "email",
+    "email-editor",
+    "framework-agnostic",
+    "templatical",
+    "vue-reactivity"
+  ],
   "license": "SEE LICENSE IN LICENSE",
-  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "peerDependencies": {
     "pusher-js": "^8.5.0"
@@ -41,6 +48,11 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/core"
   },
   "scripts": {
     "build": "tsup",

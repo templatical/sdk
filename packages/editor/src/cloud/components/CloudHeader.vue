@@ -10,7 +10,6 @@ import {
 } from "@lucide/vue";
 import { defineAsyncComponent } from "vue";
 import type {
-  AuthManager,
   UseCommentsReturn,
   UseTestEmailReturn,
   UseWebSocketReturn,
@@ -38,7 +37,6 @@ const AiFeatureMenu = defineAsyncComponent(() => import("./AiFeatureMenu.vue"));
 defineProps<{
   editor: CloudUseEditorReturn;
   core: UseEditorCoreReturn;
-  authManager: AuthManager;
   featureFlags: UseCloudFeatureFlagsReturn;
   panelState: UseCloudPanelStateReturn;
   snapshotPreview: UseSnapshotPreviewReturn;
@@ -71,19 +69,6 @@ defineEmits<{
     <div
       class="tpl-header-left tpl:flex tpl:min-w-[200px] tpl:items-center tpl:gap-3"
     >
-      <div
-        v-if="!featureFlags.isWhiteLabeled.value"
-        class="tpl-logo tpl:flex tpl:items-center tpl:gap-2.5 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
-      >
-        <img
-          :src="authManager.resolveUrl('/logo.svg')"
-          alt="Templatical"
-          width="24"
-          height="24"
-          class="tpl:shrink-0"
-        />
-        <span style="letter-spacing: -0.01em">{{ core.t.header.title }}</span>
-      </div>
       <span
         v-if="featureFlags.templateLimit.value !== null"
         class="tpl:text-xs tpl:opacity-60 tpl:text-[var(--tpl-text-muted)]"

@@ -2,6 +2,7 @@
   "name": "@templatical/types",
   "description": "Shared TypeScript types, block factory functions, and event emitter for Templatical email editor",
   "version": "0.0.6",
+  "bugs": "https://github.com/templatical/sdk/issues",
   "devDependencies": {
     "@templatical/media-library": "workspace:*",
     "tsup": "^8.5.1",
@@ -11,18 +12,30 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
+  "homepage": "https://templatical.com",
+  "keywords": [
+    "block-types",
+    "email",
+    "email-editor",
+    "templatical",
+    "types",
+    "typescript"
+  ],
   "license": "MIT",
-  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/types"
   },
   "scripts": {
     "build": "tsup",

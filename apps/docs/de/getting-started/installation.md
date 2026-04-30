@@ -5,6 +5,12 @@ description: Installieren Sie den Templatical-E-Mail-Editor über npm oder CDN.
 
 # Installation
 
+::: tip Aktive Entwicklung
+Templatical wird aktiv weiterentwickelt und veröffentlicht häufig neue Versionen. Die öffentliche API stabilisiert sich — wir folgen [SemVer](https://semver.org), nutzen [Changesets](https://github.com/changesets/changesets) für jedes Release und dokumentieren Breaking Changes im [Changelog](https://github.com/templatical/sdk/releases). Pinne in Produktion eine Version und beobachte die [GitHub-Releases](https://github.com/templatical/sdk/releases), um aktuell zu bleiben.
+
+Feature-Wunsch oder rauer Kante begegnet? [Diskussion eröffnen](https://github.com/templatical/sdk/discussions) — Feedback formt die Roadmap.
+:::
+
 ## Voraussetzungen
 
 - **Moderner Browser** -- Chrome 80+, Firefox 80+, Safari 14+, Edge 80+
@@ -35,7 +41,7 @@ bun add @templatical/editor @templatical/renderer
 |---|---|---|
 | `@templatical/editor` | Visueller Drag-and-Drop-Editor und `init()`-Einstiegspunkt | Ja |
 | `@templatical/types` | Gemeinsame TypeScript-Typen, Block-Factory-Funktionen, Type Guards | Automatisch installiert |
-| `@templatical/core` | Framework-agnostische Editor-Logik (State, History, Plugins) | Automatisch installiert |
+| `@templatical/core` | Framework-agnostische Editor-Logik (State, History) | Automatisch installiert |
 | `@templatical/renderer` | Rendert Templates zu MJML | Empfohlen |
 | `@templatical/import-beefree` | Konvertiert BeeFree-JSON-Templates in das Templatical-Format | Optional |
 

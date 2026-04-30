@@ -39,6 +39,13 @@ export interface TemplaticalCloudEditorConfig {
   uiTheme?: UiTheme;
   locale?: string;
 
+  /**
+   * Show the "Powered by Templatical" footer. Defaults to `true`.
+   * Set to `false` to hide the footer (no attribution required by the license).
+   * Cloud white-label plans hide the footer regardless of this setting.
+   */
+  branding?: boolean;
+
   ai?: AiConfig | false;
   commenting?: boolean;
   collaboration?: CollaborationConfig;

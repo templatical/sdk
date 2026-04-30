@@ -2,6 +2,7 @@
   "name": "@templatical/import-beefree",
   "description": "Convert BeeFree email templates to Templatical format",
   "version": "0.0.6",
+  "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*"
   },
@@ -13,18 +14,30 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
+  "homepage": "https://templatical.com",
+  "keywords": [
+    "beefree",
+    "email",
+    "email-template",
+    "importer",
+    "migration",
+    "templatical"
+  ],
   "license": "MIT",
-  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/import-beefree"
   },
   "scripts": {
     "build": "tsup",

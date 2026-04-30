@@ -11,7 +11,8 @@ Templatical
 ### The Software
 
 Templatical Email Editor — the visual drag-and-drop email template editor
-(@templatical/core and @templatical/editor packages).
+(@templatical/core, @templatical/editor, and @templatical/media-library
+packages).
 
 ### Grant of Rights
 
@@ -23,15 +24,9 @@ following conditions:
 ### Permitted Uses
 
 You may use the Software for any purpose, including commercial purposes,
-**provided that**:
-
-1. You do not offer the Software, or a substantially similar product built
-   using the Software, as a hosted or managed service that competes with
-   Templatical's commercial offerings.
-
-2. If your organization's annual revenue exceeds $5,000,000 USD, you must
-   purchase a commercial license from Templatical ($2,000 USD per year).
-   Contact licensing@templatical.com.
+**provided that** you do not offer the Software, or a substantially similar
+product built using the Software, as a hosted or managed service that
+competes with Templatical's commercial offerings.
 
 ### Change Date
 
@@ -58,4 +53,4 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 
 Note: The @templatical/types, @templatical/renderer, and
 @templatical/import-beefree packages are licensed separately under the MIT
-License. See LICENSE-MIT.
+License. See LICENSE-MIT for those packages' terms.

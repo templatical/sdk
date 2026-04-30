@@ -2,6 +2,7 @@
   "name": "@templatical/editor",
   "description": "Vue 3 visual drag-and-drop email editor powered by Templatical",
   "version": "0.0.6",
+  "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@lucide/vue": "^1.11.0",
     "@templatical/core": "workspace:*",
@@ -37,16 +38,27 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/templatical-editor.js",
-      "require": "./dist/templatical-editor.umd.cjs"
+      "import": "./dist/templatical-editor.js"
     },
     "./style.css": "./dist/style.css"
   },
   "files": [
     "dist"
   ],
+  "homepage": "https://templatical.com",
+  "keywords": [
+    "drag-and-drop",
+    "email",
+    "email-builder",
+    "email-editor",
+    "email-template",
+    "mjml",
+    "templatical",
+    "tiptap",
+    "vue",
+    "wysiwyg"
+  ],
   "license": "SEE LICENSE IN LICENSE",
-  "main": "./dist/templatical-editor.umd.cjs",
   "module": "./dist/templatical-editor.js",
   "peerDependencies": {
     "@templatical/media-library": "workspace:*",
@@ -64,6 +76,11 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/editor"
   },
   "scripts": {
     "build": "vite build",

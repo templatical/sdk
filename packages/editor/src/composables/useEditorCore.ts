@@ -75,8 +75,12 @@ import { registerBuiltInBlocks } from "../utils/registerBuiltInBlocks";
 import { handleEditorKeydown } from "../utils/keyboardShortcuts";
 
 // Block components — shared between OSS and Cloud editors
+import { defineAsyncComponent } from "vue";
 import ButtonBlock from "../components/blocks/ButtonBlock.vue";
-import CountdownBlockComponent from "../components/blocks/CountdownBlock.vue";
+// Cloud-only at insertion; lazy so OSS users without countdown content pay nothing.
+const CountdownBlockComponent = defineAsyncComponent(
+  () => import("../components/blocks/CountdownBlock.vue"),
+);
 import CustomBlockComponent from "../components/blocks/CustomBlock.vue";
 import DividerBlock from "../components/blocks/DividerBlock.vue";
 import HtmlBlock from "../components/blocks/HtmlBlock.vue";

@@ -55,6 +55,7 @@ unmount();
 | `theme` | `ThemeOverrides` | No | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming) |
 | `uiTheme` | `'light' \| 'dark' \| 'auto'` | No | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'` |
 | `locale` | `string` | No | Locale code (e.g. `'en'`, `'de'`). Defaults to `'en'` |
+| `branding` | `boolean` | No | Show the "Powered by Templatical" footer. Defaults to `true`. Set to `false` to hide it |
 
 
 ## TemplaticalEditor

@@ -3,7 +3,7 @@ layout: home
 hero:
   name: Templatical
   text: Email Editor for Your App
-  tagline: Drop a production-ready drag-and-drop email editor into any web application. Open-source, framework-agnostic, and fully customizable.
+  tagline: Drop a production-ready drag-and-drop email editor into any web application. Open-source, framework-agnostic, and packed with features that are typically reserved for paid tiers in other editors.
   actions:
     - theme: brand
       text: Get Started
@@ -12,12 +12,28 @@ hero:
       text: Try Playground
       link: https://play.templatical.com
 features:
-  - title: Drop-In Integration
-    details: Works with React, Vue, Svelte, Angular, or plain JavaScript. One function call to mount, one to unmount. No framework lock-in.
-  - title: Complete Block System
-    details: 14 built-in block types from titles and paragraphs to tables and custom blocks. Sections handle multi-column layouts that stack on mobile.
-  - title: Portable Templates
-    details: Templates are JSON. Render to MJML with the included renderer — in the browser or on your server. Compile to HTML with any MJML library.
-  - title: Your Brand, Your Rules
-    details: 22 color tokens, custom fonts, dark mode, merge tags, display conditions, and a plugin system. The editor adapts to your product, not the other way around.
+  - title: Custom blocks with API-backed data
+    details: Register your own block types — static templates or live API data at preview time.
+    link: /guide/custom-blocks
+    linkText: Build a custom block →
+  - title: Merge tags with pluggable syntax
+    details: Handlebars, Liquid, JS literals, or your own — with human-readable labels in the canvas.
+    link: /guide/merge-tags
+    linkText: Configure merge tags →
+  - title: Display conditions
+    details: Show or hide blocks per recipient attribute, with live preview while editing.
+    link: /guide/display-conditions
+    linkText: See display conditions →
+  - title: Full theming via design tokens
+    details: 27 OKLch tokens, custom fonts, dark mode, and complete theme overrides.
+    link: /guide/theming
+    linkText: Customize theming →
+  - title: Template & block defaults
+    details: Define your brand once; new templates and blocks inherit colors, fonts, and layout.
+    link: /guide/defaults
+    linkText: Set defaults →
+  - title: JSON in, MJML out
+    details: Portable JSON templates, MJML output. Render anywhere, send through any provider.
+    link: /getting-started/how-rendering-works
+    linkText: How rendering works →
 ---

@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from "vue";
 import ButtonToolbar from "./toolbar/ButtonToolbar.vue";
 import CommonBlockSettings from "./toolbar/CommonBlockSettings.vue";
-import CountdownToolbar from "./toolbar/CountdownToolbar.vue";
+const CountdownToolbar = defineAsyncComponent(
+  () => import("./toolbar/CountdownToolbar.vue"),
+);
 import CustomBlockToolbar from "./toolbar/CustomBlockToolbar.vue";
 import DividerToolbar from "./toolbar/DividerToolbar.vue";
 import HtmlToolbar from "./toolbar/HtmlToolbar.vue";

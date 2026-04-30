@@ -1,17 +1,18 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import tailwindcss from '@tailwindcss/vite';
 import dts from 'vite-plugin-dts';
 import { resolve } from 'node:path';
 
 export default defineConfig({
-    plugins: [vue(), dts({ rollupTypes: true })],
+    plugins: [tailwindcss(), vue(), dts({ rollupTypes: true })],
     build: {
         cssMinify: 'esbuild',
         lib: {
             entry: resolve(import.meta.dirname, 'src/index.ts'),
             name: 'TemplaticalMediaLibrary',
             fileName: 'templatical-media-library',
-            formats: ['es', 'umd'],
+            formats: ['es'],
         },
         rolldownOptions: {
             external: [
@@ -23,17 +24,6 @@ export default defineConfig({
                 '@lucide/vue',
                 'vue-advanced-cropper',
             ],
-            output: {
-                globals: {
-                    vue: 'Vue',
-                    '@templatical/core': 'TemplaticalCore',
-                    '@templatical/core/cloud': 'TemplaticalCoreCloud',
-                    '@templatical/types': 'TemplaticalTypes',
-                    '@vueuse/core': 'VueUseCore',
-                    '@lucide/vue': 'LucideVue',
-                    'vue-advanced-cropper': 'VueAdvancedCropper',
-                },
-            },
         },
     },
 });
