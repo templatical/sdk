@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { createApp, defineComponent, h, ref, type InjectionKey } from 'vue';
 import en from '../src/i18n/locales/en';
 import de from '../src/i18n/locales/de';
+import ptBR from '../src/i18n/locales/pt-BR';
 import {
   getBaseLocale,
   loadTranslations,
@@ -53,6 +54,7 @@ describe('getBaseLocale', () => {
   it('handles simple locale', () => {
     expect(getBaseLocale('en')).toBe('en');
     expect(getBaseLocale('de')).toBe('de');
+    expect(getBaseLocale('pt-BR')).toBe('pt');
   });
 
   it('handles empty string', () => {
@@ -64,16 +66,20 @@ describe('isLocaleSupported', () => {
   it('returns true for supported locales', () => {
     expect(isLocaleSupported('en')).toBe(true);
     expect(isLocaleSupported('de')).toBe(true);
+    expect(isLocaleSupported('pt-BR')).toBe(true);
   });
 
   it('returns true for locale with region if base is supported', () => {
     expect(isLocaleSupported('en-US')).toBe(true);
     expect(isLocaleSupported('de-AT')).toBe(true);
+    expect(isLocaleSupported('pt-br')).toBe(true);
   });
 
   it('returns false for unsupported locales', () => {
     expect(isLocaleSupported('fr')).toBe(false);
     expect(isLocaleSupported('ja')).toBe(false);
+    expect(isLocaleSupported('pt')).toBe(false);
+    expect(isLocaleSupported('pt-PT')).toBe(false);
   });
 });
 
@@ -82,6 +88,7 @@ describe('getSupportedLocales', () => {
     const locales = getSupportedLocales();
     expect(locales).toContain('en');
     expect(locales).toContain('de');
+    expect(locales).toContain('pt-BR');
   });
 
   it('returns a new array (not a reference)', () => {
@@ -106,6 +113,23 @@ describe('loadTranslations', () => {
   it('normalizes locale with region', async () => {
     const t = await loadTranslations('en-US');
     expect(t.header.title).toBe('Templatical');
+  });
+
+  it('loads pt-BR translations', async () => {
+    const t = await loadTranslations('pt-BR');
+    expect(t.loading.initializing).toBe('Inicializando...');
+  });
+
+  it('loads pt-BR translations with case-insensitive locale', async () => {
+    const t = await loadTranslations('pt-br');
+    expect(t.loading.initializing).toBe('Inicializando...');
+  });
+
+  it('does not map pt or pt-PT to pt-BR', async () => {
+    const pt = await loadTranslations('pt');
+    const ptPT = await loadTranslations('pt-PT');
+    expect(pt.loading.initializing).toBe('Initializing...');
+    expect(ptPT.loading.initializing).toBe('Initializing...');
   });
 
   it('falls back to English for unsupported locale', async () => {
@@ -135,11 +159,19 @@ describe('locale parity', () => {
     expect(enKeys).toEqual(deKeys);
   });
 
+  it('English and pt-BR have the same nested keys', () => {
+    const enKeys = getNestedKeys(en).sort();
+    const ptBRKeys = getNestedKeys(ptBR).sort();
+    expect(enKeys).toEqual(ptBRKeys);
+  });
+
   it('both locales preserve placeholder tokens in key strings', () => {
     expect(en.header.templatesUsed).toContain('{used}');
     expect(en.header.templatesUsed).toContain('{max}');
     expect(de.header.templatesUsed).toContain('{used}');
     expect(de.header.templatesUsed).toContain('{max}');
+    expect(ptBR.header.templatesUsed).toContain('{used}');
+    expect(ptBR.header.templatesUsed).toContain('{max}');
   });
 });
 
@@ -200,6 +232,13 @@ describe('useI18n', () => {
         [TRANSLATIONS_KEY as symbol]: de,
       });
       expect(t.loading.initializing).toBe('Initialisieren...');
+    });
+
+    it('injects pt-BR translations from context', () => {
+      const { t } = withProvide(() => useI18n(), {
+        [TRANSLATIONS_KEY as symbol]: ptBR,
+      });
+      expect(t.loading.initializing).toBe('Inicializando...');
     });
 
     it('override takes precedence over injected', () => {

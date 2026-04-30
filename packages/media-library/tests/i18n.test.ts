@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import en from '../src/i18n/locales/en';
 import de from '../src/i18n/locales/de';
+import ptBR from '../src/i18n/locales/pt-BR';
 import { loadMediaTranslations } from '../src/i18n';
 import { useI18n } from '../src/composables/useI18n';
 
@@ -21,6 +22,12 @@ describe('i18n locales', () => {
     expect(enKeys).toEqual(deKeys);
   });
 
+  it('English and pt-BR have the same keys', () => {
+    const enKeys = Object.keys(en.mediaLibrary).sort();
+    const ptBRKeys = Object.keys(ptBR.mediaLibrary).sort();
+    expect(enKeys).toEqual(ptBRKeys);
+  });
+
   it('both locales preserve placeholder tokens', () => {
     // Check that placeholders like {current}, {total} exist in both
     expect(en.mediaLibrary.uploadingProgress).toContain('{current}');
@@ -37,6 +44,13 @@ describe('i18n locales', () => {
     expect(de.mediaLibrary.storageTooltip).toContain('{used}');
     expect(de.mediaLibrary.storageTooltip).toContain('{total}');
     expect(de.mediaLibrary.storageTooltip).toContain('{remaining}');
+
+    expect(ptBR.mediaLibrary.uploadingProgress).toContain('{current}');
+    expect(ptBR.mediaLibrary.uploadingProgress).toContain('{total}');
+    expect(ptBR.mediaLibrary.usedInTemplates).toContain('{count}');
+    expect(ptBR.mediaLibrary.storageTooltip).toContain('{used}');
+    expect(ptBR.mediaLibrary.storageTooltip).toContain('{total}');
+    expect(ptBR.mediaLibrary.storageTooltip).toContain('{remaining}');
   });
 });
 
@@ -61,6 +75,23 @@ describe('loadMediaTranslations', () => {
     expect(translations.mediaLibrary.title).toBe('Medienbibliothek');
   });
 
+  it('loads pt-BR translations', async () => {
+    const translations = await loadMediaTranslations('pt-BR');
+    expect(translations.mediaLibrary.title).toBe('Biblioteca de Mídia');
+  });
+
+  it('loads pt-BR translations with case-insensitive locale', async () => {
+    const translations = await loadMediaTranslations('pt-br');
+    expect(translations.mediaLibrary.title).toBe('Biblioteca de Mídia');
+  });
+
+  it('does not map pt or pt-PT to pt-BR', async () => {
+    const pt = await loadMediaTranslations('pt');
+    const ptPT = await loadMediaTranslations('pt-PT');
+    expect(pt.mediaLibrary.title).toBe('Media Library');
+    expect(ptPT.mediaLibrary.title).toBe('Media Library');
+  });
+
   it('falls back to English for unsupported locale', async () => {
     const translations = await loadMediaTranslations('fr');
     expect(translations.mediaLibrary.title).toBe('Media Library');
@@ -76,6 +107,11 @@ describe('useI18n', () => {
   it('uses override translations', () => {
     const { t } = useI18n(en);
     expect(t.mediaLibrary.title).toBe('Media Library');
+  });
+
+  it('uses pt-BR override translations', () => {
+    const { t } = useI18n(ptBR);
+    expect(t.mediaLibrary.title).toBe('Biblioteca de Mídia');
   });
 
   describe('format', () => {
