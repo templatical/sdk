@@ -2,6 +2,7 @@
   "name": "@templatical/media-library",
   "description": "Media library management for Templatical email editor",
   "version": "0.0.6",
+  "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@lucide/vue": "^1.11.0",
     "@templatical/core": "workspace:*",
@@ -30,22 +31,16 @@
   "files": [
     "dist"
   ],
-  "license": "SEE LICENSE IN LICENSE",
   "homepage": "https://templatical.com",
-  "bugs": "https://github.com/templatical/sdk/issues",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/templatical/sdk.git",
-    "directory": "packages/media-library"
-  },
   "keywords": [
+    "asset-manager",
+    "image-upload",
     "media-library",
     "media-manager",
-    "image-upload",
-    "vue",
     "templatical",
-    "asset-manager"
+    "vue"
   ],
+  "license": "SEE LICENSE IN LICENSE",
   "main": "./dist/templatical-media-library.umd.cjs",
   "module": "./dist/templatical-media-library.js",
   "peerDependencies": {
@@ -54,6 +49,11 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/media-library"
   },
   "scripts": {
     "build": "vite build",

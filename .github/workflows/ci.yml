@@ -19,20 +19,20 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: node_modules/.cache/eslint
-          key: eslint-${{ runner.os }}-${{ hashFiles('eslint.config.mjs', 'bun.lock') }}-${{ github.sha }}
+          key: eslint-${{ runner.os }}-${{ hashFiles('eslint.config.mjs', 'pnpm-lock.yaml') }}-${{ github.sha }}
           restore-keys: |
-            eslint-${{ runner.os }}-${{ hashFiles('eslint.config.mjs', 'bun.lock') }}-
+            eslint-${{ runner.os }}-${{ hashFiles('eslint.config.mjs', 'pnpm-lock.yaml') }}-
             eslint-${{ runner.os }}-
-      - run: bun run format:check
-      - run: bun run lint
-      - run: bun run deps:check
+      - run: pnpm run format:check
+      - run: pnpm run lint
+      - run: pnpm run deps:check
 
   typecheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      - run: bun run typecheck
+      - run: pnpm run typecheck
 
   build:
     runs-on: ubuntu-latest
@@ -40,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      - run: bun run build
+      - run: pnpm run build
       - uses: actions/upload-artifact@v4
         with:
           name: dist
@@ -58,7 +58,7 @@ jobs:
         with:
           name: dist
           path: packages/
-      - run: bun run test:coverage
+      - run: pnpm run test:coverage
       - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -83,12 +83,12 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-      - run: bunx playwright install --with-deps chromium
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm exec playwright install --with-deps chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-      - run: bunx playwright install-deps chromium
+      - run: pnpm exec playwright install-deps chromium
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-      - run: bun run test:e2e -- --shard=${{ matrix.shard }}/3
+      - run: pnpm run test:e2e -- --shard=${{ matrix.shard }}/3
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
@@ -108,7 +108,7 @@ jobs:
           path: all-blob-reports
           pattern: blob-report-*
           merge-multiple: true
-      - run: bunx playwright merge-reports --reporter html ./all-blob-reports
+      - run: pnpm exec playwright merge-reports --reporter html ./all-blob-reports
       - uses: actions/upload-artifact@v4
         with:
           name: playwright-report

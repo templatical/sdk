@@ -42,11 +42,11 @@ Keep PRs small and focused — one concern per PR.
 ## Checklist
 
 - [ ] Tests added or updated (and they fail without my change)
-- [ ] `bun run ci` passes locally (lint + typecheck + build + test)
-- [ ] `bun run test:e2e` passes (only if this PR touches editor UI)
+- [ ] `pnpm run ci` passes locally (lint + typecheck + build + test)
+- [ ] `pnpm run test:e2e` passes (only if this PR touches editor UI)
 - [ ] Docs updated — both `apps/docs/<page>.md` and `apps/docs/de/<page>.md` if user-facing
 - [ ] i18n keys added to both `en.ts` and `de.ts` if I added new strings
-- [ ] Changeset added (`bunx changeset`) — required for any change to a published package
+- [ ] Changeset added (`pnpm exec changeset`) — required for any change to a published package
 - [ ] PR title is descriptive and follows the existing convention
 
 ## Screenshots / recordings

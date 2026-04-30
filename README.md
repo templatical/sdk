@@ -139,9 +139,9 @@ Contributions, bug reports, and feature requests are welcome.
 ```bash
 git clone https://github.com/templatical/sdk.git
 cd sdk
-bun install
-bun run build
-bun run test
+pnpm install
+pnpm run build
+pnpm run test
 ```
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide and [CLAUDE.md](./CLAUDE.md) for architecture details.

@@ -20,7 +20,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "bun run --filter '@templatical/playground' dev",
+    command: "pnpm --filter '@templatical/playground' run dev",
     url: "http://localhost:5173",
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,

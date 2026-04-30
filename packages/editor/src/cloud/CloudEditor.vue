@@ -56,7 +56,6 @@ const {
   isInitializing,
   isAuthReady,
   initError,
-  authManager,
   planConfigInstance,
   websocket,
   collaboration,

@@ -30,8 +30,8 @@ For block-level concerns, the docs are usually the right reference: [block refer
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) >= 1.0
-- Node.js >= 22 (the engine requirement; Bun runs everything)
+- Node.js >= 22 (the engine requirement)
+- [pnpm](https://pnpm.io/) >= 9 (run `corepack enable` once and the repo's pinned version is used automatically)
 - A modern browser for the playground / E2E tests
 
 ### One-time setup
@@ -39,35 +39,35 @@ For block-level concerns, the docs are usually the right reference: [block refer
 ```bash
 git clone https://github.com/templatical/sdk.git
 cd sdk
-bun install
-bun run build      # required once, so subsequent commands have dist/
-bun run test       # verify everything passes locally
+pnpm install
+pnpm run build      # required once, so subsequent commands have dist/
+pnpm run test       # verify everything passes locally
 ```
 
 ### Development loop
 
 ```bash
-bun install          # install / update deps
-bun run build        # build all packages (tsup + vite)
-bun run test         # vitest across all packages
-bun run test:e2e     # Playwright E2E (against the playground)
-bun run lint         # ESLint
-bun run format       # Prettier auto-fix
-bun run format:check # Prettier check (CI uses this)
-bun run typecheck    # tsc / vue-tsc per package, no build needed
-bun run ci           # all of the above sequentially (matches CI)
+pnpm install          # install / update deps
+pnpm run build        # build all packages (tsup + vite)
+pnpm run test         # vitest across all packages
+pnpm run test:e2e     # Playwright E2E (against the playground)
+pnpm run lint         # ESLint
+pnpm run format       # Prettier auto-fix
+pnpm run format:check # Prettier check (CI uses this)
+pnpm run typecheck    # tsc / vue-tsc per package, no build needed
+pnpm run ci           # all of the above sequentially (matches CI)
 ```
 
 Run the playground while iterating on editor code:
 
 ```bash
-cd apps/playground && bun run dev
+cd apps/playground && pnpm run dev
 ```
 
 Run the docs site while iterating on docs:
 
 ```bash
-cd apps/docs && bun run docs:dev
+cd apps/docs && pnpm run docs:dev
 ```
 
 ## Tests
@@ -97,7 +97,7 @@ The same rule applies to i18n keys in `packages/editor/src/i18n/` and `packages/
 Templatical uses [`@changesets/cli`](https://github.com/changesets/changesets) for versioning. **Every PR that changes code in a published package must include a changeset.**
 
 ```bash
-bunx changeset
+pnpm exec changeset
 ```
 
 This walks you through:
@@ -114,10 +114,10 @@ PRs that touch only docs, tests, or internal tooling don't need a changeset.
 Before opening a PR:
 
 - [ ] Tests added or updated (and they fail without your change)
-- [ ] `bun run ci` passes locally (lint + typecheck + build + test)
-- [ ] E2E still passes (`bun run test:e2e`) — if your change touches the editor UI
+- [ ] `pnpm run ci` passes locally (lint + typecheck + build + test)
+- [ ] E2E still passes (`pnpm run test:e2e`) — if your change touches the editor UI
 - [ ] Docs updated (en + de if user-facing)
-- [ ] Changeset added (`bunx changeset`)
+- [ ] Changeset added (`pnpm exec changeset`)
 - [ ] PR description explains the *why*, not just the *what*
 
 Keep PRs small and focused. One concern per PR — reviewers move faster, and you avoid having an unrelated test failure block your fix.
@@ -125,7 +125,7 @@ Keep PRs small and focused. One concern per PR — reviewers move faster, and yo
 ## Code style
 
 - TypeScript strict mode — no `any` for public APIs (it's allowed in tests and internal helpers, see ESLint config).
-- ESLint + Prettier handle most formatting decisions. Run `bun run format` before pushing.
+- ESLint + Prettier handle most formatting decisions. Run `pnpm run format` before pushing.
 - Use named exports unless there's a strong reason for a default export.
 - For Vue components, use `<script setup lang="ts">`. The repo conventions in [`CLAUDE.md`](./CLAUDE.md#conventions) cover specifics (i18n via `useI18n()`, `tpl:` Tailwind prefix, lazy-loading heavy deps, `_destroyed` guards on async work).
 
