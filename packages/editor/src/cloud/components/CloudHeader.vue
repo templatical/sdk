@@ -17,6 +17,7 @@ import type {
 } from "@templatical/core/cloud";
 
 import type { UseEditorCoreReturn } from "../../composables/useEditorCore";
+import { useCloudI18nStrict } from "../../composables/useCloudI18n";
 import { headerBtnClass } from "../../constants/styleConstants";
 import ViewportToggle from "../../components/ViewportToggle.vue";
 import PreviewToggle from "../../components/PreviewToggle.vue";
@@ -52,6 +53,8 @@ defineProps<{
 defineEmits<{
   (e: "save"): void;
 }>();
+
+const { t: cloudT, format: cloudFormat } = useCloudI18nStrict();
 </script>
 
 <template>
@@ -74,7 +77,7 @@ defineEmits<{
         class="tpl:text-xs tpl:opacity-60 tpl:text-[var(--tpl-text-muted)]"
       >
         {{
-          core.format(core.t.header.templatesUsed, {
+          cloudFormat(cloudT.header.templatesUsed, {
             used: featureFlags.templateCount.value,
             max: featureFlags.templateLimit.value,
           })
@@ -125,7 +128,7 @@ defineEmits<{
         :data-tooltip="featureFlags.saveErrorMessage.value"
       >
         <CircleAlert :size="12" :stroke-width="2.5" />
-        {{ core.t.header.saveFailed }}
+        {{ cloudT.header.saveFailed }}
       </div>
       <div
         v-else-if="featureFlags.saveStatus.value === 'saved'"
@@ -133,7 +136,7 @@ defineEmits<{
         class="tpl-status tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-xs tpl:text-[var(--tpl-success)]"
       >
         <Check :size="12" :stroke-width="2.5" />
-        {{ core.t.header.saved }}
+        {{ cloudT.header.saved }}
       </div>
       <div
         v-else-if="editor.state.isDirty"
@@ -143,7 +146,7 @@ defineEmits<{
         <span
           class="tpl-pulse tpl:size-1.5 tpl:rounded-full tpl:bg-[var(--tpl-primary)]"
         ></span>
-        {{ core.t.header.unsaved }}
+        {{ cloudT.header.unsaved }}
       </div>
 
       <!-- Comments button -->
@@ -154,8 +157,8 @@ defineEmits<{
         "
         :aria-label="
           commentsInstance.unresolvedCount.value > 0
-            ? `${core.t.comments.button} (${commentsInstance.unresolvedCount.value})`
-            : core.t.comments.button
+            ? `${cloudT.comments.button} (${commentsInstance.unresolvedCount.value})`
+            : cloudT.comments.button
         "
         :aria-expanded="panelState.commentsOpen.value"
         :class="headerBtnClass"
@@ -171,7 +174,7 @@ defineEmits<{
         @click="panelState.commentsOpen.value = !panelState.commentsOpen.value"
       >
         <MessageCircle :size="16" :stroke-width="2" />
-        {{ core.t.comments.button }}
+        {{ cloudT.comments.button }}
         <span
           v-if="
             commentsInstance.unresolvedCount.value > 0 &&
@@ -203,7 +206,7 @@ defineEmits<{
           @click.stop="panelState.toggleAiMenu"
         >
           <Sparkles :size="16" :stroke-width="2" class="tpl-ai-btn-icon" />
-          {{ core.t.aiChat.button }}
+          {{ cloudT.aiChat.button }}
         </button>
         <Transition
           enter-active-class="tpl:transition-all tpl:duration-150 tpl:ease-out"
@@ -241,7 +244,7 @@ defineEmits<{
       >
         <Send v-if="!testEmail.isSending.value" :size="16" :stroke-width="2" />
         <LoaderCircle v-else class="tpl-spinner" :size="16" :stroke-width="2" />
-        {{ core.t.testEmail.button }}
+        {{ cloudT.testEmail.button }}
       </button>
 
       <!-- Save button -->
@@ -257,7 +260,7 @@ defineEmits<{
       >
         <Save v-if="!isSaving" :size="16" :stroke-width="2" />
         <LoaderCircle v-else class="tpl-spinner" :size="16" :stroke-width="2" />
-        {{ isSaving ? core.t.header.saving : core.t.header.save }}
+        {{ isSaving ? cloudT.header.saving : cloudT.header.save }}
       </button>
     </div>
   </header>

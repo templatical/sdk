@@ -7,6 +7,7 @@ import {
   requireInject,
 } from "../../keys";
 import { useI18n } from "../../composables/useI18n";
+import { useCloudI18nStrict } from "../../composables/useCloudI18n";
 import type { Comment } from "@templatical/types";
 import {
   Check,
@@ -32,7 +33,8 @@ const emit = defineEmits<{
   (e: "filterBlock", blockId: string | null): void;
 }>();
 
-const { t, format } = useI18n();
+const { format } = useI18n();
+const { t: cloudT } = useCloudI18nStrict();
 const editor = requireInject(EDITOR_KEY, "CommentsSidebar");
 const authManager = requireInject(AUTH_MANAGER_KEY, "CommentsSidebar");
 const comments = requireInject(COMMENTS_KEY, "CommentsSidebar");
@@ -212,7 +214,7 @@ function isOwnComment(comment: Comment): boolean {
 }
 
 function formatTime(dateString: string): string {
-  return formatRelativeTime(dateString, t.snapshotHistory) ?? dateString;
+  return formatRelativeTime(dateString, cloudT.snapshotHistory) ?? dateString;
 }
 
 function handleNewCommentKeydown(event: KeyboardEvent): void {
@@ -269,7 +271,7 @@ defineExpose({ filterByBlock, focusNewComment });
           class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text)]"
         >
           <MessageCircle :size="13" :stroke-width="2" />
-          <span>{{ t.comments.title }}</span>
+          <span>{{ cloudT.comments.title }}</span>
           <span
             v-if="comments.unresolvedCount.value > 0"
             class="tpl:ml-1 tpl:inline-flex tpl:size-5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
@@ -296,14 +298,14 @@ defineExpose({ filterByBlock, focusNewComment });
           "
           @click="setFilter('unresolved')"
         >
-          {{ t.comments.filterUnresolved }}
+          {{ cloudT.comments.filterUnresolved }}
         </button>
         <button
           class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:duration-150"
           :class="filterMode === 'all' ? 'tpl-comment-filter--active' : ''"
           @click="setFilter('all')"
         >
-          {{ t.comments.filterAll }}
+          {{ cloudT.comments.filterAll }}
         </button>
         <button
           v-if="editor.state.selectedBlockId"
@@ -311,7 +313,7 @@ defineExpose({ filterByBlock, focusNewComment });
           :class="filterMode === 'block' ? 'tpl-comment-filter--active' : ''"
           @click="setFilter('block', editor.state.selectedBlockId ?? undefined)"
         >
-          {{ t.comments.filterBlock }}
+          {{ cloudT.comments.filterBlock }}
         </button>
       </div>
 
@@ -344,8 +346,8 @@ defineExpose({ filterByBlock, focusNewComment });
           >
             {{
               filterMode === "all"
-                ? t.comments.noCommentsHint
-                : t.comments.noComments
+                ? cloudT.comments.noCommentsHint
+                : cloudT.comments.noComments
             }}
           </p>
         </div>
@@ -371,7 +373,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   >
                     {{
                       isOwnComment(thread)
-                        ? t.comments.ownedByYou
+                        ? cloudT.comments.ownedByYou
                         : thread.author_name
                     }}
                   </span>
@@ -382,7 +384,7 @@ defineExpose({ filterByBlock, focusNewComment });
                     v-if="thread.updated_at !== thread.created_at"
                     class="tpl:text-[10px] tpl:italic tpl:text-[var(--tpl-text-dim)]"
                   >
-                    ({{ t.comments.edited }})
+                    ({{ cloudT.comments.edited }})
                   </span>
                 </div>
                 <div class="tpl:flex tpl:items-center tpl:gap-0.5">
@@ -391,8 +393,8 @@ defineExpose({ filterByBlock, focusNewComment });
                     class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
                     :title="
                       thread.resolved_at
-                        ? t.comments.unresolve
-                        : t.comments.resolve
+                        ? cloudT.comments.unresolve
+                        : cloudT.comments.resolve
                     "
                     @click="handleResolve(thread.id)"
                   >
@@ -411,7 +413,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   <button
                     v-if="isOwnComment(thread)"
                     class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
-                    :title="t.comments.edit"
+                    :title="cloudT.comments.edit"
                     @click="startEdit(thread)"
                   >
                     <Pencil :size="12" :stroke-width="2" />
@@ -420,7 +422,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   <button
                     v-if="isOwnComment(thread)"
                     class="tpl-comment-action tpl-comment-delete tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
-                    :title="t.comments.delete"
+                    :title="cloudT.comments.delete"
                     @click="confirmDelete(thread.id)"
                   >
                     <Trash2 :size="12" :stroke-width="2" />
@@ -437,7 +439,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   <Check :size="10" :stroke-width="2.5" />
                   <span>
                     {{
-                      format(t.comments.resolvedBy, {
+                      format(cloudT.comments.resolvedBy, {
                         name: thread.resolved_by_name ?? "",
                       })
                     }}
@@ -450,7 +452,7 @@ defineExpose({ filterByBlock, focusNewComment });
                 v-if="thread.block_id && isBlockMissing(thread.block_id)"
                 class="tpl:mt-1 tpl:inline-flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-warning-light)] tpl:text-[var(--tpl-warning)]"
               >
-                {{ t.comments.missingBlock }}
+                {{ cloudT.comments.missingBlock }}
               </span>
               <button
                 v-else-if="thread.block_id"
@@ -474,13 +476,13 @@ defineExpose({ filterByBlock, focusNewComment });
                     :disabled="!editBody.trim() || comments.isSubmitting.value"
                     @click="handleEdit(thread.id)"
                   >
-                    {{ t.comments.save }}
+                    {{ cloudT.comments.save }}
                   </button>
                   <button
                     class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
                     @click="cancelEdit()"
                   >
-                    {{ t.comments.cancel }}
+                    {{ cloudT.comments.cancel }}
                   </button>
                 </div>
               </div>
@@ -497,19 +499,19 @@ defineExpose({ filterByBlock, focusNewComment });
                 class="tpl:mt-2 tpl:flex tpl:items-center tpl:gap-2 tpl:rounded-md tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-danger-light)] tpl:text-[var(--tpl-danger)]"
               >
                 <span class="tpl:flex-1">
-                  {{ t.comments.deleteConfirm }}
+                  {{ cloudT.comments.deleteConfirm }}
                 </span>
                 <button
                   class="tpl:rounded tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-medium tpl:bg-[var(--tpl-danger)] tpl:text-[var(--tpl-bg)]"
                   @click="handleDelete(thread.id)"
                 >
-                  {{ t.comments.delete }}
+                  {{ cloudT.comments.delete }}
                 </button>
                 <button
                   class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
                   @click="cancelDelete()"
                 >
-                  {{ t.comments.cancel }}
+                  {{ cloudT.comments.cancel }}
                 </button>
               </div>
 
@@ -520,7 +522,7 @@ defineExpose({ filterByBlock, focusNewComment });
               >
                 <button
                   class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
-                  :title="t.comments.reply"
+                  :title="cloudT.comments.reply"
                   @click="startReply(thread.id)"
                 >
                   <Reply
@@ -542,10 +544,10 @@ defineExpose({ filterByBlock, focusNewComment });
                   </template>
                   {{
                     (thread.replies?.length ?? 0) === 1
-                      ? format(t.comments.replyOne, {
+                      ? format(cloudT.comments.replyOne, {
                           count: String(thread.replies?.length ?? 0),
                         })
-                      : format(t.comments.replyMany, {
+                      : format(cloudT.comments.replyMany, {
                           count: String(thread.replies?.length ?? 0),
                         })
                   }}
@@ -579,7 +581,7 @@ defineExpose({ filterByBlock, focusNewComment });
                       >
                         {{
                           isOwnComment(reply)
-                            ? t.comments.ownedByYou
+                            ? cloudT.comments.ownedByYou
                             : reply.author_name
                         }}
                       </span>
@@ -592,14 +594,14 @@ defineExpose({ filterByBlock, focusNewComment });
                         v-if="reply.updated_at !== reply.created_at"
                         class="tpl:text-[10px] tpl:italic tpl:text-[var(--tpl-text-dim)]"
                       >
-                        ({{ t.comments.edited }})
+                        ({{ cloudT.comments.edited }})
                       </span>
                     </div>
                     <div class="tpl:flex tpl:items-center tpl:gap-0.5">
                       <button
                         v-if="isOwnComment(reply)"
                         class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
-                        :title="t.comments.edit"
+                        :title="cloudT.comments.edit"
                         @click="startEdit(reply)"
                       >
                         <Pencil :size="11" :stroke-width="2" />
@@ -607,7 +609,7 @@ defineExpose({ filterByBlock, focusNewComment });
                       <button
                         v-if="isOwnComment(reply)"
                         class="tpl-comment-action tpl-comment-delete tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
-                        :title="t.comments.delete"
+                        :title="cloudT.comments.delete"
                         @click="confirmDelete(reply.id)"
                       >
                         <Trash2 :size="11" :stroke-width="2" />
@@ -631,13 +633,13 @@ defineExpose({ filterByBlock, focusNewComment });
                         "
                         @click="handleEdit(reply.id)"
                       >
-                        {{ t.comments.save }}
+                        {{ cloudT.comments.save }}
                       </button>
                       <button
                         class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
                         @click="cancelEdit()"
                       >
-                        {{ t.comments.cancel }}
+                        {{ cloudT.comments.cancel }}
                       </button>
                     </div>
                   </div>
@@ -654,19 +656,19 @@ defineExpose({ filterByBlock, focusNewComment });
                     class="tpl:mt-2 tpl:flex tpl:items-center tpl:gap-2 tpl:rounded-md tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-danger-light)] tpl:text-[var(--tpl-danger)]"
                   >
                     <span class="tpl:flex-1">
-                      {{ t.comments.deleteConfirm }}
+                      {{ cloudT.comments.deleteConfirm }}
                     </span>
                     <button
                       class="tpl:rounded tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-medium tpl:bg-[var(--tpl-danger)] tpl:text-[var(--tpl-bg)]"
                       @click="handleDelete(reply.id)"
                     >
-                      {{ t.comments.delete }}
+                      {{ cloudT.comments.delete }}
                     </button>
                     <button
                       class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
                       @click="cancelDelete()"
                     >
-                      {{ t.comments.cancel }}
+                      {{ cloudT.comments.cancel }}
                     </button>
                   </div>
                 </div>
@@ -683,7 +685,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   <textarea
                     v-model="replyBody"
                     class="tpl:flex-1 tpl:resize-none tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:font-sans tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
-                    :placeholder="t.comments.replyPlaceholder"
+                    :placeholder="cloudT.comments.replyPlaceholder"
                     rows="2"
                     @keydown="handleReplyKeydown($event, thread.id)"
                   />
@@ -717,7 +719,7 @@ defineExpose({ filterByBlock, focusNewComment });
           v-if="isBlockFilterUnsaved"
           class="tpl:flex tpl:min-h-[68px] tpl:items-center tpl:rounded-md tpl:px-3 tpl:py-2 tpl:text-xs tpl:bg-[var(--tpl-warning-light)] tpl:text-[var(--tpl-warning)]"
         >
-          {{ t.comments.saveTemplateFirst }}
+          {{ cloudT.comments.saveTemplateFirst }}
         </div>
         <div
           v-else
@@ -727,7 +729,7 @@ defineExpose({ filterByBlock, focusNewComment });
             ref="newCommentInput"
             v-model="newCommentBody"
             class="tpl:max-h-24 tpl:min-h-[48px] tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-xs tpl:outline-none tpl:text-[var(--tpl-text)]"
-            :placeholder="t.comments.placeholder"
+            :placeholder="cloudT.comments.placeholder"
             :disabled="comments.isSubmitting.value"
             rows="2"
             @keydown="handleNewCommentKeydown"

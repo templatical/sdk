@@ -2,7 +2,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import Sidebar from '../src/components/Sidebar.vue';
 import { mountEditor } from './helpers/mount';
-import { EDITOR_KEY, CUSTOM_BLOCK_DEFINITIONS_KEY, CAPABILITIES_KEY } from '../src/keys';
+import {
+  EDITOR_KEY,
+  CUSTOM_BLOCK_DEFINITIONS_KEY,
+  CAPABILITIES_KEY,
+  CLOUD_TRANSLATIONS_KEY,
+} from '../src/keys';
+import cloudEn from '../src/i18n/locales/cloud/en';
 
 function makeEditor() {
   const addBlock = vi.fn();
@@ -164,6 +170,7 @@ describe('Sidebar', () => {
     const openBrowser = vi.fn();
     const wrapper = mountSidebar({
       [EDITOR_KEY]: editor,
+      [CLOUD_TRANSLATIONS_KEY]: cloudEn,
       [CAPABILITIES_KEY]: {
         savedModules: {
           moduleCount: { value: 3 },

@@ -1,5 +1,11 @@
 export { useFocusTrap } from "./useFocusTrap";
 export { useI18n, type UseI18nReturn } from "./useI18n";
+export {
+  useCloudI18n,
+  useCloudI18nStrict,
+  type UseCloudI18nReturn,
+  type UseCloudI18nStrictReturn,
+} from "./useCloudI18n";
 export { useMergeTag, type UseMergeTagReturn } from "./useMergeTag";
 export {
   useEmoji,

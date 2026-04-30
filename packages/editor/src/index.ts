@@ -17,7 +17,7 @@ import type {
 import type { MediaRequestContext } from "@templatical/media-library";
 
 import Editor from "./Editor.vue";
-import { loadTranslations } from "./i18n";
+import { loadTranslations, loadCloudTranslations } from "./i18n";
 import { useFonts } from "./composables";
 
 // ---------------------------------------------------------------------------
@@ -175,8 +175,12 @@ export async function initCloud(
   // Dynamic import — CloudEditor.vue is tree-shaken from the OSS bundle
   const { default: CloudEditor } = await import("./cloud/CloudEditor.vue");
 
-  // Load translations before mounting so child components can use useI18n synchronously
-  const translations = await loadTranslations(config.locale ?? "en");
+  // Load OSS + cloud translations in parallel so child components can use
+  // useI18n / useCloudI18n synchronously
+  const [translations, cloudTranslations] = await Promise.all([
+    loadTranslations(config.locale ?? "en"),
+    loadCloudTranslations(config.locale ?? "en"),
+  ]);
 
   // Create fonts manager to pass to CloudEditor
   const fontsManager = useFonts(config.fonts);
@@ -193,6 +197,7 @@ export async function initCloud(
           h(CloudEditor, {
             config,
             translations,
+            cloudTranslations,
             fontsManager,
             ref: cloudEditorRef,
             onReady: () => {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import TplModal from "./TplModal.vue";
-import { useI18n } from "../../composables";
+import { useCloudI18nStrict } from "../../composables";
 import { LoaderCircle } from "@lucide/vue";
 import { ref, watch } from "vue";
 
@@ -16,7 +16,7 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const { t } = useI18n();
+const { t: cloudT } = useCloudI18nStrict();
 
 const recipient = ref("");
 
@@ -71,7 +71,7 @@ function handleKeydown(event: KeyboardEvent): void {
         id="tpl-test-email-title"
         class="tpl:mb-4 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
       >
-        {{ t.testEmail.title }}
+        {{ cloudT.testEmail.title }}
       </h3>
 
       <!-- Recipient -->
@@ -79,7 +79,7 @@ function handleKeydown(event: KeyboardEvent): void {
         <label
           class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
         >
-          {{ t.testEmail.recipientLabel }}
+          {{ cloudT.testEmail.recipientLabel }}
         </label>
         <input
           v-if="allowedEmails.length === 1"
@@ -120,7 +120,7 @@ function handleKeydown(event: KeyboardEvent): void {
           }"
           @click="handleClose"
         >
-          {{ t.testEmail.cancel }}
+          {{ cloudT.testEmail.cancel }}
         </button>
         <button
           type="button"
@@ -134,10 +134,10 @@ function handleKeydown(event: KeyboardEvent): void {
               :size="12"
               :stroke-width="2"
             />
-            {{ t.testEmail.sending }}
+            {{ cloudT.testEmail.sending }}
           </span>
           <span v-else>
-            {{ t.testEmail.send }}
+            {{ cloudT.testEmail.send }}
           </span>
         </button>
       </div>

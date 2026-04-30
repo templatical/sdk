@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import TplModal from "./TplModal.vue";
 import { useI18n } from "../../composables";
+import { useCloudI18nStrict } from "../../composables";
 import { blockTypeIcons } from "../../utils/blockTypeIcons";
 import {
   SAVED_MODULES_HEADLESS_KEY,
@@ -25,6 +26,7 @@ const ModulePreviewCanvas = defineAsyncComponent(
 );
 
 const { t } = useI18n();
+const { t: cloudT } = useCloudI18nStrict();
 const savedModules = requireInject(
   SAVED_MODULES_HEADLESS_KEY,
   "ModuleBrowserModal",
@@ -59,7 +61,7 @@ interface PositionOption {
 
 const positionOptions = computed<PositionOption[]>(() => {
   const options: PositionOption[] = [
-    { value: "beginning", label: t.modules.insertAtBeginning },
+    { value: "beginning", label: cloudT.modules.insertAtBeginning },
   ];
   const blocks = editor.content.value.blocks;
   for (let i = 0; i < blocks.length; i++) {
@@ -68,10 +70,13 @@ const positionOptions = computed<PositionOption[]>(() => {
     const label = t.blocks[typeKey] ?? block.type;
     options.push({
       value: block.id,
-      label: t.modules.insertAfterBlock.replace("{block}", `${label} ${i + 1}`),
+      label: cloudT.modules.insertAfterBlock.replace(
+        "{block}",
+        `${label} ${i + 1}`,
+      ),
     });
   }
-  options.push({ value: "end", label: t.modules.insertAtEnd });
+  options.push({ value: "end", label: cloudT.modules.insertAtEnd });
   return options;
 });
 
@@ -178,10 +183,10 @@ function handleKeydown(event: KeyboardEvent): void {
           id="tpl-module-browser-title"
           class="tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
         >
-          {{ t.modules.browse }}
+          {{ cloudT.modules.browse }}
         </h3>
         <button
-          :aria-label="t.modules.close"
+          :aria-label="cloudT.modules.close"
           class="tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-1 tpl:transition-colors tpl:duration-100 tpl:text-[var(--tpl-text-dim)]"
           @click="handleClose"
         >
@@ -206,7 +211,7 @@ function handleKeydown(event: KeyboardEvent): void {
               <input
                 v-model="searchQuery"
                 type="text"
-                :placeholder="t.modules.search"
+                :placeholder="cloudT.modules.search"
                 class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:pl-9 tpl:pr-3 tpl:text-sm tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
               />
             </div>
@@ -246,7 +251,7 @@ function handleKeydown(event: KeyboardEvent): void {
                     class="tpl:shrink-0 tpl:rounded-full tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
                   >
                     {{
-                      t.modules.blockCount.replace(
+                      cloudT.modules.blockCount.replace(
                         "{count}",
                         String(mod.content.length),
                       )
@@ -270,18 +275,18 @@ function handleKeydown(event: KeyboardEvent): void {
                   </span>
                   <button
                     v-if="confirmDeleteId === mod.id"
-                    :aria-label="t.modules.deleteConfirm"
+                    :aria-label="cloudT.modules.deleteConfirm"
                     class="tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:duration-100 tpl:border-[var(--tpl-danger)] tpl:text-[var(--tpl-danger)]"
                     style="background-color: transparent"
                     @click.stop="handleDelete(mod.id)"
                   >
-                    {{ t.modules.deleteConfirm }}
+                    {{ cloudT.modules.deleteConfirm }}
                   </button>
                   <button
                     v-else
                     class="tpl-module-delete-btn tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-0.5 tpl:transition-colors tpl:duration-100 tpl:text-[var(--tpl-text-dim)]"
-                    :aria-label="t.modules.delete"
-                    :title="t.modules.delete"
+                    :aria-label="cloudT.modules.delete"
+                    :title="cloudT.modules.delete"
                     @click.stop="confirmDeleteId = mod.id"
                   >
                     <Trash2 :size="12" :stroke-width="1.5" />
@@ -302,7 +307,9 @@ function handleKeydown(event: KeyboardEvent): void {
               />
               <p class="tpl:mt-2 tpl:text-xs tpl:text-[var(--tpl-text-dim)]">
                 {{
-                  searchQuery ? t.modules.noModules : t.modules.noModulesHint
+                  searchQuery
+                    ? cloudT.modules.noModules
+                    : cloudT.modules.noModulesHint
                 }}
               </p>
             </div>
@@ -336,7 +343,7 @@ function handleKeydown(event: KeyboardEvent): void {
             <p
               class="tpl:mt-2 tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
             >
-              {{ t.modules.selectToPreview }}
+              {{ cloudT.modules.selectToPreview }}
             </p>
           </div>
         </div>
@@ -350,7 +357,7 @@ function handleKeydown(event: KeyboardEvent): void {
           <label
             class="tpl:shrink-0 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
           >
-            {{ t.modules.insertPosition }}
+            {{ cloudT.modules.insertPosition }}
           </label>
           <select
             v-model="insertPosition"
@@ -371,7 +378,7 @@ function handleKeydown(event: KeyboardEvent): void {
             class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
             @click="handleClose"
           >
-            {{ t.modules.close }}
+            {{ cloudT.modules.close }}
           </button>
           <button
             type="button"
@@ -379,7 +386,7 @@ function handleKeydown(event: KeyboardEvent): void {
             :disabled="!selectedModule"
             @click="handleInsert"
           >
-            {{ t.modules.insert }}
+            {{ cloudT.modules.insert }}
           </button>
         </div>
       </div>
