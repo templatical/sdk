@@ -51,7 +51,14 @@ export class WebSocketClient {
       return;
     }
 
-    const { default: Pusher } = await import("pusher-js");
+    let Pusher: typeof import("pusher-js").default;
+    try {
+      ({ default: Pusher } = await import("pusher-js"));
+    } catch {
+      throw new Error(
+        "Cloud features require the optional peer dependency 'pusher-js'. Install it with: npm install pusher-js",
+      );
+    }
 
     const { host, port, appKey } = this.config;
     const authEndpoint = this.authManager.resolveUrl(

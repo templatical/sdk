@@ -285,9 +285,6 @@ importers:
       liquidjs:
         specifier: ^10.25.7
         version: 10.25.7
-      tailwindcss:
-        specifier: ^4.2.4
-        version: 4.2.4
       vanilla-colorful:
         specifier: ^0.7.2
         version: 0.7.2
@@ -304,6 +301,9 @@ importers:
       happy-dom:
         specifier: ^20.9.0
         version: 20.9.0
+      tailwindcss:
+        specifier: ^4.2.4
+        version: 4.2.4
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
