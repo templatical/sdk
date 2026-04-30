@@ -62,7 +62,7 @@
   "module": "./dist/templatical-editor.js",
   "peerDependencies": {
     "@templatical/media-library": "workspace:*",
-    "@templatical/renderer": "^1.0.0",
+    "@templatical/renderer": "^0.1.0",
     "tailwindcss": "^4.2.4",
     "vue": "^3.5.0"
   },
