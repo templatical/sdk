@@ -15,6 +15,7 @@ Have a feature request or hit a rough edge? [Open a discussion](https://github.c
 
 - **Modern browser** -- Chrome 80+, Firefox 80+, Safari 14+, Edge 80+
 - **Container element** -- must have a defined height (the editor fills its container)
+- **No peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses.
 
 ## npm
 
@@ -37,15 +38,15 @@ bun add @templatical/editor @templatical/renderer
 
 ## Package overview
 
-| Package | Description | Required |
+| Package | Description | When to install |
 |---|---|---|
-| `@templatical/editor` | Visual drag-and-drop editor and `init()` entry point | Yes |
-| `@templatical/types` | Shared TypeScript types, block factory functions, type guards | Auto-installed |
-| `@templatical/core` | Framework-agnostic editor logic (state, history) | Auto-installed |
-| `@templatical/renderer` | Renders templates to MJML | Recommended |
-| `@templatical/import-beefree` | Converts BeeFree JSON templates to Templatical format | Optional |
+| `@templatical/editor` | Visual drag-and-drop editor and `init()` entry point. Self-contained — Vue, TipTap, and `@templatical/core`/`/types` are bundled inside. | Required |
+| `@templatical/renderer` | Converts templates to MJML for email sending. | Recommended |
+| `@templatical/types` | Shared TypeScript types, block factory functions, type guards. | Only if you build templates programmatically without the editor (e.g. server-side workflows) |
+| `@templatical/core` | Framework-agnostic editor logic (state, history) for headless setups. | Only for headless / non-editor consumers |
+| `@templatical/import-beefree` | Converts BeeFree JSON templates to Templatical format. | Optional |
 
-`@templatical/types` and `@templatical/core` are direct dependencies of `@templatical/editor` and are installed automatically.
+`@templatical/editor` ships as a single self-contained ESM bundle: every runtime dependency it needs (Vue, TipTap, vuedraggable, `@templatical/core`, `@templatical/types`, etc.) is inlined. You never install them separately — and you never get duplicate copies in your app's `node_modules`.
 ## Framework integration
 
 Templatical mounts into any DOM element. It creates its own isolated application internally, so it works with any framework — or no framework at all.

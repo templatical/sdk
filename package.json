@@ -53,6 +53,7 @@
     "test": "pnpm --filter './packages/*' run test",
     "test:coverage": "pnpm --filter './packages/*' run test -- --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:consumer": "playwright test --config playwright.consumer.config.ts",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
     "typecheck": "pnpm --filter './packages/*' run typecheck && pnpm --filter '@templatical/playground' run typecheck"

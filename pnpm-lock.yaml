@@ -228,18 +228,19 @@ importers:
 
   packages/editor:
     dependencies:
-      '@lucide/vue':
-        specifier: ^1.11.0
-        version: 1.14.0(vue@3.5.33(typescript@6.0.3))
-      '@templatical/core':
-        specifier: workspace:*
-        version: link:../core
       '@templatical/media-library':
         specifier: workspace:*
         version: link:../media-library
       '@templatical/renderer':
         specifier: workspace:*
         version: link:../renderer
+    devDependencies:
+      '@lucide/vue':
+        specifier: ^1.11.0
+        version: 1.14.0(vue@3.5.33(typescript@6.0.3))
+      '@templatical/core':
+        specifier: workspace:*
+        version: link:../core
       '@templatical/types':
         specifier: workspace:*
         version: link:../types
@@ -279,34 +280,33 @@ importers:
       '@tiptap/vue-3':
         specifier: ^3.22.4
         version: 3.22.5(@floating-ui/dom@1.7.6)(@tiptap/core@3.22.5(@tiptap/pm@3.22.5))(@tiptap/pm@3.22.5)(vue@3.5.33(typescript@6.0.3))
-      '@vueuse/core':
-        specifier: ^14.2.1
-        version: 14.2.1(vue@3.5.33(typescript@6.0.3))
-      liquidjs:
-        specifier: ^10.25.7
-        version: 10.25.7
-      vanilla-colorful:
-        specifier: ^0.7.2
-        version: 0.7.2
-      vuedraggable:
-        specifier: ^4.1.0
-        version: 4.1.0(vue@3.5.33(typescript@6.0.3))
-    devDependencies:
       '@vitejs/plugin-vue':
         specifier: ^6.0.6
         version: 6.0.6(vite@8.0.10(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(yaml@2.8.3))(vue@3.5.33(typescript@6.0.3))
       '@vue/test-utils':
         specifier: ^2.4.8
         version: 2.4.9(@vue/compiler-dom@3.5.33)(@vue/server-renderer@3.5.33(vue@3.5.33(typescript@6.0.3)))(vue@3.5.33(typescript@6.0.3))
+      '@vueuse/core':
+        specifier: ^14.2.1
+        version: 14.2.1(vue@3.5.33(typescript@6.0.3))
+      es-module-lexer:
+        specifier: ^2.1.0
+        version: 2.1.0
       happy-dom:
         specifier: ^20.9.0
         version: 20.9.0
+      liquidjs:
+        specifier: ^10.25.7
+        version: 10.25.7
       tailwindcss:
         specifier: ^4.2.4
         version: 4.2.4
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+      vanilla-colorful:
+        specifier: ^0.7.2
+        version: 0.7.2
       vite:
         specifier: ^8.0.10
         version: 8.0.10(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(yaml@2.8.3)
@@ -322,6 +322,9 @@ importers:
       vue-tsc:
         specifier: ^3.2.7
         version: 3.2.7(typescript@6.0.3)
+      vuedraggable:
+        specifier: ^4.1.0
+        version: 4.1.0(vue@3.5.33(typescript@6.0.3))
 
   packages/import-beefree:
     dependencies:
