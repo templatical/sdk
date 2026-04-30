@@ -17,6 +17,16 @@ export default defineConfig({
     }),
     dts({ rollupTypes: true }),
   ],
+  resolve: {
+    // Dedupe Vue runtime + reactivity. Both `vue` (full runtime) and
+    // `@vue/reactivity` (used by `@templatical/core`) must resolve to a single
+    // physical instance in the bundle — otherwise the editor ships two
+    // reactivity systems with separate dep-tracking WeakMaps, and refs created
+    // in core never trigger re-renders in editor components (interactivity
+    // silently dies). Vue re-exports the entire @vue/reactivity surface, so
+    // when both are bundled together the bundler emits one shared module.
+    dedupe: ['vue', '@vue/reactivity'],
+  },
   build: {
     cssMinify: 'esbuild',
     lib: {
@@ -28,7 +38,10 @@ export default defineConfig({
     },
     cssCodeSplit: false,
     rolldownOptions: {
-      external: ['@templatical/core', '@templatical/core/cloud', '@templatical/media-library', '@templatical/types', '@templatical/renderer'],
+      // Bundle Vue, @templatical/core, @templatical/types and all transitive Vue
+      // libs inline so the editor ships as a self-contained drop-in. The only
+      // externals are optional cloud/feature peers the consumer opts into.
+      external: ['@templatical/media-library', '@templatical/renderer', 'pusher-js'],
     },
   },
 })

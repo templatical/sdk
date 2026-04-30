@@ -3,7 +3,7 @@
   "description": "Vue 3 visual drag-and-drop email editor powered by Templatical",
   "version": "0.1.1",
   "bugs": "https://github.com/templatical/sdk/issues",
-  "dependencies": {
+  "devDependencies": {
     "@lucide/vue": "^1.11.0",
     "@templatical/core": "workspace:*",
     "@templatical/types": "workspace:*",
@@ -19,22 +19,20 @@
     "@tiptap/extension-underline": "^3.22.4",
     "@tiptap/starter-kit": "^3.22.4",
     "@tiptap/vue-3": "^3.22.4",
-    "@vueuse/core": "^14.2.1",
-    "liquidjs": "^10.25.7",
-    "vanilla-colorful": "^0.7.2",
-    "vuedraggable": "^4.1.0"
-  },
-  "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/test-utils": "^2.4.8",
+    "@vueuse/core": "^14.2.1",
     "happy-dom": "^20.9.0",
+    "liquidjs": "^10.25.7",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
+    "vanilla-colorful": "^0.7.2",
     "vite": "^8.0.10",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.1.5",
     "vue": "^3.5.33",
-    "vue-tsc": "^3.2.7"
+    "vue-tsc": "^3.2.7",
+    "vuedraggable": "^4.1.0"
   },
   "exports": {
     ".": {
