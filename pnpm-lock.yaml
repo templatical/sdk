@@ -238,7 +238,7 @@ importers:
         specifier: workspace:*
         version: link:../media-library
       '@templatical/renderer':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../renderer
       '@templatical/types':
         specifier: workspace:*
