@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const E2E_PORT = 51730;
+
 export default defineConfig({
   testDir: "./apps/playground/e2e",
   fullyParallel: true,
@@ -10,7 +12,7 @@ export default defineConfig({
     ? [["blob"], ["html", { open: "never" }]]
     : "list",
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: `http://localhost:${E2E_PORT}`,
     trace: "on-first-retry",
   },
   projects: [
@@ -20,8 +22,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm --filter '@templatical/playground' run dev",
-    url: "http://localhost:5173",
+    command: `pnpm --filter '@templatical/playground' run dev --port ${E2E_PORT} --strictPort`,
+    url: `http://localhost:${E2E_PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
   },
