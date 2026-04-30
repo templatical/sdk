@@ -24,6 +24,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -59,9 +60,12 @@ try {
   mkdirSync(CONSUMER_DIR, { recursive: true });
   cpSync(FIXTURE_DIR, CONSUMER_DIR, { recursive: true });
 
-  // Replace the placeholder spec with the file: URL of the freshly packed
-  // tarball. The fixture's package.json is a template; we never publish it.
+  // The fixture ships its package.json as `package.json.tpl` so syncpack and
+  // pnpm don't treat it as a workspace package. Rename + interpolate the
+  // tarball spec here.
+  const tplPath = join(CONSUMER_DIR, "package.json.tpl");
   const consumerPkgPath = join(CONSUMER_DIR, "package.json");
+  renameSync(tplPath, consumerPkgPath);
   const consumerPkgText = readFileSync(consumerPkgPath, "utf8").replace(
     "TARBALL_PLACEHOLDER",
     `file:${tarballPath}`,
