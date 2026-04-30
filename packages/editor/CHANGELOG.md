@@ -1,5 +1,18 @@
 # @templatical/editor
 
+## 1.0.0
+
+### Minor Changes
+
+- 180d247: Initial production release
+
+### Patch Changes
+
+- @templatical/types@1.0.0
+- @templatical/core@1.0.0
+- @templatical/renderer@1.0.0
+- @templatical/media-library@1.0.0
+
 ## 0.0.6
 
 ### Patch Changes
