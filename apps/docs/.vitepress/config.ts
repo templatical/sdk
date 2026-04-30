@@ -4,7 +4,6 @@ const enNav: DefaultTheme.NavItem[] = [
   { text: "Guide", link: "/getting-started/installation" },
   { text: "API", link: "/api/editor" },
   { text: "Cloud", link: "/cloud/" },
-  { text: "Compare", link: "/comparison" },
   { text: "Playground", link: "https://play.templatical.com" },
 ];
 
@@ -103,7 +102,6 @@ const enSidebar: DefaultTheme.SidebarMulti = {
       text: "Resources",
       items: [
         { text: "Showcase", link: "/showcase" },
-        { text: "Comparison", link: "/comparison" },
         { text: "License FAQ", link: "/license-faq" },
       ],
     },
@@ -114,7 +112,6 @@ const deNav: DefaultTheme.NavItem[] = [
   { text: "Anleitung", link: "/de/getting-started/installation" },
   { text: "API", link: "/de/api/editor" },
   { text: "Cloud", link: "/de/cloud/" },
-  { text: "Vergleich", link: "/de/comparison" },
   { text: "Playground", link: "https://play.templatical.com" },
 ];
 
@@ -216,7 +213,6 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       text: "Ressourcen",
       items: [
         { text: "Showcase", link: "/de/showcase" },
-        { text: "Vergleich", link: "/de/comparison" },
         { text: "Lizenz-FAQ", link: "/de/license-faq" },
       ],
     },

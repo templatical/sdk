@@ -35,21 +35,21 @@
 
 ---
 
-**Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (so they render correctly in every email client), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. It's an open-source alternative to Beefree and Unlayer, with an optional Cloud tier for AI rewrites and real-time collaboration.
+**Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (so they render correctly in every email client), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. An optional Cloud tier is in development for AI rewrites, real-time collaboration, comments, snapshots, saved modules, multi-tenancy, test email sending, MCP support, and more.
 
 ## Power features
 
 Things that are usually paid features in commercial editors — open-source in Templatical:
 
-- **Custom blocks with API-backed data sources** — register your own block types whose content is rendered from a static template *or* fetched live from your API at preview time. Paid tier elsewhere ($750–$2,500/mo).
+- **Custom blocks with API-backed data sources** — register your own block types whose content is rendered from a static template *or* fetched live from your API at preview time. Typically a paid-tier feature in commercial editors.
 - **Merge tags with pluggable syntax** — `{{handlebars}}`, `{liquid}`, `${js}`, or your own — with automatic human-readable label replacement directly in the editor canvas. Build your CRM-aware tag picker in minutes.
 - **Display conditions** — show/hide blocks based on recipient attributes, with live preview in the editor.
 - **Full theming via design tokens** — 27 OKLch tokens, custom fonts, dark mode, complete theme overrides. No CSS hacking, no paid tier.
 - **Template & block defaults** — define your brand once. New templates and new blocks pick up your brand automatically.
 
-> **Cloud features** — AI rewrite, AI chat, real-time collaboration with block locking, comments, snapshots, and more — are part of the Templatical Cloud tier currently in development. The Cloud implementation is also open code in `@templatical/core/cloud`. [Learn more about Cloud →](https://docs.templatical.com/cloud/)
+> **Cloud features** — AI rewrite, AI chat, real-time collaboration with block locking, comments, snapshots and version history, saved modules, hosted media library, template scoring, test email sending, MCP integration, multi-tenancy, headless API, and more — are part of the Templatical Cloud tier currently in development. The Cloud implementation is also open code in `@templatical/core/cloud`. [Learn more about Cloud →](https://docs.templatical.com/cloud/)
 
-## And the table-stakes (still important)
+### And more
 
 - **Drop-in mount** — one `init()` call, one `unmount()`. No framework lock-in.
 - **14 block types** — Title, Paragraph, Image, Button, Section, Divider, Spacer, Social Icons, Menu, Table, HTML, Video, Countdown, Custom.
@@ -99,21 +99,6 @@ const mjml = editor.toMjml();
 | [`@templatical/types`](https://www.npmjs.com/package/@templatical/types) | Shared TypeScript types and block factories | [MIT](./LICENSE-MIT) |
 | [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) | JSON → MJML → HTML renderer (browser + Node) | [MIT](./LICENSE-MIT) |
 | [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert BeeFree templates to Templatical format | [MIT](./LICENSE-MIT) |
-
-## How does it compare?
-
-|  | **Templatical** | Beefree SDK | Unlayer | GrapesJS + MJML |
-|---|---|---|---|---|
-| Open source | ✅ FSL → MIT | ❌ Closed source | ⚠️ Wrapper only (MIT) | ✅ BSD-3 |
-| Self-hostable | ✅ | ❌ Iframe-only | ❌ Iframe-only | ✅ |
-| MJML output | ✅ Native | ❌ Proprietary JSON | ❌ Proprietary JSON | ✅ |
-| Custom blocks | ✅ Open API | Paid tier (Superpowers, $2.5k/mo) | Paid tier (Scale, $750/mo) | ✅ Open API |
-| Real-time collaboration | ✅ Cloud / OSS code | Paid tier ($2.5k/mo) | Team-level only | ❌ |
-| AI rewrite | ✅ Cloud / OSS code | Paid tier | Paid tier (Scale+) | ❌ |
-| Comments / review | ✅ Cloud / OSS code | Paid tier | Audit tab only | ❌ |
-| Embed price floor (paid) | Free / self-host | $350–$5,000+/mo | $250–$2,000+/mo | Free |
-
-[Full comparison with prose, sources, and "when *not* to choose Templatical" →](https://docs.templatical.com/comparison)
 
 ## Why FSL-1.1-MIT?
 
