@@ -1,6 +1,6 @@
 # @templatical/editor
 
-## 1.0.0
+## 0.1.0
 
 ### Minor Changes
 
@@ -8,10 +8,10 @@
 
 ### Patch Changes
 
-- @templatical/types@1.0.0
-- @templatical/core@1.0.0
-- @templatical/renderer@1.0.0
-- @templatical/media-library@1.0.0
+- @templatical/types@0.1.0
+- @templatical/core@0.1.0
+- @templatical/renderer@0.1.0
+- @templatical/media-library@0.1.0
 
 ## 0.0.6
 

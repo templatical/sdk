@@ -1,10 +1,10 @@
 # @templatical/renderer
 
-## 1.0.0
+## 0.1.0
 
 ### Patch Changes
 
-- @templatical/types@1.0.0
+- @templatical/types@0.1.0
 
 ## 0.0.6
 
