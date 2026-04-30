@@ -238,8 +238,8 @@ importers:
         specifier: workspace:*
         version: link:../media-library
       '@templatical/renderer':
-        specifier: ^0.0.6
-        version: 0.0.6
+        specifier: workspace:^
+        version: link:../renderer
       '@templatical/types':
         specifier: workspace:*
         version: link:../types
@@ -1565,9 +1565,6 @@ packages:
     resolution: {integrity: sha512-pCvohwOCspk3ZFn6eJzrrX3g4n2JY73H6MmYC87XfGPyTty4YsCjYTMArRZm/zOI8dIt3+EcrLHAFPe5A4bgtw==}
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
-
-  '@templatical/renderer@0.0.6':
-    resolution: {integrity: sha512-PAE5T1WdeFXGIJDWRBKh88RzE3dICfskMgIErG7IjIR2cjB5Q2P1UlrSp0mQddHLyFKLxVfsE2rJPRlv2IgY8A==}
 
   '@tiptap/core@3.22.5':
     resolution: {integrity: sha512-L1lhWz6ujGny8LduTJ7MBWYhzigwOvfUJUrJ7IzOJSuy3+OAzisdGDD1GV7LEO/hU0Hr2Mkm1wajRIHExvS9HQ==}
@@ -5142,10 +5139,6 @@ snapshots:
       '@tailwindcss/oxide': 4.2.4
       tailwindcss: 4.2.4
       vite: 8.0.10(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(yaml@2.8.3)
-
-  '@templatical/renderer@0.0.6':
-    dependencies:
-      '@templatical/types': link:packages/types
 
   '@tiptap/core@3.22.5(@tiptap/pm@3.22.5)':
     dependencies:
