@@ -794,10 +794,9 @@ function handleExportJson(): void {
   downloadFile(json, "email-template.json", "application/json");
 }
 
-function handleExportMjml(): void {
+async function handleExportMjml(): Promise<void> {
   if (!editor.value) return;
-  if (!editor.value.toMjml) return;
-  const mjml = editor.value.toMjml();
+  const mjml = await editor.value.toMjml();
   downloadFile(mjml, "email-template.mjml", "text/plain");
 }
 

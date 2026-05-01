@@ -43,7 +43,7 @@ npm install @templatical/editor @templatical/renderer
 
     window.save = async function () {
       const content = editor.getContent();
-      const mjml = editor.toMjml();
+      const mjml = await editor.toMjml();
 
       await fetch('/api/templates', {
         method: 'POST',

@@ -1,5 +1,10 @@
-import type { Block, TemplateContent, CustomFont } from "@templatical/types";
-import { isSection } from "@templatical/types";
+import type {
+  Block,
+  CustomBlock,
+  TemplateContent,
+  CustomFont,
+} from "@templatical/types";
+import { isSection, isCustomBlock } from "@templatical/types";
 import { RenderContext } from "./render-context";
 import { renderBlock } from "./renderers";
 import { escapeHtml, escapeAttr } from "./escape";
@@ -8,26 +13,52 @@ export interface RenderOptions {
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;
+  /**
+   * Resolves custom blocks to their HTML representation. Called once per
+   * custom block in the content tree before MJML rendering. The renderer
+   * has no built-in knowledge of how to render custom blocks; consumers
+   * provide this function.
+   *
+   * Editor consumers: pass `editor.renderCustomBlock`.
+   *
+   * Headless consumers (Node.js, server, CLI): provide your own resolver,
+   * typically using the same liquid template + field values pipeline as
+   * the editor uses. If omitted, custom blocks fall back to
+   * `block.renderedHtml` (if present) and otherwise are omitted from the
+   * output.
+   */
+  renderCustomBlock?: (block: CustomBlock) => Promise<string>;
 }
 
 /**
  * Render template content to an MJML string.
- * This is the main entry point that matches the PHP MjmlRenderingService.export() output.
+ *
+ * The function is async because resolving custom blocks may require
+ * asynchronous work (e.g., the editor's liquid renderer dynamically imports
+ * `liquidjs`). When the content has no custom blocks or `renderCustomBlock`
+ * is omitted, no async work is performed but the function still resolves
+ * synchronously — i.e., it always returns a Promise.
  */
-export function renderToMjml(
+export async function renderToMjml(
   content: TemplateContent,
   options?: RenderOptions,
-): string {
+): Promise<string> {
   const customFonts = options?.customFonts ?? [];
   const defaultFallbackFont =
     options?.defaultFallbackFont ?? "Arial, sans-serif";
   const allowHtmlBlocks = options?.allowHtmlBlocks ?? true;
+
+  const customBlockHtml = await resolveCustomBlocks(
+    content,
+    options?.renderCustomBlock,
+  );
 
   const renderContext = new RenderContext(
     content.settings.width,
     customFonts,
     defaultFallbackFont,
     allowHtmlBlocks,
+    customBlockHtml,
   );
 
   const blocks = filterHtmlBlocks(content.blocks, allowHtmlBlocks);
@@ -162,6 +193,59 @@ function filterHtmlBlocks(blocks: Block[], allowHtmlBlocks: boolean): Block[] {
   }
 
   return blocks.filter((block) => block.type !== "html");
+}
+
+/**
+ * Walk the content tree, collect every custom block, then resolve each in
+ * parallel via the supplied callback. Returns a map keyed by block id that
+ * the synchronous render pass reads from. If no callback is provided, returns
+ * an empty map and the sync pass falls back to `block.renderedHtml`.
+ *
+ * Per-block failures bubble up — the caller decides whether to swallow or
+ * rethrow. We don't replace failures with placeholders here because that's
+ * a policy decision (the editor swallows; a strict CLI may want to fail).
+ */
+async function resolveCustomBlocks(
+  content: TemplateContent,
+  renderCustomBlock: RenderOptions["renderCustomBlock"],
+): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+
+  if (!renderCustomBlock) {
+    return result;
+  }
+
+  const customBlocks: CustomBlock[] = [];
+  collectCustomBlocks(content.blocks, customBlocks);
+
+  if (customBlocks.length === 0) {
+    return result;
+  }
+
+  const rendered = await Promise.all(
+    customBlocks.map((block) => renderCustomBlock(block)),
+  );
+
+  for (let index = 0; index < customBlocks.length; index++) {
+    result.set(customBlocks[index].id, rendered[index]);
+  }
+
+  return result;
+}
+
+function collectCustomBlocks(blocks: Block[], out: CustomBlock[]): void {
+  for (const block of blocks) {
+    if (isCustomBlock(block)) {
+      out.push(block);
+      continue;
+    }
+
+    if (isSection(block)) {
+      for (const column of block.children) {
+        collectCustomBlocks(column, out);
+      }
+    }
+  }
 }
 
 // Re-export utilities for consumers

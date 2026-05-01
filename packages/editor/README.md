@@ -16,11 +16,20 @@ The visual editor for [Templatical](https://github.com/templatical/sdk) — an o
 
 ## Install
 
-Install the editor alongside `@templatical/renderer` — the renderer is what enables `editor.toMjml()` (the editor auto-detects it at runtime).
+```bash
+npm install @templatical/editor
+```
+
+`@templatical/renderer` is an optional peer — install it only if you need to convert templates to MJML. The two common cases are:
+
+- **In the browser, alongside the editor**, when you call `editor.toMjml()` to export from the user's session.
+- **In Node.js (or another runtime)**, when you only have stored template JSON and want to convert it to MJML server-side. You don't need the editor for this — install just the renderer.
 
 ```bash
-npm install @templatical/editor @templatical/renderer
+npm install @templatical/renderer
 ```
+
+If you call `editor.toMjml()` without the renderer installed, it throws a clear error naming the missing package.
 
 ## Usage
 
@@ -35,8 +44,8 @@ const editor = await init({
   },
 });
 
-// Render to MJML when sending email
-const mjml = editor.toMjml();
+// Render to MJML when sending email — async; requires @templatical/renderer
+const mjml = await editor.toMjml();
 
 // Always unmount when removing the editor (cleans up listeners + DOM)
 editor.unmount();

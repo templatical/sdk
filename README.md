@@ -80,7 +80,7 @@ const editor = await init({
 });
 
 // Render to MJML when you're ready to send
-const mjml = editor.toMjml();
+const mjml = await editor.toMjml();
 ```
 
 ```html
