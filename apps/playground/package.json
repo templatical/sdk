@@ -1,6 +1,6 @@
 {
   "name": "@templatical/playground",
-  "version": "0.1.3",
+  "version": "0.0.1",
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.1",
     "@codemirror/commands": "^6.10.3",
