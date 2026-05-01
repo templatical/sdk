@@ -347,6 +347,83 @@ describe('standalone visual', () => {
     expect(secondApp.mount).toHaveBeenCalledWith(container);
   });
 
+  it('concurrent init calls do not orphan first app', async () => {
+    const mockAuthManager = {
+      projectId: 'proj-1',
+      tenantSlug: 'acme',
+      initialize: vi.fn().mockResolvedValue(undefined),
+      authenticatedFetch: vi.fn(),
+    };
+
+    const { createSdkAuthManager: mockCreateAuth } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(mockCreateAuth).mockReturnValue(mockAuthManager as any);
+
+    const { ApiClient: MockApiClient } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(MockApiClient).mockImplementation(function (this: any) {
+      this.fetchConfig = vi.fn().mockResolvedValue({ storage: {} });
+      return this;
+    } as any);
+
+    // Defer translation loading so we can interleave two inits.
+    const { loadMediaTranslations: mockLoadTranslations } = await import(
+      '../src/i18n'
+    );
+    let resolveFirst!: (v: any) => void;
+    let resolveSecond!: (v: any) => void;
+    const firstTranslations = new Promise((r) => {
+      resolveFirst = r;
+    });
+    const secondTranslations = new Promise((r) => {
+      resolveSecond = r;
+    });
+    vi.mocked(mockLoadTranslations)
+      .mockImplementationOnce(() => firstTranslations as any)
+      .mockImplementationOnce(() => secondTranslations as any);
+
+    const { createApp: mockCreateApp } = await import('vue');
+    const firstApp = { mount: vi.fn(), unmount: vi.fn() };
+    const secondApp = { mount: vi.fn(), unmount: vi.fn() };
+    let callCount = 0;
+    vi.mocked(mockCreateApp).mockImplementation((...args: any[]) => {
+      const component = args[0] as any;
+      if (component?.setup) {
+        component.setup();
+      }
+      callCount++;
+      return (callCount === 1 ? firstApp : secondApp) as any;
+    });
+
+    const container = document.createElement('div');
+
+    // Kick off both inits before either's awaits settle.
+    const firstInit = initFn({
+      container,
+      auth: { projectId: 'p1', token: 't1' },
+    } as any);
+    const secondInit = initFn({
+      container,
+      auth: { projectId: 'p1', token: 't1' },
+    } as any);
+
+    // Settle awaits in order: first translation, then second.
+    resolveFirst({});
+    await new Promise((r) => setTimeout(r, 10));
+    resolveSecond({});
+    await new Promise((r) => setTimeout(r, 10));
+
+    firstInit.catch(() => {});
+    secondInit.catch(() => {});
+
+    // Both apps mounted, but the first must have been unmounted before the
+    // second mount — otherwise it leaks.
+    expect(firstApp.unmount).toHaveBeenCalled();
+    expect(secondApp.mount).toHaveBeenCalledWith(container);
+  });
+
   it('passes locale to loadMediaTranslations', async () => {
     const mockAuthManager = {
       projectId: 'proj-1',

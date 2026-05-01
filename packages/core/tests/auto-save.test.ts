@@ -258,6 +258,44 @@ describe("useAutoSave", () => {
       vi.advanceTimersByTime(100);
       expect(onChange).toHaveBeenCalledTimes(1);
     });
+
+    it("does not fire pending save when disabled during debounce window", () => {
+      const content = ref(makeContent());
+      const onChange = vi.fn();
+      let enabledValue = true;
+      useAutoSave({
+        content,
+        isDirty: () => true,
+        onChange,
+        enabled: () => enabledValue,
+        debounce: 500,
+      });
+
+      content.value.settings.width = 700;
+      vi.advanceTimersByTime(200);
+      enabledValue = false;
+      vi.advanceTimersByTime(500);
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("does not fire pending save when paused during debounce window", () => {
+      const content = ref(makeContent());
+      const onChange = vi.fn();
+      const { pause } = useAutoSave({
+        content,
+        isDirty: () => true,
+        onChange,
+        debounce: 500,
+      });
+
+      content.value.settings.width = 700;
+      vi.advanceTimersByTime(200);
+      pause();
+      vi.advanceTimersByTime(500);
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
   });
 
   describe("destroy", () => {

@@ -133,6 +133,14 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     return options.lockedBlocks?.value.has(blockId) ?? false;
   }
 
+  // TODO(collab): the lock checks in addBlock/moveBlock/removeBlock/updateBlock
+  // are shallow — they only consider the directly-targeted block id. A section
+  // can still be removed, moved, or have its `children` array rewritten while a
+  // peer is editing one of its descendants, which silently disrupts that peer's
+  // edit. Add a `hasLockedDescendant(blockId)` helper and gate section-level
+  // operations on it (and on the parent of each affected child) so cascades
+  // through the tree are also blocked.
+
   function setContent(newContent: TemplateContent, markDirty = true): void {
     state.content = newContent;
     if (markDirty) {
@@ -189,6 +197,9 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     index?: number,
   ): void {
     if (targetSectionId) {
+      if (isBlockLocked(targetSectionId)) {
+        return;
+      }
       const section = findBlockById(state.content.blocks, targetSectionId);
       if (section && section.type === "section") {
         section.children[columnIndex] = section.children[columnIndex] || [];
@@ -232,23 +243,33 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     targetSectionId?: string,
     columnIndex = 0,
   ): void {
+    if (isBlockLocked(blockId)) {
+      return;
+    }
+    if (targetSectionId && isBlockLocked(targetSectionId)) {
+      return;
+    }
+
     const parent = findBlockParent(state.content.blocks, blockId);
     if (!parent) return;
 
     const oldIndex = parent.blocks.findIndex((b) => b.id === blockId);
     if (oldIndex === -1) return;
 
-    const [block] = parent.blocks.splice(oldIndex, 1);
-
+    // Resolve target before mutating the source — otherwise an invalid
+    // targetSectionId leaves the block spliced-out and unrecoverable.
+    let targetArray: Block[];
     if (targetSectionId) {
       const section = findBlockById(state.content.blocks, targetSectionId);
-      if (section && section.type === "section") {
-        section.children[columnIndex] = section.children[columnIndex] || [];
-        section.children[columnIndex].splice(newIndex, 0, block);
-      }
+      if (!section || section.type !== "section") return;
+      section.children[columnIndex] = section.children[columnIndex] || [];
+      targetArray = section.children[columnIndex];
     } else {
-      state.content.blocks.splice(newIndex, 0, block);
+      targetArray = state.content.blocks;
     }
+
+    const [block] = parent.blocks.splice(oldIndex, 1);
+    targetArray.splice(newIndex, 0, block);
 
     state.isDirty = true;
   }

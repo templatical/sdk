@@ -27,10 +27,6 @@ async function init(config: MediaLibraryConfig): Promise<MediaLibraryInstance> {
     throw new Error(`Container element not found: ${config.container}`);
   }
 
-  if (appInstance) {
-    unmount();
-  }
-
   // Initialize auth
   const authManager = createSdkAuthManager(config.auth, config.onError);
   await authManager.initialize();
@@ -46,6 +42,13 @@ async function init(config: MediaLibraryConfig): Promise<MediaLibraryInstance> {
 
   // Apply theme overrides to container
   applyTheme(container as HTMLElement, config.theme);
+
+  // Unmount any prior app *after* awaits so concurrent init() calls don't
+  // both pass an early check while appInstance is still null and orphan
+  // the first-mounted app.
+  if (appInstance) {
+    unmount();
+  }
 
   return new Promise((resolve, reject) => {
     try {

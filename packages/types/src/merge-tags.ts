@@ -31,7 +31,7 @@ export function resolveSyntax(
   }
 
   if (typeof syntax === "string") {
-    return SYNTAX_PRESETS[syntax];
+    return SYNTAX_PRESETS[syntax] ?? SYNTAX_PRESETS.liquid;
   }
 
   return syntax;
@@ -50,7 +50,15 @@ function anchoredRegex(pattern: RegExp): RegExp {
 }
 
 export function isMergeTagValue(value: string, syntax: SyntaxPreset): boolean {
-  return anchoredRegex(syntax.value).test(value?.trim() || "");
+  const trimmed = value?.trim() || "";
+  // Handlebars (and similar) value regex is liberal enough to also match
+  // logic tags like `{{#each items}}`. Exclude logic-shaped tags so callers
+  // that rely on this discriminator (UI segmentation, label rendering)
+  // don't misclassify them.
+  if (anchoredRegex(syntax.logic).test(trimmed)) {
+    return false;
+  }
+  return anchoredRegex(syntax.value).test(trimmed);
 }
 
 export function getMergeTagLabel(value: string, mergeTags: MergeTag[]): string {

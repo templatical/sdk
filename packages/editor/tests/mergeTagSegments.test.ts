@@ -211,19 +211,20 @@ describe("merge tag segment parsing", () => {
       ]);
     });
 
-    it("parses handlebars logic tag #if as mergeTag (value regex matches first)", () => {
-      // In handlebars, {{#if show}} matches the value regex too, so the
-      // combined regex picks it up as a value merge tag (isMergeTagValue wins)
+    it("classifies handlebars #if as a logic merge tag, not a value tag", () => {
+      // The handlebars value regex `\{\{\{?.+?\}?\}\}` is liberal enough
+      // to match `{{#if show}}` too. isMergeTagValue must exclude
+      // logic-shaped tags so the segment renders as logicMergeTag.
       const result = parseSegments("{{#if show}}", handlebars, []);
       expect(result).toHaveLength(1);
-      expect(result[0].type).toBe("mergeTag");
+      expect(result[0].type).toBe("logicMergeTag");
       expect(result[0].value).toBe("{{#if show}}");
     });
 
-    it("parses handlebars logic tag /if as mergeTag (value regex matches first)", () => {
+    it("classifies handlebars /if as a logic merge tag, not a value tag", () => {
       const result = parseSegments("{{/if}}", handlebars, []);
       expect(result).toHaveLength(1);
-      expect(result[0].type).toBe("mergeTag");
+      expect(result[0].type).toBe("logicMergeTag");
       expect(result[0].value).toBe("{{/if}}");
     });
   });

@@ -406,6 +406,28 @@ describe('useFonts', () => {
       warnSpy.mockRestore();
     });
 
+    it('cleans up the link tag when a font fails to load', async () => {
+      setupAppendChild({ triggerOnerror: true });
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const { loadCustomFonts, cleanupFontLinks } = useFonts({
+        customFonts: [{ name: 'BadFont', url: 'https://fonts.com/bad.css' }],
+      });
+
+      await loadCustomFonts();
+
+      expect(appendedLinks).toHaveLength(1);
+      const orphan = appendedLinks[0];
+      expect(orphan.remove).not.toHaveBeenCalled();
+
+      cleanupFontLinks();
+
+      // The failed link must be removed alongside successful ones — otherwise
+      // it accumulates in <head> across init/unmount cycles.
+      expect(orphan.remove).toHaveBeenCalledOnce();
+      warnSpy.mockRestore();
+    });
+
     it('loads multiple fonts and sets isLoaded after all settle', async () => {
       setupAppendChild({ triggerOnload: true });
 

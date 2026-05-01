@@ -491,6 +491,41 @@ describe('useMediaLibrary', () => {
 
       expect(lib.currentFolderId.value).toBeNull();
     });
+
+    it('stale loadItems response does not overwrite newer folder content', async () => {
+      // User scenario: enter folder A, then quickly switch to folder B before
+      // A's response arrives. A's late response must NOT overwrite B's items.
+      const folderAItems = [createMediaItem('A1'), createMediaItem('A2')];
+      const folderBItems = [createMediaItem('B1')];
+
+      let resolveA!: (v: any) => void;
+      let resolveB!: (v: any) => void;
+      vi.mocked(MediaApiClient.prototype.browseMedia)
+        .mockImplementationOnce(
+          () => new Promise((r) => (resolveA = r)) as any,
+        )
+        .mockImplementationOnce(
+          () => new Promise((r) => (resolveB = r)) as any,
+        );
+
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+      });
+
+      const navA = lib.navigateToFolder('A');
+      const navB = lib.navigateToFolder('B');
+
+      // Resolve B first (newer request), then A (stale).
+      resolveB(mockBrowseResponse(folderBItems));
+      await navB;
+      resolveA(mockBrowseResponse(folderAItems));
+      await navA;
+
+      // Items reflect B (the current folder), not A.
+      expect(lib.currentFolderId.value).toBe('B');
+      expect(lib.items.value.map((i) => i.id)).toEqual(['B1']);
+    });
   });
 
   describe('showFrequentlyUsed', () => {

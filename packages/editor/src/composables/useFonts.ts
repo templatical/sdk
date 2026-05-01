@@ -170,14 +170,17 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
         link.href = font.url;
         link.setAttribute("data-custom-font", font.name);
 
+        // Track the link before awaiting so a load failure still leaves it
+        // recoverable via cleanupFontLinks — otherwise the <link> orphans
+        // in <head> after a network/CSS error.
+        createdLinks.push(link);
+
         await new Promise<void>((resolve, reject) => {
           link.onload = () => resolve();
           link.onerror = () =>
             reject(new Error(`Failed to load font: ${font.name}`));
           document.head.appendChild(link);
         });
-
-        createdLinks.push(link);
       } catch (error) {
         logger.warn(`Failed to load custom font "${font.name}":`, error);
       }

@@ -18,22 +18,40 @@ export function useHistoryInterceptor(
   const originalUpdateBlock = editor.updateBlock;
   const originalUpdateSettings = editor.updateSettings;
 
+  // Skip recording when the underlying op is a no-op (e.g., a peer-locked
+  // block or section), otherwise the undo stack fills with snapshots that
+  // are identical to current state and undo silently does nothing.
   editor.addBlock = (block, targetSectionId?, columnIndex?, index?) => {
+    if (targetSectionId && editor.isBlockLocked(targetSectionId)) {
+      return;
+    }
     history.record();
     originalAddBlock(block, targetSectionId, columnIndex, index);
   };
 
   editor.removeBlock = (blockId) => {
+    if (editor.isBlockLocked(blockId)) {
+      return;
+    }
     history.record();
     originalRemoveBlock(blockId);
   };
 
   editor.moveBlock = (blockId, newIndex, targetSectionId?, columnIndex?) => {
+    if (editor.isBlockLocked(blockId)) {
+      return;
+    }
+    if (targetSectionId && editor.isBlockLocked(targetSectionId)) {
+      return;
+    }
     history.record();
     originalMoveBlock(blockId, newIndex, targetSectionId, columnIndex);
   };
 
   editor.updateBlock = (blockId, updates) => {
+    if (editor.isBlockLocked(blockId)) {
+      return;
+    }
     history.recordDebounced(blockId);
     originalUpdateBlock(blockId, updates);
   };

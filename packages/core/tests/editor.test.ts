@@ -219,6 +219,42 @@ describe('locked blocks', () => {
         expect(editor.state.content.blocks).toHaveLength(2);
     });
 
+    it('moveBlock does nothing when block is locked', () => {
+        const { editor, lockedBlockId } = createEditorWithLockedBlocks();
+        editor.moveBlock(lockedBlockId, 1);
+        expect(editor.state.content.blocks[0].id).toBe(lockedBlockId);
+        expect(editor.state.isDirty).toBe(false);
+    });
+
+    it('moveBlock does nothing when target section is locked', () => {
+        const content = createDefaultTemplateContent();
+        const lockedSection = createSectionBlock({ columns: '1' });
+        const block = createParagraphBlock({ content: '<p>Move me</p>' });
+        content.blocks = [block, lockedSection];
+        const lockedBlocks = ref(new Map([[lockedSection.id, { id: 'other-user' }]]));
+        const editor = useEditor({ content, lockedBlocks });
+
+        editor.moveBlock(block.id, 0, lockedSection.id, 0);
+
+        expect(editor.state.content.blocks[0].id).toBe(block.id);
+        expect((editor.state.content.blocks[1] as any).children[0]).toHaveLength(0);
+        expect(editor.state.isDirty).toBe(false);
+    });
+
+    it('addBlock does nothing when target section is locked', () => {
+        const content = createDefaultTemplateContent();
+        const lockedSection = createSectionBlock({ columns: '1' });
+        content.blocks = [lockedSection];
+        const lockedBlocks = ref(new Map([[lockedSection.id, { id: 'other-user' }]]));
+        const editor = useEditor({ content, lockedBlocks });
+        const newBlock = createParagraphBlock({ content: '<p>New</p>' });
+
+        editor.addBlock(newBlock, lockedSection.id, 0);
+
+        expect((editor.state.content.blocks[0] as any).children[0]).toHaveLength(0);
+        expect(editor.state.isDirty).toBe(false);
+    });
+
     it('isBlockLocked returns true for locked blocks', () => {
         const { editor, lockedBlockId } = createEditorWithLockedBlocks();
         expect(editor.isBlockLocked(lockedBlockId)).toBe(true);
@@ -315,7 +351,7 @@ describe('edge cases', () => {
         expect(editor.state.content.blocks[1].id).toBe(block2.id);
     });
 
-    it('moveBlock to non-existent section removes block from source but does not insert', () => {
+    it('moveBlock to non-existent section is a no-op (block stays in source)', () => {
         const content = createDefaultTemplateContent();
         const block1 = createParagraphBlock({ content: '<p>First</p>' });
         const block2 = createParagraphBlock({ content: '<p>Second</p>' });
@@ -323,8 +359,11 @@ describe('edge cases', () => {
         const editor = useEditor({ content });
 
         editor.moveBlock(block1.id, 0, 'nonexistent-section');
-        // Block is removed from source but target section not found, so it's lost
-        expect(editor.state.content.blocks.every(b => b.id !== block1.id)).toBe(true);
+
+        expect(editor.state.content.blocks).toHaveLength(2);
+        expect(editor.state.content.blocks[0].id).toBe(block1.id);
+        expect(editor.state.content.blocks[1].id).toBe(block2.id);
+        expect(editor.state.isDirty).toBe(false);
     });
 
     it('setContent with markDirty=false does not set isDirty', () => {
