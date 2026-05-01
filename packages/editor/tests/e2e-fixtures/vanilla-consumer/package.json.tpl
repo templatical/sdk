@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
-    "@templatical/editor": "TARBALL_PLACEHOLDER",
-    "@templatical/renderer": "^0.1.1"
+    "@templatical/editor": "EDITOR_TARBALL_PLACEHOLDER",
+    "@templatical/renderer": "RENDERER_TARBALL_PLACEHOLDER"
   },
   "devDependencies": {
     "vite": "^6.4.2"

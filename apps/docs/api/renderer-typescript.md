@@ -15,12 +15,12 @@ npm install @templatical/renderer
 
 ## `renderToMjml(content, options?)`
 
-Renders a `TemplateContent` object to an MJML string.
+Renders a `TemplateContent` object to an MJML string. Returns a `Promise<string>` — async so custom blocks (which may require async work to resolve) can be rendered in line.
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
 
-const mjml = renderToMjml(templateContent);
+const mjml = await renderToMjml(templateContent);
 ```
 
 **Parameters:**
@@ -30,7 +30,7 @@ const mjml = renderToMjml(templateContent);
 | `content` | `TemplateContent` | The template to render |
 | `options` | `RenderOptions` | Optional rendering configuration |
 
-**Returns:** `string` -- MJML markup
+**Returns:** `Promise<string>` -- MJML markup
 
 ## RenderOptions
 
@@ -39,6 +39,7 @@ interface RenderOptions {
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // default: true
+  renderCustomBlock?: (block: CustomBlock) => Promise<string>;
 }
 ```
 
@@ -47,6 +48,34 @@ interface RenderOptions {
 | `customFonts` | `[]` | Custom font definitions for `<mj-font>` declarations in rendered output |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback font stack |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
+| `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. Editor consumers pass `editor.renderCustomBlock`; headless consumers wire their own resolver. If omitted, custom blocks fall back to the block's `renderedHtml` field (if present) and otherwise are omitted. |
+
+### Custom blocks
+
+When the content tree contains custom blocks, the renderer asks the supplied `renderCustomBlock` callback to convert each one to HTML. From the editor:
+
+```ts
+const mjml = await renderToMjml(editor.getContent(), {
+  renderCustomBlock: editor.renderCustomBlock,
+});
+```
+
+Headless / Node.js consumers (no editor mounted) can provide their own resolver — for example, running the same Liquid template against the block's `fieldValues`:
+
+```ts
+import { Liquid } from 'liquidjs';
+
+const engine = new Liquid();
+const definitionsByType = new Map(/* your CustomBlockDefinition list, keyed by type */);
+
+const mjml = await renderToMjml(content, {
+  async renderCustomBlock(block) {
+    const definition = definitionsByType.get(block.customType);
+    if (!definition) return '';
+    return engine.parseAndRender(definition.template, block.fieldValues);
+  },
+});
+```
 
 ## Utilities
 
@@ -162,7 +191,7 @@ After rendering to MJML, compile to HTML using any MJML library:
 import { renderToMjml } from '@templatical/renderer';
 import mjml2html from 'mjml';
 
-const mjml = renderToMjml(templateContent);
+const mjml = await renderToMjml(templateContent);
 const { html } = mjml2html(mjml);
 
 // html is ready to send via your email service

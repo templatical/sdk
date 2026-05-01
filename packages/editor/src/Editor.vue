@@ -72,6 +72,7 @@ defineExpose({
   getContent: () => editor.content.value,
   setContent: (content: TemplateContent) => editor.setContent(content),
   setTheme: (theme: UiTheme) => editor.setUiTheme(theme),
+  renderCustomBlock: core.registry.renderCustomBlock,
 });
 </script>
 

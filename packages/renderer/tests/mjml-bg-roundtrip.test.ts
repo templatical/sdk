@@ -150,7 +150,7 @@ describe("background-color round-trip through MJML compiler", () => {
     } as Parameters<typeof createSectionBlock>[0]);
 
     const content = makeContent([block]);
-    const mjml = renderToMjml(content);
+    const mjml = await renderToMjml(content);
 
     expect(mjml).toMatch(
       new RegExp(`<mj-section[^>]*\\sbackground-color="${SECTION_BG}"`),

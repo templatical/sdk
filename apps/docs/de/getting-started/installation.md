@@ -20,20 +20,42 @@ Feature-Wunsch oder rauer Kante begegnet? [Diskussion eröffnen](https://github.
 
 ::: code-group
 ```bash [npm]
-npm install @templatical/editor @templatical/renderer
+npm install @templatical/editor
 ```
 ```bash [pnpm]
-pnpm add @templatical/editor @templatical/renderer
+pnpm add @templatical/editor
 ```
 ```bash [yarn]
-yarn add @templatical/editor @templatical/renderer
+yarn add @templatical/editor
 ```
 ```bash [bun]
-bun add @templatical/editor @templatical/renderer
+bun add @templatical/editor
 ```
 :::
 
-`@templatical/editor` ist der visuelle Editor. `@templatical/renderer` konvertiert Templates zu MJML für den E-Mail-Versand.
+`@templatical/editor` ist der visuelle Editor. Um Templates in MJML zu konvertieren, installieren Sie zusätzlich `@templatical/renderer`:
+
+::: code-group
+```bash [npm]
+npm install @templatical/renderer
+```
+```bash [pnpm]
+pnpm add @templatical/renderer
+```
+```bash [yarn]
+yarn add @templatical/renderer
+```
+```bash [bun]
+bun add @templatical/renderer
+```
+:::
+
+Der Renderer ist **optional**. Installieren Sie ihn dort, wo Sie MJML-Ausgabe benötigen:
+
+- **Im Browser, neben dem Editor** – wenn Sie `editor.toMjml()` aufrufen, um aus der Sitzung des Nutzers zu exportieren.
+- **In Node.js / auf dem Server** – wenn Sie nur gespeichertes Template-JSON haben und es serverseitig in MJML umwandeln möchten. Dafür benötigen Sie den Editor nicht; installieren Sie nur den Renderer.
+
+Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wird ein klarer Fehler ausgelöst, der das fehlende Paket benennt.
 
 ## Paketübersicht
 
@@ -42,7 +64,7 @@ bun add @templatical/editor @templatical/renderer
 | `@templatical/editor` | Visueller Drag-and-Drop-Editor und `init()`-Einstiegspunkt | Ja |
 | `@templatical/types` | Gemeinsame TypeScript-Typen, Block-Factory-Funktionen, Type Guards | Automatisch installiert |
 | `@templatical/core` | Framework-agnostische Editor-Logik (State, History) | Automatisch installiert |
-| `@templatical/renderer` | Rendert Templates zu MJML | Empfohlen |
+| `@templatical/renderer` | Rendert Templates zu MJML | Optional – installieren, wo Sie `editor.toMjml()` (Browser) oder `renderToMjml()` (Node.js, Server) aufrufen |
 | `@templatical/import-beefree` | Konvertiert BeeFree-JSON-Templates in das Templatical-Format | Optional |
 
 `@templatical/types` und `@templatical/core` sind direkte Abhängigkeiten von `@templatical/editor` und werden automatisch installiert.

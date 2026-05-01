@@ -20,6 +20,12 @@ export class RenderContext {
     public readonly customFonts: CustomFont[],
     public readonly defaultFallbackFont: string,
     public readonly allowHtmlBlocks: boolean,
+    /**
+     * Map of custom block id → pre-rendered HTML, populated by `renderToMjml`
+     * before the synchronous render pass. Set when the consumer provides a
+     * `renderCustomBlock` option. Empty by default.
+     */
+    public readonly customBlockHtml: ReadonlyMap<string, string> = new Map(),
   ) {}
 
   /**
@@ -32,6 +38,7 @@ export class RenderContext {
       this.customFonts,
       this.defaultFallbackFont,
       this.allowHtmlBlocks,
+      this.customBlockHtml,
     );
   }
 

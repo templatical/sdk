@@ -47,14 +47,30 @@ if (!existsSync(FIXTURE_DIR)) {
   throw new Error(`fixture dir not found: ${FIXTURE_DIR}`);
 }
 
+// Build editor and renderer in dependency order so packed tarballs ship the
+// latest local source. The renderer is an optional peer of the editor; the
+// e2e consumer installs both because we exercise `editor.toMjml()`.
+run(`pnpm --filter @templatical/renderer run build`, { cwd: REPO_ROOT });
 run(`pnpm --filter @templatical/editor run build`, { cwd: REPO_ROOT });
+
+const RENDERER_DIR = resolve(REPO_ROOT, "packages/renderer");
 
 const packDir = mkdtempSync(join(tmpdir(), "tpl-e2e-pack-"));
 try {
   run(`pnpm pack --pack-destination "${packDir}"`, { cwd: EDITOR_DIR });
-  const tarball = readdirSync(packDir).find((f) => f.endsWith(".tgz"));
-  if (!tarball) throw new Error("pnpm pack did not produce a .tgz");
-  const tarballPath = join(packDir, tarball);
+  run(`pnpm pack --pack-destination "${packDir}"`, { cwd: RENDERER_DIR });
+  const editorTarball = readdirSync(packDir).find(
+    (f) => f.startsWith("templatical-editor-") && f.endsWith(".tgz"),
+  );
+  const rendererTarball = readdirSync(packDir).find(
+    (f) => f.startsWith("templatical-renderer-") && f.endsWith(".tgz"),
+  );
+  if (!editorTarball)
+    throw new Error("pnpm pack did not produce an editor .tgz");
+  if (!rendererTarball)
+    throw new Error("pnpm pack did not produce a renderer .tgz");
+  const editorTarballPath = join(packDir, editorTarball);
+  const rendererTarballPath = join(packDir, rendererTarball);
 
   rmSync(CONSUMER_DIR, { recursive: true, force: true });
   mkdirSync(CONSUMER_DIR, { recursive: true });
@@ -62,14 +78,13 @@ try {
 
   // The fixture ships its package.json as `package.json.tpl` so syncpack and
   // pnpm don't treat it as a workspace package. Rename + interpolate the
-  // tarball spec here.
+  // tarball specs here.
   const tplPath = join(CONSUMER_DIR, "package.json.tpl");
   const consumerPkgPath = join(CONSUMER_DIR, "package.json");
   renameSync(tplPath, consumerPkgPath);
-  const consumerPkgText = readFileSync(consumerPkgPath, "utf8").replace(
-    "TARBALL_PLACEHOLDER",
-    `file:${tarballPath}`,
-  );
+  const consumerPkgText = readFileSync(consumerPkgPath, "utf8")
+    .replace("EDITOR_TARBALL_PLACEHOLDER", `file:${editorTarballPath}`)
+    .replace("RENDERER_TARBALL_PLACEHOLDER", `file:${rendererTarballPath}`);
   writeFileSync(consumerPkgPath, consumerPkgText);
 
   run(`npm install --no-fund --no-audit`, { cwd: CONSUMER_DIR });

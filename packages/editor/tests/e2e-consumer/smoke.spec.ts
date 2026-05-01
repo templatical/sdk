@@ -67,6 +67,7 @@ test("editor exposes the documented public API on window", async ({ page }) => {
       hasSetContent: typeof ed.setContent === "function",
       hasUnmount: typeof ed.unmount === "function",
       hasToMjml: typeof ed.toMjml === "function",
+      hasRenderCustomBlock: typeof ed.renderCustomBlock === "function",
     };
   });
 
@@ -75,5 +76,84 @@ test("editor exposes the documented public API on window", async ({ page }) => {
     hasSetContent: true,
     hasUnmount: true,
     hasToMjml: true,
+    hasRenderCustomBlock: true,
   });
+});
+
+test("editor.toMjml() resolves to a valid MJML string", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForFunction(
+    () => typeof (window as unknown as { editor?: unknown }).editor === "object",
+    null,
+    { timeout: 30_000 },
+  );
+
+  const mjml = await page.evaluate(async () => {
+    const ed = (window as unknown as {
+      editor: { toMjml: () => Promise<string> };
+    }).editor;
+    return ed.toMjml();
+  });
+
+  expect(typeof mjml).toBe("string");
+  expect(mjml).toContain("<mjml>");
+  expect(mjml).toContain("<mj-body");
+  expect(mjml).toContain("</mjml>");
+});
+
+test("editor.toMjml() includes custom blocks in the output", async ({ page }) => {
+  // Regression for issue #25: custom blocks were missing from MJML exports
+  // because their renderedHtml was never persisted to block state. The fix
+  // is the renderer's renderCustomBlock callback, wired by editor.toMjml()
+  // through editor.renderCustomBlock. This end-to-end test exercises the
+  // full path in a real browser against the published consumer surface.
+  await page.goto("/");
+  await page.waitForFunction(
+    () => typeof (window as unknown as { editor?: unknown }).editor === "object",
+    null,
+    { timeout: 30_000 },
+  );
+
+  // Insert a custom block via setContent, then export.
+  const { mjml, blocksAfter, renderedHtml } = await page.evaluate(async () => {
+    const ed = (window as unknown as {
+      editor: {
+        getContent: () => unknown;
+        setContent: (content: unknown) => void;
+        toMjml: () => Promise<string>;
+        renderCustomBlock: (block: unknown) => Promise<string>;
+      };
+    }).editor;
+
+    const baseContent = ed.getContent() as { blocks: unknown[] };
+
+    const customBlock = {
+      id: "test-event-card-id",
+      type: "custom",
+      customType: "event-card",
+      fieldValues: { title: "Annual Gala 2026" },
+      styles: {
+        padding: { top: 10, right: 10, bottom: 10, left: 10 },
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      },
+    };
+
+    ed.setContent({ ...baseContent, blocks: [...baseContent.blocks, customBlock] });
+
+    const blocksAfter = (ed.getContent() as { blocks: unknown[] }).blocks.length;
+    const renderedHtml = await ed.renderCustomBlock(customBlock);
+    const mjml = await ed.toMjml();
+    return { mjml, blocksAfter, renderedHtml };
+  });
+
+  // Diagnostic: confirm setContent landed and direct render works.
+  expect(blocksAfter).toBe(1);
+  expect(renderedHtml).toContain("Annual Gala 2026");
+
+  // The custom block's liquid template renders {{ title }} → 'Annual Gala 2026'
+  // wrapped in the configured <div class="event">…</div>. The renderer wraps
+  // that HTML in an <mj-text> for emission. If the customBlock pipeline
+  // breaks (regression), this assertion fails.
+  expect(mjml).toContain("Annual Gala 2026");
+  expect(mjml).toContain('class="event"');
 });

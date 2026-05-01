@@ -42,7 +42,7 @@ Sobald du ein Template visuell nachgebaut hast:
 ```ts
 import { renderToMjml } from '@templatical/renderer';
 
-const mjml = renderToMjml(content);
+const mjml = await renderToMjml(content);
 // Vergleiche dieses MJML mit deinem ursprünglichen MJML-Quelltext.
 ```
 

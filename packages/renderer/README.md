@@ -24,8 +24,10 @@ import { renderToMjml } from '@templatical/renderer';
 import type { TemplateContent } from '@templatical/types';
 
 const content: TemplateContent = JSON.parse(stored);
-const mjml = renderToMjml(content);
+const mjml = await renderToMjml(content);
 ```
+
+`renderToMjml` is async — it returns `Promise<string>`. Custom blocks may need async work to resolve, so the call always returns a promise even when content has none.
 
 ### Node — MJML → HTML for sending
 
@@ -33,17 +35,17 @@ const mjml = renderToMjml(content);
 import { renderToMjml } from '@templatical/renderer';
 import mjml2html from 'mjml';
 
-const mjml = renderToMjml(content);
+const mjml = await renderToMjml(content);
 const { html } = mjml2html(mjml);
 
 // Send via Postmark, Resend, SES, Mailgun, anything
 await mailer.send({ to, subject, html });
 ```
 
-### With custom fonts and merge tag values
+### With custom fonts
 
 ```ts
-const mjml = renderToMjml(content, {
+const mjml = await renderToMjml(content, {
   customFonts: [
     { name: 'Geist', url: 'https://fonts.googleapis.com/...' },
   ],
@@ -52,14 +54,30 @@ const mjml = renderToMjml(content, {
 });
 ```
 
+### With custom blocks
+
+The renderer doesn't know how to render custom blocks on its own — you supply a callback. Editor consumers wire this automatically through `editor.toMjml()`. Headless callers provide their own resolver:
+
+```ts
+const mjml = await renderToMjml(content, {
+  async renderCustomBlock(block) {
+    // e.g. run the same liquid template the editor uses, against block.fieldValues
+    return await myLiquidEngine.render(block.customType, block.fieldValues);
+  },
+});
+```
+
+If you don't pass `renderCustomBlock`, the renderer falls back to the block's `renderedHtml` field (if any) and otherwise omits the block from output.
+
 ## API
 
-- `renderToMjml(content, options?)` — render `TemplateContent` to an MJML string. Pair with the [`mjml`](https://www.npmjs.com/package/mjml) package to compile to final HTML.
+- `renderToMjml(content, options?): Promise<string>` — render `TemplateContent` to an MJML string. Pair with the [`mjml`](https://www.npmjs.com/package/mjml) package to compile to final HTML.
 
 Options:
 - `customFonts` — `CustomFont[]` declarations rendered into `<mj-attributes>`
 - `defaultFallbackFont` — fallback when a block doesn't specify a font
 - `allowHtmlBlocks` — pass `false` to strip HTML blocks before render (e.g. for untrusted content)
+- `renderCustomBlock` — `(block: CustomBlock) => Promise<string>` — resolves custom blocks to HTML
 
 ## Documentation
 
