@@ -118,15 +118,18 @@ export async function init(
     );
   }
 
-  if (appInstance) {
-    unmount();
-  }
-
   // Load translations before mounting so child components can use useI18n synchronously
   const translations = await loadTranslations(config.locale ?? "en");
 
   // Create fonts manager to pass to Editor
   const fontsManager = useFonts(config.fonts);
+
+  // Unmount any prior app *after* awaits — checking before the await would
+  // let two concurrent init() calls both pass the guard while appInstance is
+  // still null and orphan the first-mounted app.
+  if (appInstance) {
+    unmount();
+  }
 
   appInstance = createApp({
     setup() {
@@ -197,10 +200,6 @@ export async function initCloud(
     );
   }
 
-  if (cloudAppInstance) {
-    unmountCloud();
-  }
-
   // Dynamic import — CloudEditor.vue is tree-shaken from the OSS bundle
   const { default: CloudEditor } = await import("./cloud/CloudEditor.vue");
 
@@ -213,6 +212,13 @@ export async function initCloud(
 
   // Create fonts manager to pass to CloudEditor
   const fontsManager = useFonts(config.fonts);
+
+  // Unmount any prior app *after* awaits — checking before the await would
+  // let two concurrent initCloud() calls both pass the guard while
+  // cloudAppInstance is still null and orphan the first-mounted app.
+  if (cloudAppInstance) {
+    unmountCloud();
+  }
 
   // Promise that resolves when CloudEditor emits 'ready'
   const readyPromise = new Promise<void>((resolve, reject) => {

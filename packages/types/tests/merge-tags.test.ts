@@ -35,6 +35,13 @@ describe('resolveSyntax', () => {
         const custom = { value: /\[\[.+?\]\]/g, logic: /\[\[#(\w+).*?\]\]/g };
         expect(resolveSyntax(custom)).toBe(custom);
     });
+
+    it('falls back to liquid when given an unknown preset name', () => {
+        // Consumers may pass a runtime string that bypasses TS narrowing.
+        const syntax = resolveSyntax('not-a-real-preset' as any);
+        expect(syntax).toBe(SYNTAX_PRESETS.liquid);
+        expect(syntax.value).toBeInstanceOf(RegExp);
+    });
 });
 
 describe('isMergeTagValue', () => {
@@ -48,6 +55,15 @@ describe('isMergeTagValue', () => {
 
     it('returns false for partial match', () => {
         expect(isMergeTagValue('hello {{name}} world', liquidSyntax)).toBe(false);
+    });
+
+    it('returns false for handlebars logic tags (not value tags)', () => {
+        // The handlebars value regex `\{\{\{?.+?\}?\}\}` would otherwise match
+        // `{{#each items}}` and misclassify it as a value merge tag.
+        const handlebars = SYNTAX_PRESETS.handlebars;
+        expect(isMergeTagValue('{{#each items}}', handlebars)).toBe(false);
+        expect(isMergeTagValue('{{/each}}', handlebars)).toBe(false);
+        expect(isMergeTagValue('{{#if active}}', handlebars)).toBe(false);
     });
 });
 

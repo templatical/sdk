@@ -45,7 +45,13 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
   const pendingReplaceItem: Ref<MediaItem | null> = ref(null);
   const replaceUsageInfo: Ref<MediaUsageInfo | null> = ref(null);
 
+  // Monotonic token so out-of-order browseMedia responses (folder switch /
+  // search change before the previous request settled) don't overwrite the
+  // current view with stale data.
+  let browseRequestId = 0;
+
   async function loadItems(): Promise<void> {
+    const requestId = ++browseRequestId;
     isLoading.value = true;
     try {
       const response = await api.browseMedia({
@@ -54,19 +60,24 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
         category: categoryFilter.value || undefined,
         sort: sortOption.value !== "newest" ? sortOption.value : undefined,
       });
+      if (requestId !== browseRequestId) return;
       items.value = response.data;
       nextCursor.value = response.meta.next_cursor;
       hasMore.value = !!response.meta.next_cursor;
     } catch (error) {
+      if (requestId !== browseRequestId) return;
       options.onError?.(error as Error);
     } finally {
-      isLoading.value = false;
+      if (requestId === browseRequestId) {
+        isLoading.value = false;
+      }
     }
   }
 
   async function loadMore(): Promise<void> {
     if (!hasMore.value || !nextCursor.value || isLoading.value) return;
 
+    const requestId = ++browseRequestId;
     isLoading.value = true;
     try {
       const response = await api.browseMedia({
@@ -76,13 +87,17 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
         sort: sortOption.value !== "newest" ? sortOption.value : undefined,
         cursor: nextCursor.value,
       });
+      if (requestId !== browseRequestId) return;
       items.value = [...items.value, ...response.data];
       nextCursor.value = response.meta.next_cursor;
       hasMore.value = !!response.meta.next_cursor;
     } catch (error) {
+      if (requestId !== browseRequestId) return;
       options.onError?.(error as Error);
     } finally {
-      isLoading.value = false;
+      if (requestId === browseRequestId) {
+        isLoading.value = false;
+      }
     }
   }
 

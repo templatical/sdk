@@ -383,5 +383,49 @@ describe('useRichTextEditor', () => {
 
       expect(setContentSpy).not.toHaveBeenCalled();
     });
+
+    it('does not leak a TipTap editor when unmounted during async init', async () => {
+      // Hold loadExtensions until we explicitly resolve so we can simulate
+      // the host component unmounting mid-init.
+      let resolveLoad!: (v: any) => void;
+      const loadExtensions = vi.fn(
+        () =>
+          new Promise<{
+            TiptapEditor: typeof StubEditor;
+            EC: typeof StubEditorContent;
+            extensions: any[];
+          }>((r) => {
+            resolveLoad = r;
+          }),
+      );
+
+      const createdEditors: StubEditor[] = [];
+      class TrackingStubEditor extends StubEditor {
+        constructor(opts: StubEditorOpts) {
+          super(opts);
+          createdEditors.push(this);
+        }
+      }
+
+      const ctx = mountRichText({ loadExtensions: loadExtensions as any });
+
+      // Unmount BEFORE loadExtensions resolves — initEditor is still awaiting.
+      ctx.destroy();
+
+      // Now let initEditor's await complete.
+      resolveLoad({
+        TiptapEditor: TrackingStubEditor as any,
+        EC: StubEditorContent as any,
+        extensions: [{ name: 'bold' }],
+      });
+      await flushAsync();
+
+      // Either no editor was constructed, or the one that was got destroyed.
+      // The bug: editor created post-unmount and never destroyed.
+      if (createdEditors.length > 0) {
+        expect(createdEditors[0].destroyed).toBe(true);
+      }
+      expect(createdEditors.length).toBeLessThanOrEqual(1);
+    });
   });
 });

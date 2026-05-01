@@ -92,6 +92,8 @@ export function useRichTextEditor(
   const isLoading = ref(true);
   const initError = ref<string | null>(null);
 
+  let destroyed = false;
+
   async function initEditor(): Promise<void> {
     initError.value = null;
     isLoading.value = true;
@@ -102,6 +104,13 @@ export function useRichTextEditor(
         syntax,
       });
 
+      // Component unmounted while we awaited loadExtensions — bail out
+      // before constructing the TipTap editor. Otherwise the editor escapes
+      // the onBeforeUnmount destroy hook that already ran.
+      if (destroyed) {
+        return;
+      }
+
       EditorContent.value = EC;
 
       const seen = new Map<string, number>();
@@ -110,11 +119,12 @@ export function useRichTextEditor(
         (ext, i) => seen.get(ext.name) === i,
       );
 
-      editor.value = new TiptapEditor({
+      const instance = new TiptapEditor({
         extensions: uniqueExtensions,
         content: options.blockContent(),
         editable: true,
         onUpdate: ({ editor: e }) => {
+          if (destroyed) return;
           if (emailEditor) {
             emailEditor.updateBlock(options.blockId(), {
               content: e.getHTML(),
@@ -123,9 +133,18 @@ export function useRichTextEditor(
         },
       });
 
+      // A second unmount check covers the gap between `await` resolving and
+      // the constructor running.
+      if (destroyed) {
+        instance.destroy();
+        return;
+      }
+
+      editor.value = instance;
       isLoading.value = false;
       startFocusTimeout();
     } catch (error) {
+      if (destroyed) return;
       logger.error(
         `[${options.editorName ?? "RichTextEditor"}] Failed to initialize TipTap editor:`,
         error,
@@ -177,6 +196,7 @@ export function useRichTextEditor(
   useEventListener(document, "mousedown", handleClickOutside);
 
   onBeforeUnmount(() => {
+    destroyed = true;
     stopContentWatch();
     stopFocusTimeout();
     editor.value?.destroy();
