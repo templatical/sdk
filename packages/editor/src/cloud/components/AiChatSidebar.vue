@@ -2,7 +2,7 @@
 import LoadingTrack from "../../components/LoadingTrack.vue";
 import { useAiChat } from "@templatical/core/cloud";
 import {
-  TRANSLATIONS_KEY,
+  CLOUD_TRANSLATIONS_KEY,
   EDITOR_KEY,
   AUTH_MANAGER_KEY,
   MERGE_TAGS_KEY,
@@ -32,7 +32,10 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const translations = requireInject(TRANSLATIONS_KEY, "AiChatSidebar");
+const cloudTranslations = requireInject(
+  CLOUD_TRANSLATIONS_KEY,
+  "AiChatSidebar",
+);
 const editor = requireInject(EDITOR_KEY, "AiChatSidebar");
 const authManager = requireInject(AUTH_MANAGER_KEY, "AiChatSidebar");
 const mergeTags = inject(MERGE_TAGS_KEY, []);
@@ -176,14 +179,14 @@ function handleKeydown(event: KeyboardEvent): void {
         >
           <Sparkles :size="13" :stroke-width="2" />
           <span>
-            {{ translations.aiChat.title }}
+            {{ cloudTranslations.aiChat.title }}
           </span>
         </div>
         <div class="tpl:flex tpl:items-center tpl:gap-1">
           <button
             v-if="(aiChat.messages.value?.length ?? 0) > 0"
             class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
-            :title="translations.aiChat.clear"
+            :title="cloudTranslations.aiChat.clear"
             @click="aiChat.clearChat()"
           >
             <Trash2 :size="14" :stroke-width="2" />
@@ -215,7 +218,7 @@ function handleKeydown(event: KeyboardEvent): void {
               :stroke-width="2"
             />
             <p class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
-              {{ translations.aiChat.loadingHistory }}
+              {{ cloudTranslations.aiChat.loadingHistory }}
             </p>
           </div>
 
@@ -232,7 +235,7 @@ function handleKeydown(event: KeyboardEvent): void {
             <p
               class="tpl:max-w-[240px] tpl:text-sm tpl:text-[var(--tpl-text-muted)]"
             >
-              {{ translations.aiChat.placeholder }}
+              {{ cloudTranslations.aiChat.placeholder }}
             </p>
           </div>
 
@@ -278,7 +281,7 @@ function handleKeydown(event: KeyboardEvent): void {
                 >
                   {{
                     stripJsonBlock(message.content) ||
-                    translations.aiChat.applied
+                    cloudTranslations.aiChat.applied
                   }}
                 </div>
                 <button
@@ -296,11 +299,11 @@ function handleKeydown(event: KeyboardEvent): void {
                 >
                   <template v-if="aiChat.isLastChangeReverted.value">
                     <Redo2 :size="12" :stroke-width="2" />
-                    {{ translations.aiChat.reapply }}
+                    {{ cloudTranslations.aiChat.reapply }}
                   </template>
                   <template v-else>
                     <Undo2 :size="12" :stroke-width="2" />
-                    {{ translations.aiChat.revert }}
+                    {{ cloudTranslations.aiChat.revert }}
                   </template>
                 </button>
               </div>
@@ -324,8 +327,8 @@ function handleKeydown(event: KeyboardEvent): void {
           />
           <span>{{
             aiChat.error.value === "ai_apply_failed"
-              ? translations.aiChat.applyFailed
-              : translations.aiChat.error
+              ? cloudTranslations.aiChat.applyFailed
+              : cloudTranslations.aiChat.error
           }}</span>
         </div>
 
@@ -375,7 +378,7 @@ function handleKeydown(event: KeyboardEvent): void {
           <textarea
             v-model="promptInput"
             class="tpl:max-h-32 tpl:min-h-[64px] tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-sm tpl:outline-none tpl:text-[var(--tpl-text)]"
-            :placeholder="translations.aiChat.inputPlaceholder"
+            :placeholder="cloudTranslations.aiChat.inputPlaceholder"
             :disabled="aiChat.isGenerating.value"
             rows="3"
             @keydown="handleKeydown"
@@ -393,7 +396,7 @@ function handleKeydown(event: KeyboardEvent): void {
         <p
           class="tpl:m-0 tpl:px-1 tpl:pt-2 tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
         >
-          {{ translations.aiMenu.disclaimer }}
+          {{ cloudTranslations.aiMenu.disclaimer }}
         </p>
       </div>
     </div>

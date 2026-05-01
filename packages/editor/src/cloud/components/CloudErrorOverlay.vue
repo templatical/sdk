@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CircleAlert } from "@lucide/vue";
-import { useI18n } from "../../composables/useI18n";
+import { useCloudI18nStrict } from "../../composables/useCloudI18n";
 
 defineProps<{
   error: Error | null;
@@ -11,19 +11,19 @@ const emit = defineEmits<{
   (e: "retry"): void;
 }>();
 
-const { t } = useI18n();
+const { t: cloudT } = useCloudI18nStrict();
 
 function getErrorMessage(error: Error): string {
   if (
     "isUnauthorized" in error &&
     (error as { isUnauthorized: boolean }).isUnauthorized
   ) {
-    return t.error.authFailed;
+    return cloudT.error.authFailed;
   }
   if ("isNotFound" in error && (error as { isNotFound: boolean }).isNotFound) {
-    return t.error.templateNotFound;
+    return cloudT.error.templateNotFound;
   }
-  return t.error.defaultMessage;
+  return cloudT.error.defaultMessage;
 }
 
 function isNotFoundError(error: Error): boolean {
@@ -52,7 +52,7 @@ function isNotFoundError(error: Error): boolean {
       class="tpl:flex tpl:flex-col tpl:items-center tpl:gap-2 tpl:text-center"
     >
       <h2 class="tpl:text-lg tpl:font-semibold tpl:text-[var(--tpl-text)]">
-        {{ t.error.title }}
+        {{ cloudT.error.title }}
       </h2>
       <p class="tpl:max-w-md tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
         {{ getErrorMessage(error) }}
@@ -63,7 +63,7 @@ function isNotFoundError(error: Error): boolean {
       class="tpl-btn tpl-btn-primary tpl:inline-flex tpl:items-center tpl:gap-2 tpl:rounded-md tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
       @click="emit('retry')"
     >
-      {{ t.error.retry }}
+      {{ cloudT.error.retry }}
     </button>
   </div>
 </template>

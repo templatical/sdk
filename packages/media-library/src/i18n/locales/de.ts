@@ -1,4 +1,6 @@
-const de = {
+import type en from "./en";
+
+const de: typeof en = {
   mediaLibrary: {
     title: "Medienbibliothek",
     searchPlaceholder: "Dateien suchen...",

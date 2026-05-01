@@ -11,7 +11,7 @@ import type {
   MergeTag,
   SyntaxPreset,
 } from "@templatical/types";
-import type { Translations } from "./i18n";
+import type { Translations, CloudTranslations } from "./i18n";
 import type {
   AuthManager,
   UseAiConfigReturn,
@@ -105,6 +105,9 @@ export const SAVED_MODULES_HEADLESS_KEY: InjectionKey<UseSavedModulesReturn> =
 
 export const SCORING_KEY: InjectionKey<UseTemplateScoringReturn> =
   Symbol("scoring");
+
+export const CLOUD_TRANSLATIONS_KEY: InjectionKey<CloudTranslations> =
+  Symbol("cloudTranslations");
 
 // ---------------------------------------------------------------------------
 // Helper for required injections with explicit null default + throw

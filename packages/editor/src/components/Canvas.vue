@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
+import { useCloudI18n } from "../composables/useCloudI18n";
 import type {
   Block,
   Collaborator,
@@ -69,6 +70,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { t: cloudT } = useCloudI18n();
 
 const editor = requireInject(EDITOR_KEY, "Canvas");
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
@@ -272,7 +274,7 @@ function handleFetchData(
               {{ t.canvas.dragHint }}
             </p>
             <p
-              v-if="canUseAiChat"
+              v-if="canUseAiChat && cloudT"
               class="tpl:m-0 tpl:mt-2 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
             >
               {{ t.canvas.aiHintChat }}
@@ -281,12 +283,12 @@ function handleFetchData(
                 @click="emit('open-ai-chat')"
               >
                 <Sparkles :size="14" :stroke-width="2" />
-                {{ t.aiMenu.aiAssistant }}
+                {{ cloudT.aiMenu.aiAssistant }}
               </button>
               {{ t.canvas.aiHintChatSuffix }}
             </p>
             <p
-              v-if="canUseDesignToTemplate"
+              v-if="canUseDesignToTemplate && cloudT"
               class="tpl:m-0 tpl:mt-4 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
             >
               {{ t.canvas.aiHintDesign }}
@@ -295,7 +297,7 @@ function handleFetchData(
                 @click="emit('open-design-reference')"
               >
                 <ImageUp :size="14" :stroke-width="2" />
-                {{ t.aiMenu.designToTemplate }}
+                {{ cloudT.aiMenu.designToTemplate }}
               </button>
               {{ t.canvas.aiHintDesignSuffix }}
             </p>

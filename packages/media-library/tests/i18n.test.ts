@@ -15,28 +15,53 @@ describe('i18n locales', () => {
     expect(de.mediaLibrary.title).toBe('Medienbibliothek');
   });
 
-  it('English and German have the same keys', () => {
-    const enKeys = Object.keys(en.mediaLibrary).sort();
-    const deKeys = Object.keys(de.mediaLibrary).sort();
-    expect(enKeys).toEqual(deKeys);
+  function getNestedEntries(
+    obj: Record<string, unknown>,
+    prefix = '',
+  ): Array<[string, string]> {
+    const entries: Array<[string, string]> = [];
+    for (const key of Object.keys(obj)) {
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      const value = obj[key];
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        entries.push(
+          ...getNestedEntries(value as Record<string, unknown>, fullKey),
+        );
+      } else if (typeof value === 'string') {
+        entries.push([fullKey, value]);
+      }
+    }
+    return entries;
+  }
+
+  function getPlaceholders(value: string): string[] {
+    return (value.match(/\{[a-zA-Z0-9_]+\}/g) ?? []).slice().sort();
+  }
+
+  const enEntries = getNestedEntries(
+    en as unknown as Record<string, unknown>,
+  ).sort(([a], [b]) => a.localeCompare(b));
+  const deEntries = getNestedEntries(
+    de as unknown as Record<string, unknown>,
+  ).sort(([a], [b]) => a.localeCompare(b));
+
+  it('English and German have the same nested keys', () => {
+    expect(enEntries.map(([k]) => k)).toEqual(deEntries.map(([k]) => k));
   });
 
-  it('both locales preserve placeholder tokens', () => {
-    // Check that placeholders like {current}, {total} exist in both
-    expect(en.mediaLibrary.uploadingProgress).toContain('{current}');
-    expect(en.mediaLibrary.uploadingProgress).toContain('{total}');
-    expect(de.mediaLibrary.uploadingProgress).toContain('{current}');
-    expect(de.mediaLibrary.uploadingProgress).toContain('{total}');
-
-    expect(en.mediaLibrary.usedInTemplates).toContain('{count}');
-    expect(de.mediaLibrary.usedInTemplates).toContain('{count}');
-
-    expect(en.mediaLibrary.storageTooltip).toContain('{used}');
-    expect(en.mediaLibrary.storageTooltip).toContain('{total}');
-    expect(en.mediaLibrary.storageTooltip).toContain('{remaining}');
-    expect(de.mediaLibrary.storageTooltip).toContain('{used}');
-    expect(de.mediaLibrary.storageTooltip).toContain('{total}');
-    expect(de.mediaLibrary.storageTooltip).toContain('{remaining}');
+  it('every key has matching placeholder tokens across locales', () => {
+    const deMap = new Map(deEntries);
+    const mismatches: Array<{ key: string; en: string[]; de: string[] }> = [];
+    for (const [key, enValue] of enEntries) {
+      const deValue = deMap.get(key);
+      if (deValue === undefined) continue;
+      const enPh = getPlaceholders(enValue);
+      const dePh = getPlaceholders(deValue);
+      if (enPh.join(',') !== dePh.join(',')) {
+        mismatches.push({ key, en: enPh, de: dePh });
+      }
+    }
+    expect(mismatches).toEqual([]);
   });
 });
 

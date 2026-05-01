@@ -12,7 +12,7 @@ import {
   severityColor,
   severityBgColor,
 } from "../utils/scoringStyles";
-import { useI18n } from "../../composables/useI18n";
+import { useCloudI18nStrict } from "../../composables/useCloudI18n";
 import type { ScoringCategory, ScoringFinding } from "@templatical/types";
 import {
   CircleAlert,
@@ -38,7 +38,7 @@ const emit = defineEmits<{
   (e: "close"): void;
 }>();
 
-const { t } = useI18n();
+const { t: cloudT } = useCloudI18nStrict();
 const editor = requireInject(EDITOR_KEY, "TemplateScoringPanel");
 const scoring = requireInject(SCORING_KEY, "TemplateScoringPanel");
 const mergeTags = inject(MERGE_TAGS_KEY, []);
@@ -147,13 +147,13 @@ function totalFindings(): number {
           class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-primary)]"
         >
           <ShieldCheck :size="13" :stroke-width="2" />
-          <span>{{ t.scoring.title }}</span>
+          <span>{{ cloudT.scoring.title }}</span>
         </div>
         <div class="tpl:flex tpl:items-center tpl:gap-1">
           <button
             v-if="scoring.scoringResult.value && !scoring.isScoring.value"
             class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
-            :title="t.scoring.rescore"
+            :title="cloudT.scoring.rescore"
             @click="triggerScore()"
           >
             <RefreshCw :size="14" :stroke-width="2" />
@@ -175,7 +175,7 @@ function totalFindings(): number {
           class="tpl:flex tpl:h-full tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-3 tpl:text-center"
         >
           <p class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
-            {{ t.scoring.scoring }}
+            {{ cloudT.scoring.scoring }}
           </p>
           <LoadingTrack class="tpl:w-3/4" />
         </div>
@@ -193,14 +193,14 @@ function totalFindings(): number {
           <p
             class="tpl:max-w-[240px] tpl:text-sm tpl:text-[var(--tpl-text-muted)]"
           >
-            {{ t.scoring.error }}
+            {{ cloudT.scoring.error }}
           </p>
           <button
             class="tpl:mt-2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text-muted)]"
             @click="triggerScore()"
           >
             <RefreshCw :size="12" :stroke-width="2" />
-            {{ t.scoring.rescore }}
+            {{ cloudT.scoring.rescore }}
           </button>
         </div>
 
@@ -227,14 +227,14 @@ function totalFindings(): number {
             <span
               class="tpl:text-xs tpl:font-medium tpl:uppercase tpl:tracking-wider tpl:text-[var(--tpl-text-muted)]"
             >
-              {{ t.scoring.overallScore }}
+              {{ cloudT.scoring.overallScore }}
             </span>
             <span
               v-if="totalFindings() > 0"
               class="tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
             >
               {{ totalFindings() }}
-              {{ t.scoring.findings }}
+              {{ cloudT.scoring.findings }}
             </span>
           </div>
 
@@ -248,7 +248,7 @@ function totalFindings(): number {
               :stroke-width="2"
               class="tpl:mt-0.5 tpl:shrink-0"
             />
-            <span>{{ t.scoring.fixError }}</span>
+            <span>{{ cloudT.scoring.fixError }}</span>
           </div>
 
           <!-- Category cards -->
@@ -275,7 +275,7 @@ function totalFindings(): number {
               <span
                 class="tpl:flex-1 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)]"
               >
-                {{ t.scoring.categories[category] }}
+                {{ cloudT.scoring.categories[category] }}
               </span>
               <span
                 class="tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-semibold tpl:tabular-nums"
@@ -326,7 +326,7 @@ function totalFindings(): number {
                 "
                 class="tpl:px-3 tpl:py-3 tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
               >
-                {{ t.scoring.noFindings }}
+                {{ cloudT.scoring.noFindings }}
               </div>
               <div
                 v-for="finding in scoring.scoringResult.value.categories[
@@ -362,7 +362,7 @@ function totalFindings(): number {
                           backgroundColor: severityBgColor(finding.severity),
                         }"
                       >
-                        {{ t.scoring.severity[finding.severity] }}
+                        {{ cloudT.scoring.severity[finding.severity] }}
                       </span>
                       <span
                         class="tpl:text-xs tpl:leading-snug tpl:text-[var(--tpl-text)]"
@@ -397,8 +397,8 @@ function totalFindings(): number {
                         <Sparkles v-else :size="11" :stroke-width="2" />
                         {{
                           scoring.fixingFindingId.value === finding.id
-                            ? t.scoring.fixing
-                            : t.scoring.fix
+                            ? cloudT.scoring.fixing
+                            : cloudT.scoring.fix
                         }}
                       </button>
                       <p
@@ -428,7 +428,7 @@ function totalFindings(): number {
           <p
             class="tpl:max-w-[240px] tpl:text-sm tpl:text-[var(--tpl-text-muted)]"
           >
-            {{ t.scoring.emptyState }}
+            {{ cloudT.scoring.emptyState }}
           </p>
         </div>
 
@@ -436,7 +436,7 @@ function totalFindings(): number {
         <p
           class="tpl:m-0 tpl:px-4 tpl:pb-2 tpl:pt-2 tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
         >
-          {{ t.aiMenu.disclaimer }}
+          {{ cloudT.aiMenu.disclaimer }}
         </p>
       </div>
     </div>

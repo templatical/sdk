@@ -5,7 +5,9 @@ import { cloneBlock } from "@templatical/types";
 import type { UseFontsReturn } from "../composables/useFonts";
 import { onMounted, onUnmounted, ref } from "vue";
 import { RotateCcw } from "@lucide/vue";
-import type { Translations } from "../i18n";
+import type { Translations, CloudTranslations } from "../i18n";
+import { provide } from "vue";
+import { CLOUD_TRANSLATIONS_KEY } from "../keys";
 
 import { useCloudInitialization } from "./composables/useCloudInitialization";
 import { useCloudLifecycle } from "./composables/useCloudLifecycle";
@@ -28,8 +30,11 @@ import type { TemplaticalCloudEditorConfig } from "./cloudConfig";
 const props = defineProps<{
   config: TemplaticalCloudEditorConfig;
   translations: Translations;
+  cloudTranslations: CloudTranslations;
   fontsManager: UseFontsReturn;
 }>();
+
+provide(CLOUD_TRANSLATIONS_KEY, props.cloudTranslations);
 const emit = defineEmits<{
   (e: "ready"): void;
 }>();
