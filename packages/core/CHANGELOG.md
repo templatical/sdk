@@ -1,6 +1,6 @@
 # @templatical/core
 
-## 1.0.0
+## 0.2.0
 
 ### Minor Changes
 
@@ -55,7 +55,7 @@
 ### Patch Changes
 
 - Updated dependencies [058dfff]
-  - @templatical/types@1.0.0
+  - @templatical/types@0.2.0
 
 ## 0.1.2
 

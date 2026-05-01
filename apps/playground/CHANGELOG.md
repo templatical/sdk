@@ -5,10 +5,10 @@
 ### Patch Changes
 
 - Updated dependencies [058dfff]
-  - @templatical/types@1.0.0
-  - @templatical/renderer@1.0.0
-  - @templatical/editor@1.0.0
-  - @templatical/import-beefree@1.0.0
+  - @templatical/types@0.2.0
+  - @templatical/renderer@0.2.0
+  - @templatical/editor@0.2.0
+  - @templatical/import-beefree@0.2.0
 
 ## 0.1.2
 
