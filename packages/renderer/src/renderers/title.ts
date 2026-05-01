@@ -3,6 +3,7 @@ import { HEADING_LEVEL_FONT_SIZE } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { convertMergeTagsToValues } from "../escape";
 import { toPaddingString } from "../padding";
+import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -14,9 +15,7 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   }
 
   const padding = toPaddingString(block.styles.padding);
-  const bgColor = block.styles.backgroundColor
-    ? ` background-color="${block.styles.backgroundColor}"`
-    : "";
+  const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const content = convertMergeTagsToValues(block.content);
   const fontSize = HEADING_LEVEL_FONT_SIZE[block.level];
   const color = block.color;

@@ -2,6 +2,7 @@ import type { ParagraphBlock } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { convertMergeTagsToValues } from "../escape";
 import { toPaddingString } from "../padding";
+import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -17,9 +18,7 @@ export function renderParagraph(
   }
 
   const padding = toPaddingString(block.styles.padding);
-  const bgColor = block.styles.backgroundColor
-    ? ` background-color="${block.styles.backgroundColor}"`
-    : "";
+  const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const content = convertMergeTagsToValues(block.content);
   const visibilityAttr = getCssClassAttr(block);
 
