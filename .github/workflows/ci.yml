@@ -104,6 +104,12 @@ jobs:
     # Smoke-test the editor as a real consumer would: pack, install into a
     # fresh project, mount, click. Catches the duplicate-Vue-instance class of
     # bug that the workspace-resolved playground e2e cannot see.
+    #
+    # Skipped on changesets release branches because the packed tarballs
+    # reference the about-to-be-released workspace versions, which aren't on
+    # npm yet — `npm install` fails with ETARGET. The post-merge run on `main`
+    # (after publish) and every feature PR's run still cover this surface.
+    if: ${{ !startsWith(github.head_ref, 'changeset-release/') && !startsWith(github.ref_name, 'changeset-release/') }}
     runs-on: ubuntu-latest
     needs: [build]
     steps:
