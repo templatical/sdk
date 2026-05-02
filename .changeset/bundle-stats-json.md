@@ -8,7 +8,7 @@ File contract:
 
 ```json
 {
-  "version": "0.2.1",
+  "version": "x.y.z",
   "initialGzipBytes": 211686,
   "initialRawBytes": 717015,
   "initialFileCount": 30,
