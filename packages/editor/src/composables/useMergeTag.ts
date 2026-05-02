@@ -8,6 +8,7 @@ import { inject, ref, type Ref } from "vue";
 import {
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
+  MERGE_TAG_AUTOCOMPLETE_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
 } from "../keys";
 
@@ -18,6 +19,8 @@ export interface UseMergeTagReturn {
   isRequesting: Ref<boolean>;
   /** Whether merge tag functionality is enabled (has merge tags and callback) */
   isEnabled: boolean;
+  /** Whether typing-based autocomplete is enabled by configuration */
+  autocomplete: boolean;
   /** The resolved syntax preset for merge tags */
   syntax: SyntaxPreset;
   /** Check if a value matches the configured merge tag syntax */
@@ -36,6 +39,7 @@ export function useMergeTag(): UseMergeTagReturn {
   const mergeTags = inject(MERGE_TAGS_KEY, []);
   const syntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
   const onRequestMergeTag = inject(ON_REQUEST_MERGE_TAG_KEY, null);
+  const autocomplete = inject(MERGE_TAG_AUTOCOMPLETE_KEY, true);
 
   const isRequesting = ref(false);
 
@@ -73,6 +77,7 @@ export function useMergeTag(): UseMergeTagReturn {
     mergeTags,
     isRequesting,
     isEnabled,
+    autocomplete,
     syntax,
     isMergeTagValue,
     getMergeTagLabel,

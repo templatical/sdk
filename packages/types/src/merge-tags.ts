@@ -23,6 +23,27 @@ export const SYNTAX_PRESETS: Record<SyntaxPresetName, SyntaxPreset> = {
   ampscript: { value: /%%=.+?=%%/g, logic: /%%\[\s*(\w+).*?\]%%/g },
 };
 
+const SYNTAX_TRIGGER_CHARS: Record<SyntaxPresetName, string> = {
+  liquid: "{{",
+  handlebars: "{{",
+  mailchimp: "*|",
+  ampscript: "%%=",
+};
+
+/**
+ * Resolves the autocomplete trigger string for a syntax preset.
+ * Returns null when the syntax doesn't match any built-in preset
+ * (custom regex syntax — autocomplete cannot be enabled safely).
+ */
+export function getSyntaxTriggerChar(syntax: SyntaxPreset): string | null {
+  for (const name of Object.keys(SYNTAX_PRESETS) as SyntaxPresetName[]) {
+    if (SYNTAX_PRESETS[name].value.source === syntax.value.source) {
+      return SYNTAX_TRIGGER_CHARS[name];
+    }
+  }
+  return null;
+}
+
 export function resolveSyntax(
   syntax?: SyntaxPresetName | SyntaxPreset,
 ): SyntaxPreset {

@@ -35,6 +35,15 @@ export interface MergeTagsConfig {
   syntax?: SyntaxPresetName | SyntaxPreset;
   tags?: MergeTag[];
   onRequest?: () => Promise<MergeTag | null>;
+  /**
+   * Enables typing-based autocomplete in rich text fields. When the user
+   * types the syntax opener (e.g. `{{`), a popup lists matching `tags`.
+   *
+   * Defaults to `true`. Effective only when `tags` is non-empty AND
+   * `syntax` matches a built-in preset (custom regex syntaxes cannot be
+   * mapped to a trigger string and silently disable autocomplete).
+   */
+  autocomplete?: boolean;
 }
 
 export interface DisplayCondition {

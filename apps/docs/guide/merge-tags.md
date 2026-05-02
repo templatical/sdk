@@ -148,6 +148,33 @@ mergeTags: {
 
 The `value` regex detects data placeholders. The `logic` regex detects control flow statements — the first capture group `(\w+)` extracts the keyword (e.g., `IF`, `FOR`) which the editor uses as the display label.
 
+## Autocomplete
+
+When users type the syntax opener (e.g. <code v-pre>{{</code> for Liquid/Handlebars, `*|` for Mailchimp, `%%=` for AMPscript) inside a title or paragraph block, the editor surfaces a popup listing matching tags from the configured `tags` array. Selecting an item (mouse click, `Enter`, or `Tab`) inserts it as a styled merge tag — the same form produced by the toolbar picker. `Esc` or clicking elsewhere dismisses the popup.
+
+Filtering is case-insensitive and matches against both `label` and `value`. The list is capped at 10 results.
+
+Autocomplete is enabled by default. It is **automatically disabled** when:
+
+- `tags` is empty (no candidates to suggest), or
+- `syntax` is a custom regex (the editor cannot infer a trigger string from arbitrary regexes).
+
+To opt out explicitly, set `autocomplete: false`:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: {
+    autocomplete: false,
+    tags: [
+      { label: 'First Name', value: '{{first_name}}' },
+    ],
+  },
+});
+```
+
+The toolbar's "Insert merge tag" button continues to work regardless of the autocomplete setting.
+
 ## Dynamic tag loading
 
 For large or context-dependent tag lists, use the `onRequest` callback instead of (or in addition to) a static `tags` array. The editor calls this function when the user clicks to insert a merge tag. Use it to open a custom picker modal, fetch available placeholders from your API, or build a context-aware tag list based on the current user. Return the selected `MergeTag` or `null` to cancel.

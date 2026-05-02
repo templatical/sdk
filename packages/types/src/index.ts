@@ -125,6 +125,7 @@ export {
   containsMergeTag,
   getLogicMergeTagKeyword,
   getMergeTagLabel,
+  getSyntaxTriggerChar,
   isLogicMergeTagValue,
   isMergeTagValue,
   resolveHtmlLogicMergeTagLabels,

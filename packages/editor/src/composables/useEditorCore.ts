@@ -52,6 +52,7 @@ import {
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
+  MERGE_TAG_AUTOCOMPLETE_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
   ON_REQUEST_MEDIA_KEY,
   DISPLAY_CONDITIONS_KEY,
@@ -323,6 +324,7 @@ export function useEditorCore(
   provide(MERGE_TAGS_KEY, config.mergeTags?.tags ?? []);
   provide(MERGE_TAG_SYNTAX_KEY, mergeTagSyntax);
   provide(ON_REQUEST_MERGE_TAG_KEY, config.mergeTags?.onRequest ?? null);
+  provide(MERGE_TAG_AUTOCOMPLETE_KEY, config.mergeTags?.autocomplete !== false);
 
   provide(ON_REQUEST_MEDIA_KEY, config.onRequestMedia ?? null);
 

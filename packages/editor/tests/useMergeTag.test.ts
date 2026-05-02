@@ -9,6 +9,7 @@ import { useMergeTag } from '../src/composables/useMergeTag';
 import {
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
+  MERGE_TAG_AUTOCOMPLETE_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
 } from '../src/keys';
 
@@ -205,6 +206,27 @@ describe('useMergeTag', () => {
     it('defaults to liquid syntax when not provided', () => {
       const { syntax } = withProvide(() => useMergeTag());
       expect(syntax).toEqual(SYNTAX_PRESETS.liquid);
+    });
+  });
+
+  describe('autocomplete flag', () => {
+    it('defaults to true when not provided', () => {
+      const { autocomplete } = withProvide(() => useMergeTag());
+      expect(autocomplete).toBe(true);
+    });
+
+    it('reflects provided true value', () => {
+      const { autocomplete } = withProvide(() => useMergeTag(), {
+        [MERGE_TAG_AUTOCOMPLETE_KEY as symbol]: true,
+      });
+      expect(autocomplete).toBe(true);
+    });
+
+    it('reflects provided false value (consumer disabled)', () => {
+      const { autocomplete } = withProvide(() => useMergeTag(), {
+        [MERGE_TAG_AUTOCOMPLETE_KEY as symbol]: false,
+      });
+      expect(autocomplete).toBe(false);
     });
   });
 });

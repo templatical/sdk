@@ -83,6 +83,14 @@ export const SELECTORS = {
   // Rich-text editable root (TipTap wrapper)
   textEditable: ".tpl-text-editable",
 
+  // Merge tag autocomplete
+  mergeTagSuggestionPopup: '[data-testid="merge-tag-suggestion-popup"]',
+  mergeTagSuggestionList: '[data-testid="merge-tag-suggestion-list"]',
+  mergeTagSuggestionEmpty: '[data-testid="merge-tag-suggestion-empty"]',
+  // Inline merge tag node rendered by MergeTagNodeView. The raw value
+  // lives in data-tooltip on the inner display span.
+  mergeTagNode: ".tpl-merge-tag-node",
+
   // Modals
   modalBackdrop: ".pg-modal-backdrop",
 } as const;

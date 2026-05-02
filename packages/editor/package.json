@@ -18,6 +18,7 @@
     "@tiptap/extension-text-style": "^3.22.4",
     "@tiptap/extension-underline": "^3.22.4",
     "@tiptap/starter-kit": "^3.22.4",
+    "@tiptap/suggestion": "^3.22.4",
     "@tiptap/vue-3": "^3.22.4",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/test-utils": "^2.4.8",
