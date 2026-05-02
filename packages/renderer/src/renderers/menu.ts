@@ -64,7 +64,7 @@ function renderMenuItem(item: MenuItemData, linkColor: string): string {
   const text = escapeHtml(item.text);
   const url = escapeAttr(item.url);
   const color = escapeCssValue(item.color ?? linkColor);
-  const target = item.openInNewTab ? ' target="_blank"' : "";
+  const target = item.openInNewTab ? ' target="_blank" rel="noopener"' : "";
 
   const styles: string[] = [`color: ${color}`, "text-decoration: none"];
 
