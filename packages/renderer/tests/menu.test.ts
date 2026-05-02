@@ -135,6 +135,39 @@ describe('renderMenu', () => {
       expect(result).toContain('href="https://example.com/path?a=1&amp;b=&quot;2&quot;"');
     });
 
+    it('strips CSS property separators from separatorColor to prevent injection', () => {
+      const block = createMenuBlock({
+        items: [
+          { id: '1', text: 'A', url: '/', openInNewTab: false, bold: false, underline: false },
+          { id: '2', text: 'B', url: '/', openInNewTab: false, bold: false, underline: false },
+        ],
+        separator: '|',
+        separatorColor: "red; background: url('http://attacker.example/log')",
+      });
+      const result = renderBlock(block, ctx);
+      expect(result).not.toContain('; background');
+      expect(result).not.toContain('red;');
+    });
+
+    it('strips CSS property separators from item.color to prevent injection', () => {
+      const block = createMenuBlock({
+        items: [
+          {
+            id: '1',
+            text: 'A',
+            url: '/',
+            openInNewTab: false,
+            bold: false,
+            underline: false,
+            color: "red; background: url('http://attacker.example/log')",
+          },
+        ],
+      });
+      const result = renderBlock(block, ctx);
+      expect(result).not.toContain('; background');
+      expect(result).not.toContain('red;');
+    });
+
     it('single item has no separator', () => {
       const block = createMenuBlock({
         items: [

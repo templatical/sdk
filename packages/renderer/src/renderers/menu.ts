@@ -1,6 +1,6 @@
 import type { MenuBlock, MenuItemData } from "@templatical/types";
 import type { RenderContext } from "../render-context";
-import { escapeHtml, escapeAttr } from "../escape";
+import { escapeHtml, escapeAttr, escapeCssValue } from "../escape";
 import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
@@ -40,7 +40,7 @@ export function renderMenu(block: MenuBlock, context: RenderContext): string {
 function renderMenuItems(block: MenuBlock): string {
   const items = block.items;
   const separator = escapeHtml(block.separator);
-  const separatorColor = escapeAttr(block.separatorColor);
+  const separatorColor = escapeCssValue(block.separatorColor);
   const spacing = block.spacing;
   const linkColor = block.linkColor ?? block.color;
 
@@ -63,7 +63,7 @@ function renderMenuItems(block: MenuBlock): string {
 function renderMenuItem(item: MenuItemData, linkColor: string): string {
   const text = escapeHtml(item.text);
   const url = escapeAttr(item.url);
-  const color = item.color ?? linkColor;
+  const color = escapeCssValue(item.color ?? linkColor);
   const target = item.openInNewTab ? ' target="_blank"' : "";
 
   const styles: string[] = [`color: ${color}`, "text-decoration: none"];

@@ -29,9 +29,7 @@ export function useRichTextLinkDialog(
 
   function insertLink(): void {
     if (linkUrl.value) {
-      const url = linkUrl.value.startsWith("http")
-        ? linkUrl.value
-        : `https://${linkUrl.value}`;
+      const url = normalizeLinkUrl(linkUrl.value);
       editor.value
         ?.chain()
         .focus()
@@ -40,6 +38,16 @@ export function useRichTextLinkDialog(
         .run();
     }
     closeLinkDialog();
+  }
+
+  function normalizeLinkUrl(raw: string): string {
+    // Preserve any URL that already declares a scheme (mailto:, tel:, ftp:,
+    // http(s):, etc.) and any same-page anchor (#…). Only bare hostnames /
+    // paths get the https:// prefix.
+    if (/^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith("#")) {
+      return raw;
+    }
+    return `https://${raw}`;
   }
 
   function removeLink(): void {
