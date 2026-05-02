@@ -25,9 +25,21 @@ jobs:
       - run: pnpm run build
 
       - name: Create Release Pull Request or Publish
+        id: changesets
         uses: changesets/action@v1
         with:
           publish: pnpm exec changeset publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Trigger marketing-site rebuild
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          DEPLOY_HOOK: ${{ secrets.TEMPLATICAL_COM_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "TEMPLATICAL_COM_DEPLOY_HOOK secret not set — skipping rebuild trigger."
+            exit 0
+          fi
+          curl -fsSL -X POST "$DEPLOY_HOOK" -o /dev/null -w "HTTP %{http_code}\n"
