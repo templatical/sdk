@@ -3,6 +3,12 @@ import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import dts from 'vite-plugin-dts'
 import { resolve } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { bundleStatsPlugin } from './scripts/bundle-stats-plugin'
+
+const pkg = JSON.parse(
+  readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8'),
+) as { version: string }
 
 export default defineConfig({
   plugins: [
@@ -16,6 +22,11 @@ export default defineConfig({
       },
     }),
     dts({ rollupTypes: true }),
+    bundleStatsPlugin({
+      distDir: resolve(import.meta.dirname, 'dist'),
+      entry: 'templatical-editor.js',
+      pkgVersion: pkg.version,
+    }),
   ],
   resolve: {
     // Dedupe Vue runtime + reactivity. Both `vue` (full runtime) and
