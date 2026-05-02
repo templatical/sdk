@@ -464,6 +464,7 @@ const de: typeof en = {
     add: "Merge-Tag hinzufügen",
     editValue: "Merge-Tag-Wert bearbeiten",
     deleteMergeTag: "Merge-Tag löschen",
+    suggestionEmpty: "Keine passenden Merge-Tags",
   },
 
   // Canvas

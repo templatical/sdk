@@ -148,6 +148,33 @@ mergeTags: {
 
 Die `value`-Regex erkennt Datenplatzhalter. Die `logic`-Regex erkennt Kontrollflussanweisungen — die erste Erfassungsgruppe `(\w+)` extrahiert das Schlüsselwort (z. B. `IF`, `FOR`), das der Editor als Anzeigelabel verwendet.
 
+## Autovervollständigung
+
+Wenn Benutzer den Syntax-Öffner (z. B. <code v-pre>{{</code> für Liquid/Handlebars, `*|` für Mailchimp, `%%=` für AMPscript) innerhalb eines Titel- oder Absatzblocks eingeben, zeigt der Editor ein Popup mit übereinstimmenden Tags aus dem konfigurierten `tags`-Array an. Das Auswählen eines Eintrags (Mausklick, `Enter` oder `Tab`) fügt es als formatiertes Merge-Tag ein — dieselbe Form, die der Toolbar-Picker erzeugt. `Esc` oder ein Klick außerhalb schließt das Popup.
+
+Die Filterung ist nicht groß-/kleinschreibungsabhängig und gleicht sowohl `label` als auch `value` ab. Die Liste ist auf 10 Ergebnisse begrenzt.
+
+Die Autovervollständigung ist standardmäßig aktiviert. Sie wird **automatisch deaktiviert**, wenn:
+
+- `tags` leer ist (keine Kandidaten zum Vorschlagen) oder
+- `syntax` eine benutzerdefinierte Regex ist (der Editor kann aus beliebigen Regex-Mustern keine Trigger-Zeichenkette ableiten).
+
+Um sie explizit zu deaktivieren, setzen Sie `autocomplete: false`:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: {
+    autocomplete: false,
+    tags: [
+      { label: 'Vorname', value: '{{first_name}}' },
+    ],
+  },
+});
+```
+
+Die Schaltfläche „Merge-Tag einfügen" in der Symbolleiste funktioniert weiterhin unabhängig von der Autovervollständigungs-Einstellung.
+
 ## Dynamisches Tag-Laden
 
 Für große oder kontextabhängige Tag-Listen verwenden Sie den `onRequest`-Callback anstelle von (oder zusätzlich zu) einem statischen `tags`-Array. Der Editor ruft diese Funktion auf, wenn der Benutzer klickt, um ein Merge-Tag einzufügen. Verwenden Sie sie, um ein benutzerdefiniertes Picker-Modal zu öffnen, verfügbare Platzhalter von Ihrer API abzurufen oder eine kontextbezogene Tag-Liste basierend auf dem aktuellen Benutzer zu erstellen. Geben Sie das ausgewählte `MergeTag` oder `null` zurück, um abzubrechen.

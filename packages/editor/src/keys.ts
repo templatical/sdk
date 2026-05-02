@@ -72,6 +72,10 @@ export const ON_REQUEST_MERGE_TAG_KEY: InjectionKey<
   (() => Promise<MergeTag | null>) | null
 > = Symbol("onRequestMergeTag");
 
+export const MERGE_TAG_AUTOCOMPLETE_KEY: InjectionKey<boolean> = Symbol(
+  "mergeTagAutocomplete",
+);
+
 export const ON_REQUEST_MEDIA_KEY: InjectionKey<OnRequestMedia | null> =
   Symbol("onRequestMedia");
 

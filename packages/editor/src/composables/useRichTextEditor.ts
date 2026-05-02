@@ -6,6 +6,7 @@ import type { Extension, Mark, Node } from "@tiptap/core";
 import { useEventListener, useTimeoutFn } from "@vueuse/core";
 import {
   inject,
+  isRef,
   onBeforeUnmount,
   ref,
   shallowRef,
@@ -13,7 +14,9 @@ import {
   type Ref,
   type ShallowRef,
 } from "vue";
-import { EDITOR_KEY } from "../keys";
+import type { Translations } from "../i18n";
+import { getSyntaxTriggerChar } from "@templatical/types";
+import { EDITOR_KEY, TRANSLATIONS_KEY } from "../keys";
 import { useMergeTag } from "./useMergeTag";
 import { useRichTextLinkDialog } from "./useRichTextLinkDialog";
 import { logger } from "../utils/logger";
@@ -21,6 +24,12 @@ import { logger } from "../utils/logger";
 export interface MergeTagContext {
   mergeTags: ReturnType<typeof useMergeTag>["mergeTags"];
   syntax: ReturnType<typeof useMergeTag>["syntax"];
+  /** Resolved trigger string for built-in syntaxes; null for custom syntax. */
+  triggerChar: string | null;
+  /** Whether the consumer has enabled autocomplete (default true). */
+  autocompleteEnabled: boolean;
+  /** Localized empty-state label for the autocomplete popup. */
+  suggestionEmptyText: string;
 }
 
 export interface UseRichTextEditorOptions {
@@ -68,7 +77,19 @@ export function useRichTextEditor(
     isRequesting: isRequestingMergeTag,
     requestMergeTag,
     syntax,
+    autocomplete: autocompleteEnabled,
   } = useMergeTag();
+
+  const injectedTranslations = inject(TRANSLATIONS_KEY, null) as
+    | Translations
+    | Ref<Translations>
+    | null;
+  const resolvedTranslations: Translations | null = isRef(injectedTranslations)
+    ? injectedTranslations.value
+    : injectedTranslations;
+  const suggestionEmptyText =
+    resolvedTranslations?.mergeTag?.suggestionEmpty ?? "No matching merge tags";
+  const triggerChar = getSyntaxTriggerChar(syntax);
 
   const editor = shallowRef<Editor | null>(null);
 
@@ -102,6 +123,9 @@ export function useRichTextEditor(
       const { TiptapEditor, EC, extensions } = await options.loadExtensions({
         mergeTags,
         syntax,
+        triggerChar,
+        autocompleteEnabled,
+        suggestionEmptyText,
       });
 
       // Component unmounted while we awaited loadExtensions — bail out

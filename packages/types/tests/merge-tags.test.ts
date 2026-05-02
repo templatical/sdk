@@ -10,6 +10,7 @@ import {
     restoreMergeTagMarkup,
     resolveSyntax,
     SYNTAX_PRESETS,
+    getSyntaxTriggerChar,
     type MergeTag,
 } from '../src';
 
@@ -309,5 +310,54 @@ describe('containsMergeTag with ampscript syntax', () => {
 
     it('detects ampscript logic tags', () => {
         expect(containsMergeTag('%%[IF @active]%%', SYNTAX_PRESETS.ampscript)).toBe(true);
+    });
+});
+
+describe('getSyntaxTriggerChar', () => {
+    it('returns "{{" for liquid preset', () => {
+        
+        expect(getSyntaxTriggerChar(SYNTAX_PRESETS.liquid)).toBe('{{');
+    });
+
+    it('returns "{{" for handlebars preset', () => {
+        
+        expect(getSyntaxTriggerChar(SYNTAX_PRESETS.handlebars)).toBe('{{');
+    });
+
+    it('returns "*|" for mailchimp preset', () => {
+        
+        expect(getSyntaxTriggerChar(SYNTAX_PRESETS.mailchimp)).toBe('*|');
+    });
+
+    it('returns "%%=" for ampscript preset', () => {
+        
+        expect(getSyntaxTriggerChar(SYNTAX_PRESETS.ampscript)).toBe('%%=');
+    });
+
+    it('works with resolveSyntax output', () => {
+        
+        expect(getSyntaxTriggerChar(resolveSyntax('liquid'))).toBe('{{');
+        expect(getSyntaxTriggerChar(resolveSyntax('mailchimp'))).toBe('*|');
+    });
+
+    it('returns null for custom syntax', () => {
+        
+        const custom = { value: /<<.+?>>/g, logic: /<%.+?%>/g };
+        expect(getSyntaxTriggerChar(custom)).toBe(null);
+    });
+
+    it('returns null for empty regex', () => {
+        
+        const empty = { value: /(?:)/g, logic: /(?:)/g };
+        expect(getSyntaxTriggerChar(empty)).toBe(null);
+    });
+
+    it('matches by source even when regex flags differ', () => {
+        
+        const cloned = {
+            value: new RegExp(SYNTAX_PRESETS.liquid.value.source, 'gi'),
+            logic: SYNTAX_PRESETS.liquid.logic,
+        };
+        expect(getSyntaxTriggerChar(cloned)).toBe('{{');
     });
 });

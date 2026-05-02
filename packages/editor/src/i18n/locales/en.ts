@@ -457,6 +457,7 @@ export default {
     add: "Add merge tag",
     editValue: "Edit merge tag value",
     deleteMergeTag: "Delete merge tag",
+    suggestionEmpty: "No matching merge tags",
   },
 
   // Canvas
