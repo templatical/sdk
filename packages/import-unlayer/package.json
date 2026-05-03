@@ -22,12 +22,12 @@
   ],
   "homepage": "https://templatical.com",
   "keywords": [
-    "unlayer",
     "email",
     "email-template",
     "importer",
     "migration",
-    "templatical"
+    "templatical",
+    "unlayer"
   ],
   "license": "MIT",
   "module": "./dist/index.js",
