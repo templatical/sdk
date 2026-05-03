@@ -253,25 +253,31 @@ test.describe("Merge tag autocomplete", () => {
     const popup = page.locator(SELECTORS.mergeTagSuggestionPopup);
     await expect(popup).toBeVisible();
 
-    // The merge tag node we'd be replacing is at the caret. Its rect
-    // should be within ~400px (any reasonable dropdown layout) of the
-    // popup's rect both horizontally and vertically.
-    const editableBox = await editable.boundingBox();
-    const popupBox = await popup.boundingBox();
-    expect(editableBox).not.toBeNull();
-    expect(popupBox).not.toBeNull();
+    // After the popup tracks scroll, it should be pinned to the caret
+    // bottom — not just "in the same screen region." Read the caret rect
+    // and the popup rect in the same evaluate so they're sampled at the
+    // same layout tick (no race against in-flight auto-scroll).
+    const gaps = await page.evaluate((popupSelector: string) => {
+      const sel = window.getSelection();
+      const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+      const caretRect = range?.getBoundingClientRect() ?? null;
+      const popupEl = document.querySelector(popupSelector) as HTMLElement | null;
+      const popupRect = popupEl?.getBoundingClientRect() ?? null;
+      if (!caretRect || !popupRect) return null;
+      return {
+        vertical: Math.abs(popupRect.top - caretRect.bottom),
+        horizontal: Math.abs(popupRect.left - caretRect.left),
+      };
+    }, SELECTORS.mergeTagSuggestionPopup);
 
-    const horizontalGap = Math.abs(
-      (popupBox?.x ?? 0) - (editableBox?.x ?? 0),
-    );
-    const verticalGap = Math.abs(
-      (popupBox?.y ?? 0) - ((editableBox?.y ?? 0) + (editableBox?.height ?? 0)),
-    );
-
-    // Popup should be reasonably close to the caret area — well within
-    // the editable's width. A failing run shows >500px horizontal offset.
-    expect(horizontalGap).toBeLessThan(400);
-    expect(verticalGap).toBeLessThan(400);
+    expect(gaps).not.toBeNull();
+    // Popup top should sit on the caret bottom. ~10px tolerance accounts
+    // for sub-pixel rounding only — anything more means scroll-tracking
+    // failed.
+    expect(gaps?.vertical ?? Infinity).toBeLessThanOrEqual(10);
+    // Popup left should align with caret left. Wider tolerance because
+    // the popup may shift to keep within viewport bounds.
+    expect(gaps?.horizontal ?? Infinity).toBeLessThan(50);
   });
 
   test("popup flips above caret when there's not enough room below", async ({
