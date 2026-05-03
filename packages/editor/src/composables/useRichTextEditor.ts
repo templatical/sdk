@@ -6,6 +6,7 @@ import type { Extension, Mark, Node } from "@tiptap/core";
 import { useEventListener, useTimeoutFn } from "@vueuse/core";
 import {
   inject,
+  isRef,
   onBeforeUnmount,
   ref,
   shallowRef,
@@ -13,7 +14,9 @@ import {
   type Ref,
   type ShallowRef,
 } from "vue";
-import { EDITOR_KEY } from "../keys";
+import type { Translations } from "../i18n";
+import { getSyntaxTriggerChar } from "@templatical/types";
+import { EDITOR_KEY, TRANSLATIONS_KEY } from "../keys";
 import { useMergeTag } from "./useMergeTag";
 import { useRichTextLinkDialog } from "./useRichTextLinkDialog";
 import { logger } from "../utils/logger";
@@ -21,6 +24,12 @@ import { logger } from "../utils/logger";
 export interface MergeTagContext {
   mergeTags: ReturnType<typeof useMergeTag>["mergeTags"];
   syntax: ReturnType<typeof useMergeTag>["syntax"];
+  /** Resolved trigger string for built-in syntaxes; null for custom syntax. */
+  triggerChar: string | null;
+  /** Whether the consumer has enabled autocomplete (default true). */
+  autocompleteEnabled: boolean;
+  /** Localized empty-state label for the autocomplete popup. */
+  suggestionEmptyText: string;
 }
 
 export interface UseRichTextEditorOptions {
@@ -68,7 +77,19 @@ export function useRichTextEditor(
     isRequesting: isRequestingMergeTag,
     requestMergeTag,
     syntax,
+    autocomplete: autocompleteEnabled,
   } = useMergeTag();
+
+  const injectedTranslations = inject(TRANSLATIONS_KEY, null) as
+    | Translations
+    | Ref<Translations>
+    | null;
+  const resolvedTranslations: Translations | null = isRef(injectedTranslations)
+    ? injectedTranslations.value
+    : injectedTranslations;
+  const suggestionEmptyText =
+    resolvedTranslations?.mergeTag?.suggestionEmpty ?? "No matching merge tags";
+  const triggerChar = getSyntaxTriggerChar(syntax);
 
   const editor = shallowRef<Editor | null>(null);
 
@@ -92,6 +113,8 @@ export function useRichTextEditor(
   const isLoading = ref(true);
   const initError = ref<string | null>(null);
 
+  let destroyed = false;
+
   async function initEditor(): Promise<void> {
     initError.value = null;
     isLoading.value = true;
@@ -100,7 +123,17 @@ export function useRichTextEditor(
       const { TiptapEditor, EC, extensions } = await options.loadExtensions({
         mergeTags,
         syntax,
+        triggerChar,
+        autocompleteEnabled,
+        suggestionEmptyText,
       });
+
+      // Component unmounted while we awaited loadExtensions — bail out
+      // before constructing the TipTap editor. Otherwise the editor escapes
+      // the onBeforeUnmount destroy hook that already ran.
+      if (destroyed) {
+        return;
+      }
 
       EditorContent.value = EC;
 
@@ -110,11 +143,12 @@ export function useRichTextEditor(
         (ext, i) => seen.get(ext.name) === i,
       );
 
-      editor.value = new TiptapEditor({
+      const instance = new TiptapEditor({
         extensions: uniqueExtensions,
         content: options.blockContent(),
         editable: true,
         onUpdate: ({ editor: e }) => {
+          if (destroyed) return;
           if (emailEditor) {
             emailEditor.updateBlock(options.blockId(), {
               content: e.getHTML(),
@@ -123,9 +157,18 @@ export function useRichTextEditor(
         },
       });
 
+      // A second unmount check covers the gap between `await` resolving and
+      // the constructor running.
+      if (destroyed) {
+        instance.destroy();
+        return;
+      }
+
+      editor.value = instance;
       isLoading.value = false;
       startFocusTimeout();
     } catch (error) {
+      if (destroyed) return;
       logger.error(
         `[${options.editorName ?? "RichTextEditor"}] Failed to initialize TipTap editor:`,
         error,
@@ -177,6 +220,7 @@ export function useRichTextEditor(
   useEventListener(document, "mousedown", handleClickOutside);
 
   onBeforeUnmount(() => {
+    destroyed = true;
     stopContentWatch();
     stopFocusTimeout();
     editor.value?.destroy();

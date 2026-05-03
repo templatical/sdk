@@ -2,6 +2,7 @@ import { createApp, h, ref, type App, type Ref } from "vue";
 import { INIT_TIMEOUT_MS } from "./constants/timeouts";
 import type {
   BlockDefaults,
+  CustomBlock,
   CustomBlockDefinition,
   DisplayConditionsConfig,
   FontsConfig,
@@ -17,8 +18,9 @@ import type {
 import type { MediaRequestContext } from "@templatical/media-library";
 
 import Editor from "./Editor.vue";
-import { loadTranslations } from "./i18n";
+import { loadTranslations, loadCloudTranslations } from "./i18n";
 import { useFonts } from "./composables";
+import { toMjmlForInstance } from "./utils/toMjml";
 
 // ---------------------------------------------------------------------------
 // OSS config + return types
@@ -58,15 +60,38 @@ export type OnRequestMedia = (
   context?: MediaRequestContext,
 ) => Promise<MediaResult | null>;
 
-export interface TemplaticalEditor {
+interface TemplaticalEditorBase {
   getContent(): TemplateContent;
   setContent(content: TemplateContent): void;
   setTheme(theme: UiTheme): void;
   unmount(): void;
-  toMjml?(): string;
 }
 
-export interface TemplaticalCloudEditor extends TemplaticalEditor {
+export interface TemplaticalEditor extends TemplaticalEditorBase {
+  /**
+   * Render the current template to an MJML string. Resolves custom blocks
+   * via the editor's internal block registry. Throws if the optional
+   * `@templatical/renderer` package is not installed.
+   */
+  toMjml(): Promise<string>;
+  /**
+   * Render a single custom block to its HTML representation, using the
+   * registered custom block definition's template and the block's current
+   * field values. Exposed for headless callers that want to reuse the
+   * editor's renderer (e.g., to drive `@templatical/renderer`'s
+   * `renderCustomBlock` option from outside the editor instance).
+   */
+  renderCustomBlock(block: CustomBlock): Promise<string>;
+}
+
+/**
+ * Cloud editor does not expose `toMjml` or `renderCustomBlock`: the cloud
+ * backend performs MJML conversion server-side with additional processing
+ * (e.g., signed image URLs, attachment handling) that isn't available client
+ * side. Use the cloud `save()` flow to persist content; the backend handles
+ * MJML/HTML export from there.
+ */
+export interface TemplaticalCloudEditor extends TemplaticalEditorBase {
   create(content?: TemplateContent): Promise<Template>;
   load(templateId: string): Promise<Template>;
   save(): Promise<SaveResult>;
@@ -93,15 +118,18 @@ export async function init(
     );
   }
 
-  if (appInstance) {
-    unmount();
-  }
-
   // Load translations before mounting so child components can use useI18n synchronously
   const translations = await loadTranslations(config.locale ?? "en");
 
   // Create fonts manager to pass to Editor
   const fontsManager = useFonts(config.fonts);
+
+  // Unmount any prior app *after* awaits — checking before the await would
+  // let two concurrent init() calls both pass the guard while appInstance is
+  // still null and orphan the first-mounted app.
+  if (appInstance) {
+    unmount();
+  }
 
   appInstance = createApp({
     setup() {
@@ -136,10 +164,14 @@ export async function init(
       }
     },
     unmount,
+    renderCustomBlock(block: CustomBlock) {
+      if (!editorRef.value) {
+        return Promise.reject(new Error("[Templatical] Editor not ready"));
+      }
+      return editorRef.value.renderCustomBlock(block);
+    },
+    toMjml: () => toMjmlForInstance(instance),
   };
-
-  // Try to detect @templatical/renderer for export methods
-  attachRenderer(instance);
 
   return instance;
 }
@@ -168,18 +200,25 @@ export async function initCloud(
     );
   }
 
-  if (cloudAppInstance) {
-    unmountCloud();
-  }
-
   // Dynamic import — CloudEditor.vue is tree-shaken from the OSS bundle
   const { default: CloudEditor } = await import("./cloud/CloudEditor.vue");
 
-  // Load translations before mounting so child components can use useI18n synchronously
-  const translations = await loadTranslations(config.locale ?? "en");
+  // Load OSS + cloud translations in parallel so child components can use
+  // useI18n / useCloudI18n synchronously
+  const [translations, cloudTranslations] = await Promise.all([
+    loadTranslations(config.locale ?? "en"),
+    loadCloudTranslations(config.locale ?? "en"),
+  ]);
 
   // Create fonts manager to pass to CloudEditor
   const fontsManager = useFonts(config.fonts);
+
+  // Unmount any prior app *after* awaits — checking before the await would
+  // let two concurrent initCloud() calls both pass the guard while
+  // cloudAppInstance is still null and orphan the first-mounted app.
+  if (cloudAppInstance) {
+    unmountCloud();
+  }
 
   // Promise that resolves when CloudEditor emits 'ready'
   const readyPromise = new Promise<void>((resolve, reject) => {
@@ -193,6 +232,7 @@ export async function initCloud(
           h(CloudEditor, {
             config,
             translations,
+            cloudTranslations,
             fontsManager,
             ref: cloudEditorRef,
             onReady: () => {
@@ -252,9 +292,6 @@ export async function initCloud(
     },
   };
 
-  // Try to detect @templatical/renderer for export methods
-  attachRenderer(instance);
-
   return instance;
 }
 
@@ -276,20 +313,6 @@ function unmountCloud(): void {
     cloudAppInstance = null;
     cloudEditorRef.value = null;
   }
-}
-
-// ---------------------------------------------------------------------------
-// Renderer attachment (shared by OSS + Cloud)
-// ---------------------------------------------------------------------------
-
-function attachRenderer(instance: TemplaticalEditor): void {
-  import("@templatical/renderer")
-    .then((renderer) => {
-      instance.toMjml = () => renderer.renderToMjml(instance.getContent());
-    })
-    .catch(() => {
-      // @templatical/renderer not installed — export methods not available
-    });
 }
 
 // ---------------------------------------------------------------------------

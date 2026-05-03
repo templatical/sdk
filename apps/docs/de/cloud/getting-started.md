@@ -133,9 +133,9 @@ const result = await editor.save();
 
 ### Export
 
-```js
-const mjml = editor.toMjml();
-```
+Der Cloud-Editor stellt **keine** clientseitige `toMjml()`-Methode bereit. Das Templatical-Cloud-Backend wandelt gespeicherte Template-JSON serverseitig in MJML um, mit zusätzlicher Verarbeitung, die der Browser allein nicht leisten kann (z. B. signierte Bild-URLs, Asset-Umschreibung). Lösen Sie einen Export nach dem Speichern über die Backend-HTTP-API aus – siehe die Headless-API-Dokumentation für Endpunkte.
+
+Wenn Sie stattdessen clientseitiges MJML-Rendering wünschen (ohne Backend-Roundtrip), verwenden Sie den OSS-Editor (`init`, nicht `initCloud`) zusammen mit `@templatical/renderer`.
 
 ## Aufräumen
 

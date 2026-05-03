@@ -35,7 +35,13 @@ const {
   blockContent: () => props.block.content,
   onDone: () => emit("done"),
   editorName: "ParagraphEditor",
-  async loadExtensions({ mergeTags, syntax }) {
+  async loadExtensions({
+    mergeTags,
+    syntax,
+    triggerChar,
+    autocompleteEnabled,
+    suggestionEmptyText,
+  }) {
     const [
       { Editor: TiptapEditor, EditorContent: EC },
       { default: StarterKit },
@@ -48,7 +54,14 @@ const {
       { default: Color },
       { default: FontFamily },
       { default: Highlight },
-      { MergeTagNode, LogicMergeTagNode, FontSize, LineHeight, LetterSpacing },
+      {
+        MergeTagNode,
+        MergeTagSuggestion,
+        LogicMergeTagNode,
+        FontSize,
+        LineHeight,
+        LetterSpacing,
+      },
     ] = await Promise.all([
       import("@tiptap/vue-3"),
       import("@tiptap/starter-kit"),
@@ -94,6 +107,15 @@ const {
         LetterSpacing,
         MergeTagNode.configure({ mergeTags, syntax }),
         LogicMergeTagNode.configure({ syntax }),
+        ...(autocompleteEnabled && triggerChar && mergeTags.length > 0
+          ? [
+              MergeTagSuggestion.configure({
+                mergeTags,
+                char: triggerChar,
+                emptyText: suggestionEmptyText,
+              }),
+            ]
+          : []),
       ],
     };
   },

@@ -10,6 +10,7 @@ import {
     restoreMergeTagMarkup,
     resolveSyntax,
     SYNTAX_PRESETS,
+    getSyntaxTriggerChar,
     type MergeTag,
 } from '../src';
 
@@ -35,6 +36,13 @@ describe('resolveSyntax', () => {
         const custom = { value: /\[\[.+?\]\]/g, logic: /\[\[#(\w+).*?\]\]/g };
         expect(resolveSyntax(custom)).toBe(custom);
     });
+
+    it('falls back to liquid when given an unknown preset name', () => {
+        // Consumers may pass a runtime string that bypasses TS narrowing.
+        const syntax = resolveSyntax('not-a-real-preset' as any);
+        expect(syntax).toBe(SYNTAX_PRESETS.liquid);
+        expect(syntax.value).toBeInstanceOf(RegExp);
+    });
 });
 
 describe('isMergeTagValue', () => {
@@ -48,6 +56,15 @@ describe('isMergeTagValue', () => {
 
     it('returns false for partial match', () => {
         expect(isMergeTagValue('hello {{name}} world', liquidSyntax)).toBe(false);
+    });
+
+    it('returns false for handlebars logic tags (not value tags)', () => {
+        // The handlebars value regex `\{\{\{?.+?\}?\}\}` would otherwise match
+        // `{{#each items}}` and misclassify it as a value merge tag.
+        const handlebars = SYNTAX_PRESETS.handlebars;
+        expect(isMergeTagValue('{{#each items}}', handlebars)).toBe(false);
+        expect(isMergeTagValue('{{/each}}', handlebars)).toBe(false);
+        expect(isMergeTagValue('{{#if active}}', handlebars)).toBe(false);
     });
 });
 
@@ -293,5 +310,54 @@ describe('containsMergeTag with ampscript syntax', () => {
 
     it('detects ampscript logic tags', () => {
         expect(containsMergeTag('%%[IF @active]%%', SYNTAX_PRESETS.ampscript)).toBe(true);
+    });
+});
+
+describe('getSyntaxTriggerChar', () => {
+    it('returns "{{" for liquid preset', () => {
+        
+        expect(getSyntaxTriggerChar(SYNTAX_PRESETS.liquid)).toBe('{{');
+    });
+
+    it('returns "{{" for handlebars preset', () => {
+        
+        expect(getSyntaxTriggerChar(SYNTAX_PRESETS.handlebars)).toBe('{{');
+    });
+
+    it('returns "*|" for mailchimp preset', () => {
+        
+        expect(getSyntaxTriggerChar(SYNTAX_PRESETS.mailchimp)).toBe('*|');
+    });
+
+    it('returns "%%=" for ampscript preset', () => {
+        
+        expect(getSyntaxTriggerChar(SYNTAX_PRESETS.ampscript)).toBe('%%=');
+    });
+
+    it('works with resolveSyntax output', () => {
+        
+        expect(getSyntaxTriggerChar(resolveSyntax('liquid'))).toBe('{{');
+        expect(getSyntaxTriggerChar(resolveSyntax('mailchimp'))).toBe('*|');
+    });
+
+    it('returns null for custom syntax', () => {
+        
+        const custom = { value: /<<.+?>>/g, logic: /<%.+?%>/g };
+        expect(getSyntaxTriggerChar(custom)).toBe(null);
+    });
+
+    it('returns null for empty regex', () => {
+        
+        const empty = { value: /(?:)/g, logic: /(?:)/g };
+        expect(getSyntaxTriggerChar(empty)).toBe(null);
+    });
+
+    it('matches by source even when regex flags differ', () => {
+        
+        const cloned = {
+            value: new RegExp(SYNTAX_PRESETS.liquid.value.source, 'gi'),
+            logic: SYNTAX_PRESETS.liquid.logic,
+        };
+        expect(getSyntaxTriggerChar(cloned)).toBe('{{');
     });
 });

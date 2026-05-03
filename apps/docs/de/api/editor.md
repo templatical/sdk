@@ -99,13 +99,27 @@ Zerstört diese Editor-Instanz.
 
 ### `toMjml()`
 
-Rendert den aktuellen Inhalt in MJML-Markup. Nur verfügbar, wenn `@templatical/renderer` installiert ist.
+Rendert den aktuellen Inhalt in MJML-Markup. Gibt ein `Promise<string>` zurück, da das Auflösen benutzerdefinierter Blöcke asynchrone Arbeit erfordern kann (der Liquid-Renderer des Editors wird bei Bedarf geladen).
 
 ```ts
-const mjml = editor.toMjml?.();
+const mjml = await editor.toMjml();
 ```
 
+Wirft einen klaren Fehler, wenn `@templatical/renderer` nicht installiert ist. Der Renderer ist eine optionale Peer-Abhängigkeit – installieren Sie ihn nur, wenn Sie MJML-Export aus dem Browser benötigen. Siehe [Installation](/de/getting-started/installation) für Details.
+
 Um MJML zu HTML zu kompilieren, verwenden Sie eine beliebige MJML-Bibliothek (z. B. [mjml](https://www.npmjs.com/package/mjml) für Node.js).
+
+::: tip Cloud-Editor
+Der Cloud-Editor stellt `toMjml()` **nicht** zur Verfügung – das Cloud-Backend übernimmt die MJML-Konvertierung serverseitig mit zusätzlicher Verarbeitung (signierte Bild-URLs, Asset-Umschreibung). Verwenden Sie den OSS-Editor (`init`, nicht `initCloud`), wenn Sie clientseitigen MJML-Export wünschen.
+:::
+
+### `renderCustomBlock(block)`
+
+Rendert einen einzelnen benutzerdefinierten Block in seine HTML-Darstellung. Nützlich für Headless-Aufrufer, die `@templatical/renderer`s `renderCustomBlock`-Option von außerhalb der Editor-Instanz steuern möchten – etwa beim direkten Aufruf des Renderers mit eigener Konfiguration.
+
+```ts
+const html = await editor.renderCustomBlock(customBlock);
+```
 
 ## Core-Composables
 

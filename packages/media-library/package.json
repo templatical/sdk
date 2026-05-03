@@ -1,7 +1,7 @@
 {
   "name": "@templatical/media-library",
   "description": "Media library management for Templatical email editor",
-  "version": "0.1.2",
+  "version": "0.3.1",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@lucide/vue": "^1.11.0",

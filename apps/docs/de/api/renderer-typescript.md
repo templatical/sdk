@@ -15,12 +15,12 @@ npm install @templatical/renderer
 
 ## `renderToMjml(content, options?)`
 
-Rendert ein `TemplateContent`-Objekt zu einem MJML-String.
+Rendert ein `TemplateContent`-Objekt zu einem MJML-String. Gibt ein `Promise<string>` zurück – asynchron, damit benutzerdefinierte Blöcke (deren Auflösung asynchrone Arbeit erfordern kann) inline gerendert werden können.
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
 
-const mjml = renderToMjml(templateContent);
+const mjml = await renderToMjml(templateContent);
 ```
 
 **Parameter:**
@@ -30,7 +30,7 @@ const mjml = renderToMjml(templateContent);
 | `content` | `TemplateContent` | Das zu rendernde Template |
 | `options` | `RenderOptions` | Optionale Rendering-Konfiguration |
 
-**Rückgabewert:** `string` -- MJML-Markup
+**Rückgabewert:** `Promise<string>` -- MJML-Markup
 
 ## RenderOptions
 
@@ -39,6 +39,7 @@ interface RenderOptions {
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // Standard: true
+  renderCustomBlock?: (block: CustomBlock) => Promise<string>;
 }
 ```
 
@@ -47,6 +48,34 @@ interface RenderOptions {
 | `customFonts` | `[]` | Definitionen benutzerdefinierter Schriftarten für `<mj-font>`-Deklarationen in der gerenderten Ausgabe |
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback-Schriftart-Stack |
 | `allowHtmlBlocks` | `true` | Auf `false` setzen, um HTML-Blöcke aus der Ausgabe zu entfernen |
+| `renderCustomBlock` | -- | Wandelt benutzerdefinierte Blöcke in HTML um. Wird einmal pro benutzerdefiniertem Block aufgerufen. Editor-Konsumenten übergeben `editor.renderCustomBlock`; Headless-Konsumenten verwenden einen eigenen Resolver. Wenn weggelassen, fällt der Renderer auf das `renderedHtml`-Feld des Blocks zurück (falls vorhanden) und lässt den Block andernfalls weg. |
+
+### Benutzerdefinierte Blöcke
+
+Wenn der Inhaltsbaum benutzerdefinierte Blöcke enthält, fragt der Renderer den übergebenen `renderCustomBlock`-Callback, um jeden in HTML zu konvertieren. Aus dem Editor:
+
+```ts
+const mjml = await renderToMjml(editor.getContent(), {
+  renderCustomBlock: editor.renderCustomBlock,
+});
+```
+
+Headless- / Node.js-Konsumenten (ohne montierten Editor) können einen eigenen Resolver bereitstellen – zum Beispiel die gleiche Liquid-Vorlage gegen die `fieldValues` des Blocks ausführen:
+
+```ts
+import { Liquid } from 'liquidjs';
+
+const engine = new Liquid();
+const definitionsByType = new Map(/* Ihre CustomBlockDefinition-Liste, nach type indiziert */);
+
+const mjml = await renderToMjml(content, {
+  async renderCustomBlock(block) {
+    const definition = definitionsByType.get(block.customType);
+    if (!definition) return '';
+    return engine.parseAndRender(definition.template, block.fieldValues);
+  },
+});
+```
 
 ## Hilfsfunktionen
 
@@ -162,7 +191,7 @@ Nach dem Rendern in MJML kompilieren Sie mit einer beliebigen MJML-Bibliothek zu
 import { renderToMjml } from '@templatical/renderer';
 import mjml2html from 'mjml';
 
-const mjml = renderToMjml(templateContent);
+const mjml = await renderToMjml(templateContent);
 const { html } = mjml2html(mjml);
 
 // html ist bereit zum Versand über Ihren E-Mail-Dienst

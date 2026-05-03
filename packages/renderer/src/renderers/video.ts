@@ -2,6 +2,7 @@ import type { VideoBlock } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { escapeAttr } from "../escape";
 import { toPaddingString } from "../padding";
+import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -58,9 +59,7 @@ export function renderVideo(block: VideoBlock, context: RenderContext): string {
   }
 
   const padding = toPaddingString(block.styles.padding);
-  const bgColor = block.styles.backgroundColor
-    ? ` background-color="${block.styles.backgroundColor}"`
-    : "";
+  const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const width =
     block.width === "full" ? context.containerWidth + "px" : block.width + "px";
   const visibilityAttr = getCssClassAttr(block);

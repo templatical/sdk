@@ -133,9 +133,9 @@ const result = await editor.save();
 
 ### Export
 
-```js
-const mjml = editor.toMjml();
-```
+The Cloud editor does **not** expose a client-side `toMjml()` method. The Templatical Cloud backend converts saved template JSON to MJML server-side, with additional processing the browser can't do alone (e.g., signed image URLs, asset rewriting). Trigger an export through the backend HTTP API after saving — see the headless API docs for endpoints.
+
+If you want client-side MJML rendering instead (no backend round-trip), use the OSS editor (`init`, not `initCloud`) along with `@templatical/renderer`.
 
 ## Cleanup
 

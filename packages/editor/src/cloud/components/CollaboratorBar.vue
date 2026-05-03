@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Collaborator } from "@templatical/types";
-import { useI18n } from "../../composables";
+import { useCloudI18nStrict } from "../../composables";
 import { Wifi, WifiOff } from "@lucide/vue";
 import { computed } from "vue";
 import { readableTextColor } from "../../utils/readableTextColor";
@@ -10,7 +10,7 @@ const props = defineProps<{
   isConnected: boolean;
 }>();
 
-const { t } = useI18n();
+const { t: cloudT } = useCloudI18nStrict();
 
 const maxVisible = 3;
 
@@ -48,7 +48,9 @@ function getInitials(name: string): string {
         color: isConnected ? 'var(--tpl-success)' : 'var(--tpl-text-muted)',
       }"
       :title="
-        isConnected ? t.collaboration.connected : t.collaboration.disconnected
+        isConnected
+          ? cloudT.collaboration.connected
+          : cloudT.collaboration.disconnected
       "
     >
       <Wifi v-if="isConnected" :size="12" :stroke-width="2" />

@@ -51,7 +51,7 @@
     "lint": "eslint packages/*/src apps/*/src --cache --cache-location node_modules/.cache/eslint/",
     "prepare": "husky",
     "test": "pnpm --filter './packages/*' run test",
-    "test:coverage": "pnpm --filter './packages/*' run test -- --coverage",
+    "test:coverage": "pnpm --filter './packages/*' run test --coverage",
     "test:e2e": "playwright test",
     "test:e2e:consumer": "playwright test --config playwright.consumer.config.ts",
     "test:e2e:headed": "playwright test --headed",

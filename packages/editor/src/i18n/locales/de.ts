@@ -1,43 +1,10 @@
-export default {
-  // Loading
-  loading: {
-    initializing: "Initialisieren...",
-  },
+import type en from "./en";
 
-  // Error
-  error: {
-    title: "Etwas ist schiefgelaufen",
-    defaultMessage:
-      "Der Editor konnte keine Verbindung zu Templatical herstellen. Überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.",
-    authFailed:
-      "Authentifizierung fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.",
-    templateNotFound:
-      "Die angeforderte Vorlage konnte nicht gefunden werden. Bitte überprüfen Sie die Vorlagen-ID.",
-    retry: "Erneut versuchen",
-  },
-
-  // Header
-  header: {
-    title: "Templatical",
-    unsaved: "Nicht gespeichert",
-    saving: "Speichern...",
-    saved: "Gespeichert",
-    saveFailed: "Speichern fehlgeschlagen",
-    save: "Speichern",
-    templatesUsed: "{used}/{max} Vorlagen verwendet",
-  },
-
+const de: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Erstellt mit",
     openSource: "Open Source",
-  },
-
-  // Snapshot preview banner
-  snapshotPreview: {
-    message: "Sie sehen einen früheren Snapshot dieser Vorlage.",
-    cancel: "Abbrechen",
-    restore: "Diesen Snapshot wiederherstellen",
   },
 
   // History (undo/redo)
@@ -497,20 +464,7 @@ export default {
     add: "Merge-Tag hinzufügen",
     editValue: "Merge-Tag-Wert bearbeiten",
     deleteMergeTag: "Merge-Tag löschen",
-  },
-
-  // Snapshot history (cloud)
-  snapshotHistory: {
-    tooltip: "Versionsverlauf",
-    dropdownTitle: "Versionsverlauf",
-    noSnapshots: "Noch keine Versionen",
-    auto: "auto",
-    justNow: "Gerade eben",
-    minutesAgo: "vor {minutes} Min.",
-    hoursAgo: "vor {hours} Std.",
-    daysAgo: "vor {days} Tagen",
-    olderSnapshot: "Ältere Version",
-    newerSnapshot: "Neuere Version",
+    suggestionEmpty: "Keine passenden Merge-Tags",
   },
 
   // Canvas
@@ -616,146 +570,6 @@ export default {
     storageTooltip: "{used} von {total} verwendet ({remaining} verfügbar)",
   },
 
-  // Test Email (cloud)
-  testEmail: {
-    title: "Test-E-Mail senden",
-    recipientLabel: "Empfänger",
-    send: "Senden",
-    sending: "Wird gesendet...",
-    cancel: "Abbrechen",
-    success: "Test-E-Mail erfolgreich gesendet",
-    button: "Test",
-  },
-
-  // AI Rewrite (cloud)
-  aiRewrite: {
-    title: "KI-Umschreibung",
-    tone: "Tonalität",
-    length: "Länge",
-    clarity: "Klarheit",
-    professional: "Professionell",
-    casual: "Locker",
-    friendly: "Freundlich",
-    urgent: "Dringend",
-    persuasive: "Überzeugend",
-    shorter: "Kürzer",
-    longer: "Länger",
-    summarize: "Zusammenfassen",
-    simplify: "Vereinfachen",
-    fixGrammar: "Grammatik korrigieren",
-    improveReadability: "Lesbarkeit verbessern",
-    customInstruction: "Eigene Anweisung",
-    customPlaceholder: "Beschreiben Sie die gewünschte Umschreibung...",
-    rewrite: "Umschreiben",
-    rewriting: "Wird umgeschrieben...",
-    undo: "Rückgängig",
-    redo: "Wiederholen",
-    refine: "Weiter verfeinern",
-    error: "Text konnte nicht umgeschrieben werden",
-  },
-
-  // AI Chat (cloud)
-  aiChat: {
-    title: "KI-Assistent",
-    button: "KI",
-    inputPlaceholder: "Beschreiben Sie Ihre E-Mail-Vorlage...",
-    send: "Senden",
-    generating: "Wird generiert...",
-    applied: "Änderungen auf Vorlage angewendet.",
-    applyFailed:
-      "Änderungen konnten nicht auf die Vorlage angewendet werden. Bitte versuchen Sie es erneut.",
-    revert: "Änderungen rückgängig",
-    reapply: "Änderungen erneut anwenden",
-    error: "Vorlage konnte nicht generiert werden",
-    clear: "Chat leeren",
-    placeholder:
-      "Beschreiben Sie die E-Mail-Vorlage, die Sie erstellen möchten, oder bitten Sie um Änderungen an der aktuellen.",
-    loadingHistory: "Konversation wird geladen...",
-  },
-
-  // Template Scoring (cloud)
-  scoring: {
-    button: "Bewertung",
-    title: "Vorlagenbewertung",
-    rescore: "Neu bewerten",
-    scoring: "Vorlage wird analysiert...",
-    overallScore: "Gesamtbewertung",
-    categories: {
-      spam: "Spam-Risiko",
-      readability: "Lesbarkeit",
-      accessibility: "Barrierefreiheit",
-      bestPractices: "Best Practices",
-    },
-    severity: {
-      high: "Hoch",
-      medium: "Mittel",
-      low: "Niedrig",
-    },
-    fix: "Mit KI beheben",
-    fixing: "Wird behoben...",
-    fixed: "Behoben",
-    findings: "Ergebnisse",
-    noFindings: "Keine Probleme gefunden",
-    error: "Vorlage konnte nicht analysiert werden",
-    fixError: "Korrektur konnte nicht angewendet werden",
-    emptyState:
-      "Bewerten Sie Ihre Vorlage, um umsetzbare Rückmeldungen zu Spam-Risiko, Lesbarkeit, Barrierefreiheit und Best Practices zu erhalten.",
-  },
-
-  // AI Feature Menu (cloud)
-  aiMenu: {
-    aiAssistant: "KI-Assistent",
-    aiAssistantDesc:
-      "Mit KI chatten, um Ihre Vorlage zu erstellen oder zu ändern",
-    designToTemplate: "Design zu Vorlage",
-    designToTemplateDesc: "Vorlage aus einem Bild oder PDF generieren",
-    templateScore: "Vorlagenbewertung",
-    templateScoreDesc: "Qualität, Spam-Risiko und Barrierefreiheit analysieren",
-    disclaimer:
-      "KI kann Fehler machen. Bitte überprüfen Sie die Ergebnisse vor der Genehmigung.",
-  },
-
-  // Kommentare (cloud)
-  comments: {
-    title: "Kommentare",
-    placeholder: "Kommentar schreiben...",
-    replyPlaceholder: "Antwort schreiben...",
-    reply: "Antworten",
-    resolve: "Lösen",
-    unresolve: "Wiedereröffnen",
-    resolved: "Gelöst",
-    delete: "Löschen",
-    edit: "Bearbeiten",
-    cancel: "Abbrechen",
-    save: "Speichern",
-    noComments: "Noch keine Kommentare",
-    noCommentsHint:
-      "Starten Sie eine Konversation, indem Sie einen Kommentar zur Vorlage oder einem bestimmten Block hinzufügen.",
-    addComment: "Kommentar hinzufügen",
-    deleteConfirm: "Diesen Kommentar löschen?",
-    filterAll: "Alle",
-    filterUnresolved: "Ungelöst",
-    filterBlock: "Dieser Block",
-    ownedByYou: "Sie",
-    edited: "bearbeitet",
-    resolvedBy: "Gelöst von {name}",
-    replyOne: "{count} Antwort",
-    replyMany: "{count} Antworten",
-    missingBlock: "Fehlender Block",
-    saveTemplateFirst:
-      "Speichern Sie die Vorlage, bevor Sie diesen Block kommentieren.",
-    button: "Kommentare",
-  },
-
-  // Zusammenarbeit (cloud)
-  collaboration: {
-    connected: "Zusammenarbeit aktiv",
-    disconnected: "Zusammenarbeit getrennt",
-    reconnecting: "Verbindung wird wiederhergestellt...",
-    blockLockedBy: "Wird bearbeitet von {name}",
-    usersOnline: "{count} Benutzer online",
-  },
-
   // Seitenleiste
   sidebarNav: {
     browseModules: "Gespeicherte Module durchsuchen",
@@ -772,59 +586,12 @@ export default {
     reorderAnnouncements: "Block-Neuanordnungsmeldungen",
   },
 
-  // Gespeicherte Module (cloud)
-  modules: {
-    title: "Gespeicherte Module",
-    saveAsModule: "Als Modul speichern",
-    moduleName: "Modulname",
-    moduleNamePlaceholder: "z.B. Header, Footer, CTA...",
-    selectBlocks: "Blöcke auswählen",
-    save: "Modul speichern",
-    saving: "Wird gespeichert...",
-    cancel: "Abbrechen",
-    noModules: "Noch keine gespeicherten Module",
-    noModulesHint:
-      "Speichern Sie Blöcke aus Ihren Vorlagen, um sie später wiederzuverwenden.",
-    search: "Module suchen...",
-    insert: "Einfügen",
-    delete: "Löschen",
-    deleteConfirm: "Dieses Modul löschen?",
-    blockCount: "{count} Block/Blöcke",
-    browse: "Module durchsuchen",
-    selectToPreview: "Modul auswählen für Vorschau",
-    insertAtBeginning: "Am Anfang",
-    insertAfterBlock: "Nach {block}",
-    insertAtEnd: "Am Ende",
-    insertPosition: "Einfügeposition",
-    close: "Schließen",
-  },
-
   // Design Reference (cloud)
-  designReference: {
-    title: "Designvorlage",
-    button: "Design",
-    uploadImage: "Bild",
-    uploadPdf: "PDF",
-    dropHint: "Datei hierher ziehen oder klicken zum Durchsuchen",
-    acceptedImages: "PNG, JPG, WebP (max. 10 MB)",
-    acceptedPdf: "PDF (max. 10 MB)",
-    promptLabel: "Anweisungen (optional)",
-    promptPlaceholder:
-      "Beschreiben Sie Anpassungen oder Wünsche für die generierte Vorlage...",
-    generate: "Aus Design generieren",
-    generating: "Design wird analysiert und Vorlage generiert...",
-    replaceWarning:
-      "Die Generierung aus einer Designvorlage ersetzt den vorhandenen Vorlageninhalt.",
-    replaceConfirm: "Ersetzen und generieren",
-    replaceCancel: "Abbrechen",
-    error: "Vorlage konnte nicht aus Design generiert werden",
-    fileTooLarge: "Datei ist zu groß. Maximale Größe ist 10 MB.",
-    invalidFileType:
-      "Dieser Dateityp wird nicht unterstützt. Laden Sie eine PNG-, JPG-, WebP- oder PDF-Datei hoch.",
-  },
   errors: {
     editorLoading: "Editor wird geladen...",
     editorLoadFailed: "Editor konnte nicht geladen werden.",
     retry: "Erneut versuchen",
   },
-} as const;
+};
+
+export default de;

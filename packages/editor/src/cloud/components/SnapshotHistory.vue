@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables";
+import { useCloudI18nStrict } from "../../composables";
 import { formatRelativeTime } from "../../utils/formatRelativeTime";
 import type { TemplateSnapshot } from "@templatical/types";
 import { onClickOutside } from "@vueuse/core";
@@ -23,7 +24,8 @@ const emit = defineEmits<{
   (e: "navigate", snapshot: TemplateSnapshot): void;
 }>();
 
-const { t, format } = useI18n();
+const { format } = useI18n();
+const { t: cloudT } = useCloudI18nStrict();
 
 const isOpen = ref(false);
 const dropdownRef = ref<HTMLElement | null>(null);
@@ -82,7 +84,12 @@ function handleRestore(snapshotId: string): void {
 }
 
 function formatDate(dateString: string): string {
-  const result = formatRelativeTime(dateString, t.snapshotHistory, format, 7);
+  const result = formatRelativeTime(
+    dateString,
+    cloudT.snapshotHistory,
+    format,
+    7,
+  );
   if (result !== null) return result;
 
   return new Date(dateString).toLocaleDateString(undefined, {
@@ -107,7 +114,7 @@ onClickOutside(dropdownRef, () => {
     <button
       class="tpl:flex tpl:size-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:transition-colors tpl:duration-150 hover:tpl:bg-[var(--tpl-bg-hover)] disabled:tpl:cursor-not-allowed disabled:tpl:opacity-30 disabled:hover:tpl:bg-transparent tpl:text-[var(--tpl-text-muted)]"
       :disabled="!canGoOlder"
-      :title="t.snapshotHistory.olderSnapshot"
+      :title="cloudT.snapshotHistory.olderSnapshot"
       @click.stop="goOlder"
     >
       <ChevronLeft :size="14" :stroke-width="2" />
@@ -116,7 +123,7 @@ onClickOutside(dropdownRef, () => {
     <!-- History dropdown toggle -->
     <button
       class="tpl:flex tpl:h-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-1.5 tpl:transition-colors tpl:duration-150 hover:tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
-      :title="t.snapshotHistory.tooltip"
+      :title="cloudT.snapshotHistory.tooltip"
       @click.stop="toggleDropdown"
     >
       <Clock :size="16" :stroke-width="1.5" />
@@ -137,7 +144,7 @@ onClickOutside(dropdownRef, () => {
         <div
           class="tpl:border-b tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-semibold tpl:text-[var(--tpl-text)] tpl:border-[var(--tpl-border)]"
         >
-          {{ t.snapshotHistory.dropdownTitle }}
+          {{ cloudT.snapshotHistory.dropdownTitle }}
         </div>
 
         <div
@@ -155,7 +162,7 @@ onClickOutside(dropdownRef, () => {
           v-else-if="snapshots.length === 0"
           class="tpl:px-3 tpl:py-6 tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
         >
-          {{ t.snapshotHistory.noSnapshots }}
+          {{ cloudT.snapshotHistory.noSnapshots }}
         </div>
 
         <div v-else class="tpl:max-h-64 tpl:overflow-y-auto">
@@ -176,7 +183,7 @@ onClickOutside(dropdownRef, () => {
                   v-if="snapshot.is_autosave"
                   class="tpl:rounded tpl:px-1 tpl:py-0.5 tpl:text-[10px] tpl:font-normal tpl:bg-[var(--tpl-bg-active)] tpl:text-[var(--tpl-text-muted)]"
                 >
-                  {{ t.snapshotHistory.auto }}
+                  {{ cloudT.snapshotHistory.auto }}
                 </span>
               </div>
             </div>
@@ -189,7 +196,7 @@ onClickOutside(dropdownRef, () => {
     <button
       class="tpl:flex tpl:size-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:transition-colors tpl:duration-150 hover:tpl:bg-[var(--tpl-bg-hover)] disabled:tpl:cursor-not-allowed disabled:tpl:opacity-30 disabled:hover:tpl:bg-transparent tpl:text-[var(--tpl-text-muted)]"
       :disabled="!canGoNewer"
-      :title="t.snapshotHistory.newerSnapshot"
+      :title="cloudT.snapshotHistory.newerSnapshot"
       @click.stop="goNewer"
     >
       <ChevronRight :size="14" :stroke-width="2" />

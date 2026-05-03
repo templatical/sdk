@@ -3,7 +3,7 @@ import { MAX_UPLOAD_SIZE_BYTES } from "../../constants/timeouts";
 import LoadingTrack from "../../components/LoadingTrack.vue";
 import { useDesignReference } from "@templatical/core/cloud";
 import { EDITOR_KEY, AUTH_MANAGER_KEY, requireInject } from "../../keys";
-import { useI18n } from "../../composables/useI18n";
+import { useCloudI18nStrict } from "../../composables/useCloudI18n";
 import type { TemplateContent } from "@templatical/types";
 import {
   CircleAlert,
@@ -25,7 +25,7 @@ const emit = defineEmits<{
   (e: "apply", content: TemplateContent): void;
 }>();
 
-const { t } = useI18n();
+const { t: cloudT } = useCloudI18nStrict();
 const editor = requireInject(EDITOR_KEY, "DesignReferenceSidebar");
 const authManager = requireInject(AUTH_MANAGER_KEY, "DesignReferenceSidebar");
 
@@ -72,7 +72,7 @@ function handleFileSelect(event: Event): void {
 function setFile(file: File): void {
   // Validate file size (10MB)
   if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-    designReference.error.value = t.designReference.fileTooLarge;
+    designReference.error.value = cloudT.designReference.fileTooLarge;
     return;
   }
 
@@ -80,12 +80,12 @@ function setFile(file: File): void {
   if (activeTab.value === "image") {
     const validTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
     if (!validTypes.includes(file.type)) {
-      designReference.error.value = t.designReference.invalidFileType;
+      designReference.error.value = cloudT.designReference.invalidFileType;
       return;
     }
   } else if (activeTab.value === "pdf") {
     if (file.type !== "application/pdf") {
-      designReference.error.value = t.designReference.invalidFileType;
+      designReference.error.value = cloudT.designReference.invalidFileType;
       return;
     }
   }
@@ -199,7 +199,7 @@ watch(
           class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-primary)]"
         >
           <ImageUp :size="13" :stroke-width="2" />
-          <span>{{ t.designReference.title }}</span>
+          <span>{{ cloudT.designReference.title }}</span>
         </div>
         <button
           class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
@@ -221,7 +221,7 @@ watch(
           >
             <LoadingTrack />
             <p class="tpl:text-sm tpl:text-[var(--tpl-text-muted)]">
-              {{ t.designReference.generating }}
+              {{ cloudT.designReference.generating }}
             </p>
           </div>
         </div>
@@ -246,7 +246,7 @@ watch(
               @click="selectTab('image')"
             >
               <FileImage :size="12" :stroke-width="2" />
-              {{ t.designReference.uploadImage }}
+              {{ cloudT.designReference.uploadImage }}
             </button>
             <button
               class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
@@ -262,7 +262,7 @@ watch(
               @click="selectTab('pdf')"
             >
               <FileText :size="12" :stroke-width="2" />
-              {{ t.designReference.uploadPdf }}
+              {{ cloudT.designReference.uploadPdf }}
             </button>
           </div>
 
@@ -329,15 +329,15 @@ watch(
               <span
                 class="tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
               >
-                {{ t.designReference.dropHint }}
+                {{ cloudT.designReference.dropHint }}
               </span>
               <span
                 class="tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
               >
                 {{
                   activeTab === "image"
-                    ? t.designReference.acceptedImages
-                    : t.designReference.acceptedPdf
+                    ? cloudT.designReference.acceptedImages
+                    : cloudT.designReference.acceptedPdf
                 }}
               </span>
             </div>
@@ -359,13 +359,13 @@ watch(
             <label
               class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
             >
-              {{ t.designReference.promptLabel }}
+              {{ cloudT.designReference.promptLabel }}
             </label>
             <textarea
               v-model="prompt"
               class="tpl:min-h-[72px] tpl:w-full tpl:resize-none tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:font-sans tpl:text-sm tpl:outline-none tpl:transition-colors tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
               :class="['tpl-design-prompt-input']"
-              :placeholder="t.designReference.promptPlaceholder"
+              :placeholder="cloudT.designReference.promptPlaceholder"
               rows="3"
             />
           </div>
@@ -376,7 +376,7 @@ watch(
             class="tpl:flex tpl:flex-col tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:px-3 tpl:py-3 tpl:bg-[var(--tpl-warning-light)] tpl:border tpl:border-[var(--tpl-warning)]"
           >
             <p class="tpl:text-xs tpl:leading-snug tpl:text-[var(--tpl-text)]">
-              {{ t.designReference.replaceWarning }}
+              {{ cloudT.designReference.replaceWarning }}
             </p>
             <div class="tpl:flex tpl:gap-2">
               <button
@@ -384,13 +384,13 @@ watch(
                 style="background-color: transparent"
                 @click="cancelConfirmation"
               >
-                {{ t.designReference.replaceCancel }}
+                {{ cloudT.designReference.replaceCancel }}
               </button>
               <button
                 class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
                 @click="handleGenerate"
               >
-                {{ t.designReference.replaceConfirm }}
+                {{ cloudT.designReference.replaceConfirm }}
               </button>
             </div>
           </div>
@@ -405,7 +405,7 @@ watch(
               :stroke-width="2"
               class="tpl:mt-0.5 tpl:shrink-0"
             />
-            <span>{{ t.designReference.error }}</span>
+            <span>{{ cloudT.designReference.error }}</span>
           </div>
 
           <!-- Generate button -->
@@ -416,14 +416,14 @@ watch(
             @click="handleGenerate"
           >
             <ImageUp :size="16" :stroke-width="2" />
-            {{ t.designReference.generate }}
+            {{ cloudT.designReference.generate }}
           </button>
 
           <!-- AI disclaimer -->
           <p
             class="tpl:m-0 tpl:pt-1 tpl:text-center tpl:text-[11px] tpl:text-[var(--tpl-text-dim)]"
           >
-            {{ t.aiMenu.disclaimer }}
+            {{ cloudT.aiMenu.disclaimer }}
           </p>
         </div>
       </div>

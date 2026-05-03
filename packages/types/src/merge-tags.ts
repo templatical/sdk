@@ -23,6 +23,27 @@ export const SYNTAX_PRESETS: Record<SyntaxPresetName, SyntaxPreset> = {
   ampscript: { value: /%%=.+?=%%/g, logic: /%%\[\s*(\w+).*?\]%%/g },
 };
 
+const SYNTAX_TRIGGER_CHARS: Record<SyntaxPresetName, string> = {
+  liquid: "{{",
+  handlebars: "{{",
+  mailchimp: "*|",
+  ampscript: "%%=",
+};
+
+/**
+ * Resolves the autocomplete trigger string for a syntax preset.
+ * Returns null when the syntax doesn't match any built-in preset
+ * (custom regex syntax — autocomplete cannot be enabled safely).
+ */
+export function getSyntaxTriggerChar(syntax: SyntaxPreset): string | null {
+  for (const name of Object.keys(SYNTAX_PRESETS) as SyntaxPresetName[]) {
+    if (SYNTAX_PRESETS[name].value.source === syntax.value.source) {
+      return SYNTAX_TRIGGER_CHARS[name];
+    }
+  }
+  return null;
+}
+
 export function resolveSyntax(
   syntax?: SyntaxPresetName | SyntaxPreset,
 ): SyntaxPreset {
@@ -31,7 +52,7 @@ export function resolveSyntax(
   }
 
   if (typeof syntax === "string") {
-    return SYNTAX_PRESETS[syntax];
+    return SYNTAX_PRESETS[syntax] ?? SYNTAX_PRESETS.liquid;
   }
 
   return syntax;
@@ -50,7 +71,15 @@ function anchoredRegex(pattern: RegExp): RegExp {
 }
 
 export function isMergeTagValue(value: string, syntax: SyntaxPreset): boolean {
-  return anchoredRegex(syntax.value).test(value?.trim() || "");
+  const trimmed = value?.trim() || "";
+  // Handlebars (and similar) value regex is liberal enough to also match
+  // logic tags like `{{#each items}}`. Exclude logic-shaped tags so callers
+  // that rely on this discriminator (UI segmentation, label rendering)
+  // don't misclassify them.
+  if (anchoredRegex(syntax.logic).test(trimmed)) {
+    return false;
+  }
+  return anchoredRegex(syntax.value).test(trimmed);
 }
 
 export function getMergeTagLabel(value: string, mergeTags: MergeTag[]): string {

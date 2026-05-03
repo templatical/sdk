@@ -1,7 +1,7 @@
 {
   "name": "@templatical/editor",
   "description": "Vue 3 visual drag-and-drop email editor powered by Templatical",
-  "version": "0.1.2",
+  "version": "0.3.1",
   "bugs": "https://github.com/templatical/sdk/issues",
   "devDependencies": {
     "@lucide/vue": "^1.11.0",
@@ -18,6 +18,7 @@
     "@tiptap/extension-text-style": "^3.22.4",
     "@tiptap/extension-underline": "^3.22.4",
     "@tiptap/starter-kit": "^3.22.4",
+    "@tiptap/suggestion": "^3.22.4",
     "@tiptap/vue-3": "^3.22.4",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/test-utils": "^2.4.8",

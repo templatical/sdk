@@ -1,4 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+import { ref } from "@vue/reactivity";
+import {
+  createDefaultTemplateContent,
+  createParagraphBlock,
+  createSectionBlock,
+} from "@templatical/types";
+import { useEditor } from "../src/editor";
+import { useHistory } from "../src/history";
 import { useHistoryInterceptor } from "../src/history-interceptor";
 import type { UseEditorReturn } from "../src/editor";
 import type { UseHistoryReturn } from "../src/history";
@@ -10,6 +18,7 @@ function createMockEditor(): UseEditorReturn {
     moveBlock: vi.fn(),
     updateBlock: vi.fn(),
     updateSettings: vi.fn(),
+    isBlockLocked: vi.fn(() => false),
   } as unknown as UseEditorReturn;
 }
 
@@ -102,6 +111,87 @@ describe("useHistoryInterceptor", () => {
 
     expect(history.record).toHaveBeenCalledOnce();
     expect(originalUpdateSettings).toHaveBeenCalledWith(updates);
+  });
+
+  describe("does not pollute history when the underlying op is a no-op", () => {
+    it("skips recording when updateBlock targets a locked block", () => {
+      const content = createDefaultTemplateContent();
+      content.blocks = [createParagraphBlock({ content: "<p>locked</p>" })];
+      const lockedId = content.blocks[0].id;
+      const lockedBlocks = ref(new Map([[lockedId, { id: "peer" }]]));
+      const editor = useEditor({ content, lockedBlocks });
+      const history = useHistory({
+        content: editor.content,
+        setContent: editor.setContent,
+      });
+      const recordSpy = vi.spyOn(history, "recordDebounced");
+      useHistoryInterceptor(editor, history);
+
+      editor.updateBlock(lockedId, { content: "<p>changed</p>" } as any);
+
+      expect(recordSpy).not.toHaveBeenCalled();
+      expect(history.canUndo.value).toBe(false);
+    });
+
+    it("skips recording when removeBlock targets a locked block", () => {
+      const content = createDefaultTemplateContent();
+      content.blocks = [createParagraphBlock()];
+      const lockedId = content.blocks[0].id;
+      const lockedBlocks = ref(new Map([[lockedId, { id: "peer" }]]));
+      const editor = useEditor({ content, lockedBlocks });
+      const history = useHistory({
+        content: editor.content,
+        setContent: editor.setContent,
+      });
+      const recordSpy = vi.spyOn(history, "record");
+      useHistoryInterceptor(editor, history);
+
+      editor.removeBlock(lockedId);
+
+      expect(recordSpy).not.toHaveBeenCalled();
+      expect(history.canUndo.value).toBe(false);
+    });
+
+    it("skips recording when moveBlock targets a locked block", () => {
+      const content = createDefaultTemplateContent();
+      content.blocks = [
+        createParagraphBlock({ content: "<p>locked</p>" }),
+        createParagraphBlock({ content: "<p>other</p>" }),
+      ];
+      const lockedId = content.blocks[0].id;
+      const lockedBlocks = ref(new Map([[lockedId, { id: "peer" }]]));
+      const editor = useEditor({ content, lockedBlocks });
+      const history = useHistory({
+        content: editor.content,
+        setContent: editor.setContent,
+      });
+      const recordSpy = vi.spyOn(history, "record");
+      useHistoryInterceptor(editor, history);
+
+      editor.moveBlock(lockedId, 1);
+
+      expect(recordSpy).not.toHaveBeenCalled();
+      expect(history.canUndo.value).toBe(false);
+    });
+
+    it("skips recording when addBlock targets a locked section", () => {
+      const content = createDefaultTemplateContent();
+      const lockedSection = createSectionBlock({ columns: "1" });
+      content.blocks = [lockedSection];
+      const lockedBlocks = ref(new Map([[lockedSection.id, { id: "peer" }]]));
+      const editor = useEditor({ content, lockedBlocks });
+      const history = useHistory({
+        content: editor.content,
+        setContent: editor.setContent,
+      });
+      const recordSpy = vi.spyOn(history, "record");
+      useHistoryInterceptor(editor, history);
+
+      editor.addBlock(createParagraphBlock(), lockedSection.id, 0);
+
+      expect(recordSpy).not.toHaveBeenCalled();
+      expect(history.canUndo.value).toBe(false);
+    });
   });
 
   it("passes all arguments through to original methods", () => {

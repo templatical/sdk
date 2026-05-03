@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import TplModal from "./TplModal.vue";
 import { useI18n } from "../../composables";
+import { useCloudI18nStrict } from "../../composables";
 import {
   EDITOR_KEY,
   SAVED_MODULES_HEADLESS_KEY,
@@ -21,6 +22,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { t: cloudT } = useCloudI18nStrict();
 const editor = requireInject(EDITOR_KEY, "SaveModuleDialog");
 const savedModules = requireInject(
   SAVED_MODULES_HEADLESS_KEY,
@@ -124,7 +126,7 @@ function handleKeydown(event: KeyboardEvent): void {
         id="tpl-save-module-title"
         class="tpl:mb-4 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
       >
-        {{ t.modules.saveAsModule }}
+        {{ cloudT.modules.saveAsModule }}
       </h3>
 
       <!-- Module name -->
@@ -132,12 +134,12 @@ function handleKeydown(event: KeyboardEvent): void {
         <label
           class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
         >
-          {{ t.modules.moduleName }}
+          {{ cloudT.modules.moduleName }}
         </label>
         <input
           v-model="moduleName"
           type="text"
-          :placeholder="t.modules.moduleNamePlaceholder"
+          :placeholder="cloudT.modules.moduleNamePlaceholder"
           class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
           :disabled="isSaving"
         />
@@ -148,7 +150,7 @@ function handleKeydown(event: KeyboardEvent): void {
         <label
           class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
         >
-          {{ t.modules.selectBlocks }}
+          {{ cloudT.modules.selectBlocks }}
         </label>
         <div
           class="tpl:max-h-40 tpl:space-y-1 tpl:overflow-y-auto tpl:rounded-md tpl:border tpl:p-2 tpl:border-[var(--tpl-border)]"
@@ -196,7 +198,7 @@ function handleKeydown(event: KeyboardEvent): void {
           }"
           @click="handleClose"
         >
-          {{ t.modules.cancel }}
+          {{ cloudT.modules.cancel }}
         </button>
         <button
           type="button"
@@ -210,10 +212,10 @@ function handleKeydown(event: KeyboardEvent): void {
               :size="12"
               :stroke-width="2"
             />
-            {{ t.modules.saving }}
+            {{ cloudT.modules.saving }}
           </span>
           <span v-else>
-            {{ t.modules.save }}
+            {{ cloudT.modules.save }}
           </span>
         </button>
       </div>

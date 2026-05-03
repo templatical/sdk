@@ -6,6 +6,7 @@ import type {
 import type { RenderContext } from "../render-context";
 import { escapeAttr, convertMergeTagsToValues } from "../escape";
 import { toPaddingString } from "../padding";
+import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -22,9 +23,7 @@ export function renderTable(block: TableBlock, context: RenderContext): string {
   }
 
   const padding = toPaddingString(block.styles.padding);
-  const bgColor = block.styles.backgroundColor
-    ? ` background-color="${block.styles.backgroundColor}"`
-    : "";
+  const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const visibilityAttr = getCssClassAttr(block);
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const fontSize = block.fontSize;

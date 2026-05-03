@@ -62,7 +62,7 @@ export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
     cancel();
     timeoutId = setTimeout(() => {
       timeoutId = null;
-      if (isDirty()) {
+      if (isEnabled() && !paused && isDirty()) {
         onChange(JSON.parse(JSON.stringify(content.value)));
       }
     }, debounce);

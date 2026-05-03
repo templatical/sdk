@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
+import { useCloudI18n } from "../composables/useCloudI18n";
 import type { Block, BlockType } from "@templatical/types";
 import { createBlock, createCustomBlock } from "@templatical/types";
 import { Package } from "@lucide/vue";
@@ -23,6 +24,7 @@ interface BlockTypeItem {
 }
 
 const { t, format } = useI18n();
+const { t: cloudT } = useCloudI18n();
 const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 const blockDefaults = inject(BLOCK_DEFAULTS_KEY, undefined);
 const editor = inject(EDITOR_KEY, null);
@@ -129,7 +131,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
   >
     <!-- Saved Modules browser trigger (cloud only) -->
     <div
-      v-if="showModulesSection"
+      v-if="showModulesSection && cloudT"
       class="tpl:border-b tpl:px-1 tpl:pb-1 tpl:border-[var(--tpl-border)]"
     >
       <button
@@ -146,7 +148,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
           v-if="isExpanded"
           class="tpl:flex-1 tpl:truncate tpl:text-sm tpl:font-medium"
         >
-          {{ t.modules.title }}
+          {{ cloudT.modules.title }}
         </span>
         <span
           v-if="isExpanded"

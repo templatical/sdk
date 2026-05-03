@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Clock } from "@lucide/vue";
-import { useI18n } from "../../composables/useI18n";
+import { useCloudI18nStrict } from "../../composables/useCloudI18n";
 
 defineProps<{
   visible: boolean;
@@ -11,7 +11,7 @@ const emit = defineEmits<{
   (e: "confirm"): void;
 }>();
 
-const { t } = useI18n();
+const { t: cloudT } = useCloudI18nStrict();
 </script>
 
 <template>
@@ -27,7 +27,7 @@ const { t } = useI18n();
         :stroke-width="2"
         class="tpl:text-[var(--tpl-primary)]"
       />
-      <span>{{ t.snapshotPreview.message }}</span>
+      <span>{{ cloudT.snapshotPreview.message }}</span>
     </div>
     <div class="tpl:flex tpl:items-center tpl:gap-2">
       <button
@@ -35,13 +35,13 @@ const { t } = useI18n();
         style="background-color: transparent"
         @click="emit('cancel')"
       >
-        {{ t.snapshotPreview.cancel }}
+        {{ cloudT.snapshotPreview.cancel }}
       </button>
       <button
         class="tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
         @click="emit('confirm')"
       >
-        {{ t.snapshotPreview.restore }}
+        {{ cloudT.snapshotPreview.restore }}
       </button>
     </div>
   </div>

@@ -43,12 +43,18 @@ const {
   blockContent: () => props.block.content,
   onDone: () => emit("done"),
   editorName: "TitleEditor",
-  async loadExtensions({ mergeTags, syntax }) {
+  async loadExtensions({
+    mergeTags,
+    syntax,
+    triggerChar,
+    autocompleteEnabled,
+    suggestionEmptyText,
+  }) {
     const [
       { Editor: TiptapEditor, EditorContent: EC },
       { default: StarterKit },
       { default: LinkExt },
-      { MergeTagNode, LogicMergeTagNode },
+      { MergeTagNode, MergeTagSuggestion, LogicMergeTagNode },
     ] = await Promise.all([
       import("@tiptap/vue-3"),
       import("@tiptap/starter-kit"),
@@ -79,6 +85,15 @@ const {
         }),
         MergeTagNode.configure({ mergeTags, syntax }),
         LogicMergeTagNode.configure({ syntax }),
+        ...(autocompleteEnabled && triggerChar && mergeTags.length > 0
+          ? [
+              MergeTagSuggestion.configure({
+                mergeTags,
+                char: triggerChar,
+                emptyText: suggestionEmptyText,
+              }),
+            ]
+          : []),
       ],
     };
   },

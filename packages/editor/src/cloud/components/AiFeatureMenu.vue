@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useI18n } from "../../composables";
+import { useCloudI18nStrict } from "../../composables";
 import { AI_CONFIG_KEY, requireInject } from "../../keys";
 import type { AiConfig } from "@templatical/types";
 import { ImageUp, ShieldCheck, Sparkles } from "@lucide/vue";
@@ -15,7 +15,7 @@ const emit = defineEmits<{
   (e: "select", feature: AiFeature): void;
 }>();
 
-const { t } = useI18n();
+const { t: cloudT } = useCloudI18nStrict();
 
 const aiConfig = requireInject(AI_CONFIG_KEY, "AiFeatureMenu");
 
@@ -36,15 +36,15 @@ const features = computed(() =>
 );
 
 function getTitle(key: AiFeature): string {
-  if (key === "ai-chat") return t.aiMenu.aiAssistant;
-  if (key === "design-reference") return t.aiMenu.designToTemplate;
-  return t.aiMenu.templateScore;
+  if (key === "ai-chat") return cloudT.aiMenu.aiAssistant;
+  if (key === "design-reference") return cloudT.aiMenu.designToTemplate;
+  return cloudT.aiMenu.templateScore;
 }
 
 function getDescription(key: AiFeature): string {
-  if (key === "ai-chat") return t.aiMenu.aiAssistantDesc;
-  if (key === "design-reference") return t.aiMenu.designToTemplateDesc;
-  return t.aiMenu.templateScoreDesc;
+  if (key === "ai-chat") return cloudT.aiMenu.aiAssistantDesc;
+  if (key === "design-reference") return cloudT.aiMenu.designToTemplateDesc;
+  return cloudT.aiMenu.templateScoreDesc;
 }
 </script>
 

@@ -127,6 +127,16 @@ describe("handleEditorKeydown", () => {
 
       expect(handlers.onSave).not.toHaveBeenCalled();
     });
+
+    it("calls onSave when caps lock is on (e.key is 'S')", () => {
+      const handlers = createMockHandlers();
+      const e = createKeyEvent("S", { metaKey: true });
+
+      handleEditorKeydown(e, handlers);
+
+      expect(handlers.onSave).toHaveBeenCalledOnce();
+      expect(e.defaultPrevented).toBe(true);
+    });
   });
 
   describe("Cmd/Ctrl+Z: undo", () => {

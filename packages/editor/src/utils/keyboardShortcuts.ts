@@ -40,7 +40,7 @@ export function handleEditorKeydown(
   const isCmd = e.metaKey || e.ctrlKey;
 
   // Cmd/Ctrl+S: save
-  if (isCmd && e.key === "s") {
+  if (isCmd && e.key.toLowerCase() === "s") {
     e.preventDefault();
     handlers.onSave?.();
     return;

@@ -21,27 +21,49 @@ Have a feature request or hit a rough edge? [Open a discussion](https://github.c
 
 ::: code-group
 ```bash [npm]
-npm install @templatical/editor @templatical/renderer
+npm install @templatical/editor
 ```
 ```bash [pnpm]
-pnpm add @templatical/editor @templatical/renderer
+pnpm add @templatical/editor
 ```
 ```bash [yarn]
-yarn add @templatical/editor @templatical/renderer
+yarn add @templatical/editor
 ```
 ```bash [bun]
-bun add @templatical/editor @templatical/renderer
+bun add @templatical/editor
 ```
 :::
 
-`@templatical/editor` is the visual editor. `@templatical/renderer` converts templates to MJML for email sending.
+`@templatical/editor` is the visual editor. To convert templates to MJML, also install `@templatical/renderer`:
+
+::: code-group
+```bash [npm]
+npm install @templatical/renderer
+```
+```bash [pnpm]
+pnpm add @templatical/renderer
+```
+```bash [yarn]
+yarn add @templatical/renderer
+```
+```bash [bun]
+bun add @templatical/renderer
+```
+:::
+
+The renderer is **optional**. Install it where you need MJML output:
+
+- **Browser, with the editor** — when calling `editor.toMjml()` to export from the user's session.
+- **Node.js / server** — when you only have stored template JSON and want to convert it to MJML server-side. You don't need the editor for this; install just the renderer.
+
+If you call `editor.toMjml()` without the renderer installed, it throws a clear error naming the missing package.
 
 ## Package overview
 
 | Package | Description | When to install |
 |---|---|---|
 | `@templatical/editor` | Visual drag-and-drop editor and `init()` entry point. Self-contained — Vue, TipTap, and `@templatical/core`/`/types` are bundled inside. | Required |
-| `@templatical/renderer` | Converts templates to MJML for email sending. | Recommended |
+| `@templatical/renderer` | Converts templates to MJML for email sending. | Optional — install where you call `editor.toMjml()` (browser) or `renderToMjml()` (Node.js, server) |
 | `@templatical/types` | Shared TypeScript types, block factory functions, type guards. | Only if you build templates programmatically without the editor (e.g. server-side workflows) |
 | `@templatical/core` | Framework-agnostic editor logic (state, history) for headless setups. | Only for headless / non-editor consumers |
 | `@templatical/import-beefree` | Converts BeeFree JSON templates to Templatical format. | Optional |

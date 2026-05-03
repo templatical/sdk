@@ -1,12 +1,13 @@
 {
   "name": "@templatical/renderer",
   "description": "Render Templatical email templates to MJML",
-  "version": "0.1.2",
+  "version": "0.3.1",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*"
   },
   "devDependencies": {
+    "mjml": "^5.1.0",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.5"
