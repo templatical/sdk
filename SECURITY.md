@@ -44,7 +44,7 @@ We'll keep you in the loop while we investigate and remediate. If you'd like pub
 
 In scope:
 
-- Code in this repository (`@templatical/editor`, `@templatical/core`, `@templatical/media-library`, `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree`)
+- Code in this repository (`@templatical/editor`, `@templatical/core`, `@templatical/media-library`, `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree`, `@templatical/import-unlayer`)
 - Published npm packages built from this repository
 - The CDN bundles served from `unpkg.com` / `jsdelivr.net` for our packages
 

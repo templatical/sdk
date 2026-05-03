@@ -9,7 +9,8 @@
       "@templatical/renderer",
       "@templatical/editor",
       "@templatical/media-library",
-      "@templatical/import-beefree"
+      "@templatical/import-beefree",
+      "@templatical/import-unlayer"
     ]
   ],
   "linked": [],

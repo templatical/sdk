@@ -6,8 +6,9 @@ export default {
     subtitle: "W\u00e4hlen Sie einen Startpunkt f\u00fcr Ihre E-Mail-Vorlage",
     startFromScratch: "Neu beginnen",
     emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
-    beefreePrompt: "Haben Sie eine bestehende BeeFree-Vorlage?",
-    importBeefree: "Aus BeeFree importieren",
+    importPrompt: "Haben Sie eine bestehende Vorlage?",
+    importTemplate: "Bestehende Vorlage importieren",
+    importSources: "Unterstützt BeeFree- und Unlayer-JSON-Exporte.",
   },
   cloudBanner: {
     title: "Das volle Erlebnis mit Cloud freischalten",
@@ -67,16 +68,28 @@ export default {
     cancel: "Abbrechen",
     apply: "\u00dcbernehmen & Neu laden",
   },
-  beefreeModal: {
-    title: "BeeFree-Vorlage importieren",
-    description:
-      "F\u00fcgen Sie den JSON-Export aus Ihrem BeeFree-Editor unten ein.",
+  importModal: {
+    title: "Bestehende Vorlage importieren",
+    sources: {
+      beefree: "Aus BeeFree",
+      unlayer: "Aus Unlayer",
+    },
     chooseFile: ".json-Datei w\u00e4hlen",
     orPaste: "oder JSON einf\u00fcgen",
     import: "Importieren & \u00d6ffnen",
     cancel: "Abbrechen",
-    emptyError:
-      "F\u00fcgen Sie Ihr BeeFree-JSON ein oder laden Sie eine Datei hoch.",
+    beefree: {
+      description:
+        "F\u00fcgen Sie den JSON-Export aus Ihrem BeeFree-Editor unten ein.",
+      emptyError:
+        "F\u00fcgen Sie Ihr BeeFree-JSON ein oder laden Sie eine Datei hoch.",
+    },
+    unlayer: {
+      description:
+        "F\u00fcgen Sie den JSON-Design-Export aus Unlayer (Ergebnis von saveDesign) unten ein.",
+      emptyError:
+        "F\u00fcgen Sie Ihr Unlayer-JSON ein oder laden Sie eine Datei hoch.",
+    },
   },
   mergeTagModal: {
     title: "Merge-Tag einf\u00fcgen",
@@ -221,6 +234,7 @@ export default {
     templateUuid: "Vorlagen-UUID",
     editorConfig: "Editor-Konfiguration",
     beefreeJsonContent: "BeeFree-JSON-Inhalt",
+    unlayerJsonContent: "Unlayer-JSON-Inhalt",
     selectLanguage: "Sprache auswählen",
     selectTheme: "Farbschema auswählen",
   },

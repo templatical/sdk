@@ -156,6 +156,7 @@ Alle Routen sind auf ein Projekt und einen Mandanten bezogen:
 | `broadcasting/auth` | POST | WebSocket-Verbindung authentifizieren |
 | `templates` | POST | Template erstellen |
 | `templates/import/from-beefree` | POST | BeeFree-Template importieren |
+| `templates/import/from-unlayer` | POST | Unlayer-Template importieren |
 | `templates/{id}` | GET | Template abrufen |
 | `templates/{id}` | PUT | Template aktualisieren |
 | `templates/{id}` | DELETE | Template löschen |

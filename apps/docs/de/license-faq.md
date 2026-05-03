@@ -12,7 +12,7 @@ Diese Seite beantwortet die Fragen, die Teams bei der Bewertung von Templaticals
 - **Du kannst Templatical kostenlos in jedem kommerziellen Produkt einsetzen**, einschließlich kostenpflichtigem SaaS, internen Tools und On-Premise-Installationen.
 - **Das Einzige, was du nicht darfst**, ist Templatical selbst als konkurrierendes E-Mail-Editor-SaaS zu vermarkten.
 - **Nach zwei Jahren** wird jede unter FSL veröffentlichte Version automatisch zu MIT. Keine Aktion erforderlich.
-- **Drei der sechs Pakete sind heute schon reines MIT** — types, renderer und der BeeFree-Importer.
+- **Vier der sieben Pakete sind heute schon reines MIT** — types, renderer und die BeeFree- und Unlayer-Importer.
 
 ## Was ist FSL-1.1-MIT?
 
@@ -33,6 +33,7 @@ FSL-1.1-**MIT** ist die Variante, die nach zwei Jahren automatisch zur MIT-Lizen
 | `@templatical/types` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/renderer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-beefree` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-unlayer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
 Die Aufteilung sorgt dafür, dass alles, was du in dein eigenes Backend oder eine Codegen-Pipeline einbinden würdest (Types, Renderer, Importer), unter permissiver MIT-Lizenz steht und keine Future-License-Überlegungen nötig sind.
 
@@ -96,7 +97,7 @@ Denselben Ansatz nutzen [Sentry](https://sentry.io), [PowerSync](https://www.pow
 
 **Ja, bitte.** Open-Source-Beiträge sind willkommen — Bugfixes, Features, Doku-Verbesserungen, zusätzliche Locales und Beispiele für eigene Blöcke werden geschätzt.
 
-Mit deinem Beitrag stimmst du zu, dass dein Beitrag unter derselben Lizenz steht wie das Paket, zu dem du beiträgst (MIT für `types`, `renderer`, `import-beefree`; FSL-1.1-MIT für `editor`, `core`, `media-library`).
+Mit deinem Beitrag stimmst du zu, dass dein Beitrag unter derselben Lizenz steht wie das Paket, zu dem du beiträgst (MIT für `types`, `renderer`, `import-beefree`, `import-unlayer`; FSL-1.1-MIT für `editor`, `core`, `media-library`).
 
 Es gibt derzeit **kein separates Contributor License Agreement (CLA)** zu unterschreiben — dein PR allein reicht.
 
