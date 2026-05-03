@@ -149,7 +149,13 @@ export function useKeyboardReorder(
     const id = liftedBlockId.value;
     if (id && originalLocation) {
       const current = findBlockLocation(id);
-      if (current && current.index !== originalLocation.index) {
+      const movedAcrossContainers =
+        !!current &&
+        (current.sectionId !== originalLocation.sectionId ||
+          current.columnIndex !== originalLocation.columnIndex);
+      const movedWithinContainer =
+        !!current && current.index !== originalLocation.index;
+      if (current && (movedAcrossContainers || movedWithinContainer)) {
         editor.moveBlock(
           id,
           originalLocation.index,

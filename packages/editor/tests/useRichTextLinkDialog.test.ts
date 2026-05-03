@@ -101,6 +101,45 @@ describe("useRichTextLinkDialog", () => {
       });
     });
 
+    it("preserves mailto: URLs without prefixing https://", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "mailto:foo@bar.com";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.setLink).toHaveBeenCalledWith({
+        href: "mailto:foo@bar.com",
+      });
+    });
+
+    it("preserves tel: URLs without prefixing https://", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "tel:+1234567890";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.setLink).toHaveBeenCalledWith({
+        href: "tel:+1234567890",
+      });
+    });
+
+    it("preserves anchor links without prefixing https://", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "#section-2";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.setLink).toHaveBeenCalledWith({
+        href: "#section-2",
+      });
+    });
+
     it("does not call editor chain when URL is empty", () => {
       const editor = createMockEditor();
       const result = useRichTextLinkDialog(editor);

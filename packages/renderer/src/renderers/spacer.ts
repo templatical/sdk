@@ -1,10 +1,15 @@
 import type { SpacerBlock } from "@templatical/types";
 import type { RenderContext } from "../render-context";
-import { toPaddingString } from "../padding";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
  * Render a spacer block to MJML markup.
+ *
+ * The canvas renders a spacer at exactly `block.height` pixels and ignores
+ * `block.styles.padding`. Match that here: emit `padding="0"` so the
+ * exported email's spacer occupies the same vertical space the user saw
+ * in the editor preview. Any non-zero `block.styles.padding` on a spacer
+ * is meaningless and silently dropped from the export.
  */
 export function renderSpacer(
   block: SpacerBlock,
@@ -15,11 +20,10 @@ export function renderSpacer(
   }
 
   const height = block.height;
-  const padding = toPaddingString(block.styles.padding);
   const bgColor = block.styles.backgroundColor
     ? ` container-background-color="${block.styles.backgroundColor}"`
     : "";
   const visibilityAttr = getCssClassAttr(block);
 
-  return `<mj-spacer height="${height}px" padding="${padding}"${bgColor}${visibilityAttr} />`;
+  return `<mj-spacer height="${height}px" padding="0"${bgColor}${visibilityAttr} />`;
 }

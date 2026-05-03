@@ -33,7 +33,13 @@ export function useCloudMediaLibrary(
       return { url: item.url, alt: item.alt_text || undefined };
     }
 
-    // Otherwise open the built-in media library
+    // Otherwise open the built-in media library. If a previous request
+    // is still pending (e.g. consumer fired two requests back-to-back),
+    // settle it with null so its caller doesn't hang forever.
+    if (mediaResolve) {
+      mediaResolve(null);
+      mediaResolve = null;
+    }
     mediaLibraryAccept.value = ["images"];
     mediaLibraryOpen.value = true;
     return new Promise<MediaResult | null>((resolve) => {

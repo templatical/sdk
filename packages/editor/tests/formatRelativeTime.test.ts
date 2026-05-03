@@ -97,5 +97,15 @@ describe("formatRelativeTime", () => {
     const result = formatRelativeTime("2026-04-04T11:50:00Z", labels);
     expect(result).toBe("10 minutes ago");
   });
+
+  it("returns justNow for slightly future dates (clock skew tolerance)", () => {
+    const result = formatRelativeTime("2026-04-04T12:00:30Z", labels);
+    expect(result).toBe("Just now");
+  });
+
+  it("returns null for invalid date strings instead of NaN-laced output", () => {
+    const result = formatRelativeTime("not-a-date", labels);
+    expect(result).toBeNull();
+  });
 });
 

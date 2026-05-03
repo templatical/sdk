@@ -219,6 +219,33 @@ describe("useCloudMediaLibrary", () => {
     scope.stop();
   });
 
+  it("settles a pending built-in promise when handleRequestMedia is called twice", async () => {
+    const mediaLibraryOpen = ref(false);
+    const mediaLibraryAccept = ref<string[] | undefined>(undefined);
+
+    const { handleRequestMedia, handleMediaSelect } = useCloudMediaLibrary({
+      mediaLibraryOpen,
+      mediaLibraryAccept,
+    } as any);
+
+    const first = handleRequestMedia();
+    const second = handleRequestMedia();
+
+    handleMediaSelect(createMediaItem() as any);
+
+    const firstResult = await Promise.race([
+      first,
+      new Promise((resolve) => setTimeout(() => resolve("hung"), 50)),
+    ]);
+    expect(firstResult).not.toBe("hung");
+
+    const secondResult = await Promise.race([
+      second,
+      new Promise((resolve) => setTimeout(() => resolve("hung"), 50)),
+    ]);
+    expect(secondResult).not.toBe("hung");
+  });
+
   it("custom handler item with alt_text maps to alt field", async () => {
     const item = createMediaItem({
       url: "https://cdn.test/pic.webp",

@@ -20,18 +20,22 @@ export function renderButton(
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const buttonPadding = toPaddingString(block.buttonPadding);
 
-  const href = escapeAttr(block.url);
-  const backgroundColor = block.backgroundColor;
-  const textColor = block.textColor;
+  // Omit href entirely when no URL is set so we don't emit a clickable
+  // `<a href="">` that navigates to whatever URL the email is opened from.
+  const href = block.url === "" ? "" : escapeAttr(block.url);
+  const hrefAttr = href === "" ? "" : ` href="${href}"`;
+  const backgroundColor = escapeAttr(block.backgroundColor);
+  const textColor = escapeAttr(block.textColor);
   const fontSize = block.fontSize;
   const borderRadius = block.borderRadius;
   const text = escapeHtml(block.text);
-  const targetAttr = block.openInNewTab ? ' target="_blank"' : "";
+  const targetAttr = block.openInNewTab
+    ? ' target="_blank" rel="noopener"'
+    : "";
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const visibilityAttr = getCssClassAttr(block);
 
-  return `<mj-button
-  href="${href}"${targetAttr}
+  return `<mj-button${hrefAttr}${targetAttr}
   background-color="${backgroundColor}"
   color="${textColor}"
   font-size="${fontSize}px"

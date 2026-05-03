@@ -121,7 +121,10 @@ describe('renderToMjml', () => {
     expect(mjml).toContain('<mj-body');
     expect(mjml).toContain('</mj-body>');
     expect(mjml).toContain('</mjml>');
-    expect(mjml).not.toContain('<mj-text');
+    // <mj-attributes> may contain `<mj-text font-size="..." />` defaults
+    // — assert only on the body.
+    const body = mjml.replace(/<mj-attributes>[\s\S]*?<\/mj-attributes>/, '');
+    expect(body).not.toContain('<mj-text');
   });
 
   it('does not add preview tag for empty preheader text', async () => {

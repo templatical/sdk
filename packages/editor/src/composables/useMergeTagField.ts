@@ -126,8 +126,12 @@ export function useMergeTagField(
         : modelValue().length;
 
     insertingMergeTag = true;
-    const mergeTag = await requestMergeTag();
-    insertingMergeTag = false;
+    let mergeTag: Awaited<ReturnType<typeof requestMergeTag>>;
+    try {
+      mergeTag = await requestMergeTag();
+    } finally {
+      insertingMergeTag = false;
+    }
 
     if (mergeTag) {
       const before = modelValue().slice(0, cursorPos);

@@ -13,6 +13,12 @@ export function renderImage(block: ImageBlock, context: RenderContext): string {
     return "";
   }
 
+  if (block.src === "") {
+    // Skip rather than emit `<mj-image src="">` which compiles to a
+    // broken-image icon. Mirrors video.ts behavior when no source is set.
+    return "";
+  }
+
   const padding = toPaddingString(block.styles.padding);
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const width =
@@ -24,7 +30,7 @@ export function renderImage(block: ImageBlock, context: RenderContext): string {
   if (block.linkUrl) {
     linkAttr = ` href="${escapeAttr(block.linkUrl)}"`;
     if (block.linkOpenInNewTab) {
-      linkAttr += ' target="_blank"';
+      linkAttr += ' target="_blank" rel="noopener"';
     }
   }
 

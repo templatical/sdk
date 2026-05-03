@@ -87,19 +87,33 @@ const showFeatureOverlay = ref(false);
 const currentFeatures = ref<TemplateFeature[]>([]);
 const currentTemplateName = ref("");
 
-const dismissedTemplates = useLocalStorage<string[]>(
+// Stored as either a string[] of dismissed template names, or the literal
+// boolean `true` meaning "all dismissed" (legacy flag-shaped value still
+// used by some e2e tests to bypass the overlay). Normalize on every read.
+const dismissedTemplatesRaw = useLocalStorage<string[] | true>(
   "tpl-playground-features-dismissed",
   [],
 );
+
+function isTemplateDismissed(name: string): boolean {
+  const v = dismissedTemplatesRaw.value;
+  if (v === true) return true;
+  return Array.isArray(v) && v.includes(name);
+}
+
+function asDismissedList(): string[] {
+  const v = dismissedTemplatesRaw.value;
+  return Array.isArray(v) ? v : [];
+}
 
 function dismissFeatureOverlay(): void {
   showFeatureOverlay.value = false;
   if (
     currentTemplateName.value &&
-    !dismissedTemplates.value.includes(currentTemplateName.value)
+    !isTemplateDismissed(currentTemplateName.value)
   ) {
-    dismissedTemplates.value = [
-      ...dismissedTemplates.value,
+    dismissedTemplatesRaw.value = [
+      ...asDismissedList(),
       currentTemplateName.value,
     ];
   }
@@ -115,7 +129,7 @@ function dismissFeatureOverlay(): void {
 
 function reopenFeatureOverlay(): void {
   if (currentTemplateName.value) {
-    dismissedTemplates.value = dismissedTemplates.value.filter(
+    dismissedTemplatesRaw.value = asDismissedList().filter(
       (n) => n !== currentTemplateName.value,
     );
   }
@@ -412,7 +426,7 @@ function chooseTemplate(
   if (template?.features?.length) {
     currentFeatures.value = template.features;
     currentTemplateName.value = template.name;
-    if (!dismissedTemplates.value.includes(template.name)) {
+    if (!isTemplateDismissed(template.name)) {
       showFeatureOverlay.value = true;
     }
   } else {
