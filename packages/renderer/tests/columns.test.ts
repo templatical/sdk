@@ -10,8 +10,8 @@ describe('getWidthPercentages', () => {
     expect(getWidthPercentages('2')).toEqual(['50%', '50%']);
   });
 
-  it('returns 33.33% for three columns', () => {
-    expect(getWidthPercentages('3')).toEqual(['33.33%', '33.33%', '33.33%']);
+  it('returns three column widths summing to 100%', () => {
+    expect(getWidthPercentages('3')).toEqual(['33.33%', '33.33%', '33.34%']);
   });
 
   it('returns 33.33/66.67 for 1-2 layout', () => {

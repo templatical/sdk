@@ -76,6 +76,7 @@ export function renderVideo(block: VideoBlock, context: RenderContext): string {
   align="${align}"
   padding="${padding}"
   href="${href}"
-  target="_blank"${bgColor}${visibilityAttr}
+  target="_blank"
+  rel="noopener"${bgColor}${visibilityAttr}
 />`;
 }

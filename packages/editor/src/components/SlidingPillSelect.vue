@@ -17,10 +17,13 @@ const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
 }>();
 
-const pillOffset = computed(() => {
-  const index = props.options.findIndex((o) => o.value === props.modelValue);
-  return `translateX(${Math.max(index, 0) * 100}%)`;
-});
+const selectedIndex = computed(() =>
+  props.options.findIndex((o) => o.value === props.modelValue),
+);
+
+const pillOffset = computed(
+  () => `translateX(${Math.max(selectedIndex.value, 0) * 100}%)`,
+);
 </script>
 
 <template>
@@ -32,8 +35,11 @@ const pillOffset = computed(() => {
       backgroundColor: 'var(--tpl-bg-hover)',
     }"
   >
-    <!-- Sliding pill -->
+    <!-- Sliding pill — hidden when modelValue matches no option,
+         otherwise it would silently sit on the first option and create
+         a visual mismatch with aria-checked. -->
     <div
+      v-if="selectedIndex >= 0"
       class="tpl:absolute tpl:inset-y-1 tpl:rounded-[var(--tpl-radius-sm)]"
       :style="{
         left: '4px',

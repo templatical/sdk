@@ -33,6 +33,27 @@ export function escapeAttr(text: string): string {
 }
 
 /**
+ * Escape a string for use as a CSS property value inside an inline
+ * `style="prop: ${value}"` attribute. Beyond HTML entity escaping (so the
+ * value survives the attribute boundary), this strips characters that
+ * could break out of the property value into a sibling property:
+ *
+ *   `;`     — separates CSS declarations
+ *   `{`/`}` — opens/closes a CSS rule (rejected by attribute parsers but
+ *             still safer to remove)
+ *   `\n`/`\r` — would smuggle past line-based CSS sanitizers
+ *
+ * Without this, an attacker-controlled color like
+ * `"red; background: url('//attacker/log')"` lands as a real CSS rule.
+ */
+export function escapeCssValue(text: string): string {
+  if (text === "") {
+    return "";
+  }
+  return escapeAttr(text).replace(/[;{}\r\n]/g, "");
+}
+
+/**
  * Replace merge tag span elements with their data attribute values.
  * Converts `<span data-merge-tag="{{name}}">Label</span>` to `{{name}}`.
  * Also handles `data-logic-merge-tag` attributes.

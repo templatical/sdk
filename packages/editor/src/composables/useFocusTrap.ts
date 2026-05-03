@@ -14,6 +14,7 @@ export function useFocusTrap(
 ): void {
   let previouslyFocused: HTMLElement | null = null;
   let cleanupListener: (() => void) | null = null;
+  let pendingRaf: number | null = null;
 
   function getFocusableElements(): HTMLElement[] {
     if (!containerRef.value) return [];
@@ -45,13 +46,19 @@ export function useFocusTrap(
   }
 
   function activate(): void {
+    // Re-entry guard: if a previous activate didn't deactivate (e.g.
+    // container ref swapped while still active), tear down the prior
+    // listener and rAF before registering new ones — otherwise they leak.
+    if (cleanupListener || pendingRaf !== null) {
+      deactivate({ restoreFocus: false });
+    }
+
     previouslyFocused = document.activeElement as HTMLElement | null;
 
-    // Focus first focusable element after DOM update
-    requestAnimationFrame(() => {
+    pendingRaf = requestAnimationFrame(() => {
+      pendingRaf = null;
       const focusable = getFocusableElements();
       if (focusable.length > 0) {
-        // Prefer autofocus element if present
         const autofocus = containerRef.value?.querySelector<HTMLElement>(
           "[autofocus], input:not([disabled])",
         );
@@ -62,11 +69,20 @@ export function useFocusTrap(
     cleanupListener = useEventListener(containerRef, "keydown", handleKeydown);
   }
 
-  function deactivate(): void {
+  function deactivate(opts: { restoreFocus?: boolean } = {}): void {
+    const restoreFocus = opts.restoreFocus !== false;
+
+    if (pendingRaf !== null) {
+      if (typeof cancelAnimationFrame !== "undefined") {
+        cancelAnimationFrame(pendingRaf);
+      }
+      pendingRaf = null;
+    }
+
     cleanupListener?.();
     cleanupListener = null;
 
-    if (previouslyFocused && previouslyFocused.focus) {
+    if (restoreFocus && previouslyFocused && previouslyFocused.focus) {
       previouslyFocused.focus();
       previouslyFocused = null;
     }

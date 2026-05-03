@@ -1,4 +1,5 @@
 import type { Block, SectionBlock } from "@templatical/types";
+import { isSection } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { getWidthPercentages, getWidthPixels } from "../columns";
 import { toPaddingString } from "../padding";
@@ -39,7 +40,14 @@ export function renderSection(
       columnWidthsPx[index] ?? context.containerWidth,
     );
 
-    const filteredColumn = filterHtmlBlocks(column, context.allowHtmlBlocks);
+    // Sections cannot be nested inside columns per MJML spec — drop any
+    // SectionBlocks that landed inside a column (via tampered JSON or a
+    // future API). Keeping them would emit `<mj-section>` inside
+    // `<mj-column>`, which mjml@5 rejects with a hard error.
+    const filteredColumn = filterHtmlBlocks(
+      column,
+      context.allowHtmlBlocks,
+    ).filter((child) => !isSection(child));
     const columnContext = context.withContainerWidth(columnWidth);
 
     const columnBlocks = filteredColumn

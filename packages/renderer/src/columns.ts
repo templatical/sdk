@@ -8,7 +8,9 @@ export function getWidthPercentages(layout: ColumnLayout): string[] {
     case "2":
       return ["50%", "50%"];
     case "3":
-      return ["33.33%", "33.33%", "33.33%"];
+      // 33.33 × 3 = 99.99% — let the last column absorb the rounding gap
+      // so widths sum to exactly 100% in the compiled HTML.
+      return ["33.33%", "33.33%", "33.34%"];
     case "1-2":
       return ["33.33%", "66.67%"];
     case "2-1":

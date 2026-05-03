@@ -88,6 +88,34 @@ describe('renderTable', () => {
     expect(result).toContain('border: 2px solid #ff0000');
   });
 
+  it('strips CSS property separators from borderColor to prevent injection', () => {
+    const block = createTableBlock({
+      rows: makeRows([['A']]),
+      hasHeaderRow: false,
+      borderColor: "red; background: url('http://attacker.example/log')",
+      borderWidth: 1,
+    });
+    const result = renderBlock(block, ctx);
+    // The injected `;` must not survive — without it the rest of the
+    // attacker payload becomes a malformed CSS value that browsers reject.
+    expect(result).not.toContain('; background');
+    expect(result).not.toContain('red;');
+  });
+
+  it('strips CSS property separators from headerBackgroundColor to prevent injection', () => {
+    const block = createTableBlock({
+      rows: makeRows([
+        ['H'],
+        ['D'],
+      ]),
+      hasHeaderRow: true,
+      headerBackgroundColor: '#eee; visibility: hidden',
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).not.toContain('; visibility');
+    expect(result).not.toContain('#eee;');
+  });
+
   it('applies cell padding from block properties', () => {
     const block = createTableBlock({
       rows: makeRows([['A']]),

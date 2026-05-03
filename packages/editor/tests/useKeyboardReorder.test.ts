@@ -177,6 +177,26 @@ describe("useKeyboardReorder", () => {
       expect(reorder.liftedBlockId.value).toBe(null);
     });
 
+    it("restores block to original container when moved across containers while lifted", () => {
+      const { editor, reorder } = fixture;
+      const section = editor.content.value.blocks[3] as any;
+      const image = section.children[0][0];
+
+      reorder.lift(image.id);
+      // Simulate cross-container move (e.g. via concurrent drag) — image
+      // travels from section column 0 index 0 to top-level index 0. The
+      // index happens to match the original.
+      editor.moveBlock(image.id, 0);
+
+      reorder.cancel();
+
+      const sectionAfter = editor.content.value.blocks.find(
+        (b) => b.id === section.id,
+      ) as any;
+      expect(sectionAfter.children[0][0].id).toBe(image.id);
+      expect(editor.content.value.blocks[0].id).not.toBe(image.id);
+    });
+
     it("announces cancellation with original position", async () => {
       const { reorder, blocks } = fixture;
       reorder.lift(blocks[1].id);

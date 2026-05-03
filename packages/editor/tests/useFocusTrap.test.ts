@@ -347,6 +347,61 @@ describe("useFocusTrap", () => {
     expect(mockCleanup).toHaveBeenCalledTimes(1);
   });
 
+  it("cancels pending rAF when deactivated before frame fires", async () => {
+    const rafCallbacks: Array<() => void> = [];
+    let rafIdSeq = 0;
+    const cancelled: number[] = [];
+    vi.stubGlobal("requestAnimationFrame", (cb: () => void) => {
+      rafCallbacks.push(cb);
+      return ++rafIdSeq;
+    });
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => {
+      cancelled.push(id);
+    });
+
+    const btn = createFocusableElement("button");
+    const container = createMockContainer([btn]);
+    const active = ref(false);
+    const containerRef = ref<HTMLElement | null>(null);
+
+    useFocusTrap(containerRef, active);
+
+    active.value = true;
+    containerRef.value = container;
+    await flushWatcher();
+
+    expect(rafIdSeq).toBe(1);
+    expect(btn.focus).not.toHaveBeenCalled();
+
+    active.value = false;
+    await flushWatcher();
+
+    expect(cancelled).toContain(1);
+  });
+
+  it("cleans up previous listener when container changes while active", async () => {
+    const btn1 = createFocusableElement("button");
+    const btn2 = createFocusableElement("button");
+    const c1 = createMockContainer([btn1]);
+    const c2 = createMockContainer([btn2]);
+    const active = ref(false);
+    const containerRef = ref<HTMLElement | null>(null);
+
+    useFocusTrap(containerRef, active);
+
+    active.value = true;
+    containerRef.value = c1;
+    await flushWatcher();
+    expect(vi.mocked(useEventListener).mock.calls.length).toBe(1);
+    expect(mockCleanup).toHaveBeenCalledTimes(0);
+
+    containerRef.value = c2;
+    await flushWatcher();
+
+    expect(mockCleanup).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(useEventListener).mock.calls.length).toBe(2);
+  });
+
   it("registers onScopeDispose cleanup when used in effectScope", async () => {
     const { effectScope, onScopeDispose } = await import("vue");
     const container = createMockContainer([createFocusableElement("button")]);

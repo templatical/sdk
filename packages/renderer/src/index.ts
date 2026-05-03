@@ -79,6 +79,7 @@ export async function renderToMjml(
   <mj-head>${previewTag}
     <mj-attributes>
       <mj-all font-family="${fontFamily}" />
+      <mj-text font-size="14px" />
       <mj-section padding="0" />
       <mj-column padding="0" />
       <mj-image fluid-on-mobile="true" />

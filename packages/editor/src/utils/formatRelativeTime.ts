@@ -26,7 +26,9 @@ export function formatRelativeTime(
   maxDays?: number,
 ): string | null {
   const date = new Date(dateString);
-  const diff = Date.now() - date.getTime();
+  const time = date.getTime();
+  if (Number.isNaN(time)) return null;
+  const diff = Date.now() - time;
   const minutes = Math.floor(diff / MS_PER_MINUTE);
   const hours = Math.floor(diff / MS_PER_HOUR);
   const days = Math.floor(diff / MS_PER_DAY);

@@ -17,6 +17,14 @@ export function renderParagraph(
     return "";
   }
 
+  // Skip when the user has cleared the paragraph — otherwise we emit a
+  // styled `<td>` cell that adds visible whitespace to the email even
+  // though the canvas shows nothing for an empty paragraph.
+  const stripped = block.content.replace(/<\/?p[^>]*>/gi, "").trim();
+  if (stripped === "") {
+    return "";
+  }
+
   const padding = toPaddingString(block.styles.padding);
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const content = convertMergeTagsToValues(block.content);

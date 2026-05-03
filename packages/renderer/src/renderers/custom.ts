@@ -1,5 +1,6 @@
 import type { CustomBlock } from "@templatical/types";
 import type { RenderContext } from "../render-context";
+import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -29,8 +30,9 @@ export function renderCustom(
   }
 
   const visibilityAttr = getCssClassAttr(block);
+  const bgColor = bgAttr(block.styles?.backgroundColor, "container");
 
-  return `<mj-text${visibilityAttr}>
+  return `<mj-text${bgColor}${visibilityAttr}>
 ${content}
 </mj-text>`;
 }

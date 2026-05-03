@@ -4,7 +4,7 @@ import type {
   TableCellData,
 } from "@templatical/types";
 import type { RenderContext } from "../render-context";
-import { escapeAttr, convertMergeTagsToValues } from "../escape";
+import { escapeCssValue, convertMergeTagsToValues } from "../escape";
 import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
@@ -42,7 +42,7 @@ export function renderTable(block: TableBlock, context: RenderContext): string {
 }
 
 function renderTableElement(block: TableBlock): string {
-  const borderColor = escapeAttr(block.borderColor);
+  const borderColor = escapeCssValue(block.borderColor);
   const borderWidth = block.borderWidth;
 
   const tableStyle = "width: 100%; border-collapse: collapse;";
@@ -93,7 +93,7 @@ function renderCell(
 
     if (block.headerBackgroundColor) {
       styles.push(
-        `background-color: ${escapeAttr(block.headerBackgroundColor)}`,
+        `background-color: ${escapeCssValue(block.headerBackgroundColor)}`,
       );
     }
   }

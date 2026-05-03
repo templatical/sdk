@@ -498,6 +498,33 @@ describe('useMergeTagField', () => {
       expect(emitFn).toHaveBeenCalledWith('Hello{{email}} World');
     });
 
+    it('clears insertingMergeTag flag when request rejects so stopEditing is not stuck', async () => {
+      const elementRef = createElementRef();
+      const emitFn = vi.fn();
+      const requestCallback = vi.fn().mockRejectedValue(new Error('boom'));
+
+      const { isEditing, startEditing, stopEditing, insertMergeTag } =
+        withProvide(
+          () =>
+            useMergeTagField({
+              modelValue: () => '',
+              emit: emitFn,
+              elementRef,
+            }),
+          defaultProvides({
+            [ON_REQUEST_MERGE_TAG_KEY as symbol]: requestCallback,
+          }),
+        );
+
+      startEditing();
+      expect(isEditing.value).toBe(true);
+
+      await expect(insertMergeTag()).rejects.toThrow('boom');
+
+      stopEditing();
+      expect(isEditing.value).toBe(false);
+    });
+
     it('sets isEditing to true after successful insertion', async () => {
       const elementRef = createElementRef();
       const emitFn = vi.fn();
