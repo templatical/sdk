@@ -5,11 +5,12 @@ export default {
     startFromScratch: "Start from Scratch",
     emptyCanvas: "Empty canvas with default settings",
     migration: {
-      headline: "Already using BeeFree or Unlayer?",
+      headline: "Already using BeeFree, Unlayer, or hand-coded HTML?",
       description:
         "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
       importFromBeefree: "Import from BeeFree",
       importFromUnlayer: "Import from Unlayer",
+      importFromHtml: "Import from HTML",
     },
   },
   cloudBanner: {
@@ -75,9 +76,10 @@ export default {
     sources: {
       beefree: "From BeeFree",
       unlayer: "From Unlayer",
+      html: "From HTML",
     },
-    chooseFile: "Choose .json file",
-    orPaste: "or paste JSON",
+    chooseFile: "Choose file",
+    orPaste: "or paste below",
     import: "Import & Open",
     cancel: "Cancel",
     beefree: {
@@ -88,6 +90,11 @@ export default {
       description:
         "Paste the JSON design export from Unlayer (saveDesign output) below.",
       emptyError: "Paste your Unlayer JSON or upload a file.",
+    },
+    html: {
+      description:
+        "Paste the raw HTML source of an email (MJML output, ESP export, or hand-coded). Best results with table-based layouts.",
+      emptyError: "Paste your HTML source or upload a file.",
     },
   },
   mergeTagModal: {
@@ -232,6 +239,7 @@ export default {
     editorConfig: "Editor Configuration",
     beefreeJsonContent: "BeeFree JSON content",
     unlayerJsonContent: "Unlayer JSON content",
+    htmlSourceContent: "HTML source content",
     selectLanguage: "Select language",
     selectTheme: "Select theme",
   },

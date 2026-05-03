@@ -100,6 +100,7 @@ const mjml = await editor.toMjml();
 | [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) | JSON → MJML → HTML renderer (browser + Node) | [MIT](./LICENSE-MIT) |
 | [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert BeeFree templates to Templatical format | [MIT](./LICENSE-MIT) |
 | [`@templatical/import-unlayer`](https://www.npmjs.com/package/@templatical/import-unlayer) | Convert Unlayer templates to Templatical format | [MIT](./LICENSE-MIT) |
+| [`@templatical/import-html`](https://www.npmjs.com/package/@templatical/import-html) | Convert HTML email templates (table-based) to Templatical format | [MIT](./LICENSE-MIT) |
 
 ## Why FSL-1.1-MIT?
 
@@ -122,6 +123,7 @@ The only restriction: don't repackage Templatical itself as a directly competing
 - [Cloud (AI, Collab, Comments)](https://docs.templatical.com/cloud/) — optional managed tier
 - [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)
 - [Migrating from Unlayer](https://docs.templatical.com/guide/migration-from-unlayer)
+- [Migrating from HTML](https://docs.templatical.com/guide/migration-from-html)
 
 Full docs: **[docs.templatical.com](https://docs.templatical.com)** (English + Deutsch).
 
