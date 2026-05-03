@@ -8,7 +8,7 @@ import type { UnlayerBorder, UnlayerFontFamily } from "./types";
 export function parsePxValue(value: string | number | undefined): number {
   if (value === undefined || value === null) return 0;
   if (typeof value === "number") return Math.round(value);
-  const match = value.match(/^(-?\d+(?:\.\d+)?)\s*px?/);
+  const match = value.match(/^(-?\d+(?:\.\d+)?)\s*(?:px)?\s*$/);
   return match ? Math.round(parseFloat(match[1])) : 0;
 }
 

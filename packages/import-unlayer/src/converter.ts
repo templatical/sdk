@@ -12,16 +12,18 @@ import type {
   ImportReportEntry,
 } from "./types";
 import { convertContent } from "./block-mapper";
-import { parsePxValue, parseColor, parseFontFamily } from "./style-parser";
+import {
+  parsePxValue,
+  parseColor,
+  parseFontFamily,
+  parsePaddingShorthand,
+} from "./style-parser";
 
-/**
- * Determines the Templatical ColumnLayout from Unlayer cell weights.
- */
 function resolveColumnLayout(
   cells: number[],
   warnings: string[],
-): ColumnLayout | null {
-  if (cells.length === 1) return null;
+): ColumnLayout {
+  if (cells.length <= 1) return "1";
   if (cells.length === 3) return "3";
 
   if (cells.length === 2) {
@@ -35,14 +37,10 @@ function resolveColumnLayout(
     return "2";
   }
 
-  if (cells.length >= 4) {
-    warnings.push(
-      `Row with ${cells.length} columns was flattened to a single column. Unlayer supports arbitrary columns, but Templatical supports up to 3.`,
-    );
-    return null;
-  }
-
-  return "2";
+  warnings.push(
+    `Row with ${cells.length} columns was flattened to a single column. Unlayer supports arbitrary columns, but Templatical supports up to 3.`,
+  );
+  return "1";
 }
 
 /**
@@ -78,27 +76,27 @@ function processRow(
   const cells = row.cells ?? columns.map(() => 1);
   const layout = resolveColumnLayout(cells, warnings);
 
-  if (!layout) {
-    const blocks: Block[] = [];
+  let children: Block[][];
+  if (layout === "1") {
+    const merged: Block[] = [];
     for (const column of columns) {
-      blocks.push(...convertColumnContents(column, entries, warnings));
+      merged.push(...convertColumnContents(column, entries, warnings));
     }
-    return blocks;
+    children = [merged];
+  } else {
+    children = columns.map((col) =>
+      convertColumnContents(col, entries, warnings),
+    );
   }
 
-  const children: Block[][] = columns.map((col) =>
-    convertColumnContents(col, entries, warnings),
-  );
-
-  const rowBg =
-    parseColor(row.values?.backgroundColor) ||
-    parseColor(row.values?.columnsBackgroundColor);
+  const rowBg = parseColor(row.values?.backgroundColor);
+  const padding = parsePaddingShorthand(row.values?.padding);
 
   const section = createSectionBlock({
     columns: layout,
     children,
     styles: {
-      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+      padding,
       margin: { top: 0, right: 0, bottom: 0, left: 0 },
       ...(rowBg ? { backgroundColor: rowBg } : {}),
     },

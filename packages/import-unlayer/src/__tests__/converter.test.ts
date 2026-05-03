@@ -19,37 +19,50 @@ describe("convertUnlayerTemplate", () => {
     expect(content.settings.fontFamily).toBe("Arial");
   });
 
-  it("emits a section for the [1,1] row and inline blocks for single-column rows", () => {
+  it("emits a section for every row including single-column rows", () => {
     const { content } = convertUnlayerTemplate(template);
     const blocks = content.blocks;
 
-    // r1: single column → inline (heading + text) = 2 blocks
-    expect(blocks[0].type).toBe("title");
-    expect(blocks[1].type).toBe("paragraph");
+    expect(blocks).toHaveLength(5);
 
-    // r2: [1,1] → SectionBlock with layout '2'
+    expect(blocks[0].type).toBe("section");
+    if (blocks[0].type === "section") {
+      expect(blocks[0].columns).toBe("1");
+      expect(blocks[0].children[0]).toHaveLength(2);
+      expect(blocks[0].children[0][0].type).toBe("title");
+      expect(blocks[0].children[0][1].type).toBe("paragraph");
+    }
+
+    expect(blocks[1].type).toBe("section");
+    if (blocks[1].type === "section") {
+      expect(blocks[1].columns).toBe("2");
+      expect(blocks[1].children).toHaveLength(2);
+      expect(blocks[1].children[0][0].type).toBe("image");
+      expect(blocks[1].children[1][0].type).toBe("button");
+      expect(blocks[1].styles?.backgroundColor).toBe("#fafafa");
+    }
+
     expect(blocks[2].type).toBe("section");
     if (blocks[2].type === "section") {
-      expect(blocks[2].columns).toBe("2");
-      expect(blocks[2].children).toHaveLength(2);
-      expect(blocks[2].children[0][0].type).toBe("image");
-      expect(blocks[2].children[1][0].type).toBe("button");
-      expect(blocks[2].styles?.backgroundColor).toBe("#fafafa");
+      expect(blocks[2].columns).toBe("2-1");
     }
 
-    // r3: [2,1] → SectionBlock with layout '2-1'
     expect(blocks[3].type).toBe("section");
     if (blocks[3].type === "section") {
-      expect(blocks[3].columns).toBe("2-1");
+      expect(blocks[3].columns).toBe("1");
+      const inner = blocks[3].children[0];
+      expect(inner[0].type).toBe("menu");
+      expect(inner[1].type).toBe("social");
+      expect(inner[2].type).toBe("video");
+      expect(inner[3].type).toBe("html");
+      expect(inner[4].type).toBe("html");
+      expect(inner[5].type).toBe("html");
     }
 
-    // r4: single column with menu, social, video, timer, form, custom
-    expect(blocks[4].type).toBe("menu");
-    expect(blocks[5].type).toBe("social");
-    expect(blocks[6].type).toBe("video");
-    expect(blocks[7].type).toBe("html"); // timer fallback
-    expect(blocks[8].type).toBe("html"); // form skipped placeholder
-    expect(blocks[9].type).toBe("html"); // unknown
+    expect(blocks[4].type).toBe("section");
+    if (blocks[4].type === "section") {
+      expect(blocks[4].columns).toBe("1");
+    }
   });
 
   it("flattens 4+ column rows and warns", () => {
@@ -133,6 +146,155 @@ describe("convertUnlayerTemplate", () => {
     expect(section.type).toBe("section");
     if (section.type === "section") {
       expect(section.columns).toBe("3");
+    }
+  });
+
+  it("wraps single-column rows in a section preserving row backgroundColor", () => {
+    const { content } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [1],
+            columns: [
+              {
+                contents: [{ type: "text", values: { text: "<p>hi</p>" } }],
+                values: {},
+              },
+            ],
+            values: { backgroundColor: "#abcdef" },
+          },
+        ],
+      },
+    });
+
+    expect(content.blocks).toHaveLength(1);
+    const section = content.blocks[0];
+    expect(section.type).toBe("section");
+    if (section.type === "section") {
+      expect(section.columns).toBe("1");
+      expect(section.styles?.backgroundColor).toBe("#abcdef");
+      expect(section.children[0]).toHaveLength(1);
+      expect(section.children[0][0].type).toBe("paragraph");
+    }
+  });
+
+  it("propagates row padding shorthand to section padding", () => {
+    const { content } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [1, 1],
+            columns: [
+              { contents: [], values: {} },
+              { contents: [], values: {} },
+            ],
+            values: { padding: "10px 20px" },
+          },
+        ],
+      },
+    });
+
+    const section = content.blocks[0];
+    expect(section.type).toBe("section");
+    if (section.type === "section") {
+      expect(section.styles?.padding).toEqual({
+        top: 10,
+        right: 20,
+        bottom: 10,
+        left: 20,
+      });
+    }
+  });
+
+  it("does not use columnsBackgroundColor as the row backgroundColor", () => {
+    const { content } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [1, 1],
+            columns: [
+              { contents: [], values: {} },
+              { contents: [], values: {} },
+            ],
+            values: { columnsBackgroundColor: "#123456" },
+          },
+        ],
+      },
+    });
+
+    const section = content.blocks[0];
+    expect(section.type).toBe("section");
+    if (section.type === "section") {
+      expect(section.styles?.backgroundColor).toBeUndefined();
+    }
+  });
+
+  it("wraps 4+ column rows in a single-column section instead of dropping the wrapper", () => {
+    const { content } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [1, 1, 1, 1],
+            columns: [
+              {
+                contents: [{ type: "text", values: { text: "<p>a</p>" } }],
+                values: {},
+              },
+              {
+                contents: [{ type: "text", values: { text: "<p>b</p>" } }],
+                values: {},
+              },
+              { contents: [], values: {} },
+              { contents: [], values: {} },
+            ],
+            values: { backgroundColor: "#eeeeee" },
+          },
+        ],
+      },
+    });
+
+    expect(content.blocks).toHaveLength(1);
+    const section = content.blocks[0];
+    expect(section.type).toBe("section");
+    if (section.type === "section") {
+      expect(section.columns).toBe("1");
+      expect(section.styles?.backgroundColor).toBe("#eeeeee");
+      expect(section.children[0]).toHaveLength(2);
+    }
+  });
+
+  it("emits a visible placeholder for unsupported block fallbacks", () => {
+    const { content } = convertUnlayerTemplate({
+      body: {
+        values: {},
+        rows: [
+          {
+            cells: [1],
+            columns: [
+              {
+                contents: [{ type: "timer", values: {} }],
+                values: {},
+              },
+            ],
+            values: {},
+          },
+        ],
+      },
+    });
+
+    const section = content.blocks[0];
+    expect(section.type).toBe("section");
+    if (section.type === "section") {
+      const fallback = section.children[0][0];
+      expect(fallback.type).toBe("html");
+      if (fallback.type === "html") {
+        expect(fallback.content).not.toMatch(/^<!--[\s\S]*-->$/);
+        expect(fallback.content).toMatch(/timer/i);
+      }
     }
   });
 

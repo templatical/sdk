@@ -18,6 +18,16 @@ describe("parsePxValue", () => {
   it("returns 0 on undefined", () => {
     expect(parsePxValue(undefined)).toBe(0);
   });
+  it("parses bare numeric strings without unit", () => {
+    expect(parsePxValue("16")).toBe(16);
+  });
+  it("parses numeric strings with trailing whitespace", () => {
+    expect(parsePxValue("16  ")).toBe(16);
+  });
+  it("rejects non-px units", () => {
+    expect(parsePxValue("16em")).toBe(0);
+    expect(parsePxValue("16rem")).toBe(0);
+  });
 });
 
 describe("parseColor", () => {

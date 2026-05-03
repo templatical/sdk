@@ -310,8 +310,9 @@ function convertMenu(values: UnlayerContentValues): Block {
 }
 
 function convertHtmlFallback(content: UnlayerContent, comment: string): Block {
+  const safe = comment.replace(/</g, "&lt;").replace(/>/g, "&gt;");
   return createHtmlBlock({
-    content: `<!-- ${comment} -->`,
+    content: `<div style="padding:12px;border:1px dashed #d1d5db;border-radius:6px;background:#fafafa;color:#6b7280;font-family:sans-serif;font-size:13px;">${safe}</div>`,
     styles: makeStyles(content.values),
   });
 }
