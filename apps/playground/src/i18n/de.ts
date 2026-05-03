@@ -6,9 +6,13 @@ export default {
     subtitle: "W\u00e4hlen Sie einen Startpunkt f\u00fcr Ihre E-Mail-Vorlage",
     startFromScratch: "Neu beginnen",
     emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
-    importPrompt: "Haben Sie eine bestehende Vorlage?",
-    importTemplate: "Bestehende Vorlage importieren",
-    importSources: "Unterstützt BeeFree- und Unlayer-JSON-Exporte.",
+    migration: {
+      headline: "Schon in BeeFree oder Unlayer?",
+      description:
+        "Bringen Sie Ihre bestehenden Vorlagen in Sekunden mit — Block-Mapping, Layouts und Merge-Tags werden automatisch übernommen.",
+      importFromBeefree: "Aus BeeFree importieren",
+      importFromUnlayer: "Aus Unlayer importieren",
+    },
   },
   cloudBanner: {
     title: "Das volle Erlebnis mit Cloud freischalten",

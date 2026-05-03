@@ -4,9 +4,13 @@ export default {
     subtitle: "Choose a starting point for your email template",
     startFromScratch: "Start from Scratch",
     emptyCanvas: "Empty canvas with default settings",
-    importPrompt: "Have an existing template?",
-    importTemplate: "Import existing template",
-    importSources: "Supports BeeFree and Unlayer JSON exports.",
+    migration: {
+      headline: "Already using BeeFree or Unlayer?",
+      description:
+        "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
+      importFromBeefree: "Import from BeeFree",
+      importFromUnlayer: "Import from Unlayer",
+    },
   },
   cloudBanner: {
     title: "Unlock the full experience with Cloud",

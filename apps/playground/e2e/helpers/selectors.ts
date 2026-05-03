@@ -93,6 +93,18 @@ export const SELECTORS = {
 
   // Modals
   modalBackdrop: ".pg-modal-backdrop",
+
+  // Template import (BeeFree / Unlayer)
+  chooserMigrationBand: '[data-testid="chooser-migration-band"]',
+  chooserImportBeefree: '[data-testid="chooser-import-beefree"]',
+  chooserImportUnlayer: '[data-testid="chooser-import-unlayer"]',
+  importModal: '[data-testid="import-modal"]',
+  importTabBeefree: '[data-testid="import-tab-beefree"]',
+  importTabUnlayer: '[data-testid="import-tab-unlayer"]',
+  importTextareaBeefree: '[data-testid="import-textarea-beefree"]',
+  importTextareaUnlayer: '[data-testid="import-textarea-unlayer"]',
+  importError: '[data-testid="import-error"]',
+  importConfirm: '[data-testid="import-confirm"]',
 } as const;
 
 /** Dynamic selector for block by type */

@@ -462,6 +462,11 @@ function closeImportModal(): void {
   unlayerError.value = "";
 }
 
+function openImportFromSource(source: ImportSource): void {
+  importSource.value = source;
+  showImport.value = true;
+}
+
 async function importBeefreeFromJson(raw: string): Promise<void> {
   beefreeError.value = "";
 
@@ -1465,39 +1470,91 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <div
-            class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-6 text-sm text-gray-500 dark:text-gray-400"
+          <section
+            data-testid="chooser-migration-band"
+            class="pg-card-stagger mt-8 w-full flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6 p-5 sm:p-6 border border-gray-200 rounded-2xl bg-gradient-to-br from-white to-gray-50/40 dark:border-gray-700 dark:from-gray-800/60 dark:to-gray-800/30"
+            :style="{ animationDelay: `${(templates.length + 1) * 40}ms` }"
           >
-            <span>{{ t.chooser.importPrompt }}</span>
-            <button
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
-              @click="
-                importSource = 'beefree';
-                showImport = true;
-              "
+            <div
+              class="shrink-0 inline-flex items-center justify-center size-10 rounded-xl bg-amber-100/70 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300"
+              aria-hidden="true"
             >
               <svg
-                width="14"
-                height="14"
-                viewBox="0 0 16 16"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
                 fill="none"
-                aria-hidden="true"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               >
-                <path
-                  d="M8 2.5v8M5 7.5L8 4.5l3 3M3 10v2.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V10"
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3
+                class="m-0 text-sm font-semibold text-gray-900 dark:text-gray-100"
+              >
+                {{ t.chooser.migration.headline }}
+              </h3>
+              <p
+                class="mt-1 mb-0 text-xs leading-[1.5] text-gray-500 dark:text-gray-400"
+              >
+                {{ t.chooser.migration.description }}
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2 sm:gap-3 shrink-0">
+              <button
+                data-testid="chooser-import-beefree"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-amber-300 hover:bg-amber-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:border-amber-500/40 dark:hover:bg-amber-500/10"
+                @click="openImportFromSource('beefree')"
+              >
+                <span
+                  class="size-2.5 rounded-full bg-amber-400 ring-2 ring-amber-200/60 dark:ring-amber-500/20"
+                  aria-hidden="true"
+                ></span>
+                {{ t.chooser.migration.importFromBeefree }}
+                <svg
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-amber-600 dark:group-hover:text-amber-400"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   stroke="currentColor"
-                  stroke-width="1.5"
+                  stroke-width="1.6"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                />
-              </svg>
-              {{ t.chooser.importTemplate }}
-            </button>
-            <span
-              class="basis-full text-center text-xs text-gray-400 dark:text-gray-500"
-              >{{ t.chooser.importSources }}</span
-            >
-          </div>
+                  aria-hidden="true"
+                >
+                  <path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" />
+                </svg>
+              </button>
+              <button
+                data-testid="chooser-import-unlayer"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-violet-300 hover:bg-violet-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:border-violet-500/40 dark:hover:bg-violet-500/10"
+                @click="openImportFromSource('unlayer')"
+              >
+                <span
+                  class="size-2.5 rounded-full bg-violet-500 ring-2 ring-violet-200/60 dark:ring-violet-500/20"
+                  aria-hidden="true"
+                ></span>
+                {{ t.chooser.migration.importFromUnlayer }}
+                <svg
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-violet-600 dark:group-hover:text-violet-400"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" />
+                </svg>
+              </button>
+            </div>
+          </section>
 
           <!-- Cloud Promotion Banner -->
           <a
@@ -2392,6 +2449,7 @@ onUnmounted(() => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="import-modal-title"
+            data-testid="import-modal"
             class="pg-modal-dialog w-[640px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
           >
             <div
@@ -2433,6 +2491,7 @@ onUnmounted(() => {
                     ? 'border-primary text-gray-900 dark:text-gray-100'
                     : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
                 ]"
+                data-testid="import-tab-beefree"
                 @click="importSource = 'beefree'"
               >
                 {{ t.importModal.sources.beefree }}
@@ -2446,6 +2505,7 @@ onUnmounted(() => {
                     ? 'border-primary text-gray-900 dark:text-gray-100'
                     : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
                 ]"
+                data-testid="import-tab-unlayer"
                 @click="importSource = 'unlayer'"
               >
                 {{ t.importModal.sources.unlayer }}
@@ -2486,6 +2546,7 @@ onUnmounted(() => {
                 v-if="importSource === 'beefree'"
                 v-model="beefreeJson"
                 :aria-label="t.a11y.beefreeJsonContent"
+                data-testid="import-textarea-beefree"
                 class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
                 placeholder='{"page": {"body": {...}, "rows": [...]}}'
               ></textarea>
@@ -2493,17 +2554,20 @@ onUnmounted(() => {
                 v-else
                 v-model="unlayerJson"
                 :aria-label="t.a11y.unlayerJsonContent"
+                data-testid="import-textarea-unlayer"
                 class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
                 placeholder='{"body": {"rows": [...], "values": {...}}}'
               ></textarea>
               <p
                 v-if="importSource === 'beefree' && beefreeError"
+                data-testid="import-error"
                 class="mt-2 mb-0 text-[13px] text-red-500"
               >
                 {{ beefreeError }}
               </p>
               <p
                 v-if="importSource === 'unlayer' && unlayerError"
+                data-testid="import-error"
                 class="mt-2 mb-0 text-[13px] text-red-500"
               >
                 {{ unlayerError }}
@@ -2517,6 +2581,7 @@ onUnmounted(() => {
               </button>
               <button
                 class="pg-cta h-9 px-4 text-[13px] rounded-md"
+                data-testid="import-confirm"
                 @click="confirmImport"
               >
                 {{ t.importModal.import }}

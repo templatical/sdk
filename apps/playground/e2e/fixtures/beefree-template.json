@@ -1,0 +1,66 @@
+{
+  "page": {
+    "title": "BeeFree e2e fixture",
+    "body": {
+      "type": "mailup-bee-page-properties",
+      "content": {
+        "style": {
+          "width": "600px",
+          "background-color": "#ffffff",
+          "font-family": "Arial, sans-serif"
+        }
+      },
+      "container": {
+        "style": {
+          "background-color": "#f5f5f5"
+        }
+      }
+    },
+    "rows": [
+      {
+        "uuid": "row-1",
+        "columns": [
+          {
+            "uuid": "col-1",
+            "grid-columns": 12,
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-heading",
+                "uuid": "h-1",
+                "descriptor": {
+                  "heading": {
+                    "title": "h1",
+                    "text": "Hello from BeeFree",
+                    "style": {
+                      "color": "#111111",
+                      "text-align": "center"
+                    }
+                  }
+                }
+              },
+              {
+                "type": "mailup-bee-newsletter-modules-text",
+                "uuid": "t-1",
+                "descriptor": {
+                  "text": {
+                    "html": "<p>Imported via the BeeFree e2e fixture.</p>"
+                  }
+                }
+              },
+              {
+                "type": "mailup-bee-newsletter-modules-button",
+                "uuid": "b-1",
+                "descriptor": {
+                  "button": {
+                    "label": "Click me",
+                    "href": "https://example.test"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
