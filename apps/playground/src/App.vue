@@ -78,9 +78,13 @@ function tplDesc(tpl: TemplateOption): string {
 
 type Screen = "chooser" | "editor";
 const screen = ref<Screen>("chooser");
-const showBeefreeImport = ref(false);
+type ImportSource = "beefree" | "unlayer";
+const showImport = ref(false);
+const importSource = ref<ImportSource>("beefree");
 const beefreeJson = ref("");
 const beefreeError = ref("");
+const unlayerJson = ref("");
+const unlayerError = ref("");
 
 // Feature showcase overlay
 const showFeatureOverlay = ref(false);
@@ -452,6 +456,17 @@ function onScreenEnter(): void {
   }
 }
 
+function closeImportModal(): void {
+  showImport.value = false;
+  beefreeError.value = "";
+  unlayerError.value = "";
+}
+
+function openImportFromSource(source: ImportSource): void {
+  importSource.value = source;
+  showImport.value = true;
+}
+
 async function importBeefreeFromJson(raw: string): Promise<void> {
   beefreeError.value = "";
 
@@ -460,7 +475,7 @@ async function importBeefreeFromJson(raw: string): Promise<void> {
     const { convertBeeFreeTemplate } =
       await import("@templatical/import-beefree");
     const { content } = convertBeeFreeTemplate(json);
-    showBeefreeImport.value = false;
+    closeImportModal();
     beefreeJson.value = "";
     chooseTemplate(content);
   } catch (e) {
@@ -468,26 +483,55 @@ async function importBeefreeFromJson(raw: string): Promise<void> {
   }
 }
 
-function confirmBeefreeImport(): void {
-  const raw = beefreeJson.value.trim();
-  if (!raw) {
-    beefreeError.value = t.value.beefreeModal.emptyError;
+async function importUnlayerFromJson(raw: string): Promise<void> {
+  unlayerError.value = "";
+
+  try {
+    const json = JSON.parse(raw);
+    const { convertUnlayerTemplate } =
+      await import("@templatical/import-unlayer");
+    const { content } = convertUnlayerTemplate(json);
+    closeImportModal();
+    unlayerJson.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    unlayerError.value = e instanceof Error ? e.message : "Invalid JSON";
+  }
+}
+
+function confirmImport(): void {
+  if (importSource.value === "beefree") {
+    const raw = beefreeJson.value.trim();
+    if (!raw) {
+      beefreeError.value = t.value.importModal.beefree.emptyError;
+      return;
+    }
+    importBeefreeFromJson(raw);
     return;
   }
 
-  importBeefreeFromJson(raw);
+  const raw = unlayerJson.value.trim();
+  if (!raw) {
+    unlayerError.value = t.value.importModal.unlayer.emptyError;
+    return;
+  }
+  importUnlayerFromJson(raw);
 }
 
-const { open: openBeefreeFile, onChange: onBeefreeFileChange } = useFileDialog({
+const { open: openImportFile, onChange: onImportFileChange } = useFileDialog({
   accept: ".json",
   multiple: false,
 });
 
-onBeefreeFileChange(async (files) => {
+onImportFileChange(async (files) => {
   const file = files?.[0];
   if (!file) return;
   const text = await file.text();
-  importBeefreeFromJson(text);
+  if (importSource.value === "beefree") {
+    importBeefreeFromJson(text);
+  } else {
+    importUnlayerFromJson(text);
+  }
 });
 
 function backToChooser(): void {
@@ -761,7 +805,7 @@ function useModalTrap(isOpen: typeof showJson) {
 
 const jsonModalRef = useModalTrap(showJson);
 const configModalRef = useModalTrap(showConfig);
-const beefreeModalRef = useModalTrap(showBeefreeImport);
+const importModalRef = useModalTrap(showImport);
 const mergeTagModalRef = useModalTrap(mergeTagPickerOpen);
 const mediaModalRef = useModalTrap(mediaPickerOpen);
 const dataSourceModalRef = useModalTrap(
@@ -780,7 +824,7 @@ watch(
   () =>
     showJson.value ||
     showConfig.value ||
-    showBeefreeImport.value ||
+    showImport.value ||
     mergeTagPickerOpen.value ||
     mediaPickerOpen.value ||
     (dataSourcePickerOpen.value && !!dataSourcePickerRequest.value) ||
@@ -1426,32 +1470,91 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <div
-            class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-6 text-sm text-gray-500 dark:text-gray-400"
+          <section
+            data-testid="chooser-migration-band"
+            class="pg-card-stagger mt-8 w-full flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6 p-5 sm:p-6 border border-gray-200 rounded-2xl bg-gradient-to-br from-white to-gray-50/40 dark:border-gray-700 dark:from-gray-800/60 dark:to-gray-800/30"
+            :style="{ animationDelay: `${(templates.length + 1) * 40}ms` }"
           >
-            <span>{{ t.chooser.beefreePrompt }}</span>
-            <button
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium border border-gray-200 rounded-md bg-white text-gray-500 cursor-pointer transition-colors duration-150 hover:text-gray-900 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
-              @click="showBeefreeImport = true"
+            <div
+              class="shrink-0 inline-flex items-center justify-center size-10 rounded-xl bg-amber-100/70 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300"
+              aria-hidden="true"
             >
               <svg
-                width="14"
-                height="14"
-                viewBox="0 0 16 16"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
                 fill="none"
-                aria-hidden="true"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               >
-                <path
-                  d="M8 2.5v8M5 7.5L8 4.5l3 3M3 10v2.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V10"
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3
+                class="m-0 text-sm font-semibold text-gray-900 dark:text-gray-100"
+              >
+                {{ t.chooser.migration.headline }}
+              </h3>
+              <p
+                class="mt-1 mb-0 text-xs leading-[1.5] text-gray-500 dark:text-gray-400"
+              >
+                {{ t.chooser.migration.description }}
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2 sm:gap-3 shrink-0">
+              <button
+                data-testid="chooser-import-beefree"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-amber-300 hover:bg-amber-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:border-amber-500/40 dark:hover:bg-amber-500/10"
+                @click="openImportFromSource('beefree')"
+              >
+                <span
+                  class="size-2.5 rounded-full bg-amber-400 ring-2 ring-amber-200/60 dark:ring-amber-500/20"
+                  aria-hidden="true"
+                ></span>
+                {{ t.chooser.migration.importFromBeefree }}
+                <svg
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-amber-600 dark:group-hover:text-amber-400"
+                  viewBox="0 0 16 16"
+                  fill="none"
                   stroke="currentColor"
-                  stroke-width="1.5"
+                  stroke-width="1.6"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                />
-              </svg>
-              {{ t.chooser.importBeefree }}
-            </button>
-          </div>
+                  aria-hidden="true"
+                >
+                  <path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" />
+                </svg>
+              </button>
+              <button
+                data-testid="chooser-import-unlayer"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-violet-300 hover:bg-violet-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:border-violet-500/40 dark:hover:bg-violet-500/10"
+                @click="openImportFromSource('unlayer')"
+              >
+                <span
+                  class="size-2.5 rounded-full bg-violet-500 ring-2 ring-violet-200/60 dark:ring-violet-500/20"
+                  aria-hidden="true"
+                ></span>
+                {{ t.chooser.migration.importFromUnlayer }}
+                <svg
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-violet-600 dark:group-hover:text-violet-400"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" />
+                </svg>
+              </button>
+            </div>
+          </section>
 
           <!-- Cloud Promotion Banner -->
           <a
@@ -2332,23 +2435,21 @@ onUnmounted(() => {
       </Transition>
     </Teleport>
 
-    <!-- BeeFree Import Modal -->
+    <!-- Import Template Modal (BeeFree / Unlayer) -->
     <Teleport to="body">
       <Transition name="pg-modal">
         <div
-          v-if="showBeefreeImport"
+          v-if="showImport"
           class="pg-modal-backdrop"
-          @click.self="showBeefreeImport = false"
-          @keydown.escape="
-            showBeefreeImport = false;
-            beefreeError = '';
-          "
+          @click.self="closeImportModal"
+          @keydown.escape="closeImportModal"
         >
           <div
-            ref="beefreeModalRef"
+            ref="importModalRef"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="beefree-modal-title"
+            aria-labelledby="import-modal-title"
+            data-testid="import-modal"
             class="pg-modal-dialog w-[640px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
           >
             <div
@@ -2356,29 +2457,64 @@ onUnmounted(() => {
             >
               <div>
                 <span
-                  id="beefree-modal-title"
+                  id="import-modal-title"
                   class="text-sm font-semibold text-gray-900 dark:text-gray-100"
-                  >{{ t.beefreeModal.title }}</span
+                  >{{ t.importModal.title }}</span
                 >
                 <p class="m-0 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {{ t.beefreeModal.description }}
+                  {{
+                    importSource === "beefree"
+                      ? t.importModal.beefree.description
+                      : t.importModal.unlayer.description
+                  }}
                 </p>
               </div>
               <button
                 :aria-label="t.common.close"
                 class="pg-modal-close"
-                @click="
-                  showBeefreeImport = false;
-                  beefreeError = '';
-                "
+                @click="closeImportModal"
               >
                 &times;
+              </button>
+            </div>
+            <div
+              role="tablist"
+              :aria-label="t.importModal.title"
+              class="flex gap-1 px-5 pt-3 border-b border-gray-200 dark:border-gray-700"
+            >
+              <button
+                role="tab"
+                :aria-selected="importSource === 'beefree'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'beefree'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-beefree"
+                @click="importSource = 'beefree'"
+              >
+                {{ t.importModal.sources.beefree }}
+              </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'unlayer'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'unlayer'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-unlayer"
+                @click="importSource = 'unlayer'"
+              >
+                {{ t.importModal.sources.unlayer }}
               </button>
             </div>
             <div class="flex-1 overflow-auto p-5">
               <button
                 class="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 cursor-pointer transition-[border-color,color] duration-150 bg-transparent hover:border-primary hover:text-gray-900 dark:border-gray-600 dark:text-gray-400 dark:hover:text-gray-100"
-                @click="() => openBeefreeFile()"
+                @click="() => openImportFile()"
               >
                 <svg
                   width="24"
@@ -2396,43 +2532,59 @@ onUnmounted(() => {
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
                 <span class="text-sm font-medium">{{
-                  t.beefreeModal.chooseFile
+                  t.importModal.chooseFile
                 }}</span>
               </button>
 
               <div
                 class="flex items-center gap-4 my-4 text-gray-500 text-xs uppercase tracking-[0.5px] before:content-[''] before:flex-1 before:h-px before:bg-gray-200 after:content-[''] after:flex-1 after:h-px after:bg-gray-200 dark:text-gray-400 before:dark:bg-gray-700 after:dark:bg-gray-700"
               >
-                <span>{{ t.beefreeModal.orPaste }}</span>
+                <span>{{ t.importModal.orPaste }}</span>
               </div>
 
               <textarea
+                v-if="importSource === 'beefree'"
                 v-model="beefreeJson"
                 :aria-label="t.a11y.beefreeJsonContent"
+                data-testid="import-textarea-beefree"
                 class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
                 placeholder='{"page": {"body": {...}, "rows": [...]}}'
               ></textarea>
-              <p v-if="beefreeError" class="mt-2 mb-0 text-[13px] text-red-500">
+              <textarea
+                v-else
+                v-model="unlayerJson"
+                :aria-label="t.a11y.unlayerJsonContent"
+                data-testid="import-textarea-unlayer"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder='{"body": {"rows": [...], "values": {...}}}'
+              ></textarea>
+              <p
+                v-if="importSource === 'beefree' && beefreeError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
                 {{ beefreeError }}
+              </p>
+              <p
+                v-if="importSource === 'unlayer' && unlayerError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ unlayerError }}
               </p>
             </div>
             <div
               class="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200 shrink-0 dark:border-gray-700"
             >
-              <button
-                class="pg-cancel-btn"
-                @click="
-                  showBeefreeImport = false;
-                  beefreeError = '';
-                "
-              >
-                {{ t.beefreeModal.cancel }}
+              <button class="pg-cancel-btn" @click="closeImportModal">
+                {{ t.importModal.cancel }}
               </button>
               <button
                 class="pg-cta h-9 px-4 text-[13px] rounded-md"
-                @click="confirmBeefreeImport"
+                data-testid="import-confirm"
+                @click="confirmImport"
               >
-                {{ t.beefreeModal.import }}
+                {{ t.importModal.import }}
               </button>
             </div>
           </div>

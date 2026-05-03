@@ -11,6 +11,7 @@
     "@codemirror/view": "^6.40.0",
     "@templatical/editor": "workspace:*",
     "@templatical/import-beefree": "workspace:*",
+    "@templatical/import-unlayer": "workspace:*",
     "@templatical/renderer": "workspace:*",
     "@templatical/types": "workspace:*",
     "@vueuse/core": "^14.2.1",

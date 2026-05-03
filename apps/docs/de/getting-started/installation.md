@@ -66,6 +66,7 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 | `@templatical/core` | Framework-agnostische Editor-Logik (State, History) | Automatisch installiert |
 | `@templatical/renderer` | Rendert Templates zu MJML | Optional – installieren, wo Sie `editor.toMjml()` (Browser) oder `renderToMjml()` (Node.js, Server) aufrufen |
 | `@templatical/import-beefree` | Konvertiert BeeFree-JSON-Templates in das Templatical-Format | Optional |
+| `@templatical/import-unlayer` | Konvertiert Unlayer-JSON-Design-Templates in das Templatical-Format | Optional |
 
 `@templatical/types` und `@templatical/core` sind direkte Abhängigkeiten von `@templatical/editor` und werden automatisch installiert.
 ## Framework-Integration

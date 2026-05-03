@@ -94,13 +94,24 @@ describe('MergeTagSuggestionList', () => {
     expect(emitted?.[0]?.[0]).toEqual(tags[1]);
   });
 
-  it('emits hover with index on mouseenter', async () => {
+  it('emits hover with index on mousemove over a non-selected option', async () => {
     const wrapper = mount(MergeTagSuggestionList, {
       props: { items: tags, selectedIndex: 0, emptyText: 'none' },
     });
-    await wrapper.findAll('button')[2].trigger('mouseenter');
+    // mousemove (not mouseenter) — mouseenter also fires when an option
+    // moves under a stationary cursor, which spuriously shifts selection
+    // when the popup repositions to track scroll.
+    await wrapper.findAll('button')[2].trigger('mousemove');
     const emitted = wrapper.emitted('hover');
     expect(emitted?.[0]?.[0]).toBe(2);
+  });
+
+  it('does not emit hover for the already-selected option', async () => {
+    const wrapper = mount(MergeTagSuggestionList, {
+      props: { items: tags, selectedIndex: 0, emptyText: 'none' },
+    });
+    await wrapper.findAll('button')[0].trigger('mousemove');
+    expect(wrapper.emitted('hover')).toBeUndefined();
   });
 
   it('renders both label and value text', () => {

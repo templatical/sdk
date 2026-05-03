@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 6,
+  "body": {
+    "id": "body",
+    "rows": [
+      {
+        "id": "r1",
+        "cells": [1],
+        "columns": [
+          {
+            "id": "c1",
+            "contents": [
+              {
+                "type": "heading",
+                "values": {
+                  "headingType": "h1",
+                  "text": "Hello from Unlayer",
+                  "color": "#111111",
+                  "textAlign": "center"
+                }
+              },
+              {
+                "type": "text",
+                "values": {
+                  "text": "<p>Imported via the Unlayer e2e fixture.</p>"
+                }
+              },
+              {
+                "type": "button",
+                "values": {
+                  "text": "Click me",
+                  "href": {
+                    "name": "web",
+                    "values": { "href": "https://example.test" }
+                  }
+                }
+              }
+            ],
+            "values": {}
+          }
+        ],
+        "values": {}
+      }
+    ],
+    "values": {
+      "contentWidth": "600px",
+      "backgroundColor": "#ffffff",
+      "fontFamily": { "label": "Arial", "value": "Arial, sans-serif" }
+    }
+  }
+}

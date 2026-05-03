@@ -76,7 +76,7 @@ cd apps/docs && pnpm run dev
 
 Test conventions are documented in detail in [`CLAUDE.md`](./CLAUDE.md#tests). The short version:
 
-- **Location:** `tests/**/*.test.ts` per package (except `import-beefree`, which uses `src/__tests__/`).
+- **Location:** `tests/**/*.test.ts` per package (except `import-beefree` and `import-unlayer`, which use `src/__tests__/`).
 - **Framework:** Vitest 3 for unit tests, Playwright for E2E.
 - **Regression sensitivity:** every test must assert on **concrete values or state**. Never use `.toBeDefined()`, `.toBeTruthy()`, or `.not.toThrow()` as the only assertion â€” pair with a value check or a state check.
 - **Coverage:** test happy path, unhappy path (error branches), and edge cases. Test every `if/else` branch, every `try/catch`, every early `return`.
@@ -141,7 +141,7 @@ Avoid discussing design decisions in inline PR comments before opening the PR â€
 
 By contributing, you agree that your contributions will be licensed under the same license as the package you're contributing to:
 
-- **MIT** for `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree`
+- **MIT** for `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree`, `@templatical/import-unlayer`
 - **FSL-1.1-MIT** (auto-converts to MIT after 2 years) for `@templatical/editor`, `@templatical/core`, `@templatical/media-library`
 
 See [`LICENSE`](./LICENSE) and [`LICENSE-MIT`](./LICENSE-MIT) for full terms, and [the license FAQ](https://docs.templatical.com/license-faq) for plain-English answers.

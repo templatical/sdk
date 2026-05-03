@@ -125,9 +125,64 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
         const selectedIndex = ref(0);
         let currentCommand: ((item: MergeTag) => void) | null = null;
         const listId = `tpl-merge-tag-suggestion-${++POPUP_ID_SEQ}`;
+        let latestClientRect: (() => DOMRect | null) | null = null;
+        let scrollTargets: Array<EventTarget> = [];
+
+        function reposition(): void {
+          position(latestClientRect?.() ?? null);
+        }
+
+        function collectScrollAncestors(el: HTMLElement | null): HTMLElement[] {
+          // Walk up the DOM finding scrollable ancestors. ProseMirror's
+          // scrollIntoView fires on whichever ancestor scrolls — listening
+          // to all of them ensures we reposition regardless of which one
+          // moves.
+          const result: HTMLElement[] = [];
+          let node: HTMLElement | null = el?.parentElement ?? null;
+          while (
+            node &&
+            node !== document.body &&
+            node !== document.documentElement
+          ) {
+            const style = window.getComputedStyle(node);
+            const overflow = style.overflow + style.overflowX + style.overflowY;
+            if (/(auto|scroll|overlay)/.test(overflow)) {
+              result.push(node);
+            }
+            node = node.parentElement;
+          }
+          return result;
+        }
+
+        function attachScrollListeners(viewDom: HTMLElement | null): void {
+          scrollTargets = [window, ...collectScrollAncestors(viewDom)];
+          for (const target of scrollTargets) {
+            target.addEventListener("scroll", reposition, {
+              passive: true,
+              capture: true,
+            });
+          }
+          window.addEventListener("resize", reposition, { passive: true });
+        }
+
+        function detachScrollListeners(): void {
+          for (const target of scrollTargets) {
+            target.removeEventListener("scroll", reposition, {
+              capture: true,
+            } as EventListenerOptions);
+          }
+          window.removeEventListener("resize", reposition);
+          scrollTargets = [];
+        }
 
         function position(rect: DOMRect | null): void {
           if (!container || !rect) return;
+          // If the caret has scrolled out of the viewport, freeze the
+          // popup at its last on-screen position. Following the caret
+          // off-screen produces an invisible popup the user can't reach,
+          // and lets pathological scroll loops drag the popup further
+          // each tick.
+          if (rect.bottom < 0 || rect.top > window.innerHeight) return;
           container.style.position = "fixed";
           container.style.left = `${rect.left}px`;
           container.style.zIndex = "9999";
@@ -229,7 +284,9 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             app.mount(container);
             setEditableAria(true);
             setActiveDescendant();
-            position(props.clientRect?.() ?? null);
+            latestClientRect = props.clientRect ?? null;
+            position(latestClientRect?.() ?? null);
+            attachScrollListeners(viewDom ?? null);
           },
           onUpdate: (props: SuggestionProps<MergeTag>) => {
             itemsRef.value = props.items;
@@ -239,7 +296,8 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             }
             currentCommand = (item) => props.command(item);
             setActiveDescendant();
-            position(props.clientRect?.() ?? null);
+            latestClientRect = props.clientRect ?? null;
+            position(latestClientRect?.() ?? null);
           },
           onKeyDown: (props: SuggestionKeyDownProps): boolean => {
             if (props.event.key === "Escape") {
@@ -255,6 +313,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             return handled;
           },
           onExit: () => {
+            detachScrollListeners();
             setEditableAria(false);
             app?.unmount();
             container?.remove();
@@ -262,6 +321,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             container = null;
             editableEl = null;
             currentCommand = null;
+            latestClientRect = null;
           },
         };
       },

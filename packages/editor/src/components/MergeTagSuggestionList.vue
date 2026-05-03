@@ -49,7 +49,7 @@ function optionId(index: number): string | undefined {
           : 'tpl:text-[var(--tpl-text)] hover:tpl:bg-[var(--tpl-bg-hover)]'
       "
       @mousedown.prevent.stop="$emit('select', item)"
-      @mouseenter="$emit('hover', index)"
+      @mousemove="index !== selectedIndex && $emit('hover', index)"
     >
       <span class="tpl:font-medium">{{ item.label }}</span>
       <span class="tpl:text-[var(--tpl-text-dim)] tpl:font-mono">{{

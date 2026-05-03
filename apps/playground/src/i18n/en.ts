@@ -4,8 +4,13 @@ export default {
     subtitle: "Choose a starting point for your email template",
     startFromScratch: "Start from Scratch",
     emptyCanvas: "Empty canvas with default settings",
-    beefreePrompt: "Have an existing BeeFree template?",
-    importBeefree: "Import from BeeFree",
+    migration: {
+      headline: "Already using BeeFree or Unlayer?",
+      description:
+        "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
+      importFromBeefree: "Import from BeeFree",
+      importFromUnlayer: "Import from Unlayer",
+    },
   },
   cloudBanner: {
     title: "Unlock the full experience with Cloud",
@@ -65,14 +70,25 @@ export default {
     cancel: "Cancel",
     apply: "Apply & Reload",
   },
-  beefreeModal: {
-    title: "Import BeeFree Template",
-    description: "Paste the JSON export from your BeeFree editor below.",
+  importModal: {
+    title: "Import existing template",
+    sources: {
+      beefree: "From BeeFree",
+      unlayer: "From Unlayer",
+    },
     chooseFile: "Choose .json file",
     orPaste: "or paste JSON",
     import: "Import & Open",
     cancel: "Cancel",
-    emptyError: "Paste your BeeFree JSON or upload a file.",
+    beefree: {
+      description: "Paste the JSON export from your BeeFree editor below.",
+      emptyError: "Paste your BeeFree JSON or upload a file.",
+    },
+    unlayer: {
+      description:
+        "Paste the JSON design export from Unlayer (saveDesign output) below.",
+      emptyError: "Paste your Unlayer JSON or upload a file.",
+    },
   },
   mergeTagModal: {
     title: "Insert Merge Tag",
@@ -215,6 +231,7 @@ export default {
     templateUuid: "Template UUID",
     editorConfig: "Editor Configuration",
     beefreeJsonContent: "BeeFree JSON content",
+    unlayerJsonContent: "Unlayer JSON content",
     selectLanguage: "Select language",
     selectTheme: "Select theme",
   },
