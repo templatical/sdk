@@ -357,6 +357,33 @@ describe('useRichTextEditor', () => {
 
       expect((ctx.api().editor.value as unknown as StubEditor).focusCalls).toContain('');
     });
+
+    it('does not insert into a destroyed editor when component unmounts mid-request', async () => {
+      let resolveTag!: (v: { label: string; value: string } | null) => void;
+      const onRequestMergeTag = vi.fn(
+        () =>
+          new Promise<{ label: string; value: string } | null>((r) => {
+            resolveTag = r;
+          }),
+      );
+      const ctx = mountRichText(
+        { blockContent: '<p>Hello</p>' },
+        { [ON_REQUEST_MERGE_TAG_KEY]: onRequestMergeTag },
+      );
+      await flushAsync();
+
+      const editor = ctx.api().editor.value as unknown as StubEditor;
+      const pending = ctx.api().handleAddMergeTag();
+
+      ctx.destroy();
+      expect(editor.destroyed).toBe(true);
+
+      resolveTag({ label: 'First Name', value: '{{first_name}}' });
+      await pending;
+      await flushAsync();
+
+      expect(editor.getHTML()).toBe('<p>Hello</p>');
+    });
   });
 
   describe('destroy / cleanup', () => {

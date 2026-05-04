@@ -228,6 +228,7 @@ export function useRichTextEditor(
 
   async function handleAddMergeTag(): Promise<void> {
     const mergeTag = await requestMergeTag();
+    if (destroyed) return;
     if (mergeTag && editor.value) {
       editor.value
         .chain()
