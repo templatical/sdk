@@ -67,7 +67,7 @@ export default {
     onRequestMediaDesc:
       'Opens a demo image picker when the user clicks "Browse Media"',
     onRequestMergeTag:
-      "Opens a merge tag picker when the user inserts a placeholder",
+      "Opens a merge tag picker when the user inserts a merge tag",
     cancel: "Cancel",
     apply: "Apply & Reload",
   },

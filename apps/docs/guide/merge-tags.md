@@ -1,11 +1,11 @@
 ---
 title: Merge Tags
-description: Dynamic content placeholders using merge tags in Templatical email templates.
+description: Dynamic content via merge tags in Templatical email templates.
 ---
 
 # Merge Tags
 
-Merge tags are placeholders for dynamic content -- things like a recipient's name, a product price, or an unsubscribe URL. They appear as highlighted tokens in the editor and pass through unchanged in the rendered MJML. Your email sending platform replaces them with real values at send time.
+Merge tags are tokens for dynamic content -- things like a recipient's name, a product price, or an unsubscribe URL. They appear as highlighted tokens in the editor and pass through unchanged in the rendered MJML. Your email sending platform replaces them with real values at send time.
 
 Templatical provides built-in syntax presets for popular platforms and supports custom syntax definitions.
 
@@ -56,7 +56,7 @@ The `value` must include the syntax delimiters. For example, with Liquid syntax:
 Templatical includes four built-in syntax presets. The `syntax` setting tells the editor how to detect and highlight both data tags and logic tags in content.
 
 Each preset defines two patterns:
-- **Data tags** -- variable placeholders like a recipient's name or email
+- **Data tags** -- variable merge tags like a recipient's name or email
 - **Logic tags** -- control flow statements like conditionals and loops
 
 | Preset | Data tag | Logic tag | Platform |
@@ -77,13 +77,13 @@ mergeTags: {
 
 ## Logic tags
 
-Beyond data placeholders, the editor also recognizes logic tags -- conditional statements, loops, and other control flow syntax used by your email platform. These are detected automatically using the `logic` regex pattern from the selected syntax preset.
+Beyond data tags, the editor also recognizes logic tags -- conditional statements, loops, and other control flow syntax used by your email platform. These are detected automatically using the `logic` regex pattern from the selected syntax preset.
 
 When a logic tag is detected in content, the editor extracts the keyword (the first capture group from the logic regex) and displays it as an uppercase badge -- for example, `{% if customer.vip %}` renders as **IF** and `{% endif %}` renders as **ENDIF**. Hovering over the badge shows the full tag value as a tooltip. Users can click the badge to edit the raw value.
 
 ![Logic tag displayed in the editor](/images/logic-tag.png)
 
-Logic tags are styled differently from data tags (outlined badge with primary color vs filled background) so template authors can distinguish between variable placeholders and control flow at a glance.
+Logic tags are styled differently from data tags (outlined badge with primary color vs filled background) so template authors can distinguish between data tags and control flow at a glance.
 
 Like data tags, logic tags pass through unchanged in the rendered MJML — your sending platform evaluates them at send time.
 
@@ -146,7 +146,7 @@ mergeTags: {
 }
 ```
 
-The `value` regex detects data placeholders. The `logic` regex detects control flow statements — the first capture group `(\w+)` extracts the keyword (e.g., `IF`, `FOR`) which the editor uses as the display label.
+The `value` regex detects data tags. The `logic` regex detects control flow statements — the first capture group `(\w+)` extracts the keyword (e.g., `IF`, `FOR`) which the editor uses as the display label.
 
 ## Autocomplete
 
@@ -177,7 +177,7 @@ The toolbar's "Insert merge tag" button continues to work regardless of the auto
 
 ## Dynamic tag loading
 
-For large or context-dependent tag lists, use the `onRequest` callback instead of (or in addition to) a static `tags` array. The editor calls this function when the user clicks to insert a merge tag. Use it to open a custom picker modal, fetch available placeholders from your API, or build a context-aware tag list based on the current user. Return the selected `MergeTag` or `null` to cancel.
+For large or context-dependent tag lists, use the `onRequest` callback instead of (or in addition to) a static `tags` array. The editor calls this function when the user clicks to insert a merge tag. Use it to open a custom picker modal, fetch available merge tags from your API, or build a context-aware tag list based on the current user. Return the selected `MergeTag` or `null` to cancel.
 
 ```ts
 const editor = await init({
@@ -193,6 +193,6 @@ const editor = await init({
 
 ## Merge tags in other inputs
 
-Placeholders aren't limited to title and paragraph blocks. The editor detects and highlights merge tags in other block inputs too — button text, button URL, image URL, image alt text, and link href values. The same label replacement and tooltip behavior applies in these fields.
+Merge tags aren't limited to title and paragraph blocks. The editor detects and highlights merge tags in other block inputs too — button text, button URL, image URL, image alt text, and link href values. The same label replacement and tooltip behavior applies in these fields.
 
 <img src="/images/button-merge-tag.png" alt="Merge tag in a button URL" style="max-width: 360px;" />

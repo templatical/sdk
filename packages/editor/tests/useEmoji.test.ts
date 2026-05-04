@@ -1,7 +1,9 @@
+// @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
 import { useEmoji } from "../src/composables/useEmoji";
 import { emojiCategories } from "../src/composables/emojiData";
-import { nextTick } from "vue";
+import { defineComponent, h, nextTick } from "vue";
+import { mount } from "@vue/test-utils";
 
 /** Flush both microtasks and Vue's reactivity queue */
 async function flushAll(): Promise<void> {
@@ -58,6 +60,25 @@ describe("useEmoji", () => {
       "gestures",
       "objects",
     ]);
+  });
+
+  it("does not write categories after the host scope is disposed mid-load", async () => {
+    let captured!: ReturnType<typeof useEmoji>;
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          captured = useEmoji();
+          return () => h("div");
+        },
+      }),
+    );
+
+    captured.toggle();
+    await nextTick();
+    wrapper.unmount();
+    await flushAll();
+
+    expect(captured.categories.value).toEqual([]);
   });
 
   it("does not re-load categories on subsequent opens", async () => {

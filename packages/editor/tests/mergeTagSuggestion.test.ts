@@ -197,23 +197,25 @@ describe('handleSuggestionKeyDown', () => {
 });
 
 describe('MergeTagSuggestion mount target', () => {
-  // Regression: popup must mount OUTSIDE the Canvas (which applies
-  // `filter` in dark mode — that creates a containing block for
-  // position: fixed descendants and offsets the popup). Mounting at
-  // the theme root keeps CSS vars cascading without sitting inside the
-  // filter scope. Click-outside teardown is handled separately by
-  // mousedown.prevent.stop on the options.
-  it('source prefers [data-tpl-theme] over .tpl-text-editor-wrapper', async () => {
+  // Regression: popup must mount to document.body so its position: fixed
+  // resolves against the viewport. Any transform/filter on a consumer-page
+  // ancestor (route transitions, reveal animations, dark canvas inversion)
+  // creates a containing block and offsets fixed descendants. Mounting
+  // inside [data-tpl-theme] previously broke on consumer pages with
+  // transformed wrappers.
+  //
+  // The popup wrapper mirrors the editor's data-tpl-theme value and adds
+  // the `tpl` class so CSS vars (scoped to .tpl[data-tpl-theme]) resolve.
+  it('source mounts to document.body and copies --tpl-* vars from the theme root', async () => {
     const fs = await import('node:fs');
     const src = fs.readFileSync(
       'src/extensions/MergeTagSuggestion.ts',
       'utf8',
     );
-    const wrapperIdx = src.indexOf('.tpl-text-editor-wrapper');
-    const themeIdx = src.indexOf('[data-tpl-theme]');
-    expect(wrapperIdx).toBeGreaterThan(-1);
-    expect(themeIdx).toBeGreaterThan(-1);
-    expect(themeIdx).toBeLessThan(wrapperIdx);
+    expect(src).toContain('document.body.appendChild(container)');
+    expect(src).toContain('data-tpl-theme');
+    expect(src).toContain('--tpl-');
+    expect(src).toContain('getComputedStyle');
   });
 
   // Regression: useRichTextEditor doesn't pass `element` to the TipTap

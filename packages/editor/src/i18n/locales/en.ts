@@ -175,7 +175,7 @@ export default {
     placeholderUrl: "Placeholder Image",
     placeholderUrlPlaceholder: "https://... (design-time only)",
     placeholderUrlTooltip:
-      "Since the image URL uses a placeholder, you can provide a real image here to preview the layout while designing. This is not included in the final output.",
+      "Since the image URL uses a merge tag, you can provide a real image here to preview the layout while designing. This is not included in the final output.",
     clickToAdd: "Click to add image URL",
     browseMedia: "Browse Media",
   },
@@ -198,7 +198,7 @@ export default {
     placeholderUrl: "Placeholder Thumbnail",
     placeholderUrlPlaceholder: "https://... (design-time only)",
     placeholderUrlTooltip:
-      "Since the video URL uses a placeholder, you can provide a real thumbnail here to preview the layout while designing. This is not included in the final output.",
+      "Since the video URL uses a merge tag, you can provide a real thumbnail here to preview the layout while designing. This is not included in the final output.",
     addVideo: "Add a video URL",
   },
 
@@ -418,7 +418,7 @@ export default {
     preheaderTextPlaceholder:
       "Preview text shown after subject line in inbox...",
     preheaderTextHint:
-      "This text appears after the subject line in email client previews. Supports placeholders.",
+      "This text appears after the subject line in email client previews. Supports merge tags.",
     tips: "Tips",
     tip1: "600px is the standard width for email templates",
     tip2: "Use web-safe fonts for best compatibility",

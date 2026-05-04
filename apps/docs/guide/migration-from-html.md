@@ -102,7 +102,7 @@ Global template settings are extracted from the document:
 
 - **Modern HTML (flex / grid / `<div>` layouts)** — produces low-fidelity output, mostly HTML-fallback blocks. The importer is tuned for table-based email HTML.
 - **Custom fonts** — `@font-face` rules are not imported. Add fonts manually via the editor's [`fonts` config option](/guide/fonts).
-- **Display conditions / merge tags** — proprietary placeholder syntax (`{{var}}`, `*|VAR|*`, `<%= var %>`) is preserved as raw text. Recreate using Templatical [merge tags](/guide/merge-tags) or [display conditions](/guide/display-conditions).
+- **Display conditions / merge tags** — proprietary merge tag syntax (`{{var}}`, `*|VAR|*`, `<%= var %>`) is preserved as raw text. Recreate using Templatical [merge tags](/guide/merge-tags) or [display conditions](/guide/display-conditions).
 - **External resources** — `<link>`, external stylesheets, web fonts, and remote images are not fetched. Image `src` URLs are preserved as-is.
 - **Outlook MSO conditional comments** — preserved as HTML inside their containing block (they're inert in non-Outlook clients anyway).
 - **`<form>` / `<input>` / `<button>` form controls** — preserved as HTML-fallback. Most email clients block form submission; rebuild the call-to-action as a button linking to a hosted form.

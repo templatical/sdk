@@ -19,7 +19,7 @@ export interface UseMergeTagFieldOptions {
 export interface UseMergeTagFieldReturn {
   segments: ComputedRef<MergeTagSegment[]>;
   hasMergeTags: ComputedRef<boolean>;
-  mergeTagEnabled: boolean;
+  canRequestMergeTag: boolean;
   isRequestingMergeTag: Ref<boolean>;
   isEditing: Ref<boolean>;
   startEditing: () => void;
@@ -35,7 +35,7 @@ export function useMergeTagField(
   const { modelValue, emit, elementRef } = options;
 
   const {
-    isEnabled: mergeTagEnabled,
+    canRequestMergeTag,
     isRequesting: isRequestingMergeTag,
     isMergeTagValue,
     getMergeTagLabel,
@@ -151,7 +151,7 @@ export function useMergeTagField(
   return {
     segments,
     hasMergeTags,
-    mergeTagEnabled,
+    canRequestMergeTag,
     isRequestingMergeTag,
     isEditing,
     startEditing,

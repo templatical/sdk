@@ -200,22 +200,41 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
           }
         }
 
-        function findMountTarget(
+        function applyThemeContext(
+          target: HTMLElement,
           editorEl: HTMLElement | null | undefined,
-        ): HTMLElement {
-          // Prefer the theme root (outside Canvas). Canvas.vue applies
-          // `filter: invert(1) hue-rotate(180deg)` in dark mode, which
-          // creates a containing block for `position: fixed` descendants.
-          // Mounting inside the canvas would offset the popup. The theme
-          // root has the CSS vars and no transform/filter — best of both.
+        ): void {
+          // The popup mounts to document.body so its `position: fixed`
+          // resolves against the viewport — any transform/filter on a
+          // consumer-page ancestor (route transitions, reveal animations,
+          // dark canvas inversion) creates a containing block and moves
+          // fixed descendants with it. Body ancestors don't transform.
           //
-          // Click-outside is handled by mousedown.prevent.stop on options;
-          // mount location no longer affects that.
-          const root =
-            editorEl?.closest<HTMLElement>("[data-tpl-theme]") ??
-            editorEl?.closest<HTMLElement>(".tpl-text-editor-wrapper") ??
-            null;
-          return root ?? document.body;
+          // CSS vars (--tpl-bg-elevated, --tpl-border, etc.) are scoped to
+          // `.tpl` and `.tpl[data-tpl-theme="dark"]` in the editor's
+          // stylesheet, so the popup wouldn't inherit them at body root.
+          // Adding `class="tpl"` would also pull base rules (min-height,
+          // flex, full-page bg) we don't want on a popup. Instead, snapshot
+          // every --tpl-* custom property from the editor's theme root and
+          // re-emit them inline on the popup wrapper.
+          const themeRoot = editorEl?.closest<HTMLElement>("[data-tpl-theme]");
+          if (!themeRoot) return;
+          const themeValue = themeRoot.getAttribute("data-tpl-theme");
+          if (themeValue) target.setAttribute("data-tpl-theme", themeValue);
+          const computed = window.getComputedStyle(themeRoot);
+          for (let i = 0; i < computed.length; i++) {
+            const prop = computed[i];
+            if (prop.startsWith("--tpl-")) {
+              target.style.setProperty(prop, computed.getPropertyValue(prop));
+            }
+          }
+          // The popup no longer inherits font from the editor wrapper, so
+          // its content would render in the page's default font and end up
+          // at a different height — which changes the flip-above decision
+          // and shifts the popup off the caret. Copy typography too.
+          target.style.fontFamily = computed.fontFamily;
+          target.style.fontSize = computed.fontSize;
+          target.style.lineHeight = computed.lineHeight;
         }
 
         function setEditableAria(active: boolean): void {
@@ -264,7 +283,8 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             // constructor (as is the case with @tiptap/vue-3 EditorContent).
             const viewDom = props.editor.view?.dom as HTMLElement | undefined;
             editableEl = viewDom ?? null;
-            findMountTarget(viewDom ?? null).appendChild(container);
+            applyThemeContext(container, viewDom ?? null);
+            document.body.appendChild(container);
 
             app = createApp({
               render() {

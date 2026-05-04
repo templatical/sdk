@@ -102,7 +102,7 @@ Eine Richtungs-Referenz, keine vollständige Spezifikation. Unlayer hat Tarif-ge
 Diese Funktionen unterscheiden sich genug zwischen den beiden Produkten, dass du sie von Hand übersetzen musst:
 
 - **Anzeigebedingungen** — Unlayers Conditional-Content-Syntax weicht von Templaticals [Anzeigebedingungen](/de/guide/display-conditions) ab. Plane das Umschreiben der Bedingungen ein.
-- **Merge-Tags** — beide Produkte unterstützen Merge-Tags, aber die Platzhalter-Syntax kann abweichen. Prüfe [Templaticals Merge-Tag-Konfiguration](/de/guide/merge-tags) und passe die Tag-Tokens in deinen Texten an.
+- **Merge-Tags** — beide Produkte unterstützen Merge-Tags, aber die Merge-Tag-Syntax kann abweichen. Prüfe [Templaticals Merge-Tag-Konfiguration](/de/guide/merge-tags) und passe die Tag-Tokens in deinen Texten an.
 - **Custom CSS** — Unlayers Tarif-gebundenes Custom CSS lässt sich nicht direkt übertragen. Nutze stattdessen Templaticals [Theming-System](/de/guide/theming) und Design-Tokens.
 - **AMP for Email** — wird in Templatical derzeit nicht unterstützt.
 - **Page-/Popup-/Document-Templates** — Unlayers Nicht-E-Mail-Builder haben keine Templatical-Entsprechung.

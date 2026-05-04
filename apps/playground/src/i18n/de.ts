@@ -69,7 +69,7 @@ export default {
     onRequestMediaDesc:
       '\u00d6ffnet eine Demo-Bildauswahl, wenn der Benutzer auf "Medien durchsuchen" klickt',
     onRequestMergeTag:
-      "\u00d6ffnet eine Merge-Tag-Auswahl, wenn der Benutzer einen Platzhalter einf\u00fcgt",
+      "\u00d6ffnet eine Merge-Tag-Auswahl, wenn der Benutzer ein Merge-Tag einf\u00fcgt",
     cancel: "Abbrechen",
     apply: "\u00dcbernehmen & Neu laden",
   },
