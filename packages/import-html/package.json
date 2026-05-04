@@ -1,0 +1,52 @@
+{
+  "name": "@templatical/import-html",
+  "description": "Convert HTML email templates to Templatical format",
+  "version": "0.4.0",
+  "bugs": "https://github.com/templatical/sdk/issues",
+  "dependencies": {
+    "@templatical/types": "workspace:*",
+    "cheerio": "^1.0.0",
+    "domhandler": "^5.0.3"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "homepage": "https://templatical.com",
+  "keywords": [
+    "email",
+    "email-template",
+    "html",
+    "html-import",
+    "importer",
+    "migration",
+    "templatical"
+  ],
+  "license": "MIT",
+  "module": "./dist/index.js",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/import-html"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts"
+}

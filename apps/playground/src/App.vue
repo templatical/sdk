@@ -78,13 +78,15 @@ function tplDesc(tpl: TemplateOption): string {
 
 type Screen = "chooser" | "editor";
 const screen = ref<Screen>("chooser");
-type ImportSource = "beefree" | "unlayer";
+type ImportSource = "beefree" | "unlayer" | "html";
 const showImport = ref(false);
 const importSource = ref<ImportSource>("beefree");
 const beefreeJson = ref("");
 const beefreeError = ref("");
 const unlayerJson = ref("");
 const unlayerError = ref("");
+const htmlSource = ref("");
+const htmlError = ref("");
 
 // Feature showcase overlay
 const showFeatureOverlay = ref(false);
@@ -460,6 +462,7 @@ function closeImportModal(): void {
   showImport.value = false;
   beefreeError.value = "";
   unlayerError.value = "";
+  htmlError.value = "";
 }
 
 function openImportFromSource(source: ImportSource): void {
@@ -499,6 +502,20 @@ async function importUnlayerFromJson(raw: string): Promise<void> {
   }
 }
 
+async function importHtmlFromString(raw: string): Promise<void> {
+  htmlError.value = "";
+
+  try {
+    const { convertHtmlTemplate } = await import("@templatical/import-html");
+    const { content } = convertHtmlTemplate(raw);
+    closeImportModal();
+    htmlSource.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    htmlError.value = e instanceof Error ? e.message : "Invalid HTML";
+  }
+}
+
 function confirmImport(): void {
   if (importSource.value === "beefree") {
     const raw = beefreeJson.value.trim();
@@ -507,6 +524,16 @@ function confirmImport(): void {
       return;
     }
     importBeefreeFromJson(raw);
+    return;
+  }
+
+  if (importSource.value === "html") {
+    const raw = htmlSource.value.trim();
+    if (!raw) {
+      htmlError.value = t.value.importModal.html.emptyError;
+      return;
+    }
+    importHtmlFromString(raw);
     return;
   }
 
@@ -519,7 +546,7 @@ function confirmImport(): void {
 }
 
 const { open: openImportFile, onChange: onImportFileChange } = useFileDialog({
-  accept: ".json",
+  accept: ".json,.html,.htm",
   multiple: false,
 });
 
@@ -529,6 +556,8 @@ onImportFileChange(async (files) => {
   const text = await file.text();
   if (importSource.value === "beefree") {
     importBeefreeFromJson(text);
+  } else if (importSource.value === "html") {
+    importHtmlFromString(text);
   } else {
     importUnlayerFromJson(text);
   }
@@ -1553,6 +1582,29 @@ onUnmounted(() => {
                   <path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" />
                 </svg>
               </button>
+              <button
+                data-testid="chooser-import-html"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-sky-300 hover:bg-sky-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:border-sky-500/40 dark:hover:bg-sky-500/10"
+                @click="openImportFromSource('html')"
+              >
+                <span
+                  class="size-2.5 rounded-full bg-sky-500 ring-2 ring-sky-200/60 dark:ring-sky-500/20"
+                  aria-hidden="true"
+                ></span>
+                {{ t.chooser.migration.importFromHtml }}
+                <svg
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-sky-600 dark:group-hover:text-sky-400"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" />
+                </svg>
+              </button>
             </div>
           </section>
 
@@ -2465,7 +2517,9 @@ onUnmounted(() => {
                   {{
                     importSource === "beefree"
                       ? t.importModal.beefree.description
-                      : t.importModal.unlayer.description
+                      : importSource === "html"
+                        ? t.importModal.html.description
+                        : t.importModal.unlayer.description
                   }}
                 </p>
               </div>
@@ -2510,6 +2564,20 @@ onUnmounted(() => {
               >
                 {{ t.importModal.sources.unlayer }}
               </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'html'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'html'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-html"
+                @click="importSource = 'html'"
+              >
+                {{ t.importModal.sources.html }}
+              </button>
             </div>
             <div class="flex-1 overflow-auto p-5">
               <button
@@ -2551,12 +2619,20 @@ onUnmounted(() => {
                 placeholder='{"page": {"body": {...}, "rows": [...]}}'
               ></textarea>
               <textarea
-                v-else
+                v-else-if="importSource === 'unlayer'"
                 v-model="unlayerJson"
                 :aria-label="t.a11y.unlayerJsonContent"
                 data-testid="import-textarea-unlayer"
                 class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
                 placeholder='{"body": {"rows": [...], "values": {...}}}'
+              ></textarea>
+              <textarea
+                v-else
+                v-model="htmlSource"
+                :aria-label="t.a11y.htmlSourceContent"
+                data-testid="import-textarea-html"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder="<!doctype html>&#10;<html>&#10;  <body>&#10;    <table>...</table>&#10;  </body>&#10;</html>"
               ></textarea>
               <p
                 v-if="importSource === 'beefree' && beefreeError"
@@ -2571,6 +2647,13 @@ onUnmounted(() => {
                 class="mt-2 mb-0 text-[13px] text-red-500"
               >
                 {{ unlayerError }}
+              </p>
+              <p
+                v-if="importSource === 'html' && htmlError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ htmlError }}
               </p>
             </div>
             <div

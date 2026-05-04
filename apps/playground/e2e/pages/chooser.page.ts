@@ -1,7 +1,25 @@
 import { expect, type Page } from "@playwright/test";
 import { SELECTORS } from "../helpers/selectors";
 
-type ImportSource = "beefree" | "unlayer";
+type ImportSource = "beefree" | "unlayer" | "html";
+
+const TRIGGER_BY_SOURCE: Record<ImportSource, string> = {
+  beefree: SELECTORS.chooserImportBeefree,
+  unlayer: SELECTORS.chooserImportUnlayer,
+  html: SELECTORS.chooserImportHtml,
+};
+
+const TAB_BY_SOURCE: Record<ImportSource, string> = {
+  beefree: SELECTORS.importTabBeefree,
+  unlayer: SELECTORS.importTabUnlayer,
+  html: SELECTORS.importTabHtml,
+};
+
+const TEXTAREA_BY_SOURCE: Record<ImportSource, string> = {
+  beefree: SELECTORS.importTextareaBeefree,
+  unlayer: SELECTORS.importTextareaUnlayer,
+  html: SELECTORS.importTextareaHtml,
+};
 
 export class ChooserPage {
   constructor(private page: Page) {}
@@ -25,11 +43,7 @@ export class ChooserPage {
   }
 
   async openImportModal(source: ImportSource = "beefree") {
-    const trigger =
-      source === "beefree"
-        ? SELECTORS.chooserImportBeefree
-        : SELECTORS.chooserImportUnlayer;
-    await this.page.locator(trigger).click();
+    await this.page.locator(TRIGGER_BY_SOURCE[source]).click();
     await expect(this.page.locator(SELECTORS.importModal)).toBeVisible();
   }
 
@@ -38,10 +52,7 @@ export class ChooserPage {
   }
 
   async selectImportSource(source: ImportSource) {
-    const tab =
-      source === "beefree"
-        ? SELECTORS.importTabBeefree
-        : SELECTORS.importTabUnlayer;
+    const tab = TAB_BY_SOURCE[source];
     await this.page.locator(tab).click();
     await expect(this.page.locator(tab)).toHaveAttribute(
       "aria-selected",
@@ -49,12 +60,8 @@ export class ChooserPage {
     );
   }
 
-  async pasteImportJson(source: ImportSource, json: string) {
-    const textarea =
-      source === "beefree"
-        ? SELECTORS.importTextareaBeefree
-        : SELECTORS.importTextareaUnlayer;
-    await this.page.locator(textarea).fill(json);
+  async pasteImportJson(source: ImportSource, content: string) {
+    await this.page.locator(TEXTAREA_BY_SOURCE[source]).fill(content);
   }
 
   async confirmImport() {
@@ -70,12 +77,12 @@ export class ChooserPage {
   }
 
   /**
-   * One-shot: open modal directly on the requested source, paste JSON, click Import.
+   * One-shot: open modal on the requested source, paste content, click Import.
    * Caller is responsible for asserting downstream editor state.
    */
-  async importTemplate(source: ImportSource, json: string) {
+  async importTemplate(source: ImportSource, content: string) {
     await this.openImportModal(source);
-    await this.pasteImportJson(source, json);
+    await this.pasteImportJson(source, content);
     await this.confirmImport();
   }
 }

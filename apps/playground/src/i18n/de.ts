@@ -7,11 +7,12 @@ export default {
     startFromScratch: "Neu beginnen",
     emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
     migration: {
-      headline: "Schon in BeeFree oder Unlayer?",
+      headline: "Schon in BeeFree, Unlayer oder eigenem HTML?",
       description:
         "Bringen Sie Ihre bestehenden Vorlagen in Sekunden mit — Block-Mapping, Layouts und Merge-Tags werden automatisch übernommen.",
       importFromBeefree: "Aus BeeFree importieren",
       importFromUnlayer: "Aus Unlayer importieren",
+      importFromHtml: "Aus HTML importieren",
     },
   },
   cloudBanner: {
@@ -77,9 +78,10 @@ export default {
     sources: {
       beefree: "Aus BeeFree",
       unlayer: "Aus Unlayer",
+      html: "Aus HTML",
     },
-    chooseFile: ".json-Datei w\u00e4hlen",
-    orPaste: "oder JSON einf\u00fcgen",
+    chooseFile: "Datei w\u00e4hlen",
+    orPaste: "oder unten einf\u00fcgen",
     import: "Importieren & \u00d6ffnen",
     cancel: "Abbrechen",
     beefree: {
@@ -93,6 +95,12 @@ export default {
         "F\u00fcgen Sie den JSON-Design-Export aus Unlayer (Ergebnis von saveDesign) unten ein.",
       emptyError:
         "F\u00fcgen Sie Ihr Unlayer-JSON ein oder laden Sie eine Datei hoch.",
+    },
+    html: {
+      description:
+        "F\u00fcgen Sie den rohen HTML-Quelltext einer E-Mail ein (MJML-Ausgabe, ESP-Export oder handgeschrieben). Beste Ergebnisse mit tabellenbasierten Layouts.",
+      emptyError:
+        "F\u00fcgen Sie Ihren HTML-Quelltext ein oder laden Sie eine Datei hoch.",
     },
   },
   mergeTagModal: {
@@ -239,6 +247,7 @@ export default {
     editorConfig: "Editor-Konfiguration",
     beefreeJsonContent: "BeeFree-JSON-Inhalt",
     unlayerJsonContent: "Unlayer-JSON-Inhalt",
+    htmlSourceContent: "HTML-Quelltext-Inhalt",
     selectLanguage: "Sprache auswählen",
     selectTheme: "Farbschema auswählen",
   },

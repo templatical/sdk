@@ -160,6 +160,9 @@ importers:
       '@templatical/import-beefree':
         specifier: workspace:*
         version: link:../../packages/import-beefree
+      '@templatical/import-html':
+        specifier: workspace:*
+        version: link:../../packages/import-html
       '@templatical/import-unlayer':
         specifier: workspace:*
         version: link:../../packages/import-unlayer
@@ -337,6 +340,28 @@ importers:
       '@templatical/types':
         specifier: workspace:*
         version: link:../types
+    devDependencies:
+      tsup:
+        specifier: ^8.5.1
+        version: 8.5.1(@microsoft/api-extractor@7.58.7(@types/node@25.6.0))(jiti@2.6.1)(postcss@8.5.12)(typescript@6.0.3)(yaml@2.8.3)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.5
+        version: 4.1.5(@types/node@25.6.0)(@vitest/coverage-v8@4.1.5)(happy-dom@20.9.0)(jsdom@28.1.0)(vite@8.0.10(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(yaml@2.8.3))
+
+  packages/import-html:
+    dependencies:
+      '@templatical/types':
+        specifier: workspace:*
+        version: link:../types
+      cheerio:
+        specifier: ^1.0.0
+        version: 1.0.0
+      domhandler:
+        specifier: ^5.0.3
+        version: 5.0.3
     devDependencies:
       tsup:
         specifier: ^8.5.1

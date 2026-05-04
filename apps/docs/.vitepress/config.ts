@@ -95,6 +95,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "From BeeFree", link: "/guide/migration-from-beefree" },
         { text: "From Unlayer", link: "/guide/migration-from-unlayer" },
+        { text: "From HTML", link: "/guide/migration-from-html" },
         { text: "From hand-written MJML", link: "/guide/migration-from-mjml" },
       ],
     },
@@ -203,6 +204,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Von BeeFree", link: "/de/guide/migration-from-beefree" },
         { text: "Von Unlayer", link: "/de/guide/migration-from-unlayer" },
+        { text: "Von HTML", link: "/de/guide/migration-from-html" },
         {
           text: "Von handgeschriebenem MJML",
           link: "/de/guide/migration-from-mjml",
