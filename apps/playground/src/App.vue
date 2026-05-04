@@ -1501,53 +1501,51 @@ onUnmounted(() => {
 
           <section
             data-testid="chooser-migration-band"
-            class="pg-card-stagger mt-8 w-full flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6 p-5 sm:p-6 border border-gray-200 rounded-2xl bg-gradient-to-br from-white to-gray-50/40 dark:border-gray-700 dark:from-gray-800/60 dark:to-gray-800/30"
+            class="pg-card-stagger mt-8 w-full flex flex-col gap-4 p-5 sm:p-6 border border-gray-200 rounded-2xl bg-gradient-to-br from-white to-gray-50/40 dark:border-gray-700 dark:from-gray-800/60 dark:to-gray-800/30"
             :style="{ animationDelay: `${(templates.length + 1) * 40}ms` }"
           >
-            <div
-              class="shrink-0 inline-flex items-center justify-center size-10 rounded-xl bg-amber-100/70 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300"
-              aria-hidden="true"
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.75"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+            <div class="flex items-start gap-3 sm:gap-4">
+              <div
+                class="shrink-0 inline-flex items-center justify-center size-10 rounded-xl bg-amber-100/70 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300"
+                aria-hidden="true"
               >
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <h3
+                  class="m-0 text-sm font-semibold text-gray-900 dark:text-gray-100"
+                >
+                  {{ t.chooser.migration.headline }}
+                </h3>
+                <p
+                  class="mt-1 mb-0 text-xs leading-[1.5] text-gray-500 dark:text-gray-400"
+                >
+                  {{ t.chooser.migration.description }}
+                </p>
+              </div>
             </div>
-            <div class="flex-1 min-w-0">
-              <h3
-                class="m-0 text-sm font-semibold text-gray-900 dark:text-gray-100"
-              >
-                {{ t.chooser.migration.headline }}
-              </h3>
-              <p
-                class="mt-1 mb-0 text-xs leading-[1.5] text-gray-500 dark:text-gray-400"
-              >
-                {{ t.chooser.migration.description }}
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-2 sm:gap-3 shrink-0">
+            <div class="flex flex-wrap gap-2 sm:gap-3">
               <button
                 data-testid="chooser-import-beefree"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-amber-300 hover:bg-amber-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:border-amber-500/40 dark:hover:bg-amber-500/10"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
                 @click="openImportFromSource('beefree')"
               >
-                <span
-                  class="size-2.5 rounded-full bg-amber-400 ring-2 ring-amber-200/60 dark:ring-amber-500/20"
-                  aria-hidden="true"
-                ></span>
                 {{ t.chooser.migration.importFromBeefree }}
                 <svg
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-amber-600 dark:group-hover:text-amber-400"
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                   viewBox="0 0 16 16"
                   fill="none"
                   stroke="currentColor"
@@ -1561,16 +1559,12 @@ onUnmounted(() => {
               </button>
               <button
                 data-testid="chooser-import-unlayer"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-violet-300 hover:bg-violet-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:border-violet-500/40 dark:hover:bg-violet-500/10"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
                 @click="openImportFromSource('unlayer')"
               >
-                <span
-                  class="size-2.5 rounded-full bg-violet-500 ring-2 ring-violet-200/60 dark:ring-violet-500/20"
-                  aria-hidden="true"
-                ></span>
                 {{ t.chooser.migration.importFromUnlayer }}
                 <svg
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-violet-600 dark:group-hover:text-violet-400"
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                   viewBox="0 0 16 16"
                   fill="none"
                   stroke="currentColor"
@@ -1584,16 +1578,12 @@ onUnmounted(() => {
               </button>
               <button
                 data-testid="chooser-import-html"
-                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-sky-300 hover:bg-sky-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:border-sky-500/40 dark:hover:bg-sky-500/10"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
                 @click="openImportFromSource('html')"
               >
-                <span
-                  class="size-2.5 rounded-full bg-sky-500 ring-2 ring-sky-200/60 dark:ring-sky-500/20"
-                  aria-hidden="true"
-                ></span>
                 {{ t.chooser.migration.importFromHtml }}
                 <svg
-                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-sky-600 dark:group-hover:text-sky-400"
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                   viewBox="0 0 16 16"
                   fill="none"
                   stroke="currentColor"
