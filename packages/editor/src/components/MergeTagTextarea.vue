@@ -25,7 +25,7 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const {
   segments,
   hasMergeTags,
-  mergeTagEnabled,
+  canRequestMergeTag,
   isRequestingMergeTag,
   isEditing,
   startEditing,
@@ -54,7 +54,7 @@ const displayClass =
       @clear="clearValue"
     />
     <MergeTagInsertButton
-      v-if="mergeTagEnabled"
+      v-if="canRequestMergeTag"
       :disabled="isRequestingMergeTag"
       @insert="insertMergeTag"
     />
@@ -71,7 +71,7 @@ const displayClass =
       @keydown.escape="stopEditing"
     />
     <MergeTagInsertButton
-      v-if="mergeTagEnabled"
+      v-if="canRequestMergeTag"
       :disabled="isRequestingMergeTag"
       @insert="insertMergeTag"
     />

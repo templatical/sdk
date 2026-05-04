@@ -60,7 +60,7 @@ Der Typ `ImageBlock` definiert alle konfigurierbaren Eigenschaften:
 
 ### Placeholder-URL
 
-Wenn das `src`-Feld einen Merge-Tag-Platzhalter enthält (z. B. <code v-pre>{{product.image}}</code>), wird das eigentliche Bild im Editor nicht gerendert. Verwenden Sie `placeholderUrl`, um ein Platzhalterbild im Editor bereitzustellen. Dieser Wert ist in der exportierten Ausgabe nicht enthalten.
+Wenn das `src`-Feld ein Merge-Tag enthält (z. B. <code v-pre>{{product.image}}</code>), wird das eigentliche Bild im Editor nicht gerendert. Verwenden Sie `placeholderUrl`, um ein Platzhalterbild im Editor bereitzustellen. Dieser Wert ist in der exportierten Ausgabe nicht enthalten.
 
 ## Best Practices
 
