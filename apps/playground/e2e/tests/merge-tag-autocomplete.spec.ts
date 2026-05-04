@@ -317,6 +317,53 @@ test.describe("Merge tag autocomplete", () => {
     expect(popupBox?.y ?? -1).toBeGreaterThanOrEqual(0);
   });
 
+  test("popup positions correctly when an ancestor of the editor has a transform", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    // Regression for the showcase-page bug: any non-`none` `transform` on
+    // an editor ancestor (route transitions, reveal animations) creates a
+    // containing block for `position: fixed` descendants. If the popup
+    // mounts inside that subtree, fixed positioning resolves against the
+    // transformed ancestor instead of the viewport and the popup lands far
+    // from the caret. The fix mounts the popup to document.body.
+    await page.evaluate(() => {
+      // Wrap the document body's children in a transformed container.
+      // `translateY(0)` is layout-equivalent to no transform but still
+      // creates a containing block — exactly the silent-trap shape.
+      const wrap = document.createElement("div");
+      wrap.style.transform = "translateY(0)";
+      while (document.body.firstChild) {
+        wrap.appendChild(document.body.firstChild);
+      }
+      document.body.appendChild(wrap);
+    });
+
+    const editable = await openParagraphEditor(editorPage);
+    await editable.click();
+    await page.keyboard.type(" {{");
+
+    const popup = page.locator(SELECTORS.mergeTagSuggestionPopup);
+    await expect(popup).toBeVisible();
+
+    const gaps = await page.evaluate((popupSelector: string) => {
+      const sel = window.getSelection();
+      const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+      const caretRect = range?.getBoundingClientRect() ?? null;
+      const popupEl = document.querySelector(popupSelector) as HTMLElement | null;
+      const popupRect = popupEl?.getBoundingClientRect() ?? null;
+      if (!caretRect || !popupRect) return null;
+      return {
+        vertical: Math.abs(popupRect.top - caretRect.bottom),
+        horizontal: Math.abs(popupRect.left - caretRect.left),
+      };
+    }, SELECTORS.mergeTagSuggestionPopup);
+
+    expect(gaps).not.toBeNull();
+    expect(gaps?.vertical ?? Infinity).toBeLessThanOrEqual(10);
+    expect(gaps?.horizontal ?? Infinity).toBeLessThan(50);
+  });
+
   test("contenteditable exposes ARIA combobox attrs while popup is open", async ({
     editorReady: { editorPage },
     page,
