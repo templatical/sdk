@@ -13,7 +13,8 @@
       "@templatical/editor": ["../../packages/editor/src/index.ts"],
       "@templatical/renderer": ["../../packages/renderer/src/index.ts"],
       "@templatical/import-beefree": ["../../packages/import-beefree/src/index.ts"],
-      "@templatical/import-unlayer": ["../../packages/import-unlayer/src/index.ts"]
+      "@templatical/import-unlayer": ["../../packages/import-unlayer/src/index.ts"],
+      "@templatical/import-html": ["../../packages/import-html/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.vue", "src/env.d.ts"]
