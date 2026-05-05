@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "./dist",
+    "types": ["vite/client"],
+    "paths": {
+      "@templatical/types": ["../types/src/index.ts"],
+      "@templatical/media-library": ["../media-library/src/types.ts"]
+    }
+  },
+  "include": ["src"]
+}
