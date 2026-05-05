@@ -32,7 +32,7 @@ Verwenden Sie das, wenn ein Mandant sich explizit ausklingt oder wenn Sie das OS
 |---|---|
 | Editor | folgt stets `init({ locale })` |
 
-Steuert die Meldungstexte, die der Linter zurückgibt (`messages/{locale}.ts`), und wird von den lokalisierungsabhängigen Regeln verwendet (`link-vague-text`, `button-vague-label`). Fällt auf `en` zurück, wenn die Locale (oder ihre Basissprache) nicht mitgeliefert wird.
+Steuert die Meldungstexte, die der Linter zurückgibt (`messages/{locale}.ts`), und wird von den lokalisierungsabhängigen Regeln verwendet (`link-vague-text`, `button-vague-label`, `img-linked-no-context`). Fällt auf `en` zurück, wenn die Locale (oder ihre Basissprache) nicht mitgeliefert wird.
 
 ```ts
 // Headless – explizit setzen
@@ -49,7 +49,7 @@ Headless-Aufrufer (`lintAccessibility(...)` direkt) behalten die volle Kontrolle
 :::
 
 ::: tip Vague-Text-Wörterbücher sind sprachenübergreifend
-Das Wörterbuch ist eine Vereinigung aller registrierten Locales – ein deutschsprachiges E-Mail-Template mit einem englischen `Click here`-Button löst also weiterhin `link-vague-text` / `button-vague-label` aus. Die `locale`-Option steuert das Matching nicht; sie steuert nur den Meldungstext.
+Das Wörterbuch ist eine Vereinigung aller registrierten Locales – ein deutschsprachiges E-Mail-Template mit einem englischen `Click here`-Button löst also weiterhin `link-vague-text` / `button-vague-label` aus, und ein deutsches `Jetzt kaufen` als Alt-Text eines verlinkten Bildes erfüllt den Action-Hint-Check von `img-linked-no-context` auch in einem englischsprachigen Template. Die `locale`-Option steuert das Matching nicht; sie steuert nur den Meldungstext.
 :::
 
 ## `rules`

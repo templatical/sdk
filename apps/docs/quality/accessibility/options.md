@@ -32,7 +32,7 @@ Use this when a tenant has explicitly opted out, or to keep the default OSS bund
 |---|---|
 | Editor | always matches `init({ locale })` |
 
-Drives the message templates the linter returns (`messages/{locale}.ts`) and is accepted by the locale-aware rules (`link-vague-text`, `button-vague-label`). Falls back to `en` when the locale (or its base language) isn't bundled.
+Drives the message templates the linter returns (`messages/{locale}.ts`) and is accepted by the locale-aware rules (`link-vague-text`, `button-vague-label`, `img-linked-no-context`). Falls back to `en` when the locale (or its base language) isn't bundled.
 
 ```ts
 // Headless — set explicitly
@@ -49,7 +49,7 @@ Headless callers (`lintAccessibility(...)` directly) keep full control.
 :::
 
 ::: tip Vague-text dictionaries are cross-locale
-The dictionary is a union of every registered locale, so a German-locale email with an English `Click here` button still flags `link-vague-text` / `button-vague-label`. The `locale` option doesn't gate matching — it only drives message text.
+The dictionary is a union of every registered locale, so a German-locale email with an English `Click here` button still flags `link-vague-text` / `button-vague-label`, and a German `Jetzt kaufen` alt on an English-locale linked image still satisfies `img-linked-no-context`'s action-hint check. The `locale` option doesn't gate matching — it only drives message text.
 :::
 
 ## `rules`

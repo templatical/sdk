@@ -4,15 +4,17 @@ import {
   createImageBlock,
 } from "@templatical/types";
 import { lintAccessibility } from "../../src";
+import type { A11yOptions } from "../../src";
 
 function issuesFor(
   block: ReturnType<typeof createImageBlock>,
   ruleId: string,
+  opts?: A11yOptions,
 ) {
   const content = createDefaultTemplateContent();
   content.settings.preheaderText = "x";
   content.blocks = [block];
-  return lintAccessibility(content).filter((i) => i.ruleId === ruleId);
+  return lintAccessibility(content, opts).filter((i) => i.ruleId === ruleId);
 }
 
 describe("img-alt-is-filename", () => {
@@ -161,6 +163,29 @@ describe("img-linked-no-context", () => {
     const block = createImageBlock({
       src: "x.png",
       alt: "",
+      linkUrl: "/buy",
+    });
+    expect(issuesFor(block, "img-linked-no-context")).toEqual([]);
+  });
+
+  it("does not fire for German action verb under locale=de", () => {
+    const block = createImageBlock({
+      src: "x.png",
+      alt: "Frühlingsschlussverkauf jetzt kaufen",
+      linkUrl: "/buy",
+    });
+    expect(
+      issuesFor(block, "img-linked-no-context", { locale: "de" }),
+    ).toEqual([]);
+  });
+
+  it("does not fire for German action verb under locale=en (cross-locale)", () => {
+    // Mirrors vagueLinkText cross-locale behavior: action hints from every
+    // registered locale count as context, so an English-locale email with a
+    // German alt is still recognized.
+    const block = createImageBlock({
+      src: "x.png",
+      alt: "Jetzt kaufen unsere Aktion",
       linkUrl: "/buy",
     });
     expect(issuesFor(block, "img-linked-no-context")).toEqual([]);

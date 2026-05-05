@@ -48,6 +48,8 @@ interface ParsedAttr {
   raw: string;
   name: string;
   value: string | null;
+  /** Start offset of `raw` within the parent attrs string. */
+  start: number;
 }
 
 const ATTR_RE =
@@ -55,11 +57,16 @@ const ATTR_RE =
 
 function parseAttrs(attrs: string): ParsedAttr[] {
   const parsed: ParsedAttr[] = [];
-  ATTR_RE.lastIndex = 0;
+  const re = new RegExp(ATTR_RE.source, ATTR_RE.flags);
   let match: RegExpExecArray | null;
-  while ((match = ATTR_RE.exec(attrs)) !== null) {
+  while ((match = re.exec(attrs)) !== null) {
     const value = match[2] ?? match[3] ?? match[4] ?? null;
-    parsed.push({ raw: match[0], name: match[1], value });
+    parsed.push({
+      raw: match[0],
+      name: match[1],
+      value,
+      start: match.index,
+    });
   }
   return parsed;
 }
@@ -85,8 +92,9 @@ function addNoopenerToTargetBlank(html: string): string {
         return match;
       }
       const newRel = `${relAttr.value ?? ""} noopener`.trim();
-      const newAttrs = attrs.replace(relAttr.raw, `rel="${newRel}"`);
-      return `<a${newAttrs}>`;
+      const before = attrs.slice(0, relAttr.start);
+      const after = attrs.slice(relAttr.start + relAttr.raw.length);
+      return `<a${before}rel="${newRel}"${after}>`;
     }
     return `<a${attrs} rel="noopener">`;
   });

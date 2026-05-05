@@ -28,6 +28,29 @@ const en = {
     "yes",
     "no",
   ],
+  /**
+   * Action verbs that signal a linked image's alt describes the link
+   * destination, not just the visual subject. Used by `img-linked-no-context`.
+   * Stored lowercase; tokenized matching is case-insensitive.
+   */
+  linkedImageActionHints: [
+    "buy",
+    "shop",
+    "view",
+    "read",
+    "learn",
+    "open",
+    "go",
+    "see",
+    "explore",
+    "discover",
+    "browse",
+    "download",
+    "get",
+    "claim",
+    "redeem",
+    "watch",
+  ],
 };
 
 export default en;

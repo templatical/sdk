@@ -35,6 +35,26 @@ describe("text-all-caps", () => {
       lint("<p>This is a Mixed-case sentence with enough letters here</p>"),
     ).toEqual([]);
   });
+
+  it("fires for long all-caps Cyrillic paragraph", () => {
+    expect(
+      lint(
+        "<p>СКИДКА ПЯТЬДЕСЯТ ПРОЦЕНТОВ ТОЛЬКО СЕГОДНЯ СПЕШИТЕ КУПИТЬ</p>",
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("fires for long all-caps Greek paragraph", () => {
+    expect(
+      lint("<p>ΜΕΓΑΛΗ ΠΡΟΣΦΟΡΑ ΣΗΜΕΡΑ ΜΟΝΟ ΑΓΟΡΑΣΤΕ ΤΩΡΑ ΧΩΡΙΣ ΚΑΘΥΣΤΕΡΗΣΗ</p>"),
+    ).toHaveLength(1);
+  });
+
+  it("does not fire for mixed-case Cyrillic", () => {
+    expect(
+      lint("<p>Это обычное предложение со смешанным регистром букв</p>"),
+    ).toEqual([]);
+  });
 });
 
 describe("text-low-contrast", () => {

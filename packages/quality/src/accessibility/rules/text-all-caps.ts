@@ -12,9 +12,9 @@ export const textAllCaps: Rule = {
   block(block, _ctx, opts) {
     if (!isParagraph(block) && !isTitle(block)) return null;
     const text = extractText(block.content ?? "");
-    const letters = text.replace(/[^A-Za-zÀ-ɏ]/g, "");
+    const letters = text.replace(/[^\p{L}]/gu, "");
     if (letters.length < opts.thresholds.allCapsMinLength) return null;
-    if (letters !== letters.toUpperCase()) return null;
+    if (letters !== letters.toLocaleUpperCase()) return null;
     return { blockId: block.id };
   },
 };

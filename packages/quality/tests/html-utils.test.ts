@@ -55,6 +55,19 @@ describe("extractAnchors", () => {
   it("returns empty array for HTML without anchors", () => {
     expect(extractAnchors("<p>no links here</p>")).toEqual([]);
   });
+
+  it("preserves outer anchor's prefix text when a nested anchor opens", () => {
+    // Nested anchors are invalid HTML but htmlparser2 still surfaces them.
+    // The outer anchor should retain its full visible text rather than
+    // losing the prefix that ran before the nested element.
+    const anchors = extractAnchors(
+      '<a href="/outer">prefix <a href="/inner">inner</a> suffix</a>',
+    );
+    const outer = anchors.find((a) => a.href === "/outer")!;
+    const inner = anchors.find((a) => a.href === "/inner")!;
+    expect(inner.text).toBe("inner");
+    expect(outer.text).toBe("prefix inner suffix");
+  });
 });
 
 describe("extractText", () => {

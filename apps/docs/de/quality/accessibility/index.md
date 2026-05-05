@@ -12,7 +12,7 @@ Barrierefreiheit bei E-Mails ist tatsächlich unterversorgt. Die meisten Builder
 - Übersprungene Überschriftenebenen, die das Dokumentgerüst zerstören
 - Winziger Fließtext, überdimensionierte Großbuchstaben-Blöcke, zu kleine Touch-Ziele
 - `target="_blank"`-Links ohne `rel="noopener"`
-- Dekorative Bilder, die nicht als solche gekennzeichnet sind
+- Dekorative Bilder mit übrig gebliebenem Alt-Text
 
 Probleme erkennen, während Sie schreiben – nicht erst, nachdem Empfänger kaputten Alt-Text, unleserlichen Kontrast oder vage CTAs sehen. Jede Regel reagiert auf eine klare, benannte Bedingung; die Ausgabe ist vorhersehbar und bleibt es, während sich Templates weiterentwickeln. Dieselben Prüfungen decken sich mit dem European Accessibility Act (durchsetzbar ab Juni 2025).
 

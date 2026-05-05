@@ -173,6 +173,30 @@ describe("link-target-blank-no-rel", () => {
     expect(patched!.content).toContain("author");
   });
 
+  it("auto-fix targets the real rel attr when an earlier attr value contains a 'rel=' substring", () => {
+    // Single-quoted data-* whose value literally contains `rel="external"`.
+    // The naive `attrs.replace(relAttr.raw, …)` would hit the substring inside
+    // data-x first and corrupt the data attribute instead of the actual rel.
+    const { all, block } = lint(
+      '<p><a data-x=\'rel="external"\' rel="external" target="_blank" href="/x">Buy</a></p>',
+    );
+    const issue = all.find((i) => i.ruleId === "link-target-blank-no-rel")!;
+    let patched: { content: string } | null = null;
+    issue.fix!.apply({
+      updateBlock: (id, patch) => {
+        if (id === block.id) patched = patch as { content: string };
+      },
+      updateSettings: () => {},
+    });
+    // data-x value preserved verbatim.
+    expect(patched!.content).toContain(`data-x='rel="external"'`);
+    // The actual rel attribute gained noopener (single occurrence).
+    expect(patched!.content).toContain('rel="external noopener"');
+    // Exactly one rel= attribute on the anchor.
+    const relMatches = patched!.content.match(/\srel\s*=/gi) ?? [];
+    expect(relMatches.length).toBe(1);
+  });
+
   it("auto-fix repairs unquoted target=_blank", () => {
     const { all, block } = lint('<p><a href="/x" target=_blank>Buy</a></p>');
     const issue = all.find((i) => i.ruleId === "link-target-blank-no-rel")!;

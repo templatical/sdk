@@ -47,6 +47,7 @@ function unionAll(pick: (d: Dictionary) => readonly string[]): string[] {
 const UNIONED_DICTIONARY: Dictionary = {
   vagueLinkText: unionAll((d) => d.vagueLinkText),
   vagueButtonLabels: unionAll((d) => d.vagueButtonLabels),
+  linkedImageActionHints: unionAll((d) => d.linkedImageActionHints),
 };
 
 export const SUPPORTED_DICTIONARY_LOCALES = Object.keys(DICTIONARIES);
