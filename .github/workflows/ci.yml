@@ -26,6 +26,8 @@ jobs:
       - run: pnpm run format:check
       - run: pnpm run lint
       - run: pnpm run deps:check
+      # Hard gate: every showcase template must pass the accessibility linter.
+      - run: pnpm --filter @templatical/playground run lint:templates
 
   typecheck:
     runs-on: ubuntu-latest
