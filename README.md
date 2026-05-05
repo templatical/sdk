@@ -98,6 +98,7 @@ const mjml = await editor.toMjml();
 | [`@templatical/media-library`](https://www.npmjs.com/package/@templatical/media-library) | Media library — composable, components, standalone SDK | [FSL-1.1-MIT](./LICENSE) |
 | [`@templatical/types`](https://www.npmjs.com/package/@templatical/types) | Shared TypeScript types and block factories | [MIT](./LICENSE-MIT) |
 | [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) | JSON → MJML → HTML renderer (browser + Node) | [MIT](./LICENSE-MIT) |
+| [`@templatical/quality`](https://www.npmjs.com/package/@templatical/quality) | Accessibility linter for templates (browser + Node) | [MIT](./LICENSE-MIT) |
 | [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert BeeFree templates to Templatical format | [MIT](./LICENSE-MIT) |
 | [`@templatical/import-unlayer`](https://www.npmjs.com/package/@templatical/import-unlayer) | Convert Unlayer templates to Templatical format | [MIT](./LICENSE-MIT) |
 | [`@templatical/import-html`](https://www.npmjs.com/package/@templatical/import-html) | Convert HTML email templates (table-based) to Templatical format | [MIT](./LICENSE-MIT) |

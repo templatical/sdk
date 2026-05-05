@@ -52,6 +52,7 @@ describe('createDefaultTemplateContent', () => {
             width: 600,
             backgroundColor: '#ffffff',
             fontFamily: 'Arial',
+            locale: 'en',
         });
     });
 });
