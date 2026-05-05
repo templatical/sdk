@@ -1,7 +1,7 @@
 {
   "name": "@templatical/quality",
   "description": "Accessibility linter for Templatical email templates",
-  "version": "0.1.0",
+  "version": "0.6.0",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*",

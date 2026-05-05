@@ -1,7 +1,7 @@
 {
   "name": "@templatical/import-unlayer",
   "description": "Convert Unlayer email templates to Templatical format",
-  "version": "1.0.0",
+  "version": "0.6.0",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*"
