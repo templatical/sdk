@@ -59,7 +59,13 @@ import {
   ALLOW_CUSTOM_CONDITIONS_KEY,
   CAPABILITIES_KEY,
   KEYBOARD_REORDER_KEY,
+  ACCESSIBILITY_LINT_KEY,
 } from "../keys";
+import {
+  useAccessibilityLint,
+  type UseAccessibilityLintReturn,
+} from "./useAccessibilityLint";
+import type { A11yOptions } from "@templatical/quality";
 import type { UseFontsReturn } from "./useFonts";
 import { useI18n, type UseI18nReturn } from "./useI18n";
 import {
@@ -168,6 +174,7 @@ export interface UseEditorCoreOptions {
     displayConditions?: DisplayConditionsConfig;
     onRequestMedia?: OnRequestMedia | null;
     onSave?: () => void;
+    accessibility?: A11yOptions;
   };
 
   translations: Translations;
@@ -205,6 +212,7 @@ export interface UseEditorCoreReturn {
   themeOverrides: Ref<ThemeOverrides>;
   registry: UseBlockRegistryReturn;
   keyboardReorder: UseKeyboardReorderReturn;
+  accessibilityLint: UseAccessibilityLintReturn | null;
   registerCustomBlocks: (definitions: CustomBlockDefinition[]) => void;
   destroy: () => void;
 }
@@ -340,9 +348,24 @@ export function useEditorCore(
 
   provide(KEYBOARD_REORDER_KEY, keyboardReorder);
 
+  // --- Accessibility lint ---
+  // editor.updateBlock / updateSettings are wrapped by useHistoryInterceptor,
+  // so each patch lands as its own undo entry. Simple and explicit.
+  const accessibilityLint: UseAccessibilityLintReturn | null =
+    config.accessibility?.disabled === true
+      ? null
+      : useAccessibilityLint({
+          content: editor.content,
+          options: config.accessibility ?? {},
+          updateBlock: editor.updateBlock,
+          updateSettings: editor.updateSettings,
+        });
+  provide(ACCESSIBILITY_LINT_KEY, accessibilityLint);
+
   // --- Cleanup ---
   function destroy(): void {
     stopNavigatingWatch?.();
+    accessibilityLint?.destroy();
     autoSave?.destroy();
     history.destroy();
   }
@@ -359,6 +382,7 @@ export function useEditorCore(
     themeOverrides,
     registry,
     keyboardReorder,
+    accessibilityLint,
     registerCustomBlocks,
     destroy,
   };

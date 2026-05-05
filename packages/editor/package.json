@@ -6,6 +6,7 @@
   "devDependencies": {
     "@lucide/vue": "^1.11.0",
     "@templatical/core": "workspace:*",
+    "@templatical/quality": "workspace:*",
     "@templatical/types": "workspace:*",
     "@tiptap/core": "^3.22.4",
     "@tiptap/extension-color": "^3.22.4",
@@ -63,6 +64,7 @@
   "module": "./dist/templatical-editor.js",
   "peerDependencies": {
     "@templatical/media-library": "workspace:*",
+    "@templatical/quality": "workspace:*",
     "@templatical/renderer": "workspace:*"
   },
   "peerDependenciesMeta": {
@@ -70,6 +72,9 @@
       "optional": true
     },
     "@templatical/media-library": {
+      "optional": true
+    },
+    "@templatical/quality": {
       "optional": true
     }
   },

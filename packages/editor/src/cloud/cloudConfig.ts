@@ -71,4 +71,11 @@ export interface TemplaticalCloudEditorConfig {
 
   onRequestMedia?: (context: MediaRequestContext) => Promise<MediaItem | null>;
   onBeforeTestEmail?: (html: string) => string | Promise<string>;
+
+  /**
+   * Accessibility linter (`@templatical/quality`) configuration. Cloud
+   * additionally merges `planConfig.accessibility` from the server (server
+   * policy wins on conflict) — this option sets the consumer-supplied baseline.
+   */
+  accessibility?: import("@templatical/quality").A11yOptions;
 }
