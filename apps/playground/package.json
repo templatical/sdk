@@ -36,7 +36,7 @@
     "build": "vite build",
     "dev": "vite",
     "dev:share": "wrangler pages dev --kv SHARES_KV --directory public -- vite",
-    "lint:templates": "tsx scripts/lint-templates.ts",
+    "lint:templates": "tsx --tsconfig scripts/tsconfig.json scripts/lint-templates.ts",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit"
   },
