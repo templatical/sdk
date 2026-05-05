@@ -14,7 +14,7 @@ Email accessibility is genuinely under-tooled. Most builders either bury accessi
 - `target="_blank"` links missing `rel="noopener"`
 - Decorative images that aren't marked as such
 
-Every rule has a deterministic trigger so the output is trustworthy. Compliance with the EU Accessibility Act (enforceable June 2025) is a concrete enterprise differentiator, but the productivity angle is the lead: catch issues while authoring instead of post-send.
+Catch problems while you're authoring, not after recipients see broken alt text, unreadable contrast, or vague CTAs. Every rule fires on a clear, named condition, so the output is predictable and stays predictable as templates evolve. The same checks align with the EU Accessibility Act (enforceable June 2025).
 
 ## Architecture
 
