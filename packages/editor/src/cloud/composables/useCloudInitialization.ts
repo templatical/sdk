@@ -28,7 +28,6 @@ import {
 } from "@templatical/core/cloud";
 import type {
   McpOperationPayload,
-  SaveResult,
   ThemeOverrides,
   UiTheme,
 } from "@templatical/types";
