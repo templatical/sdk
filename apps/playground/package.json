@@ -13,6 +13,7 @@
     "@templatical/import-beefree": "workspace:*",
     "@templatical/import-html": "workspace:*",
     "@templatical/import-unlayer": "workspace:*",
+    "@templatical/quality": "workspace:*",
     "@templatical/renderer": "workspace:*",
     "@templatical/types": "workspace:*",
     "@vueuse/core": "^14.2.1",
@@ -25,6 +26,7 @@
     "@tailwindcss/vite": "^4.2.4",
     "@vitejs/plugin-vue": "^6.0.6",
     "tailwindcss": "^4.2.4",
+    "tsx": "^4.20.6",
     "typescript": "^6.0.3",
     "vite": "^8.0.10",
     "vue-tsc": "^3.2.7"
@@ -34,6 +36,7 @@
     "build": "vite build",
     "dev": "vite",
     "dev:share": "wrangler pages dev --kv SHARES_KV --directory public -- vite",
+    "lint:templates": "tsx --tsconfig scripts/tsconfig.json scripts/lint-templates.ts",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit"
   },

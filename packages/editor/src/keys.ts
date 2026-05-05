@@ -92,6 +92,10 @@ export const CAPABILITIES_KEY: InjectionKey<EditorCapabilities> =
 export const KEYBOARD_REORDER_KEY: InjectionKey<UseKeyboardReorderReturn> =
   Symbol("keyboardReorder");
 
+export const ACCESSIBILITY_LINT_KEY: InjectionKey<
+  import("./composables/useAccessibilityLint").UseAccessibilityLintReturn | null
+> = Symbol("accessibilityLint");
+
 // ---------------------------------------------------------------------------
 // Cloud-only keys (provided by CloudEditor, consumed by cloud components)
 // ---------------------------------------------------------------------------

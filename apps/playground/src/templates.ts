@@ -677,6 +677,7 @@ export function createProductLaunchTemplate(): TemplateContent {
       backgroundColor: "#ffffff",
       fontFamily: "Arial",
       preheaderText: "Introducing Launchpad v2.0 — rebuilt from the ground up.",
+      locale: "en",
     },
     blocks: [
       createMenuBlock({
@@ -727,7 +728,6 @@ export function createProductLaunchTemplate(): TemplateContent {
         level: 2,
         color: "#0d9488",
         textAlign: "center",
-        fontFamily: "Arial",
         styles: white(15, 15, 15, 15),
       }),
       createTitleBlock({
@@ -745,7 +745,7 @@ export function createProductLaunchTemplate(): TemplateContent {
       createButtonBlock({
         text: "See What\u2019s New",
         url: "https://example.com/whats-new",
-        backgroundColor: "#0d9488",
+        backgroundColor: "#0f766e",
         textColor: "#ffffff",
         borderRadius: 6,
         fontSize: 16,
@@ -928,6 +928,7 @@ export function createNewsletterTemplate(): TemplateContent {
       fontFamily: "Georgia",
       preheaderText:
         "This week: design systems, shipping fast, and staying sane.",
+      locale: "en",
     },
     blocks: [
       createTitleBlock({
@@ -1017,6 +1018,7 @@ export function createWelcomeTemplate(): TemplateContent {
       fontFamily: "Arial",
       preheaderText:
         "Welcome to Flowwork — here is everything you need to get started.",
+      locale: "en",
     },
     blocks: [
       createTitleBlock({
@@ -1024,7 +1026,6 @@ export function createWelcomeTemplate(): TemplateContent {
         level: 1,
         color: "#2563eb",
         textAlign: "center",
-        fontFamily: "Arial",
         styles: white(15, 15, 15, 15),
       }),
       createTitleBlock({
@@ -1166,6 +1167,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       backgroundColor: "#ffffff",
       fontFamily: "Arial",
       preheaderText: "Your order #{{order_id}} has been confirmed.",
+      locale: "en",
     },
     blocks: [
       createTitleBlock({
@@ -1173,7 +1175,6 @@ export function createOrderConfirmationTemplate(): TemplateContent {
         level: 3,
         color: "#059669",
         textAlign: "center",
-        fontFamily: "Arial",
         styles: white(28, 20, 16, 20),
       }),
 
@@ -1207,7 +1208,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
 
       createTitleBlock({
         content: "<p>Order Summary</p>",
-        level: 4,
+        level: 3,
         color: "#111827",
         textAlign: "left",
         styles: white(16, 24, 12, 24),
@@ -1348,6 +1349,7 @@ export function createEventInvitationTemplate(): TemplateContent {
       backgroundColor: "#ffffff",
       fontFamily: "Arial",
       preheaderText: "You are invited — join us for Config 2026 on April 15.",
+      locale: "en",
     },
     blocks: [
       createTitleBlock({
@@ -1355,7 +1357,6 @@ export function createEventInvitationTemplate(): TemplateContent {
         level: 3,
         color: "#7c3aed",
         textAlign: "center",
-        fontFamily: "Arial",
         styles: white(32, 20, 8, 20),
       }),
       createTitleBlock({
@@ -1449,7 +1450,7 @@ export function createEventInvitationTemplate(): TemplateContent {
 
       createTitleBlock({
         content: "<p>What to Expect</p>",
-        level: 4,
+        level: 3,
         color: "#111827",
         textAlign: "center",
         styles: white(16, 20, 16, 20),
@@ -1526,6 +1527,7 @@ export function createPasswordResetTemplate(): TemplateContent {
       backgroundColor: "#ffffff",
       fontFamily: "Arial",
       preheaderText: "Reset your password \u2014 this link expires in 1 hour.",
+      locale: "en",
     },
     blocks: [
       createTitleBlock({
@@ -1533,7 +1535,6 @@ export function createPasswordResetTemplate(): TemplateContent {
         level: 3,
         color: "#111827",
         textAlign: "center",
-        fontFamily: "Arial",
         styles: white(32, 20, 24, 20),
       }),
 
@@ -1616,6 +1617,7 @@ export function createBlackFridayTemplate(): TemplateContent {
       backgroundColor: "#111827",
       fontFamily: "Arial",
       preheaderText: "Up to 50% off everything \u2014 Black Friday starts now.",
+      locale: "en",
     },
     blocks: [
       createTitleBlock({
@@ -1623,7 +1625,6 @@ export function createBlackFridayTemplate(): TemplateContent {
         level: 3,
         color: "#fbbf24",
         textAlign: "center",
-        fontFamily: "Arial",
         styles: { ...pad(28, 20, 12, 20), backgroundColor: "#111827" },
       }),
       createTitleBlock({
@@ -1635,7 +1636,7 @@ export function createBlackFridayTemplate(): TemplateContent {
       }),
       createTitleBlock({
         content: "<p>Up to 50% off everything</p>",
-        level: 4,
+        level: 2,
         color: "#fbbf24",
         textAlign: "center",
         styles: { ...pad(4, 20, 8, 20), backgroundColor: "#111827" },

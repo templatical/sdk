@@ -178,6 +178,9 @@ export default {
       "Since the image URL uses a merge tag, you can provide a real image here to preview the layout while designing. This is not included in the final output.",
     clickToAdd: "Click to add image URL",
     browseMedia: "Browse Media",
+    decorative: "Decorative image",
+    decorativeHint:
+      "Hidden from screen readers. Use only for spacers and visual flourishes.",
   },
 
   // Toolbar - Video
@@ -419,6 +422,10 @@ export default {
       "Preview text shown after subject line in inbox...",
     preheaderTextHint:
       "This text appears after the subject line in email client previews. Supports merge tags.",
+    language: "Language",
+    contentLocale: "Content language",
+    contentLocaleHint:
+      "BCP 47 code (e.g. en, de, pt-BR). Sets the rendered email's lang attribute so screen readers pronounce content correctly.",
     tips: "Tips",
     tip1: "600px is the standard width for email templates",
     tip2: "Use web-safe fonts for best compatibility",
@@ -583,5 +590,19 @@ export default {
     editorLoading: "Loading editor...",
     editorLoadFailed: "Failed to load editor.",
     retry: "Retry",
+  },
+
+  accessibility: {
+    panelTitle: "Accessibility",
+    panelTabLabel: "Accessibility",
+    groupErrors: "Errors",
+    groupWarnings: "Warnings",
+    groupInfo: "Info",
+    jump: "Jump to block",
+    fix: "Fix",
+    emptyState: "No accessibility issues — looking good.",
+    badgeError: "Has accessibility errors",
+    badgeWarning: "Has accessibility warnings",
+    issueCountTooltip: "{count} accessibility issue(s)",
   },
 };

@@ -121,6 +121,7 @@ function extractSettings(
     width: width || 600,
     backgroundColor: bgColor,
     fontFamily,
+    locale: "en",
   };
 }
 

@@ -10,8 +10,12 @@ import {
   MessageCircle,
   Trash2,
 } from "@lucide/vue";
-import { computed, inject, nextTick, ref } from "vue";
+import { computed, defineAsyncComponent, inject, nextTick, ref } from "vue";
 import { getBlockWrapperStyle } from "../../utils/blockComponentResolver";
+
+const BlockA11yBadge = defineAsyncComponent(
+  () => import("../canvas/BlockA11yBadge.vue"),
+);
 import {
   BLOCK_ACTIONS_KEY,
   CONDITION_PREVIEW_KEY,
@@ -165,6 +169,7 @@ function handleConditionToggle(): void {
     draggable="false"
     @click="handleClick"
   >
+    <BlockA11yBadge :block-id="block.id" />
     <!-- Floating action bar — positioned to the right of selected block -->
     <div
       v-if="isSelected"

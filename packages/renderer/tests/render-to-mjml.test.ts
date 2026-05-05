@@ -11,7 +11,7 @@ describe('renderToMjml', () => {
   it('renders empty template', async () => {
     const content = createDefaultTemplateContent();
     const mjml = await renderToMjml(content);
-    expect(mjml).toContain('<mjml>');
+    expect(mjml).toContain('<mjml lang="en">');
     expect(mjml).toContain('</mjml>');
     expect(mjml).toContain('<mj-body');
     expect(mjml).toContain('width="600px"');
@@ -103,7 +103,7 @@ describe('renderToMjml', () => {
     content.settings.width = 0;
     const mjml = await renderToMjml(content);
     expect(mjml).toContain('width="0px"');
-    expect(mjml).toContain('<mjml>');
+    expect(mjml).toContain('<mjml lang="en">');
   });
 
   it('renders with very large width', async () => {
@@ -117,7 +117,7 @@ describe('renderToMjml', () => {
     const content = createDefaultTemplateContent();
     content.blocks = [];
     const mjml = await renderToMjml(content);
-    expect(mjml).toContain('<mjml>');
+    expect(mjml).toContain('<mjml lang="en">');
     expect(mjml).toContain('<mj-body');
     expect(mjml).toContain('</mj-body>');
     expect(mjml).toContain('</mjml>');
@@ -131,7 +131,7 @@ describe('renderToMjml', () => {
     const content = createDefaultTemplateContent();
     content.settings.preheaderText = '';
     const mjml = await renderToMjml(content);
-    expect(mjml).toContain('<mjml>');
+    expect(mjml).toContain('<mjml lang="en">');
     expect(mjml).toContain('<mj-body');
     expect(mjml).not.toContain('<mj-preview>');
   });
@@ -140,7 +140,7 @@ describe('renderToMjml', () => {
     const content = createDefaultTemplateContent();
     content.settings.preheaderText = '   ';
     const mjml = await renderToMjml(content);
-    expect(mjml).toContain('<mjml>');
+    expect(mjml).toContain('<mjml lang="en">');
     expect(mjml).toContain('<mj-body');
     expect(mjml).not.toContain('<mj-preview>');
   });
@@ -171,7 +171,7 @@ describe('renderToMjml', () => {
     // preheaderText is optional and undefined by default
     expect(content.settings.preheaderText).toBeUndefined();
     const mjml = await renderToMjml(content);
-    expect(mjml).toContain('<mjml>');
+    expect(mjml).toContain('<mjml lang="en">');
     expect(mjml).toContain('<mj-body');
     expect(mjml).not.toContain('<mj-preview>');
   });
@@ -190,5 +190,54 @@ describe('renderToMjml', () => {
     const mjml = await renderToMjml(content);
     expect(mjml).toContain('Visible');
     expect(mjml).not.toContain('Hidden');
+  });
+
+  it('emits mjml lang attribute from settings.locale', async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.locale = 'de';
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain('<mjml lang="de">');
+  });
+
+  it('uses the default locale ("en") for new templates', async () => {
+    const content = createDefaultTemplateContent();
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain('<mjml lang="en">');
+  });
+
+  it('escapes locale value in lang attribute', async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.locale = 'en"><script>';
+    const mjml = await renderToMjml(content);
+    expect(mjml).not.toContain('<script>');
+    expect(mjml).toContain('lang="en&quot;&gt;&lt;script&gt;"');
+  });
+
+  it('renders decorative image with empty alt and role=presentation', async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createImageBlock({
+        src: 'https://example.com/spacer.png',
+        alt: 'ignored',
+        decorative: true,
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain('alt=""');
+    expect(mjml).not.toContain('alt="ignored"');
+    expect(mjml).toContain('role="presentation"');
+  });
+
+  it('renders non-decorative image preserving alt and omitting role', async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createImageBlock({
+        src: 'https://example.com/hero.png',
+        alt: 'Spring sale',
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain('alt="Spring sale"');
+    expect(mjml).not.toContain('role="presentation"');
   });
 });

@@ -213,6 +213,13 @@ const de: typeof en = {
     invalidFileType:
       "Dieser Dateityp wird nicht unterstützt. Laden Sie eine PNG-, JPG-, WebP- oder PDF-Datei hoch.",
   },
+
+  saveGate: {
+    title: "Barrierefreiheitsfehler blockieren das Speichern",
+    body: "Ihr Plan blockiert das Speichern, solange Fehler bestehen. Beheben Sie die folgenden Punkte oder speichern Sie trotzdem.",
+    cancel: "Prüfen und beheben",
+    confirm: "Trotzdem speichern",
+  },
 };
 
 export default de;

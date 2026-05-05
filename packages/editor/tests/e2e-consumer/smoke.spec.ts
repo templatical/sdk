@@ -96,7 +96,7 @@ test("editor.toMjml() resolves to a valid MJML string", async ({ page }) => {
   });
 
   expect(typeof mjml).toBe("string");
-  expect(mjml).toContain("<mjml>");
+  expect(mjml).toContain("<mjml lang=\"en\">");
   expect(mjml).toContain("<mj-body");
   expect(mjml).toContain("</mjml>");
 });

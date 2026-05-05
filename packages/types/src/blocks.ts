@@ -78,6 +78,7 @@ export interface ImageBlock extends BaseBlock {
   linkUrl?: string;
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;
+  decorative?: boolean;
 }
 
 export interface ButtonBlock extends BaseBlock {

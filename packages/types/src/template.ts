@@ -7,6 +7,11 @@ export interface TemplateSettings {
   backgroundColor: string;
   fontFamily: string;
   preheaderText?: string;
+  /**
+   * BCP-47 language code for the rendered email's `<html lang>`. Drives
+   * screen-reader pronunciation. Default `'en'` via `DEFAULT_TEMPLATE_DEFAULTS`.
+   */
+  locale: string;
 }
 
 export interface TemplateContent {

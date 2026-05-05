@@ -3,11 +3,45 @@ import { defineConfig, type DefaultTheme } from "vitepress";
 const enNav: DefaultTheme.NavItem[] = [
   { text: "Guide", link: "/getting-started/installation" },
   { text: "API", link: "/api/editor" },
+  { text: "Accessibility", link: "/quality/accessibility/" },
   { text: "Cloud", link: "/cloud/" },
   { text: "Playground", link: "https://play.templatical.com" },
 ];
 
 const enSidebar: DefaultTheme.SidebarMulti = {
+  "/quality/": [
+    {
+      text: "Quality",
+      items: [{ text: "Overview", link: "/quality/" }],
+    },
+    {
+      text: "Accessibility",
+      items: [
+        { text: "Overview", link: "/quality/accessibility/" },
+        {
+          text: "Getting Started",
+          link: "/quality/accessibility/getting-started",
+        },
+        {
+          text: "Rule catalog",
+          link: "/quality/accessibility/rule-catalog",
+        },
+        { text: "Options", link: "/quality/accessibility/options" },
+        {
+          text: "Severity & fixes",
+          link: "/quality/accessibility/severity-and-fixes",
+        },
+        {
+          text: "Headless usage",
+          link: "/quality/accessibility/headless-usage",
+        },
+        {
+          text: "Contributing locales",
+          link: "/quality/accessibility/contributing-locales",
+        },
+      ],
+    },
+  ],
   "/cloud/": [
     {
       text: "Cloud",
