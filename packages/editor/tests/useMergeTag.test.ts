@@ -44,26 +44,36 @@ const sampleTags: MergeTag[] = [
 ];
 
 describe('useMergeTag', () => {
-  describe('isEnabled', () => {
+  describe('canRequestMergeTag', () => {
     it('is false when no merge tags and no callback', () => {
-      const { isEnabled } = withProvide(() => useMergeTag());
-      expect(isEnabled).toBe(false);
+      const { canRequestMergeTag } = withProvide(() => useMergeTag());
+      expect(canRequestMergeTag).toBe(false);
     });
 
-    it('is true when merge tags are provided', () => {
-      const { isEnabled } = withProvide(() => useMergeTag(), {
+    it('is false when only static merge tags are provided (no callback)', () => {
+      // Static tags alone are surfaced via the autocomplete trigger; the
+      // insert button no-ops without onRequestMergeTag, so it must stay hidden.
+      const { canRequestMergeTag } = withProvide(() => useMergeTag(), {
         [MERGE_TAGS_KEY as symbol]: sampleTags,
         [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
       });
-      expect(isEnabled).toBe(true);
+      expect(canRequestMergeTag).toBe(false);
     });
 
     it('is true when callback is provided even with empty merge tags', () => {
-      const { isEnabled } = withProvide(() => useMergeTag(), {
+      const { canRequestMergeTag } = withProvide(() => useMergeTag(), {
         [MERGE_TAGS_KEY as symbol]: [],
         [ON_REQUEST_MERGE_TAG_KEY as symbol]: vi.fn(),
       });
-      expect(isEnabled).toBe(true);
+      expect(canRequestMergeTag).toBe(true);
+    });
+
+    it('is true when both static tags and callback are provided', () => {
+      const { canRequestMergeTag } = withProvide(() => useMergeTag(), {
+        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [ON_REQUEST_MERGE_TAG_KEY as symbol]: vi.fn(),
+      });
+      expect(canRequestMergeTag).toBe(true);
     });
   });
 

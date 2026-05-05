@@ -23,7 +23,7 @@ const {
   showLinkDialog,
   linkUrl,
   linkDialogRef,
-  mergeTagEnabled,
+  canRequestMergeTag,
   openLinkDialog,
   insertLink,
   removeLink,
@@ -128,7 +128,7 @@ const {
       :editor="editor"
       :toolbar-position="toolbarPosition"
       :is-loading="isLoading"
-      :merge-tag-enabled="mergeTagEnabled"
+      :can-request-merge-tag="canRequestMergeTag"
       @open-link-dialog="openLinkDialog"
       @add-merge-tag="handleAddMergeTag"
     />

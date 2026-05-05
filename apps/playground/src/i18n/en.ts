@@ -4,8 +4,14 @@ export default {
     subtitle: "Choose a starting point for your email template",
     startFromScratch: "Start from Scratch",
     emptyCanvas: "Empty canvas with default settings",
-    beefreePrompt: "Have an existing BeeFree template?",
-    importBeefree: "Import from BeeFree",
+    migration: {
+      headline: "Already using BeeFree, Unlayer, or hand-coded HTML?",
+      description:
+        "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
+      importFromBeefree: "Import from BeeFree",
+      importFromUnlayer: "Import from Unlayer",
+      importFromHtml: "Import from HTML",
+    },
   },
   cloudBanner: {
     title: "Unlock the full experience with Cloud",
@@ -61,18 +67,35 @@ export default {
     onRequestMediaDesc:
       'Opens a demo image picker when the user clicks "Browse Media"',
     onRequestMergeTag:
-      "Opens a merge tag picker when the user inserts a placeholder",
+      "Opens a merge tag picker when the user inserts a merge tag",
     cancel: "Cancel",
     apply: "Apply & Reload",
   },
-  beefreeModal: {
-    title: "Import BeeFree Template",
-    description: "Paste the JSON export from your BeeFree editor below.",
-    chooseFile: "Choose .json file",
-    orPaste: "or paste JSON",
+  importModal: {
+    title: "Import existing template",
+    sources: {
+      beefree: "From BeeFree",
+      unlayer: "From Unlayer",
+      html: "From HTML",
+    },
+    chooseFile: "Choose file",
+    orPaste: "or paste below",
     import: "Import & Open",
     cancel: "Cancel",
-    emptyError: "Paste your BeeFree JSON or upload a file.",
+    beefree: {
+      description: "Paste the JSON export from your BeeFree editor below.",
+      emptyError: "Paste your BeeFree JSON or upload a file.",
+    },
+    unlayer: {
+      description:
+        "Paste the JSON design export from Unlayer (saveDesign output) below.",
+      emptyError: "Paste your Unlayer JSON or upload a file.",
+    },
+    html: {
+      description:
+        "Paste the raw HTML source of an email (MJML output, ESP export, or hand-coded). Best results with table-based layouts.",
+      emptyError: "Paste your HTML source or upload a file.",
+    },
   },
   mergeTagModal: {
     title: "Insert Merge Tag",
@@ -215,6 +238,8 @@ export default {
     templateUuid: "Template UUID",
     editorConfig: "Editor Configuration",
     beefreeJsonContent: "BeeFree JSON content",
+    unlayerJsonContent: "Unlayer JSON content",
+    htmlSourceContent: "HTML source content",
     selectLanguage: "Select language",
     selectTheme: "Select theme",
   },

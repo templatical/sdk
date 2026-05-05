@@ -40,6 +40,14 @@ export default defineConfig({
                 packagesDir,
                 'import-beefree/src/index.ts',
             ),
+            '@templatical/import-unlayer': resolve(
+                packagesDir,
+                'import-unlayer/src/index.ts',
+            ),
+            '@templatical/import-html': resolve(
+                packagesDir,
+                'import-html/src/index.ts',
+            ),
             '@templatical/media-library': resolve(
                 packagesDir,
                 'media-library/src/index.ts',

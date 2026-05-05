@@ -156,6 +156,7 @@ All routes are scoped to a project and tenant:
 | `broadcasting/auth` | POST | Authenticate WebSocket connection |
 | `templates` | POST | Create template |
 | `templates/import/from-beefree` | POST | Import BeeFree template |
+| `templates/import/from-unlayer` | POST | Import Unlayer template |
 | `templates/{id}` | GET | Get template |
 | `templates/{id}` | PUT | Update template |
 | `templates/{id}` | DELETE | Delete template |

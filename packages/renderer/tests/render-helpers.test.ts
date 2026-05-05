@@ -27,7 +27,7 @@ describe('renderToMjml helpers', () => {
     const content = createDefaultTemplateContent();
     content.settings.preheaderText = '';
     const result = await renderToMjml(content);
-    expect(result).toContain('<mjml>');
+    expect(result).toContain('<mjml lang="en">');
     expect(result).toContain('<mj-body');
     expect(result).not.toContain('<mj-preview>');
   });
@@ -35,7 +35,7 @@ describe('renderToMjml helpers', () => {
   it('excludes mj-preview when preheaderText is undefined', async () => {
     const content = createDefaultTemplateContent();
     const result = await renderToMjml(content);
-    expect(result).toContain('<mjml>');
+    expect(result).toContain('<mjml lang="en">');
     expect(result).toContain('<mj-body');
     expect(result).not.toContain('<mj-preview>');
   });
@@ -60,7 +60,7 @@ describe('renderToMjml helpers', () => {
   it('renders no mj-font tags when no custom fonts provided', async () => {
     const content = createDefaultTemplateContent();
     const result = await renderToMjml(content);
-    expect(result).toContain('<mjml>');
+    expect(result).toContain('<mjml lang="en">');
     expect(result).toContain('<mj-body');
     expect(result).not.toContain('<mj-font');
   });

@@ -41,7 +41,7 @@ const props = defineProps<{
   editor: Editor | null;
   toolbarPosition: { top: number; left: number };
   isLoading: boolean;
-  mergeTagEnabled: boolean;
+  canRequestMergeTag: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -273,7 +273,7 @@ function setHighlight(color: string): void {
           />
           <ToolbarSeparator />
           <EmojiPickerDropdown @insert="insertEmoji" />
-          <template v-if="mergeTagEnabled">
+          <template v-if="canRequestMergeTag">
             <ToolbarSeparator />
             <button
               type="button"

@@ -45,6 +45,10 @@ jobs:
       # adding a runtime `dependency` that re-bloats consumer node_modules or
       # re-introduces the duplicate-Vue-instance bug. See packages/editor/scripts/verify-pack.mjs.
       - run: pnpm --filter @templatical/editor run verify:pack
+      # Hard gate: every showcase template must pass the accessibility linter.
+      # Runs after build because the script imports the built quality dist —
+      # tsx can't evaluate `import.meta.glob` from source.
+      - run: pnpm --filter @templatical/playground run lint:templates
       - uses: actions/upload-artifact@v4
         with:
           name: dist

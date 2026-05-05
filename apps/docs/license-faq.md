@@ -12,7 +12,7 @@ This page answers the questions teams ask most often when evaluating Templatical
 - **You can use Templatical for free in any commercial product**, including paid SaaS, internal tools, and on-premise installs.
 - **The only thing you can't do** is repackage Templatical itself as a competing email-editor SaaS.
 - **After two years**, every release of FSL-licensed code automatically becomes MIT. No action required.
-- **Three of the six packages are pure MIT today** — types, renderer, and the BeeFree importer.
+- **Four of the seven packages are pure MIT today** — types, renderer, and the BeeFree and Unlayer importers.
 
 ## What is FSL-1.1-MIT?
 
@@ -33,6 +33,7 @@ FSL-1.1-**MIT** is the variant that automatically converts to the MIT License af
 | `@templatical/types` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/renderer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-beefree` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-unlayer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
 The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, importer) is permissive MIT and free of any future-license consideration.
 
@@ -96,7 +97,7 @@ The same approach is used by [Sentry](https://sentry.io), [PowerSync](https://ww
 
 **Yes, please.** Open-source contributions are welcome — bug fixes, features, docs improvements, additional locales, and custom block examples are all appreciated.
 
-By contributing, you agree your contribution is licensed under the same license as the package you're contributing to (MIT for `types`, `renderer`, `import-beefree`; FSL-1.1-MIT for `editor`, `core`, `media-library`).
+By contributing, you agree your contribution is licensed under the same license as the package you're contributing to (MIT for `types`, `renderer`, `import-beefree`, `import-unlayer`; FSL-1.1-MIT for `editor`, `core`, `media-library`).
 
 There is currently **no separate Contributor License Agreement (CLA)** to sign — your PR alone is enough.
 

@@ -357,6 +357,9 @@ export interface PlanConfig {
   media: MediaConfig;
   storage: StorageInfo;
   websocket: WebSocketServerConfig;
+  accessibility?: {
+    blockOnError?: boolean;
+  };
 }
 
 export interface AiChatMessage {

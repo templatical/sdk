@@ -26,6 +26,7 @@ const DIST = join(import.meta.dirname, "..", "dist");
 
 const ALLOWED_EXTERNALS = new Set([
   "@templatical/media-library",
+  "@templatical/quality",
   "@templatical/renderer",
   "pusher-js",
 ]);

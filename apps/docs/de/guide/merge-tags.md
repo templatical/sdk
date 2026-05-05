@@ -1,11 +1,11 @@
 ---
 title: Merge-Tags
-description: Platzhalter für dynamische Inhalte mit Merge-Tags in Templatical-E-Mail-Templates.
+description: Dynamische Inhalte mit Merge-Tags in Templatical-E-Mail-Templates.
 ---
 
 # Merge-Tags
 
-Merge-Tags sind Platzhalter für dynamische Inhalte -- zum Beispiel den Namen eines Empfängers, einen Produktpreis oder eine Abmelde-URL. Sie erscheinen als hervorgehobene Tokens im Editor und werden unverändert im gerenderten MJML durchgereicht. Ihre E-Mail-Versandplattform ersetzt sie beim Versand durch echte Werte.
+Merge-Tags sind Tokens für dynamische Inhalte -- zum Beispiel den Namen eines Empfängers, einen Produktpreis oder eine Abmelde-URL. Sie erscheinen als hervorgehobene Tokens im Editor und werden unverändert im gerenderten MJML durchgereicht. Ihre E-Mail-Versandplattform ersetzt sie beim Versand durch echte Werte.
 
 Templatical bietet integrierte Syntax-Presets für beliebte Plattformen und unterstützt benutzerdefinierte Syntaxdefinitionen.
 
@@ -56,7 +56,7 @@ Der `value` muss die Syntax-Trennzeichen enthalten. Zum Beispiel mit Liquid-Synt
 Templatical enthält vier integrierte Syntax-Presets. Die Einstellung `syntax` teilt dem Editor mit, wie sowohl Daten-Tags als auch Logik-Tags im Inhalt erkannt und hervorgehoben werden sollen.
 
 Jedes Preset definiert zwei Muster:
-- **Daten-Tags** -- Variablenplatzhalter wie der Name oder die E-Mail eines Empfängers
+- **Daten-Tags** -- Variable Merge-Tags wie der Name oder die E-Mail eines Empfängers
 - **Logik-Tags** -- Kontrollflussanweisungen wie Bedingungen und Schleifen
 
 | Preset | Daten-Tag | Logik-Tag | Plattform |
@@ -77,13 +77,13 @@ mergeTags: {
 
 ## Logik-Tags
 
-Neben Datenplatzhaltern erkennt der Editor auch Logik-Tags -- bedingte Anweisungen, Schleifen und andere Kontrollflusssyntax, die von Ihrer E-Mail-Plattform verwendet wird. Diese werden automatisch mit dem `logic`-Regex-Muster aus dem ausgewählten Syntax-Preset erkannt.
+Neben Daten-Tags erkennt der Editor auch Logik-Tags -- bedingte Anweisungen, Schleifen und andere Kontrollflusssyntax, die von Ihrer E-Mail-Plattform verwendet wird. Diese werden automatisch mit dem `logic`-Regex-Muster aus dem ausgewählten Syntax-Preset erkannt.
 
 Wenn ein Logik-Tag im Inhalt erkannt wird, extrahiert der Editor das Schlüsselwort (die erste Erfassungsgruppe aus der Logik-Regex) und zeigt es als Großbuchstaben-Abzeichen an -- zum Beispiel wird `{% if customer.vip %}` als **IF** gerendert und `{% endif %}` als **ENDIF**. Beim Hovern über das Abzeichen wird der vollständige Tag-Wert als Tooltip angezeigt. Benutzer können auf das Abzeichen klicken, um den Rohwert zu bearbeiten.
 
 ![Logik-Tag im Editor angezeigt](/images/logic-tag.png)
 
-Logik-Tags werden anders formatiert als Daten-Tags (umrahmtes Abzeichen mit Primärfarbe vs. gefüllter Hintergrund), sodass Template-Autoren auf einen Blick zwischen Variablenplatzhaltern und Kontrollfluss unterscheiden können.
+Logik-Tags werden anders formatiert als Daten-Tags (umrahmtes Abzeichen mit Primärfarbe vs. gefüllter Hintergrund), sodass Template-Autoren auf einen Blick zwischen Daten-Tags und Kontrollfluss unterscheiden können.
 
 Wie Daten-Tags werden Logik-Tags unverändert im gerenderten MJML durchgereicht — Ihre Versandplattform wertet sie zum Versandzeitpunkt aus.
 
@@ -146,7 +146,7 @@ mergeTags: {
 }
 ```
 
-Die `value`-Regex erkennt Datenplatzhalter. Die `logic`-Regex erkennt Kontrollflussanweisungen — die erste Erfassungsgruppe `(\w+)` extrahiert das Schlüsselwort (z. B. `IF`, `FOR`), das der Editor als Anzeigelabel verwendet.
+Die `value`-Regex erkennt Daten-Tags. Die `logic`-Regex erkennt Kontrollflussanweisungen — die erste Erfassungsgruppe `(\w+)` extrahiert das Schlüsselwort (z. B. `IF`, `FOR`), das der Editor als Anzeigelabel verwendet.
 
 ## Autovervollständigung
 
@@ -177,7 +177,7 @@ Die Schaltfläche „Merge-Tag einfügen" in der Symbolleiste funktioniert weite
 
 ## Dynamisches Tag-Laden
 
-Für große oder kontextabhängige Tag-Listen verwenden Sie den `onRequest`-Callback anstelle von (oder zusätzlich zu) einem statischen `tags`-Array. Der Editor ruft diese Funktion auf, wenn der Benutzer klickt, um ein Merge-Tag einzufügen. Verwenden Sie sie, um ein benutzerdefiniertes Picker-Modal zu öffnen, verfügbare Platzhalter von Ihrer API abzurufen oder eine kontextbezogene Tag-Liste basierend auf dem aktuellen Benutzer zu erstellen. Geben Sie das ausgewählte `MergeTag` oder `null` zurück, um abzubrechen.
+Für große oder kontextabhängige Tag-Listen verwenden Sie den `onRequest`-Callback anstelle von (oder zusätzlich zu) einem statischen `tags`-Array. Der Editor ruft diese Funktion auf, wenn der Benutzer klickt, um ein Merge-Tag einzufügen. Verwenden Sie sie, um ein benutzerdefiniertes Picker-Modal zu öffnen, verfügbare Merge-Tags von Ihrer API abzurufen oder eine kontextbezogene Tag-Liste basierend auf dem aktuellen Benutzer zu erstellen. Geben Sie das ausgewählte `MergeTag` oder `null` zurück, um abzubrechen.
 
 ```ts
 const editor = await init({
@@ -193,6 +193,6 @@ const editor = await init({
 
 ## Merge-Tags in anderen Eingaben
 
-Platzhalter sind nicht auf Titel- und Absatzblöcke beschränkt. Der Editor erkennt und hebt Merge-Tags auch in anderen Blockeingaben hervor — Schaltflächentext, Schaltflächen-URL, Bild-URL, Bild-Alternativtext und Link-href-Werte. Das gleiche Label-Ersetzungs- und Tooltip-Verhalten gilt in diesen Feldern.
+Merge-Tags sind nicht auf Titel- und Absatzblöcke beschränkt. Der Editor erkennt und hebt Merge-Tags auch in anderen Blockeingaben hervor — Schaltflächentext, Schaltflächen-URL, Bild-URL, Bild-Alternativtext und Link-href-Werte. Das gleiche Label-Ersetzungs- und Tooltip-Verhalten gilt in diesen Feldern.
 
 <img src="/images/button-merge-tag.png" alt="Merge-Tag in einer Schaltflächen-URL" style="max-width: 360px;" />

@@ -162,6 +162,7 @@ export const DEFAULT_TEMPLATE_DEFAULTS: TemplateDefaults = {
   width: 600,
   backgroundColor: "#ffffff",
   fontFamily: "Arial",
+  locale: "en",
 };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

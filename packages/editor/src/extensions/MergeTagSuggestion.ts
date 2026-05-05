@@ -125,9 +125,79 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
         const selectedIndex = ref(0);
         let currentCommand: ((item: MergeTag) => void) | null = null;
         const listId = `tpl-merge-tag-suggestion-${++POPUP_ID_SEQ}`;
+        let latestClientRect: (() => DOMRect | null) | null = null;
+        let scrollTargets: Array<EventTarget> = [];
+
+        function reposition(): void {
+          position(latestClientRect?.() ?? null);
+        }
+
+        /**
+         * Reposition immediately and on the next animation frame.
+         * After a keystroke triggers the suggestion, TipTap may run its
+         * own `scrollIntoView` to keep the caret visible. That scroll
+         * lands AFTER the current task's `position()` call but BEFORE
+         * the browser's next paint, so we re-measure on rAF to catch
+         * the post-scroll caret rect. Without this, the popup pins to
+         * the pre-scroll caret position and ends up offset on slower
+         * runners.
+         */
+        function repositionAfterPaint(): void {
+          reposition();
+          requestAnimationFrame(reposition);
+        }
+
+        function collectScrollAncestors(el: HTMLElement | null): HTMLElement[] {
+          // Walk up the DOM finding scrollable ancestors. ProseMirror's
+          // scrollIntoView fires on whichever ancestor scrolls — listening
+          // to all of them ensures we reposition regardless of which one
+          // moves.
+          const result: HTMLElement[] = [];
+          let node: HTMLElement | null = el?.parentElement ?? null;
+          while (
+            node &&
+            node !== document.body &&
+            node !== document.documentElement
+          ) {
+            const style = window.getComputedStyle(node);
+            const overflow = style.overflow + style.overflowX + style.overflowY;
+            if (/(auto|scroll|overlay)/.test(overflow)) {
+              result.push(node);
+            }
+            node = node.parentElement;
+          }
+          return result;
+        }
+
+        function attachScrollListeners(viewDom: HTMLElement | null): void {
+          scrollTargets = [window, ...collectScrollAncestors(viewDom)];
+          for (const target of scrollTargets) {
+            target.addEventListener("scroll", reposition, {
+              passive: true,
+              capture: true,
+            });
+          }
+          window.addEventListener("resize", reposition, { passive: true });
+        }
+
+        function detachScrollListeners(): void {
+          for (const target of scrollTargets) {
+            target.removeEventListener("scroll", reposition, {
+              capture: true,
+            } as EventListenerOptions);
+          }
+          window.removeEventListener("resize", reposition);
+          scrollTargets = [];
+        }
 
         function position(rect: DOMRect | null): void {
           if (!container || !rect) return;
+          // If the caret has scrolled out of the viewport, freeze the
+          // popup at its last on-screen position. Following the caret
+          // off-screen produces an invisible popup the user can't reach,
+          // and lets pathological scroll loops drag the popup further
+          // each tick.
+          if (rect.bottom < 0 || rect.top > window.innerHeight) return;
           container.style.position = "fixed";
           container.style.left = `${rect.left}px`;
           container.style.zIndex = "9999";
@@ -145,22 +215,41 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
           }
         }
 
-        function findMountTarget(
+        function applyThemeContext(
+          target: HTMLElement,
           editorEl: HTMLElement | null | undefined,
-        ): HTMLElement {
-          // Prefer the theme root (outside Canvas). Canvas.vue applies
-          // `filter: invert(1) hue-rotate(180deg)` in dark mode, which
-          // creates a containing block for `position: fixed` descendants.
-          // Mounting inside the canvas would offset the popup. The theme
-          // root has the CSS vars and no transform/filter — best of both.
+        ): void {
+          // The popup mounts to document.body so its `position: fixed`
+          // resolves against the viewport — any transform/filter on a
+          // consumer-page ancestor (route transitions, reveal animations,
+          // dark canvas inversion) creates a containing block and moves
+          // fixed descendants with it. Body ancestors don't transform.
           //
-          // Click-outside is handled by mousedown.prevent.stop on options;
-          // mount location no longer affects that.
-          const root =
-            editorEl?.closest<HTMLElement>("[data-tpl-theme]") ??
-            editorEl?.closest<HTMLElement>(".tpl-text-editor-wrapper") ??
-            null;
-          return root ?? document.body;
+          // CSS vars (--tpl-bg-elevated, --tpl-border, etc.) are scoped to
+          // `.tpl` and `.tpl[data-tpl-theme="dark"]` in the editor's
+          // stylesheet, so the popup wouldn't inherit them at body root.
+          // Adding `class="tpl"` would also pull base rules (min-height,
+          // flex, full-page bg) we don't want on a popup. Instead, snapshot
+          // every --tpl-* custom property from the editor's theme root and
+          // re-emit them inline on the popup wrapper.
+          const themeRoot = editorEl?.closest<HTMLElement>("[data-tpl-theme]");
+          if (!themeRoot) return;
+          const themeValue = themeRoot.getAttribute("data-tpl-theme");
+          if (themeValue) target.setAttribute("data-tpl-theme", themeValue);
+          const computed = window.getComputedStyle(themeRoot);
+          for (let i = 0; i < computed.length; i++) {
+            const prop = computed[i];
+            if (prop.startsWith("--tpl-")) {
+              target.style.setProperty(prop, computed.getPropertyValue(prop));
+            }
+          }
+          // The popup no longer inherits font from the editor wrapper, so
+          // its content would render in the page's default font and end up
+          // at a different height — which changes the flip-above decision
+          // and shifts the popup off the caret. Copy typography too.
+          target.style.fontFamily = computed.fontFamily;
+          target.style.fontSize = computed.fontSize;
+          target.style.lineHeight = computed.lineHeight;
         }
 
         function setEditableAria(active: boolean): void {
@@ -209,7 +298,8 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             // constructor (as is the case with @tiptap/vue-3 EditorContent).
             const viewDom = props.editor.view?.dom as HTMLElement | undefined;
             editableEl = viewDom ?? null;
-            findMountTarget(viewDom ?? null).appendChild(container);
+            applyThemeContext(container, viewDom ?? null);
+            document.body.appendChild(container);
 
             app = createApp({
               render() {
@@ -229,7 +319,9 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             app.mount(container);
             setEditableAria(true);
             setActiveDescendant();
-            position(props.clientRect?.() ?? null);
+            latestClientRect = props.clientRect ?? null;
+            repositionAfterPaint();
+            attachScrollListeners(viewDom ?? null);
           },
           onUpdate: (props: SuggestionProps<MergeTag>) => {
             itemsRef.value = props.items;
@@ -239,7 +331,8 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             }
             currentCommand = (item) => props.command(item);
             setActiveDescendant();
-            position(props.clientRect?.() ?? null);
+            latestClientRect = props.clientRect ?? null;
+            repositionAfterPaint();
           },
           onKeyDown: (props: SuggestionKeyDownProps): boolean => {
             if (props.event.key === "Escape") {
@@ -255,6 +348,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             return handled;
           },
           onExit: () => {
+            detachScrollListeners();
             setEditableAria(false);
             app?.unmount();
             container?.remove();
@@ -262,6 +356,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             container = null;
             editableEl = null;
             currentCommand = null;
+            latestClientRect = null;
           },
         };
       },

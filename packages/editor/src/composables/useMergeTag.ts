@@ -17,8 +17,12 @@ export interface UseMergeTagReturn {
   mergeTags: MergeTag[];
   /** Whether a merge tag request is in progress */
   isRequesting: Ref<boolean>;
-  /** Whether merge tag functionality is enabled (has merge tags and callback) */
-  isEnabled: boolean;
+  /**
+   * Whether the "Insert merge tag" button should be shown. True only when
+   * `onRequestMergeTag` is provided — static `tags` alone are surfaced via
+   * the autocomplete typing trigger, not the button.
+   */
+  canRequestMergeTag: boolean;
   /** Whether typing-based autocomplete is enabled by configuration */
   autocomplete: boolean;
   /** The resolved syntax preset for merge tags */
@@ -68,15 +72,12 @@ export function useMergeTag(): UseMergeTagReturn {
     }
   }
 
-  // Merge tag functionality is enabled when either:
-  // 1. There are merge tags configured (non-empty array), OR
-  // 2. The onRequestMergeTag callback is provided
-  const isEnabled = mergeTags.length > 0 || !!onRequestMergeTag;
+  const canRequestMergeTag = !!onRequestMergeTag;
 
   return {
     mergeTags,
     isRequesting,
-    isEnabled,
+    canRequestMergeTag,
     autocomplete,
     syntax,
     isMergeTagValue,

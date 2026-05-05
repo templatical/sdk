@@ -58,6 +58,12 @@ export default defineConfig({
                     if (id.includes('pusher-js')) {
                         return 'pusher';
                     }
+                    if (id.includes('/quality/src/') || id.includes('htmlparser2')) {
+                        return 'quality';
+                    }
+                    if (id.includes('/renderer/src/')) {
+                        return 'renderer';
+                    }
                     if (
                         id.includes('vuedraggable') ||
                         id.includes('sortablejs')
@@ -94,6 +100,8 @@ export default defineConfig({
     resolve: {
         alias: {
             '@templatical/media-library': resolve(import.meta.dirname, '../media-library/src/index.ts'),
+            '@templatical/quality': resolve(import.meta.dirname, '../quality/src/index.ts'),
+            '@templatical/renderer': resolve(import.meta.dirname, '../renderer/src/index.ts'),
             '@templatical/core/cloud': resolve(import.meta.dirname, '../core/src/cloud/index.ts'),
             '@templatical/core': resolve(import.meta.dirname, '../core/src/index.ts'),
             '@templatical/types': resolve(import.meta.dirname, '../types/src/index.ts'),

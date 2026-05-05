@@ -75,7 +75,9 @@ export async function renderToMjml(
   const fontDeclarations = generateFontDeclarations(customFonts);
   const previewTag = generatePreviewTag(content.settings.preheaderText);
 
-  return `<mjml>
+  const lang = escapeAttr(content.settings.locale);
+
+  return `<mjml lang="${lang}">
   <mj-head>${previewTag}
     <mj-attributes>
       <mj-all font-family="${fontFamily}" />

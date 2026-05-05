@@ -8,7 +8,8 @@
       "@templatical/types": ["../types/src/index.ts"],
       "@templatical/core": ["../core/src/index.ts"],
       "@templatical/core/cloud": ["../core/src/cloud/index.ts"],
-      "@templatical/media-library": ["../media-library/src/index.ts"]
+      "@templatical/media-library": ["../media-library/src/index.ts"],
+      "@templatical/quality": ["../quality/src/index.ts"]
     }
   },
   "include": ["src"]

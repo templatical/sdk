@@ -28,7 +28,6 @@ import {
 } from "@templatical/core/cloud";
 import type {
   McpOperationPayload,
-  SaveResult,
   ThemeOverrides,
   UiTheme,
 } from "@templatical/types";
@@ -37,6 +36,7 @@ import {
   useEditorCore,
   type UseEditorCoreReturn,
 } from "../../composables/useEditorCore";
+import { resolveAccessibilityOptions } from "../../utils/resolveAccessibilityOptions";
 import { useDragDrop } from "../../composables/useDragDrop";
 import type { UseFontsReturn } from "../../composables/useFonts";
 import type { Translations } from "../../i18n";
@@ -133,7 +133,7 @@ export interface UseCloudInitializationReturn {
 
   // Late-bound save hook — set by `useCloudLifecycle` after it wires saveTemplate.
   // The `onSave` keyboard shortcut + `useEditorCore` autoSave both route here.
-  onSaveHook: { value: (() => Promise<SaveResult>) | null };
+  onSaveHook: { value: (() => Promise<unknown>) | null };
 
   // Methods
   initialize: () => Promise<void>;
@@ -172,7 +172,7 @@ export function useCloudInitialization(
   let _destroyed = false;
 
   // --- Late-bound save hook (filled in by useCloudLifecycle) ---
-  const onSaveHook: { value: (() => Promise<SaveResult>) | null } = {
+  const onSaveHook: { value: (() => Promise<unknown>) | null } = {
     value: null,
   };
 
@@ -265,6 +265,7 @@ export function useCloudInitialization(
       mergeTags: config.mergeTags,
       displayConditions: config.displayConditions,
       onRequestMedia: null, // cloud handles via mediaLib.handleRequestMedia
+      accessibility: resolveAccessibilityOptions(config),
       onSave: () => {
         onSaveHook.value?.().catch((err) => {
           config.onError?.(err as Error);

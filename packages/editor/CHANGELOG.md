@@ -1,5 +1,88 @@
 # @templatical/editor
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [b79c7cd]
+  - @templatical/quality@0.6.1
+  - @templatical/renderer@0.6.1
+  - @templatical/media-library@0.6.1
+
+## 0.6.0
+
+### Minor Changes
+
+- 55002de: Introduce `@templatical/quality` — an MIT-licensed accessibility linter for Templatical email templates — and wire it into the editor.
+
+  **New package: `@templatical/quality`**
+  - `lintAccessibility(content, options?)` — synchronous, pure, no DOM. Walks the JSON `TemplateContent` tree and runs every enabled rule, returning `A11yIssue[]` with `severity`, `message`, `blockId`, and an optional `fix` patch.
+  - 19 deterministic rules across images, headings, links, text, buttons, and structure (missing alt, filename-style alt, low contrast, vague CTAs, heading-skip, multiple H1, target=\_blank without rel=noopener, all-caps, undersized touch targets, missing preheader, …). Three rules ship one-click auto-fixes.
+  - Public utilities: `walkBlocks`, `getContrastRatio` (WCAG sRGB), `parseHex`, `isOpaqueHex`, `extractAnchors`, `extractText`, `getDictionary`, `formatMessage`, `getMessages`. Plus `Rule`, `RuleHit`, `RuleMeta`, `A11yIssue`, `A11yOptions`, etc.
+  - Per-rule severity overrides (`'error' | 'warning' | 'info' | 'off'`) and configurable thresholds (`altMaxLength`, `minFontSize`, `allCapsMinLength`, `minTouchTargetPx`).
+  - Locale-aware: rule messages and vague-text dictionaries auto-discover via `import.meta.glob` (drop a `messages/<lang>.ts` or `dictionaries/<lang>.ts` and it's bundled). The dictionary is a cross-locale union — a German-locale email with an English "Click here" button still flags. Ships `en` + `de` today.
+
+  **Type changes (`@templatical/types`)**
+  - `TemplateSettings.locale` (optional, defaults to `'en'`) — drives rendered `<mjml lang="…">`.
+  - `ImageBlock.decorative` (optional boolean) — when true, the renderer forces `alt=""` and adds `role="presentation"`.
+  - `PlanConfig.accessibility.blockOnError` (cloud) — server-side policy hook.
+
+  **Renderer changes (`@templatical/renderer`)**
+  - Emits `<mjml lang="…">` from `settings.locale`.
+  - Honors `ImageBlock.decorative` (empty alt + role="presentation").
+
+  **Editor integration (`@templatical/editor`)**
+  - New `accessibility` option on `init()` / `initCloud()` — full `A11yOptions` shape. Optional peer; the dynamic import is gated and tree-shakeable, so the linter chunk never downloads when not used.
+  - New `useAccessibilityLint` composable — debounced 500ms re-lint on content changes, applies auto-fixes through the editor's existing `updateBlock` / `updateSettings` (history-tracked, undoable per fix).
+  - New right-sidebar "Accessibility" tab (lazy-loaded). Errors / Warnings / Info groups with localized messages, "Jump to block" and "Fix" buttons, count badge.
+  - New inline canvas badge inside `BlockWrapper` — `CircleAlert` for errors, `TriangleAlert` for warnings.
+  - New "Decorative image" toggle on `ImageToolbar` bound to `block.decorative`.
+  - Editor mode forces the linter `locale` to match `init({ locale })` — `accessibility.locale` is overwritten on the way through. Headless callers keep full control.
+  - Cloud save-gate: when `planConfig.accessibility.blockOnError === true` and the linter reports any errors, the save flow surfaces a confirmation modal. Both the toolbar Save button and the `Cmd/Ctrl+S` keyboard shortcut route through the gate.
+  - New i18n keys (`accessibility.*` in `en` / `de` OSS chunks; `saveGate.*` in cloud chunks).
+  - CDN bundle ships `@templatical/quality` and `@templatical/renderer` as separate code-split chunks, so CDN consumers don't install the optional peer manually.
+
+### Patch Changes
+
+- Updated dependencies [55002de]
+  - @templatical/quality@0.1.0
+  - @templatical/renderer@1.0.0
+  - @templatical/media-library@1.0.0
+
+## 0.5.1
+
+### Patch Changes
+
+- 6a17329: Fix several merge-tag UX bugs:
+  - **Insert button no longer renders without an `onRequest` callback.** When only static `mergeTags.tags` were configured, the "Insert merge tag" button still showed in the rich-text toolbar, `MergeTagInput`, and `MergeTagTextarea`, but clicking it silently no-oped (`requestMergeTag` returns null without `onRequestMergeTag`). Static-tags users discover tags via the autocomplete typing trigger; the button now only appears when `onRequest` is wired up. Renamed the underlying flag from `isEnabled` → `canRequestMergeTag` for clarity.
+  - **Autocomplete popup positioning no longer breaks on consumer pages with transformed ancestors.** The popup used to mount inside `[data-tpl-theme]` (the editor wrapper) and rely on `position: fixed` resolving against the viewport. Any `transform` on a consumer-page ancestor (route transitions, reveal animations) makes that ancestor the containing block for fixed descendants — the popup landed off-screen instead of pinning to the caret. Popup now mounts to `document.body` and snapshots `--tpl-*` design tokens + typography from the editor's theme root inline so styling carries over without inheriting `.tpl` base rules.
+  - **Popup rounded corners restored.** `MergeTagSuggestionList` was referencing the undefined `--tpl-radius-md` token; switched to `--tpl-radius`.
+
+  Cleanup: leftover "placeholder" copy in editor and playground i18n strings (and corresponding docs in `apps/docs`) is updated to "merge tag" where it referred to the merge-tag concept rather than HTML input placeholder text.
+  - @templatical/renderer@0.5.1
+  - @templatical/media-library@0.5.1
+
+## 0.5.0
+
+### Patch Changes
+
+- @templatical/renderer@1.0.0
+- @templatical/media-library@1.0.0
+
+## 0.4.0
+
+### Minor Changes
+
+- f5a94ab: Add new `@templatical/import-unlayer` package that converts Unlayer design JSON (the output of `editor.saveDesign(...)`) into Templatical's `TemplateContent` shape. Mirrors `@templatical/import-beefree`: maps `text`, `heading`, `image`, `button`, `divider`, `html`, `menu`, `social`, `video`; reports `timer` as html-fallback and `form` as skipped; flattens 4+ column rows; surfaces a per-content conversion report. MIT-licensed.
+
+  The Unlayer migration guide (`/guide/migration-from-unlayer` and `/de/guide/migration-from-unlayer`) is rewritten around the importer. The playground replaces the BeeFree-only chooser button with a single "Import existing template" modal that exposes BeeFree and Unlayer as tabs. README, license FAQ, security policy, and contributing guide reflect the new package; cloud headless API reference adds the matching `templates/import/from-unlayer` route row.
+
+### Patch Changes
+
+- Updated dependencies [f5a94ab]
+  - @templatical/renderer@1.0.0
+  - @templatical/media-library@1.0.0
+
 ## 0.3.2
 
 ### Patch Changes

@@ -11,6 +11,8 @@ import { CLOUD_TRANSLATIONS_KEY } from "../keys";
 
 import { useCloudInitialization } from "./composables/useCloudInitialization";
 import { useCloudLifecycle } from "./composables/useCloudLifecycle";
+import { useCloudSaveGate } from "./composables/useCloudSaveGate";
+import CloudSaveGateModal from "./components/CloudSaveGateModal.vue";
 import CloudHeader from "./components/CloudHeader.vue";
 import CloudPanels from "./components/CloudPanels.vue";
 import EditorFooter from "../components/EditorFooter.vue";
@@ -128,8 +130,21 @@ const lifecycle = useCloudLifecycle({
   isDestroyed: init.isDestroyed,
 });
 
-// Route the keyboard Save hook to lifecycle.saveTemplate.
-init.onSaveHook.value = lifecycle.saveTemplate;
+// --- Accessibility save-gate ---
+const saveGate = useCloudSaveGate({
+  issues: core.accessibilityLint ? core.accessibilityLint.issues : ref([]),
+  planConfig: planConfigInstance.config,
+});
+
+async function gatedSave(): Promise<void> {
+  await saveGate.tryRunSave(() =>
+    lifecycle.saveTemplate().catch((err: Error) => props.config.onError?.(err)),
+  );
+}
+
+// Route the keyboard Save hook through the gate so Cmd+S also triggers the
+// modal when the plan policy says so.
+init.onSaveHook.value = gatedSave;
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -213,11 +228,14 @@ defineExpose({
         featureFlags.isSaveExporting.value ||
         !editor.state.isDirty
       "
-      @save="
-        lifecycle
-          .saveTemplate()
-          .catch((err: Error) => props.config.onError?.(err))
-      "
+      @save="gatedSave"
+    />
+
+    <CloudSaveGateModal
+      :open="saveGate.modalOpen.value"
+      :issues="saveGate.blockingIssues.value"
+      @cancel="saveGate.cancel"
+      @confirm="saveGate.confirmAndSave"
     />
 
     <!-- Snapshot preview banner -->

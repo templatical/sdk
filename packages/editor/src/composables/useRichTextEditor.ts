@@ -55,7 +55,7 @@ export interface UseRichTextEditorReturn {
   linkUrl: Ref<string>;
   linkDialogRef: Ref<HTMLElement | null>;
   mergeTags: ReturnType<typeof useMergeTag>["mergeTags"];
-  mergeTagEnabled: ReturnType<typeof useMergeTag>["isEnabled"];
+  canRequestMergeTag: ReturnType<typeof useMergeTag>["canRequestMergeTag"];
   isRequestingMergeTag: ReturnType<typeof useMergeTag>["isRequesting"];
   syntax: ReturnType<typeof useMergeTag>["syntax"];
   openLinkDialog: () => void;
@@ -73,7 +73,7 @@ export function useRichTextEditor(
 
   const {
     mergeTags,
-    isEnabled: mergeTagEnabled,
+    canRequestMergeTag,
     isRequesting: isRequestingMergeTag,
     requestMergeTag,
     syntax,
@@ -228,6 +228,7 @@ export function useRichTextEditor(
 
   async function handleAddMergeTag(): Promise<void> {
     const mergeTag = await requestMergeTag();
+    if (destroyed) return;
     if (mergeTag && editor.value) {
       editor.value
         .chain()
@@ -252,7 +253,7 @@ export function useRichTextEditor(
     linkUrl,
     linkDialogRef,
     mergeTags,
-    mergeTagEnabled,
+    canRequestMergeTag,
     isRequestingMergeTag,
     syntax,
     openLinkDialog,

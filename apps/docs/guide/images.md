@@ -60,7 +60,7 @@ The `ImageBlock` type defines all configurable properties:
 
 ### Placeholder URL
 
-When the `src` field contains a merge tag placeholder (e.g., <code v-pre>{{product.image}}</code>), the actual image won't render in the editor. Use `placeholderUrl` to provide a placeholder image in the editor. This value is not included in the exported output.
+When the `src` field contains a merge tag (e.g., <code v-pre>{{product.image}}</code>), the actual image won't render in the editor. Use `placeholderUrl` to provide a placeholder image in the editor. This value is not included in the exported output.
 
 ## Best practices
 

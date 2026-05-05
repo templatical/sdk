@@ -1,0 +1,201 @@
+{
+  "counters": { "u_row": 6, "u_column": 8, "u_content_text": 3 },
+  "schemaVersion": 6,
+  "body": {
+    "id": "body",
+    "rows": [
+      {
+        "id": "r1",
+        "cells": [1],
+        "columns": [
+          {
+            "id": "c1",
+            "contents": [
+              {
+                "type": "heading",
+                "values": {
+                  "headingType": "h1",
+                  "text": "Welcome",
+                  "color": "#111111",
+                  "textAlign": "center"
+                }
+              },
+              {
+                "type": "text",
+                "values": {
+                  "text": "<p>This is the lead paragraph.</p>",
+                  "color": "#444444",
+                  "fontSize": "14px"
+                }
+              }
+            ],
+            "values": {}
+          }
+        ],
+        "values": {}
+      },
+      {
+        "id": "r2",
+        "cells": [1, 1],
+        "columns": [
+          {
+            "id": "c2a",
+            "contents": [
+              {
+                "type": "image",
+                "values": {
+                  "src": { "url": "https://cdn.test/i.png", "width": 280 },
+                  "altText": "Promo",
+                  "textAlign": "center"
+                }
+              }
+            ],
+            "values": {}
+          },
+          {
+            "id": "c2b",
+            "contents": [
+              {
+                "type": "button",
+                "values": {
+                  "text": "Shop now",
+                  "href": {
+                    "name": "web",
+                    "values": { "href": "https://shop.test" }
+                  },
+                  "buttonColors": {
+                    "color": "#ffffff",
+                    "backgroundColor": "#ff5500"
+                  },
+                  "padding": "12px 24px",
+                  "fontSize": "16px"
+                }
+              }
+            ],
+            "values": {}
+          }
+        ],
+        "values": { "backgroundColor": "#fafafa" }
+      },
+      {
+        "id": "r3",
+        "cells": [2, 1],
+        "columns": [
+          {
+            "id": "c3a",
+            "contents": [
+              {
+                "type": "html",
+                "values": { "html": "<div>raw</div>" }
+              }
+            ],
+            "values": {}
+          },
+          {
+            "id": "c3b",
+            "contents": [
+              {
+                "type": "divider",
+                "values": {
+                  "border": {
+                    "borderTopWidth": "1px",
+                    "borderTopStyle": "solid",
+                    "borderTopColor": "#dddddd"
+                  },
+                  "width": "100%"
+                }
+              }
+            ],
+            "values": {}
+          }
+        ],
+        "values": {}
+      },
+      {
+        "id": "r4",
+        "cells": [1],
+        "columns": [
+          {
+            "id": "c4",
+            "contents": [
+              {
+                "type": "menu",
+                "values": {
+                  "menu": {
+                    "items": [
+                      {
+                        "key": "1",
+                        "text": "About",
+                        "link": {
+                          "name": "web",
+                          "values": { "href": "/about" }
+                        }
+                      },
+                      {
+                        "key": "2",
+                        "text": "Contact",
+                        "link": {
+                          "name": "web",
+                          "values": { "href": "/contact" }
+                        }
+                      }
+                    ]
+                  },
+                  "separator": "|"
+                }
+              },
+              {
+                "type": "social",
+                "values": {
+                  "icons": {
+                    "icons": [
+                      { "name": "Facebook", "url": "https://fb.test/p" },
+                      { "name": "Instagram", "url": "https://ig.test/p" }
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "video",
+                "values": {
+                  "videoUrl": "https://yt.test/v",
+                  "thumbnailUrl": "https://yt.test/v.jpg"
+                }
+              },
+              {
+                "type": "timer",
+                "values": {}
+              },
+              {
+                "type": "form",
+                "values": {}
+              },
+              {
+                "type": "custom-tool",
+                "values": {}
+              }
+            ],
+            "values": {}
+          }
+        ],
+        "values": {}
+      },
+      {
+        "id": "r5",
+        "cells": [1, 1, 1, 1],
+        "columns": [
+          { "id": "c5a", "contents": [], "values": {} },
+          { "id": "c5b", "contents": [] , "values": {} },
+          { "id": "c5c", "contents": [], "values": {} },
+          { "id": "c5d", "contents": [], "values": {} }
+        ],
+        "values": {}
+      }
+    ],
+    "values": {
+      "contentWidth": "640px",
+      "backgroundColor": "#ffffff",
+      "fontFamily": { "label": "Arial", "value": "Arial, sans-serif" }
+    }
+  }
+}

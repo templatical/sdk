@@ -205,6 +205,13 @@ const en = {
     invalidFileType:
       "This file type is not supported. Upload a PNG, JPG, WebP, or PDF.",
   },
+
+  saveGate: {
+    title: "Accessibility errors block this save",
+    body: "Your plan blocks saves while errors remain. Fix the items below or save anyway.",
+    cancel: "Review and fix",
+    confirm: "Save anyway",
+  },
 };
 
 export default en;

@@ -35,14 +35,16 @@ export function renderImage(block: ImageBlock, context: RenderContext): string {
   }
 
   const src = escapeAttr(block.src);
-  const alt = escapeAttr(block.alt);
+  const decorative = block.decorative === true;
+  const alt = decorative ? "" : escapeAttr(block.alt);
   const align = block.align;
+  const roleAttr = decorative ? ' role="presentation"' : "";
 
   return `<mj-image
   src="${src}"
   alt="${alt}"
   width="${width}"
   align="${align}"
-  padding="${padding}"${bgColor}${linkAttr}${visibilityAttr}
+  padding="${padding}"${bgColor}${linkAttr}${visibilityAttr}${roleAttr}
 />`;
 }

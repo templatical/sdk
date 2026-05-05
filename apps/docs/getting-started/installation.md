@@ -67,6 +67,7 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | `@templatical/types` | Shared TypeScript types, block factory functions, type guards. | Only if you build templates programmatically without the editor (e.g. server-side workflows) |
 | `@templatical/core` | Framework-agnostic editor logic (state, history) for headless setups. | Only for headless / non-editor consumers |
 | `@templatical/import-beefree` | Converts BeeFree JSON templates to Templatical format. | Optional |
+| `@templatical/import-unlayer` | Converts Unlayer JSON design templates to Templatical format. | Optional |
 
 `@templatical/editor` ships as a single self-contained ESM bundle: every runtime dependency it needs (Vue, TipTap, vuedraggable, `@templatical/core`, `@templatical/types`, etc.) is inlined. You never install them separately — and you never get duplicate copies in your app's `node_modules`.
 ## Framework integration

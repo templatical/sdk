@@ -11,7 +11,7 @@ import {
   labelClass,
   DEFAULT_BG_COLOR,
 } from "../constants/styleConstants";
-import { Circle, Eye, Info, Square } from "@lucide/vue";
+import { Circle, Eye, Globe, Info, Square } from "@lucide/vue";
 import { computed } from "vue";
 import { FONTS_MANAGER_KEY, requireInject } from "../keys";
 
@@ -165,6 +165,46 @@ const widthPresets = [
               {{ font.label }}
             </option>
           </select>
+        </div>
+      </div>
+
+      <!-- Language card -->
+      <div :class="cardClass">
+        <div
+          class="tpl:mb-3.5 tpl:flex tpl:items-center tpl:gap-2 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
+        >
+          <Globe
+            class="tpl:text-[var(--tpl-text-muted)]"
+            :size="14"
+            :stroke-width="2"
+          />
+          <span>{{ t.templateSettings.language }}</span>
+        </div>
+
+        <div>
+          <label :class="labelClass">{{
+            t.templateSettings.contentLocale
+          }}</label>
+          <input
+            type="text"
+            :class="inputClass"
+            :value="settings.locale ?? ''"
+            placeholder="en"
+            spellcheck="false"
+            autocapitalize="off"
+            autocomplete="off"
+            @input="
+              emit('update', {
+                locale:
+                  ($event.target as HTMLInputElement).value.trim() || undefined,
+              })
+            "
+          />
+          <p
+            class="tpl:mt-1 tpl:text-xs tpl:leading-relaxed tpl:text-[var(--tpl-text-dim)]"
+          >
+            {{ t.templateSettings.contentLocaleHint }}
+          </p>
         </div>
       </div>
 

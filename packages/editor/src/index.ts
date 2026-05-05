@@ -53,6 +53,16 @@ export interface TemplaticalEditorConfig {
    * Set to `false` to hide the footer (no attribution required by the license).
    */
   branding?: boolean;
+
+  /**
+   * Accessibility linter (`@templatical/quality`) configuration.
+   *
+   * - When unset, the linter loads on demand once the user opens the panel.
+   * - When `disabled: true`, the optional peer is never imported (saves the
+   *   chunk download) and the sidebar tab + inline badges are suppressed.
+   * - `rules`/`thresholds` follow the shape exported by `@templatical/quality`.
+   */
+  accessibility?: import("@templatical/quality").A11yOptions;
 }
 
 /** Function type for media browser requests, used by both OSS and Cloud editors. */

@@ -8,8 +8,11 @@
       "@templatical/core",
       "@templatical/renderer",
       "@templatical/editor",
+      "@templatical/quality",
       "@templatical/media-library",
-      "@templatical/import-beefree"
+      "@templatical/import-beefree",
+      "@templatical/import-unlayer",
+      "@templatical/import-html"
     ]
   ],
   "linked": [],

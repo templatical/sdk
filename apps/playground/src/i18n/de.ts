@@ -6,8 +6,14 @@ export default {
     subtitle: "W\u00e4hlen Sie einen Startpunkt f\u00fcr Ihre E-Mail-Vorlage",
     startFromScratch: "Neu beginnen",
     emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
-    beefreePrompt: "Haben Sie eine bestehende BeeFree-Vorlage?",
-    importBeefree: "Aus BeeFree importieren",
+    migration: {
+      headline: "Schon in BeeFree, Unlayer oder eigenem HTML?",
+      description:
+        "Bringen Sie Ihre bestehenden Vorlagen in Sekunden mit — Block-Mapping, Layouts und Merge-Tags werden automatisch übernommen.",
+      importFromBeefree: "Aus BeeFree importieren",
+      importFromUnlayer: "Aus Unlayer importieren",
+      importFromHtml: "Aus HTML importieren",
+    },
   },
   cloudBanner: {
     title: "Das volle Erlebnis mit Cloud freischalten",
@@ -63,20 +69,39 @@ export default {
     onRequestMediaDesc:
       '\u00d6ffnet eine Demo-Bildauswahl, wenn der Benutzer auf "Medien durchsuchen" klickt',
     onRequestMergeTag:
-      "\u00d6ffnet eine Merge-Tag-Auswahl, wenn der Benutzer einen Platzhalter einf\u00fcgt",
+      "\u00d6ffnet eine Merge-Tag-Auswahl, wenn der Benutzer ein Merge-Tag einf\u00fcgt",
     cancel: "Abbrechen",
     apply: "\u00dcbernehmen & Neu laden",
   },
-  beefreeModal: {
-    title: "BeeFree-Vorlage importieren",
-    description:
-      "F\u00fcgen Sie den JSON-Export aus Ihrem BeeFree-Editor unten ein.",
-    chooseFile: ".json-Datei w\u00e4hlen",
-    orPaste: "oder JSON einf\u00fcgen",
+  importModal: {
+    title: "Bestehende Vorlage importieren",
+    sources: {
+      beefree: "Aus BeeFree",
+      unlayer: "Aus Unlayer",
+      html: "Aus HTML",
+    },
+    chooseFile: "Datei w\u00e4hlen",
+    orPaste: "oder unten einf\u00fcgen",
     import: "Importieren & \u00d6ffnen",
     cancel: "Abbrechen",
-    emptyError:
-      "F\u00fcgen Sie Ihr BeeFree-JSON ein oder laden Sie eine Datei hoch.",
+    beefree: {
+      description:
+        "F\u00fcgen Sie den JSON-Export aus Ihrem BeeFree-Editor unten ein.",
+      emptyError:
+        "F\u00fcgen Sie Ihr BeeFree-JSON ein oder laden Sie eine Datei hoch.",
+    },
+    unlayer: {
+      description:
+        "F\u00fcgen Sie den JSON-Design-Export aus Unlayer (Ergebnis von saveDesign) unten ein.",
+      emptyError:
+        "F\u00fcgen Sie Ihr Unlayer-JSON ein oder laden Sie eine Datei hoch.",
+    },
+    html: {
+      description:
+        "F\u00fcgen Sie den rohen HTML-Quelltext einer E-Mail ein (MJML-Ausgabe, ESP-Export oder handgeschrieben). Beste Ergebnisse mit tabellenbasierten Layouts.",
+      emptyError:
+        "F\u00fcgen Sie Ihren HTML-Quelltext ein oder laden Sie eine Datei hoch.",
+    },
   },
   mergeTagModal: {
     title: "Merge-Tag einf\u00fcgen",
@@ -221,6 +246,8 @@ export default {
     templateUuid: "Vorlagen-UUID",
     editorConfig: "Editor-Konfiguration",
     beefreeJsonContent: "BeeFree-JSON-Inhalt",
+    unlayerJsonContent: "Unlayer-JSON-Inhalt",
+    htmlSourceContent: "HTML-Quelltext-Inhalt",
     selectLanguage: "Sprache auswählen",
     selectTheme: "Farbschema auswählen",
   },

@@ -180,9 +180,12 @@ const de: typeof en = {
     placeholderUrl: "Platzhalterbild",
     placeholderUrlPlaceholder: "https://... (nur zur Gestaltung)",
     placeholderUrlTooltip:
-      "Da die Bild-URL einen Platzhalter verwendet, können Sie hier ein echtes Bild angeben, um das Layout während der Gestaltung in der Vorschau anzuzeigen. Dies wird nicht in die endgültige Ausgabe aufgenommen.",
+      "Da die Bild-URL ein Merge-Tag verwendet, können Sie hier ein echtes Bild angeben, um das Layout während der Gestaltung in der Vorschau anzuzeigen. Dies wird nicht in die endgültige Ausgabe aufgenommen.",
     clickToAdd: "Klicken Sie, um eine Bild-URL hinzuzufügen",
     browseMedia: "Medien durchsuchen",
+    decorative: "Dekoratives Bild",
+    decorativeHint:
+      "Wird von Bildschirmlesern ignoriert. Nur für Abstandshalter und visuelle Verzierungen verwenden.",
   },
 
   // Toolbar - Video
@@ -203,7 +206,7 @@ const de: typeof en = {
     placeholderUrl: "Platzhalter-Thumbnail",
     placeholderUrlPlaceholder: "https://... (nur zur Gestaltung)",
     placeholderUrlTooltip:
-      "Da die Video-URL einen Platzhalter verwendet, können Sie hier ein echtes Thumbnail angeben, um das Layout während der Gestaltung in der Vorschau anzuzeigen. Dies wird nicht in die endgültige Ausgabe aufgenommen.",
+      "Da die Video-URL ein Merge-Tag verwendet, können Sie hier ein echtes Thumbnail angeben, um das Layout während der Gestaltung in der Vorschau anzuzeigen. Dies wird nicht in die endgültige Ausgabe aufgenommen.",
     addVideo: "Video-URL hinzufügen",
   },
 
@@ -425,7 +428,11 @@ const de: typeof en = {
     preheaderTextPlaceholder:
       "Vorschautext, der nach der Betreffzeile im Posteingang angezeigt wird...",
     preheaderTextHint:
-      "Dieser Text erscheint nach der Betreffzeile in der E-Mail-Vorschau. Unterstützt Platzhalter.",
+      "Dieser Text erscheint nach der Betreffzeile in der E-Mail-Vorschau. Unterstützt Merge-Tags.",
+    language: "Sprache",
+    contentLocale: "Inhaltssprache",
+    contentLocaleHint:
+      "BCP-47-Code (z. B. en, de, pt-BR). Setzt das lang-Attribut der gerenderten E-Mail, damit Screenreader den Inhalt korrekt aussprechen.",
     tips: "Tipps",
     tip1: "600px ist die Standardbreite für E-Mail-Vorlagen",
     tip2: "Verwenden Sie websichere Schriften für beste Kompatibilität",
@@ -591,6 +598,20 @@ const de: typeof en = {
     editorLoading: "Editor wird geladen...",
     editorLoadFailed: "Editor konnte nicht geladen werden.",
     retry: "Erneut versuchen",
+  },
+
+  accessibility: {
+    panelTitle: "Barrierefreiheit",
+    panelTabLabel: "Barrierefreiheit",
+    groupErrors: "Fehler",
+    groupWarnings: "Warnungen",
+    groupInfo: "Hinweise",
+    jump: "Zum Block springen",
+    fix: "Beheben",
+    emptyState: "Keine Probleme mit der Barrierefreiheit.",
+    badgeError: "Hat Barrierefreiheitsfehler",
+    badgeWarning: "Hat Barrierefreiheitswarnungen",
+    issueCountTooltip: "{count} Barrierefreiheitsprobleme",
   },
 };
 

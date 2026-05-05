@@ -3,11 +3,45 @@ import { defineConfig, type DefaultTheme } from "vitepress";
 const enNav: DefaultTheme.NavItem[] = [
   { text: "Guide", link: "/getting-started/installation" },
   { text: "API", link: "/api/editor" },
+  { text: "Accessibility", link: "/quality/accessibility/" },
   { text: "Cloud", link: "/cloud/" },
   { text: "Playground", link: "https://play.templatical.com" },
 ];
 
 const enSidebar: DefaultTheme.SidebarMulti = {
+  "/quality/": [
+    {
+      text: "Quality",
+      items: [{ text: "Overview", link: "/quality/" }],
+    },
+    {
+      text: "Accessibility",
+      items: [
+        { text: "Overview", link: "/quality/accessibility/" },
+        {
+          text: "Getting Started",
+          link: "/quality/accessibility/getting-started",
+        },
+        {
+          text: "Rule catalog",
+          link: "/quality/accessibility/rule-catalog",
+        },
+        { text: "Options", link: "/quality/accessibility/options" },
+        {
+          text: "Severity & fixes",
+          link: "/quality/accessibility/severity-and-fixes",
+        },
+        {
+          text: "Headless usage",
+          link: "/quality/accessibility/headless-usage",
+        },
+        {
+          text: "Contributing locales",
+          link: "/quality/accessibility/contributing-locales",
+        },
+      ],
+    },
+  ],
   "/cloud/": [
     {
       text: "Cloud",
@@ -95,6 +129,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "From BeeFree", link: "/guide/migration-from-beefree" },
         { text: "From Unlayer", link: "/guide/migration-from-unlayer" },
+        { text: "From HTML", link: "/guide/migration-from-html" },
         { text: "From hand-written MJML", link: "/guide/migration-from-mjml" },
       ],
     },
@@ -111,11 +146,45 @@ const enSidebar: DefaultTheme.SidebarMulti = {
 const deNav: DefaultTheme.NavItem[] = [
   { text: "Anleitung", link: "/de/getting-started/installation" },
   { text: "API", link: "/de/api/editor" },
+  { text: "Barrierefreiheit", link: "/de/quality/accessibility/" },
   { text: "Cloud", link: "/de/cloud/" },
   { text: "Playground", link: "https://play.templatical.com" },
 ];
 
 const deSidebar: DefaultTheme.SidebarMulti = {
+  "/de/quality/": [
+    {
+      text: "Qualität",
+      items: [{ text: "Überblick", link: "/de/quality/" }],
+    },
+    {
+      text: "Barrierefreiheit",
+      items: [
+        { text: "Überblick", link: "/de/quality/accessibility/" },
+        {
+          text: "Erste Schritte",
+          link: "/de/quality/accessibility/getting-started",
+        },
+        {
+          text: "Regelkatalog",
+          link: "/de/quality/accessibility/rule-catalog",
+        },
+        { text: "Optionen", link: "/de/quality/accessibility/options" },
+        {
+          text: "Schweregrad & Korrekturen",
+          link: "/de/quality/accessibility/severity-and-fixes",
+        },
+        {
+          text: "Headless-Nutzung",
+          link: "/de/quality/accessibility/headless-usage",
+        },
+        {
+          text: "Lokale beitragen",
+          link: "/de/quality/accessibility/contributing-locales",
+        },
+      ],
+    },
+  ],
   "/de/cloud/": [
     {
       text: "Cloud",
@@ -203,6 +272,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Von BeeFree", link: "/de/guide/migration-from-beefree" },
         { text: "Von Unlayer", link: "/de/guide/migration-from-unlayer" },
+        { text: "Von HTML", link: "/de/guide/migration-from-html" },
         {
           text: "Von handgeschriebenem MJML",
           link: "/de/guide/migration-from-mjml",

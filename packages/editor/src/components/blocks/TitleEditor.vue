@@ -31,7 +31,7 @@ const {
   showLinkDialog,
   linkUrl,
   linkDialogRef,
-  mergeTagEnabled,
+  canRequestMergeTag,
   openLinkDialog,
   insertLink,
   removeLink,
@@ -161,11 +161,11 @@ const {
           </button>
           <!-- Add Merge Tag -->
           <span
-            v-if="mergeTagEnabled"
+            v-if="canRequestMergeTag"
             class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
           ></span>
           <button
-            v-if="mergeTagEnabled"
+            v-if="canRequestMergeTag"
             type="button"
             class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
             :aria-label="t.mergeTag.add"

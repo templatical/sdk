@@ -550,12 +550,15 @@ describe('useMergeTagField', () => {
     });
   });
 
-  describe('mergeTagEnabled', () => {
-    it('is true when merge tags are provided', () => {
+  describe('canRequestMergeTag', () => {
+    it('is false when only static merge tags are provided (no onRequest callback)', () => {
+      // Static tags surface via the autocomplete typing trigger, not the
+      // insert button — the button no-ops without onRequestMergeTag, so it
+      // must stay hidden.
       const elementRef = createElementRef();
       const emitFn = vi.fn();
 
-      const { mergeTagEnabled } = withProvide(
+      const { canRequestMergeTag } = withProvide(
         () =>
           useMergeTagField({
             modelValue: () => '',
@@ -565,14 +568,33 @@ describe('useMergeTagField', () => {
         defaultProvides(),
       );
 
-      expect(mergeTagEnabled).toBe(true);
+      expect(canRequestMergeTag).toBe(false);
+    });
+
+    it('is true when onRequestMergeTag callback is provided', () => {
+      const elementRef = createElementRef();
+      const emitFn = vi.fn();
+
+      const { canRequestMergeTag } = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => '',
+            emit: emitFn,
+            elementRef,
+          }),
+        defaultProvides({
+          [ON_REQUEST_MERGE_TAG_KEY as symbol]: vi.fn(),
+        }),
+      );
+
+      expect(canRequestMergeTag).toBe(true);
     });
 
     it('is false when no merge tags and no callback', () => {
       const elementRef = createElementRef();
       const emitFn = vi.fn();
 
-      const { mergeTagEnabled } = withProvide(
+      const { canRequestMergeTag } = withProvide(
         () =>
           useMergeTagField({
             modelValue: () => '',
@@ -585,7 +607,7 @@ describe('useMergeTagField', () => {
         },
       );
 
-      expect(mergeTagEnabled).toBe(false);
+      expect(canRequestMergeTag).toBe(false);
     });
   });
 });
