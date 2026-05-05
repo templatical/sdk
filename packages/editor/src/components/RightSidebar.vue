@@ -2,9 +2,14 @@
 import TemplateSettingsPanel from "./TemplateSettings.vue";
 import Toolbar from "./Toolbar.vue";
 import { useI18n } from "../composables/useI18n";
+import { ACCESSIBILITY_LINT_KEY } from "../keys";
 import type { Block, TemplateSettings } from "@templatical/types";
-import { LayoutTemplate, PanelTop, Settings } from "@lucide/vue";
-import { computed, ref, watch } from "vue";
+import { Accessibility, LayoutTemplate, PanelTop, Settings } from "@lucide/vue";
+import { computed, defineAsyncComponent, inject, ref, watch } from "vue";
+
+const AccessibilityPanel = defineAsyncComponent(
+  () => import("./sidebar/AccessibilityPanel.vue"),
+);
 
 const props = defineProps<{
   selectedBlock: Block | null;
@@ -21,12 +26,31 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-type Tab = "content" | "settings";
+type Tab = "content" | "settings" | "accessibility";
 const activeTab = ref<Tab>("content");
 
-const pillOffset = computed(() =>
-  activeTab.value === "content" ? "tpl:translate-x-0" : "tpl:translate-x-full",
-);
+const lint = inject(ACCESSIBILITY_LINT_KEY, null);
+const a11yEnabled = computed(() => lint !== null);
+const a11yIssueCount = computed(() => lint?.issues.value.length ?? 0);
+
+function tabClass(tab: Tab): string {
+  const isActive = activeTab.value === tab;
+  if (isActive) {
+    return "tpl:flex-1 tpl:text-[var(--tpl-primary)]";
+  }
+  return "tpl:shrink-0 tpl:text-[var(--tpl-text-muted)] hover:tpl:text-[var(--tpl-text)]";
+}
+
+function tabStyle(tab: Tab): Record<string, string> {
+  const isActive = activeTab.value === tab;
+  if (isActive) {
+    return {
+      backgroundColor: "var(--tpl-bg)",
+      boxShadow: "var(--tpl-shadow-md)",
+    };
+  }
+  return { backgroundColor: "transparent" };
+}
 
 watch(
   () => props.selectedBlock,
@@ -46,47 +70,61 @@ watch(
   >
     <div
       role="tablist"
-      class="tpl:relative tpl:flex tpl:border-b tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)]"
+      class="tpl:relative tpl:flex tpl:gap-1 tpl:border-b tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-active)] tpl:p-1.5"
     >
-      <div
-        class="tpl:absolute tpl:bottom-0 tpl:left-0 tpl:h-full tpl:w-1/2 tpl:p-1.5 tpl:transition-transform tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]"
-        :class="pillOffset"
-      >
-        <div
-          class="tpl:h-full tpl:w-full tpl:rounded-[var(--tpl-radius-sm)] tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow)]"
-        ></div>
-      </div>
       <button
         id="tpl-tab-content"
         role="tab"
         :aria-selected="activeTab === 'content'"
         aria-controls="tpl-tabpanel-content"
-        class="tpl:relative tpl:z-10 tpl:flex tpl:flex-1 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:px-4 tpl:py-3 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:duration-[120ms]"
-        :class="
-          activeTab === 'content'
-            ? 'tpl:text-[var(--tpl-primary)]'
-            : 'tpl:text-[var(--tpl-text-muted)] hover:tpl:text-[var(--tpl-text)]'
-        "
+        :aria-label="t.sidebar.content"
+        :title="t.sidebar.content"
+        class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]"
+        :class="tabClass('content')"
+        :style="tabStyle('content')"
         @click="activeTab = 'content'"
       >
         <PanelTop :size="14" :stroke-width="2" />
-        {{ t.sidebar.content }}
+        <span v-if="activeTab === 'content'">{{ t.sidebar.content }}</span>
       </button>
       <button
         id="tpl-tab-settings"
         role="tab"
         :aria-selected="activeTab === 'settings'"
         aria-controls="tpl-tabpanel-settings"
-        class="tpl:relative tpl:z-10 tpl:flex tpl:flex-1 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:px-4 tpl:py-3 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:duration-[120ms]"
-        :class="
-          activeTab === 'settings'
-            ? 'tpl:text-[var(--tpl-primary)]'
-            : 'tpl:text-[var(--tpl-text-muted)] hover:tpl:text-[var(--tpl-text)]'
-        "
+        :aria-label="t.sidebar.settings"
+        :title="t.sidebar.settings"
+        class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]"
+        :class="tabClass('settings')"
+        :style="tabStyle('settings')"
         @click="activeTab = 'settings'"
       >
         <Settings :size="14" :stroke-width="1.5" />
-        {{ t.sidebar.settings }}
+        <span v-if="activeTab === 'settings'">{{ t.sidebar.settings }}</span>
+      </button>
+      <button
+        v-if="a11yEnabled"
+        id="tpl-tab-accessibility"
+        role="tab"
+        :aria-selected="activeTab === 'accessibility'"
+        aria-controls="tpl-tabpanel-accessibility"
+        :aria-label="t.accessibility.panelTabLabel"
+        :title="t.accessibility.panelTabLabel"
+        class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]"
+        :class="tabClass('accessibility')"
+        :style="tabStyle('accessibility')"
+        @click="activeTab = 'accessibility'"
+      >
+        <Accessibility :size="14" :stroke-width="1.5" />
+        <span v-if="activeTab === 'accessibility'">
+          {{ t.accessibility.panelTabLabel }}
+        </span>
+        <span
+          v-if="a11yIssueCount > 0"
+          class="tpl:ml-1 tpl:rounded-full tpl:bg-[var(--tpl-bg-hover)] tpl:px-1.5 tpl:text-[10px]"
+        >
+          {{ a11yIssueCount }}
+        </span>
       </button>
     </div>
 
@@ -133,6 +171,16 @@ watch(
         :settings="settings"
         @update="emit('update-settings', $event)"
       />
+    </div>
+
+    <div
+      v-if="activeTab === 'accessibility' && a11yEnabled"
+      id="tpl-tabpanel-accessibility"
+      role="tabpanel"
+      aria-labelledby="tpl-tab-accessibility"
+      class="tpl:flex tpl:flex-1 tpl:flex-col tpl:overflow-y-auto"
+    >
+      <AccessibilityPanel />
     </div>
   </aside>
 </template>

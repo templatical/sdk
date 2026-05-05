@@ -4,6 +4,7 @@ import type { TemplaticalEditorConfig } from "./index";
 import { useEditor } from "@templatical/core";
 import type { TemplateContent, UiTheme } from "@templatical/types";
 import { useEditorCore } from "./composables/useEditorCore";
+import { resolveAccessibilityOptions } from "./utils/resolveAccessibilityOptions";
 import type { Translations } from "./i18n";
 import type { UseFontsReturn } from "./composables/useFonts";
 
@@ -40,6 +41,7 @@ const core = useEditorCore({
     mergeTags: props.config.mergeTags,
     displayConditions: props.config.displayConditions,
     onRequestMedia: props.config.onRequestMedia,
+    accessibility: resolveAccessibilityOptions(props.config),
     onSave: props.config.onSave
       ? () =>
           props.config.onSave!(JSON.parse(JSON.stringify(editor.state.content)))

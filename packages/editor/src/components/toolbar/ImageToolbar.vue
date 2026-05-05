@@ -101,8 +101,27 @@ async function openMediaBrowser(): Promise<void> {
       type="text"
       :placeholder="t.image.altTextPlaceholder"
       :pulse="pulseAlt"
+      :disabled="block.decorative === true"
       @update:model-value="updateField('alt', $event)"
     />
+    <label
+      class="tpl:mt-2 tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
+    >
+      <input
+        type="checkbox"
+        class="tpl:size-3.5 tpl:cursor-pointer tpl:accent-[var(--tpl-primary)]"
+        :checked="block.decorative === true"
+        @change="
+          updateField('decorative', ($event.target as HTMLInputElement).checked)
+        "
+      />
+      <span>
+        {{ t.image.decorative }}
+        <span class="tpl:block tpl:text-[var(--tpl-text-dim)]">
+          {{ t.image.decorativeHint }}
+        </span>
+      </span>
+    </label>
   </div>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.image.width }}</label>
