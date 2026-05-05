@@ -7,17 +7,18 @@ export const meta: RuleMeta = {
   severity: "error",
 };
 
-const MIN_RATIO = 4.5;
-
 export const buttonLowContrast: Rule = {
   meta,
   block(block) {
     if (!isButton(block)) return null;
     const ratio = getContrastRatio(block.textColor, block.backgroundColor);
-    if (Number.isNaN(ratio) || ratio >= MIN_RATIO) return null;
+    if (Number.isNaN(ratio)) return null;
+    // WCAG large text = 18pt (~24px). Mirrors the heading rule's threshold.
+    const required = block.fontSize >= 24 ? 3 : 4.5;
+    if (ratio >= required) return null;
     return {
       blockId: block.id,
-      params: { ratio: ratio.toFixed(2), required: MIN_RATIO },
+      params: { ratio: ratio.toFixed(2), required },
     };
   },
 };

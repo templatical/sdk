@@ -44,18 +44,48 @@ export const linkTargetBlankNoRel: Rule = {
   },
 };
 
+interface ParsedAttr {
+  raw: string;
+  name: string;
+  value: string | null;
+}
+
+const ATTR_RE =
+  /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+
+function parseAttrs(attrs: string): ParsedAttr[] {
+  const parsed: ParsedAttr[] = [];
+  ATTR_RE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = ATTR_RE.exec(attrs)) !== null) {
+    const value = match[2] ?? match[3] ?? match[4] ?? null;
+    parsed.push({ raw: match[0], name: match[1], value });
+  }
+  return parsed;
+}
+
+function hasUnsafeTargetBlank(parsed: ParsedAttr[]): boolean {
+  return parsed.some(
+    (a) =>
+      a.name.toLowerCase() === "target" &&
+      a.value !== null &&
+      a.value.toLowerCase() === "_blank",
+  );
+}
+
 function addNoopenerToTargetBlank(html: string): string {
   return html.replace(/<a\b([^>]*)>/gi, (match, attrs: string) => {
-    const hasTargetBlank = /\btarget\s*=\s*["']_blank["']/i.test(attrs);
-    if (!hasTargetBlank) return match;
-    const relMatch = /\brel\s*=\s*["']([^"']*)["']/i.exec(attrs);
-    if (relMatch) {
-      const tokens = relMatch[1].toLowerCase().split(/\s+/);
+    const parsed = parseAttrs(attrs);
+    if (!hasUnsafeTargetBlank(parsed)) return match;
+
+    const relAttr = parsed.find((a) => a.name.toLowerCase() === "rel");
+    if (relAttr) {
+      const tokens = (relAttr.value ?? "").toLowerCase().split(/\s+/);
       if (tokens.includes("noopener") || tokens.includes("noreferrer")) {
         return match;
       }
-      const newRel = `${relMatch[1]} noopener`.trim();
-      const newAttrs = attrs.replace(relMatch[0], `rel="${newRel}"`);
+      const newRel = `${relAttr.value ?? ""} noopener`.trim();
+      const newAttrs = attrs.replace(relAttr.raw, `rel="${newRel}"`);
       return `<a${newAttrs}>`;
     }
     return `<a${attrs} rel="noopener">`;

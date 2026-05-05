@@ -2,23 +2,23 @@
 
 `@templatical/quality` ships **two** locale-aware data sets, both keyed by language:
 
-1. **Rule messages** (`src/messages/{locale}.ts`) — the human-readable strings the editor sidebar renders for each issue.
-2. **Vague-text dictionaries** (`src/dictionaries/{locale}.ts`) — the phrase lists used by `link-vague-text` and `button-vague-label`.
+1. **Rule messages** (`src/accessibility/messages/{locale}.ts`) — the human-readable strings the editor sidebar renders for each issue.
+2. **Vague-text dictionaries** (`src/accessibility/dictionaries/{locale}.ts`) — the phrase lists used by `link-vague-text` and `button-vague-label`.
 
 Both mirror the editor's locale set: every OSS locale supported by `@templatical/editor` should have a matching message map and dictionary.
 
 ## File layout
 
 ```
-packages/quality/src/messages/
+packages/quality/src/accessibility/messages/
   en.ts       ← source of truth (typed implicitly)
   de.ts       ← annotated `typeof en`
   index.ts    ← exports formatMessage(), getMessages()
 
-packages/quality/src/dictionaries/
+packages/quality/src/accessibility/dictionaries/
   en.ts
   de.ts
-  index.ts    ← exports getDictionary()
+  index.ts    ← exports getDictionary(), normalizeForMatch()
 ```
 
 ## Adding a locale
@@ -66,7 +66,7 @@ That's it — `SUPPORTED_MESSAGE_LOCALES` and `SUPPORTED_DICTIONARY_LOCALES` ref
 
 ## Phrase guidelines
 
-- **Match, not regex.** The rule lowercases and trims the anchor text, then tests `phrases.includes(text)`. Each entry is an exact match — don't try to encode patterns.
+- **Match, not regex.** The rule normalizes the anchor text — lowercase, collapse whitespace, strip leading/trailing non-alphanumeric characters (punctuation, arrows, decorative quotes) — then tests `phrases.includes(text)`. So `"Click here!"`, `"→ click here"`, and `"»click here«"` all collapse to `click here` and match the same dictionary entry. Don't add punctuation variants — they're redundant. Each entry is still an exact phrase match; don't try to encode regex patterns.
 - **Lowercase only.** Comparison is case-insensitive on the input side.
 - **Common, not exhaustive.** The point is to catch the most frequent vague phrases native authors fall into. A 50-entry list does more harm than good (false positives).
 - **Don't translate English phrases.** The dictionary is a cross-locale union — every registered locale's phrases match regardless of the active `locale` option. So your `pt.ts` only needs Portuguese phrases; English `click here` is already covered by the union.

@@ -1173,7 +1173,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       createTitleBlock({
         content: "<p>\u25cf shopfront</p>",
         level: 3,
-        color: "#059669",
+        color: "#047857",
         textAlign: "center",
         styles: white(28, 20, 16, 20),
       }),

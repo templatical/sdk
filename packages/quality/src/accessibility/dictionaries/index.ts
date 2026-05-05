@@ -1,12 +1,27 @@
 import en from "./en";
-import de from "./de";
 
 export type Dictionary = typeof en;
 
-const DICTIONARIES: Record<string, Dictionary> = {
-  en,
-  de,
-};
+/**
+ * Auto-discovered locale registry. Drop a `dictionaries/<lang>.ts` file
+ * and it's bundled automatically — same pattern as the editor's i18n
+ * and the sibling `messages/` registry.
+ *
+ * Eager glob: synchronous, all locales bundled into the package. Tiny
+ * (a few hundred bytes per locale) so the cost is negligible.
+ */
+const modules = import.meta.glob<{ default: Dictionary }>("./*.ts", {
+  eager: true,
+});
+
+const DICTIONARIES: Record<string, Dictionary> = {};
+for (const path in modules) {
+  const match = /\.\/([^/]+)\.ts$/.exec(path);
+  if (!match) continue;
+  const locale = match[1];
+  if (locale === "index") continue;
+  DICTIONARIES[locale] = modules[path].default;
+}
 
 /**
  * Returns a dictionary that unions every registered locale. Vague phrases
@@ -35,3 +50,17 @@ const UNIONED_DICTIONARY: Dictionary = {
 };
 
 export const SUPPORTED_DICTIONARY_LOCALES = Object.keys(DICTIONARIES);
+
+/**
+ * Normalize text for dictionary matching: lowercase, collapse whitespace,
+ * strip leading/trailing non-alphanumeric characters (punctuation, arrows,
+ * emoji, decorative symbols). "Click here!", "→ click here", "click here?"
+ * all collapse to "click here" so the dictionary's plain phrase matches.
+ */
+export function normalizeForMatch(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "")
+    .trim();
+}

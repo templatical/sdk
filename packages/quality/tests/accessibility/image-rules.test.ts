@@ -37,6 +37,16 @@ describe("img-alt-is-filename", () => {
     expect(issuesFor(block, "img-alt-is-filename")).toHaveLength(1);
   });
 
+  it("fires for DSC_0001 pattern (Sony/Nikon camera output)", () => {
+    const block = createImageBlock({ src: "x.png", alt: "DSC_0001" });
+    expect(issuesFor(block, "img-alt-is-filename")).toHaveLength(1);
+  });
+
+  it("fires for DSC-1234 pattern", () => {
+    const block = createImageBlock({ src: "x.png", alt: "DSC-1234" });
+    expect(issuesFor(block, "img-alt-is-filename")).toHaveLength(1);
+  });
+
   it("does not fire for descriptive alt", () => {
     const block = createImageBlock({ src: "x.png", alt: "Spring sale 30% off" });
     expect(issuesFor(block, "img-alt-is-filename")).toEqual([]);
@@ -121,6 +131,25 @@ describe("img-linked-no-context", () => {
       linkUrl: "/buy",
     });
     expect(issuesFor(block, "img-linked-no-context")).toEqual([]);
+  });
+
+  it("fires when alt only incidentally contains an action-verb substring", () => {
+    // "logo" contains the substring "go" — must not be treated as the action verb.
+    const block = createImageBlock({
+      src: "x.png",
+      alt: "Company logo",
+      linkUrl: "/about",
+    });
+    expect(issuesFor(block, "img-linked-no-context")).toHaveLength(1);
+  });
+
+  it("fires for alt 'forget password' — 'get' is a substring, not the verb", () => {
+    const block = createImageBlock({
+      src: "x.png",
+      alt: "forget password",
+      linkUrl: "/reset",
+    });
+    expect(issuesFor(block, "img-linked-no-context")).toHaveLength(1);
   });
 
   it("does not fire when image is not linked", () => {

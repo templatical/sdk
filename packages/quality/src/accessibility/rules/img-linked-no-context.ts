@@ -32,8 +32,11 @@ export const imgLinkedNoContext: Rule = {
     if (!block.linkUrl || block.linkUrl.trim() === "") return null;
     const alt = (block.alt ?? "").trim();
     if (alt === "") return null;
-    const lower = alt.toLowerCase();
-    if (ACTION_HINTS.some((hint) => lower.includes(hint))) return null;
+    const tokens = alt
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter(Boolean);
+    if (tokens.some((token) => ACTION_HINTS.includes(token))) return null;
     return { blockId: block.id };
   },
 };

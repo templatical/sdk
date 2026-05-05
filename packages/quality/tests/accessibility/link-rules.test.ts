@@ -38,6 +38,37 @@ describe("link-vague-text", () => {
     });
     expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
   });
+
+  it("fires for vague phrase with trailing exclamation", () => {
+    const { all } = lint('<p><a href="/x">Click here!</a></p>');
+    expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
+  });
+
+  it("fires for vague phrase with trailing question mark", () => {
+    const { all } = lint('<p><a href="/x">Click here?</a></p>');
+    expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
+  });
+
+  it("fires for vague phrase with trailing ellipsis", () => {
+    const { all } = lint('<p><a href="/x">Read more...</a></p>');
+    expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
+  });
+
+  it("fires for vague phrase with leading arrow symbol", () => {
+    const { all } = lint('<p><a href="/x">→ click here</a></p>');
+    expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
+  });
+
+  it("fires for vague phrase with surrounding punctuation and whitespace", () => {
+    const { all } = lint('<p><a href="/x">  »Click here«  </a></p>');
+    expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
+  });
+
+  it("does not strip internal punctuation that changes meaning", () => {
+    // "click, here" is not a vague phrase; only outer-only stripping.
+    const { all } = lint('<p><a href="/x">click, here</a></p>');
+    expect(all.filter((i) => i.ruleId === "link-vague-text")).toEqual([]);
+  });
 });
 
 describe("link-href-empty", () => {
@@ -122,5 +153,37 @@ describe("link-target-blank-no-rel", () => {
       updateSettings: () => {},
     });
     expect(patched!.content).toContain('rel="external noopener"');
+  });
+
+  it("auto-fix merges into unquoted rel without producing duplicate rel", () => {
+    const { all, block } = lint(
+      '<p><a href="/x" target="_blank" rel=author>Buy</a></p>',
+    );
+    const issue = all.find((i) => i.ruleId === "link-target-blank-no-rel")!;
+    let patched: { content: string } | null = null;
+    issue.fix!.apply({
+      updateBlock: (id, patch) => {
+        if (id === block.id) patched = patch as { content: string };
+      },
+      updateSettings: () => {},
+    });
+    const matches = patched!.content.match(/\brel\s*=/gi) ?? [];
+    expect(matches.length).toBe(1);
+    expect(patched!.content).toContain("noopener");
+    expect(patched!.content).toContain("author");
+  });
+
+  it("auto-fix repairs unquoted target=_blank", () => {
+    const { all, block } = lint('<p><a href="/x" target=_blank>Buy</a></p>');
+    const issue = all.find((i) => i.ruleId === "link-target-blank-no-rel")!;
+    let patched: { content: string } | null = null;
+    issue.fix!.apply({
+      updateBlock: (id, patch) => {
+        if (id === block.id) patched = patch as { content: string };
+      },
+      updateSettings: () => {},
+    });
+    expect(patched).not.toBeNull();
+    expect(patched!.content).toContain("noopener");
   });
 });

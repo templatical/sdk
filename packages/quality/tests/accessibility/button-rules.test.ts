@@ -45,6 +45,30 @@ describe("button-vague-label", () => {
       lintButton({ text: "Senden" }, "button-vague-label", { locale: "de" }),
     ).toHaveLength(1);
   });
+
+  it("fires for label with trailing exclamation", () => {
+    expect(
+      lintButton({ text: "Click here!" }, "button-vague-label"),
+    ).toHaveLength(1);
+  });
+
+  it("fires for label with leading arrow", () => {
+    expect(
+      lintButton({ text: "→ Submit" }, "button-vague-label"),
+    ).toHaveLength(1);
+  });
+
+  it("fires for label with surrounding whitespace and punctuation", () => {
+    expect(
+      lintButton({ text: "  »OK«  " }, "button-vague-label"),
+    ).toHaveLength(1);
+  });
+
+  it("does not fire when surrounding text adds real content", () => {
+    expect(
+      lintButton({ text: "Submit your order" }, "button-vague-label"),
+    ).toEqual([]);
+  });
 });
 
 describe("button-touch-target", () => {
