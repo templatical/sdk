@@ -346,21 +346,38 @@ test.describe("Merge tag autocomplete", () => {
     const popup = page.locator(SELECTORS.mergeTagSuggestionPopup);
     await expect(popup).toBeVisible();
 
-    const gaps = await page.evaluate((popupSelector: string) => {
-      const sel = window.getSelection();
-      const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-      const caretRect = range?.getBoundingClientRect() ?? null;
-      const popupEl = document.querySelector(popupSelector) as HTMLElement | null;
-      const popupRect = popupEl?.getBoundingClientRect() ?? null;
-      if (!caretRect || !popupRect) return null;
-      return {
-        vertical: Math.abs(popupRect.top - caretRect.bottom),
-        horizontal: Math.abs(popupRect.left - caretRect.left),
-      };
-    }, SELECTORS.mergeTagSuggestionPopup);
+    // Poll for caret/popup gap to stabilise. After the keystroke, TipTap
+    // may fire its own `scrollIntoView` which moves the caret in the
+    // viewport. The popup's reposition listener catches up, but on slower
+    // CI runners the first measurement can land between the scroll and
+    // the listener's callback. Polling lets the next `requestAnimationFrame`
+    // settle the gap. See merge-tag-popup-fixes changeset.
+    const measure = (popupSelector: string) =>
+      page.evaluate((sel) => {
+        const selection = window.getSelection();
+        const range =
+          selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+        const caretRect = range?.getBoundingClientRect();
+        const popupEl = document.querySelector(sel) as HTMLElement | null;
+        const popupRect = popupEl?.getBoundingClientRect();
+        if (!caretRect || !popupRect) return null;
+        return {
+          vertical: Math.abs(popupRect.top - caretRect.bottom),
+          horizontal: Math.abs(popupRect.left - caretRect.left),
+        };
+      }, popupSelector);
 
+    await expect
+      .poll(
+        async () =>
+          (await measure(SELECTORS.mergeTagSuggestionPopup))?.vertical ??
+          Infinity,
+        { intervals: [50, 100, 200, 500], timeout: 2000 },
+      )
+      .toBeLessThanOrEqual(10);
+
+    const gaps = await measure(SELECTORS.mergeTagSuggestionPopup);
     expect(gaps).not.toBeNull();
-    expect(gaps?.vertical ?? Infinity).toBeLessThanOrEqual(10);
     expect(gaps?.horizontal ?? Infinity).toBeLessThan(50);
   });
 
