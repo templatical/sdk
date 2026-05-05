@@ -132,6 +132,21 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
           position(latestClientRect?.() ?? null);
         }
 
+        /**
+         * Reposition immediately and on the next animation frame.
+         * After a keystroke triggers the suggestion, TipTap may run its
+         * own `scrollIntoView` to keep the caret visible. That scroll
+         * lands AFTER the current task's `position()` call but BEFORE
+         * the browser's next paint, so we re-measure on rAF to catch
+         * the post-scroll caret rect. Without this, the popup pins to
+         * the pre-scroll caret position and ends up offset on slower
+         * runners.
+         */
+        function repositionAfterPaint(): void {
+          reposition();
+          requestAnimationFrame(reposition);
+        }
+
         function collectScrollAncestors(el: HTMLElement | null): HTMLElement[] {
           // Walk up the DOM finding scrollable ancestors. ProseMirror's
           // scrollIntoView fires on whichever ancestor scrolls — listening
@@ -305,7 +320,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             setEditableAria(true);
             setActiveDescendant();
             latestClientRect = props.clientRect ?? null;
-            position(latestClientRect?.() ?? null);
+            repositionAfterPaint();
             attachScrollListeners(viewDom ?? null);
           },
           onUpdate: (props: SuggestionProps<MergeTag>) => {
@@ -317,7 +332,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             currentCommand = (item) => props.command(item);
             setActiveDescendant();
             latestClientRect = props.clientRect ?? null;
-            position(latestClientRect?.() ?? null);
+            repositionAfterPaint();
           },
           onKeyDown: (props: SuggestionKeyDownProps): boolean => {
             if (props.event.key === "Escape") {
