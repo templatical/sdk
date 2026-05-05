@@ -19,7 +19,10 @@ export const textLowContrast: Rule = {
       return null;
     }
     const fontSize = HEADING_LEVEL_FONT_SIZE[block.level];
-    const required = fontSize >= 18 ? 3 : 4.5;
+    // WCAG large text = 18pt (~24px). Headings have no structured bold
+    // flag in this codebase (TipTap stores it inline), so we conservatively
+    // skip the 14pt-bold (~18.66px) relaxation and apply the px threshold.
+    const required = fontSize >= 24 ? 3 : 4.5;
     const ratio = getContrastRatio(block.color, ctx.resolvedBackgroundColor);
     if (Number.isNaN(ratio) || ratio >= required) return null;
     return {

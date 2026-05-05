@@ -24,6 +24,25 @@ const de: typeof en = {
     "ja",
     "nein",
   ],
+  linkedImageActionHints: [
+    "kaufen",
+    "shoppen",
+    "ansehen",
+    "lesen",
+    "lernen",
+    "öffnen",
+    "los",
+    "sehen",
+    "entdecken",
+    "erkunden",
+    "stöbern",
+    "herunterladen",
+    "holen",
+    "abholen",
+    "einlösen",
+    "anschauen",
+    "jetzt",
+  ],
 };
 
 export default de;

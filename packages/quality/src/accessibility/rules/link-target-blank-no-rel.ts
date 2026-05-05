@@ -44,19 +44,57 @@ export const linkTargetBlankNoRel: Rule = {
   },
 };
 
+interface ParsedAttr {
+  raw: string;
+  name: string;
+  value: string | null;
+  /** Start offset of `raw` within the parent attrs string. */
+  start: number;
+}
+
+const ATTR_RE =
+  /([^\s"'>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+
+function parseAttrs(attrs: string): ParsedAttr[] {
+  const parsed: ParsedAttr[] = [];
+  const re = new RegExp(ATTR_RE.source, ATTR_RE.flags);
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(attrs)) !== null) {
+    const value = match[2] ?? match[3] ?? match[4] ?? null;
+    parsed.push({
+      raw: match[0],
+      name: match[1],
+      value,
+      start: match.index,
+    });
+  }
+  return parsed;
+}
+
+function hasUnsafeTargetBlank(parsed: ParsedAttr[]): boolean {
+  return parsed.some(
+    (a) =>
+      a.name.toLowerCase() === "target" &&
+      a.value !== null &&
+      a.value.toLowerCase() === "_blank",
+  );
+}
+
 function addNoopenerToTargetBlank(html: string): string {
   return html.replace(/<a\b([^>]*)>/gi, (match, attrs: string) => {
-    const hasTargetBlank = /\btarget\s*=\s*["']_blank["']/i.test(attrs);
-    if (!hasTargetBlank) return match;
-    const relMatch = /\brel\s*=\s*["']([^"']*)["']/i.exec(attrs);
-    if (relMatch) {
-      const tokens = relMatch[1].toLowerCase().split(/\s+/);
+    const parsed = parseAttrs(attrs);
+    if (!hasUnsafeTargetBlank(parsed)) return match;
+
+    const relAttr = parsed.find((a) => a.name.toLowerCase() === "rel");
+    if (relAttr) {
+      const tokens = (relAttr.value ?? "").toLowerCase().split(/\s+/);
       if (tokens.includes("noopener") || tokens.includes("noreferrer")) {
         return match;
       }
-      const newRel = `${relMatch[1]} noopener`.trim();
-      const newAttrs = attrs.replace(relMatch[0], `rel="${newRel}"`);
-      return `<a${newAttrs}>`;
+      const newRel = `${relAttr.value ?? ""} noopener`.trim();
+      const before = attrs.slice(0, relAttr.start);
+      const after = attrs.slice(relAttr.start + relAttr.raw.length);
+      return `<a${before}rel="${newRel}"${after}>`;
     }
     return `<a${attrs} rel="noopener">`;
   });

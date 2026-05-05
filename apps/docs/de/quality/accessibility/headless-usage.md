@@ -1,16 +1,16 @@
-# Headless usage
+# Headless-Nutzung
 
-`@templatical/quality` is JSON-only and has no DOM dependency, so the same lint runs in any Node.js context: CI, build pipelines, server-side pre-send checks, batch validation jobs.
+`@templatical/quality` ist ausschließlich JSON-basiert und hat keine DOM-Abhängigkeit – derselbe Lint läuft also in jedem Node.js-Kontext: CI, Build-Pipelines, serverseitige Validierung, Batch-Jobs.
 
-## Pre-send check
+## Vor dem Speichern validieren
 
-Validate every transactional template before queueing it for delivery:
+Lehnen Sie Template-JSON, das den Linter nicht besteht, an der Stelle ab, an der es in Ihr System gelangt – CMS-Save-Handler, API-Endpunkt, Ingest-Job:
 
 ```ts
 import { lintAccessibility } from "@templatical/quality";
 import type { TemplateContent } from "@templatical/types";
 
-export function assertSendable(content: TemplateContent): void {
+export function assertValid(content: TemplateContent): void {
   const errors = lintAccessibility(content).filter(
     (i) => i.severity === "error",
   );
@@ -24,9 +24,9 @@ export function assertSendable(content: TemplateContent): void {
 }
 ```
 
-## CI guard for stored templates
+## CI-Schutz für gespeicherte Templates
 
-If your application stores `TemplateContent` JSON in a database, run the linter in CI against every stored fixture so regressions can't ship:
+Speichert Ihre Anwendung `TemplateContent`-JSON in einer Datenbank, lassen Sie den Linter in CI gegen jede gespeicherte Fixture laufen, damit keine Regressionen ausgeliefert werden:
 
 ```ts
 // scripts/lint-templates.ts
@@ -56,11 +56,11 @@ for (const [name, content] of Object.entries(templates)) {
 if (failed > 0) process.exit(1);
 ```
 
-Run via `tsx scripts/lint-templates.ts` and wire it into your CI workflow. The Templatical playground does exactly this — see `apps/playground/scripts/lint-templates.ts` in the repo.
+Mit `tsx scripts/lint-templates.ts` ausführen und in den CI-Workflow einhängen. Der Templatical-Playground macht genau das – siehe `apps/playground/scripts/lint-templates.ts` im Repo.
 
-## Custom severity policy
+## Eigene Schweregrad-Policy
 
-A team may want errors-only in CI but the full info-level output in development:
+Ein Team möchte vielleicht in CI nur Errors, in der Entwicklung aber die volle Info-Stufe:
 
 ```ts
 const SEVERITIES = process.env.CI
@@ -72,9 +72,9 @@ const issues = lintAccessibility(content).filter((i) =>
 );
 ```
 
-## Building your own rules
+## Eigene Regeln bauen
 
-You can compose your own walkers using the same primitives the package ships:
+Sie können eigene Walker mit denselben Primitiven komponieren, die das Paket mitbringt:
 
 ```ts
 import { walkBlocks, getContrastRatio } from "@templatical/quality";
@@ -89,4 +89,6 @@ walkBlocks(content, (block, ctx) => {
 });
 ```
 
-`walkBlocks` resolves the nearest opaque ancestor background per block, so contrast checks "just work" without re-implementing the section/column traversal.
+`walkBlocks` löst pro Block den nächstgelegenen opaken Vorfahren-Hintergrund auf – Kontrastprüfungen "funktionieren einfach", ohne dass Sie die Section-/Column-Traversierung neu implementieren müssen.
+
+Soll Ihre eigene Regel mit den Built-ins zusammenspielen (Schweregrad-Overrides, lokalisierte Meldungen, der Editor-Sidebar), implementieren Sie das `Rule`-Interface – `block` / `template` geben einen `RuleHit` zurück (`blockId`, optionale `params`, optionaler `fix`), und der Orchestrator kombiniert ihn mit den `meta`-Daten der Regel und dem Meldungs-Template der aktiven Locale.

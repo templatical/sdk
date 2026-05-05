@@ -146,11 +146,45 @@ const enSidebar: DefaultTheme.SidebarMulti = {
 const deNav: DefaultTheme.NavItem[] = [
   { text: "Anleitung", link: "/de/getting-started/installation" },
   { text: "API", link: "/de/api/editor" },
+  { text: "Barrierefreiheit", link: "/de/quality/accessibility/" },
   { text: "Cloud", link: "/de/cloud/" },
   { text: "Playground", link: "https://play.templatical.com" },
 ];
 
 const deSidebar: DefaultTheme.SidebarMulti = {
+  "/de/quality/": [
+    {
+      text: "Qualität",
+      items: [{ text: "Überblick", link: "/de/quality/" }],
+    },
+    {
+      text: "Barrierefreiheit",
+      items: [
+        { text: "Überblick", link: "/de/quality/accessibility/" },
+        {
+          text: "Erste Schritte",
+          link: "/de/quality/accessibility/getting-started",
+        },
+        {
+          text: "Regelkatalog",
+          link: "/de/quality/accessibility/rule-catalog",
+        },
+        { text: "Optionen", link: "/de/quality/accessibility/options" },
+        {
+          text: "Schweregrad & Korrekturen",
+          link: "/de/quality/accessibility/severity-and-fixes",
+        },
+        {
+          text: "Headless-Nutzung",
+          link: "/de/quality/accessibility/headless-usage",
+        },
+        {
+          text: "Lokale beitragen",
+          link: "/de/quality/accessibility/contributing-locales",
+        },
+      ],
+    },
+  ],
   "/de/cloud/": [
     {
       text: "Cloud",

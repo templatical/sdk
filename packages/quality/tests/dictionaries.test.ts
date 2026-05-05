@@ -1,3 +1,6 @@
+import { readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import en from "../src/accessibility/dictionaries/en";
 import de from "../src/accessibility/dictionaries/de";
@@ -51,5 +54,17 @@ describe("dictionaries", () => {
       expect(locale.vagueLinkText.length).toBeGreaterThan(0);
       expect(locale.vagueButtonLabels.length).toBeGreaterThan(0);
     }
+  });
+
+  it("auto-discovers every locale file in dictionaries/ (no static import list)", () => {
+    const dir = resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      "../src/accessibility/dictionaries",
+    );
+    const onDisk = readdirSync(dir)
+      .filter((f) => f.endsWith(".ts") && f !== "index.ts")
+      .map((f) => f.replace(/\.ts$/, ""))
+      .sort();
+    expect(SUPPORTED_DICTIONARY_LOCALES.slice().sort()).toEqual(onDisk);
   });
 });

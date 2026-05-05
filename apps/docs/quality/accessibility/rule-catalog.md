@@ -1,6 +1,6 @@
 # Rule catalog
 
-> This page is generated from `@templatical/quality`'s rule definitions. Edit the rule files in `packages/quality/src/accessibility/rules/` and re-run `tsx apps/docs/.vitepress/scripts/generate-rule-catalog.ts` — never edit this file by hand.
+The 19 rules `@templatical/quality` ships, grouped by what they check. Each rule lives in `packages/quality/src/accessibility/rules/`; severity, message templates, and dictionaries are user-overridable per [Options](./options).
 
 ## Images
 
@@ -25,7 +25,7 @@
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
 | `link-empty` | error | — | Link has no accessible text — A link with no visible text and no nested image with alt is invisible to screen readers and unclickable for many users. |
-| `link-vague-text` | warning | — | Vague link text — Phrases like 'click here' or 'read more' tell screen-reader users nothing when listed out of context. Use descriptive link text that names the destination. |
+| `link-vague-text` | warning | — | Vague link text — Phrases like 'click here' or 'read more' tell screen-reader users nothing when listed out of context. Use descriptive link text that names the destination. Outer punctuation and decorative symbols are stripped before matching, so `Click here!`, `→ click here`, and `»click here«` all flag. |
 | `link-href-empty` | error | — | Link has empty href — An anchor with no destination (empty href or '#') is broken — recipients click and nothing happens, or the page jumps to top. |
 | `link-target-blank-no-rel` | warning | yes | target="_blank" missing rel="noopener" — Links opening in a new tab without rel='noopener' or rel='noreferrer' allow the destination to read window.opener and tamper with the originating page. A small but real security/privacy footgun. |
 
@@ -34,16 +34,16 @@
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
 | `text-all-caps` | warning | — | All-caps body text — Long stretches of all-caps text are read letter-by-letter by some screen readers and slow visual reading by 10–20%. Use sentence case for body copy; reserve caps for short labels. |
-| `text-low-contrast` | error | — | Text contrast is too low — WCAG AA requires 4.5:1 contrast for body text and 3:1 for large text (≥18px, or ≥14px bold). Below that, text becomes unreadable for low-vision users and in bright outdoor light. [1](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum) |
+| `text-low-contrast` | error | — | Heading contrast is too low — WCAG AA requires 4.5:1 for body text and 3:1 for large text (18pt / ~24px). Headings ≥24px (H1, H2) get the relaxed 3:1 threshold; H3 (22px) and H4 (18px) require 4.5:1. The bold-text relaxation isn't applied — TipTap stores bold inline in HTML, not as a structured field. Below that, text becomes unreadable for low-vision users and in bright outdoor light. Only Title blocks are checked; paragraph color lives in inline HTML. [1](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum) |
 | `text-too-small` | warning | — | Text is too small — Email body text below 14px becomes hard to read on mobile. Some clients also auto-zoom or scale up small fonts in unpredictable ways. Stay at 14px or larger. |
 
 ## Buttons
 
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
-| `button-vague-label` | warning | — | Vague button label — A button labeled 'Click here' or 'Submit' tells the user nothing about what will happen. Use action-oriented labels that name the outcome ('Buy ticket', 'Reset password'). |
+| `button-vague-label` | warning | — | Vague button label — A button labeled 'Click here' or 'Submit' tells the user nothing about what will happen. Use action-oriented labels that name the outcome ('Buy ticket', 'Reset password'). Same outer-punctuation handling as `link-vague-text` — `Submit!`, `→ OK`, and `»click«` all flag. |
 | `button-touch-target` | warning | — | Button touch target is too small — WCAG 2.5.5 (AAA) and Apple/Google UX guidelines recommend touch targets of at least 44×44px. Smaller buttons cause mis-taps on mobile. |
-| `button-low-contrast` | error | — | Button text contrast is too low — WCAG AA requires a 4.5:1 contrast ratio between body text and its background. Buttons that fail this become unreadable for users with low vision and in bright outdoor light. [1](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum) |
+| `button-low-contrast` | error | — | Button text contrast is too low — Same WCAG AA thresholds as `text-low-contrast`: 4.5:1 normally, 3:1 for buttons with `fontSize >= 24` (WCAG large text). Default-sized buttons (15px) require the strict ratio. Buttons that fail this become unreadable for users with low vision and in bright outdoor light. [1](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum) |
 
 ## Structure
 

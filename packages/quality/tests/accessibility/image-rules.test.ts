@@ -4,15 +4,17 @@ import {
   createImageBlock,
 } from "@templatical/types";
 import { lintAccessibility } from "../../src";
+import type { A11yOptions } from "../../src";
 
 function issuesFor(
   block: ReturnType<typeof createImageBlock>,
   ruleId: string,
+  opts?: A11yOptions,
 ) {
   const content = createDefaultTemplateContent();
   content.settings.preheaderText = "x";
   content.blocks = [block];
-  return lintAccessibility(content).filter((i) => i.ruleId === ruleId);
+  return lintAccessibility(content, opts).filter((i) => i.ruleId === ruleId);
 }
 
 describe("img-alt-is-filename", () => {
@@ -34,6 +36,16 @@ describe("img-alt-is-filename", () => {
       src: "x.png",
       alt: "Screen Shot 2026-01-01",
     });
+    expect(issuesFor(block, "img-alt-is-filename")).toHaveLength(1);
+  });
+
+  it("fires for DSC_0001 pattern (Sony/Nikon camera output)", () => {
+    const block = createImageBlock({ src: "x.png", alt: "DSC_0001" });
+    expect(issuesFor(block, "img-alt-is-filename")).toHaveLength(1);
+  });
+
+  it("fires for DSC-1234 pattern", () => {
+    const block = createImageBlock({ src: "x.png", alt: "DSC-1234" });
     expect(issuesFor(block, "img-alt-is-filename")).toHaveLength(1);
   });
 
@@ -123,6 +135,25 @@ describe("img-linked-no-context", () => {
     expect(issuesFor(block, "img-linked-no-context")).toEqual([]);
   });
 
+  it("fires when alt only incidentally contains an action-verb substring", () => {
+    // "logo" contains the substring "go" — must not be treated as the action verb.
+    const block = createImageBlock({
+      src: "x.png",
+      alt: "Company logo",
+      linkUrl: "/about",
+    });
+    expect(issuesFor(block, "img-linked-no-context")).toHaveLength(1);
+  });
+
+  it("fires for alt 'forget password' — 'get' is a substring, not the verb", () => {
+    const block = createImageBlock({
+      src: "x.png",
+      alt: "forget password",
+      linkUrl: "/reset",
+    });
+    expect(issuesFor(block, "img-linked-no-context")).toHaveLength(1);
+  });
+
   it("does not fire when image is not linked", () => {
     const block = createImageBlock({ src: "x.png", alt: "Smiling person" });
     expect(issuesFor(block, "img-linked-no-context")).toEqual([]);
@@ -132,6 +163,29 @@ describe("img-linked-no-context", () => {
     const block = createImageBlock({
       src: "x.png",
       alt: "",
+      linkUrl: "/buy",
+    });
+    expect(issuesFor(block, "img-linked-no-context")).toEqual([]);
+  });
+
+  it("does not fire for German action verb under locale=de", () => {
+    const block = createImageBlock({
+      src: "x.png",
+      alt: "Frühlingsschlussverkauf jetzt kaufen",
+      linkUrl: "/buy",
+    });
+    expect(
+      issuesFor(block, "img-linked-no-context", { locale: "de" }),
+    ).toEqual([]);
+  });
+
+  it("does not fire for German action verb under locale=en (cross-locale)", () => {
+    // Mirrors vagueLinkText cross-locale behavior: action hints from every
+    // registered locale count as context, so an English-locale email with a
+    // German alt is still recognized.
+    const block = createImageBlock({
+      src: "x.png",
+      alt: "Jetzt kaufen unsere Aktion",
       linkUrl: "/buy",
     });
     expect(issuesFor(block, "img-linked-no-context")).toEqual([]);

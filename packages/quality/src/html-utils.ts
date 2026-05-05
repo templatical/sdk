@@ -16,8 +16,9 @@ export interface AnchorInfo {
  */
 export function extractAnchors(html: string): AnchorInfo[] {
   const anchors: AnchorInfo[] = [];
-  const stack: AnchorInfo[] = [];
-  let textBuffer = "";
+  // Each open anchor owns its own text buffer so a nested `<a>` (invalid
+  // HTML but parsed permissively) doesn't truncate the outer anchor's text.
+  const stack: { anchor: AnchorInfo; buffer: string }[] = [];
 
   const parser = new Parser({
     onopentag(name, attribs) {
@@ -29,29 +30,27 @@ export function extractAnchors(html: string): AnchorInfo[] {
           rel: attribs.rel ?? null,
           hasImageWithAlt: false,
         };
-        stack.push(anchor);
-        textBuffer = "";
+        stack.push({ anchor, buffer: "" });
         return;
       }
 
       if (name === "img" && stack.length > 0) {
         const alt = (attribs.alt ?? "").trim();
         if (alt !== "") {
-          stack[stack.length - 1].hasImageWithAlt = true;
+          stack[stack.length - 1].anchor.hasImageWithAlt = true;
         }
       }
     },
     ontext(text) {
-      if (stack.length > 0) {
-        textBuffer += text;
+      for (const frame of stack) {
+        frame.buffer += text;
       }
     },
     onclosetag(name) {
       if (name === "a" && stack.length > 0) {
-        const anchor = stack.pop()!;
-        anchor.text = textBuffer.trim();
-        anchors.push(anchor);
-        textBuffer = "";
+        const frame = stack.pop()!;
+        frame.anchor.text = frame.buffer.trim();
+        anchors.push(frame.anchor);
       }
     },
   });

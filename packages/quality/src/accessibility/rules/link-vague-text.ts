@@ -2,7 +2,7 @@ import { isParagraph, isTitle } from "@templatical/types";
 import type { Block } from "@templatical/types";
 import type { Rule, RuleMeta } from "../../types";
 import { extractAnchors } from "../../html-utils";
-import { getDictionary } from "../dictionaries";
+import { getDictionary, normalizeForMatch } from "../dictionaries";
 
 export const meta: RuleMeta = {
   id: "link-vague-text",
@@ -23,7 +23,7 @@ export const linkVagueText: Rule = {
     const phrases = getDictionary(opts.locale).vagueLinkText;
     const anchors = extractAnchors(html);
     const offender = anchors.find((a) => {
-      const text = a.text.toLowerCase().replace(/\s+/g, " ").trim();
+      const text = normalizeForMatch(a.text);
       return text !== "" && phrases.includes(text);
     });
     if (!offender) return null;

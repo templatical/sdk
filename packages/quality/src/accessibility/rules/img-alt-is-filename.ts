@@ -11,7 +11,7 @@ const FILENAME_PATTERNS: RegExp[] = [
   /^IMG[_-]?\d+/i,
   /^Untitled/i,
   /^Screen[\s_-]?Shot/i,
-  /^DSC\d+/i,
+  /^DSC[_-]?\d+/i,
 ];
 
 export const imgAltIsFilename: Rule = {

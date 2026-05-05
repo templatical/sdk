@@ -35,6 +35,26 @@ describe("text-all-caps", () => {
       lint("<p>This is a Mixed-case sentence with enough letters here</p>"),
     ).toEqual([]);
   });
+
+  it("fires for long all-caps Cyrillic paragraph", () => {
+    expect(
+      lint(
+        "<p>СКИДКА ПЯТЬДЕСЯТ ПРОЦЕНТОВ ТОЛЬКО СЕГОДНЯ СПЕШИТЕ КУПИТЬ</p>",
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("fires for long all-caps Greek paragraph", () => {
+    expect(
+      lint("<p>ΜΕΓΑΛΗ ΠΡΟΣΦΟΡΑ ΣΗΜΕΡΑ ΜΟΝΟ ΑΓΟΡΑΣΤΕ ΤΩΡΑ ΧΩΡΙΣ ΚΑΘΥΣΤΕΡΗΣΗ</p>"),
+    ).toHaveLength(1);
+  });
+
+  it("does not fire for mixed-case Cyrillic", () => {
+    expect(
+      lint("<p>Это обычное предложение со смешанным регистром букв</p>"),
+    ).toEqual([]);
+  });
 });
 
 describe("text-low-contrast", () => {
@@ -57,10 +77,27 @@ describe("text-low-contrast", () => {
     expect(lintTitle("#aaaaaa", "#cccccc", 4)).toHaveLength(1);
   });
 
-  it("uses 3:1 threshold for large headings", () => {
-    // 4.0 ratio: passes for level=1 (≥18 ⇒ 3:1) but fails for hypothetical small.
-    const issues = lintTitle("#767676", "#ffffff", 1);
-    expect(issues).toEqual([]);
+  it("uses 3:1 threshold for H1 (36px ≥ 24px = WCAG large)", () => {
+    // #888888 on white ≈ 3.5:1 — passes 3:1 but fails 4.5:1.
+    expect(lintTitle("#888888", "#ffffff", 1)).toEqual([]);
+  });
+
+  it("uses 3:1 threshold for H2 (28px ≥ 24px = WCAG large)", () => {
+    expect(lintTitle("#888888", "#ffffff", 2)).toEqual([]);
+  });
+
+  it("uses 4.5:1 threshold for H3 (22px < 24px, not WCAG large)", () => {
+    // Same 3.5:1 color pair fails strict 4.5:1 requirement for H3.
+    const issues = lintTitle("#888888", "#ffffff", 3);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].message).toMatch(/4\.5:1/);
+  });
+
+  it("uses 4.5:1 threshold for H4 (18px < 24px, not WCAG large)", () => {
+    // Previously passed (18px ≥ 18 → relaxed 3:1); now fails strict.
+    const issues = lintTitle("#888888", "#ffffff", 4);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].message).toMatch(/4\.5:1/);
   });
 
   it("does not fire when colors are not opaque hex", () => {
