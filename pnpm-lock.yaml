@@ -154,6 +154,9 @@ importers:
       '@codemirror/view':
         specifier: ^6.40.0
         version: 6.41.1
+      '@lucide/vue':
+        specifier: ^1.11.0
+        version: 1.14.0(vue@3.5.33(typescript@6.0.3))
       '@templatical/editor':
         specifier: workspace:*
         version: link:../../packages/editor
