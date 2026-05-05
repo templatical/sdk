@@ -38,7 +38,7 @@
   },
   "private": true,
   "scripts": {
-    "build": "pnpm --filter '@templatical/media-library' run build:all && pnpm --filter '@templatical/types' run build && pnpm --filter '@templatical/core' --filter '@templatical/renderer' --filter '@templatical/import-beefree' --filter '@templatical/import-unlayer' --filter '@templatical/import-html' run build && pnpm --filter '@templatical/editor' run build:all",
+    "build": "pnpm --filter '@templatical/media-library' run build:all && pnpm --filter '@templatical/types' run build && pnpm --filter '@templatical/core' --filter '@templatical/renderer' --filter '@templatical/quality' --filter '@templatical/import-beefree' --filter '@templatical/import-unlayer' --filter '@templatical/import-html' run build && pnpm --filter '@templatical/editor' run build:all",
     "build:all-sdk": "pnpm run build:email-editor && pnpm run build:media-library",
     "build:email-editor": "pnpm --filter '@templatical/editor' run build:cdn",
     "build:media-library": "pnpm --filter '@templatical/media-library' run build:cdn",
