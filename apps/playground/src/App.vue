@@ -50,6 +50,29 @@ import type {
 const CodeEditor = defineAsyncComponent(() => import("@/CodeEditor.vue"));
 import LogoIcon from "@/LogoIcon.vue";
 import {
+  Monitor,
+  Sun,
+  Moon,
+  LoaderCircle,
+  Plus,
+  Upload,
+  Download,
+  ArrowRight,
+  ChevronRight,
+  ChevronLeft,
+  ChevronDown,
+  Zap,
+  Crosshair,
+  CircleAlert,
+  Info,
+  Code,
+  Braces,
+  Clock,
+  Database,
+  Blocks,
+  MonitorSmartphone,
+} from "@lucide/vue";
+import {
   usePlaygroundI18n,
   usePlaygroundTheme,
   format,
@@ -1103,7 +1126,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="box-border flex flex-col h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+    class="box-border flex flex-col min-h-screen font-sans bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
   >
     <Transition name="pg-screen" mode="out-in" @enter="onScreenEnter">
       <!-- Template Chooser Screen -->
@@ -1111,7 +1134,7 @@ onUnmounted(() => {
         v-if="screen === 'chooser'"
         key="chooser"
         data-testid="chooser-screen"
-        class="relative flex flex-col items-center justify-center min-h-screen bg-white py-12 dark:bg-gray-900"
+        class="relative flex flex-col items-center justify-center-safe min-h-screen bg-white py-12 dark:bg-gray-900"
       >
         <div class="absolute top-4 right-4 flex items-center gap-1.5">
           <button
@@ -1120,56 +1143,13 @@ onUnmounted(() => {
             :aria-label="t.a11y.selectTheme"
             @click="cycleTheme"
           >
-            <!-- Auto: monitor icon -->
-            <svg
-              v-if="uiTheme === 'auto'"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="2" y="3" width="20" height="14" rx="2" />
-              <path d="M8 21h8" />
-              <path d="M12 17v4" />
-            </svg>
-            <!-- Light: sun icon -->
-            <svg
+            <Monitor v-if="uiTheme === 'auto'" :size="14" aria-hidden="true" />
+            <Sun
               v-else-if="uiTheme === 'light'"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              :size="14"
               aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path
-                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-              />
-            </svg>
-            <!-- Dark: moon icon -->
-            <svg
-              v-else
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-            </svg>
+            />
+            <Moon v-else :size="14" aria-hidden="true" />
           </button>
           <select
             v-model="locale"
@@ -1187,27 +1167,10 @@ onUnmounted(() => {
           role="status"
           class="flex flex-col items-center gap-3 py-20"
         >
-          <svg
+          <LoaderCircle
             class="animate-spin h-6 w-6 text-gray-400 dark:text-gray-500"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
             aria-hidden="true"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            />
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
+          />
           <span class="text-sm text-gray-500 dark:text-gray-400">{{
             t.sharedTemplate.loading
           }}</span>
@@ -1473,20 +1436,7 @@ onUnmounted(() => {
               <div
                 class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200 text-gray-500 dark:bg-gray-700/50 dark:border-gray-700 dark:text-gray-400"
               >
-                <svg
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
+                <Plus :size="32" :stroke-width="1.5" aria-hidden="true" />
               </div>
               <span
                 class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100"
@@ -1509,20 +1459,7 @@ onUnmounted(() => {
                 class="shrink-0 inline-flex items-center justify-center size-10 rounded-xl bg-amber-100/70 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300"
                 aria-hidden="true"
               >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
+                <Upload :size="20" :stroke-width="1.75" />
               </div>
               <div class="flex-1 min-w-0">
                 <h3
@@ -1544,18 +1481,11 @@ onUnmounted(() => {
                 @click="openImportFromSource('beefree')"
               >
                 {{ t.chooser.migration.importFromBeefree }}
-                <svg
+                <ArrowRight
                   class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  :stroke-width="1.6"
                   aria-hidden="true"
-                >
-                  <path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" />
-                </svg>
+                />
               </button>
               <button
                 data-testid="chooser-import-unlayer"
@@ -1563,18 +1493,11 @@ onUnmounted(() => {
                 @click="openImportFromSource('unlayer')"
               >
                 {{ t.chooser.migration.importFromUnlayer }}
-                <svg
+                <ArrowRight
                   class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  :stroke-width="1.6"
                   aria-hidden="true"
-                >
-                  <path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" />
-                </svg>
+                />
               </button>
               <button
                 data-testid="chooser-import-html"
@@ -1582,18 +1505,11 @@ onUnmounted(() => {
                 @click="openImportFromSource('html')"
               >
                 {{ t.chooser.migration.importFromHtml }}
-                <svg
+                <ArrowRight
                   class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  :stroke-width="1.6"
                   aria-hidden="true"
-                >
-                  <path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" />
-                </svg>
+                />
               </button>
             </div>
           </section>
@@ -1607,19 +1523,7 @@ onUnmounted(() => {
             <div
               class="shrink-0 flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15"
             >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-              </svg>
+              <Zap :size="20" :stroke-width="1.5" aria-hidden="true" />
             </div>
             <div class="flex-1 min-w-0">
               <div
@@ -1637,19 +1541,7 @@ onUnmounted(() => {
               class="shrink-0 flex items-center gap-1.5 text-[13px] font-medium text-primary transition-colors group-hover:text-primary-hover"
             >
               {{ t.cloudBanner.cta }}
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M6 3l5 5-5 5" />
-              </svg>
+              <ChevronRight :size="14" :stroke-width="1.5" aria-hidden="true" />
             </div>
           </a>
 
@@ -1678,7 +1570,7 @@ onUnmounted(() => {
         v-else
         key="editor"
         data-testid="editor-screen"
-        class="flex flex-col h-full"
+        class="flex flex-col h-screen"
       >
         <header
           class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-2"
@@ -1690,21 +1582,7 @@ onUnmounted(() => {
               :title="t.a11y.backToTemplates"
               @click="backToChooser"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M10 3L5 8l5 5"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <ChevronLeft :size="16" :stroke-width="1.5" aria-hidden="true" />
               <span class="pg-toolbar-label">{{ t.toolbar.templates }}</span>
             </button>
             <button
@@ -1714,26 +1592,7 @@ onUnmounted(() => {
               :title="t.toolbar.config"
               @click="openConfig"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M6.5 1.75a.75.75 0 0 1 1.5 0V4a.75.75 0 0 1-1.5 0V1.75zM6.5 12a.75.75 0 0 1 1.5 0v2.25a.75.75 0 0 1-1.5 0V12zM1.75 6.5a.75.75 0 0 0 0 1.5H4a.75.75 0 0 0 0-1.5H1.75zM12 6.5a.75.75 0 0 0 0 1.5h2.25a.75.75 0 0 0 0-1.5H12z"
-                  fill="currentColor"
-                />
-                <circle
-                  cx="7.25"
-                  cy="7.25"
-                  r="2.5"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  fill="none"
-                />
-              </svg>
+              <Crosshair :size="16" :stroke-width="1.5" aria-hidden="true" />
               <span class="pg-toolbar-label">{{ t.toolbar.config }}</span>
             </button>
             <button
@@ -1742,26 +1601,7 @@ onUnmounted(() => {
               :title="t.toolbar.features"
               @click="reopenFeatureOverlay"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13z"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  fill="none"
-                />
-                <path
-                  d="M8 5v3.5M8 10.5v.5"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                />
-              </svg>
+              <CircleAlert :size="16" :stroke-width="1.5" aria-hidden="true" />
               <span class="pg-toolbar-label">{{ t.toolbar.features }}</span>
             </button>
             <button
@@ -1770,28 +1610,7 @@ onUnmounted(() => {
               :title="t.toolbar.tour"
               @click="restartOnboarding"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  fill="none"
-                />
-                <path
-                  d="M12 16v-4M12 8h.01"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
+              <Info :size="16" :stroke-width="1.5" aria-hidden="true" />
               <span class="pg-toolbar-label">{{ t.toolbar.tour }}</span>
             </button>
           </div>
@@ -1805,21 +1624,7 @@ onUnmounted(() => {
               :title="t.toolbar.json"
               @click="toggleJson"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M5.5 3L2 8l3.5 5M10.5 3L14 8l-3.5 5"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
+              <Code :size="16" :stroke-width="1.5" aria-hidden="true" />
               <span class="pg-toolbar-label">{{ t.toolbar.json }}</span>
             </button>
 
@@ -1840,37 +1645,13 @@ onUnmounted(() => {
                 :aria-expanded="exportMenuOpen"
                 @click="exportMenuOpen = !exportMenuOpen"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M3 10v2.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V10M8 2.5v8M5 7.5L8 10.5l3-3"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
+                <Download :size="16" :stroke-width="1.5" aria-hidden="true" />
                 <span class="pg-toolbar-label">{{ t.toolbar.export }}</span>
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 16 16"
-                  fill="none"
+                <ChevronDown
+                  :size="12"
+                  :stroke-width="1.5"
                   aria-hidden="true"
-                >
-                  <path
-                    d="M4 6l4 4 4-4"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
+                />
               </button>
               <div
                 v-if="exportMenuOpen"
@@ -1914,21 +1695,7 @@ onUnmounted(() => {
               :title="t.toolbar.share"
               @click="handleShare"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                <polyline points="16 6 12 2 8 6" />
-                <line x1="12" y1="2" x2="12" y2="15" />
-              </svg>
+              <Upload :size="14" aria-hidden="true" />
               <span class="pg-toolbar-label">{{ t.toolbar.share }}</span>
             </button>
 
@@ -1967,34 +1734,13 @@ onUnmounted(() => {
               data-onboarding="cloud"
               class="group inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary text-white text-[13px] font-medium font-sans cursor-pointer no-underline whitespace-nowrap transition-all duration-150 hover:bg-primary-hover"
             >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-              </svg>
+              <Zap :size="12" aria-hidden="true" />
               <span class="pg-toolbar-label">{{ t.toolbar.tryCloud }}</span>
-              <svg
-                width="10"
-                height="10"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+              <ChevronRight
+                :size="10"
                 aria-hidden="true"
                 class="transition-transform duration-150 group-hover:translate-x-0.5 hidden sm:block"
-              >
-                <path d="M6 3l5 5-5 5" />
-              </svg>
+              />
             </a>
             <button
               data-testid="toolbar-theme"
@@ -2003,53 +1749,17 @@ onUnmounted(() => {
               :aria-label="t.a11y.selectTheme"
               @click="cycleTheme"
             >
-              <svg
+              <Monitor
                 v-if="uiTheme === 'auto'"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                :size="14"
                 aria-hidden="true"
-              >
-                <rect x="2" y="3" width="20" height="14" rx="2" />
-                <path d="M8 21h8" />
-                <path d="M12 17v4" />
-              </svg>
-              <svg
+              />
+              <Sun
                 v-else-if="uiTheme === 'light'"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                :size="14"
                 aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="4" />
-                <path
-                  d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-                />
-              </svg>
-              <svg
-                v-else
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-              </svg>
+              />
+              <Moon v-else :size="14" aria-hidden="true" />
             </button>
             <select
               v-model="locale"
@@ -2180,27 +1890,10 @@ onUnmounted(() => {
                 role="status"
                 class="flex flex-col items-center gap-3 py-4"
               >
-                <svg
+                <LoaderCircle
                   class="animate-spin h-5 w-5 text-gray-400 dark:text-gray-500"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
                   aria-hidden="true"
-                >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  />
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
+                />
                 <span class="text-sm text-gray-500 dark:text-gray-400">{{
                   t.shareModal.loading
                 }}</span>
@@ -2574,21 +2267,7 @@ onUnmounted(() => {
                 class="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 cursor-pointer transition-[border-color,color] duration-150 bg-transparent hover:border-primary hover:text-gray-900 dark:border-gray-600 dark:text-gray-400 dark:hover:text-gray-100"
                 @click="() => openImportFile()"
               >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
+                <Upload :size="24" :stroke-width="1.5" aria-hidden="true" />
                 <span class="text-sm font-medium">{{
                   t.importModal.chooseFile
                 }}</span>
@@ -2813,27 +2492,10 @@ onUnmounted(() => {
               role="status"
               class="flex flex-col items-center justify-center gap-4 py-12 px-5"
             >
-              <svg
+              <LoaderCircle
                 class="h-6 w-6 animate-spin text-primary"
-                viewBox="0 0 24 24"
-                fill="none"
                 aria-hidden="true"
-              >
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  opacity="0.2"
-                />
-                <path
-                  d="M22 12a10 10 0 0 0-10-10"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  stroke-linecap="round"
-                />
-              </svg>
+              />
               <div class="text-center space-y-2">
                 <p class="m-0 text-sm text-gray-500 dark:text-gray-400">
                   {{ t.dataSourceModal.fetching }}
@@ -2881,22 +2543,12 @@ onUnmounted(() => {
                     {{ item.description }}
                   </p>
                 </div>
-                <svg
+                <ChevronRight
                   class="shrink-0 text-gray-300 group-hover:text-primary transition-colors duration-150"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
+                  :size="16"
+                  :stroke-width="1.5"
                   aria-hidden="true"
-                >
-                  <path
-                    d="M6 3l5 5-5 5"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
+                />
               </button>
             </div>
           </div>
@@ -2956,152 +2608,42 @@ onUnmounted(() => {
                 <div
                   class="shrink-0 flex items-center justify-center size-8 rounded-md bg-primary/10 text-primary mt-0.5"
                 >
-                  <svg
+                  <Braces
                     v-if="feature.icon === 'merge-tag'"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
+                    :size="16"
+                    :stroke-width="1.5"
                     aria-hidden="true"
-                  >
-                    <path
-                      d="M4.5 3C3.67 3 3 3.67 3 4.5v2c0 .55-.45 1-1 1v1c.55 0 1 .45 1 1v2c0 .83.67 1.5 1.5 1.5M11.5 3c.83 0 1.5.67 1.5 1.5v2c0 .55.45 1 1 1v1c-.55 0-1 .45-1 1v2c0 .83-.67 1.5-1.5 1.5"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                  <svg
+                  />
+                  <Clock
                     v-else-if="feature.icon === 'display-condition'"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
+                    :size="16"
+                    :stroke-width="1.5"
                     aria-hidden="true"
-                  >
-                    <path
-                      d="M2.5 8a5.5 5.5 0 1 1 11 0 5.5 5.5 0 0 1-11 0z"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    />
-                    <path
-                      d="M8 5v3l2 1"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                  <svg
+                  />
+                  <Database
                     v-else-if="feature.icon === 'data-source'"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
+                    :size="16"
+                    :stroke-width="1.5"
                     aria-hidden="true"
-                  >
-                    <path
-                      d="M13 4c0 1.1-2.24 2-5 2S3 5.1 3 4m10 0c0-1.1-2.24-2-5-2S3 2.9 3 4m10 0v8c0 1.1-2.24 2-5 2s-5-.9-5-2V4m10 4c0 1.1-2.24 2-5 2s-5-.9-5-2"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                  <svg
+                  />
+                  <Blocks
                     v-else-if="feature.icon === 'custom-block'"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
+                    :size="16"
+                    :stroke-width="1.5"
                     aria-hidden="true"
-                  >
-                    <rect
-                      x="2"
-                      y="2"
-                      width="5"
-                      height="5"
-                      rx="1"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    />
-                    <rect
-                      x="9"
-                      y="2"
-                      width="5"
-                      height="5"
-                      rx="1"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    />
-                    <rect
-                      x="2"
-                      y="9"
-                      width="5"
-                      height="5"
-                      rx="1"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    />
-                    <path
-                      d="M11.5 9.5v5M9 11.75h5"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                  <svg
+                  />
+                  <MonitorSmartphone
                     v-else-if="feature.icon === 'responsive'"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
+                    :size="16"
+                    :stroke-width="1.5"
                     aria-hidden="true"
-                  >
-                    <rect
-                      x="1"
-                      y="3"
-                      width="9"
-                      height="7"
-                      rx="1"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    />
-                    <rect
-                      x="11"
-                      y="5"
-                      width="4"
-                      height="7"
-                      rx="1"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    />
-                    <line
-                      x1="1"
-                      y1="13"
-                      x2="10"
-                      y2="13"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                  <svg
+                  />
+                  <Zap
                     v-else
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
+                    :size="16"
+                    :stroke-width="1.5"
                     aria-hidden="true"
-                  >
-                    <path
-                      d="M13 2L3 14h9l-1 8"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
+                  />
                 </div>
                 <div class="min-w-0">
                   <div
@@ -3209,20 +2751,11 @@ onUnmounted(() => {
                     ? t.onboarding.next
                     : t.onboarding.done
                 }}
-                <svg
+                <ChevronRight
                   v-if="onboardingStepIndex < onboardingSteps.length - 1"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  :size="12"
                   aria-hidden="true"
-                >
-                  <path d="M6 3l5 5-5 5" />
-                </svg>
+                />
               </button>
             </div>
           </div>

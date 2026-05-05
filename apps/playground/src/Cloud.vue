@@ -19,6 +19,26 @@ import type { MergeTag } from "@templatical/types";
 import { customBlockDefinitions } from "@/templates";
 import LogoIcon from "@/LogoIcon.vue";
 import {
+  Monitor,
+  Sun,
+  Moon,
+  ChevronRight,
+  ChevronLeft,
+  TriangleAlert,
+  Plus,
+  History,
+  ArrowDown,
+  MessageSquare,
+  Users,
+  Image,
+  Upload,
+  Send,
+  Mic,
+  MessageCircle,
+  CircleCheck,
+  Sparkles,
+} from "@lucide/vue";
+import {
   usePlaygroundI18n,
   usePlaygroundTheme,
   format,
@@ -429,56 +449,13 @@ onUnmounted(() => {
             :aria-label="t.a11y.selectTheme"
             @click="cycleTheme"
           >
-            <!-- Auto: monitor icon -->
-            <svg
-              v-if="uiTheme === 'auto'"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="2" y="3" width="20" height="14" rx="2" />
-              <path d="M8 21h8" />
-              <path d="M12 17v4" />
-            </svg>
-            <!-- Light: sun icon -->
-            <svg
+            <Monitor v-if="uiTheme === 'auto'" :size="14" aria-hidden="true" />
+            <Sun
               v-else-if="uiTheme === 'light'"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              :size="14"
               aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path
-                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-              />
-            </svg>
-            <!-- Dark: moon icon -->
-            <svg
-              v-else
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-            </svg>
+            />
+            <Moon v-else :size="14" aria-hidden="true" />
           </button>
           <select
             v-model="locale"
@@ -622,21 +599,13 @@ onUnmounted(() => {
                   class="pg-form-label m-0 mb-3 cursor-pointer flex items-center gap-1.5 select-none bg-transparent border-none p-0"
                   @click="signingOpen = !signingOpen"
                 >
-                  <svg
+                  <ChevronRight
                     class="shrink-0 transition-transform duration-150"
                     :class="signingOpen ? 'rotate-90' : ''"
-                    width="10"
-                    height="10"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                    :size="10"
+                    :stroke-width="2.5"
                     aria-hidden="true"
-                  >
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
+                  />
                   {{ t.cloud.auth.identitySigning }}
                   <span
                     class="font-normal normal-case tracking-normal opacity-70"
@@ -732,24 +701,11 @@ onUnmounted(() => {
               <div
                 class="mt-3 flex gap-2 items-start rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 dark:bg-amber-950/30 dark:border-amber-800"
               >
-                <svg
+                <TriangleAlert
                   class="shrink-0 mt-px text-amber-500"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+                  :size="14"
                   aria-hidden="true"
-                >
-                  <path
-                    d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"
-                  />
-                  <line x1="12" x2="12" y1="9" y2="13" />
-                  <line x1="12" x2="12.01" y1="17" y2="17" />
-                </svg>
+                />
                 <p
                   class="m-0 text-[11px] text-amber-700 leading-snug dark:text-amber-400"
                 >
@@ -882,18 +838,7 @@ onUnmounted(() => {
               class="w-full inline-flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium font-sans rounded-lg cursor-pointer transition-colors duration-150 bg-transparent text-gray-500 border border-gray-200 hover:not-disabled:bg-gray-50 hover:not-disabled:text-gray-900 dark:border-gray-700 dark:text-gray-400 dark:hover:not-disabled:bg-gray-700 dark:hover:not-disabled:text-gray-100"
               @click="startFresh"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                aria-hidden="true"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+              <Plus :size="16" aria-hidden="true" />
               {{ t.cloud.template.startFromScratch }}
             </button>
           </div>
@@ -903,177 +848,81 @@ onUnmounted(() => {
           class="max-w-[800px] w-full grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-[13px] text-gray-500 list-none m-0 p-0 dark:text-gray-400"
         >
           <li class="flex items-center gap-2">
-            <svg
+            <History
               class="shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+              :size="14"
               aria-hidden="true"
-            >
-              <path d="M12 8V4H8" />
-              <rect width="16" height="12" x="4" y="8" rx="2" /></svg
-            >{{ t.cloud.features.versionHistory }}
+            />{{ t.cloud.features.versionHistory }}
           </li>
           <li class="flex items-center gap-2">
-            <svg
+            <ArrowDown
               class="shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+              :size="14"
               aria-hidden="true"
-            >
-              <path d="M12 3v18m-6-6 6 6 6-6" /></svg
-            >{{ t.cloud.features.autoSave }}
+            />{{ t.cloud.features.autoSave }}
           </li>
           <li class="flex items-center gap-2">
-            <svg
+            <MessageSquare
               class="shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+              :size="14"
               aria-hidden="true"
-            >
-              <path
-                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-              /></svg
-            >{{ t.cloud.features.aiWriting }}
+            />{{ t.cloud.features.aiWriting }}
           </li>
           <li class="flex items-center gap-2">
-            <svg
+            <Users
               class="shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+              :size="14"
               aria-hidden="true"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg
-            >{{ t.cloud.features.realtimeCollaboration }}
+            />{{ t.cloud.features.realtimeCollaboration }}
           </li>
           <li class="flex items-center gap-2">
-            <svg
+            <Image
               class="shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+              :size="14"
               aria-hidden="true"
-            >
-              <rect width="18" height="18" x="3" y="3" rx="2" />
-              <circle cx="9" cy="9" r="2" />
-              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg
-            >{{ t.cloud.features.mediaLibrary }}
+            />{{ t.cloud.features.mediaLibrary }}
           </li>
           <li class="flex items-center gap-2">
-            <svg
+            <Upload
               class="shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+              :size="14"
               aria-hidden="true"
-            >
-              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-              <polyline points="16 6 12 2 8 6" />
-              <line x1="12" x2="12" y1="2" y2="15" /></svg
-            >{{ t.cloud.features.savedModules }}
+            />{{ t.cloud.features.savedModules }}
           </li>
           <li class="flex items-center gap-2">
-            <svg
+            <Send
               class="shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+              :size="14"
               aria-hidden="true"
-            >
-              <path
-                d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
-              />
-              <line x1="4" x2="4" y1="22" y2="15" /></svg
-            >{{ t.cloud.features.testEmail }}
+            />{{ t.cloud.features.testEmail }}
           </li>
           <li class="flex items-center gap-2">
-            <svg
+            <Mic
               class="shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+              :size="14"
               aria-hidden="true"
-            >
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-              <line x1="12" x2="12" y1="19" y2="22" /></svg
-            >{{ t.cloud.features.mcpIntegration }}
+            />{{ t.cloud.features.mcpIntegration }}
           </li>
           <li class="flex items-center gap-2">
-            <svg
+            <MessageCircle
               class="shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+              :size="14"
               aria-hidden="true"
-            >
-              <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" /></svg
-            >{{ t.cloud.features.commenting }}
+            />{{ t.cloud.features.commenting }}
           </li>
           <li class="flex items-center gap-2">
-            <svg
+            <CircleCheck
               class="shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+              :size="14"
               aria-hidden="true"
-            >
-              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-              <polyline points="22 4 12 14.01 9 11.01" /></svg
-            >{{ t.cloud.features.templateScoring }}
+            />{{ t.cloud.features.templateScoring }}
           </li>
           <li class="flex items-center gap-2">
-            <svg
+            <Sparkles
               class="shrink-0 text-primary"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+              :size="14"
               aria-hidden="true"
-            >
-              <path d="M5.5 8.5 9 12l-3.5 3.5L2 12l3.5-3.5Z" />
-              <path d="m12 2 3.5 3.5L12 9 8.5 5.5 12 2Z" />
-              <path d="M18.5 8.5 22 12l-3.5 3.5L15 12l3.5-3.5Z" />
-              <path d="m12 15 3.5 3.5L12 22l-3.5-3.5L12 15Z" /></svg
-            >{{ t.cloud.features.whiteLabel }}
+            />{{ t.cloud.features.whiteLabel }}
           </li>
           <li class="flex items-center gap-2">
             <a
@@ -1102,21 +951,7 @@ onUnmounted(() => {
       >
         <div class="flex items-center gap-3">
           <button class="pg-toolbar-btn" @click="backToStart">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M10 3L5 8l5 5"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+            <ChevronLeft :size="16" :stroke-width="1.5" aria-hidden="true" />
             {{ t.cloud.editor.back }}
           </button>
           <span
@@ -1141,56 +976,13 @@ onUnmounted(() => {
             :aria-label="t.a11y.selectTheme"
             @click="cycleTheme"
           >
-            <!-- Auto: monitor icon -->
-            <svg
-              v-if="uiTheme === 'auto'"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="2" y="3" width="20" height="14" rx="2" />
-              <path d="M8 21h8" />
-              <path d="M12 17v4" />
-            </svg>
-            <!-- Light: sun icon -->
-            <svg
+            <Monitor v-if="uiTheme === 'auto'" :size="14" aria-hidden="true" />
+            <Sun
               v-else-if="uiTheme === 'light'"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+              :size="14"
               aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="4" />
-              <path
-                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"
-              />
-            </svg>
-            <!-- Dark: moon icon -->
-            <svg
-              v-else
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-            </svg>
+            />
+            <Moon v-else :size="14" aria-hidden="true" />
           </button>
           <select
             v-model="locale"
