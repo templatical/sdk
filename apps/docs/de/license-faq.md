@@ -52,7 +52,6 @@ Konkret erlaubt:
 - ✅ Den Editor in dein CRM, deine Marketing-Automation, dein Transactional-E-Mail-Tool, deine Newsletter-Plattform oder jedes Produkt einzubetten, in dem E-Mail-Komposition eine Funktion unter vielen ist.
 - ✅ Deinen Kunden für die Nutzung deines Produkts Geld zu berechnen, einschließlich des eingebetteten Editors als Teil davon.
 - ✅ Den Editor mit deinem Branding, Theme, eigenen Blöcken und Cloud-Funktionen anzupassen.
-- ✅ Das Cloud-Backend selbst zu hosten (es liegt als offener Code in `@templatical/core/cloud`).
 - ✅ Den Editor in einem internen Tool zu verwenden, das nie an externe Kunden ausgeliefert wird.
 
 Konkret nicht erlaubt:
@@ -71,7 +70,7 @@ Eine "konkurrierende Nutzung" ist eine, bei der der E-Mail-Editor *das* Produkt 
 | Du baust Templatical in dein CRM ein, damit Nutzer Kampagnen-E-Mails verfassen | ✅ Ja — der Editor ist eine Funktion deines CRMs. |
 | Du integrierst Templatical in eine Transactional-E-Mail-API, damit Kunden Templates designen, bevor sie über deine API senden | ✅ Ja — der Editor ist eine Funktion deiner Sende-Plattform. |
 | Du baust ein Newsletter-SaaS, in dem Templatical eines von mehreren Kompositionswerkzeugen ist | ✅ Ja — der Editor ist eine Funktion deines Newsletter-Produkts. |
-| Du hostest Editor und Cloud-Backend selbst im internen Marketing-Portal deines Unternehmens | ✅ Ja — interne Nutzung ist uneingeschränkt. |
+| Du bettest den Editor in das interne Marketing-Portal deines Unternehmens ein | ✅ Ja — interne Nutzung ist uneingeschränkt. |
 | Du forkst Templatical, brandest es um und verkaufst Abos eines gehosteten Templatical-Klons | ❌ Nein — das ist ein konkurrierender Managed Service. |
 | Du baust "Templatical Cloud, aber günstiger" und bietest es als SaaS an | ❌ Nein — das ist ein konkurrierender Managed Service. |
 
@@ -124,7 +123,7 @@ Es gibt kein Header-Logo oder anderes erzwungenes Branding — der Footer ist di
 
 **Nein.** Der Cloud-Tarif ist optional. Das OSS-SDK funktioniert komplett eigenständig — jede Funktion in `@templatical/editor` (der OSS-Init-Pfad) läuft ohne Backend.
 
-Der Cloud-Tarif fügt KI-Umschreibung, Echtzeit-Zusammenarbeit, Kommentare, Snapshots und gespeicherte Module hinzu — und der *Code* für diese Funktionen ist Open Source unter FSL-1.1-MIT in `@templatical/core/cloud`. Du kannst entweder unser gemanagtes Cloud-Backend nutzen oder dein eigenes betreiben.
+Der Cloud-Tarif fügt KI-Umschreibung, Echtzeit-Zusammenarbeit, Kommentare, Snapshots und gespeicherte Module hinzu. Er befindet sich in Entwicklung und wird als gemanagter Dienst angeboten.
 
 ## Was, wenn ich eine Frage habe, die hier nicht beantwortet wird?
 

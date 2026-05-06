@@ -52,7 +52,6 @@ Concretely allowed:
 - ✅ Embedding the editor in your CRM, marketing automation, transactional email tool, newsletter platform, or any product where email composition is one feature among many.
 - ✅ Charging your customers for using your product, including the embedded editor as part of it.
 - ✅ Customizing the editor with your brand, theme, custom blocks, and Cloud features.
-- ✅ Self-hosting the Cloud backend (it's open code in `@templatical/core/cloud`).
 - ✅ Using it inside an internal tool that never ships to external customers.
 
 Concretely not allowed:
@@ -71,7 +70,7 @@ A "competing use" is one where the email editor *is* the product. Some worked ex
 | You add Templatical to your CRM so users can compose campaign emails | ✅ Yes — email editor is a feature of your CRM. |
 | You add Templatical to a transactional email API so customers design templates before sending via your API | ✅ Yes — email editor is a feature of your sending platform. |
 | You build a newsletter SaaS where Templatical is one of several composition tools | ✅ Yes — email editor is a feature of your newsletter product. |
-| You self-host the editor and Cloud backend inside your company's internal marketing portal | ✅ Yes — internal use is unrestricted. |
+| You embed the editor inside your company's internal marketing portal | ✅ Yes — internal use is unrestricted. |
 | You fork Templatical, rebrand it, and sell hosted Templatical-clone subscriptions | ❌ No — that's a competing managed service. |
 | You build "Templatical Cloud, but cheaper" and offer it as a SaaS | ❌ No — that's a competing managed service. |
 
@@ -124,7 +123,7 @@ There is no header logo or other forced branding — the footer is the only attr
 
 **No.** The Cloud tier is optional. The OSS SDK works completely standalone — every feature in `@templatical/editor` (the OSS init path) runs without any backend.
 
-The Cloud tier adds AI rewrite, real-time collaboration, comments, snapshots, and saved modules — and the *code* for those features is open source under FSL-1.1-MIT in `@templatical/core/cloud`. You can either use our managed Cloud backend or run your own.
+The Cloud tier adds AI rewrite, real-time collaboration, comments, snapshots, and saved modules. It is in development and will be available as a managed service.
 
 ## What if I have a question this doesn't answer?
 
