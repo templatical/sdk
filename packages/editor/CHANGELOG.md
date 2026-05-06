@@ -1,5 +1,15 @@
 # @templatical/editor
 
+## 0.6.2
+
+### Patch Changes
+
+- de4b0a3: Polish and general bug fixes
+- Updated dependencies [de4b0a3]
+  - @templatical/renderer@0.6.2
+  - @templatical/media-library@0.6.2
+  - @templatical/quality@0.6.2
+
 ## 0.6.1
 
 ### Patch Changes
