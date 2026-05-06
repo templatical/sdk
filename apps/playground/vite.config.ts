@@ -52,6 +52,10 @@ export default defineConfig({
                 packagesDir,
                 'media-library/src/index.ts',
             ),
+            '@templatical/quality': resolve(
+                packagesDir,
+                'quality/src/index.ts',
+            ),
         },
     },
     build: {
