@@ -1,5 +1,12 @@
 # @templatical/core
 
+## 0.6.2
+
+### Patch Changes
+
+- de4b0a3: Polish and general bug fixes
+  - @templatical/types@0.6.2
+
 ## 0.6.1
 
 ### Patch Changes
