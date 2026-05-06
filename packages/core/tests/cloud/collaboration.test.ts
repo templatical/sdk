@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { ref, reactive, nextTick } from 'vue';
+import { ref, reactive, nextTick, effectScope } from 'vue';
 import { useCollaboration } from '../../src/cloud/collaboration';
 import type { AuthManager } from '../../src/cloud/auth';
 import type { UseEditorReturn } from '../../src/cloud/editor';
@@ -136,6 +136,38 @@ describe('useCollaboration', () => {
       await nextTick();
 
       channel.value = null;
+      await nextTick();
+
+      expect(mockChannel.unbind).toHaveBeenCalledWith('pusher:member_added');
+      expect(mockChannel.unbind).toHaveBeenCalledWith('pusher:member_removed');
+      expect(mockChannel.unbind).toHaveBeenCalledWith('client-block_locked');
+      expect(mockChannel.unbind).toHaveBeenCalledWith('client-block_unlocked');
+      expect(mockChannel.unbind).toHaveBeenCalledWith('client-operation');
+      expect(mockChannel.unbind).toHaveBeenCalledWith('mcp-operation');
+    });
+
+    it('unbinds events when the effect scope is disposed (component unmount)', async () => {
+      const mockChannel = createMockChannel();
+      const channel = ref<PresenceChannel | null>(null);
+      const scope = effectScope();
+
+      scope.run(() => {
+        useCollaboration({
+          authManager: createMockAuthManager(),
+          editor: createMockEditor(),
+          channel,
+        });
+      });
+
+      // Connect the channel so listeners get bound.
+      channel.value = mockChannel;
+      await nextTick();
+      expect(mockChannel.bind).toHaveBeenCalled();
+
+      // Component unmounts. The watch is auto-stopped by Vue, but the
+      // currently-bound listeners stay attached to the channel forever
+      // unless the composable wires its own scope-dispose cleanup.
+      scope.stop();
       await nextTick();
 
       expect(mockChannel.unbind).toHaveBeenCalledWith('pusher:member_added');

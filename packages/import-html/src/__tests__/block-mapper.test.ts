@@ -287,4 +287,24 @@ describe("isButtonCell", () => {
     );
     expect(isButtonCell($el, $).match).toBe(false);
   });
+
+  it("does not classify a styled cell as a button when its anchor has no href", () => {
+    // Legacy email patterns wrap a styled link-like span in a <td> with
+    // background/padding/radius. Without an href, treating it as a button
+    // produces a clickable element with href="#", which is wrong — it
+    // should fall through to the regular text-conversion path.
+    const { $, $el } = firstEl(
+      '<table><tr><td style="background:#ff0000;padding:10px;border-radius:4px"><a>Go</a></td></tr></table>',
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(false);
+  });
+
+  it("does not classify a styled cell as a button when its anchor has empty href", () => {
+    const { $, $el } = firstEl(
+      '<table><tr><td style="background:#ff0000;padding:10px;border-radius:4px"><a href="">Go</a></td></tr></table>',
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(false);
+  });
 });

@@ -402,6 +402,54 @@ describe("useFocusTrap", () => {
     expect(vi.mocked(useEventListener).mock.calls.length).toBe(2);
   });
 
+  it("preserves the original previously-focused element across re-entry (container swap)", async () => {
+    // Element that had focus BEFORE the trap activated. After all activations
+    // tear down, focus must return here — not to whatever was focused inside
+    // the first trap container when the second trap container took over.
+    const externalElement = createFocusableElement("input");
+    Object.defineProperty(document, "activeElement", {
+      value: externalElement,
+      writable: true,
+      configurable: true,
+    });
+
+    const c1Btn = createFocusableElement("button");
+    const c2Btn = createFocusableElement("button");
+    const c1 = createMockContainer([c1Btn]);
+    const c2 = createMockContainer([c2Btn]);
+    c1.querySelector = vi.fn(() => null);
+    c2.querySelector = vi.fn(() => null);
+
+    const active = ref(false);
+    const containerRef = ref<HTMLElement | null>(null);
+
+    useFocusTrap(containerRef, active);
+
+    active.value = true;
+    containerRef.value = c1;
+    await flushWatcher();
+
+    // Simulate user tabbing inside the first trap → activeElement is c1Btn now.
+    Object.defineProperty(document, "activeElement", {
+      value: c1Btn,
+      writable: true,
+      configurable: true,
+    });
+
+    // Container swaps while still active (re-entry). The trap should NOT
+    // overwrite previouslyFocused with c1Btn — the original (externalElement)
+    // must be preserved.
+    containerRef.value = c2;
+    await flushWatcher();
+
+    active.value = false;
+    await flushWatcher();
+
+    // Final deactivate must restore focus to the originally-focused element,
+    // not to whatever was focused inside the trap when the container swapped.
+    expect(externalElement.focus).toHaveBeenCalled();
+  });
+
   it("registers onScopeDispose cleanup when used in effectScope", async () => {
     const { effectScope, onScopeDispose } = await import("vue");
     const container = createMockContainer([createFocusableElement("button")]);

@@ -4,7 +4,22 @@ import type { Collaborator, McpOperationPayload } from "@templatical/types";
 import { handleOperation } from "./mcp-operation-handler";
 import type { PresenceMember } from "./websocket-client";
 import type { PresenceChannel } from "pusher-js";
-import { computed, ref, watch, type Ref } from "vue";
+import { computed, onScopeDispose, ref, watch, type Ref } from "vue";
+
+const COLLAB_EVENTS = [
+  "pusher:member_added",
+  "pusher:member_removed",
+  "client-block_locked",
+  "client-block_unlocked",
+  "client-operation",
+  "mcp-operation",
+] as const;
+
+function unbindCollabEvents(channel: PresenceChannel): void {
+  for (const event of COLLAB_EVENTS) {
+    channel.unbind(event);
+  }
+}
 
 const COLLABORATOR_COLORS = [
   "#3b82f6",
@@ -192,12 +207,7 @@ export function useCollaboration(
 
   watch(channel, (newChannel, oldChannel) => {
     if (oldChannel) {
-      oldChannel.unbind("pusher:member_added");
-      oldChannel.unbind("pusher:member_removed");
-      oldChannel.unbind("client-block_locked");
-      oldChannel.unbind("client-block_unlocked");
-      oldChannel.unbind("client-operation");
-      oldChannel.unbind("mcp-operation");
+      unbindCollabEvents(oldChannel);
     }
 
     if (!newChannel) {
@@ -279,6 +289,16 @@ export function useCollaboration(
     newChannel.bind("mcp-operation", (payload: McpOperationPayload) => {
       handleRemoteOperation(payload);
     });
+  });
+
+  // The watch above only unbinds when the channel ref *changes*. On scope
+  // dispose (component unmount) the watch is auto-stopped but the currently
+  // bound listeners stay attached forever — handlers fire on a dead component
+  // and accumulate on remount. Tear them down explicitly.
+  onScopeDispose(() => {
+    if (channel.value) {
+      unbindCollabEvents(channel.value);
+    }
   });
 
   return {

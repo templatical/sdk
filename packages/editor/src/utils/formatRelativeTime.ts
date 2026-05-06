@@ -29,6 +29,10 @@ export function formatRelativeTime(
   const time = date.getTime();
   if (Number.isNaN(time)) return null;
   const diff = Date.now() - time;
+  // Tolerate up to a minute of clock skew (server slightly ahead of client).
+  // Anything further in the future is suspicious — return null so the caller
+  // falls back to an absolute date format rather than mislabeling it.
+  if (diff < -MS_PER_MINUTE) return null;
   const minutes = Math.floor(diff / MS_PER_MINUTE);
   const hours = Math.floor(diff / MS_PER_HOUR);
   const days = Math.floor(diff / MS_PER_DAY);

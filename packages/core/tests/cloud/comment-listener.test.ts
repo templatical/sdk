@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, effectScope } from 'vue';
 import { useCommentListener } from '../../src/cloud/comment-listener';
 import type { UseCommentsReturn } from '../../src/cloud/comments';
 import type { Comment } from '@templatical/types';
@@ -178,6 +178,31 @@ describe('useCommentListener', () => {
     });
 
     expect(comments.applyRemoteUpdate).toHaveBeenCalledWith(comment);
+  });
+
+  it('unbinds comment-broadcast when the effect scope is disposed (component unmount)', async () => {
+    const mockChannel = createMockChannel();
+    const channel = ref<PresenceChannel | null>(null);
+    const scope = effectScope();
+
+    scope.run(() => {
+      useCommentListener({
+        comments: createMockComments(),
+        channel,
+      });
+    });
+
+    channel.value = mockChannel as unknown as PresenceChannel;
+    await nextTick();
+    expect(mockChannel.bind).toHaveBeenCalledWith('comment-broadcast', expect.any(Function));
+
+    // Component unmounts. The currently-bound handler must be unbound or
+    // it stays attached to the Pusher channel forever, processing events
+    // for a dead component.
+    scope.stop();
+    await nextTick();
+
+    expect(mockChannel.unbind).toHaveBeenCalledWith('comment-broadcast');
   });
 
   it('rebinds when channel changes to a new channel', async () => {

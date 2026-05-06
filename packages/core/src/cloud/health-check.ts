@@ -105,16 +105,34 @@ async function checkWebSocket(wsConfig?: {
   const url = `${protocol}://${wsConfig.host}:${wsConfig.port}/app/${wsConfig.app_key}?protocol=7&client=js&version=8.4.0-rc2&flash=false`;
 
   return new Promise((resolve) => {
+    let ws: WebSocket | null = null;
+
     const timeout = setTimeout(() => {
-      ws.close();
+      ws?.close();
       resolve({ ok: false, error: "WebSocket connection timed out" });
     }, WS_HANDSHAKE_TIMEOUT);
 
-    const ws = new WebSocket(url);
+    try {
+      ws = new WebSocket(url);
+    } catch (error) {
+      // Some browsers throw synchronously from `new WebSocket(...)`
+      // (e.g. SecurityError on mixed content, InvalidAccessError on
+      // malformed URL). Without this catch the queued timeout would
+      // later access `ws` in TDZ and the outer promise would hang.
+      clearTimeout(timeout);
+      resolve({
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "WebSocket connection failed",
+      });
+      return;
+    }
 
     ws.onopen = () => {
       clearTimeout(timeout);
-      ws.close();
+      ws?.close();
       resolve({ ok: true });
     };
 

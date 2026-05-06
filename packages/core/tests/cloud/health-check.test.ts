@@ -195,6 +195,37 @@ describe("performHealthCheck", () => {
       );
     });
 
+    it("resolves when the WebSocket constructor throws synchronously", async () => {
+      // Some browsers throw SecurityError or InvalidAccessError synchronously
+      // from `new WebSocket(...)` (e.g. mixed-content or malformed URL). The
+      // promise must still settle — currently the queued setTimeout fires 5s
+      // later and accesses `ws` in TDZ → unhandled ReferenceError, leaving
+      // the outer promise pending forever.
+      vi.useFakeTimers();
+      vi.stubGlobal(
+        "WebSocket",
+        class {
+          constructor() {
+            throw new Error("Insecure WebSocket connection blocked");
+          }
+        },
+      );
+      vi.mocked(fetch).mockResolvedValue(
+        mockJsonResponse({
+          status: "ok",
+          websocket: { host: "ws.test.com", port: 443, app_key: "key123" },
+        }),
+      );
+
+      const promise = performHealthCheck();
+      // Advance past the 5s handshake timeout.
+      await vi.advanceTimersByTimeAsync(6000);
+      const result = await promise;
+
+      expect(result.websocket.ok).toBe(false);
+      vi.useRealTimers();
+    });
+
     it("uses wss protocol for port 443", async () => {
       let capturedUrl = "";
       vi.stubGlobal(

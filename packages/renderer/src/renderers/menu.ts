@@ -24,7 +24,7 @@ export function renderMenu(block: MenuBlock, context: RenderContext): string {
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const align = block.textAlign;
   const fontSize = block.fontSize;
-  const color = block.color;
+  const color = escapeAttr(block.color);
 
   const content = renderMenuItems(block);
 

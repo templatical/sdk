@@ -304,8 +304,17 @@ export function isButtonCell(
   if (anchors.length !== 1) return { match: false };
   const anchor = $(anchors[0]);
   if (looksLikeButton(getStyles(anchor))) return { match: true, anchor };
-  // Cell-level styling (bg, padding) wrapping a plain anchor also reads as button.
-  if (looksLikeButton(getStyles($el))) return { match: true, anchor };
+  // Cell-level styling (bg, padding) wrapping a plain anchor reads as a
+  // button only when the anchor actually has an href. Without one, the
+  // anchor is a decorative styled span and should fall through to the
+  // text-conversion path; otherwise convertButton defaults href to "#"
+  // and the import becomes a clickable button to nowhere.
+  if (looksLikeButton(getStyles($el))) {
+    const href = (anchor.attr("href") ?? "").trim();
+    if (href !== "") {
+      return { match: true, anchor };
+    }
+  }
   return { match: false };
 }
 

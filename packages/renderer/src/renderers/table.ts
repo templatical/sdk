@@ -4,7 +4,11 @@ import type {
   TableCellData,
 } from "@templatical/types";
 import type { RenderContext } from "../render-context";
-import { escapeCssValue, convertMergeTagsToValues } from "../escape";
+import {
+  escapeAttr,
+  escapeCssValue,
+  convertMergeTagsToValues,
+} from "../escape";
 import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
@@ -27,7 +31,7 @@ export function renderTable(block: TableBlock, context: RenderContext): string {
   const visibilityAttr = getCssClassAttr(block);
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const fontSize = block.fontSize;
-  const color = block.color;
+  const color = escapeAttr(block.color);
   const align = block.textAlign;
 
   const tableHtml = renderTableElement(block);

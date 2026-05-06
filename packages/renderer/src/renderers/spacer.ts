@@ -1,5 +1,6 @@
 import type { SpacerBlock } from "@templatical/types";
 import type { RenderContext } from "../render-context";
+import { escapeAttr } from "../escape";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -21,7 +22,7 @@ export function renderSpacer(
 
   const height = block.height;
   const bgColor = block.styles.backgroundColor
-    ? ` container-background-color="${block.styles.backgroundColor}"`
+    ? ` container-background-color="${escapeAttr(block.styles.backgroundColor)}"`
     : "";
   const visibilityAttr = getCssClassAttr(block);
 

@@ -9,6 +9,9 @@ import {
   createVideoBlock,
   createSectionBlock,
   createButtonBlock,
+  createDividerBlock,
+  createSpacerBlock,
+  createSocialIconsBlock,
   createDefaultTemplateContent,
   generateId,
 } from "@templatical/types";
@@ -159,6 +162,69 @@ describe("background-color round-trip through MJML compiler", () => {
 
     const html = await compile(mjml);
     expect(htmlContainsColor(html, SECTION_BG)).toBe(true);
+  });
+
+  it("divider: backgroundColor must be attribute-escaped to survive MJML compile", async () => {
+    // Simulate a malicious or imported color value that breaks out of the
+    // attribute boundary. The literal `"` must be HTML-encoded so it stays
+    // inside the value rather than reshaping the MJML attribute list.
+    const evilColor = `red" foo="x`;
+    const block = createDividerBlock({
+      styles: { backgroundColor: evilColor as unknown as string },
+    } as Parameters<typeof createDividerBlock>[0]);
+    const mjml = renderBlock(block, ctx);
+
+    expect(mjml).toContain(
+      `container-background-color="red&quot; foo=&quot;x"`,
+    );
+    expect(mjml).not.toContain(`container-background-color="${evilColor}"`);
+  });
+
+  it("spacer: backgroundColor must be attribute-escaped", async () => {
+    const evilColor = `red" foo="x`;
+    const block = createSpacerBlock({
+      styles: { backgroundColor: evilColor as unknown as string },
+    } as Parameters<typeof createSpacerBlock>[0]);
+    const mjml = renderBlock(block, ctx);
+
+    expect(mjml).toContain(
+      `container-background-color="red&quot; foo=&quot;x"`,
+    );
+    expect(mjml).not.toContain(`container-background-color="${evilColor}"`);
+  });
+
+  it("social: backgroundColor must be attribute-escaped", async () => {
+    const evilColor = `red" foo="x`;
+    const block = createSocialIconsBlock({
+      icons: [
+        {
+          id: generateId(),
+          platform: "facebook",
+          url: "https://example.com",
+        },
+      ],
+      styles: { backgroundColor: evilColor as unknown as string },
+    } as Parameters<typeof createSocialIconsBlock>[0]);
+    const mjml = renderBlock(block, ctx);
+
+    expect(mjml).toContain(
+      `container-background-color="red&quot; foo=&quot;x"`,
+    );
+    expect(mjml).not.toContain(`container-background-color="${evilColor}"`);
+  });
+
+  it("title: color attribute must be escaped against attribute-injection", async () => {
+    const evilColor = `red" align="right`;
+    const block = createTitleBlock({
+      content: "<p>Hi</p>",
+      level: 2,
+      color: evilColor as unknown as string,
+      textAlign: "left",
+    });
+    const mjml = renderBlock(block, ctx);
+
+    expect(mjml).toContain(`color="red&quot; align=&quot;right"`);
+    expect(mjml).not.toContain(`color="${evilColor}"`);
   });
 
   it("button: cell bg uses container-background-color, button face uses native background-color", async () => {

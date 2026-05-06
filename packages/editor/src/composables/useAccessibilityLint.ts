@@ -53,6 +53,7 @@ export function useAccessibilityLint(
   const disabled = opts.options.disabled === true;
 
   let stopWatch: (() => void) | null = null;
+  let destroyed = false;
 
   if (!disabled) {
     void load();
@@ -61,6 +62,10 @@ export function useAccessibilityLint(
   async function load(): Promise<void> {
     try {
       const mod = await import("@templatical/quality");
+      // Bail if the consumer destroyed us during the dynamic import — both
+      // to avoid mutating dead refs and to avoid leaking a watcher that
+      // destroy() can no longer reach.
+      if (destroyed) return;
       lintFn.value = mod.lintAccessibility;
       ready.value = true;
       runLint();
@@ -69,6 +74,7 @@ export function useAccessibilityLint(
         deep: true,
       });
     } catch {
+      if (destroyed) return;
       // The quality package is an optional peer; surface the unavailable
       // flag so consumers can hide UI rather than crash.
       unavailable.value = true;
@@ -100,6 +106,7 @@ export function useAccessibilityLint(
   }
 
   function destroy(): void {
+    destroyed = true;
     stopWatch?.();
     stopOptionsWatch();
   }

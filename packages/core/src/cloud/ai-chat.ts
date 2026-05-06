@@ -283,61 +283,68 @@ export function useAiChat(options: UseAiChatOptions): UseAiChatReturn {
       let buffer = "";
       let result: TemplateContent | null = null;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) {
-            continue;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            break;
           }
 
-          const jsonStr = line.slice(6);
+          buffer += decoder.decode(value, { stream: true });
 
-          let event;
-          try {
-            event = JSON.parse(jsonStr);
-          } catch {
-            continue;
-          }
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
 
-          if (event.type === "text") {
-            updateMessage(assistantMsgId, {
-              content:
-                (messages.value.find((m) => m.id === assistantMsgId)?.content ??
-                  "") + event.text,
-            });
-          } else if (event.type === "error") {
-            throw new Error(event.message || "Failed to generate template");
-          } else if (event.type === "done") {
-            if (event.conversation_id) {
-              conversationId.value = event.conversation_id;
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) {
+              continue;
             }
 
-            updateMessage(assistantMsgId, {
-              content: event.text,
-            });
+            const jsonStr = line.slice(6);
 
-            result = event.content ?? null;
+            let event;
+            try {
+              event = JSON.parse(jsonStr);
+            } catch {
+              continue;
+            }
 
-            if (result) {
-              lastPreviousContent.value = currentContent;
-              lastAppliedContent.value = result;
-              lastApplyMessageId.value = assistantMsgId;
-              isLastChangeReverted.value = false;
-              onApply?.(result);
-            } else {
-              error.value = "ai_apply_failed";
+            if (event.type === "text") {
+              updateMessage(assistantMsgId, {
+                content:
+                  (messages.value.find((m) => m.id === assistantMsgId)
+                    ?.content ?? "") + event.text,
+              });
+            } else if (event.type === "error") {
+              throw new Error(event.message || "Failed to generate template");
+            } else if (event.type === "done") {
+              if (event.conversation_id) {
+                conversationId.value = event.conversation_id;
+              }
+
+              updateMessage(assistantMsgId, {
+                content: event.text,
+              });
+
+              result = event.content ?? null;
+
+              if (result) {
+                lastPreviousContent.value = currentContent;
+                lastAppliedContent.value = result;
+                lastApplyMessageId.value = assistantMsgId;
+                isLastChangeReverted.value = false;
+                onApply?.(result);
+              } else {
+                error.value = "ai_apply_failed";
+              }
             }
           }
         }
+      } finally {
+        // Release the underlying network resource even on early exit.
+        // Without this, throwing out of the loop (e.g. on an `error` SSE
+        // event) leaves the socket and read buffer attached until GC.
+        reader.cancel().catch(() => {});
       }
 
       return result;
