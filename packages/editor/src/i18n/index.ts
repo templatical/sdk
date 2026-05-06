@@ -25,6 +25,31 @@ function localesFromGlob(modules: Record<string, unknown>): string[] {
 const supportedLocales = localesFromGlob(ossModules);
 const supportedCloudLocales = localesFromGlob(cloudModules);
 
+function normalizeLocale(locale: string): string {
+  const parts = locale.trim().replace(/_/g, "-").split("-");
+  const language = parts.shift()?.toLowerCase();
+
+  if (!language) return "";
+
+  return [
+    language,
+    ...parts.map((part) => (part.length === 2 ? part.toUpperCase() : part)),
+  ].join("-");
+}
+
+function findSupportedLocale(
+  locale: string,
+  supported: string[],
+): string | null {
+  const normalized = normalizeLocale(locale).toLowerCase();
+  return (
+    supported.find(
+      (supportedLocale) =>
+        normalizeLocale(supportedLocale).toLowerCase() === normalized,
+    ) ?? null
+  );
+}
+
 /**
  * Get the base language code from a locale string.
  * e.g., 'en-GB' -> 'en', 'de-DE' -> 'de'
@@ -34,8 +59,11 @@ export function getBaseLocale(locale: string): string {
 }
 
 function resolveLocale(locale: string, supported: string[]): string {
-  const base = getBaseLocale(locale);
-  return supported.includes(base) ? base : "en";
+  const exact = findSupportedLocale(locale, supported);
+  if (exact) return exact;
+
+  const base = getBaseLocale(normalizeLocale(locale));
+  return findSupportedLocale(base, supported) ?? "en";
 }
 
 /**
@@ -65,19 +93,25 @@ export async function loadCloudTranslations(
   return mod.default;
 }
 
-/** Check if a locale has OSS translations (matched by base, e.g. en-GB → en). */
+/** Check if a locale has OSS translations (matched by exact locale, then base). */
 export function isLocaleSupported(locale: string): boolean {
-  return (
-    supportedLocales.includes(locale) ||
-    supportedLocales.includes(getBaseLocale(locale))
+  return Boolean(
+    findSupportedLocale(locale, supportedLocales) ||
+    findSupportedLocale(
+      getBaseLocale(normalizeLocale(locale)),
+      supportedLocales,
+    ),
   );
 }
 
-/** Check if a locale has cloud translations (matched by base). */
+/** Check if a locale has cloud translations (matched by exact locale, then base). */
 export function isCloudLocaleSupported(locale: string): boolean {
-  return (
-    supportedCloudLocales.includes(locale) ||
-    supportedCloudLocales.includes(getBaseLocale(locale))
+  return Boolean(
+    findSupportedLocale(locale, supportedCloudLocales) ||
+    findSupportedLocale(
+      getBaseLocale(normalizeLocale(locale)),
+      supportedCloudLocales,
+    ),
   );
 }
 
