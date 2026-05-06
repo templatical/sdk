@@ -234,6 +234,45 @@ describe("useSnapshotPreview", () => {
       expect(options.editor.createSnapshot).not.toHaveBeenCalled();
     });
 
+    it("does not mutate state if scope is disposed before createSnapshot resolves", async () => {
+      const { effectScope } = await import("vue");
+      const options = createOptions();
+      options.editor.state.isDirty = true;
+      options.editor.hasTemplate.mockReturnValue(true);
+
+      // createSnapshot resolves only when we want it to.
+      let resolveCreateSnapshot!: () => void;
+      options.editor.createSnapshot = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveCreateSnapshot = resolve;
+          }),
+      );
+
+      const scope = effectScope();
+      let result!: ReturnType<typeof useSnapshotPreview>;
+      scope.run(() => {
+        result = useSnapshotPreview(options);
+      });
+
+      const snapshot = createSnapshot("snap-1");
+      const navigatePromise = result.handleSnapshotNavigate(snapshot);
+
+      // Simulate the component unmounting BEFORE the snapshot creation completes.
+      scope.stop();
+
+      // Now the awaited promise resolves. Per CLAUDE.md, post-unmount state
+      // mutations must be guarded — autoSave.pause / setContent / state writes
+      // should NOT fire after the scope is gone.
+      resolveCreateSnapshot();
+      await navigatePromise;
+
+      expect(options.autoSave.pause).not.toHaveBeenCalled();
+      expect(options.editor.setContent).not.toHaveBeenCalled();
+      expect(result.previewingSnapshot.value).toBe(null);
+      expect(result.contentBeforePreview.value).toBe(null);
+    });
+
     it("subsequent navigate while previewing swaps snapshot without saving content again", async () => {
       const options = createOptions();
       options.editor.content.value = {

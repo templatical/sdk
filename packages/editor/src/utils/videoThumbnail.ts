@@ -13,10 +13,11 @@ export function parseVideoUrl(url: string): VideoInfo {
     return { platform: "unknown", videoId: null, thumbnailUrl: null };
   }
 
-  // YouTube patterns
+  // YouTube patterns. Host is matched case-insensitively because URLs pasted
+  // from the address bar can have an uppercase scheme/host.
   const youtubePatterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/i,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/i,
   ];
 
   for (const pattern of youtubePatterns) {
@@ -32,7 +33,7 @@ export function parseVideoUrl(url: string): VideoInfo {
   }
 
   // Vimeo patterns
-  const vimeoPattern = /vimeo\.com\/(?:video\/)?(\d+)/;
+  const vimeoPattern = /vimeo\.com\/(?:video\/)?(\d+)/i;
   const vimeoMatch = url.match(vimeoPattern);
   if (vimeoMatch) {
     const videoId = vimeoMatch[1];

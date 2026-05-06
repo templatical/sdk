@@ -1,7 +1,7 @@
 import type { TitleBlock } from "@templatical/types";
 import { HEADING_LEVEL_FONT_SIZE } from "@templatical/types";
 import type { RenderContext } from "../render-context";
-import { convertMergeTagsToValues } from "../escape";
+import { convertMergeTagsToValues, escapeAttr } from "../escape";
 import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
@@ -21,7 +21,7 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   // `undefined` into `font-size="${...}px"` (mjml@5 rejects "undefinedpx").
   const fontSize =
     HEADING_LEVEL_FONT_SIZE[block.level] ?? HEADING_LEVEL_FONT_SIZE[2];
-  const color = block.color;
+  const color = escapeAttr(block.color);
   const align = block.textAlign;
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const visibilityAttr = getCssClassAttr(block);

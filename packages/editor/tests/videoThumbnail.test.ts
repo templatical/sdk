@@ -37,6 +37,28 @@ describe('parseVideoUrl', () => {
       expect(result.platform).toBe('youtube');
       expect(result.videoId).toBe('dQw4w9WgXcQ');
     });
+
+    it('parses URL with uppercase host (case-insensitive domain)', () => {
+      const result = parseVideoUrl(
+        'https://WWW.YOUTUBE.COM/watch?v=dQw4w9WgXcQ',
+      );
+      expect(result.platform).toBe('youtube');
+      expect(result.videoId).toBe('dQw4w9WgXcQ');
+    });
+
+    it('parses uppercase short URL', () => {
+      const result = parseVideoUrl('https://YOUTU.BE/dQw4w9WgXcQ');
+      expect(result.platform).toBe('youtube');
+      expect(result.videoId).toBe('dQw4w9WgXcQ');
+    });
+
+    it('parses uppercase shorts URL', () => {
+      const result = parseVideoUrl(
+        'https://YOUTUBE.COM/shorts/dQw4w9WgXcQ',
+      );
+      expect(result.platform).toBe('youtube');
+      expect(result.videoId).toBe('dQw4w9WgXcQ');
+    });
   });
 
   describe('Vimeo', () => {
@@ -49,6 +71,12 @@ describe('parseVideoUrl', () => {
 
     it('parses Vimeo video path URL', () => {
       const result = parseVideoUrl('https://vimeo.com/video/123456789');
+      expect(result.platform).toBe('vimeo');
+      expect(result.videoId).toBe('123456789');
+    });
+
+    it('parses uppercase Vimeo URL', () => {
+      const result = parseVideoUrl('https://VIMEO.COM/123456789');
       expect(result.platform).toBe('vimeo');
       expect(result.videoId).toBe('123456789');
     });

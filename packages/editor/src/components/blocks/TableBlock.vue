@@ -5,8 +5,24 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { Table } from "@lucide/vue";
-import { computed } from "vue";
+import { computed, type Directive } from "vue";
 import { EDITOR_KEY, requireInject } from "../../keys";
+
+// Hydrate a contenteditable cell's text imperatively. v-text would re-apply
+// on every prop update and overwrite the user's keystrokes mid-edit when
+// external content lands (collab event, undo replay, autosave round-trip),
+// so we skip the update while the cell is focused — DOM is the source of
+// truth during edit, and the prop syncs back via @blur.
+const vCellContent: Directive<HTMLElement, string> = {
+  mounted(el, binding) {
+    el.textContent = binding.value ?? "";
+  },
+  updated(el, binding) {
+    if (binding.value === binding.oldValue) return;
+    if (el.ownerDocument.activeElement === el) return;
+    el.textContent = binding.value ?? "";
+  },
+};
 
 const props = defineProps<{
   block: TableBlockType;
@@ -92,7 +108,7 @@ function onCellBlur(rowId: string, cellId: string, event: FocusEvent): void {
             @blur="onCellBlur(headerRow!.id, cell.id, $event)"
             @keydown.enter.prevent="($event.target as HTMLElement).blur()"
             @click.stop="onCellClick"
-            v-text="cell.content"
+            v-cell-content="cell.content"
           />
         </tr>
       </thead>
@@ -108,7 +124,7 @@ function onCellBlur(rowId: string, cellId: string, event: FocusEvent): void {
             @blur="onCellBlur(row.id, cell.id, $event)"
             @keydown.enter.prevent="($event.target as HTMLElement).blur()"
             @click.stop="onCellClick"
-            v-text="cell.content"
+            v-cell-content="cell.content"
           />
         </tr>
       </tbody>

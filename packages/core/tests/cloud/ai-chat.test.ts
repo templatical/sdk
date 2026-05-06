@@ -21,6 +21,43 @@ function createSSEResponse(events: Array<{ type: string; [key: string]: unknown 
   } as unknown as Response;
 }
 
+/**
+ * Build an SSE response whose body's `getReader()` is observable: returns
+ * the spy on `cancel` so we can assert the consumer released the stream
+ * after an early exit (e.g. an `error` event in the SSE payload).
+ */
+function createObservableSSEResponse(
+  events: Array<{ type: string; [key: string]: unknown }>,
+) {
+  const lines = events.map((e) => `data: ${JSON.stringify(e)}\n`).join('\n');
+  const encoder = new TextEncoder();
+  const cancel = vi.fn(() => Promise.resolve());
+
+  let emitted = false;
+  const reader = {
+    read: vi.fn(async () => {
+      if (!emitted) {
+        emitted = true;
+        return { done: false, value: encoder.encode(lines) };
+      }
+      return { done: true, value: undefined };
+    }),
+    cancel,
+    releaseLock: vi.fn(),
+  };
+
+  const response = {
+    ok: true,
+    status: 200,
+    body: {
+      getReader: () => reader,
+    },
+    json: () => Promise.resolve({}),
+  } as unknown as Response;
+
+  return { response, reader, cancel };
+}
+
 function createMockAuthManager(): AuthManager {
   return {
     projectId: 'proj-1',
@@ -180,6 +217,27 @@ describe('useAiChat', () => {
       expect(chat.messages.value[0].content).toBe('improve this');
       expect(chat.messages.value[1].role).toBe('assistant');
       expect(chat.messages.value[1].content).toBe('Done!');
+    });
+
+    it('cancels the SSE reader when an error event aborts streaming', async () => {
+      const { response, cancel } = createObservableSSEResponse([
+        { type: 'error', message: 'stream aborted' },
+      ]);
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValueOnce(response);
+
+      const chat = useAiChat({
+        authManager,
+        getTemplateId: () => 'tmpl-1',
+        onApply,
+        onError,
+      });
+
+      await chat.sendPrompt('try this', mockContent, mockMergeTags);
+
+      // The reader must be released even though the loop threw out before
+      // consuming `done` — otherwise the underlying TCP socket and
+      // unflushed buffer linger until GC.
+      expect(cancel).toHaveBeenCalledTimes(1);
     });
 
     it('sets error and failedPrompt and removes messages on failure', async () => {

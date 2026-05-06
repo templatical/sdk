@@ -1,7 +1,7 @@
 import type { UseCommentsReturn } from "./comments";
 import type { Comment } from "@templatical/types";
 import type { PresenceChannel } from "pusher-js";
-import { watch, type Ref } from "vue";
+import { onScopeDispose, watch, type Ref } from "vue";
 
 export interface CommentBroadcastPayload {
   action:
@@ -34,6 +34,13 @@ export function useCommentListener(options: UseCommentListenerOptions): void {
         },
       );
     }
+  });
+
+  // The watch only unbinds on channel *transitions*. On scope dispose the
+  // currently-bound handler stays attached, processing broadcasts on a
+  // dead component. Explicitly tear it down.
+  onScopeDispose(() => {
+    channel.value?.unbind("comment-broadcast");
   });
 }
 

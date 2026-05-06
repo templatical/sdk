@@ -103,6 +103,19 @@ describe("formatRelativeTime", () => {
     expect(result).toBe("Just now");
   });
 
+  it("returns null for far-future dates instead of mislabeling them as 'just now'", () => {
+    // 1 hour in the future — clearly not "just now"; caller should fall back
+    // to the absolute date format.
+    const result = formatRelativeTime("2026-04-04T13:00:00Z", labels);
+    expect(result).toBeNull();
+  });
+
+  it("returns null for far-future dates beyond 1-minute clock-skew window", () => {
+    // 5 minutes in the future
+    const result = formatRelativeTime("2026-04-04T12:05:00Z", labels);
+    expect(result).toBeNull();
+  });
+
   it("returns null for invalid date strings instead of NaN-laced output", () => {
     const result = formatRelativeTime("not-a-date", labels);
     expect(result).toBeNull();

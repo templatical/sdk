@@ -13,7 +13,7 @@ import {
   Upload,
   X,
 } from "@lucide/vue";
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -176,6 +176,13 @@ watch(
     }
   },
 );
+
+onBeforeUnmount(() => {
+  if (filePreviewUrl.value) {
+    URL.revokeObjectURL(filePreviewUrl.value);
+    filePreviewUrl.value = null;
+  }
+});
 </script>
 
 <template>

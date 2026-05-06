@@ -24,7 +24,7 @@ export function renderSocialIcons(
 
   const padding = toPaddingString(block.styles.padding);
   const bgColor = block.styles.backgroundColor
-    ? ` container-background-color="${block.styles.backgroundColor}"`
+    ? ` container-background-color="${escapeAttr(block.styles.backgroundColor)}"`
     : "";
   const visibilityAttr = getCssClassAttr(block);
   const align = block.align;

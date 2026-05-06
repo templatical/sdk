@@ -1,4 +1,11 @@
-import { computed, shallowRef, ref, type ComputedRef, type Ref } from "vue";
+import {
+  computed,
+  onScopeDispose,
+  shallowRef,
+  ref,
+  type ComputedRef,
+  type Ref,
+} from "vue";
 import type { TemplateContent, TemplateSnapshot } from "@templatical/types";
 import type {
   UseHistoryReturn,
@@ -52,6 +59,14 @@ export function useSnapshotPreview(
   const previewingSnapshot = ref<TemplateSnapshot | null>(null);
   const contentBeforePreview = ref<TemplateContent | null>(null);
 
+  // Per CLAUDE.md, async functions must guard against post-unmount execution
+  // after every `await` so we don't write to dead refs or fire side effects
+  // (autoSave.pause, setContent) on a torn-down component.
+  let destroyed = false;
+  onScopeDispose(() => {
+    destroyed = true;
+  });
+
   const isPreviewingSnapshot = computed(
     () => previewingSnapshot.value !== null,
   );
@@ -86,6 +101,8 @@ export function useSnapshotPreview(
   async function handleSnapshotNavigate(
     snapshot: TemplateSnapshot,
   ): Promise<void> {
+    if (destroyed) return;
+
     if (previewingSnapshot.value) {
       previewingSnapshot.value = snapshot;
       editor.setContent(snapshot.content, false);
@@ -94,6 +111,7 @@ export function useSnapshotPreview(
 
     if (editor.state.isDirty && editor.hasTemplate()) {
       await editor.createSnapshot();
+      if (destroyed) return;
     }
 
     contentBeforePreview.value = structuredClone(editor.content.value);
@@ -110,11 +128,15 @@ export function useSnapshotPreview(
       await snapshotHistoryInstance.value.restoreSnapshot(
         previewingSnapshot.value.id,
       );
+      if (destroyed) return;
       await snapshotHistoryInstance.value.loadSnapshots();
+      if (destroyed) return;
     } finally {
-      previewingSnapshot.value = null;
-      contentBeforePreview.value = null;
-      autoSave?.resume();
+      if (!destroyed) {
+        previewingSnapshot.value = null;
+        contentBeforePreview.value = null;
+        autoSave?.resume();
+      }
     }
   }
 
@@ -130,6 +152,7 @@ export function useSnapshotPreview(
   }
 
   async function loadSnapshotHistory(): Promise<void> {
+    if (destroyed) return;
     if (snapshotHistoryInstance.value) {
       await snapshotHistoryInstance.value.loadSnapshots();
     }

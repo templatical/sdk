@@ -49,11 +49,17 @@ export function useFocusTrap(
     // Re-entry guard: if a previous activate didn't deactivate (e.g.
     // container ref swapped while still active), tear down the prior
     // listener and rAF before registering new ones — otherwise they leak.
-    if (cleanupListener || pendingRaf !== null) {
+    const wasActive = cleanupListener !== null || pendingRaf !== null;
+    if (wasActive) {
       deactivate({ restoreFocus: false });
     }
 
-    previouslyFocused = document.activeElement as HTMLElement | null;
+    // Only capture previouslyFocused on the FIRST activation. On re-entry,
+    // document.activeElement is whatever the user tabbed to inside the trap;
+    // overwriting would lose the original pre-trap focus target.
+    if (!wasActive) {
+      previouslyFocused = document.activeElement as HTMLElement | null;
+    }
 
     pendingRaf = requestAnimationFrame(() => {
       pendingRaf = null;
