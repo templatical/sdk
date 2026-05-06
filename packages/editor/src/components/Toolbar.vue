@@ -15,6 +15,7 @@ import SocialToolbar from "./toolbar/SocialToolbar.vue";
 import SpacerToolbar from "./toolbar/SpacerToolbar.vue";
 import TableToolbar from "./toolbar/TableToolbar.vue";
 import TitleToolbar from "./toolbar/TitleToolbar.vue";
+import VideoToolbar from "./toolbar/VideoToolbar.vue";
 import { useI18n } from "../composables/useI18n";
 import type {
   Block,
@@ -30,6 +31,7 @@ import type {
   SpacerBlock,
   TableBlock,
   TitleBlock,
+  VideoBlock,
 } from "@templatical/types";
 import { isCustomBlock } from "@templatical/types";
 import { Code, Copy, Trash2 } from "@lucide/vue";
@@ -161,6 +163,12 @@ function handleUpdate(updates: Partial<Block>): void {
       <ImageToolbar
         v-else-if="blockType === 'image'"
         :block="block as ImageBlock"
+        @update="handleUpdate"
+      />
+
+      <VideoToolbar
+        v-else-if="blockType === 'video'"
+        :block="block as VideoBlock"
         @update="handleUpdate"
       />
 
