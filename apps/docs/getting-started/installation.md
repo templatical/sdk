@@ -15,7 +15,7 @@ Have a feature request or hit a rough edge? [Open a discussion](https://github.c
 
 - **Modern browser** -- Chrome 80+, Firefox 80+, Safari 14+, Edge 80+
 - **Container element** -- must have a defined height (the editor fills its container)
-- **No peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses.
+- **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. (`@templatical/renderer`, `@templatical/quality`, `@templatical/media-library`, and `pusher-js` are *optional* peers — install them only if you use the corresponding feature; see [Optional peers](#optional-peers) below.)
 
 ## npm
 
@@ -70,6 +70,37 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | `@templatical/import-unlayer` | Converts Unlayer JSON design templates to Templatical format. | Optional |
 
 `@templatical/editor` ships as a single self-contained ESM bundle: every runtime dependency it needs (Vue, TipTap, vuedraggable, `@templatical/core`, `@templatical/types`, etc.) is inlined. You never install them separately — and you never get duplicate copies in your app's `node_modules`.
+## Optional peers
+
+The editor lazy-loads four optional peers via dynamic `import()` at runtime, gated by feature use:
+
+| Peer | When loaded | Install if you |
+|---|---|---|
+| `@templatical/renderer` | First call to `editor.toMjml()` | Need MJML export from the browser |
+| `@templatical/quality` | Editor mount (a11y panel) | Want the accessibility sidebar |
+| `@templatical/media-library` | First open of the media browser | Use `initCloud()` |
+| `pusher-js` | Cloud realtime connect | Use `initCloud()` |
+
+If you don't install them, the corresponding feature simply disables itself — the editor still mounts and runs.
+
+### A note on bundler output
+
+The editor works out of the box with every modern bundler — no consumer configuration is required regardless of which optional peers you install. Vite, esbuild, Rollup, and Rolldown handle the optional dynamic imports silently. Webpack 5 is slightly more verbose: it statically analyzes every `import()` and prints a harmless `Module not found` **warning** for each uninstalled optional peer. The build still succeeds and the editor runs correctly — these warnings are cosmetic only.
+
+If you'd prefer a clean Webpack log, you can opt into silencing them with `ignoreWarnings`:
+
+```js
+// webpack.config.js — optional, only if the warnings bother you
+module.exports = {
+  ignoreWarnings: [
+    {
+      module: /@templatical[\\/]editor/,
+      message: /Can't resolve '(pusher-js|@templatical\/(quality|media-library|renderer))'/,
+    },
+  ],
+};
+```
+
 ## Framework integration
 
 Templatical mounts into any DOM element. It creates its own isolated application internally, so it works with any framework — or no framework at all.

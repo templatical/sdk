@@ -54,6 +54,7 @@
     "test:coverage": "pnpm --filter './packages/*' run test --coverage",
     "test:e2e": "playwright test",
     "test:e2e:consumer": "playwright test --config playwright.consumer.config.ts",
+    "test:webpack-consumer": "node packages/editor/scripts/webpack-consumer-verify.mjs",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
     "typecheck": "pnpm --filter './packages/*' run typecheck && pnpm --filter '@templatical/playground' run typecheck"

@@ -33,8 +33,16 @@ const ModuleBrowserModal = defineAsyncComponent(
   () => import("./ModuleBrowserModal.vue"),
 );
 const MediaLibraryModal = defineAsyncComponent(async () => {
-  const m = await import("@templatical/media-library");
-  return m.MediaLibraryModal;
+  // try/catch downgrades Webpack's "Module not found" from error to warning
+  // when the optional peer isn't installed. Cloud consumers always install it.
+  try {
+    const m = await import("@templatical/media-library");
+    return m.MediaLibraryModal;
+  } catch {
+    throw new Error(
+      "[Templatical] Cloud media library requires the optional peer dependency '@templatical/media-library'. Please install it.",
+    );
+  }
 });
 
 defineProps<{

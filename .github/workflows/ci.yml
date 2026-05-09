@@ -136,6 +136,19 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+  webpack-consumer:
+    # Build the editor as a real Webpack 5 consumer would. Catches issue #63:
+    # if anyone adds a dynamic `import()` to an optional peer without try/catch,
+    # webpack escalates "Module not found" from warning to error and breaks the
+    # consumer's production build. See packages/editor/scripts/webpack-consumer-verify.mjs.
+    if: ${{ !startsWith(github.head_ref, 'changeset-release/') && !startsWith(github.ref_name, 'changeset-release/') }}
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm run test:webpack-consumer
+
   e2e-report:
     runs-on: ubuntu-latest
     needs: [e2e]
