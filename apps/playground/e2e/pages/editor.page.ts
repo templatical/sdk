@@ -355,11 +355,17 @@ export class EditorPage {
     const startX = sourceBox.x + sourceBox.width / 2;
     const startY = sourceBox.y + sourceBox.height / 2;
     const endX = targetBox.x + targetBox.width / 2;
+    // Section's draggable uses default Sortable `swapThreshold: 1.0` (no
+    // invert-swap). A swap only fires once the pointer crosses the target's
+    // center toward the source — but ending too close to the target's edge
+    // overshoots into the neighbor's swap zone and causes the dropped item
+    // to land one slot past the intended position. 60% / 40% sits safely
+    // past center without crossing the boundary.
     const endY =
       targetEdge === "top"
-        ? targetBox.y + 4
+        ? targetBox.y + targetBox.height * 0.4
         : targetEdge === "bottom"
-          ? targetBox.y + targetBox.height - 4
+          ? targetBox.y + targetBox.height * 0.6
           : targetBox.y + targetBox.height / 2;
 
     // Sortable.js gates drag-start on a small initial movement (>1px) and
