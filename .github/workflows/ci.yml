@@ -149,6 +149,20 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm run test:webpack-consumer
 
+  turbopack-consumer:
+    # Build the editor as a real Next.js 15 + Turbopack consumer would.
+    # Catches the class of UMD/AMD `define()` wrapper that Webpack tolerates
+    # but Turbopack rejects with `error TP1200`, which silently breaks any
+    # downstream Next.js 15+ app (Turbopack is the default builder).
+    # See packages/editor/scripts/turbopack-consumer-verify.mjs.
+    if: ${{ !startsWith(github.head_ref, 'changeset-release/') && !startsWith(github.ref_name, 'changeset-release/') }}
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: pnpm run test:turbopack-consumer
+
   e2e-report:
     runs-on: ubuntu-latest
     needs: [e2e]
