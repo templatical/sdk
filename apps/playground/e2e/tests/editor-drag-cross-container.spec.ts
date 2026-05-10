@@ -6,10 +6,9 @@ import { blockByType } from "../helpers/selectors";
  *
  * Companion to `editor-drag-drop.spec.ts` (sidebar→canvas) and
  * `section-columns.spec.ts` (sidebar→section column). The scenarios here
- * exercise mid-template moves between containers — the riskiest path when
- * swapping draggable libraries because Sortable.js group semantics and
- * pull/put callbacks are where API drift between vuedraggable variants
- * tends to show up.
+ * exercise mid-template moves between containers — the riskiest path
+ * during draggable-library swaps or Sortable.js upgrades, since group
+ * semantics and pull/put callbacks are where behavior tends to drift.
  */
 test.describe("Editor cross-container drag-and-drop", () => {
   test("reorder blocks within a single section column", async ({
@@ -78,12 +77,11 @@ test.describe("Editor cross-container drag-and-drop", () => {
   });
 
   // Known limitation: Sortable.js's `_onDragOver` hit-test for a target
-  // column nested inside a sibling canvas item doesn't fire reliably under
+  // column nested inside a sibling canvas item doesn't fire under
   // Playwright's synthetic pointer events when the source is a canvas-level
   // handle (.tpl-block-btn). Real-user drag works; manual mouse driving
-  // does not. Re-evaluate after the vuedraggable→vue-draggable-plus swap —
-  // the new library may handle synthetic events differently. Until then,
-  // exercise this scenario via manual QA.
+  // does not. Exercise via manual QA; revisit if Playwright gains a more
+  // native pointer-event mode.
   test.fixme("move block from canvas top-level into a section column", async ({
     blankEditorReady: { editorPage },
   }) => {
@@ -156,10 +154,7 @@ test.describe("Editor cross-container drag-and-drop", () => {
 
   // Known limitation: drop into a SIBLING column of the same section
   // doesn't register under Playwright's synthetic pointer events even
-  // though cross-section moves (test below) do. Section-internal flex
-  // layout + Sortable.js's same-parent hit-test combine into a path that
-  // real users hit cleanly but synthetic mouse drives do not. Re-evaluate
-  // after the vuedraggable→vue-draggable-plus swap.
+  // though cross-section moves (test below) do. Manual QA covers it.
   test.fixme("move block between two columns of the same section", async ({
     editorReady: { editorPage },
     page,

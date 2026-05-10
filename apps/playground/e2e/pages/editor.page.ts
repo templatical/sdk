@@ -260,7 +260,7 @@ export class EditorPage {
 
   /**
    * Top-level blocks on the canvas (excludes section children). The
-   * `.tpl-block` selector matches recursively, but the canvas's vuedraggable
+   * `.tpl-block` selector matches recursively, but the canvas's draggable
    * wraps each top-level item in `div > div.tpl:relative > .tpl-block`, so
    * the grandchild path under `.tpl-canvas-blocks` yields the top-level set
    * exclusively.

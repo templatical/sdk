@@ -69,7 +69,7 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | `@templatical/import-beefree` | Converts BeeFree JSON templates to Templatical format. | Optional |
 | `@templatical/import-unlayer` | Converts Unlayer JSON design templates to Templatical format. | Optional |
 
-`@templatical/editor` ships as a single self-contained ESM bundle: every runtime dependency it needs (Vue, TipTap, vuedraggable, `@templatical/core`, `@templatical/types`, etc.) is inlined. You never install them separately — and you never get duplicate copies in your app's `node_modules`.
+`@templatical/editor` ships as a single self-contained ESM bundle: every runtime dependency it needs (Vue, TipTap, vue-draggable-plus, `@templatical/core`, `@templatical/types`, etc.) is inlined. You never install them separately — and you never get duplicate copies in your app's `node_modules`.
 ## Optional peers
 
 The editor lazy-loads four optional peers via dynamic `import()` at runtime, gated by feature use:

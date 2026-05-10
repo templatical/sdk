@@ -52,7 +52,7 @@ const FORBIDDEN_PACKAGES = [
   "@templatical/core",
   "@templatical/types",
   "@vueuse/core",
-  "vuedraggable",
+  "vue-draggable-plus",
   "@tiptap/core",
   "@tiptap/vue-3",
   "@tiptap/starter-kit",

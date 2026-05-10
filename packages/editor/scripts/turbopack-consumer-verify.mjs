@@ -14,10 +14,6 @@
  *   3. `npm install` the tarball alongside next/react/react-dom.
  *   4. Run `next build --turbopack`.
  *   5. Assert: zero TP1200 errors, build exits 0.
- *
- * Until the upstream UMD form is purged from the editor's published bundle
- * (currently shipped via the `vuedraggable@4` UMD-only `main`/`module` field),
- * this script fails — exactly mirroring the issue reporter's experience.
  */
 
 import { execSync } from "node:child_process";
@@ -111,7 +107,7 @@ try {
 
   if (/error TP1200/.test(buildOutput)) {
     fail(
-      "next build failed with TP1200 — the editor's published bundle still contains a UMD/AMD `define()` wrapper that Turbopack rejects. Likely source: vuedraggable@4 ships UMD only via its `main`/`module` field. Import the package's `src/vuedraggable.js` ESM source directly to drop the wrapper.",
+      "next build failed with TP1200 — a published chunk in dist/ contains a UMD/AMD `define()` wrapper that Turbopack rejects. Find the offending dep (search dist/ for `define.amd`), and either swap it for an ESM-only equivalent or import its ESM source directly so the wrapper isn't bundled.",
     );
   }
   if (buildExitCode !== 0) {

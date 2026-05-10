@@ -102,6 +102,6 @@ describe("editor entry — concurrent init does not orphan first app", () => {
 
   // Cloud equivalent: initCloud has the same race shape (guard checked
   // before awaits). Not unit-tested here because the dynamic CloudEditor.vue
-  // import pulls in vuedraggable/sortablejs which needs a real DOM. Fix
+  // import pulls in vue-draggable-plus/sortablejs which needs a real DOM. Fix
   // mirrors the OSS one — guard moved after awaits in src/index.ts.
 });
