@@ -1,7 +1,13 @@
 export default {
   chooser: {
-    title: "Templatical Playground",
-    subtitle: "Choose a starting point for your email template",
+    title: "Templatical",
+    subtitle:
+      "Try the editor live — each pre-built example covers a real-world use case and demonstrates a different set of SDK features. Pick one to start.",
+    pills: {
+      openSource: "Free & open source",
+      clientSide: "Client-side",
+      noTelemetry: "Zero telemetry",
+    },
     startFromScratch: "Start from Scratch",
     emptyCanvas: "Empty canvas with default settings",
     migration: {

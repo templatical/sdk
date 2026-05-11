@@ -116,7 +116,7 @@ describe("editor bundle topology", () => {
       "@templatical/core/cloud",
       "@templatical/types",
       "@vueuse/core",
-      "vuedraggable",
+      "vue-draggable-plus",
       "@tiptap/core",
       "@tiptap/vue-3",
       "@lucide/vue",

@@ -15,6 +15,7 @@ Feature-Wunsch oder rauer Kante begegnet? [Diskussion eröffnen](https://github.
 
 - **Moderner Browser** -- Chrome 80+, Firefox 80+, Safari 14+, Edge 80+
 - **Container-Element** -- muss eine definierte Höhe haben (der Editor füllt seinen Container aus)
+- **Keine erforderlichen Peer-Dependencies** -- Vue, TipTap und alle internen Bibliotheken sind im Editor gebündelt. Sie müssen weder Vue noch eine andere Framework-Runtime installieren, unabhängig davon, welches Framework Ihre App verwendet. (`@templatical/renderer`, `@templatical/quality`, `@templatical/media-library` und `pusher-js` sind *optionale* Peers — installieren Sie sie nur, wenn Sie das entsprechende Feature nutzen; siehe [Optionale Peers](#optionale-peers) weiter unten.)
 
 ## npm
 
@@ -69,6 +70,38 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 | `@templatical/import-unlayer` | Konvertiert Unlayer-JSON-Design-Templates in das Templatical-Format | Optional |
 
 `@templatical/types` und `@templatical/core` sind direkte Abhängigkeiten von `@templatical/editor` und werden automatisch installiert.
+
+## Optionale Peers
+
+Der Editor lädt vier optionale Peers zur Laufzeit per dynamischem `import()`, abhängig davon, welche Features Sie nutzen:
+
+| Peer | Wann geladen | Installieren, wenn Sie |
+|---|---|---|
+| `@templatical/renderer` | Erster Aufruf von `editor.toMjml()` | MJML-Export aus dem Browser benötigen |
+| `@templatical/quality` | Beim Mounten des Editors (Accessibility-Panel) | Die Accessibility-Sidebar nutzen möchten |
+| `@templatical/media-library` | Erstes Öffnen des Medien-Browsers | `initCloud()` verwenden |
+| `pusher-js` | Cloud-Realtime-Verbindung | `initCloud()` verwenden |
+
+Wenn Sie sie nicht installieren, deaktiviert sich das jeweilige Feature einfach selbst — der Editor mountet und läuft trotzdem.
+
+### Hinweis zur Bundler-Ausgabe
+
+Der Editor funktioniert mit allen modernen Bundlern out of the box — unabhängig davon, welche optionalen Peers Sie installieren, ist keinerlei Konfiguration auf Consumer-Seite erforderlich. Vite, esbuild, Rollup und Rolldown behandeln die optionalen dynamischen Imports stillschweigend. Webpack 5 ist etwas gesprächiger: Es analysiert jeden `import()`-Aufruf statisch und gibt für jeden nicht installierten optionalen Peer eine harmlose `Module not found`-**Warnung** aus. Der Build ist trotzdem erfolgreich und der Editor läuft korrekt — diese Warnungen sind rein kosmetisch.
+
+Wenn Sie eine saubere Webpack-Ausgabe bevorzugen, können Sie die Warnungen optional über `ignoreWarnings` ausblenden:
+
+```js
+// webpack.config.js — optional, nur falls die Warnungen stören
+module.exports = {
+  ignoreWarnings: [
+    {
+      module: /@templatical[\\/]editor/,
+      message: /Can't resolve '(pusher-js|@templatical\/(quality|media-library|renderer))'/,
+    },
+  ],
+};
+```
+
 ## Framework-Integration
 
 Templatical wird in jedes beliebige DOM-Element eingebunden. Intern erstellt es seine eigene isolierte Anwendung und funktioniert daher mit jedem Framework – oder ganz ohne Framework.

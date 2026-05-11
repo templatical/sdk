@@ -1199,11 +1199,45 @@ onUnmounted(() => {
         >
           <LogoIcon class="mb-5" />
           <h1
-            class="m-0 mb-2 text-[22px] font-semibold text-gray-900 tracking-[-0.02em] dark:text-gray-100"
+            class="m-0 mb-4 text-[22px] font-semibold text-gray-900 tracking-[-0.02em] dark:text-gray-100"
           >
             {{ t.chooser.title }}
           </h1>
-          <p class="m-0 mb-9 text-[15px] text-gray-500 dark:text-gray-400">
+
+          <div
+            class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 mb-5"
+            aria-label="Project facts"
+          >
+            <span
+              class="inline-flex items-center px-3 py-1 rounded-full border border-gray-200 text-[12px] font-mono text-gray-600 dark:border-gray-700 dark:text-gray-400"
+            >
+              {{ t.chooser.pills.openSource }}
+            </span>
+            <span
+              aria-hidden="true"
+              class="text-gray-300 text-xs select-none dark:text-gray-600"
+              >·</span
+            >
+            <span
+              class="inline-flex items-center px-3 py-1 rounded-full border border-gray-200 text-[12px] font-mono text-gray-600 dark:border-gray-700 dark:text-gray-400"
+            >
+              {{ t.chooser.pills.clientSide }}
+            </span>
+            <span
+              aria-hidden="true"
+              class="text-gray-300 text-xs select-none dark:text-gray-600"
+              >·</span
+            >
+            <span
+              class="inline-flex items-center px-3 py-1 rounded-full border border-gray-200 text-[12px] font-mono text-gray-600 dark:border-gray-700 dark:text-gray-400"
+            >
+              {{ t.chooser.pills.noTelemetry }}
+            </span>
+          </div>
+
+          <p
+            class="m-0 mb-9 max-w-[640px] text-center text-[15px] text-gray-500 dark:text-gray-400"
+          >
             {{ t.chooser.subtitle }}
           </p>
 

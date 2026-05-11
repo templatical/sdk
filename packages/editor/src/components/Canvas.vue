@@ -17,7 +17,7 @@ import {
   CAPABILITIES_KEY,
   requireInject,
 } from "../keys";
-import draggable from "vuedraggable";
+import { VueDraggable } from "vue-draggable-plus";
 import { resolveBlockComponent } from "../utils/blockComponentResolver";
 import { readableTextColor } from "../utils/readableTextColor";
 
@@ -177,10 +177,9 @@ function handleFetchData(
       :style="canvasStyle"
       @click="handleCanvasClick"
     >
-      <draggable
+      <VueDraggable
         v-model="blocks"
         group="blocks"
-        item-key="id"
         :animation="150"
         ghost-class="tpl-ghost"
         drag-class="tpl-dragging"
@@ -188,122 +187,127 @@ function handleFetchData(
         :invert-swap="true"
         :inverted-swap-threshold="0.65"
         :disabled="previewMode"
-        class="tpl-canvas-blocks"
+        class="tpl-canvas-blocks tpl:min-h-[400px]"
       >
-        <template #item="{ element: block }">
-          <div v-show="!conditionPreview?.isHidden(block.id)">
-            <div class="tpl:relative">
-              <!-- Collaboration lock overlay -->
-              <div
-                v-if="getBlockLock(block.id)"
-                class="tpl-collab-lock tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[4] tpl:rounded-sm"
+        <div
+          v-for="block in blocks"
+          :key="block.id"
+          v-show="!conditionPreview?.isHidden(block.id)"
+        >
+          <div class="tpl:relative">
+            <!-- Collaboration lock overlay -->
+            <div
+              v-if="getBlockLock(block.id)"
+              class="tpl-collab-lock tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[4] tpl:rounded-sm"
+              :style="{
+                outline: `2px solid ${getBlockLock(block.id)!.color}`,
+                outlineOffset: '-1px',
+              }"
+            >
+              <span
+                class="tpl:absolute tpl:-top-0.5 tpl:left-1/2 tpl:z-[5] tpl:flex tpl:-translate-x-1/2 tpl:-translate-y-full tpl:items-center tpl:gap-1 tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:whitespace-nowrap"
                 :style="{
-                  outline: `2px solid ${getBlockLock(block.id)!.color}`,
-                  outlineOffset: '-1px',
+                  backgroundColor: getBlockLock(block.id)!.color,
+                  color: readableTextColor(getBlockLock(block.id)!.color),
                 }"
               >
                 <span
-                  class="tpl:absolute tpl:-top-0.5 tpl:left-1/2 tpl:z-[5] tpl:flex tpl:-translate-x-1/2 tpl:-translate-y-full tpl:items-center tpl:gap-1 tpl:rounded-full tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:whitespace-nowrap"
-                  :style="{
-                    backgroundColor: getBlockLock(block.id)!.color,
-                    color: readableTextColor(getBlockLock(block.id)!.color),
-                  }"
-                >
-                  <span
-                    class="tpl:inline-flex tpl:size-3 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[8px] tpl:font-bold"
-                    style="
-                      background-color: color-mix(
-                        in srgb,
-                        var(--tpl-bg) 30%,
-                        transparent
-                      );
-                    "
-                  >
-                    {{ getBlockLock(block.id)!.name.charAt(0) }}
-                  </span>
-                  {{ getBlockLock(block.id)!.name }}
-                </span>
-              </div>
-              <BlockWrapper
-                :block="block"
-                :is-selected="
-                  !previewMode &&
-                  selectedBlockId === block.id &&
-                  !getBlockLock(block.id)
-                "
-                :viewport="viewport"
-                :preview-mode="previewMode"
-                @select="
-                  previewMode || getBlockLock(block.id)
-                    ? undefined
-                    : emit('select-block', block.id)
-                "
-              >
-                <component
-                  :is="getBlockComponent(block)"
-                  :block="block"
-                  :viewport="viewport"
-                  @fetch-data="handleFetchData(block, $event)"
-                  @update="
-                    (updates: Partial<Block>) =>
-                      editor.updateBlock(block.id, updates)
+                  class="tpl:inline-flex tpl:size-3 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[8px] tpl:font-bold"
+                  style="
+                    background-color: color-mix(
+                      in srgb,
+                      var(--tpl-bg) 30%,
+                      transparent
+                    );
                   "
-                />
-              </BlockWrapper>
+                >
+                  {{ getBlockLock(block.id)!.name.charAt(0) }}
+                </span>
+                {{ getBlockLock(block.id)!.name }}
+              </span>
             </div>
+            <BlockWrapper
+              :block="block"
+              :is-selected="
+                !previewMode &&
+                selectedBlockId === block.id &&
+                !getBlockLock(block.id)
+              "
+              :viewport="viewport"
+              :preview-mode="previewMode"
+              @select="
+                previewMode || getBlockLock(block.id)
+                  ? undefined
+                  : emit('select-block', block.id)
+              "
+            >
+              <component
+                :is="getBlockComponent(block)"
+                :block="block"
+                :viewport="viewport"
+                @fetch-data="handleFetchData(block, $event)"
+                @update="
+                  (updates: Partial<Block>) =>
+                    editor.updateBlock(block.id, updates)
+                "
+              />
+            </BlockWrapper>
           </div>
-        </template>
-        <template #footer>
-          <div
-            v-if="blocks.length === 0 && !previewMode"
-            class="tpl-canvas-empty tpl:m-6 tpl:flex tpl:min-h-[400px] tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-xl tpl:border-2 tpl:border-dashed tpl:px-10 tpl:py-12 tpl:text-center tpl:border-[var(--tpl-primary)] tpl:bg-[var(--tpl-bg-elevated)] tpl:font-[var(--tpl-font-family)]"
+        </div>
+      </VueDraggable>
+      <!-- Empty-state placeholder. Renders as a sibling of VueDraggable
+           (not a child) so Sortable.js doesn't treat it as a draggable
+           item — vue-draggable-plus iterates the default slot's direct
+           children. Canvas-blocks gets a min-h utility above so the empty
+           container still has a non-zero hit area for `dragTo`. -->
+      <div
+        v-if="blocks.length === 0 && !previewMode"
+        class="tpl-canvas-empty tpl:m-6 tpl:flex tpl:min-h-[400px] tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-xl tpl:border-2 tpl:border-dashed tpl:px-10 tpl:py-12 tpl:text-center tpl:border-[var(--tpl-primary)] tpl:bg-[var(--tpl-bg-elevated)] tpl:font-[var(--tpl-font-family)]"
+      >
+        <div
+          class="tpl-canvas-empty-icon tpl:mb-4 tpl:text-[var(--tpl-primary)]"
+        >
+          <SquarePlus :size="48" :stroke-width="1" />
+        </div>
+        <p
+          class="tpl-canvas-empty-title tpl:m-0 tpl:mb-2 tpl:text-base tpl:font-semibold tpl:text-[var(--tpl-primary)]"
+        >
+          {{ t.canvas.noBlocks }}
+        </p>
+        <p
+          class="tpl-canvas-empty-text tpl:m-0 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
+        >
+          {{ t.canvas.dragHint }}
+        </p>
+        <p
+          v-if="canUseAiChat && cloudT"
+          class="tpl:m-0 tpl:mt-2 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
+        >
+          {{ t.canvas.aiHintChat }}
+          <button
+            class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
+            @click="emit('open-ai-chat')"
           >
-            <div
-              class="tpl-canvas-empty-icon tpl:mb-4 tpl:text-[var(--tpl-primary)]"
-            >
-              <SquarePlus :size="48" :stroke-width="1" />
-            </div>
-            <p
-              class="tpl-canvas-empty-title tpl:m-0 tpl:mb-2 tpl:text-base tpl:font-semibold tpl:text-[var(--tpl-primary)]"
-            >
-              {{ t.canvas.noBlocks }}
-            </p>
-            <p
-              class="tpl-canvas-empty-text tpl:m-0 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
-            >
-              {{ t.canvas.dragHint }}
-            </p>
-            <p
-              v-if="canUseAiChat && cloudT"
-              class="tpl:m-0 tpl:mt-2 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
-            >
-              {{ t.canvas.aiHintChat }}
-              <button
-                class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
-                @click="emit('open-ai-chat')"
-              >
-                <Sparkles :size="14" :stroke-width="2" />
-                {{ cloudT.aiMenu.aiAssistant }}
-              </button>
-              {{ t.canvas.aiHintChatSuffix }}
-            </p>
-            <p
-              v-if="canUseDesignToTemplate && cloudT"
-              class="tpl:m-0 tpl:mt-4 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
-            >
-              {{ t.canvas.aiHintDesign }}
-              <button
-                class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
-                @click="emit('open-design-reference')"
-              >
-                <ImageUp :size="14" :stroke-width="2" />
-                {{ cloudT.aiMenu.designToTemplate }}
-              </button>
-              {{ t.canvas.aiHintDesignSuffix }}
-            </p>
-          </div>
-        </template>
-      </draggable>
+            <Sparkles :size="14" :stroke-width="2" />
+            {{ cloudT.aiMenu.aiAssistant }}
+          </button>
+          {{ t.canvas.aiHintChatSuffix }}
+        </p>
+        <p
+          v-if="canUseDesignToTemplate && cloudT"
+          class="tpl:m-0 tpl:mt-4 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
+        >
+          {{ t.canvas.aiHintDesign }}
+          <button
+            class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
+            @click="emit('open-design-reference')"
+          >
+            <ImageUp :size="14" :stroke-width="2" />
+            {{ cloudT.aiMenu.designToTemplate }}
+          </button>
+          {{ t.canvas.aiHintDesignSuffix }}
+        </p>
+      </div>
     </div>
   </div>
 </template>

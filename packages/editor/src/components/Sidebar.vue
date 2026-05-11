@@ -5,7 +5,7 @@ import type { Block, BlockType } from "@templatical/types";
 import { createBlock, createCustomBlock } from "@templatical/types";
 import { Package } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
-import draggable from "vuedraggable";
+import { VueDraggable } from "vue-draggable-plus";
 import CustomBlockIcon from "./CustomBlockIcon.vue";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
 import { getBlockTypeLabel } from "../utils/blockTypeLabels";
@@ -158,53 +158,52 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
         </span>
       </button>
     </div>
-    <draggable
-      :list="blockTypes"
+    <VueDraggable
+      :model-value="blockTypes"
       :group="{ name: 'blocks', pull: 'clone', put: false }"
       :clone="createBlockFromItem"
       :sort="false"
-      item-key="type"
       :animation="150"
       ghost-class="tpl-ghost"
       class="tpl:flex tpl:flex-col tpl:gap-0.5 tpl:p-1"
     >
-      <template #item="{ element: blockType }">
-        <button
-          type="button"
-          :data-palette-type="blockType.type"
-          :aria-label="
-            format(t.sidebarNav.insertBlock, { block: blockType.label })
-          "
-          class="tpl:flex tpl:h-10 tpl:w-full tpl:cursor-grab tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)] active:tpl:cursor-grabbing"
-          :style="{
-            justifyContent: isExpanded ? 'flex-start' : 'center',
-          }"
-          @click="insertBlockFromItem(blockType)"
-          @keydown="handlePaletteKeydown($event, blockType)"
+      <button
+        v-for="blockType in blockTypes"
+        :key="blockType.type"
+        type="button"
+        :data-palette-type="blockType.type"
+        :aria-label="
+          format(t.sidebarNav.insertBlock, { block: blockType.label })
+        "
+        class="tpl:flex tpl:h-10 tpl:w-full tpl:cursor-grab tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)] active:tpl:cursor-grabbing"
+        :style="{
+          justifyContent: isExpanded ? 'flex-start' : 'center',
+        }"
+        @click="insertBlockFromItem(blockType)"
+        @keydown="handlePaletteKeydown($event, blockType)"
+      >
+        <div
+          class="tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:transition-transform tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:scale-105"
         >
-          <div
-            class="tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:transition-transform tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:scale-105"
-          >
-            <component
-              :is="blockTypeIcons[blockType.type]"
-              v-if="blockTypeIcons[blockType.type]"
-              :size="20"
-              :stroke-width="1.5"
-            />
-            <CustomBlockIcon
-              v-else-if="blockType.isCustom"
-              :icon="blockType.icon"
-              :size="20"
-            />
-          </div>
-          <span
-            v-if="isExpanded"
-            class="tpl:truncate tpl:text-sm tpl:font-medium"
-          >
-            {{ blockType.label }}
-          </span>
-        </button>
-      </template>
-    </draggable>
+          <component
+            :is="blockTypeIcons[blockType.type]"
+            v-if="blockTypeIcons[blockType.type]"
+            :size="20"
+            :stroke-width="1.5"
+          />
+          <CustomBlockIcon
+            v-else-if="blockType.isCustom"
+            :icon="blockType.icon"
+            :size="20"
+          />
+        </div>
+        <span
+          v-if="isExpanded"
+          class="tpl:truncate tpl:text-sm tpl:font-medium"
+        >
+          {{ blockType.label }}
+        </span>
+      </button>
+    </VueDraggable>
   </aside>
 </template>

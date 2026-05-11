@@ -1,5 +1,32 @@
 # @templatical/editor
 
+## 0.6.6
+
+### Patch Changes
+
+- 4bdf972: Fix Title block rendering as `<p>` inside the editor canvas. The exported MJML/HTML already used the correct `<h${level}>` tag, but the canvas wrapped TipTap's stored content in a plain `<div>` and left the outer `<p>` from the editor's paragraph node in place, so the editor preview diverged from the final email and consumer CSS rules targeting `p` could unintentionally style titles in the canvas. The non-editing branch of `TitleBlock` now renders `h1`–`h4` matching `block.level` and strips the single outer `<p>` wrapper using the same rule the renderer applies. No data migration is needed — existing templates already carry `level` and render correctly on reload. Consumers that previously overrode title styling via `.tpl-text-content p` selectors in the canvas should switch to heading selectors (`h1`–`h4`) to match the exported output.
+  - @templatical/renderer@0.6.6
+  - @templatical/quality@0.6.6
+  - @templatical/media-library@0.6.6
+
+## 0.6.5
+
+### Patch Changes
+
+- 9274721: Replace `vuedraggable` with `vue-draggable-plus`. The previous draggable library shipped a UMD-only bundle whose `define.amd` wrapper got inlined into our published editor chunks, causing `error TP1200 unsupported AMD define() dependency element form` for any Next.js 15+ consumer using Turbopack (the default). The new library ships proper ESM, so the published bundle no longer contains UMD/AMD wrappers and Turbopack builds succeed. No public API change.
+  - @templatical/renderer@0.6.5
+  - @templatical/quality@0.6.5
+  - @templatical/media-library@0.6.5
+
+## 0.6.4
+
+### Patch Changes
+
+- 3845ea9: Fix Webpack 5 production build failure on `@templatical/media-library` (issue #63). The dynamic `import()` for the cloud media browser was missing the `try/catch` wrapper that the other three optional peers (`pusher-js`, `@templatical/quality`, `@templatical/renderer`) already had. Without it, Webpack escalates "Module not found" from a warning to an error and breaks the consumer's production build. Wraps the import so OSS consumers (no cloud, no media-library installed) can build cleanly. Adds a regression test that builds the editor as a real Webpack 5 consumer would (`pnpm run test:webpack-consumer`, wired into CI). Vite, esbuild, and Rolldown were unaffected.
+  - @templatical/renderer@0.6.4
+  - @templatical/quality@0.6.4
+  - @templatical/media-library@0.6.4
+
 ## 0.6.3
 
 ### Patch Changes

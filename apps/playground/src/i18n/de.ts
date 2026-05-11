@@ -2,8 +2,14 @@ import type { Translations } from "./index";
 
 export default {
   chooser: {
-    title: "Templatical Playground",
-    subtitle: "W\u00e4hlen Sie einen Startpunkt f\u00fcr Ihre E-Mail-Vorlage",
+    title: "Templatical",
+    subtitle:
+      "Probieren Sie den Editor live aus \u2014 jedes vorgefertigte Beispiel deckt einen realen Anwendungsfall ab und zeigt verschiedene SDK-Funktionen. W\u00e4hlen Sie eines zum Starten aus.",
+    pills: {
+      openSource: "Kostenlos & Open Source",
+      clientSide: "Clientseitig",
+      noTelemetry: "Keine Telemetrie",
+    },
     startFromScratch: "Neu beginnen",
     emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
     migration: {

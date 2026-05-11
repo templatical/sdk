@@ -15,7 +15,7 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { computed, inject, type Component } from "vue";
-import draggable from "vuedraggable";
+import { VueDraggable } from "vue-draggable-plus";
 import {
   EDITOR_KEY,
   CONDITION_PREVIEW_KEY,
@@ -115,7 +115,7 @@ function handleFetchData(
         "
         :style="{ width: columnWidths[colIndex] }"
       >
-        <draggable
+        <VueDraggable
           :model-value="getColumnBlocks(colIndex)"
           :group="{
             name: 'blocks',
@@ -123,31 +123,32 @@ function handleFetchData(
             put: (_to: unknown, _from: unknown, el: HTMLElement) =>
               el.dataset.blockType !== 'section',
           }"
-          item-key="id"
           :animation="150"
           ghost-class="tpl-ghost"
           :empty-insert-threshold="20"
           class="tpl:min-h-[60px]"
           @update:model-value="(val: Block[]) => setColumnBlocks(colIndex, val)"
         >
-          <template #item="{ element: childBlock }">
-            <div v-show="!conditionPreview?.isHidden(childBlock.id)">
-              <BlockWrapper
+          <div
+            v-for="childBlock in getColumnBlocks(colIndex)"
+            :key="childBlock.id"
+            v-show="!conditionPreview?.isHidden(childBlock.id)"
+          >
+            <BlockWrapper
+              :block="childBlock"
+              :is-selected="editor.state.selectedBlockId === childBlock.id"
+              :viewport="viewport"
+              @select="editor.selectBlock(childBlock.id)"
+            >
+              <component
+                :is="getBlockComponent(childBlock)"
                 :block="childBlock"
-                :is-selected="editor.state.selectedBlockId === childBlock.id"
                 :viewport="viewport"
-                @select="editor.selectBlock(childBlock.id)"
-              >
-                <component
-                  :is="getBlockComponent(childBlock)"
-                  :block="childBlock"
-                  :viewport="viewport"
-                  @fetch-data="handleFetchData(childBlock, $event)"
-                />
-              </BlockWrapper>
-            </div>
-          </template>
-        </draggable>
+                @fetch-data="handleFetchData(childBlock, $event)"
+              />
+            </BlockWrapper>
+          </div>
+        </VueDraggable>
         <div
           v-if="getColumnBlocks(colIndex).length === 0"
           data-testid="section-drop-hint"

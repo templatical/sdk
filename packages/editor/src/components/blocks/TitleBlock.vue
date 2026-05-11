@@ -6,6 +6,7 @@ import type {
 } from "@templatical/types";
 import { HEADING_LEVEL_FONT_SIZE } from "@templatical/types";
 import { computed, defineAsyncComponent } from "vue";
+import { unwrapParagraph } from "../../utils/unwrapParagraph";
 
 const props = defineProps<{
   block: TitleBlockType;
@@ -35,6 +36,9 @@ const titleStyle = computed(() => {
   }
   return style;
 });
+
+const headingTag = computed(() => `h${props.block.level}`);
+const headingHtml = computed(() => unwrapParagraph(resolvedContent.value));
 </script>
 
 <template>
@@ -50,12 +54,14 @@ const titleStyle = computed(() => {
       :toolbar-position="toolbarPosition"
       @done="handleEditorDone"
     />
-    <!-- eslint-disable vue/no-v-html -->
-    <div
+    <!-- eslint-disable vue/no-v-html, vue/no-v-text-v-html-on-component -->
+    <component
+      :is="headingTag"
       v-else
-      class="tpl-text-content tpl:outline-none [&_a]:tpl:underline [&_p]:tpl:m-0 [&_p]:tpl:mb-2 [&_p:last-child]:tpl:mb-0"
-      v-html="resolvedContent"
+      class="tpl-text-content tpl:m-0 tpl:font-[inherit] tpl:text-[length:inherit] tpl:leading-tight tpl:outline-none [&_a]:tpl:underline [&_p]:tpl:m-0 [&_p]:tpl:mb-2 [&_p:last-child]:tpl:mb-0"
+      :style="{ color: 'inherit' }"
+      v-html="headingHtml"
     />
-    <!-- eslint-enable vue/no-v-html -->
+    <!-- eslint-enable vue/no-v-html, vue/no-v-text-v-html-on-component -->
   </div>
 </template>

@@ -17,7 +17,7 @@ export default defineConfig({
     ],
     publicDir: false,
     // Vite's lib mode does not replace `process.env.NODE_ENV`. Some deps
-    // (vuedraggable/sortablejs) reference it unguarded — define it explicitly.
+    // (vue-draggable-plus/sortablejs) reference it unguarded — define it explicitly.
     define: {
         'process.env.NODE_ENV': JSON.stringify('production'),
     },
@@ -65,7 +65,7 @@ export default defineConfig({
                         return 'renderer';
                     }
                     if (
-                        id.includes('vuedraggable') ||
+                        id.includes('vue-draggable-plus') ||
                         id.includes('sortablejs')
                     ) {
                         return 'draggable';
