@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRichTextEditor } from "../../composables/useRichTextEditor";
+import { usePopoverRoot } from "../../composables/usePopoverRoot";
 import type { ParagraphBlock as ParagraphBlockType } from "@templatical/types";
 import ParagraphToolbar from "./ParagraphToolbar.vue";
 import RichTextLinkDialog from "./RichTextLinkDialog.vue";
@@ -13,6 +14,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "done"): void;
 }>();
+
+const popoverRoot = usePopoverRoot();
 
 const {
   editor,
@@ -113,6 +116,7 @@ const {
                 mergeTags,
                 char: triggerChar,
                 emptyText: suggestionEmptyText,
+                popoverRoot,
               }),
             ]
           : []),

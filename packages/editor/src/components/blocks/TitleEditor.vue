@@ -93,6 +93,7 @@ const {
                 mergeTags,
                 char: triggerChar,
                 emptyText: suggestionEmptyText,
+                popoverRoot,
               }),
             ]
           : []),

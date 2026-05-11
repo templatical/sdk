@@ -2,7 +2,7 @@
 import './dom-stubs';
 
 import { describe, expect, it, vi } from 'vitest';
-import { ref } from 'vue';
+import { ref, shallowRef } from 'vue';
 import type { MergeTag } from '@templatical/types';
 import {
   MergeTagSuggestion,
@@ -197,22 +197,19 @@ describe('handleSuggestionKeyDown', () => {
 });
 
 describe('MergeTagSuggestion mount target', () => {
-  // Regression: popup must mount to document.body so its position: fixed
-  // resolves against the viewport. Any transform/filter on a consumer-page
-  // ancestor (route transitions, reveal animations, dark canvas inversion)
-  // creates a containing block and offsets fixed descendants. Mounting
-  // inside [data-tpl-theme] previously broke on consumer pages with
-  // transformed wrappers.
-  //
-  // The popup wrapper mirrors the editor's data-tpl-theme value and adds
-  // the `tpl` class so CSS vars (scoped to .tpl[data-tpl-theme]) resolve.
-  it('source mounts to document.body and copies --tpl-* vars from the theme root', async () => {
+  // Regression: popup must mount inside the editor's shadow-aware popover
+  // root when wired (Phase 3.1) and fall back to document.body otherwise.
+  // The wrapper mirrors the editor's data-tpl-theme value and snapshots
+  // every --tpl-* custom property so CSS vars (scoped to .tpl[data-tpl-theme])
+  // resolve regardless of where the popup ends up in the DOM.
+  it('source uses popoverRoot.value with document.body fallback and copies --tpl-* vars', async () => {
     const fs = await import('node:fs');
     const src = fs.readFileSync(
       'src/extensions/MergeTagSuggestion.ts',
       'utf8',
     );
-    expect(src).toContain('document.body.appendChild(container)');
+    expect(src).toContain('popoverRootRef?.value ?? document.body');
+    expect(src).toContain('mountTarget.appendChild(container)');
     expect(src).toContain('data-tpl-theme');
     expect(src).toContain('--tpl-');
     expect(src).toContain('getComputedStyle');
@@ -300,6 +297,9 @@ describe('MergeTagSuggestion extension', () => {
     expect(ext.options.mergeTags).toEqual([]);
     expect(ext.options.char).toBe('{{');
     expect(ext.options.emptyText).toBe('No matching merge tags');
+    // Phase 3.1: popoverRoot defaults to null; popup falls back to
+    // document.body when not provided.
+    expect(ext.options.popoverRoot).toBe(null);
   });
 
   it('accepts configuration', () => {
@@ -321,5 +321,47 @@ describe('MergeTagSuggestion extension', () => {
     expect(liquid.options.char).toBe('{{');
     expect(mailchimp.options.char).toBe('*|');
     expect(ampscript.options.char).toBe('%%=');
+  });
+
+  it('stores popoverRoot ref when supplied', () => {
+    // Use shallowRef so the dom-stub plain object isn't wrapped in a
+    // reactive proxy (production passes a real HTMLElement, which Vue
+    // skips proxying — but the stub here is a plain object, which Vue
+    // would deeply proxy with ref()). Identity check on the unwrapped
+    // value is the assertion of record.
+    const el = document.createElement('div');
+    const popoverRoot = shallowRef<HTMLElement | null>(el);
+    const ext = MergeTagSuggestion.configure({ popoverRoot });
+    expect(ext.options.popoverRoot?.value).toBe(el);
+  });
+});
+
+describe('MergeTagSuggestion popoverRoot wiring', () => {
+  it('TitleEditor passes popoverRoot into MergeTagSuggestion.configure', async () => {
+    const fs = await import('node:fs');
+    const src = fs.readFileSync(
+      'src/components/blocks/TitleEditor.vue',
+      'utf8',
+    );
+    expect(src).toContain('usePopoverRoot');
+    const configureBlock = src.slice(
+      src.indexOf('MergeTagSuggestion.configure'),
+      src.indexOf('MergeTagSuggestion.configure') + 300,
+    );
+    expect(configureBlock).toContain('popoverRoot');
+  });
+
+  it('ParagraphEditor passes popoverRoot into MergeTagSuggestion.configure', async () => {
+    const fs = await import('node:fs');
+    const src = fs.readFileSync(
+      'src/components/blocks/ParagraphEditor.vue',
+      'utf8',
+    );
+    expect(src).toContain('usePopoverRoot');
+    const configureBlock = src.slice(
+      src.indexOf('MergeTagSuggestion.configure'),
+      src.indexOf('MergeTagSuggestion.configure') + 300,
+    );
+    expect(configureBlock).toContain('popoverRoot');
   });
 });

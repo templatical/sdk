@@ -20,6 +20,17 @@ export interface MergeTagSuggestionOptions {
   char: string;
   /** Localized empty-state label */
   emptyText: string;
+  /**
+   * Mount target for the suggestion popup. When provided with a non-null
+   * `.value`, the popup attaches into that element instead of
+   * `document.body` — keeping it inside the editor's effective DOM root
+   * (shadow-aware). Pass the ref returned by `usePopoverRoot()`.
+   *
+   * Falls back to `document.body` when omitted or when the ref's value is
+   * null at popup-open time (e.g. headless/test editors without an editor
+   * shell). Preserves pre-Phase-3 behavior for callers that don't migrate.
+   */
+  popoverRoot?: Ref<HTMLElement | null> | null;
 }
 
 /**
@@ -80,12 +91,14 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
       mergeTags: [],
       char: "{{",
       emptyText: "No matching merge tags",
+      popoverRoot: null,
     };
   },
 
   addProseMirrorPlugins() {
     const tags = this.options.mergeTags;
     const emptyText = this.options.emptyText;
+    const popoverRootRef = this.options.popoverRoot;
 
     const config: Omit<SuggestionOptions<MergeTag>, "editor"> = {
       char: this.options.char,
@@ -219,11 +232,18 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
           target: HTMLElement,
           editorEl: HTMLElement | null | undefined,
         ): void {
-          // The popup mounts to document.body so its `position: fixed`
+          // When the popup mounts to document.body its `position: fixed`
           // resolves against the viewport — any transform/filter on a
           // consumer-page ancestor (route transitions, reveal animations,
           // dark canvas inversion) creates a containing block and moves
           // fixed descendants with it. Body ancestors don't transform.
+          //
+          // When mounting inside the editor's popover root (Phase 3.1 of
+          // the Shadow DOM migration), the popup is a descendant of the
+          // `.tpl[data-tpl-theme]` root so CSS vars + font would inherit
+          // — but the snapshot below is still emitted inline because
+          // inline declarations win and the cost is negligible. This
+          // keeps a single behavior across both mount paths.
           //
           // CSS vars (--tpl-bg-elevated, --tpl-border, etc.) are scoped to
           // `.tpl` and `.tpl[data-tpl-theme="dark"]` in the editor's
@@ -299,7 +319,12 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             const viewDom = props.editor.view?.dom as HTMLElement | undefined;
             editableEl = viewDom ?? null;
             applyThemeContext(container, viewDom ?? null);
-            document.body.appendChild(container);
+            // Prefer the editor's popover root (shadow-aware, Phase 3.1)
+            // when wired by the consumer. Falls back to document.body for
+            // headless / not-yet-migrated callers so the existing behavior
+            // is preserved when `popoverRoot` is omitted from configure().
+            const mountTarget = popoverRootRef?.value ?? document.body;
+            mountTarget.appendChild(container);
 
             app = createApp({
               render() {
