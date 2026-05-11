@@ -53,9 +53,21 @@ export function inlineStyleCssPlugin(opts: {
     load(id) {
       if (id !== RESOLVED_ID) return null
       if (isServeMode) {
-        // Tests + dev — return raw source CSS. No replacement step runs.
-        const source = readFileSync(opts.fallbackSourcePath, 'utf8')
-        return `export default ${JSON.stringify(source)};`
+        // Dev (vite serve, vitest, playground dev) — delegate to `?inline` on
+        // the source CSS. Vite + Tailwind plugin process the file and return
+        // the compiled CSS as a string. Raw-source fallback wouldn't work
+        // here: `@import 'tailwindcss/utilities.css'` rules are stripped from
+        // `replaceSync()` adopted stylesheets per the CSSOM spec, leaving the
+        // shadow root with theme vars only and no Tailwind utility rules —
+        // which is exactly the broken-chrome regression observed when shipping
+        // raw source as the fallback.
+        //
+        // Known dev-mode limitation: this still does NOT capture SFC `<style
+        // scoped>` blocks from `.vue` files (Vite dev injects each into
+        // document.head separately via HMR — those don't cross the shadow
+        // boundary). For full-fidelity shadow DOM testing, run a production
+        // build and exercise the packed output. Acceptable trade-off for dev.
+        return `import css from '${opts.fallbackSourcePath.replace(/\\/g, '\\\\')}?inline';\nexport default css;\n`
       }
       // Build mode — emit the placeholder. generateBundle replaces it.
       return `export default ${JSON.stringify(PLACEHOLDER)};`

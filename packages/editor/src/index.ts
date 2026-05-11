@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference -- ambient-module declaration must be loaded for cross-package typecheck (workspace path alias resolves to source)
+/// <reference path="./virtual-modules.d.ts" />
 import { createApp, h, ref, type App, type Ref } from "vue";
 import { INIT_TIMEOUT_MS } from "./constants/timeouts";
 import type {
@@ -31,6 +33,10 @@ import { toMjmlForInstance } from "./utils/toMjml";
 // Separate concern from the side-effecting `import "./styles/index.css"` in
 // `Editor.vue` / `CloudEditor.vue`, which injects styles into `document.head`
 // for light-DOM mode and survives untouched.
+//
+// Ambient declaration for `virtual:editor-css` lives in `virtual-modules.d.ts`
+// referenced at the top of this file via triple-slash so it's visible to any
+// consumer typechecking through the workspace path alias.
 import editorStylesInline from "virtual:editor-css";
 
 // ---------------------------------------------------------------------------
@@ -191,6 +197,12 @@ function resolveMountTarget(
 
   const host = document.createElement("div");
   host.className = "tpl-editor-host";
+  // Match the container's layout. Without an explicit size the host is a
+  // default block element (height: auto) and the editor's `tpl:h-full`
+  // template root collapses to content height because the height-100% chain
+  // breaks at the shadow boundary. `width: 100%` is redundant for block
+  // elements but harmless and explicit.
+  host.style.cssText = "display:block;height:100%;width:100%;";
   shadowRoot.appendChild(host);
 
   return { target: host, shadowRoot };

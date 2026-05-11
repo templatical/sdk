@@ -322,13 +322,26 @@ async function startFresh(): Promise<void> {
   await initEditor();
 }
 
+function readShadowDomFlag(): boolean {
+  if (typeof window === "undefined") return false;
+  const v = new URLSearchParams(window.location.search).get("shadowDom");
+  return v === "1" || v === "true";
+}
+
 async function initEditor(templateId?: string): Promise<void> {
   if (!editorContainer.value) return;
 
   initError.value = "";
+  const shadowDom = readShadowDomFlag();
+  if (shadowDom) {
+    console.info(
+      "[Cloud SDK] shadowDom=true — cloud editor mounts inside Shadow DOM",
+    );
+  }
   try {
     const config: TemplaticalCloudEditorConfig = {
       container: editorContainer.value,
+      shadowDom,
       auth: buildAuthConfig(),
       uiTheme: uiTheme.value,
       locale: locale.value,

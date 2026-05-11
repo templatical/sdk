@@ -1,5 +1,9 @@
 /**
- * Virtual modules owned by editor-local Vite plugins.
+ * Ambient declarations for editor-local virtual modules. Loaded via the
+ * triple-slash reference at the top of `index.ts` so the declaration is
+ * visible to any consumer typechecking through the workspace path alias
+ * (playground, e2e fixtures, etc.) without needing each consumer's tsconfig
+ * to include this file explicitly.
  */
 
 declare module "virtual:editor-css" {

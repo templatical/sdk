@@ -707,13 +707,29 @@ function cancelMediaPicker(): void {
 
 const initError = ref("");
 
+// Shadow DOM dev toggle — read `?shadowDom=1` (or `=true`) from URL so the
+// editor can be exercised in shadow mode without touching code. Defaults to
+// false, matching the SDK's Phase 1 opt-in default.
+function readShadowDomFlag(): boolean {
+  if (typeof window === "undefined") return false;
+  const v = new URLSearchParams(window.location.search).get("shadowDom");
+  return v === "1" || v === "true";
+}
+
 async function initEditor(): Promise<void> {
   if (!editorContainer.value) return;
 
   initError.value = "";
+  const shadowDom = readShadowDomFlag();
+  if (shadowDom) {
+    console.info(
+      "[Playground] shadowDom=true — editor mounts inside Shadow DOM",
+    );
+  }
   try {
     editor.value = await init({
       container: editorContainer.value,
+      shadowDom,
       ...currentSerializableConfig,
       mergeTags: {
         ...currentSerializableConfig.mergeTags,
