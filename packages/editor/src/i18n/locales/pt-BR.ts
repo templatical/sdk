@@ -457,12 +457,12 @@ const ptBR: typeof en = {
   // Merge Tag
   mergeTag: {
     clickToEdit: "Clique para editar",
-    remove: "Remover placeholder",
-    insert: "Inserir placeholder",
-    add: "Adicionar placeholder",
-    editValue: "Editar valor do placeholder",
-    deleteMergeTag: "Excluir merge tag",
-    suggestionEmpty: "Nenhum merge tag correspondente",
+    remove: "Remover variável",
+    insert: "Inserir variável",
+    add: "Adicionar variável",
+    editValue: "Editar valor da variável",
+    deleteMergeTag: "Excluir variável",
+    suggestionEmpty: "Nenhuma variável correspondente",
   },
 
   // Canvas
@@ -587,6 +587,20 @@ const ptBR: typeof en = {
     editorLoading: "Carregando editor...",
     editorLoadFailed: "Falha ao carregar o editor.",
     retry: "Tentar novamente",
+  },
+
+  accessibility: {
+    panelTitle: "Acessibilidade",
+    panelTabLabel: "Acessibilidade",
+    groupErrors: "Erros",
+    groupWarnings: "Avisos",
+    groupInfo: "Info",
+    jump: "Ir para o bloco",
+    fix: "Corrigir",
+    emptyState: "Nenhum problema de acessibilidade — tudo certo.",
+    badgeError: "Tem erros de acessibilidade",
+    badgeWarning: "Tem avisos de acessibilidade",
+    issueCountTooltip: "{count} problema(s) de acessibilidade",
   },
 };
 
