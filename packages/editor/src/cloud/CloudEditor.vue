@@ -34,6 +34,12 @@ const props = defineProps<{
   translations: Translations;
   cloudTranslations: CloudTranslations;
   fontsManager: UseFontsReturn;
+  /**
+   * Shadow root the cloud editor is mounted into. Supplied by `initCloud()`
+   * when `shadowDom: true`; undefined in light-DOM mode. Plumbed through
+   * `useCloudInitialization` → `useEditorCore`.
+   */
+  shadowRoot?: ShadowRoot;
 }>();
 
 provide(CLOUD_TRANSLATIONS_KEY, props.cloudTranslations);
@@ -56,6 +62,7 @@ const init = useCloudInitialization({
     cloudPanelsRef.value
       ? { filterByBlock: cloudPanelsRef.value.filterCommentsByBlock }
       : null,
+  editorRoot: props.shadowRoot,
 });
 
 // Destructure heavily-used members for template readability.

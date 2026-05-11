@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
+import { inlineStyleCssPlugin } from './scripts/inline-style-css-plugin';
 
 export default defineConfig({
     plugins: [
@@ -13,6 +14,9 @@ export default defineConfig({
                     isCustomElement: (tag) => tag === 'hex-color-picker',
                 },
             },
+        }),
+        inlineStyleCssPlugin({
+            fallbackSourcePath: resolve(import.meta.dirname, 'src/styles/index.css'),
         }),
     ],
     publicDir: false,

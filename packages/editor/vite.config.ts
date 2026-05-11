@@ -5,6 +5,7 @@ import dts from 'vite-plugin-dts'
 import { resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { bundleStatsPlugin } from './scripts/bundle-stats-plugin'
+import { inlineStyleCssPlugin } from './scripts/inline-style-css-plugin'
 
 const pkg = JSON.parse(
   readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8'),
@@ -26,6 +27,9 @@ export default defineConfig({
       distDir: resolve(import.meta.dirname, 'dist'),
       entry: 'templatical-editor.js',
       pkgVersion: pkg.version,
+    }),
+    inlineStyleCssPlugin({
+      fallbackSourcePath: resolve(import.meta.dirname, 'src/styles/index.css'),
     }),
   ],
   resolve: {

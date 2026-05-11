@@ -96,6 +96,15 @@ export const ACCESSIBILITY_LINT_KEY: InjectionKey<
   import("./composables/useAccessibilityLint").UseAccessibilityLintReturn | null
 > = Symbol("accessibilityLint");
 
+/**
+ * The editor's effective DOM root — `Document` in light-DOM mode, `ShadowRoot`
+ * when `shadowDom: true`. Composables that read `document.activeElement`,
+ * popup mount targets, etc. should inject this and use the root-aware API
+ * (both `Document` and `ShadowRoot` expose `activeElement` etc.).
+ */
+export const EDITOR_ROOT_KEY: InjectionKey<Document | ShadowRoot> =
+  Symbol("editorRoot");
+
 // ---------------------------------------------------------------------------
 // Cloud-only keys (provided by CloudEditor, consumed by cloud components)
 // ---------------------------------------------------------------------------

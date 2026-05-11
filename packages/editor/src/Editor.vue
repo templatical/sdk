@@ -22,6 +22,13 @@ const props = defineProps<{
   config: TemplaticalEditorConfig;
   translations: Translations;
   fontsManager: UseFontsReturn;
+  /**
+   * Shadow root the editor is mounted into. Supplied by `init()` when
+   * `shadowDom: true`; undefined in light-DOM mode. Passed through to
+   * `useEditorCore` so shadow-DOM-aware composables can resolve the
+   * effective root via `EDITOR_ROOT_KEY`.
+   */
+  shadowRoot?: ShadowRoot;
 }>();
 
 // --- Core editor state ---
@@ -57,6 +64,7 @@ const core = useEditorCore({
           ),
       }
     : null,
+  editorRoot: props.shadowRoot,
 });
 
 // --- Lifecycle ---

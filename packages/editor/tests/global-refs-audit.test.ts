@@ -63,16 +63,22 @@ describe("editor global DOM-reference audit", () => {
     // `useFonts` deliberately appends <link> to document.head — fonts must
     // live at document level (shadow root @font-face is unreliable across
     // browsers). This is the one intentional global escape in the migration.
+    //
+    // `index.ts` mentions `document.head` in a comment describing the Phase 1
+    // CSS-injection trade-off — no code reference.
     const actual = filesMatching(FILES, /document\.head/);
-    expect(actual).toEqual(["composables/useFonts.ts"]);
+    expect(actual).toEqual(["composables/useFonts.ts", "index.ts"]);
   });
 
   it("only the expected source files reference `document.activeElement`", () => {
     // `useFocusTrap` currently reads `document.activeElement`. Phase 4.1 will
     // refactor to use `useEditorRoot().root.activeElement` (works for both
     // Document and ShadowRoot — same API surface).
+    //
+    // `keys.ts` mentions `document.activeElement` in the JSDoc for
+    // `EDITOR_ROOT_KEY` — no code reference.
     const actual = filesMatching(FILES, /document\.activeElement/);
-    expect(actual).toEqual(["composables/useFocusTrap.ts"]);
+    expect(actual).toEqual(["composables/useFocusTrap.ts", "keys.ts"]);
   });
 
   it("no source file references `window.getSelection` (use TipTap selection APIs instead)", () => {

@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'node:path';
+import { inlineStyleCssPlugin } from '../../packages/editor/scripts/inline-style-css-plugin';
 
 const packagesDir = resolve(import.meta.dirname, '../../packages');
 
@@ -16,6 +17,11 @@ export default defineConfig({
             },
         }),
         tailwindcss(),
+        // Editor consumes `virtual:editor-css`; playground resolves workspace
+        // editor source directly so it needs the plugin too.
+        inlineStyleCssPlugin({
+            fallbackSourcePath: resolve(packagesDir, 'editor/src/styles/index.css'),
+        }),
     ],
     resolve: {
         // Deduplicate vue and @vue/reactivity so they share one reactive system.

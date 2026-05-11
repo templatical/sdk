@@ -21,6 +21,17 @@ import Editor from "./Editor.vue";
 import { loadTranslations, loadCloudTranslations } from "./i18n";
 import { useFonts } from "./composables";
 import { toMjmlForInstance } from "./utils/toMjml";
+// Compiled-CSS-as-string for shadow root adoption. The `virtual:editor-css`
+// module is owned by `scripts/inline-style-css-plugin.ts` — at build time it
+// captures every emitted CSS asset (Tailwind utilities + every `.vue` SFC
+// `<style>` block + `styles/index.css` rules) and replaces this import's
+// runtime value with the full library CSS string. In dev/test the plugin
+// returns `styles/index.css` source as a fallback.
+//
+// Separate concern from the side-effecting `import "./styles/index.css"` in
+// `Editor.vue` / `CloudEditor.vue`, which injects styles into `document.head`
+// for light-DOM mode and survives untouched.
+import editorStylesInline from "virtual:editor-css";
 
 // ---------------------------------------------------------------------------
 // OSS config + return types
@@ -29,6 +40,21 @@ import { toMjmlForInstance } from "./utils/toMjml";
 export interface TemplaticalEditorConfig {
   container: string | HTMLElement;
   content?: TemplateContent;
+
+  /**
+   * Mount the editor inside a Shadow DOM (open mode) for CSS isolation
+   * from the host page. When `false` (default), the editor mounts in light
+   * DOM with current behavior — host stylesheets can still reach editor
+   * elements via tag selectors (`p`, `a`, `input`, etc.).
+   *
+   * Phase 1 of the Shadow DOM migration ships this as opt-in. The default
+   * will flip to `true` in a future minor; keep your integration on
+   * `false` if you depend on light-DOM access to editor internals or need
+   * Firefox <101 / Safari <16.4 support (`adoptedStyleSheets` requirement).
+   *
+   * @default false
+   */
+  shadowDom?: boolean;
 
   onChange?: (content: TemplateContent) => void;
   onSave?: (content: TemplateContent) => void;
@@ -108,6 +134,69 @@ export interface TemplaticalCloudEditor extends TemplaticalEditorBase {
 }
 
 // ---------------------------------------------------------------------------
+// Shadow root helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Module-cached `CSSStyleSheet` built once from the inline editor CSS string.
+ * `adoptedStyleSheets` accepts the same sheet object across multiple shadow
+ * roots — sharing one sheet costs zero per-instance memory, regardless of
+ * how many editors mount.
+ */
+let cachedEditorStyleSheet: CSSStyleSheet | null = null;
+function getEditorStyleSheet(): CSSStyleSheet {
+  if (cachedEditorStyleSheet === null) {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(editorStylesInline);
+    cachedEditorStyleSheet = sheet;
+  }
+  return cachedEditorStyleSheet;
+}
+
+interface MountTarget {
+  target: Element;
+  shadowRoot: ShadowRoot | null;
+}
+
+/**
+ * Resolve where Vue should mount: directly on the consumer's container
+ * (light-DOM mode) or on a fresh `<div>` inside a newly-attached open
+ * shadow root (shadow mode). In shadow mode, also attaches the editor's
+ * cached `CSSStyleSheet` to the root so chrome renders with the right
+ * styles inside the boundary.
+ *
+ * Idempotent: a second call on the same container reuses any existing
+ * shadow root, clearing its contents so a prior mount's stale DOM doesn't
+ * accumulate.
+ */
+function resolveMountTarget(
+  container: Element,
+  shadowDom: boolean | undefined,
+): MountTarget {
+  if (!shadowDom) {
+    return { target: container, shadowRoot: null };
+  }
+
+  const shadowRoot =
+    container.shadowRoot ?? container.attachShadow({ mode: "open" });
+
+  // Adopt the editor stylesheet. Idempotent — repeated assignment of the
+  // same sheet is fine.
+  shadowRoot.adoptedStyleSheets = [getEditorStyleSheet()];
+
+  // Clear stale content from a prior mount (re-init on same container).
+  while (shadowRoot.firstChild) {
+    shadowRoot.removeChild(shadowRoot.firstChild);
+  }
+
+  const host = document.createElement("div");
+  host.className = "tpl-editor-host";
+  shadowRoot.appendChild(host);
+
+  return { target: host, shadowRoot };
+}
+
+// ---------------------------------------------------------------------------
 // OSS init — sync
 // ---------------------------------------------------------------------------
 
@@ -141,6 +230,8 @@ export async function init(
     unmount();
   }
 
+  const mount = resolveMountTarget(container, config.shadowDom);
+
   appInstance = createApp({
     setup() {
       return () =>
@@ -148,12 +239,13 @@ export async function init(
           config,
           translations,
           fontsManager,
+          shadowRoot: mount.shadowRoot ?? undefined,
           ref: editorRef,
         });
     },
   });
 
-  appInstance.mount(container);
+  appInstance.mount(mount.target);
 
   const instance: TemplaticalEditor = {
     getContent() {
@@ -230,6 +322,8 @@ export async function initCloud(
     unmountCloud();
   }
 
+  const mount = resolveMountTarget(container, config.shadowDom);
+
   // Promise that resolves when CloudEditor emits 'ready'
   const readyPromise = new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -244,6 +338,7 @@ export async function initCloud(
             translations,
             cloudTranslations,
             fontsManager,
+            shadowRoot: mount.shadowRoot ?? undefined,
             ref: cloudEditorRef,
             onReady: () => {
               clearTimeout(timeout);
@@ -253,7 +348,7 @@ export async function initCloud(
       },
     });
 
-    cloudAppInstance.mount(container);
+    cloudAppInstance.mount(mount.target);
   });
 
   await readyPromise;

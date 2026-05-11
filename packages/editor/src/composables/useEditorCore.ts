@@ -60,6 +60,7 @@ import {
   CAPABILITIES_KEY,
   KEYBOARD_REORDER_KEY,
   ACCESSIBILITY_LINT_KEY,
+  EDITOR_ROOT_KEY,
 } from "../keys";
 import {
   useAccessibilityLint,
@@ -198,6 +199,15 @@ export interface UseEditorCoreOptions {
 
   /** Cloud capabilities exposed to OSS components. Empty in OSS mode. */
   capabilities?: EditorCapabilities;
+
+  /**
+   * Effective DOM root — `Document` in light-DOM mode, `ShadowRoot` when
+   * mounted with `shadowDom: true`. Provided via `EDITOR_ROOT_KEY` so
+   * shadow-DOM-aware composables (focus trap, popover mount targets, etc.)
+   * can read it without reaching for the global `document`. Defaults to
+   * `document` if omitted — preserves current light-DOM behavior.
+   */
+  editorRoot?: Document | ShadowRoot;
 }
 
 export interface UseEditorCoreReturn {
@@ -316,6 +326,7 @@ export function useEditorCore(
   useEventListener(document, "keydown", handleKeyboard);
 
   // --- Provides (18 shared keys) ---
+  provide(EDITOR_ROOT_KEY, options.editorRoot ?? document);
   provide(TRANSLATIONS_KEY, translations);
   provide(EDITOR_KEY, editor);
   provide(HISTORY_KEY, history);

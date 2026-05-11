@@ -93,6 +93,11 @@ export interface UseCloudInitializationOptions {
   emit: (event: "ready") => void;
   /** Lazy getter for the CommentsSidebar-filter target (for block-filter). */
   getCommentsSidebar: CommentsSidebarGetter;
+  /**
+   * Effective DOM root passed through to `useEditorCore`. Set when the
+   * cloud editor is mounted inside a shadow root (`shadowDom: true`).
+   */
+  editorRoot?: Document | ShadowRoot;
 }
 
 export interface UseCloudInitializationReturn {
@@ -297,6 +302,7 @@ export function useCloudInitialization(
     keyboardOptions: {
       onBeforeUndo: () => collabWarningRef?.showCollabUndoWarning(),
     },
+    editorRoot: options.editorRoot,
   });
 
   // --- 7. Collab undo warning ---
