@@ -61,6 +61,7 @@ import {
   KEYBOARD_REORDER_KEY,
   ACCESSIBILITY_LINT_KEY,
   EDITOR_ROOT_KEY,
+  POPOVER_ROOT_KEY,
 } from "../keys";
 import {
   useAccessibilityLint,
@@ -223,6 +224,13 @@ export interface UseEditorCoreReturn {
   registry: UseBlockRegistryReturn;
   keyboardReorder: UseKeyboardReorderReturn;
   accessibilityLint: UseAccessibilityLintReturn | null;
+  /**
+   * Ref bound to the `<div class="tpl-popover-root" />` that the editor's
+   * top-level template must render. Provided via `POPOVER_ROOT_KEY` so
+   * popovers/toolbars/modals teleport inside the editor's effective DOM
+   * root (shadow-aware) instead of escaping to `document.body`.
+   */
+  popoverRoot: Ref<HTMLElement | null>;
   registerCustomBlocks: (definitions: CustomBlockDefinition[]) => void;
   destroy: () => void;
 }
@@ -325,8 +333,14 @@ export function useEditorCore(
 
   useEventListener(document, "keydown", handleKeyboard);
 
-  // --- Provides (18 shared keys) ---
+  // --- Popover mount ---
+  // Ref bound by the editor template to `<div class="tpl-popover-root" />`.
+  // Null until the template mounts; consumers guard with `v-if="popoverRoot"`.
+  const popoverRoot = ref<HTMLElement | null>(null);
+
+  // --- Provides (19 shared keys) ---
   provide(EDITOR_ROOT_KEY, options.editorRoot ?? document);
+  provide(POPOVER_ROOT_KEY, popoverRoot);
   provide(TRANSLATIONS_KEY, translations);
   provide(EDITOR_KEY, editor);
   provide(HISTORY_KEY, history);
@@ -394,6 +408,7 @@ export function useEditorCore(
     registry,
     keyboardReorder,
     accessibilityLint,
+    popoverRoot,
     registerCustomBlocks,
     destroy,
   };

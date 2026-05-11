@@ -384,6 +384,14 @@ defineExpose({
       @send-test-email="handleSendTestEmail"
       @module-insert="handleModuleInsert"
     />
+
+    <!-- Popover mount — Teleport target for toolbars, link dialog, modal.
+         Replaces the historical body-level teleport pattern so popups
+         render inside the editor's effective DOM root (shadow-aware). -->
+    <div
+      :ref="(el) => (core.popoverRoot.value = el as HTMLElement | null)"
+      class="tpl-popover-root"
+    />
   </div>
 </template>
 

@@ -1,4 +1,4 @@
-import { inject, type InjectionKey, type ComputedRef } from "vue";
+import { inject, type InjectionKey, type ComputedRef, type Ref } from "vue";
 import type {
   UseHistoryReturn,
   UseBlockActionsReturn,
@@ -104,6 +104,20 @@ export const ACCESSIBILITY_LINT_KEY: InjectionKey<
  */
 export const EDITOR_ROOT_KEY: InjectionKey<Document | ShadowRoot> =
   Symbol("editorRoot");
+
+/**
+ * Mount target for popovers, toolbars, and modal dialogs that previously
+ * teleported to `document.body`. Provided by `useEditorCore` as a ref bound
+ * to a `<div class="tpl-popover-root" />` rendered at the top level of the
+ * editor template. Teleports use `:to="popoverRoot"` so popups land inside
+ * the editor's effective root — `document` in light-DOM mode, `ShadowRoot`
+ * when `shadowDom: true` — instead of escaping the shadow boundary.
+ *
+ * Null until the editor's template mounts; consumers must guard with
+ * `v-if="popoverRoot"` before passing to `<Teleport>`.
+ */
+export const POPOVER_ROOT_KEY: InjectionKey<Ref<HTMLElement | null>> =
+  Symbol("popoverRoot");
 
 // ---------------------------------------------------------------------------
 // Cloud-only keys (provided by CloudEditor, consumed by cloud components)

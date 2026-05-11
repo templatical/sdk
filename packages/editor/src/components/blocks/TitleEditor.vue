@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables";
 import { useRichTextEditor } from "../../composables/useRichTextEditor";
+import { usePopoverRoot } from "../../composables/usePopoverRoot";
 import type { TitleBlock as TitleBlockType } from "@templatical/types";
 import { Bold, Italic, Link, LoaderCircle, ScanLine } from "@lucide/vue";
 import { inject } from "vue";
@@ -19,6 +20,7 @@ const emit = defineEmits<{
 
 const themeStyles = inject(THEME_STYLES_KEY, null);
 const tplUiTheme = inject(UI_THEME_KEY, null);
+const popoverRoot = usePopoverRoot();
 
 const { t } = useI18n();
 
@@ -102,7 +104,7 @@ const {
 
 <template>
   <div class="tpl-text-editor-wrapper tpl:relative">
-    <Teleport to="body">
+    <Teleport v-if="popoverRoot" :to="popoverRoot">
       <div
         :data-tpl-theme="tplUiTheme"
         role="toolbar"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFocusTrap } from "../../composables";
+import { usePopoverRoot } from "../../composables/usePopoverRoot";
 import { UI_THEME_KEY } from "../../keys";
 import { computed, inject, ref } from "vue";
 
@@ -17,6 +18,7 @@ const isVisible = computed(() => props.visible);
 useFocusTrap(dialogRef, isVisible);
 
 const tplUiTheme = inject(UI_THEME_KEY);
+const popoverRoot = usePopoverRoot();
 
 function handleKeydown(event: KeyboardEvent): void {
   if (event.key === "Escape") {
@@ -27,7 +29,7 @@ function handleKeydown(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport v-if="popoverRoot" :to="popoverRoot">
     <Transition
       enter-active-class="tpl:transition tpl:duration-150"
       enter-from-class="tpl:opacity-0"

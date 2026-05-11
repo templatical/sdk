@@ -4,6 +4,7 @@ import ToolbarIconButton from "../toolbar/ToolbarIconButton.vue";
 import ToolbarSeparator from "../toolbar/ToolbarSeparator.vue";
 import ToolbarSelect from "../toolbar/ToolbarSelect.vue";
 import { useI18n } from "../../composables";
+import { usePopoverRoot } from "../../composables/usePopoverRoot";
 import type { Editor } from "@tiptap/core";
 import {
   AlignCenter,
@@ -52,6 +53,7 @@ const emit = defineEmits<{
 const themeStyles = inject(THEME_STYLES_KEY, null);
 const tplUiTheme = inject(UI_THEME_KEY, null);
 const fontsManager = requireInject(FONTS_MANAGER_KEY, "ParagraphToolbar");
+const popoverRoot = usePopoverRoot();
 
 const { t } = useI18n();
 
@@ -111,7 +113,7 @@ function setHighlight(color: string): void {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport v-if="popoverRoot" :to="popoverRoot">
     <div
       :data-tpl-theme="tplUiTheme"
       role="toolbar"

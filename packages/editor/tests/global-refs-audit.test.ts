@@ -55,8 +55,16 @@ describe("editor global DOM-reference audit", () => {
   it("only the expected source files reference `document.body`", () => {
     // Shadow DOM migration will rework MergeTagSuggestion's `appendChild`
     // (Phase 3.1) to mount inside the editor's popover root.
+    //
+    // `composables/useEditorCore.ts` and `keys.ts` mention `document.body`
+    // in JSDoc explaining the Phase 2 popover-root migration — no code
+    // reference.
     const actual = filesMatching(FILES, /document\.body/);
-    expect(actual).toEqual(["extensions/MergeTagSuggestion.ts"]);
+    expect(actual).toEqual([
+      "composables/useEditorCore.ts",
+      "extensions/MergeTagSuggestion.ts",
+      "keys.ts",
+    ]);
   });
 
   it("only the expected source files reference `document.head`", () => {
@@ -86,9 +94,21 @@ describe("editor global DOM-reference audit", () => {
     expect(actual).toEqual([]);
   });
 
-  it("only the expected `.vue` files declare `<Teleport to=\"body\">`", () => {
-    // Phase 2 rewrites all four to teleport to the injected popover root.
+  it("no source file declares `<Teleport to=\"body\">`", () => {
+    // Phase 2 rewrote all four historical teleports (RichTextLinkDialog,
+    // TitleEditor, ParagraphToolbar, TplModal) to teleport to the editor's
+    // injected popover root (`POPOVER_ROOT_KEY`) instead of `document.body`.
+    // Any new occurrence is a regression to the host-CSS-bleeds bug class.
     const actual = filesMatching(FILES, /<Teleport\s+to=["']body["']/);
+    expect(actual).toEqual([]);
+  });
+
+  it("only the expected `.vue` files declare a popover-root-bound `<Teleport>`", () => {
+    // Counterpart to the assertion above: the four files that previously
+    // teleported to body must now teleport via `:to="popoverRoot"`. If one
+    // is renamed or removed, this list updates in the same PR — keeping the
+    // two assertions in lock-step.
+    const actual = filesMatching(FILES, /<Teleport[^>]*:to=["']popoverRoot["']/);
     expect(actual).toEqual([
       "cloud/components/TplModal.vue",
       "components/blocks/ParagraphToolbar.vue",

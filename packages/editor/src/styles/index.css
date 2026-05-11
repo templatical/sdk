@@ -230,6 +230,18 @@
     }
 }
 
+/* Popover mount target — Teleport root for toolbars, link dialog, modals.
+   Replaces the historical `<Teleport to="body">` pattern (Phase 2 of the
+   Shadow DOM migration). Empty by default; descendants are popovers/modals
+   that position themselves via `position: fixed`. The explicit z-index
+   (above the modal token) establishes a stacking context that wins over
+   editor chrome (header z-50, sidebars), since the popover-root now lives
+   inside the editor container rather than at document.body. */
+.tpl-popover-root {
+    position: relative;
+    z-index: var(--z-modal);
+}
+
 .tpl-pulse {
     animation: tpl-pulse 2s infinite;
 }

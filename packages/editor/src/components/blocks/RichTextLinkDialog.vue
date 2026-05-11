@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
+import { usePopoverRoot } from "../../composables/usePopoverRoot";
 import { X } from "@lucide/vue";
 import { inject } from "vue";
 import { THEME_STYLES_KEY, UI_THEME_KEY } from "../../keys";
@@ -23,12 +24,13 @@ const emit = defineEmits<{
 
 const themeStyles = inject(THEME_STYLES_KEY, null);
 const tplUiTheme = inject(UI_THEME_KEY, null);
+const popoverRoot = usePopoverRoot();
 
 const { t } = useI18n();
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport v-if="popoverRoot" :to="popoverRoot">
     <div
       v-if="visible"
       :data-tpl-theme="tplUiTheme"
