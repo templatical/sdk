@@ -1,23 +1,18 @@
 import type en from "./en";
 
 const ptBR: typeof en = {
-  // Loading
   loading: {
     initializing: "Inicializando...",
   },
-
-  // Error
   error: {
     title: "Algo deu errado",
     defaultMessage:
-      "O editor não conseguiu conectar ao Templatical. Verifique sua conexão de rede e tente novamente.",
-    authFailed: "Autenticação falhou. Verifique suas credenciais.",
+      "O editor não conseguiu se conectar ao Templatical. Verifique sua conexão de rede e tente novamente.",
+    authFailed: "Falha na autenticação. Verifique suas credenciais.",
     templateNotFound:
       "O template solicitado não foi encontrado. Verifique se o ID do template está correto.",
     retry: "Tentar novamente",
   },
-
-  // Header
   header: {
     title: "Templatical",
     unsaved: "Não salvo",
@@ -25,49 +20,41 @@ const ptBR: typeof en = {
     saved: "Salvo",
     saveFailed: "Falha ao salvar",
     save: "Salvar",
-    templatesUsed: "{used}/{max} templates usados",
+    templatesUsed: "{used}/{max} templates utilizados",
   },
-
-  // Snapshot preview banner
   snapshotPreview: {
-    message: "Você está visualizando uma versão anterior deste template.",
+    message: "Você está visualizando um snapshot anterior deste template.",
     cancel: "Cancelar",
     restore: "Restaurar este snapshot",
   },
-
-  // Snapshot history (cloud)
   snapshotHistory: {
     tooltip: "Histórico de versões",
-    dropdownTitle: "Histórico de versões",
+    dropdownTitle: "Histórico de Versões",
     noSnapshots: "Nenhuma versão ainda",
     auto: "auto",
     justNow: "Agora mesmo",
-    minutesAgo: "há {minutes}m",
+    minutesAgo: "há {minutes}min",
     hoursAgo: "há {hours}h",
     daysAgo: "há {days}d",
     olderSnapshot: "Versão anterior",
     newerSnapshot: "Versão mais recente",
   },
-
-  // Test Email (cloud)
   testEmail: {
-    title: "Enviar email de teste",
+    title: "Enviar E-mail de Teste",
     recipientLabel: "Destinatário",
     send: "Enviar",
     sending: "Enviando...",
     cancel: "Cancelar",
-    success: "Email de teste enviado com sucesso",
+    success: "E-mail de teste enviado com sucesso",
     button: "Testar",
   },
-
-  // AI Rewrite (cloud)
   aiRewrite: {
-    title: "Reescrever com IA",
+    title: "Reescrita com IA",
     tone: "Tom",
-    length: "Comprimento",
+    length: "Tamanho",
     clarity: "Clareza",
     professional: "Profissional",
-    casual: "Informal",
+    casual: "Casual",
     friendly: "Amigável",
     urgent: "Urgente",
     persuasive: "Persuasivo",
@@ -83,69 +70,62 @@ const ptBR: typeof en = {
     rewriting: "Reescrevendo...",
     undo: "Desfazer",
     redo: "Refazer",
-    refine: "Aprimorar",
+    refine: "Refinar mais",
     error: "Falha ao reescrever o texto",
   },
-
-  // AI Chat (cloud)
   aiChat: {
     title: "Assistente de IA",
     button: "IA",
-    inputPlaceholder: "Descreva seu template de email...",
+    inputPlaceholder: "Descreva seu template de e-mail...",
     send: "Enviar",
     generating: "Gerando...",
     applied: "Alterações aplicadas ao template.",
-    applyFailed: "Não foi possível aplicar as alterações. Tente novamente.",
+    applyFailed:
+      "Não foi possível aplicar as alterações ao template. Tente novamente.",
     revert: "Reverter alterações",
-    reapply: "Reaplicar",
-    error: "Falha ao gerar template",
+    reapply: "Reaplicar alterações",
+    error: "Falha ao gerar o template",
     clear: "Limpar conversa",
     placeholder:
-      "Descreva o template de email que você quer criar, ou peça para modificar o atual.",
+      "Descreva o template de e-mail que você deseja criar, ou peça para modificar o atual.",
     loadingHistory: "Carregando conversa...",
   },
-
-  // Template Scoring (cloud)
   scoring: {
-    button: "Avaliar",
+    button: "Pontuar",
     title: "Pontuação do Template",
-    rescore: "Reavaliar",
+    rescore: "Pontuar novamente",
     scoring: "Analisando template...",
-    overallScore: "Pontuação geral",
+    overallScore: "Pontuação Geral",
     categories: {
-      spam: "Risco de spam",
+      spam: "Risco de Spam",
       readability: "Legibilidade",
       accessibility: "Acessibilidade",
-      bestPractices: "Boas práticas",
+      bestPractices: "Boas Práticas",
     },
     severity: {
-      high: "Alto",
-      medium: "Médio",
-      low: "Baixo",
+      high: "Alta",
+      medium: "Média",
+      low: "Baixa",
     },
     fix: "Corrigir com IA",
     fixing: "Corrigindo...",
     fixed: "Corrigido",
-    findings: "achados",
+    findings: "ocorrências",
     noFindings: "Nenhum problema encontrado",
     error: "Falha ao analisar o template",
     fixError: "Falha ao aplicar correção",
     emptyState:
-      "Avalie seu template para obter feedback acionável sobre risco de spam, legibilidade, acessibilidade e melhores práticas.",
+      "Pontue seu template para obter sugestões práticas sobre risco de spam, legibilidade, acessibilidade e boas práticas.",
   },
-
-  // AI Feature Menu (cloud)
   aiMenu: {
     aiAssistant: "Assistente de IA",
     aiAssistantDesc: "Converse com a IA para criar ou modificar seu template",
     designToTemplate: "Design para Template",
-    designToTemplateDesc: "Gerar um template a partir de uma imagem ou PDF",
+    designToTemplateDesc: "Gere um template a partir de uma imagem ou PDF",
     templateScore: "Pontuação do Template",
-    templateScoreDesc: "Analisar qualidade, risco de spam e acessibilidade",
-    disclaimer: "A IA pode errar. Verifique antes de aprovar.",
+    templateScoreDesc: "Analise qualidade, risco de spam e acessibilidade",
+    disclaimer: "A IA pode cometer erros. Verifique antes de aprovar.",
   },
-
-  // Comments (cloud)
   comments: {
     title: "Comentários",
     placeholder: "Escreva um comentário...",
@@ -169,70 +149,71 @@ const ptBR: typeof en = {
     ownedByYou: "Você",
     edited: "editado",
     resolvedBy: "Resolvido por {name}",
-    replyOne: "{count} resposta",
-    replyMany: "{count} respostas",
+    replyOne: "{count} Resposta",
+    replyMany: "{count} Respostas",
     missingBlock: "Bloco ausente",
     saveTemplateFirst: "Salve o template antes de comentar neste bloco.",
     button: "Comentários",
   },
-
-  // Collaboration (cloud)
   collaboration: {
-    connected: "Modo colaboração ativo",
+    connected: "Modo de colaboração ativo",
     disconnected: "Colaboração desconectada",
     reconnecting: "Reconectando...",
-    blockLockedBy: "Editando por {name}",
+    blockLockedBy: "Em edição por {name}",
     usersOnline: "{count} usuários online",
   },
-
-  // Saved Modules (cloud)
   modules: {
-    title: "Módulos salvos",
-    saveAsModule: "Salvar como módulo",
-    moduleName: "Nome do módulo",
+    title: "Módulos Salvos",
+    saveAsModule: "Salvar como Módulo",
+    moduleName: "Nome do Módulo",
     moduleNamePlaceholder: "ex.: Cabeçalho, Rodapé, CTA...",
-    selectBlocks: "Selecionar blocos",
-    save: "Salvar módulo",
+    selectBlocks: "Selecionar Blocos",
+    save: "Salvar Módulo",
     saving: "Salvando...",
     cancel: "Cancelar",
     noModules: "Nenhum módulo salvo ainda",
-    noModulesHint: "Salve blocos dos seus templates para reutilizá‑los depois.",
+    noModulesHint: "Salve blocos dos seus templates para reutilizá-los depois.",
     search: "Buscar módulos...",
     insert: "Inserir",
     delete: "Excluir",
     deleteConfirm: "Excluir este módulo?",
     blockCount: "{count} bloco(s)",
-    browse: "Procurar módulos",
+    browse: "Explorar Módulos",
     selectToPreview: "Selecione um módulo para visualizar",
     insertAtBeginning: "No início",
     insertAfterBlock: "Após {block}",
-    insertAtEnd: "No fim",
+    insertAtEnd: "No final",
     insertPosition: "Posição de inserção",
     close: "Fechar",
   },
-
-  // Design Reference (cloud)
   designReference: {
-    title: "Referência de design",
+    title: "Referência de Design",
     button: "Design",
-    uploadImage: "Enviar imagem",
-    uploadPdf: "Enviar PDF",
+    uploadImage: "Imagem",
+    uploadPdf: "PDF",
     dropHint: "Solte um arquivo aqui ou clique para procurar",
-    acceptedImages: "PNG, JPG, WebP (máx 10MB)",
-    acceptedPdf: "PDF (máx 10MB)",
+    acceptedImages: "PNG, JPG, WebP (máx. 10MB)",
+    acceptedPdf: "PDF (máx. 10MB)",
     promptLabel: "Instruções (opcional)",
     promptPlaceholder:
       "Descreva ajustes ou preferências para o template gerado...",
     generate: "Gerar a partir do design",
-    generating: "Analisando o design e gerando template...",
+    generating: "Analisando design e gerando template...",
     replaceWarning:
-      "Gerar a partir de um design substituirá o conteúdo existente do template.",
+      "Gerar a partir de uma referência de design substituirá o conteúdo existente do template.",
     replaceConfirm: "Substituir e gerar",
     replaceCancel: "Cancelar",
     error: "Falha ao gerar template a partir do design",
-    fileTooLarge: "Arquivo muito grande. O tamanho máximo é 10MB.",
+    fileTooLarge: "O arquivo é muito grande. O tamanho máximo é 10MB.",
     invalidFileType:
-      "Este tipo de arquivo não é suportado. Envie PNG, JPG, WebP ou PDF.",
+      "Este tipo de arquivo não é suportado. Envie um PNG, JPG, WebP ou PDF.",
+  },
+
+  saveGate: {
+    title: "Erros de acessibilidade bloqueiam este salvamento",
+    body: "Seu plano bloqueia salvamentos enquanto houver erros. Corrija os itens abaixo ou salve mesmo assim.",
+    cancel: "Revisar e corrigir",
+    confirm: "Salvar mesmo assim",
   },
 };
 
