@@ -217,9 +217,9 @@ function handleFetchData(
         :disabled="previewMode"
         :draggable="'.tpl-block-item'"
         :class="[
-          'tpl-canvas-blocks tpl:min-h-[400px]',
+          'tpl-canvas-blocks',
           isEmptyCanvas
-            ? 'tpl-canvas-empty tpl:m-6 tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-xl tpl:border-2 tpl:border-dashed tpl:px-10 tpl:py-12 tpl:text-center tpl:bg-[var(--tpl-bg-elevated)] tpl:font-[var(--tpl-font-family)] tpl:transition-colors tpl:duration-150'
+            ? 'tpl-canvas-empty tpl:m-6 tpl:flex tpl:min-h-[400px] tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-xl tpl:border-2 tpl:border-dashed tpl:px-10 tpl:py-12 tpl:text-center tpl:bg-[var(--tpl-bg-elevated)] tpl:font-[var(--tpl-font-family)] tpl:transition-colors tpl:duration-150'
             : '',
           isEmptyCanvas && isDragOverEmpty
             ? 'tpl-canvas-empty--drag-over tpl:border-[var(--tpl-primary-hover)] tpl:bg-[var(--tpl-primary-light)]'
