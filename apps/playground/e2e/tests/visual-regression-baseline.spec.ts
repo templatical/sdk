@@ -36,16 +36,23 @@ const DIFF_OPTIONS = {
 };
 
 test.describe("visual regression baseline (Phase 0.2)", () => {
-  // Baselines were captured against the light-DOM playground. Shadow-mode
-  // chrome has different layout (popover root inside the shadow tree
-  // creates a new stacking context) and the dev-mode CSS pipeline doesn't
-  // pull SFC scoped styles across the boundary, so pixel comparisons in
-  // shadow mode would fail spuriously. The behavioral specs are dual-mode;
-  // visual regression stays single-mode until the dev-mode SFC-scoped-CSS
-  // gap is closed.
+  // Visual regression is light-DOM only by design.
+  //
+  // The behavioral spec suite is dual-mode (chromium-light + chromium-shadow)
+  // and covers the interactive surface that matters for shadow correctness.
+  // Pixel-level baselines on top would be:
+  //   - low marginal value (drift in token spacing rarely indicates a real
+  //     regression that the behavioral specs miss); and
+  //   - high maintenance cost (every Tailwind / Vue / Geist font subpixel
+  //     update would force a re-capture, doubled for two modes).
+  //
+  // Baselines stay captured against light-DOM only as a "design hasn't
+  // drifted" gate. Shadow-mode visual quality is verified through the
+  // shadow-layout-gate + host-theming + multi-instance specs which check
+  // structural and computed-style invariants directly.
   test.skip(
     ({ shadowDom }) => shadowDom,
-    "baselines captured against light-DOM playground only",
+    "visual regression is light-DOM only by design",
   );
 
   test("blank editor — empty canvas + sidebar rail", async ({
