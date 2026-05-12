@@ -200,7 +200,21 @@ export class EditorPage {
     const columns = section.locator('[class*="tpl:min-h-"]');
     const target = columns.nth(colIndex);
     const countBefore = await section.locator(SELECTORS.block).count();
-    await sidebarItem.dragTo(target);
+    // Section's draggable runs with `invertSwap: true` + `invertedSwapThreshold:
+    // 0.65`, so the column's center 65% is a no-swap zone. Aim at the bottom
+    // ~10% — well inside the outer swap zone for non-empty columns, and well
+    // inside the empty-insert threshold (60px) for empty columns.
+    const targetBox = await target.boundingBox();
+    if (!targetBox)
+      throw new Error(
+        `Section ${sectionIndex} col ${colIndex} bounding box unavailable`,
+      );
+    await sidebarItem.dragTo(target, {
+      targetPosition: {
+        x: targetBox.width / 2,
+        y: targetBox.height - Math.max(4, targetBox.height * 0.1),
+      },
+    });
     await expect
       .poll(() => section.locator(SELECTORS.block).count(), { timeout: 5000 })
       .toBe(countBefore + 1);
@@ -355,17 +369,15 @@ export class EditorPage {
     const startX = sourceBox.x + sourceBox.width / 2;
     const startY = sourceBox.y + sourceBox.height / 2;
     const endX = targetBox.x + targetBox.width / 2;
-    // Section's draggable uses default Sortable `swapThreshold: 1.0` (no
-    // invert-swap). A swap only fires once the pointer crosses the target's
-    // center toward the source — but ending too close to the target's edge
-    // overshoots into the neighbor's swap zone and causes the dropped item
-    // to land one slot past the intended position. 60% / 40% sits safely
-    // past center without crossing the boundary.
+    // Section's and canvas's draggables both run with `invertSwap: true` +
+    // `invertedSwapThreshold: 0.65`, so the swap zone is the outer ~17.5%
+    // of each edge (inner 65% is a dead zone). Aiming at 10% / 90% lands
+    // squarely in the active zone and lets Sortable fire the swap reliably.
     const endY =
       targetEdge === "top"
-        ? targetBox.y + targetBox.height * 0.4
+        ? targetBox.y + targetBox.height * 0.1
         : targetEdge === "bottom"
-          ? targetBox.y + targetBox.height * 0.6
+          ? targetBox.y + targetBox.height * 0.9
           : targetBox.y + targetBox.height / 2;
 
     // Sortable.js gates drag-start on a small initial movement (>1px) and

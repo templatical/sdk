@@ -125,6 +125,8 @@ function handleFetchData(
           }"
           :animation="150"
           ghost-class="tpl-ghost"
+          :invert-swap="true"
+          :inverted-swap-threshold="0.65"
           :empty-insert-threshold="20"
           class="tpl:min-h-[60px]"
           @update:model-value="(val: Block[]) => setColumnBlocks(colIndex, val)"

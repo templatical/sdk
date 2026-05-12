@@ -455,6 +455,13 @@
     display: none !important;
 }
 
+/* The sidebar palette is drag-source-only (`put: false` + `sort: false`), so
+   Sortable's ghost insertion line inside the palette list is misleading —
+   suggests the sidebar accepts drops when it cannot. Hide it. */
+.tpl-sidebar-rail .tpl-ghost {
+    display: none !important;
+}
+
 .tpl-dragging {
     @apply tpl:opacity-80;
     box-shadow: var(--tpl-shadow-xl);
