@@ -448,6 +448,14 @@
     box-shadow: none !important;
 }
 
+/* When the canvas is empty, the dashed `.tpl-canvas-empty` container is the
+   only drop target and its dragover highlight is the visual cue — Sortable's
+   ghost insertion line would be redundant noise. Hide it here; reinstated
+   automatically once the first block lands and the empty class drops. */
+.tpl-canvas-empty .tpl-ghost {
+    display: none !important;
+}
+
 .tpl-dragging {
     @apply tpl:opacity-80;
     box-shadow: var(--tpl-shadow-xl);

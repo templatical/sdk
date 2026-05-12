@@ -9,7 +9,7 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { ImageUp, Sparkles, SquarePlus } from "@lucide/vue";
-import { computed, inject, type Component } from "vue";
+import { computed, inject, ref, type Component } from "vue";
 import {
   EDITOR_KEY,
   CONDITION_PREVIEW_KEY,
@@ -118,6 +118,34 @@ const canvasStyle = computed(() => ({
   fontFamily: props.content.settings.fontFamily,
 }));
 
+// Empty canvas: the whole dashed placeholder IS the Sortable drop zone.
+// `isEmptyCanvas` toggles the styling + the inline empty-state content.
+const isEmptyCanvas = computed(
+  () => blocks.value.length === 0 && !props.previewMode,
+);
+
+// Highlight the empty drop zone while a block is being dragged over it.
+// Uses a counter to handle dragenter/leave bubbling from descendants —
+// raw event toggling would flicker as the pointer moves between children.
+const dragEnterDepth = ref(0);
+const isDragOverEmpty = computed(
+  () => isEmptyCanvas.value && dragEnterDepth.value > 0,
+);
+
+function handleEmptyDragEnter(): void {
+  if (!isEmptyCanvas.value) return;
+  dragEnterDepth.value += 1;
+}
+
+function handleEmptyDragLeave(): void {
+  if (!isEmptyCanvas.value) return;
+  dragEnterDepth.value = Math.max(0, dragEnterDepth.value - 1);
+}
+
+function handleEmptyDrop(): void {
+  dragEnterDepth.value = 0;
+}
+
 function handleCanvasClick(event: MouseEvent): void {
   if (props.previewMode) {
     return;
@@ -187,11 +215,79 @@ function handleFetchData(
         :invert-swap="true"
         :inverted-swap-threshold="0.65"
         :disabled="previewMode"
-        class="tpl-canvas-blocks tpl:min-h-[400px]"
+        :draggable="'.tpl-block-item'"
+        :class="[
+          'tpl-canvas-blocks tpl:min-h-[400px]',
+          isEmptyCanvas
+            ? 'tpl-canvas-empty tpl:m-6 tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-xl tpl:border-2 tpl:border-dashed tpl:px-10 tpl:py-12 tpl:text-center tpl:bg-[var(--tpl-bg-elevated)] tpl:font-[var(--tpl-font-family)] tpl:transition-colors tpl:duration-150'
+            : '',
+          isEmptyCanvas && isDragOverEmpty
+            ? 'tpl-canvas-empty--drag-over tpl:border-[var(--tpl-primary-hover)] tpl:bg-[var(--tpl-primary-light)]'
+            : '',
+          isEmptyCanvas && !isDragOverEmpty
+            ? 'tpl:border-[var(--tpl-primary)]'
+            : '',
+        ]"
+        @dragenter="handleEmptyDragEnter"
+        @dragleave="handleEmptyDragLeave"
+        @drop="handleEmptyDrop"
       >
+        <!-- Empty-state content: rendered INSIDE the draggable so the whole
+             dashed box is the drop zone, but excluded from sortable items via
+             the `:draggable="'.tpl-block-item'"` selector above — only
+             `.tpl-block-item` children are sortable, this isn't. -->
+        <div
+          v-if="isEmptyCanvas"
+          class="tpl-canvas-empty-content tpl:flex tpl:flex-col tpl:items-center"
+        >
+          <div
+            class="tpl-canvas-empty-icon tpl:mb-4 tpl:text-[var(--tpl-primary)]"
+          >
+            <SquarePlus :size="48" :stroke-width="1" />
+          </div>
+          <p
+            class="tpl-canvas-empty-title tpl:m-0 tpl:mb-2 tpl:text-base tpl:font-semibold tpl:text-[var(--tpl-primary)]"
+          >
+            {{ t.canvas.noBlocks }}
+          </p>
+          <p
+            class="tpl-canvas-empty-text tpl:m-0 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
+          >
+            {{ t.canvas.dragHint }}
+          </p>
+          <p
+            v-if="canUseAiChat && cloudT"
+            class="tpl:m-0 tpl:mt-2 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
+          >
+            {{ t.canvas.aiHintChat }}
+            <button
+              class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
+              @click="emit('open-ai-chat')"
+            >
+              <Sparkles :size="14" :stroke-width="2" />
+              {{ cloudT.aiMenu.aiAssistant }}
+            </button>
+            {{ t.canvas.aiHintChatSuffix }}
+          </p>
+          <p
+            v-if="canUseDesignToTemplate && cloudT"
+            class="tpl:m-0 tpl:mt-4 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
+          >
+            {{ t.canvas.aiHintDesign }}
+            <button
+              class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
+              @click="emit('open-design-reference')"
+            >
+              <ImageUp :size="14" :stroke-width="2" />
+              {{ cloudT.aiMenu.designToTemplate }}
+            </button>
+            {{ t.canvas.aiHintDesignSuffix }}
+          </p>
+        </div>
         <div
           v-for="block in blocks"
           :key="block.id"
+          class="tpl-block-item"
           v-show="!conditionPreview?.isHidden(block.id)"
         >
           <div class="tpl:relative">
@@ -255,59 +351,6 @@ function handleFetchData(
           </div>
         </div>
       </VueDraggable>
-      <!-- Empty-state placeholder. Renders as a sibling of VueDraggable
-           (not a child) so Sortable.js doesn't treat it as a draggable
-           item — vue-draggable-plus iterates the default slot's direct
-           children. Canvas-blocks gets a min-h utility above so the empty
-           container still has a non-zero hit area for `dragTo`. -->
-      <div
-        v-if="blocks.length === 0 && !previewMode"
-        class="tpl-canvas-empty tpl:m-6 tpl:flex tpl:min-h-[400px] tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-xl tpl:border-2 tpl:border-dashed tpl:px-10 tpl:py-12 tpl:text-center tpl:border-[var(--tpl-primary)] tpl:bg-[var(--tpl-bg-elevated)] tpl:font-[var(--tpl-font-family)]"
-      >
-        <div
-          class="tpl-canvas-empty-icon tpl:mb-4 tpl:text-[var(--tpl-primary)]"
-        >
-          <SquarePlus :size="48" :stroke-width="1" />
-        </div>
-        <p
-          class="tpl-canvas-empty-title tpl:m-0 tpl:mb-2 tpl:text-base tpl:font-semibold tpl:text-[var(--tpl-primary)]"
-        >
-          {{ t.canvas.noBlocks }}
-        </p>
-        <p
-          class="tpl-canvas-empty-text tpl:m-0 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
-        >
-          {{ t.canvas.dragHint }}
-        </p>
-        <p
-          v-if="canUseAiChat && cloudT"
-          class="tpl:m-0 tpl:mt-2 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
-        >
-          {{ t.canvas.aiHintChat }}
-          <button
-            class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
-            @click="emit('open-ai-chat')"
-          >
-            <Sparkles :size="14" :stroke-width="2" />
-            {{ cloudT.aiMenu.aiAssistant }}
-          </button>
-          {{ t.canvas.aiHintChatSuffix }}
-        </p>
-        <p
-          v-if="canUseDesignToTemplate && cloudT"
-          class="tpl:m-0 tpl:mt-4 tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-center tpl:gap-x-1 tpl:gap-y-0.5 tpl:text-sm tpl:text-[var(--tpl-text-dim)]"
-        >
-          {{ t.canvas.aiHintDesign }}
-          <button
-            class="tpl:inline-flex tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-1 tpl:whitespace-nowrap tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-sm tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
-            @click="emit('open-design-reference')"
-          >
-            <ImageUp :size="14" :stroke-width="2" />
-            {{ cloudT.aiMenu.designToTemplate }}
-          </button>
-          {{ t.canvas.aiHintDesignSuffix }}
-        </p>
-      </div>
     </div>
   </div>
 </template>

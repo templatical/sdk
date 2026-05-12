@@ -7,7 +7,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 /**
- * Phase 1 smoke test for the Shadow DOM mount infrastructure.
+ * Smoke test for the Shadow DOM mount infrastructure.
  *
  * Asserts that `init({ shadowDom: true })` (a) attaches an open shadow root
  * to the consumer's container, (b) adopts a non-empty stylesheet onto it,
@@ -15,8 +15,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
  * shadow root, and (d) passes the shadow root to `Editor.vue` as a prop so
  * `useEditorCore` can provide `EDITOR_ROOT_KEY`.
  *
- * Also verifies the default (`shadowDom: false` / omitted) path leaves the
- * container untouched and mounts Vue directly on it.
+ * Also verifies the explicit-opt-out path (`shadowDom: false`) leaves the
+ * container untouched and mounts Vue directly on it, and that omitting the
+ * flag entirely defers to the SDK default (shadow DOM since Phase 7).
  *
  * Vue / Editor.vue / i18n are mocked the same way as `index-init.test.ts`
  * so the test exercises just the mount-resolver logic, not the editor's
@@ -124,7 +125,7 @@ describe("editor shadow mount (Phase 1.5)", () => {
     expect(editorPropsCaptured!.shadowRoot).toBeUndefined();
   });
 
-  it("omitted `shadowDom` defaults to light DOM (no shadow root)", async () => {
+  it("omitted `shadowDom` defaults to shadow DOM (Phase 7 default)", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
 
@@ -133,9 +134,12 @@ describe("editor shadow mount (Phase 1.5)", () => {
       content: {} as Parameters<typeof initFn>[0]["content"],
     });
 
-    expect(container.shadowRoot).toBeNull();
-    expect(mountedOn).toBe(container);
-    expect(editorPropsCaptured!.shadowRoot).toBeUndefined();
+    expect(container.shadowRoot).not.toBeNull();
+    expect(container.shadowRoot?.mode).toBe("open");
+    expect(mountedOn).toBeInstanceOf(HTMLDivElement);
+    expect((mountedOn as HTMLDivElement).className).toBe("tpl-editor-host");
+    expect((mountedOn as HTMLDivElement).parentNode).toBe(container.shadowRoot);
+    expect(editorPropsCaptured!.shadowRoot).toBe(container.shadowRoot);
   });
 
   it("re-initializing on the same container reuses the existing shadow root and clears stale content", async () => {

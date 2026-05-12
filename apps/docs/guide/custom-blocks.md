@@ -7,6 +7,10 @@ description: Define your own block types with custom fields, Liquid templates, a
 
 Custom blocks let you extend Templatical with your own block types. Define a set of fields, write a Liquid template for rendering, and optionally connect a data source. Users interact with custom blocks through the same drag-and-drop interface as built-in blocks.
 
+::: warning Shadow DOM and host-side queries
+Custom blocks render inside the editor's Shadow DOM by default. If your custom block needs to be reached from host page code (e.g. to wire up a third-party widget by ID), `document.querySelector` calls into the editor will not find it — walk the shadow root via `container.shadowRoot.querySelector(...)` instead, or opt out with `shadowDom: false`.
+:::
+
 ## Defining a custom block
 
 Pass custom block definitions through the editor config. The example below creates a "Testimonial" block with a quote, author details, avatar, and star rating. Once registered, users can drag it from the block palette into their template and edit each field from the settings panel.

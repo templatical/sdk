@@ -58,6 +58,12 @@ npm install @templatical/editor @templatical/renderer
 
 Your backend receives both the JSON (store it to let users edit later) and the MJML (compile to HTML with any [MJML library](https://mjml.io) and send).
 
+::: info Shadow DOM by default
+The editor mounts inside a Shadow DOM, so host page CSS cannot cascade into editor elements. Use a `<div>` — or any [shadow-host-eligible element](/api/editor#container-element-requirements) — as the container; elements like `<table>`, `<form>`, or `<input>` cannot host a shadow root.
+
+Pass `shadowDom: false` to opt out if you need an unusual container, target editor internals from `document.querySelector`, or support Firefox <101 / Safari <16.4.
+:::
+
 ## Next steps
 
 - [How Rendering Works](/getting-started/how-rendering-works) -- understand the JSON → MJML pipeline.

@@ -7,6 +7,10 @@ description: Definieren Sie Ihre eigenen Blocktypen mit benutzerdefinierten Feld
 
 Benutzerdefinierte Blöcke ermöglichen es Ihnen, Templatical um Ihre eigenen Blocktypen zu erweitern. Definieren Sie eine Reihe von Feldern, schreiben Sie ein Liquid-Template für das Rendering und verbinden Sie optional eine Datenquelle. Benutzer interagieren mit benutzerdefinierten Blöcken über die gleiche Drag-and-Drop-Oberfläche wie mit integrierten Blöcken.
 
+::: warning Shadow DOM und Host-seitige Queries
+Benutzerdefinierte Blöcke rendern standardmäßig innerhalb des Shadow DOM des Editors. Wenn Ihr benutzerdefinierter Block aus Host-Seiten-Code heraus erreichbar sein muss (z. B. um ein Drittanbieter-Widget per ID anzubinden), finden `document.querySelector`-Aufrufe in den Editor das Element nicht — durchlaufen Sie stattdessen den Shadow Root über `container.shadowRoot.querySelector(...)` oder deaktivieren Sie mit `shadowDom: false`.
+:::
+
 ## Einen benutzerdefinierten Block definieren
 
 Übergeben Sie benutzerdefinierte Blockdefinitionen über die Editor-Konfiguration. Das folgende Beispiel erstellt einen "Testimonial"-Block mit einem Zitat, Autorendetails, Avatar und einer Sternebewertung. Nach der Registrierung können Benutzer ihn aus der Block-Palette in ihr Template ziehen und jedes Feld im Einstellungsbereich bearbeiten.

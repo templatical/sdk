@@ -40,7 +40,8 @@ unmount();
 
 | Property | Type | Required | Beschreibung |
 |----------|------|----------|-------------|
-| `container` | `string \| HTMLElement` | Yes | CSS-Selektor oder DOM-Element, in das der Editor eingehängt wird |
+| `container` | `string \| HTMLElement` | Yes | CSS-Selektor oder DOM-Element, in das der Editor eingehängt wird. Im Standardmodus (Shadow DOM) muss es ein Element sein, das einen Shadow Root aufnehmen kann — `<div>` wird empfohlen. Siehe [Anforderungen an das Container-Element](#anforderungen-an-das-container-element) unten |
+| `shadowDom` | `boolean` | No | Mountet innerhalb eines Shadow DOM zur CSS-Isolation von der Host-Seite. Standardwert `true`. Auf `false` setzen, um das alte Light-DOM-Mount beizubehalten (z. B. für `document.querySelector`-Zugriff auf Editor-Interna oder Firefox-<101 / Safari-<16.4-Unterstützung) |
 | `content` | `TemplateContent` | No | Anfänglicher Template-Inhalt. Standardmäßig ein leeres Template |
 | `onChange` | `(content: TemplateContent) => void` | No | Wird aufgerufen, wenn sich der Template-Inhalt ändert (entprellt) |
 | `onSave` | `(content: TemplateContent) => void` | No | Wird aufgerufen, wenn der Benutzer eine Speicheraktion auslöst |
@@ -57,6 +58,16 @@ unmount();
 | `locale` | `string` | No | Locale-Code (z. B. `'en'`, `'de'`). Standardwert ist `'en'` |
 | `branding` | `boolean` | No | Zeigt den "Powered by Templatical"-Footer. Standardwert `true`. Auf `false` setzen, um ihn auszublenden |
 
+
+### Anforderungen an das Container-Element
+
+Das Standard-Mount (Shadow DOM) ruft `attachShadow()` auf Ihrem Container auf, und die HTML-Spezifikation erlaubt Shadow Roots nur für eine feste Menge von Elementen. Verwenden Sie eines davon:
+
+`<article>`, `<aside>`, `<blockquote>`, `<body>`, `<div>` (empfohlen), `<footer>`, `<h1>`–`<h6>`, `<header>`, `<main>`, `<nav>`, `<p>`, `<section>`, `<span>` sowie jedes von Ihnen definierte Custom Element.
+
+**Nicht erlaubt:** `<table>`, `<tr>`, `<td>`, `<form>`, `<input>`, `<button>`, `<select>`, Listenelemente (`<ul>`, `<ol>`, `<li>`), `<iframe>`, ersetzte Elemente (`<img>`, `<video>` usw.). Die Übergabe eines dieser Elemente wirft eine `DOMException` aus `attachShadow()`.
+
+Wenn Ihre Integration ein nicht unterstütztes Element verwenden muss (z. B. Mount in eine `<form>`-Zelle eines CMS-Layouts), übergeben Sie `shadowDom: false` — das Light-DOM-Mount akzeptiert jedes Element. Der Kompromiss ist die Host-CSS-Isolation, auf die Sie verzichten.
 
 ## TemplaticalEditor
 

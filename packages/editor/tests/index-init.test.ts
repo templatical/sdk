@@ -85,8 +85,11 @@ describe("editor entry — concurrent init does not orphan first app", () => {
 
     const container = document.createElement("div");
 
-    const firstInit = initFn({ container } as any);
-    const secondInit = initFn({ container } as any);
+    // Pin light DOM so the dom-stubs container (no `attachShadow`) is a
+    // valid mount target. The race shape this test asserts is independent
+    // of mount mode.
+    const firstInit = initFn({ container, shadowDom: false } as any);
+    const secondInit = initFn({ container, shadowDom: false } as any);
 
     resolveFirst({});
     await new Promise((r) => setTimeout(r, 10));

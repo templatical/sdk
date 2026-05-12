@@ -28,13 +28,14 @@ export class ChooserPage {
   ) {}
 
   /**
-   * Navigate to the playground. Appends `?shadowDom=1` when the fixture
-   * was constructed with `shadowDom: true` (the dual-mode Playwright
-   * project sets this from its metadata), so the same spec runs in both
-   * light-DOM and shadow-DOM modes without per-test branching.
+   * Navigate to the playground. Always pins the mount mode explicitly via
+   * `?shadowDom=1` (shadow) or `?shadowDom=0` (light) so the e2e split
+   * doesn't drift with the SDK's default. The dual-mode Playwright
+   * project sets `metadata.shadowDom` and the editor fixture forwards
+   * that here.
    */
   async goto() {
-    const url = this.options.shadowDom ? "/?shadowDom=1" : "/";
+    const url = this.options.shadowDom ? "/?shadowDom=1" : "/?shadowDom=0";
     await this.page.goto(url);
     await this.page.waitForSelector(SELECTORS.chooserScreen);
   }

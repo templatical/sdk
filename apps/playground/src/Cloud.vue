@@ -322,10 +322,14 @@ async function startFresh(): Promise<void> {
   await initEditor();
 }
 
-function readShadowDomFlag(): boolean {
-  if (typeof window === "undefined") return false;
+// Shadow DOM dev toggle — `?shadowDom=1`/`=true` forces shadow, `=0`/`=false`
+// forces light, absent defers to the SDK default (shadow since Phase 7).
+function readShadowDomFlag(): boolean | undefined {
+  if (typeof window === "undefined") return undefined;
   const v = new URLSearchParams(window.location.search).get("shadowDom");
-  return v === "1" || v === "true";
+  if (v === "1" || v === "true") return true;
+  if (v === "0" || v === "false") return false;
+  return undefined;
 }
 
 async function initEditor(templateId?: string): Promise<void> {
@@ -333,9 +337,9 @@ async function initEditor(templateId?: string): Promise<void> {
 
   initError.value = "";
   const shadowDom = readShadowDomFlag();
-  if (shadowDom) {
+  if (shadowDom !== undefined) {
     console.info(
-      "[Cloud SDK] shadowDom=true — cloud editor mounts inside Shadow DOM",
+      `[Cloud SDK] shadowDom=${shadowDom} — cloud editor mount mode forced via URL`,
     );
   }
   try {

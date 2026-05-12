@@ -26,16 +26,22 @@ export interface TemplaticalCloudEditorConfig {
 
   /**
    * Mount the editor inside a Shadow DOM (open mode) for CSS isolation
-   * from the host page. When `false` (default), the editor mounts in light
-   * DOM with current behavior — host stylesheets can still reach editor
-   * elements via tag selectors (`p`, `a`, `input`, etc.).
+   * from the host page. Defaults to `true` — host stylesheets cannot
+   * cascade past the shadow boundary into editor elements (`p`, `a`,
+   * `input`, etc.), and editor utility classes never collide with host
+   * class names.
    *
-   * Phase 1 of the Shadow DOM migration ships this as opt-in. The default
-   * will flip to `true` in a future minor; keep your integration on
-   * `false` if you depend on light-DOM access to editor internals or need
-   * Firefox <101 / Safari <16.4 support (`adoptedStyleSheets` requirement).
+   * Set to `false` to mount in light DOM. Opt out when:
+   *  - Your host integration uses `document.querySelector` to reach
+   *    editor internals (with shadow DOM, use `container.shadowRoot
+   *    .querySelector(...)` instead).
+   *  - You need to support Firefox <101 or Safari <16.4, which lack the
+   *    `adoptedStyleSheets` API the shadow path relies on.
    *
-   * @default false
+   * Light-mode consumers should keep this set to `false` explicitly so
+   * future SDK changes don't silently flip the default again.
+   *
+   * @default true
    */
   shadowDom?: boolean;
 

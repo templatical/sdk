@@ -58,6 +58,12 @@ npm install @templatical/editor @templatical/renderer
 
 Ihr Backend erhält sowohl das JSON (speichern Sie es, damit Nutzer das Template später weiter bearbeiten können) als auch das MJML (kompilieren Sie es mit einer beliebigen [MJML-Bibliothek](https://mjml.io) zu HTML und versenden Sie es).
 
+::: info Shadow DOM als Standard
+Der Editor mountet standardmäßig innerhalb eines Shadow DOM, sodass Host-Seiten-CSS nicht in Editor-Elemente durchschlagen kann. Verwenden Sie ein `<div>` — oder ein beliebiges [Shadow-Host-fähiges Element](/de/api/editor#anforderungen-an-das-container-element) — als Container; Elemente wie `<table>`, `<form>` oder `<input>` können keinen Shadow Root aufnehmen.
+
+Übergeben Sie `shadowDom: false`, um zu deaktivieren, falls Sie einen ungewöhnlichen Container benötigen, Editor-Interna über `document.querySelector` ansprechen oder Firefox <101 / Safari <16.4 unterstützen müssen.
+:::
+
 ## Nächste Schritte
 
 - [Wie das Rendering funktioniert](/de/getting-started/how-rendering-works) -- verstehen Sie die JSON → MJML-Pipeline.

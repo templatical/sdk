@@ -40,7 +40,8 @@ unmount();
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `container` | `string \| HTMLElement` | Yes | CSS selector or DOM element to mount the editor into |
+| `container` | `string \| HTMLElement` | Yes | CSS selector or DOM element to mount the editor into. In default (shadow DOM) mode, must be an element that can host a Shadow DOM — `<div>` is recommended. See [Container element requirements](#container-element-requirements) below |
+| `shadowDom` | `boolean` | No | Mount inside a Shadow DOM for CSS isolation from the host page. Defaults to `true`. Set to `false` to keep the legacy light-DOM mount (e.g. for `document.querySelector` access to editor internals or Firefox <101 / Safari <16.4 support) |
 | `content` | `TemplateContent` | No | Initial template content. Defaults to empty template |
 | `onChange` | `(content: TemplateContent) => void` | No | Called when template content changes (debounced) |
 | `onSave` | `(content: TemplateContent) => void` | No | Called when the user triggers a save action |
@@ -57,6 +58,16 @@ unmount();
 | `locale` | `string` | No | Locale code (e.g. `'en'`, `'de'`). Defaults to `'en'` |
 | `branding` | `boolean` | No | Show the "Powered by Templatical" footer. Defaults to `true`. Set to `false` to hide it |
 
+
+### Container element requirements
+
+The default (shadow DOM) mount calls `attachShadow()` on your container, and the HTML spec only allows shadow roots on a fixed set of elements. Use one of:
+
+`<article>`, `<aside>`, `<blockquote>`, `<body>`, `<div>` (recommended), `<footer>`, `<h1>`–`<h6>`, `<header>`, `<main>`, `<nav>`, `<p>`, `<section>`, `<span>`, plus any custom element you've defined.
+
+**Not allowed:** `<table>`, `<tr>`, `<td>`, `<form>`, `<input>`, `<button>`, `<select>`, list elements (`<ul>`, `<ol>`, `<li>`), `<iframe>`, replaced elements (`<img>`, `<video>`, etc.). Passing one of these throws a `DOMException` from `attachShadow()`.
+
+If your integration must use an unsupported element (e.g. mounting into a `<form>` cell of a CMS layout), pass `shadowDom: false` — light-DOM mount accepts any element. The trade-off is the host-CSS isolation you give up.
 
 ## TemplaticalEditor
 
