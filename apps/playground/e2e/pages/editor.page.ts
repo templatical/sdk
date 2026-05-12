@@ -201,20 +201,40 @@ export class EditorPage {
     const target = columns.nth(colIndex);
     const countBefore = await section.locator(SELECTORS.block).count();
     // Section's draggable runs with `invertSwap: true` + `invertedSwapThreshold:
-    // 0.65`, so the column's center 65% is a no-swap zone. Aim at the bottom
-    // ~10% — well inside the outer swap zone for non-empty columns, and well
-    // inside the empty-insert threshold (60px) for empty columns.
-    const targetBox = await target.boundingBox();
-    if (!targetBox)
-      throw new Error(
-        `Section ${sectionIndex} col ${colIndex} bounding box unavailable`,
-      );
-    await sidebarItem.dragTo(target, {
-      targetPosition: {
-        x: targetBox.width / 2,
-        y: targetBox.height - Math.max(4, targetBox.height * 0.1),
-      },
-    });
+    // 0.65`, so swap zones are the outer ~17.5% of each existing block.
+    // Aiming at the COLUMN's bottom 10% can land in column whitespace below
+    // the last item (column has `min-h-[60px]`, items may not fill it), which
+    // misses every swap zone. Aim at the last item's bottom 10% instead; for
+    // an empty column, aim at the column center where `emptyInsertThreshold`
+    // applies.
+    const existingBlocks = this.getSectionColumnBlocks(sectionIndex, colIndex);
+    const existingCount = await existingBlocks.count();
+    if (existingCount > 0) {
+      const lastBlock = existingBlocks.last();
+      const lastBox = await lastBlock.boundingBox();
+      if (!lastBox)
+        throw new Error(
+          `Section ${sectionIndex} col ${colIndex} last block bounding box unavailable`,
+        );
+      await sidebarItem.dragTo(lastBlock, {
+        targetPosition: {
+          x: lastBox.width / 2,
+          y: lastBox.height - Math.max(4, lastBox.height * 0.1),
+        },
+      });
+    } else {
+      const targetBox = await target.boundingBox();
+      if (!targetBox)
+        throw new Error(
+          `Section ${sectionIndex} col ${colIndex} bounding box unavailable`,
+        );
+      await sidebarItem.dragTo(target, {
+        targetPosition: {
+          x: targetBox.width / 2,
+          y: targetBox.height / 2,
+        },
+      });
+    }
     await expect
       .poll(() => section.locator(SELECTORS.block).count(), { timeout: 5000 })
       .toBe(countBefore + 1);
