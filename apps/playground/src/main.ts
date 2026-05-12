@@ -30,6 +30,8 @@ import "./style.css";
 
 // Lazy-load Cloud page — only fetched when user navigates to #cloud
 const Cloud = defineAsyncComponent(() => import("./Cloud.vue"));
+// Lazy-load multi-instance shadow-DOM playground — only used by Phase 6.3 e2e.
+const MultiInstance = defineAsyncComponent(() => import("./MultiInstance.vue"));
 
 const pages: Record<
   string,
@@ -37,7 +39,14 @@ const pages: Record<
 > = {
   "": App,
   "#cloud": Cloud,
+  "#multi": MultiInstance,
 };
+
+function pageKeyFor(component: unknown): string {
+  if (component === Cloud) return "cloud";
+  if (component === MultiInstance) return "multi";
+  return "oss";
+}
 
 const currentPage = shallowRef(pages[window.location.hash] ?? App);
 
@@ -52,7 +61,7 @@ const app = createApp({
     return () =>
       h(Transition, { name: "pg-screen", mode: "out-in" }, () =>
         h(currentPage.value, {
-          key: currentPage.value === Cloud ? "cloud" : "oss",
+          key: pageKeyFor(currentPage.value),
         }),
       );
   },

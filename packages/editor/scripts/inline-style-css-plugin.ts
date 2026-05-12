@@ -103,21 +103,73 @@ export function inlineStyleCssPlugin(opts: {
       }
 
       const cssContent = cssParts.join('\n\n')
-      // The placeholder ships as a JSON-encoded string literal in the chunk.
-      const placeholderQuoted = JSON.stringify(PLACEHOLDER)
-      const cssQuoted = JSON.stringify(cssContent)
+      const cssDoubleQuoted = JSON.stringify(cssContent)
+      // Backticks let us avoid escaping every embedded `${...}` and `\`
+      // for template-literal output. Replicate the minifier's expected
+      // form so the chunk lands a valid string literal either way.
+      const cssBacktickQuoted =
+        '`' +
+        cssContent
+          .replace(/\\/g, '\\\\')
+          .replace(/`/g, '\\`')
+          .replace(/\$\{/g, '\\${') +
+        '`'
 
-      let replaced = 0
+      // The plugin emits the placeholder via `JSON.stringify(PLACEHOLDER)`
+      // (double-quoted), but library/app bundlers downstream may re-emit
+      // it as a single-quoted string OR a template literal. Rolldown app
+      // builds in particular promote long single-line strings to
+      // template literals during minification, which the original
+      // double-quote-only replacement missed — shipping the literal
+      // `__TPL_INLINE_EDITOR_CSS__` token into the runtime and giving
+      // shadow-root mounts an adopted stylesheet of garbage.
+      //
+      // Match all three string-literal forms and substitute with the
+      // quote variant the chunk already uses, so we preserve whatever
+      // escaping convention the downstream bundler picked.
+      const variants: Array<{ from: string; to: string }> = [
+        { from: `"${PLACEHOLDER}"`, to: cssDoubleQuoted },
+        { from: `'${PLACEHOLDER}'`, to: cssDoubleQuoted },
+        { from: '`' + PLACEHOLDER + '`', to: cssBacktickQuoted },
+      ]
+
+      let chunksTouched = 0
       for (const file of Object.values(bundle)) {
         if (file.type !== 'chunk') continue
-        if (!file.code.includes(placeholderQuoted)) continue
-        file.code = file.code.split(placeholderQuoted).join(cssQuoted)
-        replaced++
+        let touched = false
+        for (const { from, to } of variants) {
+          if (!file.code.includes(from)) continue
+          file.code = file.code.split(from).join(to)
+          touched = true
+        }
+        if (touched) chunksTouched++
       }
 
       this.info?.(
-        `inline-style-css: injected ${(cssContent.length / 1024).toFixed(1)} kB raw CSS into ${replaced} chunk(s)`,
+        `inline-style-css: injected ${(cssContent.length / 1024).toFixed(1)} kB raw CSS into ${chunksTouched} chunk(s)`,
       )
+
+      // Self-check: if the placeholder still appears in any chunk after the
+      // variant-aware replacement above, a downstream bundler re-emitted it
+      // in a form we don't recognize. Fail the build so the regression
+      // surfaces immediately instead of shipping a shadow root whose
+      // adopted stylesheet content is the literal placeholder token.
+      // Real-world precedent: Rolldown app-mode minification promoted long
+      // single-line strings to backtick template literals, slipping past
+      // the original double-quote-only replacement and shipping broken
+      // styling to consumers using `shadowDom: true`.
+      for (const file of Object.values(bundle)) {
+        if (file.type !== 'chunk') continue
+        if (!file.code.includes(PLACEHOLDER)) continue
+        const surrounding = file.code.match(
+          new RegExp(`.{0,40}${PLACEHOLDER}.{0,40}`),
+        )
+        this.error?.(
+          `inline-style-css: placeholder \`${PLACEHOLDER}\` still present in chunk ${file.fileName} after replacement. ` +
+            `A downstream bundler likely re-emitted the placeholder string in a quote form not handled by the plugin. ` +
+            `Surrounding context: ${surrounding?.[0] ?? '<unavailable>'}`,
+        )
+      }
     },
   }
 }

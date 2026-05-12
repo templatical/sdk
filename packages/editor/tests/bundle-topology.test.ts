@@ -180,4 +180,31 @@ describe("editor bundle topology", () => {
     );
     expect(peers.sort()).toEqual(optionalPeers.sort());
   });
+
+  it("does not ship the inline-style-css placeholder in any chunk", () => {
+    // Regression: `inline-style-css-plugin` emits a `__TPL_INLINE_EDITOR_CSS__`
+    // placeholder at `load()` time and `generateBundle()` swaps it for the
+    // full library CSS string. If a downstream bundler re-emits the
+    // placeholder in a quote form the plugin's variant matcher misses, the
+    // literal placeholder token ships in the chunk and `replaceSync()`
+    // adopts garbage into the shadow root — broken styling for every
+    // `shadowDom: true` consumer. Hit historically when Rolldown app-mode
+    // minification promoted long single-line strings to backtick template
+    // literals.
+    //
+    // The plugin itself now hard-fails the build on this condition, but
+    // keep the assertion here as the second line of defense — independent
+    // of the plugin's internal self-check, catches the bug class even if
+    // someone disables that check.
+    const PLACEHOLDER = "__TPL_INLINE_EDITOR_CSS__";
+    for (const chunk of chunks) {
+      const code = readFileSync(join(DIST, chunk), "utf8");
+      expect(
+        code.includes(PLACEHOLDER),
+        `Chunk ${chunk} still contains the inline-style-css placeholder. ` +
+          `inline-style-css-plugin failed to substitute the CSS string — ` +
+          `shadow-DOM consumers would see an empty adopted stylesheet.`,
+      ).toBe(false);
+    }
+  });
 });

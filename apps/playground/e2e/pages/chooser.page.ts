@@ -22,10 +22,20 @@ const TEXTAREA_BY_SOURCE: Record<ImportSource, string> = {
 };
 
 export class ChooserPage {
-  constructor(private page: Page) {}
+  constructor(
+    private page: Page,
+    private options: { shadowDom?: boolean } = {},
+  ) {}
 
+  /**
+   * Navigate to the playground. Appends `?shadowDom=1` when the fixture
+   * was constructed with `shadowDom: true` (the dual-mode Playwright
+   * project sets this from its metadata), so the same spec runs in both
+   * light-DOM and shadow-DOM modes without per-test branching.
+   */
   async goto() {
-    await this.page.goto("/");
+    const url = this.options.shadowDom ? "/?shadowDom=1" : "/";
+    await this.page.goto(url);
     await this.page.waitForSelector(SELECTORS.chooserScreen);
   }
 

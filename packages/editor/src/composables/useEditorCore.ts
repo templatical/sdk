@@ -331,13 +331,16 @@ export function useEditorCore(
     });
   }
 
-  // Attach to the editor's effective DOM root rather than the global
-  // `document`. In shadow mode this scopes shortcuts to keydowns originating
-  // inside the editor's shadow tree — without this, Cmd+S typed while the
-  // host page has focus would fire the editor's onSave. In light-DOM mode
-  // the root IS the document, so behavior is unchanged.
-  const keydownTarget = options.editorRoot ?? document;
-  useEventListener(keydownTarget, "keydown", handleKeyboard);
+  // Attach the global keydown listener at the `document` level even in
+  // shadow mode. Non-focusable elements (most blocks are bare `<div>`)
+  // don't capture focus on click, so after a user clicks a block their
+  // active element stays on `document.body` — a subsequent keystroke
+  // never reaches the shadow root, only `document`. Listening at
+  // `document` keeps Escape / Cmd+Z / Delete shortcuts working in both
+  // modes; multi-instance scoping (a future concern) will need to
+  // disambiguate per-editor at the handler level rather than via
+  // listener target.
+  useEventListener(document, "keydown", handleKeyboard);
 
   // --- Popover mount ---
   // Ref bound by the editor template to `<div class="tpl-popover-root" />`.

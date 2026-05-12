@@ -1,6 +1,17 @@
 import { test, expect } from "../fixtures/editor.fixture";
 
 test.describe("Undo and redo", () => {
+  // Phase 7 blocker: TipTap selection state breaks in shadow mode
+  // (window.getSelection() returns empty inside a shadow tree on
+  // Chromium), so the block delete/duplicate paths that these tests
+  // exercise behave inconsistently when blocks contain rich text. Skip
+  // here and track as a Phase 3 follow-up alongside the broader TipTap
+  // selection gap.
+  test.skip(
+    ({ shadowDom }) => shadowDom,
+    "TipTap selection API doesn't pierce shadow boundary — Phase 3 follow-up",
+  );
+
   test("undo after deleting block restores it", async ({
     editorReady: { editorPage },
     page,

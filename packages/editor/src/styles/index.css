@@ -34,98 +34,146 @@
 @source '../../../media-library/src/**/*.vue';
 @source '../../../media-library/src/**/*.ts';
 
-/* SDK CSS Variables - Default theme, can be overridden via inline styles */
+/* SDK CSS Variables — light defaults.
+ *
+ * Every token reads a `--tpl-user-*` fallback first so consumers can theme
+ * the editor by setting the override variable on the host element (or any
+ * ancestor of the editor's mount point). The user value inherits into the
+ * editor's root and wins; otherwise the literal default applies. Works
+ * identically in light-DOM and shadow-DOM mode — `--tpl-user-*` crosses
+ * the shadow boundary via CSS-custom-property inheritance.
+ *
+ * Inline styles on `.tpl` (from the editor's `theme` config option) still
+ * win over both because inline specificity beats class specificity.
+ */
 .tpl {
     /* Warm palette */
-    --tpl-bg: oklch(99.5% 0.002 60);
-    --tpl-bg-elevated: oklch(98% 0.004 60);
-    --tpl-bg-hover: oklch(96% 0.006 60);
-    --tpl-bg-active: oklch(93.5% 0.008 60);
-    --tpl-border: oklch(92% 0.006 60);
-    --tpl-border-light: oklch(86% 0.01 60);
-    --tpl-text: oklch(18% 0.01 60);
-    --tpl-text-muted: oklch(50% 0.015 60);
-    --tpl-text-dim: oklch(68% 0.012 60);
-    --tpl-primary: oklch(70% 0.16 55);
-    --tpl-primary-hover: oklch(63% 0.17 55);
-    --tpl-primary-light: oklch(95% 0.04 55);
-    --tpl-secondary: oklch(60% 0.118 184.71);
-    --tpl-secondary-hover: oklch(53.2% 0.105 186.39);
-    --tpl-secondary-light: oklch(93.8% 0.03 186.82);
-    --tpl-success: oklch(62.8% 0.194 155.1);
-    --tpl-success-light: oklch(93.6% 0.043 163.51);
-    --tpl-warning: oklch(76.9% 0.168 70.08);
-    --tpl-warning-light: oklch(95% 0.038 73.59);
-    --tpl-danger: oklch(63.7% 0.237 25.33);
-    --tpl-danger-light: oklch(93.6% 0.032 17.72);
-    --tpl-canvas-bg: oklch(97.5% 0.003 60);
+    --tpl-bg: var(--tpl-user-bg, oklch(99.5% 0.002 60));
+    --tpl-bg-elevated: var(--tpl-user-bg-elevated, oklch(98% 0.004 60));
+    --tpl-bg-hover: var(--tpl-user-bg-hover, oklch(96% 0.006 60));
+    --tpl-bg-active: var(--tpl-user-bg-active, oklch(93.5% 0.008 60));
+    --tpl-border: var(--tpl-user-border, oklch(92% 0.006 60));
+    --tpl-border-light: var(--tpl-user-border-light, oklch(86% 0.01 60));
+    --tpl-text: var(--tpl-user-text, oklch(18% 0.01 60));
+    --tpl-text-muted: var(--tpl-user-text-muted, oklch(50% 0.015 60));
+    --tpl-text-dim: var(--tpl-user-text-dim, oklch(68% 0.012 60));
+    --tpl-primary: var(--tpl-user-primary, oklch(70% 0.16 55));
+    --tpl-primary-hover: var(--tpl-user-primary-hover, oklch(63% 0.17 55));
+    --tpl-primary-light: var(--tpl-user-primary-light, oklch(95% 0.04 55));
+    --tpl-secondary: var(--tpl-user-secondary, oklch(60% 0.118 184.71));
+    --tpl-secondary-hover: var(--tpl-user-secondary-hover, oklch(53.2% 0.105 186.39));
+    --tpl-secondary-light: var(--tpl-user-secondary-light, oklch(93.8% 0.03 186.82));
+    --tpl-success: var(--tpl-user-success, oklch(62.8% 0.194 155.1));
+    --tpl-success-light: var(--tpl-user-success-light, oklch(93.6% 0.043 163.51));
+    --tpl-warning: var(--tpl-user-warning, oklch(76.9% 0.168 70.08));
+    --tpl-warning-light: var(--tpl-user-warning-light, oklch(95% 0.038 73.59));
+    --tpl-danger: var(--tpl-user-danger, oklch(63.7% 0.237 25.33));
+    --tpl-danger-light: var(--tpl-user-danger-light, oklch(93.6% 0.032 17.72));
+    --tpl-canvas-bg: var(--tpl-user-canvas-bg, oklch(97.5% 0.003 60));
 
     /* 3-level radius */
-    --tpl-radius: 10px;
-    --tpl-radius-sm: 7px;
-    --tpl-radius-lg: 14px;
+    --tpl-radius: var(--tpl-user-radius, 10px);
+    --tpl-radius-sm: var(--tpl-user-radius-sm, 7px);
+    --tpl-radius-lg: var(--tpl-user-radius-lg, 14px);
 
     /* Font — Geist */
-    --tpl-font-family:
-        'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --tpl-font-family: var(
+        --tpl-user-font-family,
+        'Geist',
+        ui-sans-serif,
+        system-ui,
+        sans-serif,
+        'Apple Color Emoji',
+        'Segoe UI Emoji',
+        'Segoe UI Symbol',
+        'Noto Color Emoji'
+    );
 
     /* 5-level shadow system */
-    --tpl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
-    --tpl-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
-    --tpl-shadow-md:
-        0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-    --tpl-shadow-lg:
-        0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
-    --tpl-shadow-xl:
-        0 8px 32px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.06);
+    --tpl-shadow-sm: var(--tpl-user-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.03));
+    --tpl-shadow: var(
+        --tpl-user-shadow,
+        0 1px 2px rgba(0, 0, 0, 0.04),
+        0 1px 3px rgba(0, 0, 0, 0.03)
+    );
+    --tpl-shadow-md: var(
+        --tpl-user-shadow-md,
+        0 2px 8px rgba(0, 0, 0, 0.06),
+        0 1px 3px rgba(0, 0, 0, 0.04)
+    );
+    --tpl-shadow-lg: var(
+        --tpl-user-shadow-lg,
+        0 4px 16px rgba(0, 0, 0, 0.08),
+        0 2px 6px rgba(0, 0, 0, 0.04)
+    );
+    --tpl-shadow-xl: var(
+        --tpl-user-shadow-xl,
+        0 8px 32px rgba(0, 0, 0, 0.1),
+        0 4px 12px rgba(0, 0, 0, 0.06)
+    );
 
     /* Modal overlay */
-    --tpl-overlay: rgba(0, 0, 0, 0.5);
+    --tpl-overlay: var(--tpl-user-overlay, rgba(0, 0, 0, 0.5));
 
     /* Focus ring with amber accent */
-    --tpl-ring: 0 0 0 3px var(--tpl-primary-light);
+    --tpl-ring: var(--tpl-user-ring, 0 0 0 3px var(--tpl-primary-light));
 
     /* Spring easing transition */
-    --tpl-transition: 120ms cubic-bezier(0.16, 1, 0.3, 1);
+    --tpl-transition: var(--tpl-user-transition, 120ms cubic-bezier(0.16, 1, 0.3, 1));
 }
 
-/* Dark theme defaults — activated by data attribute, overridden by inline styles */
+/* Dark theme defaults — activated by data attribute. User overrides for dark
+ * mode use the `--tpl-user-dark-*` namespace so consumers can theme light and
+ * dark independently; the fallback in each declaration is the SDK's default
+ * dark value. Same inheritance flow as light. */
 .tpl[data-tpl-theme="dark"] {
-    --tpl-bg: oklch(16% 0.005 60);
-    --tpl-bg-elevated: oklch(21% 0.006 60);
-    --tpl-bg-hover: oklch(26% 0.007 60);
-    --tpl-bg-active: oklch(30% 0.008 60);
-    --tpl-border: oklch(30% 0.006 60);
-    --tpl-border-light: oklch(38% 0.008 60);
-    --tpl-text: oklch(93% 0.005 60);
-    --tpl-text-muted: oklch(65% 0.01 60);
-    --tpl-text-dim: oklch(50% 0.008 60);
-    --tpl-primary: oklch(73% 0.15 55);
-    --tpl-primary-hover: oklch(78% 0.14 55);
-    --tpl-primary-light: oklch(28% 0.05 55);
-    --tpl-secondary: oklch(63% 0.11 184.71);
-    --tpl-secondary-hover: oklch(68% 0.1 186.39);
-    --tpl-secondary-light: oklch(25% 0.03 186.82);
-    --tpl-success: oklch(65% 0.18 155.1);
-    --tpl-success-light: oklch(25% 0.04 163.51);
-    --tpl-warning: oklch(78% 0.16 70.08);
-    --tpl-warning-light: oklch(28% 0.04 73.59);
-    --tpl-danger: oklch(65% 0.22 25.33);
-    --tpl-danger-light: oklch(25% 0.04 17.72);
-    --tpl-canvas-bg: oklch(10% 0.003 60);
+    --tpl-bg: var(--tpl-user-dark-bg, oklch(16% 0.005 60));
+    --tpl-bg-elevated: var(--tpl-user-dark-bg-elevated, oklch(21% 0.006 60));
+    --tpl-bg-hover: var(--tpl-user-dark-bg-hover, oklch(26% 0.007 60));
+    --tpl-bg-active: var(--tpl-user-dark-bg-active, oklch(30% 0.008 60));
+    --tpl-border: var(--tpl-user-dark-border, oklch(30% 0.006 60));
+    --tpl-border-light: var(--tpl-user-dark-border-light, oklch(38% 0.008 60));
+    --tpl-text: var(--tpl-user-dark-text, oklch(93% 0.005 60));
+    --tpl-text-muted: var(--tpl-user-dark-text-muted, oklch(65% 0.01 60));
+    --tpl-text-dim: var(--tpl-user-dark-text-dim, oklch(50% 0.008 60));
+    --tpl-primary: var(--tpl-user-dark-primary, oklch(73% 0.15 55));
+    --tpl-primary-hover: var(--tpl-user-dark-primary-hover, oklch(78% 0.14 55));
+    --tpl-primary-light: var(--tpl-user-dark-primary-light, oklch(28% 0.05 55));
+    --tpl-secondary: var(--tpl-user-dark-secondary, oklch(63% 0.11 184.71));
+    --tpl-secondary-hover: var(--tpl-user-dark-secondary-hover, oklch(68% 0.1 186.39));
+    --tpl-secondary-light: var(--tpl-user-dark-secondary-light, oklch(25% 0.03 186.82));
+    --tpl-success: var(--tpl-user-dark-success, oklch(65% 0.18 155.1));
+    --tpl-success-light: var(--tpl-user-dark-success-light, oklch(25% 0.04 163.51));
+    --tpl-warning: var(--tpl-user-dark-warning, oklch(78% 0.16 70.08));
+    --tpl-warning-light: var(--tpl-user-dark-warning-light, oklch(28% 0.04 73.59));
+    --tpl-danger: var(--tpl-user-dark-danger, oklch(65% 0.22 25.33));
+    --tpl-danger-light: var(--tpl-user-dark-danger-light, oklch(25% 0.04 17.72));
+    --tpl-canvas-bg: var(--tpl-user-dark-canvas-bg, oklch(10% 0.003 60));
 
-    --tpl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-    --tpl-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
-    --tpl-shadow-md:
-        0 2px 8px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
-    --tpl-shadow-lg:
-        0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
-    --tpl-shadow-xl:
-        0 8px 32px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --tpl-shadow-sm: var(--tpl-user-dark-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.2));
+    --tpl-shadow: var(
+        --tpl-user-dark-shadow,
+        0 1px 2px rgba(0, 0, 0, 0.3),
+        0 1px 3px rgba(0, 0, 0, 0.2)
+    );
+    --tpl-shadow-md: var(
+        --tpl-user-dark-shadow-md,
+        0 2px 8px rgba(0, 0, 0, 0.35),
+        0 1px 3px rgba(0, 0, 0, 0.25)
+    );
+    --tpl-shadow-lg: var(
+        --tpl-user-dark-shadow-lg,
+        0 4px 16px rgba(0, 0, 0, 0.4),
+        0 2px 6px rgba(0, 0, 0, 0.3)
+    );
+    --tpl-shadow-xl: var(
+        --tpl-user-dark-shadow-xl,
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        0 4px 12px rgba(0, 0, 0, 0.35)
+    );
 
-    --tpl-overlay: rgba(0, 0, 0, 0.7);
-    --tpl-ring: 0 0 0 3px var(--tpl-primary-light);
+    --tpl-overlay: var(--tpl-user-dark-overlay, rgba(0, 0, 0, 0.7));
+    --tpl-ring: var(--tpl-user-dark-ring, 0 0 0 3px var(--tpl-primary-light));
 }
 
 /* Canvas always uses light-theme values regardless of UI theme.

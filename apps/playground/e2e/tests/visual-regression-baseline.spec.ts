@@ -36,6 +36,18 @@ const DIFF_OPTIONS = {
 };
 
 test.describe("visual regression baseline (Phase 0.2)", () => {
+  // Baselines were captured against the light-DOM playground. Shadow-mode
+  // chrome has different layout (popover root inside the shadow tree
+  // creates a new stacking context) and the dev-mode CSS pipeline doesn't
+  // pull SFC scoped styles across the boundary, so pixel comparisons in
+  // shadow mode would fail spuriously. The behavioral specs are dual-mode;
+  // visual regression stays single-mode until the dev-mode SFC-scoped-CSS
+  // gap is closed.
+  test.skip(
+    ({ shadowDom }) => shadowDom,
+    "baselines captured against light-DOM playground only",
+  );
+
   test("blank editor — empty canvas + sidebar rail", async ({
     blankEditorReady: { editorPage },
     page,

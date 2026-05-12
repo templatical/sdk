@@ -16,9 +16,22 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
+    // Two projects, same specs. Light DOM (current default) and shadow
+    // DOM (opt-in via the playground's `?shadowDom=1` URL param) — both
+    // must pass before the SDK can flip its default in Phase 7.
+    //
+    // `metadata.shadowDom` is the contract every fixture / page-object
+    // consults to decide whether to append the query string and whether
+    // shadow-only assertions apply.
     {
-      name: "chromium",
+      name: "chromium-light",
       use: { ...devices["Desktop Chrome"] },
+      metadata: { shadowDom: false },
+    },
+    {
+      name: "chromium-shadow",
+      use: { ...devices["Desktop Chrome"] },
+      metadata: { shadowDom: true },
     },
   ],
   webServer: {

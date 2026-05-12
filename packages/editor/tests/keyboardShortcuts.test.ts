@@ -348,22 +348,20 @@ describe("handleEditorKeydown", () => {
   });
 });
 
-describe("useEditorCore keydown wiring (shadow-aware)", () => {
-  // Source-level guard: the editor's global keydown listener must attach
-  // to the editor's effective DOM root (Document in light-DOM mode,
-  // ShadowRoot when shadowDom: true), not the bare `document`. Otherwise
-  // Cmd+S typed while the host page has focus would fire the editor's
-  // onSave in shadow mode, and multi-instance scoping would not work.
-  it("source attaches keydown listener to editorRoot, not document", async () => {
+describe("useEditorCore keydown wiring", () => {
+  // Source-level guard: the editor's global keydown listener attaches at
+  // `document` level so it catches keystrokes regardless of where the
+  // user's focus is (non-focusable blocks keep activeElement on
+  // document.body, so a shadow-root-scoped listener would miss those).
+  // Multi-instance keydown scoping is a future concern handled at the
+  // handler level, not at the listener target.
+  it("source attaches keydown listener to document", async () => {
     const fs = await import("node:fs");
     const src = fs.readFileSync(
       "src/composables/useEditorCore.ts",
       "utf8",
     );
-    expect(src).toContain("const keydownTarget = options.editorRoot ?? document");
-    expect(src).toContain('useEventListener(keydownTarget, "keydown"');
-    // No bare `useEventListener(document, "keydown", ...)` line remains.
-    expect(src).not.toMatch(/useEventListener\(document,\s*["']keydown["']/);
+    expect(src).toMatch(/useEventListener\(document,\s*["']keydown["']/);
   });
 });
 

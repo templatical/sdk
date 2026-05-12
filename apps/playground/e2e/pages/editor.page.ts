@@ -649,14 +649,37 @@ export class EditorPage {
     // Arm a transitionend listener before the click so we catch the exact
     // settled frame. Canvas.vue animates `width` with a 300ms spring-bounce
     // curve — polling for "width changed" fires mid-flight and returns an
-    // overshoot value. Fallback timeout covers the same-viewport no-op case
-    // where no transition runs.
+    // overshoot value. The wrapper lives inside the editor's shadow root
+    // when shadowDom is enabled, so look through every container's shadow
+    // root first; fall back to a document query for light-DOM mounts.
+    // Fallback timeout covers the same-viewport no-op case where no
+    // transition runs (and the listener never fires).
     const settled = this.page.evaluate((testId) => {
       return new Promise<void>((resolve) => {
-        const el = document.querySelector(`[data-testid="${testId}"]`);
+        let el: Element | null = document.querySelector(
+          `[data-testid="${testId}"]`,
+        );
+        if (!el) {
+          // Walk every host element with an open shadow root looking for
+          // the wrapper. Avoids hard-coding the editor container's
+          // testid in this helper.
+          const hosts = Array.from(document.querySelectorAll("*")).filter(
+            (n): n is HTMLElement =>
+              n instanceof HTMLElement && !!n.shadowRoot,
+          );
+          for (const host of hosts) {
+            const inside = host.shadowRoot!.querySelector(
+              `[data-testid="${testId}"]`,
+            );
+            if (inside) {
+              el = inside;
+              break;
+            }
+          }
+        }
         if (!el) return resolve();
         const done = () => {
-          el.removeEventListener("transitionend", handler);
+          el!.removeEventListener("transitionend", handler);
           resolve();
         };
         const handler = (e: Event) => {

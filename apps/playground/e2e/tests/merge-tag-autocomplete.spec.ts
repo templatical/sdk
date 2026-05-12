@@ -1,6 +1,18 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
+// Phase 7 blocker: merge-tag autocomplete depends on the `{{` keystroke
+// reaching TipTap's input rules. In shadow mode, typing doesn't propagate
+// (window.getSelection() returns empty inside a shadow tree on Chromium),
+// so TipTap's selection-driven input rules never fire and the popup
+// never opens. Skip until the broader TipTap shadow gap is closed.
+// Tracked as a Phase 3 follow-up.
+test.skip(
+  ({ shadowDom }) => shadowDom,
+  "TipTap selection API doesn't pierce shadow boundary — Phase 3 follow-up",
+);
+
+
 /**
  * Helpers — keep test bodies focused on assertions.
  */
