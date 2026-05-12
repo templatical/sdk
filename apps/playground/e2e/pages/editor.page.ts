@@ -441,14 +441,38 @@ export class EditorPage {
     await fromBlock.scrollIntoViewIfNeeded();
     await toBlock.scrollIntoViewIfNeeded();
     const fromBox = await fromBlock.boundingBox();
-    const toBox = await toBlock.boundingBox();
-    if (!fromBox || !toBox) throw new Error("Section reorder bounds unavailable");
+    if (!fromBox) throw new Error("Section reorder source bounds unavailable");
 
-    await this.pointerDrive(
-      fromBox,
-      toBox,
-      toChildIndex > fromChildIndex ? "bottom" : "top",
-    );
+    // Sortable replaces the dragged element with a zero-height ghost
+    // (`.tpl-ghost { height: 0 }`), so once the drag starts, the column
+    // collapses and the target block shifts up by the source's height.
+    // Pre-drag `toBox` coordinates would aim past the target's new position
+    // — drive the mouse to drag-start first, re-query `toBox`, then
+    // interpolate to the up-to-date target location.
+    const targetEdge = toChildIndex > fromChildIndex ? "bottom" : "top";
+    const startX = fromBox.x + fromBox.width / 2;
+    const startY = fromBox.y + fromBox.height / 2;
+    await this.page.mouse.move(startX, startY);
+    await this.page.mouse.down();
+    // Tiny nudge so Sortable's drag-start threshold fires and the ghost
+    // is inserted into the DOM, collapsing the column.
+    await this.page.mouse.move(startX + 4, startY + 4);
+
+    const toBox = await toBlock.boundingBox();
+    if (!toBox) {
+      await this.page.mouse.up();
+      throw new Error("Section reorder target bounds unavailable after drag start");
+    }
+    const endX = toBox.x + toBox.width / 2;
+    const endY =
+      targetEdge === "top"
+        ? toBox.y + toBox.height * 0.1
+        : toBox.y + toBox.height * 0.9;
+
+    await this.page.mouse.move(endX, endY, { steps: 30 });
+    await this.page.mouse.move(endX, endY);
+    await this.page.mouse.move(endX, endY);
+    await this.page.mouse.up();
 
     await expect
       .poll(
