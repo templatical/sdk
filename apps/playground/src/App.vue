@@ -740,14 +740,24 @@ function resolveInitialShadowMode(): "shadow" | "light" {
 
 const shadowDomMode = ref<"shadow" | "light">(resolveInitialShadowMode());
 
-function cycleShadowDom(): void {
-  shadowDomMode.value = shadowDomMode.value === "shadow" ? "light" : "shadow";
+async function cycleShadowDom(): Promise<void> {
+  const newMode = shadowDomMode.value === "shadow" ? "light" : "shadow";
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(SHADOW_STORAGE_KEY, shadowDomMode.value);
+    window.localStorage.setItem(SHADOW_STORAGE_KEY, newMode);
   }
-  // Re-init when an editor is mounted; init() short-circuits if not.
   if (editor.value) {
-    initEditor();
+    // Once `attachShadow()` runs on a host element, the shadow root is
+    // permanent — even after Vue unmount, the (now empty) shadow tree
+    // suppresses light-DOM children. So we must tear down the current
+    // editor AND force Vue to recreate the container element via a `:key`
+    // bump, then re-init on the fresh node.
+    editor.value.unmount();
+    editor.value = null;
+    shadowDomMode.value = newMode;
+    await nextTick();
+    await initEditor();
+  } else {
+    shadowDomMode.value = newMode;
   }
 }
 
@@ -1902,6 +1912,7 @@ onUnmounted(() => {
           </div>
           <div
             v-else
+            :key="shadowDomMode"
             ref="editorContainer"
             data-testid="editor-container"
             data-onboarding="canvas"

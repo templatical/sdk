@@ -352,13 +352,24 @@ function resolveInitialShadowMode(): "shadow" | "light" {
 
 const shadowDomMode = ref<"shadow" | "light">(resolveInitialShadowMode());
 
-function cycleShadowDom(): void {
-  shadowDomMode.value = shadowDomMode.value === "shadow" ? "light" : "shadow";
+async function cycleShadowDom(): Promise<void> {
+  const newMode = shadowDomMode.value === "shadow" ? "light" : "shadow";
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(SHADOW_STORAGE_KEY, shadowDomMode.value);
+    window.localStorage.setItem(SHADOW_STORAGE_KEY, newMode);
   }
   if (editor.value) {
-    initEditor(currentTemplateId.value ?? undefined);
+    // Once `attachShadow()` runs on a host element, the shadow root is
+    // permanent — re-mounting on the same element in light mode would
+    // render into a dead shadow tree. Tear down + bump the container's
+    // `:key` so Vue recreates a fresh DOM node, then re-init.
+    const previousTemplateId = currentTemplateId.value;
+    editor.value.unmount();
+    editor.value = null;
+    shadowDomMode.value = newMode;
+    await nextTick();
+    await initEditor(previousTemplateId ?? undefined);
+  } else {
+    shadowDomMode.value = newMode;
   }
 }
 
@@ -1092,6 +1103,7 @@ onUnmounted(() => {
         </div>
         <div
           v-else
+          :key="shadowDomMode"
           ref="editorContainer"
           class="flex-1 min-w-0 rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700"
         />
