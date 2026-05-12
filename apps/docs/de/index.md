@@ -3,7 +3,7 @@ layout: home
 hero:
   name: Templatical
   text: E-Mail-Editor für Ihre Anwendung
-  tagline: Binden Sie einen produktionsreifen Drag-and-Drop-E-Mail-Editor in jede Webanwendung ein. Open Source, Framework-agnostisch und vollgepackt mit Funktionen, die in anderen Editoren typischerweise kostenpflichtigen Tarifen vorbehalten sind.
+  tagline: Binden Sie einen produktionsreifen Drag-and-Drop-E-Mail-Editor in jede Webanwendung ein — Host-CSS und Design-Systeme können ihn nicht beschädigen. Open Source, Framework-agnostisch und vollgepackt mit Funktionen, die in anderen Editoren typischerweise kostenpflichtigen Tarifen vorbehalten sind.
   actions:
     - theme: brand
       text: Loslegen
@@ -36,4 +36,12 @@ features:
     details: Portables JSON, MJML-Ausgabe. Rendern Sie überall und versenden Sie über jeden Provider.
     link: /de/getting-started/how-rendering-works
     linkText: Wie das Rendering funktioniert →
+  - title: Standardmäßig style-isoliert
+    details: Shadow-DOM-Mount hält Host-CSS aus dem Editor und Editor-CSS aus Ihrer App heraus. Funktioniert in jeder Seite, jedem Framework, jedem CMS — ohne Resets, ohne Konflikte.
+    link: /de/guide/shadow-dom
+    linkText: So funktioniert die Isolation →
+  - title: Bestehende Templates übernehmen
+    details: Importer für BeeFree, Unlayer und rohes HTML. Migrieren Sie in Ihrem Tempo, kein Neuaufbau erforderlich.
+    link: /de/guide/migration-from-beefree
+    linkText: Von BeeFree migrieren →
 ---

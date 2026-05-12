@@ -52,11 +52,11 @@ Things that are usually paid features in commercial editors — open-source in T
 ### And more
 
 - **Drop-in mount** — one `init()` call, one `unmount()`. No framework lock-in.
+- **Style-isolated, both directions** — Shadow DOM by default keeps host CSS out of the editor; `tpl:` Tailwind prefix and no preflight reset keep editor styles out of your app. Drops into any page, any framework, any CMS — no resets, no conflicts. [Learn more →](https://docs.templatical.com/guide/shadow-dom)
 - **14 block types** — Title, Paragraph, Image, Button, Section, Divider, Spacer, Social Icons, Menu, Table, HTML, Video, Countdown, Custom.
 - **JSON templates** — portable, versionable, store anywhere, render anywhere.
 - **MJML output** — works with any email provider (Postmark, Resend, SES, Mailgun, anything).
 - **Framework-agnostic** — first-class examples for React, Vue, Svelte, Angular, vanilla.
-- **Tailwind 4 with `tpl:` prefix** — no preflight reset, no style leaks into your app.
 - **Bilingual** — en/de built in, easy to add more locales.
 - **TypeScript strict** — full types for blocks, config, and callbacks.
 - **Battle-tested** — ~1,400 unit tests + Playwright E2E coverage.

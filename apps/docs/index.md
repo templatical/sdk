@@ -3,7 +3,7 @@ layout: home
 hero:
   name: Templatical
   text: Email Editor for Your App
-  tagline: Drop a production-ready drag-and-drop email editor into any web application. Open-source, framework-agnostic, and packed with features that are typically reserved for paid tiers in other editors.
+  tagline: Drop a production-ready drag-and-drop email editor into any web application — host CSS and design systems can't break it. Open-source, framework-agnostic, and packed with features that are typically reserved for paid tiers in other editors.
   actions:
     - theme: brand
       text: Get Started
@@ -36,4 +36,12 @@ features:
     details: Portable JSON templates, MJML output. Render anywhere, send through any provider.
     link: /getting-started/how-rendering-works
     linkText: How rendering works →
+  - title: Style-isolated by default
+    details: Shadow DOM mount keeps host CSS out of the editor and editor CSS out of your app. Drop into any page, framework, or CMS — no resets, no conflicts.
+    link: /guide/shadow-dom
+    linkText: How isolation works →
+  - title: Bring your existing templates
+    details: Importers for BeeFree, Unlayer, and raw HTML. Migrate at your pace, no rebuild required.
+    link: /guide/migration-from-beefree
+    linkText: Migrate from BeeFree →
 ---
