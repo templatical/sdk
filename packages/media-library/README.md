@@ -22,16 +22,16 @@ Peer deps: `vue@^3.5`, `tailwindcss@^4`.
 ### Standalone visual SDK (mount anywhere)
 
 ```ts
-import { init } from '@templatical/media-library';
-import '@templatical/media-library/style.css';
+import { init } from "@templatical/media-library";
+import "@templatical/media-library/style.css";
 
 const media = await init({
-  container: '#media',
+  container: "#media",
   auth: {
-    url: 'https://your-app.com/api/templatical/token',
+    url: "https://your-app.com/api/templatical/token",
   },
   onSelect(item) {
-    console.log('Picked:', item.url);
+    console.log("Picked:", item.url);
   },
 });
 
@@ -44,18 +44,18 @@ media.unmount();
 Use `MediaLibraryModal` inside a Vue 3 app. See [docs](https://docs.templatical.com/cloud/media-library) for the full prop reference.
 
 ```ts
-import { MediaLibraryModal } from '@templatical/media-library';
-import '@templatical/media-library/style.css';
+import { MediaLibraryModal } from "@templatical/media-library";
+import "@templatical/media-library/style.css";
 ```
 
 ### Composable (build your own UI)
 
 ```ts
-import { AuthManager } from '@templatical/core/cloud';
-import { useMediaLibrary } from '@templatical/media-library';
+import { AuthManager } from "@templatical/core/cloud";
+import { useMediaLibrary } from "@templatical/media-library";
 
 const authManager = new AuthManager({
-  url: 'https://your-app.com/api/templatical/token',
+  url: "https://your-app.com/api/templatical/token",
 });
 await authManager.initialize();
 
@@ -68,8 +68,8 @@ const lib = useMediaLibrary({
 ### API client (low-level)
 
 ```ts
-import { AuthManager } from '@templatical/core/cloud';
-import { MediaApiClient } from '@templatical/media-library';
+import { AuthManager } from "@templatical/core/cloud";
+import { MediaApiClient } from "@templatical/media-library";
 
 const api = new MediaApiClient(authManager);
 const response = await api.browseMedia({ folder_id: null });
@@ -83,9 +83,16 @@ const response = await api.browseMedia({ folder_id: null });
 - **API client** — `MediaApiClient`
 - **Types** — `MediaItem`, `MediaFolder`, `MediaCategory`, `MediaConversion`, `MediaBrowseParams/Response`, `MediaUsageInfo/Response`, `MediaConfig`, etc.
 
+## Inside the editor's Shadow DOM
+
+When the editor mounts in its default shadow-DOM mode (`shadowDom: true`), the media library invocation teleports into the editor's shadow-aware popover root rather than `document.body`. The `MediaLibraryModal` accepts an optional `popoverTarget?: HTMLElement | null` prop and provides it to its three nested sub-modals (replace, edit, import-url) so the entire media UI lives inside the editor's shadow root. Standalone-SDK consumers (`init({ container })`) keep the previous body-level mount.
+
+If you embed `MediaLibraryModal` manually inside another shadow-DOM-mounted UI, pass `popoverTarget` to keep its sub-modals scoped to your shadow root.
+
 ## Documentation
 
 - [Media library guide](https://docs.templatical.com/cloud/media-library)
+- [Shadow DOM (editor)](https://docs.templatical.com/guide/shadow-dom)
 
 Full reference at **[docs.templatical.com](https://docs.templatical.com)**.
 

@@ -18,8 +18,8 @@ Save reusable template sections — headers, footers, product grids, CTAs — an
 
 ```js
 const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
+  container: "#editor",
+  auth: { url: "/api/templatical/token" },
   modules: true,
 });
 ```
@@ -27,18 +27,20 @@ const editor = await initCloud({
 ## Composable
 
 ```js
-import { useSavedModules } from '@templatical/core/cloud';
+import { useSavedModules } from "@templatical/core/cloud";
 
 const {
-  modules,        // Ref<SavedModule[]>
-  isLoading,      // Ref<boolean>
+  modules, // Ref<SavedModule[]>
+  isLoading, // Ref<boolean>
 
-  loadModules,    // (search?) => Promise<void>
-  createModule,   // (name, content) => Promise<SavedModule>
-  updateModule,   // (id, data) => Promise<SavedModule>
-  deleteModule,   // (id) => Promise<void>
+  loadModules, // (search?) => Promise<void>
+  createModule, // (name, content) => Promise<SavedModule>
+  updateModule, // (id, data) => Promise<SavedModule>
+  deleteModule, // (id) => Promise<void>
 } = useSavedModules({
   authManager,
-  onError: (error) => { /* handle error */ },
+  onError: (error) => {
+    /* handle error */
+  },
 });
 ```

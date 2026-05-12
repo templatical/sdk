@@ -9,10 +9,10 @@ Templatical Cloud ist für Multi-Tenant-SaaS-Anwendungen gebaut. Jeder Ihrer Kun
 
 ## Konzepte
 
-| Konzept | Beschreibung |
-|---------|-------------|
-| **Projekt** | Ihre Anwendung. Ein Projekt pro Templatical-Cloud-Konto. |
-| **Mandant** | Einer Ihrer Kunden/Ihrer Organisationen. Jeder Mandant hat isolierte Daten. |
+| Konzept           | Beschreibung                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Projekt**       | Ihre Anwendung. Ein Projekt pro Templatical-Cloud-Konto.                                                         |
+| **Mandant**       | Einer Ihrer Kunden/Ihrer Organisationen. Jeder Mandant hat isolierte Daten.                                      |
 | **API-Schlüssel** | Zugangsdaten, die auf ein Projekt beschränkt sind. Werden verwendet, um mandantenspezifische Tokens zu erzeugen. |
 
 ## So funktioniert es

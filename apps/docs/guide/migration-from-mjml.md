@@ -15,7 +15,7 @@ MJML → Templatical is harder to fully automate than BeeFree → Templatical, b
 
 ## What's actually happening here
 
-This is a slightly counter-intuitive migration. Templatical's renderer produces *MJML output* — so on the surface, MJML and Templatical look identical. But:
+This is a slightly counter-intuitive migration. Templatical's renderer produces _MJML output_ — so on the surface, MJML and Templatical look identical. But:
 
 - **MJML** is a markup language. You write XML-like tags (`<mj-section>`, `<mj-column>`, `<mj-text>`) and the MJML compiler turns them into table-based HTML.
 - **Templatical** stores templates as a JSON tree of typed blocks (`SectionBlock`, `ParagraphBlock`, etc.) and renders that tree to MJML at export time.
@@ -40,7 +40,7 @@ Most MJML templates port in 10–20 minutes once you've done one or two.
 Once you've rebuilt a template visually:
 
 ```ts
-import { renderToMjml } from '@templatical/renderer';
+import { renderToMjml } from "@templatical/renderer";
 
 const mjml = await renderToMjml(content);
 // Compare this MJML against your original MJML source.
@@ -55,19 +55,19 @@ If you have hundreds of MJML templates and want to attempt automated conversion 
 Here's the rough shape:
 
 ```ts
-import { parse } from 'node-html-parser';
+import { parse } from "node-html-parser";
 import {
   createSectionBlock,
   createTitleBlock,
   createParagraphBlock,
   createImageBlock,
   createButtonBlock,
-} from '@templatical/types';
-import type { TemplateContent, Block } from '@templatical/types';
+} from "@templatical/types";
+import type { TemplateContent, Block } from "@templatical/types";
 
 function mjmlToTemplate(mjml: string): TemplateContent {
   const root = parse(mjml);
-  const body = root.querySelector('mj-body');
+  const body = root.querySelector("mj-body");
 
   const blocks: Block[] = (body?.childNodes ?? [])
     .map((node) => convertNode(node))
@@ -76,17 +76,17 @@ function mjmlToTemplate(mjml: string): TemplateContent {
   return {
     blocks,
     settings: {
-      width: parseInt(body?.getAttribute('width') ?? '600'),
-      backgroundColor: body?.getAttribute('background-color') ?? '#ffffff',
+      width: parseInt(body?.getAttribute("width") ?? "600"),
+      backgroundColor: body?.getAttribute("background-color") ?? "#ffffff",
     },
   };
 }
 
 function convertNode(node: any): Block | null {
   switch (node.tagName?.toLowerCase()) {
-    case 'mj-section':
+    case "mj-section":
       return convertSection(node);
-    case 'mj-text':
+    case "mj-text":
       return convertText(node);
     // …more cases — see the mapping table below
     default:
@@ -101,22 +101,22 @@ A handwritten parser will miss edge cases — nested `mj-wrapper`, custom compon
 
 ## MJML tag mapping {#mjml-tag-mapping}
 
-| MJML tag | Templatical block | Notes |
-|---|---|---|
-| `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | Multi-column layouts work the same way; column widths come from MJML's `width` attribute or are equally distributed. |
-| `mj-column` | Section column | A column holds a list of nested blocks. |
-| `mj-text` | `ParagraphBlock` (or `TitleBlock` if it's a heading) | Use heading-level inline styles to decide between Title and Paragraph. |
-| `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding. |
-| `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, padding. |
-| `mj-divider` | `DividerBlock` | `border-color`, `border-width`, padding. |
-| `mj-spacer` | `SpacerBlock` | `height`. |
-| `mj-social` (with `mj-social-element`) | `SocialIconsBlock` | Each `mj-social-element` → a `SocialIcon` entry. |
-| `mj-navbar` (with `mj-navbar-link`) | `MenuBlock` | Each link → `MenuItemData`. |
-| `mj-table` | `TableBlock` | Map `<tr>` and `<td>` rows/cells to Templatical's table data. |
-| `mj-raw` | `HtmlBlock` | Pass-through HTML. |
-| `mj-wrapper` | `SectionBlock` (often) | A wrapper without columns becomes a section with one column. |
-| `mj-hero`, `mj-carousel`, `mj-accordion` | `HtmlBlock` (fallback) | Templatical doesn't have direct equivalents yet — convert the rendered HTML to a raw HTML block, or wait for the importer. |
-| `mj-head` content | Template `settings` | `mj-title`, `mj-preview`, `mj-attributes`, `mj-font`, `mj-style` map to `TemplateSettings.preheaderText`, custom fonts, and theme overrides. |
+| MJML tag                                 | Templatical block                                    | Notes                                                                                                                                        |
+| ---------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mj-section` (containing `mj-column`s)   | `SectionBlock` with `columns`                        | Multi-column layouts work the same way; column widths come from MJML's `width` attribute or are equally distributed.                         |
+| `mj-column`                              | Section column                                       | A column holds a list of nested blocks.                                                                                                      |
+| `mj-text`                                | `ParagraphBlock` (or `TitleBlock` if it's a heading) | Use heading-level inline styles to decide between Title and Paragraph.                                                                       |
+| `mj-image`                               | `ImageBlock`                                         | `src`, `alt`, `href`, `width`, padding.                                                                                                      |
+| `mj-button`                              | `ButtonBlock`                                        | `href`, `background-color`, `color`, font, padding.                                                                                          |
+| `mj-divider`                             | `DividerBlock`                                       | `border-color`, `border-width`, padding.                                                                                                     |
+| `mj-spacer`                              | `SpacerBlock`                                        | `height`.                                                                                                                                    |
+| `mj-social` (with `mj-social-element`)   | `SocialIconsBlock`                                   | Each `mj-social-element` → a `SocialIcon` entry.                                                                                             |
+| `mj-navbar` (with `mj-navbar-link`)      | `MenuBlock`                                          | Each link → `MenuItemData`.                                                                                                                  |
+| `mj-table`                               | `TableBlock`                                         | Map `<tr>` and `<td>` rows/cells to Templatical's table data.                                                                                |
+| `mj-raw`                                 | `HtmlBlock`                                          | Pass-through HTML.                                                                                                                           |
+| `mj-wrapper`                             | `SectionBlock` (often)                               | A wrapper without columns becomes a section with one column.                                                                                 |
+| `mj-hero`, `mj-carousel`, `mj-accordion` | `HtmlBlock` (fallback)                               | Templatical doesn't have direct equivalents yet — convert the rendered HTML to a raw HTML block, or wait for the importer.                   |
+| `mj-head` content                        | Template `settings`                                  | `mj-title`, `mj-preview`, `mj-attributes`, `mj-font`, `mj-style` map to `TemplateSettings.preheaderText`, custom fonts, and theme overrides. |
 
 ## Things that don't map automatically
 

@@ -56,17 +56,17 @@ Templatical trennt die Template-Bearbeitung vom Template-Rendering. Der Editor e
 
 3. **HTML** -- Die finale Ausgabe. MJML kompiliert zu einem vollständigen HTML-Dokument mit Inline-Styles, verschachtelten Tabellen und client-spezifischen Workarounds. **Diesen Schritt kompilieren Sie selbst** mit einer beliebigen MJML-Bibliothek:
 
-    | Sprache | Bibliothek |
-    |----------|---------|
-    | Node.js | [mjml](https://www.npmjs.com/package/mjml) (offiziell) |
-    | PHP | [spatie/mjml-php](https://github.com/spatie/mjml-php) |
-    | Python | [mrml-python](https://github.com/jdrouet/mrml/tree/main/packages/mrml-python) |
-    | Ruby | [mrml-ruby](https://github.com/hardpixel/mrml-ruby) |
-    | Rust | [mrml](https://github.com/jdrouet/mrml) |
-    | .NET | [Mjml.Net](https://github.com/SebastianStehle/mjml-net) |
-    | Elixir | [mjml_nif](https://github.com/adoptoposs/mjml_nif) |
+   | Sprache | Bibliothek                                                                    |
+   | ------- | ----------------------------------------------------------------------------- |
+   | Node.js | [mjml](https://www.npmjs.com/package/mjml) (offiziell)                        |
+   | PHP     | [spatie/mjml-php](https://github.com/spatie/mjml-php)                         |
+   | Python  | [mrml-python](https://github.com/jdrouet/mrml/tree/main/packages/mrml-python) |
+   | Ruby    | [mrml-ruby](https://github.com/hardpixel/mrml-ruby)                           |
+   | Rust    | [mrml](https://github.com/jdrouet/mrml)                                       |
+   | .NET    | [Mjml.Net](https://github.com/SebastianStehle/mjml-net)                       |
+   | Elixir  | [mjml_nif](https://github.com/adoptoposs/mjml_nif)                            |
 
-    Eine vollständige Liste finden Sie auf [mjml.io/community](https://mjml.io/community).
+   Eine vollständige Liste finden Sie auf [mjml.io/community](https://mjml.io/community).
 
 ## Warum MJML?
 

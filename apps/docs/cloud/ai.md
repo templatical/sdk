@@ -13,18 +13,18 @@ AI is enabled by default when using `initCloud()`. To disable it or configure sp
 
 ```js
 const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
+  container: "#editor",
+  auth: { url: "/api/templatical/token" },
 
   // Enable all AI features (default when omitted)
   ai: {},
 
   // Or configure individually
   ai: {
-    chat: true,              // AI chat for content generation
-    rewrite: true,           // Text rewrite in title/paragraph blocks
-    scoring: true,           // Template quality scoring
-    designToTemplate: true,  // Design-to-template conversion
+    chat: true, // AI chat for content generation
+    rewrite: true, // Text rewrite in title/paragraph blocks
+    scoring: true, // Template quality scoring
+    designToTemplate: true, // Design-to-template conversion
   },
 
   // Or disable AI entirely
@@ -37,6 +37,7 @@ const editor = await initCloud({
 The AI chat panel lets users generate and modify email content through natural language prompts. The AI understands the current template structure and can add, modify, or remove blocks.
 
 **How it works:**
+
 1. User opens the AI chat panel in the editor
 2. Types a prompt like "Add a hero section with a product image and CTA button"
 3. The AI generates template changes and applies them
@@ -74,41 +75,45 @@ If you're building a custom UI on top of the Cloud SDK, these composables are av
 ### `useAiChat`
 
 ```js
-import { useAiChat } from '@templatical/core/cloud';
+import { useAiChat } from "@templatical/core/cloud";
 
 const {
-  messages,           // Ref<AiChatMessage[]> — conversation history
-  isGenerating,       // Ref<boolean> — currently generating
-  suggestions,        // Ref<string[]> — prompt suggestions
-  error,              // Ref<string | null>
+  messages, // Ref<AiChatMessage[]> — conversation history
+  isGenerating, // Ref<boolean> — currently generating
+  suggestions, // Ref<string[]> — prompt suggestions
+  error, // Ref<string | null>
 
-  sendPrompt,         // (prompt, content, mergeTags) => Promise<TemplateContent | null>
-  loadConversation,   // () => Promise<void>
-  loadSuggestions,    // (content, mergeTags) => Promise<void>
-  clearChat,          // () => void
+  sendPrompt, // (prompt, content, mergeTags) => Promise<TemplateContent | null>
+  loadConversation, // () => Promise<void>
+  loadSuggestions, // (content, mergeTags) => Promise<void>
+  clearChat, // () => void
 } = useAiChat({
   authManager,
   getTemplateId: () => templateId,
-  onApply: (content) => { /* AI applied changes */ },
-  onError: (error) => { /* handle error */ },
+  onApply: (content) => {
+    /* AI applied changes */
+  },
+  onError: (error) => {
+    /* handle error */
+  },
 });
 ```
 
 ### `useAiRewrite`
 
 ```js
-import { useAiRewrite } from '@templatical/core/cloud';
+import { useAiRewrite } from "@templatical/core/cloud";
 
 const {
-  isRewriting,        // Ref<boolean>
-  streamingText,      // Ref<string> — text as it streams in
-  rewrittenContent,   // Ref<string | null> — final result
-  error,              // Ref<string | null>
+  isRewriting, // Ref<boolean>
+  streamingText, // Ref<string> — text as it streams in
+  rewrittenContent, // Ref<string | null> — final result
+  error, // Ref<string | null>
 
-  rewrite,            // (content, instruction, mergeTags) => Promise<string | null>
-  undo,               // () => string | null
-  redo,               // () => string | null
-  reset,              // () => void
+  rewrite, // (content, instruction, mergeTags) => Promise<string | null>
+  undo, // () => string | null
+  redo, // () => string | null
+  reset, // () => void
 } = useAiRewrite({
   authManager,
   getTemplateId: () => templateId,
@@ -118,18 +123,20 @@ const {
 ### `useDesignReference`
 
 ```js
-import { useDesignReference } from '@templatical/core/cloud';
+import { useDesignReference } from "@templatical/core/cloud";
 
 const {
-  isGenerating,       // Ref<boolean>
-  error,              // Ref<string | null>
+  isGenerating, // Ref<boolean>
+  error, // Ref<string | null>
 
-  generate,           // (input) => Promise<TemplateContent | null>
-  reset,              // () => void
+  generate, // (input) => Promise<TemplateContent | null>
+  reset, // () => void
 } = useDesignReference({
   authManager,
   getTemplateId: () => templateId,
-  onApply: (content) => { /* design converted */ },
+  onApply: (content) => {
+    /* design converted */
+  },
 });
 
 // Generate from an uploaded image
@@ -139,5 +146,7 @@ await generate({ imageUpload: file });
 await generate({ pdfUpload: pdfFile });
 
 // Generate from a prompt
-await generate({ prompt: 'A product launch email with hero image and pricing table' });
+await generate({
+  prompt: "A product launch email with hero image and pricing table",
+});
 ```

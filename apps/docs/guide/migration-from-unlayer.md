@@ -20,17 +20,19 @@ npm install @templatical/import-unlayer
 ## Usage
 
 ```ts
-import { convertUnlayerTemplate } from '@templatical/import-unlayer';
+import { convertUnlayerTemplate } from "@templatical/import-unlayer";
 
 // Load your Unlayer design JSON (whatever editor.saveDesign returned)
-const unlayerJson = await fetch('/api/unlayer-templates/123').then(r => r.json());
+const unlayerJson = await fetch("/api/unlayer-templates/123").then((r) =>
+  r.json(),
+);
 
 // Convert to Templatical format
 const { content, report } = convertUnlayerTemplate(unlayerJson);
 
 // Use in the editor
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   content,
 });
 
@@ -39,6 +41,7 @@ console.log(report);
 ```
 
 The function returns an `ImportResult` with:
+
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each content node (`converted`, `approximated`, `html-fallback`, or `skipped`)
 
@@ -46,19 +49,19 @@ The function returns an `ImportResult` with:
 
 Unlayer content types map to Templatical equivalents:
 
-| Unlayer Content | Templatical Block | Status |
-|---|---|---|
-| Text | `paragraph` | Converted |
-| Heading | `title` | Converted |
-| Image | `image` | Converted |
-| Button | `button` | Converted |
-| Divider | `divider` | Converted |
-| Html | `html` | Converted |
-| Menu | `menu` | Approximated (styles may differ) |
-| Social | `social` | Converted (16 platforms mapped) |
-| Video | `video` | Converted |
-| Timer | `html` | HTML fallback (rebuild manually) |
-| Form | — | Skipped |
+| Unlayer Content | Templatical Block | Status                           |
+| --------------- | ----------------- | -------------------------------- |
+| Text            | `paragraph`       | Converted                        |
+| Heading         | `title`           | Converted                        |
+| Image           | `image`           | Converted                        |
+| Button          | `button`          | Converted                        |
+| Divider         | `divider`         | Converted                        |
+| Html            | `html`            | Converted                        |
+| Menu            | `menu`            | Approximated (styles may differ) |
+| Social          | `social`          | Converted (16 platforms mapped)  |
+| Video           | `video`           | Converted                        |
+| Timer           | `html`            | HTML fallback (rebuild manually) |
+| Form            | —                 | Skipped                          |
 
 Unknown content types are converted to HTML blocks as a fallback.
 
@@ -66,14 +69,14 @@ Unknown content types are converted to HTML blocks as a fallback.
 
 Unlayer organizes content into rows with columns whose widths come from a `cells` weight array. These map to Templatical's `SectionBlock` with the appropriate `ColumnLayout`:
 
-| Unlayer cells | Templatical Layout |
-|---|---|
-| `[1]` (single column) | flattened — no section wrapper |
-| `[1, 1]` (equal halves) | `'2'` |
-| `[1, 1, 1]` (equal thirds) | `'3'` |
-| `[1, 2]` | `'1-2'` |
-| `[2, 1]` | `'2-1'` |
-| 4+ cells | flattened to single column with a warning |
+| Unlayer cells              | Templatical Layout                        |
+| -------------------------- | ----------------------------------------- |
+| `[1]` (single column)      | flattened — no section wrapper            |
+| `[1, 1]` (equal halves)    | `'2'`                                     |
+| `[1, 1, 1]` (equal thirds) | `'3'`                                     |
+| `[1, 2]`                   | `'1-2'`                                   |
+| `[2, 1]`                   | `'2-1'`                                   |
+| 4+ cells                   | flattened to single column with a warning |
 
 Cell ratios that don't match a standard layout are mapped to the closest available one.
 

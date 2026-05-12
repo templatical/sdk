@@ -11,8 +11,8 @@ Multiple team members can edit the same template simultaneously. The collaborati
 
 ```js
 const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
+  container: "#editor",
+  auth: { url: "/api/templatical/token" },
   collaboration: {
     enabled: true,
   },
@@ -32,14 +32,14 @@ When collaboration is enabled:
 
 ```js
 const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
+  container: "#editor",
+  auth: { url: "/api/templatical/token" },
   collaboration: {
     enabled: true,
   },
   // React to collaboration events
   onError: (error) => {
-    console.error('Collaboration error:', error);
+    console.error("Collaboration error:", error);
   },
 });
 ```
@@ -49,19 +49,27 @@ const editor = await initCloud({
 For custom UI implementations:
 
 ```js
-import { useCollaboration } from '@templatical/core/cloud';
+import { useCollaboration } from "@templatical/core/cloud";
 
 const {
-  collaborators,    // Ref<Collaborator[]> — currently connected users
-  lockedBlocks,     // Ref<Map<string, Collaborator>> — blockId → who locked it
+  collaborators, // Ref<Collaborator[]> — currently connected users
+  lockedBlocks, // Ref<Map<string, Collaborator>> — blockId → who locked it
 } = useCollaboration({
   authManager,
   editor,
-  channel,          // Ref<PresenceChannel | null>
-  onCollaboratorJoined: (user) => { /* user joined */ },
-  onCollaboratorLeft: (user) => { /* user left */ },
-  onBlockLocked: ({ blockId, collaborator }) => { /* block locked */ },
-  onBlockUnlocked: ({ blockId, collaborator }) => { /* block unlocked */ },
+  channel, // Ref<PresenceChannel | null>
+  onCollaboratorJoined: (user) => {
+    /* user joined */
+  },
+  onCollaboratorLeft: (user) => {
+    /* user left */
+  },
+  onBlockLocked: ({ blockId, collaborator }) => {
+    /* block locked */
+  },
+  onBlockUnlocked: ({ blockId, collaborator }) => {
+    /* block unlocked */
+  },
 });
 ```
 

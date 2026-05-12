@@ -26,8 +26,8 @@ Wenn MCP aktiviert ist, lauscht der Editor über WebSocket auf Operationen verbu
 
 ```js
 const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
+  container: "#editor",
+  auth: { url: "/api/templatical/token" },
   mcp: {
     enabled: true,
   },

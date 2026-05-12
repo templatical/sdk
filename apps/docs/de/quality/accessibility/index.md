@@ -63,18 +63,23 @@ Das Paket macht keine Vorgaben zur UI. Das `useAccessibilityLint`-Composable des
 ## Installation
 
 ::: code-group
+
 ```bash [npm]
 npm install @templatical/quality
 ```
+
 ```bash [pnpm]
 pnpm add @templatical/quality
 ```
+
 ```bash [yarn]
 yarn add @templatical/quality
 ```
+
 ```bash [bun]
 bun add @templatical/quality
 ```
+
 :::
 
 Das Paket ist ein **optionaler Peer** von `@templatical/editor`. Installieren Sie es, um den Sidebar-Tab und die Canvas-Badges zu aktivieren. Lassen Sie es weg, bleibt der Editor schlank – der dynamische Import ist gegated und tree-shakeable, sodass der Linter-Chunk nie heruntergeladen wird.

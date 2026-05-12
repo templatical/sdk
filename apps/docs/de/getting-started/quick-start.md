@@ -16,43 +16,60 @@ npm install @templatical/editor @templatical/renderer
 ```html
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Templatical Editor</title>
-  <style>
-    body { margin: 0; }
-    #editor { height: calc(100vh - 48px); }
-    #toolbar { height: 48px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid #e5e7eb; }
-    #toolbar button { padding: 8px 16px; background: #1a73e8; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
-  </style>
-</head>
-<body>
-  <div id="toolbar">
-    <button onclick="save()">Save Template</button>
-  </div>
-  <div id="editor"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Templatical Editor</title>
+    <style>
+      body {
+        margin: 0;
+      }
+      #editor {
+        height: calc(100vh - 48px);
+      }
+      #toolbar {
+        height: 48px;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      #toolbar button {
+        padding: 8px 16px;
+        background: #1a73e8;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar">
+      <button onclick="save()">Save Template</button>
+    </div>
+    <div id="editor"></div>
 
-  <script type="module">
-    import { init } from '@templatical/editor';
-    import '@templatical/editor/style.css';
+    <script type="module">
+      import { init } from "@templatical/editor";
+      import "@templatical/editor/style.css";
 
-    const editor = await init({
-      container: '#editor',
-    });
-
-    window.save = async function () {
-      const content = editor.getContent();
-      const mjml = await editor.toMjml();
-
-      await fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, mjml }),
+      const editor = await init({
+        container: "#editor",
       });
-    };
-  </script>
-</body>
+
+      window.save = async function () {
+        const content = editor.getContent();
+        const mjml = await editor.toMjml();
+
+        await fetch("/api/templates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content, mjml }),
+        });
+      };
+    </script>
+  </body>
 </html>
 ```
 
@@ -61,7 +78,7 @@ Ihr Backend erhält sowohl das JSON (speichern Sie es, damit Nutzer das Template
 ::: info Shadow DOM als Standard
 Der Editor mountet standardmäßig innerhalb eines Shadow DOM, sodass Host-Seiten-CSS nicht in Editor-Elemente durchschlagen kann. Verwenden Sie ein `<div>` — oder ein beliebiges [Shadow-Host-fähiges Element](/de/api/editor#anforderungen-an-das-container-element) — als Container; Elemente wie `<table>`, `<form>` oder `<input>` können keinen Shadow Root aufnehmen.
 
-Übergeben Sie `shadowDom: false`, um zu deaktivieren, falls Sie einen ungewöhnlichen Container benötigen, Editor-Interna über `document.querySelector` ansprechen oder Firefox <101 / Safari <16.4 unterstützen müssen.
+Übergeben Sie `shadowDom: false`, um zu deaktivieren, falls Sie einen ungewöhnlichen Container benötigen, Editor-Interna über `document.querySelector` ansprechen oder Firefox <101 / Safari <16.4 unterstützen müssen. Siehe den [Shadow-DOM-Leitfaden](/de/guide/shadow-dom) für die vollständige Kompromissliste und Theming via `:host`.
 :::
 
 ## Nächste Schritte

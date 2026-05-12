@@ -21,9 +21,9 @@ Templatical Cloud verwendet JWT-basierte Authentifizierung. Das SDK verwaltet To
 
 ```js
 const editor = await initCloud({
-  container: '#editor',
+  container: "#editor",
   auth: {
-    url: '/api/templatical/token',
+    url: "/api/templatical/token",
   },
 });
 ```
@@ -32,19 +32,19 @@ const editor = await initCloud({
 
 ```js
 const editor = await initCloud({
-  container: '#editor',
+  container: "#editor",
   auth: {
-    url: '/api/templatical/token',
-    baseUrl: 'https://templatical.com',        // Standard
+    url: "/api/templatical/token",
+    baseUrl: "https://templatical.com", // Standard
     requestOptions: {
-      method: 'POST',                         // Standard: POST
+      method: "POST", // Standard: POST
       headers: {
-        'X-Custom-Header': 'value',
+        "X-Custom-Header": "value",
       },
       body: {
-        tenant_id: 'tenant-123',
+        tenant_id: "tenant-123",
       },
-      credentials: 'same-origin',
+      credentials: "same-origin",
     },
   },
 });
@@ -52,14 +52,14 @@ const editor = await initCloud({
 
 ### Referenz der Auth-Optionen
 
-| Option | Typ | Standard | Beschreibung |
-|--------|------|---------|-------------|
-| `url` | `string` | — | **Erforderlich.** URL Ihres Token-Endpunkts |
-| `baseUrl` | `string` | `https://templatical.com` | Basis-URL der Templatical-Cloud-API |
-| `requestOptions.method` | `'GET' \| 'POST'` | `'POST'` | HTTP-Methode für Token-Anfragen |
-| `requestOptions.headers` | `Record<string, string>` | `{}` | Zusätzliche Header, die mit Token-Anfragen gesendet werden |
-| `requestOptions.body` | `Record<string, unknown>` | `{}` | Body-Nutzlast für POST-Token-Anfragen |
-| `requestOptions.credentials` | `RequestCredentials` | `'include'` | Fetch-Credentials-Modus (`same-origin`, `include`) |
+| Option                       | Typ                       | Standard                  | Beschreibung                                               |
+| ---------------------------- | ------------------------- | ------------------------- | ---------------------------------------------------------- |
+| `url`                        | `string`                  | —                         | **Erforderlich.** URL Ihres Token-Endpunkts                |
+| `baseUrl`                    | `string`                  | `https://templatical.com` | Basis-URL der Templatical-Cloud-API                        |
+| `requestOptions.method`      | `'GET' \| 'POST'`         | `'POST'`                  | HTTP-Methode für Token-Anfragen                            |
+| `requestOptions.headers`     | `Record<string, string>`  | `{}`                      | Zusätzliche Header, die mit Token-Anfragen gesendet werden |
+| `requestOptions.body`        | `Record<string, unknown>` | `{}`                      | Body-Nutzlast für POST-Token-Anfragen                      |
+| `requestOptions.credentials` | `RequestCredentials`      | `'include'`               | Fetch-Credentials-Modus (`same-origin`, `include`)         |
 
 ## Format der Token-Antwort
 
@@ -83,35 +83,35 @@ Ihr Token-Endpunkt muss eine JSON-Antwort mit dieser Struktur zurückgeben:
 }
 ```
 
-| Feld | Typ | Beschreibung |
-|-------|------|-------------|
-| `token` | `string` | **Erforderlich.** Das JWT-Zugriffstoken |
-| `expires_at` | `number` | **Erforderlich.** Unix-Zeitstempel, zu dem das Token abläuft |
-| `project_id` | `string` | **Erforderlich.** Die Projekt-ID |
-| `tenant` | `string` | **Erforderlich.** Der Tenant-Slug |
-| `user` | `object` | Optional. Wird für Präsenz bei Zusammenarbeit und die Zuordnung von Kommentaren verwendet |
-| `user.id` | `string` | Benutzer-Identifier |
-| `user.name` | `string` | Anzeigename in der Kollaborations-UI |
-| `user.signature` | `string` | HMAC-Signatur zur Benutzerverifikation |
-| `test_email` | `object` | Optional. Konfiguration für die Test-E-Mail-Funktion |
-| `test_email.allowed_emails` | `string[]` | E-Mail-Adressen, die Test-E-Mails empfangen dürfen |
-| `test_email.signature` | `string` | HMAC-Signatur zur Verifikation von Test-E-Mails |
+| Feld                        | Typ        | Beschreibung                                                                              |
+| --------------------------- | ---------- | ----------------------------------------------------------------------------------------- |
+| `token`                     | `string`   | **Erforderlich.** Das JWT-Zugriffstoken                                                   |
+| `expires_at`                | `number`   | **Erforderlich.** Unix-Zeitstempel, zu dem das Token abläuft                              |
+| `project_id`                | `string`   | **Erforderlich.** Die Projekt-ID                                                          |
+| `tenant`                    | `string`   | **Erforderlich.** Der Tenant-Slug                                                         |
+| `user`                      | `object`   | Optional. Wird für Präsenz bei Zusammenarbeit und die Zuordnung von Kommentaren verwendet |
+| `user.id`                   | `string`   | Benutzer-Identifier                                                                       |
+| `user.name`                 | `string`   | Anzeigename in der Kollaborations-UI                                                      |
+| `user.signature`            | `string`   | HMAC-Signatur zur Benutzerverifikation                                                    |
+| `test_email`                | `object`   | Optional. Konfiguration für die Test-E-Mail-Funktion                                      |
+| `test_email.allowed_emails` | `string[]` | E-Mail-Adressen, die Test-E-Mails empfangen dürfen                                        |
+| `test_email.signature`      | `string`   | HMAC-Signatur zur Verifikation von Test-E-Mails                                           |
 
 ## Direkte Authentifizierung
 
 Für serverseitige oder Test-Szenarien können Sie sich direkt mit API-Zugangsdaten authentifizieren, statt einen Token-Endpunkt zu verwenden:
 
 ```js
-import { createSdkAuthManager } from '@templatical/core/cloud';
+import { createSdkAuthManager } from "@templatical/core/cloud";
 
 const auth = createSdkAuthManager(
   {
-    mode: 'direct',
-    clientId: 'your-client-id',
-    clientSecret: 'your-client-secret',
-    tenant: 'tenant-slug',
+    mode: "direct",
+    clientId: "your-client-id",
+    clientSecret: "your-client-secret",
+    tenant: "tenant-slug",
   },
-  (error) => console.error('Auth error:', error), // optionaler onError-Callback
+  (error) => console.error("Auth error:", error), // optionaler onError-Callback
 );
 ```
 
@@ -125,12 +125,12 @@ Authentifizierungsfehler werden über den `onError`-Callback gemeldet:
 
 ```js
 const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
+  container: "#editor",
+  auth: { url: "/api/templatical/token" },
   onError: (error) => {
-    if (error.message.includes('401') || error.message.includes('auth')) {
+    if (error.message.includes("401") || error.message.includes("auth")) {
       // Zur Anmeldung weiterleiten oder Re-Auth-Aufforderung anzeigen
-      window.location.href = '/login';
+      window.location.href = "/login";
     }
   },
 });

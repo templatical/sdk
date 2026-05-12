@@ -3,18 +3,23 @@
 ## Installation
 
 ::: code-group
+
 ```bash [npm]
 npm install @templatical/quality
 ```
+
 ```bash [pnpm]
 pnpm add @templatical/quality
 ```
+
 ```bash [yarn]
 yarn add @templatical/quality
 ```
+
 ```bash [bun]
 bun add @templatical/quality
 ```
+
 :::
 
 ## In den Editor einbinden

@@ -4,12 +4,12 @@
 
 Every rule emits an `A11yIssue` with one of four severities:
 
-| Severity | Meaning | UI |
-|---|---|---|
-| `error` | Hard accessibility failure. Recipient may be excluded from the message. | Red dot on canvas, "Errors" group in the sidebar. |
-| `warning` | Likely problem — fix unless you know better. | Yellow dot, "Warnings" group. |
-| `info` | Recommendation; not a defect. | No canvas badge, "Info" group. |
-| `off` | Override — disables the rule entirely. | Nothing. |
+| Severity  | Meaning                                                                 | UI                                                |
+| --------- | ----------------------------------------------------------------------- | ------------------------------------------------- |
+| `error`   | Hard accessibility failure. Recipient may be excluded from the message. | Red dot on canvas, "Errors" group in the sidebar. |
+| `warning` | Likely problem — fix unless you know better.                            | Yellow dot, "Warnings" group.                     |
+| `info`    | Recommendation; not a defect.                                           | No canvas badge, "Info" group.                    |
+| `off`     | Override — disables the rule entirely.                                  | Nothing.                                          |
 
 Severity is configurable per rule via `options.rules` — the catalog's "Severity" column is just the default.
 

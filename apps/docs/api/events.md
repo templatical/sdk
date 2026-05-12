@@ -15,12 +15,12 @@ Called whenever the template content changes. The callback receives the full `Te
 
 ```ts
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   onChange(content) {
     // Save to your backend
-    fetch('/api/templates/123', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+    fetch("/api/templates/123", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(content),
     });
   },
@@ -33,10 +33,10 @@ Called when the user explicitly triggers a save (e.g. via keyboard shortcut). Us
 
 ```ts
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   onSave(content) {
     saveTemplate(content);
-    showNotification('Template saved');
+    showNotification("Template saved");
   },
 });
 ```
@@ -47,9 +47,9 @@ Called when an error occurs within the editor.
 
 ```ts
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   onError(error) {
-    console.error('Editor error:', error.message);
+    console.error("Editor error:", error.message);
     reportToSentry(error);
   },
 });
@@ -62,10 +62,10 @@ const editor = await init({
 Called when the user clicks to select an image (e.g. in the image block settings). Return a `MediaResult` object, or `null` if the user cancels. When `alt` is provided, the editor automatically fills in the image's alt text.
 
 ```ts
-import type { MediaResult } from '@templatical/types';
+import type { MediaResult } from "@templatical/types";
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   async onRequestMedia(context?): Promise<MediaResult | null> {
     const image = await openMediaPicker();
     if (!image) return null;
@@ -81,14 +81,14 @@ If you don't provide `onRequestMedia`, the editor shows a text input where users
 Called when the user clicks to insert a merge tag in a title or paragraph block. Return a `Promise` that resolves to a `MergeTag` object or `null` if the user cancels.
 
 ```ts
-import type { MergeTag } from '@templatical/types';
+import type { MergeTag } from "@templatical/types";
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   mergeTags: {
     tags: [
-      { label: 'First Name', value: '{{first_name}}' },
-      { label: 'Email', value: '{{email}}' },
+      { label: "First Name", value: "{{first_name}}" },
+      { label: "Email", value: "{{email}}" },
     ],
     async onRequest(): Promise<MergeTag | null> {
       // Show your own picker UI and return the selected tag
@@ -109,7 +109,7 @@ If you provide `mergeTags.tags` without `onRequest`, the editor uses a built-in 
 let saveTimeout: ReturnType<typeof setTimeout>;
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   onChange(content) {
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => {
@@ -129,7 +129,7 @@ const editor = await init({
 let isDirty = false;
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   onChange() {
     isDirty = true;
     updateSaveButton();
@@ -142,7 +142,7 @@ const editor = await init({
   },
 });
 
-window.addEventListener('beforeunload', (e) => {
+window.addEventListener("beforeunload", (e) => {
   if (isDirty) {
     e.preventDefault();
   }

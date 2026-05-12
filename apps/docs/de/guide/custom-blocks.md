@@ -8,7 +8,7 @@ description: Definieren Sie Ihre eigenen Blocktypen mit benutzerdefinierten Feld
 Benutzerdefinierte Blöcke ermöglichen es Ihnen, Templatical um Ihre eigenen Blocktypen zu erweitern. Definieren Sie eine Reihe von Feldern, schreiben Sie ein Liquid-Template für das Rendering und verbinden Sie optional eine Datenquelle. Benutzer interagieren mit benutzerdefinierten Blöcken über die gleiche Drag-and-Drop-Oberfläche wie mit integrierten Blöcken.
 
 ::: warning Shadow DOM und Host-seitige Queries
-Benutzerdefinierte Blöcke rendern standardmäßig innerhalb des Shadow DOM des Editors. Wenn Ihr benutzerdefinierter Block aus Host-Seiten-Code heraus erreichbar sein muss (z. B. um ein Drittanbieter-Widget per ID anzubinden), finden `document.querySelector`-Aufrufe in den Editor das Element nicht — durchlaufen Sie stattdessen den Shadow Root über `container.shadowRoot.querySelector(...)` oder deaktivieren Sie mit `shadowDom: false`.
+Benutzerdefinierte Blöcke rendern standardmäßig innerhalb des Shadow DOM des Editors. Wenn Ihr benutzerdefinierter Block aus Host-Seiten-Code heraus erreichbar sein muss (z. B. um ein Drittanbieter-Widget per ID anzubinden), finden `document.querySelector`-Aufrufe in den Editor das Element nicht — durchlaufen Sie stattdessen den Shadow Root über `container.shadowRoot.querySelector(...)` oder deaktivieren Sie mit `shadowDom: false`. Siehe den [Shadow-DOM-Leitfaden](./shadow-dom) für die vollständige Host-Integrations-Geschichte.
 :::
 
 ## Einen benutzerdefinierten Block definieren
@@ -16,23 +16,36 @@ Benutzerdefinierte Blöcke rendern standardmäßig innerhalb des Shadow DOM des 
 Übergeben Sie benutzerdefinierte Blockdefinitionen über die Editor-Konfiguration. Das folgende Beispiel erstellt einen "Testimonial"-Block mit einem Zitat, Autorendetails, Avatar und einer Sternebewertung. Nach der Registrierung können Benutzer ihn aus der Block-Palette in ihr Template ziehen und jedes Feld im Einstellungsbereich bearbeiten.
 
 ```ts
-import { init } from '@templatical/editor';
+import { init } from "@templatical/editor";
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   customBlocks: [
     {
-      type: 'testimonial',
-      name: 'Testimonial',
+      type: "testimonial",
+      name: "Testimonial",
       icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-      description: 'Customer quote with photo and rating',
+      description: "Customer quote with photo and rating",
       fields: [
-        { key: 'quote', label: 'Quote', type: 'textarea' },
-        { key: 'authorName', label: 'Author Name', type: 'text' },
-        { key: 'authorTitle', label: 'Author Title', type: 'text' },
-        { key: 'avatar', label: 'Avatar', type: 'image' },
-        { key: 'rating', label: 'Rating (1-5)', type: 'number', min: 1, max: 5, step: 1, default: 5 },
-        { key: 'showRating', label: 'Show Rating', type: 'boolean', default: true },
+        { key: "quote", label: "Quote", type: "textarea" },
+        { key: "authorName", label: "Author Name", type: "text" },
+        { key: "authorTitle", label: "Author Title", type: "text" },
+        { key: "avatar", label: "Avatar", type: "image" },
+        {
+          key: "rating",
+          label: "Rating (1-5)",
+          type: "number",
+          min: 1,
+          max: 5,
+          step: 1,
+          default: 5,
+        },
+        {
+          key: "showRating",
+          label: "Show Rating",
+          type: "boolean",
+          default: true,
+        },
       ],
       template: `
         <table style="width: 100%; font-family: sans-serif;" cellpadding="0" cellspacing="0">
@@ -99,15 +112,15 @@ interface CustomBlockDefinition {
 }
 ```
 
-| Eigenschaft | Erforderlich | Beschreibung |
-|----------|----------|-------------|
-| `type` | Ja | Eindeutige Kennung (wird als `customType` in Block-Instanzen verwendet) |
-| `name` | Ja | Anzeigename in der Block-Palette |
-| `icon` | Nein | Inline-SVG-String, Bild-URL oder base64-Daten-URI für das Palettensymbol |
-| `description` | Nein | Tooltip oder Untertitel in der Palette |
-| `fields` | Ja | Array von Felddefinitionen |
-| `template` | Ja | Liquid-Template-String für das Rendering |
-| `dataSource` | Nein | Konfiguration für das Abrufen externer Daten |
+| Eigenschaft   | Erforderlich | Beschreibung                                                             |
+| ------------- | ------------ | ------------------------------------------------------------------------ |
+| `type`        | Ja           | Eindeutige Kennung (wird als `customType` in Block-Instanzen verwendet)  |
+| `name`        | Ja           | Anzeigename in der Block-Palette                                         |
+| `icon`        | Nein         | Inline-SVG-String, Bild-URL oder base64-Daten-URI für das Palettensymbol |
+| `description` | Nein         | Tooltip oder Untertitel in der Palette                                   |
+| `fields`      | Ja           | Array von Felddefinitionen                                               |
+| `template`    | Ja           | Liquid-Template-String für das Rendering                                 |
+| `dataSource`  | Nein         | Konfiguration für das Abrufen externer Daten                             |
 
 ## Feldtypen
 
@@ -125,16 +138,16 @@ interface CustomBlockFieldBase {
 
 Alle Feldtypen erweitern diese Basis. Der `key` wird als Variablenname in Ihrem Liquid-Template verwendet. Zusätzliche Eigenschaften hängen vom Feld-`type` ab:
 
-| Eigenschaft | Gilt für | Beschreibung |
-|----------|------------|-------------|
-| `required` | Alle | Feld als erforderlich markieren |
-| `placeholder` | Alle | Platzhaltertext für die Eingabe |
-| `readOnly` | Alle | Benutzerbearbeitung verhindern (nützlich bei Datenquellen) |
-| `default` | Alle | Standardwert bei Erstellung des Blocks |
-| `min`, `max`, `step` | `number` | Numerische Einschränkungen |
-| `options` | `select` | Array von `{ label, value }`-Auswahlmöglichkeiten |
-| `fields` | `repeatable` | Unterfelddefinitionen |
-| `minItems`, `maxItems` | `repeatable` | Grenzen für die Anzahl der Einträge |
+| Eigenschaft            | Gilt für     | Beschreibung                                               |
+| ---------------------- | ------------ | ---------------------------------------------------------- |
+| `required`             | Alle         | Feld als erforderlich markieren                            |
+| `placeholder`          | Alle         | Platzhaltertext für die Eingabe                            |
+| `readOnly`             | Alle         | Benutzerbearbeitung verhindern (nützlich bei Datenquellen) |
+| `default`              | Alle         | Standardwert bei Erstellung des Blocks                     |
+| `min`, `max`, `step`   | `number`     | Numerische Einschränkungen                                 |
+| `options`              | `select`     | Array von `{ label, value }`-Auswahlmöglichkeiten          |
+| `fields`               | `repeatable` | Unterfelddefinitionen                                      |
+| `minItems`, `maxItems` | `repeatable` | Grenzen für die Anzahl der Einträge                        |
 
 ### text
 
@@ -308,7 +321,9 @@ Benutzerdefinierte Blöcke werden noch leistungsfähiger, wenn sie durch eine AP
 ```ts
 interface DataSourceConfig {
   label: string;
-  onFetch: (context: DataSourceFetchContext) => Promise<Record<string, unknown> | null>;
+  onFetch: (
+    context: DataSourceFetchContext,
+  ) => Promise<Record<string, unknown> | null>;
 }
 
 interface DataSourceFetchContext {
@@ -370,26 +385,36 @@ Ein Einladungsblock für eine Veranstaltung mit einem Zeitplan, der mit wiederho
 
 ```ts
 const eventCard: CustomBlockDefinition = {
-  type: 'event-card',
-  name: 'Event Card',
+  type: "event-card",
+  name: "Event Card",
   icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
-  description: 'Event details with schedule and RSVP',
+  description: "Event details with schedule and RSVP",
   fields: [
-    { key: 'eventName', label: 'Event Name', type: 'text', default: 'Untitled Event' },
-    { key: 'date', label: 'Date', type: 'text', default: 'January 1, 2026' },
-    { key: 'venue', label: 'Venue', type: 'text' },
-    { key: 'venueAddress', label: 'Venue Address', type: 'text' },
-    { key: 'accentColor', label: 'Accent Color', type: 'color', default: '#4f46e5' },
-    { key: 'rsvpUrl', label: 'RSVP URL', type: 'text' },
     {
-      key: 'schedule',
-      label: 'Schedule',
-      type: 'repeatable',
+      key: "eventName",
+      label: "Event Name",
+      type: "text",
+      default: "Untitled Event",
+    },
+    { key: "date", label: "Date", type: "text", default: "January 1, 2026" },
+    { key: "venue", label: "Venue", type: "text" },
+    { key: "venueAddress", label: "Venue Address", type: "text" },
+    {
+      key: "accentColor",
+      label: "Accent Color",
+      type: "color",
+      default: "#4f46e5",
+    },
+    { key: "rsvpUrl", label: "RSVP URL", type: "text" },
+    {
+      key: "schedule",
+      label: "Schedule",
+      type: "repeatable",
       minItems: 1,
       maxItems: 10,
       fields: [
-        { key: 'time', label: 'Time', type: 'text' },
-        { key: 'session', label: 'Session', type: 'text' },
+        { key: "time", label: "Time", type: "text" },
+        { key: "session", label: "Session", type: "text" },
       ],
     },
   ],
@@ -422,26 +447,39 @@ Ein Preisblock mit einer Funktionsliste und CTA-Schaltfläche:
 
 ```ts
 const pricingTier: CustomBlockDefinition = {
-  type: 'pricing-tier',
-  name: 'Pricing Tier',
+  type: "pricing-tier",
+  name: "Pricing Tier",
   icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
-  description: 'Pricing card with features list',
+  description: "Pricing card with features list",
   fields: [
-    { key: 'planName', label: 'Plan Name', type: 'text', default: 'Pro' },
-    { key: 'price', label: 'Price', type: 'text', default: '$29/mo' },
-    { key: 'highlighted', label: 'Highlighted', type: 'boolean', default: false },
-    { key: 'accentColor', label: 'Accent Color', type: 'color', default: '#4f46e5' },
-    { key: 'ctaLabel', label: 'Button Label', type: 'text', default: 'Get Started' },
-    { key: 'ctaUrl', label: 'Button URL', type: 'text' },
+    { key: "planName", label: "Plan Name", type: "text", default: "Pro" },
+    { key: "price", label: "Price", type: "text", default: "$29/mo" },
     {
-      key: 'features',
-      label: 'Features',
-      type: 'repeatable',
+      key: "highlighted",
+      label: "Highlighted",
+      type: "boolean",
+      default: false,
+    },
+    {
+      key: "accentColor",
+      label: "Accent Color",
+      type: "color",
+      default: "#4f46e5",
+    },
+    {
+      key: "ctaLabel",
+      label: "Button Label",
+      type: "text",
+      default: "Get Started",
+    },
+    { key: "ctaUrl", label: "Button URL", type: "text" },
+    {
+      key: "features",
+      label: "Features",
+      type: "repeatable",
       minItems: 1,
       maxItems: 8,
-      fields: [
-        { key: 'text', label: 'Feature', type: 'text' },
-      ],
+      fields: [{ key: "text", label: "Feature", type: "text" }],
     },
   ],
   template: `

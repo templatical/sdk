@@ -98,6 +98,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
       text: "Customization",
       items: [
         { text: "Theming", link: "/guide/theming" },
+        { text: "Shadow DOM", link: "/guide/shadow-dom" },
         { text: "Block & Template Defaults", link: "/guide/defaults" },
         { text: "Custom Fonts", link: "/guide/fonts" },
         { text: "Internationalization", link: "/guide/i18n" },
@@ -241,6 +242,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       text: "Anpassung",
       items: [
         { text: "Theming", link: "/de/guide/theming" },
+        { text: "Shadow DOM", link: "/de/guide/shadow-dom" },
         { text: "Block- & Template-Standards", link: "/de/guide/defaults" },
         { text: "Benutzerdefinierte Schriften", link: "/de/guide/fonts" },
         { text: "Internationalisierung", link: "/de/guide/i18n" },

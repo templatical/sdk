@@ -20,17 +20,19 @@ npm install @templatical/import-beefree
 ## Verwendung
 
 ```ts
-import { convertBeeFreeTemplate } from '@templatical/import-beefree';
+import { convertBeeFreeTemplate } from "@templatical/import-beefree";
 
 // Laden Sie Ihr BeeFree-Template-JSON
-const beefreeJson = await fetch('/api/beefree-templates/123').then(r => r.json());
+const beefreeJson = await fetch("/api/beefree-templates/123").then((r) =>
+  r.json(),
+);
 
 // In das Templatical-Format konvertieren
 const { content, report } = convertBeeFreeTemplate(beefreeJson);
 
 // Im Editor verwenden
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   content,
 });
 
@@ -39,6 +41,7 @@ console.log(report);
 ```
 
 Die Funktion gibt ein `ImportResult` zurück mit:
+
 - `content` — den konvertierten `TemplateContent`, bereit für den Editor
 - `report` — einen Konvertierungsbericht mit dem Status jedes Blocks (`converted`, `approximated`, `html-fallback` oder `skipped`)
 
@@ -46,21 +49,21 @@ Die Funktion gibt ein `ImportResult` zurück mit:
 
 BeeFree-Blocktypen werden den Templatical-Äquivalenten zugeordnet:
 
-| BeeFree-Modul | Templatical-Block | Status |
-|---|---|---|
-| Text | `paragraph` | Konvertiert |
-| Paragraph | `paragraph` | Konvertiert |
-| Heading | `title` | Konvertiert |
-| List | `paragraph` | Konvertiert |
-| Image | `image` | Konvertiert |
-| Button | `button` | Konvertiert |
-| Divider | `divider` | Konvertiert |
-| Spacer | `spacer` | Konvertiert |
-| Social | `social` | Konvertiert (16 Plattformen zugeordnet) |
-| Html | `html` | Konvertiert |
-| Menu | `menu` | Angenähert (Stile können abweichen) |
-| Video | `video` | Konvertiert |
-| Table | `table` | Konvertiert |
+| BeeFree-Modul | Templatical-Block | Status                                  |
+| ------------- | ----------------- | --------------------------------------- |
+| Text          | `paragraph`       | Konvertiert                             |
+| Paragraph     | `paragraph`       | Konvertiert                             |
+| Heading       | `title`           | Konvertiert                             |
+| List          | `paragraph`       | Konvertiert                             |
+| Image         | `image`           | Konvertiert                             |
+| Button        | `button`          | Konvertiert                             |
+| Divider       | `divider`         | Konvertiert                             |
+| Spacer        | `spacer`          | Konvertiert                             |
+| Social        | `social`          | Konvertiert (16 Plattformen zugeordnet) |
+| Html          | `html`            | Konvertiert                             |
+| Menu          | `menu`            | Angenähert (Stile können abweichen)     |
+| Video         | `video`           | Konvertiert                             |
+| Table         | `table`           | Konvertiert                             |
 
 Unbekannte Modultypen werden als Fallback in HTML-Blöcke konvertiert.
 
@@ -68,13 +71,13 @@ Unbekannte Modultypen werden als Fallback in HTML-Blöcke konvertiert.
 
 BeeFree organisiert Inhalte in Zeilen mit Spalten. Diese werden einem Templatical-`SectionBlock` mit dem entsprechenden `ColumnLayout` zugeordnet:
 
-| BeeFree-Spalten | Templatical-Layout |
-|---|---|
-| 1 Spalte (100%) | `'1'` |
-| 2 gleiche Spalten | `'2'` |
-| 3 gleiche Spalten | `'3'` |
-| 2 Spalten (~33/66) | `'1-2'` |
-| 2 Spalten (~66/33) | `'2-1'` |
+| BeeFree-Spalten    | Templatical-Layout |
+| ------------------ | ------------------ |
+| 1 Spalte (100%)    | `'1'`              |
+| 2 gleiche Spalten  | `'2'`              |
+| 3 gleiche Spalten  | `'3'`              |
+| 2 Spalten (~33/66) | `'1-2'`            |
+| 2 Spalten (~66/33) | `'2-1'`            |
 
 Spaltenbreiten, die nicht einem Standardverhältnis entsprechen, werden dem am nächsten liegenden verfügbaren Layout zugeordnet.
 

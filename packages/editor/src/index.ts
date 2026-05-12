@@ -214,6 +214,7 @@ function attachDevStyleMirror(shadowRoot: ShadowRoot): () => void {
 
   function buildSheets(): CSSStyleSheet[] {
     const sheets: CSSStyleSheet[] = [];
+    // shadow-ok: dev-only HMR style mirror (production path is plugin-driven via adoptedStyleSheets)
     document.head.querySelectorAll("style").forEach((el) => {
       const text = el.textContent;
       if (!text) return;
@@ -241,6 +242,7 @@ function attachDevStyleMirror(shadowRoot: ShadowRoot): () => void {
   const observer = new MutationObserver(() => refresh());
   // childList catches new/removed <style> tags; characterData + subtree
   // catches Vite HMR mutating an existing style's textContent in place.
+  // shadow-ok: dev-only HMR style mirror observer
   observer.observe(document.head, {
     childList: true,
     characterData: true,

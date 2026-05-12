@@ -34,15 +34,15 @@ Die meisten Templates sind in 5–15 Minuten umgezogen, sobald du das erste oder
 Hast du **Dutzende oder Hunderte Templates** und willst nicht auf den offiziellen Importer warten, kannst du mit der [Mapping-Tabelle](#unlayer-modul-mapping) ein einmaliges Skript schreiben. Die Form ist überschaubar:
 
 ```ts
-import { writeFileSync } from 'node:fs';
+import { writeFileSync } from "node:fs";
 import {
   createTitleBlock,
   createParagraphBlock,
   createImageBlock,
   createButtonBlock,
   createSectionBlock,
-} from '@templatical/types';
-import type { TemplateContent, Block } from '@templatical/types';
+} from "@templatical/types";
+import type { TemplateContent, Block } from "@templatical/types";
 
 interface UnlayerDesign {
   body: {
@@ -57,8 +57,8 @@ function convertUnlayerDesign(design: UnlayerDesign): TemplateContent {
   return {
     blocks,
     settings: {
-      width: parseInt(design.body.values.contentWidth ?? '600'),
-      backgroundColor: design.body.values.backgroundColor ?? '#ffffff',
+      width: parseInt(design.body.values.contentWidth ?? "600"),
+      backgroundColor: design.body.values.backgroundColor ?? "#ffffff",
       // …weitere Settings je nach Bedarf
     },
   };
@@ -67,7 +67,9 @@ function convertUnlayerDesign(design: UnlayerDesign): TemplateContent {
 function convertRow(row: UnlayerRow): Block {
   // Spalten/Zellen auf Templaticals SectionBlock-Children abbilden.
   // Modulebene siehe Mapping-Tabelle unten.
-  return createSectionBlock({ /* … */ });
+  return createSectionBlock({
+    /* … */
+  });
 }
 ```
 
@@ -81,21 +83,21 @@ Dein Konvertierungs-Skript wird Iteration brauchen. Lass es zuerst auf einer kle
 
 Eine Richtungs-Referenz, keine vollständige Spezifikation. Unlayer hat Tarif-gebundene Module und Custom Blocks ohne direkte Entsprechungen.
 
-| Unlayer-Modul | Templatical-Block | Hinweise |
-|---|---|---|
-| `row` (mit `columns`) | `SectionBlock` (mit `columns`) | Section = Reihe + mehrspaltiges Layout. Templatical-Sections unterstützen 1–4 Spalten, die auf Mobil stapeln. |
-| `column` | Section-Spalte | Eine Spalte innerhalb einer Section, hält eine Liste von Blöcken. |
-| `heading` | `TitleBlock` | Heading-Level (h1–h6) mappen auf Templaticals `level`-Property. |
-| `text` | `ParagraphBlock` | Inline-Rich-Text. Verwende TipTap-kompatibles HTML für Runs. |
-| `image` | `ImageBlock` | `src`, `alt`, `href`, `width`. Bilder über deine Medienbibliothek neu hosten. |
-| `button` | `ButtonBlock` | `text`, `href`, `backgroundColor`, `color`, Padding. |
-| `divider` | `DividerBlock` | Farbe, Breite, Padding. |
-| `social` | `SocialIconsBlock` | Jedes Icon → ein `SocialIcon`-Eintrag mit `platform` und `href`. |
-| `menu` | `MenuBlock` | Menüeinträge → `MenuItemData`-Einträge. |
-| `html` | `HtmlBlock` | Roher HTML-Pass-Through. |
-| `video` | `VideoBlock` | `src`, `thumbnail`, `href`. |
-| Spacer | `SpacerBlock` | Nur vertikaler Abstand. |
-| Custom-Module / Tarif-gebundene Module | `HtmlBlock` (Fallback) | In einen rohen HTML-Block konvertieren oder als [Custom Block](/de/guide/custom-blocks) implementieren, wenn er wiederverwendbar ist. |
+| Unlayer-Modul                          | Templatical-Block              | Hinweise                                                                                                                              |
+| -------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `row` (mit `columns`)                  | `SectionBlock` (mit `columns`) | Section = Reihe + mehrspaltiges Layout. Templatical-Sections unterstützen 1–4 Spalten, die auf Mobil stapeln.                         |
+| `column`                               | Section-Spalte                 | Eine Spalte innerhalb einer Section, hält eine Liste von Blöcken.                                                                     |
+| `heading`                              | `TitleBlock`                   | Heading-Level (h1–h6) mappen auf Templaticals `level`-Property.                                                                       |
+| `text`                                 | `ParagraphBlock`               | Inline-Rich-Text. Verwende TipTap-kompatibles HTML für Runs.                                                                          |
+| `image`                                | `ImageBlock`                   | `src`, `alt`, `href`, `width`. Bilder über deine Medienbibliothek neu hosten.                                                         |
+| `button`                               | `ButtonBlock`                  | `text`, `href`, `backgroundColor`, `color`, Padding.                                                                                  |
+| `divider`                              | `DividerBlock`                 | Farbe, Breite, Padding.                                                                                                               |
+| `social`                               | `SocialIconsBlock`             | Jedes Icon → ein `SocialIcon`-Eintrag mit `platform` und `href`.                                                                      |
+| `menu`                                 | `MenuBlock`                    | Menüeinträge → `MenuItemData`-Einträge.                                                                                               |
+| `html`                                 | `HtmlBlock`                    | Roher HTML-Pass-Through.                                                                                                              |
+| `video`                                | `VideoBlock`                   | `src`, `thumbnail`, `href`.                                                                                                           |
+| Spacer                                 | `SpacerBlock`                  | Nur vertikaler Abstand.                                                                                                               |
+| Custom-Module / Tarif-gebundene Module | `HtmlBlock` (Fallback)         | In einen rohen HTML-Block konvertieren oder als [Custom Block](/de/guide/custom-blocks) implementieren, wenn er wiederverwendbar ist. |
 
 ## Was sich nicht automatisch übertragen lässt
 

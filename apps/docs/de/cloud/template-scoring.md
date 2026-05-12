@@ -21,22 +21,22 @@ Einige Findings können automatisch behoben werden. Die KI schreibt den Inhalt d
 ## Composable
 
 ```js
-import { useTemplateScoring } from '@templatical/core/cloud';
+import { useTemplateScoring } from "@templatical/core/cloud";
 
 const {
   // Zustand
-  isScoring,          // Ref<boolean>
-  scoringResult,      // Ref<ScoringResult | null>
-  error,              // Ref<string | null>
-  fixingFindingId,    // Ref<string | null> — wird gerade behoben
-  fixStreamingText,   // Ref<string> — Fix-Text während er gestreamt wird
-  fixError,           // Ref<string | null>
+  isScoring, // Ref<boolean>
+  scoringResult, // Ref<ScoringResult | null>
+  error, // Ref<string | null>
+  fixingFindingId, // Ref<string | null> — wird gerade behoben
+  fixStreamingText, // Ref<string> — Fix-Text während er gestreamt wird
+  fixError, // Ref<string | null>
 
   // Methoden
-  score,              // (content, mergeTags) => Promise<ScoringResult | null>
-  fixFinding,         // (blockContent, finding, mergeTags) => Promise<string | null>
-  removeFinding,      // (category, findingId) => void
-  reset,              // () => void
+  score, // (content, mergeTags) => Promise<ScoringResult | null>
+  fixFinding, // (blockContent, finding, mergeTags) => Promise<string | null>
+  removeFinding, // (category, findingId) => void
+  reset, // () => void
 } = useTemplateScoring({
   authManager,
   getTemplateId: () => templateId,
@@ -49,11 +49,11 @@ Die Template-Bewertung ist eine KI-Funktion und kann unabhängig umgeschaltet we
 
 ```js
 const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
+  container: "#editor",
+  auth: { url: "/api/templatical/token" },
   ai: {
     chat: true,
-    scoring: true,        // Bewertung aktivieren (Standard: true)
+    scoring: true, // Bewertung aktivieren (Standard: true)
     designToTemplate: false,
   },
 });

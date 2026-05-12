@@ -15,16 +15,16 @@ Stick to 1-2 columns for most emails. Three-column layouts become cramped on mob
 
 The `columns` property accepts one of five layout presets:
 
-| Value | Description | Column widths |
-|-------|-------------|---------------|
-| `'1'` | Single column | 100% |
-| `'2'` | Two equal columns | 50% / 50% |
-| `'3'` | Three equal columns | 33% / 33% / 33% |
-| `'2-1'` | Two-thirds / one-third | 66% / 33% |
-| `'1-2'` | One-third / two-thirds | 33% / 66% |
+| Value   | Description            | Column widths   |
+| ------- | ---------------------- | --------------- |
+| `'1'`   | Single column          | 100%            |
+| `'2'`   | Two equal columns      | 50% / 50%       |
+| `'3'`   | Three equal columns    | 33% / 33% / 33% |
+| `'2-1'` | Two-thirds / one-third | 66% / 33%       |
+| `'1-2'` | One-third / two-thirds | 33% / 66%       |
 
 ```ts
-type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
+type ColumnLayout = "1" | "2" | "3" | "2-1" | "1-2";
 ```
 
 ## Creating sections
@@ -37,19 +37,19 @@ import {
   createTitleBlock,
   createParagraphBlock,
   createImageBlock,
-} from '@templatical/types';
+} from "@templatical/types";
 
 // Empty two-column section
-const section = createSectionBlock({ columns: '2' });
+const section = createSectionBlock({ columns: "2" });
 
 // Section with pre-populated columns
 const hero = createSectionBlock({
-  columns: '1-2',
+  columns: "1-2",
   children: [
-    [createImageBlock({ src: 'https://cdn.example.com/logo.png', width: 120 })],
+    [createImageBlock({ src: "https://cdn.example.com/logo.png", width: 120 })],
     [
-      createTitleBlock({ content: '<h1>Welcome</h1>', level: 1 }),
-      createParagraphBlock({ content: '<p>Get started in minutes.</p>' }),
+      createTitleBlock({ content: "<h1>Welcome</h1>", level: 1 }),
+      createParagraphBlock({ content: "<p>Get started in minutes.</p>" }),
     ],
   ],
 });
@@ -62,15 +62,15 @@ const hero = createSectionBlock({
 ```ts
 // For a '2' layout:
 section.children = [
-  [blockA, blockB],  // Left column
-  [blockC],          // Right column
+  [blockA, blockB], // Left column
+  [blockC], // Right column
 ];
 
 // For a '3' layout:
 section.children = [
-  [blockA],  // Left
-  [blockB],  // Center
-  [blockC],  // Right
+  [blockA], // Left
+  [blockB], // Center
+  [blockC], // Right
 ];
 ```
 
@@ -84,8 +84,8 @@ To programmatically add a block to a specific column:
 // Add a button to the second column (index 1)
 section.children[1].push(
   createButtonBlock({
-    text: 'Learn More',
-    url: 'https://example.com/docs',
+    text: "Learn More",
+    url: "https://example.com/docs",
   }),
 );
 ```
@@ -102,7 +102,7 @@ You can use the `visibility` property on individual blocks within columns to sho
 
 ```ts
 const block = createParagraphBlock({
-  content: '<p>Desktop only sidebar content</p>',
+  content: "<p>Desktop only sidebar content</p>",
 });
 
 block.visibility = {
@@ -119,10 +119,10 @@ See [Styling](/guide/styling) for more on responsive overrides and block visibil
 Sections support the same `BlockStyles` as other blocks. Common use cases include setting a background color or padding on the entire row:
 
 ```ts
-const section = createSectionBlock({ columns: '1' });
+const section = createSectionBlock({ columns: "1" });
 
 section.styles = {
-  backgroundColor: '#f8fafc',
+  backgroundColor: "#f8fafc",
   padding: { top: 32, right: 24, bottom: 32, left: 24 },
   margin: { top: 0, right: 0, bottom: 0, left: 0 },
 };

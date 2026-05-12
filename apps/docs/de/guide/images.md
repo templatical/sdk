@@ -18,10 +18,10 @@ Wenn der Callback `onRequestMedia` bereitgestellt wird, erscheint eine Durchsuch
 Der Editor ruft diese Funktion auf, wenn der Benutzer auf die Schaltfläche klickt. Geben Sie ein `MediaResult`-Objekt zurück oder `null`, wenn der Benutzer abbricht. Wenn `alt` angegeben ist, füllt der Editor automatisch den Alternativtext des Bildes aus.
 
 ```ts
-import { init } from '@templatical/editor';
+import { init } from "@templatical/editor";
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   async onRequestMedia() {
     // Öffnen Sie Ihr eigenes Modal, Ihren Datei-Browser oder Asset-Manager
     const image = await openMyMediaModal();
@@ -43,20 +43,19 @@ interface MediaResult {
 onRequestMedia?: (context?: MediaRequestContext) => Promise<MediaResult | null>;
 ```
 
-
 ## Eigenschaften des Bildblocks
 
 Der Typ `ImageBlock` definiert alle konfigurierbaren Eigenschaften:
 
-| Eigenschaft | Typ | Beschreibung |
-|---|---|---|
-| `src` | `string` | Quell-URL des Bildes |
-| `alt` | `string` | Alternativtext für Barrierefreiheit |
-| `width` | `number \| 'full'` | Bildbreite in Pixeln oder `'full'` für 100% |
-| `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
-| `linkUrl` | `string` (optional) | Umschließt das Bild mit einem Link |
-| `linkOpenInNewTab` | `boolean` (optional) | Öffnet den Link in einem neuen Tab |
-| `placeholderUrl` | `string` (optional) | Vorschaubild zur Entwurfszeit, wenn `src` ein Merge-Tag verwendet |
+| Eigenschaft        | Typ                             | Beschreibung                                                      |
+| ------------------ | ------------------------------- | ----------------------------------------------------------------- |
+| `src`              | `string`                        | Quell-URL des Bildes                                              |
+| `alt`              | `string`                        | Alternativtext für Barrierefreiheit                               |
+| `width`            | `number \| 'full'`              | Bildbreite in Pixeln oder `'full'` für 100%                       |
+| `align`            | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung                                           |
+| `linkUrl`          | `string` (optional)             | Umschließt das Bild mit einem Link                                |
+| `linkOpenInNewTab` | `boolean` (optional)            | Öffnet den Link in einem neuen Tab                                |
+| `placeholderUrl`   | `string` (optional)             | Vorschaubild zur Entwurfszeit, wenn `src` ein Merge-Tag verwendet |
 
 ### Placeholder-URL
 

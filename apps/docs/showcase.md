@@ -16,6 +16,7 @@ These are the integration patterns we see most often. Each describes how Templat
 You're building (or extending) a transactional email API — Postmark, Resend, SES wrappers, internal sending platforms. Customers connect their codebase, then need a way to design and version the templates the API sends.
 
 **Templatical fits because:**
+
 - Templates are JSON — versionable, diffable, AI-friendly, easy to store next to your customers' data.
 - MJML output renders consistently across Outlook, Gmail, Apple Mail, and the long tail of clients.
 - The renderer runs in Node, so you can compile to HTML server-side at send time without a vendor-hosted render API.
@@ -27,6 +28,7 @@ You're building (or extending) a transactional email API — Postmark, Resend, S
 You're building a Mailchimp-style product, an automation tool, or a creator-newsletter platform. Email composition is one of several features your customers need.
 
 **Templatical fits because:**
+
 - Drop-in editor mounts with one function call — no rewrite of your existing dashboard.
 - Theming via design tokens means your customers' emails feel native to your brand, not Templatical's.
 - Display conditions and merge tags are built in — important for personalization-heavy newsletter use.
@@ -39,6 +41,7 @@ You're building a Mailchimp-style product, an automation tool, or a creator-news
 You're building a CRM, a sales-engagement tool, or a marketing automation platform where customers send branded emails as one workflow among many.
 
 **Templatical fits because:**
+
 - It's not a separate "email designer" tab — it embeds inline alongside contact records, campaign builders, and automation flows.
 - Custom blocks let you surface your product's data (contact fields, deal info, calculated values) as first-class content blocks customers can drop into emails.
 - Real-time collaboration lets sales and marketing teams co-edit campaign templates without clobbering each other.
@@ -50,6 +53,7 @@ You're building a CRM, a sales-engagement tool, or a marketing automation platfo
 You're not building a customer-facing product — you need a controlled tool for your team to design transactional and marketing emails, with the JSON output stored in your own systems.
 
 **Templatical fits because:**
+
 - Self-hostable in full. The OSS SDK has no required cloud dependency.
 - Bilingual (en/de) out of the box, with a clean path to add more locales for international teams.
 - TypeScript-strict end-to-end, which makes it easy to wire into existing internal tooling and codegen pipelines.
@@ -61,6 +65,7 @@ You're not building a customer-facing product — you need a controlled tool for
 You're not embedding a visual editor at all — you want to generate templates from data programmatically, version them in source control, and render them through a deterministic pipeline.
 
 **Templatical fits because:**
+
 - The block system has factory functions (`createTitleBlock`, `createImageBlock`, …) and full TypeScript types — you can build templates entirely in code with full type safety.
 - The renderer is a pure function with no DOM dependency. Run it in serverless, edge, or Node.
 
@@ -73,6 +78,7 @@ See [Programmatic Templates](/guide/programmatic-templates) for a full walkthrou
 If your team ships Templatical in production, we'd love to feature you here. Open a pull request adding your entry, or [start a discussion](https://github.com/templatical/sdk/discussions) and we'll do it together.
 
 What we list:
+
 - A short product description (one sentence)
 - Your logo and a link
 - Optional: a one-paragraph note on how you use Templatical (which packages, which features, anything notable)

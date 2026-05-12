@@ -18,17 +18,17 @@ npm install @templatical/renderer
 Rendert ein `TemplateContent`-Objekt zu einem MJML-String. Gibt ein `Promise<string>` zurück – asynchron, damit benutzerdefinierte Blöcke (deren Auflösung asynchrone Arbeit erfordern kann) inline gerendert werden können.
 
 ```ts
-import { renderToMjml } from '@templatical/renderer';
+import { renderToMjml } from "@templatical/renderer";
 
 const mjml = await renderToMjml(templateContent);
 ```
 
 **Parameter:**
 
-| Parameter | Type | Beschreibung |
-|-----------|------|-------------|
-| `content` | `TemplateContent` | Das zu rendernde Template |
-| `options` | `RenderOptions` | Optionale Rendering-Konfiguration |
+| Parameter | Type              | Beschreibung                      |
+| --------- | ----------------- | --------------------------------- |
+| `content` | `TemplateContent` | Das zu rendernde Template         |
+| `options` | `RenderOptions`   | Optionale Rendering-Konfiguration |
 
 **Rückgabewert:** `Promise<string>` -- MJML-Markup
 
@@ -38,17 +38,17 @@ const mjml = await renderToMjml(templateContent);
 interface RenderOptions {
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
-  allowHtmlBlocks?: boolean;      // Standard: true
+  allowHtmlBlocks?: boolean; // Standard: true
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
 }
 ```
 
-| Option | Default | Beschreibung |
-|--------|---------|-------------|
-| `customFonts` | `[]` | Definitionen benutzerdefinierter Schriftarten für `<mj-font>`-Deklarationen in der gerenderten Ausgabe |
-| `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback-Schriftart-Stack |
-| `allowHtmlBlocks` | `true` | Auf `false` setzen, um HTML-Blöcke aus der Ausgabe zu entfernen |
-| `renderCustomBlock` | -- | Wandelt benutzerdefinierte Blöcke in HTML um. Wird einmal pro benutzerdefiniertem Block aufgerufen. Editor-Konsumenten übergeben `editor.renderCustomBlock`; Headless-Konsumenten verwenden einen eigenen Resolver. Wenn weggelassen, fällt der Renderer auf das `renderedHtml`-Feld des Blocks zurück (falls vorhanden) und lässt den Block andernfalls weg. |
+| Option                | Default               | Beschreibung                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `customFonts`         | `[]`                  | Definitionen benutzerdefinierter Schriftarten für `<mj-font>`-Deklarationen in der gerenderten Ausgabe                                                                                                                                                                                                                                                        |
+| `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback-Schriftart-Stack                                                                                                                                                                                                                                                                                                                                     |
+| `allowHtmlBlocks`     | `true`                | Auf `false` setzen, um HTML-Blöcke aus der Ausgabe zu entfernen                                                                                                                                                                                                                                                                                               |
+| `renderCustomBlock`   | --                    | Wandelt benutzerdefinierte Blöcke in HTML um. Wird einmal pro benutzerdefiniertem Block aufgerufen. Editor-Konsumenten übergeben `editor.renderCustomBlock`; Headless-Konsumenten verwenden einen eigenen Resolver. Wenn weggelassen, fällt der Renderer auf das `renderedHtml`-Feld des Blocks zurück (falls vorhanden) und lässt den Block andernfalls weg. |
 
 ### Benutzerdefinierte Blöcke
 
@@ -63,15 +63,16 @@ const mjml = await renderToMjml(editor.getContent(), {
 Headless- / Node.js-Konsumenten (ohne montierten Editor) können einen eigenen Resolver bereitstellen – zum Beispiel die gleiche Liquid-Vorlage gegen die `fieldValues` des Blocks ausführen:
 
 ```ts
-import { Liquid } from 'liquidjs';
+import { Liquid } from "liquidjs";
 
 const engine = new Liquid();
-const definitionsByType = new Map(/* Ihre CustomBlockDefinition-Liste, nach type indiziert */);
+const definitionsByType =
+  new Map(/* Ihre CustomBlockDefinition-Liste, nach type indiziert */);
 
 const mjml = await renderToMjml(content, {
   async renderCustomBlock(block) {
     const definition = definitionsByType.get(block.customType);
-    if (!definition) return '';
+    if (!definition) return "";
     return engine.parseAndRender(definition.template, block.fieldValues);
   },
 });
@@ -96,7 +97,7 @@ import {
   getWidthPixels,
   SOCIAL_ICONS,
   RenderContext,
-} from '@templatical/renderer';
+} from "@templatical/renderer";
 ```
 
 ### `escapeHtml(text)`
@@ -122,7 +123,7 @@ const alt = escapeAttr('Photo of "sunrise" at O\'Hare');
 Konvertiert HTML-Spans für Merge-Tags (vom Rich-Text-System des Editors intern verwendet) zurück in ihre einfache Textsyntax. Der Editor speichert Merge-Tags als `<span data-merge-tag="...">`-Elemente; diese Funktion entfernt die Spans und lässt die rohe Merge-Tag-Syntax übrig:
 
 ```ts
-import { convertMergeTagsToValues } from '@templatical/renderer';
+import { convertMergeTagsToValues } from "@templatical/renderer";
 
 // Eingabe: internes HTML-Format des Editors
 const editorHtml = '<span data-merge-tag="{{ first_name }}">First Name</span>';
@@ -159,7 +160,7 @@ toPaddingString({ top: 10, right: 20, bottom: 10, left: 20 });
 Erzeugt eine base64-kodierte SVG-Data-URI für ein Social-Media-Plattform-Icon. Wird intern vom Renderer für Social-Icon-Blöcke verwendet:
 
 ```ts
-const uri = generateSocialIconDataUri('twitter', 'circle', 32);
+const uri = generateSocialIconDataUri("twitter", "circle", 32);
 // 'data:image/svg+xml,...'
 ```
 
@@ -188,8 +189,8 @@ Eine Zuordnung aller eingebauten SVG-Icon-Daten für soziale Plattformen, nach P
 Nach dem Rendern in MJML kompilieren Sie mit einer beliebigen MJML-Bibliothek zu HTML:
 
 ```ts
-import { renderToMjml } from '@templatical/renderer';
-import mjml2html from 'mjml';
+import { renderToMjml } from "@templatical/renderer";
+import mjml2html from "mjml";
 
 const mjml = await renderToMjml(templateContent);
 const { html } = mjml2html(mjml);

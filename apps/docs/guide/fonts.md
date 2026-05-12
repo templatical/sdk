@@ -10,46 +10,46 @@ By default, the editor includes a set of common web-safe fonts (Arial, Georgia, 
 Configure which fonts are available using the `fonts` option:
 
 ```ts
-import type { FontsConfig } from '@templatical/types';
+import type { FontsConfig } from "@templatical/types";
 
 const fonts: FontsConfig = {
-  defaultFont: 'Inter',
-  defaultFallback: 'Arial, sans-serif',
+  defaultFont: "Inter",
+  defaultFallback: "Arial, sans-serif",
   customFonts: [
     {
-      name: 'Inter',
-      url: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap',
-      fallback: 'Helvetica, Arial, sans-serif',
+      name: "Inter",
+      url: "https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap",
+      fallback: "Helvetica, Arial, sans-serif",
     },
     {
-      name: 'Merriweather',
-      url: 'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap',
-      fallback: 'Georgia, serif',
+      name: "Merriweather",
+      url: "https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap",
+      fallback: "Georgia, serif",
     },
   ],
 };
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   fonts,
 });
 ```
 
 ## FontsConfig
 
-| Property | Type | Description |
-|---|---|---|
-| `defaultFont` | `string` | Font name selected by default in new templates |
-| `defaultFallback` | `string` | Fallback stack used when a custom font is unavailable |
-| `customFonts` | `CustomFont[]` | List of custom fonts to register |
+| Property          | Type           | Description                                           |
+| ----------------- | -------------- | ----------------------------------------------------- |
+| `defaultFont`     | `string`       | Font name selected by default in new templates        |
+| `defaultFallback` | `string`       | Fallback stack used when a custom font is unavailable |
+| `customFonts`     | `CustomFont[]` | List of custom fonts to register                      |
 
 ## CustomFont
 
-| Property | Type | Description |
-|---|---|---|
-| `name` | `string` | Display name in the font picker |
-| `url` | `string` | URL to the font CSS (e.g., Google Fonts link) |
-| `fallback` | `string` | Optional fallback font stack for this font |
+| Property   | Type     | Description                                   |
+| ---------- | -------- | --------------------------------------------- |
+| `name`     | `string` | Display name in the font picker               |
+| `url`      | `string` | URL to the font CSS (e.g., Google Fonts link) |
+| `fallback` | `string` | Optional fallback font stack for this font    |
 
 Custom fonts are automatically included as `<mj-font>` declarations in the rendered MJML output.
 

@@ -22,13 +22,13 @@ Sie können das HTML vor dem Versand als Test-E-Mail transformieren. Das ist nü
 
 ```js
 const editor = await initCloud({
-  container: '#editor',
-  auth: { url: '/api/templatical/token' },
+  container: "#editor",
+  auth: { url: "/api/templatical/token" },
   onBeforeTestEmail: async (html) => {
     // Merge-Tags durch Testwerte ersetzen
     return html
-      .replace('{{first_name}}', 'Jane')
-      .replace('{{company}}', 'Acme Corp');
+      .replace("{{first_name}}", "Jane")
+      .replace("{{company}}", "Acme Corp");
   },
 });
 ```
@@ -36,21 +36,23 @@ const editor = await initCloud({
 ## Composable
 
 ```js
-import { useTestEmail } from '@templatical/core/cloud';
+import { useTestEmail } from "@templatical/core/cloud";
 
 const {
-  isEnabled,        // ComputedRef<boolean> — Plan erlaubt Test-E-Mails
-  allowedEmails,    // ComputedRef<string[]> — zugelassene Empfänger
-  isSending,        // Ref<boolean>
-  error,            // Ref<string | null>
+  isEnabled, // ComputedRef<boolean> — Plan erlaubt Test-E-Mails
+  allowedEmails, // ComputedRef<string[]> — zugelassene Empfänger
+  isSending, // Ref<boolean>
+  error, // Ref<string | null>
 
-  sendTestEmail,    // (recipient) => Promise<void>
+  sendTestEmail, // (recipient) => Promise<void>
 } = useTestEmail({
   authManager,
   getTemplateId: () => templateId,
   save: () => editor.save(),
   exportHtml: (templateId) => exportFn(templateId),
   onBeforeTestEmail: (html) => html,
-  onError: (error) => { /* Fehler behandeln */ },
+  onError: (error) => {
+    /* Fehler behandeln */
+  },
 });
 ```

@@ -1,6 +1,7 @@
 import tseslint from "typescript-eslint";
 import pluginVue from "eslint-plugin-vue";
 import vueParser from "vue-eslint-parser";
+import templaticalEditorRules from "./packages/editor/eslint-rules/index.js";
 
 const tsRules = {
   "no-unused-vars": "off",
@@ -26,7 +27,18 @@ export default tseslint.config(
   {
     files: ["packages/*/src/**/*.ts", "apps/*/src/**/*.ts"],
     extends: [tseslint.configs.recommended],
+    plugins: {
+      "templatical-editor": templaticalEditorRules,
+    },
     rules: tsRules,
+  },
+
+  // ── Editor-package shadow-DOM guard rule (TS) ─────────────────────────
+  {
+    files: ["packages/editor/src/**/*.ts"],
+    rules: {
+      "templatical-editor/no-unannotated-document-global": "error",
+    },
   },
 
   // ── Vue single-file components ────────────────────────────────────────
@@ -44,6 +56,7 @@ export default tseslint.config(
     },
     plugins: {
       "@typescript-eslint": tseslint.plugin,
+      "templatical-editor": templaticalEditorRules,
     },
     rules: {
       ...tsRules,
@@ -66,6 +79,15 @@ export default tseslint.config(
       // design. Vue's lint rule can't distinguish that from replacing the
       // prop itself, which it treats the same way. Disable the false positive.
       "vue/no-mutating-props": "off",
+    },
+  },
+
+  // ── Editor-package shadow-DOM guard rules (.vue) ──────────────────────
+  {
+    files: ["packages/editor/src/**/*.vue"],
+    rules: {
+      "templatical-editor/no-teleport-to-body": "error",
+      "templatical-editor/no-unannotated-document-global": "error",
     },
   },
 );

@@ -12,23 +12,23 @@ Anzeigebedingungen erlauben es Benutzern, die Sichtbarkeit von Blöcken basieren
 Definieren Sie verfügbare Bedingungen über die Editor-Konfiguration:
 
 ```ts
-import { init } from '@templatical/editor';
+import { init } from "@templatical/editor";
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   displayConditions: {
     conditions: [
       {
-        label: 'VIP Customers',
-        before: '{% if customer.vip == true %}',
-        after: '{% endif %}',
-        description: 'Only shown to VIP customers',
+        label: "VIP Customers",
+        before: "{% if customer.vip == true %}",
+        after: "{% endif %}",
+        description: "Only shown to VIP customers",
       },
       {
-        label: 'Has Active Subscription',
-        before: '{% if subscription.active %}',
-        after: '{% endif %}',
-        description: 'Shown when user has an active subscription',
+        label: "Has Active Subscription",
+        before: "{% if subscription.active %}",
+        after: "{% endif %}",
+        description: "Shown when user has an active subscription",
       },
     ],
   },
@@ -47,13 +47,13 @@ interface DisplayCondition {
 }
 ```
 
-| Eigenschaft | Erforderlich | Beschreibung |
-|----------|----------|-------------|
-| `label` | Ja | Anzeigename in der Editor-Oberfläche |
-| `before` | Ja | Markup, das vor der Blockausgabe eingefügt wird |
-| `after` | Ja | Markup, das nach der Blockausgabe eingefügt wird |
-| `group` | Nein | Gruppenname zur Organisation von Bedingungen im Dropdown |
-| `description` | Nein | Erklärender Text, der unter dem Label angezeigt wird |
+| Eigenschaft   | Erforderlich | Beschreibung                                             |
+| ------------- | ------------ | -------------------------------------------------------- |
+| `label`       | Ja           | Anzeigename in der Editor-Oberfläche                     |
+| `before`      | Ja           | Markup, das vor der Blockausgabe eingefügt wird          |
+| `after`       | Ja           | Markup, das nach der Blockausgabe eingefügt wird         |
+| `group`       | Nein         | Gruppenname zur Organisation von Bedingungen im Dropdown |
+| `description` | Nein         | Erklärender Text, der unter dem Label angezeigt wird     |
 
 ## DisplayConditionsConfig
 

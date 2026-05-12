@@ -179,6 +179,7 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
           link.onload = () => resolve();
           link.onerror = () =>
             reject(new Error(`Failed to load font: ${font.name}`));
+          // shadow-ok: web fonts must load at document level; @font-face from inside a shadow root is unreliable across browsers
           document.head.appendChild(link);
         });
       } catch (error) {

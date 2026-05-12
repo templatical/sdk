@@ -169,6 +169,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
           let node: HTMLElement | null = el?.parentElement ?? null;
           while (
             node &&
+            // shadow-ok: ancestor walk terminator; not a mount target
             node !== document.body &&
             node !== document.documentElement
           ) {
@@ -323,6 +324,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             // when wired by the consumer. Falls back to document.body for
             // headless / not-yet-migrated callers so the existing behavior
             // is preserved when `popoverRoot` is omitted from configure().
+            // shadow-ok: fallback when popoverRoot wasn't provided (e.g., headless caller); editor mounts pass the shadow-aware root
             const mountTarget = popoverRootRef?.value ?? document.body;
             mountTarget.appendChild(container);
 

@@ -49,7 +49,9 @@ for (const [name, content] of Object.entries(templates)) {
   console.error(`✖ ${name}: ${issues.length} issue(s)`);
   for (const issue of issues) {
     const where = issue.blockId ? `block ${issue.blockId}` : "template";
-    console.error(`  [${issue.severity}] ${issue.ruleId} (${where}): ${issue.message}`);
+    console.error(
+      `  [${issue.severity}] ${issue.ruleId} (${where}): ${issue.message}`,
+    );
   }
 }
 
@@ -63,9 +65,7 @@ Mit `tsx scripts/lint-templates.ts` ausführen und in den CI-Workflow einhängen
 Ein Team möchte vielleicht in CI nur Errors, in der Entwicklung aber die volle Info-Stufe:
 
 ```ts
-const SEVERITIES = process.env.CI
-  ? ["error"]
-  : ["error", "warning", "info"];
+const SEVERITIES = process.env.CI ? ["error"] : ["error", "warning", "info"];
 
 const issues = lintAccessibility(content).filter((i) =>
   SEVERITIES.includes(i.severity),

@@ -8,7 +8,8 @@
 The visual editor for [Templatical](https://github.com/templatical/sdk) — an open-source drag-and-drop email editor with JSON templates and MJML output.
 
 - 🧩 **14 block types** — title, paragraph, image, button, section, divider, spacer, social icons, menu, table, HTML, video, countdown, custom
-- 🎨 **27 design tokens** — full theming, dark mode, custom fonts
+- 🛡 **Shadow DOM isolated** — mounts inside an open shadow root by default so host page CSS cannot bleed in
+- 🎨 **27 design tokens** — full theming via `--tpl-user-*` CSS variables, dark mode, custom fonts
 - 🔌 **Framework-agnostic** — works in React, Vue, Svelte, Angular, vanilla
 - 📦 **JSON in, MJML out** — portable templates, render with any email provider
 - 🌍 **Bilingual** — English + German built in
@@ -34,11 +35,11 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 ## Usage
 
 ```ts
-import { init } from '@templatical/editor';
-import '@templatical/editor/style.css';
+import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   onChange(content) {
     // content is JSON — store/version/sync however you want
   },
@@ -59,6 +60,29 @@ editor.unmount();
 
 First-class examples for **React, Vue, Svelte, Angular, and vanilla JS** are in the [installation guide](https://docs.templatical.com/getting-started/installation).
 
+## Shadow DOM by default
+
+The editor mounts inside an open shadow root attached to your container. Host page CSS — including resets like `* { color: red !important }` — cannot cascade into editor elements, and editor utility classes cannot leak out.
+
+```ts
+// Shadow DOM is on by default — no extra config
+const editor = await init({ container: "#editor" });
+
+// Opt out for light-DOM mount (older browsers, host-side document.querySelector access)
+const editor = await init({ container: "#editor", shadowDom: false });
+```
+
+Theme via `:host`-style CSS variables — set `--tpl-user-*` on the container (or any ancestor) and the value inherits across the shadow boundary:
+
+```css
+#editor {
+  --tpl-user-primary: oklch(65% 0.2 280);
+  --tpl-user-radius: 14px;
+}
+```
+
+See the [Shadow DOM guide](https://docs.templatical.com/guide/shadow-dom) for trade-offs, opt-out semantics, and browser-support tiers.
+
 ## Cloud features
 
 For AI rewrite, real-time collaboration, comments, snapshots, and saved modules, use `initCloud()` instead. See the [Cloud guide](https://docs.templatical.com/cloud/getting-started).
@@ -69,6 +93,7 @@ For AI rewrite, real-time collaboration, comments, snapshots, and saved modules,
 - [Editor API reference](https://docs.templatical.com/api/editor)
 - [Block reference](https://docs.templatical.com/guide/blocks)
 - [Theming](https://docs.templatical.com/guide/theming)
+- [Shadow DOM](https://docs.templatical.com/guide/shadow-dom)
 - [Custom blocks](https://docs.templatical.com/guide/custom-blocks)
 
 Full docs at **[docs.templatical.com](https://docs.templatical.com)**.

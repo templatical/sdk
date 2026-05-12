@@ -49,7 +49,9 @@ for (const [name, content] of Object.entries(templates)) {
   console.error(`✖ ${name}: ${issues.length} issue(s)`);
   for (const issue of issues) {
     const where = issue.blockId ? `block ${issue.blockId}` : "template";
-    console.error(`  [${issue.severity}] ${issue.ruleId} (${where}): ${issue.message}`);
+    console.error(
+      `  [${issue.severity}] ${issue.ruleId} (${where}): ${issue.message}`,
+    );
   }
 }
 
@@ -63,9 +65,7 @@ Run via `tsx scripts/lint-templates.ts` and wire it into your CI workflow. The T
 A team may want errors-only in CI but the full info-level output in development:
 
 ```ts
-const SEVERITIES = process.env.CI
-  ? ["error"]
-  : ["error", "warning", "info"];
+const SEVERITIES = process.env.CI ? ["error"] : ["error", "warning", "info"];
 
 const issues = lintAccessibility(content).filter((i) =>
   SEVERITIES.includes(i.severity),

@@ -13,42 +13,54 @@ Feature-Wunsch oder rauer Kante begegnet? [Diskussion eröffnen](https://github.
 
 ## Voraussetzungen
 
-- **Moderner Browser** -- Chrome 80+, Firefox 80+, Safari 14+, Edge 80+
-- **Container-Element** -- muss eine definierte Höhe haben (der Editor füllt seinen Container aus)
-- **Keine erforderlichen Peer-Dependencies** -- Vue, TipTap und alle internen Bibliotheken sind im Editor gebündelt. Sie müssen weder Vue noch eine andere Framework-Runtime installieren, unabhängig davon, welches Framework Ihre App verwendet. (`@templatical/renderer`, `@templatical/quality`, `@templatical/media-library` und `pusher-js` sind *optionale* Peers — installieren Sie sie nur, wenn Sie das entsprechende Feature nutzen; siehe [Optionale Peers](#optionale-peers) weiter unten.)
+- **Moderner Browser** -- der Support hängt vom Mount-Modus ab:
+  - **Standardmodus** (`shadowDom: true`, Shadow DOM) — Chrome 80+, Edge 80+, Firefox 101+, Safari 16.4+. Firefox- und Safari-Mindestversionen sind durch die `adoptedStyleSheets`-API bestimmt, auf die der Shadow-Pfad angewiesen ist.
+  - **Opt-out-Modus** (`shadowDom: false`, Light DOM) — Chrome 80+, Edge 80+, Firefox 80+, Safari 14+. Gleicher Support wie in früheren Versionen. Verwenden Sie diesen Modus, wenn Sie ältere Firefox- oder Safari-Versionen unterstützen müssen oder Ihre Integration Light-DOM-Zugriff auf Editor-Interna benötigt. Siehe den [Shadow-DOM-Leitfaden](../guide/shadow-dom) für die Kompromisse.
+- **Container-Element** -- muss eine definierte Höhe haben (der Editor füllt seinen Container aus). Im Standardmodus muss es ein Elementtyp sein, der einen Shadow Root hosten kann (z. B. `<div>`, `<section>`, `<article>`). Siehe [Container-Element-Anforderungen](../api/editor#container-element-requirements).
+- **Keine erforderlichen Peer-Dependencies** -- Vue, TipTap und alle internen Bibliotheken sind im Editor gebündelt. Sie müssen weder Vue noch eine andere Framework-Runtime installieren, unabhängig davon, welches Framework Ihre App verwendet. (`@templatical/renderer`, `@templatical/quality`, `@templatical/media-library` und `pusher-js` sind _optionale_ Peers — installieren Sie sie nur, wenn Sie das entsprechende Feature nutzen; siehe [Optionale Peers](#optionale-peers) weiter unten.)
 
 ## npm
 
 ::: code-group
+
 ```bash [npm]
 npm install @templatical/editor
 ```
+
 ```bash [pnpm]
 pnpm add @templatical/editor
 ```
+
 ```bash [yarn]
 yarn add @templatical/editor
 ```
+
 ```bash [bun]
 bun add @templatical/editor
 ```
+
 :::
 
 `@templatical/editor` ist der visuelle Editor. Um Templates in MJML zu konvertieren, installieren Sie zusätzlich `@templatical/renderer`:
 
 ::: code-group
+
 ```bash [npm]
 npm install @templatical/renderer
 ```
+
 ```bash [pnpm]
 pnpm add @templatical/renderer
 ```
+
 ```bash [yarn]
 yarn add @templatical/renderer
 ```
+
 ```bash [bun]
 bun add @templatical/renderer
 ```
+
 :::
 
 Der Renderer ist **optional**. Installieren Sie ihn dort, wo Sie MJML-Ausgabe benötigen:
@@ -60,14 +72,14 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 
 ## Paketübersicht
 
-| Paket | Beschreibung | Erforderlich |
-|---|---|---|
-| `@templatical/editor` | Visueller Drag-and-Drop-Editor und `init()`-Einstiegspunkt | Ja |
-| `@templatical/types` | Gemeinsame TypeScript-Typen, Block-Factory-Funktionen, Type Guards | Automatisch installiert |
-| `@templatical/core` | Framework-agnostische Editor-Logik (State, History) | Automatisch installiert |
-| `@templatical/renderer` | Rendert Templates zu MJML | Optional – installieren, wo Sie `editor.toMjml()` (Browser) oder `renderToMjml()` (Node.js, Server) aufrufen |
-| `@templatical/import-beefree` | Konvertiert BeeFree-JSON-Templates in das Templatical-Format | Optional |
-| `@templatical/import-unlayer` | Konvertiert Unlayer-JSON-Design-Templates in das Templatical-Format | Optional |
+| Paket                         | Beschreibung                                                        | Erforderlich                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `@templatical/editor`         | Visueller Drag-and-Drop-Editor und `init()`-Einstiegspunkt          | Ja                                                                                                           |
+| `@templatical/types`          | Gemeinsame TypeScript-Typen, Block-Factory-Funktionen, Type Guards  | Automatisch installiert                                                                                      |
+| `@templatical/core`           | Framework-agnostische Editor-Logik (State, History)                 | Automatisch installiert                                                                                      |
+| `@templatical/renderer`       | Rendert Templates zu MJML                                           | Optional – installieren, wo Sie `editor.toMjml()` (Browser) oder `renderToMjml()` (Node.js, Server) aufrufen |
+| `@templatical/import-beefree` | Konvertiert BeeFree-JSON-Templates in das Templatical-Format        | Optional                                                                                                     |
+| `@templatical/import-unlayer` | Konvertiert Unlayer-JSON-Design-Templates in das Templatical-Format | Optional                                                                                                     |
 
 `@templatical/types` und `@templatical/core` sind direkte Abhängigkeiten von `@templatical/editor` und werden automatisch installiert.
 
@@ -75,12 +87,12 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 
 Der Editor lädt vier optionale Peers zur Laufzeit per dynamischem `import()`, abhängig davon, welche Features Sie nutzen:
 
-| Peer | Wann geladen | Installieren, wenn Sie |
-|---|---|---|
-| `@templatical/renderer` | Erster Aufruf von `editor.toMjml()` | MJML-Export aus dem Browser benötigen |
-| `@templatical/quality` | Beim Mounten des Editors (Accessibility-Panel) | Die Accessibility-Sidebar nutzen möchten |
-| `@templatical/media-library` | Erstes Öffnen des Medien-Browsers | `initCloud()` verwenden |
-| `pusher-js` | Cloud-Realtime-Verbindung | `initCloud()` verwenden |
+| Peer                         | Wann geladen                                   | Installieren, wenn Sie                   |
+| ---------------------------- | ---------------------------------------------- | ---------------------------------------- |
+| `@templatical/renderer`      | Erster Aufruf von `editor.toMjml()`            | MJML-Export aus dem Browser benötigen    |
+| `@templatical/quality`       | Beim Mounten des Editors (Accessibility-Panel) | Die Accessibility-Sidebar nutzen möchten |
+| `@templatical/media-library` | Erstes Öffnen des Medien-Browsers              | `initCloud()` verwenden                  |
+| `pusher-js`                  | Cloud-Realtime-Verbindung                      | `initCloud()` verwenden                  |
 
 Wenn Sie sie nicht installieren, deaktiviert sich das jeweilige Feature einfach selbst — der Editor mountet und läuft trotzdem.
 
@@ -96,7 +108,8 @@ module.exports = {
   ignoreWarnings: [
     {
       module: /@templatical[\\/]editor/,
-      message: /Can't resolve '(pusher-js|@templatical\/(quality|media-library|renderer))'/,
+      message:
+        /Can't resolve '(pusher-js|@templatical\/(quality|media-library|renderer))'/,
     },
   ],
 };
@@ -107,25 +120,27 @@ module.exports = {
 Templatical wird in jedes beliebige DOM-Element eingebunden. Intern erstellt es seine eigene isolierte Anwendung und funktioniert daher mit jedem Framework – oder ganz ohne Framework.
 
 ::: code-group
+
 ```ts [Vanilla JS]
-import { init } from '@templatical/editor';
-import '@templatical/editor/style.css';
+import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   onChange(content) {
-    console.log('Content changed', content);
+    console.log("Content changed", content);
   },
 });
 
 // Später, beim Entfernen des Editors:
 editor.unmount();
 ```
+
 ```tsx [React]
-import { useRef, useEffect } from 'react';
-import { init } from '@templatical/editor';
-import '@templatical/editor/style.css';
-import type { TemplaticalEditor } from '@templatical/editor';
+import { useRef, useEffect } from "react";
+import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
+import type { TemplaticalEditor } from "@templatical/editor";
 
 export function EmailEditor() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -138,7 +153,7 @@ export function EmailEditor() {
     init({
       container: containerRef.current,
       onChange(content) {
-        console.log('Content changed', content);
+        console.log("Content changed", content);
       },
     }).then((ed) => {
       if (!cancelled) editorRef.current = ed;
@@ -150,15 +165,16 @@ export function EmailEditor() {
     };
   }, []);
 
-  return <div ref={containerRef} style={{ height: '100vh' }} />;
+  return <div ref={containerRef} style={{ height: "100vh" }} />;
 }
 ```
+
 ```vue [Vue]
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { init } from '@templatical/editor';
-import '@templatical/editor/style.css';
-import type { TemplaticalEditor } from '@templatical/editor';
+import { ref, onMounted, onUnmounted } from "vue";
+import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
+import type { TemplaticalEditor } from "@templatical/editor";
 
 const container = ref<HTMLElement>();
 let editor: TemplaticalEditor | null = null;
@@ -169,7 +185,7 @@ onMounted(async () => {
   editor = await init({
     container: container.value,
     onChange(content) {
-      console.log('Content changed', content);
+      console.log("Content changed", content);
     },
   });
 });
@@ -183,6 +199,7 @@ onUnmounted(() => {
   <div ref="container" style="height: 100vh" />
 </template>
 ```
+
 ```svelte [Svelte]
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
@@ -209,19 +226,26 @@ onUnmounted(() => {
 
 <div bind:this={containerEl} style="height: 100vh;" />
 ```
+
 ```ts [Angular]
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { init } from '@templatical/editor';
-import '@templatical/editor/style.css';
-import type { TemplaticalEditor } from '@templatical/editor';
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from "@angular/core";
+import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
+import type { TemplaticalEditor } from "@templatical/editor";
 
 @Component({
-  selector: 'app-email-editor',
+  selector: "app-email-editor",
   standalone: true,
   template: `<div #editorContainer style="height: 100vh"></div>`,
 })
 export class EmailEditorComponent implements OnInit, OnDestroy {
-  @ViewChild('editorContainer', { static: true })
+  @ViewChild("editorContainer", { static: true })
   containerRef!: ElementRef<HTMLElement>;
 
   private editor: TemplaticalEditor | null = null;
@@ -230,7 +254,7 @@ export class EmailEditorComponent implements OnInit, OnDestroy {
     this.editor = await init({
       container: this.containerRef.nativeElement,
       onChange(content) {
-        console.log('Content changed', content);
+        console.log("Content changed", content);
       },
     });
   }
@@ -240,6 +264,7 @@ export class EmailEditorComponent implements OnInit, OnDestroy {
   }
 }
 ```
+
 :::
 
 ::: warning Wichtig
@@ -251,9 +276,17 @@ Rufen Sie immer `unmount()` auf, wenn Sie den Editor von der Seite entfernen. Da
 Alle Pakete werden mit vollständigen TypeScript-Typdefinitionen ausgeliefert. Konfigurationsoptionen, Callback-Payloads, Blocktypen und Instanzmethoden sind vollständig typisiert:
 
 ```ts
-import { init, unmount } from '@templatical/editor';
-import type { TemplaticalEditor, TemplaticalEditorConfig } from '@templatical/editor';
-import type { TemplateContent, Block, ThemeOverrides, FontsConfig } from '@templatical/types';
+import { init, unmount } from "@templatical/editor";
+import type {
+  TemplaticalEditor,
+  TemplaticalEditorConfig,
+} from "@templatical/editor";
+import type {
+  TemplateContent,
+  Block,
+  ThemeOverrides,
+  FontsConfig,
+} from "@templatical/types";
 ```
 
 ## CDN
@@ -261,12 +294,15 @@ import type { TemplateContent, Block, ThemeOverrides, FontsConfig } from '@templ
 Wenn Sie keinen Paketmanager verwenden möchten, können Sie den Editor direkt über Script-Tags laden:
 
 ```html
-<link rel="stylesheet" href="https://unpkg.com/@templatical/editor/dist/cdn/editor.css" />
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/@templatical/editor/dist/cdn/editor.css"
+/>
 <script type="module">
-  import { init } from 'https://unpkg.com/@templatical/editor/dist/cdn/editor.js';
+  import { init } from "https://unpkg.com/@templatical/editor/dist/cdn/editor.js";
 
   const editor = await init({
-    container: '#editor',
+    container: "#editor",
   });
 </script>
 

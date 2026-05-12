@@ -10,46 +10,46 @@ Standardmäßig enthält der Editor eine Reihe gängiger websicherer Schriftarte
 Konfigurieren Sie, welche Schriftarten verfügbar sind, über die Option `fonts`:
 
 ```ts
-import type { FontsConfig } from '@templatical/types';
+import type { FontsConfig } from "@templatical/types";
 
 const fonts: FontsConfig = {
-  defaultFont: 'Inter',
-  defaultFallback: 'Arial, sans-serif',
+  defaultFont: "Inter",
+  defaultFallback: "Arial, sans-serif",
   customFonts: [
     {
-      name: 'Inter',
-      url: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap',
-      fallback: 'Helvetica, Arial, sans-serif',
+      name: "Inter",
+      url: "https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap",
+      fallback: "Helvetica, Arial, sans-serif",
     },
     {
-      name: 'Merriweather',
-      url: 'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap',
-      fallback: 'Georgia, serif',
+      name: "Merriweather",
+      url: "https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap",
+      fallback: "Georgia, serif",
     },
   ],
 };
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   fonts,
 });
 ```
 
 ## FontsConfig
 
-| Eigenschaft | Typ | Beschreibung |
-|---|---|---|
-| `defaultFont` | `string` | Schriftartname, der in neuen Templates standardmäßig ausgewählt ist |
-| `defaultFallback` | `string` | Fallback-Stack, der verwendet wird, wenn eine benutzerdefinierte Schriftart nicht verfügbar ist |
-| `customFonts` | `CustomFont[]` | Liste benutzerdefinierter Schriftarten, die registriert werden sollen |
+| Eigenschaft       | Typ            | Beschreibung                                                                                    |
+| ----------------- | -------------- | ----------------------------------------------------------------------------------------------- |
+| `defaultFont`     | `string`       | Schriftartname, der in neuen Templates standardmäßig ausgewählt ist                             |
+| `defaultFallback` | `string`       | Fallback-Stack, der verwendet wird, wenn eine benutzerdefinierte Schriftart nicht verfügbar ist |
+| `customFonts`     | `CustomFont[]` | Liste benutzerdefinierter Schriftarten, die registriert werden sollen                           |
 
 ## CustomFont
 
-| Eigenschaft | Typ | Beschreibung |
-|---|---|---|
-| `name` | `string` | Anzeigename in der Schriftauswahl |
-| `url` | `string` | URL zum Schriftart-CSS (z. B. Google-Fonts-Link) |
-| `fallback` | `string` | Optionaler Fallback-Font-Stack für diese Schriftart |
+| Eigenschaft | Typ      | Beschreibung                                        |
+| ----------- | -------- | --------------------------------------------------- |
+| `name`      | `string` | Anzeigename in der Schriftauswahl                   |
+| `url`       | `string` | URL zum Schriftart-CSS (z. B. Google-Fonts-Link)    |
+| `fallback`  | `string` | Optionaler Fallback-Font-Stack für diese Schriftart |
 
 Benutzerdefinierte Schriftarten werden automatisch als `<mj-font>`-Deklarationen in der gerenderten MJML-Ausgabe eingefügt.
 
