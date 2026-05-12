@@ -20,17 +20,17 @@ npm install @templatical/import-html
 ## Usage
 
 ```ts
-import { convertHtmlTemplate } from "@templatical/import-html";
+import { convertHtmlTemplate } from '@templatical/import-html';
 
 // Load the raw HTML source of an email
-const html = await fetch("/path/to/email.html").then((r) => r.text());
+const html = await fetch('/path/to/email.html').then((r) => r.text());
 
 // Convert to Templatical format
 const { content, report } = convertHtmlTemplate(html);
 
 // Use in the editor
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   content,
 });
 
@@ -39,7 +39,6 @@ console.log(report);
 ```
 
 The function returns an `ImportResult` with:
-
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each element (`converted`, `approximated`, `html-fallback`, or `skipped`)
 
@@ -47,20 +46,20 @@ The function returns an `ImportResult` with:
 
 HTML elements map to Templatical equivalents:
 
-| HTML Element                                                                                  | Templatical Block          | Status                                |
-| --------------------------------------------------------------------------------------------- | -------------------------- | ------------------------------------- |
-| `<h1>` – `<h4>`                                                                               | `title`                    | Converted (level preserved)           |
-| `<h5>` – `<h6>`                                                                               | `title`                    | Converted (clamped to level 4)        |
-| `<p>` / text-only `<div>` / `<span>`                                                          | `paragraph`                | Converted                             |
-| `<img>`                                                                                       | `image`                    | Converted                             |
-| `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button`                   | Converted                             |
-| `<a>` (plain inline link)                                                                     | `paragraph`                | Approximated (wrapped in a paragraph) |
-| `<hr>`                                                                                        | `divider`                  | Converted                             |
-| Empty `<td>` with explicit height                                                             | `spacer`                   | Converted                             |
-| `<td>` containing a single styled `<a>`                                                       | `button`                   | Converted (cell-as-button pattern)    |
-| `<table>` (layout, multi-row/column)                                                          | `section` (one per `<tr>`) | Converted                             |
-| `<table>` (data table — text-only cells)                                                      | `html`                     | HTML fallback                         |
-| Unknown / custom elements                                                                     | `html`                     | HTML fallback                         |
+| HTML Element | Templatical Block | Status |
+|---|---|---|
+| `<h1>` – `<h4>` | `title` | Converted (level preserved) |
+| `<h5>` – `<h6>` | `title` | Converted (clamped to level 4) |
+| `<p>` / text-only `<div>` / `<span>` | `paragraph` | Converted |
+| `<img>` | `image` | Converted |
+| `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted |
+| `<a>` (plain inline link) | `paragraph` | Approximated (wrapped in a paragraph) |
+| `<hr>` | `divider` | Converted |
+| Empty `<td>` with explicit height | `spacer` | Converted |
+| `<td>` containing a single styled `<a>` | `button` | Converted (cell-as-button pattern) |
+| `<table>` (layout, multi-row/column) | `section` (one per `<tr>`) | Converted |
+| `<table>` (data table — text-only cells) | `html` | HTML fallback |
+| Unknown / custom elements | `html` | HTML fallback |
 
 Anything that can't be mapped is preserved verbatim inside an HTML block, so no visible content is lost.
 
@@ -68,12 +67,12 @@ Anything that can't be mapped is preserved verbatim inside an HTML block, so no 
 
 Each `<tr>` in a layout table becomes a `SectionBlock`. Cell counts map directly:
 
-| Cells per row | Templatical Layout                |
-| ------------- | --------------------------------- |
-| 1             | `'1'`                             |
-| 2             | `'2'`                             |
-| 3             | `'3'`                             |
-| 4+            | flattened to `'1'` with a warning |
+| Cells per row | Templatical Layout |
+|---|---|
+| 1 | `'1'` |
+| 2 | `'2'` |
+| 3 | `'3'` |
+| 4+ | flattened to `'1'` with a warning |
 
 Templatical sections cannot nest. Tables nested inside a `<td>` are flattened — their inner blocks are merged into the parent cell.
 
@@ -128,8 +127,11 @@ console.log(report.summary);
 // { total: 12, converted: 10, approximated: 1, htmlFallback: 1, skipped: 0 }
 
 for (const entry of report.entries) {
-  if (entry.status === "html-fallback") {
-    console.warn(`Element <${entry.sourceTag}> preserved as HTML:`, entry.note);
+  if (entry.status === 'html-fallback') {
+    console.warn(
+      `Element <${entry.sourceTag}> preserved as HTML:`,
+      entry.note,
+    );
   }
 }
 

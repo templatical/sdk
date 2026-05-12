@@ -25,8 +25,8 @@ If you want to use your own media picker instead of the built-in library, provid
 
 ```js
 const editor = await initCloud({
-  container: "#editor",
-  auth: { url: "/api/templatical/token" },
+  container: '#editor',
+  auth: { url: '/api/templatical/token' },
   onRequestMedia: async (context) => {
     // Open your custom media picker
     const selected = await myMediaPicker.open();
@@ -49,16 +49,16 @@ const editor = await initCloud({
 The media library is also available as a standalone component for use outside the editor via the `@templatical/media-library` package:
 
 ```js
-import { init } from "@templatical/media-library";
+import { init } from '@templatical/media-library';
 
 const mediaLibrary = init({
-  container: "#media-library",
+  container: '#media-library',
   auth: {
-    mode: "proxy",
-    url: "/api/templatical/token",
+    mode: 'proxy',
+    url: '/api/templatical/token',
   },
   onSelect: (item) => {
-    console.log("Selected:", item.url);
+    console.log('Selected:', item.url);
   },
 });
 ```
@@ -68,24 +68,20 @@ const mediaLibrary = init({
 For server-side or programmatic media operations:
 
 ```js
-import { MediaApiClient } from "@templatical/media-library";
+import { MediaApiClient } from '@templatical/media-library';
 
 const client = new MediaApiClient(authManager);
 
 // Browse images
-const response = await client.browseMedia({
-  folder_id: "folder-id",
-  search: "hero",
-  category: "images",
-});
+const response = await client.browseMedia({ folder_id: 'folder-id', search: 'hero', category: 'images' });
 // response: { data: MediaItem[], meta: { path, per_page, next_cursor, prev_cursor } }
 
 // Upload
 const item = await client.uploadMedia(file, folderId);
 
 // Delete (accepts an array of IDs)
-await client.deleteMedia(["item-id-1", "item-id-2"]);
+await client.deleteMedia(['item-id-1', 'item-id-2']);
 
 // Check usage before deleting (accepts an array of IDs)
-const usage = await client.checkMediaUsage(["item-id-1"]);
+const usage = await client.checkMediaUsage(['item-id-1']);
 ```

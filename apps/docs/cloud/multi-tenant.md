@@ -9,10 +9,10 @@ Templatical Cloud is built for multi-tenant SaaS applications. Each of your cust
 
 ## Concepts
 
-| Concept     | Description                                                               |
-| ----------- | ------------------------------------------------------------------------- |
-| **Project** | Your application. One project per Templatical Cloud account.              |
-| **Tenant**  | One of your customers/organizations. Each tenant has isolated data.       |
+| Concept | Description |
+|---------|-------------|
+| **Project** | Your application. One project per Templatical Cloud account. |
+| **Tenant** | One of your customers/organizations. Each tenant has isolated data. |
 | **API Key** | Credentials scoped to a project. Used to generate tenant-specific tokens. |
 
 ## How It Works

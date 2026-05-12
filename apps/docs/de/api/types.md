@@ -28,10 +28,10 @@ interface TemplateContent {
 
 ```ts
 interface TemplateSettings {
-  width: number; // Template-Breite in Pixeln (Standard: 600)
-  backgroundColor: string; // Hintergrundfarbe
-  fontFamily: string; // Standard-Schriftfamilie
-  preheaderText?: string; // E-Mail-Preheader-Text
+  width: number;                  // Template-Breite in Pixeln (Standard: 600)
+  backgroundColor: string;        // Hintergrundfarbe
+  fontFamily: string;             // Standard-Schriftfamilie
+  preheaderText?: string;         // E-Mail-Preheader-Text
 }
 ```
 
@@ -60,19 +60,9 @@ type Block =
 
 ```ts
 type BlockType =
-  | "title"
-  | "paragraph"
-  | "image"
-  | "button"
-  | "section"
-  | "divider"
-  | "video"
-  | "spacer"
-  | "social"
-  | "menu"
-  | "table"
-  | "html"
-  | "custom";
+  | 'title' | 'paragraph' | 'image' | 'button' | 'section'
+  | 'divider' | 'video' | 'spacer' | 'social'
+  | 'menu' | 'table' | 'html' | 'custom';
 ```
 
 ## Basistypen
@@ -145,11 +135,11 @@ Detaillierte Beschreibungen der einzelnen Blocktypen finden Sie im [Blocks-Leitf
 
 ```ts
 interface TitleBlock extends BaseBlock {
-  type: "title";
-  content: string; // HTML-Inhalt
-  level: 1 | 2 | 3 | 4; // H1=36px, H2=28px, H3=22px, H4=18px
+  type: 'title';
+  content: string;          // HTML-Inhalt
+  level: 1 | 2 | 3 | 4;   // H1=36px, H2=28px, H3=22px, H4=18px
   color: string;
-  textAlign: "left" | "center" | "right";
+  textAlign: 'left' | 'center' | 'right';
   fontFamily?: string;
 }
 ```
@@ -158,8 +148,8 @@ interface TitleBlock extends BaseBlock {
 
 ```ts
 interface ParagraphBlock extends BaseBlock {
-  type: "paragraph";
-  content: string; // HTML-Inhalt (alle Formatierungen sind inline über TipTap)
+  type: 'paragraph';
+  content: string;          // HTML-Inhalt (alle Formatierungen sind inline über TipTap)
 }
 ```
 
@@ -167,11 +157,11 @@ interface ParagraphBlock extends BaseBlock {
 
 ```ts
 interface ImageBlock extends BaseBlock {
-  type: "image";
+  type: 'image';
   src: string;
   alt: string;
-  width: number | "full";
-  align: "left" | "center" | "right";
+  width: number | 'full';
+  align: 'left' | 'center' | 'right';
   linkUrl?: string;
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;
@@ -182,7 +172,7 @@ interface ImageBlock extends BaseBlock {
 
 ```ts
 interface ButtonBlock extends BaseBlock {
-  type: "button";
+  type: 'button';
   text: string;
   url: string;
   backgroundColor: string;
@@ -201,23 +191,23 @@ Container für mehrspaltige Layouts.
 
 ```ts
 interface SectionBlock extends BaseBlock {
-  type: "section";
+  type: 'section';
   columns: ColumnLayout;
-  children: Block[][]; // Array von Spalten, die jeweils Blöcke enthalten
+  children: Block[][];      // Array von Spalten, die jeweils Blöcke enthalten
 }
 
-type ColumnLayout = "1" | "2" | "3" | "2-1" | "1-2";
+type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';
 ```
 
 ### DividerBlock
 
 ```ts
 interface DividerBlock extends BaseBlock {
-  type: "divider";
-  lineStyle: "solid" | "dashed" | "dotted";
+  type: 'divider';
+  lineStyle: 'solid' | 'dashed' | 'dotted';
   color: string;
   thickness: number;
-  width: number | "full";
+  width: number | 'full';
 }
 ```
 
@@ -225,7 +215,7 @@ interface DividerBlock extends BaseBlock {
 
 ```ts
 interface SpacerBlock extends BaseBlock {
-  type: "spacer";
+  type: 'spacer';
   height: number;
 }
 ```
@@ -234,12 +224,12 @@ interface SpacerBlock extends BaseBlock {
 
 ```ts
 interface SocialIconsBlock extends BaseBlock {
-  type: "social";
+  type: 'social';
   icons: SocialIcon[];
   iconStyle: SocialIconStyle;
   iconSize: SocialIconSize;
   spacing: number;
-  align: "left" | "center" | "right";
+  align: 'left' | 'center' | 'right';
 }
 
 interface SocialIcon {
@@ -249,40 +239,28 @@ interface SocialIcon {
 }
 
 type SocialPlatform =
-  | "facebook"
-  | "twitter"
-  | "instagram"
-  | "linkedin"
-  | "youtube"
-  | "tiktok"
-  | "pinterest"
-  | "email"
-  | "whatsapp"
-  | "telegram"
-  | "discord"
-  | "snapchat"
-  | "reddit"
-  | "github"
-  | "dribbble"
-  | "behance";
+  | 'facebook' | 'twitter' | 'instagram' | 'linkedin'
+  | 'youtube' | 'tiktok' | 'pinterest' | 'email'
+  | 'whatsapp' | 'telegram' | 'discord' | 'snapchat'
+  | 'reddit' | 'github' | 'dribbble' | 'behance';
 
 // Insgesamt 16 Plattformen
 
-type SocialIconStyle = "solid" | "outlined" | "rounded" | "square" | "circle";
-type SocialIconSize = "small" | "medium" | "large";
+type SocialIconStyle = 'solid' | 'outlined' | 'rounded' | 'square' | 'circle';
+type SocialIconSize = 'small' | 'medium' | 'large';
 ```
 
 ### MenuBlock
 
 ```ts
 interface MenuBlock extends BaseBlock {
-  type: "menu";
+  type: 'menu';
   items: MenuItemData[];
   fontSize: number;
   fontFamily?: string;
   color: string;
   linkColor?: string;
-  textAlign: "left" | "center" | "right";
+  textAlign: 'left' | 'center' | 'right';
   separator: string;
   separatorColor: string;
   spacing: number;
@@ -303,7 +281,7 @@ interface MenuItemData {
 
 ```ts
 interface TableBlock extends BaseBlock {
-  type: "table";
+  type: 'table';
   rows: TableRowData[];
   hasHeaderRow: boolean;
   headerBackgroundColor?: string;
@@ -313,7 +291,7 @@ interface TableBlock extends BaseBlock {
   fontSize: number;
   fontFamily?: string;
   color: string;
-  textAlign: "left" | "center" | "right";
+  textAlign: 'left' | 'center' | 'right';
 }
 
 interface TableRowData {
@@ -331,8 +309,8 @@ interface TableCellData {
 
 ```ts
 interface HtmlBlock extends BaseBlock {
-  type: "html";
-  content: string; // Rohes HTML
+  type: 'html';
+  content: string;          // Rohes HTML
 }
 ```
 
@@ -340,7 +318,7 @@ interface HtmlBlock extends BaseBlock {
 
 ```ts
 interface CustomBlock extends BaseBlock {
-  type: "custom";
+  type: 'custom';
   customType: string;
   fieldValues: Record<string, unknown>;
   renderedHtml?: string;
@@ -368,7 +346,7 @@ interface MergeTagsConfig {
   onRequest?: () => Promise<MergeTag | null>;
 }
 
-type SyntaxPresetName = "liquid" | "handlebars" | "mailchimp" | "ampscript";
+type SyntaxPresetName = 'liquid' | 'handlebars' | 'mailchimp' | 'ampscript';
 ```
 
 ### DisplayCondition
@@ -401,7 +379,7 @@ interface CustomBlockDefinition {
   icon?: string;
   description?: string;
   fields: CustomBlockField[];
-  template: string; // Liquid-Template
+  template: string;           // Liquid-Template
   dataSource?: DataSourceConfig;
 }
 ```
@@ -434,7 +412,7 @@ interface ThemeOverrides {
   danger?: string;
   dangerLight?: string;
   canvasBg?: string;
-  dark?: Omit<ThemeOverrides, "dark">;
+  dark?: Omit<ThemeOverrides, 'dark'>;
 }
 ```
 
@@ -457,7 +435,7 @@ interface CustomFont {
 ### ViewportSize
 
 ```ts
-type ViewportSize = "desktop" | "tablet" | "mobile";
+type ViewportSize = 'desktop' | 'tablet' | 'mobile';
 ```
 
 ## Factory-Funktionen
@@ -483,19 +461,19 @@ import {
   cloneBlock,
   createDefaultTemplateContent,
   generateId,
-} from "@templatical/types";
+} from '@templatical/types';
 
 // Mit Standardwerten erstellen
 const paragraph = createParagraphBlock();
 
 // Mit Überschreibungen erstellen
 const heading = createTitleBlock({
-  content: "<h1>Hello</h1>",
+  content: '<h1>Hello</h1>',
   level: 1,
 });
 
 // Beliebigen Block per Typ-String erstellen
-const block = createBlock("button");
+const block = createBlock('button');
 
 // Deep Clone mit neuer ID
 const copy = cloneBlock(existingBlock);
@@ -511,20 +489,10 @@ const id = generateId();
 
 ```ts
 import {
-  isTitle,
-  isParagraph,
-  isImage,
-  isButton,
-  isSection,
-  isDivider,
-  isVideo,
-  isSpacer,
-  isSocialIcons,
-  isMenu,
-  isTable,
-  isHtml,
-  isCustomBlock,
-} from "@templatical/types";
+  isTitle, isParagraph, isImage, isButton, isSection,
+  isDivider, isVideo, isSpacer, isSocialIcons,
+  isMenu, isTable, isHtml, isCustomBlock,
+} from '@templatical/types';
 
 if (isTitle(block)) {
   console.log(block.level); // TypeScript weiß, dass dies ein TitleBlock ist
@@ -536,7 +504,7 @@ if (isTitle(block)) {
 Ein typisierter Event-Emitter für Subscription-Muster.
 
 ```ts
-import { EventEmitter } from "@templatical/types";
+import { EventEmitter } from '@templatical/types';
 
 type Events = {
   change: TemplateContent;
@@ -545,20 +513,20 @@ type Events = {
 
 const emitter = new EventEmitter<Events>();
 
-const unsubscribe = emitter.on("change", (content) => {
-  console.log("Changed:", content);
+const unsubscribe = emitter.on('change', (content) => {
+  console.log('Changed:', content);
 });
 
-emitter.emit("change", templateContent);
+emitter.emit('change', templateContent);
 unsubscribe(); // Listener entfernen
 ```
 
 ### Methoden
 
-| Methode                      | Beschreibung                                                  |
-| ---------------------------- | ------------------------------------------------------------- |
-| `on(event, handler)`         | Abonnieren. Gibt eine Unsubscribe-Funktion zurück             |
-| `off(event, handler)`        | Einen bestimmten Handler abbestellen                          |
-| `emit(event, data)`          | Ein Ereignis auslösen                                         |
+| Methode | Beschreibung |
+|--------|-------------|
+| `on(event, handler)` | Abonnieren. Gibt eine Unsubscribe-Funktion zurück |
+| `off(event, handler)` | Einen bestimmten Handler abbestellen |
+| `emit(event, data)` | Ein Ereignis auslösen |
 | `removeAllListeners(event?)` | Alle Listener entfernen, optional für ein bestimmtes Ereignis |
-| `listenerCount(event)`       | Anzahl der Listener für ein Ereignis                          |
+| `listenerCount(event)` | Anzahl der Listener für ein Ereignis |

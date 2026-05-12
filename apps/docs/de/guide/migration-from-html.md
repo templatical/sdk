@@ -20,17 +20,17 @@ npm install @templatical/import-html
 ## Verwendung
 
 ```ts
-import { convertHtmlTemplate } from "@templatical/import-html";
+import { convertHtmlTemplate } from '@templatical/import-html';
 
 // Den rohen HTML-Quelltext einer E-Mail laden
-const html = await fetch("/path/to/email.html").then((r) => r.text());
+const html = await fetch('/path/to/email.html').then((r) => r.text());
 
 // In das Templatical-Format konvertieren
 const { content, report } = convertHtmlTemplate(html);
 
 // Im Editor verwenden
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   content,
 });
 
@@ -39,26 +39,25 @@ console.log(report);
 ```
 
 Die Funktion gibt ein `ImportResult` zurück mit:
-
 - `content` — das konvertierte `TemplateContent`, bereit für den Editor
 - `report` — ein Konvertierungsbericht mit dem Status jedes Elements (`converted`, `approximated`, `html-fallback` oder `skipped`)
 
 ## Element-Mapping
 
-| HTML-Element                                                                                  | Templatical-Block           | Status                                   |
-| --------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------- |
-| `<h1>` – `<h4>`                                                                               | `title`                     | Konvertiert (Level erhalten)             |
-| `<h5>` – `<h6>`                                                                               | `title`                     | Konvertiert (auf Level 4 begrenzt)       |
-| `<p>` / Text-`<div>` / `<span>`                                                               | `paragraph`                 | Konvertiert                              |
-| `<img>`                                                                                       | `image`                     | Konvertiert                              |
-| `<a>` als Button gestaltet (Hintergrund, Padding, Border-Radius oder `display: inline-block`) | `button`                    | Konvertiert                              |
-| `<a>` (einfacher Inline-Link)                                                                 | `paragraph`                 | Approximiert (in Paragraph eingewickelt) |
-| `<hr>`                                                                                        | `divider`                   | Konvertiert                              |
-| Leeres `<td>` mit explizit gesetzter Höhe                                                     | `spacer`                    | Konvertiert                              |
-| `<td>` mit einem einzigen gestylten `<a>`                                                     | `button`                    | Konvertiert (Cell-as-Button-Muster)      |
-| `<table>` (Layout, mehrere Zeilen/Spalten)                                                    | `section` (eine pro `<tr>`) | Konvertiert                              |
-| `<table>` (Datentabelle — nur Text in Zellen)                                                 | `html`                      | HTML-Fallback                            |
-| Unbekannte / Custom-Elemente                                                                  | `html`                      | HTML-Fallback                            |
+| HTML-Element | Templatical-Block | Status |
+|---|---|---|
+| `<h1>` – `<h4>` | `title` | Konvertiert (Level erhalten) |
+| `<h5>` – `<h6>` | `title` | Konvertiert (auf Level 4 begrenzt) |
+| `<p>` / Text-`<div>` / `<span>` | `paragraph` | Konvertiert |
+| `<img>` | `image` | Konvertiert |
+| `<a>` als Button gestaltet (Hintergrund, Padding, Border-Radius oder `display: inline-block`) | `button` | Konvertiert |
+| `<a>` (einfacher Inline-Link) | `paragraph` | Approximiert (in Paragraph eingewickelt) |
+| `<hr>` | `divider` | Konvertiert |
+| Leeres `<td>` mit explizit gesetzter Höhe | `spacer` | Konvertiert |
+| `<td>` mit einem einzigen gestylten `<a>` | `button` | Konvertiert (Cell-as-Button-Muster) |
+| `<table>` (Layout, mehrere Zeilen/Spalten) | `section` (eine pro `<tr>`) | Konvertiert |
+| `<table>` (Datentabelle — nur Text in Zellen) | `html` | HTML-Fallback |
+| Unbekannte / Custom-Elemente | `html` | HTML-Fallback |
 
 Alles, was sich nicht zuordnen lässt, wird wortgetreu in einem HTML-Block erhalten — sichtbarer Inhalt geht nicht verloren.
 
@@ -66,12 +65,12 @@ Alles, was sich nicht zuordnen lässt, wird wortgetreu in einem HTML-Block erhal
 
 Jeder `<tr>` einer Layout-Tabelle wird zu einem `SectionBlock`:
 
-| Zellen pro Zeile | Templatical-Layout              |
-| ---------------- | ------------------------------- |
-| 1                | `'1'`                           |
-| 2                | `'2'`                           |
-| 3                | `'3'`                           |
-| 4+               | auf `'1'` reduziert mit Warnung |
+| Zellen pro Zeile | Templatical-Layout |
+|---|---|
+| 1 | `'1'` |
+| 2 | `'2'` |
+| 3 | `'3'` |
+| 4+ | auf `'1'` reduziert mit Warnung |
 
 Templatical-Sections können nicht verschachtelt werden. Tabellen, die in einem `<td>` verschachtelt sind, werden flachgelegt — ihre Blöcke wandern in die übergeordnete Zelle.
 
@@ -122,8 +121,11 @@ console.log(report.summary);
 // { total: 12, converted: 10, approximated: 1, htmlFallback: 1, skipped: 0 }
 
 for (const entry of report.entries) {
-  if (entry.status === "html-fallback") {
-    console.warn(`Element <${entry.sourceTag}> als HTML erhalten:`, entry.note);
+  if (entry.status === 'html-fallback') {
+    console.warn(
+      `Element <${entry.sourceTag}> als HTML erhalten:`,
+      entry.note,
+    );
   }
 }
 

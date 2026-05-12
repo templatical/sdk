@@ -12,23 +12,23 @@ Display conditions allow users to change block visibility based on conditions. W
 Define available conditions through the editor config:
 
 ```ts
-import { init } from "@templatical/editor";
+import { init } from '@templatical/editor';
 
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   displayConditions: {
     conditions: [
       {
-        label: "VIP Customers",
-        before: "{% if customer.vip == true %}",
-        after: "{% endif %}",
-        description: "Only shown to VIP customers",
+        label: 'VIP Customers',
+        before: '{% if customer.vip == true %}',
+        after: '{% endif %}',
+        description: 'Only shown to VIP customers',
       },
       {
-        label: "Has Active Subscription",
-        before: "{% if subscription.active %}",
-        after: "{% endif %}",
-        description: "Shown when user has an active subscription",
+        label: 'Has Active Subscription',
+        before: '{% if subscription.active %}',
+        after: '{% endif %}',
+        description: 'Shown when user has an active subscription',
       },
     ],
   },
@@ -47,13 +47,13 @@ interface DisplayCondition {
 }
 ```
 
-| Property      | Required | Description                                          |
-| ------------- | -------- | ---------------------------------------------------- |
-| `label`       | Yes      | Display name shown in the editor UI                  |
-| `before`      | Yes      | Markup inserted before the block output              |
-| `after`       | Yes      | Markup inserted after the block output               |
-| `group`       | No       | Group name for organizing conditions in the dropdown |
-| `description` | No       | Explanatory text shown below the label               |
+| Property | Required | Description |
+|----------|----------|-------------|
+| `label` | Yes | Display name shown in the editor UI |
+| `before` | Yes | Markup inserted before the block output |
+| `after` | Yes | Markup inserted after the block output |
+| `group` | No | Group name for organizing conditions in the dropdown |
+| `description` | No | Explanatory text shown below the label |
 
 ## DisplayConditionsConfig
 

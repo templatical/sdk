@@ -11,8 +11,8 @@ Mehrere Teammitglieder können dasselbe Template gleichzeitig bearbeiten. Das Ko
 
 ```js
 const editor = await initCloud({
-  container: "#editor",
-  auth: { url: "/api/templatical/token" },
+  container: '#editor',
+  auth: { url: '/api/templatical/token' },
   collaboration: {
     enabled: true,
   },
@@ -32,14 +32,14 @@ Wenn die Zusammenarbeit aktiviert ist:
 
 ```js
 const editor = await initCloud({
-  container: "#editor",
-  auth: { url: "/api/templatical/token" },
+  container: '#editor',
+  auth: { url: '/api/templatical/token' },
   collaboration: {
     enabled: true,
   },
   // Auf Kollaborations-Ereignisse reagieren
   onError: (error) => {
-    console.error("Collaboration error:", error);
+    console.error('Collaboration error:', error);
   },
 });
 ```
@@ -49,27 +49,19 @@ const editor = await initCloud({
 Für benutzerdefinierte UI-Implementierungen:
 
 ```js
-import { useCollaboration } from "@templatical/core/cloud";
+import { useCollaboration } from '@templatical/core/cloud';
 
 const {
-  collaborators, // Ref<Collaborator[]> — aktuell verbundene Nutzer
-  lockedBlocks, // Ref<Map<string, Collaborator>> — blockId → wer hat gesperrt
+  collaborators,    // Ref<Collaborator[]> — aktuell verbundene Nutzer
+  lockedBlocks,     // Ref<Map<string, Collaborator>> — blockId → wer hat gesperrt
 } = useCollaboration({
   authManager,
   editor,
-  channel, // Ref<PresenceChannel | null>
-  onCollaboratorJoined: (user) => {
-    /* Nutzer beigetreten */
-  },
-  onCollaboratorLeft: (user) => {
-    /* Nutzer verlassen */
-  },
-  onBlockLocked: ({ blockId, collaborator }) => {
-    /* Block gesperrt */
-  },
-  onBlockUnlocked: ({ blockId, collaborator }) => {
-    /* Block entsperrt */
-  },
+  channel,          // Ref<PresenceChannel | null>
+  onCollaboratorJoined: (user) => { /* Nutzer beigetreten */ },
+  onCollaboratorLeft: (user) => { /* Nutzer verlassen */ },
+  onBlockLocked: ({ blockId, collaborator }) => { /* Block gesperrt */ },
+  onBlockUnlocked: ({ blockId, collaborator }) => { /* Block entsperrt */ },
 });
 ```
 

@@ -18,17 +18,17 @@ npm install @templatical/renderer
 Renders a `TemplateContent` object to an MJML string. Returns a `Promise<string>` — async so custom blocks (which may require async work to resolve) can be rendered in line.
 
 ```ts
-import { renderToMjml } from "@templatical/renderer";
+import { renderToMjml } from '@templatical/renderer';
 
 const mjml = await renderToMjml(templateContent);
 ```
 
 **Parameters:**
 
-| Parameter | Type              | Description                      |
-| --------- | ----------------- | -------------------------------- |
-| `content` | `TemplateContent` | The template to render           |
-| `options` | `RenderOptions`   | Optional rendering configuration |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `content` | `TemplateContent` | The template to render |
+| `options` | `RenderOptions` | Optional rendering configuration |
 
 **Returns:** `Promise<string>` -- MJML markup
 
@@ -38,17 +38,17 @@ const mjml = await renderToMjml(templateContent);
 interface RenderOptions {
   customFonts?: CustomFont[];
   defaultFallbackFont?: string;
-  allowHtmlBlocks?: boolean; // default: true
+  allowHtmlBlocks?: boolean;      // default: true
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
 }
 ```
 
-| Option                | Default               | Description                                                                                                                                                                                                                                                                 |
-| --------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `customFonts`         | `[]`                  | Custom font definitions for `<mj-font>` declarations in rendered output                                                                                                                                                                                                     |
-| `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback font stack                                                                                                                                                                                                                                                         |
-| `allowHtmlBlocks`     | `true`                | Set to `false` to strip HTML blocks from output                                                                                                                                                                                                                             |
-| `renderCustomBlock`   | --                    | Resolves custom blocks to HTML. Called once per custom block. Editor consumers pass `editor.renderCustomBlock`; headless consumers wire their own resolver. If omitted, custom blocks fall back to the block's `renderedHtml` field (if present) and otherwise are omitted. |
+| Option | Default | Description |
+|--------|---------|-------------|
+| `customFonts` | `[]` | Custom font definitions for `<mj-font>` declarations in rendered output |
+| `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback font stack |
+| `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
+| `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. Editor consumers pass `editor.renderCustomBlock`; headless consumers wire their own resolver. If omitted, custom blocks fall back to the block's `renderedHtml` field (if present) and otherwise are omitted. |
 
 ### Custom blocks
 
@@ -63,16 +63,15 @@ const mjml = await renderToMjml(editor.getContent(), {
 Headless / Node.js consumers (no editor mounted) can provide their own resolver — for example, running the same Liquid template against the block's `fieldValues`:
 
 ```ts
-import { Liquid } from "liquidjs";
+import { Liquid } from 'liquidjs';
 
 const engine = new Liquid();
-const definitionsByType =
-  new Map(/* your CustomBlockDefinition list, keyed by type */);
+const definitionsByType = new Map(/* your CustomBlockDefinition list, keyed by type */);
 
 const mjml = await renderToMjml(content, {
   async renderCustomBlock(block) {
     const definition = definitionsByType.get(block.customType);
-    if (!definition) return "";
+    if (!definition) return '';
     return engine.parseAndRender(definition.template, block.fieldValues);
   },
 });
@@ -97,7 +96,7 @@ import {
   getWidthPixels,
   SOCIAL_ICONS,
   RenderContext,
-} from "@templatical/renderer";
+} from '@templatical/renderer';
 ```
 
 ### `escapeHtml(text)`
@@ -123,7 +122,7 @@ const alt = escapeAttr('Photo of "sunrise" at O\'Hare');
 Converts merge tag HTML spans (used internally by the editor's rich text system) back into their plain text syntax. The editor stores merge tags as `<span data-merge-tag="...">` elements; this function strips the spans and leaves the raw merge tag syntax:
 
 ```ts
-import { convertMergeTagsToValues } from "@templatical/renderer";
+import { convertMergeTagsToValues } from '@templatical/renderer';
 
 // Input: editor's internal HTML format
 const editorHtml = '<span data-merge-tag="{{ first_name }}">First Name</span>';
@@ -160,7 +159,7 @@ toPaddingString({ top: 10, right: 20, bottom: 10, left: 20 });
 Generates a base64-encoded SVG data URI for a social media platform icon. Used internally by the renderer for social icon blocks:
 
 ```ts
-const uri = generateSocialIconDataUri("twitter", "circle", 32);
+const uri = generateSocialIconDataUri('twitter', 'circle', 32);
 // 'data:image/svg+xml,...'
 ```
 
@@ -189,8 +188,8 @@ A map of all built-in social platform SVG icon data, keyed by platform and style
 After rendering to MJML, compile to HTML using any MJML library:
 
 ```ts
-import { renderToMjml } from "@templatical/renderer";
-import mjml2html from "mjml";
+import { renderToMjml } from '@templatical/renderer';
+import mjml2html from 'mjml';
 
 const mjml = await renderToMjml(templateContent);
 const { html } = mjml2html(mjml);

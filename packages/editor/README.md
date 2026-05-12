@@ -35,11 +35,11 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 ## Usage
 
 ```ts
-import { init } from "@templatical/editor";
-import "@templatical/editor/style.css";
+import { init } from '@templatical/editor';
+import '@templatical/editor/style.css';
 
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   onChange(content) {
     // content is JSON — store/version/sync however you want
   },

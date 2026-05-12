@@ -26,8 +26,8 @@ When MCP is enabled, the editor listens for operations from connected AI agents 
 
 ```js
 const editor = await initCloud({
-  container: "#editor",
-  auth: { url: "/api/templatical/token" },
+  container: '#editor',
+  auth: { url: '/api/templatical/token' },
   mcp: {
     enabled: true,
   },

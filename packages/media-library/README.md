@@ -22,16 +22,16 @@ Peer deps: `vue@^3.5`, `tailwindcss@^4`.
 ### Standalone visual SDK (mount anywhere)
 
 ```ts
-import { init } from "@templatical/media-library";
-import "@templatical/media-library/style.css";
+import { init } from '@templatical/media-library';
+import '@templatical/media-library/style.css';
 
 const media = await init({
-  container: "#media",
+  container: '#media',
   auth: {
-    url: "https://your-app.com/api/templatical/token",
+    url: 'https://your-app.com/api/templatical/token',
   },
   onSelect(item) {
-    console.log("Picked:", item.url);
+    console.log('Picked:', item.url);
   },
 });
 
@@ -44,18 +44,18 @@ media.unmount();
 Use `MediaLibraryModal` inside a Vue 3 app. See [docs](https://docs.templatical.com/cloud/media-library) for the full prop reference.
 
 ```ts
-import { MediaLibraryModal } from "@templatical/media-library";
-import "@templatical/media-library/style.css";
+import { MediaLibraryModal } from '@templatical/media-library';
+import '@templatical/media-library/style.css';
 ```
 
 ### Composable (build your own UI)
 
 ```ts
-import { AuthManager } from "@templatical/core/cloud";
-import { useMediaLibrary } from "@templatical/media-library";
+import { AuthManager } from '@templatical/core/cloud';
+import { useMediaLibrary } from '@templatical/media-library';
 
 const authManager = new AuthManager({
-  url: "https://your-app.com/api/templatical/token",
+  url: 'https://your-app.com/api/templatical/token',
 });
 await authManager.initialize();
 
@@ -68,8 +68,8 @@ const lib = useMediaLibrary({
 ### API client (low-level)
 
 ```ts
-import { AuthManager } from "@templatical/core/cloud";
-import { MediaApiClient } from "@templatical/media-library";
+import { AuthManager } from '@templatical/core/cloud';
+import { MediaApiClient } from '@templatical/media-library';
 
 const api = new MediaApiClient(authManager);
 const response = await api.browseMedia({ folder_id: null });

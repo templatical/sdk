@@ -16,7 +16,7 @@ type Severity = "error" | "warning" | "info" | "off";
 ## `disabled`
 
 | Default | `false` |
-| ------- | ------- |
+|---|---|
 
 When `true`:
 
@@ -28,9 +28,9 @@ Use this when a tenant has explicitly opted out, or to keep the default OSS bund
 
 ## `locale`
 
-| Default (headless) | `'en'`                            |
-| ------------------ | --------------------------------- |
-| Editor             | always matches `init({ locale })` |
+| Default (headless) | `'en'` |
+|---|---|
+| Editor | always matches `init({ locale })` |
 
 Drives the message templates the linter returns (`messages/{locale}.ts`) and is accepted by the locale-aware rules (`link-vague-text`, `button-vague-label`, `img-linked-no-context`). Falls back to `en` when the locale (or its base language) isn't bundled.
 
@@ -55,7 +55,7 @@ The dictionary is a union of every registered locale, so a German-locale email w
 ## `rules`
 
 | Default | `{}` |
-| ------- | ---- |
+|---|---|
 
 Per-rule severity override. Set a rule to `'off'` to disable it entirely. Set to a different severity to bend the default classification:
 
@@ -72,16 +72,16 @@ The override applies before the rule runs, so disabled rules don't even execute.
 ## `thresholds`
 
 | Default | See below |
-| ------- | --------- |
+|---|---|
 
 Numeric knobs that some rules consult:
 
-| Threshold          | Default | Used by               |
-| ------------------ | ------- | --------------------- |
-| `altMaxLength`     | `125`   | `img-alt-too-long`    |
-| `minFontSize`      | `14`    | `text-too-small`      |
-| `allCapsMinLength` | `20`    | `text-all-caps`       |
-| `minTouchTargetPx` | `44`    | `button-touch-target` |
+| Threshold | Default | Used by |
+|---|---|---|
+| `altMaxLength` | `125` | `img-alt-too-long` |
+| `minFontSize` | `14` | `text-too-small` |
+| `allCapsMinLength` | `20` | `text-all-caps` |
+| `minTouchTargetPx` | `44` | `button-touch-target` |
 
 Override one without losing the others — partial merging is built in:
 

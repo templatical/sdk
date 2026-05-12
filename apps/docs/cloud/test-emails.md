@@ -22,13 +22,13 @@ You can transform the HTML before it's sent as a test email. This is useful for 
 
 ```js
 const editor = await initCloud({
-  container: "#editor",
-  auth: { url: "/api/templatical/token" },
+  container: '#editor',
+  auth: { url: '/api/templatical/token' },
   onBeforeTestEmail: async (html) => {
     // Replace merge tags with test values
     return html
-      .replace("{{first_name}}", "Jane")
-      .replace("{{company}}", "Acme Corp");
+      .replace('{{first_name}}', 'Jane')
+      .replace('{{company}}', 'Acme Corp');
   },
 });
 ```
@@ -36,23 +36,21 @@ const editor = await initCloud({
 ## Composable
 
 ```js
-import { useTestEmail } from "@templatical/core/cloud";
+import { useTestEmail } from '@templatical/core/cloud';
 
 const {
-  isEnabled, // ComputedRef<boolean> — plan allows test emails
-  allowedEmails, // ComputedRef<string[]> — whitelisted recipients
-  isSending, // Ref<boolean>
-  error, // Ref<string | null>
+  isEnabled,        // ComputedRef<boolean> — plan allows test emails
+  allowedEmails,    // ComputedRef<string[]> — whitelisted recipients
+  isSending,        // Ref<boolean>
+  error,            // Ref<string | null>
 
-  sendTestEmail, // (recipient) => Promise<void>
+  sendTestEmail,    // (recipient) => Promise<void>
 } = useTestEmail({
   authManager,
   getTemplateId: () => templateId,
   save: () => editor.save(),
   exportHtml: (templateId) => exportFn(templateId),
   onBeforeTestEmail: (html) => html,
-  onError: (error) => {
-    /* handle error */
-  },
+  onError: (error) => { /* handle error */ },
 });
 ```

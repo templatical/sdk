@@ -21,16 +21,16 @@ interface BlockStyles {
 ```
 
 ```ts
-import { createParagraphBlock } from "@templatical/types";
+import { createParagraphBlock } from '@templatical/types';
 
 const block = createParagraphBlock({
-  content: "<p>Styled text</p>",
+  content: '<p>Styled text</p>',
 });
 
 block.styles = {
   padding: { top: 16, right: 24, bottom: 16, left: 24 },
   margin: { top: 0, right: 0, bottom: 0, left: 0 },
-  backgroundColor: "#f0f9ff",
+  backgroundColor: '#f0f9ff',
 };
 ```
 
@@ -69,11 +69,11 @@ interface ResponsiveStyles {
 
 Der Editor verwendet diese Viewport-Breiten im Vorschaumodus:
 
-| Viewport | Vorschaubreite                   |
-| -------- | -------------------------------- |
-| Desktop  | Template-Breite (Standard 600px) |
-| Tablet   | 768px                            |
-| Mobile   | 375px                            |
+| Viewport | Vorschaubreite |
+|----------|---------------|
+| Desktop | Template-Breite (Standard 600px) |
+| Tablet | 768px |
+| Mobile | 375px |
 
 Responsive Überschreibungen werden mit den Basisstilen zusammengeführt. Geben Sie nur die Eigenschaften an, die Sie ändern möchten:
 
@@ -136,24 +136,24 @@ Die meisten CSS-Eigenschaften funktionieren nicht zuverlässig über E-Mail-Clie
 
 Neben einzelnen Blockstilen hat das Template selbst globale Einstellungen, die das Gesamtlayout beeinflussen.
 
-| Einstellung       | Typ      | Beschreibung                                      |
-| ----------------- | -------- | ------------------------------------------------- |
-| `width`           | `number` | Template-Inhaltsbreite in px (typischerweise 600) |
-| `backgroundColor` | `string` | Äußere Hintergrundfarbe hinter dem Template       |
-| `fontFamily`      | `string` | Standard-Schriftfamilie für alle Blöcke           |
+| Einstellung | Typ | Beschreibung |
+|---------|------|-------------|
+| `width` | `number` | Template-Inhaltsbreite in px (typischerweise 600) |
+| `backgroundColor` | `string` | Äußere Hintergrundfarbe hinter dem Template |
+| `fontFamily` | `string` | Standard-Schriftfamilie für alle Blöcke |
 
 Diese werden über die `init()`-Konfiguration des Editors oder durch direkte Änderung des Template-JSON konfiguriert:
 
 ```ts
-import { init } from "@templatical/editor";
+import { init } from '@templatical/editor';
 
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   content: {
     settings: {
       width: 640,
-      backgroundColor: "#f8fafc",
-      fontFamily: "Inter, system-ui, sans-serif",
+      backgroundColor: '#f8fafc',
+      fontFamily: 'Inter, system-ui, sans-serif',
     },
     blocks: [],
   },

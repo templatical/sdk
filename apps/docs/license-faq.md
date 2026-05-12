@@ -25,15 +25,15 @@ FSL-1.1-**MIT** is the variant that automatically converts to the MIT License af
 
 ## Which packages use which license?
 
-| Package                       | License                                                                                         |
-| ----------------------------- | ----------------------------------------------------------------------------------------------- |
-| `@templatical/editor`         | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (becomes MIT after 2 years) |
-| `@templatical/core`           | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (becomes MIT after 2 years) |
-| `@templatical/media-library`  | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (becomes MIT after 2 years) |
-| `@templatical/types`          | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)                                 |
-| `@templatical/renderer`       | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)                                 |
-| `@templatical/import-beefree` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)                                 |
-| `@templatical/import-unlayer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)                                 |
+| Package | License |
+|---|---|
+| `@templatical/editor` | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (becomes MIT after 2 years) |
+| `@templatical/core` | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (becomes MIT after 2 years) |
+| `@templatical/media-library` | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (becomes MIT after 2 years) |
+| `@templatical/types` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/renderer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-beefree` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-unlayer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
 The split exists so anything you'd build into your own backend or codegen pipeline (types, renderer, importer) is permissive MIT and free of any future-license consideration.
 
@@ -41,7 +41,7 @@ The split exists so anything you'd build into your own backend or codegen pipeli
 
 **Yes.** You can embed Templatical in any commercial product — paid SaaS, internal tools, on-premise software, agency builds, anything — without paying us and without asking permission.
 
-The only restriction is the one in the LICENSE: you can't take Templatical, slap a different name on it, and offer _that_ as a hosted email-editor service that competes with us.
+The only restriction is the one in the LICENSE: you can't take Templatical, slap a different name on it, and offer *that* as a hosted email-editor service that competes with us.
 
 ## Can I embed Templatical in my SaaS?
 
@@ -63,16 +63,16 @@ If you're not sure whether your use case crosses the line, [open a discussion](h
 
 ## What does "competing use" mean concretely?
 
-A "competing use" is one where the email editor _is_ the product. Some worked examples:
+A "competing use" is one where the email editor *is* the product. Some worked examples:
 
-| Use case                                                                                                   | Allowed?                                                       |
-| ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| You add Templatical to your CRM so users can compose campaign emails                                       | ✅ Yes — email editor is a feature of your CRM.                |
-| You add Templatical to a transactional email API so customers design templates before sending via your API | ✅ Yes — email editor is a feature of your sending platform.   |
-| You build a newsletter SaaS where Templatical is one of several composition tools                          | ✅ Yes — email editor is a feature of your newsletter product. |
-| You embed the editor inside your company's internal marketing portal                                       | ✅ Yes — internal use is unrestricted.                         |
-| You fork Templatical, rebrand it, and sell hosted Templatical-clone subscriptions                          | ❌ No — that's a competing managed service.                    |
-| You build "Templatical Cloud, but cheaper" and offer it as a SaaS                                          | ❌ No — that's a competing managed service.                    |
+| Use case | Allowed? |
+|---|---|
+| You add Templatical to your CRM so users can compose campaign emails | ✅ Yes — email editor is a feature of your CRM. |
+| You add Templatical to a transactional email API so customers design templates before sending via your API | ✅ Yes — email editor is a feature of your sending platform. |
+| You build a newsletter SaaS where Templatical is one of several composition tools | ✅ Yes — email editor is a feature of your newsletter product. |
+| You embed the editor inside your company's internal marketing portal | ✅ Yes — internal use is unrestricted. |
+| You fork Templatical, rebrand it, and sell hosted Templatical-clone subscriptions | ❌ No — that's a competing managed service. |
+| You build "Templatical Cloud, but cheaper" and offer it as a SaaS | ❌ No — that's a competing managed service. |
 
 The rule of thumb: if you remove Templatical from your product, do you still have a product? If yes, you're fine.
 

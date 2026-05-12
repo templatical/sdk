@@ -20,17 +20,17 @@ Beim Hovern über ein Tag wird der Rohwert hinter dem Label angezeigt.
 Die Eigenschaft `syntax` ist optional und standardmäßig `'liquid'`.
 
 ```ts
-import { init } from "@templatical/editor";
+import { init } from '@templatical/editor';
 
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   mergeTags: {
     tags: [
-      { label: "First Name", value: "{{first_name}}" },
-      { label: "Last Name", value: "{{last_name}}" },
-      { label: "Email", value: "{{email}}" },
-      { label: "Company", value: "{{company.name}}" },
-      { label: "Unsubscribe URL", value: "{{unsubscribe_url}}" },
+      { label: 'First Name', value: '{{first_name}}' },
+      { label: 'Last Name', value: '{{last_name}}' },
+      { label: 'Email', value: '{{email}}' },
+      { label: 'Company', value: '{{company.name}}' },
+      { label: 'Unsubscribe URL', value: '{{unsubscribe_url}}' },
     ],
   },
 });
@@ -56,16 +56,15 @@ Der `value` muss die Syntax-Trennzeichen enthalten. Zum Beispiel mit Liquid-Synt
 Templatical enthält vier integrierte Syntax-Presets. Die Einstellung `syntax` teilt dem Editor mit, wie sowohl Daten-Tags als auch Logik-Tags im Inhalt erkannt und hervorgehoben werden sollen.
 
 Jedes Preset definiert zwei Muster:
-
 - **Daten-Tags** -- Variable Merge-Tags wie der Name oder die E-Mail eines Empfängers
 - **Logik-Tags** -- Kontrollflussanweisungen wie Bedingungen und Schleifen
 
-| Preset         | Daten-Tag                         | Logik-Tag                       | Plattform                       |
-| -------------- | --------------------------------- | ------------------------------- | ------------------------------- |
-| `'liquid'`     | <code v-pre>{{first_name}}</code> | <code v-pre>{% if vip %}</code> | Shopify, Jekyll, Django, Jinja2 |
-| `'handlebars'` | <code v-pre>{{first_name}}</code> | <code v-pre>{{#if vip}}</code>  | Handlebars.js, Mandrill         |
-| `'mailchimp'`  | `*\|FIRST_NAME\|*`                | `*\|IF:VIP\|*`                  | Mailchimp                       |
-| `'ampscript'`  | `%%=first_name=%%`                | `%%[IF @vip]%%`                 | Salesforce Marketing Cloud      |
+| Preset | Daten-Tag | Logik-Tag | Plattform |
+|--------|----------|-----------|----------|
+| `'liquid'` | <code v-pre>{{first_name}}</code> | <code v-pre>{% if vip %}</code> | Shopify, Jekyll, Django, Jinja2 |
+| `'handlebars'` | <code v-pre>{{first_name}}</code> | <code v-pre>{{#if vip}}</code> | Handlebars.js, Mandrill |
+| `'mailchimp'` | `*\|FIRST_NAME\|*` | `*\|IF:VIP\|*` | Mailchimp |
+| `'ampscript'` | `%%=first_name=%%` | `%%[IF @vip]%%` | Salesforce Marketing Cloud |
 
 ```ts
 mergeTags: {
@@ -91,35 +90,34 @@ Wie Daten-Tags werden Logik-Tags unverändert im gerenderten MJML durchgereicht 
 Beispiele für Logik-Tags nach Preset:
 
 ::: code-group
-
 ```html [Liquid]
 {% if customer.vip %}
-<p>Exclusive offer just for you!</p>
-{% endif %} {% for item in cart.items %}
-<p>{{item.name}} - {{item.price}}</p>
+  <p>Exclusive offer just for you!</p>
+{% endif %}
+
+{% for item in cart.items %}
+  <p>{{item.name}} - {{item.price}}</p>
 {% endfor %}
 ```
-
 ```html [Handlebars]
 {{#if hasSubscription}}
-<p>Your plan renews on {{renewal_date}}</p>
-{{/if}} {{#each products}}
-<p>{{this.name}}</p>
+  <p>Your plan renews on {{renewal_date}}</p>
+{{/if}}
+
+{{#each products}}
+  <p>{{this.name}}</p>
 {{/each}}
 ```
-
 ```html [Mailchimp]
 *|IF:VIP|*
-<p>VIP discount applied</p>
+  <p>VIP discount applied</p>
 *|END:IF|*
 ```
-
 ```html [AMPscript]
 %%[IF @subscriber_type == "premium"]%%
-<p>Premium content here</p>
+  <p>Premium content here</p>
 %%[ENDIF]%%
 ```
-
 :::
 
 ## Benutzerdefinierte Syntax
@@ -128,8 +126,8 @@ Wenn die integrierten Presets nicht zu Ihrer Plattform passen, definieren Sie ei
 
 ```ts
 interface SyntaxPreset {
-  value: RegExp; // matches data tags like ${user.name}
-  logic: RegExp; // matches logic tags like $[IF ...]
+  value: RegExp;  // matches data tags like ${user.name}
+  logic: RegExp;  // matches logic tags like $[IF ...]
 }
 ```
 
@@ -165,10 +163,12 @@ Um sie explizit zu deaktivieren, setzen Sie `autocomplete: false`:
 
 ```ts
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   mergeTags: {
     autocomplete: false,
-    tags: [{ label: "Vorname", value: "{{first_name}}" }],
+    tags: [
+      { label: 'Vorname', value: '{{first_name}}' },
+    ],
   },
 });
 ```
@@ -181,7 +181,7 @@ Für große oder kontextabhängige Tag-Listen verwenden Sie den `onRequest`-Call
 
 ```ts
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   mergeTags: {
     onRequest: async () => {
       const tag = await showMyMergeTagPicker();

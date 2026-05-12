@@ -16,7 +16,7 @@ type Severity = "error" | "warning" | "info" | "off";
 ## `disabled`
 
 | Standard | `false` |
-| -------- | ------- |
+|---|---|
 
 Bei `true`:
 
@@ -28,9 +28,9 @@ Verwenden Sie das, wenn ein Mandant sich explizit ausklingt oder wenn Sie das OS
 
 ## `locale`
 
-| Standard (Headless) | `'en'`                         |
-| ------------------- | ------------------------------ |
-| Editor              | folgt stets `init({ locale })` |
+| Standard (Headless) | `'en'` |
+|---|---|
+| Editor | folgt stets `init({ locale })` |
 
 Steuert die Meldungstexte, die der Linter zurückgibt (`messages/{locale}.ts`), und wird von den lokalisierungsabhängigen Regeln verwendet (`link-vague-text`, `button-vague-label`, `img-linked-no-context`). Fällt auf `en` zurück, wenn die Locale (oder ihre Basissprache) nicht mitgeliefert wird.
 
@@ -55,7 +55,7 @@ Das Wörterbuch ist eine Vereinigung aller registrierten Locales – ein deutsch
 ## `rules`
 
 | Standard | `{}` |
-| -------- | ---- |
+|---|---|
 
 Pro-Regel-Schweregrad-Override. Setzen Sie eine Regel auf `'off'`, um sie ganz zu deaktivieren. Setzen Sie sie auf einen anderen Schweregrad, um die Standard-Klassifikation zu beugen:
 
@@ -72,16 +72,16 @@ Das Override greift, bevor die Regel läuft – deaktivierte Regeln werden also 
 ## `thresholds`
 
 | Standard | siehe unten |
-| -------- | ----------- |
+|---|---|
 
 Numerische Stellschrauben, die einige Regeln konsultieren:
 
-| Schwellwert        | Standard | Verwendet von         |
-| ------------------ | -------- | --------------------- |
-| `altMaxLength`     | `125`    | `img-alt-too-long`    |
-| `minFontSize`      | `14`     | `text-too-small`      |
-| `allCapsMinLength` | `20`     | `text-all-caps`       |
-| `minTouchTargetPx` | `44`     | `button-touch-target` |
+| Schwellwert | Standard | Verwendet von |
+|---|---|---|
+| `altMaxLength` | `125` | `img-alt-too-long` |
+| `minFontSize` | `14` | `text-too-small` |
+| `allCapsMinLength` | `20` | `text-all-caps` |
+| `minTouchTargetPx` | `44` | `button-touch-target` |
 
 Einen Wert überschreiben, ohne die anderen zu verlieren – partielles Mergen ist eingebaut:
 

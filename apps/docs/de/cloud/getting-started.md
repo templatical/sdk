@@ -51,10 +51,10 @@ Route::post('/api/templatical/token', function (Request $request) {
 ### Node.js-Beispiel
 
 ```js
-app.post("/api/templatical/token", async (req, res) => {
-  const response = await fetch("https://templatical.com/api/v1/auth/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+app.post('/api/templatical/token', async (req, res) => {
+  const response = await fetch('https://templatical.com/api/v1/auth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       client_id: process.env.TEMPLATICAL_CLIENT_ID,
       client_secret: process.env.TEMPLATICAL_CLIENT_SECRET,
@@ -71,15 +71,15 @@ app.post("/api/templatical/token", async (req, res) => {
 Ersetzen Sie `init()` durch `initCloud()` und geben Sie Ihren Auth-Endpunkt an:
 
 ```js
-import { initCloud } from "@templatical/editor";
+import { initCloud } from '@templatical/editor';
 
 const editor = await initCloud({
-  container: "#editor",
+  container: '#editor',
   auth: {
-    url: "/api/templatical/token",
+    url: '/api/templatical/token',
     requestOptions: {
-      method: "POST",
-      credentials: "same-origin",
+      method: 'POST',
+      credentials: 'same-origin',
     },
   },
 });
@@ -93,33 +93,24 @@ const editor = await initCloud({
 
 ```js
 const editor = await initCloud({
-  container: "#editor",
+  container: '#editor',
   auth: {
-    url: "/api/templatical/token",
+    url: '/api/templatical/token',
   },
 
   // Cloud-Funktionen (alle optional)
-  ai: {}, // Alle KI-Funktionen aktivieren
-  collaboration: {
-    // Echtzeit-Zusammenarbeit aktivieren
+  ai: {},                       // Alle KI-Funktionen aktivieren
+  collaboration: {             // Echtzeit-Zusammenarbeit aktivieren
     enabled: true,
   },
-  commenting: true, // Inline-Kommentare aktivieren
-  modules: true, // Gespeicherte Module aktivieren
+  commenting: true,            // Inline-Kommentare aktivieren
+  modules: true,               // Gespeicherte Module aktivieren
 
   // Callbacks
-  onChange: (content) => {
-    /* Template geändert */
-  },
-  onSave: (result) => {
-    /* SaveResult: { templateId, html, mjml, content } */
-  },
-  onError: (error) => {
-    /* Fehler behandeln */
-  },
-  onComment: (event) => {
-    /* Kommentar erstellt/aktualisiert/gelöscht */
-  },
+  onChange: (content) => { /* Template geändert */ },
+  onSave: (result) => { /* SaveResult: { templateId, html, mjml, content } */ },
+  onError: (error) => { /* Fehler behandeln */ },
+  onComment: (event) => { /* Kommentar erstellt/aktualisiert/gelöscht */ },
 });
 ```
 
@@ -135,7 +126,7 @@ const template = await editor.create();
 ### Bestehendes Template laden
 
 ```js
-const template = await editor.load("template-id-here");
+const template = await editor.load('template-id-here');
 ```
 
 ### Änderungen speichern
@@ -163,16 +154,16 @@ editor.unmount();
 Prüfen Sie, ob Ihre Cloud-Verbindung funktioniert:
 
 ```js
-import { performHealthCheck } from "@templatical/core/cloud";
+import { performHealthCheck } from '@templatical/core/cloud';
 
 const result = await performHealthCheck({
-  baseUrl: "https://templatical.com",
+  baseUrl: 'https://templatical.com',
 });
 
-console.log(result.overall); // true, wenn alle Dienste erreichbar sind
-console.log(result.api); // { ok: true, latency: 42 }
-console.log(result.websocket); // { ok: true }
-console.log(result.auth); // { ok: true }
+console.log(result.overall);    // true, wenn alle Dienste erreichbar sind
+console.log(result.api);        // { ok: true, latency: 42 }
+console.log(result.websocket);  // { ok: true }
+console.log(result.auth);       // { ok: true }
 ```
 
 ## Nächste Schritte

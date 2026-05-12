@@ -15,12 +15,12 @@ Wird aufgerufen, wann immer sich der Template-Inhalt ändert. Der Callback erhä
 
 ```ts
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   onChange(content) {
     // An Ihr Backend speichern
-    fetch("/api/templates/123", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
+    fetch('/api/templates/123', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(content),
     });
   },
@@ -33,10 +33,10 @@ Wird aufgerufen, wenn der Benutzer explizit einen Speichervorgang auslöst (z. B
 
 ```ts
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   onSave(content) {
     saveTemplate(content);
-    showNotification("Template saved");
+    showNotification('Template saved');
   },
 });
 ```
@@ -47,9 +47,9 @@ Wird aufgerufen, wenn innerhalb des Editors ein Fehler auftritt.
 
 ```ts
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   onError(error) {
-    console.error("Editor error:", error.message);
+    console.error('Editor error:', error.message);
     reportToSentry(error);
   },
 });
@@ -62,10 +62,10 @@ const editor = await init({
 Wird aufgerufen, wenn der Benutzer klickt, um ein Bild auszuwählen (z. B. in den Einstellungen des Bild-Blocks). Geben Sie ein `MediaResult`-Objekt zurück oder `null`, wenn der Benutzer abbricht. Wenn `alt` angegeben ist, füllt der Editor den Alt-Text des Bildes automatisch aus.
 
 ```ts
-import type { MediaResult } from "@templatical/types";
+import type { MediaResult } from '@templatical/types';
 
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   async onRequestMedia(context?): Promise<MediaResult | null> {
     const image = await openMediaPicker();
     if (!image) return null;
@@ -81,14 +81,14 @@ Wenn Sie `onRequestMedia` nicht bereitstellen, zeigt der Editor ein Texteingabef
 Wird aufgerufen, wenn der Benutzer klickt, um ein Merge-Tag in einen Title- oder Paragraph-Block einzufügen. Gibt ein `Promise` zurück, das sich zu einem `MergeTag`-Objekt oder `null` auflöst, wenn der Benutzer abbricht.
 
 ```ts
-import type { MergeTag } from "@templatical/types";
+import type { MergeTag } from '@templatical/types';
 
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   mergeTags: {
     tags: [
-      { label: "First Name", value: "{{first_name}}" },
-      { label: "Email", value: "{{email}}" },
+      { label: 'First Name', value: '{{first_name}}' },
+      { label: 'Email', value: '{{email}}' },
     ],
     async onRequest(): Promise<MergeTag | null> {
       // Zeigen Sie Ihre eigene Picker-UI an und geben Sie das ausgewählte Tag zurück
@@ -109,7 +109,7 @@ Wenn Sie `mergeTags.tags` ohne `onRequest` bereitstellen, verwendet der Editor e
 let saveTimeout: ReturnType<typeof setTimeout>;
 
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   onChange(content) {
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => {
@@ -129,7 +129,7 @@ const editor = await init({
 let isDirty = false;
 
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   onChange() {
     isDirty = true;
     updateSaveButton();
@@ -142,7 +142,7 @@ const editor = await init({
   },
 });
 
-window.addEventListener("beforeunload", (e) => {
+window.addEventListener('beforeunload', (e) => {
   if (isDirty) {
     e.preventDefault();
   }

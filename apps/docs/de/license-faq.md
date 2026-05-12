@@ -25,15 +25,15 @@ FSL-1.1-**MIT** ist die Variante, die nach zwei Jahren automatisch zur MIT-Lizen
 
 ## Welches Paket nutzt welche Lizenz?
 
-| Paket                         | Lizenz                                                                                       |
-| ----------------------------- | -------------------------------------------------------------------------------------------- |
-| `@templatical/editor`         | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (wird nach 2 Jahren MIT) |
-| `@templatical/core`           | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (wird nach 2 Jahren MIT) |
-| `@templatical/media-library`  | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (wird nach 2 Jahren MIT) |
-| `@templatical/types`          | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)                              |
-| `@templatical/renderer`       | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)                              |
-| `@templatical/import-beefree` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)                              |
-| `@templatical/import-unlayer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT)                              |
+| Paket | Lizenz |
+|---|---|
+| `@templatical/editor` | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (wird nach 2 Jahren MIT) |
+| `@templatical/core` | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (wird nach 2 Jahren MIT) |
+| `@templatical/media-library` | [FSL-1.1-MIT](https://github.com/templatical/sdk/blob/main/LICENSE) (wird nach 2 Jahren MIT) |
+| `@templatical/types` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/renderer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-beefree` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-unlayer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
 Die Aufteilung sorgt dafür, dass alles, was du in dein eigenes Backend oder eine Codegen-Pipeline einbinden würdest (Types, Renderer, Importer), unter permissiver MIT-Lizenz steht und keine Future-License-Überlegungen nötig sind.
 
@@ -41,7 +41,7 @@ Die Aufteilung sorgt dafür, dass alles, was du in dein eigenes Backend oder ein
 
 **Ja.** Du kannst Templatical in jedes kommerzielle Produkt einbetten — kostenpflichtiges SaaS, interne Tools, On-Premise-Software, Agentur-Builds, was auch immer — ohne uns zu bezahlen und ohne um Erlaubnis zu fragen.
 
-Die einzige Einschränkung steht in der LICENSE: Du darfst Templatical nicht nehmen, einen anderen Namen draufkleben und _das_ als gehosteten E-Mail-Editor-Service anbieten, der mit uns konkurriert.
+Die einzige Einschränkung steht in der LICENSE: Du darfst Templatical nicht nehmen, einen anderen Namen draufkleben und *das* als gehosteten E-Mail-Editor-Service anbieten, der mit uns konkurriert.
 
 ## Darf ich Templatical in mein SaaS einbetten?
 
@@ -63,16 +63,16 @@ Bist du dir nicht sicher, ob dein Anwendungsfall die Linie überschreitet, [öff
 
 ## Was bedeutet "konkurrierende Nutzung" konkret?
 
-Eine "konkurrierende Nutzung" ist eine, bei der der E-Mail-Editor _das_ Produkt ist. Ein paar Beispiele aus der Praxis:
+Eine "konkurrierende Nutzung" ist eine, bei der der E-Mail-Editor *das* Produkt ist. Ein paar Beispiele aus der Praxis:
 
-| Anwendungsfall                                                                                                                | Erlaubt?                                                         |
-| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Du baust Templatical in dein CRM ein, damit Nutzer Kampagnen-E-Mails verfassen                                                | ✅ Ja — der Editor ist eine Funktion deines CRMs.                |
-| Du integrierst Templatical in eine Transactional-E-Mail-API, damit Kunden Templates designen, bevor sie über deine API senden | ✅ Ja — der Editor ist eine Funktion deiner Sende-Plattform.     |
-| Du baust ein Newsletter-SaaS, in dem Templatical eines von mehreren Kompositionswerkzeugen ist                                | ✅ Ja — der Editor ist eine Funktion deines Newsletter-Produkts. |
-| Du bettest den Editor in das interne Marketing-Portal deines Unternehmens ein                                                 | ✅ Ja — interne Nutzung ist uneingeschränkt.                     |
-| Du forkst Templatical, brandest es um und verkaufst Abos eines gehosteten Templatical-Klons                                   | ❌ Nein — das ist ein konkurrierender Managed Service.           |
-| Du baust "Templatical Cloud, aber günstiger" und bietest es als SaaS an                                                       | ❌ Nein — das ist ein konkurrierender Managed Service.           |
+| Anwendungsfall | Erlaubt? |
+|---|---|
+| Du baust Templatical in dein CRM ein, damit Nutzer Kampagnen-E-Mails verfassen | ✅ Ja — der Editor ist eine Funktion deines CRMs. |
+| Du integrierst Templatical in eine Transactional-E-Mail-API, damit Kunden Templates designen, bevor sie über deine API senden | ✅ Ja — der Editor ist eine Funktion deiner Sende-Plattform. |
+| Du baust ein Newsletter-SaaS, in dem Templatical eines von mehreren Kompositionswerkzeugen ist | ✅ Ja — der Editor ist eine Funktion deines Newsletter-Produkts. |
+| Du bettest den Editor in das interne Marketing-Portal deines Unternehmens ein | ✅ Ja — interne Nutzung ist uneingeschränkt. |
+| Du forkst Templatical, brandest es um und verkaufst Abos eines gehosteten Templatical-Klons | ❌ Nein — das ist ein konkurrierender Managed Service. |
+| Du baust "Templatical Cloud, aber günstiger" und bietest es als SaaS an | ❌ Nein — das ist ein konkurrierender Managed Service. |
 
 Die Faustregel: Wenn du Templatical aus deinem Produkt entfernst, hast du dann immer noch ein Produkt? Wenn ja, bist du auf der sicheren Seite.
 

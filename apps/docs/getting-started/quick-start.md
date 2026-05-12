@@ -16,60 +16,43 @@ npm install @templatical/editor @templatical/renderer
 ```html
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Templatical Editor</title>
-    <style>
-      body {
-        margin: 0;
-      }
-      #editor {
-        height: calc(100vh - 48px);
-      }
-      #toolbar {
-        height: 48px;
-        display: flex;
-        align-items: center;
-        padding: 0 16px;
-        border-bottom: 1px solid #e5e7eb;
-      }
-      #toolbar button {
-        padding: 8px 16px;
-        background: #1a73e8;
-        color: #fff;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="toolbar">
-      <button onclick="save()">Save Template</button>
-    </div>
-    <div id="editor"></div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Templatical Editor</title>
+  <style>
+    body { margin: 0; }
+    #editor { height: calc(100vh - 48px); }
+    #toolbar { height: 48px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid #e5e7eb; }
+    #toolbar button { padding: 8px 16px; background: #1a73e8; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button onclick="save()">Save Template</button>
+  </div>
+  <div id="editor"></div>
 
-    <script type="module">
-      import { init } from "@templatical/editor";
-      import "@templatical/editor/style.css";
+  <script type="module">
+    import { init } from '@templatical/editor';
+    import '@templatical/editor/style.css';
 
-      const editor = await init({
-        container: "#editor",
+    const editor = await init({
+      container: '#editor',
+    });
+
+    window.save = async function () {
+      const content = editor.getContent();
+      const mjml = await editor.toMjml();
+
+      await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, mjml }),
       });
-
-      window.save = async function () {
-        const content = editor.getContent();
-        const mjml = await editor.toMjml();
-
-        await fetch("/api/templates", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content, mjml }),
-        });
-      };
-    </script>
-  </body>
+    };
+  </script>
+</body>
 </html>
 ```
 

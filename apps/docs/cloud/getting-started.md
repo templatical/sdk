@@ -51,10 +51,10 @@ Route::post('/api/templatical/token', function (Request $request) {
 ### Node.js Example
 
 ```js
-app.post("/api/templatical/token", async (req, res) => {
-  const response = await fetch("https://templatical.com/api/v1/auth/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+app.post('/api/templatical/token', async (req, res) => {
+  const response = await fetch('https://templatical.com/api/v1/auth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       client_id: process.env.TEMPLATICAL_CLIENT_ID,
       client_secret: process.env.TEMPLATICAL_CLIENT_SECRET,
@@ -71,15 +71,15 @@ app.post("/api/templatical/token", async (req, res) => {
 Replace `init()` with `initCloud()` and provide your auth endpoint:
 
 ```js
-import { initCloud } from "@templatical/editor";
+import { initCloud } from '@templatical/editor';
 
 const editor = await initCloud({
-  container: "#editor",
+  container: '#editor',
   auth: {
-    url: "/api/templatical/token",
+    url: '/api/templatical/token',
     requestOptions: {
-      method: "POST",
-      credentials: "same-origin",
+      method: 'POST',
+      credentials: 'same-origin',
     },
   },
 });
@@ -93,33 +93,24 @@ The `auth.url` should point to the token endpoint you created above. The SDK han
 
 ```js
 const editor = await initCloud({
-  container: "#editor",
+  container: '#editor',
   auth: {
-    url: "/api/templatical/token",
+    url: '/api/templatical/token',
   },
 
   // Cloud features (all optional)
-  ai: {}, // Enable all AI features
-  collaboration: {
-    // Enable real-time collaboration
+  ai: {},                       // Enable all AI features
+  collaboration: {             // Enable real-time collaboration
     enabled: true,
   },
-  commenting: true, // Enable inline comments
-  modules: true, // Enable saved modules
+  commenting: true,            // Enable inline comments
+  modules: true,               // Enable saved modules
 
   // Callbacks
-  onChange: (content) => {
-    /* template changed */
-  },
-  onSave: (result) => {
-    /* SaveResult: { templateId, html, mjml, content } */
-  },
-  onError: (error) => {
-    /* handle errors */
-  },
-  onComment: (event) => {
-    /* comment created/updated/deleted */
-  },
+  onChange: (content) => { /* template changed */ },
+  onSave: (result) => { /* SaveResult: { templateId, html, mjml, content } */ },
+  onError: (error) => { /* handle errors */ },
+  onComment: (event) => { /* comment created/updated/deleted */ },
 });
 ```
 
@@ -135,7 +126,7 @@ const template = await editor.create();
 ### Load an Existing Template
 
 ```js
-const template = await editor.load("template-id-here");
+const template = await editor.load('template-id-here');
 ```
 
 ### Save Changes
@@ -163,16 +154,16 @@ editor.unmount();
 Verify your Cloud connection is working:
 
 ```js
-import { performHealthCheck } from "@templatical/core/cloud";
+import { performHealthCheck } from '@templatical/core/cloud';
 
 const result = await performHealthCheck({
-  baseUrl: "https://templatical.com",
+  baseUrl: 'https://templatical.com',
 });
 
-console.log(result.overall); // true if all services are reachable
-console.log(result.api); // { ok: true, latency: 42 }
-console.log(result.websocket); // { ok: true }
-console.log(result.auth); // { ok: true }
+console.log(result.overall);    // true if all services are reachable
+console.log(result.api);        // { ok: true, latency: 42 }
+console.log(result.websocket);  // { ok: true }
+console.log(result.auth);       // { ok: true }
 ```
 
 ## Next Steps

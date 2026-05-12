@@ -21,16 +21,16 @@ interface BlockStyles {
 ```
 
 ```ts
-import { createParagraphBlock } from "@templatical/types";
+import { createParagraphBlock } from '@templatical/types';
 
 const block = createParagraphBlock({
-  content: "<p>Styled text</p>",
+  content: '<p>Styled text</p>',
 });
 
 block.styles = {
   padding: { top: 16, right: 24, bottom: 16, left: 24 },
   margin: { top: 0, right: 0, bottom: 0, left: 0 },
-  backgroundColor: "#f0f9ff",
+  backgroundColor: '#f0f9ff',
 };
 ```
 
@@ -69,11 +69,11 @@ interface ResponsiveStyles {
 
 The editor uses these viewport widths in preview mode:
 
-| Viewport | Preview Width                  |
-| -------- | ------------------------------ |
-| Desktop  | Template width (default 600px) |
-| Tablet   | 768px                          |
-| Mobile   | 375px                          |
+| Viewport | Preview Width |
+|----------|---------------|
+| Desktop | Template width (default 600px) |
+| Tablet | 768px |
+| Mobile | 375px |
 
 Responsive overrides merge with the base styles. Only specify the properties you want to change:
 
@@ -136,24 +136,24 @@ Most CSS properties don't work reliably across email clients. Properties like `d
 
 Beyond individual block styles, the template itself has global settings that affect the overall layout.
 
-| Setting           | Type     | Description                                  |
-| ----------------- | -------- | -------------------------------------------- |
-| `width`           | `number` | Template content width in px (typically 600) |
-| `backgroundColor` | `string` | Outer background color behind the template   |
-| `fontFamily`      | `string` | Default font family for all blocks           |
+| Setting | Type | Description |
+|---------|------|-------------|
+| `width` | `number` | Template content width in px (typically 600) |
+| `backgroundColor` | `string` | Outer background color behind the template |
+| `fontFamily` | `string` | Default font family for all blocks |
 
 These are configured through the editor's `init()` config or by modifying the template JSON directly:
 
 ```ts
-import { init } from "@templatical/editor";
+import { init } from '@templatical/editor';
 
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   content: {
     settings: {
       width: 640,
-      backgroundColor: "#f8fafc",
-      fontFamily: "Inter, system-ui, sans-serif",
+      backgroundColor: '#f8fafc',
+      fontFamily: 'Inter, system-ui, sans-serif',
     },
     blocks: [],
   },

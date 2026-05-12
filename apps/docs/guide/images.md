@@ -18,10 +18,10 @@ When the `onRequestMedia` callback is provided, a browse button appears alongsid
 The editor calls this function whenever the user clicks the button. Return a `MediaResult` object, or `null` if the user cancels. When `alt` is provided, the editor automatically fills in the image's alt text.
 
 ```ts
-import { init } from "@templatical/editor";
+import { init } from '@templatical/editor';
 
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   async onRequestMedia() {
     // Open your own modal, file browser, or asset manager
     const image = await openMyMediaModal();
@@ -43,19 +43,20 @@ interface MediaResult {
 onRequestMedia?: (context?: MediaRequestContext) => Promise<MediaResult | null>;
 ```
 
+
 ## Image Block Properties
 
 The `ImageBlock` type defines all configurable properties:
 
-| Property           | Type                            | Description                                           |
-| ------------------ | ------------------------------- | ----------------------------------------------------- |
-| `src`              | `string`                        | Image source URL                                      |
-| `alt`              | `string`                        | Alt text for accessibility                            |
-| `width`            | `number \| 'full'`              | Image width in pixels, or `'full'` for 100%           |
-| `align`            | `'left' \| 'center' \| 'right'` | Horizontal alignment                                  |
-| `linkUrl`          | `string` (optional)             | Wraps the image in a link                             |
-| `linkOpenInNewTab` | `boolean` (optional)            | Opens the link in a new tab                           |
-| `placeholderUrl`   | `string` (optional)             | Design-time preview image when `src` uses a merge tag |
+| Property | Type | Description |
+|---|---|---|
+| `src` | `string` | Image source URL |
+| `alt` | `string` | Alt text for accessibility |
+| `width` | `number \| 'full'` | Image width in pixels, or `'full'` for 100% |
+| `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
+| `linkUrl` | `string` (optional) | Wraps the image in a link |
+| `linkOpenInNewTab` | `boolean` (optional) | Opens the link in a new tab |
+| `placeholderUrl` | `string` (optional) | Design-time preview image when `src` uses a merge tag |
 
 ### Placeholder URL
 

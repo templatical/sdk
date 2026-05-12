@@ -12,7 +12,7 @@ Templatical provides factory functions for every block type. Use them to build t
 ## Blank template
 
 ```ts
-import { createDefaultTemplateContent } from "@templatical/types";
+import { createDefaultTemplateContent } from '@templatical/types';
 
 const content = createDefaultTemplateContent();
 // { blocks: [], settings: { width: 600, backgroundColor: '#ffffff', fontFamily: 'Arial' } }
@@ -21,7 +21,7 @@ const content = createDefaultTemplateContent();
 `createDefaultTemplateContent()` accepts an optional font family string:
 
 ```ts
-const content = createDefaultTemplateContent("Georgia, serif");
+const content = createDefaultTemplateContent('Georgia, serif');
 ```
 
 ## Building a template
@@ -36,7 +36,7 @@ import {
   createImageBlock,
   createButtonBlock,
   createDividerBlock,
-} from "@templatical/types";
+} from '@templatical/types';
 
 const content = createDefaultTemplateContent();
 
@@ -46,19 +46,19 @@ content.blocks = [
     level: 1,
   }),
   createImageBlock({
-    src: "https://example.com/hero.jpg",
-    alt: "Welcome hero image",
-    width: "full",
+    src: 'https://example.com/hero.jpg',
+    alt: 'Welcome hero image',
+    width: 'full',
   }),
   createDividerBlock(),
   createParagraphBlock({
-    content: "<p>Thanks for signing up. Here is what happens next.</p>",
+    content: '<p>Thanks for signing up. Here is what happens next.</p>',
   }),
   createButtonBlock({
-    text: "Get Started",
-    url: "https://example.com/dashboard",
-    backgroundColor: "#1a73e8",
-    textColor: "#ffffff",
+    text: 'Get Started',
+    url: 'https://example.com/dashboard',
+    backgroundColor: '#1a73e8',
+    textColor: '#ffffff',
     borderRadius: 6,
   }),
 ];
@@ -70,56 +70,56 @@ content.blocks = [
 
 ```ts
 createTitleBlock({
-  content: "<h1>Welcome, {{name}}!</h1>",
+  content: '<h1>Welcome, {{name}}!</h1>',
   level: 1,
-  textAlign: "center",
-});
+  textAlign: 'center',
+})
 ```
 
 ### Paragraph
 
 ```ts
 createParagraphBlock({
-  content: "<p>Thanks for signing up. Here is what happens next.</p>",
-});
+  content: '<p>Thanks for signing up. Here is what happens next.</p>',
+})
 ```
 
 ### Image
 
 ```ts
 createImageBlock({
-  src: "https://cdn.example.com/hero.png",
-  alt: "Hero banner",
+  src: 'https://cdn.example.com/hero.png',
+  alt: 'Hero banner',
   width: 560,
-  linkUrl: "https://example.com",
-});
+  linkUrl: 'https://example.com',
+})
 ```
 
 ### Button
 
 ```ts
 createButtonBlock({
-  text: "Get Started",
-  url: "https://example.com/signup",
-  backgroundColor: "#6366f1",
+  text: 'Get Started',
+  url: 'https://example.com/signup',
+  backgroundColor: '#6366f1',
   borderRadius: 8,
-});
+})
 ```
 
 ### Divider
 
 ```ts
 createDividerBlock({
-  lineStyle: "dashed",
-  color: "#e5e7eb",
+  lineStyle: 'dashed',
+  color: '#e5e7eb',
   thickness: 2,
-});
+})
 ```
 
 ### Spacer
 
 ```ts
-createSpacerBlock({ height: 40 });
+createSpacerBlock({ height: 40 })
 ```
 
 ### HTML
@@ -127,24 +127,20 @@ createSpacerBlock({ height: 40 });
 ```ts
 createHtmlBlock({
   content: '<div style="text-align:center;">Custom markup</div>',
-});
+})
 ```
 
 ### Social Icons
 
 ```ts
 createSocialIconsBlock({
-  iconStyle: "circle",
-  iconSize: "large",
+  iconStyle: 'circle',
+  iconSize: 'large',
   icons: [
-    { id: crypto.randomUUID(), platform: "twitter", url: "https://x.com/acme" },
-    {
-      id: crypto.randomUUID(),
-      platform: "github",
-      url: "https://github.com/acme",
-    },
+    { id: crypto.randomUUID(), platform: 'twitter', url: 'https://x.com/acme' },
+    { id: crypto.randomUUID(), platform: 'github', url: 'https://github.com/acme' },
   ],
-});
+})
 ```
 
 ### Menu
@@ -152,33 +148,12 @@ createSocialIconsBlock({
 ```ts
 createMenuBlock({
   items: [
-    {
-      id: crypto.randomUUID(),
-      text: "Home",
-      url: "https://example.com",
-      openInNewTab: false,
-      bold: false,
-      underline: false,
-    },
-    {
-      id: crypto.randomUUID(),
-      text: "Blog",
-      url: "https://example.com/blog",
-      openInNewTab: false,
-      bold: false,
-      underline: false,
-    },
-    {
-      id: crypto.randomUUID(),
-      text: "Docs",
-      url: "https://docs.example.com",
-      openInNewTab: true,
-      bold: false,
-      underline: false,
-    },
+    { id: crypto.randomUUID(), text: 'Home', url: 'https://example.com', openInNewTab: false, bold: false, underline: false },
+    { id: crypto.randomUUID(), text: 'Blog', url: 'https://example.com/blog', openInNewTab: false, bold: false, underline: false },
+    { id: crypto.randomUUID(), text: 'Docs', url: 'https://docs.example.com', openInNewTab: true, bold: false, underline: false },
   ],
-  separator: "-",
-});
+  separator: '-',
+})
 ```
 
 ### Table
@@ -187,51 +162,33 @@ createMenuBlock({
 createTableBlock({
   hasHeaderRow: true,
   rows: [
-    {
-      id: crypto.randomUUID(),
-      cells: [
-        { id: crypto.randomUUID(), content: "Plan" },
-        { id: crypto.randomUUID(), content: "Price" },
-      ],
-    },
-    {
-      id: crypto.randomUUID(),
-      cells: [
-        { id: crypto.randomUUID(), content: "Starter" },
-        { id: crypto.randomUUID(), content: "$9/mo" },
-      ],
-    },
-    {
-      id: crypto.randomUUID(),
-      cells: [
-        { id: crypto.randomUUID(), content: "Pro" },
-        { id: crypto.randomUUID(), content: "$29/mo" },
-      ],
-    },
+    { id: crypto.randomUUID(), cells: [{ id: crypto.randomUUID(), content: 'Plan' }, { id: crypto.randomUUID(), content: 'Price' }] },
+    { id: crypto.randomUUID(), cells: [{ id: crypto.randomUUID(), content: 'Starter' }, { id: crypto.randomUUID(), content: '$9/mo' }] },
+    { id: crypto.randomUUID(), cells: [{ id: crypto.randomUUID(), content: 'Pro' }, { id: crypto.randomUUID(), content: '$29/mo' }] },
   ],
-});
+})
 ```
 
 ### Video
 
 ```ts
 createVideoBlock({
-  url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-  alt: "Product demo video",
-});
+  url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+  thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+  alt: 'Product demo video',
+})
 ```
 
 ### Section
 
 ```ts
 createSectionBlock({
-  columns: "2",
+  columns: '2',
   children: [
-    [createParagraphBlock({ content: "<p>Left column</p>" })],
-    [createImageBlock({ src: "https://cdn.example.com/photo.jpg" })],
+    [createParagraphBlock({ content: '<p>Left column</p>' })],
+    [createImageBlock({ src: 'https://cdn.example.com/photo.jpg' })],
   ],
-});
+})
 ```
 
 The `columns` property accepts: `'1'` (single), `'2'` (two equal), `'3'` (three equal), `'2-1'` (two-thirds / one-third), `'1-2'` (one-third / two-thirds). See [Sections and Columns](/guide/sections-and-columns) for full details.
@@ -247,9 +204,9 @@ The `columns` property accepts: `'1'` (single), `'2'` (two equal), `'3'` (three 
 Create any block by type string:
 
 ```ts
-import { createBlock } from "@templatical/types";
+import { createBlock } from '@templatical/types';
 
-const block = createBlock("title"); // TitleBlock with defaults
+const block = createBlock('title'); // TitleBlock with defaults
 ```
 
 ### Cloning
@@ -257,7 +214,7 @@ const block = createBlock("title"); // TitleBlock with defaults
 Deep-clone a block with a new ID:
 
 ```ts
-import { cloneBlock } from "@templatical/types";
+import { cloneBlock } from '@templatical/types';
 
 const copy = cloneBlock(existingBlock);
 // copy.id !== existingBlock.id
@@ -268,13 +225,7 @@ const copy = cloneBlock(existingBlock);
 Narrow a `Block` union to a specific type:
 
 ```ts
-import {
-  isTitle,
-  isParagraph,
-  isImage,
-  isButton,
-  isSection,
-} from "@templatical/types";
+import { isTitle, isParagraph, isImage, isButton, isSection } from '@templatical/types';
 
 if (isTitle(block)) {
   console.log(block.level); // TypeScript knows this is TitleBlock
@@ -299,17 +250,17 @@ Template settings control the global properties of the email:
 const content = createDefaultTemplateContent();
 
 content.settings.width = 640;
-content.settings.backgroundColor = "#f5f5f5";
-content.settings.fontFamily = "Helvetica, Arial, sans-serif";
-content.settings.preheaderText = "Your weekly digest is here";
+content.settings.backgroundColor = '#f5f5f5';
+content.settings.fontFamily = 'Helvetica, Arial, sans-serif';
+content.settings.preheaderText = 'Your weekly digest is here';
 ```
 
-| Setting           | Type     | Description                      |
-| ----------------- | -------- | -------------------------------- |
-| `width`           | `number` | Email width in pixels            |
-| `backgroundColor` | `string` | Outer background color           |
-| `fontFamily`      | `string` | Default font stack               |
-| `preheaderText`   | `string` | Preview text shown in inbox list |
+| Setting | Type | Description |
+|---|---|---|
+| `width` | `number` | Email width in pixels |
+| `backgroundColor` | `string` | Outer background color |
+| `fontFamily` | `string` | Default font stack |
+| `preheaderText` | `string` | Preview text shown in inbox list |
 
 For default values and how to customize them, see [Block & Template Defaults](/guide/defaults).
 
@@ -318,10 +269,10 @@ For default values and how to customize them, see [Block & Template Defaults](/g
 Pass previously saved JSON back to the editor:
 
 ```ts
-const saved = await fetch("/api/templates/123").then((r) => r.json());
+const saved = await fetch('/api/templates/123').then(r => r.json());
 
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   content: saved,
 });
 ```

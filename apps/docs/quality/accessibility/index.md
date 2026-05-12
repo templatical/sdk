@@ -63,23 +63,18 @@ The package has no opinion on UI. The editor's `useAccessibilityLint` composable
 ## Install
 
 ::: code-group
-
 ```bash [npm]
 npm install @templatical/quality
 ```
-
 ```bash [pnpm]
 pnpm add @templatical/quality
 ```
-
 ```bash [yarn]
 yarn add @templatical/quality
 ```
-
 ```bash [bun]
 bun add @templatical/quality
 ```
-
 :::
 
 The package is an **optional peer** of `@templatical/editor`. Install it to turn on the sidebar tab and canvas badges. Skip it and the editor stays lean — the dynamic import is gated and tree-shakeable, so the linter chunk never downloads.

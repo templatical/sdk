@@ -17,23 +17,21 @@ Snapshots bieten einen automatischen Versionsverlauf für Ihre Templates. Jede S
 ## Composable
 
 ```js
-import { useSnapshotHistory } from "@templatical/core/cloud";
+import { useSnapshotHistory } from '@templatical/core/cloud';
 
 const {
-  snapshots, // Ref<TemplateSnapshot[]>
-  isLoading, // Ref<boolean>
-  isRestoring, // Ref<boolean>
+  snapshots,      // Ref<TemplateSnapshot[]>
+  isLoading,      // Ref<boolean>
+  isRestoring,    // Ref<boolean>
 
-  loadSnapshots, // () => Promise<void>
-  restoreSnapshot, // (snapshotId) => Promise<Template>
+  loadSnapshots,     // () => Promise<void>
+  restoreSnapshot,   // (snapshotId) => Promise<Template>
 } = useSnapshotHistory({
   authManager,
-  templateId: "template-id",
+  templateId: 'template-id',
   onRestore: (template) => {
     // Template wiederhergestellt — Editor aktualisieren
   },
-  onError: (error) => {
-    /* Fehler behandeln */
-  },
+  onError: (error) => { /* Fehler behandeln */ },
 });
 ```

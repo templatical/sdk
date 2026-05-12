@@ -20,19 +20,17 @@ npm install @templatical/import-beefree
 ## Usage
 
 ```ts
-import { convertBeeFreeTemplate } from "@templatical/import-beefree";
+import { convertBeeFreeTemplate } from '@templatical/import-beefree';
 
 // Load your BeeFree template JSON
-const beefreeJson = await fetch("/api/beefree-templates/123").then((r) =>
-  r.json(),
-);
+const beefreeJson = await fetch('/api/beefree-templates/123').then(r => r.json());
 
 // Convert to Templatical format
 const { content, report } = convertBeeFreeTemplate(beefreeJson);
 
 // Use in the editor
 const editor = await init({
-  container: "#editor",
+  container: '#editor',
   content,
 });
 
@@ -41,7 +39,6 @@ console.log(report);
 ```
 
 The function returns an `ImportResult` with:
-
 - `content` — the converted `TemplateContent` ready for the editor
 - `report` — a conversion report with the status of each block (`converted`, `approximated`, `html-fallback`, or `skipped`)
 
@@ -49,21 +46,21 @@ The function returns an `ImportResult` with:
 
 BeeFree block types map to Templatical equivalents:
 
-| BeeFree Module | Templatical Block | Status                           |
-| -------------- | ----------------- | -------------------------------- |
-| Text           | `paragraph`       | Converted                        |
-| Paragraph      | `paragraph`       | Converted                        |
-| Heading        | `title`           | Converted                        |
-| List           | `paragraph`       | Converted                        |
-| Image          | `image`           | Converted                        |
-| Button         | `button`          | Converted                        |
-| Divider        | `divider`         | Converted                        |
-| Spacer         | `spacer`          | Converted                        |
-| Social         | `social`          | Converted (16 platforms mapped)  |
-| Html           | `html`            | Converted                        |
-| Menu           | `menu`            | Approximated (styles may differ) |
-| Video          | `video`           | Converted                        |
-| Table          | `table`           | Converted                        |
+| BeeFree Module | Templatical Block | Status |
+|---|---|---|
+| Text | `paragraph` | Converted |
+| Paragraph | `paragraph` | Converted |
+| Heading | `title` | Converted |
+| List | `paragraph` | Converted |
+| Image | `image` | Converted |
+| Button | `button` | Converted |
+| Divider | `divider` | Converted |
+| Spacer | `spacer` | Converted |
+| Social | `social` | Converted (16 platforms mapped) |
+| Html | `html` | Converted |
+| Menu | `menu` | Approximated (styles may differ) |
+| Video | `video` | Converted |
+| Table | `table` | Converted |
 
 Unknown module types are converted to HTML blocks as a fallback.
 
@@ -71,13 +68,13 @@ Unknown module types are converted to HTML blocks as a fallback.
 
 BeeFree organizes content into rows with columns. These map to Templatical's `SectionBlock` with the appropriate `ColumnLayout`:
 
-| BeeFree Columns    | Templatical Layout |
-| ------------------ | ------------------ |
-| 1 column (100%)    | `'1'`              |
-| 2 equal columns    | `'2'`              |
-| 3 equal columns    | `'3'`              |
-| 2 columns (~33/66) | `'1-2'`            |
-| 2 columns (~66/33) | `'2-1'`            |
+| BeeFree Columns | Templatical Layout |
+|---|---|
+| 1 column (100%) | `'1'` |
+| 2 equal columns | `'2'` |
+| 3 equal columns | `'3'` |
+| 2 columns (~33/66) | `'1-2'` |
+| 2 columns (~66/33) | `'2-1'` |
 
 Column widths that don't match a standard ratio are mapped to the closest available layout.
 

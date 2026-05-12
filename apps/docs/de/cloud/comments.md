@@ -11,8 +11,8 @@ Fügen Sie Inline-Kommentare an einzelnen Blöcken für Review-Workflows hinzu. 
 
 ```js
 const editor = await initCloud({
-  container: "#editor",
-  auth: { url: "/api/templatical/token" },
+  container: '#editor',
+  auth: { url: '/api/templatical/token' },
   commenting: true,
   onComment: (event) => {
     // Wird benachrichtigt, wenn Kommentare erstellt, aktualisiert oder gelöscht werden
@@ -31,36 +31,32 @@ const editor = await initCloud({
 ## Composable
 
 ```js
-import { useComments } from "@templatical/core/cloud";
+import { useComments } from '@templatical/core/cloud';
 
 const {
   // Zustand
-  comments, // Ref<CommentThread[]>
-  isLoading, // Ref<boolean>
-  isSubmitting, // Ref<boolean>
-  isEnabled, // ComputedRef<boolean>
-  commentCountByBlock, // ComputedRef<Map<string, number>>
-  totalCount, // ComputedRef<number>
-  unresolvedCount, // ComputedRef<number>
+  comments,             // Ref<CommentThread[]>
+  isLoading,            // Ref<boolean>
+  isSubmitting,         // Ref<boolean>
+  isEnabled,            // ComputedRef<boolean>
+  commentCountByBlock,  // ComputedRef<Map<string, number>>
+  totalCount,           // ComputedRef<number>
+  unresolvedCount,      // ComputedRef<number>
 
   // Operationen
-  loadComments, // () => Promise<void>
-  addComment, // (body, blockId?, parentId?) => Promise<Comment | null>
-  editComment, // (commentId, body) => Promise<Comment | null>
-  removeComment, // (commentId) => Promise<boolean>
-  toggleResolve, // (commentId) => Promise<Comment | null>
+  loadComments,         // () => Promise<void>
+  addComment,           // (body, blockId?, parentId?) => Promise<Comment | null>
+  editComment,          // (commentId, body) => Promise<Comment | null>
+  removeComment,        // (commentId) => Promise<boolean>
+  toggleResolve,        // (commentId) => Promise<Comment | null>
 } = useComments({
   authManager,
   getTemplateId: () => templateId,
-  getSocketId: () => socketId, // WebSocket-Socket-ID zur Echo-Vermeidung
-  isAuthReady: () => true, // Laden erst freigeben, wenn Auth bereit ist
-  hasCommentingFeature: () => true, // Auf Basis der Plan-Funktionen freischalten
-  onComment: (event) => {
-    /* Kommentar-Ereignis */
-  },
-  onError: (error) => {
-    /* Fehler behandeln */
-  },
+  getSocketId: () => socketId,             // WebSocket-Socket-ID zur Echo-Vermeidung
+  isAuthReady: () => true,                 // Laden erst freigeben, wenn Auth bereit ist
+  hasCommentingFeature: () => true,        // Auf Basis der Plan-Funktionen freischalten
+  onComment: (event) => { /* Kommentar-Ereignis */ },
+  onError: (error) => { /* Fehler behandeln */ },
 });
 ```
 
@@ -69,11 +65,9 @@ const {
 Wenn der WebSocket verbunden ist, synchronisieren sich Kommentare automatisch zwischen allen Mitarbeitenden. Das Composable bietet Methoden zum Anwenden entfernter Aktualisierungen:
 
 ```js
-const { applyRemoteCreate, applyRemoteUpdate, applyRemoteDelete } = useComments(
-  {
-    // ...Optionen
-  },
-);
+const { applyRemoteCreate, applyRemoteUpdate, applyRemoteDelete } = useComments({
+  // ...Optionen
+});
 ```
 
 Diese werden automatisch vom `useCommentListener`-Composable aufgerufen, wenn WebSocket-Ereignisse eintreffen.

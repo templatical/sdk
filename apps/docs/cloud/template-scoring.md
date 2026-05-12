@@ -21,22 +21,22 @@ Some findings can be fixed automatically. The AI rewrites the affected block con
 ## Composable
 
 ```js
-import { useTemplateScoring } from "@templatical/core/cloud";
+import { useTemplateScoring } from '@templatical/core/cloud';
 
 const {
   // State
-  isScoring, // Ref<boolean>
-  scoringResult, // Ref<ScoringResult | null>
-  error, // Ref<string | null>
-  fixingFindingId, // Ref<string | null> — currently fixing
-  fixStreamingText, // Ref<string> — fix text as it streams
-  fixError, // Ref<string | null>
+  isScoring,          // Ref<boolean>
+  scoringResult,      // Ref<ScoringResult | null>
+  error,              // Ref<string | null>
+  fixingFindingId,    // Ref<string | null> — currently fixing
+  fixStreamingText,   // Ref<string> — fix text as it streams
+  fixError,           // Ref<string | null>
 
   // Methods
-  score, // (content, mergeTags) => Promise<ScoringResult | null>
-  fixFinding, // (blockContent, finding, mergeTags) => Promise<string | null>
-  removeFinding, // (category, findingId) => void
-  reset, // () => void
+  score,              // (content, mergeTags) => Promise<ScoringResult | null>
+  fixFinding,         // (blockContent, finding, mergeTags) => Promise<string | null>
+  removeFinding,      // (category, findingId) => void
+  reset,              // () => void
 } = useTemplateScoring({
   authManager,
   getTemplateId: () => templateId,
@@ -49,11 +49,11 @@ Template scoring is an AI feature and can be toggled independently:
 
 ```js
 const editor = await initCloud({
-  container: "#editor",
-  auth: { url: "/api/templatical/token" },
+  container: '#editor',
+  auth: { url: '/api/templatical/token' },
   ai: {
     chat: true,
-    scoring: true, // Enable scoring (default: true)
+    scoring: true,        // Enable scoring (default: true)
     designToTemplate: false,
   },
 });
