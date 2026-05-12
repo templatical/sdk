@@ -51,6 +51,7 @@ export default {
       theme: "Theme",
       defaults: "Defaults",
       callbacks: "Callbacks",
+      locale: "Locale",
     },
     descriptions: {
       options: "mergeTags, displayConditions, customBlocks",
@@ -58,7 +59,11 @@ export default {
       theme: "Colors and visual overrides (OKLch)",
       defaults: "blockDefaults, templateDefaults",
       callbacks: "onRequestMedia, mergeTags.onRequest",
+      locale: "SDK locale passed to init({ locale })",
     },
+    localeHint:
+      'Sets the language for editor chrome (toolbars, dialogs, errors). Independent of the playground UI language above. Applies on "Apply & Reload".',
+    localeLabel: "SDK locale",
     defaultsPresetLabel: "Preset",
     defaultsPresets: {
       templatical: "Templatical Default",
@@ -247,6 +252,7 @@ export default {
     unlayerJsonContent: "Unlayer JSON content",
     htmlSourceContent: "HTML source content",
     selectLanguage: "Select language",
+    selectSdkLanguage: "Select SDK language",
     selectTheme: "Select theme",
   },
   theme: {

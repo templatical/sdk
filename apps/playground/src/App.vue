@@ -75,10 +75,13 @@ import {
 import {
   usePlaygroundI18n,
   usePlaygroundTheme,
+  useSdkLocale,
   format,
   supportedLocales,
+  ossSdkLocales as sdkLocales,
 } from "@/i18n";
 const { locale, t } = usePlaygroundI18n();
+const { sdkLocale } = useSdkLocale();
 const { theme: uiTheme, isDark } = usePlaygroundTheme();
 provide("isDark", isDark);
 
@@ -228,6 +231,7 @@ const configTabs = [
   "theme",
   "defaults",
   "callbacks",
+  "locale",
 ] as const;
 
 function focusConfigTab(delta: number): void {
@@ -723,7 +727,7 @@ async function initEditor(): Promise<void> {
       templateDefaults: currentTemplateDefaults,
       theme: { ...currentTheme, dark: currentDarkTheme },
       uiTheme: uiTheme.value,
-      locale: locale.value,
+      locale: sdkLocale.value,
       onRequestMedia: enableRequestMedia.value ? requestMedia : undefined,
     });
   } catch (err) {
@@ -910,7 +914,7 @@ async function handleExportMjml(): Promise<void> {
   downloadFile(mjml, "email-template.mjml", "text/plain");
 }
 
-watch(locale, () => {
+watch([locale, sdkLocale], () => {
   if (screen.value === "editor" && editor.value) {
     initEditor();
   }
@@ -2175,6 +2179,32 @@ onUnmounted(() => {
                       {{ t.configModal.onRequestMergeTag }}
                     </p>
                   </div>
+                </label>
+              </div>
+              <div
+                v-show="configTab === 'locale'"
+                :inert="configTab !== 'locale' || undefined"
+                id="config-panel-locale"
+                role="tabpanel"
+                aria-labelledby="config-tab-locale"
+                class="flex flex-col gap-4"
+              >
+                <p class="m-0 text-[13px] text-gray-500 dark:text-gray-400">
+                  {{ t.configModal.localeHint }}
+                </p>
+                <label class="flex flex-col gap-1.5">
+                  <span class="pg-form-label m-0">
+                    {{ t.configModal.localeLabel }}
+                  </span>
+                  <select
+                    v-model="sdkLocale"
+                    data-testid="sdk-locale-select"
+                    class="pg-locale-select w-auto self-start"
+                  >
+                    <option v-for="loc in sdkLocales" :key="loc" :value="loc">
+                      {{ loc }}
+                    </option>
+                  </select>
                 </label>
               </div>
               <p v-if="configError" class="mt-2 mb-0 text-[13px] text-red-500">

@@ -349,3 +349,11 @@ export type {
 export type { UseFontsReturn, FontOption } from "./composables/useFonts";
 export { useFonts } from "./composables/useFonts";
 export type { EditorCapabilities } from "./types/editor-capabilities";
+
+export {
+  getSupportedLocales,
+  getSupportedCloudLocales,
+  isLocaleSupported,
+  isCloudLocaleSupported,
+  getBaseLocale,
+} from "./i18n";

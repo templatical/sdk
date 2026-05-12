@@ -53,6 +53,7 @@ export default {
       theme: "Design",
       defaults: "Standards",
       callbacks: "Callbacks",
+      locale: "Sprache",
     },
     descriptions: {
       options: "mergeTags, displayConditions, customBlocks",
@@ -60,7 +61,11 @@ export default {
       theme: "Farben und visuelle \u00dcberschreibungen (OKLch)",
       defaults: "blockDefaults, templateDefaults",
       callbacks: "onRequestMedia, mergeTags.onRequest",
+      locale: "SDK-Sprache, die an init({ locale }) \u00fcbergeben wird",
     },
+    localeHint:
+      'Legt die Sprache der Editor-Oberfl\u00e4che fest (Werkzeugleisten, Dialoge, Fehler). Unabh\u00e4ngig von der Playground-Sprache oben. Wird bei "\u00dcbernehmen & Neu laden" wirksam.',
+    localeLabel: "SDK-Sprache",
     defaultsPresetLabel: "Vorlage",
     defaultsPresets: {
       templatical: "Templatical Standard",
@@ -255,6 +260,7 @@ export default {
     unlayerJsonContent: "Unlayer-JSON-Inhalt",
     htmlSourceContent: "HTML-Quelltext-Inhalt",
     selectLanguage: "Sprache auswählen",
+    selectSdkLanguage: "SDK-Sprache auswählen",
     selectTheme: "Farbschema auswählen",
   },
   theme: {
