@@ -54,6 +54,15 @@ Das `tpl:`-Präfix schützt nur eine Richtung: Editor-Utilities können niemals 
 
 Shadow DOM ist der einzige standardbasierte Weg, diese Kaskade zu blockieren. Derselbe Ansatz wird von Stripe Elements, Intercom-Widgets und den meisten einbettbaren Drittanbieter-UIs verwendet. Siehe [Issue #70](https://github.com/templatical/sdk/issues/70) für den ursprünglichen Bericht.
 
+## Warum als Standard
+
+Shadow DOM garantiert, dass keine Stile zwischen Host-Seite und Editor-UI leaken — Host-CSS kann nicht in den Editor kaskadieren, und Editor-CSS kann nicht in Ihre App durchsickern. Templatical aktiviert diese Garantie standardmäßig, nicht als Opt-in, weil die Bedingungen, die sie notwendig machen, auf fast jede Host-Seite zutreffen:
+
+- **Globale Resets, Design-Systeme und Framework-Preflight sind überall.** Tailwind, Bootstrap, Material UI, Chakra, Mantine — jeder moderne Stack liefert Regeln wie `* { box-sizing: border-box }` und `body { font-family: … }` aus. Ohne die Shadow-Grenze würde jedes Editor-Element übernehmen, was Ihre Host-Seite definiert.
+- **Der Canvas rendert E-Mail-ähnliche Inhalte, bei denen Typografie und Abstände am wichtigsten sind.** Ein Host-`body { font-family: Comic Sans }`, das in die Vorschau kaskadiert, beschädigt jede Vorlage, bevor sie exportiert wird.
+- **Jeder Editor auf der Seite erhält seinen eigenen Scope.** Mit mehreren nebeneinander gemounteten Editoren (z. B. Entwurf + Vorschau, A/B-Vergleich) isoliert jeder Shadow Root Theming und Host-Targeting pro Instanz — Host-Overrides auf einem erreichen den anderen nicht.
+- **Formularelemente in Toolbars und Dialogen würden Host-Styling übernehmen.** Texteingaben, Auswahl-Dropdowns und Buttons würden mit Padding, Schriften und Fokusringen der Host-Seite gerendert — pro Konsument unterschiedlich.
+
 ## Kompromisse
 
 Was Sie aufgeben, wenn Sie innerhalb eines Shadow Root eingebunden werden:

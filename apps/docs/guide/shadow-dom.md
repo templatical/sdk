@@ -54,6 +54,15 @@ The `tpl:` prefix only protects one direction: editor utilities can never collid
 
 Shadow DOM is the only standards-based way to block that cascade. The same approach is used by Stripe Elements, Intercom widgets, and most embeddable third-party UIs. See [issue #70](https://github.com/templatical/sdk/issues/70) for the original report.
 
+## Why it's the default
+
+Shadow DOM guarantees no style leaks between the host page and the editor UI — host CSS cannot cascade into the editor, and editor CSS cannot bleed into your app. Templatical enables that guarantee by default, rather than as an opt-in, because the conditions that make it necessary apply to nearly every host page:
+
+- **Global resets, design systems, and framework preflight are everywhere.** Tailwind, Bootstrap, Material UI, Chakra, Mantine — every modern stack ships rules like `* { box-sizing: border-box }` and `body { font-family: … }`. Without the shadow boundary, every editor element would inherit whatever your host page declares.
+- **The canvas renders email-like content, where typography and spacing matter most.** A host `body { font-family: Comic Sans }` cascading into the preview corrupts every template before it is exported.
+- **Each editor on the page gets its own scope.** With multiple editors mounted side by side (e.g. draft + preview, A/B comparison), each shadow root isolates theming and host targeting per instance — host overrides on one don't reach the other.
+- **Form controls in toolbars and dialogs would inherit host styling.** Text inputs, select dropdowns, and buttons would render with the host page's padding, fonts, and focus rings — different per consumer.
+
 ## Trade-offs
 
 What you give up by mounting inside a shadow root:
