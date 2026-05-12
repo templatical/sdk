@@ -1,11 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { isNodeSelected } from "../src/extensions/isNodeSelected";
 import type { Editor } from "@tiptap/core";
 
 function createMockEditor(options: {
   fromPos: number;
   toPos: number;
-  nodesBetween?: Array<{ typeName: string }>;
   nodeBeforeType?: string | null;
   nodeAfterType?: string | null;
 }): Editor {
@@ -21,45 +20,35 @@ function createMockEditor(options: {
 
   const $to = { pos: options.toPos };
 
-  const nodesBetweenFn = vi.fn(
-    (
-      _from: number,
-      _to: number,
-      callback: (node: { type: { name: string } }) => boolean | void,
-    ) => {
-      for (const node of options.nodesBetween ?? []) {
-        const result = callback({ type: { name: node.typeName } });
-        if (result === false) break;
-      }
-    },
-  );
-
   return {
     state: {
       selection: { $from, $to },
-      doc: { nodesBetween: nodesBetweenFn },
     },
   } as unknown as Editor;
 }
 
 describe("isNodeSelected", () => {
-  it("returns true when selection contains the target node type", () => {
+  // Regression: previously returned `true` whenever `nodesBetween` found
+  // any merge-tag node in the selection range — silently broke
+  // Cmd+A + Backspace for any paragraph containing a merge tag (entire
+  // deletion was cancelled, nothing happened). Range selections must
+  // fall through to default replaceSelection behavior.
+  it("returns false for range selections even when they span the target node", () => {
     const editor = createMockEditor({
       fromPos: 0,
-      toPos: 5,
-      nodesBetween: [{ typeName: "mergeTagNode" }],
+      toPos: 10,
     });
-
-    expect(isNodeSelected(editor, "mergeTagNode")).toBe(true);
+    expect(isNodeSelected(editor, "mergeTagNode")).toBe(false);
   });
 
-  it("returns false when selection contains a different node type", () => {
+  it("returns false for range selections regardless of adjacent nodes", () => {
+    // Range with cursor-adjacent target: range still wins, returns false.
     const editor = createMockEditor({
       fromPos: 0,
       toPos: 5,
-      nodesBetween: [{ typeName: "paragraph" }],
+      nodeBeforeType: "mergeTagNode",
+      nodeAfterType: "mergeTagNode",
     });
-
     expect(isNodeSelected(editor, "mergeTagNode")).toBe(false);
   });
 
@@ -69,7 +58,6 @@ describe("isNodeSelected", () => {
       toPos: 3,
       nodeBeforeType: "logicMergeTagNode",
     });
-
     expect(isNodeSelected(editor, "logicMergeTagNode")).toBe(true);
   });
 
@@ -79,42 +67,43 @@ describe("isNodeSelected", () => {
       toPos: 3,
       nodeAfterType: "mergeTagNode",
     });
-
     expect(isNodeSelected(editor, "mergeTagNode")).toBe(true);
   });
 
-  it("returns false when cursor is at position 0 with no adjacent nodes", () => {
+  it("returns false when cursor is in plain text with no adjacent atom", () => {
+    const editor = createMockEditor({
+      fromPos: 7,
+      toPos: 7,
+    });
+    expect(isNodeSelected(editor, "mergeTagNode")).toBe(false);
+  });
+
+  it("returns false when cursor is at position 0 with no adjacent atom", () => {
     const editor = createMockEditor({
       fromPos: 0,
       toPos: 0,
     });
-
     expect(isNodeSelected(editor, "mergeTagNode")).toBe(false);
   });
 
   it("does not check nodeBefore when cursor is at position 0", () => {
+    // Edge case: at doc start, `nodeBefore` may be undefined in ProseMirror.
+    // The pos > 0 guard prevents a spurious match.
     const editor = createMockEditor({
       fromPos: 0,
       toPos: 0,
       nodeBeforeType: "mergeTagNode",
     });
-
-    // Position 0 guard: $from.pos > 0 is false, so nodeBefore is not checked
     expect(isNodeSelected(editor, "mergeTagNode")).toBe(false);
   });
 
-  it("stops nodesBetween iteration early when target is found", () => {
+  it("returns false when adjacent node is a different type", () => {
     const editor = createMockEditor({
-      fromPos: 0,
-      toPos: 10,
-      nodesBetween: [
-        { typeName: "mergeTagNode" },
-        { typeName: "paragraph" },
-      ],
+      fromPos: 3,
+      toPos: 3,
+      nodeBeforeType: "paragraph",
     });
-
-    expect(isNodeSelected(editor, "mergeTagNode")).toBe(true);
-    // The callback returned false after finding the node, stopping iteration
+    expect(isNodeSelected(editor, "mergeTagNode")).toBe(false);
   });
 
   it("works for both merge tag node types with the same function", () => {
