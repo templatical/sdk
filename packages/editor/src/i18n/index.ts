@@ -25,17 +25,38 @@ function localesFromGlob(modules: Record<string, unknown>): string[] {
 const supportedLocales = localesFromGlob(ossModules);
 const supportedCloudLocales = localesFromGlob(cloudModules);
 
+function canonicalize(locale: string): string {
+  return locale.trim().replace(/_/g, "-").toLowerCase();
+}
+
+function findSupportedLocale(
+  locale: string,
+  supported: string[],
+): string | undefined {
+  const canonical = canonicalize(locale);
+  return supported.find((s) => canonicalize(s) === canonical);
+}
+
 /**
  * Get the base language code from a locale string.
- * e.g., 'en-GB' -> 'en', 'de-DE' -> 'de'
+ * e.g., 'en-GB' -> 'en', 'de_DE' -> 'de'
  */
 export function getBaseLocale(locale: string): string {
-  return locale.split("-")[0].toLowerCase();
+  return canonicalize(locale).split("-")[0];
+}
+
+function tryResolveLocale(
+  locale: string,
+  supported: string[],
+): string | undefined {
+  return (
+    findSupportedLocale(locale, supported) ??
+    findSupportedLocale(getBaseLocale(locale), supported)
+  );
 }
 
 function resolveLocale(locale: string, supported: string[]): string {
-  const base = getBaseLocale(locale);
-  return supported.includes(base) ? base : "en";
+  return tryResolveLocale(locale, supported) ?? "en";
 }
 
 /**
@@ -65,20 +86,14 @@ export async function loadCloudTranslations(
   return mod.default;
 }
 
-/** Check if a locale has OSS translations (matched by base, e.g. en-GB → en). */
+/** Check if a locale has OSS translations (matched by exact locale, then base). */
 export function isLocaleSupported(locale: string): boolean {
-  return (
-    supportedLocales.includes(locale) ||
-    supportedLocales.includes(getBaseLocale(locale))
-  );
+  return tryResolveLocale(locale, supportedLocales) !== undefined;
 }
 
-/** Check if a locale has cloud translations (matched by base). */
+/** Check if a locale has cloud translations (matched by exact locale, then base). */
 export function isCloudLocaleSupported(locale: string): boolean {
-  return (
-    supportedCloudLocales.includes(locale) ||
-    supportedCloudLocales.includes(getBaseLocale(locale))
-  );
+  return tryResolveLocale(locale, supportedCloudLocales) !== undefined;
 }
 
 /** List of OSS-supported locales. */

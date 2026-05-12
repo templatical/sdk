@@ -21,15 +21,14 @@
   "vulnerabilityAlerts": {
     "enabled": true,
     "labels": ["security"],
-    "schedule": ["at any time"],
-    "prPriority": 10
+    "schedule": ["at any time"]
   },
   "ignorePaths": ["**/node_modules/**", "**/dist/**"],
   "ignoreDeps": [],
   "packageRules": [
     {
       "description": "Never bump internal workspace packages",
-      "matchPackagePatterns": ["^@templatical/"],
+      "matchPackageNames": ["@templatical/**"],
       "enabled": false
     },
     {
@@ -41,41 +40,64 @@
     },
     {
       "description": "Group Vue ecosystem (non-major)",
-      "matchPackageNames": ["vue", "vue-tsc", "@vue/reactivity"],
-      "matchPackagePatterns": ["^@vue/", "^@vitejs/", "^vue-", "^eslint-plugin-vue$", "^vue-eslint-parser$"],
+      "matchPackageNames": [
+        "vue",
+        "vue-tsc",
+        "@vue/reactivity",
+        "@vue/**",
+        "@vitejs/**",
+        "vue-**",
+        "eslint-plugin-vue",
+        "vue-eslint-parser"
+      ],
       "matchUpdateTypes": ["patch", "minor"],
       "groupName": "vue ecosystem"
     },
     {
       "description": "Group TipTap (non-major)",
-      "matchPackagePatterns": ["^@tiptap/"],
+      "matchPackageNames": ["@tiptap/**"],
       "matchUpdateTypes": ["patch", "minor"],
       "groupName": "tiptap"
     },
     {
       "description": "Group Tailwind (non-major)",
-      "matchPackagePatterns": ["^tailwindcss", "^@tailwindcss/"],
+      "matchPackageNames": ["tailwindcss", "tailwindcss-**", "@tailwindcss/**"],
       "matchUpdateTypes": ["patch", "minor"],
       "groupName": "tailwind"
     },
     {
       "description": "Group ESLint + Prettier (non-major)",
-      "matchPackageNames": ["eslint", "prettier", "typescript-eslint"],
-      "matchPackagePatterns": ["^eslint-", "^@typescript-eslint/"],
+      "matchPackageNames": [
+        "eslint",
+        "prettier",
+        "typescript-eslint",
+        "eslint-**",
+        "@typescript-eslint/**"
+      ],
       "matchUpdateTypes": ["patch", "minor"],
       "groupName": "lint + format"
     },
     {
       "description": "Group Vitest + Playwright (non-major)",
-      "matchPackageNames": ["vitest"],
-      "matchPackagePatterns": ["^@vitest/", "^@playwright/", "^playwright"],
+      "matchPackageNames": [
+        "vitest",
+        "@vitest/**",
+        "@playwright/**",
+        "playwright",
+        "playwright-**"
+      ],
       "matchUpdateTypes": ["patch", "minor"],
       "groupName": "test tooling"
     },
     {
       "description": "Group Vite + tsup (non-major)",
-      "matchPackageNames": ["vite", "tsup", "tsdown"],
-      "matchPackagePatterns": ["^vite-plugin-", "^@vitejs/"],
+      "matchPackageNames": [
+        "vite",
+        "tsup",
+        "tsdown",
+        "vite-plugin-**",
+        "@vitejs/**"
+      ],
       "matchUpdateTypes": ["patch", "minor"],
       "groupName": "build tooling"
     },
