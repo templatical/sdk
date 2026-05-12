@@ -37,6 +37,8 @@ import {
   MessageCircle,
   CircleCheck,
   Sparkles,
+  Layers,
+  Square,
 } from "@lucide/vue";
 import {
   usePlaygroundI18n,
@@ -322,8 +324,12 @@ async function startFresh(): Promise<void> {
   await initEditor();
 }
 
-// Shadow DOM dev toggle — `?shadowDom=1`/`=true` forces shadow, `=0`/`=false`
-// forces light, absent defers to the SDK default (shadow since Phase 7).
+// Shadow DOM mount mode. Resolution: URL param > localStorage > SDK default
+// (`'shadow'`). The header toggle button mutates the ref + localStorage and
+// re-inits the editor. Shares the storage key with the OSS playground so the
+// preference persists across `#` and `#cloud` routes.
+const SHADOW_STORAGE_KEY = "tpl-playground-shadow-mode";
+
 function readShadowDomFlag(): boolean | undefined {
   if (typeof window === "undefined") return undefined;
   const v = new URLSearchParams(window.location.search).get("shadowDom");
@@ -332,16 +338,35 @@ function readShadowDomFlag(): boolean | undefined {
   return undefined;
 }
 
+function readStoredShadowMode(): "shadow" | "light" | null {
+  if (typeof window === "undefined") return null;
+  const v = window.localStorage.getItem(SHADOW_STORAGE_KEY);
+  return v === "shadow" || v === "light" ? v : null;
+}
+
+function resolveInitialShadowMode(): "shadow" | "light" {
+  const urlFlag = readShadowDomFlag();
+  if (urlFlag !== undefined) return urlFlag ? "shadow" : "light";
+  return readStoredShadowMode() ?? "shadow";
+}
+
+const shadowDomMode = ref<"shadow" | "light">(resolveInitialShadowMode());
+
+function cycleShadowDom(): void {
+  shadowDomMode.value = shadowDomMode.value === "shadow" ? "light" : "shadow";
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(SHADOW_STORAGE_KEY, shadowDomMode.value);
+  }
+  if (editor.value) {
+    initEditor(currentTemplateId.value ?? undefined);
+  }
+}
+
 async function initEditor(templateId?: string): Promise<void> {
   if (!editorContainer.value) return;
 
   initError.value = "";
-  const shadowDom = readShadowDomFlag();
-  if (shadowDom !== undefined) {
-    console.info(
-      `[Cloud SDK] shadowDom=${shadowDom} — cloud editor mount mode forced via URL`,
-    );
-  }
+  const shadowDom = shadowDomMode.value === "shadow";
   try {
     const config: TemplaticalCloudEditorConfig = {
       container: editorContainer.value,
@@ -460,6 +485,23 @@ onUnmounted(() => {
         class="relative flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 py-12 gap-4"
       >
         <div class="absolute top-4 right-4 flex items-center gap-1.5">
+          <button
+            class="pg-toolbar-btn"
+            :title="t.a11y.toggleShadowDom"
+            :aria-label="t.a11y.toggleShadowDom"
+            data-testid="toolbar-shadow-toggle"
+            @click="cycleShadowDom"
+          >
+            <Layers
+              v-if="shadowDomMode === 'shadow'"
+              :size="14"
+              aria-hidden="true"
+            />
+            <Square v-else :size="14" aria-hidden="true" />
+            <span class="pg-toolbar-label">{{
+              t.shadowMode[shadowDomMode]
+            }}</span>
+          </button>
           <button
             class="pg-theme-btn"
             :title="t.theme[uiTheme]"
@@ -987,6 +1029,23 @@ onUnmounted(() => {
           >
         </div>
         <div class="flex items-center gap-2">
+          <button
+            data-testid="toolbar-shadow-toggle"
+            class="pg-toolbar-btn"
+            :title="t.a11y.toggleShadowDom"
+            :aria-label="t.a11y.toggleShadowDom"
+            @click="cycleShadowDom"
+          >
+            <Layers
+              v-if="shadowDomMode === 'shadow'"
+              :size="14"
+              aria-hidden="true"
+            />
+            <Square v-else :size="14" aria-hidden="true" />
+            <span class="pg-toolbar-label">{{
+              t.shadowMode[shadowDomMode]
+            }}</span>
+          </button>
           <button
             class="pg-theme-btn"
             :title="t.theme[uiTheme]"

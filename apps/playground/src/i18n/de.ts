@@ -256,11 +256,16 @@ export default {
     htmlSourceContent: "HTML-Quelltext-Inhalt",
     selectLanguage: "Sprache auswählen",
     selectTheme: "Farbschema auswählen",
+    toggleShadowDom: "Shadow-DOM-Mount umschalten",
   },
   theme: {
     auto: "Auto",
     light: "Hell",
     dark: "Dunkel",
+  },
+  shadowMode: {
+    shadow: "Shadow",
+    light: "Light",
   },
   cloud: {
     title: "Templatical Cloud",

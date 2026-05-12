@@ -248,11 +248,16 @@ export default {
     htmlSourceContent: "HTML source content",
     selectLanguage: "Select language",
     selectTheme: "Select theme",
+    toggleShadowDom: "Toggle Shadow DOM mount",
   },
   theme: {
     auto: "Auto",
     light: "Light",
     dark: "Dark",
+  },
+  shadowMode: {
+    shadow: "Shadow",
+    light: "Light",
   },
   cloud: {
     title: "Templatical Cloud",
