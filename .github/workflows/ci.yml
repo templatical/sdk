@@ -75,6 +75,13 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # Playwright's official image ships Chromium + every system dep
+    # preinstalled, skipping the ~5 min `playwright install-deps` step that
+    # fresh ubuntu-latest runners would otherwise pay every run (apt state
+    # isn't cacheable across runs). Image tag must match the pinned
+    # `@playwright/test` version in pnpm-lock.yaml.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs: [build]
     strategy:
       fail-fast: false
@@ -87,15 +94,6 @@ jobs:
         with:
           name: dist
           path: packages/
-      - uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install --with-deps chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-      - run: pnpm exec playwright install-deps chromium
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
       - run: pnpm exec playwright test --shard=${{ matrix.shard }}/3
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
@@ -115,19 +113,14 @@ jobs:
     # (after publish) and every feature PR's run still cover this surface.
     if: ${{ !startsWith(github.head_ref, 'changeset-release/') && !startsWith(github.ref_name, 'changeset-release/') }}
     runs-on: ubuntu-latest
+    # Same rationale as the `e2e` job — use the Playwright image to skip
+    # the system-dep install step.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs: [build]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      - uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install --with-deps chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-      - run: pnpm exec playwright install-deps chromium
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
       - run: pnpm run test:e2e:consumer
       - uses: actions/upload-artifact@v4
         if: failure()
