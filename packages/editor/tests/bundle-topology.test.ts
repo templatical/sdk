@@ -197,8 +197,8 @@ describe("editor bundle topology", () => {
     // of the plugin's internal self-check, catches the bug class even if
     // someone disables that check.
     const PLACEHOLDER = "__TPL_INLINE_EDITOR_CSS__";
-    for (const chunk of chunks) {
-      const code = readFileSync(join(DIST, chunk), "utf8");
+    for (const chunk of allFiles) {
+      const code = readFileSync(chunk, "utf8");
       expect(
         code.includes(PLACEHOLDER),
         `Chunk ${chunk} still contains the inline-style-css placeholder. ` +
