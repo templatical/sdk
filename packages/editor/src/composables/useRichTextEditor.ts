@@ -202,14 +202,26 @@ export function useRichTextEditor(
   function handleClickOutside(event: MouseEvent): void {
     if (isRequestingMergeTag.value) return;
 
-    const target = event.target as HTMLElement;
+    // `event.target` gets retargeted to the shadow host when the editor
+    // mounts inside a shadow root and the listener is at `document`
+    // level. The host element isn't inside any `.tpl-text-editor-wrapper`,
+    // so `target.closest(...)` returns null and we'd fall through to
+    // `onDone()` — closing the editor on every click inside the shadow
+    // tree (including double-click word-select). Walk the composed path
+    // instead: the first HTMLElement is the real innermost clicked
+    // element regardless of shadow boundaries.
+    const path = event.composedPath();
+    const innerTarget = path.find(
+      (n): n is HTMLElement => n instanceof HTMLElement,
+    );
+    if (!innerTarget) return;
 
-    options.onClickOutsideSideEffect?.(target);
+    options.onClickOutsideSideEffect?.(innerTarget);
 
     if (
-      target.closest(".tpl-text-editor-wrapper") ||
-      target.closest(".tpl-text-toolbar") ||
-      target.closest(".tpl-link-dialog")
+      innerTarget.closest(".tpl-text-editor-wrapper") ||
+      innerTarget.closest(".tpl-text-toolbar") ||
+      innerTarget.closest(".tpl-link-dialog")
     ) {
       return;
     }

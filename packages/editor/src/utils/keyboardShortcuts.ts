@@ -10,18 +10,32 @@ export interface KeyboardShortcutHandlers {
 }
 
 /**
- * Returns true when the keyboard event target is a text-editing context
- * (input, textarea, select, or contentEditable element like TipTap).
- * Used to let native/TipTap controls handle their own key events.
+ * Returns true when the keyboard event originated from a text-editing
+ * context (input, textarea, select, or contentEditable element like
+ * TipTap). Used to let native/TipTap controls handle their own key
+ * events so the editor doesn't, for example, delete the whole block on
+ * Backspace mid-typing.
+ *
+ * Walks `event.composedPath()` rather than reading `event.target`
+ * directly. When the editor mounts inside a shadow root and a global
+ * keydown listener at `document` level receives the event, the browser
+ * retargets `event.target` to the shadow host element — so the actual
+ * focused contenteditable inside the shadow tree is invisible via
+ * `event.target` alone. The composed path traverses through every
+ * shadow boundary the event crossed and exposes the real innermost
+ * element, which is what we need to inspect.
+ *
+ * Light-DOM mode: `composedPath()` returns the same chain as `target`'s
+ * ancestors, so behavior is unchanged.
  */
 export function isEditingText(e: KeyboardEvent): boolean {
-  const target = e.target as HTMLElement;
-  return (
-    target.isContentEditable ||
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.tagName === "SELECT"
-  );
+  for (const node of e.composedPath()) {
+    if (!(node instanceof HTMLElement)) continue;
+    if (node.isContentEditable) return true;
+    const tag = node.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  }
+  return false;
 }
 
 /**

@@ -1,3 +1,7 @@
+// DOM stubs must be imported BEFORE anything that triggers an `HTMLElement`
+// reference (the production code's composedPath traversal uses `instanceof
+// HTMLElement`). Stub matches the editor's existing test convention.
+import "./dom-stubs";
 import { describe, expect, it, vi } from "vitest";
 import {
   handleEditorKeydown,
@@ -25,6 +29,19 @@ function createMockHandlers(
   };
 }
 
+/**
+ * Build a fake HTMLElement-shaped object the production code's
+ * `instanceof HTMLElement` check accepts in jsdom/happy-dom.
+ */
+function makeFakeElement(tag: string, contentEditable: boolean): HTMLElement {
+  const el = Object.create(HTMLElement.prototype) as HTMLElement;
+  Object.defineProperty(el, "tagName", { value: tag.toUpperCase() });
+  Object.defineProperty(el, "isContentEditable", {
+    value: contentEditable,
+  });
+  return el;
+}
+
 function createKeyEvent(
   key: string,
   options: {
@@ -33,6 +50,17 @@ function createKeyEvent(
     shiftKey?: boolean;
     targetTag?: string;
     contentEditable?: boolean;
+    /**
+     * Models shadow-DOM event retargeting: `event.target` points to an
+     * outer host element (e.g. the editor's container `<div>`), but
+     * `event.composedPath()` still includes the real innermost target
+     * inside the shadow tree. When provided, the test's logical
+     * "inside-shadow target" goes here; the outer event.target is set
+     * to a generic DIV — simulating what a document-level listener sees
+     * when a key fires inside a shadow-mounted contenteditable.
+     */
+    innerTargetTag?: string;
+    innerContentEditable?: boolean;
   } = {},
 ): KeyboardEvent {
   const {
@@ -41,14 +69,23 @@ function createKeyEvent(
     shiftKey = false,
     targetTag = "DIV",
     contentEditable = false,
+    innerTargetTag,
+    innerContentEditable = false,
   } = options;
 
   let prevented = false;
 
-  const target = {
-    tagName: targetTag.toUpperCase(),
-    isContentEditable: contentEditable,
-  };
+  const target = makeFakeElement(targetTag, contentEditable);
+
+  // Build the composed path: innermost element first, then up through
+  // the host (retargeted target), then document. Matches the real
+  // event.composedPath() ordering.
+  const path: EventTarget[] = innerTargetTag
+    ? [
+        makeFakeElement(innerTargetTag, innerContentEditable),
+        target,
+      ]
+    : [target];
 
   return {
     key,
@@ -56,6 +93,7 @@ function createKeyEvent(
     ctrlKey,
     shiftKey,
     target,
+    composedPath: () => path,
     preventDefault: () => {
       prevented = true;
     },
@@ -93,6 +131,41 @@ describe("isEditingText", () => {
 
   it("returns false for BUTTON elements", () => {
     const e = createKeyEvent("z", { targetTag: "BUTTON" });
+    expect(isEditingText(e)).toBe(false);
+  });
+
+  // Regression: when the editor mounts inside a shadow root, document-level
+  // keydown listeners receive the event with `e.target` retargeted to the
+  // shadow host (a regular DIV, not contentEditable). The actual editing
+  // surface is only visible via `e.composedPath()`. Before the fix, the
+  // shortcut handler thought the user was NOT editing text — Backspace
+  // mid-typing deleted the entire block, etc.
+  it("returns true when only composedPath exposes the contentEditable (shadow retargeting)", () => {
+    const e = createKeyEvent("Backspace", {
+      // Retargeted outer event.target — what the document listener "sees".
+      targetTag: "DIV",
+      contentEditable: false,
+      // What's actually being edited inside the shadow tree.
+      innerTargetTag: "DIV",
+      innerContentEditable: true,
+    });
+    expect(isEditingText(e)).toBe(true);
+  });
+
+  it("returns true when only composedPath exposes an INPUT (shadow retargeting)", () => {
+    const e = createKeyEvent("Backspace", {
+      targetTag: "DIV",
+      contentEditable: false,
+      innerTargetTag: "INPUT",
+    });
+    expect(isEditingText(e)).toBe(true);
+  });
+
+  it("returns false when neither target nor composed path contains an editing surface", () => {
+    const e = createKeyEvent("Backspace", {
+      targetTag: "DIV",
+      innerTargetTag: "BUTTON",
+    });
     expect(isEditingText(e)).toBe(false);
   });
 });
