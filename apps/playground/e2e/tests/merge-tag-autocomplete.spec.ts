@@ -1,15 +1,20 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
-// Phase 7 blocker: merge-tag autocomplete depends on the `{{` keystroke
-// reaching TipTap's input rules. In shadow mode, typing doesn't propagate
-// (window.getSelection() returns empty inside a shadow tree on Chromium),
-// so TipTap's selection-driven input rules never fire and the popup
-// never opens. Skip until the broader TipTap shadow gap is closed.
-// Tracked as a Phase 3 follow-up.
+// Playwright limitation, not a real bug.
+//
+// Merge-tag autocomplete fires on TipTap input rules triggered by
+// the `{{` keystroke. Manual testing in Chromium (2026-05-12) confirms
+// the popup opens and works correctly in shadow mode for real users
+// (typing → suggestion list → click/Enter/Tab inserts the pill).
+//
+// The e2e flow types `{{` via `page.keyboard.type()` / `editable.press()`
+// — Playwright's synthetic keystrokes don't reach contenteditables
+// inside a shadow root, so the input rule never fires in the spec.
+// Skip in shadow mode rather than chase a Playwright-keyboard quirk.
 test.skip(
   ({ shadowDom }) => shadowDom,
-  "TipTap selection API doesn't pierce shadow boundary — Phase 3 follow-up",
+  "Playwright keyboard.type doesn't reach shadow-mounted contenteditable; behavior verified manually",
 );
 
 

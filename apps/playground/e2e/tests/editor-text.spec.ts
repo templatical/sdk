@@ -2,13 +2,19 @@ import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
 test.describe("Editor text editing", () => {
-  // Phase 7 blocker: bold/italic/alignment toggles via the rich-text
-  // toolbar require TipTap to track selection, which doesn't work inside
-  // a shadow tree on Chromium (window.getSelection() returns empty). Skip
-  // the toolbar-action tests here; track as Phase 3 follow-up.
+  // Playwright limitation, not a real bug.
+  //
+  // Bold/italic/alignment toolbar actions depend on the user having a
+  // selection before clicking the button. The selection is created with
+  // `page.keyboard.press("ControlOrMeta+a")` (or similar) in these
+  // specs, and Playwright's synthetic keystrokes don't reach
+  // shadow-mounted contenteditables — they go to the shadow host
+  // instead. Manual testing in Chromium (2026-05-12) confirms the
+  // same flow works for real users: mouse-select a word → toolbar B
+  // → word becomes bold.
   test.skip(
     ({ shadowDom }) => shadowDom,
-    "TipTap selection API doesn't pierce shadow boundary — Phase 3 follow-up",
+    "Playwright keyboard.press doesn't reach shadow-mounted contenteditable; behavior verified manually",
   );
 
   test("double-click paragraph enters edit mode", async ({
