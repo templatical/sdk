@@ -79,14 +79,14 @@ describe("editor global DOM-reference audit", () => {
   });
 
   it("only the expected source files reference `document.activeElement`", () => {
-    // `useFocusTrap` currently reads `document.activeElement`. Phase 4.1 will
-    // refactor to use `useEditorRoot().root.activeElement` (works for both
-    // Document and ShadowRoot — same API surface).
+    // Phase 4.1 migrated `useFocusTrap` to read `editorRoot.activeElement`
+    // via `useEditorRoot()` — works for both Document and ShadowRoot
+    // (same API surface). Only doc-comment mentions remain now.
     //
     // `keys.ts` mentions `document.activeElement` in the JSDoc for
     // `EDITOR_ROOT_KEY` — no code reference.
     const actual = filesMatching(FILES, /document\.activeElement/);
-    expect(actual).toEqual(["composables/useFocusTrap.ts", "keys.ts"]);
+    expect(actual).toEqual(["keys.ts"]);
   });
 
   it("no source file references `window.getSelection` (use TipTap selection APIs instead)", () => {

@@ -1,5 +1,6 @@
 import { useEventListener } from "@vueuse/core";
 import { onScopeDispose, watch, type Ref } from "vue";
+import { useEditorRoot } from "./useEditorRoot";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -12,6 +13,15 @@ export function useFocusTrap(
   containerRef: Ref<HTMLElement | null>,
   active: Ref<boolean>,
 ): void {
+  // Resolve the editor's effective DOM root once at setup time. In light-DOM
+  // mode this is the global `document`; in shadow mode it's the editor's
+  // open `ShadowRoot`. Both expose `activeElement` with the same semantics
+  // we need (the focused element WITHIN that root). Reading `activeElement`
+  // off the shadow root instead of `document` is the difference between
+  // "the focused descendant inside the trap" and "the host element" when
+  // focus is inside the shadow tree.
+  const editorRoot = useEditorRoot();
+
   let previouslyFocused: HTMLElement | null = null;
   let cleanupListener: (() => void) | null = null;
   let pendingRaf: number | null = null;
@@ -33,12 +43,12 @@ export function useFocusTrap(
     const last = focusable[focusable.length - 1];
 
     if (event.shiftKey) {
-      if (document.activeElement === first) {
+      if (editorRoot.activeElement === first) {
         event.preventDefault();
         last.focus();
       }
     } else {
-      if (document.activeElement === last) {
+      if (editorRoot.activeElement === last) {
         event.preventDefault();
         first.focus();
       }
@@ -55,10 +65,10 @@ export function useFocusTrap(
     }
 
     // Only capture previouslyFocused on the FIRST activation. On re-entry,
-    // document.activeElement is whatever the user tabbed to inside the trap;
-    // overwriting would lose the original pre-trap focus target.
+    // editorRoot.activeElement is whatever the user tabbed to inside the
+    // trap; overwriting would lose the original pre-trap focus target.
     if (!wasActive) {
-      previouslyFocused = document.activeElement as HTMLElement | null;
+      previouslyFocused = editorRoot.activeElement as HTMLElement | null;
     }
 
     pendingRaf = requestAnimationFrame(() => {

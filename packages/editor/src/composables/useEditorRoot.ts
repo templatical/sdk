@@ -19,5 +19,11 @@ import { EDITOR_ROOT_KEY } from "../keys";
  * `document.*` references in the editor source to use it.
  */
 export function useEditorRoot(): Document | ShadowRoot {
-  return inject(EDITOR_ROOT_KEY, document);
+  // When called outside a Vue setup() context (e.g. direct composable
+  // invocation in unit tests), Vue's inject() warns and returns undefined
+  // regardless of the default arg. Coalesce explicitly so callers always
+  // get a usable root — keeps test ergonomics simple and matches the
+  // "headless fallback to document" semantics this composable promises.
+  const root = inject(EDITOR_ROOT_KEY, document);
+  return root ?? document;
 }
