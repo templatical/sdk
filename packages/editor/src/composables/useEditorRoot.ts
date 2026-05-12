@@ -14,9 +14,7 @@ import { EDITOR_ROOT_KEY } from "../keys";
  * Falls back to `document` if no provider is in scope — keeps headless /
  * test-utility usage working without explicit wiring.
  *
- * Internal — not exported from the package entry. Phase 1 of the Shadow
- * DOM migration ships this as plumbing; Phase 2+ migrates the existing
- * `document.*` references in the editor source to use it.
+ * Internal — not exported from the package entry.
  */
 export function useEditorRoot(): Document | ShadowRoot {
   // When called outside a Vue setup() context (e.g. direct composable

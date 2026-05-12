@@ -8,16 +8,16 @@ import {
 } from "@templatical/types";
 
 /**
- * Multi-instance playground route (Phase 6.3). Mounts two independent
- * Shadow-DOM-enabled editors side by side so e2e specs can verify that:
+ * Multi-instance playground route. Mounts two independent shadow-DOM
+ * editors side by side so e2e specs can verify that:
  *   - Popovers (link dialog, toolbars) stay scoped to their editor.
  *   - Theme variables don't bleed between instances.
  *   - Keyboard shortcuts target only the focused editor.
  *   - Drag-drop in one editor doesn't affect the other.
  *
- * Both instances mount with `shadowDom: true` since that's the regression
- * surface that needs gating. Light-DOM multi-instance is a separate
- * concern (current SDK assumes one editor per page in light mode).
+ * Both instances mount with `shadowDom: true` because that's the
+ * regression surface that needs gating. Light-DOM multi-instance is a
+ * separate concern (the SDK assumes one editor per page in light mode).
  */
 
 const containerA = ref<HTMLDivElement | null>(null);
@@ -63,8 +63,8 @@ onUnmounted(() => {
       <a href="#" class="multi-back" data-testid="multi-back">← Back</a>
       <h1>Multi-instance shadow-DOM playground</h1>
       <p>
-        Two editors mounted with <code>shadowDom: true</code>. Used by Phase 6.3
-        e2e to verify isolation.
+        Two editors mounted with <code>shadowDom: true</code>. Used by e2e specs
+        to verify isolation between instances.
       </p>
     </header>
     <div class="multi-grid">

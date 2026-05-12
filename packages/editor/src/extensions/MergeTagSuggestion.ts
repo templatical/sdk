@@ -239,11 +239,10 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
           // dark canvas inversion) creates a containing block and moves
           // fixed descendants with it. Body ancestors don't transform.
           //
-          // When mounting inside the editor's popover root (Phase 3.1 of
-          // the Shadow DOM migration), the popup is a descendant of the
-          // `.tpl[data-tpl-theme]` root so CSS vars + font would inherit
-          // — but the snapshot below is still emitted inline because
-          // inline declarations win and the cost is negligible. This
+          // When mounting inside the editor's popover root, the popup is a
+          // descendant of the `.tpl[data-tpl-theme]` root so CSS vars + font
+          // would inherit — but the snapshot below is still emitted inline
+          // because inline declarations win and the cost is negligible. This
           // keeps a single behavior across both mount paths.
           //
           // CSS vars (--tpl-bg-elevated, --tpl-border, etc.) are scoped to
@@ -320,10 +319,9 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             const viewDom = props.editor.view?.dom as HTMLElement | undefined;
             editableEl = viewDom ?? null;
             applyThemeContext(container, viewDom ?? null);
-            // Prefer the editor's popover root (shadow-aware, Phase 3.1)
-            // when wired by the consumer. Falls back to document.body for
-            // headless / not-yet-migrated callers so the existing behavior
-            // is preserved when `popoverRoot` is omitted from configure().
+            // Prefer the editor's popover root (shadow-aware) when wired by
+            // the consumer. Falls back to document.body for headless callers
+            // that don't pass `popoverRoot` to configure().
             // shadow-ok: fallback when popoverRoot wasn't provided (e.g., headless caller); editor mounts pass the shadow-aware root
             const mountTarget = popoverRootRef?.value ?? document.body;
             mountTarget.appendChild(container);

@@ -30,7 +30,7 @@ import "./style.css";
 
 // Lazy-load Cloud page — only fetched when user navigates to #cloud
 const Cloud = defineAsyncComponent(() => import("./Cloud.vue"));
-// Lazy-load multi-instance shadow-DOM playground — only used by Phase 6.3 e2e.
+// Lazy-load multi-instance shadow-DOM playground — only used by e2e specs.
 const MultiInstance = defineAsyncComponent(() => import("./MultiInstance.vue"));
 
 const pages: Record<
