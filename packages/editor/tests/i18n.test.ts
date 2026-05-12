@@ -190,6 +190,11 @@ describe("loadTranslations", () => {
     expect(t.footer.poweredBy).toBe("Desenvolvido por");
   });
 
+  it("accepts underscore separator (pt_BR)", async () => {
+    const t = await loadTranslations("pt_BR");
+    expect(t.footer.poweredBy).toBe("Desenvolvido por");
+  });
+
   it("does not map pt or pt-PT to pt-BR", async () => {
     const pt = await loadTranslations("pt");
     const ptPT = await loadTranslations("pt-PT");

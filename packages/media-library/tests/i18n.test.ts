@@ -126,6 +126,11 @@ describe("loadMediaTranslations", () => {
     expect(translations.mediaLibrary.title).toBe("Biblioteca de Mídia");
   });
 
+  it("accepts underscore separator (pt_BR)", async () => {
+    const translations = await loadMediaTranslations("pt_BR");
+    expect(translations.mediaLibrary.title).toBe("Biblioteca de Mídia");
+  });
+
   it("does not map pt or pt-PT to pt-BR", async () => {
     const pt = await loadMediaTranslations("pt");
     const ptPT = await loadMediaTranslations("pt-PT");
