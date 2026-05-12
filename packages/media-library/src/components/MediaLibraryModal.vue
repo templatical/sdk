@@ -27,11 +27,29 @@ import {
   Search,
   X,
 } from "@lucide/vue";
-import { computed, inject, watch, type ComputedRef, type Ref } from "vue";
+import {
+  computed,
+  inject,
+  provide,
+  toRef,
+  watch,
+  type ComputedRef,
+  type Ref,
+} from "vue";
+import { POPOVER_TARGET_KEY } from "../keys";
 
 const props = defineProps<{
   visible: boolean;
   accept?: MediaCategory[];
+  /**
+   * Mount target for the modal's teleport. When provided, the modal and
+   * its sub-modals render inside this element instead of `document.body`
+   * — used by editors that wrap the media library inside a shadow root
+   * (or any other DOM boundary) and want the modal to stay inside.
+   * Defaults to `null` → teleport to body, preserving the original
+   * standalone-SDK behavior.
+   */
+  popoverTarget?: HTMLElement | null;
 }>();
 
 const emit = defineEmits<{
@@ -41,6 +59,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
+
+// Sub-modals (MediaReplaceModal, MediaEditModal, MediaImportUrlModal) inject
+// the same target so every nested teleport lands in the same place as this
+// one. Wrap the prop in a reactive ref so the provide updates if the host
+// remounts the modal with a different target.
+const popoverTargetRef = toRef(() => props.popoverTarget ?? null);
+provide(POPOVER_TARGET_KEY, popoverTargetRef);
 const authManager = inject<AuthManager>("authManager")!;
 const projectIdRef = inject<ComputedRef<string>>("projectId")!;
 const projectId = computed(() => projectIdRef.value);
@@ -123,7 +148,7 @@ function confirmSelection(): void {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport :to="popoverTarget || 'body'">
     <Transition
       enter-active-class="tpl:transition tpl:duration-200"
       enter-from-class="tpl:opacity-0"

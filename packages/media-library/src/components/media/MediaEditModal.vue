@@ -9,6 +9,7 @@ import {
   resizeCanvas,
   type AspectRatioPreset,
 } from "../../composables/useImageCrop";
+import { POPOVER_TARGET_KEY } from "../../keys";
 import type { MediaItem } from "../../types";
 import { computed, inject, ref, watch, type Ref } from "vue";
 import { Cropper, type CropperResult } from "vue-advanced-cropper";
@@ -36,6 +37,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
+const popoverTarget = inject(POPOVER_TARGET_KEY, ref<HTMLElement | null>(null));
 const mediaT = t.mediaLibrary as Record<string, string>;
 
 const { isImageMimeType } = useMediaCategories();
@@ -200,7 +202,7 @@ function handleKeydown(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport :to="popoverTarget || 'body'">
     <Transition
       enter-active-class="tpl:transition tpl:ease-out tpl:duration-150"
       enter-from-class="tpl:opacity-0"

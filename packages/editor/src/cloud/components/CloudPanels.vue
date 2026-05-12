@@ -161,6 +161,7 @@ defineExpose({ filterCommentsByBlock });
   <MediaLibraryModal
     :visible="panelState.mediaLibraryOpen.value"
     :accept="panelState.mediaLibraryAccept.value"
+    :popover-target="core.popoverRoot.value"
     @select="mediaLib.handleMediaSelect"
     @close="mediaLib.handleMediaLibraryClose"
   />

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
+import { POPOVER_TARGET_KEY } from "../../keys";
 import type { MediaItem, MediaUsageInfo } from "../../types";
 import { computed, inject, ref, watch, type Ref } from "vue";
 
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
+const popoverTarget = inject(POPOVER_TARGET_KEY, ref<HTMLElement | null>(null));
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const selectedFile = ref<File | null>(null);
@@ -72,7 +74,7 @@ function handleKeydown(event: KeyboardEvent): void {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport :to="popoverTarget || 'body'">
     <Transition
       enter-active-class="tpl:transition tpl:ease-out tpl:duration-150"
       enter-from-class="tpl:opacity-0"
