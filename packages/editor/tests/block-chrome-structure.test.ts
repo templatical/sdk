@@ -116,6 +116,36 @@ describe("block chrome structure", () => {
     );
   });
 
+  it("palette `.tpl-ghost` nullifies every paint property (no insertion-line, no 'Drop here')", () => {
+    // The shared `.tpl-ghost` rule styles drop-insertion indicators with
+    // a dashed border-top + a "Drop here" pseudo + a 12px vertical
+    // margin. In the SIDEBAR PALETTE context none of these are
+    // meaningful — the palette is drag-source-only (`put: false`) so
+    // there's never a real drop target there. But `_appendGhost` reads
+    // `dragEl`'s rect AFTER `tpl-ghost` is applied, so we can't `display:
+    // none` it (rect would be zero — that was the original bug). We
+    // null every paint property individually so the user sees nothing
+    // in the palette while the element stays in layout for rect capture.
+    //
+    // Each property below was observed leaking through `visibility:
+    // hidden` in at least one combination, so they're belt-and-
+    // suspenders. Don't strip them.
+    const palette =
+      styles.match(/\.tpl-sidebar-rail\s+\.tpl-ghost\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(palette).not.toBe("");
+    expect(palette).toMatch(/visibility:\s*hidden\s*!important/);
+    expect(palette).toMatch(/border-top:\s*none\s*!important/);
+    expect(palette).toMatch(/margin:\s*0\s*!important/);
+    expect(palette).not.toMatch(/display:\s*none/);
+
+    // The `::before` pseudo content (the "Drop here" badge) gets its
+    // own kill rule because `content: none` is the cleanest cross-
+    // browser way to disable a generated pseudo.
+    expect(styles).toMatch(
+      /\.tpl-sidebar-rail\s+\.tpl-ghost::before\s*\{[^}]*content:\s*none\s*!important/,
+    );
+  });
+
   it("`.tpl-sidebar-rail .tpl-ghost` uses `visibility: hidden`, NOT `display: none`", () => {
     // THIS RULE IS THE FIX FOR THE WORST DRAG REGRESSION WE HAD.
     //
