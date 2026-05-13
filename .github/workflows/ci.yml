@@ -81,7 +81,7 @@ jobs:
     # isn't cacheable across runs). Image tag must match the pinned
     # `@playwright/test` version in pnpm-lock.yaml.
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v1.60.0-jammy
     needs: [build]
     strategy:
       fail-fast: false

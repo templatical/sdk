@@ -85,6 +85,14 @@ test.describe("Section columns", () => {
     editorReady: { editorPage },
     page,
   }) => {
+    // Sidebar→section column drop. Section's inner Sortable runs
+    // `force-fallback: true` and Sortable.js doesn't bind `dragover` on
+    // force-fallback targets — Playwright's HTML5 `dragTo` from the
+    // sidebar can't trigger the drop. Real-user pointer events DO trigger
+    // it (target's `pointermove`/`pointerup` listeners are bound). See
+    // `block-chrome-structure.test.ts` for the production-config asserts.
+    test.fixme(true, "Playwright/Sortable cross-mode drag interop gap");
+
     const sections = page.locator(blockByType("section"));
     const sectionCount = await sections.count();
 

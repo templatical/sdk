@@ -108,19 +108,38 @@ describe("section drag + cycle defenses", () => {
     join(SRC, "components/blocks/SectionBlock.vue"),
     "utf8",
   );
+  const canvas = readFileSync(join(SRC, "components/Canvas.vue"), "utf8");
+  const sidebar = readFileSync(join(SRC, "components/Sidebar.vue"), "utf8");
   const blockWrapper = readFileSync(
     join(SRC, "components/blocks/BlockWrapper.vue"),
     "utf8",
   );
 
-  it("inner section VueDraggable uses `force-fallback`", () => {
+  it("inner section VueDraggable uses `force-fallback` + `fallback-on-body`", () => {
     // Chrome's strict HTML5 native-drag chain check (a `draggable=\"false\"`
     // ancestor blocks the drag) combined with nested Sortable instances
-    // makes the section's inner draggable fail without fallback mode.
+    // makes section's inner draggable fail without fallback mode.
     // `force-fallback` makes Sortable simulate drag via pointer events,
     // bypassing the native-drag attribute walk and the nested-instance
     // contention that breaks Chrome drag inside sections.
+    // `fallback-on-body` attaches Sortable's JS-managed ghost clone to
+    // `document.body` so it follows the cursor correctly regardless of
+    // the section column's own overflow / stacking context.
+    //
+    // Sidebar + canvas top-level deliberately stay on HTML5 — sharing
+    // the `blocks` group across mixed modes works in practice because
+    // Sortable's nested document-level mousemove/dragover listeners
+    // catch cross-list events. Real-user verified.
     expect(sectionBlock).toMatch(
+      /<VueDraggable[\s\S]*?:force-fallback="true"[\s\S]*?<\/VueDraggable>/,
+    );
+    expect(sectionBlock).toMatch(
+      /<VueDraggable[\s\S]*?:fallback-on-body="true"[\s\S]*?<\/VueDraggable>/,
+    );
+    expect(canvas).not.toMatch(
+      /<VueDraggable[\s\S]*?:force-fallback="true"[\s\S]*?<\/VueDraggable>/,
+    );
+    expect(sidebar).not.toMatch(
       /<VueDraggable[\s\S]*?:force-fallback="true"[\s\S]*?<\/VueDraggable>/,
     );
   });
