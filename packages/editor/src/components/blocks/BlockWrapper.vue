@@ -176,7 +176,6 @@ function handleConditionToggle(): void {
     :style="wrapperStyle"
     :data-block-id="block.id"
     :data-block-type="block.type"
-    draggable="false"
     @click="handleClick"
   >
     <BlockA11yBadge :block-id="block.id" />

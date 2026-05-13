@@ -228,6 +228,7 @@ function handleFetchData(
         :inverted-swap-threshold="0.65"
         :disabled="previewMode"
         :draggable="'.tpl-block-item'"
+        :force-fallback="true"
         :class="[
           'tpl-canvas-blocks',
           isEmptyCanvas

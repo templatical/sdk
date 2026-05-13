@@ -132,10 +132,12 @@ function handleFetchData(
           }"
           :animation="150"
           ghost-class="tpl-ghost"
-          :force-fallback="true"
+          drag-class="tpl-dragging"
+          handle=".tpl-block-btn"
           :invert-swap="true"
           :inverted-swap-threshold="0.65"
           :empty-insert-threshold="20"
+          :force-fallback="true"
           class="tpl:min-h-[60px]"
           @update:model-value="(val: Block[]) => setColumnBlocks(colIndex, val)"
         >

@@ -165,6 +165,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
       :sort="false"
       :animation="150"
       ghost-class="tpl-ghost"
+      :force-fallback="true"
       class="tpl:flex tpl:flex-col tpl:gap-0.5 tpl:p-1"
     >
       <button

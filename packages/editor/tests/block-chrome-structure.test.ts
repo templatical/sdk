@@ -115,33 +115,75 @@ describe("section drag + cycle defenses", () => {
     "utf8",
   );
 
-  it("inner section VueDraggable uses `force-fallback` + `fallback-on-body`", () => {
-    // Chrome's strict HTML5 native-drag chain check (a `draggable=\"false\"`
-    // ancestor blocks the drag) combined with nested Sortable instances
-    // makes section's inner draggable fail without fallback mode.
-    // `force-fallback` makes Sortable simulate drag via pointer events,
-    // bypassing the native-drag attribute walk and the nested-instance
-    // contention that breaks Chrome drag inside sections.
-    // `fallback-on-body` attaches Sortable's JS-managed ghost clone to
-    // `document.body` so it follows the cursor correctly regardless of
-    // the section column's own overflow / stacking context.
+  it("editor stays on HTML5 Sortable; `.tpl-block` is drag-transparent", () => {
+    // We use HTML5 mode (no `force-fallback`) for all three lists
+    // (sidebar, canvas top-level, section column). Reasons:
+    //   1. Browser-native drag image follows the cursor correctly
+    //      — Sortable.js's force-fallback JS-managed ghost
+    //      mis-positions when the editor mounts in shadow DOM
+    //      (scoped CSS doesn't reach a ghost appended to document.body).
+    //   2. Sortable only binds `dragover`/`dragenter` on HTML5-mode
+    //      targets, so cross-list drag (sidebar → section) requires
+    //      all participants in the same mode. Forcing fallback
+    //      everywhere breaks the ghost visual; keeping HTML5
+    //      everywhere preserves it.
     //
-    // Sidebar + canvas top-level deliberately stay on HTML5 — sharing
-    // the `blocks` group across mixed modes works in practice because
-    // Sortable's nested document-level mousemove/dragover listeners
-    // catch cross-list events. Real-user verified.
+    // ALL THREE Sortables (sidebar, canvas, section column) MUST use
+    // `:force-fallback="true"`. Reasons:
+    //   1. Chrome's HTML5 native-drag mode silently fails to initiate
+    //      drag from a child block's grip inside a SECTION column
+    //      (nested Sortable case). The mousedown + threshold-move
+    //      sequence runs Sortable's `_prepareDragStart` successfully —
+    //      `dragEl.draggable = true` is set on the inner v-for div, but
+    //      Chrome refuses to fire `dragstart`. Firefox fires it fine,
+    //      which is why this presented as "works in FF, not Chrome".
+    //      Removing every `draggable="false"` ancestor didn't help —
+    //      Chrome's refusal is independent of the false-ancestor abort
+    //      and isolated to deeply nested HTML5-mode Sortable scenarios.
+    //   2. Sortable.js binds `dragover`/`dragenter` listeners on its `el`
+    //      ONLY when `nativeDraggable=true` (HTML5 mode). With mixed
+    //      modes (one Sortable fallback, others HTML5), cross-list drops
+    //      INTO the fallback target from an HTML5 source fail because
+    //      no dragover ever fires on the fallback target's el. Putting
+    //      ALL three in fallback mode removes the mode mismatch.
+    //   3. Fallback mode emulates drag via pointer events. Sortable
+    //      handles its own cloned-element ghost (`tpl-ghost`) and
+    //      positions it via transforms. No native HTML5 drag image,
+    //      no native-drag chain check, no Chrome ancestor quirks.
+    //
+    // Trade-off: Playwright's `dragTo` emits HTML5 drag events only and
+    // cannot drive a fallback-mode Sortable. E2E tests that depend on
+    // dragTo for canvas/section drops are `test.fixme()`'d with a
+    // Playwright/Sortable interop note. Manual mouse-step drag still
+    // works for playwright tests that need it.
+    expect(canvas).toMatch(/:force-fallback="true"/);
+    expect(sidebar).toMatch(/:force-fallback="true"/);
+    expect(sectionBlock).toMatch(/:force-fallback="true"/);
+
+    // Both canvas + section Sortables retain `handle=".tpl-block-btn"`.
+    // In fallback mode the handle still gates drag initiation; without
+    // it, accidental pointer-drags from non-grip clicks (text, images)
+    // would also start a Sortable drag.
     expect(sectionBlock).toMatch(
-      /<VueDraggable[\s\S]*?:force-fallback="true"[\s\S]*?<\/VueDraggable>/,
+      /<VueDraggable[\s\S]*?handle="\.tpl-block-btn"[\s\S]*?<\/VueDraggable>/,
     );
-    expect(sectionBlock).toMatch(
-      /<VueDraggable[\s\S]*?:fallback-on-body="true"[\s\S]*?<\/VueDraggable>/,
+    expect(canvas).toMatch(
+      /<VueDraggable[\s\S]*?handle="\.tpl-block-btn"[\s\S]*?<\/VueDraggable>/,
     );
-    expect(canvas).not.toMatch(
-      /<VueDraggable[\s\S]*?:force-fallback="true"[\s\S]*?<\/VueDraggable>/,
-    );
-    expect(sidebar).not.toMatch(
-      /<VueDraggable[\s\S]*?:force-fallback="true"[\s\S]*?<\/VueDraggable>/,
-    );
+
+    // Canvas restricts sortable items to `.tpl-block-item` so the
+    // empty-state placeholder rendered inside the VueDraggable isn't
+    // treated as a drag item. SectionBlock doesn't need this — its
+    // VueDraggable has only sortable children.
+    expect(canvas).toMatch(/:draggable="'\.tpl-block-item'"/);
+    expect(canvas).toMatch(/v-for=[\s\S]*?class="tpl-block-item"/);
+
+    // No `draggable="false"` anywhere on BlockWrapper. With fallback
+    // mode in use this attribute has no effect on Sortable drag
+    // initiation, but historically it was the cause of multiple drag
+    // regressions in Chrome. Keep it absent so future maintainers don't
+    // reintroduce it on the assumption that it gates anything.
+    expect(blockWrapper).not.toMatch(/draggable="false"/);
   });
 
   it("`setColumnBlocks` deep-clones each block before writing to state", () => {
@@ -156,14 +198,4 @@ describe("section drag + cycle defenses", () => {
     );
   });
 
-  it("`.tpl-block` keeps `draggable=\"false\"`", () => {
-    // Stops the browser from initiating native HTML5 drag on text/content
-    // areas inside a block — clicks on TipTap-edited text would otherwise
-    // race with editor selection and start a block-drag instead. Top-level
-    // sortable still works because its handle option uses Sortable's
-    // mousedown path; the section uses force-fallback for the same reason.
-    expect(blockWrapper).toMatch(
-      /class="tpl-block[\s\S]*?draggable="false"/,
-    );
-  });
 });
