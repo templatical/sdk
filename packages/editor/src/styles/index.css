@@ -176,10 +176,13 @@
     --tpl-ring: var(--tpl-user-dark-ring, 0 0 0 3px var(--tpl-primary-light));
 }
 
-/* Canvas always uses light-theme values regardless of UI theme.
-   The canvas represents the email preview — emails render on white backgrounds.
-   Dark mode preview is handled separately via CSS filter inversion. */
-.tpl[data-tpl-theme="dark"] .tpl-canvas-wrapper {
+/* Email block content always renders with light-theme values regardless
+   of UI theme — emails are designed for white backgrounds. Scoped to
+   `.tpl-block-content` (not the whole canvas-wrapper) so block chrome
+   outside this wrapper (action bar, indicators) follows the editor's UI
+   theme naturally. Dark-mode preview is a separate feature handled via
+   CSS filter inversion on `.tpl-block-content`. */
+.tpl[data-tpl-theme="dark"] .tpl-block-content {
     --tpl-bg-elevated: oklch(98% 0.004 60);
     --tpl-border-light: oklch(86% 0.01 60);
     --tpl-text: oklch(18% 0.01 60);
@@ -286,7 +289,9 @@
    container rather than at document.body. */
 .tpl-popover-root {
     position: relative;
-    z-index: var(--z-modal);
+    /* Literal — `var(--z-modal)` resolves to :root which is unreachable
+       from inside a shadow root, dropping the stacking context. */
+    z-index: 10000;
 }
 
 .tpl-pulse {

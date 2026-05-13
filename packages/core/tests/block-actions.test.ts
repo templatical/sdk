@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createParagraphBlock, createTitleBlock, createSectionBlock, type BlockDefaults } from '@templatical/types';
-import { useBlockActions } from '../src';
+import {
+    createDefaultTemplateContent,
+    createParagraphBlock,
+    createSectionBlock,
+    createTitleBlock,
+    type BlockDefaults,
+} from '@templatical/types';
+import { useBlockActions, useEditor } from '../src';
 
 function createMockOptions() {
     return {
@@ -152,6 +158,110 @@ describe('useBlockActions', () => {
 
         actions.duplicateBlock(original);
         expect(original.id).toBe(originalId);
+    });
+});
+
+describe('useBlockActions duplicate inserts after source', () => {
+    it('inserts clone at sourceIndex + 1 in the canvas root', () => {
+        const original = createParagraphBlock({ content: '<p>Mid</p>' });
+        const opts = {
+            ...createMockOptions(),
+            findBlockLocation: vi.fn(() => ({
+                targetSectionId: undefined,
+                columnIndex: undefined,
+                index: 2,
+            })),
+        };
+        const actions = useBlockActions(opts);
+
+        const cloned = actions.duplicateBlock(original);
+        expect(opts.findBlockLocation).toHaveBeenCalledWith(original.id);
+        expect(opts.addBlock).toHaveBeenCalledWith(cloned, undefined, undefined, 3);
+    });
+
+    it('inserts clone at sourceIndex + 1 inside the source section column', () => {
+        const child = createParagraphBlock({ content: '<p>Child</p>' });
+        const opts = {
+            ...createMockOptions(),
+            findBlockLocation: vi.fn(() => ({
+                targetSectionId: 'section-42',
+                columnIndex: 1,
+                index: 0,
+            })),
+        };
+        const actions = useBlockActions(opts);
+
+        const cloned = actions.duplicateBlock(child);
+        expect(opts.addBlock).toHaveBeenCalledWith(cloned, 'section-42', 1, 1);
+    });
+
+    it('explicit targetSectionId/columnIndex override the source-location lookup', () => {
+        const original = createParagraphBlock();
+        const opts = {
+            ...createMockOptions(),
+            findBlockLocation: vi.fn(() => ({
+                targetSectionId: 'section-A',
+                columnIndex: 0,
+                index: 5,
+            })),
+        };
+        const actions = useBlockActions(opts);
+
+        const cloned = actions.duplicateBlock(original, 'section-B', 2);
+        expect(opts.findBlockLocation).not.toHaveBeenCalled();
+        expect(opts.addBlock).toHaveBeenCalledWith(cloned, 'section-B', 2);
+    });
+
+    it('falls back to appending at end when source location is null', () => {
+        const original = createParagraphBlock();
+        const opts = {
+            ...createMockOptions(),
+            findBlockLocation: vi.fn(() => null),
+        };
+        const actions = useBlockActions(opts);
+
+        const cloned = actions.duplicateBlock(original);
+        expect(opts.findBlockLocation).toHaveBeenCalledWith(original.id);
+        expect(opts.addBlock).toHaveBeenCalledWith(cloned, undefined, undefined);
+    });
+
+    it('falls back to appending when findBlockLocation option is not provided', () => {
+        const original = createParagraphBlock();
+        const opts = createMockOptions();
+        const actions = useBlockActions(opts);
+
+        const cloned = actions.duplicateBlock(original);
+        expect(opts.addBlock).toHaveBeenCalledWith(cloned, undefined, undefined);
+    });
+
+    it('end-to-end with real editor: clone of a section child lands inside same column', () => {
+        // Integration-style: wire useBlockActions with a real editor's
+        // addBlock + findBlockLocation. Asserts the duplicated child ends
+        // up at index sourceIndex + 1 in the SAME section column.
+        const content = createDefaultTemplateContent();
+        const childA = createParagraphBlock({ content: '<p>A</p>' });
+        const childB = createParagraphBlock({ content: '<p>B</p>' });
+        const section = createSectionBlock({ children: [[childA, childB]] });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+        const actions = useBlockActions({
+            addBlock: editor.addBlock,
+            removeBlock: editor.removeBlock,
+            updateBlock: editor.updateBlock,
+            selectBlock: editor.selectBlock,
+            findBlockLocation: editor.findBlockLocation,
+        });
+
+        const cloned = actions.duplicateBlock(childA);
+
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            // Column 0 should now have A, A', B in that order.
+            expect(sec.children[0]).toHaveLength(3);
+            expect(sec.children[0][0].id).toBe(childA.id);
+            expect(sec.children[0][1].id).toBe(cloned.id);
+            expect(sec.children[0][2].id).toBe(childB.id);
+        }
     });
 });
 
