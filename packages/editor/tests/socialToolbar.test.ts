@@ -21,7 +21,7 @@ describe('SocialToolbar CRUD', () => {
     ]);
     const wrapper = mountIt(block);
 
-    const selects = wrapper.findAll('select');
+    const selects = wrapper.findAll('[data-testid="social-platform-select"]');
     expect(selects).toHaveLength(2);
     expect((selects[0].element as HTMLSelectElement).value).toBe('facebook');
     expect((selects[1].element as HTMLSelectElement).value).toBe('twitter');
@@ -52,7 +52,7 @@ describe('SocialToolbar CRUD', () => {
     ]);
     const wrapper = mountIt(block);
 
-    const select = wrapper.findAll('select')[1];
+    const select = wrapper.findAll('[data-testid="social-platform-select"]')[1];
     (select.element as HTMLSelectElement).value = 'instagram';
     await select.trigger('change');
 

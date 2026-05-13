@@ -5,7 +5,7 @@ import type {
   CustomFont,
 } from "@templatical/types";
 import { isSection, isCustomBlock } from "@templatical/types";
-import { RenderContext } from "./render-context";
+import { RenderContext, DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
 import { renderBlock } from "./renderers";
 import { escapeHtml, escapeAttr } from "./escape";
 
@@ -28,6 +28,17 @@ export interface RenderOptions {
    * output.
    */
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
+  /**
+   * Base URL (no trailing slash) for the social icon PNG assets. Resolved to
+   * `${baseUrl}/${style}/${platform}.png` per icon. Defaults to the
+   * version-pinned unpkg mirror of this package. Override to self-host
+   * (e.g., behind your own CDN or for air-gapped environments).
+   *
+   * Why PNGs: Outlook desktop (Word rendering engine) does not support SVG
+   * and rejects base64 data URIs in `<img src>`, so social icons must be
+   * served as raster images over HTTP for cross-client compatibility.
+   */
+  socialIconsBaseUrl?: string;
 }
 
 /**
@@ -47,6 +58,9 @@ export async function renderToMjml(
   const defaultFallbackFont =
     options?.defaultFallbackFont ?? "Arial, sans-serif";
   const allowHtmlBlocks = options?.allowHtmlBlocks ?? true;
+  const socialIconsBaseUrl = stripTrailingSlash(
+    options?.socialIconsBaseUrl ?? DEFAULT_SOCIAL_ICONS_BASE_URL,
+  );
 
   const customBlockHtml = await resolveCustomBlocks(
     content,
@@ -59,6 +73,7 @@ export async function renderToMjml(
     defaultFallbackFont,
     allowHtmlBlocks,
     customBlockHtml,
+    socialIconsBaseUrl,
   );
 
   const blocks = filterHtmlBlocks(content.blocks, allowHtmlBlocks);
@@ -156,6 +171,10 @@ function wrapInSection(content: string): string {
 ${content}
   </mj-column>
 </mj-section>`;
+}
+
+function stripTrailingSlash(url: string): string {
+  return url.endsWith("/") ? url.slice(0, -1) : url;
 }
 
 function generatePreviewTag(preheaderText?: string): string {
@@ -257,6 +276,6 @@ export { escapeHtml, escapeAttr, convertMergeTagsToValues } from "./escape";
 export { isHiddenOnAll, getCssClassAttr, getCssClasses } from "./visibility";
 export { getWidthPercentages, getWidthPixels } from "./columns";
 export { toPaddingString } from "./padding";
-export { SOCIAL_ICONS, generateSocialIconDataUri } from "./social-icons";
+export { DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
 export { renderBlock } from "./renderers";
 export type { BlockRenderer } from "./renderers/section";

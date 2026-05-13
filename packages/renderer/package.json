@@ -7,6 +7,7 @@
     "@templatical/types": "workspace:*"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "mjml": "^5.1.0",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
@@ -19,7 +20,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "assets"
   ],
   "homepage": "https://templatical.com",
   "keywords": [
@@ -41,7 +43,7 @@
     "directory": "packages/renderer"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && node scripts/rasterize-social.mjs",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit"
   },

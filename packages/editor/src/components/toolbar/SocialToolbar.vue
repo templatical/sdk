@@ -17,6 +17,7 @@ import {
 import type {
   SocialIcon,
   SocialIconsBlock,
+  SocialIconStyle,
   SocialPlatform,
 } from "@templatical/types";
 import { generateId } from "@templatical/types";
@@ -74,6 +75,7 @@ function removeSocialIcon(iconId: string): void {
       >
         <div class="tpl:flex tpl:items-center tpl:gap-2">
           <select
+            data-testid="social-platform-select"
             :class="inputClass"
             class="tpl:flex-1"
             :value="icon.platform"
@@ -116,17 +118,22 @@ function removeSocialIcon(iconId: string): void {
   </div>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.social.style }}</label>
-    <SlidingPillSelect
-      :options="[
-        { value: 'solid', label: t.social.styleSolid },
-        { value: 'outlined', label: t.social.styleOutlined },
-        { value: 'rounded', label: t.social.styleRounded },
-        { value: 'square', label: t.social.styleSquare },
-        { value: 'circle', label: t.social.styleCircle },
-      ]"
-      :model-value="block.iconStyle"
-      @update:model-value="updateField('iconStyle', $event)"
-    />
+    <select
+      :class="inputClass"
+      :value="block.iconStyle"
+      @change="
+        updateField(
+          'iconStyle',
+          ($event.target as HTMLSelectElement).value as SocialIconStyle,
+        )
+      "
+    >
+      <option value="solid">{{ t.social.styleSolid }}</option>
+      <option value="outlined">{{ t.social.styleOutlined }}</option>
+      <option value="rounded">{{ t.social.styleRounded }}</option>
+      <option value="square">{{ t.social.styleSquare }}</option>
+      <option value="circle">{{ t.social.styleCircle }}</option>
+    </select>
   </div>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.social.size }}</label>

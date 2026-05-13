@@ -4,8 +4,9 @@ import {
   createParagraphBlock,
   createSectionBlock,
   createImageBlock,
+  createSocialIconsBlock,
 } from '@templatical/types';
-import { renderToMjml } from '../src';
+import { renderToMjml, DEFAULT_SOCIAL_ICONS_BASE_URL } from '../src';
 
 describe('renderToMjml', () => {
   it('renders empty template', async () => {
@@ -226,6 +227,53 @@ describe('renderToMjml', () => {
     expect(mjml).toContain('alt=""');
     expect(mjml).not.toContain('alt="ignored"');
     expect(mjml).toContain('role="presentation"');
+  });
+
+  it('uses default unpkg URL for social icons', async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createSocialIconsBlock({
+        icons: [{ platform: 'facebook', url: 'https://facebook.com' }],
+        iconStyle: 'circle',
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain(
+      `src="${DEFAULT_SOCIAL_ICONS_BASE_URL}/circle/facebook.png"`,
+    );
+  });
+
+  it('honors socialIconsBaseUrl option', async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createSocialIconsBlock({
+        icons: [{ platform: 'twitter', url: 'https://twitter.com' }],
+        iconStyle: 'solid',
+      }),
+    ];
+    const mjml = await renderToMjml(content, {
+      socialIconsBaseUrl: 'https://cdn.example.com/social',
+    });
+    expect(mjml).toContain(
+      'src="https://cdn.example.com/social/solid/twitter.png"',
+    );
+  });
+
+  it('strips trailing slash from socialIconsBaseUrl', async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createSocialIconsBlock({
+        icons: [{ platform: 'github', url: 'https://github.com' }],
+        iconStyle: 'square',
+      }),
+    ];
+    const mjml = await renderToMjml(content, {
+      socialIconsBaseUrl: 'https://cdn.example.com/social/',
+    });
+    expect(mjml).toContain(
+      'src="https://cdn.example.com/social/square/github.png"',
+    );
+    expect(mjml).not.toContain('//square/');
   });
 
   it('renders non-decorative image preserving alt and omitting role', async () => {

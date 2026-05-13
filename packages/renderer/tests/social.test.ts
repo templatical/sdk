@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createSocialIconsBlock } from "@templatical/types";
-import { renderBlock, RenderContext } from "../src";
+import {
+  renderBlock,
+  RenderContext,
+  DEFAULT_SOCIAL_ICONS_BASE_URL,
+} from "../src";
 
 const ctx = new RenderContext(600, [], "Arial, sans-serif", true);
 
@@ -121,6 +125,99 @@ describe("renderSocialIcons", () => {
     });
     const result = renderBlock(block, ctx);
     expect(result).toContain('container-background-color="#ff0000"');
+  });
+
+  it("emits PNG asset URL with style/platform path, not data URI", () => {
+    const block = createSocialIconsBlock({
+      icons: [{ platform: "facebook", url: "https://facebook.com" }],
+      iconStyle: "circle",
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain(
+      `src="${DEFAULT_SOCIAL_ICONS_BASE_URL}/circle/facebook.png"`,
+    );
+    expect(result).not.toContain("data:");
+  });
+
+  it("emits no inline SVG markup", () => {
+    const block = createSocialIconsBlock({
+      icons: [
+        { platform: "facebook", url: "https://facebook.com" },
+        { platform: "twitter", url: "https://twitter.com" },
+      ],
+      iconStyle: "circle",
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).not.toMatch(/<svg[\s>]/i);
+    expect(result).not.toContain("</svg>");
+    expect(result).not.toContain("xmlns=\"http://www.w3.org/2000/svg\"");
+    expect(result).not.toContain("image/svg+xml");
+  });
+
+  it("default base URL points at version-pinned unpkg mirror", () => {
+    expect(DEFAULT_SOCIAL_ICONS_BASE_URL).toMatch(
+      /^https:\/\/unpkg\.com\/@templatical\/renderer@\d+\.\d+\.\d+\/assets\/social$/,
+    );
+  });
+
+  it("honors a custom socialIconsBaseUrl", () => {
+    const custom = new RenderContext(
+      600,
+      [],
+      "Arial, sans-serif",
+      true,
+      new Map(),
+      "https://cdn.example.com/icons",
+    );
+    const block = createSocialIconsBlock({
+      icons: [{ platform: "twitter", url: "https://twitter.com" }],
+      iconStyle: "rounded",
+    });
+    const result = renderBlock(block, custom);
+    expect(result).toContain(
+      'src="https://cdn.example.com/icons/rounded/twitter.png"',
+    );
+  });
+
+  it("emits URL for every supported platform and style", () => {
+    const platforms = [
+      "facebook",
+      "twitter",
+      "instagram",
+      "linkedin",
+      "youtube",
+      "tiktok",
+      "pinterest",
+      "email",
+      "whatsapp",
+      "telegram",
+      "discord",
+      "snapchat",
+      "reddit",
+      "github",
+      "dribbble",
+      "behance",
+    ] as const;
+    const styles = [
+      "solid",
+      "outlined",
+      "rounded",
+      "square",
+      "circle",
+    ] as const;
+
+    for (const style of styles) {
+      for (const platform of platforms) {
+        const block = createSocialIconsBlock({
+          icons: [{ platform, url: `https://${platform}.example` }],
+          iconStyle: style,
+        });
+        const result = renderBlock(block, ctx);
+        expect(result).toContain(
+          `src="${DEFAULT_SOCIAL_ICONS_BASE_URL}/${style}/${platform}.png"`,
+        );
+      }
+    }
   });
 
   it("escapes special characters in URL href", () => {

@@ -40,6 +40,7 @@ interface RenderOptions {
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // default: true
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
+  socialIconsBaseUrl?: string;
 }
 ```
 
@@ -49,6 +50,7 @@ interface RenderOptions {
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback font stack |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
 | `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. Editor consumers pass `editor.renderCustomBlock`; headless consumers wire their own resolver. If omitted, custom blocks fall back to the block's `renderedHtml` field (if present) and otherwise are omitted. |
+| `socialIconsBaseUrl` | version-pinned unpkg URL | Base URL (no trailing slash) for the social icon PNG assets. Resolved per icon to `${baseUrl}/${style}/${platform}.png`. See [Social icons](#social-icons) below. |
 
 ### Custom blocks
 
@@ -77,6 +79,34 @@ const mjml = await renderToMjml(content, {
 });
 ```
 
+### Social icons
+
+Social icon blocks are emitted as `<img src="…/{style}/{platform}.png">`. The default `socialIconsBaseUrl` points at the version-pinned unpkg mirror of `@templatical/renderer`, which ships pre-rasterized PNGs (16 platforms × 5 styles) alongside the package:
+
+```
+https://unpkg.com/@templatical/renderer@<version>/assets/social/{style}/{platform}.png
+```
+
+**Why PNGs.** Outlook desktop (Word rendering engine) does not support SVG and rejects base64 data URIs in `<img src>`. Hosted PNGs are the only format that renders across every mainstream email client.
+
+**Why version-pinned.** Email is archival — recipients open messages months or years after they're sent. The version pin freezes the icon visuals at render time so a future redesign or regression in the package doesn't retroactively break already-delivered emails. It also avoids a per-image 302 redirect and unlocks long-lived immutable cache headers.
+
+**Self-hosting.** Override `socialIconsBaseUrl` to serve the assets from your own CDN — useful for air-gapped environments, brand-specific theming, or removing the unpkg dependency:
+
+```ts
+const mjml = await renderToMjml(content, {
+  socialIconsBaseUrl: 'https://cdn.example.com/email-assets/social',
+});
+```
+
+The exact filenames the renderer expects are `{style}/{platform}.png` where `style` is one of `solid | outlined | rounded | square | circle` and `platform` is one of `facebook | twitter | instagram | linkedin | youtube | tiktok | pinterest | email | whatsapp | telegram | discord | snapchat | reddit | github | dribbble | behance`. The shipped 192×192 PNGs are a reasonable starting point if you want to mirror them.
+
+The package also exports `DEFAULT_SOCIAL_ICONS_BASE_URL` if you want to compose URLs against the same default:
+
+```ts
+import { DEFAULT_SOCIAL_ICONS_BASE_URL } from '@templatical/renderer';
+```
+
 ## Utilities
 
 The renderer also exports utility functions:
@@ -88,13 +118,12 @@ import {
   convertMergeTagsToValues,
   isHiddenOnAll,
   toPaddingString,
-  generateSocialIconDataUri,
   renderBlock,
   getCssClassAttr,
   getCssClasses,
   getWidthPercentages,
   getWidthPixels,
-  SOCIAL_ICONS,
+  DEFAULT_SOCIAL_ICONS_BASE_URL,
   RenderContext,
 } from '@templatical/renderer';
 ```
@@ -154,15 +183,6 @@ toPaddingString({ top: 10, right: 20, bottom: 10, left: 20 });
 // '10px 20px 10px 20px'
 ```
 
-### `generateSocialIconDataUri(platform, style, size)`
-
-Generates a base64-encoded SVG data URI for a social media platform icon. Used internally by the renderer for social icon blocks:
-
-```ts
-const uri = generateSocialIconDataUri('twitter', 'circle', 32);
-// 'data:image/svg+xml,...'
-```
-
 ### `renderBlock(block, context)`
 
 Renders a single block to its MJML representation. Used internally by `renderToMjml()` but exported for advanced use cases where you need to render individual blocks.
@@ -179,9 +199,9 @@ Generate CSS class attributes from a block's visibility settings. Used internall
 
 Calculate column widths for a given `ColumnLayout`. Returns an array of percentage or pixel values per column.
 
-### `SOCIAL_ICONS`
+### `DEFAULT_SOCIAL_ICONS_BASE_URL`
 
-A map of all built-in social platform SVG icon data, keyed by platform and style.
+The default value of `RenderOptions.socialIconsBaseUrl` — the version-pinned unpkg URL pointing at this package's bundled social icon PNGs. See [Social icons](#social-icons).
 
 ## Compiling MJML to HTML
 

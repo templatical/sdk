@@ -245,6 +245,37 @@ describe("background-color round-trip through MJML compiler", () => {
   });
 });
 
+describe("social icons render as hosted <img>, not inline SVG (Outlook safety)", () => {
+  /**
+   * Outlook desktop (Word rendering engine) does not support SVG and rejects
+   * base64 data URIs in `<img src>`. The renderer must emit hosted PNG URLs
+   * so the compiled email HTML uses `<img src="https://…">` for social icons.
+   * If a future change reverts to inline SVG or data URIs, this test fails.
+   */
+  it("compiled HTML uses <img> tags with HTTP PNG URLs for social icons", async () => {
+    const block = createSocialIconsBlock({
+      icons: [
+        { platform: "facebook", url: "https://facebook.com" },
+        { platform: "twitter", url: "https://twitter.com" },
+      ],
+      iconStyle: "circle",
+    });
+    const mjml = renderBlock(block, ctx);
+    const html = await compile(wrapBlock(mjml));
+
+    expect(html).toContain(
+      'src="https://unpkg.com/@templatical/renderer@',
+    );
+    expect(html).toContain("/circle/facebook.png");
+    expect(html).toContain("/circle/twitter.png");
+
+    expect(html).not.toMatch(/<svg[\s>]/i);
+    expect(html).not.toContain("</svg>");
+    expect(html).not.toContain("data:image/svg");
+    expect(html).not.toContain("data:image/png;base64");
+  });
+});
+
 describe("MJML silent-drop trap (regression baseline)", () => {
   /**
    * Documents the actual MJML behavior we're protecting against: passing

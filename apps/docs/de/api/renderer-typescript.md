@@ -40,6 +40,7 @@ interface RenderOptions {
   defaultFallbackFont?: string;
   allowHtmlBlocks?: boolean;      // Standard: true
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
+  socialIconsBaseUrl?: string;
 }
 ```
 
@@ -49,6 +50,7 @@ interface RenderOptions {
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback-Schriftart-Stack |
 | `allowHtmlBlocks` | `true` | Auf `false` setzen, um HTML-Blöcke aus der Ausgabe zu entfernen |
 | `renderCustomBlock` | -- | Wandelt benutzerdefinierte Blöcke in HTML um. Wird einmal pro benutzerdefiniertem Block aufgerufen. Editor-Konsumenten übergeben `editor.renderCustomBlock`; Headless-Konsumenten verwenden einen eigenen Resolver. Wenn weggelassen, fällt der Renderer auf das `renderedHtml`-Feld des Blocks zurück (falls vorhanden) und lässt den Block andernfalls weg. |
+| `socialIconsBaseUrl` | versionsgebundene unpkg-URL | Basis-URL (ohne abschließenden Schrägstrich) für die PNG-Assets der Social-Media-Icons. Wird pro Icon zu `${baseUrl}/${style}/${platform}.png` aufgelöst. Siehe [Social-Media-Icons](#social-media-icons) unten. |
 
 ### Benutzerdefinierte Blöcke
 
@@ -77,6 +79,34 @@ const mjml = await renderToMjml(content, {
 });
 ```
 
+### Social-Media-Icons
+
+Social-Icon-Blöcke werden als `<img src="…/{style}/{platform}.png">` ausgegeben. Der Standardwert von `socialIconsBaseUrl` verweist auf den versionsgebundenen unpkg-Mirror von `@templatical/renderer`, der vorgerasterte PNGs (16 Plattformen × 5 Stile) mit dem Paket ausliefert:
+
+```
+https://unpkg.com/@templatical/renderer@<version>/assets/social/{style}/{platform}.png
+```
+
+**Warum PNGs.** Outlook Desktop (Word-Rendering-Engine) unterstützt kein SVG und lehnt base64-Daten-URIs in `<img src>` ab. Gehostete PNGs sind das einzige Format, das in allen gängigen E-Mail-Clients zuverlässig dargestellt wird.
+
+**Warum versionsgebunden.** E-Mails sind Archivinhalt — Empfänger öffnen Nachrichten Monate oder Jahre nach dem Versand. Die Versionsbindung friert die Icon-Darstellung zum Renderzeitpunkt ein, sodass ein späteres Redesign oder ein Regressionsfehler im Paket bereits zugestellte E-Mails nicht rückwirkend beschädigt. Außerdem entfällt eine 302-Weiterleitung pro Icon und es können langlebige, unveränderliche Cache-Header gesetzt werden.
+
+**Selbst hosten.** Überschreiben Sie `socialIconsBaseUrl`, um die Assets über Ihr eigenes CDN auszuliefern — nützlich für Air-Gapped-Umgebungen, markenspezifische Themen oder um die Abhängigkeit von unpkg zu entfernen:
+
+```ts
+const mjml = await renderToMjml(content, {
+  socialIconsBaseUrl: 'https://cdn.example.com/email-assets/social',
+});
+```
+
+Die exakten Dateinamen, die der Renderer erwartet, sind `{style}/{platform}.png`, wobei `style` einer von `solid | outlined | rounded | square | circle` und `platform` einer von `facebook | twitter | instagram | linkedin | youtube | tiktok | pinterest | email | whatsapp | telegram | discord | snapchat | reddit | github | dribbble | behance` ist. Die ausgelieferten 192×192-PNGs sind ein sinnvoller Ausgangspunkt, wenn Sie sie spiegeln möchten.
+
+Das Paket exportiert außerdem `DEFAULT_SOCIAL_ICONS_BASE_URL`, falls Sie URLs gegen denselben Standardwert komponieren möchten:
+
+```ts
+import { DEFAULT_SOCIAL_ICONS_BASE_URL } from '@templatical/renderer';
+```
+
 ## Hilfsfunktionen
 
 Der Renderer exportiert außerdem Hilfsfunktionen:
@@ -88,13 +118,12 @@ import {
   convertMergeTagsToValues,
   isHiddenOnAll,
   toPaddingString,
-  generateSocialIconDataUri,
   renderBlock,
   getCssClassAttr,
   getCssClasses,
   getWidthPercentages,
   getWidthPixels,
-  SOCIAL_ICONS,
+  DEFAULT_SOCIAL_ICONS_BASE_URL,
   RenderContext,
 } from '@templatical/renderer';
 ```
@@ -154,15 +183,6 @@ toPaddingString({ top: 10, right: 20, bottom: 10, left: 20 });
 // '10px 20px 10px 20px'
 ```
 
-### `generateSocialIconDataUri(platform, style, size)`
-
-Erzeugt eine base64-kodierte SVG-Data-URI für ein Social-Media-Plattform-Icon. Wird intern vom Renderer für Social-Icon-Blöcke verwendet:
-
-```ts
-const uri = generateSocialIconDataUri('twitter', 'circle', 32);
-// 'data:image/svg+xml,...'
-```
-
 ### `renderBlock(block, context)`
 
 Rendert einen einzelnen Block in seine MJML-Darstellung. Wird intern von `renderToMjml()` verwendet, aber für fortgeschrittene Anwendungsfälle exportiert, in denen Sie einzelne Blöcke rendern müssen.
@@ -179,9 +199,9 @@ Erzeugen CSS-Klassen-Attribute aus den Sichtbarkeitseinstellungen eines Blocks. 
 
 Berechnen Spaltenbreiten für ein gegebenes `ColumnLayout`. Gibt ein Array von Prozent- oder Pixelwerten pro Spalte zurück.
 
-### `SOCIAL_ICONS`
+### `DEFAULT_SOCIAL_ICONS_BASE_URL`
 
-Eine Zuordnung aller eingebauten SVG-Icon-Daten für soziale Plattformen, nach Plattform und Stil indiziert.
+Der Standardwert von `RenderOptions.socialIconsBaseUrl` — die versionsgebundene unpkg-URL, die auf die in diesem Paket mitgelieferten PNGs der Social-Media-Icons verweist. Siehe [Social-Media-Icons](#social-media-icons).
 
 ## MJML zu HTML kompilieren
 

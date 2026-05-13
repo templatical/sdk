@@ -3,14 +3,21 @@ import type { RenderContext } from "../render-context";
 import { escapeAttr } from "../escape";
 import { toPaddingString } from "../padding";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
-import { generateSocialIconDataUri } from "../social-icons";
 
 /**
  * Render a social icons block to MJML markup.
+ *
+ * Icons are emitted as `<img src="…/{style}/{platform}.png">` rather than
+ * inline SVG or base64 data URIs. Outlook desktop (Word rendering engine)
+ * does not support SVG and rejects base64 in `<img src>`, so hosted PNGs are
+ * the only format that renders across every mainstream client. The base URL
+ * is read from `context.socialIconsBaseUrl` (configurable via
+ * `RenderOptions.socialIconsBaseUrl`; default is the version-pinned unpkg
+ * mirror of this package).
  */
 export function renderSocialIcons(
   block: SocialIconsBlock,
-  _context: RenderContext,
+  context: RenderContext,
 ): string {
   if (isHiddenOnAll(block)) {
     return "";
@@ -66,9 +73,7 @@ export function renderSocialIcons(
   const socialElements = icons.map((icon, index) => {
     const platform = icon.platform;
     const url = escapeAttr(icon.url);
-
-    // Generate custom SVG icon as data URI to match editor appearance
-    const iconSrc = generateSocialIconDataUri(platform, iconStyle, iconSizePx);
+    const iconSrc = `${context.socialIconsBaseUrl}/${iconStyle}/${platform}.png`;
 
     // Apply spacing as right padding only (except last icon) to match CSS gap behavior
     const rightPad = index === iconCount - 1 ? 0 : spacing;

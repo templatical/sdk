@@ -1,4 +1,7 @@
 import type { CustomFont } from "@templatical/types";
+import pkg from "../package.json" with { type: "json" };
+
+export const DEFAULT_SOCIAL_ICONS_BASE_URL = `https://unpkg.com/@templatical/renderer@${pkg.version}/assets/social`;
 
 const BUILT_IN_FONT_FALLBACKS: Record<string, string> = {
   arial: "Arial, sans-serif",
@@ -26,6 +29,14 @@ export class RenderContext {
      * `renderCustomBlock` option. Empty by default.
      */
     public readonly customBlockHtml: ReadonlyMap<string, string> = new Map(),
+    /**
+     * Base URL (no trailing slash) for the social icon PNG assets. Resolved to
+     * `${baseUrl}/${style}/${platform}.png`. Outlook desktop has no SVG support
+     * and rejects base64 data URIs in `<img src>`, so PNGs must be served over
+     * HTTP. Default points at the version-pinned unpkg mirror of this
+     * package; consumers can override to self-host.
+     */
+    public readonly socialIconsBaseUrl: string = DEFAULT_SOCIAL_ICONS_BASE_URL,
   ) {}
 
   /**
@@ -39,6 +50,7 @@ export class RenderContext {
       this.defaultFallbackFont,
       this.allowHtmlBlocks,
       this.customBlockHtml,
+      this.socialIconsBaseUrl,
     );
   }
 

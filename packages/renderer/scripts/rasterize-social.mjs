@@ -1,7 +1,24 @@
-/**
- * Social icon SVG path data and brand colors for all supported platforms.
- */
-export const SOCIAL_ICONS: Record<string, { path: string; color: string }> = {
+// Rasterizes the social icon SVG source into PNGs that ship with the npm
+// tarball (jsdelivr serves them at the version-pinned URL referenced by
+// `DEFAULT_SOCIAL_ICONS_BASE_URL`). Runs as part of `pnpm build`.
+//
+// PNGs are derived artifacts — not committed to git. SVG path + brand color
+// data below is the source of truth.
+//
+// Outputs `assets/social/{style}/{platform}.png` at 192×192 (8× retina for
+// the default 24px display size; scales cleanly to 48px).
+
+import { renderAsync } from "@resvg/resvg-js";
+import { mkdir, writeFile, rm } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const OUT_DIR = resolve(__dirname, "../assets/social");
+const RENDER_SIZE = 192;
+const VIEW_SIZE = 24;
+
+const SOCIAL_ICONS = {
   facebook: {
     path: "M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z",
     color: "#1877F2",
@@ -68,56 +85,77 @@ export const SOCIAL_ICONS: Record<string, { path: string; color: string }> = {
   },
 };
 
-/**
- * Generate a base64-encoded SVG data URI for a social icon.
- * Ported from SocialIconSvgGenerator.php.
- */
-export function generateSocialIconDataUri(
-  platform: string,
-  style: string,
-  size: number,
-): string {
-  const iconData = SOCIAL_ICONS[platform];
-  const path = iconData?.path ?? "";
-  const brandColor = iconData?.color ?? "#6B7280";
+const STYLES = ["solid", "outlined", "rounded", "square", "circle"];
 
-  if (path === "") {
-    return "";
-  }
-
-  // Only outlined style has transparent bg with colored icon
-  // All other styles (solid, rounded, square, circle) have colored bg with white icon
+function buildSvg(platform, style) {
+  const { path, color } = SOCIAL_ICONS[platform];
   const isOutlined = style === "outlined";
-  const iconColor = isOutlined ? brandColor : "#ffffff";
+  const iconColor = isOutlined ? color : "#ffffff";
 
-  // Border radius values proportional to editor (based on 24x24 viewBox)
-  let bgShape: string;
+  let bgShape;
   switch (style) {
     case "circle":
-      bgShape = `<circle cx="12" cy="12" r="12" fill="${brandColor}"/>`;
+      bgShape = `<circle cx="12" cy="12" r="12" fill="${color}"/>`;
       break;
     case "rounded":
-      bgShape = `<rect width="24" height="24" rx="6" fill="${brandColor}"/>`;
+      bgShape = `<rect width="24" height="24" rx="6" fill="${color}"/>`;
       break;
     case "square":
-      bgShape = `<rect width="24" height="24" rx="0" fill="${brandColor}"/>`;
+      bgShape = `<rect width="24" height="24" rx="0" fill="${color}"/>`;
       break;
     case "outlined":
-      bgShape = `<rect width="22" height="22" x="1" y="1" rx="3" fill="transparent" stroke="${brandColor}" stroke-width="2"/>`;
+      bgShape = `<rect width="22" height="22" x="1" y="1" rx="3" fill="transparent" stroke="${color}" stroke-width="2"/>`;
       break;
     default:
-      bgShape = `<rect width="24" height="24" rx="3" fill="${brandColor}"/>`;
+      bgShape = `<rect width="24" height="24" rx="3" fill="${color}"/>`;
       break;
   }
 
-  // Icon size = 60% of container (matching editor's Math.floor(size * 0.6))
-  // In 24x24 viewBox: 60% = 14.4, so translate by (24-14.4)/2 = 4.8 and scale by 0.6
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}">` +
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VIEW_SIZE} ${VIEW_SIZE}" width="${VIEW_SIZE}" height="${VIEW_SIZE}">` +
     bgShape +
     `<g transform="translate(4.8, 4.8) scale(0.6)">` +
     `<path d="${path}" fill="${iconColor}"/>` +
-    `</g></svg>`;
-
-  return "data:image/svg+xml;base64," + btoa(svg);
+    `</g></svg>`
+  );
 }
+
+async function renderOne(platform, style, styleDir) {
+  const svg = buildSvg(platform, style);
+  const rendered = await renderAsync(svg, {
+    fitTo: { mode: "width", value: RENDER_SIZE },
+    shapeRendering: 2,
+    textRendering: 2,
+    imageRendering: 0,
+  });
+  await writeFile(resolve(styleDir, `${platform}.png`), rendered.asPng());
+}
+
+async function main() {
+  const start = performance.now();
+  await rm(OUT_DIR, { recursive: true, force: true });
+
+  await Promise.all(
+    STYLES.map((style) =>
+      mkdir(resolve(OUT_DIR, style), { recursive: true }),
+    ),
+  );
+
+  const platforms = Object.keys(SOCIAL_ICONS);
+  const jobs = [];
+  for (const style of STYLES) {
+    const styleDir = resolve(OUT_DIR, style);
+    for (const platform of platforms) {
+      jobs.push(renderOne(platform, style, styleDir));
+    }
+  }
+  await Promise.all(jobs);
+
+  const ms = Math.round(performance.now() - start);
+  console.log(`rasterize-social: wrote ${jobs.length} PNGs in ${ms}ms`);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
