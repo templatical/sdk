@@ -102,3 +102,49 @@ describe("block chrome structure", () => {
     expect(popoverBlock).not.toMatch(/z-index:\s*var\(--z-modal\)/);
   });
 });
+
+describe("section drag + cycle defenses", () => {
+  const sectionBlock = readFileSync(
+    join(SRC, "components/blocks/SectionBlock.vue"),
+    "utf8",
+  );
+  const blockWrapper = readFileSync(
+    join(SRC, "components/blocks/BlockWrapper.vue"),
+    "utf8",
+  );
+
+  it("inner section VueDraggable uses `force-fallback`", () => {
+    // Chrome's strict HTML5 native-drag chain check (a `draggable=\"false\"`
+    // ancestor blocks the drag) combined with nested Sortable instances
+    // makes the section's inner draggable fail without fallback mode.
+    // `force-fallback` makes Sortable simulate drag via pointer events,
+    // bypassing the native-drag attribute walk and the nested-instance
+    // contention that breaks Chrome drag inside sections.
+    expect(sectionBlock).toMatch(
+      /<VueDraggable[\s\S]*?:force-fallback="true"[\s\S]*?<\/VueDraggable>/,
+    );
+  });
+
+  it("`setColumnBlocks` deep-clones each block before writing to state", () => {
+    // vue-draggable-plus's emit can carry a back-reference (e.g. a Sortable
+    // expando on a DOM element) that ends up reachable from state.content.
+    // The deep clone here strips any non-Block fields before the array
+    // lands in editor state, preventing later `history.cloneContent` /
+    // JSON.stringify calls from hitting a cycle. Pair with the
+    // cycle-safe `cloneContent` in @templatical/core/history.ts.
+    expect(sectionBlock).toMatch(
+      /function setColumnBlocks[\s\S]*?JSON\.parse\(JSON\.stringify\(b\)\)[\s\S]*?editor\.updateBlock/,
+    );
+  });
+
+  it("`.tpl-block` keeps `draggable=\"false\"`", () => {
+    // Stops the browser from initiating native HTML5 drag on text/content
+    // areas inside a block — clicks on TipTap-edited text would otherwise
+    // race with editor selection and start a block-drag instead. Top-level
+    // sortable still works because its handle option uses Sortable's
+    // mousedown path; the section uses force-fallback for the same reason.
+    expect(blockWrapper).toMatch(
+      /class="tpl-block[\s\S]*?draggable="false"/,
+    );
+  });
+});
