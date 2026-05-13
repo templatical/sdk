@@ -100,11 +100,49 @@ describe("block chrome structure", () => {
     // The `.sortable-fallback` class is Sortable's default
     // `fallbackClass` applied to the ghost; this rule forces `transition`
     // and `animation` off so the ghost tracks 1:1.
+    //
+    // Regression: dropping !important from either declaration lets the
+    // inherited `transition-property: all; transition-duration: 120ms`
+    // from `.tpl\\:transition-all` win, and the ghost lags behind the
+    // cursor by ~120ms (visible as a noticeable trail when dragging
+    // fast). The `animation: none` covers a parallel case where the
+    // source has a keyframe animation (e.g. `tpl-fade-in`) that would
+    // also play on the cloned ghost.
     expect(styles).toMatch(
       /\.sortable-fallback\s*\{[^}]*transition:\s*none\s*!important/,
     );
     expect(styles).toMatch(
       /\.sortable-fallback\s*\{[^}]*animation:\s*none\s*!important/,
+    );
+  });
+
+  it("`.tpl-sidebar-rail .tpl-ghost` uses `visibility: hidden`, NOT `display: none`", () => {
+    // THIS RULE IS THE FIX FOR THE WORST DRAG REGRESSION WE HAD.
+    //
+    // Sortable.js `_dragStarted` (in fallback mode) applies the
+    // `ghostClass` (`tpl-ghost`) to `dragEl` BEFORE calling
+    // `_appendGhost`. `_appendGhost` then reads `dragEl`'s rect via
+    // `getBoundingClientRect()` to stamp the cursor-following ghost's
+    // initial `top` / `left` / `width` / `height`. If our CSS rule
+    // forces `dragEl` to `display: none` at that exact moment,
+    // `getBoundingClientRect()` returns ALL ZEROS — the ghost ends up
+    // at viewport `(0, 0)` with zero size, and the `transform`-based
+    // pointermove update translates it by `(cursor - tapEvt)` which
+    // lands it `tapEvt.x, tapEvt.y` away from the cursor. The
+    // misalignment grows linearly with the palette item's Y offset in
+    // the sidebar (~42px per index), which is the signature symptom.
+    //
+    // `visibility: hidden` keeps the element in layout — its rect stays
+    // valid — so the ghost is positioned correctly. Same for `opacity: 0`
+    // if anyone is tempted to switch.
+    //
+    // DO NOT REVERT TO `display: none`. This was a multi-hour
+    // debugging session.
+    expect(styles).toMatch(
+      /\.tpl-sidebar-rail\s+\.tpl-ghost\s*\{[^}]*visibility:\s*hidden\s*!important/,
+    );
+    expect(styles).not.toMatch(
+      /\.tpl-sidebar-rail\s+\.tpl-ghost\s*\{[^}]*display:\s*none/,
     );
   });
 
@@ -210,4 +248,82 @@ describe("section drag + cycle defenses", () => {
     );
   });
 
+  it("section's `put` predicate rejects nested section blocks", () => {
+    // Section blocks must never accept another section as a child — a
+    // nested section would create a column-inside-column layout that
+    // breaks the renderer + creates an infinite-nesting hazard for the
+    // history cycle defender. The `put` callback inspects
+    // `el.dataset.blockType` and returns false when the dragged item is
+    // a section. Don't change this predicate without updating the
+    // renderer + history defenses to cope with nested sections.
+    expect(sectionBlock).toMatch(
+      /put:\s*\([^)]*\)\s*=>\s*\n?\s*el\.dataset\.blockType\s*!==\s*['"]section['"]/,
+    );
+  });
+
+  it("all three Sortables wire `ghost-class` to the same `tpl-ghost` token", () => {
+    // The drop-insertion indicator CSS (`.tpl-ghost` thin dotted line +
+    // ::before "Drop here" badge in `styles/index.css`) is shared across
+    // every Sortable. If any Sortable uses a different ghostClass, its
+    // drop indicator silently disappears (default `sortable-ghost` has
+    // no editor-side styling). Also load-bearing for the
+    // `.tpl-sidebar-rail .tpl-ghost { visibility: hidden }` rule that
+    // hides the dragEl-with-ghost-class in the source list during drag
+    // — change the class name on the sidebar Sortable and that rule
+    // stops matching too.
+    expect(sidebar).toMatch(/ghost-class="tpl-ghost"/);
+    expect(canvas).toMatch(/ghost-class="tpl-ghost"/);
+    expect(sectionBlock).toMatch(/ghost-class="tpl-ghost"/);
+  });
+});
+
+describe("sidebar drag-during-collapse rect-capture defense", () => {
+  const sidebar = readFileSync(
+    join(SRC, "components/Sidebar.vue"),
+    "utf8",
+  );
+
+  it("declares an `isDragging` ref to guard mid-drag layout shifts", () => {
+    // The auto-hide rail collapses 200px → 48px on `mouseleave`. Without
+    // a guard, the cursor leaving the sidebar (toward the canvas) flips
+    // `isExpanded` and the rail's width transition starts BEFORE
+    // Sortable's `_appendGhost` reads `dragEl.getBoundingClientRect()`.
+    // The captured rect is mid-transition → ghost initially stamped at
+    // wrong width/position, visibly offset from the cursor. The
+    // `isDragging` ref locks `isExpanded` while a drag is in flight.
+    expect(sidebar).toMatch(/const\s+isDragging\s*=\s*ref\(false\)/);
+  });
+
+  it("`handleSidebarLeave` early-returns when `isDragging.value` is true", () => {
+    // The `@mouseleave` is wired to `handleSidebarLeave` (not directly
+    // to `isExpanded = false`) so the guard takes effect. Reverting to
+    // `@mouseleave="isExpanded = false"` re-opens the rect-capture race.
+    expect(sidebar).toMatch(
+      /function\s+handleSidebarLeave\s*\([^)]*\)[^{]*\{\s*[^}]*if\s*\(\s*isDragging\.value\s*\)\s*return/,
+    );
+    expect(sidebar).toMatch(/@mouseleave="handleSidebarLeave"/);
+  });
+
+  it("VueDraggable wires `@choose` (NOT `@start`) to flip the drag guard", () => {
+    // `choose` fires synchronously inside Sortable's `_onTapStart` on
+    // pointerdown. `start` fires only after the threshold-move
+    // dispatches `_dragStarted` — by which time the cursor has likely
+    // already left the sidebar and `mouseleave` has fired. Hooking
+    // `@start` re-opens the collapse race we're trying to close.
+    // Don't swap to `@start`.
+    expect(sidebar).toMatch(/@choose="handleDragChoose"/);
+    expect(sidebar).toMatch(
+      /function\s+handleDragChoose\s*\([^)]*\)[^{]*\{[^}]*isDragging\.value\s*=\s*true/,
+    );
+  });
+
+  it("VueDraggable wires `@end` to clear `isDragging`", () => {
+    // Without `@end`, `isDragging` would latch true after the first
+    // drag and the sidebar would never collapse again. `end` fires
+    // regardless of drop success or cancellation.
+    expect(sidebar).toMatch(/@end="handleDragEnd"/);
+    expect(sidebar).toMatch(
+      /function\s+handleDragEnd\s*\([^)]*\)[^{]*\{[^}]*isDragging\.value\s*=\s*false/,
+    );
+  });
 });
