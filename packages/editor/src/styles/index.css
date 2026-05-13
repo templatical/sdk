@@ -462,14 +462,39 @@
 
 /* The sidebar palette is drag-source-only (`put: false` + `sort: false`), so
    Sortable's ghost insertion line inside the palette list is misleading —
-   suggests the sidebar accepts drops when it cannot. Hide it. */
+   suggests the sidebar accepts drops when it cannot. Hide it.
+   IMPORTANT: must hide via `visibility: hidden`, NOT `display: none`. The
+   `ghostClass` (`tpl-ghost`) is applied to `dragEl` BEFORE Sortable's
+   `_appendGhost` runs in fallback mode. If this rule used `display: none`,
+   `getBoundingClientRect(dragEl)` inside `_appendGhost` would return all
+   zeros — the cursor-following fallback ghost ends up stamped with
+   `top: 0; left: 0; width: 0; height: 0` and visibly drifts away from
+   the cursor by the dragged palette item's Y position in the sidebar
+   (grows ~42px per item index). `visibility: hidden` keeps the element
+   in layout so the rect is accurate. */
 .tpl-sidebar-rail .tpl-ghost {
-    display: none !important;
+    visibility: hidden !important;
 }
 
 .tpl-dragging {
     @apply tpl:opacity-80;
     box-shadow: var(--tpl-shadow-xl);
+}
+
+/* Sortable.js's force-fallback ghost (default `fallbackClass:
+   sortable-fallback`). The ghost is a clone of the dragEl, so it inherits
+   the source element's classes — for the sidebar palette buttons that
+   means `tpl:transition-all tpl:duration-[120ms]` from Tailwind, which
+   silently animates the ghost's `transform` over 120ms on every
+   `pointermove`. The cursor outruns the animation and the ghost visibly
+   lags behind. Sortable clears the `transition` inline at ghost-create
+   time (`css(ghostEl, 'transition', '')`), but an empty inline value lets
+   the inherited class rule apply. Force `transition: none` here so the
+   transform tracks the cursor 1:1. Same logic for any `animation`
+   inherited from the source. */
+.sortable-fallback {
+    transition: none !important;
+    animation: none !important;
 }
 
 /* Keyboard-lifted state — block picked up via Space/Enter on drag handle */

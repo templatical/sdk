@@ -91,6 +91,23 @@ describe("block chrome structure", () => {
     );
   });
 
+  it("`.sortable-fallback` ghost has `transition: none` to track cursor 1:1", () => {
+    // Sortable's force-fallback ghost is a clone of the drag source. The
+    // sidebar palette buttons carry Tailwind's `transition-all
+    // duration-120ms` so the cloned ghost inherits it — every
+    // pointermove-driven `transform` update animates over 120ms instead
+    // of jumping, and the ghost visibly lags behind a moving cursor.
+    // The `.sortable-fallback` class is Sortable's default
+    // `fallbackClass` applied to the ghost; this rule forces `transition`
+    // and `animation` off so the ghost tracks 1:1.
+    expect(styles).toMatch(
+      /\.sortable-fallback\s*\{[^}]*transition:\s*none\s*!important/,
+    );
+    expect(styles).toMatch(
+      /\.sortable-fallback\s*\{[^}]*animation:\s*none\s*!important/,
+    );
+  });
+
   it("`.tpl-popover-root` uses a LITERAL z-index (not `var(--z-modal)`)", () => {
     // `@theme inline` emits `--z-modal` on `:root`, which is unreachable
     // from inside a shadow root. Reverting to `var(--z-modal)` drops the
@@ -115,47 +132,42 @@ describe("section drag + cycle defenses", () => {
     "utf8",
   );
 
-  it("editor stays on HTML5 Sortable; `.tpl-block` is drag-transparent", () => {
-    // We use HTML5 mode (no `force-fallback`) for all three lists
-    // (sidebar, canvas top-level, section column). Reasons:
-    //   1. Browser-native drag image follows the cursor correctly
-    //      — Sortable.js's force-fallback JS-managed ghost
-    //      mis-positions when the editor mounts in shadow DOM
-    //      (scoped CSS doesn't reach a ghost appended to document.body).
-    //   2. Sortable only binds `dragover`/`dragenter` on HTML5-mode
-    //      targets, so cross-list drag (sidebar → section) requires
-    //      all participants in the same mode. Forcing fallback
-    //      everywhere breaks the ghost visual; keeping HTML5
-    //      everywhere preserves it.
-    //
+  it("all three Sortables use force-fallback", () => {
     // ALL THREE Sortables (sidebar, canvas, section column) MUST use
-    // `:force-fallback="true"`. Reasons:
+    // `:force-fallback="true"`. Two reasons compose:
     //   1. Chrome's HTML5 native-drag mode silently fails to initiate
     //      drag from a child block's grip inside a SECTION column
-    //      (nested Sortable case). The mousedown + threshold-move
-    //      sequence runs Sortable's `_prepareDragStart` successfully —
-    //      `dragEl.draggable = true` is set on the inner v-for div, but
-    //      Chrome refuses to fire `dragstart`. Firefox fires it fine,
-    //      which is why this presented as "works in FF, not Chrome".
-    //      Removing every `draggable="false"` ancestor didn't help —
-    //      Chrome's refusal is independent of the false-ancestor abort
-    //      and isolated to deeply nested HTML5-mode Sortable scenarios.
-    //   2. Sortable.js binds `dragover`/`dragenter` listeners on its `el`
-    //      ONLY when `nativeDraggable=true` (HTML5 mode). With mixed
-    //      modes (one Sortable fallback, others HTML5), cross-list drops
-    //      INTO the fallback target from an HTML5 source fail because
-    //      no dragover ever fires on the fallback target's el. Putting
-    //      ALL three in fallback mode removes the mode mismatch.
-    //   3. Fallback mode emulates drag via pointer events. Sortable
-    //      handles its own cloned-element ghost (`tpl-ghost`) and
-    //      positions it via transforms. No native HTML5 drag image,
-    //      no native-drag chain check, no Chrome ancestor quirks.
+    //      (nested Sortable case). Sortable's `_prepareDragStart` runs
+    //      and sets `dragEl.draggable = true`, but Chrome refuses to
+    //      fire `dragstart`. Firefox fires it fine — presents as
+    //      "works in FF, not Chrome". Removing every `draggable="false"`
+    //      ancestor doesn't help; Chrome's refusal is independent and
+    //      isolated to deeply nested HTML5-mode Sortable scenarios.
+    //      Fallback mode bypasses native drag entirely.
+    //   2. Sortable.js binds `dragover`/`dragenter` listeners on its
+    //      `el` ONLY when `nativeDraggable=true` (HTML5 mode). Mixing
+    //      modes (e.g. HTML5 sidebar + fallback canvas) breaks
+    //      cross-list DROPS: the fallback target never receives drag-
+    //      over events from the HTML5 source. The "Drop here"
+    //      insertion indicator never appears and the block never lands.
+    //      Putting ALL Sortables in fallback mode means they coordinate
+    //      drag-over via Sortable's own pointer-event polling
+    //      (`_emulateDragOver`), which works cross-instance regardless
+    //      of which one is the source.
     //
-    // Trade-off: Playwright's `dragTo` emits HTML5 drag events only and
+    // Known visual quirk: in shadow-DOM mode the fallback ghost (a
+    // cloned DOM element positioned via inline transforms) can appear
+    // visually offset from the cursor for the SIDEBAR source. The drop
+    // indicator and actual drop ARE registered correctly on the
+    // target — the misalignment is cosmetic on the source side.
+    // Trade-off accepted: functional cross-list drops beat perfect
+    // ghost tracking. Switching the sidebar back to HTML5 fixes the
+    // ghost but kills the drop coordination.
+    //
+    // Playwright trade-off: `dragTo` emits HTML5 drag events only and
     // cannot drive a fallback-mode Sortable. E2E tests that depend on
-    // dragTo for canvas/section drops are `test.fixme()`'d with a
-    // Playwright/Sortable interop note. Manual mouse-step drag still
-    // works for playwright tests that need it.
+    // dragTo for drops are `test.fixme()`'d with a Playwright/Sortable
+    // interop note.
     expect(canvas).toMatch(/:force-fallback="true"/);
     expect(sidebar).toMatch(/:force-fallback="true"/);
     expect(sectionBlock).toMatch(/:force-fallback="true"/);
