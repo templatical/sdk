@@ -47,7 +47,23 @@ export function useHistory(options: UseHistoryOptions): UseHistoryReturn {
   const canRedo = computed(() => redoStack.value.length > 0);
 
   function cloneContent(): TemplateContent {
-    return JSON.parse(JSON.stringify(content.value)) as TemplateContent;
+    // Cycle-safe deep clone. A naked JSON.stringify throws
+    // `Converting circular structure to JSON` if anything in the tree
+    // is self-referencing — e.g. a DOM element with a Sortable expando
+    // back-ref ever sneaks into block data via a drag handler. We'd
+    // rather drop the back-ref from the snapshot than freeze the undo
+    // stack (the visible symptom: any subsequent mutation that calls
+    // `record()` throws, breaking clone/move/etc.).
+    const seen = new WeakSet<object>();
+    return JSON.parse(
+      JSON.stringify(content.value, (_key, value) => {
+        if (typeof value === "object" && value !== null) {
+          if (seen.has(value)) return undefined;
+          seen.add(value);
+        }
+        return value;
+      }),
+    ) as TemplateContent;
   }
 
   function pushToUndoStack(snapshot: TemplateContent): void {

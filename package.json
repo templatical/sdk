@@ -8,8 +8,8 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
-    "@playwright/mcp": "^0.0.70",
-    "@playwright/test": "^1.59.1",
+    "@playwright/mcp": "^0.0.75",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/vite": "^4.2.4",
     "@templatical/editor": "workspace:*",
     "@tiptap/extension-color": "^3.22.4",
@@ -34,7 +34,9 @@
   },
   "packageManager": "pnpm@10.33.2",
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   },
   "private": true,
   "scripts": {

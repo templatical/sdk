@@ -598,3 +598,57 @@ describe('moveBlock into section column', () => {
         }
     });
 });
+
+describe('findBlockLocation', () => {
+    it('returns location for a top-level block with no section parent', () => {
+        const content = createDefaultTemplateContent();
+        const blockA = createParagraphBlock({ content: '<p>A</p>' });
+        const blockB = createParagraphBlock({ content: '<p>B</p>' });
+        const blockC = createParagraphBlock({ content: '<p>C</p>' });
+        content.blocks = [blockA, blockB, blockC];
+        const editor = useEditor({ content });
+
+        const location = editor.findBlockLocation(blockB.id);
+        expect(location).toEqual({
+            targetSectionId: undefined,
+            columnIndex: undefined,
+            index: 1,
+        });
+    });
+
+    it('returns location for a block inside a section column', () => {
+        const content = createDefaultTemplateContent();
+        const childA = createParagraphBlock({ content: '<p>A</p>' });
+        const childB = createParagraphBlock({ content: '<p>B</p>' });
+        const section = createSectionBlock({ children: [[childA, childB]] });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        const location = editor.findBlockLocation(childB.id);
+        expect(location).toEqual({
+            targetSectionId: section.id,
+            columnIndex: 0,
+            index: 1,
+        });
+    });
+
+    it('distinguishes column index for blocks in different columns', () => {
+        const content = createDefaultTemplateContent();
+        const left = createParagraphBlock({ content: '<p>L</p>' });
+        const right = createParagraphBlock({ content: '<p>R</p>' });
+        const section = createSectionBlock({ children: [[left], [right]] });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        expect(editor.findBlockLocation(left.id)?.columnIndex).toBe(0);
+        expect(editor.findBlockLocation(right.id)?.columnIndex).toBe(1);
+    });
+
+    it('returns null for an unknown block id', () => {
+        const content = createDefaultTemplateContent();
+        content.blocks = [createParagraphBlock({ content: '<p>X</p>' })];
+        const editor = useEditor({ content });
+
+        expect(editor.findBlockLocation('does-not-exist')).toBeNull();
+    });
+});

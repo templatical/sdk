@@ -131,24 +131,115 @@ export class EditorPage {
     await this.dismissOverlays();
     const rail = this.page.locator(SELECTORS.sidebarRail);
     await rail.hover();
-    // Wait for expand — palette items become visible when rail is wide enough
-    // to show labels. We don't assert text since a block-type attribute is
-    // always present, so just let the rail settle for the hover transition.
     await expect(rail).toBeVisible();
+    // The rail width transition is 200ms (`Sidebar.vue` inline style).
+    // `rail.hover()` resolves on hover, NOT on transition completion, so
+    // a subsequent `boundingBox()` on a palette item can return a position
+    // mid-transition (rail width = ~113px while still growing from 48px to
+    // 200px). Drag handlers that mousedown using that box land on stale
+    // coordinates and the drop misses entirely. Poll until the rail
+    // settles at its full expanded width before returning.
+    await expect
+      .poll(
+        () =>
+          rail.evaluate(
+            (el) => (el as HTMLElement).getBoundingClientRect().width,
+          ),
+        { timeout: 1000 },
+      )
+      .toBeGreaterThan(180);
   }
 
   /**
-   * Drag a block from the sidebar palette onto the canvas.
+   * Mouse-step drag from a palette button to an arbitrary target. Used
+   * for ALL sidebar→canvas / sidebar→section flows.
+   *
+   * Why mouse-step instead of Playwright's `dragTo`: every `<VueDraggable>`
+   * in the editor runs with `:force-fallback="true"`. Sortable in
+   * fallback mode listens to pointer events and ignores native HTML5
+   * `dragstart`/`drop`, which is what `dragTo` emits. Driving the mouse
+   * manually with interpolated moves matches how a real user interacts
+   * and gives Sortable's pointermove polling enough frames to register
+   * the drag-start, the dragover hit-tests, and the drop.
+   */
+  private async pointerDriveFromPalette(
+    blockType: string,
+    target: { x: number; y: number },
+  ): Promise<void> {
+    const sidebarItem = this.page
+      .locator(SELECTORS.sidebarRail)
+      .locator(paletteByType(blockType));
+    await sidebarItem.scrollIntoViewIfNeeded();
+    const fromBox = await sidebarItem.boundingBox();
+    if (!fromBox) throw new Error(`Palette item ${blockType} not found`);
+
+    const startX = fromBox.x + fromBox.width / 2;
+    const startY = fromBox.y + fromBox.height / 2;
+
+    await this.page.mouse.move(startX, startY);
+    await this.page.mouse.down();
+    // Sortable.js gates drag-start on a small initial movement; tiny
+    // nudge fires the threshold check before the interpolated long move.
+    await this.page.mouse.move(startX + 4, startY + 4);
+    await this.page.mouse.move(target.x, target.y, { steps: 30 });
+    // Settle frames so Sortable's 50ms `_emulateDragOver` interval has a
+    // chance to resolve the drop target before mouseup commits.
+    await this.page.mouse.move(target.x, target.y);
+    await this.page.mouse.move(target.x, target.y);
+    await this.page.mouse.up();
+  }
+
+  /**
+   * Drag a block from the sidebar palette onto the canvas (appends to end).
    * Resolves when the canvas block count increases by one.
    */
   async dragBlockFromSidebar(blockType: string): Promise<void> {
     await this.hoverSidebar();
     const countBefore = await this.getBlocks().count();
-    const sidebarItem = this.page
-      .locator(SELECTORS.sidebarRail)
-      .locator(paletteByType(blockType));
-    const canvas = this.page.locator(SELECTORS.canvasBlocks);
-    await sidebarItem.dragTo(canvas);
+
+    // Aim at the last existing top-level block's bottom edge. The canvas
+    // can extend below the viewport on long templates, so picking a
+    // bottom-of-canvas coord risks landing offscreen where
+    // `document.elementFromPoint` can't find the canvas Sortable (drop
+    // never registers). Targeting the last in-viewport block guarantees
+    // a valid hit-test and uses Sortable's `invertSwap` zone on the
+    // existing block to position the new block right after it. On an
+    // empty canvas, fall back to the canvas's `.tpl-canvas-empty`
+    // dashed-box container which is guaranteed in viewport.
+    const topLevelBlocks = this.getTopLevelBlocks();
+    const topLevelCount = await topLevelBlocks.count();
+
+    if (topLevelCount === 0) {
+      const empty = this.page.locator(SELECTORS.canvasEmpty);
+      await empty.scrollIntoViewIfNeeded();
+      const emptyBox = await empty.boundingBox();
+      if (!emptyBox) throw new Error("Empty canvas bounds unavailable");
+      await this.pointerDriveFromPalette(blockType, {
+        x: emptyBox.x + emptyBox.width / 2,
+        y: emptyBox.y + emptyBox.height / 2,
+      });
+    } else {
+      // Aim at the last block's center. Sortable's force-fallback
+      // `_onDragOver` for a cross-list drop computes direction from
+      // cursor Y relative to the target's midpoint — bottom half means
+      // direction=1 (insert AFTER). Center is the most stable target
+      // because aiming at edges interacts with `invertSwap`/
+      // `invertedSwapThreshold` in non-obvious ways. The drop lands
+      // either AT the last block's position (swap) or right AFTER it,
+      // both of which keep the dragged block at top-level (not absorbed
+      // into a section). Callers asserting strict "appears at end"
+      // semantics should verify either the new last position OR the
+      // second-to-last (Sortable behavior varies by item geometry).
+      const lastBlock = topLevelBlocks.last();
+      await lastBlock.scrollIntoViewIfNeeded();
+      const lastBox = await lastBlock.boundingBox();
+      if (!lastBox) throw new Error("Last top-level block bounds unavailable");
+      await this.pointerDriveFromPalette(blockType, {
+        x: lastBox.x + lastBox.width / 2,
+        y: lastBox.y + lastBox.height / 2,
+      });
+    }
+
     await expect
       .poll(() => this.getBlocks().count(), { timeout: 5000 })
       .toBe(countBefore + 1);
@@ -165,22 +256,27 @@ export class EditorPage {
   ): Promise<void> {
     await this.hoverSidebar();
     const countBefore = await this.getBlocks().count();
-    const sidebarItem = this.page
-      .locator(SELECTORS.sidebarRail)
-      .locator(paletteByType(blockType));
     const targetBlock = this.getBlocks().nth(targetBlockIndex);
+    // Long templates can push the target out of viewport. The mouse-drive
+    // hit-test uses `document.elementFromPoint`, which only matches
+    // viewport-visible coordinates — so scroll the target into view first.
+    await targetBlock.scrollIntoViewIfNeeded();
     const targetBox = await targetBlock.boundingBox();
-    if (!targetBox) throw new Error(`Target block #${targetBlockIndex} not found`);
+    if (!targetBox)
+      throw new Error(`Target block #${targetBlockIndex} not found`);
 
-    await sidebarItem.dragTo(targetBlock, {
-      targetPosition: {
-        x: targetBox.width / 2,
-        y:
-          position === "before"
-            ? Math.max(4, targetBox.height * 0.1)
-            : targetBox.height - Math.max(4, targetBox.height * 0.1),
-      },
+    // Sortable's `invertSwap: true` + `invertedSwapThreshold: 0.65` means
+    // swap zones are the outer ~17.5% of each item — aim into that zone.
+    const targetY =
+      position === "before"
+        ? targetBox.y + Math.max(4, targetBox.height * 0.1)
+        : targetBox.y + targetBox.height - Math.max(4, targetBox.height * 0.1);
+
+    await this.pointerDriveFromPalette(blockType, {
+      x: targetBox.x + targetBox.width / 2,
+      y: targetY,
     });
+
     await expect
       .poll(() => this.getBlocks().count(), { timeout: 5000 })
       .toBe(countBefore + 1);
@@ -193,48 +289,52 @@ export class EditorPage {
     colIndex: number = 0,
   ): Promise<void> {
     await this.hoverSidebar();
-    const sidebarItem = this.page
-      .locator(SELECTORS.sidebarRail)
-      .locator(paletteByType(blockType));
-    const section = this.page.locator(blockByType("section")).nth(sectionIndex);
-    const columns = section.locator('[class*="tpl:min-h-"]');
-    const target = columns.nth(colIndex);
+    const section = this.page
+      .locator(blockByType("section"))
+      .nth(sectionIndex);
+    const target = this.getSectionColumn(sectionIndex, colIndex);
     const countBefore = await section.locator(SELECTORS.block).count();
-    // Section's draggable runs with `invertSwap: true` + `invertedSwapThreshold:
-    // 0.65`, so swap zones are the outer ~17.5% of each existing block.
-    // Aiming at the COLUMN's bottom 10% can land in column whitespace below
-    // the last item (column has `min-h-[60px]`, items may not fill it), which
-    // misses every swap zone. Aim at the last item's bottom 10% instead; for
-    // an empty column, aim at the column center where `emptyInsertThreshold`
-    // applies.
+
     const existingBlocks = this.getSectionColumnBlocks(sectionIndex, colIndex);
     const existingCount = await existingBlocks.count();
+    let targetPoint: { x: number; y: number };
     if (existingCount > 0) {
+      // Aim at the last existing item's center-50% — far enough from
+      // top/bottom edges that Sortable's `invertSwap` zones treat this
+      // as a clear "drop on this item, append after it" rather than a
+      // potentially-ambiguous edge swap. The `pull/put: true` cross-
+      // container path takes a different route than within-list swap
+      // anyway: when the source comes from outside this list, Sortable's
+      // `_onDragOver` calls `_insertion` directly based on
+      // `emptyInsertThreshold` + the item's `closest` lookup, not the
+      // invert-swap thresholds. Center-50% guarantees the elementFromPoint
+      // lands on the item, not on a neighboring item or whitespace.
       const lastBlock = existingBlocks.last();
+      await lastBlock.scrollIntoViewIfNeeded();
       const lastBox = await lastBlock.boundingBox();
       if (!lastBox)
         throw new Error(
-          `Section ${sectionIndex} col ${colIndex} last block bounding box unavailable`,
+          `Section ${sectionIndex} col ${colIndex} last block bounds unavailable`,
         );
-      await sidebarItem.dragTo(lastBlock, {
-        targetPosition: {
-          x: lastBox.width / 2,
-          y: lastBox.height - Math.max(4, lastBox.height * 0.1),
-        },
-      });
+      targetPoint = {
+        x: lastBox.x + lastBox.width / 2,
+        y: lastBox.y + lastBox.height / 2,
+      };
     } else {
+      // Empty column — aim at center where `emptyInsertThreshold` applies.
+      await target.scrollIntoViewIfNeeded();
       const targetBox = await target.boundingBox();
       if (!targetBox)
         throw new Error(
-          `Section ${sectionIndex} col ${colIndex} bounding box unavailable`,
+          `Section ${sectionIndex} col ${colIndex} bounds unavailable`,
         );
-      await sidebarItem.dragTo(target, {
-        targetPosition: {
-          x: targetBox.width / 2,
-          y: targetBox.height / 2,
-        },
-      });
+      targetPoint = {
+        x: targetBox.x + targetBox.width / 2,
+        y: targetBox.y + targetBox.height / 2,
+      };
     }
+
+    await this.pointerDriveFromPalette(blockType, targetPoint);
     await expect
       .poll(() => section.locator(SELECTORS.block).count(), { timeout: 5000 })
       .toBe(countBefore + 1);

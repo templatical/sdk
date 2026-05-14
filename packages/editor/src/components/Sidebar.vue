@@ -36,6 +36,31 @@ const showModulesSection = computed(
 );
 
 const isExpanded = ref(false);
+const isDragging = ref(false);
+
+function handleSidebarLeave(): void {
+  // Don't collapse while a Sortable drag is in progress. If the sidebar
+  // shrinks (200px → 48px) DURING the drag's threshold-to-dragStarted
+  // window, `dragEl.getBoundingClientRect()` returns a mid-transition
+  // rect when Sortable's `_appendGhost` runs — the fallback ghost gets
+  // stamped with that wrong rect and ends up visibly offset from the
+  // cursor for the rest of the drag. Cleared on drag-end.
+  if (isDragging.value) return;
+  isExpanded.value = false;
+}
+
+function handleDragChoose(): void {
+  // `choose` fires synchronously inside Sortable's `_onTapStart` at
+  // pointerdown, BEFORE any pointermove or mouseleave. `start` would be
+  // too late — it fires only after the threshold-move dispatches
+  // `_dragStarted`, by which time mouseleave may already have flipped
+  // `isExpanded` and the sidebar may be mid-collapse.
+  isDragging.value = true;
+}
+
+function handleDragEnd(): void {
+  isDragging.value = false;
+}
 
 const builtInBlockTypeOrder: string[] = [
   "section",
@@ -125,7 +150,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
         'width 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1)',
     }"
     @mouseenter="isExpanded = true"
-    @mouseleave="isExpanded = false"
+    @mouseleave="handleSidebarLeave"
     @focusin="isExpanded = true"
     @focusout="isExpanded = false"
   >
@@ -165,7 +190,10 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
       :sort="false"
       :animation="150"
       ghost-class="tpl-ghost"
+      :force-fallback="true"
       class="tpl:flex tpl:flex-col tpl:gap-0.5 tpl:p-1"
+      @choose="handleDragChoose"
+      @end="handleDragEnd"
     >
       <button
         v-for="blockType in blockTypes"

@@ -394,3 +394,71 @@ describe('setNavigating timeout', () => {
         }
     });
 });
+
+describe('cloneContent (cycle-safe)', () => {
+    // Regression: drag inside a section block via vue-draggable-plus can
+    // leak a Sortable expando back-ref (`HTMLDivElement.SortableXXX →
+    // instance → el → div`) into reactive content. A naked JSON.stringify
+    // would throw `Converting circular structure to JSON` and freeze every
+    // subsequent mutation (clone, move, etc.) because history.record()
+    // runs first. cloneContent must drop cycles instead of throwing.
+    it('survives a cycle in the content tree (drops the back-ref)', () => {
+        const content = ref<any>(createDefaultTemplateContent());
+        const para: any = createParagraphBlock();
+        // Simulate a Sortable-flavored cycle: an object on the block points
+        // back to itself through a property chain.
+        const sortableInstance: { el: unknown } = { el: null };
+        const fakeDiv: Record<string, unknown> = {
+            Sortable1: sortableInstance,
+        };
+        sortableInstance.el = fakeDiv;
+        para.leaked = fakeDiv;
+        content.value.blocks = [para];
+
+        const history = useHistory({ content, setContent: () => {} });
+
+        // Before: would throw `Converting circular structure to JSON`.
+        expect(() => history.record()).not.toThrow();
+        expect(history.canUndo.value).toBe(true);
+    });
+
+    it('preserves regular block data when stripping a cycle', () => {
+        const content = ref<any>(createDefaultTemplateContent());
+        const setContent = (c: any) => {
+            content.value = c;
+        };
+        const para: any = createParagraphBlock({ content: '<p>hello</p>' });
+        const ring: Record<string, unknown> = {};
+        ring.self = ring;
+        para.cyclic = ring;
+        content.value.blocks = [para];
+
+        const history = useHistory({ content, setContent });
+        history.record();
+
+        // Mutate content so undo has somewhere to go.
+        setContent({
+            ...content.value,
+            blocks: [createParagraphBlock({ content: '<p>changed</p>' })],
+        });
+
+        history.undo();
+        // The original block survives the snapshot/restore round-trip;
+        // only the cyclic back-ref gets dropped.
+        const restored: any = content.value.blocks[0];
+        expect(restored.type).toBe('paragraph');
+        expect(restored.content).toBe('<p>hello</p>');
+    });
+
+    it('does not affect non-cyclic content (sanity)', () => {
+        const content = ref<any>(createDefaultTemplateContent());
+        content.value.blocks = [
+            createParagraphBlock({ content: '<p>A</p>' }),
+            createParagraphBlock({ content: '<p>B</p>' }),
+        ];
+        const history = useHistory({ content, setContent: () => {} });
+
+        history.record();
+        expect(history.canUndo.value).toBe(true);
+    });
+});

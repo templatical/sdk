@@ -162,6 +162,11 @@ export interface BaseEditorReturn {
   ) => void;
   isBlockLocked: (blockId: string) => boolean;
   markDirty: () => void;
+  findBlockLocation: (blockId: string) => {
+    targetSectionId?: string;
+    columnIndex?: number;
+    index: number;
+  } | null;
 }
 
 export interface UseEditorCoreOptions {
@@ -271,6 +276,7 @@ export function useEditorCore(
     removeBlock: editor.removeBlock,
     updateBlock: editor.updateBlock,
     selectBlock: editor.selectBlock,
+    findBlockLocation: editor.findBlockLocation,
     blockDefaults: config.blockDefaults,
   });
 

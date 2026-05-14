@@ -6,10 +6,18 @@ export interface UseBlockActionsOptions {
     block: Block,
     targetSectionId?: string,
     columnIndex?: number,
+    index?: number,
   ) => void;
   removeBlock: (blockId: string) => void;
   updateBlock: (blockId: string, updates: Partial<Block>) => void;
   selectBlock: (blockId: string | null) => void;
+  /** Locate a block in the tree — used by `duplicateBlock` to insert the
+   *  clone right after the source instead of appending to the end. */
+  findBlockLocation?: (blockId: string) => {
+    targetSectionId?: string;
+    columnIndex?: number;
+    index: number;
+  } | null;
   blockDefaults?: BlockDefaults;
 }
 
@@ -35,7 +43,8 @@ export interface UseBlockActionsReturn {
 export function useBlockActions(
   options: UseBlockActionsOptions,
 ): UseBlockActionsReturn {
-  const { addBlock, removeBlock, updateBlock, selectBlock } = options;
+  const { addBlock, removeBlock, updateBlock, selectBlock, findBlockLocation } =
+    options;
 
   function createAndAddBlock(
     type: BlockType,
@@ -66,7 +75,24 @@ export function useBlockActions(
       );
     }
 
-    addBlock(cloned, targetSectionId, columnIndex);
+    // Insert directly after the source block. Explicit target args win;
+    // otherwise, resolve the source's location and bump index by 1. Falls
+    // back to appending at the end if location is unknown.
+    if (targetSectionId !== undefined || columnIndex !== undefined) {
+      addBlock(cloned, targetSectionId, columnIndex);
+    } else {
+      const sourceLocation = findBlockLocation?.(block.id) ?? null;
+      if (sourceLocation) {
+        addBlock(
+          cloned,
+          sourceLocation.targetSectionId,
+          sourceLocation.columnIndex,
+          sourceLocation.index + 1,
+        );
+      } else {
+        addBlock(cloned, targetSectionId, columnIndex);
+      }
+    }
     selectBlock(cloned.id);
     return cloned;
   }

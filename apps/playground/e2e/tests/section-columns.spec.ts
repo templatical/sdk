@@ -85,6 +85,10 @@ test.describe("Section columns", () => {
     editorReady: { editorPage },
     page,
   }) => {
+    // Sidebar→section column drop. `dragBlockFromSidebarToSection` now
+    // drives the mouse manually (Sortable runs in force-fallback mode
+    // which doesn't respond to Playwright's HTML5 `dragTo` — manual
+    // pointer drive is the supported pattern).
     const sections = page.locator(blockByType("section"));
     const sectionCount = await sections.count();
 

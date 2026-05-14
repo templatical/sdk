@@ -51,6 +51,11 @@ export interface UseEditorReturn {
   ) => void;
   savedBlockIds: Ref<Set<string>>;
   isBlockLocked: (blockId: string) => boolean;
+  findBlockLocation: (blockId: string) => {
+    targetSectionId?: string;
+    columnIndex?: number;
+    index: number;
+  } | null;
   create: (content?: TemplateContent) => Promise<Template>;
   load: (templateId: string) => Promise<Template>;
   save: () => Promise<Template>;
@@ -352,12 +357,29 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     state.isDirty = true;
   }
 
+  function findBlockLocation(blockId: string): {
+    targetSectionId?: string;
+    columnIndex?: number;
+    index: number;
+  } | null {
+    const parent = findBlockParent(state.content.blocks, blockId);
+    if (!parent) return null;
+    const index = parent.blocks.findIndex((b) => b.id === blockId);
+    if (index === -1) return null;
+    return {
+      targetSectionId: parent.sectionId,
+      columnIndex: parent.columnIndex,
+      index,
+    };
+  }
+
   return {
     state: readonly(state),
     content,
     selectedBlock,
     savedBlockIds,
     isBlockLocked,
+    findBlockLocation,
     setContent,
     selectBlock,
     setViewport,

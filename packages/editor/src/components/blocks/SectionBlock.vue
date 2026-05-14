@@ -71,11 +71,18 @@ function getColumnBlocks(colIndex: number): Block[] {
 }
 
 function setColumnBlocks(colIndex: number, blocks: Block[]): void {
+  // Strip non-Block fields (e.g., a DOM `.el` back-reference Sortable
+  // attaches to its list root expando) before the array lands in state.
+  // The block factories produce flat, JSON-clean shapes; rebuilding each
+  // entry as a plain object keeps the contract intact without a full
+  // deep clone and prevents `history.cloneContent` from later choking on
+  // a cyclic structure.
+  const safeBlocks = blocks.map((b) => JSON.parse(JSON.stringify(b)) as Block);
   const newChildren = [...props.block.children];
   while (newChildren.length <= colIndex) {
     newChildren.push([]);
   }
-  newChildren[colIndex] = blocks;
+  newChildren[colIndex] = safeBlocks;
   editor.updateBlock(props.block.id, { children: newChildren });
 }
 
@@ -125,9 +132,12 @@ function handleFetchData(
           }"
           :animation="150"
           ghost-class="tpl-ghost"
+          drag-class="tpl-dragging"
+          handle=".tpl-block-btn"
           :invert-swap="true"
           :inverted-swap-threshold="0.65"
           :empty-insert-threshold="20"
+          :force-fallback="true"
           class="tpl:min-h-[60px]"
           @update:model-value="(val: Block[]) => setColumnBlocks(colIndex, val)"
         >

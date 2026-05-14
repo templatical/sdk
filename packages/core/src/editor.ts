@@ -59,6 +59,11 @@ export interface UseEditorReturn {
   ) => void;
   isBlockLocked: (blockId: string) => boolean;
   markDirty: () => void;
+  findBlockLocation: (blockId: string) => {
+    targetSectionId?: string;
+    columnIndex?: number;
+    index: number;
+  } | null;
 }
 
 export function useEditor(options: UseEditorOptions): UseEditorReturn {
@@ -131,6 +136,22 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
 
   function isBlockLocked(blockId: string): boolean {
     return options.lockedBlocks?.value.has(blockId) ?? false;
+  }
+
+  function findBlockLocation(blockId: string): {
+    targetSectionId?: string;
+    columnIndex?: number;
+    index: number;
+  } | null {
+    const parent = findBlockParent(state.content.blocks, blockId);
+    if (!parent) return null;
+    const index = parent.blocks.findIndex((b) => b.id === blockId);
+    if (index === -1) return null;
+    return {
+      targetSectionId: parent.sectionId,
+      columnIndex: parent.columnIndex,
+      index,
+    };
   }
 
   // TODO(collab): the lock checks in addBlock/moveBlock/removeBlock/updateBlock
@@ -295,5 +316,6 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     removeBlock,
     moveBlock,
     markDirty,
+    findBlockLocation,
   };
 }

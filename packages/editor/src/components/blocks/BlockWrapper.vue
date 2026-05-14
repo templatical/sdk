@@ -128,7 +128,17 @@ const blockCommentCount = computed(
   () => caps.comments?.getBlockCount(props.block.id) ?? 0,
 );
 
-const wrapperStyle = computed(() => getBlockWrapperStyle(props.block));
+// Split the block style: margin stays on `.tpl-block` (so the block's flow
+// spacing in the canvas is unaffected), while padding + backgroundColor
+// move onto `.tpl-block-content`. Filter-based dark-mode preview targets
+// `.tpl-block-content` so the bg inverts together with its content.
+const wrapperStyle = computed(() => ({
+  margin: getBlockWrapperStyle(props.block).margin,
+}));
+const contentStyle = computed(() => {
+  const full = getBlockWrapperStyle(props.block);
+  return { padding: full.padding, backgroundColor: full.backgroundColor };
+});
 
 function handleClick(event: MouseEvent): void {
   if (props.previewMode) {
@@ -166,7 +176,6 @@ function handleConditionToggle(): void {
     :style="wrapperStyle"
     :data-block-id="block.id"
     :data-block-type="block.type"
-    draggable="false"
     @click="handleClick"
   >
     <BlockA11yBadge :block-id="block.id" />
@@ -258,7 +267,13 @@ function handleConditionToggle(): void {
         {{ blockCommentCount }}
       </button>
     </div>
-    <slot />
+    <!-- Email content wrapper — target for the canvas dark-mode preview
+         filter. Block chrome (action bar, indicators, overlays) is a
+         sibling of this wrapper, so the filter never reaches them — no
+         counter-filter needed and no toggle flicker. -->
+    <div class="tpl-block-content" :style="contentStyle">
+      <slot />
+    </div>
   </div>
 </template>
 

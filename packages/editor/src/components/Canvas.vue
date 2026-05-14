@@ -113,8 +113,10 @@ const viewportWidth = computed(() => {
 // Canvas dark mode preview: simulates how the email will appear in recipients'
 // dark-themed email clients. Uses CSS filter inversion — independent of the
 // editor UI theme (light/dark/auto) which is controlled via uiTheme config.
+// The email bg lives on the `.tpl-canvas-bg` sibling layer (so it can be
+// inverted by `filter` without trapping block chrome in a stacking context);
+// the `.tpl-canvas` itself stays transparent so the bg layer shows through.
 const canvasStyle = computed(() => ({
-  backgroundColor: props.content.settings.backgroundColor,
   fontFamily: props.content.settings.fontFamily,
 }));
 
@@ -186,18 +188,28 @@ function handleFetchData(
     data-testid="canvas-wrapper"
     role="region"
     :aria-label="t.landmarks.canvas"
-    class="tpl-canvas-wrapper tpl:rounded-lg"
+    class="tpl-canvas-wrapper tpl:relative tpl:rounded-lg"
     :style="{
       width: `${viewportWidth}px`,
-      backgroundColor: content.settings.backgroundColor,
       boxShadow: darkMode ? 'none' : 'var(--tpl-shadow-xl)',
-      filter: darkMode ? 'invert(1) hue-rotate(180deg)' : 'none',
-      transition:
-        'width 300ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 300ms ease',
+      transition: 'width 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
     }"
   >
+    <!-- Background layer — holds the email bg and the dark-preview filter.
+         Filter on this leaf layer (no descendants) does not create a
+         containing block / stacking context that would trap block chrome
+         (action bar, indicators) inside the wrapper. The filter has its
+         own transition so the canvas fades smoothly between modes. -->
     <div
-      class="tpl-canvas tpl:rounded-lg"
+      class="tpl-canvas-bg tpl:absolute tpl:inset-0 tpl:rounded-lg tpl:pointer-events-none"
+      :style="{
+        backgroundColor: content.settings.backgroundColor,
+        ...(darkMode ? { filter: 'invert(1) hue-rotate(180deg)' } : {}),
+        transition: 'filter 300ms ease',
+      }"
+    />
+    <div
+      class="tpl-canvas tpl:relative tpl:rounded-lg"
       :class="{
         'tpl-canvas--dark-mode': darkMode,
         'tpl-preview-mode': previewMode,
@@ -216,6 +228,7 @@ function handleFetchData(
         :inverted-swap-threshold="0.65"
         :disabled="previewMode"
         :draggable="'.tpl-block-item'"
+        :force-fallback="true"
         :class="[
           'tpl-canvas-blocks',
           isEmptyCanvas
@@ -356,15 +369,22 @@ function handleFetchData(
 </template>
 
 <style scoped>
-/* Counter-invert images so they look normal in dark mode */
-.tpl-canvas--dark-mode :deep(img) {
+/* Dark-mode preview: invert only top-level `.tpl-block-content`. Applying
+   filter to every `.tpl-block-content` would compound at nested levels
+   (sections wrapping child blocks) and cancel out — `:not(...)` restricts
+   it to outermost wrappers so the inversion is single-pass. Block chrome
+   (action bar, indicators, overlays) lives outside `.tpl-block-content`
+   and is therefore never filtered — no counter-filter / toggle flicker. */
+.tpl-canvas--dark-mode :deep(.tpl-block-content:not(.tpl-block-content *)) {
   filter: invert(1) hue-rotate(180deg);
 }
+:deep(.tpl-block-content) {
+  transition: filter 300ms ease;
+}
 
-/* Counter-invert editor UI chrome so controls stay readable */
-.tpl-canvas--dark-mode :deep(.tpl-block-actions),
-.tpl-canvas--dark-mode :deep(.tpl-condition-toggle),
-.tpl-canvas--dark-mode :deep(.tpl-block-hidden-overlay) {
+/* Counter-invert images so they look normal inside the inverted block
+   content layer (canonical CSS-filter dark-mode trick). */
+.tpl-canvas--dark-mode :deep(.tpl-block-content img) {
   filter: invert(1) hue-rotate(180deg);
 }
 </style>

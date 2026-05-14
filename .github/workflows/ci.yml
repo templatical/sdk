@@ -81,7 +81,7 @@ jobs:
     # isn't cacheable across runs). Image tag must match the pinned
     # `@playwright/test` version in pnpm-lock.yaml.
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v1.60.0-jammy
     needs: [build]
     strategy:
       fail-fast: false
@@ -116,7 +116,7 @@ jobs:
     # Same rationale as the `e2e` job — use the Playwright image to skip
     # the system-dep install step.
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v1.60.0-jammy
     needs: [build]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
