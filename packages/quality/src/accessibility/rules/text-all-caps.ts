@@ -3,7 +3,7 @@ import type { Rule, RuleMeta } from "../../types";
 import { extractText } from "../../html-utils";
 
 export const meta: RuleMeta = {
-  id: "text-all-caps",
+  id: "a11y.text-all-caps",
   severity: "warning",
 };
 

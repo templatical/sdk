@@ -3,7 +3,7 @@ import type { Rule, RuleMeta } from "../../types";
 import { getContrastRatio } from "../../contrast";
 
 export const meta: RuleMeta = {
-  id: "button-low-contrast",
+  id: "a11y.button-low-contrast",
   severity: "error",
 };
 

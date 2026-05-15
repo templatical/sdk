@@ -592,17 +592,17 @@ export default {
     retry: "Retry",
   },
 
-  accessibility: {
-    panelTitle: "Accessibility",
-    panelTabLabel: "Accessibility",
+  issues: {
+    panelTitle: "Issues",
+    panelTabLabel: "Issues",
     groupErrors: "Errors",
     groupWarnings: "Warnings",
     groupInfo: "Info",
     jump: "Jump to block",
     fix: "Fix",
-    emptyState: "No accessibility issues — looking good.",
-    badgeError: "Has accessibility errors",
-    badgeWarning: "Has accessibility warnings",
-    issueCountTooltip: "{count} accessibility issue(s)",
+    emptyState: "No issues — looking good.",
+    badgeError: "Has errors",
+    badgeWarning: "Has warnings",
+    issueCountTooltip: "{count} issue(s)",
   },
 };

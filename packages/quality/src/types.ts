@@ -7,33 +7,34 @@ import type {
 
 export type Severity = "error" | "warning" | "info" | "off";
 
-export interface A11yIssue {
+export interface LintIssue {
   /** Block id, or null for template-level issues. */
   blockId: string | null;
   ruleId: string;
   severity: Exclude<Severity, "off">;
   message: string;
-  fix?: A11yPatch;
+  fix?: LintPatch;
 }
 
-export interface A11yPatchContext {
+export interface LintPatchContext {
   updateBlock: (blockId: string, patch: Partial<Block>) => void;
   updateSettings: (patch: Partial<TemplateSettings>) => void;
+  removeBlock: (blockId: string) => void;
 }
 
-export interface A11yPatch {
+export interface LintPatch {
   description: string;
-  apply: (ctx: A11yPatchContext) => void;
+  apply: (ctx: LintPatchContext) => void;
 }
 
-export interface A11yThresholds {
+export interface LintThresholds {
   altMaxLength: number;
   minFontSize: number;
   allCapsMinLength: number;
   minTouchTargetPx: number;
 }
 
-export interface A11yOptions {
+export interface LintOptions {
   /**
    * Fully disable linting. When true, the editor skips lazy-loading the
    * package, hides the sidebar tab, and suppresses inline badges.
@@ -43,13 +44,13 @@ export interface A11yOptions {
   locale?: string;
   /** Per-rule severity override. Set to `'off'` to disable a specific rule. */
   rules?: Record<string, Severity>;
-  thresholds?: Partial<A11yThresholds>;
+  thresholds?: Partial<LintThresholds>;
 }
 
 export interface ResolvedOptions {
   locale: string;
   rules: Record<string, Severity>;
-  thresholds: A11yThresholds;
+  thresholds: LintThresholds;
   /** Returns the effective severity for a rule (override or default). */
   severity: (ruleId: string) => Severity;
 }
@@ -82,7 +83,7 @@ export interface RuleHit {
   blockId: string | null;
   /** Interpolation values for the rule's localized message template. */
   params?: Record<string, string | number>;
-  fix?: A11yPatch;
+  fix?: LintPatch;
 }
 
 export interface Rule {
@@ -97,7 +98,7 @@ export interface Rule {
   template?: (content: TemplateContent, opts: ResolvedOptions) => RuleHit[];
 }
 
-export const DEFAULT_THRESHOLDS: A11yThresholds = {
+export const DEFAULT_A11Y_THRESHOLDS: LintThresholds = {
   altMaxLength: 125,
   minFontSize: 14,
   allCapsMinLength: 20,

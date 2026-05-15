@@ -94,9 +94,10 @@ export interface TemplaticalCloudEditorConfig {
   onBeforeTestEmail?: (html: string) => string | Promise<string>;
 
   /**
-   * Accessibility linter (`@templatical/quality`) configuration. Cloud
+   * Template linter (`@templatical/quality`) configuration. Runs every
+   * linter exported by the package (accessibility + structure). Cloud
    * additionally merges `planConfig.accessibility` from the server (server
    * policy wins on conflict) — this option sets the consumer-supplied baseline.
    */
-  accessibility?: import("@templatical/quality").A11yOptions;
+  lint?: import("@templatical/quality").LintOptions;
 }

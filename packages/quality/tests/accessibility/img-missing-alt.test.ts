@@ -10,11 +10,11 @@ function lintFor(block: ReturnType<typeof createImageBlock>) {
   content.settings.preheaderText = "x";
   content.blocks = [block];
   return lintAccessibility(content).filter(
-    (i) => i.ruleId === "img-missing-alt",
+    (i) => i.ruleId === "a11y.img-missing-alt",
   );
 }
 
-describe("img-missing-alt", () => {
+describe("a11y.img-missing-alt", () => {
   it("fires when alt is empty and image has src", () => {
     const block = createImageBlock({ src: "hero.png", alt: "" });
     const issues = lintFor(block);
@@ -53,8 +53,8 @@ describe("img-missing-alt", () => {
     content.settings.preheaderText = "x";
     content.blocks = [block];
     const issues = lintAccessibility(content, {
-      rules: { "img-missing-alt": "warning" },
-    }).filter((i) => i.ruleId === "img-missing-alt");
+      rules: { "a11y.img-missing-alt": "warning" },
+    }).filter((i) => i.ruleId === "a11y.img-missing-alt");
     expect(issues[0].severity).toBe("warning");
   });
 
@@ -64,8 +64,8 @@ describe("img-missing-alt", () => {
     content.settings.preheaderText = "x";
     content.blocks = [block];
     const issues = lintAccessibility(content, {
-      rules: { "img-missing-alt": "off" },
-    }).filter((i) => i.ruleId === "img-missing-alt");
+      rules: { "a11y.img-missing-alt": "off" },
+    }).filter((i) => i.ruleId === "a11y.img-missing-alt");
     expect(issues).toEqual([]);
   });
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject } from "vue";
 import {
-  Accessibility,
+  ListChecks,
   AlertCircle,
   AlertTriangle,
   Info,
@@ -9,11 +9,11 @@ import {
   Wrench,
 } from "@lucide/vue";
 import { useI18n } from "../../composables/useI18n";
-import { ACCESSIBILITY_LINT_KEY, EDITOR_KEY } from "../../keys";
-import type { A11yIssue } from "../../composables/useAccessibilityLint";
+import { TEMPLATE_LINT_KEY, EDITOR_KEY } from "../../keys";
+import type { LintIssue } from "../../composables/useTemplateLint";
 
 const { t, format } = useI18n();
-const lint = inject(ACCESSIBILITY_LINT_KEY, null);
+const lint = inject(TEMPLATE_LINT_KEY, null);
 const editor = inject(EDITOR_KEY, null);
 
 const errors = computed(() =>
@@ -30,12 +30,12 @@ const totalCount = computed(
   () => errors.value.length + warnings.value.length + infos.value.length,
 );
 
-function jumpTo(issue: A11yIssue): void {
+function jumpTo(issue: LintIssue): void {
   if (!editor) return;
   if (issue.blockId) editor.selectBlock(issue.blockId);
 }
 
-function applyFix(issue: A11yIssue): void {
+function applyFix(issue: LintIssue): void {
   lint?.applyFix(issue);
 }
 </script>
@@ -43,18 +43,16 @@ function applyFix(issue: A11yIssue): void {
 <template>
   <div class="tpl:flex tpl:flex-col tpl:gap-4 tpl:p-4">
     <header class="tpl:flex tpl:items-center tpl:gap-2">
-      <Accessibility :size="16" :stroke-width="1.5" />
+      <ListChecks :size="16" :stroke-width="1.5" />
       <h3
         class="tpl:m-0 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
       >
-        {{ t.accessibility.panelTitle }}
+        {{ t.issues.panelTitle }}
       </h3>
       <span
         v-if="totalCount > 0"
         class="tpl:ml-auto tpl:rounded-full tpl:bg-[var(--tpl-bg-hover)] tpl:px-2 tpl:py-0.5 tpl:text-[11px] tpl:text-[var(--tpl-text-muted)]"
-        :title="
-          format(t.accessibility.issueCountTooltip, { count: totalCount })
-        "
+        :title="format(t.issues.issueCountTooltip, { count: totalCount })"
       >
         {{ totalCount }}
       </span>
@@ -71,7 +69,7 @@ function applyFix(issue: A11yIssue): void {
       v-else-if="totalCount === 0"
       class="tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-3 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
     >
-      {{ t.accessibility.emptyState }}
+      {{ t.issues.emptyState }}
     </div>
 
     <template v-else>
@@ -79,21 +77,21 @@ function applyFix(issue: A11yIssue): void {
         v-for="group in [
           {
             key: 'errors',
-            title: t.accessibility.groupErrors,
+            title: t.issues.groupErrors,
             icon: AlertCircle,
             items: errors,
             tone: 'tpl:text-[var(--tpl-danger)]',
           },
           {
             key: 'warnings',
-            title: t.accessibility.groupWarnings,
+            title: t.issues.groupWarnings,
             icon: AlertTriangle,
             items: warnings,
             tone: 'tpl:text-[var(--tpl-warning)]',
           },
           {
             key: 'info',
-            title: t.accessibility.groupInfo,
+            title: t.issues.groupInfo,
             icon: Info,
             items: infos,
             tone: 'tpl:text-[var(--tpl-text-muted)]',
@@ -137,7 +135,7 @@ function applyFix(issue: A11yIssue): void {
                 @click="jumpTo(issue)"
               >
                 <ArrowRight :size="10" :stroke-width="2" />
-                {{ t.accessibility.jump }}
+                {{ t.issues.jump }}
               </button>
               <button
                 v-if="issue.fix"
@@ -147,7 +145,7 @@ function applyFix(issue: A11yIssue): void {
                 @click="applyFix(issue)"
               >
                 <Wrench :size="10" :stroke-width="2" />
-                {{ t.accessibility.fix }}
+                {{ t.issues.fix }}
               </button>
             </div>
           </li>

@@ -2,13 +2,13 @@
 import TemplateSettingsPanel from "./TemplateSettings.vue";
 import Toolbar from "./Toolbar.vue";
 import { useI18n } from "../composables/useI18n";
-import { ACCESSIBILITY_LINT_KEY } from "../keys";
+import { TEMPLATE_LINT_KEY } from "../keys";
 import type { Block, TemplateSettings } from "@templatical/types";
-import { Accessibility, LayoutTemplate, PanelTop, Settings } from "@lucide/vue";
+import { ListChecks, LayoutTemplate, PanelTop, Settings } from "@lucide/vue";
 import { computed, defineAsyncComponent, inject, ref, watch } from "vue";
 
-const AccessibilityPanel = defineAsyncComponent(
-  () => import("./sidebar/AccessibilityPanel.vue"),
+const IssuesPanel = defineAsyncComponent(
+  () => import("./sidebar/IssuesPanel.vue"),
 );
 
 const props = defineProps<{
@@ -26,12 +26,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-type Tab = "content" | "settings" | "accessibility";
+type Tab = "content" | "settings" | "issues";
 const activeTab = ref<Tab>("content");
 
-const lint = inject(ACCESSIBILITY_LINT_KEY, null);
-const a11yEnabled = computed(() => lint !== null);
-const a11yIssueCount = computed(() => lint?.issues.value.length ?? 0);
+const lint = inject(TEMPLATE_LINT_KEY, null);
+const lintEnabled = computed(() => lint !== null);
+const issueCount = computed(() => lint?.issues.value.length ?? 0);
 
 function tabClass(tab: Tab): string {
   const isActive = activeTab.value === tab;
@@ -103,27 +103,27 @@ watch(
         <span v-if="activeTab === 'settings'">{{ t.sidebar.settings }}</span>
       </button>
       <button
-        v-if="a11yEnabled"
-        id="tpl-tab-accessibility"
+        v-if="lintEnabled"
+        id="tpl-tab-issues"
         role="tab"
-        :aria-selected="activeTab === 'accessibility'"
-        aria-controls="tpl-tabpanel-accessibility"
-        :aria-label="t.accessibility.panelTabLabel"
-        :title="t.accessibility.panelTabLabel"
+        :aria-selected="activeTab === 'issues'"
+        aria-controls="tpl-tabpanel-issues"
+        :aria-label="t.issues.panelTabLabel"
+        :title="t.issues.panelTabLabel"
         class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]"
-        :class="tabClass('accessibility')"
-        :style="tabStyle('accessibility')"
-        @click="activeTab = 'accessibility'"
+        :class="tabClass('issues')"
+        :style="tabStyle('issues')"
+        @click="activeTab = 'issues'"
       >
-        <Accessibility :size="14" :stroke-width="1.5" />
-        <span v-if="activeTab === 'accessibility'">
-          {{ t.accessibility.panelTabLabel }}
+        <ListChecks :size="14" :stroke-width="1.5" />
+        <span v-if="activeTab === 'issues'">
+          {{ t.issues.panelTabLabel }}
         </span>
         <span
-          v-if="a11yIssueCount > 0"
+          v-if="issueCount > 0"
           class="tpl:ml-1 tpl:rounded-full tpl:bg-[var(--tpl-bg-hover)] tpl:px-1.5 tpl:text-[10px]"
         >
-          {{ a11yIssueCount }}
+          {{ issueCount }}
         </span>
       </button>
     </div>
@@ -174,13 +174,13 @@ watch(
     </div>
 
     <div
-      v-if="activeTab === 'accessibility' && a11yEnabled"
-      id="tpl-tabpanel-accessibility"
+      v-if="activeTab === 'issues' && lintEnabled"
+      id="tpl-tabpanel-issues"
       role="tabpanel"
-      aria-labelledby="tpl-tab-accessibility"
+      aria-labelledby="tpl-tab-issues"
       class="tpl:flex tpl:flex-1 tpl:flex-col tpl:overflow-y-auto"
     >
-      <AccessibilityPanel />
+      <IssuesPanel />
     </div>
   </aside>
 </template>

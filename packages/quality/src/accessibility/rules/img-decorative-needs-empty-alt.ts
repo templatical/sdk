@@ -2,7 +2,7 @@ import { isImage } from "@templatical/types";
 import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
-  id: "img-decorative-needs-empty-alt",
+  id: "a11y.img-decorative-needs-empty-alt",
   severity: "info",
 };
 

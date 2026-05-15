@@ -13,8 +13,8 @@ import {
 import { computed, defineAsyncComponent, inject, nextTick, ref } from "vue";
 import { getBlockWrapperStyle } from "../../utils/blockComponentResolver";
 
-const BlockA11yBadge = defineAsyncComponent(
-  () => import("../canvas/BlockA11yBadge.vue"),
+const BlockIssueBadge = defineAsyncComponent(
+  () => import("../canvas/BlockIssueBadge.vue"),
 );
 import {
   BLOCK_ACTIONS_KEY,
@@ -178,7 +178,7 @@ function handleConditionToggle(): void {
     :data-block-type="block.type"
     @click="handleClick"
   >
-    <BlockA11yBadge :block-id="block.id" />
+    <BlockIssueBadge :block-id="block.id" />
     <!-- Floating action bar — positioned to the right of selected block -->
     <div
       v-if="isSelected"

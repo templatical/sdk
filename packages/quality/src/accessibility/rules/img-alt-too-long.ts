@@ -2,7 +2,7 @@ import { isImage } from "@templatical/types";
 import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
-  id: "img-alt-too-long",
+  id: "a11y.img-alt-too-long",
   severity: "warning",
 };
 

@@ -3,7 +3,7 @@ import type { Block } from "@templatical/types";
 import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
-  id: "text-too-small",
+  id: "a11y.text-too-small",
   severity: "warning",
 };
 

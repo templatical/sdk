@@ -3,7 +3,7 @@ import type { Block, TitleBlock, TemplateContent } from "@templatical/types";
 import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
-  id: "heading-multiple-h1",
+  id: "a11y.heading-multiple-h1",
   severity: "warning",
 };
 

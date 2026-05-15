@@ -9,14 +9,14 @@ import {
 } from "@templatical/types";
 import { lintAccessibility } from "../../src";
 
-describe("text-all-caps", () => {
+describe("a11y.text-all-caps", () => {
   function lint(html: string) {
     const block = createParagraphBlock({ content: html });
     const content = createDefaultTemplateContent();
     content.settings.preheaderText = "x";
     content.blocks = [block];
     return lintAccessibility(content).filter(
-      (i) => i.ruleId === "text-all-caps",
+      (i) => i.ruleId === "a11y.text-all-caps",
     );
   }
 
@@ -57,7 +57,7 @@ describe("text-all-caps", () => {
   });
 });
 
-describe("text-low-contrast", () => {
+describe("a11y.text-low-contrast", () => {
   function lintTitle(color: string, bg: string, level: 1 | 2 | 3 | 4 = 2) {
     const block = createTitleBlock({
       content: "<p>Hi</p>",
@@ -69,7 +69,7 @@ describe("text-low-contrast", () => {
     content.settings.backgroundColor = bg;
     content.blocks = [block];
     return lintAccessibility(content).filter(
-      (i) => i.ruleId === "text-low-contrast",
+      (i) => i.ruleId === "a11y.text-low-contrast",
     );
   }
 
@@ -105,14 +105,14 @@ describe("text-low-contrast", () => {
   });
 });
 
-describe("text-too-small", () => {
+describe("a11y.text-too-small", () => {
   it("fires for menu fontSize < 14", () => {
     const block = createMenuBlock({ fontSize: 12 });
     const content = createDefaultTemplateContent();
     content.settings.preheaderText = "x";
     content.blocks = [block];
     const issues = lintAccessibility(content).filter(
-      (i) => i.ruleId === "text-too-small",
+      (i) => i.ruleId === "a11y.text-too-small",
     );
     expect(issues).toHaveLength(1);
   });
@@ -123,7 +123,7 @@ describe("text-too-small", () => {
     content.settings.preheaderText = "x";
     content.blocks = [block];
     const issues = lintAccessibility(content).filter(
-      (i) => i.ruleId === "text-too-small",
+      (i) => i.ruleId === "a11y.text-too-small",
     );
     expect(issues).toHaveLength(1);
   });
@@ -134,7 +134,7 @@ describe("text-too-small", () => {
     content.settings.preheaderText = "x";
     content.blocks = [block];
     expect(
-      lintAccessibility(content).filter((i) => i.ruleId === "text-too-small"),
+      lintAccessibility(content).filter((i) => i.ruleId === "a11y.text-too-small"),
     ).toEqual([]);
   });
 
@@ -145,7 +145,7 @@ describe("text-too-small", () => {
     content.blocks = [createSectionBlock({ children: [[block]] })];
     const issues = lintAccessibility(content, {
       thresholds: { minFontSize: 16 },
-    }).filter((i) => i.ruleId === "text-too-small");
+    }).filter((i) => i.ruleId === "a11y.text-too-small");
     expect(issues).toHaveLength(1);
   });
 });

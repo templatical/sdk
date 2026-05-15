@@ -3,7 +3,7 @@ import type { Rule, RuleMeta } from "../../types";
 import { getDictionary } from "../dictionaries";
 
 export const meta: RuleMeta = {
-  id: "img-linked-no-context",
+  id: "a11y.img-linked-no-context",
   severity: "warning",
 };
 

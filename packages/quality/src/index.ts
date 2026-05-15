@@ -1,4 +1,5 @@
-export { lintAccessibility, RULES } from "./accessibility";
+export { lintAccessibility, ACCESSIBILITY_RULES } from "./accessibility";
+export { lintStructure, STRUCTURE_RULES } from "./structure";
 export { walkBlocks } from "./walk";
 export type { Visitor } from "./walk";
 export { getContrastRatio, parseHex, isOpaqueHex } from "./contrast";
@@ -15,12 +16,21 @@ export {
   SUPPORTED_MESSAGE_LOCALES,
 } from "./accessibility/messages";
 export type { MessageMap, RuleMessageId } from "./accessibility/messages";
+export {
+  formatStructureMessage,
+  getStructureMessages,
+  SUPPORTED_STRUCTURE_MESSAGE_LOCALES,
+} from "./structure/messages";
 export type {
-  A11yIssue,
-  A11yOptions,
-  A11yPatch,
-  A11yPatchContext,
-  A11yThresholds,
+  StructureMessageMap,
+  StructureRuleMessageId,
+} from "./structure/messages";
+export type {
+  LintIssue,
+  LintOptions,
+  LintPatch,
+  LintPatchContext,
+  LintThresholds,
   ResolvedOptions,
   Rule,
   RuleHit,
@@ -28,4 +38,4 @@ export type {
   Severity,
   WalkContext,
 } from "./types";
-export { DEFAULT_THRESHOLDS } from "./types";
+export { DEFAULT_A11Y_THRESHOLDS } from "./types";

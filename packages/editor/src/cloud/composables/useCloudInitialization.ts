@@ -36,7 +36,7 @@ import {
   useEditorCore,
   type UseEditorCoreReturn,
 } from "../../composables/useEditorCore";
-import { resolveAccessibilityOptions } from "../../utils/resolveAccessibilityOptions";
+import { resolveLintOptions } from "../../utils/resolveLintOptions";
 import { useDragDrop } from "../../composables/useDragDrop";
 import type { UseFontsReturn } from "../../composables/useFonts";
 import type { Translations } from "../../i18n";
@@ -275,7 +275,7 @@ export function useCloudInitialization(
       mergeTags: config.mergeTags,
       displayConditions: config.displayConditions,
       onRequestMedia: null, // cloud handles via mediaLib.handleRequestMedia
-      accessibility: resolveAccessibilityOptions(config),
+      lint: resolveLintOptions(config),
       onSave: () => {
         onSaveHook.value?.().catch((err) => {
           config.onError?.(err as Error);

@@ -7,48 +7,56 @@ import type {
 } from "@templatical/types";
 // Type-only import — runtime is dynamically loaded.
 import type {
-  A11yIssue,
-  A11yOptions,
-  lintAccessibility as LintFn,
+  LintIssue,
+  LintOptions,
+  lintAccessibility as LintAccessibilityFn,
+  lintStructure as LintStructureFn,
 } from "@templatical/quality";
 
-export type { A11yIssue, A11yOptions } from "@templatical/quality";
+export type { LintIssue, LintOptions } from "@templatical/quality";
 
-export interface UseAccessibilityLintOptions {
+export interface UseTemplateLintOptions {
   content: Ref<TemplateContent>;
-  options: A11yOptions;
+  options: LintOptions;
   updateBlock: (blockId: string, updates: Partial<Block>) => void;
   updateSettings: (updates: Partial<TemplateSettings>) => void;
+  removeBlock: (blockId: string) => void;
   /** Debounce in ms; defaults to 500 to match the plan. */
   debounce?: number;
 }
 
-export interface UseAccessibilityLintReturn {
-  issues: Ref<A11yIssue[]>;
+export interface UseTemplateLintReturn {
+  issues: Ref<LintIssue[]>;
   /** True once the quality package has been successfully imported. */
   ready: Ref<boolean>;
   /** True if the dynamic import failed (e.g. package not installed). */
   unavailable: Ref<boolean>;
-  applyFix: (issue: A11yIssue) => void;
+  applyFix: (issue: LintIssue) => void;
   destroy: () => void;
 }
 
+interface Loaded {
+  lintAccessibility: typeof LintAccessibilityFn;
+  lintStructure: typeof LintStructureFn;
+}
+
 /**
- * Live accessibility linting. Lazy-imports `@templatical/quality` on first
- * call so the OSS bundle pays nothing for the chunk until the user opens
- * the panel. Re-lints debounced (500ms default) on every content change.
+ * Live template linting. Runs every linter in `@templatical/quality`
+ * (accessibility + structure) on every content change, debounced 500ms.
+ * Lazy-imports the quality package on first call so the OSS bundle pays
+ * nothing for the chunk until linting actually starts.
  *
  * When `options.disabled === true`, the dynamic import is skipped entirely
  * and `issues` stays empty — saves the chunk download for consumers that
  * turn off the linter.
  */
-export function useAccessibilityLint(
-  opts: UseAccessibilityLintOptions,
-): UseAccessibilityLintReturn {
-  const issues = ref<A11yIssue[]>([]) as Ref<A11yIssue[]>;
+export function useTemplateLint(
+  opts: UseTemplateLintOptions,
+): UseTemplateLintReturn {
+  const issues = ref<LintIssue[]>([]) as Ref<LintIssue[]>;
   const ready = ref(false);
   const unavailable = ref(false);
-  const lintFn = shallowRef<typeof LintFn | null>(null);
+  const loaded = shallowRef<Loaded | null>(null);
 
   const disabled = opts.options.disabled === true;
 
@@ -66,7 +74,10 @@ export function useAccessibilityLint(
       // to avoid mutating dead refs and to avoid leaking a watcher that
       // destroy() can no longer reach.
       if (destroyed) return;
-      lintFn.value = mod.lintAccessibility;
+      loaded.value = {
+        lintAccessibility: mod.lintAccessibility,
+        lintStructure: mod.lintStructure,
+      };
       ready.value = true;
       runLint();
       stopWatch = watchDebounced(opts.content, runLint, {
@@ -82,8 +93,16 @@ export function useAccessibilityLint(
   }
 
   function runLint(): void {
-    if (!lintFn.value) return;
-    issues.value = lintFn.value(opts.content.value, opts.options);
+    if (!loaded.value) return;
+    const a11y = loaded.value.lintAccessibility(
+      opts.content.value,
+      opts.options,
+    );
+    const structure = loaded.value.lintStructure(
+      opts.content.value,
+      opts.options,
+    );
+    issues.value = [...a11y, ...structure];
   }
 
   // Re-run when severity overrides change at runtime (rare, but useful for
@@ -91,16 +110,17 @@ export function useAccessibilityLint(
   const stopOptionsWatch = watch(
     () => opts.options,
     () => {
-      if (lintFn.value) runLint();
+      if (loaded.value) runLint();
     },
     { deep: true },
   );
 
-  function applyFix(issue: A11yIssue): void {
+  function applyFix(issue: LintIssue): void {
     if (!issue.fix) return;
     issue.fix.apply({
       updateBlock: opts.updateBlock,
       updateSettings: opts.updateSettings,
+      removeBlock: opts.removeBlock,
     });
     // The content watcher will re-lint via the debounced watcher.
   }

@@ -3,7 +3,7 @@ import type { Block, TitleBlock, TemplateContent } from "@templatical/types";
 import type { Rule, RuleHit, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
-  id: "heading-skip-level",
+  id: "a11y.heading-skip-level",
   severity: "error",
 };
 

@@ -596,18 +596,18 @@ const ptBR: typeof en = {
     retry: "Tentar novamente",
   },
 
-  accessibility: {
-    panelTitle: "Acessibilidade",
-    panelTabLabel: "Acessibilidade",
+  issues: {
+    panelTitle: "Problemas",
+    panelTabLabel: "Problemas",
     groupErrors: "Erros",
     groupWarnings: "Avisos",
     groupInfo: "Informações",
     jump: "Ir para o bloco",
     fix: "Corrigir",
-    emptyState: "Nenhum problema de acessibilidade — tudo certo.",
-    badgeError: "Possui erros de acessibilidade",
-    badgeWarning: "Possui avisos de acessibilidade",
-    issueCountTooltip: "{count} problema(s) de acessibilidade",
+    emptyState: "Nenhum problema — tudo certo.",
+    badgeError: "Possui erros",
+    badgeWarning: "Possui avisos",
+    issueCountTooltip: "{count} problema(s)",
   },
 };
 

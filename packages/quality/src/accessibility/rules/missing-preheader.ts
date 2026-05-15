@@ -1,7 +1,7 @@
 import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
-  id: "missing-preheader",
+  id: "a11y.missing-preheader",
   severity: "info",
 };
 

@@ -14,84 +14,84 @@ function lint(html: string, opts?: Parameters<typeof lintAccessibility>[1]) {
   return { all: lintAccessibility(content, opts), block };
 }
 
-describe("link-vague-text", () => {
+describe("a11y.link-vague-text", () => {
   it("fires for 'Click here'", () => {
     const { all } = lint('<p><a href="/x">Click here</a></p>');
-    const issues = all.filter((i) => i.ruleId === "link-vague-text");
+    const issues = all.filter((i) => i.ruleId === "a11y.link-vague-text");
     expect(issues).toHaveLength(1);
     expect(issues[0].severity).toBe("warning");
   });
 
   it("fires for 'read more' (case insensitive)", () => {
     const { all } = lint('<p><a href="/x">READ MORE</a></p>');
-    expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
+    expect(all.filter((i) => i.ruleId === "a11y.link-vague-text")).toHaveLength(1);
   });
 
   it("does not fire for descriptive text", () => {
     const { all } = lint('<p><a href="/x">Buy spring sale tickets</a></p>');
-    expect(all.filter((i) => i.ruleId === "link-vague-text")).toEqual([]);
+    expect(all.filter((i) => i.ruleId === "a11y.link-vague-text")).toEqual([]);
   });
 
   it("uses German dictionary when locale=de", () => {
     const { all } = lint('<p><a href="/x">hier klicken</a></p>', {
       locale: "de",
     });
-    expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
+    expect(all.filter((i) => i.ruleId === "a11y.link-vague-text")).toHaveLength(1);
   });
 
   it("fires for vague phrase with trailing exclamation", () => {
     const { all } = lint('<p><a href="/x">Click here!</a></p>');
-    expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
+    expect(all.filter((i) => i.ruleId === "a11y.link-vague-text")).toHaveLength(1);
   });
 
   it("fires for vague phrase with trailing question mark", () => {
     const { all } = lint('<p><a href="/x">Click here?</a></p>');
-    expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
+    expect(all.filter((i) => i.ruleId === "a11y.link-vague-text")).toHaveLength(1);
   });
 
   it("fires for vague phrase with trailing ellipsis", () => {
     const { all } = lint('<p><a href="/x">Read more...</a></p>');
-    expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
+    expect(all.filter((i) => i.ruleId === "a11y.link-vague-text")).toHaveLength(1);
   });
 
   it("fires for vague phrase with leading arrow symbol", () => {
     const { all } = lint('<p><a href="/x">→ click here</a></p>');
-    expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
+    expect(all.filter((i) => i.ruleId === "a11y.link-vague-text")).toHaveLength(1);
   });
 
   it("fires for vague phrase with surrounding punctuation and whitespace", () => {
     const { all } = lint('<p><a href="/x">  »Click here«  </a></p>');
-    expect(all.filter((i) => i.ruleId === "link-vague-text")).toHaveLength(1);
+    expect(all.filter((i) => i.ruleId === "a11y.link-vague-text")).toHaveLength(1);
   });
 
   it("does not strip internal punctuation that changes meaning", () => {
     // "click, here" is not a vague phrase; only outer-only stripping.
     const { all } = lint('<p><a href="/x">click, here</a></p>');
-    expect(all.filter((i) => i.ruleId === "link-vague-text")).toEqual([]);
+    expect(all.filter((i) => i.ruleId === "a11y.link-vague-text")).toEqual([]);
   });
 });
 
-describe("link-href-empty", () => {
+describe("a11y.link-href-empty", () => {
   it("fires for empty href", () => {
     const { all } = lint('<p><a href="">Buy</a></p>');
-    expect(all.filter((i) => i.ruleId === "link-href-empty")).toHaveLength(1);
+    expect(all.filter((i) => i.ruleId === "a11y.link-href-empty")).toHaveLength(1);
   });
 
   it("fires for href='#'", () => {
     const { all } = lint('<p><a href="#">Buy</a></p>');
-    expect(all.filter((i) => i.ruleId === "link-href-empty")).toHaveLength(1);
+    expect(all.filter((i) => i.ruleId === "a11y.link-href-empty")).toHaveLength(1);
   });
 
   it("does not fire for real href", () => {
     const { all } = lint('<p><a href="/buy">Buy</a></p>');
-    expect(all.filter((i) => i.ruleId === "link-href-empty")).toEqual([]);
+    expect(all.filter((i) => i.ruleId === "a11y.link-href-empty")).toEqual([]);
   });
 });
 
-describe("link-target-blank-no-rel", () => {
+describe("a11y.link-target-blank-no-rel", () => {
   it("fires for target=_blank without rel", () => {
     const { all } = lint('<p><a href="/x" target="_blank">Buy</a></p>');
-    const issues = all.filter((i) => i.ruleId === "link-target-blank-no-rel");
+    const issues = all.filter((i) => i.ruleId === "a11y.link-target-blank-no-rel");
     expect(issues).toHaveLength(1);
     expect(issues[0].fix).toBeDefined();
   });
@@ -101,7 +101,7 @@ describe("link-target-blank-no-rel", () => {
       '<p><a href="/x" target="_blank" rel="noopener">Buy</a></p>',
     );
     expect(
-      all.filter((i) => i.ruleId === "link-target-blank-no-rel"),
+      all.filter((i) => i.ruleId === "a11y.link-target-blank-no-rel"),
     ).toEqual([]);
   });
 
@@ -110,14 +110,14 @@ describe("link-target-blank-no-rel", () => {
       '<p><a href="/x" target="_blank" rel="noreferrer">Buy</a></p>',
     );
     expect(
-      all.filter((i) => i.ruleId === "link-target-blank-no-rel"),
+      all.filter((i) => i.ruleId === "a11y.link-target-blank-no-rel"),
     ).toEqual([]);
   });
 
   it("does not fire when target is not _blank", () => {
     const { all } = lint('<p><a href="/x">Buy</a></p>');
     expect(
-      all.filter((i) => i.ruleId === "link-target-blank-no-rel"),
+      all.filter((i) => i.ruleId === "a11y.link-target-blank-no-rel"),
     ).toEqual([]);
   });
 
@@ -125,7 +125,7 @@ describe("link-target-blank-no-rel", () => {
     const { all, block } = lint(
       '<p><a href="/x" target="_blank">Buy</a></p>',
     );
-    const issue = all.find((i) => i.ruleId === "link-target-blank-no-rel")!;
+    const issue = all.find((i) => i.ruleId === "a11y.link-target-blank-no-rel")!;
     let patched: Partial<Block> | null = null;
     issue.fix!.apply({
       updateBlock: (id, patch) => {
@@ -143,7 +143,7 @@ describe("link-target-blank-no-rel", () => {
     const { all, block } = lint(
       '<p><a href="/x" target="_blank" rel="external">Buy</a></p>',
     );
-    const issue = all.find((i) => i.ruleId === "link-target-blank-no-rel")!;
+    const issue = all.find((i) => i.ruleId === "a11y.link-target-blank-no-rel")!;
     let patched: { content: string } | null = null;
     issue.fix!.apply({
       updateBlock: (id, patch) => {
@@ -159,7 +159,7 @@ describe("link-target-blank-no-rel", () => {
     const { all, block } = lint(
       '<p><a href="/x" target="_blank" rel=author>Buy</a></p>',
     );
-    const issue = all.find((i) => i.ruleId === "link-target-blank-no-rel")!;
+    const issue = all.find((i) => i.ruleId === "a11y.link-target-blank-no-rel")!;
     let patched: { content: string } | null = null;
     issue.fix!.apply({
       updateBlock: (id, patch) => {
@@ -180,7 +180,7 @@ describe("link-target-blank-no-rel", () => {
     const { all, block } = lint(
       '<p><a data-x=\'rel="external"\' rel="external" target="_blank" href="/x">Buy</a></p>',
     );
-    const issue = all.find((i) => i.ruleId === "link-target-blank-no-rel")!;
+    const issue = all.find((i) => i.ruleId === "a11y.link-target-blank-no-rel")!;
     let patched: { content: string } | null = null;
     issue.fix!.apply({
       updateBlock: (id, patch) => {
@@ -199,7 +199,7 @@ describe("link-target-blank-no-rel", () => {
 
   it("auto-fix repairs unquoted target=_blank", () => {
     const { all, block } = lint('<p><a href="/x" target=_blank>Buy</a></p>');
-    const issue = all.find((i) => i.ruleId === "link-target-blank-no-rel")!;
+    const issue = all.find((i) => i.ruleId === "a11y.link-target-blank-no-rel")!;
     let patched: { content: string } | null = null;
     issue.fix!.apply({
       updateBlock: (id, patch) => {

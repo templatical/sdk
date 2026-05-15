@@ -1,5 +1,10 @@
 import { expect, type Locator, type Page } from "@playwright/test";
-import { SELECTORS, blockByType, paletteByType } from "../helpers/selectors";
+import {
+  SELECTORS,
+  blockByType,
+  issueRowByRule,
+  paletteByType,
+} from "../helpers/selectors";
 
 export class EditorPage {
   constructor(private page: Page) {}
@@ -890,5 +895,32 @@ export class EditorPage {
 
   getEditorContainer(): Locator {
     return this.page.locator(SELECTORS.editorContainer);
+  }
+
+  // --- Issues panel (lint) ---
+
+  /**
+   * Open the right-sidebar Issues tab. Waits for the tab button to be
+   * visible (it appears only when the lint composable initializes — quality
+   * package is an optional peer).
+   */
+  async openIssuesTab(): Promise<void> {
+    const tab = this.page.locator(SELECTORS.rightTabIssues);
+    await tab.waitFor();
+    await tab.click();
+    await this.page.locator(SELECTORS.rightPanelIssues).waitFor();
+  }
+
+  /**
+   * Locator for an issue row in the panel, keyed by rule ID. Each rule ID
+   * is rendered as monospace `<p>` text below the message.
+   */
+  getIssueRow(ruleId: string): Locator {
+    return this.page.locator(issueRowByRule(ruleId));
+  }
+
+  /** Locator for the Fix button inside an issue row. */
+  getFixButtonForRule(ruleId: string): Locator {
+    return this.getIssueRow(ruleId).getByRole("button", { name: "Fix" });
   }
 }

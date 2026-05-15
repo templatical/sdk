@@ -202,25 +202,29 @@
     font-family: var(--tpl-font-family);
 }
 
-/* Form element reset - Preflight is omitted so form elements use browser defaults */
-.tpl button,
-.tpl input,
-.tpl select,
-.tpl textarea {
+/* Form element reset - Preflight is omitted so form elements use browser
+   defaults. `:where()` keeps the scope but drops specificity to the bare
+   element selector so per-button Tailwind utilities (e.g. `tpl:bg-[…]`)
+   always win. Without :where, `.tpl button` would beat single-class
+   utilities and silently strip explicit backgrounds, borders, etc. */
+:where(.tpl) button,
+:where(.tpl) input,
+:where(.tpl) select,
+:where(.tpl) textarea {
     font-family: inherit;
 }
 
-.tpl button {
+:where(.tpl) button {
     border: none;
     background: none;
     cursor: pointer;
 }
 
 /* Focus ring — visible only for keyboard navigation */
-.tpl button:focus-visible,
-.tpl input:focus-visible,
-.tpl select:focus-visible,
-.tpl textarea:focus-visible {
+:where(.tpl) button:focus-visible,
+:where(.tpl) input:focus-visible,
+:where(.tpl) select:focus-visible,
+:where(.tpl) textarea:focus-visible {
     outline: none;
     box-shadow: var(--tpl-ring);
 }

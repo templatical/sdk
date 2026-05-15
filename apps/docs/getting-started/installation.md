@@ -90,7 +90,7 @@ The editor lazy-loads four optional peers via dynamic `import()` at runtime, gat
 | Peer                         | When loaded                     | Install if you                    |
 | ---------------------------- | ------------------------------- | --------------------------------- |
 | `@templatical/renderer`      | First call to `editor.toMjml()` | Need MJML export from the browser |
-| `@templatical/quality`       | Editor mount (a11y panel)       | Want the accessibility sidebar    |
+| `@templatical/quality`       | Editor mount (Issues panel)     | Want accessibility + structure lint in the Issues sidebar |
 | `@templatical/media-library` | First open of the media browser | Use `initCloud()`                 |
 | `pusher-js`                  | Cloud realtime connect          | Use `initCloud()`                 |
 

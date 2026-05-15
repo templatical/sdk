@@ -17,11 +17,11 @@ function lint(text: string, bg: string, fontSize?: number) {
   content.settings.preheaderText = "x";
   content.blocks = [block];
   return lintAccessibility(content).filter(
-    (i) => i.ruleId === "button-low-contrast",
+    (i) => i.ruleId === "a11y.button-low-contrast",
   );
 }
 
-describe("button-low-contrast", () => {
+describe("a11y.button-low-contrast", () => {
   it("fires when contrast is below 4.5:1", () => {
     const issues = lint("#aaaaaa", "#cccccc");
     expect(issues).toHaveLength(1);

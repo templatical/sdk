@@ -2,7 +2,7 @@ import { isImage } from "@templatical/types";
 import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
-  id: "img-alt-is-filename",
+  id: "a11y.img-alt-is-filename",
   severity: "warning",
 };
 

@@ -3,7 +3,7 @@ import type { Rule, RuleMeta } from "../../types";
 import { getDictionary, normalizeForMatch } from "../dictionaries";
 
 export const meta: RuleMeta = {
-  id: "button-vague-label",
+  id: "a11y.button-vague-label",
   severity: "warning",
 };
 

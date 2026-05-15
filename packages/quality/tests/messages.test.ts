@@ -6,7 +6,7 @@ import {
   getMessages,
   SUPPORTED_MESSAGE_LOCALES,
 } from "../src/accessibility/messages";
-import { RULES } from "../src";
+import { ACCESSIBILITY_RULES } from "../src";
 
 describe("rule messages", () => {
   it("en and de share the same key set", () => {
@@ -14,7 +14,7 @@ describe("rule messages", () => {
   });
 
   it("every registered rule has an en + de message", () => {
-    for (const rule of RULES) {
+    for (const rule of ACCESSIBILITY_RULES) {
       expect(en).toHaveProperty(rule.meta.id);
       expect(de).toHaveProperty(rule.meta.id);
     }
@@ -39,7 +39,7 @@ describe("rule messages", () => {
   });
 
   it("interpolates {name} placeholders", () => {
-    const out = formatMessage("en", "img-alt-too-long", {
+    const out = formatMessage("en", "a11y.img-alt-too-long", {
       length: 200,
       max: 125,
     });
@@ -47,12 +47,12 @@ describe("rule messages", () => {
   });
 
   it("uses the German template when locale=de", () => {
-    const out = formatMessage("de", "img-missing-alt");
+    const out = formatMessage("de", "a11y.img-missing-alt");
     expect(out).toContain("Alt-Text");
   });
 
   it("leaves unknown placeholders intact", () => {
-    const out = formatMessage("en", "img-alt-too-long", { length: 200 });
+    const out = formatMessage("en", "a11y.img-alt-too-long", { length: 200 });
     expect(out).toContain("{max}");
   });
 

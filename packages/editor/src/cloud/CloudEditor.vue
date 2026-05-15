@@ -142,9 +142,9 @@ const lifecycle = useCloudLifecycle({
   isDestroyed: init.isDestroyed,
 });
 
-// --- Accessibility save-gate ---
+// --- Lint save-gate ---
 const saveGate = useCloudSaveGate({
-  issues: core.accessibilityLint ? core.accessibilityLint.issues : ref([]),
+  issues: core.templateLint ? core.templateLint.issues : ref([]),
   planConfig: planConfigInstance.config,
 });
 

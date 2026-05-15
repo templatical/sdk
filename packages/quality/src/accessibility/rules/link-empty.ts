@@ -4,7 +4,7 @@ import type { Rule, RuleMeta } from "../../types";
 import { extractAnchors } from "../../html-utils";
 
 export const meta: RuleMeta = {
-  id: "link-empty",
+  id: "a11y.link-empty",
   severity: "error",
 };
 

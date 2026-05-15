@@ -12,13 +12,13 @@ function lint(html: string) {
   content.blocks = [block];
   return {
     issues: lintAccessibility(content).filter(
-      (i) => i.ruleId === "link-empty",
+      (i) => i.ruleId === "a11y.link-empty",
     ),
     blockId: block.id,
   };
 }
 
-describe("link-empty", () => {
+describe("a11y.link-empty", () => {
   it("fires when anchor has no text and no image", () => {
     const { issues, blockId } = lint('<p><a href="/x"></a></p>');
     expect(issues).toHaveLength(1);

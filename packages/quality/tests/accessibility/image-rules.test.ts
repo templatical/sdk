@@ -4,12 +4,12 @@ import {
   createImageBlock,
 } from "@templatical/types";
 import { lintAccessibility } from "../../src";
-import type { A11yOptions } from "../../src";
+import type { LintOptions } from "../../src";
 
 function issuesFor(
   block: ReturnType<typeof createImageBlock>,
   ruleId: string,
-  opts?: A11yOptions,
+  opts?: LintOptions,
 ) {
   const content = createDefaultTemplateContent();
   content.settings.preheaderText = "x";
@@ -17,10 +17,10 @@ function issuesFor(
   return lintAccessibility(content, opts).filter((i) => i.ruleId === ruleId);
 }
 
-describe("img-alt-is-filename", () => {
+describe("a11y.img-alt-is-filename", () => {
   it("fires for jpeg-extension alt", () => {
     const block = createImageBlock({ src: "x.png", alt: "hero.jpg" });
-    const issues = issuesFor(block, "img-alt-is-filename");
+    const issues = issuesFor(block, "a11y.img-alt-is-filename");
     expect(issues).toHaveLength(1);
     expect(issues[0].severity).toBe("warning");
     expect(issues[0].fix).toBeDefined();
@@ -28,7 +28,7 @@ describe("img-alt-is-filename", () => {
 
   it("fires for IMG_1234 pattern", () => {
     const block = createImageBlock({ src: "x.png", alt: "IMG_1234" });
-    expect(issuesFor(block, "img-alt-is-filename")).toHaveLength(1);
+    expect(issuesFor(block, "a11y.img-alt-is-filename")).toHaveLength(1);
   });
 
   it("fires for Screen Shot pattern", () => {
@@ -36,27 +36,27 @@ describe("img-alt-is-filename", () => {
       src: "x.png",
       alt: "Screen Shot 2026-01-01",
     });
-    expect(issuesFor(block, "img-alt-is-filename")).toHaveLength(1);
+    expect(issuesFor(block, "a11y.img-alt-is-filename")).toHaveLength(1);
   });
 
   it("fires for DSC_0001 pattern (Sony/Nikon camera output)", () => {
     const block = createImageBlock({ src: "x.png", alt: "DSC_0001" });
-    expect(issuesFor(block, "img-alt-is-filename")).toHaveLength(1);
+    expect(issuesFor(block, "a11y.img-alt-is-filename")).toHaveLength(1);
   });
 
   it("fires for DSC-1234 pattern", () => {
     const block = createImageBlock({ src: "x.png", alt: "DSC-1234" });
-    expect(issuesFor(block, "img-alt-is-filename")).toHaveLength(1);
+    expect(issuesFor(block, "a11y.img-alt-is-filename")).toHaveLength(1);
   });
 
   it("does not fire for descriptive alt", () => {
     const block = createImageBlock({ src: "x.png", alt: "Spring sale 30% off" });
-    expect(issuesFor(block, "img-alt-is-filename")).toEqual([]);
+    expect(issuesFor(block, "a11y.img-alt-is-filename")).toEqual([]);
   });
 
   it("auto-fix clears the alt", () => {
     const block = createImageBlock({ src: "x.png", alt: "hero.jpg" });
-    const issue = issuesFor(block, "img-alt-is-filename")[0];
+    const issue = issuesFor(block, "a11y.img-alt-is-filename")[0];
     let updated: { id: string; patch: Record<string, unknown> } | null = null;
     issue.fix!.apply({
       updateBlock: (id, patch) => {
@@ -68,15 +68,15 @@ describe("img-alt-is-filename", () => {
   });
 });
 
-describe("img-alt-too-long", () => {
+describe("a11y.img-alt-too-long", () => {
   it("fires when alt > 125 chars", () => {
     const block = createImageBlock({ src: "x.png", alt: "a".repeat(126) });
-    expect(issuesFor(block, "img-alt-too-long")).toHaveLength(1);
+    expect(issuesFor(block, "a11y.img-alt-too-long")).toHaveLength(1);
   });
 
   it("does not fire at threshold (125)", () => {
     const block = createImageBlock({ src: "x.png", alt: "a".repeat(125) });
-    expect(issuesFor(block, "img-alt-too-long")).toEqual([]);
+    expect(issuesFor(block, "a11y.img-alt-too-long")).toEqual([]);
   });
 
   it("respects threshold override", () => {
@@ -86,19 +86,19 @@ describe("img-alt-too-long", () => {
     content.blocks = [block];
     const issues = lintAccessibility(content, {
       thresholds: { altMaxLength: 30 },
-    }).filter((i) => i.ruleId === "img-alt-too-long");
+    }).filter((i) => i.ruleId === "a11y.img-alt-too-long");
     expect(issues).toHaveLength(1);
   });
 });
 
-describe("img-decorative-needs-empty-alt", () => {
+describe("a11y.img-decorative-needs-empty-alt", () => {
   it("fires when decorative + non-empty alt", () => {
     const block = createImageBlock({
       src: "x.png",
       alt: "ignored",
       decorative: true,
     });
-    expect(issuesFor(block, "img-decorative-needs-empty-alt")).toHaveLength(1);
+    expect(issuesFor(block, "a11y.img-decorative-needs-empty-alt")).toHaveLength(1);
   });
 
   it("does not fire when decorative + empty alt", () => {
@@ -107,23 +107,23 @@ describe("img-decorative-needs-empty-alt", () => {
       alt: "",
       decorative: true,
     });
-    expect(issuesFor(block, "img-decorative-needs-empty-alt")).toEqual([]);
+    expect(issuesFor(block, "a11y.img-decorative-needs-empty-alt")).toEqual([]);
   });
 
   it("does not fire when not decorative", () => {
     const block = createImageBlock({ src: "x.png", alt: "Hero" });
-    expect(issuesFor(block, "img-decorative-needs-empty-alt")).toEqual([]);
+    expect(issuesFor(block, "a11y.img-decorative-needs-empty-alt")).toEqual([]);
   });
 });
 
-describe("img-linked-no-context", () => {
+describe("a11y.img-linked-no-context", () => {
   it("fires when linked image alt has no action verb", () => {
     const block = createImageBlock({
       src: "x.png",
       alt: "Smiling person",
       linkUrl: "/buy",
     });
-    expect(issuesFor(block, "img-linked-no-context")).toHaveLength(1);
+    expect(issuesFor(block, "a11y.img-linked-no-context")).toHaveLength(1);
   });
 
   it("does not fire when alt contains action verb", () => {
@@ -132,7 +132,7 @@ describe("img-linked-no-context", () => {
       alt: "Buy spring sale tickets",
       linkUrl: "/buy",
     });
-    expect(issuesFor(block, "img-linked-no-context")).toEqual([]);
+    expect(issuesFor(block, "a11y.img-linked-no-context")).toEqual([]);
   });
 
   it("fires when alt only incidentally contains an action-verb substring", () => {
@@ -142,7 +142,7 @@ describe("img-linked-no-context", () => {
       alt: "Company logo",
       linkUrl: "/about",
     });
-    expect(issuesFor(block, "img-linked-no-context")).toHaveLength(1);
+    expect(issuesFor(block, "a11y.img-linked-no-context")).toHaveLength(1);
   });
 
   it("fires for alt 'forget password' — 'get' is a substring, not the verb", () => {
@@ -151,12 +151,12 @@ describe("img-linked-no-context", () => {
       alt: "forget password",
       linkUrl: "/reset",
     });
-    expect(issuesFor(block, "img-linked-no-context")).toHaveLength(1);
+    expect(issuesFor(block, "a11y.img-linked-no-context")).toHaveLength(1);
   });
 
   it("does not fire when image is not linked", () => {
     const block = createImageBlock({ src: "x.png", alt: "Smiling person" });
-    expect(issuesFor(block, "img-linked-no-context")).toEqual([]);
+    expect(issuesFor(block, "a11y.img-linked-no-context")).toEqual([]);
   });
 
   it("does not fire when alt is empty (covered by missing-alt)", () => {
@@ -165,7 +165,7 @@ describe("img-linked-no-context", () => {
       alt: "",
       linkUrl: "/buy",
     });
-    expect(issuesFor(block, "img-linked-no-context")).toEqual([]);
+    expect(issuesFor(block, "a11y.img-linked-no-context")).toEqual([]);
   });
 
   it("does not fire for German action verb under locale=de", () => {
@@ -175,7 +175,7 @@ describe("img-linked-no-context", () => {
       linkUrl: "/buy",
     });
     expect(
-      issuesFor(block, "img-linked-no-context", { locale: "de" }),
+      issuesFor(block, "a11y.img-linked-no-context", { locale: "de" }),
     ).toEqual([]);
   });
 
@@ -188,6 +188,6 @@ describe("img-linked-no-context", () => {
       alt: "Jetzt kaufen unsere Aktion",
       linkUrl: "/buy",
     });
-    expect(issuesFor(block, "img-linked-no-context")).toEqual([]);
+    expect(issuesFor(block, "a11y.img-linked-no-context")).toEqual([]);
   });
 });

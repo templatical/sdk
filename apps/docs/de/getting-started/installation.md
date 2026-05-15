@@ -90,7 +90,7 @@ Der Editor lädt vier optionale Peers zur Laufzeit per dynamischem `import()`, a
 | Peer                         | Wann geladen                                   | Installieren, wenn Sie                   |
 | ---------------------------- | ---------------------------------------------- | ---------------------------------------- |
 | `@templatical/renderer`      | Erster Aufruf von `editor.toMjml()`            | MJML-Export aus dem Browser benötigen    |
-| `@templatical/quality`       | Beim Mounten des Editors (Accessibility-Panel) | Die Accessibility-Sidebar nutzen möchten |
+| `@templatical/quality`       | Beim Mounten des Editors (Issues-Panel)        | Barrierefreiheit + Struktur-Lint in der Issues-Sidebar nutzen möchten |
 | `@templatical/media-library` | Erstes Öffnen des Medien-Browsers              | `initCloud()` verwenden                  |
 | `pusher-js`                  | Cloud-Realtime-Verbindung                      | `initCloud()` verwenden                  |
 

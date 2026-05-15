@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { AlertTriangle } from "@lucide/vue";
 import { useCloudI18nStrict } from "../../composables/useCloudI18n";
-import type { A11yIssue } from "../../composables/useAccessibilityLint";
+import type { LintIssue } from "../../composables/useTemplateLint";
 
 defineProps<{
   open: boolean;
-  issues: A11yIssue[];
+  issues: LintIssue[];
 }>();
 
 const emit = defineEmits<{

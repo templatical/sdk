@@ -5,7 +5,7 @@ import { extractAnchors } from "../../html-utils";
 import { getDictionary, normalizeForMatch } from "../dictionaries";
 
 export const meta: RuleMeta = {
-  id: "link-vague-text",
+  id: "a11y.link-vague-text",
   severity: "warning",
 };
 

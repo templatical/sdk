@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { createDefaultTemplateContent } from "@templatical/types";
 import { lintAccessibility } from "../../src";
 
-describe("missing-preheader", () => {
+describe("a11y.missing-preheader", () => {
   it("fires when preheaderText is unset", () => {
     const content = createDefaultTemplateContent();
     const issues = lintAccessibility(content).filter(
-      (i) => i.ruleId === "missing-preheader",
+      (i) => i.ruleId === "a11y.missing-preheader",
     );
     expect(issues).toHaveLength(1);
     expect(issues[0].severity).toBe("info");
@@ -18,7 +18,7 @@ describe("missing-preheader", () => {
     content.settings.preheaderText = "   ";
     expect(
       lintAccessibility(content).filter(
-        (i) => i.ruleId === "missing-preheader",
+        (i) => i.ruleId === "a11y.missing-preheader",
       ),
     ).toHaveLength(1);
   });
@@ -28,7 +28,7 @@ describe("missing-preheader", () => {
     content.settings.preheaderText = "Spring sale";
     expect(
       lintAccessibility(content).filter(
-        (i) => i.ruleId === "missing-preheader",
+        (i) => i.ruleId === "a11y.missing-preheader",
       ),
     ).toEqual([]);
   });

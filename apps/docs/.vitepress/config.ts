@@ -3,7 +3,7 @@ import { defineConfig, type DefaultTheme } from "vitepress";
 const enNav: DefaultTheme.NavItem[] = [
   { text: "Guide", link: "/getting-started/installation" },
   { text: "API", link: "/api/editor" },
-  { text: "Accessibility", link: "/quality/accessibility/" },
+  { text: "Quality", link: "/quality/" },
   { text: "Cloud", link: "/cloud/" },
   { text: "Playground", link: "https://play.templatical.com" },
 ];
@@ -12,33 +12,29 @@ const enSidebar: DefaultTheme.SidebarMulti = {
   "/quality/": [
     {
       text: "Quality",
-      items: [{ text: "Overview", link: "/quality/" }],
+      items: [
+        { text: "Overview", link: "/quality/" },
+        { text: "Options", link: "/quality/options" },
+        { text: "Severity & fixes", link: "/quality/severity-and-fixes" },
+        { text: "Headless usage", link: "/quality/headless-usage" },
+        {
+          text: "Contributing locales",
+          link: "/quality/contributing-locales",
+        },
+      ],
     },
     {
       text: "Accessibility",
       items: [
         { text: "Overview", link: "/quality/accessibility/" },
-        {
-          text: "Getting Started",
-          link: "/quality/accessibility/getting-started",
-        },
-        {
-          text: "Rule catalog",
-          link: "/quality/accessibility/rule-catalog",
-        },
-        { text: "Options", link: "/quality/accessibility/options" },
-        {
-          text: "Severity & fixes",
-          link: "/quality/accessibility/severity-and-fixes",
-        },
-        {
-          text: "Headless usage",
-          link: "/quality/accessibility/headless-usage",
-        },
-        {
-          text: "Contributing locales",
-          link: "/quality/accessibility/contributing-locales",
-        },
+        { text: "Rule catalog", link: "/quality/accessibility/rule-catalog" },
+      ],
+    },
+    {
+      text: "Structure",
+      items: [
+        { text: "Overview", link: "/quality/structure/" },
+        { text: "Rule catalog", link: "/quality/structure/rule-catalog" },
       ],
     },
   ],
@@ -147,7 +143,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
 const deNav: DefaultTheme.NavItem[] = [
   { text: "Anleitung", link: "/de/getting-started/installation" },
   { text: "API", link: "/de/api/editor" },
-  { text: "Barrierefreiheit", link: "/de/quality/accessibility/" },
+  { text: "Qualität", link: "/de/quality/" },
   { text: "Cloud", link: "/de/cloud/" },
   { text: "Playground", link: "https://play.templatical.com" },
 ];
@@ -156,33 +152,35 @@ const deSidebar: DefaultTheme.SidebarMulti = {
   "/de/quality/": [
     {
       text: "Qualität",
-      items: [{ text: "Überblick", link: "/de/quality/" }],
+      items: [
+        { text: "Überblick", link: "/de/quality/" },
+        { text: "Optionen", link: "/de/quality/options" },
+        {
+          text: "Schweregrade & Fixes",
+          link: "/de/quality/severity-and-fixes",
+        },
+        { text: "Headless-Nutzung", link: "/de/quality/headless-usage" },
+        {
+          text: "Lokalen beitragen",
+          link: "/de/quality/contributing-locales",
+        },
+      ],
     },
     {
       text: "Barrierefreiheit",
       items: [
         { text: "Überblick", link: "/de/quality/accessibility/" },
         {
-          text: "Erste Schritte",
-          link: "/de/quality/accessibility/getting-started",
-        },
-        {
           text: "Regelkatalog",
           link: "/de/quality/accessibility/rule-catalog",
         },
-        { text: "Optionen", link: "/de/quality/accessibility/options" },
-        {
-          text: "Schweregrad & Korrekturen",
-          link: "/de/quality/accessibility/severity-and-fixes",
-        },
-        {
-          text: "Headless-Nutzung",
-          link: "/de/quality/accessibility/headless-usage",
-        },
-        {
-          text: "Lokale beitragen",
-          link: "/de/quality/accessibility/contributing-locales",
-        },
+      ],
+    },
+    {
+      text: "Struktur",
+      items: [
+        { text: "Überblick", link: "/de/quality/structure/" },
+        { text: "Regelkatalog", link: "/de/quality/structure/rule-catalog" },
       ],
     },
   ],

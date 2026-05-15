@@ -3,7 +3,7 @@ import type { Rule, RuleMeta } from "../../types";
 import { extractText } from "../../html-utils";
 
 export const meta: RuleMeta = {
-  id: "heading-empty",
+  id: "a11y.heading-empty",
   severity: "error",
 };
 

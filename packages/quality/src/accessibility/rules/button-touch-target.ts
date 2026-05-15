@@ -2,7 +2,7 @@ import { isButton } from "@templatical/types";
 import type { Rule, RuleMeta } from "../../types";
 
 export const meta: RuleMeta = {
-  id: "button-touch-target",
+  id: "a11y.button-touch-target",
   severity: "warning",
 };
 

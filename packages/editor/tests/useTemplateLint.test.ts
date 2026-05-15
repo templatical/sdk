@@ -12,18 +12,20 @@ function createContent(): TemplateContent {
 
 interface QualityMockHandle {
   lintAccessibility: ReturnType<typeof vi.fn>;
+  lintStructure: ReturnType<typeof vi.fn>;
   resolveImport: () => void;
   rejectImport: (err: unknown) => void;
 }
 
 /**
  * Stage a per-test mock for `@templatical/quality` whose dynamic import can
- * be deferred. Returns the spy + resolver so the test can control timing.
+ * be deferred. Returns the spies + resolver so the test can control timing.
  */
 async function setupQualityMock(): Promise<QualityMockHandle> {
   vi.resetModules();
 
   const lintAccessibility = vi.fn(() => [] as unknown[]);
+  const lintStructure = vi.fn(() => [] as unknown[]);
   let resolve!: () => void;
   let reject!: (err: unknown) => void;
   const importPromise = new Promise<void>((res, rej) => {
@@ -33,33 +35,38 @@ async function setupQualityMock(): Promise<QualityMockHandle> {
 
   vi.doMock("@templatical/quality", async () => {
     await importPromise;
-    return { lintAccessibility };
+    return { lintAccessibility, lintStructure };
   });
 
-  return { lintAccessibility, resolveImport: resolve, rejectImport: reject };
+  return {
+    lintAccessibility,
+    lintStructure,
+    resolveImport: resolve,
+    rejectImport: reject,
+  };
 }
 
 async function loadComposable() {
-  return (await import("../src/composables/useAccessibilityLint"))
-    .useAccessibilityLint;
+  return (await import("../src/composables/useTemplateLint")).useTemplateLint;
 }
 
-describe("useAccessibilityLint", () => {
+describe("useTemplateLint", () => {
   beforeEach(() => {
     vi.useRealTimers();
   });
 
-  it("does not run lintAccessibility after destroy() if dynamic import resolves later", async () => {
+  it("does not run linters after destroy() if dynamic import resolves later", async () => {
     const mock = await setupQualityMock();
-    const useAccessibilityLint = await loadComposable();
+    const useTemplateLint = await loadComposable();
 
     const content = ref(createContent());
 
-    const result = useAccessibilityLint({
+    const result = useTemplateLint({
       content,
       options: {},
       updateBlock: vi.fn(),
       updateSettings: vi.fn(),
+      removeBlock: vi.fn(),
       debounce: 10,
     });
 
@@ -74,6 +81,7 @@ describe("useAccessibilityLint", () => {
     await nextTick();
 
     expect(mock.lintAccessibility).not.toHaveBeenCalled();
+    expect(mock.lintStructure).not.toHaveBeenCalled();
     expect(result.ready.value).toBe(false);
 
     // Mutate content. If a leaked watcher exists, it would fire runLint after
@@ -85,19 +93,21 @@ describe("useAccessibilityLint", () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect(mock.lintAccessibility).not.toHaveBeenCalled();
+    expect(mock.lintStructure).not.toHaveBeenCalled();
   });
 
-  it("runs lintAccessibility on content changes when alive (sanity check)", async () => {
+  it("runs both linters on content changes when alive", async () => {
     const mock = await setupQualityMock();
-    const useAccessibilityLint = await loadComposable();
+    const useTemplateLint = await loadComposable();
 
     const content = ref(createContent());
 
-    useAccessibilityLint({
+    useTemplateLint({
       content,
       options: {},
       updateBlock: vi.fn(),
       updateSettings: vi.fn(),
+      removeBlock: vi.fn(),
       debounce: 10,
     });
 
@@ -107,6 +117,7 @@ describe("useAccessibilityLint", () => {
     await nextTick();
 
     expect(mock.lintAccessibility).toHaveBeenCalledTimes(1);
+    expect(mock.lintStructure).toHaveBeenCalledTimes(1);
 
     content.value = {
       blocks: [{ id: "b2", type: "paragraph" }],
@@ -115,17 +126,48 @@ describe("useAccessibilityLint", () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect(mock.lintAccessibility).toHaveBeenCalledTimes(2);
+    expect(mock.lintStructure).toHaveBeenCalledTimes(2);
+  });
+
+  it("merges issues from both linters", async () => {
+    const mock = await setupQualityMock();
+    mock.lintAccessibility.mockReturnValue([
+      { ruleId: "a11y.x", blockId: "b1", severity: "error", message: "a" },
+    ]);
+    mock.lintStructure.mockReturnValue([
+      { ruleId: "structure.x", blockId: "b1", severity: "error", message: "b" },
+    ]);
+    const useTemplateLint = await loadComposable();
+
+    const result = useTemplateLint({
+      content: ref(createContent()),
+      options: {},
+      updateBlock: vi.fn(),
+      updateSettings: vi.fn(),
+      removeBlock: vi.fn(),
+      debounce: 10,
+    });
+
+    mock.resolveImport();
+    await new Promise((r) => setTimeout(r, 0));
+    await nextTick();
+
+    expect(result.issues.value.map((i) => i.ruleId)).toEqual([
+      "a11y.x",
+      "structure.x",
+    ]);
   });
 
   it("does not start lint when options.disabled is true", async () => {
     const mock = await setupQualityMock();
-    const useAccessibilityLint = await loadComposable();
+    const useTemplateLint = await loadComposable();
 
-    useAccessibilityLint({
+    useTemplateLint({
       content: ref(createContent()),
       options: { disabled: true },
       updateBlock: vi.fn(),
       updateSettings: vi.fn(),
+      removeBlock: vi.fn(),
     });
 
     // Even if we resolve the (un-awaited) import, nothing should run.
@@ -134,5 +176,6 @@ describe("useAccessibilityLint", () => {
     await nextTick();
 
     expect(mock.lintAccessibility).not.toHaveBeenCalled();
+    expect(mock.lintStructure).not.toHaveBeenCalled();
   });
 });

@@ -1,10 +1,10 @@
 import { computed, ref, type ComputedRef, type Ref } from "vue";
 import type { PlanConfig } from "@templatical/types";
-import type { A11yIssue } from "../../composables/useAccessibilityLint";
+import type { LintIssue } from "../../composables/useTemplateLint";
 
 export interface UseCloudSaveGateOptions {
-  /** Reactive accessibility issues from `useAccessibilityLint`. */
-  issues: Ref<A11yIssue[]>;
+  /** Reactive accessibility issues from `useTemplateLint`. */
+  issues: Ref<LintIssue[]>;
   /** Reactive plan config from the server. */
   planConfig: Ref<PlanConfig | null>;
 }
@@ -13,7 +13,7 @@ export interface UseCloudSaveGateReturn {
   /** True when the gate would block a save click given current state. */
   shouldBlock: ComputedRef<boolean>;
   /** Errors that would block the save. Empty when `shouldBlock` is false. */
-  blockingIssues: ComputedRef<A11yIssue[]>;
+  blockingIssues: ComputedRef<LintIssue[]>;
   /** Modal visibility — toggled by `tryRunSave` and `cancel`. */
   modalOpen: Ref<boolean>;
   /**

@@ -1,14 +1,6 @@
 import type { TemplateContent } from "@templatical/types";
-import type {
-  A11yIssue,
-  A11yOptions,
-  ResolvedOptions,
-  Rule,
-  RuleHit,
-  Severity,
-} from "../types";
-import { DEFAULT_THRESHOLDS } from "../types";
-import { walkBlocks } from "../walk";
+import type { LintIssue, LintOptions, Rule } from "../types";
+import { runRules } from "../run-rules";
 import { formatMessage, type RuleMessageId } from "./messages";
 import { imgMissingAlt } from "./rules/img-missing-alt";
 import { imgAltIsFilename } from "./rules/img-alt-is-filename";
@@ -30,7 +22,7 @@ import { buttonTouchTarget } from "./rules/button-touch-target";
 import { buttonLowContrast } from "./rules/button-low-contrast";
 import { missingPreheader } from "./rules/missing-preheader";
 
-export const RULES: Rule[] = [
+export const ACCESSIBILITY_RULES: Rule[] = [
   imgMissingAlt,
   imgAltIsFilename,
   imgAltTooLong,
@@ -54,68 +46,9 @@ export const RULES: Rule[] = [
 
 export function lintAccessibility(
   content: TemplateContent,
-  options: A11yOptions = {},
-): A11yIssue[] {
-  if (options.disabled === true) {
-    return [];
-  }
-
-  const opts = resolveOptions(options);
-  const issues: A11yIssue[] = [];
-
-  function buildIssue(
-    ruleId: string,
-    severity: Exclude<Severity, "off">,
-    hit: RuleHit,
-  ): A11yIssue {
-    return {
-      blockId: hit.blockId,
-      ruleId,
-      severity,
-      message: formatMessage(opts.locale, ruleId as RuleMessageId, hit.params),
-      fix: hit.fix,
-    };
-  }
-
-  walkBlocks(content, (block, ctx) => {
-    for (const rule of RULES) {
-      const sev = opts.severity(rule.meta.id);
-      if (sev === "off" || !rule.block) continue;
-      const hit = rule.block(block, ctx, opts);
-      if (hit !== null) {
-        issues.push(buildIssue(rule.meta.id, sev, hit));
-      }
-    }
-  });
-
-  for (const rule of RULES) {
-    const sev = opts.severity(rule.meta.id);
-    if (sev === "off" || !rule.template) continue;
-    const hits = rule.template(content, opts);
-    for (const hit of hits) {
-      issues.push(buildIssue(rule.meta.id, sev, hit));
-    }
-  }
-
-  return issues;
-}
-
-export function resolveOptions(options: A11yOptions): ResolvedOptions {
-  const overrides = options.rules ?? {};
-  const thresholds = { ...DEFAULT_THRESHOLDS, ...(options.thresholds ?? {}) };
-  const locale = options.locale ?? "en";
-
-  return {
-    locale,
-    rules: overrides,
-    thresholds,
-    severity: (ruleId: string): Severity => {
-      const override = overrides[ruleId];
-      if (override !== undefined) {
-        return override;
-      }
-      const rule = RULES.find((r) => r.meta.id === ruleId);
-      return rule?.meta.severity ?? "warning";
-    },
-  };
+  options: LintOptions = {},
+): LintIssue[] {
+  return runRules(content, ACCESSIBILITY_RULES, options, (locale, id, params) =>
+    formatMessage(locale, id as RuleMessageId, params),
+  );
 }

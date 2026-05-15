@@ -42,8 +42,10 @@ export const SELECTORS = {
   rightSidebar: ".tpl-right-sidebar",
   rightTabContent: "#tpl-tab-content",
   rightTabSettings: "#tpl-tab-settings",
+  rightTabIssues: "#tpl-tab-issues",
   rightPanelContent: "#tpl-tabpanel-content",
   rightPanelSettings: "#tpl-tabpanel-settings",
+  rightPanelIssues: "#tpl-tabpanel-issues",
 
   // Text editing
   textToolbar: ".tpl-text-toolbar",
@@ -128,4 +130,9 @@ export function configTab(name: string) {
 /** Dynamic selector for config panel */
 export function configPanel(name: string) {
   return `#config-panel-${name}`;
+}
+
+/** Dynamic selector for an issue panel row by rule ID (e.g. "structure.empty-section"). */
+export function issueRowByRule(ruleId: string): string {
+  return `li:has(p:text-is("${ruleId}"))`;
 }

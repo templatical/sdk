@@ -93,14 +93,15 @@ export interface TemplaticalEditorConfig {
   branding?: boolean;
 
   /**
-   * Accessibility linter (`@templatical/quality`) configuration.
+   * Template linter (`@templatical/quality`) configuration. Runs every
+   * linter exported by the package (accessibility + structure).
    *
    * - When unset, the linter loads on demand once the user opens the panel.
    * - When `disabled: true`, the optional peer is never imported (saves the
    *   chunk download) and the sidebar tab + inline badges are suppressed.
    * - `rules`/`thresholds` follow the shape exported by `@templatical/quality`.
    */
-  accessibility?: import("@templatical/quality").A11yOptions;
+  lint?: import("@templatical/quality").LintOptions;
 }
 
 /** Function type for media browser requests, used by both OSS and Cloud editors. */

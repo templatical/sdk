@@ -2,11 +2,11 @@
 import { computed, inject } from "vue";
 import { CircleAlert, TriangleAlert } from "@lucide/vue";
 import { useI18n } from "../../composables/useI18n";
-import { ACCESSIBILITY_LINT_KEY } from "../../keys";
+import { TEMPLATE_LINT_KEY } from "../../keys";
 
 const props = defineProps<{ blockId: string }>();
 const { t } = useI18n();
-const lint = inject(ACCESSIBILITY_LINT_KEY, null);
+const lint = inject(TEMPLATE_LINT_KEY, null);
 
 const blockIssues = computed(() =>
   (lint?.issues.value ?? []).filter((i) => i.blockId === props.blockId),
@@ -19,9 +19,7 @@ const severity = computed<"error" | "warning" | null>(() => {
 });
 
 const tooltip = computed(() =>
-  severity.value === "error"
-    ? t.accessibility.badgeError
-    : t.accessibility.badgeWarning,
+  severity.value === "error" ? t.issues.badgeError : t.issues.badgeWarning,
 );
 </script>
 

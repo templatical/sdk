@@ -600,18 +600,18 @@ const de: typeof en = {
     retry: "Erneut versuchen",
   },
 
-  accessibility: {
-    panelTitle: "Barrierefreiheit",
-    panelTabLabel: "Barrierefreiheit",
+  issues: {
+    panelTitle: "Probleme",
+    panelTabLabel: "Probleme",
     groupErrors: "Fehler",
     groupWarnings: "Warnungen",
     groupInfo: "Hinweise",
     jump: "Zum Block springen",
     fix: "Beheben",
-    emptyState: "Keine Probleme mit der Barrierefreiheit.",
-    badgeError: "Hat Barrierefreiheitsfehler",
-    badgeWarning: "Hat Barrierefreiheitswarnungen",
-    issueCountTooltip: "{count} Barrierefreiheitsprobleme",
+    emptyState: "Keine Probleme — sieht gut aus.",
+    badgeError: "Hat Fehler",
+    badgeWarning: "Hat Warnungen",
+    issueCountTooltip: "{count} Problem(e)",
   },
 };
 

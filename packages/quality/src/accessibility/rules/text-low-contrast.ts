@@ -4,7 +4,7 @@ import { getContrastRatio, isOpaqueHex } from "../../contrast";
 import { HEADING_LEVEL_FONT_SIZE } from "@templatical/types";
 
 export const meta: RuleMeta = {
-  id: "text-low-contrast",
+  id: "a11y.text-low-contrast",
   severity: "error",
 };
 
