@@ -72,14 +72,17 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 
 ## Paketübersicht
 
-| Paket                         | Beschreibung                                                        | Erforderlich                                                                                                 |
-| ----------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `@templatical/editor`         | Visueller Drag-and-Drop-Editor und `init()`-Einstiegspunkt          | Ja                                                                                                           |
-| `@templatical/types`          | Gemeinsame TypeScript-Typen, Block-Factory-Funktionen, Type Guards  | Automatisch installiert                                                                                      |
-| `@templatical/core`           | Framework-agnostische Editor-Logik (State, History)                 | Automatisch installiert                                                                                      |
-| `@templatical/renderer`       | Rendert Templates zu MJML                                           | Optional – installieren, wo Sie `editor.toMjml()` (Browser) oder `renderToMjml()` (Node.js, Server) aufrufen |
-| `@templatical/import-beefree` | Konvertiert BeeFree-JSON-Templates in das Templatical-Format        | Optional                                                                                                     |
-| `@templatical/import-unlayer` | Konvertiert Unlayer-JSON-Design-Templates in das Templatical-Format | Optional                                                                                                     |
+| Paket                          | Beschreibung                                                                                                            | Erforderlich                                                                                                 |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `@templatical/editor`          | Visueller Drag-and-Drop-Editor und `init()`-Einstiegspunkt                                                              | Ja                                                                                                           |
+| `@templatical/types`           | Gemeinsame TypeScript-Typen, Block-Factory-Funktionen, Type Guards                                                      | Automatisch installiert                                                                                      |
+| `@templatical/core`            | Framework-agnostische Editor-Logik (State, History)                                                                     | Automatisch installiert                                                                                      |
+| `@templatical/renderer`        | Rendert Templates zu MJML                                                                                               | Optional – installieren, wo Sie `editor.toMjml()` (Browser) oder `renderToMjml()` (Node.js, Server) aufrufen |
+| `@templatical/quality`         | Template-Linter (Barrierefreiheit + Struktur) für das Issues-Panel des Editors und Headless- / CI-Checks                | Optional – installieren, um den Issues-Sidebar-Tab und die Inline-Block-Badges zu aktivieren                 |
+| `@templatical/media-library`   | Eigenständige Medienbibliothek (Typen, Composable, API-Client, Vue-Komponenten), wird von `initCloud()` genutzt         | Optional – nur nötig, wenn Sie `initCloud()` für den Medien-Browser verwenden                                |
+| `@templatical/import-beefree`  | Konvertiert BeeFree-JSON-Templates in das Templatical-Format                                                            | Optional                                                                                                     |
+| `@templatical/import-unlayer`  | Konvertiert Unlayer-JSON-Design-Templates in das Templatical-Format                                                     | Optional                                                                                                     |
+| `@templatical/import-html`     | Konvertiert bestehende HTML-E-Mail-Templates (Tabellen-basiert) in das Templatical-Format                               | Optional                                                                                                     |
 
 `@templatical/types` und `@templatical/core` sind direkte Abhängigkeiten von `@templatical/editor` und werden automatisch installiert.
 
