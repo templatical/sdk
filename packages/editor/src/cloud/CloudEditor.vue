@@ -53,6 +53,10 @@ const cloudPanelsRef = ref<{
   filterCommentsByBlock: (blockId: string) => void;
 } | null>(null);
 
+// Outer `.tpl` ref forwarded to `useEditorCore` (via `useCloudInitialization`)
+// for multi-editor keyboard routing.
+const rootEl = ref<HTMLElement | null>(null);
+
 const init = useCloudInitialization({
   config: props.config,
   translations: props.translations,
@@ -63,6 +67,7 @@ const init = useCloudInitialization({
       ? { filterByBlock: cloudPanelsRef.value.filterCommentsByBlock }
       : null,
   editorRoot: props.shadowRoot,
+  containerEl: rootEl,
 });
 
 // Destructure heavily-used members for template readability.
@@ -183,6 +188,7 @@ defineExpose({
 
 <template>
   <div
+    ref="rootEl"
     class="tpl tpl:relative tpl:h-full tpl:overflow-hidden"
     :class="{ 'tpl:dark': editor.state.darkMode }"
     :data-tpl-theme="core.resolvedTheme.value"

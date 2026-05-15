@@ -30,24 +30,42 @@ export function useRichTextLinkDialog(
   function insertLink(): void {
     if (linkUrl.value) {
       const url = normalizeLinkUrl(linkUrl.value);
-      editor.value
-        ?.chain()
-        .focus()
-        .extendMarkRange("link")
-        .setLink({ href: url })
-        .run();
+      if (url !== null) {
+        editor.value
+          ?.chain()
+          .focus()
+          .extendMarkRange("link")
+          .setLink({ href: url })
+          .run();
+      }
     }
     closeLinkDialog();
   }
 
-  function normalizeLinkUrl(raw: string): string {
-    // Preserve any URL that already declares a scheme (mailto:, tel:, ftp:,
-    // http(s):, etc.) and any same-page anchor (#…). Only bare hostnames /
-    // paths get the https:// prefix.
-    if (/^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith("#")) {
-      return raw;
+  // Allowlist mirroring @tiptap/extension-link defaults so URLs persisted
+  // via the dialog can't smuggle in javascript:/data:/vbscript: payloads
+  // that bypass TipTap's apply-time filter on JSON load.
+  const SAFE_SCHEMES = new Set([
+    "http",
+    "https",
+    "mailto",
+    "tel",
+    "ftp",
+    "ftps",
+    "sms",
+    "xmpp",
+    "cid",
+  ]);
+
+  function normalizeLinkUrl(raw: string): string | null {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    if (trimmed.startsWith("#")) return trimmed;
+    const schemeMatch = /^([a-z][a-z0-9+.-]*):/i.exec(trimmed);
+    if (schemeMatch) {
+      return SAFE_SCHEMES.has(schemeMatch[1].toLowerCase()) ? trimmed : null;
     }
-    return `https://${raw}`;
+    return `https://${trimmed}`;
   }
 
   function removeLink(): void {

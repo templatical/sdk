@@ -9,6 +9,7 @@ import { containsMergeTag } from "@templatical/types";
 import { Image } from "@lucide/vue";
 import { computed, inject } from "vue";
 import { ON_REQUEST_MEDIA_KEY } from "../../keys";
+import { useAliveFlag } from "../../composables/useAliveFlag";
 
 const props = defineProps<{
   block: ImageBlockType;
@@ -23,9 +24,11 @@ const { t } = useI18n();
 const { syntax } = useMergeTag();
 const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
 const canBrowseMedia = computed(() => !!onRequestMedia);
+const aliveFlag = useAliveFlag();
 
 async function browseMedia(): Promise<void> {
   const result = await onRequestMedia?.({ accept: ["images"] });
+  if (!aliveFlag.alive) return;
   if (result) {
     const updates: Partial<ImageBlockType> = { src: result.url };
     if (result.alt) updates.alt = result.alt;

@@ -1,5 +1,6 @@
 import type {
   Block,
+  ColumnLayout,
   TemplateContent,
   TemplateDefaults,
   TemplateSettings,
@@ -7,6 +8,12 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { createDefaultTemplateContent } from "@templatical/types";
+
+function getColumnCount(layout: ColumnLayout): number {
+  if (layout === "1") return 1;
+  if (layout === "3") return 3;
+  return 2;
+}
 import {
   computed,
   reactive,
@@ -106,6 +113,17 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       }
     }
     return null;
+  }
+
+  function collectBlockIds(block: Block, ids: Set<string>): void {
+    ids.add(block.id);
+    if (block.type === "section") {
+      for (const column of block.children) {
+        for (const child of column) {
+          collectBlockIds(child, ids);
+        }
+      }
+    }
   }
 
   function findBlockParent(
@@ -223,6 +241,9 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       }
       const section = findBlockById(state.content.blocks, targetSectionId);
       if (section && section.type === "section") {
+        if (columnIndex < 0 || columnIndex >= getColumnCount(section.columns)) {
+          return;
+        }
         section.children[columnIndex] = section.children[columnIndex] || [];
         const targetArray = section.children[columnIndex];
         if (index !== undefined && index < targetArray.length) {
@@ -249,9 +270,13 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     if (parent) {
       const index = parent.blocks.findIndex((b) => b.id === blockId);
       if (index !== -1) {
-        parent.blocks.splice(index, 1);
-        if (state.selectedBlockId === blockId) {
-          state.selectedBlockId = null;
+        const [removed] = parent.blocks.splice(index, 1);
+        if (state.selectedBlockId) {
+          const removedIds = new Set<string>();
+          collectBlockIds(removed, removedIds);
+          if (removedIds.has(state.selectedBlockId)) {
+            state.selectedBlockId = null;
+          }
         }
         state.isDirty = true;
       }
@@ -283,6 +308,9 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     if (targetSectionId) {
       const section = findBlockById(state.content.blocks, targetSectionId);
       if (!section || section.type !== "section") return;
+      if (columnIndex < 0 || columnIndex >= getColumnCount(section.columns)) {
+        return;
+      }
       section.children[columnIndex] = section.children[columnIndex] || [];
       targetArray = section.children[columnIndex];
     } else {

@@ -32,8 +32,33 @@ function withProvide<T>(
     app.provide(sym as InjectionKey<unknown>, provides[sym]);
   }
   app.mount(document.createElement('div'));
-  app.unmount();
+  // App is intentionally left mounted so scope-aware composables
+  // (e.g. ones using `onScopeDispose`) keep their effects live for
+  // the duration of the test. Tests that need disposal mount manually.
   return result!;
+}
+
+// Manual mount/unmount pair used by tests that need to assert
+// post-unmount behavior — call `mountField` to mount, run the
+// scenario, then `app.unmount()` at the precise moment under test.
+function mountField(
+  setup: () => unknown,
+  provides: Record<string | symbol, unknown> = {},
+) {
+  let result: unknown;
+  const app = createApp(
+    defineComponent({
+      setup() {
+        result = setup();
+        return () => h('div');
+      },
+    }),
+  );
+  for (const sym of Object.getOwnPropertySymbols(provides)) {
+    app.provide(sym as InjectionKey<unknown>, provides[sym]);
+  }
+  app.mount(document.createElement('div'));
+  return { app, result };
 }
 
 const sampleTags: MergeTag[] = [
@@ -547,6 +572,38 @@ describe('useMergeTagField', () => {
       expect(isEditing.value).toBe(false);
       await insertMergeTag();
       expect(isEditing.value).toBe(true);
+    });
+
+    it('does not emit when component unmounts before request resolves', async () => {
+      const elementRef = createElementRef();
+      const emitFn = vi.fn();
+      let resolveRequest!: (value: MergeTag) => void;
+      const requestCallback = vi.fn(
+        () =>
+          new Promise<MergeTag>((resolve) => {
+            resolveRequest = resolve;
+          }),
+      );
+
+      const { app, result } = mountField(
+        () =>
+          useMergeTagField({
+            modelValue: () => 'Hello ',
+            emit: emitFn,
+            elementRef,
+          }),
+        defaultProvides({
+          [ON_REQUEST_MERGE_TAG_KEY as symbol]: requestCallback,
+        }),
+      );
+      const { insertMergeTag } = result as ReturnType<typeof useMergeTagField>;
+
+      const insertPromise = insertMergeTag();
+      app.unmount();
+      resolveRequest({ label: 'Name', value: '{{name}}' });
+      await insertPromise;
+
+      expect(emitFn).not.toHaveBeenCalled();
     });
   });
 

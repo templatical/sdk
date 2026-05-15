@@ -5,6 +5,7 @@ import { inputClass } from "../../../constants/styleConstants";
 import { Image } from "@lucide/vue";
 import { computed, inject } from "vue";
 import { ON_REQUEST_MEDIA_KEY } from "../../../keys";
+import { useAliveFlag } from "../../../composables/useAliveFlag";
 import FieldWrapper from "./FieldWrapper.vue";
 
 defineProps<{
@@ -19,11 +20,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
+const aliveFlag = useAliveFlag();
 
 const canBrowseMedia = computed(() => !!onRequestMedia);
 
 async function browseMedia(): Promise<void> {
   const result = await onRequestMedia?.({ accept: ["images"] });
+  if (!aliveFlag.alive) return;
   if (result) {
     emit("update:modelValue", result.url);
   }

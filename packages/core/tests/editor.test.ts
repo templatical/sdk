@@ -156,6 +156,45 @@ describe('useEditor', () => {
         expect(editor.state.selectedBlockId).toBeNull();
     });
 
+    it('clears selection when removing a section whose child is selected', () => {
+        const content = createDefaultTemplateContent();
+        const child = createParagraphBlock({ content: '<p>Child</p>' });
+        const section = createSectionBlock({ children: [[child]] });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+        editor.selectBlock(child.id);
+        expect(editor.state.selectedBlockId).toBe(child.id);
+
+        editor.removeBlock(section.id);
+        expect(editor.state.content.blocks).toHaveLength(0);
+        expect(editor.state.selectedBlockId).toBeNull();
+    });
+
+    it('clears selection when removing a deeply nested ancestor', () => {
+        const content = createDefaultTemplateContent();
+        const leaf = createParagraphBlock({ content: '<p>Leaf</p>' });
+        const innerSection = createSectionBlock({ children: [[leaf]] });
+        const outerSection = createSectionBlock({ children: [[innerSection]] });
+        content.blocks = [outerSection];
+        const editor = useEditor({ content });
+        editor.selectBlock(leaf.id);
+
+        editor.removeBlock(outerSection.id);
+        expect(editor.state.selectedBlockId).toBeNull();
+    });
+
+    it('does not clear selection when removing an unrelated block', () => {
+        const content = createDefaultTemplateContent();
+        const a = createParagraphBlock({ content: '<p>A</p>' });
+        const b = createParagraphBlock({ content: '<p>B</p>' });
+        content.blocks = [a, b];
+        const editor = useEditor({ content });
+        editor.selectBlock(a.id);
+
+        editor.removeBlock(b.id);
+        expect(editor.state.selectedBlockId).toBe(a.id);
+    });
+
     it('moves block to new position', () => {
         const content = createDefaultTemplateContent();
         const block1 = createParagraphBlock({ content: '<p>First</p>' });
@@ -581,9 +620,10 @@ describe('moveBlock into section column', () => {
         const content = createDefaultTemplateContent();
         const rootBlock = createParagraphBlock({ content: '<p>Root</p>' });
         const section = createSectionBlock({
+            columns: '2',
             children: [[]],
         });
-        // Clear column to simulate undefined
+        // Clear column to simulate undefined within the declared layout
         (section as any).children[1] = undefined;
         content.blocks = [rootBlock, section];
         const editor = useEditor({ content });
@@ -595,6 +635,98 @@ describe('moveBlock into section column', () => {
         if (sec.type === 'section') {
             expect(sec.children[1]).toHaveLength(1);
             expect(sec.children[1][0].id).toBe(rootBlock.id);
+        }
+    });
+});
+
+describe('column index validation', () => {
+    it('addBlock rejects out-of-range columnIndex for "1" layout section', () => {
+        const content = createDefaultTemplateContent();
+        const section = createSectionBlock({ columns: '1', children: [[]] });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        const added = createParagraphBlock({ content: '<p>X</p>' });
+        editor.addBlock(added, section.id, 5);
+
+        const sec = editor.state.content.blocks[0];
+        expect(sec.type).toBe('section');
+        if (sec.type === 'section') {
+            expect(sec.children.length).toBe(1);
+        }
+    });
+
+    it('addBlock rejects out-of-range columnIndex for "2" layout section', () => {
+        const content = createDefaultTemplateContent();
+        const section = createSectionBlock({ columns: '2', children: [[], []] });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        const added = createParagraphBlock({ content: '<p>X</p>' });
+        editor.addBlock(added, section.id, 2);
+
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            expect(sec.children.length).toBe(2);
+            expect(sec.children[0]).toHaveLength(0);
+            expect(sec.children[1]).toHaveLength(0);
+        }
+    });
+
+    it('addBlock accepts max valid columnIndex for "3" layout section', () => {
+        const content = createDefaultTemplateContent();
+        const section = createSectionBlock({
+            columns: '3',
+            children: [[], [], []],
+        });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        const added = createParagraphBlock({ content: '<p>X</p>' });
+        editor.addBlock(added, section.id, 2);
+
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            expect(sec.children[2]).toHaveLength(1);
+            expect(sec.children[2][0].id).toBe(added.id);
+        }
+    });
+
+    it('addBlock accepts columnIndex 1 for "2-1" layout section', () => {
+        const content = createDefaultTemplateContent();
+        const section = createSectionBlock({
+            columns: '2-1',
+            children: [[], []],
+        });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        const added = createParagraphBlock({ content: '<p>X</p>' });
+        editor.addBlock(added, section.id, 1);
+
+        const sec = editor.state.content.blocks[0];
+        if (sec.type === 'section') {
+            expect(sec.children.length).toBe(2);
+            expect(sec.children[1]).toHaveLength(1);
+        }
+    });
+
+    it('moveBlock rejects out-of-range columnIndex and leaves source intact', () => {
+        const content = createDefaultTemplateContent();
+        const rootBlock = createParagraphBlock({ content: '<p>Root</p>' });
+        const section = createSectionBlock({ columns: '2', children: [[], []] });
+        content.blocks = [rootBlock, section];
+        const editor = useEditor({ content });
+
+        editor.moveBlock(rootBlock.id, 0, section.id, 7);
+
+        expect(editor.state.content.blocks).toHaveLength(2);
+        expect(editor.state.content.blocks[0].id).toBe(rootBlock.id);
+        const sec = editor.state.content.blocks[1];
+        if (sec.type === 'section') {
+            expect(sec.children.length).toBe(2);
+            expect(sec.children[0]).toHaveLength(0);
+            expect(sec.children[1]).toHaveLength(0);
         }
     });
 });

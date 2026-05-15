@@ -477,6 +477,37 @@ describe('useFonts', () => {
       );
       warnSpy.mockRestore();
     });
+
+    it('does not set isLoaded when scope is disposed before fonts resolve', async () => {
+      // Capture the appended link without firing onload — caller controls
+      // when the load completes.
+      let appendedLink: any = null;
+      appendChildSpy = vi.fn((child: any) => {
+        appendedLink = child;
+        return child;
+      });
+      (document as any).head.appendChild = appendChildSpy;
+
+      const scope = effectScope();
+      let fonts!: ReturnType<typeof useFonts>;
+      scope.run(() => {
+        fonts = useFonts({
+          customFonts: [
+            { name: 'SlowFont', url: 'https://fonts.com/slow.css' },
+          ],
+        });
+      });
+
+      const loadPromise = fonts.loadCustomFonts();
+      expect(appendedLink).not.toBeNull();
+      expect(fonts.isLoaded.value).toBe(false);
+
+      scope.stop();
+      appendedLink.onload?.();
+      await loadPromise;
+
+      expect(fonts.isLoaded.value).toBe(false);
+    });
   });
 
   describe('cleanupFontLinks', () => {

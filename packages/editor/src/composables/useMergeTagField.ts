@@ -2,7 +2,15 @@ import {
   getLogicMergeTagKeyword,
   isLogicMergeTagValue,
 } from "@templatical/types";
-import { computed, nextTick, ref, type ComputedRef, type Ref } from "vue";
+import {
+  computed,
+  getCurrentScope,
+  nextTick,
+  onScopeDispose,
+  ref,
+  type ComputedRef,
+  type Ref,
+} from "vue";
 import { useMergeTag } from "./useMergeTag";
 
 export type MergeTagSegment =
@@ -45,6 +53,12 @@ export function useMergeTagField(
 
   const isEditing = ref(false);
   let insertingMergeTag = false;
+  let disposed = false;
+  if (getCurrentScope()) {
+    onScopeDispose(() => {
+      disposed = true;
+    });
+  }
 
   const segments = computed((): MergeTagSegment[] => {
     const val = modelValue();
@@ -133,6 +147,8 @@ export function useMergeTagField(
       insertingMergeTag = false;
     }
 
+    if (disposed) return;
+
     if (mergeTag) {
       const before = modelValue().slice(0, cursorPos);
       const after = modelValue().slice(cursorPos);
@@ -141,6 +157,7 @@ export function useMergeTagField(
 
       isEditing.value = true;
       nextTick(() => {
+        if (disposed) return;
         const newPos = cursorPos + mergeTag.value.length;
         elementRef.value?.focus();
         elementRef.value?.setSelectionRange(newPos, newPos);

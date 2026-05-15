@@ -149,10 +149,11 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
   }
 
   const createdLinks: HTMLLinkElement[] = [];
+  let disposed = false;
 
   async function loadCustomFonts(): Promise<void> {
     if (customFonts.value.length === 0) {
-      isLoaded.value = true;
+      if (!disposed) isLoaded.value = true;
       return;
     }
 
@@ -188,6 +189,7 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
     });
 
     await Promise.allSettled(loadPromises);
+    if (disposed) return;
     isLoaded.value = true;
   }
 
@@ -199,7 +201,10 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
   }
 
   if (getCurrentScope()) {
-    onScopeDispose(cleanupFontLinks);
+    onScopeDispose(() => {
+      disposed = true;
+      cleanupFontLinks();
+    });
   }
 
   return {

@@ -140,6 +140,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
         const listId = `tpl-merge-tag-suggestion-${++POPUP_ID_SEQ}`;
         let latestClientRect: (() => DOMRect | null) | null = null;
         let scrollTargets: Array<EventTarget> = [];
+        let pendingRaf: number | null = null;
 
         function reposition(): void {
           position(latestClientRect?.() ?? null);
@@ -157,7 +158,11 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
          */
         function repositionAfterPaint(): void {
           reposition();
-          requestAnimationFrame(reposition);
+          if (pendingRaf !== null) cancelAnimationFrame(pendingRaf);
+          pendingRaf = requestAnimationFrame(() => {
+            pendingRaf = null;
+            reposition();
+          });
         }
 
         function collectScrollAncestors(el: HTMLElement | null): HTMLElement[] {
@@ -373,6 +378,10 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
             return handled;
           },
           onExit: () => {
+            if (pendingRaf !== null) {
+              cancelAnimationFrame(pendingRaf);
+              pendingRaf = null;
+            }
             detachScrollListeners();
             setEditableAria(false);
             app?.unmount();

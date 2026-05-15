@@ -98,6 +98,11 @@ export interface UseCloudInitializationOptions {
    * cloud editor is mounted inside a shadow root (`shadowDom: true`).
    */
   editorRoot?: Document | ShadowRoot;
+  /**
+   * Outer `.tpl` container ref forwarded to `useEditorCore` for
+   * multi-editor keyboard routing.
+   */
+  containerEl?: Ref<HTMLElement | null>;
 }
 
 export interface UseCloudInitializationReturn {
@@ -303,6 +308,7 @@ export function useCloudInitialization(
       onBeforeUndo: () => collabWarningRef?.showCollabUndoWarning(),
     },
     editorRoot: options.editorRoot,
+    containerEl: options.containerEl,
   });
 
   // --- 7. Collab undo warning ---

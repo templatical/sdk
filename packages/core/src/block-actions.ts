@@ -1,6 +1,20 @@
 import type { Block, BlockDefaults, BlockType } from "@templatical/types";
 import { createBlock, generateId } from "@templatical/types";
 
+function regenerateNestedIds(block: Block): void {
+  if (block.type === "table") {
+    block.rows = block.rows.map((row) => ({
+      ...row,
+      id: generateId(),
+      cells: row.cells.map((cell) => ({ ...cell, id: generateId() })),
+    }));
+  } else if (block.type === "social") {
+    block.icons = block.icons.map((icon) => ({ ...icon, id: generateId() }));
+  } else if (block.type === "menu") {
+    block.items = block.items.map((item) => ({ ...item, id: generateId() }));
+  }
+}
+
 export interface UseBlockActionsOptions {
   addBlock: (
     block: Block,
@@ -64,12 +78,14 @@ export function useBlockActions(
   ): Block {
     const cloned = JSON.parse(JSON.stringify(block)) as Block;
     cloned.id = generateId();
+    regenerateNestedIds(cloned);
 
     if (cloned.type === "section") {
       cloned.children = cloned.children.map((column) =>
         column.map((child) => {
           const clonedChild = JSON.parse(JSON.stringify(child)) as Block;
           clonedChild.id = generateId();
+          regenerateNestedIds(clonedChild);
           return clonedChild;
         }),
       );

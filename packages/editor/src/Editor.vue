@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import type { TemplaticalEditorConfig } from "./index";
 import { useEditor } from "@templatical/core";
 import type { TemplateContent, UiTheme } from "@templatical/types";
@@ -37,9 +37,14 @@ const editor = useEditor({
   templateDefaults: props.config.templateDefaults,
 });
 
+// Outer `.tpl` ref — passed to `useEditorCore` so the active-editor
+// tracker can route keyboard shortcuts when two editors share a page.
+const rootEl = ref<HTMLElement | null>(null);
+
 // --- Shared editor core (composables, provides, plugins, keyboard) ---
 const core = useEditorCore({
   editor,
+  containerEl: rootEl,
   config: {
     uiTheme: props.config.uiTheme,
     theme: props.config.theme,
@@ -88,6 +93,7 @@ defineExpose({
 
 <template>
   <div
+    ref="rootEl"
     class="tpl tpl:relative tpl:h-full tpl:overflow-hidden"
     :class="{ 'tpl:dark': editor.state.darkMode }"
     :data-tpl-theme="core.resolvedTheme.value"

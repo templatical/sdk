@@ -6,6 +6,7 @@ import { useElementBounding } from "@vueuse/core";
 import { computed, inject, ref, type ComputedRef, type Ref } from "vue";
 import { MERGE_TAGS_KEY } from "../keys";
 import { useMergeTag } from "./useMergeTag";
+import { sanitizeRichTextHtml } from "../utils/sanitizeRichTextHtml";
 
 export interface UseEditableTextBlockReturn {
   isEditing: Ref<boolean>;
@@ -22,10 +23,17 @@ export function useEditableTextBlock(
   const mergeTags = inject(MERGE_TAGS_KEY, []);
   const { syntax } = useMergeTag();
 
+  // Sanitize before binding to `v-html`. TipTap-authored content is
+  // already safe, but template JSON loaded from a consumer can carry
+  // arbitrary HTML — including `<script>`, `<img onerror>`, or
+  // `javascript:` anchors that would otherwise execute when the block
+  // renders in the canvas.
   const resolvedContent = computed(() =>
-    resolveHtmlLogicMergeTagLabels(
-      resolveHtmlMergeTagLabels(blockContent(), mergeTags),
-      syntax,
+    sanitizeRichTextHtml(
+      resolveHtmlLogicMergeTagLabels(
+        resolveHtmlMergeTagLabels(blockContent(), mergeTags),
+        syntax,
+      ),
     ),
   );
 

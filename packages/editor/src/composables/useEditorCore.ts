@@ -1,5 +1,7 @@
 import {
   computed,
+  getCurrentScope,
+  onScopeDispose,
   provide,
   ref,
   watch,
@@ -9,6 +11,7 @@ import {
   type Ref,
 } from "vue";
 import { useEventListener } from "@vueuse/core";
+import { registerEditorInstance } from "../utils/activeEditorTracker";
 import {
   useHistory,
   useHistoryInterceptor,
@@ -214,6 +217,16 @@ export interface UseEditorCoreOptions {
    * `document` if omitted — preserves current light-DOM behavior.
    */
   editorRoot?: Document | ShadowRoot;
+
+  /**
+   * Ref pointing at this editor's outer `.tpl` container. When two editors
+   * mount on the same page, the document-level keydown listener installed
+   * by each `useEditorCore` would otherwise fire on every instance. Passing
+   * the container ref lets the active-editor tracker route a keystroke to
+   * the instance the user most recently interacted with. Omit for
+   * single-editor pages — single-instance mode skips the routing check.
+   */
+  containerEl?: Ref<HTMLElement | null>;
 }
 
 export interface UseEditorCoreReturn {
@@ -326,7 +339,34 @@ export function useEditorCore(
   }
 
   // --- Keyboard shortcuts ---
+  // Register this editor with the page-wide active-instance tracker. On
+  // single-editor pages `isActive()` is always true. With two editors
+  // mounted, `claim()` runs on pointerdown inside this editor's
+  // container, and `handleKeyboard` only forwards when this is the
+  // active instance — otherwise a single Cmd+Z would fire both editors'
+  // undo handlers.
+  const instanceHandle = registerEditorInstance();
+  if (getCurrentScope()) {
+    onScopeDispose(instanceHandle.dispose);
+  }
+
+  if (options.containerEl) {
+    const containerEl = options.containerEl;
+    useEventListener(
+      document,
+      "pointerdown",
+      (e: PointerEvent) => {
+        const target = containerEl.value;
+        if (!target) return;
+        const path = e.composedPath?.() ?? [];
+        if (path.includes(target)) instanceHandle.claim();
+      },
+      { capture: true },
+    );
+  }
+
   function handleKeyboard(e: KeyboardEvent): void {
+    if (!instanceHandle.isActive()) return;
     handleEditorKeydown(e, {
       history,
       selectBlock: (id) => editor.selectBlock(id),
@@ -343,9 +383,8 @@ export function useEditorCore(
   // active element stays on `document.body` — a subsequent keystroke
   // never reaches the shadow root, only `document`. Listening at
   // `document` keeps Escape / Cmd+Z / Delete shortcuts working in both
-  // modes; multi-instance scoping (a future concern) will need to
-  // disambiguate per-editor at the handler level rather than via
-  // listener target.
+  // modes; multi-editor disambiguation is handled inside the listener
+  // via `activeEditorTracker`.
   useEventListener(document, "keydown", handleKeyboard);
 
   // --- Popover mount ---

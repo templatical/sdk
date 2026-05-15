@@ -150,6 +150,100 @@ describe("useRichTextLinkDialog", () => {
       expect(editor.value.chain).not.toHaveBeenCalled();
     });
 
+    it("rejects javascript: scheme", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "javascript:alert(1)";
+      result.showLinkDialog.value = true;
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.setLink).not.toHaveBeenCalled();
+      expect(result.showLinkDialog.value).toBe(false);
+    });
+
+    it("rejects data: scheme", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "data:text/html,<script>alert(1)</script>";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.setLink).not.toHaveBeenCalled();
+    });
+
+    it("rejects vbscript: scheme", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "vbscript:msgbox(1)";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.setLink).not.toHaveBeenCalled();
+    });
+
+    it("rejects file: scheme", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "file:///etc/passwd";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.setLink).not.toHaveBeenCalled();
+    });
+
+    it("rejects case-bypassed JAVASCRIPT: scheme", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "JaVaScRiPt:alert(1)";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.setLink).not.toHaveBeenCalled();
+    });
+
+    it("rejects whitespace-padded javascript: scheme", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "  javascript:alert(1)";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.setLink).not.toHaveBeenCalled();
+    });
+
+    it("preserves ftp: and ftps: URLs", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "ftp://example.com/file";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.setLink).toHaveBeenCalledWith({
+        href: "ftp://example.com/file",
+      });
+    });
+
+    it("preserves sms: URLs", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "sms:+15555550100";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.setLink).toHaveBeenCalledWith({
+        href: "sms:+15555550100",
+      });
+    });
+
     it("closes dialog after inserting link", () => {
       const editor = createMockEditor();
       const result = useRichTextLinkDialog(editor);

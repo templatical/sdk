@@ -1,10 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
     createDefaultTemplateContent,
+    createMenuBlock,
     createParagraphBlock,
     createSectionBlock,
+    createSocialIconsBlock,
+    createTableBlock,
     createTitleBlock,
     type BlockDefaults,
+    type MenuBlock,
+    type SocialIconsBlock,
+    type TableBlock,
 } from '@templatical/types';
 import { useBlockActions, useEditor } from '../src';
 
@@ -158,6 +164,75 @@ describe('useBlockActions', () => {
 
         actions.duplicateBlock(original);
         expect(original.id).toBe(originalId);
+    });
+
+    it('duplicates table block with unique row and cell IDs', () => {
+        const opts = createMockOptions();
+        const actions = useBlockActions(opts);
+        const original = createTableBlock();
+        const sourceRowIds = original.rows.map((r) => r.id);
+        const sourceCellIds = original.rows.flatMap((r) => r.cells.map((c) => c.id));
+
+        const cloned = actions.duplicateBlock(original) as TableBlock;
+        expect(cloned.type).toBe('table');
+
+        const clonedRowIds = cloned.rows.map((r) => r.id);
+        const clonedCellIds = cloned.rows.flatMap((r) => r.cells.map((c) => c.id));
+
+        for (const id of clonedRowIds) {
+            expect(sourceRowIds).not.toContain(id);
+        }
+        for (const id of clonedCellIds) {
+            expect(sourceCellIds).not.toContain(id);
+        }
+        // Cloned IDs unique among themselves
+        expect(new Set(clonedRowIds).size).toBe(clonedRowIds.length);
+        expect(new Set(clonedCellIds).size).toBe(clonedCellIds.length);
+        // Cell content preserved
+        expect(cloned.rows[0].cells[0].content).toBe(original.rows[0].cells[0].content);
+    });
+
+    it('duplicates social icons block with unique icon IDs', () => {
+        const opts = createMockOptions();
+        const actions = useBlockActions(opts);
+        const original = createSocialIconsBlock({
+            icons: [
+                { id: 'icon-1', platform: 'twitter', url: 'https://twitter.com/x' },
+                { id: 'icon-2', platform: 'facebook', url: 'https://facebook.com/x' },
+            ],
+        });
+
+        const cloned = actions.duplicateBlock(original) as SocialIconsBlock;
+        expect(cloned.type).toBe('social');
+        expect(cloned.icons).toHaveLength(2);
+
+        expect(cloned.icons[0].id).not.toBe('icon-1');
+        expect(cloned.icons[1].id).not.toBe('icon-2');
+        expect(cloned.icons[0].id).not.toBe(cloned.icons[1].id);
+        // Non-id fields preserved
+        expect(cloned.icons[0].platform).toBe('twitter');
+        expect(cloned.icons[1].url).toBe('https://facebook.com/x');
+    });
+
+    it('duplicates menu block with unique item IDs', () => {
+        const opts = createMockOptions();
+        const actions = useBlockActions(opts);
+        const original = createMenuBlock({
+            items: [
+                { id: 'item-1', label: 'Home', url: 'https://example.com' },
+                { id: 'item-2', label: 'About', url: 'https://example.com/about' },
+            ],
+        });
+
+        const cloned = actions.duplicateBlock(original) as MenuBlock;
+        expect(cloned.type).toBe('menu');
+        expect(cloned.items).toHaveLength(2);
+
+        expect(cloned.items[0].id).not.toBe('item-1');
+        expect(cloned.items[1].id).not.toBe('item-2');
+        expect(cloned.items[0].id).not.toBe(cloned.items[1].id);
+        expect(cloned.items[0].label).toBe('Home');
+        expect(cloned.items[1].label).toBe('About');
     });
 });
 

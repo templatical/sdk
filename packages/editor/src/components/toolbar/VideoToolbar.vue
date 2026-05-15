@@ -8,6 +8,7 @@ import { containsMergeTag, SYNTAX_PRESETS } from "@templatical/types";
 import { Image } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
 import { ON_REQUEST_MEDIA_KEY, MERGE_TAG_SYNTAX_KEY } from "../../keys";
+import { useAliveFlag } from "../../composables/useAliveFlag";
 import { useTimeoutFn } from "@vueuse/core";
 
 const props = defineProps<{
@@ -21,6 +22,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
 const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
+const aliveFlag = useAliveFlag();
 
 const canBrowseMedia = computed(() => !!onRequestMedia);
 const urlHasMergeTag = computed(() =>
@@ -42,6 +44,7 @@ function updateField(field: keyof VideoBlock, value: unknown): void {
 
 async function openMediaBrowser(): Promise<void> {
   const result = await onRequestMedia?.({ accept: ["images"] });
+  if (!aliveFlag.alive) return;
   if (result) {
     updateField("thumbnailUrl", result.url);
     pulseThumbnail.value = true;
