@@ -76,7 +76,7 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `@templatical/editor`          | Visual drag-and-drop editor and `init()` entry point. Self-contained — Vue, TipTap, and `@templatical/core`/`/types` are bundled inside. | Required                                                                                            |
 | `@templatical/renderer`        | Converts templates to MJML for email sending.                                                                                            | Optional — install where you call `editor.toMjml()` (browser) or `renderToMjml()` (Node.js, server) |
-| `@templatical/quality`         | Template linters (accessibility + structure) that drive the editor's Issues panel and a headless / CI check.                             | Optional — install to turn on the Issues sidebar tab and inline block badges                        |
+| `@templatical/quality`         | Template linters (accessibility, structure, links) that drive the editor's Issues panel and a headless / CI check.                             | Optional — install to turn on the Issues sidebar tab and inline block badges                        |
 | `@templatical/media-library`   | Standalone media library (types, composable, API client, Vue components) used by `initCloud()`.                                          | Optional — required only when using `initCloud()` for the media browser                             |
 | `@templatical/types`           | Shared TypeScript types, block factory functions, type guards.                                                                           | Only if you build templates programmatically without the editor (e.g. server-side workflows)        |
 | `@templatical/core`            | Framework-agnostic editor logic (state, history) for headless setups.                                                                    | Only for headless / non-editor consumers                                                            |
@@ -93,7 +93,7 @@ The editor lazy-loads four optional peers via dynamic `import()` at runtime, gat
 | Peer                         | When loaded                     | Install if you                    |
 | ---------------------------- | ------------------------------- | --------------------------------- |
 | `@templatical/renderer`      | First call to `editor.toMjml()` | Need MJML export from the browser |
-| `@templatical/quality`       | Editor mount (Issues panel)     | Want accessibility + structure lint in the Issues sidebar |
+| `@templatical/quality`       | Editor mount (Issues panel)     | Want accessibility, structure, and link lint in the Issues sidebar |
 | `@templatical/media-library` | First open of the media browser | Use `initCloud()`                 |
 | `pusher-js`                  | Cloud realtime connect          | Use `initCloud()`                 |
 

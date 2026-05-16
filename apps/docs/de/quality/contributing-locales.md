@@ -5,8 +5,9 @@
 1. **Barrierefreiheits-Regelnachrichten** (`src/accessibility/messages/{locale}.ts`) — die Texte, die der Editor für jedes `a11y.*`-Issue zeigt.
 2. **Vague-Text-Dictionaries** (`src/accessibility/dictionaries/{locale}.ts`) — Phrasenlisten, die von `a11y.link-vague-text`, `a11y.button-vague-label` und `a11y.img-linked-no-context` genutzt werden.
 3. **Struktur-Regelnachrichten** (`src/structure/messages/{locale}.ts`) — Texte für jedes `structure.*`-Issue.
+4. **Link-Regelnachrichten** (`src/links/messages/{locale}.ts`) — Texte für jedes `link.*`-Issue.
 
-Jede Datenmenge spiegelt die Locale-Auswahl des Editors. Der Struktur-Linter hat kein Vague-Text-Dictionary-Pendant — seine Regeln sind deterministisch und sprachunabhängig, nur der Nachrichtentext muss übersetzt werden.
+Jede Datenmenge spiegelt die Locale-Auswahl des Editors. Der Struktur- und der Link-Linter haben kein Vague-Text-Dictionary-Pendant — ihre Regeln sind deterministisch und sprachunabhängig, nur der Nachrichtentext muss übersetzt werden.
 
 ## Verzeichnisstruktur
 
@@ -25,6 +26,11 @@ packages/quality/src/structure/messages/
   en.ts       ← Source of Truth
   de.ts       ← annotiert mit `typeof en`
   index.ts    ← exportiert formatStructureMessage(), getStructureMessages()
+
+packages/quality/src/links/messages/
+  en.ts       ← Source of Truth
+  de.ts       ← annotiert mit `typeof en`
+  index.ts    ← exportiert formatLinkMessage(), getLinkMessages()
 ```
 
 ## Eine Locale hinzufügen
@@ -88,7 +94,26 @@ const pt: typeof en = {
 export default pt;
 ```
 
-Das war's — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES` und `SUPPORTED_STRUCTURE_MESSAGE_LOCALES` reflektieren die neue Locale automatisch. Keine Registry zu editieren, kein Test zu aktualisieren.
+### 4. Link-Regelnachrichten
+
+`links/messages/<lang>.ts` ablegen:
+
+```ts
+// links/messages/pt.ts
+import type en from "./en";
+
+const pt: typeof en = {
+  "link.javascript-protocol":
+    'URL usa o protocolo "javascript:", que é removido na renderização por segurança. Substitua por um link real ou remova a URL.',
+  "link.unsupported-protocol":
+    'URL usa o protocolo "{protocol}", que a maioria dos clientes de e-mail não suporta. Use http, https, mailto, tel ou sms.',
+  // …ein Key pro Link-Regel
+};
+
+export default pt;
+```
+
+Das war's — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES` und `SUPPORTED_LINK_MESSAGE_LOCALES` reflektieren die neue Locale automatisch. Keine Registry zu editieren, kein Test zu aktualisieren.
 
 ## Phrasen-Richtlinien (Vague-Text-Dictionary)
 
@@ -102,4 +127,4 @@ Das war's — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES` und `S
 ## Wie das Matching aufgelöst wird
 
 - **Vague-Text-Dictionary** — `getDictionary(locale)` liefert eine Vereinigung der Phrasen (und Action-Hints) aller registrierten Locales. Das `locale`-Argument wird der API-Symmetrie wegen akzeptiert, ändert aber aktuell nichts an der zurückgegebenen Menge — eine vage Phrase ist universell vage, und ein Action-Verb in einer beliebigen registrierten Sprache zählt als Link-Ziel-Kontext. Die Erkennung ist by design sprachübergreifend.
-- **Regelnachrichten** — `formatMessage(locale, ruleId, params?)` (Barrierefreiheit) und `formatStructureMessage(locale, ruleId, params?)` (Struktur) lösen das lokalisierte Template über die jeweilige `messages/{locale}.ts`-Datei auf und interpolieren `{name}`-Platzhalter. Beide fallen auf Englisch zurück, wenn die Locale nicht gebündelt ist.
+- **Regelnachrichten** — `formatMessage(locale, ruleId, params?)` (Barrierefreiheit), `formatStructureMessage(locale, ruleId, params?)` (Struktur) und `formatLinkMessage(locale, ruleId, params?)` (Links) lösen das lokalisierte Template über die jeweilige `messages/{locale}.ts`-Datei auf und interpolieren `{name}`-Platzhalter. Alle drei fallen auf Englisch zurück, wenn die Locale nicht gebündelt ist.

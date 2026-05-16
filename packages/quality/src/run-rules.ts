@@ -7,7 +7,7 @@ import type {
   RuleHit,
   Severity,
 } from "./types";
-import { DEFAULT_A11Y_THRESHOLDS } from "./types";
+import { DEFAULT_A11Y_THRESHOLDS, DEFAULT_NON_PRODUCTION_HOSTS } from "./types";
 import { walkBlocks } from "./walk";
 
 export type MessageFormatter = (
@@ -81,12 +81,17 @@ export function resolveOptions(
     ...DEFAULT_A11Y_THRESHOLDS,
     ...(options.thresholds ?? {}),
   };
+  const links = {
+    nonProductionHosts:
+      options.links?.nonProductionHosts ?? DEFAULT_NON_PRODUCTION_HOSTS,
+  };
   const locale = options.locale ?? "en";
 
   return {
     locale,
     rules: overrides,
     thresholds,
+    links,
     severity: (ruleId: string): Severity => {
       const override = overrides[ruleId];
       if (override !== undefined) {

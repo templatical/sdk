@@ -13,6 +13,7 @@ function createContent(): TemplateContent {
 interface QualityMockHandle {
   lintAccessibility: ReturnType<typeof vi.fn>;
   lintStructure: ReturnType<typeof vi.fn>;
+  lintLinks: ReturnType<typeof vi.fn>;
   resolveImport: () => void;
   rejectImport: (err: unknown) => void;
 }
@@ -26,6 +27,7 @@ async function setupQualityMock(): Promise<QualityMockHandle> {
 
   const lintAccessibility = vi.fn(() => [] as unknown[]);
   const lintStructure = vi.fn(() => [] as unknown[]);
+  const lintLinks = vi.fn(() => [] as unknown[]);
   let resolve!: () => void;
   let reject!: (err: unknown) => void;
   const importPromise = new Promise<void>((res, rej) => {
@@ -35,12 +37,13 @@ async function setupQualityMock(): Promise<QualityMockHandle> {
 
   vi.doMock("@templatical/quality", async () => {
     await importPromise;
-    return { lintAccessibility, lintStructure };
+    return { lintAccessibility, lintStructure, lintLinks };
   });
 
   return {
     lintAccessibility,
     lintStructure,
+    lintLinks,
     resolveImport: resolve,
     rejectImport: reject,
   };
@@ -82,6 +85,7 @@ describe("useTemplateLint", () => {
 
     expect(mock.lintAccessibility).not.toHaveBeenCalled();
     expect(mock.lintStructure).not.toHaveBeenCalled();
+    expect(mock.lintLinks).not.toHaveBeenCalled();
     expect(result.ready.value).toBe(false);
 
     // Mutate content. If a leaked watcher exists, it would fire runLint after
@@ -94,9 +98,10 @@ describe("useTemplateLint", () => {
 
     expect(mock.lintAccessibility).not.toHaveBeenCalled();
     expect(mock.lintStructure).not.toHaveBeenCalled();
+    expect(mock.lintLinks).not.toHaveBeenCalled();
   });
 
-  it("runs both linters on content changes when alive", async () => {
+  it("runs every linter on content changes when alive", async () => {
     const mock = await setupQualityMock();
     const useTemplateLint = await loadComposable();
 
@@ -118,6 +123,7 @@ describe("useTemplateLint", () => {
 
     expect(mock.lintAccessibility).toHaveBeenCalledTimes(1);
     expect(mock.lintStructure).toHaveBeenCalledTimes(1);
+    expect(mock.lintLinks).toHaveBeenCalledTimes(1);
 
     content.value = {
       blocks: [{ id: "b2", type: "paragraph" }],
@@ -127,15 +133,19 @@ describe("useTemplateLint", () => {
 
     expect(mock.lintAccessibility).toHaveBeenCalledTimes(2);
     expect(mock.lintStructure).toHaveBeenCalledTimes(2);
+    expect(mock.lintLinks).toHaveBeenCalledTimes(2);
   });
 
-  it("merges issues from both linters", async () => {
+  it("merges issues from every linter", async () => {
     const mock = await setupQualityMock();
     mock.lintAccessibility.mockReturnValue([
       { ruleId: "a11y.x", blockId: "b1", severity: "error", message: "a" },
     ]);
     mock.lintStructure.mockReturnValue([
       { ruleId: "structure.x", blockId: "b1", severity: "error", message: "b" },
+    ]);
+    mock.lintLinks.mockReturnValue([
+      { ruleId: "link.x", blockId: "b1", severity: "error", message: "c" },
     ]);
     const useTemplateLint = await loadComposable();
 
@@ -155,6 +165,7 @@ describe("useTemplateLint", () => {
     expect(result.issues.value.map((i) => i.ruleId)).toEqual([
       "a11y.x",
       "structure.x",
+      "link.x",
     ]);
   });
 
@@ -177,5 +188,6 @@ describe("useTemplateLint", () => {
 
     expect(mock.lintAccessibility).not.toHaveBeenCalled();
     expect(mock.lintStructure).not.toHaveBeenCalled();
+    expect(mock.lintLinks).not.toHaveBeenCalled();
   });
 });

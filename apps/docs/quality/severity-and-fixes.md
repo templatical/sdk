@@ -1,6 +1,6 @@
 # Severity & fixes
 
-Both linters share the same severity model and patch shape, so this page covers `lintAccessibility` and `lintStructure` together.
+Every linter shares the same severity model and patch shape, so this page covers `lintAccessibility`, `lintStructure`, and `lintLinks` together.
 
 ## Severity model
 
@@ -37,11 +37,16 @@ In the editor, `apply` runs through the existing `editor.updateBlock` / `editor.
 Headless callers can construct their own `LintPatchContext` and apply patches programmatically:
 
 ```ts
-import { lintAccessibility, lintStructure } from "@templatical/quality";
+import {
+  lintAccessibility,
+  lintLinks,
+  lintStructure,
+} from "@templatical/quality";
 
 const issues = [
   ...lintAccessibility(content),
   ...lintStructure(content),
+  ...lintLinks(content),
 ];
 const fixable = issues.filter((i) => i.fix);
 
@@ -60,5 +65,6 @@ See the **Auto-fix** column in each catalog. Today's auto-fixable rules:
 
 - Accessibility — `a11y.img-alt-is-filename`, `a11y.img-decorative-needs-empty-alt`, `a11y.link-target-blank-no-rel`.
 - Structure — `structure.empty-section`.
+- Links — none. Every link rule is destructive to auto-fix (strip the href, change the protocol) and the right answer depends on intent.
 
 Auto-fixes are added conservatively — only when the right answer is unambiguous. `structure.empty-column`, for example, has no auto-fix because removing an empty column requires changing the section's `columns` layout, and the right answer (merge into a sibling vs. drop the section vs. change the layout key) depends on intent.

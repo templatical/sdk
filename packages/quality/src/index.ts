@@ -1,7 +1,10 @@
 export { lintAccessibility, ACCESSIBILITY_RULES } from "./accessibility";
 export { lintStructure, STRUCTURE_RULES } from "./structure";
+export { lintLinks, LINK_RULES } from "./links";
 export { walkBlocks } from "./walk";
 export type { Visitor } from "./walk";
+export { walkUrls } from "./url-walker";
+export type { UrlOccurrence, UrlSource } from "./url-walker";
 export { getContrastRatio, parseHex, isOpaqueHex } from "./contrast";
 export { extractAnchors, extractText } from "./html-utils";
 export type { AnchorInfo } from "./html-utils";
@@ -25,12 +28,20 @@ export type {
   StructureMessageMap,
   StructureRuleMessageId,
 } from "./structure/messages";
+export {
+  formatLinkMessage,
+  getLinkMessages,
+  SUPPORTED_LINK_MESSAGE_LOCALES,
+} from "./links/messages";
+export type { LinkMessageMap, LinkRuleMessageId } from "./links/messages";
 export type {
   LintIssue,
+  LintLinksOptions,
   LintOptions,
   LintPatch,
   LintPatchContext,
   LintThresholds,
+  ResolvedLinksOptions,
   ResolvedOptions,
   Rule,
   RuleHit,
@@ -38,4 +49,4 @@ export type {
   Severity,
   WalkContext,
 } from "./types";
-export { DEFAULT_A11Y_THRESHOLDS } from "./types";
+export { DEFAULT_A11Y_THRESHOLDS, DEFAULT_NON_PRODUCTION_HOSTS } from "./types";

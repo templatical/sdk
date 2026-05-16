@@ -1,6 +1,6 @@
 # Schweregrade & Fixes
 
-Beide Linter teilen sich dasselbe Schweregrad-Modell und dieselbe Patch-Struktur, daher behandelt diese Seite `lintAccessibility` und `lintStructure` gemeinsam.
+Alle Linter teilen sich dasselbe Schweregrad-Modell und dieselbe Patch-Struktur, daher behandelt diese Seite `lintAccessibility`, `lintStructure` und `lintLinks` gemeinsam.
 
 ## Schweregrad-Modell
 
@@ -37,11 +37,16 @@ Im Editor läuft `apply` über den bestehenden `editor.updateBlock` / `editor.up
 Headless-Aufrufer können einen eigenen `LintPatchContext` konstruieren und Patches programmatisch anwenden:
 
 ```ts
-import { lintAccessibility, lintStructure } from "@templatical/quality";
+import {
+  lintAccessibility,
+  lintLinks,
+  lintStructure,
+} from "@templatical/quality";
 
 const issues = [
   ...lintAccessibility(content),
   ...lintStructure(content),
+  ...lintLinks(content),
 ];
 const fixable = issues.filter((i) => i.fix);
 
@@ -60,5 +65,6 @@ Siehe die **Auto-Fix**-Spalte in den jeweiligen Katalogen. Aktuell mit Auto-Fix:
 
 - Barrierefreiheit — `a11y.img-alt-is-filename`, `a11y.img-decorative-needs-empty-alt`, `a11y.link-target-blank-no-rel`.
 - Struktur — `structure.empty-section`.
+- Links — keine. Jede Link-Regel ist beim Auto-Fix destruktiv (Href entfernen, Protokoll ändern), und die richtige Antwort hängt vom Intent ab.
 
 Auto-Fixes werden konservativ ergänzt — nur wenn die richtige Antwort eindeutig ist. `structure.empty-column` hat z. B. keinen Auto-Fix, weil das Entfernen einer leeren Spalte das `columns`-Layout der Sektion ändern muss und die richtige Antwort (in Nachbar-Spalte zusammenführen vs. Sektion entfernen vs. Layout-Key ändern) von der Intention abhängt.

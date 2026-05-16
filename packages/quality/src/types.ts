@@ -34,6 +34,19 @@ export interface LintThresholds {
   minTouchTargetPx: number;
 }
 
+export interface LintLinksOptions {
+  /**
+   * Host patterns that should flag as "staging / non-production".
+   * Each entry is a glob-style pattern matched against the URL host.
+   * `*` matches any run of characters (including `.`), so `*.staging.*`
+   * matches `app.staging.example.com`.
+   *
+   * Default: ['localhost', '127.0.0.1', '0.0.0.0', '*.local',
+   *           '*.staging.*', '*.dev.*']
+   */
+  nonProductionHosts?: string[];
+}
+
 export interface LintOptions {
   /**
    * Fully disable linting. When true, the editor skips lazy-loading the
@@ -45,12 +58,19 @@ export interface LintOptions {
   /** Per-rule severity override. Set to `'off'` to disable a specific rule. */
   rules?: Record<string, Severity>;
   thresholds?: Partial<LintThresholds>;
+  /** Per-linter knobs. Only `lintLinks` reads `links` today. */
+  links?: LintLinksOptions;
+}
+
+export interface ResolvedLinksOptions {
+  nonProductionHosts: string[];
 }
 
 export interface ResolvedOptions {
   locale: string;
   rules: Record<string, Severity>;
   thresholds: LintThresholds;
+  links: ResolvedLinksOptions;
   /** Returns the effective severity for a rule (override or default). */
   severity: (ruleId: string) => Severity;
 }
@@ -104,3 +124,12 @@ export const DEFAULT_A11Y_THRESHOLDS: LintThresholds = {
   allCapsMinLength: 20,
   minTouchTargetPx: 44,
 };
+
+export const DEFAULT_NON_PRODUCTION_HOSTS: string[] = [
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+  "*.local",
+  "*.staging.*",
+  "*.dev.*",
+];

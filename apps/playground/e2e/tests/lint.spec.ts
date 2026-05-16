@@ -58,4 +58,25 @@ test.describe("Template lint (a11y + structure)", () => {
     await tab.waitFor();
     await expect(tab).toContainText(/2/);
   });
+
+  test("link.javascript-protocol fires when a button URL is `javascript:`", async ({
+    blankEditorReady: { editorPage },
+    page,
+  }) => {
+    await editorPage.dragBlockFromSidebar("button");
+    await editorPage.selectBlockByType("button");
+
+    // Fill the URL input in the button toolbar. There is only one
+    // `type="url"` input on the right panel — match it directly.
+    const urlInput = page
+      .locator(SELECTORS.rightPanelContent)
+      .locator('input[type="url"]');
+    await urlInput.fill("javascript:alert(1)");
+    // Blur so the model-update is committed before lint runs.
+    await urlInput.blur();
+
+    await editorPage.openIssuesTab();
+    const row = editorPage.getIssueRow("link.javascript-protocol");
+    await expect(row).toBeVisible();
+  });
 });

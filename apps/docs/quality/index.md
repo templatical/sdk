@@ -8,8 +8,9 @@
 |---|---|---|
 | **[Accessibility](./accessibility/)** | Missing alt text, low contrast, vague CTAs, heading-skip, undersized touch targets, ALL CAPS body, target=_blank missing rel, missing preheader, … | mostly error/warning |
 | **[Structure](./structure/)** | Duplicate block IDs, sections with the wrong column count, nested sections, empty sections, empty columns | mostly error; some warning |
+| **[Links](./links/)** | Dangerous URL schemes (`javascript:`), unsupported protocols, malformed `mailto:` / `tel:`, staging / localhost URLs leaking into a template | mostly warning; `link.javascript-protocol` is error |
 
-Both linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`) when grouping.
+All three linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`) when grouping.
 
 ## Architecture
 
@@ -26,13 +27,16 @@ Both linters return the same `LintIssue` shape and share the same options surfac
   <text x="100" y="76" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">from the editor or DB</text>
   <!-- Arrow -->
   <line x1="190" y1="50" x2="225" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah-quality)"/>
-  <!-- Step 2: Engines (two boxes stacked) -->
-  <rect x="230" y="2" width="180" height="44" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
-  <text x="320" y="22" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintAccessibility()</text>
-  <text x="320" y="38" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">a11y.* rules</text>
-  <rect x="230" y="54" width="180" height="44" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
-  <text x="320" y="74" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintStructure()</text>
-  <text x="320" y="90" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">structure.* rules</text>
+  <!-- Step 2: Engines (three boxes stacked) -->
+  <rect x="230" y="2" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
+  <text x="320" y="16" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintAccessibility()</text>
+  <text x="320" y="28" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">a11y.* rules</text>
+  <rect x="230" y="38" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
+  <text x="320" y="52" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintStructure()</text>
+  <text x="320" y="64" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">structure.* rules</text>
+  <rect x="230" y="74" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
+  <text x="320" y="88" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintLinks()</text>
+  <text x="320" y="100" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">link.* rules</text>
   <!-- Arrow -->
   <line x1="410" y1="50" x2="445" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah-quality)"/>
   <!-- Step 3: Output -->
@@ -95,8 +99,10 @@ const editor = init({
       "a11y.img-missing-alt": "warning",      // soften from default 'error'
       "a11y.text-all-caps": "off",            // turn off entirely
       "structure.empty-column": "info",       // demote to info
+      "link.localhost-or-staging": "error",   // promote to error before send
     },
     thresholds: { minFontSize: 16 },
+    links: { nonProductionHosts: ["*.staging.*", "*.preview.*"] },
   },
 });
 ```
@@ -111,3 +117,4 @@ The Issues tab and inline canvas badges appear automatically once the optional p
 - [Contributing locales](./contributing-locales) — adding rule messages + vague-text dictionaries.
 - [Accessibility linter](./accessibility/) — what it catches, rule catalog.
 - [Structure linter](./structure/) — what it catches, rule catalog.
+- [Links linter](./links/) — what it catches, rule catalog.

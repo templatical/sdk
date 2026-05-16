@@ -5,8 +5,9 @@
 1. **Accessibility rule messages** (`src/accessibility/messages/{locale}.ts`) — strings the editor shows for each `a11y.*` issue.
 2. **Vague-text dictionaries** (`src/accessibility/dictionaries/{locale}.ts`) — phrase lists used by `a11y.link-vague-text`, `a11y.button-vague-label`, and `a11y.img-linked-no-context`.
 3. **Structure rule messages** (`src/structure/messages/{locale}.ts`) — strings for each `structure.*` issue.
+4. **Link rule messages** (`src/links/messages/{locale}.ts`) — strings for each `link.*` issue.
 
-Each set mirrors the editor's locale set. The structure linter has no equivalent of vague-text dictionaries — its rules are deterministic and locale-agnostic, only the message text needs translating.
+Each set mirrors the editor's locale set. The structure and link linters have no equivalent of vague-text dictionaries — their rules are deterministic and locale-agnostic, only the message text needs translating.
 
 ## File layout
 
@@ -25,6 +26,11 @@ packages/quality/src/structure/messages/
   en.ts       ← source of truth
   de.ts       ← annotated `typeof en`
   index.ts    ← exports formatStructureMessage(), getStructureMessages()
+
+packages/quality/src/links/messages/
+  en.ts       ← source of truth
+  de.ts       ← annotated `typeof en`
+  index.ts    ← exports formatLinkMessage(), getLinkMessages()
 ```
 
 ## Adding a locale
@@ -88,7 +94,26 @@ const pt: typeof en = {
 export default pt;
 ```
 
-That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, and `SUPPORTED_STRUCTURE_MESSAGE_LOCALES` reflect the new locale automatically. No registry edit, no test update.
+### 4. Link rule messages
+
+Drop `links/messages/<lang>.ts`:
+
+```ts
+// links/messages/pt.ts
+import type en from "./en";
+
+const pt: typeof en = {
+  "link.javascript-protocol":
+    'URL usa o protocolo "javascript:", que é removido na renderização por segurança. Substitua por um link real ou remova a URL.',
+  "link.unsupported-protocol":
+    'URL usa o protocolo "{protocol}", que a maioria dos clientes de e-mail não suporta. Use http, https, mailto, tel ou sms.',
+  // …one key per link rule
+};
+
+export default pt;
+```
+
+That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPPORTED_STRUCTURE_MESSAGE_LOCALES`, and `SUPPORTED_LINK_MESSAGE_LOCALES` reflect the new locale automatically. No registry edit, no test update.
 
 ## Phrase guidelines (vague-text dictionary)
 
@@ -102,4 +127,4 @@ That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, and `
 ## How matching resolves
 
 - **Vague-text dictionary** — `getDictionary(locale)` returns a union of every registered locale's phrases (and action hints). The `locale` argument is accepted for API symmetry but currently doesn't change the returned set; a vague phrase is universally vague, and an action verb in any registered language counts as link-destination context, so detection is cross-locale by design.
-- **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility) and `formatStructureMessage(locale, ruleId, params?)` (structure) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. Both fall back to English when the locale isn't bundled.
+- **Rule messages** — `formatMessage(locale, ruleId, params?)` (accessibility), `formatStructureMessage(locale, ruleId, params?)` (structure), and `formatLinkMessage(locale, ruleId, params?)` (links) resolve the localized template via the matching `messages/{locale}.ts` file and interpolate `{name}` placeholders. All three fall back to English when the locale isn't bundled.
