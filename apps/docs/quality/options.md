@@ -6,15 +6,31 @@
 interface LintOptions {
   disabled?: boolean;
   locale?: string;
+  accessibility?: false | AccessibilityLintOptions;
+  structure?: false | StructureLintOptions;
+  links?: false | LinksLintOptions;
+}
+
+interface AccessibilityLintOptions {
   rules?: Record<string, Severity>;
   thresholds?: Partial<LintThresholds>;
-  links?: LintLinksOptions;
+}
+
+interface StructureLintOptions {
+  rules?: Record<string, Severity>;
+}
+
+interface LinksLintOptions {
+  rules?: Record<string, Severity>;
+  nonProductionHosts?: string[];
 }
 
 type Severity = "error" | "warning" | "info" | "off";
 ```
 
 The same object also gates the editor's `init({ lint })` config — every option here applies to every linter via the shared `useTemplateLint` composable.
+
+Severity overrides and tool-specific knobs (`thresholds`, `nonProductionHosts`) are namespaced under their owning linter, so each linter only sees the config that's relevant to it.
 
 ## `disabled`
 
@@ -28,6 +44,10 @@ When `true`:
 - The inline canvas badges produce **no DOM**.
 
 Use this when a tenant has explicitly opted out, or to keep the default OSS bundle minimal. There's no soft-disable — `disabled: true` is a complete, irreversible-per-instance shut-off.
+
+::: tip Disabling every linter individually has the same effect
+The editor treats `{ accessibility: false, structure: false, links: false }` as equivalent to `{ disabled: true }`: no chunk download, no sidebar tab, no canvas badges. So you don't need the global flag if every linter is already off.
+:::
 
 ## `locale`
 
@@ -57,33 +77,45 @@ Headless callers (`lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(.
 The dictionary is a union of every registered locale, so a German-locale email with an English `Click here` button still flags `a11y.link-vague-text` / `a11y.button-vague-label`, and a German `Jetzt kaufen` alt on an English-locale linked image still satisfies `a11y.img-linked-no-context`'s action-hint check. The `locale` option doesn't gate matching — it only drives message text.
 :::
 
-## `rules`
+## `accessibility`
+
+| Default | `{}` (linter enabled, defaults for every knob) |
+|---|---|
+
+Configuration for `lintAccessibility`. Set to `false` to disable the entire accessibility linter without enumerating its rules.
+
+```ts
+// Turn off the whole accessibility linter
+lintAccessibility(content, { accessibility: false });
+```
+
+### `accessibility.rules`
 
 | Default | `{}` |
 |---|---|
 
-Per-rule severity override. Set a rule to `'off'` to disable it entirely. Set to a different severity to bend the default classification:
+Per-rule severity override for accessibility rules. Set a rule to `'off'` to disable it entirely. Set to a different severity to bend the default classification:
 
 ```ts
-{
-  "a11y.img-missing-alt": "warning",   // soften
-  "a11y.text-all-caps": "off",         // disable
-  "a11y.missing-preheader": "warning", // promote info → warning
-  "structure.empty-column": "info",    // demote warning → info
-  "link.localhost-or-staging": "error",// promote to error before send
-}
+lintAccessibility(content, {
+  accessibility: {
+    rules: {
+      "a11y.img-missing-alt": "warning",   // soften
+      "a11y.text-all-caps": "off",         // disable
+      "a11y.missing-preheader": "warning", // promote info → warning
+    },
+  },
+});
 ```
 
-Rule IDs are namespaced by linter: `a11y.*` for accessibility rules, `structure.*` for structure rules, `link.*` for link rules. Override keys must use the full prefixed ID.
+Override keys use the full prefixed rule ID (`a11y.*`) — the same ID that appears on `LintIssue.ruleId`, so a value copied from an emitted issue pastes straight in. See the [accessibility rule catalog](./accessibility/rule-catalog) for default severities.
 
-The override applies before the rule runs, so disabled rules don't even execute. See each linter's rule catalog for default severities: [accessibility](./accessibility/rule-catalog) · [structure](./structure/rule-catalog) · [links](./links/rule-catalog).
-
-## `thresholds`
+### `accessibility.thresholds`
 
 | Default | See below |
 |---|---|
 
-Numeric knobs that some accessibility rules consult. (Structure rules don't currently use thresholds.)
+Numeric knobs that some accessibility rules consult.
 
 | Threshold | Default | Used by |
 |---|---|---|
@@ -96,21 +128,65 @@ Override one without losing the others — partial merging is built in:
 
 ```ts
 lintAccessibility(content, {
-  thresholds: { minFontSize: 16 },
+  accessibility: { thresholds: { minFontSize: 16 } },
 });
 ```
 
 The `DEFAULT_A11Y_THRESHOLDS` constant is also exported if you need to reference the baseline programmatically.
 
-## `links`
+## `structure`
 
-`lintLinks` reads one optional sub-object:
+| Default | `{}` |
+|---|---|
+
+Configuration for `lintStructure`. Set to `false` to disable the entire structure linter.
 
 ```ts
-interface LintLinksOptions {
-  nonProductionHosts?: string[];
-}
+lintStructure(content, { structure: false });
 ```
+
+### `structure.rules`
+
+Per-rule severity override for structure rules:
+
+```ts
+lintStructure(content, {
+  structure: {
+    rules: {
+      "structure.empty-column": "info",    // demote warning → info
+    },
+  },
+});
+```
+
+Keys use the `structure.*` prefix. See the [structure rule catalog](./structure/rule-catalog) for default severities.
+
+## `links`
+
+| Default | `{}` |
+|---|---|
+
+Configuration for `lintLinks`. Set to `false` to disable the entire links linter.
+
+```ts
+lintLinks(content, { links: false });
+```
+
+### `links.rules`
+
+Per-rule severity override for link rules:
+
+```ts
+lintLinks(content, {
+  links: {
+    rules: {
+      "link.localhost-or-staging": "error", // promote to error before send
+    },
+  },
+});
+```
+
+Keys use the `link.*` prefix. See the [links rule catalog](./links/rule-catalog) for default severities.
 
 ### `links.nonProductionHosts`
 

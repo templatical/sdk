@@ -10,23 +10,42 @@ describe("resolveLintOptions", () => {
   it("ignores lint.locale supplied by the consumer", () => {
     const out = resolveLintOptions({
       locale: "de",
-      lint: { locale: "en", rules: { "a11y.img-missing-alt": "warning" } },
+      lint: {
+        locale: "en",
+        accessibility: { rules: { "a11y.img-missing-alt": "warning" } },
+      },
     });
     expect(out.locale).toBe("de");
   });
 
-  it("preserves all other lint options", () => {
+  it("preserves all other lint options including nested per-tool config", () => {
     const out = resolveLintOptions({
       locale: "de",
       lint: {
-        rules: { "a11y.img-missing-alt": "warning" },
-        thresholds: { minFontSize: 16 },
+        accessibility: {
+          rules: { "a11y.img-missing-alt": "warning" },
+          thresholds: { minFontSize: 16 },
+        },
+        links: { nonProductionHosts: ["*.preview.*"] },
         disabled: false,
       },
     });
-    expect(out.rules).toEqual({ "a11y.img-missing-alt": "warning" });
-    expect(out.thresholds).toEqual({ minFontSize: 16 });
+    expect(out.accessibility).toEqual({
+      rules: { "a11y.img-missing-alt": "warning" },
+      thresholds: { minFontSize: 16 },
+    });
+    expect(out.links).toEqual({ nonProductionHosts: ["*.preview.*"] });
     expect(out.disabled).toBe(false);
+  });
+
+  it("preserves per-tool false disables", () => {
+    const out = resolveLintOptions({
+      locale: "en",
+      lint: { accessibility: false, structure: false, links: false },
+    });
+    expect(out.accessibility).toBe(false);
+    expect(out.structure).toBe(false);
+    expect(out.links).toBe(false);
   });
 
   it("returns undefined locale when editor locale is unset", () => {

@@ -22,16 +22,23 @@ export function walkBlocks(content: TemplateContent, visit: Visitor): void {
     : DEFAULT_BG;
 
   const walk = (block: Block, ctx: WalkContext): void => {
-    visit(block, ctx);
+    // A block's own opaque backgroundColor is what's behind its content —
+    // visit it with that resolved bg so contrast rules compare against the
+    // right surface. Falls back to the inherited section/template bg.
+    const ownBg = block.styles?.backgroundColor;
+    const effectiveBg = isOpaqueHex(ownBg)
+      ? (ownBg as string).toLowerCase()
+      : ctx.resolvedBackgroundColor;
+    const blockCtx: WalkContext =
+      effectiveBg === ctx.resolvedBackgroundColor
+        ? ctx
+        : { ...ctx, resolvedBackgroundColor: effectiveBg };
+
+    visit(block, blockCtx);
 
     if (!isSection(block)) {
       return;
     }
-
-    const sectionBg = block.styles?.backgroundColor;
-    const childBg = isOpaqueHex(sectionBg)
-      ? (sectionBg as string).toLowerCase()
-      : ctx.resolvedBackgroundColor;
 
     block.children.forEach((column, columnIndex) => {
       column.forEach((child) =>
@@ -40,7 +47,7 @@ export function walkBlocks(content: TemplateContent, visit: Visitor): void {
           section: block,
           columnIndex,
           depth: ctx.depth + 1,
-          resolvedBackgroundColor: childBg,
+          resolvedBackgroundColor: effectiveBg,
         }),
       );
     });

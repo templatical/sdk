@@ -11,7 +11,7 @@ export const imgDecorativeNeedsEmptyAlt: Rule = {
   block(block) {
     if (!isImage(block)) return null;
     if (block.decorative !== true) return null;
-    if ((block.alt ?? "") === "") return null;
+    if ((block.alt ?? "").trim() === "") return null;
     return {
       blockId: block.id,
       fix: {

@@ -13,7 +13,13 @@ Every rule emits a `LintIssue` with one of four severities:
 | `info` | Recommendation; not a defect. | No canvas badge, "Info" group. |
 | `off` | Override — disables the rule entirely. | Nothing. |
 
-Severity is configurable per rule via `options.rules` — each rule's documented default is just the baseline.
+Severity is configurable per rule via the linter's own `rules` map — `accessibility.rules`, `structure.rules`, `links.rules`. Each rule's documented default is just the baseline.
+
+```ts
+lintAccessibility(content, {
+  accessibility: { rules: { "a11y.text-all-caps": "off" } },
+});
+```
 
 ## Auto-fix
 

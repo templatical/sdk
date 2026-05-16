@@ -32,6 +32,7 @@ export interface Rgb {
 
 const HEX3 = /^#?([0-9a-f])([0-9a-f])([0-9a-f])$/i;
 const HEX6 = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i;
+const HEX8 = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i;
 
 export function parseHex(input: string | undefined | null): Rgb | null {
   if (typeof input !== "string") {
@@ -39,6 +40,18 @@ export function parseHex(input: string | undefined | null): Rgb | null {
   }
 
   const trimmed = input.trim();
+
+  const match8 = HEX8.exec(trimmed);
+  if (match8) {
+    // Only treat fully-opaque (alpha = ff) as a valid RGB color; partial
+    // alpha can't be flattened without knowing the underlay.
+    if (match8[4].toLowerCase() !== "ff") return null;
+    return {
+      r: parseInt(match8[1], 16),
+      g: parseInt(match8[2], 16),
+      b: parseInt(match8[3], 16),
+    };
+  }
 
   const match6 = HEX6.exec(trimmed);
   if (match6) {

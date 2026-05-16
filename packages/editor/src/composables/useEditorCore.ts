@@ -66,7 +66,11 @@ import {
   EDITOR_ROOT_KEY,
   POPOVER_ROOT_KEY,
 } from "../keys";
-import { useTemplateLint, type UseTemplateLintReturn } from "./useTemplateLint";
+import {
+  isLintFullyDisabled,
+  useTemplateLint,
+  type UseTemplateLintReturn,
+} from "./useTemplateLint";
 import type { LintOptions } from "@templatical/quality";
 import type { UseFontsReturn } from "./useFonts";
 import { useI18n, type UseI18nReturn } from "./useI18n";
@@ -427,16 +431,17 @@ export function useEditorCore(
   // --- Template lint (accessibility + structure) ---
   // editor.updateBlock / updateSettings / removeBlock are wrapped by
   // useHistoryInterceptor, so each fix patch lands as its own undo entry.
-  const templateLint: UseTemplateLintReturn | null =
-    config.lint?.disabled === true
-      ? null
-      : useTemplateLint({
-          content: editor.content,
-          options: config.lint ?? {},
-          updateBlock: editor.updateBlock,
-          updateSettings: editor.updateSettings,
-          removeBlock: editor.removeBlock,
-        });
+  const templateLint: UseTemplateLintReturn | null = isLintFullyDisabled(
+    config.lint,
+  )
+    ? null
+    : useTemplateLint({
+        content: editor.content,
+        options: config.lint ?? {},
+        updateBlock: editor.updateBlock,
+        updateSettings: editor.updateSettings,
+        removeBlock: editor.removeBlock,
+      });
   provide(TEMPLATE_LINT_KEY, templateLint);
 
   // --- Cleanup ---

@@ -1,6 +1,6 @@
 import type { TemplateContent } from "@templatical/types";
 import type { LintIssue, LintOptions, Rule } from "../types";
-import { runRules } from "../run-rules";
+import { resolveStructureOptions, runRules } from "../run-rules";
 import {
   formatStructureMessage,
   type StructureRuleMessageId,
@@ -23,7 +23,14 @@ export function lintStructure(
   content: TemplateContent,
   options: LintOptions = {},
 ): LintIssue[] {
-  return runRules(content, STRUCTURE_RULES, options, (locale, id, params) =>
+  if (options.disabled === true || options.structure === false) return [];
+  const tool = options.structure ?? {};
+  const resolved = resolveStructureOptions(
+    options.locale,
+    tool,
+    STRUCTURE_RULES,
+  );
+  return runRules(content, STRUCTURE_RULES, resolved, (locale, id, params) =>
     formatStructureMessage(locale, id as StructureRuleMessageId, params),
   );
 }

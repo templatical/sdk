@@ -10,7 +10,7 @@
 | **[Structure](./structure/)** | Duplicate block IDs, sections with the wrong column count, nested sections, empty sections, empty columns | mostly error; some warning |
 | **[Links](./links/)** | Dangerous URL schemes (`javascript:`), unsupported protocols, malformed `mailto:` / `tel:`, staging / localhost URLs leaking into a template | mostly warning; `link.javascript-protocol` is error |
 
-All three linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`) when grouping.
+All three linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`) when grouping. Each linter's per-rule severities and tool-specific knobs live under its own namespace (`accessibility`, `structure`, `links`); set any of them to `false` to disable that linter entirely.
 
 ## Architecture
 
@@ -95,23 +95,35 @@ const editor = init({
   container: "#editor",
   locale: "en",
   lint: {
-    rules: {
-      "a11y.img-missing-alt": "warning",      // soften from default 'error'
-      "a11y.text-all-caps": "off",            // turn off entirely
-      "structure.empty-column": "info",       // demote to info
-      "link.localhost-or-staging": "error",   // promote to error before send
+    accessibility: {
+      rules: {
+        "a11y.img-missing-alt": "warning",   // soften from default 'error'
+        "a11y.text-all-caps": "off",         // turn off entirely
+      },
+      thresholds: { minFontSize: 16 },
     },
-    thresholds: { minFontSize: 16 },
-    links: { nonProductionHosts: ["*.staging.*", "*.preview.*"] },
+    structure: {
+      rules: { "structure.empty-column": "info" }, // demote to info
+    },
+    links: {
+      rules: { "link.localhost-or-staging": "error" }, // promote before send
+      nonProductionHosts: ["*.staging.*", "*.preview.*"],
+    },
   },
 });
 ```
 
-The Issues tab and inline canvas badges appear automatically once the optional peer is resolved. When `lint.disabled === true`, the editor never lazy-loads the package — no chunk download, no UI surface.
+The Issues tab and inline canvas badges appear automatically once the optional peer is resolved. When `lint.disabled === true` — or when every per-tool key (`accessibility`, `structure`, `links`) is `false` — the editor never lazy-loads the package: no chunk download, no UI surface.
+
+Set any single linter to `false` to drop just that tool's rules:
+
+```ts
+init({ container: "#editor", lint: { links: false } });
+```
 
 ## Quick links
 
-- [Options](./options) — `disabled`, `locale`, `rules`, `thresholds` (shared by every linter).
+- [Options](./options) — `disabled`, `locale`, per-tool `accessibility` / `structure` / `links` namespaces.
 - [Severity & fixes](./severity-and-fixes) — severity model + how auto-fix patches land in the editor.
 - [Headless usage](./headless-usage) — validating stored templates in CI / server save handlers.
 - [Contributing locales](./contributing-locales) — adding rule messages + vague-text dictionaries.

@@ -27,6 +27,17 @@ const issues = lintAccessibility(content, options?);
 
 The function takes a `TemplateContent` and an optional [`LintOptions`](../options) object. It returns a flat array of `LintIssue` objects with `ruleId`, `severity`, `message`, `blockId`, and optionally a `fix` patch.
 
+Accessibility-specific config lives under `LintOptions.accessibility`. Set `accessibility: false` to disable the linter entirely.
+
+```ts
+lintAccessibility(content, {
+  accessibility: {
+    rules: { "a11y.img-missing-alt": "warning" },
+    thresholds: { minFontSize: 16 },
+  },
+});
+```
+
 In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quality`, debounces re-lint on content changes, and wires `applyFix(issue)` through the editor's block-update path so fixes land as proper undo entries. Accessibility issues appear in the **Issues** sidebar tab alongside structure issues.
 
 ## Quick links

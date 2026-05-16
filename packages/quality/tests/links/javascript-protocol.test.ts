@@ -125,15 +125,16 @@ describe("link.javascript-protocol", () => {
     content.blocks = [button];
 
     const warned = lintLinks(content, {
-      rules: { "link.javascript-protocol": "warning" },
+      links: { rules: { "link.javascript-protocol": "warning" } },
     }).find((i) => i.ruleId === "link.javascript-protocol");
     expect(warned?.severity).toBe("warning");
 
     const off = lintLinks(content, {
-      rules: { "link.javascript-protocol": "off" },
+      links: { rules: { "link.javascript-protocol": "off" } },
     }).filter((i) => i.ruleId === "link.javascript-protocol");
     expect(off).toEqual([]);
 
     expect(lintLinks(content, { disabled: true })).toEqual([]);
+    expect(lintLinks(content, { links: false })).toEqual([]);
   });
 });

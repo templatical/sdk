@@ -13,7 +13,13 @@ Jede Regel emittiert ein `LintIssue` mit einem von vier Schweregraden:
 | `info` | Empfehlung; kein Defekt. | Kein Canvas-Badge, „Hinweise"-Gruppe. |
 | `off` | Override — deaktiviert die Regel komplett. | Nichts. |
 
-Schweregrade sind pro Regel über `options.rules` konfigurierbar — die dokumentierten Defaults sind nur die Basislinie.
+Schweregrade sind pro Regel über die `rules`-Map des jeweiligen Linters konfigurierbar — `accessibility.rules`, `structure.rules`, `links.rules`. Die dokumentierten Defaults sind nur die Basislinie.
+
+```ts
+lintAccessibility(content, {
+  accessibility: { rules: { "a11y.text-all-caps": "off" } },
+});
+```
 
 ## Auto-Fix
 

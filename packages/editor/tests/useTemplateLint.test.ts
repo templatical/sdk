@@ -190,4 +190,95 @@ describe("useTemplateLint", () => {
     expect(mock.lintStructure).not.toHaveBeenCalled();
     expect(mock.lintLinks).not.toHaveBeenCalled();
   });
+
+  it("does not start lint when every per-tool key is false", async () => {
+    const mock = await setupQualityMock();
+    const useTemplateLint = await loadComposable();
+
+    useTemplateLint({
+      content: ref(createContent()),
+      options: { accessibility: false, structure: false, links: false },
+      updateBlock: vi.fn(),
+      updateSettings: vi.fn(),
+      removeBlock: vi.fn(),
+    });
+
+    mock.resolveImport();
+    await new Promise((r) => setTimeout(r, 0));
+    await nextTick();
+
+    expect(mock.lintAccessibility).not.toHaveBeenCalled();
+    expect(mock.lintStructure).not.toHaveBeenCalled();
+    expect(mock.lintLinks).not.toHaveBeenCalled();
+  });
+
+  it("still starts lint when only some tools are disabled", async () => {
+    const mock = await setupQualityMock();
+    const useTemplateLint = await loadComposable();
+
+    useTemplateLint({
+      content: ref(createContent()),
+      options: { accessibility: false, structure: false },
+      updateBlock: vi.fn(),
+      updateSettings: vi.fn(),
+      removeBlock: vi.fn(),
+      debounce: 10,
+    });
+
+    mock.resolveImport();
+    await new Promise((r) => setTimeout(r, 0));
+    await nextTick();
+
+    // The composable calls every linter; the per-tool false is enforced
+    // inside the linter function itself (returns []) — but the composable
+    // does not short-circuit while at least one tool is still active.
+    expect(mock.lintAccessibility).toHaveBeenCalledTimes(1);
+    expect(mock.lintStructure).toHaveBeenCalledTimes(1);
+    expect(mock.lintLinks).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("isLintFullyDisabled", () => {
+  it("returns false for undefined options", async () => {
+    const { isLintFullyDisabled } = await import(
+      "../src/composables/useTemplateLint"
+    );
+    expect(isLintFullyDisabled(undefined)).toBe(false);
+  });
+
+  it("returns false for empty options", async () => {
+    const { isLintFullyDisabled } = await import(
+      "../src/composables/useTemplateLint"
+    );
+    expect(isLintFullyDisabled({})).toBe(false);
+  });
+
+  it("returns true when disabled flag is set", async () => {
+    const { isLintFullyDisabled } = await import(
+      "../src/composables/useTemplateLint"
+    );
+    expect(isLintFullyDisabled({ disabled: true })).toBe(true);
+  });
+
+  it("returns true only when ALL three tool keys are false", async () => {
+    const { isLintFullyDisabled } = await import(
+      "../src/composables/useTemplateLint"
+    );
+    expect(
+      isLintFullyDisabled({
+        accessibility: false,
+        structure: false,
+        links: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("returns false when only two tools are disabled", async () => {
+    const { isLintFullyDisabled } = await import(
+      "../src/composables/useTemplateLint"
+    );
+    expect(
+      isLintFullyDisabled({ accessibility: false, structure: false }),
+    ).toBe(false);
+  });
 });

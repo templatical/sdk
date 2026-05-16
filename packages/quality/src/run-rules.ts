@@ -1,11 +1,14 @@
 import type { TemplateContent } from "@templatical/types";
 import type {
+  AccessibilityLintOptions,
+  LinksLintOptions,
   LintIssue,
-  LintOptions,
   ResolvedOptions,
   Rule,
   RuleHit,
+  RuleOverrides,
   Severity,
+  StructureLintOptions,
 } from "./types";
 import { DEFAULT_A11Y_THRESHOLDS, DEFAULT_NON_PRODUCTION_HOSTS } from "./types";
 import { walkBlocks } from "./walk";
@@ -19,20 +22,15 @@ export type MessageFormatter = (
 /**
  * Walk the tree once, dispatch every block-level rule, then run every
  * template-level rule. Each tool (lintAccessibility, lintStructure, …)
- * wraps this with its own rule list + message formatter. Keeps the per-tool
- * orchestrators down to a thin call.
+ * wraps this with its own rule list + message formatter and a pre-built
+ * `ResolvedOptions` containing that tool's overrides and tool-scoped config.
  */
 export function runRules(
   content: TemplateContent,
   rules: Rule[],
-  options: LintOptions,
+  opts: ResolvedOptions,
   formatMessage: MessageFormatter,
 ): LintIssue[] {
-  if (options.disabled === true) {
-    return [];
-  }
-
-  const opts = resolveOptions(options, rules);
   const issues: LintIssue[] = [];
 
   function buildIssue(
@@ -72,20 +70,29 @@ export function runRules(
   return issues;
 }
 
-export function resolveOptions(
-  options: LintOptions,
-  rules: Rule[],
-): ResolvedOptions {
-  const overrides = options.rules ?? {};
+/**
+ * Build a `ResolvedOptions` for a given tool. Each tool wrapper passes its
+ * own per-tool bag; fields not relevant to the tool fall back to defaults
+ * (e.g. `lintStructure` still gets `thresholds` populated, but no structure
+ * rule reads them).
+ */
+export function resolveOptions(args: {
+  locale: string | undefined;
+  rules: Rule[];
+  overrides: RuleOverrides | undefined;
+  thresholds: Partial<import("./types").LintThresholds> | undefined;
+  nonProductionHosts: string[] | undefined;
+}): ResolvedOptions {
+  const overrides = args.overrides ?? {};
   const thresholds = {
     ...DEFAULT_A11Y_THRESHOLDS,
-    ...(options.thresholds ?? {}),
+    ...(args.thresholds ?? {}),
   };
   const links = {
-    nonProductionHosts:
-      options.links?.nonProductionHosts ?? DEFAULT_NON_PRODUCTION_HOSTS,
+    nonProductionHosts: args.nonProductionHosts ?? DEFAULT_NON_PRODUCTION_HOSTS,
   };
-  const locale = options.locale ?? "en";
+  const locale = args.locale ?? "en";
+  const rules = args.rules;
 
   return {
     locale,
@@ -101,4 +108,55 @@ export function resolveOptions(
       return rule?.meta.severity ?? "warning";
     },
   };
+}
+
+/**
+ * Resolver for the accessibility linter — reads `options.accessibility`.
+ */
+export function resolveAccessibilityOptions(
+  locale: string | undefined,
+  tool: AccessibilityLintOptions,
+  rules: Rule[],
+): ResolvedOptions {
+  return resolveOptions({
+    locale,
+    rules,
+    overrides: tool.rules,
+    thresholds: tool.thresholds,
+    nonProductionHosts: undefined,
+  });
+}
+
+/**
+ * Resolver for the structure linter — reads `options.structure`.
+ */
+export function resolveStructureOptions(
+  locale: string | undefined,
+  tool: StructureLintOptions,
+  rules: Rule[],
+): ResolvedOptions {
+  return resolveOptions({
+    locale,
+    rules,
+    overrides: tool.rules,
+    thresholds: undefined,
+    nonProductionHosts: undefined,
+  });
+}
+
+/**
+ * Resolver for the links linter — reads `options.links`.
+ */
+export function resolveLinksOptions(
+  locale: string | undefined,
+  tool: LinksLintOptions,
+  rules: Rule[],
+): ResolvedOptions {
+  return resolveOptions({
+    locale,
+    rules,
+    overrides: tool.rules,
+    thresholds: undefined,
+    nonProductionHosts: tool.nonProductionHosts,
+  });
 }

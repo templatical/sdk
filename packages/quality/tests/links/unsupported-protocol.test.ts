@@ -81,15 +81,16 @@ describe("link.unsupported-protocol", () => {
     content.blocks = [createButtonBlock({ url: "ftp://example.com" })];
 
     const promoted = lintLinks(content, {
-      rules: { "link.unsupported-protocol": "error" },
+      links: { rules: { "link.unsupported-protocol": "error" } },
     }).find((i) => i.ruleId === "link.unsupported-protocol");
     expect(promoted?.severity).toBe("error");
 
     const off = lintLinks(content, {
-      rules: { "link.unsupported-protocol": "off" },
+      links: { rules: { "link.unsupported-protocol": "off" } },
     }).filter((i) => i.ruleId === "link.unsupported-protocol");
     expect(off).toEqual([]);
 
     expect(lintLinks(content, { disabled: true })).toEqual([]);
+    expect(lintLinks(content, { links: false })).toEqual([]);
   });
 });

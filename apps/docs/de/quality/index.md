@@ -10,7 +10,7 @@
 | **[Struktur](./structure/)** | Doppelte Block-IDs, Sektionen mit falscher Spaltenanzahl, verschachtelte Sektionen, leere Sektionen, leere Spalten | überwiegend error; einige warning |
 | **[Links](./links/)** | Gefährliche URL-Schemata (`javascript:`), nicht unterstützte Protokolle, fehlerhafte `mailto:` / `tel:`, Staging-/localhost-URLs, die ins Template lecken | überwiegend warning; `link.javascript-protocol` ist error |
 
-Alle drei Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Optionsfläche (`LintOptions`) — Konsumenten können sie also in jeder Kombination ausführen, Ergebnisse zusammenführen und beim Gruppieren nach `ruleId`-Präfix (`a11y.*`, `structure.*`, `link.*`) filtern.
+Alle drei Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Optionsfläche (`LintOptions`) — Konsumenten können sie also in jeder Kombination ausführen, Ergebnisse zusammenführen und beim Gruppieren nach `ruleId`-Präfix (`a11y.*`, `structure.*`, `link.*`) filtern. Die Schweregrad-Overrides und tool-spezifischen Stellschrauben jedes Linters liegen unter seinem eigenen Namensraum (`accessibility`, `structure`, `links`); setze einen davon auf `false`, um den jeweiligen Linter komplett zu deaktivieren.
 
 ## Architektur
 
@@ -88,23 +88,35 @@ const editor = init({
   container: "#editor",
   locale: "de",
   lint: {
-    rules: {
-      "a11y.img-missing-alt": "warning",      // von Standard 'error' herabstufen
-      "a11y.text-all-caps": "off",            // komplett deaktivieren
-      "structure.empty-column": "info",       // von warning auf info herabstufen
-      "link.localhost-or-staging": "error",   // vor Versand zu error hochstufen
+    accessibility: {
+      rules: {
+        "a11y.img-missing-alt": "warning",   // von Standard 'error' herabstufen
+        "a11y.text-all-caps": "off",         // komplett deaktivieren
+      },
+      thresholds: { minFontSize: 16 },
     },
-    thresholds: { minFontSize: 16 },
-    links: { nonProductionHosts: ["*.staging.*", "*.preview.*"] },
+    structure: {
+      rules: { "structure.empty-column": "info" }, // warning → info
+    },
+    links: {
+      rules: { "link.localhost-or-staging": "error" }, // vor Versand hochstufen
+      nonProductionHosts: ["*.staging.*", "*.preview.*"],
+    },
   },
 });
 ```
 
-Der Issues-Tab und die Canvas-Badges erscheinen automatisch, sobald der optionale Peer aufgelöst ist. Bei `lint.disabled === true` lädt der Editor das Paket gar nicht erst nach — kein Chunk-Download, keine UI.
+Der Issues-Tab und die Canvas-Badges erscheinen automatisch, sobald der optionale Peer aufgelöst ist. Bei `lint.disabled === true` — oder wenn jeder Linter-Key (`accessibility`, `structure`, `links`) auf `false` steht — lädt der Editor das Paket gar nicht erst nach: kein Chunk-Download, keine UI.
+
+Setze einen einzelnen Linter auf `false`, um nur dessen Regeln auszuschalten:
+
+```ts
+init({ container: "#editor", lint: { links: false } });
+```
 
 ## Schnellzugriff
 
-- [Optionen](./options) — `disabled`, `locale`, `rules`, `thresholds` (von jedem Linter geteilt).
+- [Optionen](./options) — `disabled`, `locale`, pro-Tool-Namensräume `accessibility` / `structure` / `links`.
 - [Schweregrade & Fixes](./severity-and-fixes) — Schweregrad-Modell + wie Auto-Fix-Patches im Editor landen.
 - [Headless-Nutzung](./headless-usage) — Validierung gespeicherter Templates in CI / Server-Save-Handlern.
 - [Lokalen beitragen](./contributing-locales) — Regel-Nachrichten + Vague-Text-Dictionaries hinzufügen.

@@ -23,7 +23,12 @@ describe("a11y.img-alt-is-filename", () => {
     const issues = issuesFor(block, "a11y.img-alt-is-filename");
     expect(issues).toHaveLength(1);
     expect(issues[0].severity).toBe("warning");
-    expect(issues[0].fix).toBeDefined();
+  });
+
+  it("does not attach an auto-fix (clearing alt would trip img-missing-alt)", () => {
+    const block = createImageBlock({ src: "x.png", alt: "hero.jpg" });
+    const issue = issuesFor(block, "a11y.img-alt-is-filename")[0];
+    expect(issue.fix).toBeUndefined();
   });
 
   it("fires for IMG_1234 pattern", () => {
@@ -54,18 +59,6 @@ describe("a11y.img-alt-is-filename", () => {
     expect(issuesFor(block, "a11y.img-alt-is-filename")).toEqual([]);
   });
 
-  it("auto-fix clears the alt", () => {
-    const block = createImageBlock({ src: "x.png", alt: "hero.jpg" });
-    const issue = issuesFor(block, "a11y.img-alt-is-filename")[0];
-    let updated: { id: string; patch: Record<string, unknown> } | null = null;
-    issue.fix!.apply({
-      updateBlock: (id, patch) => {
-        updated = { id, patch };
-      },
-      updateSettings: () => {},
-    });
-    expect(updated).toEqual({ id: block.id, patch: { alt: "" } });
-  });
 });
 
 describe("a11y.img-alt-too-long", () => {
@@ -85,7 +78,7 @@ describe("a11y.img-alt-too-long", () => {
     content.settings.preheaderText = "x";
     content.blocks = [block];
     const issues = lintAccessibility(content, {
-      thresholds: { altMaxLength: 30 },
+      accessibility: { thresholds: { altMaxLength: 30 } },
     }).filter((i) => i.ruleId === "a11y.img-alt-too-long");
     expect(issues).toHaveLength(1);
   });
@@ -112,6 +105,15 @@ describe("a11y.img-decorative-needs-empty-alt", () => {
 
   it("does not fire when not decorative", () => {
     const block = createImageBlock({ src: "x.png", alt: "Hero" });
+    expect(issuesFor(block, "a11y.img-decorative-needs-empty-alt")).toEqual([]);
+  });
+
+  it("does not fire for whitespace-only alt (treated as empty)", () => {
+    const block = createImageBlock({
+      src: "x.png",
+      alt: "   ",
+      decorative: true,
+    });
     expect(issuesFor(block, "a11y.img-decorative-needs-empty-alt")).toEqual([]);
   });
 });

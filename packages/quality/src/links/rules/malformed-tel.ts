@@ -6,14 +6,20 @@ export const meta: RuleMeta = {
   severity: "warning",
 };
 
-const VALID_TEL_CHARS = /^[+0-9\s().\-]+$/;
+const VALID_SUBSCRIBER_CHARS = /^[+0-9\s().\-]+$/;
+// RFC 3966 par = `;` pname [ "=" pvalue ]. pname is alphanum/`-`, pvalue is
+// 1+ paramchar. We accept anything non-empty on the right of `=` since email
+// clients don't validate it.
+const VALID_PARAM = /^[A-Za-z0-9-]+(=[^;]+)?$/;
 
 function isMalformedTel(url: string): boolean {
   const trimmed = url.trim();
   if (!/^tel:/i.test(trimmed)) return false;
   const value = trimmed.slice("tel:".length).trim();
   if (value === "") return true;
-  return !VALID_TEL_CHARS.test(value);
+  const [subscriber, ...params] = value.split(";");
+  if (!VALID_SUBSCRIBER_CHARS.test(subscriber)) return true;
+  return params.some((p) => !VALID_PARAM.test(p));
 }
 
 export const malformedTel: Rule = {

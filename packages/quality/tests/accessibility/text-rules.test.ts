@@ -103,6 +103,29 @@ describe("a11y.text-low-contrast", () => {
   it("does not fire when colors are not opaque hex", () => {
     expect(lintTitle("transparent", "#ffffff")).toEqual([]);
   });
+
+  it("resolves against the title's own backgroundColor (block bg wins over template bg)", () => {
+    // Template bg is white, but the title sets its own black bg. Near-black
+    // text on black-bg should fire even though near-black on white would pass.
+    const block = createTitleBlock({
+      content: "<p>Hi</p>",
+      color: "#0a0a0a",
+      level: 3,
+      styles: {
+        backgroundColor: "#000000",
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      },
+    });
+    const content = createDefaultTemplateContent();
+    content.settings.preheaderText = "x";
+    content.settings.backgroundColor = "#ffffff";
+    content.blocks = [block];
+    const issues = lintAccessibility(content).filter(
+      (i) => i.ruleId === "a11y.text-low-contrast",
+    );
+    expect(issues).toHaveLength(1);
+  });
 });
 
 describe("a11y.text-too-small", () => {
@@ -144,7 +167,7 @@ describe("a11y.text-too-small", () => {
     content.settings.preheaderText = "x";
     content.blocks = [createSectionBlock({ children: [[block]] })];
     const issues = lintAccessibility(content, {
-      thresholds: { minFontSize: 16 },
+      accessibility: { thresholds: { minFontSize: 16 } },
     }).filter((i) => i.ruleId === "a11y.text-too-small");
     expect(issues).toHaveLength(1);
   });

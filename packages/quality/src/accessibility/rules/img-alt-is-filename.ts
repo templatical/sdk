@@ -25,10 +25,6 @@ export const imgAltIsFilename: Rule = {
     return {
       blockId: block.id,
       params: { alt },
-      fix: {
-        description: "Clear alt text",
-        apply: (ctx) => ctx.updateBlock(block.id, { alt: "" }),
-      },
     };
   },
 };

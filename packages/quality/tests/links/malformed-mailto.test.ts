@@ -91,15 +91,16 @@ describe("link.malformed-mailto", () => {
     content.blocks = [createButtonBlock({ url: "mailto:notanemail" })];
 
     const promoted = lintLinks(content, {
-      rules: { "link.malformed-mailto": "error" },
+      links: { rules: { "link.malformed-mailto": "error" } },
     }).find((i) => i.ruleId === "link.malformed-mailto");
     expect(promoted?.severity).toBe("error");
 
     const off = lintLinks(content, {
-      rules: { "link.malformed-mailto": "off" },
+      links: { rules: { "link.malformed-mailto": "off" } },
     }).filter((i) => i.ruleId === "link.malformed-mailto");
     expect(off).toEqual([]);
 
     expect(lintLinks(content, { disabled: true })).toEqual([]);
+    expect(lintLinks(content, { links: false })).toEqual([]);
   });
 });

@@ -27,6 +27,17 @@ const issues = lintAccessibility(content, options?);
 
 Die Funktion nimmt ein `TemplateContent` und ein optionales [`LintOptions`](../options)-Objekt. Sie liefert ein flaches Array von `LintIssue`-Objekten mit `ruleId`, `severity`, `message`, `blockId` und optional einem `fix`-Patch.
 
+Barrierefreiheits-spezifische Konfiguration liegt unter `LintOptions.accessibility`. Setze `accessibility: false`, um den Linter komplett zu deaktivieren.
+
+```ts
+lintAccessibility(content, {
+  accessibility: {
+    rules: { "a11y.img-missing-alt": "warning" },
+    thresholds: { minFontSize: 16 },
+  },
+});
+```
+
 Im Editor lädt das `useTemplateLint`-Composable `@templatical/quality` per dynamischem Import, entprellt das Re-Linting bei Inhaltsänderungen und routet `applyFix(issue)` über den Block-Update-Pfad des Editors — Fixes landen so als ordentliche Undo-Einträge. Barrierefreiheits-Issues erscheinen im **Issues**-Sidebar-Tab neben Struktur-Issues.
 
 ## Schnellzugriff

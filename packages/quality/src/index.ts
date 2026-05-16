@@ -34,9 +34,11 @@ export {
   SUPPORTED_LINK_MESSAGE_LOCALES,
 } from "./links/messages";
 export type { LinkMessageMap, LinkRuleMessageId } from "./links/messages";
+export { isLintFullyDisabled } from "./util";
 export type {
+  AccessibilityLintOptions,
+  LinksLintOptions,
   LintIssue,
-  LintLinksOptions,
   LintOptions,
   LintPatch,
   LintPatchContext,
@@ -46,7 +48,9 @@ export type {
   Rule,
   RuleHit,
   RuleMeta,
+  RuleOverrides,
   Severity,
+  StructureLintOptions,
   WalkContext,
 } from "./types";
 export { DEFAULT_A11Y_THRESHOLDS, DEFAULT_NON_PRODUCTION_HOSTS } from "./types";

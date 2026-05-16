@@ -1,6 +1,6 @@
 import type { TemplateContent } from "@templatical/types";
 import type { LintIssue, LintOptions, Rule } from "../types";
-import { runRules } from "../run-rules";
+import { resolveAccessibilityOptions, runRules } from "../run-rules";
 import { formatMessage, type RuleMessageId } from "./messages";
 import { imgMissingAlt } from "./rules/img-missing-alt";
 import { imgAltIsFilename } from "./rules/img-alt-is-filename";
@@ -48,7 +48,17 @@ export function lintAccessibility(
   content: TemplateContent,
   options: LintOptions = {},
 ): LintIssue[] {
-  return runRules(content, ACCESSIBILITY_RULES, options, (locale, id, params) =>
-    formatMessage(locale, id as RuleMessageId, params),
+  if (options.disabled === true || options.accessibility === false) return [];
+  const tool = options.accessibility ?? {};
+  const resolved = resolveAccessibilityOptions(
+    options.locale,
+    tool,
+    ACCESSIBILITY_RULES,
+  );
+  return runRules(
+    content,
+    ACCESSIBILITY_RULES,
+    resolved,
+    (locale, id, params) => formatMessage(locale, id as RuleMessageId, params),
   );
 }

@@ -16,6 +16,21 @@ import type {
 
 export type { LintIssue, LintOptions } from "@templatical/quality";
 
+/**
+ * Mirrors `isLintFullyDisabled` from `@templatical/quality`. Duplicated
+ * here to avoid a static runtime import of the optional peer, which would
+ * defeat the editor's lazy-load gate. Keep the two in sync.
+ */
+export function isLintFullyDisabled(options: LintOptions | undefined): boolean {
+  if (!options) return false;
+  if (options.disabled === true) return true;
+  return (
+    options.accessibility === false &&
+    options.structure === false &&
+    options.links === false
+  );
+}
+
 export interface UseTemplateLintOptions {
   content: Ref<TemplateContent>;
   options: LintOptions;
@@ -44,13 +59,14 @@ interface Loaded {
 
 /**
  * Live template linting. Runs every linter in `@templatical/quality`
- * (accessibility + structure) on every content change, debounced 500ms.
- * Lazy-imports the quality package on first call so the OSS bundle pays
- * nothing for the chunk until linting actually starts.
+ * (accessibility + structure + links) on every content change,
+ * debounced 500ms. Lazy-imports the quality package on first call so the
+ * OSS bundle pays nothing for the chunk until linting actually starts.
  *
- * When `options.disabled === true`, the dynamic import is skipped entirely
- * and `issues` stays empty — saves the chunk download for consumers that
- * turn off the linter.
+ * When all linting is turned off — either `options.disabled === true` or
+ * every per-tool key (`accessibility`, `structure`, `links`) is set to
+ * `false` — the dynamic import is skipped entirely and `issues` stays
+ * empty. Saves the chunk download for consumers that turn the linter off.
  */
 export function useTemplateLint(
   opts: UseTemplateLintOptions,
@@ -60,7 +76,7 @@ export function useTemplateLint(
   const unavailable = ref(false);
   const loaded = shallowRef<Loaded | null>(null);
 
-  const disabled = opts.options.disabled === true;
+  const disabled = isLintFullyDisabled(opts.options);
 
   let stopWatch: (() => void) | null = null;
   let destroyed = false;

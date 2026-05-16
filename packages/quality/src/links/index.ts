@@ -1,6 +1,6 @@
 import type { TemplateContent } from "@templatical/types";
 import type { LintIssue, LintOptions, Rule } from "../types";
-import { runRules } from "../run-rules";
+import { resolveLinksOptions, runRules } from "../run-rules";
 import { formatLinkMessage, type LinkRuleMessageId } from "./messages";
 import { javascriptProtocol } from "./rules/javascript-protocol";
 import { unsupportedProtocol } from "./rules/unsupported-protocol";
@@ -20,7 +20,10 @@ export function lintLinks(
   content: TemplateContent,
   options: LintOptions = {},
 ): LintIssue[] {
-  return runRules(content, LINK_RULES, options, (locale, id, params) =>
+  if (options.disabled === true || options.links === false) return [];
+  const tool = options.links ?? {};
+  const resolved = resolveLinksOptions(options.locale, tool, LINK_RULES);
+  return runRules(content, LINK_RULES, resolved, (locale, id, params) =>
     formatLinkMessage(locale, id as LinkRuleMessageId, params),
   );
 }

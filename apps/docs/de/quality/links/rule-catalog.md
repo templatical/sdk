@@ -25,7 +25,7 @@ Die 5 Regeln, die `lintLinks` ausliefert. Jede Regel lebt in `packages/quality/s
 
 | Regel | Standard-Schweregrad | Auto-Fix | Was sie prüft |
 |---|---|---|---|
-| `link.localhost-or-staging` | warning | — | URL-Host matcht die konfigurierte Nicht-Produktions-Hostliste. Der Standard erfasst `localhost`, `127.0.0.1`, `0.0.0.0`, `*.local`, `*.staging.*`, `*.dev.*`. Konfigurierbar via `options.links.nonProductionHosts` — Standard-Erweiterungs- / Ersatz-Muster siehe [Übersicht](./). Feuert nur auf `http(s)`- und `ftp(s)`-URLs; mailto/tel/sms werden übersprungen. |
+| `link.localhost-or-staging` | warning | — | URL-Host matcht die konfigurierte Nicht-Produktions-Hostliste. Der Standard erfasst `localhost`, `127.0.0.1`, `0.0.0.0`, `*.local`, `*.staging.*`, `*.dev.*`. Konfigurierbar via `LintOptions.links.nonProductionHosts` — Standard-Erweiterungs- / Ersatz-Muster siehe [Übersicht](./). Feuert nur auf `http(s)`- und `ftp(s)`-URLs; mailto/tel/sms werden übersprungen. |
 
 ## Warum keine Auto-Fixes?
 

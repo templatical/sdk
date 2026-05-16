@@ -72,15 +72,16 @@ describe("structure.duplicate-block-id", () => {
     content.blocks = [a, b];
 
     const warned = lintStructure(content, {
-      rules: { "structure.duplicate-block-id": "warning" },
+      structure: { rules: { "structure.duplicate-block-id": "warning" } },
     }).find((i) => i.ruleId === "structure.duplicate-block-id");
     expect(warned?.severity).toBe("warning");
 
     const off = lintStructure(content, {
-      rules: { "structure.duplicate-block-id": "off" },
+      structure: { rules: { "structure.duplicate-block-id": "off" } },
     }).filter((i) => i.ruleId === "structure.duplicate-block-id");
     expect(off).toEqual([]);
 
     expect(lintStructure(content, { disabled: true })).toEqual([]);
+    expect(lintStructure(content, { structure: false })).toEqual([]);
   });
 });

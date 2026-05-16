@@ -49,12 +49,23 @@ Im Editor lädt das `useTemplateLint`-Composable `@templatical/quality` per dyna
 
 ## Konfiguration
 
-`lintLinks` liest einen optionalen Knopf unter `LintOptions.links`:
+`lintLinks` liest seine Konfiguration unter `LintOptions.links`. Setze `links: false`, um den gesamten Linter zu deaktivieren, ohne Regeln einzeln aufzählen zu müssen.
 
 ```ts
-interface LintLinksOptions {
+interface LinksLintOptions {
+  rules?: Record<string, Severity>;
   nonProductionHosts?: string[];
 }
+```
+
+### `links.rules`
+
+Schweregrad-Override pro Regel für Link-Regeln:
+
+```ts
+lintLinks(content, {
+  links: { rules: { "link.localhost-or-staging": "error" } },
+});
 ```
 
 ### `links.nonProductionHosts`

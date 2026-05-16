@@ -100,15 +100,16 @@ describe("link.localhost-or-staging", () => {
     content.blocks = [createButtonBlock({ url: "http://localhost/x" })];
 
     const promoted = lintLinks(content, {
-      rules: { "link.localhost-or-staging": "error" },
+      links: { rules: { "link.localhost-or-staging": "error" } },
     }).find((i) => i.ruleId === "link.localhost-or-staging");
     expect(promoted?.severity).toBe("error");
 
     const off = lintLinks(content, {
-      rules: { "link.localhost-or-staging": "off" },
+      links: { rules: { "link.localhost-or-staging": "off" } },
     }).filter((i) => i.ruleId === "link.localhost-or-staging");
     expect(off).toEqual([]);
 
     expect(lintLinks(content, { disabled: true })).toEqual([]);
+    expect(lintLinks(content, { links: false })).toEqual([]);
   });
 });

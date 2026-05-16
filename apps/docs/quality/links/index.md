@@ -49,12 +49,23 @@ In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quali
 
 ## Configuration
 
-`lintLinks` reads one optional knob under `LintOptions.links`:
+`lintLinks` reads its config under `LintOptions.links`. Set `links: false` to disable the entire linter without enumerating rules.
 
 ```ts
-interface LintLinksOptions {
+interface LinksLintOptions {
+  rules?: Record<string, Severity>;
   nonProductionHosts?: string[];
 }
+```
+
+### `links.rules`
+
+Per-rule severity override for link rules:
+
+```ts
+lintLinks(content, {
+  links: { rules: { "link.localhost-or-staging": "error" } },
+});
 ```
 
 ### `links.nonProductionHosts`

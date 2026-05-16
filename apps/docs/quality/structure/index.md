@@ -27,6 +27,14 @@ const issues = lintStructure(content, options?);
 
 Same signature as `lintAccessibility`. Same `LintOptions` shape. Same `LintIssue` return type. You can run both linters independently or merge results.
 
+Structure-specific config lives under `LintOptions.structure`. Set `structure: false` to disable the linter entirely.
+
+```ts
+lintStructure(content, {
+  structure: { rules: { "structure.empty-column": "info" } },
+});
+```
+
 In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quality` and runs both linters on every (debounced) content change. Structure issues appear in the **Issues** sidebar tab alongside accessibility issues.
 
 ## Quick links

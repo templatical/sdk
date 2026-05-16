@@ -42,6 +42,15 @@ describe("parseHex", () => {
     expect(parseHex("#f80")).toEqual({ r: 255, g: 136, b: 0 });
   });
 
+  it("parses 8-digit with opaque alpha (ff)", () => {
+    expect(parseHex("#ff8800ff")).toEqual({ r: 255, g: 136, b: 0 });
+  });
+
+  it("returns null for 8-digit with non-opaque alpha", () => {
+    expect(parseHex("#ff880080")).toBeNull();
+    expect(parseHex("#ff880000")).toBeNull();
+  });
+
   it("returns null for invalid", () => {
     expect(parseHex("rgba(0,0,0,0.5)")).toBeNull();
     expect(parseHex("")).toBeNull();
@@ -54,6 +63,16 @@ describe("isOpaqueHex", () => {
   it("true for valid hex", () => {
     expect(isOpaqueHex("#fff")).toBe(true);
     expect(isOpaqueHex("#abcdef")).toBe(true);
+  });
+
+  it("true for 8-digit hex with fully-opaque alpha", () => {
+    expect(isOpaqueHex("#ffffffff")).toBe(true);
+    expect(isOpaqueHex("#000000ff")).toBe(true);
+  });
+
+  it("false for 8-digit hex with non-opaque alpha", () => {
+    expect(isOpaqueHex("#ffffff80")).toBe(false);
+    expect(isOpaqueHex("#000000fe")).toBe(false);
   });
 
   it("false for invalid", () => {

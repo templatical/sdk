@@ -84,6 +84,23 @@ describe("walkBlocks", () => {
     expect(innerCtx.resolvedBackgroundColor).toBe("#abcdef");
   });
 
+  it("resolves to the block's own opaque bg when set, not the section/template bg", () => {
+    const content = createDefaultTemplateContent();
+    content.settings.backgroundColor = "#ffffff";
+    const inner = createParagraphBlock({
+      id: "p",
+      styles: {
+        backgroundColor: "#000000",
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+      },
+    });
+    content.blocks = [inner];
+
+    const calls = visited(content);
+    expect(calls[0].ctx.resolvedBackgroundColor).toBe("#000000");
+  });
+
   it("falls back to white when template bg is not opaque hex", () => {
     const content = createDefaultTemplateContent();
     content.settings.backgroundColor = "transparent";

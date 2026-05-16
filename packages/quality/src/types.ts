@@ -34,7 +34,27 @@ export interface LintThresholds {
   minTouchTargetPx: number;
 }
 
-export interface LintLinksOptions {
+/**
+ * Per-rule severity override. Set a rule to `'off'` to disable it.
+ * Keys are the full prefixed rule IDs (`a11y.*`, `structure.*`, `link.*`)
+ * so a value copied from `LintIssue.ruleId` pastes straight in.
+ */
+export type RuleOverrides = Record<string, Severity>;
+
+/** Options consumed only by the accessibility linter. */
+export interface AccessibilityLintOptions {
+  rules?: RuleOverrides;
+  thresholds?: Partial<LintThresholds>;
+}
+
+/** Options consumed only by the structure linter. */
+export interface StructureLintOptions {
+  rules?: RuleOverrides;
+}
+
+/** Options consumed only by the links linter. */
+export interface LinksLintOptions {
+  rules?: RuleOverrides;
   /**
    * Host patterns that should flag as "staging / non-production".
    * Each entry is a glob-style pattern matched against the URL host.
@@ -55,11 +75,21 @@ export interface LintOptions {
   disabled?: boolean;
   /** Locale for vague-text dictionaries and message text. Falls back to `en`. */
   locale?: string;
-  /** Per-rule severity override. Set to `'off'` to disable a specific rule. */
-  rules?: Record<string, Severity>;
-  thresholds?: Partial<LintThresholds>;
-  /** Per-linter knobs. Only `lintLinks` reads `links` today. */
-  links?: LintLinksOptions;
+  /**
+   * Accessibility linter config. Set to `false` to disable the whole
+   * `lintAccessibility` linter without enumerating its rules.
+   */
+  accessibility?: false | AccessibilityLintOptions;
+  /**
+   * Structure linter config. Set to `false` to disable the whole
+   * `lintStructure` linter without enumerating its rules.
+   */
+  structure?: false | StructureLintOptions;
+  /**
+   * Links linter config. Set to `false` to disable the whole `lintLinks`
+   * linter without enumerating its rules.
+   */
+  links?: false | LinksLintOptions;
 }
 
 export interface ResolvedLinksOptions {
@@ -68,7 +98,7 @@ export interface ResolvedLinksOptions {
 
 export interface ResolvedOptions {
   locale: string;
-  rules: Record<string, Severity>;
+  rules: RuleOverrides;
   thresholds: LintThresholds;
   links: ResolvedLinksOptions;
   /** Returns the effective severity for a rule (override or default). */

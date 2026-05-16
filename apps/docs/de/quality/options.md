@@ -6,15 +6,31 @@
 interface LintOptions {
   disabled?: boolean;
   locale?: string;
+  accessibility?: false | AccessibilityLintOptions;
+  structure?: false | StructureLintOptions;
+  links?: false | LinksLintOptions;
+}
+
+interface AccessibilityLintOptions {
   rules?: Record<string, Severity>;
   thresholds?: Partial<LintThresholds>;
-  links?: LintLinksOptions;
+}
+
+interface StructureLintOptions {
+  rules?: Record<string, Severity>;
+}
+
+interface LinksLintOptions {
+  rules?: Record<string, Severity>;
+  nonProductionHosts?: string[];
 }
 
 type Severity = "error" | "warning" | "info" | "off";
 ```
 
 Dasselbe Objekt steuert auch die `init({ lint })`-Konfiguration des Editors — jede Option hier wirkt sich über das geteilte `useTemplateLint`-Composable auf jeden Linter aus.
+
+Schweregrad-Overrides und tool-spezifische Stellschrauben (`thresholds`, `nonProductionHosts`) sind unter ihrem jeweiligen Linter namensraum-getrennt, sodass jeder Linter nur die für ihn relevante Konfiguration sieht.
 
 ## `disabled`
 
@@ -28,6 +44,10 @@ Bei `true`:
 - Die Canvas-Badges erzeugen **kein DOM**.
 
 Sinnvoll, wenn ein Mandant ausdrücklich verzichtet hat oder das Standard-OSS-Bundle möglichst klein bleiben soll. Es gibt kein Soft-Disable — `disabled: true` ist eine vollständige, pro Instanz nicht rückgängig zu machende Abschaltung.
+
+::: tip Jeden Linter einzeln zu deaktivieren hat denselben Effekt
+Der Editor behandelt `{ accessibility: false, structure: false, links: false }` wie `{ disabled: true }`: kein Chunk-Download, kein Sidebar-Tab, keine Canvas-Badges. Wenn jeder Linter bereits aus ist, brauchst du das globale Flag nicht zusätzlich.
+:::
 
 ## `locale`
 
@@ -57,33 +77,45 @@ Headless-Aufrufer (`lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(
 Das Dictionary ist eine Vereinigung aller registrierten Locales — eine deutschsprachige E-Mail mit englischem `Click here`-Button schlägt `a11y.link-vague-text` / `a11y.button-vague-label` trotzdem aus, und ein deutsches `Jetzt kaufen`-Alt auf einem verlinkten Bild in englischer Locale erfüllt den Action-Hint-Check von `a11y.img-linked-no-context`. Die `locale`-Option gated das Matching nicht — sie steuert nur den Nachrichtentext.
 :::
 
-## `rules`
+## `accessibility`
+
+| Standard | `{}` (Linter aktiv, Defaults für jede Stellschraube) |
+|---|---|
+
+Konfiguration für `lintAccessibility`. Setze auf `false`, um den gesamten Barrierefreiheits-Linter zu deaktivieren, ohne Regeln einzeln aufzählen zu müssen.
+
+```ts
+// Gesamten Barrierefreiheits-Linter abschalten
+lintAccessibility(content, { accessibility: false });
+```
+
+### `accessibility.rules`
 
 | Standard | `{}` |
 |---|---|
 
-Schweregrad-Override pro Regel. Setze eine Regel auf `'off'`, um sie komplett zu deaktivieren. Setze sie auf einen anderen Schweregrad, um die Standardklassifikation zu verbiegen:
+Schweregrad-Override pro Regel für Barrierefreiheits-Regeln. Setze eine Regel auf `'off'`, um sie komplett zu deaktivieren. Setze sie auf einen anderen Schweregrad, um die Standardklassifikation zu verbiegen:
 
 ```ts
-{
-  "a11y.img-missing-alt": "warning",   // herabstufen
-  "a11y.text-all-caps": "off",         // deaktivieren
-  "a11y.missing-preheader": "warning", // info → warning hochstufen
-  "structure.empty-column": "info",    // warning → info herabstufen
-  "link.localhost-or-staging": "error",// vor Versand zu error hochstufen
-}
+lintAccessibility(content, {
+  accessibility: {
+    rules: {
+      "a11y.img-missing-alt": "warning",   // herabstufen
+      "a11y.text-all-caps": "off",         // deaktivieren
+      "a11y.missing-preheader": "warning", // info → warning hochstufen
+    },
+  },
+});
 ```
 
-Regel-IDs sind nach Linter namensraum-getrennt: `a11y.*` für Barrierefreiheit, `structure.*` für Struktur, `link.*` für Links. Override-Schlüssel müssen die volle, mit Präfix versehene ID verwenden.
+Override-Schlüssel verwenden die volle, mit Präfix versehene Regel-ID (`a11y.*`) — dieselbe ID, die auf `LintIssue.ruleId` erscheint. Werte aus einem ausgegebenen Issue lassen sich direkt einsetzen. Standardschweregrade pro Regel: [Barrierefreiheit-Katalog](./accessibility/rule-catalog).
 
-Der Override greift, bevor die Regel läuft — deaktivierte Regeln werden also gar nicht erst ausgeführt. Standardschweregrade pro Regel: [Barrierefreiheit](./accessibility/rule-catalog) · [Struktur](./structure/rule-catalog) · [Links](./links/rule-catalog).
-
-## `thresholds`
+### `accessibility.thresholds`
 
 | Standard | Siehe unten |
 |---|---|
 
-Numerische Stellschrauben, die einige Barrierefreiheits-Regeln konsultieren. (Struktur-Regeln nutzen aktuell keine Thresholds.)
+Numerische Stellschrauben, die einige Barrierefreiheits-Regeln konsultieren.
 
 | Threshold | Standard | Verwendet von |
 |---|---|---|
@@ -96,21 +128,61 @@ Einen Wert überschreiben, ohne die anderen zu verlieren — partielles Merging 
 
 ```ts
 lintAccessibility(content, {
-  thresholds: { minFontSize: 16 },
+  accessibility: { thresholds: { minFontSize: 16 } },
 });
 ```
 
 Die Konstante `DEFAULT_A11Y_THRESHOLDS` wird ebenfalls exportiert, falls du die Baseline programmatisch referenzieren willst.
 
-## `links`
+## `structure`
 
-`lintLinks` liest ein optionales Unter-Objekt:
+| Standard | `{}` |
+|---|---|
+
+Konfiguration für `lintStructure`. Setze auf `false`, um den gesamten Struktur-Linter zu deaktivieren.
 
 ```ts
-interface LintLinksOptions {
-  nonProductionHosts?: string[];
-}
+lintStructure(content, { structure: false });
 ```
+
+### `structure.rules`
+
+Schweregrad-Override pro Regel für Struktur-Regeln:
+
+```ts
+lintStructure(content, {
+  structure: {
+    rules: { "structure.empty-column": "info" }, // warning → info
+  },
+});
+```
+
+Schlüssel verwenden das `structure.*`-Präfix. Siehe [Struktur-Regelkatalog](./structure/rule-catalog).
+
+## `links`
+
+| Standard | `{}` |
+|---|---|
+
+Konfiguration für `lintLinks`. Setze auf `false`, um den gesamten Links-Linter zu deaktivieren.
+
+```ts
+lintLinks(content, { links: false });
+```
+
+### `links.rules`
+
+Schweregrad-Override pro Regel für Link-Regeln:
+
+```ts
+lintLinks(content, {
+  links: {
+    rules: { "link.localhost-or-staging": "error" }, // vor Versand hochstufen
+  },
+});
+```
+
+Schlüssel verwenden das `link.*`-Präfix. Siehe [Link-Regelkatalog](./links/rule-catalog).
 
 ### `links.nonProductionHosts`
 

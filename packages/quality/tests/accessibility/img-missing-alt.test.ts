@@ -53,7 +53,7 @@ describe("a11y.img-missing-alt", () => {
     content.settings.preheaderText = "x";
     content.blocks = [block];
     const issues = lintAccessibility(content, {
-      rules: { "a11y.img-missing-alt": "warning" },
+      accessibility: { rules: { "a11y.img-missing-alt": "warning" } },
     }).filter((i) => i.ruleId === "a11y.img-missing-alt");
     expect(issues[0].severity).toBe("warning");
   });
@@ -64,15 +64,22 @@ describe("a11y.img-missing-alt", () => {
     content.settings.preheaderText = "x";
     content.blocks = [block];
     const issues = lintAccessibility(content, {
-      rules: { "a11y.img-missing-alt": "off" },
+      accessibility: { rules: { "a11y.img-missing-alt": "off" } },
     }).filter((i) => i.ruleId === "a11y.img-missing-alt");
     expect(issues).toEqual([]);
   });
 
-  it("returns empty array when entire linter is disabled", () => {
+  it("returns empty array when entire linter is disabled globally", () => {
     const block = createImageBlock({ src: "hero.png", alt: "" });
     const content = createDefaultTemplateContent();
     content.blocks = [block];
     expect(lintAccessibility(content, { disabled: true })).toEqual([]);
+  });
+
+  it("returns empty array when accessibility tool is disabled", () => {
+    const block = createImageBlock({ src: "hero.png", alt: "" });
+    const content = createDefaultTemplateContent();
+    content.blocks = [block];
+    expect(lintAccessibility(content, { accessibility: false })).toEqual([]);
   });
 });
