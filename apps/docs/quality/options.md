@@ -1,6 +1,6 @@
 # Options
 
-`lintAccessibility` and `lintStructure` accept the same `LintOptions` shape. Every field is optional.
+`lintAccessibility`, `lintStructure`, and `lintLinks` accept the same `LintOptions` shape. Every field is optional.
 
 ```ts
 interface LintOptions {
@@ -8,12 +8,13 @@ interface LintOptions {
   locale?: string;
   rules?: Record<string, Severity>;
   thresholds?: Partial<LintThresholds>;
+  links?: LintLinksOptions;
 }
 
 type Severity = "error" | "warning" | "info" | "off";
 ```
 
-The same object also gates the editor's `init({ lint })` config — every option here applies to both linters via the shared `useTemplateLint` composable.
+The same object also gates the editor's `init({ lint })` config — every option here applies to every linter via the shared `useTemplateLint` composable.
 
 ## `disabled`
 
@@ -40,6 +41,7 @@ Drives the message templates the linter returns (one file per locale per linter)
 // Headless — set explicitly
 lintAccessibility(content, { locale: "de" });
 lintStructure(content, { locale: "de" });
+lintLinks(content, { locale: "de" });
 
 // Editor — linter automatically follows the editor locale
 init({ locale: "de" });
@@ -48,7 +50,7 @@ init({ locale: "de" });
 ::: warning Editor mode ignores `lint.locale`
 In editor mode the linter locale is **forced** to the editor's `locale` from `init({ locale })`. Setting `lint.locale` has no effect — it's overwritten on the way through.
 
-Headless callers (`lintAccessibility(...)` / `lintStructure(...)` directly) keep full control.
+Headless callers (`lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` directly) keep full control.
 :::
 
 ::: tip Vague-text dictionaries are cross-locale
@@ -68,12 +70,13 @@ Per-rule severity override. Set a rule to `'off'` to disable it entirely. Set to
   "a11y.text-all-caps": "off",         // disable
   "a11y.missing-preheader": "warning", // promote info → warning
   "structure.empty-column": "info",    // demote warning → info
+  "link.localhost-or-staging": "error",// promote to error before send
 }
 ```
 
-Rule IDs are namespaced by linter: `a11y.*` for accessibility rules, `structure.*` for structure rules. Override keys must use the full prefixed ID.
+Rule IDs are namespaced by linter: `a11y.*` for accessibility rules, `structure.*` for structure rules, `link.*` for link rules. Override keys must use the full prefixed ID.
 
-The override applies before the rule runs, so disabled rules don't even execute. See each linter's rule catalog for default severities: [accessibility](./accessibility/rule-catalog) · [structure](./structure/rule-catalog).
+The override applies before the rule runs, so disabled rules don't even execute. See each linter's rule catalog for default severities: [accessibility](./accessibility/rule-catalog) · [structure](./structure/rule-catalog) · [links](./links/rule-catalog).
 
 ## `thresholds`
 
@@ -98,3 +101,31 @@ lintAccessibility(content, {
 ```
 
 The `DEFAULT_A11Y_THRESHOLDS` constant is also exported if you need to reference the baseline programmatically.
+
+## `links`
+
+`lintLinks` reads one optional sub-object:
+
+```ts
+interface LintLinksOptions {
+  nonProductionHosts?: string[];
+}
+```
+
+### `links.nonProductionHosts`
+
+| Default | `['localhost', '127.0.0.1', '0.0.0.0', '*.local', '*.staging.*', '*.dev.*']` |
+|---|---|
+
+Glob-style patterns matched against the URL host. `*` matches any run of characters (including `.`) — so `*.staging.*` matches `app.staging.example.com` and `*.local` matches `acme.local` or `a.b.c.local`. Patterns are anchored, so `*.local` does NOT match `acme.local-tools`. Case-insensitive.
+
+```ts
+lintLinks(content, {
+  links: { nonProductionHosts: ["*.preview.*"] },
+});
+
+// Or silence the rule without disabling it:
+lintLinks(content, { links: { nonProductionHosts: [] } });
+```
+
+`DEFAULT_NON_PRODUCTION_HOSTS` is exported as the baseline. See the [links overview](./links/) for more.

@@ -8,8 +8,9 @@
 |---|---|---|
 | **[Barrierefreiheit](./accessibility/)** | Fehlender Alt-Text, niedriger Kontrast, vage CTAs, übersprungene Überschriftenebenen, zu kleine Touch-Ziele, lange GROSSBUCHSTABEN, target=_blank ohne rel, fehlender Preheader, … | überwiegend error/warning |
 | **[Struktur](./structure/)** | Doppelte Block-IDs, Sektionen mit falscher Spaltenanzahl, verschachtelte Sektionen, leere Sektionen, leere Spalten | überwiegend error; einige warning |
+| **[Links](./links/)** | Gefährliche URL-Schemata (`javascript:`), nicht unterstützte Protokolle, fehlerhafte `mailto:` / `tel:`, Staging-/localhost-URLs, die ins Template lecken | überwiegend warning; `link.javascript-protocol` ist error |
 
-Beide Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Optionsfläche (`LintOptions`) — Konsumenten können sie also in jeder Kombination ausführen, Ergebnisse zusammenführen und beim Gruppieren nach `ruleId`-Präfix (`a11y.*`, `structure.*`) filtern.
+Alle drei Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Optionsfläche (`LintOptions`) — Konsumenten können sie also in jeder Kombination ausführen, Ergebnisse zusammenführen und beim Gruppieren nach `ruleId`-Präfix (`a11y.*`, `structure.*`, `link.*`) filtern.
 
 ## Architektur
 
@@ -24,12 +25,15 @@ Beide Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Opti
   <text x="100" y="60" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">JSON-Blockbaum</text>
   <text x="100" y="76" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">aus Editor oder DB</text>
   <line x1="190" y1="50" x2="225" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah-quality-de)"/>
-  <rect x="230" y="2" width="180" height="44" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
-  <text x="320" y="22" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintAccessibility()</text>
-  <text x="320" y="38" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">a11y.* Regeln</text>
-  <rect x="230" y="54" width="180" height="44" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
-  <text x="320" y="74" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintStructure()</text>
-  <text x="320" y="90" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">structure.* Regeln</text>
+  <rect x="230" y="2" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
+  <text x="320" y="16" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintAccessibility()</text>
+  <text x="320" y="28" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">a11y.* Regeln</text>
+  <rect x="230" y="38" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
+  <text x="320" y="52" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintStructure()</text>
+  <text x="320" y="64" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">structure.* Regeln</text>
+  <rect x="230" y="74" width="180" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" rx="8"/>
+  <text x="320" y="88" font-family="ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1e293b" text-anchor="middle">lintLinks()</text>
+  <text x="320" y="100" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#92400e" text-anchor="middle">link.* Regeln</text>
   <line x1="410" y1="50" x2="445" y2="50" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah-quality-de)"/>
   <rect x="450" y="10" width="180" height="80" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" rx="10"/>
   <text x="540" y="36" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14" font-weight="600" fill="#1e293b" text-anchor="middle">LintIssue[]</text>
@@ -88,8 +92,10 @@ const editor = init({
       "a11y.img-missing-alt": "warning",      // von Standard 'error' herabstufen
       "a11y.text-all-caps": "off",            // komplett deaktivieren
       "structure.empty-column": "info",       // von warning auf info herabstufen
+      "link.localhost-or-staging": "error",   // vor Versand zu error hochstufen
     },
     thresholds: { minFontSize: 16 },
+    links: { nonProductionHosts: ["*.staging.*", "*.preview.*"] },
   },
 });
 ```
@@ -104,3 +110,4 @@ Der Issues-Tab und die Canvas-Badges erscheinen automatisch, sobald der optional
 - [Lokalen beitragen](./contributing-locales) — Regel-Nachrichten + Vague-Text-Dictionaries hinzufügen.
 - [Barrierefreiheits-Linter](./accessibility/) — was er erkennt, Regelkatalog.
 - [Struktur-Linter](./structure/) — was er erkennt, Regelkatalog.
+- [Links-Linter](./links/) — was er erkennt, Regelkatalog.

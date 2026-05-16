@@ -1,6 +1,6 @@
 # Optionen
 
-`lintAccessibility` und `lintStructure` akzeptieren dieselbe `LintOptions`-Struktur. Jedes Feld ist optional.
+`lintAccessibility`, `lintStructure` und `lintLinks` akzeptieren dieselbe `LintOptions`-Struktur. Jedes Feld ist optional.
 
 ```ts
 interface LintOptions {
@@ -8,12 +8,13 @@ interface LintOptions {
   locale?: string;
   rules?: Record<string, Severity>;
   thresholds?: Partial<LintThresholds>;
+  links?: LintLinksOptions;
 }
 
 type Severity = "error" | "warning" | "info" | "off";
 ```
 
-Dasselbe Objekt steuert auch die `init({ lint })`-Konfiguration des Editors — jede Option hier wirkt sich über das geteilte `useTemplateLint`-Composable auf beide Linter aus.
+Dasselbe Objekt steuert auch die `init({ lint })`-Konfiguration des Editors — jede Option hier wirkt sich über das geteilte `useTemplateLint`-Composable auf jeden Linter aus.
 
 ## `disabled`
 
@@ -40,6 +41,7 @@ Steuert die Nachrichtentemplates des Linters (eine Datei pro Locale pro Linter) 
 // Headless — explizit setzen
 lintAccessibility(content, { locale: "de" });
 lintStructure(content, { locale: "de" });
+lintLinks(content, { locale: "de" });
 
 // Editor — Linter folgt automatisch der Editor-Locale
 init({ locale: "de" });
@@ -48,7 +50,7 @@ init({ locale: "de" });
 ::: warning Im Editor-Modus wird `lint.locale` ignoriert
 Im Editor-Modus wird die Linter-Locale **erzwungen** auf den `locale`-Wert aus `init({ locale })`. `lint.locale` zu setzen, hat keinen Effekt — es wird auf dem Weg überschrieben.
 
-Headless-Aufrufer (`lintAccessibility(...)` / `lintStructure(...)` direkt) behalten volle Kontrolle.
+Headless-Aufrufer (`lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` direkt) behalten volle Kontrolle.
 :::
 
 ::: tip Vague-Text-Dictionaries sind sprachübergreifend
@@ -68,12 +70,13 @@ Schweregrad-Override pro Regel. Setze eine Regel auf `'off'`, um sie komplett zu
   "a11y.text-all-caps": "off",         // deaktivieren
   "a11y.missing-preheader": "warning", // info → warning hochstufen
   "structure.empty-column": "info",    // warning → info herabstufen
+  "link.localhost-or-staging": "error",// vor Versand zu error hochstufen
 }
 ```
 
-Regel-IDs sind nach Linter namensraum-getrennt: `a11y.*` für Barrierefreiheit, `structure.*` für Struktur. Override-Schlüssel müssen die volle, mit Präfix versehene ID verwenden.
+Regel-IDs sind nach Linter namensraum-getrennt: `a11y.*` für Barrierefreiheit, `structure.*` für Struktur, `link.*` für Links. Override-Schlüssel müssen die volle, mit Präfix versehene ID verwenden.
 
-Der Override greift, bevor die Regel läuft — deaktivierte Regeln werden also gar nicht erst ausgeführt. Standardschweregrade pro Regel: [Barrierefreiheit](./accessibility/rule-catalog) · [Struktur](./structure/rule-catalog).
+Der Override greift, bevor die Regel läuft — deaktivierte Regeln werden also gar nicht erst ausgeführt. Standardschweregrade pro Regel: [Barrierefreiheit](./accessibility/rule-catalog) · [Struktur](./structure/rule-catalog) · [Links](./links/rule-catalog).
 
 ## `thresholds`
 
@@ -98,3 +101,31 @@ lintAccessibility(content, {
 ```
 
 Die Konstante `DEFAULT_A11Y_THRESHOLDS` wird ebenfalls exportiert, falls du die Baseline programmatisch referenzieren willst.
+
+## `links`
+
+`lintLinks` liest ein optionales Unter-Objekt:
+
+```ts
+interface LintLinksOptions {
+  nonProductionHosts?: string[];
+}
+```
+
+### `links.nonProductionHosts`
+
+| Standard | `['localhost', '127.0.0.1', '0.0.0.0', '*.local', '*.staging.*', '*.dev.*']` |
+|---|---|
+
+Glob-Muster, die gegen den URL-Host abgeglichen werden. `*` matcht eine beliebige Zeichenfolge (auch über `.` hinweg) — `*.staging.*` matcht also `app.staging.example.com` und `*.local` matcht `acme.local` oder `a.b.c.local`. Muster sind verankert; `*.local` matcht damit NICHT `acme.local-tools`. Groß-/Kleinschreibung wird ignoriert.
+
+```ts
+lintLinks(content, {
+  links: { nonProductionHosts: ["*.preview.*"] },
+});
+
+// Oder die Regel still schalten, ohne sie zu deaktivieren:
+lintLinks(content, { links: { nonProductionHosts: [] } });
+```
+
+`DEFAULT_NON_PRODUCTION_HOSTS` wird als Baseline exportiert. Mehr in der [Links-Übersicht](./links/).

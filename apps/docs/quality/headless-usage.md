@@ -2,20 +2,25 @@
 
 `@templatical/quality` is JSON-only and has no DOM dependency, so the same linters run in any Node.js context: CI, build pipelines, server-side validation, batch jobs.
 
-Both `lintAccessibility(content, options?)` and `lintStructure(content, options?)` return the same `LintIssue[]` shape, so you can call them independently or merge results.
+`lintAccessibility(content, options?)`, `lintStructure(content, options?)`, and `lintLinks(content, options?)` all return the same `LintIssue[]` shape, so you can call them independently or merge results.
 
 ## Validate before storing
 
 Reject template JSON that fails the linter at the point it enters your system — CMS save handler, API endpoint, ingestion job:
 
 ```ts
-import { lintAccessibility, lintStructure } from "@templatical/quality";
+import {
+  lintAccessibility,
+  lintLinks,
+  lintStructure,
+} from "@templatical/quality";
 import type { TemplateContent } from "@templatical/types";
 
 export function assertValid(content: TemplateContent): void {
   const issues = [
     ...lintAccessibility(content),
     ...lintStructure(content),
+    ...lintLinks(content),
   ];
   const errors = issues.filter((i) => i.severity === "error");
   if (errors.length > 0) {
@@ -28,7 +33,7 @@ export function assertValid(content: TemplateContent): void {
 }
 ```
 
-`structure.*` errors typically indicate data corruption (duplicate IDs, layout/children mismatch) and should always block a save. `a11y.*` errors are content quality and may warrant a softer policy.
+`structure.*` errors typically indicate data corruption (duplicate IDs, layout/children mismatch) and should always block a save. `link.javascript-protocol` is also an error — a dangerous scheme that the editor's render-time sanitizer would strip silently. `a11y.*` errors are content quality and may warrant a softer policy.
 
 ## CI guard for stored templates
 
@@ -36,7 +41,11 @@ If your application stores `TemplateContent` JSON in a database, run the linters
 
 ```ts
 // scripts/lint-templates.ts
-import { lintAccessibility, lintStructure } from "@templatical/quality";
+import {
+  lintAccessibility,
+  lintLinks,
+  lintStructure,
+} from "@templatical/quality";
 import { templates } from "../fixtures/templates";
 
 const SEVERITY_RANK = { error: 3, warning: 2, info: 1 };
@@ -47,6 +56,7 @@ for (const [name, content] of Object.entries(templates)) {
   const issues = [
     ...lintAccessibility(content),
     ...lintStructure(content),
+    ...lintLinks(content),
   ].filter((i) => SEVERITY_RANK[i.severity] >= SEVERITY_RANK.warning);
 
   if (issues.length === 0) {
@@ -68,15 +78,17 @@ Run via `tsx scripts/lint-templates.ts` and wire it into your CI workflow. The T
 
 ## Filtering by category
 
-Rule IDs are namespaced (`a11y.*`, `structure.*`), so grouping or filtering by linter is a `startsWith` check:
+Rule IDs are namespaced (`a11y.*`, `structure.*`, `link.*`), so grouping or filtering by linter is a `startsWith` check:
 
 ```ts
 const issues = [
   ...lintAccessibility(content),
   ...lintStructure(content),
+  ...lintLinks(content),
 ];
 const a11y = issues.filter((i) => i.ruleId.startsWith("a11y."));
 const structural = issues.filter((i) => i.ruleId.startsWith("structure."));
+const links = issues.filter((i) => i.ruleId.startsWith("link."));
 ```
 
 ## Custom severity policy
@@ -112,4 +124,16 @@ walkBlocks(content, (block, ctx) => {
 
 `walkBlocks` resolves the nearest opaque ancestor background per block, so contrast checks "just work" without re-implementing the section/column traversal.
 
-If you'd like your custom rule to participate in the orchestrator alongside the built-ins (severity overrides, localized messages, the editor Issues panel), implement the `Rule` interface — `block` / `template` return a `RuleHit` (`blockId`, optional `params`, optional `fix`) and the orchestrator combines it with the rule's `meta` and the active locale's message template. The same `runRules` helper powers both `lintAccessibility` and `lintStructure`.
+For URL-scoped rules, use `walkUrls` instead — it yields one `UrlOccurrence` per URL field across the template (anchors, button, image-link, video, menu-item, social-icon) without re-walking the tree per rule:
+
+```ts
+import { walkUrls } from "@templatical/quality";
+
+for (const { url, blockId, source } of walkUrls(content)) {
+  if (source === "anchor" && url.startsWith("https://tracking.")) {
+    console.warn(`Block ${blockId} routes through tracking domain`);
+  }
+}
+```
+
+If you'd like your custom rule to participate in the orchestrator alongside the built-ins (severity overrides, localized messages, the editor Issues panel), implement the `Rule` interface — `block` / `template` return a `RuleHit` (`blockId`, optional `params`, optional `fix`) and the orchestrator combines it with the rule's `meta` and the active locale's message template. The same `runRules` helper powers `lintAccessibility`, `lintStructure`, and `lintLinks`.

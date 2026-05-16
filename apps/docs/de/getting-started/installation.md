@@ -78,7 +78,7 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 | `@templatical/types`           | Gemeinsame TypeScript-Typen, Block-Factory-Funktionen, Type Guards                                                      | Automatisch installiert                                                                                      |
 | `@templatical/core`            | Framework-agnostische Editor-Logik (State, History)                                                                     | Automatisch installiert                                                                                      |
 | `@templatical/renderer`        | Rendert Templates zu MJML                                                                                               | Optional – installieren, wo Sie `editor.toMjml()` (Browser) oder `renderToMjml()` (Node.js, Server) aufrufen |
-| `@templatical/quality`         | Template-Linter (Barrierefreiheit + Struktur) für das Issues-Panel des Editors und Headless- / CI-Checks                | Optional – installieren, um den Issues-Sidebar-Tab und die Inline-Block-Badges zu aktivieren                 |
+| `@templatical/quality`         | Template-Linter (Barrierefreiheit, Struktur, Links) für das Issues-Panel des Editors und Headless- / CI-Checks                | Optional – installieren, um den Issues-Sidebar-Tab und die Inline-Block-Badges zu aktivieren                 |
 | `@templatical/media-library`   | Eigenständige Medienbibliothek (Typen, Composable, API-Client, Vue-Komponenten), wird von `initCloud()` genutzt         | Optional – nur nötig, wenn Sie `initCloud()` für den Medien-Browser verwenden                                |
 | `@templatical/import-beefree`  | Konvertiert BeeFree-JSON-Templates in das Templatical-Format                                                            | Optional                                                                                                     |
 | `@templatical/import-unlayer`  | Konvertiert Unlayer-JSON-Design-Templates in das Templatical-Format                                                     | Optional                                                                                                     |
@@ -93,7 +93,7 @@ Der Editor lädt vier optionale Peers zur Laufzeit per dynamischem `import()`, a
 | Peer                         | Wann geladen                                   | Installieren, wenn Sie                   |
 | ---------------------------- | ---------------------------------------------- | ---------------------------------------- |
 | `@templatical/renderer`      | Erster Aufruf von `editor.toMjml()`            | MJML-Export aus dem Browser benötigen    |
-| `@templatical/quality`       | Beim Mounten des Editors (Issues-Panel)        | Barrierefreiheit + Struktur-Lint in der Issues-Sidebar nutzen möchten |
+| `@templatical/quality`       | Beim Mounten des Editors (Issues-Panel)        | Barrierefreiheit, Struktur und Link-Lint in der Issues-Sidebar nutzen möchten |
 | `@templatical/media-library` | Erstes Öffnen des Medien-Browsers              | `initCloud()` verwenden                  |
 | `pusher-js`                  | Cloud-Realtime-Verbindung                      | `initCloud()` verwenden                  |
 

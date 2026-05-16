@@ -37,6 +37,13 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Rule catalog", link: "/quality/structure/rule-catalog" },
       ],
     },
+    {
+      text: "Links",
+      items: [
+        { text: "Overview", link: "/quality/links/" },
+        { text: "Rule catalog", link: "/quality/links/rule-catalog" },
+      ],
+    },
   ],
   "/cloud/": [
     {
@@ -181,6 +188,13 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Überblick", link: "/de/quality/structure/" },
         { text: "Regelkatalog", link: "/de/quality/structure/rule-catalog" },
+      ],
+    },
+    {
+      text: "Links",
+      items: [
+        { text: "Überblick", link: "/de/quality/links/" },
+        { text: "Regelkatalog", link: "/de/quality/links/rule-catalog" },
       ],
     },
   ],
