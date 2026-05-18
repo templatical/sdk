@@ -7,7 +7,7 @@ Die 19 Regeln, die `lintAccessibility` mitliefert, gruppiert nach Prüfbereich. 
 | Regel | Standardschweregrad | Auto-Fix | Was geprüft wird |
 |---|---|---|---|
 | `a11y.img-missing-alt` | error | — | Fehlender Alt-Text — Screenreader sagen einen undefinierten oder leeren Alt-Text als Dateinamen vor oder überspringen das Bild ganz. E-Mail-Clients blockieren Bilder zudem oft standardmäßig; Alt-Text ist das, was 30–50 % der Empfänger zuerst sehen. [1](https://www.w3.org/WAI/tutorials/images/) |
-| `a11y.img-alt-is-filename` | warning | ja | Alt-Text wirkt wie ein Dateiname — Dateinamen wie 'IMG_1234.jpg' oder 'Screen Shot 2026.png' tragen keine sinnvolle Information. Ersetze sie durch eine kurze Beschreibung dessen, was das Bild vermittelt. |
+| `a11y.img-alt-is-filename` | warning | — | Alt-Text wirkt wie ein Dateiname — Dateinamen wie 'IMG_1234.jpg' oder 'Screen Shot 2026.png' tragen keine sinnvolle Information. Ersetze sie durch eine kurze Beschreibung dessen, was das Bild vermittelt. |
 | `a11y.img-alt-too-long` | warning | — | Alt-Text ist zu lang — Screenreader machen innerhalb des Alt-Textes keine Pausen. Lange Texte werden zu einer Sprachwand. Bleibe unter ca. 125 Zeichen; zusätzlichen Kontext in den Fließtext auslagern. |
 | `a11y.img-decorative-needs-empty-alt` | info | ja | Dekoratives Bild hat Alt-Text — Dekorative Bilder sollten von Screenreadern übersprungen werden. Ein leerer Alt-Text (alt='') signalisiert genau das. Ein nicht leerer Alt-Text auf einem dekorativen Bild widerspricht sich. |
 | `a11y.img-linked-no-context` | warning | — | Verlinktes Bild ohne Zielkontext — Wenn ein Bild zugleich Link ist, fungiert der Alt-Text als Linktext. Wer nur das Bild beschreibt, lässt Nutzer im Unklaren über das Ziel. |

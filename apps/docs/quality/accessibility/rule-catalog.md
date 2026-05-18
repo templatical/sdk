@@ -7,7 +7,7 @@ The 19 rules `lintAccessibility` ships, grouped by what they check. Each rule li
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
 | `a11y.img-missing-alt` | error | — | Missing alt text — Screen readers announce undefined or empty alt as the image filename or skip the image entirely. Email clients also block images by default; alt text is what 30–50% of recipients see first. [1](https://www.w3.org/WAI/tutorials/images/) |
-| `a11y.img-alt-is-filename` | warning | yes | Alt text looks like a filename — Filenames like 'IMG_1234.jpg' or 'Screen Shot 2026.png' carry no useful meaning. Replace with a short description of what the image conveys. |
+| `a11y.img-alt-is-filename` | warning | — | Alt text looks like a filename — Filenames like 'IMG_1234.jpg' or 'Screen Shot 2026.png' carry no useful meaning. Replace with a short description of what the image conveys. |
 | `a11y.img-alt-too-long` | warning | — | Alt text is too long — Screen readers don't pause inside alt text. Long alt strings become a wall of speech. Aim for under ~125 characters; put extra context in surrounding copy. |
 | `a11y.img-decorative-needs-empty-alt` | info | yes | Decorative image has alt text — Decorative images should be skipped by screen readers. Setting alt='' (empty) signals that intent. Non-empty alt on a decorative image is a contradiction. |
 | `a11y.img-linked-no-context` | warning | — | Linked image has no destination context — When an image is also a link, alt text doubles as the link label. Describing only what the image shows leaves users guessing where the link goes. |
