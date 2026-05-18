@@ -10,6 +10,7 @@
   ],
   "labels": ["dependencies"],
   "rangeStrategy": "bump",
+  "minimumReleaseAge": "3 days",
   "schedule": ["before 6am on monday"],
   "timezone": "Europe/Berlin",
   "prConcurrentLimit": 5,
@@ -108,9 +109,9 @@
       "automerge": true
     },
     {
-      "description": "Pin GitHub Actions to digests",
+      "description": "Don't pin GitHub Actions or Docker images to digests — version tags are sufficient",
       "matchManagers": ["github-actions"],
-      "pinDigests": true
+      "pinDigests": false
     }
   ]
 }
