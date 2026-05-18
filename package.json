@@ -15,7 +15,7 @@
     "@tiptap/extension-color": "^3.22.4",
     "@tiptap/extension-font-family": "^3.22.4",
     "@tiptap/extension-text-style": "^3.22.4",
-    "@vitejs/plugin-vue": "^6.0.6",
+    "@vitejs/plugin-vue": "^6.0.7",
     "@vitest/coverage-v8": "^4.1.5",
     "@vue/reactivity": "^3.5.33",
     "eslint": "^10.2.1",
@@ -26,7 +26,7 @@
     "syncpack": "^14.0.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.0",
-    "vite": "^8.0.10",
+    "vite": "^8.0.13",
     "vue-eslint-parser": "^10.4.0"
   },
   "engines": {
