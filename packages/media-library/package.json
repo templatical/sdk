@@ -4,21 +4,21 @@
   "version": "0.8.1",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
-    "@lucide/vue": "^1.11.0",
+    "@lucide/vue": "^1.16.0",
     "@templatical/core": "workspace:*",
     "@templatical/types": "workspace:*",
-    "@vueuse/core": "^14.2.1",
+    "@vueuse/core": "^14.3.0",
     "vue-advanced-cropper": "^2.8.9"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.6",
-    "@vue/test-utils": "^2.4.8",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/test-utils": "^2.4.10",
     "typescript": "^6.0.3",
-    "vite": "^8.0.10",
+    "vite": "^8.0.13",
     "vite-plugin-dts": "^4.5.4",
-    "vitest": "^4.1.5",
-    "vue": "^3.5.33",
-    "vue-tsc": "^3.2.7"
+    "vitest": "^4.1.6",
+    "vue": "^3.5.34",
+    "vue-tsc": "^3.2.9"
   },
   "exports": {
     ".": {

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://unpkg.com/syncpack@14/schema.json",
+  "$schema": "https://unpkg.com/syncpack@15/schema.json",
   "source": ["package.json", "packages/*/package.json", "apps/*/package.json"],
   "semverGroups": [
     {
