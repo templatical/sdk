@@ -25,6 +25,8 @@ const de: typeof en = {
     "Ein Link in diesem Block hat ein leeres oder „#“-href.",
   "a11y.link-target-blank-no-rel":
     'Link öffnet in neuem Tab, aber rel="noopener" fehlt – ergänze es, damit das Ziel nicht auf window.opener zugreifen kann.',
+  "a11y.link-nested-anchor":
+    "Ein Link liegt innerhalb eines anderen Links. Verschachtelte Anker sind ungültiges HTML und werden von E-Mail-Clients unterschiedlich gerendert – flache einen einzigen Anker daraus.",
   "a11y.text-all-caps":
     "Längere Texte in Großbuchstaben sind schwerer lesbar. Verwende Groß- und Kleinschreibung.",
   "a11y.text-low-contrast":

@@ -8,6 +8,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
+    "@microsoft/api-extractor": "^7.58.7",
     "@playwright/mcp": "^0.0.75",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/vite": "^4.3.0",
@@ -35,7 +36,7 @@
   "packageManager": "pnpm@11.1.2+sha512.415a1cc25974731e75455c1468371be74c5aa5fb7621b50d4056d222451609f11412f23fd602e6169f1e060466641f798597e1be961a10688836a67b16569499",
   "private": true,
   "scripts": {
-    "build": "pnpm --filter '@templatical/media-library' run build:all && pnpm --filter '@templatical/types' run build && pnpm --filter '@templatical/core' --filter '@templatical/renderer' --filter '@templatical/quality' --filter '@templatical/import-beefree' --filter '@templatical/import-unlayer' --filter '@templatical/import-html' run build && pnpm --filter '@templatical/editor' run build:all",
+    "build": "pnpm --filter '@templatical/types' run build && pnpm --filter '@templatical/core' --filter '@templatical/renderer' --filter '@templatical/import-beefree' --filter '@templatical/import-unlayer' --filter '@templatical/import-html' run build && pnpm --filter '@templatical/media-library' run build:all && pnpm --filter '@templatical/quality' run build && pnpm --filter '@templatical/editor' run build:all",
     "build:all-sdk": "pnpm run build:email-editor && pnpm run build:media-library",
     "build:email-editor": "pnpm --filter '@templatical/editor' run build:cdn",
     "build:media-library": "pnpm --filter '@templatical/media-library' run build:cdn",

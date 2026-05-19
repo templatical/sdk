@@ -5,12 +5,11 @@
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*",
-    "htmlparser2": "^9.1.0"
+    "htmlparser2": "^12.0.0"
   },
   "devDependencies": {
     "typescript": "^6.0.3",
     "vite": "^8.0.13",
-    "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.1.6"
   },
   "exports": {
@@ -42,7 +41,7 @@
     "directory": "packages/quality"
   },
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && tsc -p tsconfig.build.json && api-extractor run --local && rm -rf dist/types",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit"
   },

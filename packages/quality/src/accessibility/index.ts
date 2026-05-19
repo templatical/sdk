@@ -14,6 +14,7 @@ import { linkEmpty } from "./rules/link-empty";
 import { linkVagueText } from "./rules/link-vague-text";
 import { linkHrefEmpty } from "./rules/link-href-empty";
 import { linkTargetBlankNoRel } from "./rules/link-target-blank-no-rel";
+import { linkNestedAnchor } from "./rules/link-nested-anchor";
 import { textAllCaps } from "./rules/text-all-caps";
 import { textLowContrast } from "./rules/text-low-contrast";
 import { textTooSmall } from "./rules/text-too-small";
@@ -35,6 +36,7 @@ export const ACCESSIBILITY_RULES: Rule[] = [
   linkVagueText,
   linkHrefEmpty,
   linkTargetBlankNoRel,
+  linkNestedAnchor,
   textAllCaps,
   textLowContrast,
   textTooSmall,

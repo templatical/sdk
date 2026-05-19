@@ -121,6 +121,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+      # The prep script re-builds editor + renderer. The new dts pipeline
+      # (vue-tsc + api-extractor) needs every dependency's dist/index.d.ts
+      # already on disk for module resolution — they're not pulled in from
+      # source the way vite-plugin-dts used to allow. Download the build-job
+      # artifact so the rebuild has types/, core/, quality/, media-library/
+      # dists to read from.
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: packages/
       - run: pnpm run test:e2e:consumer
       - uses: actions/upload-artifact@v4
         if: failure()
@@ -140,6 +150,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+      # See e2e-consumer comment — same reason.
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: packages/
       - run: pnpm run test:webpack-consumer
 
   turbopack-consumer:
@@ -154,6 +169,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
+      # See e2e-consumer comment — same reason.
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: packages/
       - run: pnpm run test:turbopack-consumer
 
   e2e-report:

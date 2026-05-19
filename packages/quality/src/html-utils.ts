@@ -13,52 +13,94 @@ export interface AnchorInfo {
  * Extract every anchor from a TipTap-style HTML fragment. Used by
  * link-* rules. Doesn't try to be a full DOM — only the data the rules
  * need.
+ *
+ * Nested `<a>` is invalid HTML; htmlparser2 follows the HTML5 spec and
+ * emits an implicit `</a>` when a second `<a>` opens, so anchors are
+ * effectively flat siblings. We mirror that with a single in-flight
+ * anchor (no stack); a defensive finalize-on-reopen handles the
+ * theoretical case where the parser ever stops emitting the implicit
+ * close. Detecting nested-anchor markup as its own concern lives in
+ * the `a11y.link-nested-anchor` rule, which inspects the raw input
+ * before this normalization.
  */
 export function extractAnchors(html: string): AnchorInfo[] {
   const anchors: AnchorInfo[] = [];
-  // Each open anchor owns its own text buffer so a nested `<a>` (invalid
-  // HTML but parsed permissively) doesn't truncate the outer anchor's text.
-  const stack: { anchor: AnchorInfo; buffer: string }[] = [];
+  let current: AnchorInfo | null = null;
+  let buffer = "";
+
+  const finalize = () => {
+    if (current === null) return;
+    current.text = buffer.trim();
+    anchors.push(current);
+    current = null;
+    buffer = "";
+  };
 
   const parser = new Parser({
     onopentag(name, attribs) {
       if (name === "a") {
-        const anchor: AnchorInfo = {
+        finalize();
+        current = {
           href: attribs.href ?? "",
           text: "",
           target: attribs.target ?? null,
           rel: attribs.rel ?? null,
           hasImageWithAlt: false,
         };
-        stack.push({ anchor, buffer: "" });
         return;
       }
 
-      if (name === "img" && stack.length > 0) {
+      if (name === "img" && current !== null) {
         const alt = (attribs.alt ?? "").trim();
         if (alt !== "") {
-          stack[stack.length - 1].anchor.hasImageWithAlt = true;
+          current.hasImageWithAlt = true;
         }
       }
     },
     ontext(text) {
-      for (const frame of stack) {
-        frame.buffer += text;
+      if (current !== null) {
+        buffer += text;
       }
     },
     onclosetag(name) {
-      if (name === "a" && stack.length > 0) {
-        const frame = stack.pop()!;
-        frame.anchor.text = frame.buffer.trim();
-        anchors.push(frame.anchor);
+      if (name === "a") {
+        finalize();
       }
     },
   });
 
   parser.write(html);
   parser.end();
+  finalize();
 
   return anchors;
+}
+
+/**
+ * Whether the raw HTML contains an `<a>` opened inside another open
+ * `<a>` — invalid markup that htmlparser2 silently normalizes by
+ * emitting an implicit `</a>` before the inner open. `extractAnchors`
+ * runs against the normalized parse and therefore can't distinguish
+ * nested-from-sibling input; this helper inspects the raw text so the
+ * `a11y.link-nested-anchor` rule can flag the structural problem.
+ *
+ * Tokenization here ignores anchor-like tokens inside HTML comments,
+ * which is enough for TipTap email-template HTML. CDATA, `<script>`,
+ * and attribute-value occurrences aren't expected in this surface.
+ */
+export function hasNestedAnchors(html: string): boolean {
+  const stripped = html.replace(/<!--[\s\S]*?-->/g, "");
+  const tokens = stripped.matchAll(/<\/?a\b[^>]*>/gi);
+  let depth = 0;
+  for (const match of tokens) {
+    if (match[0].startsWith("</")) {
+      if (depth > 0) depth--;
+      continue;
+    }
+    if (depth > 0) return true;
+    depth++;
+  }
+  return false;
 }
 
 /**

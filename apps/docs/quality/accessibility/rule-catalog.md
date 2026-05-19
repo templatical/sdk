@@ -1,6 +1,6 @@
 # Accessibility rule catalog
 
-The 19 rules `lintAccessibility` ships, grouped by what they check. Each rule lives in `packages/quality/src/accessibility/rules/`; severity, message templates, and dictionaries are user-overridable per [Options](../options).
+The 20 rules `lintAccessibility` ships, grouped by what they check. Each rule lives in `packages/quality/src/accessibility/rules/`; severity, message templates, and dictionaries are user-overridable per [Options](../options).
 
 ## Images
 
@@ -28,6 +28,7 @@ The 19 rules `lintAccessibility` ships, grouped by what they check. Each rule li
 | `a11y.link-vague-text` | warning | — | Vague link text — Phrases like 'click here' or 'read more' tell screen-reader users nothing when listed out of context. Use descriptive link text that names the destination. Outer punctuation and decorative symbols are stripped before matching, so `Click here!`, `→ click here`, and `»click here«` all flag. |
 | `a11y.link-href-empty` | error | — | Link has empty href — An anchor with no destination (empty href or '#') is broken — recipients click and nothing happens, or the page jumps to top. |
 | `a11y.link-target-blank-no-rel` | warning | yes | target="_blank" missing rel="noopener" — Links opening in a new tab without rel='noopener' or rel='noreferrer' allow the destination to read window.opener and tamper with the originating page. A small but real security/privacy footgun. |
+| `a11y.link-nested-anchor` | error | — | Anchor nested inside another anchor — Invalid HTML; email clients render nested `<a>` inconsistently (some flatten, some strip the inner, some break click targets). Flatten to a single anchor. |
 
 ## Text
 

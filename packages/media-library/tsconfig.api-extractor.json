@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "./dist/types",
+    "skipLibCheck": true,
+    "jsx": "preserve"
+  },
+  "include": ["dist/types/**/*.d.ts"]
+}

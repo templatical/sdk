@@ -31,7 +31,6 @@
     "typescript": "^6.0.3",
     "vanilla-colorful": "^0.7.2",
     "vite": "^8.0.13",
-    "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.1.6",
     "vue": "^3.5.34",
     "vue-draggable-plus": "^0.6.1",
@@ -87,8 +86,8 @@
     "directory": "packages/editor"
   },
   "scripts": {
-    "build": "vite build",
-    "build:all": "vite build && vite build --config vite.cdn.config.ts",
+    "build": "vite build && vue-tsc -p tsconfig.build.json && api-extractor run --local && rm -rf dist/types",
+    "build:all": "pnpm run build && vite build --config vite.cdn.config.ts",
     "build:cdn": "vite build --config vite.cdn.config.ts",
     "test": "vitest run",
     "typecheck": "vue-tsc --noEmit",

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { extractAnchors, extractText } from "../src/html-utils";
+import {
+  extractAnchors,
+  extractText,
+  hasNestedAnchors,
+} from "../src/html-utils";
 
 describe("extractAnchors", () => {
   it("returns href + text for a simple anchor", () => {
@@ -56,17 +60,71 @@ describe("extractAnchors", () => {
     expect(extractAnchors("<p>no links here</p>")).toEqual([]);
   });
 
-  it("preserves outer anchor's prefix text when a nested anchor opens", () => {
-    // Nested anchors are invalid HTML but htmlparser2 still surfaces them.
-    // The outer anchor should retain its full visible text rather than
-    // losing the prefix that ran before the nested element.
+  it("flattens nested anchors to siblings (HTML5-spec parse)", () => {
+    // Nested `<a>` is invalid HTML. htmlparser2 follows the HTML5 spec
+    // and emits an implicit `</a>` when a second `<a>` opens, so the
+    // two anchors are surfaced as siblings rather than parent/child.
+    // Text that appears after the inner anchor's close (and before the
+    // outer's stray `</a>`) is outside any open anchor and is therefore
+    // not attributed — this matches the spec parse a browser would do.
+    // The presence of nested-anchor markup itself is flagged separately
+    // by the `a11y.link-nested-anchor` rule, which inspects the raw
+    // input rather than this normalized list.
     const anchors = extractAnchors(
       '<a href="/outer">prefix <a href="/inner">inner</a> suffix</a>',
     );
+    expect(anchors).toHaveLength(2);
     const outer = anchors.find((a) => a.href === "/outer")!;
     const inner = anchors.find((a) => a.href === "/inner")!;
+    expect(outer.text).toBe("prefix");
     expect(inner.text).toBe("inner");
-    expect(outer.text).toBe("prefix inner suffix");
+  });
+
+  it("finalizes an unclosed anchor at end of input", () => {
+    const anchors = extractAnchors('<a href="/x">no close');
+    expect(anchors).toHaveLength(1);
+    expect(anchors[0].href).toBe("/x");
+    expect(anchors[0].text).toBe("no close");
+  });
+});
+
+describe("hasNestedAnchors", () => {
+  it("returns true when an anchor opens inside another", () => {
+    expect(
+      hasNestedAnchors(
+        '<a href="/outer">x<a href="/inner">y</a></a>',
+      ),
+    ).toBe(true);
+  });
+
+  it("returns false for sibling anchors", () => {
+    expect(
+      hasNestedAnchors('<a href="/a">a</a><a href="/b">b</a>'),
+    ).toBe(false);
+  });
+
+  it("returns false for a single anchor", () => {
+    expect(hasNestedAnchors('<a href="/x">x</a>')).toBe(false);
+  });
+
+  it("returns false for HTML without anchors", () => {
+    expect(hasNestedAnchors("<p>plain text</p>")).toBe(false);
+  });
+
+  it("ignores anchor-like tokens inside HTML comments", () => {
+    expect(
+      hasNestedAnchors(
+        '<a href="/x">y<!-- <a href="/z"> --></a>',
+      ),
+    ).toBe(false);
+  });
+
+  it("returns true when nesting follows a closed earlier anchor", () => {
+    expect(
+      hasNestedAnchors(
+        '<a href="/a">a</a><a href="/outer"><a href="/inner">x</a></a>',
+      ),
+    ).toBe(true);
   });
 });
 

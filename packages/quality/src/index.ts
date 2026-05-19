@@ -6,7 +6,7 @@ export type { Visitor } from "./walk";
 export { walkUrls } from "./url-walker";
 export type { UrlOccurrence, UrlSource } from "./url-walker";
 export { getContrastRatio, parseHex, isOpaqueHex } from "./contrast";
-export { extractAnchors, extractText } from "./html-utils";
+export { extractAnchors, extractText, hasNestedAnchors } from "./html-utils";
 export type { AnchorInfo } from "./html-utils";
 export {
   getDictionary,

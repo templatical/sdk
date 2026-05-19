@@ -26,6 +26,8 @@ const en = {
   "a11y.link-href-empty": "A link in this block has an empty or '#' href.",
   "a11y.link-target-blank-no-rel":
     'Link opens in a new tab but is missing rel="noopener" — add it to prevent the destination from accessing window.opener.',
+  "a11y.link-nested-anchor":
+    "A link is nested inside another link. Nested anchors are invalid HTML and clients render them inconsistently — flatten to a single anchor.",
   "a11y.text-all-caps":
     "Long all-caps text is harder to read for everyone. Use sentence case.",
   "a11y.text-low-contrast":

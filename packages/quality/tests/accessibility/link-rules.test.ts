@@ -211,3 +211,53 @@ describe("a11y.link-target-blank-no-rel", () => {
     expect(patched!.content).toContain("noopener");
   });
 });
+
+describe("a11y.link-nested-anchor", () => {
+  it("fires when an anchor opens inside another open anchor", () => {
+    const { all, block } = lint(
+      '<p><a href="/outer">before <a href="/inner">inner</a> after</a></p>',
+    );
+    const issues = all.filter((i) => i.ruleId === "a11y.link-nested-anchor");
+    expect(issues).toHaveLength(1);
+    expect(issues[0].blockId).toBe(block.id);
+    expect(issues[0].severity).toBe("error");
+  });
+
+  it("does not fire for sibling anchors", () => {
+    const { all } = lint(
+      '<p><a href="/a">A</a> and <a href="/b">B</a></p>',
+    );
+    expect(all.filter((i) => i.ruleId === "a11y.link-nested-anchor")).toEqual([]);
+  });
+
+  it("does not fire for a single anchor wrapping formatting", () => {
+    const { all } = lint(
+      '<p><a href="/x">Hello <strong>world</strong></a></p>',
+    );
+    expect(all.filter((i) => i.ruleId === "a11y.link-nested-anchor")).toEqual([]);
+  });
+
+  it("ignores anchor-like tokens inside HTML comments", () => {
+    const { all } = lint(
+      '<p><a href="/x">x<!-- <a href="/y"> --></a></p>',
+    );
+    expect(all.filter((i) => i.ruleId === "a11y.link-nested-anchor")).toEqual([]);
+  });
+
+  it("honours severity override", () => {
+    const { all } = lint(
+      '<p><a href="/outer"><a href="/inner">x</a></a></p>',
+      { accessibility: { rules: { "a11y.link-nested-anchor": "warning" } } },
+    );
+    const issue = all.find((i) => i.ruleId === "a11y.link-nested-anchor");
+    expect(issue?.severity).toBe("warning");
+  });
+
+  it("can be disabled via severity 'off'", () => {
+    const { all } = lint(
+      '<p><a href="/outer"><a href="/inner">x</a></a></p>',
+      { accessibility: { rules: { "a11y.link-nested-anchor": "off" } } },
+    );
+    expect(all.filter((i) => i.ruleId === "a11y.link-nested-anchor")).toEqual([]);
+  });
+});

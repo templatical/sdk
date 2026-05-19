@@ -1,6 +1,6 @@
 # Regelkatalog Barrierefreiheit
 
-Die 19 Regeln, die `lintAccessibility` mitliefert, gruppiert nach Prüfbereich. Jede Regel liegt in `packages/quality/src/accessibility/rules/`; Schweregrad, Meldungstexte und Wörterbücher sind pro Regel über die [Optionen](../options) anpassbar.
+Die 20 Regeln, die `lintAccessibility` mitliefert, gruppiert nach Prüfbereich. Jede Regel liegt in `packages/quality/src/accessibility/rules/`; Schweregrad, Meldungstexte und Wörterbücher sind pro Regel über die [Optionen](../options) anpassbar.
 
 ## Bilder
 
@@ -28,6 +28,7 @@ Die 19 Regeln, die `lintAccessibility` mitliefert, gruppiert nach Prüfbereich. 
 | `a11y.link-vague-text` | warning | — | Vager Linktext — Phrasen wie „hier klicken" oder „mehr erfahren" sagen Screenreader-Nutzern im Kontextverzeichnis nichts. Verwende beschreibenden Linktext, der das Ziel benennt. Äußere Interpunktion und dekorative Symbole werden vor dem Vergleich entfernt; `hier klicken!`, `→ hier klicken` und `»hier klicken«` lösen also alle aus. |
 | `a11y.link-href-empty` | error | — | Link mit leerem href — Ein Anchor ohne Ziel (leeres href oder '#') ist defekt — Empfänger klicken, und es passiert nichts, oder die Seite springt nach oben. |
 | `a11y.link-target-blank-no-rel` | warning | ja | target="_blank" ohne rel="noopener" — Links, die in einem neuen Tab öffnen und kein rel='noopener' oder rel='noreferrer' haben, lassen das Ziel auf window.opener zugreifen und an der Ursprungs­seite manipulieren. Eine kleine, aber reale Sicherheits-/Datenschutz-Falle. |
+| `a11y.link-nested-anchor` | error | — | Anker in Anker verschachtelt — Ungültiges HTML; E-Mail-Clients rendern verschachtelte `<a>` uneinheitlich (manche flachen ab, manche entfernen den inneren Anker, manche zerlegen das Klickziel). Auf einen einzigen Anker reduzieren. |
 
 ## Text
 
