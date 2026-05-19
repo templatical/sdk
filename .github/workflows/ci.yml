@@ -67,7 +67,7 @@ jobs:
           name: dist
           path: packages/
       - run: pnpm run test:coverage
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: .
