@@ -40,13 +40,16 @@ const containerStyle = computed(() => ({
   textAlign: props.block.align,
 }));
 
-const imageStyle = computed(() => ({
-  maxWidth: "100%",
-  width: props.block.width === "full" ? "100%" : `${props.block.width}px`,
-  display: "block",
-  margin: props.block.align === "center" ? "0 auto" : undefined,
-  marginLeft: props.block.align === "right" ? "auto" : undefined,
-}));
+const imageStyle = computed(() => {
+  const align = props.block.align;
+  return {
+    maxWidth: "100%",
+    width: props.block.width === "full" ? "100%" : `${props.block.width}px`,
+    display: "block",
+    marginLeft: align === "center" || align === "right" ? "auto" : undefined,
+    marginRight: align === "center" ? "auto" : undefined,
+  };
+});
 
 const hasMergeTagSrc = computed(() =>
   containsMergeTag(props.block.src, syntax),
