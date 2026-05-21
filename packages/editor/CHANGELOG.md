@@ -1,5 +1,14 @@
 # @templatical/editor
 
+## 0.8.2
+
+### Patch Changes
+
+- Updated dependencies [d835948]
+  - @templatical/quality@0.8.2
+  - @templatical/renderer@0.8.2
+  - @templatical/media-library@0.8.2
+
 ## 0.8.1
 
 ### Patch Changes
