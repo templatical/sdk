@@ -461,7 +461,6 @@ export default {
     clickToEdit: "Click to edit",
     remove: "Remove merge tag",
     insert: "Insert merge tag",
-    add: "Add merge tag",
     editValue: "Edit merge tag value",
     deleteMergeTag: "Delete merge tag",
     suggestionEmpty: "No matching merge tags",

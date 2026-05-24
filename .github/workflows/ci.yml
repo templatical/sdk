@@ -10,46 +10,88 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Version Packages PRs (opened by changesets/action on `changeset-release/*`
+# branches) intentionally skip the real CI work — every check already ran on
+# the feature PR that produced the changeset. To keep branch-protection
+# happy, each required job still STARTS (so a status is reported) but its
+# steps no-op when the branch matches `changeset-release/*`. The job-level
+# env flag `IS_VP` drives that gate; do NOT replace it with a job-level `if:`
+# because a skipped job reports no status and required-check rules will
+# block the PR forever.
+#
+# For workflows to fire on the VP PR at all, the changesets/action push must
+# be made with a non-`GITHUB_TOKEN` identity — see publish.yml.
+
 jobs:
   lint:
     runs-on: ubuntu-latest
+    env:
+      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
-      - uses: actions/cache@v5
+      - name: Skip on Version Packages PR
+        if: env.IS_VP == 'true'
+        run: echo "Skipped — Version Packages PR. Original checks ran on the producing PR."
+      - if: env.IS_VP != 'true'
+        uses: actions/checkout@v6
+      - if: env.IS_VP != 'true'
+        uses: ./.github/actions/setup
+      - if: env.IS_VP != 'true'
+        uses: actions/cache@v5
         with:
           path: node_modules/.cache/eslint
           key: eslint-${{ runner.os }}-${{ hashFiles('eslint.config.mjs', 'pnpm-lock.yaml') }}-${{ github.sha }}
           restore-keys: |
             eslint-${{ runner.os }}-${{ hashFiles('eslint.config.mjs', 'pnpm-lock.yaml') }}-
             eslint-${{ runner.os }}-
-      - run: pnpm run format:check
-      - run: pnpm run lint
-      - run: pnpm run deps:check
+      - if: env.IS_VP != 'true'
+        run: pnpm run format:check
+      - if: env.IS_VP != 'true'
+        run: pnpm run lint
+      - if: env.IS_VP != 'true'
+        run: pnpm run deps:check
 
   typecheck:
     runs-on: ubuntu-latest
+    env:
+      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
-      - run: pnpm run typecheck
+      - name: Skip on Version Packages PR
+        if: env.IS_VP == 'true'
+        run: echo "Skipped — Version Packages PR."
+      - if: env.IS_VP != 'true'
+        uses: actions/checkout@v6
+      - if: env.IS_VP != 'true'
+        uses: ./.github/actions/setup
+      - if: env.IS_VP != 'true'
+        run: pnpm run typecheck
 
   build:
     runs-on: ubuntu-latest
     needs: [lint, typecheck]
+    env:
+      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
-      - run: pnpm run build
+      - name: Skip on Version Packages PR
+        if: env.IS_VP == 'true'
+        run: echo "Skipped — Version Packages PR."
+      - if: env.IS_VP != 'true'
+        uses: actions/checkout@v6
+      - if: env.IS_VP != 'true'
+        uses: ./.github/actions/setup
+      - if: env.IS_VP != 'true'
+        run: pnpm run build
       # Guard the editor's published-tarball install footprint. Catches anyone
       # adding a runtime `dependency` that re-bloats consumer node_modules or
       # re-introduces the duplicate-Vue-instance bug. See packages/editor/scripts/verify-pack.mjs.
-      - run: pnpm --filter @templatical/editor run verify:pack
+      - if: env.IS_VP != 'true'
+        run: pnpm --filter @templatical/editor run verify:pack
       # Hard gate: every showcase template must pass the accessibility linter.
       # Runs after build because the script imports the built quality dist —
       # tsx can't evaluate `import.meta.glob` from source.
-      - run: pnpm --filter @templatical/playground run lint:templates
-      - uses: actions/upload-artifact@v7
+      - if: env.IS_VP != 'true'
+        run: pnpm --filter @templatical/playground run lint:templates
+      - if: env.IS_VP != 'true'
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: packages/*/dist
@@ -59,15 +101,25 @@ jobs:
   test:
     runs-on: ubuntu-latest
     needs: [build]
+    env:
+      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
-      - uses: actions/download-artifact@v8
+      - name: Skip on Version Packages PR
+        if: env.IS_VP == 'true'
+        run: echo "Skipped — Version Packages PR."
+      - if: env.IS_VP != 'true'
+        uses: actions/checkout@v6
+      - if: env.IS_VP != 'true'
+        uses: ./.github/actions/setup
+      - if: env.IS_VP != 'true'
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: packages/
-      - run: pnpm run test:coverage
-      - uses: codecov/codecov-action@v6
+      - if: env.IS_VP != 'true'
+        run: pnpm run test:coverage
+      - if: env.IS_VP != 'true'
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: .
@@ -87,16 +139,25 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3]
+    env:
+      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
-      - uses: actions/download-artifact@v8
+      - name: Skip on Version Packages PR
+        if: env.IS_VP == 'true'
+        run: echo "Skipped — Version Packages PR."
+      - if: env.IS_VP != 'true'
+        uses: actions/checkout@v6
+      - if: env.IS_VP != 'true'
+        uses: ./.github/actions/setup
+      - if: env.IS_VP != 'true'
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: packages/
-      - run: pnpm exec playwright test --shard=${{ matrix.shard }}/3
-      - uses: actions/upload-artifact@v7
-        if: ${{ !cancelled() }}
+      - if: env.IS_VP != 'true'
+        run: pnpm exec playwright test --shard=${{ matrix.shard }}/3
+      - if: env.IS_VP != 'true' && !cancelled()
+        uses: actions/upload-artifact@v7
         with:
           name: blob-report-${{ matrix.shard }}
           path: blob-report/
@@ -107,33 +168,42 @@ jobs:
     # fresh project, mount, click. Catches the duplicate-Vue-instance class of
     # bug that the workspace-resolved playground e2e cannot see.
     #
-    # Skipped on changesets release branches because the packed tarballs
-    # reference the about-to-be-released workspace versions, which aren't on
-    # npm yet — `npm install` fails with ETARGET. The post-merge run on `main`
-    # (after publish) and every feature PR's run still cover this surface.
-    if: ${{ !startsWith(github.head_ref, 'changeset-release/') && !startsWith(github.ref_name, 'changeset-release/') }}
+    # Skipped on Version Packages PRs (changeset-release/*) because the packed
+    # tarballs reference the about-to-be-released workspace versions, which
+    # aren't on npm yet — `npm install` would fail with ETARGET. The original
+    # gate already ran on the producing PR; the post-merge run on `main` (after
+    # publish) re-covers the surface.
     runs-on: ubuntu-latest
     # Same rationale as the `e2e` job — use the Playwright image to skip
     # the system-dep install step.
     container:
       image: mcr.microsoft.com/playwright:v1.60.0-jammy
     needs: [build]
+    env:
+      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
+      - name: Skip on Version Packages PR
+        if: env.IS_VP == 'true'
+        run: echo "Skipped — Version Packages PR. Tarballs reference unreleased versions."
+      - if: env.IS_VP != 'true'
+        uses: actions/checkout@v6
+      - if: env.IS_VP != 'true'
+        uses: ./.github/actions/setup
       # The prep script re-builds editor + renderer. The new dts pipeline
       # (vue-tsc + api-extractor) needs every dependency's dist/index.d.ts
       # already on disk for module resolution — they're not pulled in from
       # source the way vite-plugin-dts used to allow. Download the build-job
       # artifact so the rebuild has types/, core/, quality/, media-library/
       # dists to read from.
-      - uses: actions/download-artifact@v4
+      - if: env.IS_VP != 'true'
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: packages/
-      - run: pnpm run test:e2e:consumer
-      - uses: actions/upload-artifact@v7
-        if: failure()
+      - if: env.IS_VP != 'true'
+        run: pnpm run test:e2e:consumer
+      - if: env.IS_VP != 'true' && failure()
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-consumer-report
           path: playwright-report/
@@ -144,18 +214,26 @@ jobs:
     # if anyone adds a dynamic `import()` to an optional peer without try/catch,
     # webpack escalates "Module not found" from warning to error and breaks the
     # consumer's production build. See packages/editor/scripts/webpack-consumer-verify.mjs.
-    if: ${{ !startsWith(github.head_ref, 'changeset-release/') && !startsWith(github.ref_name, 'changeset-release/') }}
     runs-on: ubuntu-latest
     needs: [build]
+    env:
+      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
+      - name: Skip on Version Packages PR
+        if: env.IS_VP == 'true'
+        run: echo "Skipped — Version Packages PR."
+      - if: env.IS_VP != 'true'
+        uses: actions/checkout@v6
+      - if: env.IS_VP != 'true'
+        uses: ./.github/actions/setup
       # See e2e-consumer comment — same reason.
-      - uses: actions/download-artifact@v4
+      - if: env.IS_VP != 'true'
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: packages/
-      - run: pnpm run test:webpack-consumer
+      - if: env.IS_VP != 'true'
+        run: pnpm run test:webpack-consumer
 
   turbopack-consumer:
     # Build the editor as a real Next.js 15 + Turbopack consumer would.
@@ -163,33 +241,51 @@ jobs:
     # but Turbopack rejects with `error TP1200`, which silently breaks any
     # downstream Next.js 15+ app (Turbopack is the default builder).
     # See packages/editor/scripts/turbopack-consumer-verify.mjs.
-    if: ${{ !startsWith(github.head_ref, 'changeset-release/') && !startsWith(github.ref_name, 'changeset-release/') }}
     runs-on: ubuntu-latest
     needs: [build]
+    env:
+      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
+      - name: Skip on Version Packages PR
+        if: env.IS_VP == 'true'
+        run: echo "Skipped — Version Packages PR."
+      - if: env.IS_VP != 'true'
+        uses: actions/checkout@v6
+      - if: env.IS_VP != 'true'
+        uses: ./.github/actions/setup
       # See e2e-consumer comment — same reason.
-      - uses: actions/download-artifact@v4
+      - if: env.IS_VP != 'true'
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: packages/
-      - run: pnpm run test:turbopack-consumer
+      - if: env.IS_VP != 'true'
+        run: pnpm run test:turbopack-consumer
 
   e2e-report:
     runs-on: ubuntu-latest
     needs: [e2e]
     if: ${{ !cancelled() && needs.e2e.result != 'skipped' }}
+    env:
+      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup
-      - uses: actions/download-artifact@v8
+      - name: Skip on Version Packages PR
+        if: env.IS_VP == 'true'
+        run: echo "Skipped — Version Packages PR. No e2e artifacts produced."
+      - if: env.IS_VP != 'true'
+        uses: actions/checkout@v6
+      - if: env.IS_VP != 'true'
+        uses: ./.github/actions/setup
+      - if: env.IS_VP != 'true'
+        uses: actions/download-artifact@v8
         with:
           path: all-blob-reports
           pattern: blob-report-*
           merge-multiple: true
-      - run: pnpm exec playwright merge-reports --reporter html ./all-blob-reports
-      - uses: actions/upload-artifact@v7
+      - if: env.IS_VP != 'true'
+        run: pnpm exec playwright merge-reports --reporter html ./all-blob-reports
+      - if: env.IS_VP != 'true'
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/

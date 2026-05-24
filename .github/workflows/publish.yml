@@ -13,7 +13,17 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      # Use a PAT (CHANGESETS_PAT) so the Version Packages PR is pushed under
+      # a real user identity instead of GITHUB_TOKEN. GitHub's anti-recursion
+      # guard suppresses workflow runs triggered by GITHUB_TOKEN — without a
+      # PAT, the CI workflow never fires on the VP PR and required-check
+      # rules hold it in "Expected — Waiting for status" forever. With the
+      # PAT, ci.yml fires normally; jobs detect the `changeset-release/*`
+      # branch via their IS_VP env flag and no-op their work while still
+      # reporting green.
       - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.CHANGESETS_PAT }}
       - uses: pnpm/action-setup@v4
         with:
           run_install: false
@@ -30,7 +40,7 @@ jobs:
         with:
           publish: pnpm exec changeset publish
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CHANGESETS_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Trigger marketing-site rebuild

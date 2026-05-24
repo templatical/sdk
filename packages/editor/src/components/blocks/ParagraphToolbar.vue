@@ -280,12 +280,12 @@ function setHighlight(color: string): void {
             <button
               type="button"
               class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
-              :aria-label="t.mergeTag.add"
-              :title="t.mergeTag.add"
+              :aria-label="t.mergeTag.insert"
+              :title="t.mergeTag.insert"
               @click="emit('add-merge-tag')"
             >
               <ScanLine :size="16" :stroke-width="2" />
-              {{ t.mergeTag.add }}
+              {{ t.mergeTag.insert }}
             </button>
           </template>
         </div>

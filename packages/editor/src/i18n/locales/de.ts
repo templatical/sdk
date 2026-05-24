@@ -468,7 +468,6 @@ const de: typeof en = {
     clickToEdit: "Zum Bearbeiten klicken",
     remove: "Merge-Tag entfernen",
     insert: "Merge-Tag einfügen",
-    add: "Merge-Tag hinzufügen",
     editValue: "Merge-Tag-Wert bearbeiten",
     deleteMergeTag: "Merge-Tag löschen",
     suggestionEmpty: "Keine passenden Merge-Tags",
