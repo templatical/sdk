@@ -471,6 +471,17 @@ const de: typeof en = {
     editValue: "Merge-Tag-Wert bearbeiten",
     deleteMergeTag: "Merge-Tag löschen",
     suggestionEmpty: "Keine passenden Merge-Tags",
+    picker: {
+      title: "Merge-Tag einfügen",
+      searchPlaceholder: "Merge-Tags suchen",
+      searchAriaLabel: "Merge-Tags suchen",
+      noResults: "Keine passenden Merge-Tags",
+      empty: "Keine Merge-Tags konfiguriert",
+      otherGroup: "Sonstige",
+      cancel: "Abbrechen",
+      close: "Schließen",
+      groupCount: "{count}",
+    },
   },
 
   // Canvas

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import TplModal from "./TplModal.vue";
+import TplModal from "../../components/TplModal.vue";
 import { useI18n } from "../../composables";
 import { useCloudI18nStrict } from "../../composables";
 import {

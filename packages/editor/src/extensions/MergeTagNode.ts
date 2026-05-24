@@ -10,10 +10,19 @@ export interface MergeTagNodeOptions {
   syntax: SyntaxPreset;
 }
 
+/**
+ * Inserted-node attrs are intentionally limited to `label` + `value`. The
+ * `MergeTag` interface also carries optional `group` / `description` for
+ * the built-in picker, but those are display-only and must NOT leak into
+ * the document JSON — they would bloat templates and pollute serialized
+ * state. `Pick<>` makes the constraint explicit at the type level.
+ */
+export type InsertMergeTagAttrs = Pick<MergeTag, "label" | "value">;
+
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     mergeTagNode: {
-      insertMergeTag: (attrs: MergeTag) => ReturnType;
+      insertMergeTag: (attrs: InsertMergeTagAttrs) => ReturnType;
     };
   }
 }
@@ -76,11 +85,13 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
   addCommands() {
     return {
       insertMergeTag:
-        (attrs: MergeTag) =>
+        (attrs: InsertMergeTagAttrs) =>
         ({ commands }) => {
+          // Whitelist explicitly — even if a caller smuggles extra keys via
+          // a wider type assertion, only label/value reach the node attrs.
           return commands.insertContent({
             type: this.name,
-            attrs,
+            attrs: { label: attrs.label, value: attrs.value },
           });
         },
     };

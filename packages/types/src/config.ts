@@ -24,6 +24,19 @@ export interface ExportResult {
 export interface MergeTag {
   label: string;
   value: string;
+  /**
+   * Optional grouping label used by the built-in merge tag picker to
+   * section the list. When no tag in the configured array carries
+   * `group`, the picker renders a plain flat list with no headers.
+   * Ignored by the renderer and by typing-autocomplete.
+   */
+  group?: string;
+  /**
+   * Optional helper text shown beneath the tag in the built-in merge
+   * tag picker. Not rendered anywhere else (toolbar, autocomplete,
+   * MJML output) and not stored on the inserted document node.
+   */
+  description?: string;
 }
 
 export interface MediaResult {

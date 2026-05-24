@@ -468,6 +468,17 @@ const ptBR: typeof en = {
     editValue: "Editar valor da merge tag",
     deleteMergeTag: "Excluir merge tag",
     suggestionEmpty: "Nenhuma merge tag correspondente",
+    picker: {
+      title: "Inserir merge tag",
+      searchPlaceholder: "Pesquisar merge tags",
+      searchAriaLabel: "Pesquisar merge tags",
+      noResults: "Nenhuma merge tag correspondente",
+      empty: "Nenhuma merge tag configurada",
+      otherGroup: "Outros",
+      cancel: "Cancelar",
+      close: "Fechar",
+      groupCount: "{count}",
+    },
   },
 
   // Canvas

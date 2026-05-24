@@ -76,6 +76,84 @@ describe('getMergeTagLabel', () => {
     it('returns raw value for unknown merge tags', () => {
         expect(getMergeTagLabel('{{unknown}}', tags)).toBe('{{unknown}}');
     });
+
+    it('returns label when description is set (description does not leak into label rendering)', () => {
+        const enriched: MergeTag[] = [
+            { label: 'First Name', value: '{{first_name}}', description: 'Recipient first name' },
+        ];
+        expect(getMergeTagLabel('{{first_name}}', enriched)).toBe('First Name');
+    });
+
+    it('returns label when group is set', () => {
+        const grouped: MergeTag[] = [
+            { label: 'First Name', value: '{{first_name}}', group: 'Recipient' },
+        ];
+        expect(getMergeTagLabel('{{first_name}}', grouped)).toBe('First Name');
+    });
+});
+
+describe('MergeTag interface — optional fields', () => {
+    it('accepts the baseline shape (label + value only)', () => {
+        const tag: MergeTag = { label: 'Email', value: '{{email}}' };
+        expect(tag.value).toBe('{{email}}');
+        expect(tag.group).toBeUndefined();
+        expect(tag.description).toBeUndefined();
+    });
+
+    it('accepts label + value + group', () => {
+        const tag: MergeTag = { label: 'First Name', value: '{{first_name}}', group: 'Recipient' };
+        expect(tag.group).toBe('Recipient');
+        expect(tag.description).toBeUndefined();
+    });
+
+    it('accepts label + value + description', () => {
+        const tag: MergeTag = {
+            label: 'Unsubscribe URL',
+            value: '{{unsubscribe_url}}',
+            description: 'Required by anti-spam legislation',
+        };
+        expect(tag.description).toBe('Required by anti-spam legislation');
+        expect(tag.group).toBeUndefined();
+    });
+
+    it('accepts label + value + group + description', () => {
+        const tag: MergeTag = {
+            label: 'Company',
+            value: '{{company.name}}',
+            group: 'Account',
+            description: 'Recipient organization',
+        };
+        expect(tag.group).toBe('Account');
+        expect(tag.description).toBe('Recipient organization');
+    });
+
+    it('isMergeTagValue is unaffected when group/description are set', () => {
+        const enriched: MergeTag[] = [
+            { label: 'First Name', value: '{{first_name}}', group: 'Recipient', description: 'desc' },
+        ];
+        expect(isMergeTagValue(enriched[0]!.value, liquidSyntax)).toBe(true);
+    });
+
+    it('restoreMergeTagMarkup is unaffected by group/description fields', () => {
+        const baseline = restoreMergeTagMarkup(
+            'Hello {{first_name}}',
+            [{ label: 'First Name', value: '{{first_name}}' }],
+            liquidSyntax,
+        );
+        const enriched = restoreMergeTagMarkup(
+            'Hello {{first_name}}',
+            [
+                {
+                    label: 'First Name',
+                    value: '{{first_name}}',
+                    group: 'Recipient',
+                    description: 'Recipient first name',
+                },
+            ],
+            liquidSyntax,
+        );
+        expect(enriched).toBe(baseline);
+    });
 });
 
 describe('containsMergeTag', () => {

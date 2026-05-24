@@ -464,6 +464,17 @@ export default {
     editValue: "Edit merge tag value",
     deleteMergeTag: "Delete merge tag",
     suggestionEmpty: "No matching merge tags",
+    picker: {
+      title: "Insert merge tag",
+      searchPlaceholder: "Search merge tags",
+      searchAriaLabel: "Search merge tags",
+      noResults: "No matching merge tags",
+      empty: "No merge tags configured",
+      otherGroup: "Other",
+      cancel: "Cancel",
+      close: "Close",
+      groupCount: "{count}",
+    },
   },
 
   // Canvas

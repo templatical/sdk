@@ -11,6 +11,27 @@ const editor = await init({
       fields: [{ key: 'title', type: 'text', label: 'Title', default: 'My Event' }],
     },
   ],
+  mergeTags: {
+    tags: [
+      {
+        label: 'First Name',
+        value: '{{first_name}}',
+        group: 'Recipient',
+        description: 'Personalized greeting',
+      },
+      {
+        label: 'Email',
+        value: '{{email}}',
+        group: 'Recipient',
+        description: 'Primary contact address',
+      },
+      {
+        label: 'Unsubscribe URL',
+        value: '{{unsubscribe_url}}',
+        description: 'Required by anti-spam legislation',
+      },
+    ],
+  },
   onChange(content) {
     console.log('[e2e onChange]', content)
   },

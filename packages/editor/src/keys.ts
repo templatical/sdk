@@ -76,6 +76,21 @@ export const MERGE_TAG_AUTOCOMPLETE_KEY: InjectionKey<boolean> = Symbol(
   "mergeTagAutocomplete",
 );
 
+/**
+ * Singleton state for the built-in merge tag picker modal. Provided by
+ * `useEditorCore`, consumed by `useMergeTag.requestMergeTag()` (to open
+ * the modal as a fall-through when only `mergeTags.tags` is configured)
+ * and by `MergeTagPickerModal.vue` (to render and resolve).
+ *
+ * `Pick<>` keeps a stable shape for consumers without coupling the key
+ * to the full composable return type — the picker chunk is lazy-loaded
+ * so the modal must not pull the composable's transitive symbols into
+ * the editor's main entry just to declare the key.
+ */
+export const MERGE_TAG_PICKER_KEY: InjectionKey<
+  import("./composables/useMergeTagPicker").UseMergeTagPickerReturn
+> = Symbol("mergeTagPicker");
+
 export const ON_REQUEST_MEDIA_KEY: InjectionKey<OnRequestMedia | null> =
   Symbol("onRequestMedia");
 

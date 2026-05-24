@@ -356,25 +356,95 @@ let currentTemplateDefaults: TemplateDefaults | undefined;
 const mergeTagPickerOpen = ref(false);
 let mergeTagResolve: ((tag: MergeTag | null) => void) | null = null;
 
-const mergeTagList = computed<MergeTag[]>(() => [
-  { label: t.value.mergeTags.firstName, value: "{{first_name}}" },
-  { label: t.value.mergeTags.lastName, value: "{{last_name}}" },
-  { label: t.value.mergeTags.email, value: "{{email}}" },
-  { label: t.value.mergeTags.company, value: "{{company}}" },
-  { label: t.value.mergeTags.accountId, value: "{{account_id}}" },
-  { label: t.value.mergeTags.planName, value: "{{plan_name}}" },
-  { label: t.value.mergeTags.orderId, value: "{{order_id}}" },
-  { label: t.value.mergeTags.orderTotal, value: "{{order_total}}" },
-  { label: t.value.mergeTags.shippingMethod, value: "{{shipping_method}}" },
-  {
-    label: t.value.mergeTags.estimatedDelivery,
-    value: "{{estimated_delivery}}",
-  },
-  { label: t.value.mergeTags.trackingUrl, value: "{{tracking_url}}" },
-  { label: t.value.mergeTags.unsubscribeUrl, value: "{{unsubscribe_url}}" },
-  { label: t.value.mergeTags.preferencesUrl, value: "{{preferences_url}}" },
-  { label: t.value.mergeTags.currentDate, value: "{{current_date}}" },
-]);
+const mergeTagList = computed<MergeTag[]>(() => {
+  const tags = t.value.mergeTags;
+  return [
+    {
+      label: tags.firstName,
+      value: "{{first_name}}",
+      group: tags.groups.recipient,
+      description: tags.descriptions.firstName,
+    },
+    {
+      label: tags.lastName,
+      value: "{{last_name}}",
+      group: tags.groups.recipient,
+      description: tags.descriptions.lastName,
+    },
+    {
+      label: tags.email,
+      value: "{{email}}",
+      group: tags.groups.recipient,
+      description: tags.descriptions.email,
+    },
+    {
+      label: tags.company,
+      value: "{{company}}",
+      group: tags.groups.account,
+      description: tags.descriptions.company,
+    },
+    {
+      label: tags.accountId,
+      value: "{{account_id}}",
+      group: tags.groups.account,
+      description: tags.descriptions.accountId,
+    },
+    {
+      label: tags.planName,
+      value: "{{plan_name}}",
+      group: tags.groups.account,
+      description: tags.descriptions.planName,
+    },
+    {
+      label: tags.orderId,
+      value: "{{order_id}}",
+      group: tags.groups.order,
+      description: tags.descriptions.orderId,
+    },
+    {
+      label: tags.orderTotal,
+      value: "{{order_total}}",
+      group: tags.groups.order,
+      description: tags.descriptions.orderTotal,
+    },
+    {
+      label: tags.shippingMethod,
+      value: "{{shipping_method}}",
+      group: tags.groups.order,
+      description: tags.descriptions.shippingMethod,
+    },
+    {
+      label: tags.estimatedDelivery,
+      value: "{{estimated_delivery}}",
+      group: tags.groups.order,
+      description: tags.descriptions.estimatedDelivery,
+    },
+    {
+      label: tags.trackingUrl,
+      value: "{{tracking_url}}",
+      group: tags.groups.order,
+      description: tags.descriptions.trackingUrl,
+    },
+    {
+      label: tags.unsubscribeUrl,
+      value: "{{unsubscribe_url}}",
+      group: tags.groups.system,
+      description: tags.descriptions.unsubscribeUrl,
+    },
+    {
+      label: tags.preferencesUrl,
+      value: "{{preferences_url}}",
+      group: tags.groups.system,
+      description: tags.descriptions.preferencesUrl,
+    },
+    {
+      label: tags.currentDate,
+      value: "{{current_date}}",
+      group: tags.groups.system,
+      description: tags.descriptions.currentDate,
+    },
+  ];
+});
 
 function requestMergeTag(): Promise<MergeTag | null> {
   return new Promise((resolve) => {
@@ -382,6 +452,42 @@ function requestMergeTag(): Promise<MergeTag | null> {
     mergeTagPickerOpen.value = true;
   });
 }
+
+// Showcase: the consumer-owned `onRequest` modal mirrors the SDK's
+// built-in picker — grouping by `group`, helper text below each row.
+// Helps consumers reading the playground discover both fields without
+// flipping the toggle to the static-tags path.
+type MergeTagPickerRow =
+  | { kind: "header"; group: string; count: number }
+  | { kind: "tag"; tag: MergeTag };
+
+const mergeTagPickerRows = computed<MergeTagPickerRow[]>(() => {
+  const tags = mergeTagList.value;
+  const hasGroups = tags.some((tag) => Boolean(tag.group));
+  if (!hasGroups) {
+    return tags.map((tag) => ({ kind: "tag", tag }));
+  }
+  const otherLabel = t.value.mergeTags.groups.system;
+  const buckets = new Map<string, MergeTag[]>();
+  const order: string[] = [];
+  for (const tag of tags) {
+    const key = tag.group ?? otherLabel;
+    if (!buckets.has(key)) {
+      buckets.set(key, []);
+      order.push(key);
+    }
+    buckets.get(key)!.push(tag);
+  }
+  const rows: MergeTagPickerRow[] = [];
+  for (const group of order) {
+    const items = buckets.get(group)!;
+    rows.push({ kind: "header", group, count: items.length });
+    for (const tag of items) {
+      rows.push({ kind: "tag", tag });
+    }
+  }
+  return rows;
+});
 
 function selectMergeTag(tag: MergeTag): void {
   mergeTagPickerOpen.value = false;
@@ -453,6 +559,14 @@ function chooseTemplate(
 ): void {
   selectedContent = content;
   selectedCustomBlocks = template?.customBlocks;
+  // A template can opt out of the playground's consumer-owned `onRequest`
+  // modal — that's how the Welcome Email template demos the SDK's built-in
+  // picker without making the user flip a config toggle. The flag is
+  // applied per template-open; flipping it back is the user's choice via
+  // the Config modal.
+  if (template?.useBuiltInMergeTagPicker) {
+    enableRequestMergeTag.value = false;
+  }
   currentSerializableConfig = buildSerializableConfig();
   pendingEditorInit = true;
   screen.value = "editor";
@@ -2258,6 +2372,7 @@ onUnmounted(() => {
                     v-model="enableRequestMergeTag"
                     type="checkbox"
                     class="size-4 accent-primary cursor-pointer"
+                    data-testid="enable-on-request-merge-tag"
                   />
                   <div>
                     <span
@@ -2314,6 +2429,7 @@ onUnmounted(() => {
                 </button>
                 <button
                   class="pg-cta h-9 px-4 text-[13px] rounded-md"
+                  data-testid="config-apply"
                   @click="applyConfig"
                 >
                   {{ t.configModal.apply }}
@@ -2514,6 +2630,7 @@ onUnmounted(() => {
             aria-modal="true"
             aria-labelledby="mergetag-modal-title"
             class="pg-modal-dialog w-[380px] max-w-[90vw] max-h-[480px] flex flex-col bg-white rounded-xl shadow-modal-sm overflow-hidden dark:bg-gray-800"
+            data-testid="playground-merge-tag-modal"
           >
             <div
               class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700"
@@ -2532,21 +2649,43 @@ onUnmounted(() => {
               </button>
             </div>
             <div class="overflow-y-auto p-2">
-              <button
-                v-for="tag in mergeTagList"
-                :key="tag.value"
-                class="group flex items-center justify-between w-full px-3 py-2.5 border-none bg-transparent rounded-lg cursor-pointer transition-[background] duration-[120ms] text-left font-sans hover:bg-gray-50 dark:hover:bg-gray-700"
-                @click="selectMergeTag(tag)"
+              <template
+                v-for="entry in mergeTagPickerRows"
+                :key="
+                  entry.kind === 'header' ? `h-${entry.group}` : entry.tag.value
+                "
               >
-                <span
-                  class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
-                  >{{ tag.label }}</span
+                <div
+                  v-if="entry.kind === 'header'"
+                  class="px-3 pt-3 pb-1 text-[10px] font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400"
                 >
-                <code
-                  class="text-[11px] font-mono text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded group-hover:bg-gray-200 dark:text-gray-400 dark:bg-gray-700 dark:group-hover:bg-gray-600"
-                  >{{ tag.value }}</code
+                  {{ entry.group }}
+                  <span class="ml-1.5 font-normal lowercase"
+                    >({{ entry.count }})</span
+                  >
+                </div>
+                <button
+                  v-else
+                  class="group flex flex-col items-start gap-1 w-full px-3 py-2.5 border-none bg-transparent rounded-lg cursor-pointer transition-[background] duration-[120ms] text-left font-sans hover:bg-gray-50 dark:hover:bg-gray-700"
+                  @click="selectMergeTag(entry.tag)"
                 >
-              </button>
+                  <div class="flex w-full items-center justify-between">
+                    <span
+                      class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
+                      >{{ entry.tag.label }}</span
+                    >
+                    <code
+                      class="text-[11px] font-mono text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded group-hover:bg-gray-200 dark:text-gray-400 dark:bg-gray-700 dark:group-hover:bg-gray-600"
+                      >{{ entry.tag.value }}</code
+                    >
+                  </div>
+                  <span
+                    v-if="entry.tag.description"
+                    class="text-[11px] text-gray-500 dark:text-gray-400"
+                    >{{ entry.tag.description }}</span
+                  >
+                </button>
+              </template>
             </div>
           </div>
         </div>

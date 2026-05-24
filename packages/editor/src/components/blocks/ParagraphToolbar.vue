@@ -23,11 +23,12 @@ import {
   Superscript,
   Underline,
 } from "@lucide/vue";
-import { inject } from "vue";
+import { computed, inject } from "vue";
 import {
   THEME_STYLES_KEY,
   UI_THEME_KEY,
   FONTS_MANAGER_KEY,
+  MERGE_TAG_PICKER_KEY,
   requireInject,
 } from "../../keys";
 import {
@@ -54,6 +55,13 @@ const themeStyles = inject(THEME_STYLES_KEY, null);
 const tplUiTheme = inject(UI_THEME_KEY, null);
 const fontsManager = requireInject(FONTS_MANAGER_KEY, "ParagraphToolbar");
 const popoverRoot = usePopoverRoot();
+// Picker may be null in non-editor contexts (e.g. isolated component tests).
+// When it's provided AND open, hide the floating toolbar — leaving it
+// visible behind the modal is visually noisy and the toolbar's Tailwind
+// z-index utility doesn't compile reliably, so it can sometimes paint
+// over the modal backdrop.
+const picker = inject(MERGE_TAG_PICKER_KEY, null);
+const pickerIsOpen = computed(() => picker?.isOpen.value ?? false);
 
 const { t } = useI18n();
 
@@ -113,7 +121,7 @@ function setHighlight(color: string): void {
 </script>
 
 <template>
-  <Teleport v-if="popoverRoot" :to="popoverRoot">
+  <Teleport v-if="popoverRoot && !pickerIsOpen" :to="popoverRoot">
     <div
       :data-tpl-theme="tplUiTheme"
       role="toolbar"

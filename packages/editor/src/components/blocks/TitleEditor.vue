@@ -4,8 +4,12 @@ import { useRichTextEditor } from "../../composables/useRichTextEditor";
 import { usePopoverRoot } from "../../composables/usePopoverRoot";
 import type { TitleBlock as TitleBlockType } from "@templatical/types";
 import { Bold, Italic, Link, LoaderCircle, ScanLine } from "@lucide/vue";
-import { inject } from "vue";
-import { THEME_STYLES_KEY, UI_THEME_KEY } from "../../keys";
+import { computed, inject } from "vue";
+import {
+  THEME_STYLES_KEY,
+  UI_THEME_KEY,
+  MERGE_TAG_PICKER_KEY,
+} from "../../keys";
 import RichTextLinkDialog from "./RichTextLinkDialog.vue";
 import RichTextEditorContent from "./RichTextEditorContent.vue";
 
@@ -21,6 +25,10 @@ const emit = defineEmits<{
 const themeStyles = inject(THEME_STYLES_KEY, null);
 const tplUiTheme = inject(UI_THEME_KEY, null);
 const popoverRoot = usePopoverRoot();
+// Hide the floating toolbar while the built-in merge tag picker modal is
+// open — see ParagraphToolbar.vue for the same rationale.
+const picker = inject(MERGE_TAG_PICKER_KEY, null);
+const pickerIsOpen = computed(() => picker?.isOpen.value ?? false);
 
 const { t } = useI18n();
 
@@ -105,7 +113,7 @@ const {
 
 <template>
   <div class="tpl-text-editor-wrapper tpl:relative">
-    <Teleport v-if="popoverRoot" :to="popoverRoot">
+    <Teleport v-if="popoverRoot && !pickerIsOpen" :to="popoverRoot">
       <div
         :data-tpl-theme="tplUiTheme"
         role="toolbar"
