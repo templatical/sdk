@@ -12,7 +12,6 @@ export const SELECTORS = {
   // Editor toolbar (playground)
   backButton: '[data-testid="toolbar-back"]',
   configButton: '[data-testid="toolbar-config"]',
-  jsonButton: '[data-testid="toolbar-json"]',
   exportButton: '[data-testid="toolbar-export"]',
   shareButton: '[data-testid="toolbar-share"]',
   themeButton: '[data-testid="toolbar-theme"]',
@@ -61,16 +60,15 @@ export const SELECTORS = {
   darkModeToggle: ".tpl-dark-mode-toggle",
   previewToggle: ".tpl-preview-toggle",
 
-  // Export
-  exportMenu: '[role="menu"]',
-  exportMenuItem: '[role="menuitem"]',
-  exportJsonItem: '[data-testid="export-json"]',
-  exportMjmlItem: '[data-testid="export-mjml"]',
-
-  // JSON modal
-  jsonModal: '[data-testid="json-modal"]',
-  jsonModalContent: '[aria-label="Template JSON content"]',
-  jsonModalClose: '[data-testid="json-modal"] .pg-modal-close',
+  // Export modal
+  exportModal: '[data-testid="export-modal"]',
+  exportModalClose: '[data-testid="export-modal-close"]',
+  exportTabMjml: '[data-testid="export-tab-mjml"]',
+  exportTabHtml: '[data-testid="export-tab-html"]',
+  exportTabJson: '[data-testid="export-tab-json"]',
+  exportCopyBtn: '[data-testid="export-copy"]',
+  exportDownloadBtn: '[data-testid="export-download"]',
+  exportHtmlError: '[data-testid="export-html-error"]',
 
   // Feature overlay
   featureOverlay: '[data-testid="feature-overlay"]',

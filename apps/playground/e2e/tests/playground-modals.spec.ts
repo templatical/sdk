@@ -2,75 +2,67 @@ import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
 test.describe("Playground modals", () => {
-  test("JSON modal shows valid JSON", async ({
+  test("export modal shows MJML on open", async ({
     editorReady: { editorPage },
     page,
   }) => {
-    await editorPage.openJson();
-    const modal = page.locator(SELECTORS.jsonModal);
+    await editorPage.openExport();
+    const modal = page.locator(SELECTORS.exportModal);
     await expect(modal).toBeVisible();
-    // CodeMirror renders content — verify the editor is present and has content
     const cmEditor = modal.locator(".cm-editor");
     await expect(cmEditor).toBeVisible();
-    // Use innerText which gets the visible text including virtualized lines
-    const text = await modal.locator(".cm-editor").innerText();
+    const text = await cmEditor.innerText();
     expect(text.length).toBeGreaterThan(10);
-    expect(text).toContain("blocks");
+    expect(text).toContain("<mjml");
   });
 
-  test("JSON copy button works", async ({
+  test("export copy button works", async ({
     editorReady: { editorPage },
     page,
   }) => {
-    await editorPage.openJson();
-    const modal = page.locator(SELECTORS.jsonModal);
-    // Find the copy button
-    const copyBtn = modal
-      .locator("button")
-      .filter({ hasText: /copy/i })
-      .first();
+    await editorPage.openExport();
+    const copyBtn = page.locator(SELECTORS.exportCopyBtn);
     await expect(copyBtn).toBeVisible();
-    // Just verify the button is clickable (clipboard behavior varies by environment)
     await copyBtn.click();
-    // Button should still exist after click (even if text didn't change in headless)
     await expect(copyBtn).toBeVisible();
   });
 
-  test("JSON modal closes on Escape", async ({
+  test("export modal closes on Escape", async ({
     editorReady: { editorPage },
     page,
   }) => {
-    await editorPage.openJson();
-    await expect(page.locator(SELECTORS.jsonModal)).toBeVisible();
-    // Focus the modal backdrop to ensure Escape is received
+    await editorPage.openExport();
+    await expect(page.locator(SELECTORS.exportModal)).toBeVisible();
     await page.locator(SELECTORS.modalBackdrop).focus();
     await page.keyboard.press("Escape");
-    await expect(page.locator(SELECTORS.jsonModal)).not.toBeVisible();
+    await expect(page.locator(SELECTORS.exportModal)).not.toBeVisible();
   });
 
-  test("JSON modal closes on backdrop click", async ({
+  test("export modal closes on backdrop click", async ({
     editorReady: { editorPage },
     page,
   }) => {
-    await editorPage.openJson();
-    await expect(page.locator(SELECTORS.jsonModal)).toBeVisible();
+    await editorPage.openExport();
+    await expect(page.locator(SELECTORS.exportModal)).toBeVisible();
     await page.locator(SELECTORS.modalBackdrop).click({
       position: { x: 10, y: 10 },
     });
-    await expect(page.locator(SELECTORS.jsonModal)).toHaveCount(0);
+    await expect(page.locator(SELECTORS.exportModal)).toHaveCount(0);
   });
 
-  test("JSON reflects template content", async ({
+  test("export JSON tab reflects template content", async ({
     editorReady: { editorPage },
     page,
   }) => {
     const canvasBlockCount = await editorPage.getBlockCount();
     expect(canvasBlockCount).toBeGreaterThan(0);
 
-    await editorPage.openJson();
-    const modal = page.locator(SELECTORS.jsonModal);
-    const text = await modal.locator(".cm-editor").innerText();
-    // JSON should reference block types that exist in the template
+    await editorPage.openExport();
+    await page.locator(SELECTORS.exportTabJson).click();
+    const text = await page
+      .locator(SELECTORS.exportModal)
+      .locator(".cm-editor")
+      .innerText();
     expect(text).toContain("blocks");
     expect(text).toContain("type");
   });

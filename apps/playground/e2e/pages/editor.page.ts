@@ -874,11 +874,6 @@ export class EditorPage {
     await this.page.locator(SELECTORS.backButton).click();
   }
 
-  async openJson(): Promise<void> {
-    await this.page.locator(SELECTORS.jsonButton).click();
-    await this.page.locator(SELECTORS.jsonModal).waitFor();
-  }
-
   async clickThemeToggle(): Promise<void> {
     await this.page.locator(SELECTORS.themeButton).click();
   }
@@ -888,9 +883,9 @@ export class EditorPage {
     await this.page.locator('[role="dialog"]').first().waitFor();
   }
 
-  async openExportMenu(): Promise<void> {
+  async openExport(): Promise<void> {
     await this.page.locator(SELECTORS.exportButton).click();
-    await this.page.locator(SELECTORS.exportMenu).waitFor();
+    await this.page.locator(SELECTORS.exportModal).waitFor();
   }
 
   getEditorContainer(): Locator {

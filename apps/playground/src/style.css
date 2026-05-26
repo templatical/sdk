@@ -115,7 +115,7 @@ html.dark body {
 }
 
 .pg-cta {
-    @apply inline-flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium font-sans border-none rounded-lg cursor-pointer transition-[color,background-color,box-shadow,transform] duration-150 bg-primary text-white shadow-btn hover:bg-primary-hover hover:-translate-y-px hover:shadow-primary-glow disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-dark dark:hover:bg-primary-dark-hover;
+    @apply inline-flex items-center justify-center gap-2 py-3 px-5 text-sm font-medium font-sans border-none rounded-lg cursor-pointer transition-[color,background-color] duration-150 bg-primary text-white shadow-btn hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed dark:bg-primary-dark dark:hover:bg-primary-dark-hover;
 }
 
 .pg-modal-backdrop {

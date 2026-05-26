@@ -31,20 +31,12 @@ export default {
     templates: "Vorlagen",
     config: "Konfiguration",
     features: "Funktionen",
-    json: "JSON",
     export: "Exportieren",
-    downloadJson: "JSON herunterladen",
-    downloadMjml: "MJML herunterladen",
     docs: "Dokumentation",
     tryCloud: "Cloud testen",
     retry: "Erneut versuchen",
     share: "Teilen",
     tour: "Tour",
-  },
-  jsonModal: {
-    title: "Vorlagen-JSON",
-    copy: "Kopieren",
-    copied: "Kopiert!",
   },
   configModal: {
     tabs: {
@@ -131,6 +123,26 @@ export default {
     subtitle: "{name} zeigt diese SDK-F\u00e4higkeiten",
     dismiss: "Verstanden, mit Bearbeitung beginnen",
   },
+  exportModal: {
+    title: "Vorlage exportieren",
+    tabs: {
+      html: "HTML",
+      mjml: "MJML",
+      json: "JSON",
+    },
+    description: {
+      html: "Versandfertiges HTML. In Ihren ESP einfügen oder als finale E-Mail senden.",
+      mjml: "MJML-Quelle. Mit dem MJML-Compiler oder kompatiblen Tools verwenden.",
+      json: "Templatical Block-JSON. Zum erneuten Import oder Speichern der Vorlage.",
+    },
+    copy: "Kopieren",
+    copied: "Kopiert!",
+    download: "Herunterladen",
+    compiling: "HTML wird kompiliert…",
+    compileError: "HTML-Kompilierung fehlgeschlagen.",
+    compileErrorDetails: "Fehler:",
+    retry: "Erneut versuchen",
+  },
   shareModal: {
     title: "Vorlage teilen",
     description:
@@ -209,13 +221,9 @@ export default {
       title: "Editor-Konfiguration",
       text: "Passen Sie Merge-Tags, Anzeigebedingungen, Designfarben und Block-Standards an.",
     },
-    json: {
-      title: "Vorlagen-JSON",
-      text: "Sehen Sie jederzeit die rohe JSON-Ausgabe Ihrer Vorlage ein.",
-    },
     exportBtn: {
-      title: "Export-Optionen",
-      text: "Laden Sie Ihre Vorlage als JSON oder MJML herunter, um sie in Ihrer Anwendung zu verwenden.",
+      title: "Vorlage exportieren",
+      text: "Vorschau, Kopieren oder Herunterladen als HTML, MJML oder JSON.",
     },
     share: {
       title: "Arbeit teilen",
