@@ -20,7 +20,14 @@ export function renderParagraph(
   // Skip when the user has cleared the paragraph — otherwise we emit a
   // styled `<td>` cell that adds visible whitespace to the email even
   // though the canvas shows nothing for an empty paragraph.
-  const stripped = block.content.replace(/<\/?p[^>]*>/gi, "").trim();
+  //
+  // Use `[^<>]*` (not `[^>]*`) inside the tag to keep the regex linear:
+  // `[^>]*` lets the engine consume across nested `<` chars and then
+  // backtrack one char at a time when no closing `>` exists, which is
+  // O(n²) over inputs like `<p<p<p<p…`. `[^<>]*` fails fast at the
+  // next `<` and keeps each match attempt O(1). Real HTML attributes
+  // never contain a raw `<`, so the restriction is semantics-preserving.
+  const stripped = block.content.replace(/<\/?p\b[^<>]*>/gi, "").trim();
   if (stripped === "") {
     return "";
   }

@@ -62,6 +62,37 @@ function toAlign(value: string | undefined, fallback: Align = "left"): Align {
   return fallback;
 }
 
+/**
+ * Strip every `<…>` from a button label and reject any stray `<` or `>`
+ * left behind (e.g. a truncated `<script`). The original
+ * `value.replace(/<[^>]*>/g, "")` was both polynomial-ReDoS over
+ * `<<<<…` inputs and an incomplete sanitizer — an unterminated `<script`
+ * would survive the strip. Downstream HTML-escapes the label at render
+ * time, but stripping here keeps the imported JSON clean.
+ */
+function stripTagsPlain(text: string): string {
+  let out = "";
+  let i = 0;
+  while (i < text.length) {
+    if (text[i] === "<") {
+      const close = text.indexOf(">", i + 1);
+      if (close === -1) {
+        // Unterminated tag — discard the rest.
+        break;
+      }
+      i = close + 1;
+      continue;
+    }
+    if (text[i] === ">") {
+      i++;
+      continue;
+    }
+    out += text[i];
+    i++;
+  }
+  return out;
+}
+
 function toLineStyle(
   value: string | undefined,
   fallback: LineStyle = "solid",
@@ -125,13 +156,59 @@ function inlineStylesToHtml(
   }
 
   if (spanStyle) {
-    result = result.replace(
-      /<p([^>]*)>([\s\S]*?)<\/p>/g,
-      `<p$1><span style="${spanStyle}">$2</span></p>`,
-    );
+    result = wrapParagraphInner(result, spanStyle);
   }
 
   return result;
+}
+
+/**
+ * Wrap the inner content of every `<p …>…</p>` with `<span style="…">…</span>`.
+ *
+ * Hand-rolled linear scanner instead of `/<p([^>]*)>([\s\S]*?)<\/p>/g` because
+ * the regex is polynomial-ReDoS: the engine retries `[\s\S]*?<\/p>` at every
+ * `<p` start, so inputs like `<p>a<p>a<p>a…` (no `</p>` ever) cost O(n²).
+ * The scanner advances `i` monotonically via `indexOf`, keeping the work
+ * strictly O(n).
+ */
+function wrapParagraphInner(html: string, spanStyle: string): string {
+  let out = "";
+  let i = 0;
+  while (i < html.length) {
+    const open = html.indexOf("<p", i);
+    if (open === -1) {
+      out += html.substring(i);
+      break;
+    }
+    const afterTagName = html[open + 2];
+    if (
+      afterTagName !== ">" &&
+      afterTagName !== " " &&
+      afterTagName !== "\t" &&
+      afterTagName !== "\n" &&
+      afterTagName !== "\r" &&
+      afterTagName !== "/"
+    ) {
+      out += html.substring(i, open + 2);
+      i = open + 2;
+      continue;
+    }
+    const openEnd = html.indexOf(">", open + 2);
+    if (openEnd === -1) {
+      out += html.substring(i);
+      break;
+    }
+    const closeStart = html.indexOf("</p>", openEnd + 1);
+    if (closeStart === -1) {
+      out += html.substring(i);
+      break;
+    }
+    const inner = html.substring(openEnd + 1, closeStart);
+    out += html.substring(i, openEnd + 1);
+    out += `<span style="${spanStyle}">${inner}</span></p>`;
+    i = closeStart + 4;
+  }
+  return out;
 }
 
 function ensureParagraphWrapped(html: string): string {
@@ -194,7 +271,7 @@ function convertButton(values: UnlayerContentValues): Block {
   const padding = values.padding
     ? parsePaddingShorthand(values.padding)
     : { top: 12, right: 24, bottom: 12, left: 24 };
-  const label = (values.text ?? "Button").replace(/<[^>]*>/g, "");
+  const label = stripTagsPlain(values.text ?? "Button");
   const linkValues = values.href?.values;
 
   return createButtonBlock({

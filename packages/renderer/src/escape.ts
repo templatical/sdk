@@ -57,23 +57,92 @@ export function escapeCssValue(text: string): string {
  * Replace merge tag span elements with their data attribute values.
  * Converts `<span data-merge-tag="{{name}}">Label</span>` to `{{name}}`.
  * Also handles `data-logic-merge-tag` attributes.
+ *
+ * Uses a single-pass linear scan instead of an `[^>]*…[^>]*` regex because
+ * the latter is polynomial-ReDoS over inputs that contain many `<span`
+ * starts but no closing `>` — the engine retries `[^>]*` at every span
+ * position. The scan below resolves each `<span>` open tag with a bounded
+ * `indexOf('>')`, keeping the work strictly O(n).
  */
 export function convertMergeTagsToValues(html: string): string {
   if (html === "") {
     return "";
   }
 
-  // Replace <span data-merge-tag="...">...</span> with the merge tag value
-  let result = html.replace(
-    /<span[^>]*\bdata-merge-tag="([^"]*)"[^>]*>.*?<\/span>/gs,
-    "$1",
+  return rewriteMergeTagSpans(
+    html,
+    (attrs) =>
+      findAttr(attrs, "data-merge-tag") ??
+      findAttr(attrs, "data-logic-merge-tag"),
   );
+}
 
-  // Replace <span data-logic-merge-tag="...">...</span> with the merge tag value
-  result = result.replace(
-    /<span[^>]*\bdata-logic-merge-tag="([^"]*)"[^>]*>.*?<\/span>/gs,
-    "$1",
-  );
+/**
+ * Walk `html`, find every `<span …>…</span>`, and replace the entire span
+ * with whatever `extract` returns for its attribute string (or leave it
+ * alone if `extract` returns `null`). Linear in the length of `html`:
+ * every `indexOf` advances the cursor monotonically.
+ */
+function rewriteMergeTagSpans(
+  html: string,
+  extract: (attrs: string) => string | null,
+): string {
+  let out = "";
+  let i = 0;
+  while (i < html.length) {
+    const open = html.indexOf("<span", i);
+    if (open === -1) {
+      out += html.substring(i);
+      break;
+    }
+    // `<span` must be followed by `>` or whitespace to be a real opening tag.
+    const afterTagName = html[open + 5];
+    if (
+      afterTagName !== ">" &&
+      afterTagName !== " " &&
+      afterTagName !== "\t" &&
+      afterTagName !== "\n" &&
+      afterTagName !== "\r" &&
+      afterTagName !== "/"
+    ) {
+      out += html.substring(i, open + 5);
+      i = open + 5;
+      continue;
+    }
+    const openEnd = html.indexOf(">", open + 5);
+    if (openEnd === -1) {
+      out += html.substring(i);
+      break;
+    }
+    const closeStart = html.indexOf("</span>", openEnd + 1);
+    if (closeStart === -1) {
+      out += html.substring(i);
+      break;
+    }
+    const attrs = html.substring(open + 5, openEnd);
+    const replacement = extract(attrs);
+    if (replacement === null) {
+      // This `<span>` isn't a merge-tag — emit up to and including the
+      // `<span` literal and let the next iteration scan inward, so any
+      // nested merge-tag span still gets a chance to match.
+      out += html.substring(i, open + 5);
+      i = open + 5;
+      continue;
+    }
+    out += html.substring(i, open);
+    out += replacement;
+    i = closeStart + 7;
+  }
+  return out;
+}
 
-  return result;
+/**
+ * Extract the value of `name="…"` from an HTML attribute string, or `null`
+ * if absent. Uses `[^<>"]*` for the value match so a missing closing quote
+ * fails fast rather than backtracking across the full input.
+ */
+function findAttr(attrs: string, name: string): string | null {
+  const pattern = new RegExp(`(?:^|\\s)${name}="([^"<>]*)"`);
+  const match = pattern.exec(attrs);
+  return match ? match[1] : null;
 }

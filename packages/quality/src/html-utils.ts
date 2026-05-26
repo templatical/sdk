@@ -89,8 +89,8 @@ export function extractAnchors(html: string): AnchorInfo[] {
  * and attribute-value occurrences aren't expected in this surface.
  */
 export function hasNestedAnchors(html: string): boolean {
-  const stripped = html.replace(/<!--[\s\S]*?-->/g, "");
-  const tokens = stripped.matchAll(/<\/?a\b[^>]*>/gi);
+  const stripped = stripHtmlComments(html);
+  const tokens = stripped.matchAll(/<\/?a\b[^<>]*>/gi);
   let depth = 0;
   for (const match of tokens) {
     if (match[0].startsWith("</")) {
@@ -101,6 +101,40 @@ export function hasNestedAnchors(html: string): boolean {
     depth++;
   }
   return false;
+}
+
+/**
+ * Linear-time `<!-- … -->` stripper. Replaces the original
+ * `replace(/<!--[\s\S]*?-->/g, "")`, which had two related problems:
+ *
+ *   - Polynomial ReDoS: each `<!--` start re-scanned the rest of the
+ *     input for `-->`, costing O(n²) over inputs like `<!--<!--<!--…`.
+ *   - Incomplete sanitization: an unterminated `<!--` left the literal
+ *     `<!--` in the output, so downstream rendering could still parse it
+ *     as an open HTML comment and swallow the rest of the document.
+ *
+ * The scanner discards an unterminated comment entirely — there is no
+ * way to recover meaningful content after a stray `<!--`, and leaving
+ * it in would re-introduce the sanitizer gap.
+ */
+function stripHtmlComments(html: string): string {
+  let out = "";
+  let i = 0;
+  while (i < html.length) {
+    const start = html.indexOf("<!--", i);
+    if (start === -1) {
+      out += html.substring(i);
+      break;
+    }
+    out += html.substring(i, start);
+    const end = html.indexOf("-->", start + 4);
+    if (end === -1) {
+      // Unterminated comment — drop everything from this point onward.
+      break;
+    }
+    i = end + 3;
+  }
+  return out;
 }
 
 /**

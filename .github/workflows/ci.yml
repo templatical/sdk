@@ -10,6 +10,16 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Principle of least privilege: every job in this workflow only reads the
+# repo (checkout, build, test, upload-artifact within the workflow run).
+# No job pushes, comments, opens PRs, or touches deployments — so the
+# default token scope is restricted to `contents: read`. The Codecov
+# upload uses `secrets.CODECOV_TOKEN` and does not need GITHUB_TOKEN
+# write scopes. Adding a write permission here would expand blast radius
+# without enabling any current job.
+permissions:
+  contents: read
+
 # Version Packages PRs (opened by changesets/action on `changeset-release/*`
 # branches) intentionally skip the real CI work — every check already ran on
 # the feature PR that produced the changeset. To keep branch-protection

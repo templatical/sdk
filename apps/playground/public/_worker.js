@@ -1,10 +1,23 @@
 const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
+// Rejection-sample upper bound. `256 % 62 = 8`, so bytes in [248, 256)
+// would map to indices 0..7 more often than to 8..61 if we just took
+// `bytes[i] % 62` directly. Discarding them and resampling restores a
+// uniform distribution over the alphabet.
+const REJECTION_BOUND = 248;
+
 function generateId(size = 10) {
-  const bytes = crypto.getRandomValues(new Uint8Array(size));
   let id = "";
-  for (let i = 0; i < size; i++) {
-    id += ALPHABET[bytes[i] % 62];
+  while (id.length < size) {
+    // Draw a fresh batch each iteration. In practice ~3% of bytes are
+    // rejected, so a single batch of `size` covers `size` characters
+    // with overwhelming probability and the loop runs once.
+    const bytes = crypto.getRandomValues(new Uint8Array(size));
+    for (let i = 0; i < bytes.length && id.length < size; i++) {
+      if (bytes[i] < REJECTION_BOUND) {
+        id += ALPHABET[bytes[i] % 62];
+      }
+    }
   }
   return id;
 }

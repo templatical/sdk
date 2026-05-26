@@ -126,6 +126,30 @@ describe("hasNestedAnchors", () => {
       ),
     ).toBe(true);
   });
+
+  it("discards anchors after an unterminated `<!--` (sanitizer-completeness regression)", () => {
+    // The original `replace(/<!--[\s\S]*?-->/g, "")` left an unterminated
+    // `<!--` untouched, so an anchor following an opened-but-never-closed
+    // comment would still be counted. The scanner now drops the rest of
+    // the input when no closing `-->` exists.
+    expect(
+      hasNestedAnchors(
+        '<a href="/outer"><!-- <a href="/inner">never closed',
+      ),
+    ).toBe(false);
+  });
+
+  // Regression: the old `<!--[\s\S]*?-->` strip pattern was polynomial-ReDoS.
+  // An input full of `<!--` starts with no closing `-->` retried the lazy
+  // quantifier at every position. The scanner is strictly O(n).
+  it("returns false in linear time on adversarial `<!--<!--<!--…` input (ReDoS regression)", () => {
+    const adversarial = "<!--".repeat(20_000);
+    const start = Date.now();
+    const result = hasNestedAnchors(adversarial);
+    const elapsed = Date.now() - start;
+    expect(result).toBe(false);
+    expect(elapsed).toBeLessThan(500);
+  });
 });
 
 describe("extractText", () => {

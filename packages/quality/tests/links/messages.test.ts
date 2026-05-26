@@ -53,9 +53,20 @@ describe("link rule messages", () => {
   });
 
   it("uses the German template when locale=de", () => {
-    const out = formatLinkMessage("de", "link.javascript-protocol");
+    const out = formatLinkMessage("de", "link.javascript-protocol", {
+      protocol: "javascript",
+    });
     expect(out).toContain("javascript");
     expect(out).toContain("entfernt");
+  });
+
+  it("interpolates {protocol} for javascript-protocol", () => {
+    expect(
+      formatLinkMessage("en", "link.javascript-protocol", { protocol: "data" }),
+    ).toContain('"data:"');
+    expect(
+      formatLinkMessage("en", "link.javascript-protocol", { protocol: "vbscript" }),
+    ).toContain('"vbscript:"');
   });
 
   it("exports the supported locale list", () => {

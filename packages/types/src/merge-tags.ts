@@ -94,12 +94,8 @@ export function resolveHtmlMergeTagLabels(
   html: string,
   mergeTags: MergeTag[],
 ): string {
-  return html.replace(
-    /(<span[^>]*\sdata-merge-tag="([^"]*)"[^>]*>)(.*?)(<\/span>)/g,
-    (_match, openTag, value, _oldLabel, closeTag) => {
-      const label = getMergeTagLabel(value, mergeTags);
-      return `${openTag}${label}${closeTag}`;
-    },
+  return rewriteSpanByAttr(html, "data-merge-tag", (value) =>
+    getMergeTagLabel(value, mergeTags),
   );
 }
 
@@ -163,11 +159,77 @@ export function resolveHtmlLogicMergeTagLabels(
   html: string,
   syntax: SyntaxPreset,
 ): string {
-  return html.replace(
-    /(<span[^>]*\sdata-logic-merge-tag="([^"]*)"[^>]*>)(.*?)(<\/span>)/g,
-    (_match, openTag, value, _oldLabel, closeTag) => {
-      const keyword = getLogicMergeTagKeyword(value, syntax);
-      return `${openTag}${keyword}${closeTag}`;
-    },
+  return rewriteSpanByAttr(html, "data-logic-merge-tag", (value) =>
+    getLogicMergeTagKeyword(value, syntax),
   );
+}
+
+/**
+ * Walk `html` and rewrite the inner text of every `<span … {attrName}="…">…</span>`
+ * by passing the attribute value through `relabel`. Linear in `html.length`:
+ * each `indexOf` advances the cursor monotonically, and no regex backtracking
+ * can run over the whole string.
+ *
+ * Replaces the original `/<span[^>]*…[^>]*>(.*?)<\/span>/g` pattern, which
+ * was polynomial-ReDoS over inputs that contained many `<span` starts with
+ * no closing `>`.
+ */
+function rewriteSpanByAttr(
+  html: string,
+  attrName: string,
+  relabel: (value: string) => string,
+): string {
+  // Anchored on `>` per match. `[^<>"]*` for the attribute value fails fast
+  // on a missing closing quote instead of backtracking across the input.
+  const attrPattern = new RegExp(`(?:^|\\s)${attrName}="([^"<>]*)"`);
+  let out = "";
+  let i = 0;
+  while (i < html.length) {
+    const open = html.indexOf("<span", i);
+    if (open === -1) {
+      out += html.substring(i);
+      break;
+    }
+    const afterTagName = html[open + 5];
+    if (
+      afterTagName !== ">" &&
+      afterTagName !== " " &&
+      afterTagName !== "\t" &&
+      afterTagName !== "\n" &&
+      afterTagName !== "\r" &&
+      afterTagName !== "/"
+    ) {
+      out += html.substring(i, open + 5);
+      i = open + 5;
+      continue;
+    }
+    const openEnd = html.indexOf(">", open + 5);
+    if (openEnd === -1) {
+      out += html.substring(i);
+      break;
+    }
+    const closeStart = html.indexOf("</span>", openEnd + 1);
+    if (closeStart === -1) {
+      out += html.substring(i);
+      break;
+    }
+    const attrs = html.substring(open + 5, openEnd);
+    const attrMatch = attrPattern.exec(attrs);
+    if (!attrMatch) {
+      // This `<span>` isn't the one we're looking for — emit up to and
+      // including the `<span` literal and let the next iteration scan
+      // inward. Skipping straight to the matching `</span>` would swallow
+      // any nested merge-tag span in the same loop iteration.
+      out += html.substring(i, open + 5);
+      i = open + 5;
+      continue;
+    }
+    const value = attrMatch[1];
+    const newLabel = relabel(value);
+    out += html.substring(i, openEnd + 1);
+    out += newLabel;
+    out += "</span>";
+    i = closeStart + 7;
+  }
+  return out;
 }

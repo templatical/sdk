@@ -76,4 +76,24 @@ describe('convertMergeTagsToValues', () => {
     const html = '<span class="logic" data-logic-merge-tag="{% if active %}" style="color:blue">IF</span>';
     expect(convertMergeTagsToValues(html)).toBe('{% if active %}');
   });
+
+  it('rewrites a merge-tag span nested inside a non-merge-tag span', () => {
+    const html =
+      '<span class="x"><span data-merge-tag="{{name}}">Label</span></span>';
+    // Outer wrapper survives, inner merge-tag span collapses to its value.
+    expect(convertMergeTagsToValues(html)).toBe('<span class="x">{{name}}</span>');
+  });
+
+  // Regression: the old `/<span[^>]*\bdata-merge-tag="..."[^>]*>.*?<\/span>/gs`
+  // pattern was polynomial-ReDoS — every `<span` start re-scanned the rest of
+  // the input for a closing `>`. A 10k-char adversarial input below stalls the
+  // old regex for seconds; the linear scanner completes in ms.
+  it('runs in linear time on adversarial `<span<span<span…` input (ReDoS regression)', () => {
+    const adversarial = '<span'.repeat(10_000);
+    const start = Date.now();
+    const result = convertMergeTagsToValues(adversarial);
+    const elapsed = Date.now() - start;
+    expect(result).toBe(adversarial);
+    expect(elapsed).toBeLessThan(500);
+  });
 });
