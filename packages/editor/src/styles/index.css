@@ -206,12 +206,18 @@
    defaults. `:where()` keeps the scope but drops specificity to the bare
    element selector so per-button Tailwind utilities (e.g. `tpl:bg-[…]`)
    always win. Without :where, `.tpl button` would beat single-class
-   utilities and silently strip explicit backgrounds, borders, etc. */
+   utilities and silently strip explicit backgrounds, borders, etc.
+
+   `box-sizing: border-box` is required here because Tailwind preflight
+   (which would set it universally) is disabled. Without it, `tpl:w-full`
+   on a padded input resolves to `width: 100%` + horizontal padding,
+   overflowing the parent — see issue #115. */
 :where(.tpl) button,
 :where(.tpl) input,
 :where(.tpl) select,
 :where(.tpl) textarea {
     font-family: inherit;
+    box-sizing: border-box;
 }
 
 :where(.tpl) button {
