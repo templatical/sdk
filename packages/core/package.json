@@ -11,7 +11,7 @@
     "pusher-js": "^8.5.0",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.6",
+    "vitest": "^4.1.7",
     "vue": "^3.5.34"
   },
   "exports": {
