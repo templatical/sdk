@@ -181,29 +181,16 @@ describe("editor bundle topology", () => {
     expect(peers.sort()).toEqual(optionalPeers.sort());
   });
 
-  it("ships a dedicated chunk for the merge tag picker modal", () => {
-    // The picker is opt-in and lazy-loaded via `defineAsyncComponent`.
-    // Verify the dynamic-import boundary materialized as its own chunk
-    // so the main entry stays lean. The npm build uses Vite defaults
-    // (no manualChunks), so the chunk name comes from Vite's auto-naming
-    // — match by content (`MergeTagPickerModal` source reference).
+  it("the merge tag picker modal ships somewhere in the bundle", () => {
+    // The modal is statically imported by Editor.vue / CloudEditor.vue.
+    // Vite is free to place it in the main chunk or split it as it sees
+    // fit — we only care that it's present, not where. Search by stable
+    // marker (the `data-testid` we render).
     const matchingChunks = allFiles.filter((file) => {
       const src = readFileSync(file, "utf8");
-      // A chunk that DEFINES the modal contains its template markup —
-      // search for a stable marker (the `data-testid` we render).
       return src.includes("merge-tag-picker-modal");
     });
     expect(matchingChunks.length).toBeGreaterThan(0);
-  });
-
-  it("the main entry does not statically reference MergeTagPickerModal source", () => {
-    // The dynamic import compiles to an `import("./chunk.js")` reference
-    // — that's expected. What must NOT happen is the modal's source
-    // (template, script) ending up inlined in the main entry; that would
-    // mean the chunk split silently collapsed.
-    const mainEntry = join(DIST, "templatical-editor.js");
-    const src = readFileSync(mainEntry, "utf8");
-    expect(src).not.toContain("merge-tag-picker-modal");
   });
 
   it("does not ship the inline-style-css placeholder in any chunk", () => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import type { TemplaticalEditorConfig } from "./index";
 import { useEditor } from "@templatical/core";
 import type { TemplateContent, UiTheme } from "@templatical/types";
@@ -16,15 +16,8 @@ import ViewportToggle from "./components/ViewportToggle.vue";
 import PreviewToggle from "./components/PreviewToggle.vue";
 import DarkModeToggle from "./components/DarkModeToggle.vue";
 import EditorFooter from "./components/EditorFooter.vue";
+import MergeTagPickerModal from "./components/MergeTagPickerModal.vue";
 import "./styles/index.css";
-
-// Lazy-loaded — picker bundle isn't fetched until the first time the
-// user clicks "Insert merge tag" in this session. The modal template
-// is render-gated on `picker.isOpen`, so Vue defers resolution of the
-// dynamic import until then.
-const MergeTagPickerModal = defineAsyncComponent(
-  () => import("./components/MergeTagPickerModal.vue"),
-);
 
 const props = defineProps<{
   config: TemplaticalEditorConfig;
@@ -234,8 +227,8 @@ defineExpose({
       class="tpl-popover-root"
     />
 
-    <!-- Merge tag picker modal — lazy chunk; mounts here once and reads
-         picker state via injection. -->
+    <!-- Built-in merge tag picker modal. Reads picker state via injection;
+         renders nothing until `picker.isOpen` flips true. -->
     <MergeTagPickerModal />
   </div>
 </template>
