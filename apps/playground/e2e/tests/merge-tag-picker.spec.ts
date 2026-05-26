@@ -15,6 +15,11 @@ async function openConfigAndDisableOnRequest(
   page: import("@playwright/test").Page,
 ): Promise<void> {
   await page.locator(SELECTORS.configButton).click();
+  // Config modal opens on the "options" tab by default; the onRequest
+  // checkbox lives under the "callbacks" tab. Switch first — the
+  // checkbox element exists in DOM regardless (it's `v-show`-hidden),
+  // so `toBeVisible()` times out without this tab click.
+  await page.locator("#config-tab-callbacks").click();
   const checkbox = page.locator(SELECTORS.configEnableOnRequestMergeTag);
   await expect(checkbox).toBeVisible();
   // Read current state — if already unchecked we just apply.
