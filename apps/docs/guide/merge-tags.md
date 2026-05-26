@@ -38,18 +38,22 @@ const editor = await init({
 
 ## MergeTag type
 
-Each tag is defined with a label (shown in the editor UI) and a value (the full merge tag string including delimiters):
+Each tag is defined with a label (shown in the editor UI) and a value (the full merge tag string including delimiters). Two optional fields — `group` and `description` — are used by the built-in picker to organize and explain tags:
 
 ```ts
 interface MergeTag {
   label: string;
   value: string;
+  group?: string;        // optional grouping shown in the picker
+  description?: string;  // optional helper text shown in the picker
 }
 ```
 
 The `value` must include the syntax delimiters. For example, with Liquid syntax:
 
 <code v-pre>value: '{{first_name}}'</code>
+
+The `group` and `description` fields are picker-only — they do not appear in the editor canvas, in autocomplete, or in the rendered MJML output. They are ignored if you only use `onRequest` for tag selection.
 
 ## Syntax presets
 
@@ -175,6 +179,55 @@ const editor = await init({
 
 The toolbar's "Insert merge tag" button continues to work regardless of the autocomplete setting.
 
+## Built-in picker
+
+When you configure `mergeTags.tags` without an `onRequest` callback, clicking the "Insert merge tag" button in the rich text toolbar (or next to a sidebar text input) opens a built-in modal picker. The picker lists every tag from `tags`, supports keyboard navigation, and offers a search field that matches against `label`, `value`, and `description`.
+
+![Built-in merge tag picker](/images/merge-tag-picker.png)
+
+The picker shows:
+
+- the **label** (bold)
+- the raw **value** (mono, dim)
+- the optional **description** (small, dim) when set
+
+When at least one tag carries a `group` field, the picker renders sectioned headers in insertion order (the order tags appear in your `tags` array). Tags without `group` fall under a localized "Other" header. When no tag has a `group`, the picker renders a plain flat list — no headers, no "Other" bucket.
+
+Typing in the search field flattens groups and filters the list. Case-insensitive substring matches against the tag's `label`, `value`, or `description`. Clearing the search restores the grouped (or flat) layout.
+
+Single-step insert: clicking a row, or pressing `Enter` on the highlighted row, inserts the tag and closes the modal. `Esc`, the header close (×), or clicking the backdrop all dismiss the picker without inserting.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: {
+    tags: [
+      {
+        label: 'First Name',
+        value: '{{first_name}}',
+        group: 'Recipient',
+        description: 'Personalized greeting',
+      },
+      {
+        label: 'Last Name',
+        value: '{{last_name}}',
+        group: 'Recipient'
+      },
+      {
+        label: 'Company',
+        value: '{{company.name}}',
+        group: 'Account'
+      },
+      {
+        label: 'Unsubscribe URL',
+        value: '{{unsubscribe_url}}',
+        description: 'Required by anti-spam legislation',
+      },
+    ],
+  },
+});
+```
+
 ## Dynamic tag loading
 
 For large or context-dependent tag lists, use the `onRequest` callback instead of (or in addition to) a static `tags` array. The editor calls this function when the user clicks to insert a merge tag. Use it to open a custom picker modal, fetch available merge tags from your API, or build a context-aware tag list based on the current user. Return the selected `MergeTag` or `null` to cancel.
@@ -190,6 +243,10 @@ const editor = await init({
   },
 });
 ```
+
+::: tip Precedence
+If you provide both `tags` and `onRequest`, `onRequest` takes precedence — the "Insert merge tag" button always calls your callback. The static `tags` array still powers the typing-autocomplete suggestion list.
+:::
 
 ## Merge tags in other inputs
 

@@ -16,6 +16,7 @@ import ViewportToggle from "./components/ViewportToggle.vue";
 import PreviewToggle from "./components/PreviewToggle.vue";
 import DarkModeToggle from "./components/DarkModeToggle.vue";
 import EditorFooter from "./components/EditorFooter.vue";
+import MergeTagPickerModal from "./components/MergeTagPickerModal.vue";
 import "./styles/index.css";
 
 const props = defineProps<{
@@ -225,6 +226,10 @@ defineExpose({
       :ref="(el) => (core.popoverRoot.value = el as HTMLElement | null)"
       class="tpl-popover-root"
     />
+
+    <!-- Built-in merge tag picker modal. Reads picker state via injection;
+         renders nothing until `picker.isOpen` flips true. -->
+    <MergeTagPickerModal />
   </div>
 </template>
 

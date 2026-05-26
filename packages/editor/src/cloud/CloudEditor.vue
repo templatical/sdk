@@ -24,6 +24,7 @@ import CloudLoadingOverlay from "./components/CloudLoadingOverlay.vue";
 import CloudErrorOverlay from "./components/CloudErrorOverlay.vue";
 import SnapshotPreviewBanner from "./components/SnapshotPreviewBanner.vue";
 import CollabUndoToast from "./components/CollabUndoToast.vue";
+import MergeTagPickerModal from "../components/MergeTagPickerModal.vue";
 import "../styles/index.css";
 
 export type { TemplaticalCloudEditorConfig } from "./cloudConfig";
@@ -398,6 +399,10 @@ defineExpose({
       :ref="(el) => (core.popoverRoot.value = el as HTMLElement | null)"
       class="tpl-popover-root"
     />
+
+    <!-- Built-in merge tag picker modal. Reads picker state via injection;
+         renders nothing until `picker.isOpen` flips true. -->
+    <MergeTagPickerModal />
   </div>
 </template>
 

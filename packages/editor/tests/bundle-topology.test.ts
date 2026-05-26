@@ -181,6 +181,18 @@ describe("editor bundle topology", () => {
     expect(peers.sort()).toEqual(optionalPeers.sort());
   });
 
+  it("the merge tag picker modal ships somewhere in the bundle", () => {
+    // The modal is statically imported by Editor.vue / CloudEditor.vue.
+    // Vite is free to place it in the main chunk or split it as it sees
+    // fit — we only care that it's present, not where. Search by stable
+    // marker (the `data-testid` we render).
+    const matchingChunks = allFiles.filter((file) => {
+      const src = readFileSync(file, "utf8");
+      return src.includes("merge-tag-picker-modal");
+    });
+    expect(matchingChunks.length).toBeGreaterThan(0);
+  });
+
   it("does not ship the inline-style-css placeholder in any chunk", () => {
     // Regression: `inline-style-css-plugin` emits a `__TPL_INLINE_EDITOR_CSS__`
     // placeholder at `load()` time and `generateBundle()` swaps it for the

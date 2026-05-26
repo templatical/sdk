@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import TplModal from "./TplModal.vue";
+import TplModal from "../../components/TplModal.vue";
 import { useCloudI18nStrict } from "../../composables";
 import { LoaderCircle } from "@lucide/vue";
 import { ref, watch } from "vue";

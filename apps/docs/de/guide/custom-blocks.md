@@ -82,8 +82,8 @@ const editor = await init({
 ![Übersicht benutzerdefinierter Blöcke](/images/custom-blocks-overview.png)
 
 1. **Block-Palette** — Der `name` und das `icon` erscheinen hier. Benutzer ziehen den Block aus der Palette in ihr Template.
-2. **Editor-Canvas** — Das Liquid-`template` wird genau wie definiert gerendert, wobei die Feldwerte aus dem Einstellungsbereich übernommen werden.
-3. **Einstellungsbereich** — Jeder Eintrag in `fields` wird zu einem Formularelement, mit dem Benutzer den Inhalt des Blocks bearbeiten können.
+2. **Einstellungsbereich** — Jeder Eintrag in `fields` wird zu einem Formularelement, mit dem Benutzer den Inhalt des Blocks bearbeiten können.
+3. **Editor-Canvas** — Das Liquid-`template` wird genau wie definiert gerendert, wobei die Feldwerte aus dem Einstellungsbereich übernommen werden.
 
 ## CustomBlockDefinition
 

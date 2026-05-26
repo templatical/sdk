@@ -49,6 +49,20 @@ export class ChooserPage {
     await this.page.locator(SELECTORS.blankTemplateCard).click();
   }
 
+  /**
+   * Pick a template by its display name. Used by tests that depend on a
+   * specific template's configuration (e.g. the Welcome Email template
+   * which deliberately disables `mergeTags.onRequest` so the SDK's
+   * built-in picker handles "Insert merge tag" clicks).
+   */
+  async selectTemplateByName(name: string): Promise<void> {
+    const card = this.page
+      .locator(SELECTORS.templateCard)
+      .filter({ hasText: name })
+      .first();
+    await card.click();
+  }
+
   getTemplateCards() {
     return this.page.locator(SELECTORS.templateCard);
   }

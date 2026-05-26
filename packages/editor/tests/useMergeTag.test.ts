@@ -6,10 +6,12 @@ import { createApp, defineComponent, h, type InjectionKey } from 'vue';
 import type { MergeTag } from '@templatical/types';
 import { SYNTAX_PRESETS } from '@templatical/types';
 import { useMergeTag } from '../src/composables/useMergeTag';
+import { useMergeTagPicker } from '../src/composables/useMergeTagPicker';
 import {
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
   MERGE_TAG_AUTOCOMPLETE_KEY,
+  MERGE_TAG_PICKER_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
 } from '../src/keys';
 
@@ -45,22 +47,20 @@ const sampleTags: MergeTag[] = [
 
 describe('useMergeTag', () => {
   describe('canRequestMergeTag', () => {
-    it('is false when no merge tags and no callback', () => {
+    it('is false when neither tags nor onRequest is provided', () => {
       const { canRequestMergeTag } = withProvide(() => useMergeTag());
       expect(canRequestMergeTag).toBe(false);
     });
 
-    it('is false when only static merge tags are provided (no callback)', () => {
-      // Static tags alone are surfaced via the autocomplete trigger; the
-      // insert button no-ops without onRequestMergeTag, so it must stay hidden.
+    it('is true when only static tags are provided (built-in picker handles the click)', () => {
       const { canRequestMergeTag } = withProvide(() => useMergeTag(), {
         [MERGE_TAGS_KEY as symbol]: sampleTags,
         [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
       });
-      expect(canRequestMergeTag).toBe(false);
+      expect(canRequestMergeTag).toBe(true);
     });
 
-    it('is true when callback is provided even with empty merge tags', () => {
+    it('is true when only onRequest callback is provided (empty tags)', () => {
       const { canRequestMergeTag } = withProvide(() => useMergeTag(), {
         [MERGE_TAGS_KEY as symbol]: [],
         [ON_REQUEST_MERGE_TAG_KEY as symbol]: vi.fn(),
@@ -74,6 +74,13 @@ describe('useMergeTag', () => {
         [ON_REQUEST_MERGE_TAG_KEY as symbol]: vi.fn(),
       });
       expect(canRequestMergeTag).toBe(true);
+    });
+
+    it('is false when tags is provided but empty (no callback either)', () => {
+      const { canRequestMergeTag } = withProvide(() => useMergeTag(), {
+        [MERGE_TAGS_KEY as symbol]: [],
+      });
+      expect(canRequestMergeTag).toBe(false);
     });
   });
 
@@ -170,6 +177,106 @@ describe('useMergeTag', () => {
 
       const result = await requestMergeTag();
       expect(result).toBeNull();
+    });
+
+    it('opens the built-in picker when only static tags are set', async () => {
+      const picker = useMergeTagPicker();
+      const openSpy = vi.spyOn(picker, 'open');
+
+      const { requestMergeTag } = withProvide(() => useMergeTag(), {
+        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAG_PICKER_KEY as symbol]: picker,
+      });
+
+      const promise = requestMergeTag();
+      expect(openSpy).toHaveBeenCalledTimes(1);
+      expect(openSpy.mock.calls[0]![0]).toEqual(sampleTags);
+
+      picker.resolve(sampleTags[0]!);
+      const result = await promise;
+      expect(result).toEqual(sampleTags[0]);
+    });
+
+    it('returns null from picker fall-through when user cancels', async () => {
+      const picker = useMergeTagPicker();
+
+      const { requestMergeTag } = withProvide(() => useMergeTag(), {
+        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAG_PICKER_KEY as symbol]: picker,
+      });
+
+      const promise = requestMergeTag();
+      picker.resolve(null);
+      expect(await promise).toBeNull();
+    });
+
+    it('invokes onRequest (NOT the picker) when both onRequest and tags are configured — precedence', async () => {
+      const picker = useMergeTagPicker();
+      const openSpy = vi.spyOn(picker, 'open');
+      const callback = vi.fn().mockResolvedValue(sampleTags[1]);
+
+      const { requestMergeTag } = withProvide(() => useMergeTag(), {
+        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAG_PICKER_KEY as symbol]: picker,
+        [ON_REQUEST_MERGE_TAG_KEY as symbol]: callback,
+      });
+
+      const result = await requestMergeTag();
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect(openSpy).not.toHaveBeenCalled();
+      expect(result).toEqual(sampleTags[1]);
+    });
+
+    it('does not pass tags as an argument to onRequest (callback contract unchanged)', async () => {
+      const callback = vi.fn().mockResolvedValue(null);
+
+      const { requestMergeTag } = withProvide(() => useMergeTag(), {
+        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [ON_REQUEST_MERGE_TAG_KEY as symbol]: callback,
+      });
+
+      await requestMergeTag();
+      expect(callback).toHaveBeenCalledWith();
+      expect(callback.mock.calls[0]).toEqual([]);
+    });
+
+    it('isRequesting flips to true during picker fall-through and back to false after', async () => {
+      const picker = useMergeTagPicker();
+
+      const { requestMergeTag, isRequesting } = withProvide(() => useMergeTag(), {
+        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAG_PICKER_KEY as symbol]: picker,
+      });
+
+      expect(isRequesting.value).toBe(false);
+      const promise = requestMergeTag();
+      expect(isRequesting.value).toBe(true);
+      picker.resolve(null);
+      await promise;
+      expect(isRequesting.value).toBe(false);
+    });
+
+    it('concurrent requestMergeTag through the picker: first resolves null, second wins', async () => {
+      const picker = useMergeTagPicker();
+
+      const { requestMergeTag } = withProvide(() => useMergeTag(), {
+        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        [MERGE_TAG_PICKER_KEY as symbol]: picker,
+      });
+
+      const first = requestMergeTag();
+      const second = requestMergeTag();
+      expect(await first).toBeNull();
+      picker.resolve(sampleTags[2]!);
+      expect(await second).toEqual(sampleTags[2]);
+    });
+
+    it('returns null when tags is non-empty but picker is not provided (headless caller)', async () => {
+      const { requestMergeTag } = withProvide(() => useMergeTag(), {
+        [MERGE_TAGS_KEY as symbol]: sampleTags,
+        // No MERGE_TAG_PICKER_KEY provided.
+      });
+      expect(await requestMergeTag()).toBeNull();
     });
   });
 

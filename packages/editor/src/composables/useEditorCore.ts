@@ -56,6 +56,7 @@ import {
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
   MERGE_TAG_AUTOCOMPLETE_KEY,
+  MERGE_TAG_PICKER_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
   ON_REQUEST_MEDIA_KEY,
   DISPLAY_CONDITIONS_KEY,
@@ -66,6 +67,7 @@ import {
   EDITOR_ROOT_KEY,
   POPOVER_ROOT_KEY,
 } from "../keys";
+import { useMergeTagPicker } from "./useMergeTagPicker";
 import {
   isLintFullyDisabled,
   useTemplateLint,
@@ -413,6 +415,13 @@ export function useEditorCore(
   provide(MERGE_TAG_SYNTAX_KEY, mergeTagSyntax);
   provide(ON_REQUEST_MERGE_TAG_KEY, config.mergeTags?.onRequest ?? null);
   provide(MERGE_TAG_AUTOCOMPLETE_KEY, config.mergeTags?.autocomplete !== false);
+
+  // Built-in merge tag picker singleton. Always instantiated so
+  // `useMergeTag.requestMergeTag()` can fall through to it whenever
+  // static `tags` are configured without an `onRequest` callback. Cost
+  // is a ref + ref + closure per editor — negligible.
+  const mergeTagPicker = useMergeTagPicker();
+  provide(MERGE_TAG_PICKER_KEY, mergeTagPicker);
 
   provide(ON_REQUEST_MEDIA_KEY, config.onRequestMedia ?? null);
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useFocusTrap } from "../../composables";
-import { usePopoverRoot } from "../../composables/usePopoverRoot";
-import { UI_THEME_KEY } from "../../keys";
+import { useFocusTrap } from "../composables";
+import { usePopoverRoot } from "../composables/usePopoverRoot";
+import { UI_THEME_KEY } from "../keys";
 import { computed, inject, ref } from "vue";
 
 const props = defineProps<{

@@ -1790,6 +1790,14 @@ export interface TemplateOption {
   customBlocks?: CustomBlockDefinition[];
   /** Features showcased by this template, displayed in the overlay */
   features?: TemplateFeature[];
+  /**
+   * When set, this template intentionally omits `mergeTags.onRequest` so the
+   * SDK's built-in picker handles "Insert merge tag" clicks. The playground
+   * normally wires its own `onRequest` modal (it's a richer consumer-owned
+   * demo); this flag opts a specific template out so reviewers can see the
+   * built-in path without flipping a config toggle.
+   */
+  useBuiltInMergeTagPicker?: boolean;
 }
 
 export const templates: TemplateOption[] = [
@@ -1853,7 +1861,14 @@ export const templates: TemplateOption[] = [
     create: createWelcomeTemplate,
     preview: "welcome",
     customBlocks: [],
+    useBuiltInMergeTagPicker: true,
     features: [
+      {
+        label: "Built-in Merge Tag Picker",
+        icon: "merge-tag",
+        description:
+          "This template intentionally does NOT wire a custom `mergeTags.onRequest` callback. Because only `mergeTags.tags` is configured, the editor falls back to its built-in picker \u2014 a searchable modal grouped by the optional `group` field, with helper text from `description`.\nTo try it: click inside any paragraph or title block, then click the merge tag button ({ }) in the rich text toolbar. The built-in modal opens listing every configured tag, with grouping by Recipient / Account / Order / System and a description under each row. Type to filter; press \u2191/\u2193 then Enter to insert.\nEvery other playground template wires `onRequest` to show the consumer-owned modal demo. This template showcases the zero-config path: just provide `tags` (optionally with `group` and `description`) and the SDK handles the rest.",
+      },
       {
         label: "Logic Merge Tags (If/Else)",
         icon: "merge-tag",

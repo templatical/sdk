@@ -6,9 +6,11 @@ import { createApp, defineComponent, h, ref, nextTick, type InjectionKey } from 
 import type { MergeTag, SyntaxPreset } from '@templatical/types';
 import { SYNTAX_PRESETS } from '@templatical/types';
 import { useMergeTagField } from '../src/composables/useMergeTagField';
+import { useMergeTagPicker } from '../src/composables/useMergeTagPicker';
 import {
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
+  MERGE_TAG_PICKER_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
 } from '../src/keys';
 
@@ -608,10 +610,7 @@ describe('useMergeTagField', () => {
   });
 
   describe('canRequestMergeTag', () => {
-    it('is false when only static merge tags are provided (no onRequest callback)', () => {
-      // Static tags surface via the autocomplete typing trigger, not the
-      // insert button — the button no-ops without onRequestMergeTag, so it
-      // must stay hidden.
+    it('is true when static tags are provided (built-in picker handles the click)', () => {
       const elementRef = createElementRef();
       const emitFn = vi.fn();
 
@@ -625,7 +624,7 @@ describe('useMergeTagField', () => {
         defaultProvides(),
       );
 
-      expect(canRequestMergeTag).toBe(false);
+      expect(canRequestMergeTag).toBe(true);
     });
 
     it('is true when onRequestMergeTag callback is provided', () => {
@@ -665,6 +664,109 @@ describe('useMergeTagField', () => {
       );
 
       expect(canRequestMergeTag).toBe(false);
+    });
+  });
+
+  describe('picker fall-through', () => {
+    it('insertMergeTag opens the built-in picker when only static tags are configured', async () => {
+      const elementRef = createElementRef();
+      const emitFn = vi.fn();
+      const picker = useMergeTagPicker();
+      const openSpy = vi.spyOn(picker, 'open');
+
+      const { insertMergeTag } = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => 'Hi ',
+            emit: emitFn,
+            elementRef,
+          }),
+        defaultProvides({
+          [MERGE_TAG_PICKER_KEY as symbol]: picker,
+        }),
+      );
+
+      const promise = insertMergeTag();
+      expect(openSpy).toHaveBeenCalledTimes(1);
+      picker.resolve({ label: 'Name', value: '{{name}}' });
+      await promise;
+      expect(emitFn).toHaveBeenCalledWith('Hi {{name}}');
+    });
+
+    it('cursor-position insertion still works after picker resolves', async () => {
+      const elementRef = createElementRef();
+      elementRef.value!.selectionStart = 3;
+      const emitFn = vi.fn();
+      const picker = useMergeTagPicker();
+
+      const { insertMergeTag, startEditing } = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => 'abc def',
+            emit: emitFn,
+            elementRef,
+          }),
+        defaultProvides({
+          [MERGE_TAG_PICKER_KEY as symbol]: picker,
+        }),
+      );
+
+      startEditing();
+      const promise = insertMergeTag();
+      picker.resolve({ label: 'Email', value: '{{email}}' });
+      await promise;
+      expect(emitFn).toHaveBeenCalledWith('abc{{email}} def');
+    });
+
+    it('null resolve from picker leaves field unchanged', async () => {
+      const elementRef = createElementRef();
+      const emitFn = vi.fn();
+      const picker = useMergeTagPicker();
+
+      const { insertMergeTag } = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => 'unchanged',
+            emit: emitFn,
+            elementRef,
+          }),
+        defaultProvides({
+          [MERGE_TAG_PICKER_KEY as symbol]: picker,
+        }),
+      );
+
+      const promise = insertMergeTag();
+      picker.resolve(null);
+      await promise;
+      expect(emitFn).not.toHaveBeenCalled();
+    });
+
+    it('disposed flag blocks emit after picker resolves post-unmount', async () => {
+      const elementRef = createElementRef();
+      const emitFn = vi.fn();
+      const picker = useMergeTagPicker();
+
+      const { app, result } = mountField(
+        () =>
+          useMergeTagField({
+            modelValue: () => 'Hi ',
+            emit: emitFn,
+            elementRef,
+          }),
+        defaultProvides({
+          [MERGE_TAG_PICKER_KEY as symbol]: picker,
+        }),
+      );
+      const { insertMergeTag } = result as ReturnType<typeof useMergeTagField>;
+
+      const promise = insertMergeTag();
+      app.unmount();
+      // After unmount the picker's onScopeDispose resolves the pending
+      // promise with null automatically — but resolve a tag here to assert
+      // that even a tag resolve cannot drive an emit on a disposed field.
+      picker.resolve({ label: 'Name', value: '{{name}}' });
+      await promise;
+      expect(emitFn).not.toHaveBeenCalled();
     });
   });
 });

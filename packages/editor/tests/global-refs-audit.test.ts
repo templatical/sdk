@@ -110,10 +110,39 @@ describe("editor global DOM-reference audit", () => {
     // two assertions in lock-step.
     const actual = filesMatching(FILES, /<Teleport[^>]*:to=["']popoverRoot["']/);
     expect(actual).toEqual([
-      "cloud/components/TplModal.vue",
+      "components/TplModal.vue",
       "components/blocks/ParagraphToolbar.vue",
       "components/blocks/RichTextLinkDialog.vue",
       "components/blocks/TitleEditor.vue",
     ]);
+  });
+
+  it("MergeTagPickerModal + useMergeTagPicker make zero global-DOM references", () => {
+    // The picker mounts inside TplModal (which routes through the
+    // popover root) and reads focus/selection state via the composable
+    // surface only. If a future change reaches for `document.body`,
+    // `document.head`, `document.activeElement`, `window.getSelection`,
+    // or `<Teleport to="body">`, the picker would break shadow-DOM mode
+    // and re-introduce the host-CSS-bleeds class of bug.
+    const FORBIDDEN = [
+      /document\.body/,
+      /document\.head/,
+      /document\.activeElement/,
+      /window\.getSelection/,
+      /<Teleport\s+to=["']body["']/,
+    ];
+    const targets = [
+      "components/MergeTagPickerModal.vue",
+      "composables/useMergeTagPicker.ts",
+    ];
+    for (const target of targets) {
+      const src = readFileSync(join(SRC, target), "utf8");
+      for (const pattern of FORBIDDEN) {
+        expect(
+          pattern.test(src),
+          `${target} contains forbidden pattern ${pattern}`,
+        ).toBe(false);
+      }
+    }
   });
 });

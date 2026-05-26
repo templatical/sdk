@@ -250,7 +250,7 @@ describe('MergeTagNode renderHTML', () => {
 });
 
 describe('MergeTagNode addCommands', () => {
-  it('insertMergeTag calls commands.insertContent with correct type and attrs', () => {
+  it('insertMergeTag calls commands.insertContent with type and exactly { label, value }', () => {
     const commands = (MergeTagNode.config.addCommands as Function).call({
       name: 'mergeTagNode',
     });
@@ -261,9 +261,59 @@ describe('MergeTagNode addCommands', () => {
     });
     expect(mockInsertContent).toHaveBeenCalledWith({
       type: 'mergeTagNode',
-      attrs: mergeTag,
+      attrs: { label: 'First Name', value: '{{ first_name }}' },
     });
     expect(result).toBe(true);
+  });
+
+  it('insertMergeTag whitelists attrs: group and description NEVER reach the node', () => {
+    // Even when a caller smuggles `group` / `description` via a wider type
+    // assertion, the command must drop them so they cannot leak into the
+    // document JSON (templates would bloat and serialized state would drift).
+    const commands = (MergeTagNode.config.addCommands as Function).call({
+      name: 'mergeTagNode',
+    });
+    const enriched = {
+      label: 'First Name',
+      value: '{{ first_name }}',
+      group: 'Recipient',
+      description: 'Personalized greeting',
+    } as { label: string; value: string };
+    const mockInsertContent = vi.fn().mockReturnValue(true);
+    commands.insertMergeTag(enriched)({
+      commands: { insertContent: mockInsertContent },
+    });
+    const [call] = mockInsertContent.mock.calls;
+    const attrs = call[0].attrs as Record<string, unknown>;
+    expect(Object.keys(attrs).sort()).toEqual(['label', 'value']);
+    expect(attrs.group).toBeUndefined();
+    expect(attrs.description).toBeUndefined();
+  });
+
+  it('insertMergeTag attrs serialize to JSON without group/description even when source carries them', () => {
+    const commands = (MergeTagNode.config.addCommands as Function).call({
+      name: 'mergeTagNode',
+    });
+    const enriched = {
+      label: 'First Name',
+      value: '{{ first_name }}',
+      group: 'Recipient',
+      description: 'Personalized greeting',
+    } as { label: string; value: string };
+    let captured: unknown;
+    commands.insertMergeTag(enriched)({
+      commands: {
+        insertContent: (payload: unknown) => {
+          captured = payload;
+          return true;
+        },
+      },
+    });
+    const json = JSON.stringify(captured);
+    expect(json).not.toContain('group');
+    expect(json).not.toContain('description');
+    expect(json).toContain('"label":"First Name"');
+    expect(json).toContain('"value":"{{ first_name }}"');
   });
 });
 

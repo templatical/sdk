@@ -55,6 +55,7 @@ import {
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
+  MERGE_TAG_PICKER_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
   ON_REQUEST_MEDIA_KEY,
   DISPLAY_CONDITIONS_KEY,
@@ -77,6 +78,7 @@ const ALL_KEYS: Array<{ key: InjectionKey<unknown>; label: string }> = [
   { key: CUSTOM_BLOCK_DEFINITIONS_KEY, label: 'customBlockDefinitions' },
   { key: MERGE_TAGS_KEY, label: 'mergeTags' },
   { key: MERGE_TAG_SYNTAX_KEY, label: 'mergeTagSyntax' },
+  { key: MERGE_TAG_PICKER_KEY, label: 'mergeTagPicker' },
   { key: ON_REQUEST_MERGE_TAG_KEY, label: 'onRequestMergeTag' },
   { key: ON_REQUEST_MEDIA_KEY, label: 'onRequestMedia' },
   { key: DISPLAY_CONDITIONS_KEY, label: 'displayConditions' },
@@ -240,11 +242,23 @@ describe('useEditorCore', () => {
   });
 
   describe('provides', () => {
-    it('provides all 19 shared injection keys', () => {
+    it('provides all 20 shared injection keys', () => {
       const { captured } = mountCore();
       for (const { label } of ALL_KEYS) {
         expect(captured.injected![label]).not.toBe('MISSING');
       }
+    });
+
+    it('provides a single merge tag picker instance per editor (singleton identity)', () => {
+      const { captured } = mountCore();
+      const picker = captured.injected!.mergeTagPicker as any;
+      expect(picker).not.toBeUndefined();
+      // The picker exposes the documented composable surface — assert on
+      // shape so the test fails if the provided object is ever swapped
+      // for something incompatible (e.g. a config object).
+      expect(typeof picker.open).toBe('function');
+      expect(typeof picker.resolve).toBe('function');
+      expect(picker.isOpen.value).toBe(false);
     });
 
     it('provides mergeTags array from config', () => {

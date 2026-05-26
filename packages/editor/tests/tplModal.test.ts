@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { nextTick, h, ref } from 'vue';
-import TplModal from '../src/cloud/components/TplModal.vue';
+import TplModal from '../src/components/TplModal.vue';
 import { POPOVER_ROOT_KEY } from '../src/keys';
 import { mountEditor } from './helpers/mount';
 

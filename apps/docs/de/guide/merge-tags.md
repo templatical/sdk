@@ -38,18 +38,22 @@ const editor = await init({
 
 ## MergeTag-Typ
 
-Jedes Tag wird mit einem Label (in der Editor-Oberfläche angezeigt) und einem Wert (der vollständige Merge-Tag-String einschließlich Trennzeichen) definiert:
+Jedes Tag wird mit einem Label (in der Editor-Oberfläche angezeigt) und einem Wert (der vollständige Merge-Tag-String einschließlich Trennzeichen) definiert. Zwei optionale Felder — `group` und `description` — werden vom integrierten Picker zur Gruppierung und Erklärung verwendet:
 
 ```ts
 interface MergeTag {
   label: string;
   value: string;
+  group?: string;        // optionale Gruppierung im Picker
+  description?: string;  // optionaler Hilfetext im Picker
 }
 ```
 
 Der `value` muss die Syntax-Trennzeichen enthalten. Zum Beispiel mit Liquid-Syntax:
 
 <code v-pre>value: '{{first_name}}'</code>
+
+Die Felder `group` und `description` sind ausschließlich für den Picker — sie erscheinen weder im Editor-Canvas, noch in der Autovervollständigung, noch in der gerenderten MJML-Ausgabe. Sie werden ignoriert, wenn Sie nur `onRequest` für die Tag-Auswahl verwenden.
 
 ## Syntax-Presets
 
@@ -175,6 +179,55 @@ const editor = await init({
 
 Die Schaltfläche „Merge-Tag einfügen" in der Symbolleiste funktioniert weiterhin unabhängig von der Autovervollständigungs-Einstellung.
 
+## Integrierter Picker
+
+Wenn Sie `mergeTags.tags` ohne `onRequest`-Callback konfigurieren, öffnet ein Klick auf die Schaltfläche „Merge-Tag einfügen" in der Rich-Text-Symbolleiste (oder neben einem Texteingabefeld in der Seitenleiste) ein integriertes modales Picker-Fenster. Der Picker listet jedes Tag aus `tags` auf, unterstützt Tastaturnavigation und bietet ein Suchfeld, das gegen `label`, `value` und `description` filtert.
+
+![Integrierter Merge-Tag-Picker](/images/merge-tag-picker.png)
+
+Der Picker zeigt:
+
+- das **Label** (fett)
+- den rohen **Wert** (Monospace, gedimmt)
+- die optionale **Beschreibung** (klein, gedimmt), sofern gesetzt
+
+Wenn mindestens ein Tag ein `group`-Feld trägt, rendert der Picker sektionierte Überschriften in Einfügereihenfolge (der Reihenfolge in Ihrem `tags`-Array). Tags ohne `group` landen unter einer lokalisierten „Sonstige"-Überschrift. Wenn kein Tag eine `group` hat, rendert der Picker eine flache Liste — keine Überschriften, kein „Sonstige"-Eimer.
+
+Während Sie tippen, werden Gruppen aufgelöst und die Liste gefiltert. Die Filterung ist nicht groß-/kleinschreibungsabhängig und gleicht Teilzeichenketten in `label`, `value` oder `description` ab. Beim Löschen der Suche wird das gruppierte (oder flache) Layout wiederhergestellt.
+
+Ein-Schritt-Einfügen: Ein Klick auf eine Zeile oder das Drücken von `Enter` auf der hervorgehobenen Zeile fügt das Tag ein und schließt das Modal. `Esc`, das Schließen-Symbol im Header (×) oder ein Klick auf den Hintergrund schließen den Picker ohne Einfügen.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: {
+    tags: [
+      {
+        label: 'Vorname',
+        value: '{{first_name}}',
+        group: 'Empfänger',
+        description: 'Persönliche Anrede',
+      },
+      {
+        label: 'Nachname',
+        value: '{{last_name}}',
+        group: 'Empfänger'
+      },
+      {
+        label: 'Unternehmen',
+        value: '{{company.name}}',
+        group: 'Konto'
+      },
+      {
+        label: 'Abmelde-URL',
+        value: '{{unsubscribe_url}}',
+        description: 'Gesetzlich vorgeschrieben (Anti-Spam)',
+      },
+    ],
+  },
+});
+```
+
 ## Dynamisches Tag-Laden
 
 Für große oder kontextabhängige Tag-Listen verwenden Sie den `onRequest`-Callback anstelle von (oder zusätzlich zu) einem statischen `tags`-Array. Der Editor ruft diese Funktion auf, wenn der Benutzer klickt, um ein Merge-Tag einzufügen. Verwenden Sie sie, um ein benutzerdefiniertes Picker-Modal zu öffnen, verfügbare Merge-Tags von Ihrer API abzurufen oder eine kontextbezogene Tag-Liste basierend auf dem aktuellen Benutzer zu erstellen. Geben Sie das ausgewählte `MergeTag` oder `null` zurück, um abzubrechen.
@@ -190,6 +243,10 @@ const editor = await init({
   },
 });
 ```
+
+::: tip Vorrangregel
+Wenn Sie sowohl `tags` als auch `onRequest` angeben, hat `onRequest` Vorrang — die Schaltfläche „Merge-Tag einfügen" ruft immer Ihren Callback auf. Das statische `tags`-Array versorgt weiterhin die Autovervollständigungs-Vorschläge beim Tippen.
+:::
 
 ## Merge-Tags in anderen Eingaben
 

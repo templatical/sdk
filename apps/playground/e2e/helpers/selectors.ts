@@ -91,6 +91,24 @@ export const SELECTORS = {
   // lives in data-tooltip on the inner display span.
   mergeTagNode: ".tpl-merge-tag-node",
 
+  // Built-in merge tag picker (SDK)
+  mergeTagPickerModal: '[data-testid="merge-tag-picker-modal"]',
+  mergeTagPickerSearch: '[data-testid="merge-tag-picker-search"]',
+  mergeTagPickerList: '[data-testid="merge-tag-picker-list"]',
+  mergeTagPickerItem: '[data-testid="merge-tag-picker-item"]',
+  mergeTagPickerGroupHeader: '[data-testid="merge-tag-picker-group-header"]',
+  mergeTagPickerCancel: '[data-testid="merge-tag-picker-cancel"]',
+  mergeTagPickerClose: '[data-testid="merge-tag-picker-close"]',
+  mergeTagPickerEmpty: '[data-testid="merge-tag-picker-empty"]',
+
+  // Playground's consumer-owned onRequest modal (separate from SDK picker)
+  playgroundMergeTagModal: '[data-testid="playground-merge-tag-modal"]',
+
+  // Config modal toggles (playground)
+  configEnableOnRequestMergeTag:
+    '[data-testid="enable-on-request-merge-tag"]',
+  configApply: '[data-testid="config-apply"]',
+
   // Modals
   modalBackdrop: ".pg-modal-backdrop",
 
