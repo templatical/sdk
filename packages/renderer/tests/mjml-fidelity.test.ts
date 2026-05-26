@@ -430,6 +430,25 @@ describe("empty paragraph emits nothing", () => {
     const mjml = renderBlock(block, ctx);
     expect(mjml).toBe("");
   });
+
+  // Regression: the old `/<\/?p[^>]*>/gi` strip pattern was polynomial-ReDoS.
+  // Adversarial input below — many `<p` starts with no closing `>` — used to
+  // make the regex engine retry `[^>]*` at every position. The `[^<>]*` rewrite
+  // fails fast at the next `<` and keeps the work linear.
+  it("strips empty-paragraph tags in linear time on `<p<p<p…` input (ReDoS regression)", () => {
+    const adversarial = "<p".repeat(50_000);
+    const block = createParagraphBlock({
+      content: adversarial,
+    } as Parameters<typeof createParagraphBlock>[0]);
+    const start = Date.now();
+    const mjml = renderBlock(block, ctx);
+    const elapsed = Date.now() - start;
+    // Stripped content is identical (no `>` ever matches), so non-empty
+    // after the strip — the block emits a non-empty mj-text. We only care
+    // that it doesn't hang.
+    expect(typeof mjml).toBe("string");
+    expect(elapsed).toBeLessThan(500);
+  });
 });
 
 describe("paragraph default font-size matches canvas (14px)", () => {

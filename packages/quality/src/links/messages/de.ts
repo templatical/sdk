@@ -2,7 +2,7 @@ import type en from "./en";
 
 const de: typeof en = {
   "link.javascript-protocol":
-    'Die URL verwendet das „javascript:"-Protokoll, das aus Sicherheitsgründen beim Rendern entfernt wird. Ersetze sie durch eine echte URL oder entferne sie.',
+    'Die URL verwendet das Protokoll „{protocol}:", das beliebigen Skriptcode ausführen kann und aus Sicherheitsgründen beim Rendern entfernt wird. Ersetze sie durch eine echte URL oder entferne sie.',
   "link.unsupported-protocol":
     'Die URL verwendet das Protokoll „{protocol}", das von den meisten E-Mail-Clients nicht unterstützt wird. Verwende http, https, mailto, tel oder sms.',
   "link.malformed-mailto":

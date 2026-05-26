@@ -6,7 +6,7 @@
  */
 const en = {
   "link.javascript-protocol":
-    'URL uses the "javascript:" protocol, which is stripped at render time for safety. Replace it with a real link or remove the URL.',
+    'URL uses the "{protocol}:" protocol, which can execute arbitrary script and is stripped at render time for safety. Replace it with a real link or remove the URL.',
   "link.unsupported-protocol":
     'URL uses the "{protocol}" protocol, which most email clients do not support. Use http, https, mailto, tel, or sms.',
   "link.malformed-mailto":

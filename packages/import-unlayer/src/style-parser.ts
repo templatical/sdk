@@ -8,7 +8,12 @@ import type { UnlayerBorder, UnlayerFontFamily } from "./types";
 export function parsePxValue(value: string | number | undefined): number {
   if (value === undefined || value === null) return 0;
   if (typeof value === "number") return Math.round(value);
-  const match = value.match(/^(-?\d+(?:\.\d+)?)\s*(?:px)?\s*$/);
+  // Single trailing-whitespace group with an optional `px` inside it. The
+  // original `\s*(?:px)?\s*` had two `\s*` quantifiers around an optional
+  // group, which is the textbook polynomial-ReDoS shape ("how should the
+  // whitespace split across the two quantifiers?") over inputs like
+  // `9                ` with no `px`.
+  const match = value.match(/^(-?\d+(?:\.\d+)?)\s*(?:px\s*)?$/);
   return match ? Math.round(parseFloat(match[1])) : 0;
 }
 

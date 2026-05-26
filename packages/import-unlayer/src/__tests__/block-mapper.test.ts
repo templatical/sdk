@@ -64,6 +64,26 @@ describe("convertContent", () => {
         expect(block.content).toBe("<p>Bare</p>");
       }
     });
+
+    // Regression: the old `/<p([^>]*)>([\s\S]*?)<\/p>/g` wrap pattern was
+    // polynomial-ReDoS — every `<p` start re-scanned the rest of the input
+    // for `</p>`. Adversarial input with many `<p>a` chunks but no `</p>`
+    // used to stall the regex. The manual scanner is strictly linear.
+    it("wraps paragraph content in linear time on `<p>a<p>a<p>a…` input (ReDoS regression)", () => {
+      const adversarial = "<p>a".repeat(10_000);
+      const start = Date.now();
+      const { block } = convertContent(
+        makeContent("text", {
+          text: adversarial,
+          // Provide a non-default text style so the wrapping branch runs.
+          color: "#123456",
+        }),
+        [],
+      );
+      const elapsed = Date.now() - start;
+      expect(block.type).toBe("paragraph");
+      expect(elapsed).toBeLessThan(500);
+    });
   });
 
   describe("heading", () => {
@@ -180,6 +200,48 @@ describe("convertContent", () => {
       if (block.type === "button") {
         expect(block.url).toBe("#");
       }
+    });
+
+    // Regression: the old `.replace(/<[^>]*>/g, "")` was both incomplete
+    // sanitization (left an unterminated `<script` in the label) and
+    // polynomial-ReDoS on `<<<<…` inputs. The new `stripTagsPlain`
+    // walks the string linearly and discards trailing unterminated tags.
+    it("strips unterminated `<script` from the button label (sanitizer regression)", () => {
+      const { block } = convertContent(
+        makeContent("button", { text: "Hello <script" }),
+        [],
+      );
+      if (block.type === "button") {
+        expect(block.text).toBe("Hello ");
+        expect(block.text).not.toContain("<");
+        expect(block.text).not.toContain(">");
+      }
+    });
+
+    it("strips stray `>` characters left by malformed input", () => {
+      const { block } = convertContent(
+        makeContent("button", { text: "A > B > C" }),
+        [],
+      );
+      if (block.type === "button") {
+        expect(block.text).toBe("A  B  C");
+      }
+    });
+
+    it("strips button label in linear time on adversarial `<<<<…` input (ReDoS regression)", () => {
+      const adversarial = "<".repeat(50_000) + "Buy";
+      const start = Date.now();
+      const { block } = convertContent(
+        makeContent("button", { text: adversarial }),
+        [],
+      );
+      const elapsed = Date.now() - start;
+      if (block.type === "button") {
+        // Every `<` opens a tag that never closes — the stripper bails at
+        // the first unterminated tag and discards the rest. Result is empty.
+        expect(block.text).toBe("");
+      }
+      expect(elapsed).toBeLessThan(500);
     });
   });
 

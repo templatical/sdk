@@ -28,6 +28,28 @@ describe("parsePxValue", () => {
     expect(parsePxValue("16em")).toBe(0);
     expect(parsePxValue("16rem")).toBe(0);
   });
+
+  it("parses '12 px' with whitespace between number and unit", () => {
+    expect(parsePxValue("12 px")).toBe(12);
+  });
+
+  it("parses '12px ' with trailing whitespace after unit", () => {
+    expect(parsePxValue("12px ")).toBe(12);
+  });
+
+  // Regression: the old `\s*(?:px)?\s*` suffix had two `\s*` quantifiers
+  // around an optional group — classic polynomial-ReDoS on inputs like
+  // `9                          ` (a digit followed by many spaces). The
+  // rewrite collapses to a single `\s*(?:px\s*)?` so trailing whitespace
+  // is matched by one quantifier with no backtracking.
+  it("rejects digit-then-long-whitespace input in linear time (ReDoS regression)", () => {
+    const adversarial = "9" + " ".repeat(50_000) + "x";
+    const start = Date.now();
+    const result = parsePxValue(adversarial);
+    const elapsed = Date.now() - start;
+    expect(result).toBe(0); // `x` makes it fail the `px?` group
+    expect(elapsed).toBeLessThan(500);
+  });
 });
 
 describe("parseColor", () => {

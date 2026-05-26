@@ -119,6 +119,58 @@ describe("link.javascript-protocol", () => {
     expect(issues).toHaveLength(2);
   });
 
+  it("also fires on `data:` URLs (incomplete-scheme-check defense)", () => {
+    const content = createDefaultTemplateContent();
+    const a = createButtonBlock({ url: "data:text/html,<script>alert(1)</script>" });
+    const b = createButtonBlock({
+      url: "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+    });
+    content.blocks = [a, b];
+    const issues = lintLinks(content).filter(
+      (i) => i.ruleId === "link.javascript-protocol",
+    );
+    expect(issues).toHaveLength(2);
+    expect(issues[0].severity).toBe("error");
+    expect(issues[0].blockId).toBe(a.id);
+    expect(issues[0].message).toContain('"data:"');
+    expect(issues[1].blockId).toBe(b.id);
+  });
+
+  it("also fires on `vbscript:` URLs (incomplete-scheme-check defense)", () => {
+    const content = createDefaultTemplateContent();
+    const button = createButtonBlock({ url: "vbscript:msgbox(1)" });
+    content.blocks = [button];
+    const issues = lintLinks(content).filter(
+      (i) => i.ruleId === "link.javascript-protocol",
+    );
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe("error");
+    expect(issues[0].message).toContain('"vbscript:"');
+  });
+
+  it("catches mixed-case + whitespace variants for data: and vbscript:", () => {
+    const content = createDefaultTemplateContent();
+    const a = createButtonBlock({ url: " DaTa:text/html,x" });
+    const b = createButtonBlock({ url: "\tVbScRiPt:msgbox(1)" });
+    content.blocks = [a, b];
+    const issues = lintLinks(content).filter(
+      (i) => i.ruleId === "link.javascript-protocol",
+    );
+    expect(issues).toHaveLength(2);
+  });
+
+  it("does not fire on `data` substring inside a legitimate URL", () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createButtonBlock({ url: "https://example.com/data:report" }),
+      createButtonBlock({ url: "https://example.com/path?q=data:xyz" }),
+    ];
+    const issues = lintLinks(content).filter(
+      (i) => i.ruleId === "link.javascript-protocol",
+    );
+    expect(issues).toEqual([]);
+  });
+
   it("respects severity override and `off` disables the rule", () => {
     const content = createDefaultTemplateContent();
     const button = createButtonBlock({ url: "javascript:alert(1)" });

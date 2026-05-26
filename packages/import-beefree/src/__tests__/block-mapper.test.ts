@@ -62,6 +62,29 @@ describe("convertModule", () => {
         expect(block.content).toBe("<p>Plain</p>");
       }
     });
+
+    // Regression: the old `/<p([^>]*)>([\s\S]*?)<\/p>/g` wrap pattern was
+    // polynomial-ReDoS — every `<p` start re-scanned the rest of the input
+    // for `</p>`. Adversarial input with many `<p>a` chunks but no `</p>`
+    // used to stall the regex. The manual scanner is strictly linear.
+    it("wraps paragraph content in linear time on `<p>a<p>a<p>a…` input (ReDoS regression)", () => {
+      const warnings: string[] = [];
+      const adversarial = "<p>a".repeat(10_000);
+      const mod = makeModule("mailup-bee-newsletter-modules-text", {
+        text: {
+          style: {
+            // Non-default style triggers the wrap branch
+            color: "#123456",
+          },
+          html: adversarial,
+        },
+      });
+      const start = Date.now();
+      const { block } = convertModule(mod, warnings);
+      const elapsed = Date.now() - start;
+      expect(block.type).toBe("paragraph");
+      expect(elapsed).toBeLessThan(500);
+    });
   });
 
   describe("heading", () => {
@@ -174,6 +197,40 @@ describe("convertModule", () => {
         expect(block.backgroundColor).toBe("#333333");
         expect(block.textColor).toBe("#ffffff");
       }
+    });
+
+    // Regression: the old `.replace(/<[^>]*>/g, "")` was both incomplete
+    // sanitization (left an unterminated `<script` in the label) and
+    // polynomial-ReDoS on `<<<<…` inputs. The new `stripTagsPlain` walks
+    // the string linearly and discards trailing unterminated tags.
+    it("strips unterminated `<script` from the button label (sanitizer regression)", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-button", {
+        button: { label: "Hello <script", href: "https://x.test" },
+      });
+      const { block } = convertModule(mod, warnings);
+      if (block.type === "button") {
+        expect(block.text).toBe("Hello ");
+        expect(block.text).not.toContain("<");
+        expect(block.text).not.toContain(">");
+      }
+    });
+
+    it("strips button label in linear time on adversarial `<<<<…` input (ReDoS regression)", () => {
+      const warnings: string[] = [];
+      const adversarial = "<".repeat(50_000) + "Buy";
+      const start = Date.now();
+      const mod = makeModule("mailup-bee-newsletter-modules-button", {
+        button: { label: adversarial, href: "https://x.test" },
+      });
+      const { block } = convertModule(mod, warnings);
+      const elapsed = Date.now() - start;
+      if (block.type === "button") {
+        // First `<` opens a tag that never closes — stripper bails and
+        // discards the rest, leaving an empty label.
+        expect(block.text).toBe("");
+      }
+      expect(elapsed).toBeLessThan(500);
     });
   });
 

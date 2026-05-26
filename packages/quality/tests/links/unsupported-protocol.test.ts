@@ -35,32 +35,33 @@ describe("link.unsupported-protocol", () => {
     expect(issues).toEqual([]);
   });
 
-  it("does not fire on `javascript:` (its own rule covers that)", () => {
+  it("does not fire on dangerous-script schemes (javascript/data/vbscript — their own rule covers them)", () => {
     const content = createDefaultTemplateContent();
-    content.blocks = [createButtonBlock({ url: "javascript:alert(1)" })];
+    content.blocks = [
+      createButtonBlock({ url: "javascript:alert(1)" }),
+      createButtonBlock({ url: "data:text/html,<script>1</script>" }),
+      createButtonBlock({ url: "vbscript:msgbox(1)" }),
+    ];
     const issues = lintLinks(content).filter(
       (i) => i.ruleId === "link.unsupported-protocol",
     );
     expect(issues).toEqual([]);
   });
 
-  it("fires on ftp:, file:, data:, custom app schemes", () => {
+  it("fires on ftp:, file:, and custom app schemes", () => {
     const content = createDefaultTemplateContent();
     content.blocks = [
       createButtonBlock({ url: "ftp://example.com/file" }),
       createButtonBlock({ url: "file:///etc/passwd" }),
-      createButtonBlock({ url: "data:text/plain,hello" }),
       createButtonBlock({ url: "myapp://open?id=42" }),
     ];
     const issues = lintLinks(content).filter(
       (i) => i.ruleId === "link.unsupported-protocol",
     );
-    expect(issues).toHaveLength(4);
+    expect(issues).toHaveLength(3);
     expect(issues[0].severity).toBe("warning");
-    const protocols = issues.map((i) =>
-      i.message.match(/"([^"]+)"/)?.[1],
-    );
-    expect(protocols).toEqual(["ftp", "file", "data", "myapp"]);
+    const protocols = issues.map((i) => i.message.match(/"([^"]+)"/)?.[1]);
+    expect(protocols).toEqual(["ftp", "file", "myapp"]);
   });
 
   it("fires on anchors inside paragraph content", () => {

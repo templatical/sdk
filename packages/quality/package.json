@@ -1,7 +1,7 @@
 {
   "name": "@templatical/quality",
   "description": "Accessibility linter for Templatical email templates",
-  "version": "0.8.3",
+  "version": "0.8.5",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*",
@@ -9,8 +9,8 @@
   },
   "devDependencies": {
     "typescript": "^6.0.3",
-    "vite": "^8.0.13",
-    "vitest": "^4.1.6"
+    "vite": "^8.0.14",
+    "vitest": "^4.1.7"
   },
   "exports": {
     ".": {
