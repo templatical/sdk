@@ -195,7 +195,7 @@ When at least one tag carries a `group` field, the picker renders sectioned head
 
 Typing in the search field flattens groups and filters the list. Case-insensitive substring matches against the tag's `label`, `value`, or `description`. Clearing the search restores the grouped (or flat) layout.
 
-Single-step insert: clicking a row, or pressing `Enter` on the highlighted row, inserts the tag and closes the modal. `Esc`, the Cancel button, the header close (×), or clicking the backdrop all dismiss the picker without inserting.
+Single-step insert: clicking a row, or pressing `Enter` on the highlighted row, inserts the tag and closes the modal. `Esc`, the header close (×), or clicking the backdrop all dismiss the picker without inserting.
 
 ```ts
 const editor = await init({

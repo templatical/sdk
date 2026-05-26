@@ -195,7 +195,7 @@ Wenn mindestens ein Tag ein `group`-Feld trägt, rendert der Picker sektionierte
 
 Während Sie tippen, werden Gruppen aufgelöst und die Liste gefiltert. Die Filterung ist nicht groß-/kleinschreibungsabhängig und gleicht Teilzeichenketten in `label`, `value` oder `description` ab. Beim Löschen der Suche wird das gruppierte (oder flache) Layout wiederhergestellt.
 
-Ein-Schritt-Einfügen: Ein Klick auf eine Zeile oder das Drücken von `Enter` auf der hervorgehobenen Zeile fügt das Tag ein und schließt das Modal. `Esc`, die Abbrechen-Schaltfläche, das Schließen-Symbol im Header (×) oder ein Klick auf den Hintergrund schließen den Picker ohne Einfügen.
+Ein-Schritt-Einfügen: Ein Klick auf eine Zeile oder das Drücken von `Enter` auf der hervorgehobenen Zeile fügt das Tag ein und schließt das Modal. `Esc`, das Schließen-Symbol im Header (×) oder ein Klick auf den Hintergrund schließen den Picker ohne Einfügen.
 
 ```ts
 const editor = await init({
