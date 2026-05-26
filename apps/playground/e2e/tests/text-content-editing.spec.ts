@@ -101,10 +101,11 @@ test.describe("Text content editing", () => {
       page.locator(blockByType("paragraph")).first(),
     ).toContainText(testText);
 
-    await editorPage.openExportMenu();
+    await editorPage.openExport();
+    await page.locator(SELECTORS.exportTabJson).click();
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.locator(SELECTORS.exportJsonItem).click(),
+      page.locator(SELECTORS.exportDownloadBtn).click(),
     ]);
     const content = await (await download.createReadStream()).toArray();
     const json = Buffer.concat(content).toString("utf-8");
