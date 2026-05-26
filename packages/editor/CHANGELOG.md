@@ -1,5 +1,17 @@
 # @templatical/editor
 
+## 1.0.0
+
+### Minor Changes
+
+- 4dfe37e: Add a built-in merge tag picker modal. When `mergeTags.tags` is configured without `mergeTags.onRequest`, clicking "Insert merge tag" now opens a searchable, keyboard-navigable picker that lists every tag. The picker supports optional grouping (via a new `group` field on `MergeTag`) and per-tag helper text (via a new `description` field). `onRequest` continues to take precedence when set.
+
+### Patch Changes
+
+- @templatical/media-library@1.0.0
+- @templatical/quality@1.0.0
+- @templatical/renderer@1.0.0
+
 ## 0.8.5
 
 ### Patch Changes
