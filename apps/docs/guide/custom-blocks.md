@@ -82,8 +82,8 @@ const editor = await init({
 ![Custom blocks overview](/images/custom-blocks-overview.png)
 
 1. **Block palette** — The `name` and `icon` appear here. Users drag the block from the palette into their template.
-2. **Editor canvas** — The Liquid `template` renders exactly as defined, with field values populated from the settings panel.
-3. **Settings panel** — Each entry in `fields` becomes a form control where users can edit the block's content.
+2. **Settings panel** — Each entry in `fields` becomes a form control where users can edit the block's content.
+3. **Editor canvas** — The Liquid `template` renders exactly as defined, with field values populated from the settings panel.
 
 ## CustomBlockDefinition
 

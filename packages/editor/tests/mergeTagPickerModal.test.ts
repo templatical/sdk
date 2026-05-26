@@ -476,16 +476,15 @@ describe("MergeTagPickerModal — keyboard navigation", () => {
 });
 
 describe("MergeTagPickerModal — cancel paths", () => {
-  it("Cancel button resolves picker with null and closes", async () => {
-    const { picker, openPromise } = mountPicker(flatTags);
+  it("does not render an explicit Cancel button — Esc/backdrop/× are the dismiss affordances", async () => {
+    // Regression for the design pass that dropped the Cancel footer to
+    // align the picker with the editor's other popups (autocomplete +
+    // link dialog), which all dismiss via Esc / outside-click / × only.
+    mountPicker(flatTags);
     await nextTick();
-    const cancelBtn = popoverRootEl.querySelector<HTMLButtonElement>(
-      '[data-testid="merge-tag-picker-cancel"]',
-    );
-    cancelBtn!.click();
-    expect(await openPromise!).toBeNull();
-    await nextTick();
-    expect(picker.isOpen.value).toBe(false);
+    expect(
+      popoverRootEl.querySelector('[data-testid="merge-tag-picker-cancel"]'),
+    ).toBe(null);
   });
 
   it("Header close (×) button resolves with null and closes", async () => {
@@ -539,8 +538,14 @@ describe("MergeTagPickerModal — i18n", () => {
     expect(popoverRootEl.textContent).toContain(
       enTranslations.mergeTag.picker.title,
     );
-    expect(popoverRootEl.textContent).toContain(
-      enTranslations.mergeTag.picker.cancel,
+    // Close button aria-label exposes the localized close string —
+    // assert against attribute rather than visible text since the X icon
+    // is graphic-only.
+    const closeBtn = popoverRootEl.querySelector<HTMLButtonElement>(
+      '[data-testid="merge-tag-picker-close"]',
+    );
+    expect(closeBtn!.getAttribute("aria-label")).toBe(
+      enTranslations.mergeTag.picker.close,
     );
   });
 

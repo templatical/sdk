@@ -307,11 +307,11 @@ const showPillRow = computed(
       aria-modal="true"
       :aria-labelledby="`${listId}-title`"
       data-testid="merge-tag-picker-modal"
-      class="tpl tpl:flex tpl:max-h-[80vh] tpl:w-[min(480px,92vw)] tpl:flex-col tpl:rounded-[var(--tpl-radius-lg)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:shadow-[var(--tpl-shadow-lg)]"
+      class="tpl tpl:flex tpl:max-h-[80vh] tpl:w-[min(420px,92vw)] tpl:flex-col tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:shadow-[var(--tpl-shadow-lg)]"
     >
       <!-- Header -->
       <header
-        class="tpl:flex tpl:items-center tpl:justify-between tpl:gap-3 tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
+        class="tpl:flex tpl:items-center tpl:justify-between tpl:gap-3 tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-3 tpl:py-2.5"
       >
         <h2
           :id="`${listId}-title`"
@@ -321,7 +321,7 @@ const showPillRow = computed(
         </h2>
         <button
           type="button"
-          class="tpl:flex tpl:h-7 tpl:w-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:text-[var(--tpl-text-dim)] tpl:transition-colors tpl:hover:bg-[var(--tpl-bg-hover)] tpl:hover:text-[var(--tpl-text)]"
+          class="tpl:flex tpl:h-7 tpl:w-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:text-[var(--tpl-text-dim)] tpl:transition-colors tpl:hover:bg-[var(--tpl-bg-hover)] tpl:hover:text-[var(--tpl-text)]"
           :aria-label="t.mergeTag.picker.close"
           data-testid="merge-tag-picker-close"
           @click="cancel"
@@ -332,10 +332,10 @@ const showPillRow = computed(
 
       <!-- Search -->
       <div
-        class="tpl:relative tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
+        class="tpl:relative tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-3 tpl:py-2.5"
       >
         <Search
-          class="tpl:pointer-events-none tpl:absolute tpl:top-1/2 tpl:left-7 tpl:-translate-y-1/2 tpl:text-[var(--tpl-text-dim)]"
+          class="tpl:pointer-events-none tpl:absolute tpl:top-1/2 tpl:left-5 tpl:-translate-y-1/2 tpl:text-[var(--tpl-text-dim)]"
           :size="14"
           :stroke-width="2"
         />
@@ -344,7 +344,7 @@ const showPillRow = computed(
           ref="searchInputRef"
           v-model="rawSearch"
           type="text"
-          class="tpl:w-full tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:py-1.5 tpl:pr-3 tpl:pl-8 tpl:text-sm tpl:text-[var(--tpl-text)] tpl:outline-none tpl:focus:border-[var(--tpl-primary)]"
+          class="tpl:w-full tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:py-1.5 tpl:pr-3 tpl:pl-8 tpl:text-sm tpl:text-[var(--tpl-text)] tpl:outline-none tpl:focus:border-[var(--tpl-primary)]"
           :placeholder="t.mergeTag.picker.searchPlaceholder"
           :aria-label="t.mergeTag.picker.searchAriaLabel"
           :aria-controls="listId"
@@ -360,7 +360,7 @@ const showPillRow = computed(
            degrades gracefully. -->
       <div
         v-if="showPillRow"
-        class="tpl:flex tpl:gap-1.5 tpl:overflow-x-auto tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-2"
+        class="tpl:flex tpl:gap-1.5 tpl:overflow-x-auto tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-3 tpl:py-2"
         data-testid="merge-tag-picker-group-pills"
       >
         <button
@@ -392,7 +392,7 @@ const showPillRow = computed(
       >
         <template v-if="isEmptyConfig">
           <div
-            class="tpl:px-4 tpl:py-6 tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
+            class="tpl:px-3 tpl:py-6 tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
             data-testid="merge-tag-picker-empty"
           >
             {{ t.mergeTag.picker.empty }}
@@ -400,7 +400,7 @@ const showPillRow = computed(
         </template>
         <template v-else-if="isNoResults">
           <div
-            class="tpl:px-4 tpl:py-6 tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
+            class="tpl:px-3 tpl:py-6 tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
             data-testid="merge-tag-picker-empty"
           >
             {{ t.mergeTag.picker.noResults }}
@@ -414,7 +414,7 @@ const showPillRow = computed(
               type="button"
               :aria-expanded="!isCollapsed(row.group)"
               :aria-controls="listId"
-              class="tpl:sticky tpl:top-0 tpl:z-10 tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-[var(--tpl-bg-elevated)] tpl:px-4 tpl:pt-3 tpl:pb-1 tpl:text-left tpl:text-[10px] tpl:font-semibold tpl:tracking-wider tpl:text-[var(--tpl-text-dim)] tpl:uppercase tpl:transition-colors tpl:hover:bg-[var(--tpl-bg-hover)]"
+              class="tpl:sticky tpl:top-0 tpl:z-10 tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-[var(--tpl-bg-elevated)] tpl:px-3 tpl:pt-2.5 tpl:pb-1 tpl:text-left tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-dim)] tpl:transition-colors tpl:hover:bg-[var(--tpl-bg-hover)]"
               data-testid="merge-tag-picker-group-header"
               :data-group-name="row.group"
               :data-group-collapsed="isCollapsed(row.group) ? 'true' : 'false'"
@@ -427,7 +427,7 @@ const showPillRow = computed(
                 :class="isCollapsed(row.group) ? 'tpl:-rotate-90' : ''"
               />
               <span>{{ row.group }}</span>
-              <span class="tpl:ml-1 tpl:font-normal tpl:lowercase">
+              <span class="tpl:ml-1 tpl:font-normal">
                 ({{
                   format(t.mergeTag.picker.groupCount, { count: row.count })
                 }})
@@ -447,7 +447,7 @@ const showPillRow = computed(
                   ? `${row.tag.value} — ${row.tag.description}`
                   : row.tag.value
               "
-              class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:flex-col tpl:items-start tpl:gap-0.5 tpl:border-none tpl:px-4 tpl:py-2 tpl:text-left tpl:transition-colors"
+              class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:flex-col tpl:items-start tpl:gap-0.5 tpl:border-none tpl:px-3 tpl:py-1.5 tpl:text-left tpl:transition-colors"
               :class="
                 row.index === highlightedIndex
                   ? 'tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary)]'
@@ -475,20 +475,6 @@ const showPillRow = computed(
           </template>
         </template>
       </div>
-
-      <!-- Footer -->
-      <footer
-        class="tpl:flex tpl:items-center tpl:justify-end tpl:gap-2 tpl:border-t tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-3"
-      >
-        <button
-          type="button"
-          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-transparent tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-colors tpl:hover:bg-[var(--tpl-bg-hover)]"
-          data-testid="merge-tag-picker-cancel"
-          @click="cancel"
-        >
-          {{ t.mergeTag.picker.cancel }}
-        </button>
-      </footer>
     </div>
   </TplModal>
 </template>

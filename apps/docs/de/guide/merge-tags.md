@@ -183,6 +183,8 @@ Die Schaltfläche „Merge-Tag einfügen" in der Symbolleiste funktioniert weite
 
 Wenn Sie `mergeTags.tags` ohne `onRequest`-Callback konfigurieren, öffnet ein Klick auf die Schaltfläche „Merge-Tag einfügen" in der Rich-Text-Symbolleiste (oder neben einem Texteingabefeld in der Seitenleiste) ein integriertes modales Picker-Fenster. Der Picker listet jedes Tag aus `tags` auf, unterstützt Tastaturnavigation und bietet ein Suchfeld, das gegen `label`, `value` und `description` filtert.
 
+![Integrierter Merge-Tag-Picker](/images/merge-tag-picker.png)
+
 Der Picker zeigt:
 
 - das **Label** (fett)
@@ -206,8 +208,16 @@ const editor = await init({
         group: 'Empfänger',
         description: 'Persönliche Anrede',
       },
-      { label: 'Nachname', value: '{{last_name}}', group: 'Empfänger' },
-      { label: 'Unternehmen', value: '{{company.name}}', group: 'Konto' },
+      {
+        label: 'Nachname',
+        value: '{{last_name}}',
+        group: 'Empfänger'
+      },
+      {
+        label: 'Unternehmen',
+        value: '{{company.name}}',
+        group: 'Konto'
+      },
       {
         label: 'Abmelde-URL',
         value: '{{unsubscribe_url}}',
@@ -217,8 +227,6 @@ const editor = await init({
   },
 });
 ```
-
-Das Picker-Bundle wird verzögert (lazy) geladen — die meisten Editor-Sitzungen öffnen es nie, sodass die Kosten erst beim ersten Klick anfallen. Danach ist das Chunk für den Rest der Sitzung zwischengespeichert.
 
 ## Dynamisches Tag-Laden
 

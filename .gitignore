@@ -10,3 +10,6 @@ test-results/
 blob-report/
 .playwright-mcp
 CLAUDE.md
+DESIGN.md
+PRODUCT.md
+DESIGN.json

@@ -183,6 +183,8 @@ The toolbar's "Insert merge tag" button continues to work regardless of the auto
 
 When you configure `mergeTags.tags` without an `onRequest` callback, clicking the "Insert merge tag" button in the rich text toolbar (or next to a sidebar text input) opens a built-in modal picker. The picker lists every tag from `tags`, supports keyboard navigation, and offers a search field that matches against `label`, `value`, and `description`.
 
+![Built-in merge tag picker](/images/merge-tag-picker.png)
+
 The picker shows:
 
 - the **label** (bold)
@@ -206,8 +208,16 @@ const editor = await init({
         group: 'Recipient',
         description: 'Personalized greeting',
       },
-      { label: 'Last Name', value: '{{last_name}}', group: 'Recipient' },
-      { label: 'Company', value: '{{company.name}}', group: 'Account' },
+      {
+        label: 'Last Name',
+        value: '{{last_name}}',
+        group: 'Recipient'
+      },
+      {
+        label: 'Company',
+        value: '{{company.name}}',
+        group: 'Account'
+      },
       {
         label: 'Unsubscribe URL',
         value: '{{unsubscribe_url}}',
@@ -217,8 +227,6 @@ const editor = await init({
   },
 });
 ```
-
-The picker bundle is lazy-loaded — most editor sessions never open it, so the cost is paid only on the first click. After that, the chunk is cached for the rest of the session.
 
 ## Dynamic tag loading
 
