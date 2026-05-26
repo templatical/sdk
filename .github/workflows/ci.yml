@@ -196,7 +196,7 @@ jobs:
       # artifact so the rebuild has types/, core/, quality/, media-library/
       # dists to read from.
       - if: env.IS_VP != 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: packages/
@@ -228,7 +228,7 @@ jobs:
         uses: ./.github/actions/setup
       # See e2e-consumer comment — same reason.
       - if: env.IS_VP != 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: packages/
@@ -255,7 +255,7 @@ jobs:
         uses: ./.github/actions/setup
       # See e2e-consumer comment — same reason.
       - if: env.IS_VP != 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: packages/
