@@ -186,13 +186,13 @@ importers:
         version: 14.3.0(vue@3.5.34(typescript@6.0.3))
       '@vueuse/integrations':
         specifier: ^14.3.0
-        version: 14.3.0(focus-trap@8.2.0)(vue@3.5.34(typescript@6.0.3))
+        version: 14.3.0(focus-trap@8.2.1)(vue@3.5.34(typescript@6.0.3))
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
       focus-trap:
-        specifier: ^8.2.0
-        version: 8.2.0
+        specifier: ^8.2.1
+        version: 8.2.1
       vue:
         specifier: ^3.5.34
         version: 3.5.34(typescript@6.0.3)
@@ -3166,8 +3166,8 @@ packages:
   focus-trap@7.8.0:
     resolution: {integrity: sha512-/yNdlIkpWbM0ptxno3ONTuf+2g318kh2ez3KSeZN5dZ8YC6AAmgeWz+GasYYiBJPFaYcSAPeu4GfhUaChzIJXA==}
 
-  focus-trap@8.2.0:
-    resolution: {integrity: sha512-CaBdQ9P4fa/yCA6pDf/3aJd8bf9IOG5QGK21/E+86o2V4V8kzXaR4A9E6tNR7KkkS1+T5ZIU1tJDBDLwsucz9g==}
+  focus-trap@8.2.1:
+    resolution: {integrity: sha512-6CxwrrFRquH7pDXb1mWxudkU9LSfYBMRZutpgddb2o6iwCk7cIRrBhyY3c8SGKcmIKdeMTrGSNg4Bedh2RSF/w==}
 
   foreground-child@3.3.1:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
@@ -6929,13 +6929,13 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@vueuse/integrations@14.3.0(focus-trap@8.2.0)(vue@3.5.34(typescript@6.0.3))':
+  '@vueuse/integrations@14.3.0(focus-trap@8.2.1)(vue@3.5.34(typescript@6.0.3))':
     dependencies:
       '@vueuse/core': 14.3.0(vue@3.5.34(typescript@6.0.3))
       '@vueuse/shared': 14.3.0(vue@3.5.34(typescript@6.0.3))
       vue: 3.5.34(typescript@6.0.3)
     optionalDependencies:
-      focus-trap: 8.2.0
+      focus-trap: 8.2.1
 
   '@vueuse/metadata@12.8.2': {}
 
@@ -7757,7 +7757,7 @@ snapshots:
     dependencies:
       tabbable: 6.4.0
 
-  focus-trap@8.2.0:
+  focus-trap@8.2.1:
     dependencies:
       tabbable: 6.4.0
 
