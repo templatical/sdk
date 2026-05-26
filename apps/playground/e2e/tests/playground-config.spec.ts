@@ -69,102 +69,108 @@ test.describe("Playground config & export", () => {
     await expect(dialog).not.toBeVisible();
   });
 
-  test("export dropdown opens", async ({
+  test("export modal opens with MJML as default tab", async ({
     editorReady: { editorPage },
     page,
   }) => {
-    await editorPage.openExportMenu();
-    await expect(page.locator(SELECTORS.exportMenu)).toBeVisible();
+    await editorPage.openExport();
+    await expect(page.locator(SELECTORS.exportModal)).toBeVisible();
+    await expect(page.locator(SELECTORS.exportTabMjml)).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
-  test("export dropdown has JSON and MJML items", async ({
+  test("export modal closes on Escape", async ({
     editorReady: { editorPage },
     page,
   }) => {
-    await editorPage.openExportMenu();
-    const items = page.locator(SELECTORS.exportMenuItem);
-    expect(await items.count()).toBe(2);
-  });
-
-  // Regression: header had `overflow-x-auto` which clipped the absolute
-  // dropdown to the 48px header height, making items invisible despite the
-  // DOM saying otherwise. `toBeVisible()` doesn't catch ancestor clipping —
-  // assert the menu items render below the header bottom and that
-  // elementFromPoint at each item's center hits the item itself.
-  test("export dropdown items are not clipped by header", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.openExportMenu();
-
-    const headerBottom = await page
-      .locator("header")
-      .first()
-      .evaluate((el) => el.getBoundingClientRect().bottom);
-
-    const items = page.locator(SELECTORS.exportMenuItem);
-    const count = await items.count();
-    expect(count).toBe(2);
-
-    for (let i = 0; i < count; i++) {
-      const item = items.nth(i);
-      const box = await item.boundingBox();
-      expect(box, `menu item #${i} has no box`).not.toBeNull();
-      expect(box!.height).toBeGreaterThan(0);
-      expect(box!.width).toBeGreaterThan(0);
-      expect(box!.y + box!.height).toBeGreaterThan(headerBottom);
-
-      const hit = await page.evaluate(
-        ({ x, y }) => {
-          const el = document.elementFromPoint(x, y);
-          return el?.closest('[role="menuitem"]')?.getAttribute("data-testid");
-        },
-        { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 },
-      );
-      expect(hit, `item #${i} is occluded — clipped by ancestor`).toBe(
-        await item.getAttribute("data-testid"),
-      );
-    }
-  });
-
-  test("export dropdown closes on Escape", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.openExportMenu();
-    await expect(page.locator(SELECTORS.exportMenu)).toBeVisible();
+    await editorPage.openExport();
+    await expect(page.locator(SELECTORS.exportModal)).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(page.locator(SELECTORS.exportMenu)).toHaveCount(0);
+    await expect(page.locator(SELECTORS.exportModal)).toHaveCount(0);
   });
 
-  test("JSON download triggers with valid content", async ({
+  test("MJML tab shows compiled MJML source", async ({
     editorReady: { editorPage },
     page,
   }) => {
-    await editorPage.openExportMenu();
-    const [download] = await Promise.all([
-      page.waitForEvent("download"),
-      page.locator(SELECTORS.exportJsonItem).click(),
-    ]);
-    expect(download.suggestedFilename()).toContain(".json");
-    const content = await (await download.createReadStream()).toArray();
-    const text = Buffer.concat(content).toString("utf-8");
-    const json = JSON.parse(text);
-    expect(json).toHaveProperty("blocks");
+    await editorPage.openExport();
+    await expect(page.locator(SELECTORS.exportModal)).toBeVisible();
+    const content = await page.locator(".cm-content").first().textContent();
+    expect(content).toContain("<mjml");
+  });
+
+  test("HTML tab compiles to email-ready HTML", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    await editorPage.openExport();
+    await page.locator(SELECTORS.exportTabHtml).click();
+    await expect(page.locator(SELECTORS.exportHtmlError)).toHaveCount(0);
+    await expect
+      .poll(async () =>
+        page.locator(".cm-content").first().textContent(),
+      )
+      .toMatch(/<!doctype html|<html/i);
+  });
+
+  test("JSON tab shows template block JSON", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    await editorPage.openExport();
+    await page.locator(SELECTORS.exportTabJson).click();
+    const content = await page.locator(".cm-content").first().textContent();
+    expect(content).toContain('"blocks"');
   });
 
   test("MJML download triggers with valid content", async ({
     editorReady: { editorPage },
     page,
   }) => {
-    await editorPage.openExportMenu();
+    await editorPage.openExport();
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.locator(SELECTORS.exportMjmlItem).click(),
+      page.locator(SELECTORS.exportDownloadBtn).click(),
     ]);
-    expect(download.suggestedFilename()).toContain(".mjml");
+    expect(download.suggestedFilename()).toBe("email-template.mjml");
     const content = await (await download.createReadStream()).toArray();
     const text = Buffer.concat(content).toString("utf-8");
     expect(text).toContain("<mjml");
+  });
+
+  test("JSON download triggers with valid content", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    await editorPage.openExport();
+    await page.locator(SELECTORS.exportTabJson).click();
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.locator(SELECTORS.exportDownloadBtn).click(),
+    ]);
+    expect(download.suggestedFilename()).toBe("email-template.json");
+    const content = await (await download.createReadStream()).toArray();
+    const text = Buffer.concat(content).toString("utf-8");
+    const json = JSON.parse(text);
+    expect(json).toHaveProperty("blocks");
+  });
+
+  test("HTML download triggers with valid content", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    await editorPage.openExport();
+    await page.locator(SELECTORS.exportTabHtml).click();
+    await expect(page.locator(SELECTORS.exportDownloadBtn)).toBeEnabled();
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.locator(SELECTORS.exportDownloadBtn).click(),
+    ]);
+    expect(download.suggestedFilename()).toBe("email-template.html");
+    const content = await (await download.createReadStream()).toArray();
+    const text = Buffer.concat(content).toString("utf-8");
+    expect(text.toLowerCase()).toContain("<html");
   });
 });

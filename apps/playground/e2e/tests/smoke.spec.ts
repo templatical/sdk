@@ -50,14 +50,14 @@ test.describe("Playground smoke tests", () => {
     await expect(page.locator(SELECTORS.chooserScreen)).toBeVisible();
   });
 
-  test("JSON viewer shows template content", async ({
+  test("export modal shows JSON tab content", async ({
     editorReady: { editorPage },
     page,
   }) => {
-    await editorPage.openJson();
-    await expect(page.locator(SELECTORS.jsonModal)).toBeVisible();
-    const content = page.locator(SELECTORS.jsonModalContent);
-    await expect(content).toBeVisible();
+    await editorPage.openExport();
+    await page.locator(SELECTORS.exportTabJson).click();
+    const content = await page.locator(".cm-content").first().textContent();
+    expect(content).toContain('"blocks"');
   });
 
   test("theme toggle works", async ({ editorReady: { editorPage }, page }) => {

@@ -18,7 +18,6 @@ import {
   usePreferredReducedMotion,
   useScrollLock,
   useTimeoutFn,
-  onClickOutside,
 } from "@vueuse/core";
 import { useFocusTrap } from "@vueuse/integrations/useFocusTrap";
 import { init, unmount } from "@templatical/editor";
@@ -60,12 +59,10 @@ import {
   ArrowRight,
   ChevronRight,
   ChevronLeft,
-  ChevronDown,
   Zap,
   Crosshair,
   CircleAlert,
   Info,
-  Code,
   Braces,
   Clock,
   Database,
@@ -204,28 +201,17 @@ function cancelDataSourcePicker(): void {
 
 const editorContainer = ref<HTMLElement | null>(null);
 const editor = ref<TemplaticalEditor | null>(null);
-const showJson = ref(false);
-const jsonContent = ref("");
-const exportMenuOpen = ref(false);
-const exportMenuRef = ref<HTMLElement | null>(null);
-const exportDropdownRef = ref<HTMLElement | null>(null);
-onClickOutside(exportDropdownRef, () => {
-  exportMenuOpen.value = false;
-});
 
-function focusExportItem(index: number, delta?: number): void {
-  if (!exportMenuRef.value) return;
-  const items =
-    exportMenuRef.value.querySelectorAll<HTMLElement>("[role=menuitem]");
-  if (!items.length) return;
-  const active = document.activeElement;
-  let target = index;
-  if (delta !== undefined) {
-    const current = Array.from(items).indexOf(active as HTMLElement);
-    target = (current + delta + items.length) % items.length;
-  }
-  items[target]?.focus();
-}
+type ExportTab = "mjml" | "html" | "json";
+const exportTabs: readonly ExportTab[] = ["mjml", "html", "json"] as const;
+const exportModalOpen = ref(false);
+const exportTab = ref<ExportTab>("mjml");
+const exportJson = ref("");
+const exportMjml = ref("");
+const exportHtml = ref("");
+const exportHtmlLoading = ref(false);
+const exportHtmlError = ref("");
+const exportHtmlMjmlErrors = ref<string[]>([]);
 
 const configTabs = [
   "options",
@@ -948,18 +934,6 @@ function applyConfig(): void {
   }
 }
 
-function toggleJson(): void {
-  if (!editor.value) return;
-  jsonContent.value = JSON.stringify(editor.value.getContent(), null, 2);
-  showJson.value = true;
-}
-
-const { copy, copied } = useClipboard({ copiedDuring: 1500 });
-
-function copyJson(): void {
-  copy(jsonContent.value);
-}
-
 // --- Share ---
 const shareId = inject<string | null>("shareId", null);
 const shareModalOpen = ref(false);
@@ -1015,7 +989,7 @@ onMounted(async () => {
 // --- Focus traps for modals (useFocusTrap) ---
 const trapOpts = { allowOutsideClick: true, escapeDeactivates: false };
 
-function useModalTrap(isOpen: typeof showJson) {
+function useModalTrap(isOpen: typeof showConfig | typeof exportTabValue) {
   const target = ref<HTMLElement | null>(null);
   const { activate, deactivate } = useFocusTrap(target, trapOpts);
   watch(isOpen, async (open) => {
@@ -1029,7 +1003,6 @@ function useModalTrap(isOpen: typeof showJson) {
   return target;
 }
 
-const jsonModalRef = useModalTrap(showJson);
 const configModalRef = useModalTrap(showConfig);
 const importModalRef = useModalTrap(showImport);
 const mergeTagModalRef = useModalTrap(mergeTagPickerOpen);
@@ -1042,13 +1015,13 @@ const pendingOnboardingTimers = new Set<ReturnType<typeof setTimeout>>();
 
 const featureModalRef = useModalTrap(showFeatureOverlay);
 const shareModalRef = useModalTrap(shareModalOpen);
+const exportModalRef = useModalTrap(exportModalOpen);
 const onboardingTooltipRef = useModalTrap(onboardingActive);
 
 // --- Lock body scroll when any modal is open ---
 const bodyScrollLocked = useScrollLock(document.body);
 watch(
   () =>
-    showJson.value ||
     showConfig.value ||
     showImport.value ||
     mergeTagPickerOpen.value ||
@@ -1056,6 +1029,7 @@ watch(
     (dataSourcePickerOpen.value && !!dataSourcePickerRequest.value) ||
     showFeatureOverlay.value ||
     shareModalOpen.value ||
+    exportModalOpen.value ||
     onboardingActive.value,
   (locked) => {
     bodyScrollLocked.value = locked;
@@ -1072,17 +1046,89 @@ function downloadFile(content: string, filename: string, type: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function handleExportJson(): void {
-  if (!editor.value) return;
-  const json = JSON.stringify(editor.value.getContent(), null, 2);
-  downloadFile(json, "email-template.json", "application/json");
+const { copy: copyExport, copied: exportCopied } = useClipboard({
+  copiedDuring: 1500,
+});
+
+const exportTabValue = computed<string>(() => {
+  if (exportTab.value === "html") return exportHtml.value;
+  if (exportTab.value === "mjml") return exportMjml.value;
+  return exportJson.value;
+});
+
+const exportFilename: Record<ExportTab, { name: string; mime: string }> = {
+  html: { name: "email-template.html", mime: "text/html" },
+  mjml: { name: "email-template.mjml", mime: "text/plain" },
+  json: { name: "email-template.json", mime: "application/json" },
+};
+
+async function compileExportHtml(): Promise<void> {
+  if (exportHtml.value || exportHtmlLoading.value) return;
+  exportHtmlLoading.value = true;
+  exportHtmlError.value = "";
+  exportHtmlMjmlErrors.value = [];
+  try {
+    const mod = (await import("mjml-browser")) as unknown as {
+      default: unknown;
+    };
+    type Mjml2Html = (
+      mjml: string,
+      options?: { validationLevel?: "strict" | "soft" | "skip" },
+    ) => Promise<{
+      html: string;
+      errors: { formattedMessage?: string; message: string }[];
+    }>;
+    const mjml2html: Mjml2Html =
+      typeof mod.default === "function"
+        ? (mod.default as Mjml2Html)
+        : ((mod.default as { default: Mjml2Html }).default as Mjml2Html);
+    const result = await mjml2html(exportMjml.value, {
+      validationLevel: "soft",
+    });
+    exportHtml.value = result.html ?? "";
+    exportHtmlMjmlErrors.value = (result.errors ?? []).map(
+      (e) => e.formattedMessage ?? e.message,
+    );
+  } catch (e) {
+    exportHtmlError.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    exportHtmlLoading.value = false;
+  }
 }
 
-async function handleExportMjml(): Promise<void> {
-  if (!editor.value) return;
-  const mjml = await editor.value.toMjml();
-  downloadFile(mjml, "email-template.mjml", "text/plain");
+function focusExportTab(delta: number): void {
+  const idx = exportTabs.indexOf(exportTab.value);
+  const next = (idx + delta + exportTabs.length) % exportTabs.length;
+  exportTab.value = exportTabs[next];
+  nextTick(() => {
+    document.getElementById(`export-tab-${exportTabs[next]}`)?.focus();
+  });
 }
+
+async function openExportModal(): Promise<void> {
+  if (!editor.value) return;
+  exportJson.value = JSON.stringify(editor.value.getContent(), null, 2);
+  exportMjml.value = await editor.value.toMjml();
+  exportHtml.value = "";
+  exportHtmlError.value = "";
+  exportHtmlMjmlErrors.value = [];
+  exportTab.value = "mjml";
+  exportModalOpen.value = true;
+  void compileExportHtml();
+}
+
+function handleExportCopy(): void {
+  copyExport(exportTabValue.value);
+}
+
+function handleExportDownload(): void {
+  const { name, mime } = exportFilename[exportTab.value];
+  downloadFile(exportTabValue.value, name, mime);
+}
+
+watch(exportTab, (tab) => {
+  if (tab === "html") void compileExportHtml();
+});
 
 watch([locale, sdkLocale], () => {
   if (screen.value === "editor" && editor.value) {
@@ -1102,7 +1148,6 @@ type OnboardingStep =
   | "sidebar"
   | "rightSidebar"
   | "config"
-  | "json"
   | "export"
   | "share"
   | "cloud";
@@ -1112,7 +1157,6 @@ const onboardingSteps: OnboardingStep[] = [
   "sidebar",
   "rightSidebar",
   "config",
-  "json",
   "export",
   "share",
   "cloud",
@@ -1150,7 +1194,6 @@ const onboardingI18nKey: Record<OnboardingStep, string> = {
   sidebar: "sidebar",
   rightSidebar: "rightSidebar",
   config: "config",
-  json: "json",
   export: "exportBtn",
   share: "share",
   cloud: "cloud",
@@ -1841,77 +1884,17 @@ onUnmounted(() => {
           </div>
 
           <div class="flex items-center gap-1">
-            <!-- View JSON -->
+            <!-- Export button -->
             <button
-              data-testid="toolbar-json"
-              data-onboarding="json"
-              class="pg-toolbar-btn"
-              :title="t.toolbar.json"
-              @click="toggleJson"
-            >
-              <Code :size="16" :stroke-width="1.5" aria-hidden="true" />
-              <span class="pg-toolbar-label">{{ t.toolbar.json }}</span>
-            </button>
-
-            <!-- Export dropdown -->
-            <div
-              ref="exportDropdownRef"
               data-testid="toolbar-export"
               data-onboarding="export"
-              class="relative"
-              @keydown.escape="exportMenuOpen = false"
-              @keydown.arrow-down.prevent="focusExportItem(0)"
-              @keydown.arrow-up.prevent="focusExportItem(1)"
+              class="pg-toolbar-btn"
+              :title="t.toolbar.export"
+              @click="openExportModal"
             >
-              <button
-                class="pg-toolbar-btn"
-                :title="t.toolbar.export"
-                aria-haspopup="true"
-                :aria-expanded="exportMenuOpen"
-                @click="exportMenuOpen = !exportMenuOpen"
-              >
-                <Download :size="16" :stroke-width="1.5" aria-hidden="true" />
-                <span class="pg-toolbar-label">{{ t.toolbar.export }}</span>
-                <ChevronDown
-                  :size="12"
-                  :stroke-width="1.5"
-                  aria-hidden="true"
-                />
-              </button>
-              <div
-                v-if="exportMenuOpen"
-                ref="exportMenuRef"
-                role="menu"
-                class="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-float overflow-hidden z-50 dark:bg-gray-800 dark:border-gray-700"
-                @keydown.arrow-down.prevent="focusExportItem(0, 1)"
-                @keydown.arrow-up.prevent="focusExportItem(0, -1)"
-              >
-                <button
-                  role="menuitem"
-                  data-testid="export-json"
-                  tabindex="-1"
-                  class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 bg-transparent border-none cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 focus-visible:bg-gray-50 focus-visible:text-gray-900 focus-visible:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100 dark:focus-visible:bg-gray-700 dark:focus-visible:text-gray-100"
-                  @click="
-                    handleExportJson();
-                    exportMenuOpen = false;
-                  "
-                >
-                  {{ t.toolbar.downloadJson }}
-                </button>
-                <button
-                  role="menuitem"
-                  data-testid="export-mjml"
-                  tabindex="-1"
-                  class="flex items-center w-full px-3 py-2 text-[13px] text-gray-500 bg-transparent border-none cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 focus-visible:bg-gray-50 focus-visible:text-gray-900 focus-visible:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100 dark:focus-visible:bg-gray-700 dark:focus-visible:text-gray-100"
-                  @click="
-                    handleExportMjml();
-                    exportMenuOpen = false;
-                  "
-                >
-                  {{ t.toolbar.downloadMjml }}
-                </button>
-              </div>
-            </div>
+              <Download :size="16" :stroke-width="1.5" aria-hidden="true" />
+              <span class="pg-toolbar-label">{{ t.toolbar.export }}</span>
+            </button>
 
             <button
               data-testid="toolbar-share"
@@ -2040,54 +2023,156 @@ onUnmounted(() => {
       </div>
     </Transition>
 
-    <!-- JSON Viewer Modal -->
+    <!-- Export Modal -->
     <Teleport to="body">
       <Transition name="pg-modal">
         <div
-          v-if="showJson"
+          v-if="exportModalOpen"
           class="pg-modal-backdrop"
-          @click.self="showJson = false"
-          @keydown.escape="showJson = false"
+          @click.self="exportModalOpen = false"
+          @keydown.escape="exportModalOpen = false"
         >
           <div
-            ref="jsonModalRef"
-            data-testid="json-modal"
+            ref="exportModalRef"
+            data-testid="export-modal"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="json-modal-title"
-            class="pg-modal-dialog w-[720px] max-w-[90vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
+            :aria-label="t.exportModal.title"
+            class="pg-modal-dialog w-[820px] max-w-[92vw] max-h-[85vh] flex flex-col bg-white rounded-xl shadow-modal overflow-hidden dark:bg-gray-800"
           >
             <div
-              class="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0 dark:border-gray-700"
+              class="flex items-center justify-between px-5 py-3 border-b border-gray-200 shrink-0 dark:border-gray-700"
             >
-              <span
-                id="json-modal-title"
-                class="text-sm font-semibold text-gray-900 dark:text-gray-100"
-                >{{ t.jsonModal.title }}</span
+              <div
+                role="tablist"
+                :aria-label="t.exportModal.title"
+                class="flex items-center gap-1"
+                @keydown.arrow-right.prevent="focusExportTab(1)"
+                @keydown.arrow-left.prevent="focusExportTab(-1)"
               >
-              <div class="flex items-center gap-2">
                 <button
-                  class="h-[30px] px-3 border border-gray-200 rounded-md bg-white text-gray-500 text-xs font-medium font-sans cursor-pointer transition-colors duration-150 hover:bg-gray-50 hover:text-gray-900 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-gray-100"
-                  @click="copyJson"
+                  v-for="tab in exportTabs"
+                  :id="`export-tab-${tab}`"
+                  :key="tab"
+                  role="tab"
+                  :aria-selected="exportTab === tab"
+                  :aria-controls="`export-panel-${tab}`"
+                  :tabindex="exportTab === tab ? 0 : -1"
+                  :data-testid="`export-tab-${tab}`"
+                  class="pg-tab h-8 px-3 text-[13px]"
+                  :class="
+                    exportTab === tab
+                      ? 'pg-tab-active'
+                      : 'pg-tab-inactive text-gray-500 dark:text-gray-400'
+                  "
+                  @click="exportTab = tab"
                 >
-                  <span aria-live="polite">{{
-                    copied ? t.jsonModal.copied : t.jsonModal.copy
-                  }}</span>
-                </button>
-                <button
-                  :aria-label="t.common.close"
-                  class="pg-modal-close"
-                  @click="showJson = false"
-                >
-                  &times;
+                  {{ t.exportModal.tabs[tab] }}
                 </button>
               </div>
+              <button
+                :aria-label="t.common.close"
+                class="pg-modal-close"
+                data-testid="export-modal-close"
+                @click="exportModalOpen = false"
+              >
+                &times;
+              </button>
             </div>
-            <div class="flex-1 overflow-auto p-3">
+
+            <div
+              :id="`export-panel-${exportTab}`"
+              role="tabpanel"
+              :aria-labelledby="`export-tab-${exportTab}`"
+              class="flex-1 overflow-auto px-5 py-4 flex flex-col gap-3"
+            >
+              <p class="text-[12px] text-gray-500 dark:text-gray-400 m-0">
+                {{ t.exportModal.description[exportTab] }}
+              </p>
+
+              <div
+                v-if="exportTab === 'html' && exportHtmlLoading"
+                role="status"
+                class="flex items-center gap-2 justify-center text-sm text-gray-500 h-[min(480px,60vh)] border border-gray-200 rounded-lg dark:text-gray-400 dark:border-gray-700"
+              >
+                <LoaderCircle
+                  class="animate-spin h-4 w-4 text-primary"
+                  aria-hidden="true"
+                />
+                <span>{{ t.exportModal.compiling }}</span>
+              </div>
+
+              <div
+                v-else-if="exportTab === 'html' && exportHtmlError"
+                data-testid="export-html-error"
+                class="flex flex-col items-center justify-center gap-3 h-[min(480px,60vh)] border border-gray-200 rounded-lg dark:border-gray-700"
+              >
+                <p class="text-sm text-gray-500 dark:text-gray-400 m-0">
+                  {{ t.exportModal.compileError }}
+                </p>
+                <p
+                  class="text-[11px] font-mono text-gray-400 dark:text-gray-500 m-0 max-w-full break-words"
+                >
+                  {{ exportHtmlError }}
+                </p>
+                <button
+                  class="pg-cta h-9 px-4 text-[13px] rounded-md"
+                  @click="compileExportHtml"
+                >
+                  {{ t.exportModal.retry }}
+                </button>
+              </div>
+
               <CodeEditor
-                :model-value="jsonContent"
-                aria-label="Template JSON content"
+                v-else
+                :model-value="exportTabValue"
+                :aria-label="t.exportModal.title"
               />
+
+              <div
+                v-if="
+                  exportTab === 'html' &&
+                  !exportHtmlError &&
+                  exportHtmlMjmlErrors.length
+                "
+                class="border border-gray-200 rounded-md p-3 dark:border-gray-700"
+              >
+                <p
+                  class="text-[11px] font-semibold text-gray-600 dark:text-gray-400 m-0 mb-1"
+                >
+                  {{ t.exportModal.compileErrorDetails }}
+                </p>
+                <ul
+                  class="text-[11px] font-mono text-gray-500 dark:text-gray-400 m-0 pl-4 list-disc"
+                >
+                  <li v-for="(msg, i) in exportHtmlMjmlErrors" :key="i">
+                    {{ msg }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div
+              class="flex items-center justify-end gap-2 px-5 py-3 border-t border-gray-200 shrink-0 dark:border-gray-700"
+            >
+              <button
+                data-testid="export-copy"
+                class="pg-cancel-btn"
+                :disabled="!exportTabValue || exportHtmlLoading"
+                @click="handleExportCopy"
+              >
+                <span aria-live="polite">{{
+                  exportCopied ? t.exportModal.copied : t.exportModal.copy
+                }}</span>
+              </button>
+              <button
+                data-testid="export-download"
+                class="pg-cta h-9 px-4 text-[13px] rounded-md"
+                :disabled="!exportTabValue || exportHtmlLoading"
+                @click="handleExportDownload"
+              >
+                {{ t.exportModal.download }}
+              </button>
             </div>
           </div>
         </div>

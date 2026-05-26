@@ -29,20 +29,12 @@ export default {
     templates: "Templates",
     config: "Config",
     features: "Features",
-    json: "JSON",
     export: "Export",
-    downloadJson: "Download JSON",
-    downloadMjml: "Download MJML",
     docs: "Docs",
     tryCloud: "Try Cloud",
     retry: "Retry",
     share: "Share",
     tour: "Tour",
-  },
-  jsonModal: {
-    title: "Template JSON",
-    copy: "Copy",
-    copied: "Copied!",
   },
   configModal: {
     tabs: {
@@ -124,6 +116,26 @@ export default {
     title: "Features in this template",
     subtitle: "{name} showcases these SDK capabilities",
     dismiss: "Got it, start editing",
+  },
+  exportModal: {
+    title: "Export Template",
+    tabs: {
+      html: "HTML",
+      mjml: "MJML",
+      json: "JSON",
+    },
+    description: {
+      html: "Compiled email-ready HTML. Paste into your ESP or send as the final email.",
+      mjml: "MJML source. Use with the MJML compiler or any MJML-compatible tool.",
+      json: "Templatical block JSON. Use to re-import or store the template.",
+    },
+    copy: "Copy",
+    copied: "Copied!",
+    download: "Download",
+    compiling: "Compiling HTML…",
+    compileError: "Failed to compile HTML.",
+    compileErrorDetails: "Errors:",
+    retry: "Try Again",
   },
   shareModal: {
     title: "Share Template",
@@ -244,13 +256,9 @@ export default {
       title: "Editor configuration",
       text: "Customize merge tags, display conditions, theme colors, and block defaults.",
     },
-    json: {
-      title: "Template JSON",
-      text: "Inspect the raw JSON output of your template at any time.",
-    },
     exportBtn: {
-      title: "Export options",
-      text: "Download your template as JSON or MJML to use in your application.",
+      title: "Export your template",
+      text: "Preview, copy, or download your template as HTML, MJML, or JSON.",
     },
     share: {
       title: "Share your work",
