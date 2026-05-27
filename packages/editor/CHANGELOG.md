@@ -1,5 +1,14 @@
 # @templatical/editor
 
+## 0.9.1
+
+### Patch Changes
+
+- 3c908d7: Fix theming of the built-in merge tag picker modal. The panel carries the `tpl` token class, which re-declares every design token with light-mode defaults, so without re-establishing the theme locally the picker ignored dark mode and the consumer `theme` config overrides. The panel now sets `data-tpl-theme` and applies the resolved theme styles — matching the pattern used by the other OSS panels (rich-text toolbar, link dialog) — so its surfaces, text, borders, and primary-accent highlight follow the editor theme correctly.
+  - @templatical/renderer@0.9.1
+  - @templatical/quality@0.9.1
+  - @templatical/media-library@0.9.1
+
 ## 0.9.0
 
 ### Minor Changes
