@@ -9,9 +9,7 @@ import type {
 import type {
   LintIssue,
   LintOptions,
-  lintAccessibility as LintAccessibilityFn,
-  lintStructure as LintStructureFn,
-  lintLinks as LintLinksFn,
+  lintTemplate as LintTemplateFn,
 } from "@templatical/quality";
 
 export type { LintIssue, LintOptions } from "@templatical/quality";
@@ -52,9 +50,7 @@ export interface UseTemplateLintReturn {
 }
 
 interface Loaded {
-  lintAccessibility: typeof LintAccessibilityFn;
-  lintStructure: typeof LintStructureFn;
-  lintLinks: typeof LintLinksFn;
+  lintTemplate: typeof LintTemplateFn;
 }
 
 /**
@@ -93,9 +89,7 @@ export function useTemplateLint(
       // destroy() can no longer reach.
       if (destroyed) return;
       loaded.value = {
-        lintAccessibility: mod.lintAccessibility,
-        lintStructure: mod.lintStructure,
-        lintLinks: mod.lintLinks,
+        lintTemplate: mod.lintTemplate,
       };
       ready.value = true;
       runLint();
@@ -113,16 +107,7 @@ export function useTemplateLint(
 
   function runLint(): void {
     if (!loaded.value) return;
-    const a11y = loaded.value.lintAccessibility(
-      opts.content.value,
-      opts.options,
-    );
-    const structure = loaded.value.lintStructure(
-      opts.content.value,
-      opts.options,
-    );
-    const links = loaded.value.lintLinks(opts.content.value, opts.options);
-    issues.value = [...a11y, ...structure, ...links];
+    issues.value = loaded.value.lintTemplate(opts.content.value, opts.options);
   }
 
   // Re-run when severity overrides change at runtime (rare, but useful for

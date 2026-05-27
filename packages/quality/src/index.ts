@@ -1,3 +1,4 @@
+export { lintTemplate } from "./lint-template";
 export { lintAccessibility, ACCESSIBILITY_RULES } from "./accessibility";
 export { lintStructure, STRUCTURE_RULES } from "./structure";
 export { lintLinks, LINK_RULES } from "./links";

@@ -1,6 +1,6 @@
 # Options
 
-`lintAccessibility`, `lintStructure`, and `lintLinks` accept the same `LintOptions` shape. Every field is optional.
+`lintTemplate`, `lintAccessibility`, `lintStructure`, and `lintLinks` all accept the same `LintOptions` shape. Every field is optional.
 
 ```ts
 interface LintOptions {
@@ -70,7 +70,7 @@ init({ locale: "de" });
 ::: warning Editor mode ignores `lint.locale`
 In editor mode the linter locale is **forced** to the editor's `locale` from `init({ locale })`. Setting `lint.locale` has no effect — it's overwritten on the way through.
 
-Headless callers (`lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` directly) keep full control.
+Headless callers (`lintTemplate(...)` or `lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` directly) keep full control.
 :::
 
 ::: tip Vague-text dictionaries are cross-locale

@@ -12,6 +12,8 @@
 
 All three linters return the same `LintIssue` shape and share the same options surface (`LintOptions`) — so consumers can run them in any combination, merge results, and filter by `ruleId` prefix (`a11y.*`, `structure.*`, `link.*`) when grouping. Each linter's per-rule severities and tool-specific knobs live under its own namespace (`accessibility`, `structure`, `links`); set any of them to `false` to disable that linter entirely.
 
+**Run everything in one call.** `lintTemplate(content, options?)` is the single aggregate entry point — it runs all three linters and returns the merged `LintIssue[]` (accessibility, then structure, then links). Reach for it by default; the per-linter functions stay exported for when you want to run just a subset. To skip a category, set its key to `false`: `lintTemplate(content, { structure: false })`. See [Headless usage](./headless-usage).
+
 ## Architecture
 
 <svg viewBox="0 0 640 280" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:640px;margin:1.5em auto;display:block;">
@@ -59,7 +61,7 @@ All three linters return the same `LintIssue` shape and share the same options s
   <text x="520" y="224" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">stored templates</text>
 </svg>
 
-The package has no opinion on UI. The editor's `useTemplateLint` composable lazy-imports `@templatical/quality`, runs every exported linter on debounced content changes, and merges results into a single issues stream that drives the **Issues** sidebar tab and the per-block canvas badges. `applyFix(issue)` runs each patch through the editor's existing block-update path so fixes land as proper undo entries.
+The package has no opinion on UI. The editor's `useTemplateLint` composable lazy-imports `@templatical/quality`, runs all linters via the single `lintTemplate` call on debounced content changes, and feeds the merged issues stream into the **Issues** sidebar tab and the per-block canvas badges. `applyFix(issue)` runs each patch through the editor's existing block-update path so fixes land as proper undo entries.
 
 ## Install
 
@@ -125,7 +127,7 @@ init({ container: "#editor", lint: { links: false } });
 
 - [Options](./options) — `disabled`, `locale`, per-tool `accessibility` / `structure` / `links` namespaces.
 - [Severity & fixes](./severity-and-fixes) — severity model + how auto-fix patches land in the editor.
-- [Headless usage](./headless-usage) — validating stored templates in CI / server save handlers.
+- [Headless usage](./headless-usage) — `lintTemplate` + validating stored templates in CI / server save handlers.
 - [Contributing locales](./contributing-locales) — adding rule messages + vague-text dictionaries.
 - [Accessibility linter](./accessibility/) — what it catches, rule catalog.
 - [Structure linter](./structure/) — what it catches, rule catalog.

@@ -1,12 +1,16 @@
 /**
- * CI guard: run @templatical/quality against every showcase template.
+ * CI guard: run every @templatical/quality linter (accessibility, structure,
+ * and links) against every showcase template via the single `lintTemplate`
+ * entry point. New linter categories are covered automatically — `lintTemplate`
+ * fans out to all registered linters, so this guard never needs editing when
+ * one is added.
  *
  * Exits non-zero if any rule above `info` severity fires. Wired into
  * `pnpm --filter @templatical/playground run lint:templates`.
  *
  * Run locally with: `pnpm --filter @templatical/playground run lint:templates`
  */
-import { lintAccessibility } from "@templatical/quality";
+import { lintTemplate } from "@templatical/quality";
 import {
   createBlackFridayTemplate,
   createEventInvitationTemplate,
@@ -32,7 +36,7 @@ const SEVERITY_RANK: Record<string, number> = { error: 3, warning: 2, info: 1 };
 let failed = 0;
 
 for (const [name, build] of TEMPLATES) {
-  const issues = lintAccessibility(build()).filter(
+  const issues = lintTemplate(build()).filter(
     (i) => SEVERITY_RANK[i.severity] >= SEVERITY_RANK.warning,
   );
   if (issues.length === 0) {
@@ -51,9 +55,9 @@ for (const [name, build] of TEMPLATES) {
 
 if (failed > 0) {
   console.error(
-    `\n${failed} template(s) failed accessibility lint. Fix the issues above or adjust the severity in templates.ts.`,
+    `\n${failed} template(s) failed quality lint. Fix the issues above or adjust the severity in templates.ts.`,
   );
   process.exit(1);
 }
 
-console.log("\nAll templates passed accessibility lint.");
+console.log("\nAll templates passed quality lint.");

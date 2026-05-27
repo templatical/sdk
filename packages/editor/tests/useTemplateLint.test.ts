@@ -11,23 +11,21 @@ function createContent(): TemplateContent {
 }
 
 interface QualityMockHandle {
-  lintAccessibility: ReturnType<typeof vi.fn>;
-  lintStructure: ReturnType<typeof vi.fn>;
-  lintLinks: ReturnType<typeof vi.fn>;
+  lintTemplate: ReturnType<typeof vi.fn>;
   resolveImport: () => void;
   rejectImport: (err: unknown) => void;
 }
 
 /**
  * Stage a per-test mock for `@templatical/quality` whose dynamic import can
- * be deferred. Returns the spies + resolver so the test can control timing.
+ * be deferred. The composable funnels every linter through the package's
+ * single `lintTemplate` entry point, so that's the only spy we need.
+ * Returns the spy + resolver so the test can control timing.
  */
 async function setupQualityMock(): Promise<QualityMockHandle> {
   vi.resetModules();
 
-  const lintAccessibility = vi.fn(() => [] as unknown[]);
-  const lintStructure = vi.fn(() => [] as unknown[]);
-  const lintLinks = vi.fn(() => [] as unknown[]);
+  const lintTemplate = vi.fn(() => [] as unknown[]);
   let resolve!: () => void;
   let reject!: (err: unknown) => void;
   const importPromise = new Promise<void>((res, rej) => {
@@ -37,13 +35,11 @@ async function setupQualityMock(): Promise<QualityMockHandle> {
 
   vi.doMock("@templatical/quality", async () => {
     await importPromise;
-    return { lintAccessibility, lintStructure, lintLinks };
+    return { lintTemplate };
   });
 
   return {
-    lintAccessibility,
-    lintStructure,
-    lintLinks,
+    lintTemplate,
     resolveImport: resolve,
     rejectImport: reject,
   };
@@ -77,15 +73,13 @@ describe("useTemplateLint", () => {
     result.destroy();
 
     // Now resolve the import — load() will run its post-await body. The fix
-    // must short-circuit so it neither calls lintFn nor installs a watcher.
+    // must short-circuit so it neither calls lintTemplate nor installs a watcher.
     mock.resolveImport();
     // Let microtasks settle.
     await new Promise((r) => setTimeout(r, 0));
     await nextTick();
 
-    expect(mock.lintAccessibility).not.toHaveBeenCalled();
-    expect(mock.lintStructure).not.toHaveBeenCalled();
-    expect(mock.lintLinks).not.toHaveBeenCalled();
+    expect(mock.lintTemplate).not.toHaveBeenCalled();
     expect(result.ready.value).toBe(false);
 
     // Mutate content. If a leaked watcher exists, it would fire runLint after
@@ -96,12 +90,10 @@ describe("useTemplateLint", () => {
     } as TemplateContent;
     await new Promise((r) => setTimeout(r, 50));
 
-    expect(mock.lintAccessibility).not.toHaveBeenCalled();
-    expect(mock.lintStructure).not.toHaveBeenCalled();
-    expect(mock.lintLinks).not.toHaveBeenCalled();
+    expect(mock.lintTemplate).not.toHaveBeenCalled();
   });
 
-  it("runs every linter on content changes when alive", async () => {
+  it("runs lintTemplate on content changes when alive", async () => {
     const mock = await setupQualityMock();
     const useTemplateLint = await loadComposable();
 
@@ -121,9 +113,7 @@ describe("useTemplateLint", () => {
     await new Promise((r) => setTimeout(r, 0));
     await nextTick();
 
-    expect(mock.lintAccessibility).toHaveBeenCalledTimes(1);
-    expect(mock.lintStructure).toHaveBeenCalledTimes(1);
-    expect(mock.lintLinks).toHaveBeenCalledTimes(1);
+    expect(mock.lintTemplate).toHaveBeenCalledTimes(1);
 
     content.value = {
       blocks: [{ id: "b2", type: "paragraph" }],
@@ -131,20 +121,16 @@ describe("useTemplateLint", () => {
     } as TemplateContent;
     await new Promise((r) => setTimeout(r, 50));
 
-    expect(mock.lintAccessibility).toHaveBeenCalledTimes(2);
-    expect(mock.lintStructure).toHaveBeenCalledTimes(2);
-    expect(mock.lintLinks).toHaveBeenCalledTimes(2);
+    expect(mock.lintTemplate).toHaveBeenCalledTimes(2);
   });
 
-  it("merges issues from every linter", async () => {
+  it("surfaces the merged issues lintTemplate returns", async () => {
     const mock = await setupQualityMock();
-    mock.lintAccessibility.mockReturnValue([
+    // lintTemplate already merges accessibility + structure + links inside the
+    // quality package; the composable just surfaces whatever it returns.
+    mock.lintTemplate.mockReturnValue([
       { ruleId: "a11y.x", blockId: "b1", severity: "error", message: "a" },
-    ]);
-    mock.lintStructure.mockReturnValue([
       { ruleId: "structure.x", blockId: "b1", severity: "error", message: "b" },
-    ]);
-    mock.lintLinks.mockReturnValue([
       { ruleId: "link.x", blockId: "b1", severity: "error", message: "c" },
     ]);
     const useTemplateLint = await loadComposable();
@@ -186,9 +172,7 @@ describe("useTemplateLint", () => {
     await new Promise((r) => setTimeout(r, 0));
     await nextTick();
 
-    expect(mock.lintAccessibility).not.toHaveBeenCalled();
-    expect(mock.lintStructure).not.toHaveBeenCalled();
-    expect(mock.lintLinks).not.toHaveBeenCalled();
+    expect(mock.lintTemplate).not.toHaveBeenCalled();
   });
 
   it("does not start lint when every per-tool key is false", async () => {
@@ -207,18 +191,17 @@ describe("useTemplateLint", () => {
     await new Promise((r) => setTimeout(r, 0));
     await nextTick();
 
-    expect(mock.lintAccessibility).not.toHaveBeenCalled();
-    expect(mock.lintStructure).not.toHaveBeenCalled();
-    expect(mock.lintLinks).not.toHaveBeenCalled();
+    expect(mock.lintTemplate).not.toHaveBeenCalled();
   });
 
   it("still starts lint when only some tools are disabled", async () => {
     const mock = await setupQualityMock();
     const useTemplateLint = await loadComposable();
 
+    const options = { accessibility: false, structure: false } as const;
     useTemplateLint({
       content: ref(createContent()),
-      options: { accessibility: false, structure: false },
+      options,
       updateBlock: vi.fn(),
       updateSettings: vi.fn(),
       removeBlock: vi.fn(),
@@ -229,12 +212,14 @@ describe("useTemplateLint", () => {
     await new Promise((r) => setTimeout(r, 0));
     await nextTick();
 
-    // The composable calls every linter; the per-tool false is enforced
-    // inside the linter function itself (returns []) — but the composable
-    // does not short-circuit while at least one tool is still active.
-    expect(mock.lintAccessibility).toHaveBeenCalledTimes(1);
-    expect(mock.lintStructure).toHaveBeenCalledTimes(1);
-    expect(mock.lintLinks).toHaveBeenCalledTimes(1);
+    // The composable still calls lintTemplate while at least one tool is
+    // active; the per-tool false is enforced inside the linter functions
+    // (each returns []). Options pass through unchanged.
+    expect(mock.lintTemplate).toHaveBeenCalledTimes(1);
+    expect(mock.lintTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({ blocks: expect.any(Array) }),
+      options,
+    );
   });
 });
 

@@ -1,6 +1,6 @@
 # Optionen
 
-`lintAccessibility`, `lintStructure` und `lintLinks` akzeptieren dieselbe `LintOptions`-Struktur. Jedes Feld ist optional.
+`lintTemplate`, `lintAccessibility`, `lintStructure` und `lintLinks` akzeptieren alle dieselbe `LintOptions`-Struktur. Jedes Feld ist optional.
 
 ```ts
 interface LintOptions {
@@ -70,7 +70,7 @@ init({ locale: "de" });
 ::: warning Im Editor-Modus wird `lint.locale` ignoriert
 Im Editor-Modus wird die Linter-Locale **erzwungen** auf den `locale`-Wert aus `init({ locale })`. `lint.locale` zu setzen, hat keinen Effekt — es wird auf dem Weg überschrieben.
 
-Headless-Aufrufer (`lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` direkt) behalten volle Kontrolle.
+Headless-Aufrufer (`lintTemplate(...)` oder `lintAccessibility(...)` / `lintStructure(...)` / `lintLinks(...)` direkt) behalten volle Kontrolle.
 :::
 
 ::: tip Vague-Text-Dictionaries sind sprachübergreifend

@@ -1,6 +1,6 @@
 # Schweregrade & Fixes
 
-Alle Linter teilen sich dasselbe Schweregrad-Modell und dieselbe Patch-Struktur, daher behandelt diese Seite `lintAccessibility`, `lintStructure` und `lintLinks` gemeinsam.
+Alle Linter teilen sich dasselbe Schweregrad-Modell und dieselbe Patch-Struktur, daher behandelt diese Seite `lintTemplate`, `lintAccessibility`, `lintStructure` und `lintLinks` gemeinsam.
 
 ## Schweregrad-Modell
 
@@ -43,18 +43,9 @@ Im Editor läuft `apply` über den bestehenden `editor.updateBlock` / `editor.up
 Headless-Aufrufer können einen eigenen `LintPatchContext` konstruieren und Patches programmatisch anwenden:
 
 ```ts
-import {
-  lintAccessibility,
-  lintLinks,
-  lintStructure,
-} from "@templatical/quality";
+import { lintTemplate } from "@templatical/quality";
 
-const issues = [
-  ...lintAccessibility(content),
-  ...lintStructure(content),
-  ...lintLinks(content),
-];
-const fixable = issues.filter((i) => i.fix);
+const fixable = lintTemplate(content).filter((i) => i.fix);
 
 for (const issue of fixable) {
   issue.fix!.apply({

@@ -12,6 +12,8 @@
 
 Alle drei Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Optionsfläche (`LintOptions`) — Konsumenten können sie also in jeder Kombination ausführen, Ergebnisse zusammenführen und beim Gruppieren nach `ruleId`-Präfix (`a11y.*`, `structure.*`, `link.*`) filtern. Die Schweregrad-Overrides und tool-spezifischen Stellschrauben jedes Linters liegen unter seinem eigenen Namensraum (`accessibility`, `structure`, `links`); setze einen davon auf `false`, um den jeweiligen Linter komplett zu deaktivieren.
 
+**Alles mit einem Aufruf ausführen.** `lintTemplate(content, options?)` ist der einzelne aggregierte Einstiegspunkt — er führt alle drei Linter aus und liefert die zusammengeführten `LintIssue[]` (zuerst Barrierefreiheit, dann Struktur, dann Links). Greife standardmäßig dazu; die einzelnen Linter-Funktionen bleiben exportiert, falls du nur eine Teilmenge ausführen willst. Um eine Kategorie zu überspringen, setze ihren Schlüssel auf `false`: `lintTemplate(content, { structure: false })`. Siehe [Headless-Nutzung](./headless-usage).
+
 ## Architektur
 
 <svg viewBox="0 0 640 280" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:640px;margin:1.5em auto;display:block;">
@@ -52,7 +54,7 @@ Alle drei Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe 
   <text x="520" y="224" font-family="ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">gespeicherte Templates</text>
 </svg>
 
-Das Paket trifft keine UI-Annahmen. Das `useTemplateLint`-Composable des Editors lädt `@templatical/quality` per dynamischem Import nach, ruft jeden exportierten Linter bei (entprellten) Inhaltsänderungen auf und führt die Ergebnisse in einen einzigen Issue-Strom zusammen, der den **Issues**-Sidebar-Tab und die Per-Block-Canvas-Badges speist. `applyFix(issue)` führt jeden Patch über den bestehenden Block-Update-Pfad des Editors aus — Fixes landen so als ordentliche Undo-Einträge.
+Das Paket trifft keine UI-Annahmen. Das `useTemplateLint`-Composable des Editors lädt `@templatical/quality` per dynamischem Import nach, ruft alle Linter über den einzelnen `lintTemplate`-Aufruf bei (entprellten) Inhaltsänderungen auf und speist den zusammengeführten Issue-Strom in den **Issues**-Sidebar-Tab und die Per-Block-Canvas-Badges. `applyFix(issue)` führt jeden Patch über den bestehenden Block-Update-Pfad des Editors aus — Fixes landen so als ordentliche Undo-Einträge.
 
 ## Installation
 
@@ -118,7 +120,7 @@ init({ container: "#editor", lint: { links: false } });
 
 - [Optionen](./options) — `disabled`, `locale`, pro-Tool-Namensräume `accessibility` / `structure` / `links`.
 - [Schweregrade & Fixes](./severity-and-fixes) — Schweregrad-Modell + wie Auto-Fix-Patches im Editor landen.
-- [Headless-Nutzung](./headless-usage) — Validierung gespeicherter Templates in CI / Server-Save-Handlern.
+- [Headless-Nutzung](./headless-usage) — `lintTemplate` + Validierung gespeicherter Templates in CI / Server-Save-Handlern.
 - [Lokalen beitragen](./contributing-locales) — Regel-Nachrichten + Vague-Text-Dictionaries hinzufügen.
 - [Barrierefreiheits-Linter](./accessibility/) — was er erkennt, Regelkatalog.
 - [Struktur-Linter](./structure/) — was er erkennt, Regelkatalog.

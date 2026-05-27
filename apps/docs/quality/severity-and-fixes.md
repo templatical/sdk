@@ -1,6 +1,6 @@
 # Severity & fixes
 
-Every linter shares the same severity model and patch shape, so this page covers `lintAccessibility`, `lintStructure`, and `lintLinks` together.
+Every linter shares the same severity model and patch shape, so this page covers `lintTemplate`, `lintAccessibility`, `lintStructure`, and `lintLinks` together.
 
 ## Severity model
 
@@ -43,18 +43,9 @@ In the editor, `apply` runs through the existing `editor.updateBlock` / `editor.
 Headless callers can construct their own `LintPatchContext` and apply patches programmatically:
 
 ```ts
-import {
-  lintAccessibility,
-  lintLinks,
-  lintStructure,
-} from "@templatical/quality";
+import { lintTemplate } from "@templatical/quality";
 
-const issues = [
-  ...lintAccessibility(content),
-  ...lintStructure(content),
-  ...lintLinks(content),
-];
-const fixable = issues.filter((i) => i.fix);
+const fixable = lintTemplate(content).filter((i) => i.fix);
 
 for (const issue of fixable) {
   issue.fix!.apply({

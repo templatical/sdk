@@ -2,27 +2,26 @@
 
 `@templatical/quality` is JSON-only and has no DOM dependency, so the same linters run in any Node.js context: CI, build pipelines, server-side validation, batch jobs.
 
-`lintAccessibility(content, options?)`, `lintStructure(content, options?)`, and `lintLinks(content, options?)` all return the same `LintIssue[]` shape, so you can call them independently or merge results.
+`lintTemplate(content, options?)` runs every linter — accessibility, structure, and links — and returns the merged `LintIssue[]`. It's the recommended entry point: one call, and any future linter category is included automatically.
+
+```ts
+import { lintTemplate } from "@templatical/quality";
+
+const issues = lintTemplate(content); // a11y, then structure, then link issues
+```
+
+The per-linter functions — `lintAccessibility(content, options?)`, `lintStructure(content, options?)`, `lintLinks(content, options?)` — return the same shape and stay exported for when you want to run only a subset. You can also run a subset through `lintTemplate` by disabling categories: `lintTemplate(content, { structure: false, links: false })` runs accessibility only.
 
 ## Validate before storing
 
 Reject template JSON that fails the linter at the point it enters your system — CMS save handler, API endpoint, ingestion job:
 
 ```ts
-import {
-  lintAccessibility,
-  lintLinks,
-  lintStructure,
-} from "@templatical/quality";
+import { lintTemplate } from "@templatical/quality";
 import type { TemplateContent } from "@templatical/types";
 
 export function assertValid(content: TemplateContent): void {
-  const issues = [
-    ...lintAccessibility(content),
-    ...lintStructure(content),
-    ...lintLinks(content),
-  ];
-  const errors = issues.filter((i) => i.severity === "error");
+  const errors = lintTemplate(content).filter((i) => i.severity === "error");
   if (errors.length > 0) {
     throw new Error(
       `Template fails quality checks:\n${errors
@@ -41,11 +40,7 @@ If your application stores `TemplateContent` JSON in a database, run the linters
 
 ```ts
 // scripts/lint-templates.ts
-import {
-  lintAccessibility,
-  lintLinks,
-  lintStructure,
-} from "@templatical/quality";
+import { lintTemplate } from "@templatical/quality";
 import { templates } from "../fixtures/templates";
 
 const SEVERITY_RANK = { error: 3, warning: 2, info: 1 };
@@ -53,11 +48,9 @@ const SEVERITY_RANK = { error: 3, warning: 2, info: 1 };
 let failed = 0;
 
 for (const [name, content] of Object.entries(templates)) {
-  const issues = [
-    ...lintAccessibility(content),
-    ...lintStructure(content),
-    ...lintLinks(content),
-  ].filter((i) => SEVERITY_RANK[i.severity] >= SEVERITY_RANK.warning);
+  const issues = lintTemplate(content).filter(
+    (i) => SEVERITY_RANK[i.severity] >= SEVERITY_RANK.warning,
+  );
 
   if (issues.length === 0) {
     console.log(`OK ${name}: clean`);
@@ -81,11 +74,7 @@ Run via `tsx scripts/lint-templates.ts` and wire it into your CI workflow. The T
 Rule IDs are namespaced (`a11y.*`, `structure.*`, `link.*`), so grouping or filtering by linter is a `startsWith` check:
 
 ```ts
-const issues = [
-  ...lintAccessibility(content),
-  ...lintStructure(content),
-  ...lintLinks(content),
-];
+const issues = lintTemplate(content);
 const a11y = issues.filter((i) => i.ruleId.startsWith("a11y."));
 const structural = issues.filter((i) => i.ruleId.startsWith("structure."));
 const links = issues.filter((i) => i.ruleId.startsWith("link."));
@@ -136,4 +125,4 @@ for (const { url, blockId, source } of walkUrls(content)) {
 }
 ```
 
-If you'd like your custom rule to participate in the orchestrator alongside the built-ins (severity overrides, localized messages, the editor Issues panel), implement the `Rule` interface — `block` / `template` return a `RuleHit` (`blockId`, optional `params`, optional `fix`) and the orchestrator combines it with the rule's `meta` and the active locale's message template. The same `runRules` helper powers `lintAccessibility`, `lintStructure`, and `lintLinks`.
+If you'd like your custom rule to participate in the orchestrator alongside the built-ins (severity overrides, localized messages, the editor Issues panel), implement the `Rule` interface — `block` / `template` return a `RuleHit` (`blockId`, optional `params`, optional `fix`) and the orchestrator combines it with the rule's `meta` and the active locale's message template. The same `runRules` helper powers `lintAccessibility`, `lintStructure`, and `lintLinks`, and `lintTemplate` simply fans out to all three.
