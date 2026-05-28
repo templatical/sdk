@@ -273,6 +273,10 @@ Use `defaultStyles` to declare the block's default `padding`, `margin`, and `bac
 
 This is the recommended way to opt custom blocks out of the SDK's default wrapper padding when the block's Liquid template already manages its own spacing (e.g. hero sections, product cards, or anything authored as full table HTML).
 
+::: warning Existing blocks don't retroactively pick up `defaultStyles` changes
+`defaultStyles` is applied once, when a new block instance is created from the palette. Blocks already on the canvas — or in saved templates — keep the styles they were created with. To see a `defaultStyles` change reflected on an existing block, delete it and drag a fresh instance. This is intentional: it prevents per-instance spacing tweaks made by end-users from being silently overwritten when a developer edits the definition.
+:::
+
 ## Liquid templates
 
 The `template` property uses [Liquid](https://liquidjs.com/) syntax. Field values are available as top-level variables matching their `key` property. Here are the most common patterns:

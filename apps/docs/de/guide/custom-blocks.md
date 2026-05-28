@@ -273,6 +273,10 @@ Mit `defaultStyles` lassen sich die voreingestellten Werte für `padding`, `marg
 
 Dies ist der empfohlene Weg, um benutzerdefinierte Blöcke vom Standard-Wrapper-Padding des SDK auszunehmen, wenn das Liquid-Template seinen Innenraum bereits selbst verwaltet (z. B. Hero-Sektionen, Produktkarten oder alles, was als vollständiges Tabellen-HTML verfasst ist).
 
+::: warning Bestehende Blöcke übernehmen Änderungen an `defaultStyles` nicht rückwirkend
+`defaultStyles` wird einmalig angewendet, wenn eine neue Block-Instanz aus der Palette erstellt wird. Blöcke, die bereits auf der Arbeitsfläche liegen — oder in gespeicherten Templates stecken — behalten die Stile, mit denen sie erstellt wurden. Damit eine Änderung an `defaultStyles` an einem bestehenden Block sichtbar wird, muss er gelöscht und neu aus der Palette gezogen werden. Das ist Absicht: So werden per-Instanz-Anpassungen durch Endnutzer:innen nicht stillschweigend überschrieben, wenn ein:e Entwickler:in die Definition ändert.
+:::
+
 ## Liquid-Templates
 
 Die Eigenschaft `template` verwendet die [Liquid](https://liquidjs.com/)-Syntax. Feldwerte sind als Variablen auf oberster Ebene verfügbar, die ihrer `key`-Eigenschaft entsprechen. Hier sind die gängigsten Muster:

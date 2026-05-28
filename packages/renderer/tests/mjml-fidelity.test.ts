@@ -7,6 +7,7 @@ import {
   createSectionBlock,
   createSpacerBlock,
   createParagraphBlock,
+  createHtmlBlock,
   createDefaultTemplateContent,
 } from "@templatical/types";
 import type { TemplateContent } from "@templatical/types";
@@ -187,6 +188,27 @@ describe("custom block backgroundColor reaches HTML", () => {
       new Map([["cb1", "<p>custom rendered</p>"]]),
     );
     const mjml = renderBlock(customBlock as any, context);
+    const html = await compile(wrapBlock(mjml));
+    expect(html.toLowerCase()).toContain("#fffbeb");
+  });
+});
+
+describe("html block backgroundColor reaches HTML", () => {
+  // Parallel to the custom-block bg test above. `mj-text` silently drops
+  // `background-color` and requires `container-background-color` — a string-level
+  // assertion would still pass with the wrong attribute name. Compile-through
+  // catches the gotcha.
+
+  it("HtmlBlock styles.backgroundColor must compile to container-background-color in HTML", async () => {
+    const block = createHtmlBlock({
+      content: "<div>hello</div>",
+      styles: {
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        margin: { top: 0, right: 0, bottom: 0, left: 0 },
+        backgroundColor: "#fffbeb",
+      },
+    });
+    const mjml = renderBlock(block, ctx);
     const html = await compile(wrapBlock(mjml));
     expect(html.toLowerCase()).toContain("#fffbeb");
   });
