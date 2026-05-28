@@ -358,6 +358,102 @@ describe('createCustomBlock edge cases', () => {
     });
 });
 
+describe('createCustomBlock with defaultStyles', () => {
+    it('uses base 10px padding when no defaultStyles provided', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'plain',
+            name: 'Plain',
+            fields: [],
+            template: '<div></div>',
+        };
+        const block = createCustomBlock(definition);
+        expect(block.styles.padding).toEqual({ top: 10, right: 10, bottom: 10, left: 10 });
+        expect(block.styles.margin).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+        expect(block.styles.backgroundColor).toBeUndefined();
+    });
+
+    it('overrides padding when defaultStyles.padding provided', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'no-pad',
+            name: 'No Pad',
+            fields: [],
+            template: '<div></div>',
+            defaultStyles: {
+                padding: { top: 0, right: 0, bottom: 0, left: 0 },
+            },
+        };
+        const block = createCustomBlock(definition);
+        expect(block.styles.padding).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+        // margin and backgroundColor remain at base
+        expect(block.styles.margin).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    });
+
+    it('overrides only specified BlockStyles keys (partial merge)', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'bg-only',
+            name: 'BG Only',
+            fields: [],
+            template: '<div></div>',
+            defaultStyles: {
+                backgroundColor: '#fafafa',
+            },
+        };
+        const block = createCustomBlock(definition);
+        expect(block.styles.backgroundColor).toBe('#fafafa');
+        // padding stays at base 10
+        expect(block.styles.padding).toEqual({ top: 10, right: 10, bottom: 10, left: 10 });
+    });
+
+    it('overrides margin independently of padding', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'm-only',
+            name: 'Margin Only',
+            fields: [],
+            template: '<div></div>',
+            defaultStyles: {
+                margin: { top: 8, right: 0, bottom: 8, left: 0 },
+            },
+        };
+        const block = createCustomBlock(definition);
+        expect(block.styles.margin).toEqual({ top: 8, right: 0, bottom: 8, left: 0 });
+        // padding untouched
+        expect(block.styles.padding).toEqual({ top: 10, right: 10, bottom: 10, left: 10 });
+    });
+
+    it('combines defaultStyles with dataSource without conflict', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'data-styled',
+            name: 'Data Styled',
+            fields: [],
+            template: '<div></div>',
+            dataSource: { label: 'Fetch', onFetch: async () => null },
+            defaultStyles: {
+                padding: { top: 0, right: 0, bottom: 0, left: 0 },
+            },
+        };
+        const block = createCustomBlock(definition);
+        expect(block.dataSourceFetched).toBe(false);
+        expect(block.styles.padding).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    });
+
+    it('still populates fieldValues alongside defaultStyles', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'styled-fields',
+            name: 'Styled Fields',
+            fields: [
+                { key: 'title', label: 'Title', type: 'text', default: 'Hi' },
+            ],
+            template: '<div>{{title}}</div>',
+            defaultStyles: {
+                padding: { top: 5, right: 5, bottom: 5, left: 5 },
+            },
+        };
+        const block = createCustomBlock(definition);
+        expect(block.fieldValues.title).toBe('Hi');
+        expect(block.styles.padding).toEqual({ top: 5, right: 5, bottom: 5, left: 5 });
+    });
+});
+
 describe('createBlock with blockDefaults', () => {
     it('applies title defaults via createBlock', () => {
         const defaults: BlockDefaults = {

@@ -1,5 +1,7 @@
 import type { HtmlBlock } from "@templatical/types";
 import type { RenderContext } from "../render-context";
+import { toPaddingString } from "../padding";
+import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -22,10 +24,12 @@ export function renderHtml(block: HtmlBlock, context: RenderContext): string {
   }
 
   const visibilityAttr = getCssClassAttr(block);
+  const padding = toPaddingString(block.styles.padding);
+  const bgColor = bgAttr(block.styles.backgroundColor, "container");
 
   // Use mj-text to render HTML content inside proper table cell structure.
   // mj-raw bypasses MJML's table layout and content won't be visible.
-  return `<mj-text${visibilityAttr}>
+  return `<mj-text padding="${padding}"${bgColor}${visibilityAttr}>
 ${content}
 </mj-text>`;
 }

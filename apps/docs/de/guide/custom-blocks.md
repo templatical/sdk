@@ -96,6 +96,7 @@ interface CustomBlockDefinition {
   fields: CustomBlockField[];
   template: string;
   dataSource?: DataSourceConfig;
+  defaultStyles?: Partial<BlockStyles>;
 }
 ```
 
@@ -108,6 +109,7 @@ interface CustomBlockDefinition {
 | `fields` | Ja | Array von Felddefinitionen |
 | `template` | Ja | Liquid-Template-String für das Rendering |
 | `dataSource` | Nein | Konfiguration für das Abrufen externer Daten |
+| `defaultStyles` | Nein | Standard-Blockstile (padding, margin, backgroundColor) — siehe [Standardstile](#standardstile) |
 
 ## Feldtypen
 
@@ -249,6 +251,31 @@ Eine wiederholbare Gruppe von Unterfeldern. Benutzer können Einträge innerhalb
   ],
 }
 ```
+
+## Standardstile
+
+Mit `defaultStyles` lassen sich die voreingestellten Werte für `padding`, `margin` und `backgroundColor` direkt in der Block-Definition festlegen. Der Wert ist ein `Partial<BlockStyles>` — nur die Felder angeben, die überschrieben werden sollen; alles andere fällt auf die eingebauten Standardwerte zurück (`10px` Padding rundherum, kein Margin, kein Hintergrund).
+
+```ts
+{
+  type: 'pricing-table',
+  name: 'Pricing Table',
+  fields: [...],
+  template: '<table>…</table>',
+  defaultStyles: {
+    padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  },
+}
+```
+
+`defaultStyles` greift, sobald ein:e Nutzer:in den Block aus der Palette auf die Arbeitsfläche zieht. Padding, Margin und Hintergrund lassen sich pro Block-Instanz weiterhin in den Block-Einstellungen anpassen — `defaultStyles` legt nur den Startzustand jeder neuen Instanz fest.
+
+Dies ist der empfohlene Weg, um benutzerdefinierte Blöcke vom Standard-Wrapper-Padding des SDK auszunehmen, wenn das Liquid-Template seinen Innenraum bereits selbst verwaltet (z. B. Hero-Sektionen, Produktkarten oder alles, was als vollständiges Tabellen-HTML verfasst ist).
+
+::: warning Bestehende Blöcke übernehmen Änderungen an `defaultStyles` nicht rückwirkend
+`defaultStyles` wird einmalig angewendet, wenn eine neue Block-Instanz aus der Palette erstellt wird. Blöcke, die bereits auf der Arbeitsfläche liegen — oder in gespeicherten Templates stecken — behalten die Stile, mit denen sie erstellt wurden. Damit eine Änderung an `defaultStyles` an einem bestehenden Block sichtbar wird, muss er gelöscht und neu aus der Palette gezogen werden. Das ist Absicht: So werden per-Instanz-Anpassungen durch Endnutzer:innen nicht stillschweigend überschrieben, wenn ein:e Entwickler:in die Definition ändert.
+:::
 
 ## Liquid-Templates
 

@@ -1,5 +1,7 @@
 /** @see https://templatical.com/docs/v1/custom-blocks */
 
+import type { BlockStyles } from "./blocks";
+
 export type CustomBlockFieldType =
   | "text"
   | "textarea"
@@ -88,6 +90,18 @@ export interface CustomBlockDefinition {
   fields: CustomBlockField[];
   template: string;
   dataSource?: DataSourceConfig;
+  /**
+   * Default block styles applied when a new instance of this custom block is
+   * created. Deep-merged over the built-in defaults — only specify the fields
+   * you want to override. Controls both the editor canvas wrapper and the
+   * rendered MJML/email output.
+   *
+   * @example
+   * defaultStyles: {
+   *   padding: { top: 0, right: 0, bottom: 0, left: 0 },
+   * }
+   */
+  defaultStyles?: Partial<BlockStyles>;
 }
 
 export interface DataSourceFetchContext {

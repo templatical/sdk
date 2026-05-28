@@ -1,5 +1,6 @@
 import type { CustomBlock } from "@templatical/types";
 import type { RenderContext } from "../render-context";
+import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
@@ -30,9 +31,10 @@ export function renderCustom(
   }
 
   const visibilityAttr = getCssClassAttr(block);
-  const bgColor = bgAttr(block.styles?.backgroundColor, "container");
+  const padding = toPaddingString(block.styles.padding);
+  const bgColor = bgAttr(block.styles.backgroundColor, "container");
 
-  return `<mj-text${bgColor}${visibilityAttr}>
+  return `<mj-text padding="${padding}"${bgColor}${visibilityAttr}>
 ${content}
 </mj-text>`;
 }

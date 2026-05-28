@@ -96,6 +96,7 @@ interface CustomBlockDefinition {
   fields: CustomBlockField[];
   template: string;
   dataSource?: DataSourceConfig;
+  defaultStyles?: Partial<BlockStyles>;
 }
 ```
 
@@ -108,6 +109,7 @@ interface CustomBlockDefinition {
 | `fields` | Yes | Array of field definitions |
 | `template` | Yes | Liquid template string for rendering |
 | `dataSource` | No | External data fetching configuration |
+| `defaultStyles` | No | Default block styles (padding, margin, backgroundColor) — see [Default styles](#default-styles) |
 
 ## Field types
 
@@ -249,6 +251,31 @@ A repeatable group of sub-fields. Users can add or remove items within the confi
   ],
 }
 ```
+
+## Default styles
+
+Use `defaultStyles` to declare the block's default `padding`, `margin`, and `backgroundColor` alongside the rest of the definition. The value is a `Partial<BlockStyles>` — specify only the fields you want to override; everything else falls back to the built-in defaults (`10px` padding all around, zero margin, no background).
+
+```ts
+{
+  type: 'pricing-table',
+  name: 'Pricing Table',
+  fields: [...],
+  template: '<table>…</table>',
+  defaultStyles: {
+    padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  },
+}
+```
+
+`defaultStyles` applies the moment a user drags the block from the palette onto the canvas. Users can still adjust padding/margin/background per block instance through the block settings — `defaultStyles` only controls where each new instance starts.
+
+This is the recommended way to opt custom blocks out of the SDK's default wrapper padding when the block's Liquid template already manages its own spacing (e.g. hero sections, product cards, or anything authored as full table HTML).
+
+::: warning Existing blocks don't retroactively pick up `defaultStyles` changes
+`defaultStyles` is applied once, when a new block instance is created from the palette. Blocks already on the canvas — or in saved templates — keep the styles they were created with. To see a `defaultStyles` change reflected on an existing block, delete it and drag a fresh instance. This is intentional: it prevents per-instance spacing tweaks made by end-users from being silently overwritten when a developer edits the definition.
+:::
 
 ## Liquid templates
 
