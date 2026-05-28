@@ -34,7 +34,7 @@
     "vitest": "^4.1.7",
     "vue": "^3.5.34",
     "vue-draggable-plus": "^0.6.1",
-    "vue-tsc": "^3.3.1"
+    "vue-tsc": "^3.3.2"
   },
   "exports": {
     ".": {
