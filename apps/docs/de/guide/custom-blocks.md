@@ -96,6 +96,7 @@ interface CustomBlockDefinition {
   fields: CustomBlockField[];
   template: string;
   dataSource?: DataSourceConfig;
+  defaultStyles?: Partial<BlockStyles>;
 }
 ```
 
@@ -108,6 +109,7 @@ interface CustomBlockDefinition {
 | `fields` | Ja | Array von Felddefinitionen |
 | `template` | Ja | Liquid-Template-String für das Rendering |
 | `dataSource` | Nein | Konfiguration für das Abrufen externer Daten |
+| `defaultStyles` | Nein | Standard-Blockstile (padding, margin, backgroundColor) — siehe [Standardstile](#standardstile) |
 
 ## Feldtypen
 
@@ -249,6 +251,27 @@ Eine wiederholbare Gruppe von Unterfeldern. Benutzer können Einträge innerhalb
   ],
 }
 ```
+
+## Standardstile
+
+Mit `defaultStyles` lassen sich die voreingestellten Werte für `padding`, `margin` und `backgroundColor` direkt in der Block-Definition festlegen. Der Wert ist ein `Partial<BlockStyles>` — nur die Felder angeben, die überschrieben werden sollen; alles andere fällt auf die eingebauten Standardwerte zurück (`10px` Padding rundherum, kein Margin, kein Hintergrund).
+
+```ts
+{
+  type: 'pricing-table',
+  name: 'Pricing Table',
+  fields: [...],
+  template: '<table>…</table>',
+  defaultStyles: {
+    padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    margin: { top: 0, right: 0, bottom: 0, left: 0 },
+  },
+}
+```
+
+`defaultStyles` greift, sobald ein:e Nutzer:in den Block aus der Palette auf die Arbeitsfläche zieht. Padding, Margin und Hintergrund lassen sich pro Block-Instanz weiterhin in den Block-Einstellungen anpassen — `defaultStyles` legt nur den Startzustand jeder neuen Instanz fest.
+
+Dies ist der empfohlene Weg, um benutzerdefinierte Blöcke vom Standard-Wrapper-Padding des SDK auszunehmen, wenn das Liquid-Template seinen Innenraum bereits selbst verwaltet (z. B. Hero-Sektionen, Produktkarten oder alles, was als vollständiges Tabellen-HTML verfasst ist).
 
 ## Liquid-Templates
 

@@ -254,12 +254,14 @@ export function createCustomBlock(
     fieldValues[field.key] = getFieldDefault(field);
   }
 
+  const styles = applyDefaults(createDefaultStyles(), definition.defaultStyles);
+
   return {
     id: generateId(),
     type: "custom",
     customType: definition.type,
     fieldValues,
-    styles: createDefaultStyles(),
+    styles,
     ...(definition.dataSource ? { dataSourceFetched: false } : {}),
   };
 }
