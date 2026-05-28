@@ -89,7 +89,6 @@ interface BlockStyles {
   padding: SpacingValue;
   margin: SpacingValue;
   backgroundColor?: string;
-  responsive?: ResponsiveStyles;
 }
 ```
 
@@ -101,17 +100,6 @@ interface SpacingValue {
   right: number;
   bottom: number;
   left: number;
-}
-```
-
-### ResponsiveStyles
-
-Partial style overrides for tablet and mobile viewports.
-
-```ts
-interface ResponsiveStyles {
-  tablet?: Partial<BlockStyles>;
-  mobile?: Partial<BlockStyles>;
 }
 ```
 

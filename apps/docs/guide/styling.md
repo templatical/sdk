@@ -1,6 +1,6 @@
 ---
 title: Styling
-description: Block styles, spacing, responsive overrides, visibility, and template-level settings in Templatical.
+description: Block styles, spacing, visibility, and template-level settings in Templatical.
 ---
 
 # Styling
@@ -9,14 +9,13 @@ Every block in Templatical carries a `styles` property for layout and appearance
 
 ## BlockStyles
 
-The `BlockStyles` interface controls padding, margin, background, and responsive overrides.
+The `BlockStyles` interface controls padding, margin, and background.
 
 ```ts
 interface BlockStyles {
   padding: SpacingValue;
   margin: SpacingValue;
   backgroundColor?: string;
-  responsive?: ResponsiveStyles;
 }
 ```
 
@@ -53,41 +52,6 @@ All four properties are required. Use `0` for sides that need no spacing:
 block.styles = {
   padding: { top: 0, right: 16, bottom: 0, left: 16 },
   margin: { top: 8, right: 0, bottom: 8, left: 0 },
-};
-```
-
-## Responsive overrides
-
-The `responsive` property inside `BlockStyles` lets you apply partial style overrides at tablet and mobile breakpoints.
-
-```ts
-interface ResponsiveStyles {
-  tablet?: Partial<BlockStyles>;
-  mobile?: Partial<BlockStyles>;
-}
-```
-
-The editor uses these viewport widths in preview mode:
-
-| Viewport | Preview Width |
-|----------|---------------|
-| Desktop | Template width (default 600px) |
-| Tablet | 768px |
-| Mobile | 375px |
-
-Responsive overrides merge with the base styles. Only specify the properties you want to change:
-
-```ts
-block.styles = {
-  padding: { top: 32, right: 48, bottom: 32, left: 48 },
-  responsive: {
-    tablet: {
-      padding: { top: 24, right: 24, bottom: 24, left: 24 },
-    },
-    mobile: {
-      padding: { top: 16, right: 12, bottom: 16, left: 12 },
-    },
-  },
 };
 ```
 

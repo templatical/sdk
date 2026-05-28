@@ -103,6 +103,13 @@ const isHiddenOnViewport = computed(() => {
   return props.block.visibility[props.viewport] === false;
 });
 
+// In edit mode a viewport-hidden block stays rendered (dimmed + badge) so it
+// remains selectable. In preview mode it must actually disappear to match the
+// exported MJML, which drops it via `@media` + `tpl-hide-*` css-classes.
+const isHiddenInPreview = computed(
+  () => props.previewMode === true && isHiddenOnViewport.value,
+);
+
 const hiddenLabel = computed(() => {
   if (!props.viewport) {
     return "";
@@ -167,6 +174,7 @@ function handleConditionToggle(): void {
 
 <template>
   <div
+    v-if="!isHiddenInPreview"
     class="tpl-block tpl:group tpl:relative tpl:cursor-pointer tpl:rounded-sm tpl:transition-shadow tpl:duration-150"
     :class="{
       'tpl-block--selected': isSelected,

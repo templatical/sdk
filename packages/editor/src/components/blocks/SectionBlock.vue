@@ -150,6 +150,7 @@ function handleFetchData(
               :block="childBlock"
               :is-selected="editor.state.selectedBlockId === childBlock.id"
               :viewport="viewport"
+              :preview-mode="editor.state.previewMode"
               @select="editor.selectBlock(childBlock.id)"
             >
               <component

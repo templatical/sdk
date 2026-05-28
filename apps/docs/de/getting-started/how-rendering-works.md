@@ -91,7 +91,6 @@ Speichern Sie sowohl JSON als auch MJML in Ihrer Datenbank, wenn der Nutzer spei
 
 - Konvertiert jeden Block im JSON-Baum in seine entsprechende MJML-Komponente (text → `<mj-text>`, image → `<mj-image>`, button → `<mj-button>` usw.)
 - Wendet Blockstile (Padding, Margin, Hintergrundfarbe) als MJML-Attribute an
-- Verarbeitet responsive Overrides für Tablet- und Mobile-Viewports
 - Fügt benutzerdefinierte Schriftart-Deklarationen als `<mj-font>`-Tags ein
 - Bewahrt Merge-Tags unverändert (sie werden als wörtlicher Text durchgereicht)
 - Berücksichtigt `visibility`-Einstellungen -- auf allen Viewports ausgeblendete Blöcke werden ausgelassen

@@ -112,7 +112,7 @@ block.visibility = {
 };
 ```
 
-See [Styling](/guide/styling) for more on responsive overrides and block visibility.
+See [Styling](/guide/styling) for more on block visibility.
 
 ## Section-level styles
 

@@ -112,7 +112,7 @@ block.visibility = {
 };
 ```
 
-Siehe [Styling](/de/guide/styling) für weitere Informationen zu responsiven Überschreibungen und Blocksichtbarkeit.
+Siehe [Styling](/de/guide/styling) für weitere Informationen zur Blocksichtbarkeit.
 
 ## Stile auf Sektionsebene
 
