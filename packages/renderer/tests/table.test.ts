@@ -140,7 +140,7 @@ describe('renderTable', () => {
 
   it('returns empty for hidden block', () => {
     const block = createTableBlock({
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     const result = renderBlock(block, ctx);
     expect(result).toBe('');

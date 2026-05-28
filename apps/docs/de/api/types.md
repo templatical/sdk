@@ -110,7 +110,6 @@ Steuert, auf welchen Viewports ein Block sichtbar ist.
 ```ts
 interface BlockVisibility {
   desktop: boolean;
-  tablet: boolean;
   mobile: boolean;
 }
 ```
@@ -423,7 +422,7 @@ interface CustomFont {
 ### ViewportSize
 
 ```ts
-type ViewportSize = 'desktop' | 'tablet' | 'mobile';
+type ViewportSize = 'desktop' | 'mobile';
 ```
 
 ## Factory-Funktionen

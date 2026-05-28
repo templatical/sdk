@@ -55,7 +55,6 @@ export const SELECTORS = {
   // Viewport & toggles
   viewportGroup: '[role="radiogroup"][aria-label="Viewport"]',
   viewportDesktop: '[role="radio"][aria-label="Desktop"]',
-  viewportTablet: '[role="radio"][aria-label="Tablet"]',
   viewportMobile: '[role="radio"][aria-label="Mobile"]',
   darkModeToggle: ".tpl-dark-mode-toggle",
   previewToggle: ".tpl-preview-toggle",

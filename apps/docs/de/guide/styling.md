@@ -62,18 +62,16 @@ Die Eigenschaft `visibility` auf jedem Block steuert, ob er bei jedem Breakpoint
 ```ts
 interface BlockVisibility {
   desktop: boolean;
-  tablet: boolean;
   mobile: boolean;
 }
 ```
 
-Alle drei sind standardmäßig `true`. Setzen Sie einen Breakpoint auf `false`, um den Block bei dieser Größe auszublenden:
+Beide sind standardmäßig `true`. Setzen Sie einen Breakpoint auf `false`, um den Block bei dieser Größe auszublenden:
 
 ```ts
 // Nur auf dem Desktop anzeigen
 block.visibility = {
   desktop: true,
-  tablet: false,
   mobile: false,
 };
 ```

@@ -107,7 +107,6 @@ const block = createParagraphBlock({
 
 block.visibility = {
   desktop: true,
-  tablet: true,
   mobile: false,
 };
 ```

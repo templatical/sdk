@@ -103,8 +103,6 @@ const viewportWidth = computed(() => {
   switch (props.viewport) {
     case "mobile":
       return 375;
-    case "tablet":
-      return 768;
     default:
       return props.content.settings.width;
   }

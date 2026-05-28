@@ -1581,7 +1581,7 @@ export function createPasswordResetTemplate(): TemplateContent {
         content:
           '<p><span style="font-size: 13px; color: #6b7280"><strong>Security Tips</strong></span></p><p><span style="font-size: 13px; color: #6b7280">\u2022 Never share your password with anyone<br/>\u2022 Use a unique password for each service<br/>\u2022 Enable two-factor authentication for extra protection<br/>\u2022 Check that the URL starts with https://vaultkey.com before entering credentials</span></p>',
         styles: white(16, 40, 16, 40),
-        visibility: { desktop: true, tablet: true, mobile: false },
+        visibility: { desktop: true, mobile: false },
       }),
 
       // ── Responsive: Mobile-only short security note ──
@@ -1589,7 +1589,7 @@ export function createPasswordResetTemplate(): TemplateContent {
         content:
           '<p style="text-align: center"><span style="font-size: 13px; color: #6b7280">\ud83d\udd12 Protect your account: never share this link and enable two-factor authentication.</span></p>',
         styles: white(16, 32, 16, 32),
-        visibility: { desktop: false, tablet: false, mobile: true },
+        visibility: { desktop: false, mobile: true },
       }),
 
       createParagraphBlock({
@@ -1948,7 +1948,7 @@ export const templates: TemplateOption[] = [
         label: "Responsive Visibility",
         icon: "responsive",
         description:
-          "This template has two versions of security tips that swap based on device size.\nDesktop/tablet: a detailed list with 4 bullet points. Mobile: a condensed single-line note.\nTo try it: select either block and open Settings \u2192 Display to see the visibility toggles for desktop, tablet, and mobile.\nThen switch the viewport preview in the top toolbar between Desktop and Mobile to watch the blocks swap live on the canvas.",
+          "This template has two versions of security tips that swap based on device size.\nDesktop: a detailed list with 4 bullet points. Mobile: a condensed single-line note.\nTo try it: select either block and open Settings \u2192 Display to see the visibility toggles for desktop and mobile.\nThen switch the viewport preview in the top toolbar between Desktop and Mobile to watch the blocks swap live on the canvas.",
       },
       {
         label: "Merge Tags",

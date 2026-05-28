@@ -108,7 +108,7 @@ describe('renderMenu', () => {
       items: [
         { id: '1', text: 'Hidden', url: '/', openInNewTab: false, bold: false, underline: false },
       ],
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     const result = renderBlock(block, ctx);
     expect(result).toBe('');

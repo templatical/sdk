@@ -83,7 +83,7 @@ describe('renderVideo', () => {
   it('returns empty for hidden block', () => {
     const block = createVideoBlock({
       url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     const result = renderBlock(block, ctx);
     expect(result).toBe('');

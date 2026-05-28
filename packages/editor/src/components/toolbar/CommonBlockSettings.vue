@@ -9,7 +9,7 @@ import {
   DEFAULT_BG_COLOR,
 } from "../../constants/styleConstants";
 import type { Block, DisplayCondition } from "@templatical/types";
-import { Monitor, Smartphone, Tablet } from "@lucide/vue";
+import { Monitor, Smartphone } from "@lucide/vue";
 import { computed, inject, reactive, ref, watch, type Component } from "vue";
 import {
   DISPLAY_CONDITIONS_KEY,
@@ -17,7 +17,7 @@ import {
 } from "../../keys";
 
 type SectionKey = "spacing" | "bg" | "display" | "css" | "condition";
-type VisibilityKey = "desktop" | "tablet" | "mobile";
+type VisibilityKey = "desktop" | "mobile";
 
 const props = defineProps<{
   block: Block;
@@ -41,10 +41,9 @@ const customAfter = ref("");
 const VISIBILITY_ITEMS: {
   key: VisibilityKey;
   icon: Component;
-  labelKey: "showOnDesktop" | "showOnTablet" | "showOnMobile";
+  labelKey: "showOnDesktop" | "showOnMobile";
 }[] = [
   { key: "desktop", icon: Monitor, labelKey: "showOnDesktop" },
-  { key: "tablet", icon: Tablet, labelKey: "showOnTablet" },
   { key: "mobile", icon: Smartphone, labelKey: "showOnMobile" },
 ];
 
@@ -129,7 +128,6 @@ function isVisible(key: VisibilityKey): boolean {
 function toggleVisibility(key: VisibilityKey): void {
   const next: Record<VisibilityKey, boolean> = {
     desktop: isVisible("desktop"),
-    tablet: isVisible("tablet"),
     mobile: isVisible("mobile"),
   };
   next[key] = !next[key];

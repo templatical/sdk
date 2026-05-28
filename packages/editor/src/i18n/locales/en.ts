@@ -16,7 +16,6 @@ export default {
   viewport: {
     label: "Viewport",
     desktop: "Desktop",
-    tablet: "Tablet",
     mobile: "Mobile",
   },
 
@@ -388,7 +387,6 @@ export default {
     color: "Color",
     display: "Display",
     showOnDesktop: "Show on desktop",
-    showOnTablet: "Show on tablet",
     showOnMobile: "Show on mobile",
     hiddenOnDevice: "Hidden on {device}",
     customCss: "Custom CSS",

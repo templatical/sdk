@@ -13,7 +13,6 @@ export interface BlockStyles {
 
 export interface BlockVisibility {
   desktop: boolean;
-  tablet: boolean;
   mobile: boolean;
 }
 

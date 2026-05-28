@@ -18,7 +18,6 @@ import { mountEditor } from "./helpers/mount";
 
 const HIDDEN_ON_MOBILE: BlockVisibility = {
   desktop: true,
-  tablet: true,
   mobile: false,
 };
 

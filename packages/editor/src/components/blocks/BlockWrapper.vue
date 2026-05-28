@@ -116,7 +116,6 @@ const hiddenLabel = computed(() => {
   }
   const labels: Record<string, string> = {
     desktop: t.viewport.desktop,
-    tablet: t.viewport.tablet,
     mobile: t.viewport.mobile,
   };
   return labels[props.viewport] ?? props.viewport;

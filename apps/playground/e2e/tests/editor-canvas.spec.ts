@@ -24,14 +24,14 @@ test.describe("Editor canvas", () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test("viewport toggle shows 3 options", async ({
+  test("viewport toggle shows 2 options", async ({
     editorReady,
     page,
   }) => {
     const group = page.locator(SELECTORS.viewportGroup);
     await expect(group).toBeVisible();
     const radios = page.locator('[role="radio"]');
-    expect(await radios.count()).toBe(3);
+    expect(await radios.count()).toBe(2);
   });
 
   test("desktop viewport is default", async ({ editorReady, page }) => {
@@ -50,18 +50,6 @@ test.describe("Editor canvas", () => {
     const mobileWidth = await editorPage.getCanvasWrapperWidth();
     expect(mobileWidth).toBeLessThan(desktopWidth);
     expect(mobileWidth).toBeLessThanOrEqual(400);
-  });
-
-  test("tablet viewport sets intermediate width", async ({
-    editorReady: { editorPage },
-    page,
-  }) => {
-    await editorPage.switchViewport("Mobile");
-    const mobileWidth = await editorPage.getCanvasWrapperWidth();
-    await editorPage.switchViewport("Tablet");
-    const tabletWidth = await editorPage.getCanvasWrapperWidth();
-    // Tablet should be wider than mobile
-    expect(tabletWidth).toBeGreaterThan(mobileWidth);
   });
 
   test("desktop viewport restores width", async ({

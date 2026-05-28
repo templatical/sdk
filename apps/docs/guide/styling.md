@@ -62,18 +62,16 @@ The `visibility` property on any block controls whether it renders at each break
 ```ts
 interface BlockVisibility {
   desktop: boolean;
-  tablet: boolean;
   mobile: boolean;
 }
 ```
 
-All three default to `true`. Set a breakpoint to `false` to hide the block at that size:
+Both default to `true`. Set a breakpoint to `false` to hide the block at that size:
 
 ```ts
 // Show only on desktop
 block.visibility = {
   desktop: true,
-  tablet: false,
   mobile: false,
 };
 ```

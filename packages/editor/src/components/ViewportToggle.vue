@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
 import type { ViewportSize } from "@templatical/types";
-import { Monitor, Smartphone, Tablet } from "@lucide/vue";
+import { Monitor, Smartphone } from "@lucide/vue";
 import { computed } from "vue";
 
 const props = defineProps<{
@@ -16,7 +16,6 @@ const { t } = useI18n();
 
 const viewports = computed(() => [
   { value: "desktop" as ViewportSize, label: t.viewport.desktop },
-  { value: "tablet" as ViewportSize, label: t.viewport.tablet },
   { value: "mobile" as ViewportSize, label: t.viewport.mobile },
 ]);
 
@@ -67,11 +66,6 @@ const pillOffset = computed(() => {
       @click="emit('change', vp.value)"
     >
       <Monitor v-if="vp.value === 'desktop'" :size="18" :stroke-width="1.5" />
-      <Tablet
-        v-else-if="vp.value === 'tablet'"
-        :size="18"
-        :stroke-width="1.5"
-      />
       <Smartphone v-else :size="18" :stroke-width="1.5" />
       <span>{{ vp.label }}</span>
     </button>

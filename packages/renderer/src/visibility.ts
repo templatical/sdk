@@ -10,12 +10,12 @@ export function isHiddenOnAll(block: Block): boolean {
     return false;
   }
 
-  return !visibility.desktop && !visibility.tablet && !visibility.mobile;
+  return !visibility.desktop && !visibility.mobile;
 }
 
 /**
  * Get the MJML css-class attribute string for visibility hiding.
- * Returns a string like ` css-class="tpl-hide-desktop tpl-hide-tablet"` or empty string.
+ * Returns a string like ` css-class="tpl-hide-desktop"` or empty string.
  */
 export function getCssClassAttr(block: Block): string {
   const classes = getCssClasses(block);
@@ -41,10 +41,6 @@ export function getCssClasses(block: Block): string {
 
   if (!visibility.desktop) {
     classes.push("tpl-hide-desktop");
-  }
-
-  if (!visibility.tablet) {
-    classes.push("tpl-hide-tablet");
   }
 
   if (!visibility.mobile) {

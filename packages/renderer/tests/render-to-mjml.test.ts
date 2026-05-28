@@ -66,8 +66,8 @@ describe('renderToMjml', () => {
     const content = createDefaultTemplateContent();
     const mjml = await renderToMjml(content);
     expect(mjml).toContain('tpl-hide-mobile');
-    expect(mjml).toContain('tpl-hide-tablet');
     expect(mjml).toContain('tpl-hide-desktop');
+    expect(mjml).not.toContain('tpl-hide-tablet');
   });
 
   it('wraps blocks with display conditions', async () => {
@@ -185,7 +185,7 @@ describe('renderToMjml', () => {
       }),
       createParagraphBlock({
         content: '<p>Hidden</p>',
-        visibility: { desktop: false, tablet: false, mobile: false },
+        visibility: { desktop: false, mobile: false },
       }),
     ];
     const mjml = await renderToMjml(content);

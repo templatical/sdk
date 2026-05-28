@@ -18,7 +18,6 @@ const ptBR: typeof en = {
   viewport: {
     label: "Viewport",
     desktop: "Desktop",
-    tablet: "Tablet",
     mobile: "Mobile",
   },
 
@@ -392,7 +391,6 @@ const ptBR: typeof en = {
     color: "Cor",
     display: "Exibição",
     showOnDesktop: "Mostrar no desktop",
-    showOnTablet: "Mostrar no tablet",
     showOnMobile: "Mostrar no mobile",
     hiddenOnDevice: "Oculto em {device}",
     customCss: "CSS Personalizado",
