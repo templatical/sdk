@@ -9,7 +9,6 @@
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
     "mjml": "^5.2.2",
-    "tsup": "^8.5.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"
   },
@@ -43,7 +42,7 @@
     "directory": "packages/renderer"
   },
   "scripts": {
-    "build": "tsup && node scripts/rasterize-social.mjs",
+    "build": "tsdown && node scripts/rasterize-social.mjs",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit"
   },

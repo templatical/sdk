@@ -9,7 +9,6 @@
     "domhandler": "^6.0.1"
   },
   "devDependencies": {
-    "tsup": "^8.5.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"
   },
@@ -43,7 +42,7 @@
     "directory": "packages/import-html"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsdown",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit"
   },

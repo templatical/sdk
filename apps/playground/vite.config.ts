@@ -68,6 +68,7 @@ export default defineConfig({
         outDir: 'dist',
         rolldownOptions: {
             output: {
+                // Kept as manualChunks — see the note in editor/vite.cdn.config.ts.
                 manualChunks(id: string) {
                     // Vue runtime — cached across navigations
                     if (id.includes('/vue/') || id.includes('@vue/reactivity')) {

@@ -86,7 +86,7 @@
     "directory": "packages/editor"
   },
   "scripts": {
-    "build": "vite build && vue-tsc -p tsconfig.build.json && api-extractor run --local && rm -rf dist/types",
+    "build": "tsdown && vue-tsc -p tsconfig.build.json && api-extractor run --local && rm -rf dist/types",
     "build:all": "pnpm run build && vite build --config vite.cdn.config.ts",
     "build:cdn": "vite build --config vite.cdn.config.ts",
     "test": "vitest run",

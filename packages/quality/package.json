@@ -41,7 +41,7 @@
     "directory": "packages/quality"
   },
   "scripts": {
-    "build": "vite build && tsc -p tsconfig.build.json && api-extractor run --local && rm -rf dist/types",
+    "build": "tsdown",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit"
   },

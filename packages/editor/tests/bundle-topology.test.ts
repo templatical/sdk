@@ -15,8 +15,9 @@ import { init as initLexer, parse } from "es-module-lexer";
  *      This was the 0.1.1 regression.
  *
  *   2. Exactly one `@vue/reactivity` source — the bundled vue runtime. Any
- *      additional chunk referencing `@vue/reactivity` means the dedupe
- *      (`resolve.dedupe` in vite.config.ts) failed.
+ *      additional chunk referencing `@vue/reactivity` means the single-instance
+ *      guarantee failed (the npm build bundles via tsdown, which resolves vue +
+ *      @vue/reactivity to the one hoisted copy in the pnpm workspace).
  *
  * Tests run against built `dist/` artifacts. They require `pnpm run build` first.
  * In CI the test job runs after build (see .github/workflows/ci.yml).
@@ -91,6 +92,9 @@ describe("editor bundle topology", () => {
     const names = readdirSync(DIST);
     expect(names).toContain("templatical-editor.js");
     expect(names).toContain("style.css");
+    // JS bundles via tsdown (templatical-editor.js); the .d.ts is still rolled
+    // up by vue-tsc + api-extractor (→ index.d.ts) because the editor bundles
+    // its full third-party type surface in JS but must keep it external in types.
     expect(names).toContain("index.d.ts");
   });
 

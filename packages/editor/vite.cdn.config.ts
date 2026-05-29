@@ -43,6 +43,14 @@ export default defineConfig({
             external: [],
             output: {
                 chunkFileNames: 'chunks/[name]-[hash].js',
+                // NOTE: kept as manualChunks (still fully supported under Rolldown
+                // 1.0 / Vite 8). Rolldown's newer codeSplitting/advancedChunks API
+                // applies size/share/recursive-dependency heuristics that don't
+                // match this hand-tuned per-module split — e.g. the high-priority
+                // icons group would swallow the shared vue runtime, and forcing
+                // per-module assignment (includeDependenciesRecursively:false)
+                // conflicts with lib mode's preserveEntrySignatures:'strict'. The
+                // deterministic manualChunks force-split is what we want here.
                 manualChunks: (id) => {
                     if (id.includes('@lucide/vue')) {
                         return 'icons';

@@ -26,6 +26,7 @@ export default defineConfig({
             external: [],
             output: {
                 chunkFileNames: 'chunks/[name]-[hash].js',
+                // Kept as manualChunks — see the note in editor/vite.cdn.config.ts.
                 manualChunks: (id) => {
                     if (id.includes('@lucide/vue')) {
                         return 'icons';

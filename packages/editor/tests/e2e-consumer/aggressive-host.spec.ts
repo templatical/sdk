@@ -68,10 +68,25 @@ test.describe("aggressive host CSS — issue #70 proof-of-fix gate", () => {
         mode: root?.mode,
         adoptedSheetCount: root?.adoptedStyleSheets.length ?? 0,
         adoptedRuleCount: root
-          ? Array.from(root.adoptedStyleSheets).reduce(
-              (sum, sheet) => sum + sheet.cssRules.length,
-              0,
-            )
+          ? (() => {
+              // Count rules recursively — Tailwind v4 wraps most rules inside
+              // `@layer` blocks, so a shallow `cssRules.length` undercounts the
+              // real rule total. Descend into grouping rules (@layer/@media).
+              const countRules = (rules: CSSRuleList): number =>
+                Array.from(rules).reduce(
+                  (n, r) =>
+                    n +
+                    1 +
+                    ((r as CSSGroupingRule).cssRules
+                      ? countRules((r as CSSGroupingRule).cssRules)
+                      : 0),
+                  0,
+                );
+              return Array.from(root.adoptedStyleSheets).reduce(
+                (sum, sheet) => sum + countRules(sheet.cssRules),
+                0,
+              );
+            })()
           : 0,
         hostileStylePresent: !!document.getElementById("hostile-host-css"),
       };
