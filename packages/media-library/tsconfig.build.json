@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist/types",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "paths": {
+      "@templatical/types": ["../types/dist/index.d.ts"],
+      "@templatical/core": ["../core/dist/index.d.ts"],
+      "@templatical/core/cloud": ["../core/dist/cloud.d.ts"],
+      "@templatical/media-library": ["./src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

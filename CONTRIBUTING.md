@@ -48,7 +48,7 @@ pnpm run test       # verify everything passes locally
 
 ```bash
 pnpm install          # install / update deps
-pnpm run build        # build all packages (tsup + vite)
+pnpm run build        # build all packages (tsdown + vite)
 pnpm run test         # vitest across all packages
 pnpm run test:e2e     # Playwright E2E (against the playground)
 pnpm run lint         # ESLint
@@ -69,6 +69,20 @@ Run the docs site while iterating on docs:
 ```bash
 cd apps/docs && pnpm run dev
 ```
+
+### Build toolchain
+
+The monorepo deliberately uses **two** build tools, split by package shape:
+
+| Packages | Tool | Why |
+|----------|------|-----|
+| `types`, `core`, `renderer`, `import-beefree`, `import-unlayer`, `import-html` | **tsdown** (Rolldown + Oxc) | Pure-TS libraries. tsdown bundles JS **and** rolls up `.d.ts` in one ~8-line config. Migrated off tsup → dropped `rollup` / `rollup-plugin-dts` from the build path. |
+| `editor`, `media-library`, `quality` | **Vite** (+ `vue-tsc`/`tsc` + `@microsoft/api-extractor` for `.d.ts`) | Need SFC compilation, the Tailwind/CSS pipeline, `import.meta.glob`, `import.meta.env` replacement, and shared dev-server config — all batteries Vite includes and tsdown would require manual wiring for. |
+| `editor` + `media-library` CDN bundles | **Vite** (`vite.cdn.config.ts`) | Self-contained, code-split, `window`-global app-style bundles. |
+
+**Do not "finish" the migration by moving the Vue packages to tsdown.** It was prototyped and reverted. The blocker is the editor's `.d.ts`: it bundles its entire third-party type surface in JS (`vue`, `@tiptap/*`, `@vueuse`, prosemirror — all devDeps) but those must stay **external** in the published declarations. tsdown couples JS-bundle and dts-external, so `rolldown-plugin-dts` inlines ~950 kB of third-party types vs api-extractor's ~11 kB externalized output. A second landmine: tsdown doesn't replace `import.meta.env`, so the editor's dev-only shadow-DOM style mirror leaks host CSS into the shadow root (issue #70) when a consumer serves the bundle through their dev server. Vite handles both for free.
+
+`tsdown` is pre-1.0 — it's pinned in the lockfile and buffered by `minimumReleaseAge`. Note that **`attw` (are-the-types-wrong) currently can't analyze our declarations** because its bundled TypeScript predates TS 6 (same constraint as api-extractor, see `CLAUDE.md`); `publint` runs clean. Wire `attw` into CI once it supports TS 6.
 
 ## Tests
 

@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs'
 import type { Plugin } from 'vite'
-import type { Plugin as RolldownPlugin } from 'rolldown'
 
 /**
  * Inlines the editor's *fully-bundled* library CSS as a JS string export so
@@ -21,145 +20,20 @@ import type { Plugin as RolldownPlugin } from 'rolldown'
  * `fallbackSourcePath` directly. The shadow-mount smoke test only asserts
  * `adoptedStyleSheets` is non-empty, which is satisfied by either path.
  *
- * Two variants are exported: `inlineStyleCssPlugin` (Vite — used by the
- * playground dev server, Vitest, and the CDN build) and
- * `inlineStyleCssRolldownPlugin` (tsdown/Rolldown — used by the npm library
- * build). They share the `resolveId` + `generateBundle` core; only the Vite
- * variant carries the serve-mode `load()` fallback and `configResolved` hook.
- *
  * Why a build-time plugin instead of moving every SFC `<style>` block into
  * `styles/index.css`: keeps Vue's component-local CSS authoring ergonomic,
  * preserves `:deep()` and scoped-attribute semantics, and avoids touching
- * 30+ `.vue` files. The plugin localizes the workaround to one file alongside
- * `bundleStatsPlugin`.
+ * 30+ `.vue` files. The plugin localizes the workaround to one ~70-line
+ * file alongside `bundleStatsPlugin`.
  */
-
-const VIRTUAL_ID = 'virtual:editor-css'
-const RESOLVED_ID = '\0virtual:editor-css'
-const PLACEHOLDER = '__TPL_INLINE_EDITOR_CSS__'
-
-function resolveVirtualId(id: string): string | undefined {
-  if (id === VIRTUAL_ID) return RESOLVED_ID
-}
-
-/** Build-mode `load`: emit the placeholder; `generateBundle` replaces it. */
-function loadBuildPlaceholder(id: string): string | null {
-  if (id !== RESOLVED_ID) return null
-  return `export default ${JSON.stringify(PLACEHOLDER)};`
-}
-
-/**
- * Shared `generateBundle` body. Finds every emitted CSS asset, concatenates
- * them, and replaces the placeholder string literal (in whichever quote form
- * the downstream minifier emitted) across every JS chunk. `ctx` carries the
- * rollup/rolldown plugin context for `warn`/`error`/`info`.
- */
-function injectInlineCss(
-  bundle: Record<string, unknown>,
-  fallbackSourcePath: string,
-  ctx: { warn?: (m: string) => void; error?: (m: string) => void; info?: (m: string) => void },
-): void {
-  // Find every emitted CSS asset and concatenate (library mode with
-  // cssCodeSplit: false produces one; CDN build with code-splitting can
-  // produce multiple — both are shadow-DOM-relevant).
-  const cssParts: string[] = []
-  for (const file of Object.values(bundle) as Array<Record<string, unknown>>) {
-    if (
-      file.type === 'asset' &&
-      typeof file.fileName === 'string' &&
-      file.fileName.endsWith('.css')
-    ) {
-      const source =
-        typeof file.source === 'string'
-          ? file.source
-          : new TextDecoder().decode(file.source as Uint8Array)
-      cssParts.push(source)
-    }
-  }
-
-  if (cssParts.length === 0) {
-    // No CSS emitted — fall back to source so the placeholder doesn't ship as
-    // the runtime value of the export.
-    try {
-      cssParts.push(readFileSync(fallbackSourcePath, 'utf8'))
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      ctx.warn?.(
-        `inline-style-css: no CSS asset emitted and fallback read failed (${message}); placeholder will remain in output`,
-      )
-      return
-    }
-  }
-
-  const cssContent = cssParts.join('\n\n')
-  const cssDoubleQuoted = JSON.stringify(cssContent)
-  // Backticks let us avoid escaping every embedded `${...}` and `\` for
-  // template-literal output. Replicate the minifier's expected form so the
-  // chunk lands a valid string literal either way.
-  const cssBacktickQuoted =
-    '`' +
-    cssContent
-      .replace(/\\/g, '\\\\')
-      .replace(/`/g, '\\`')
-      .replace(/\$\{/g, '\\${') +
-    '`'
-
-  // The plugin emits the placeholder via `JSON.stringify(PLACEHOLDER)`
-  // (double-quoted), but library/app bundlers downstream may re-emit it as a
-  // single-quoted string OR a template literal. Rolldown app builds in
-  // particular promote long single-line strings to template literals during
-  // minification, which the original double-quote-only replacement missed —
-  // shipping the literal `__TPL_INLINE_EDITOR_CSS__` token into the runtime
-  // and giving shadow-root mounts an adopted stylesheet of garbage.
-  //
-  // Match all three string-literal forms and substitute with the quote variant
-  // the chunk already uses, so we preserve whatever escaping convention the
-  // downstream bundler picked.
-  const variants: Array<{ from: string; to: string }> = [
-    { from: `"${PLACEHOLDER}"`, to: cssDoubleQuoted },
-    { from: `'${PLACEHOLDER}'`, to: cssDoubleQuoted },
-    { from: '`' + PLACEHOLDER + '`', to: cssBacktickQuoted },
-  ]
-
-  let chunksTouched = 0
-  for (const file of Object.values(bundle) as Array<Record<string, unknown>>) {
-    if (file.type !== 'chunk') continue
-    let touched = false
-    for (const { from, to } of variants) {
-      if (!(file.code as string).includes(from)) continue
-      file.code = (file.code as string).split(from).join(to)
-      touched = true
-    }
-    if (touched) chunksTouched++
-  }
-
-  ctx.info?.(
-    `inline-style-css: injected ${(cssContent.length / 1024).toFixed(1)} kB raw CSS into ${chunksTouched} chunk(s)`,
-  )
-
-  // Self-check: if the placeholder still appears in any chunk after the
-  // variant-aware replacement above, a downstream bundler re-emitted it in a
-  // form we don't recognize. Fail the build so the regression surfaces
-  // immediately instead of shipping a shadow root whose adopted stylesheet
-  // content is the literal placeholder token.
-  for (const file of Object.values(bundle) as Array<Record<string, unknown>>) {
-    if (file.type !== 'chunk') continue
-    if (!(file.code as string).includes(PLACEHOLDER)) continue
-    const surrounding = (file.code as string).match(
-      new RegExp(`.{0,40}${PLACEHOLDER}.{0,40}`),
-    )
-    ctx.error?.(
-      `inline-style-css: placeholder \`${PLACEHOLDER}\` still present in chunk ${file.fileName} after replacement. ` +
-        `A downstream bundler likely re-emitted the placeholder string in a quote form not handled by the plugin. ` +
-        `Surrounding context: ${surrounding?.[0] ?? '<unavailable>'}`,
-    )
-  }
-}
-
 export function inlineStyleCssPlugin(opts: {
   /** Absolute path to the source CSS used as a dev/test fallback. */
   fallbackSourcePath: string
 }): Plugin {
+  const VIRTUAL_ID = 'virtual:editor-css'
+  const RESOLVED_ID = '\0virtual:editor-css'
+  const PLACEHOLDER = '__TPL_INLINE_EDITOR_CSS__'
+
   let isServeMode = false
 
   return {
@@ -173,7 +47,7 @@ export function inlineStyleCssPlugin(opts: {
     },
 
     resolveId(id) {
-      return resolveVirtualId(id)
+      if (id === VIRTUAL_ID) return RESOLVED_ID
     },
 
     load(id) {
@@ -196,35 +70,106 @@ export function inlineStyleCssPlugin(opts: {
         return `import css from '${opts.fallbackSourcePath.replace(/\\/g, '\\\\')}?inline';\nexport default css;\n`
       }
       // Build mode — emit the placeholder. generateBundle replaces it.
-      return loadBuildPlaceholder(id)
+      return `export default ${JSON.stringify(PLACEHOLDER)};`
     },
 
     generateBundle(_, bundle) {
-      injectInlineCss(bundle, opts.fallbackSourcePath, this)
+      // Find every emitted CSS asset and concatenate (Vite library mode with
+      // cssCodeSplit: false produces one; CDN build with code-splitting can
+      // produce multiple — both are shadow-DOM-relevant).
+      const cssParts: string[] = []
+      for (const file of Object.values(bundle)) {
+        if (file.type === 'asset' && file.fileName.endsWith('.css')) {
+          const source =
+            typeof file.source === 'string'
+              ? file.source
+              : new TextDecoder().decode(file.source)
+          cssParts.push(source)
+        }
+      }
+
+      if (cssParts.length === 0) {
+        // No CSS emitted — fall back to source so the placeholder doesn't
+        // ship as the runtime value of the export.
+        try {
+          cssParts.push(readFileSync(opts.fallbackSourcePath, 'utf8'))
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err)
+          this.warn?.(
+            `inline-style-css: no CSS asset emitted and fallback read failed (${message}); placeholder will remain in output`,
+          )
+          return
+        }
+      }
+
+      const cssContent = cssParts.join('\n\n')
+      const cssDoubleQuoted = JSON.stringify(cssContent)
+      // Backticks let us avoid escaping every embedded `${...}` and `\`
+      // for template-literal output. Replicate the minifier's expected
+      // form so the chunk lands a valid string literal either way.
+      const cssBacktickQuoted =
+        '`' +
+        cssContent
+          .replace(/\\/g, '\\\\')
+          .replace(/`/g, '\\`')
+          .replace(/\$\{/g, '\\${') +
+        '`'
+
+      // The plugin emits the placeholder via `JSON.stringify(PLACEHOLDER)`
+      // (double-quoted), but library/app bundlers downstream may re-emit
+      // it as a single-quoted string OR a template literal. Rolldown app
+      // builds in particular promote long single-line strings to
+      // template literals during minification, which the original
+      // double-quote-only replacement missed — shipping the literal
+      // `__TPL_INLINE_EDITOR_CSS__` token into the runtime and giving
+      // shadow-root mounts an adopted stylesheet of garbage.
+      //
+      // Match all three string-literal forms and substitute with the
+      // quote variant the chunk already uses, so we preserve whatever
+      // escaping convention the downstream bundler picked.
+      const variants: Array<{ from: string; to: string }> = [
+        { from: `"${PLACEHOLDER}"`, to: cssDoubleQuoted },
+        { from: `'${PLACEHOLDER}'`, to: cssDoubleQuoted },
+        { from: '`' + PLACEHOLDER + '`', to: cssBacktickQuoted },
+      ]
+
+      let chunksTouched = 0
+      for (const file of Object.values(bundle)) {
+        if (file.type !== 'chunk') continue
+        let touched = false
+        for (const { from, to } of variants) {
+          if (!file.code.includes(from)) continue
+          file.code = file.code.split(from).join(to)
+          touched = true
+        }
+        if (touched) chunksTouched++
+      }
+
+      this.info?.(
+        `inline-style-css: injected ${(cssContent.length / 1024).toFixed(1)} kB raw CSS into ${chunksTouched} chunk(s)`,
+      )
+
+      // Self-check: if the placeholder still appears in any chunk after the
+      // variant-aware replacement above, a downstream bundler re-emitted it
+      // in a form we don't recognize. Fail the build so the regression
+      // surfaces immediately instead of shipping a shadow root whose
+      // adopted stylesheet content is the literal placeholder token.
+      // Real-world precedent: Rolldown app-mode minification promoted long
+      // single-line strings to backtick template literals, slipping past
+      // the original double-quote-only replacement and shipping broken
+      // styling to consumers using `shadowDom: true`.
+      for (const file of Object.values(bundle)) {
+        if (file.type !== 'chunk') continue
+        if (!file.code.includes(PLACEHOLDER)) continue
+        const surrounding = file.code.match(
+          new RegExp(`.{0,40}${PLACEHOLDER}.{0,40}`),
+        )
+        this.error?.(
+          `inline-style-css: placeholder \`${PLACEHOLDER}\` still present in chunk ${file.fileName} after replacement. ` +
+            `A downstream bundler likely re-emitted the placeholder string in a quote form not handled by the plugin. ` +
+            `Surrounding context: ${surrounding?.[0] ?? '<unavailable>'}`,
+        )
+      }
     },
   }
-}
-
-/**
- * tsdown/Rolldown variant. The npm library build is always in build mode (no
- * `vite serve`), so there is no `configResolved` hook and no serve-mode
- * fallback — `load()` always emits the placeholder, and `generateBundle()`
- * swaps in the real CSS. Identical core to the Vite variant above.
- */
-export function inlineStyleCssRolldownPlugin(opts: {
-  fallbackSourcePath: string
-}): RolldownPlugin {
-  return {
-    name: 'tpl-inline-style-css',
-    enforce: 'post',
-    resolveId(id: string) {
-      return resolveVirtualId(id)
-    },
-    load(id: string) {
-      return loadBuildPlaceholder(id)
-    },
-    generateBundle(_options: unknown, bundle: Record<string, unknown>) {
-      injectInlineCss(bundle, opts.fallbackSourcePath, this as never)
-    },
-  } as RolldownPlugin
 }

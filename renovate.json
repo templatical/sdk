@@ -91,10 +91,9 @@
       "groupName": "test tooling"
     },
     {
-      "description": "Group Vite + tsup (non-major)",
+      "description": "Group Vite + tsdown (non-major)",
       "matchPackageNames": [
         "vite",
-        "tsup",
         "tsdown",
         "vite-plugin-**",
         "@vitejs/**"

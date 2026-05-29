@@ -1,26 +1,23 @@
 ---
-"@templatical/editor": patch
-"@templatical/media-library": patch
-"@templatical/quality": patch
-"@templatical/core": patch
 "@templatical/types": patch
+"@templatical/core": patch
 "@templatical/renderer": patch
 "@templatical/import-beefree": patch
 "@templatical/import-unlayer": patch
 "@templatical/import-html": patch
 ---
 
-Migrate all package builds to tsdown (Rolldown + Oxc)
+Migrate the framework-agnostic packages from tsup to tsdown (Rolldown + Oxc)
 
-Every library package now builds with [`tsdown`](https://tsdown.dev), unifying the
-toolchain on Rolldown (Vite already uses it). This replaces tsup (esbuild + rollup)
-for the six framework-agnostic packages and the Vite-library + api-extractor `.d.ts`
-pipeline for `quality` and `media-library`. The `editor` builds its JS+CSS with
-tsdown but keeps `vue-tsc` + api-extractor for its `.d.ts` (it bundles its full
-third-party type surface in JS while keeping it external in types). CDN bundles
-remain on Vite.
+The six framework-agnostic library packages — `types`, `core`, `renderer`,
+`import-beefree`, `import-unlayer`, `import-html` — now build with
+[`tsdown`](https://tsdown.dev) instead of tsup. This drops `rollup` /
+`rollup-plugin-dts` from the build path and aligns these packages with Rolldown
+(which Vite already uses). Published output is functionally equivalent: same ESM
+exports, same externals, equivalent `.d.ts`.
 
-Published output is functionally equivalent (same ESM exports, same externals,
-equivalent `.d.ts`). One fix: `@templatical/media-library`'s `./style.css` export
-now resolves — the build emits `dist/style.css` (matching the export map) instead
-of the previously mis-named `templatical-media-library.css`.
+The Vue/CSS packages (`editor`, `media-library`) and `quality` deliberately
+remain on Vite + `vue-tsc`/`tsc` + `@microsoft/api-extractor` — `rolldown-plugin-dts`
+inlines the editor's bundled-but-type-external third-party surface (~950 kB vs
+~11 kB), and Vite's batteries-included handling (env replacement, CSS/Tailwind,
+glob, dts externalization) isn't worth reconstructing manually there.
