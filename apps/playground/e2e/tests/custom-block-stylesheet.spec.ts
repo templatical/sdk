@@ -75,10 +75,49 @@ async function readComputedStyle(
 test.describe("Custom block stylesheet (#155)", () => {
   test.beforeEach(async ({ page }) => {
     // Suppress overlays so the editor reaches a stable state and the canvas
-    // is laid out before we sample computed styles.
+    // is laid out before we sample computed styles. Also hook
+    // `navigator.clipboard.writeText` to capture the playground's copy-button
+    // payload into a window variable — reading the OS clipboard directly
+    // via `navigator.clipboard.readText()` is unreliable in headless
+    // Chromium on Linux CI (no X11, plus the focus requirement is racy
+    // under parallel workers). The playground's copy is driven by
+    // VueUse's `useClipboard` which calls `writeText`; intercepting it
+    // here gives us the exact string the user would have copied without
+    // any OS-clipboard involvement.
     await page.addInitScript(() => {
       localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
       localStorage.setItem("tpl-playground-features-dismissed", "true");
+
+      // VueUse's `useClipboard` checks `clipboard-write` permission first.
+      // In headless Chromium without `grantPermissions`, that permission is
+      // denied → useClipboard falls back to its `legacyCopy` path:
+      // creates a hidden `<textarea>`, selects its value, calls
+      // `document.execCommand("copy")`. Hooking `execCommand("copy")` is
+      // the most reliable interception point — works regardless of
+      // permission state, no OS-clipboard involvement, no permission
+      // ceremony in the test. At execCommand-call time the textarea's
+      // value is in `getSelection().toString()`.
+      (window as { __capturedClipboardWrite?: string }).__capturedClipboardWrite =
+        "";
+      const originalExec = document.execCommand.bind(document);
+      document.execCommand = function (
+        command: string,
+        ...rest: unknown[]
+      ): boolean {
+        if (command === "copy") {
+          const selected = document.getSelection()?.toString() ?? "";
+          if (selected) {
+            (
+              window as { __capturedClipboardWrite?: string }
+            ).__capturedClipboardWrite = selected;
+          }
+        }
+        // The Function.prototype.apply signature accepts the rest as an
+        // array — execCommand's optional args (showUI, value) pass through.
+        return (
+          originalExec as (cmd: string, ...args: unknown[]) => boolean
+        )(command, ...rest);
+      };
     });
   });
 
@@ -246,25 +285,35 @@ test.describe("Custom block stylesheet (#155)", () => {
     editorPage,
     page,
   }) => {
-    // Read the full MJML by going through the playground's user-facing
-    // copy button — testing the export pipeline end-to-end (editor.toMjml()
-    // → playground state → CodeMirror render → copy-to-clipboard) rather
-    // than poking at internal CodeMirror APIs. Granting clipboard-read at
-    // the context level lets `navigator.clipboard.readText()` resolve.
-    await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
-
+    // Drive the export through the playground's `__tplPlaygroundGetMjml`
+    // test affordance (installed by `apps/playground/src/App.vue` after
+    // editor init). That calls `editor.toMjml()` directly — same code
+    // path the export modal uses — without depending on copy-to-clipboard,
+    // CodeMirror virtualization, or DOM inspection of the rendered MJML.
+    // Deterministic in headless Chromium CI where clipboard APIs are
+    // unreliable.
     await chooserPage.goto();
     await chooserPage.selectTemplateByName("Product Launch");
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
-    await editorPage.openExport();
-    const modal = page.locator(SELECTORS.exportModal);
-    await expect(modal).toBeVisible();
-    // Default tab is MJML per `playground-modals.spec.ts`.
-    await page.locator(SELECTORS.exportCopyBtn).click();
+    // Wait for the hook to be installed (editor init is async).
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            typeof (
+              window as { __tplPlaygroundGetMjml?: () => Promise<string> }
+            ).__tplPlaygroundGetMjml === "function",
+        ),
+      )
+      .toBe(true);
 
-    const mjml = await page.evaluate(() => navigator.clipboard.readText());
+    const mjml = await page.evaluate(async () =>
+      (
+        window as { __tplPlaygroundGetMjml?: () => Promise<string> }
+      ).__tplPlaygroundGetMjml!(),
+    );
     expect(mjml.length).toBeGreaterThan(100);
 
     // 1. The MJML output exists and is well-formed (sanity).
