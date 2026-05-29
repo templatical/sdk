@@ -128,7 +128,6 @@ describe('renderBlock', () => {
       content: '<div>x</div>',
       styles: {
         padding: { top: 5, right: 10, bottom: 15, left: 20 },
-        margin: { top: 0, right: 0, bottom: 0, left: 0 },
       },
     });
     const result = renderBlock(block, ctx);
@@ -140,7 +139,6 @@ describe('renderBlock', () => {
       content: '<div>x</div>',
       styles: {
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
-        margin: { top: 0, right: 0, bottom: 0, left: 0 },
         backgroundColor: '#fafafa',
       },
     });
@@ -244,7 +242,7 @@ describe('renderBlock', () => {
     const block = {
       id: '1',
       type: 'nonexistent' as never,
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     } as Block;
     const result = renderBlock(block, ctx);
     expect(result).toBe('');
@@ -257,7 +255,7 @@ describe('renderBlock', () => {
       customType: 'product-card',
       fieldValues: {},
       renderedHtml: '<div>Custom Content</div>',
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     };
     const result = renderBlock(block, ctx);
     expect(result).toContain('<mj-text');
@@ -270,7 +268,7 @@ describe('renderBlock', () => {
       type: 'custom',
       customType: 'product-card',
       fieldValues: {},
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     };
     const result = renderBlock(block, ctx);
     expect(result).toBe('');
@@ -283,7 +281,7 @@ describe('renderBlock', () => {
       customType: 'product-card',
       fieldValues: {},
       renderedHtml: '',
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     };
     const result = renderBlock(block, ctx);
     expect(result).toBe('');
@@ -297,7 +295,7 @@ describe('renderBlock', () => {
       fieldValues: {},
       renderedHtml: '<div>Content</div>',
       visibility: { desktop: false, mobile: false },
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     };
     const result = renderBlock(block, ctx);
     expect(result).toBe('');
@@ -311,7 +309,7 @@ describe('renderBlock', () => {
       fieldValues: {},
       renderedHtml: '<div>Content</div>',
       visibility: { desktop: false, mobile: true },
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     };
     const result = renderBlock(block, ctx);
     expect(result).toContain('css-class="tpl-hide-desktop"');
@@ -324,7 +322,7 @@ describe('renderBlock', () => {
       customType: 'product-card',
       fieldValues: {},
       renderedHtml: '<div>Content</div>',
-      styles: { padding: { top: 5, right: 10, bottom: 15, left: 20 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 5, right: 10, bottom: 15, left: 20 } },
     };
     const result = renderBlock(block, ctx);
     expect(result).toContain('padding="5px 10px 15px 20px"');
@@ -337,7 +335,7 @@ describe('renderBlock', () => {
       customType: 'product-card',
       fieldValues: {},
       renderedHtml: '<div>Content</div>',
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     };
     const result = renderBlock(block, ctx);
     expect(result).toContain('padding="0px 0px 0px 0px"');
@@ -352,7 +350,6 @@ describe('renderBlock', () => {
       renderedHtml: '<div>Content</div>',
       styles: {
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
-        margin: { top: 0, right: 0, bottom: 0, left: 0 },
         backgroundColor: '#fafafa',
       },
     };

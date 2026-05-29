@@ -21,10 +21,6 @@ import {
 } from "./style-parser";
 import type { ImportReportEntry } from "./types";
 
-function emptyMargin() {
-  return { top: 0, right: 0, bottom: 0, left: 0 };
-}
-
 function emptyPadding() {
   return { top: 0, right: 0, bottom: 0, left: 0 };
 }
@@ -59,7 +55,6 @@ function buildCellButton(
     buttonPadding: readPaddingFromStyles(merged),
     styles: {
       padding: emptyPadding(),
-      margin: emptyMargin(),
     },
   });
 }
@@ -75,7 +70,6 @@ function buildSpacerFromCell($cell: Cheerio<Element>): Block {
     height,
     styles: {
       padding: emptyPadding(),
-      margin: emptyMargin(),
     },
   });
 }
@@ -281,7 +275,6 @@ export function processTable(
         children: columnsBlocks,
         styles: {
           padding,
-          margin: emptyMargin(),
           ...(bgColor ? { backgroundColor: bgColor } : {}),
         },
       }),

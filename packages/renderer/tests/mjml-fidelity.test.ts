@@ -177,7 +177,6 @@ describe("custom block backgroundColor reaches HTML", () => {
       styles: {
         backgroundColor: "#fffbeb",
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
-        margin: { top: 0, right: 0, bottom: 0, left: 0 },
       },
     };
     const context = new RenderContext(
@@ -204,7 +203,6 @@ describe("html block backgroundColor reaches HTML", () => {
       content: "<div>hello</div>",
       styles: {
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
-        margin: { top: 0, right: 0, bottom: 0, left: 0 },
         backgroundColor: "#fffbeb",
       },
     });
@@ -262,7 +260,6 @@ describe("button with openInNewTab=true emits rel=noopener", () => {
       openInNewTab: true,
       styles: {
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
-        margin: { top: 0, right: 0, bottom: 0, left: 0 },
       },
     };
     const mjml = renderBlock(block as any, ctx);
@@ -297,7 +294,6 @@ describe("menu items with openInNewTab=true emit rel=noopener", () => {
       textAlign: "left",
       styles: {
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
-        margin: { top: 0, right: 0, bottom: 0, left: 0 },
       },
     };
     const mjml = renderBlock(block as any, ctx);
@@ -345,7 +341,6 @@ describe("button color attrs are escaped", () => {
       openInNewTab: false,
       styles: {
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
-        margin: { top: 0, right: 0, bottom: 0, left: 0 },
       },
     };
     const mjml = renderBlock(block as any, ctx);
@@ -378,7 +373,6 @@ describe("button with empty URL", () => {
       openInNewTab: false,
       styles: {
         padding: { top: 0, right: 0, bottom: 0, left: 0 },
-        margin: { top: 0, right: 0, bottom: 0, left: 0 },
       },
     };
     const mjml = renderBlock(block as any, ctx);
@@ -394,7 +388,6 @@ describe("spacer ignores block.styles.padding (matches canvas)", () => {
       styles: {
         backgroundColor: "",
         padding: { top: 10, right: 0, bottom: 10, left: 0 },
-        margin: { top: 0, right: 0, bottom: 0, left: 0 },
       },
     } as Parameters<typeof createSpacerBlock>[0]);
 

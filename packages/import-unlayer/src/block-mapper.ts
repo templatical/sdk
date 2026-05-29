@@ -17,7 +17,6 @@ import type {
   SocialPlatform,
   SocialIcon,
   MenuItemData,
-  SpacingValue,
 } from "@templatical/types";
 import type {
   UnlayerContent,
@@ -102,15 +101,10 @@ function toLineStyle(
   return fallback;
 }
 
-function defaultMargin(): SpacingValue {
-  return { top: 0, right: 0, bottom: 0, left: 0 };
-}
-
 function makeStyles(values: UnlayerContentValues): Block["styles"] {
   const padding = parsePaddingShorthand(values.containerPadding);
   return {
     padding,
-    margin: defaultMargin(),
   };
 }
 

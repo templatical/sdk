@@ -7,7 +7,6 @@ export interface SpacingValue {
 
 export interface BlockStyles {
   padding: SpacingValue;
-  margin: SpacingValue;
   backgroundColor?: string;
 }
 

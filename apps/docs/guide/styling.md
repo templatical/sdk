@@ -9,12 +9,11 @@ Every block in Templatical carries a `styles` property for layout and appearance
 
 ## BlockStyles
 
-The `BlockStyles` interface controls padding, margin, and background.
+The `BlockStyles` interface controls padding and background.
 
 ```ts
 interface BlockStyles {
   padding: SpacingValue;
-  margin: SpacingValue;
   backgroundColor?: string;
 }
 ```
@@ -28,14 +27,13 @@ const block = createParagraphBlock({
 
 block.styles = {
   padding: { top: 16, right: 24, bottom: 16, left: 24 },
-  margin: { top: 0, right: 0, bottom: 0, left: 0 },
   backgroundColor: '#f0f9ff',
 };
 ```
 
 ## SpacingValue
 
-Padding and margin use the `SpacingValue` type with four directional values in pixels.
+Padding uses the `SpacingValue` type with four directional values in pixels.
 
 ```ts
 interface SpacingValue {
@@ -51,7 +49,6 @@ All four properties are required. Use `0` for sides that need no spacing:
 ```ts
 block.styles = {
   padding: { top: 0, right: 16, bottom: 0, left: 16 },
-  margin: { top: 8, right: 0, bottom: 8, left: 0 },
 };
 ```
 

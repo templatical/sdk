@@ -134,7 +134,6 @@ test("editor.toMjml() includes custom blocks in the output", async ({ page }) =>
       fieldValues: { title: "Annual Gala 2026" },
       styles: {
         padding: { top: 10, right: 10, bottom: 10, left: 10 },
-        margin: { top: 0, right: 0, bottom: 0, left: 0 },
       },
     };
 

@@ -386,7 +386,6 @@ const ptBR: typeof en = {
   blockSettings: {
     spacing: "Espaçamento",
     padding: "Preenchimento",
-    margin: "Margem",
     background: "Plano de Fundo",
     color: "Cor",
     display: "Exibição",

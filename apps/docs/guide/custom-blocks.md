@@ -254,7 +254,7 @@ A repeatable group of sub-fields. Users can add or remove items within the confi
 
 ## Default styles
 
-Use `defaultStyles` to declare the block's default `padding`, `margin`, and `backgroundColor` alongside the rest of the definition. The value is a `Partial<BlockStyles>` — specify only the fields you want to override; everything else falls back to the built-in defaults (`10px` padding all around, zero margin, no background).
+Use `defaultStyles` to declare the block's default `padding` and `backgroundColor` alongside the rest of the definition. The value is a `Partial<BlockStyles>` — specify only the fields you want to override; everything else falls back to the built-in defaults (`10px` padding all around, no background).
 
 ```ts
 {
@@ -264,12 +264,11 @@ Use `defaultStyles` to declare the block's default `padding`, `margin`, and `bac
   template: '<table>…</table>',
   defaultStyles: {
     padding: { top: 0, right: 0, bottom: 0, left: 0 },
-    margin: { top: 0, right: 0, bottom: 0, left: 0 },
   },
 }
 ```
 
-`defaultStyles` applies the moment a user drags the block from the palette onto the canvas. Users can still adjust padding/margin/background per block instance through the block settings — `defaultStyles` only controls where each new instance starts.
+`defaultStyles` applies the moment a user drags the block from the palette onto the canvas. Users can still adjust padding/background per block instance through the block settings — `defaultStyles` only controls where each new instance starts.
 
 This is the recommended way to opt custom blocks out of the SDK's default wrapper padding when the block's Liquid template already manages its own spacing (e.g. hero sections, product cards, or anything authored as full table HTML).
 

@@ -51,7 +51,7 @@ describe("deepMergeDefaults", () => {
 
   it("deep merges nested objects", () => {
     const base = {
-      styles: { padding: { top: 10, right: 10, bottom: 10, left: 10 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 10, right: 10, bottom: 10, left: 10 }, backgroundColor: "#fff" },
     };
     const result = deepMergeDefaults(base, {
       styles: { padding: { top: 20 } },
@@ -60,7 +60,8 @@ describe("deepMergeDefaults", () => {
     expect(result.styles.padding.right).toBe(10);
     expect(result.styles.padding.bottom).toBe(10);
     expect(result.styles.padding.left).toBe(10);
-    expect(result.styles.margin.top).toBe(0);
+    // sibling key the patch didn't touch survives the deep merge
+    expect(result.styles.backgroundColor).toBe("#fff");
   });
 
   it("replaces arrays instead of merging", () => {

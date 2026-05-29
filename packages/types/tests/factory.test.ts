@@ -368,7 +368,6 @@ describe('createCustomBlock with defaultStyles', () => {
         };
         const block = createCustomBlock(definition);
         expect(block.styles.padding).toEqual({ top: 10, right: 10, bottom: 10, left: 10 });
-        expect(block.styles.margin).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
         expect(block.styles.backgroundColor).toBeUndefined();
     });
 
@@ -384,8 +383,8 @@ describe('createCustomBlock with defaultStyles', () => {
         };
         const block = createCustomBlock(definition);
         expect(block.styles.padding).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
-        // margin and backgroundColor remain at base
-        expect(block.styles.margin).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+        // backgroundColor remains at base (undefined)
+        expect(block.styles.backgroundColor).toBeUndefined();
     });
 
     it('overrides only specified BlockStyles keys (partial merge)', () => {
@@ -401,22 +400,6 @@ describe('createCustomBlock with defaultStyles', () => {
         const block = createCustomBlock(definition);
         expect(block.styles.backgroundColor).toBe('#fafafa');
         // padding stays at base 10
-        expect(block.styles.padding).toEqual({ top: 10, right: 10, bottom: 10, left: 10 });
-    });
-
-    it('overrides margin independently of padding', () => {
-        const definition: CustomBlockDefinition = {
-            type: 'm-only',
-            name: 'Margin Only',
-            fields: [],
-            template: '<div></div>',
-            defaultStyles: {
-                margin: { top: 8, right: 0, bottom: 8, left: 0 },
-            },
-        };
-        const block = createCustomBlock(definition);
-        expect(block.styles.margin).toEqual({ top: 8, right: 0, bottom: 8, left: 0 });
-        // padding untouched
         expect(block.styles.padding).toEqual({ top: 10, right: 10, bottom: 10, left: 10 });
     });
 
@@ -492,7 +475,6 @@ describe('createBlock with blockDefaults', () => {
             expect(block.textColor).toBe('#ffffff');
             expect(block.styles.padding.top).toBe(20);
             expect(block.styles.padding.right).toBe(10);
-            expect(block.styles.margin.top).toBe(0);
         }
     });
 
@@ -659,12 +641,12 @@ describe('createBlock with blockDefaults', () => {
 });
 
 describe('factory deep merge vs shallow spread', () => {
-    it('deep merges styles.padding without losing styles.margin', () => {
+    it('deep merges styles.padding', () => {
         const block = createTitleBlock({
             styles: { padding: { top: 20, right: 20, bottom: 20, left: 20 } },
         } as any);
         expect(block.styles.padding.top).toBe(20);
-        expect(block.styles.margin.top).toBe(0);
+        expect(block.styles.padding.bottom).toBe(20);
     });
 
     it('deep merges partial padding preserving other padding values', () => {

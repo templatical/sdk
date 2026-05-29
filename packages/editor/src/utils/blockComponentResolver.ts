@@ -25,10 +25,9 @@ export function resolveBlockComponent(
  * Computes inline styles for a block wrapper from its styles config.
  */
 export function getBlockWrapperStyle(block: Block): Record<string, string> {
-  const { padding, margin, backgroundColor } = block.styles;
+  const { padding, backgroundColor } = block.styles;
   return {
     padding: `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`,
-    margin: `${margin.top}px ${margin.right}px ${margin.bottom}px ${margin.left}px`,
     backgroundColor: backgroundColor || "transparent",
   };
 }

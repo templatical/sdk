@@ -382,7 +382,6 @@ export default {
   blockSettings: {
     spacing: "Spacing",
     padding: "Padding",
-    margin: "Margin",
     background: "Background",
     color: "Color",
     display: "Display",

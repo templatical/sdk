@@ -37,16 +37,16 @@ describe("block chrome structure", () => {
     );
   });
 
-  it("padding + backgroundColor live on `.tpl-block-content`, not `.tpl-block`", () => {
+  it("padding + backgroundColor live on `.tpl-block-content`; `.tpl-block` carries no inline spacing", () => {
     // Block bg has to sit INSIDE the filter region — moving it back onto
     // `.tpl-block` makes the dark-preview filter invert text-only, leaving
     // inverted (white) text on an un-inverted (white) section bg = invisible.
     expect(blockWrapper).toMatch(
       /contentStyle\s*=\s*computed\(\(\)\s*=>\s*\{[\s\S]*padding[\s\S]*backgroundColor/,
     );
-    expect(blockWrapper).toMatch(
-      /wrapperStyle\s*=\s*computed\(\(\)\s*=>\s*\(\{\s*margin:/,
-    );
+    // `.tpl-block` carries no inline style; spacing lives only on the content
+    // layer. Guards against reintroducing a wrapper-level spacing style.
+    expect(blockWrapper).not.toMatch(/wrapperStyle/);
   });
 
   it("Canvas renders `.tpl-canvas-bg` sibling with conditional invert filter", () => {

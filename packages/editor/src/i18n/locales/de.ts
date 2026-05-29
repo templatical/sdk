@@ -389,7 +389,6 @@ const de: typeof en = {
   blockSettings: {
     spacing: "Abstände",
     padding: "Innenabstand",
-    margin: "Außenabstand",
     background: "Hintergrund",
     color: "Farbe",
     display: "Anzeige",

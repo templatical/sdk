@@ -148,13 +148,6 @@ function toggleVisibility(key: VisibilityKey): void {
         :model-value="block.styles.padding"
         @update:model-value="updateStyle('padding', $event)"
       />
-      <div class="tpl:mt-4">
-        <SpacingControl
-          :label="t.blockSettings.margin"
-          :model-value="block.styles.margin"
-          @update:model-value="updateStyle('margin', $event)"
-        />
-      </div>
     </CollapsibleSection>
 
     <CollapsibleSection

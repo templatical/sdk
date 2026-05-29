@@ -134,13 +134,9 @@ const blockCommentCount = computed(
   () => caps.comments?.getBlockCount(props.block.id) ?? 0,
 );
 
-// Split the block style: margin stays on `.tpl-block` (so the block's flow
-// spacing in the canvas is unaffected), while padding + backgroundColor
-// move onto `.tpl-block-content`. Filter-based dark-mode preview targets
-// `.tpl-block-content` so the bg inverts together with its content.
-const wrapperStyle = computed(() => ({
-  margin: getBlockWrapperStyle(props.block).margin,
-}));
+// padding + backgroundColor live on `.tpl-block-content` (not `.tpl-block`).
+// Filter-based dark-mode preview targets `.tpl-block-content` so the bg
+// inverts together with its content.
 const contentStyle = computed(() => {
   const full = getBlockWrapperStyle(props.block);
   return { padding: full.padding, backgroundColor: full.backgroundColor };
@@ -180,7 +176,6 @@ function handleConditionToggle(): void {
       'tpl-block--idle': !isSelected,
       'tpl-block--lifted': isLifted,
     }"
-    :style="wrapperStyle"
     :data-block-id="block.id"
     :data-block-type="block.type"
     @click="handleClick"

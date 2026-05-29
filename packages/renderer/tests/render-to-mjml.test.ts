@@ -92,7 +92,7 @@ describe('renderToMjml', () => {
     const content = createDefaultTemplateContent();
     content.blocks = [
       createParagraphBlock({ content: '<p>Keep</p>' }),
-      { id: '1', type: 'html' as const, content: '<div>Remove</div>', styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } } },
+      { id: '1', type: 'html' as const, content: '<div>Remove</div>', styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } } },
     ];
     const mjml = await renderToMjml(content, { allowHtmlBlocks: false });
     expect(mjml).toContain('Keep');

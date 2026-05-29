@@ -58,7 +58,6 @@ function createDefaultSpacing(value = 0): SpacingValue {
 function createDefaultStyles(padding = 10): BlockStyles {
   return {
     padding: createDefaultSpacing(padding),
-    margin: createDefaultSpacing(0),
   };
 }
 
