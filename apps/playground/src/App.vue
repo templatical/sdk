@@ -886,6 +886,16 @@ async function initEditor(): Promise<void> {
       locale: sdkLocale.value,
       onRequestMedia: enableRequestMedia.value ? requestMedia : undefined,
     });
+    // E2E affordance: expose `editor.toMjml()` on window so Playwright tests
+    // can read the export-path output without depending on the playground's
+    // copy-to-clipboard UI (the clipboard API is unreliable in headless
+    // Chromium on Linux CI — see `apps/playground/e2e/tests/custom-block-stylesheet.spec.ts`).
+    // The playground is a dev/demo harness, not a shipped product, so a
+    // test hook here is on-mission.
+    (
+      window as { __tplPlaygroundGetMjml?: () => Promise<string> }
+    ).__tplPlaygroundGetMjml = () =>
+      editor.value?.toMjml() ?? Promise.resolve("");
   } catch (err) {
     console.error("[Playground] Editor init failed:", err);
     initError.value = format(t.value.error.initFailed, {

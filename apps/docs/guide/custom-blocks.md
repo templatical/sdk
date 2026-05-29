@@ -97,6 +97,7 @@ interface CustomBlockDefinition {
   template: string;
   dataSource?: DataSourceConfig;
   defaultStyles?: Partial<BlockStyles>;
+  stylesheet?: string;
 }
 ```
 
@@ -109,7 +110,8 @@ interface CustomBlockDefinition {
 | `fields` | Yes | Array of field definitions |
 | `template` | Yes | Liquid template string for rendering |
 | `dataSource` | No | External data fetching configuration |
-| `defaultStyles` | No | Default block styles (padding, margin, backgroundColor) — see [Default styles](#default-styles) |
+| `defaultStyles` | No | Default block styles (padding, backgroundColor) — see [Default styles](#default-styles) |
+| `stylesheet` | No | Definition-level CSS emitted once into the rendered MJML's `<mj-head>` and mirrored in the editor canvas — see [Stylesheets](#stylesheets) |
 
 ## Field types
 
@@ -274,6 +276,59 @@ This is the recommended way to opt custom blocks out of the SDK's default wrappe
 
 ::: warning Existing blocks don't retroactively pick up `defaultStyles` changes
 `defaultStyles` is applied once, when a new block instance is created from the palette. Blocks already on the canvas — or in saved templates — keep the styles they were created with. To see a `defaultStyles` change reflected on an existing block, delete it and drag a fresh instance. This is intentional: it prevents per-instance spacing tweaks made by end-users from being silently overwritten when a developer edits the definition.
+:::
+
+## Stylesheets
+
+The renderer wraps your `template` output in an `mj-text` cell, which means MJML's automatic responsive behavior — column stacking, fluid images, mobile-first padding — applies to the *outer* layout but **does not reach inside** your custom block's HTML. A two-column custom block with a `<table>` layout, for example, needs to opt into its own mobile stacking via a media query.
+
+Use `stylesheet` on the definition for CSS that should apply to all instances of the block: media queries, hover states, custom-block-specific font declarations, anchor color overrides. The renderer collects every definition's `stylesheet` from the content tree, dedupes (per `customType` and again per trimmed content), and emits each unique stylesheet **once** as `<mj-style>` inside `<mj-head>` — regardless of how many instances of the block the template contains. The editor canvas mirrors the same CSS so authored responsive behavior previews live.
+
+```ts
+{
+  type: 'image-text',
+  name: 'Image + Text',
+  fields: [
+    { key: 'image', type: 'image', label: 'Image' },
+    { key: 'heading', type: 'text', label: 'Heading' },
+    { key: 'body', type: 'textarea', label: 'Body' },
+  ],
+  template: `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+      <tr>
+        <td class="tplc-image-text-cell tplc-image-text-cell--media" style="width: 40%; vertical-align: top;">
+          <img src="{{ image }}" width="200" style="display: block; max-width: 100%;" />
+        </td>
+        <td class="tplc-image-text-cell tplc-image-text-cell--body" style="width: 60%; padding-left: 20px; vertical-align: top;">
+          <h3 style="margin: 0 0 8px;">{{ heading }}</h3>
+          <p style="margin: 0;">{{ body }}</p>
+        </td>
+      </tr>
+    </table>
+  `,
+  stylesheet: `
+    @media (max-width: 480px) {
+      .tplc-image-text-cell {
+        display: block !important;
+        width: 100% !important;
+        padding-left: 0 !important;
+      }
+      .tplc-image-text-cell--body {
+        padding-top: 16px !important;
+      }
+    }
+  `,
+}
+```
+
+::: tip Namespace your class names
+The SDK does not scope `stylesheet` selectors automatically. Two definitions that use the same class name will collide in the emitted `<mj-head>`. Prefix your classes per definition — the `tplc-<type>-<element>` convention (`tplc-image-text-cell`, `tplc-product-card-button`, …) keeps each definition's CSS isolated without runtime work.
+:::
+
+::: warning Email client caveats apply
+Like all CSS in an email, your `stylesheet` rules are subject to per-client support. Notably, **Outlook on Windows (2007–2021, Word rendering engine) ignores `@media` queries entirely** — your block keeps its desktop layout there. That's the expected fallback: Outlook desktop is a desktop client, so retaining the desktop styling is usually the right outcome. Mobile clients (iOS Mail, Apple Mail, Gmail, Outlook mobile) support media queries and apply your responsive rules normally.
+
+Stick to widely-supported CSS for the best results: `display`, `width`, `padding`, `background-color`, `border`, simple media queries on `max-width`. Avoid `flex`, `grid`, `position`, CSS animations, and similar advanced features in email contexts.
 :::
 
 ## Liquid templates

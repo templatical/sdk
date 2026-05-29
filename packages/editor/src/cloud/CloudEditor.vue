@@ -18,6 +18,7 @@ import CloudPanels from "./components/CloudPanels.vue";
 import EditorFooter from "../components/EditorFooter.vue";
 
 import Canvas from "../components/Canvas.vue";
+import CustomBlockStylesheets from "../components/CustomBlockStylesheets.vue";
 import Sidebar from "../components/Sidebar.vue";
 import RightSidebar from "../components/RightSidebar.vue";
 import CloudLoadingOverlay from "./components/CloudLoadingOverlay.vue";
@@ -195,6 +196,9 @@ defineExpose({
     :data-tpl-theme="core.resolvedTheme.value"
     :style="core.themeStyles.value"
   >
+    <!-- Reactive `<style>` tags for custom-block definition stylesheets in
+         use. Sits at the top so its rules apply to the canvas below. -->
+    <CustomBlockStylesheets />
     <!-- Loading overlay -->
     <Transition
       enter-active-class="tpl:transition-opacity tpl:duration-200"

@@ -53,6 +53,7 @@ import {
   BLOCK_DEFAULTS_KEY,
   BLOCK_REGISTRY_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
+  CUSTOM_BLOCK_STYLESHEETS_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
   MERGE_TAG_AUTOCOMPLETE_KEY,
@@ -86,6 +87,7 @@ import {
   useBlockRegistry,
   type UseBlockRegistryReturn,
 } from "./useBlockRegistry";
+import { useCustomBlockStylesheets } from "./useCustomBlockStylesheets";
 import { registerBuiltInBlocks } from "../utils/registerBuiltInBlocks";
 import { handleEditorKeydown } from "../utils/keyboardShortcuts";
 
@@ -409,6 +411,14 @@ export function useEditorCore(
   provide(BLOCK_DEFAULTS_KEY, config.blockDefaults);
   provide(BLOCK_REGISTRY_KEY, registry);
   provide(CUSTOM_BLOCK_DEFINITIONS_KEY, config.customBlocks ?? []);
+  // Reactive deduped list of custom-block stylesheets currently in use. The
+  // `<CustomBlockStylesheets>` component reads this and renders `<style>` tags
+  // into the editor root so authored CSS previews live in the canvas. The
+  // renderer's `getCustomBlockStylesheet` resolver covers the export path.
+  provide(
+    CUSTOM_BLOCK_STYLESHEETS_KEY,
+    useCustomBlockStylesheets(editor.content, registry),
+  );
 
   const mergeTagSyntax = resolveSyntax(config.mergeTags?.syntax);
   provide(MERGE_TAGS_KEY, config.mergeTags?.tags ?? []);

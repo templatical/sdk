@@ -29,6 +29,21 @@ export interface RenderOptions {
    */
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
   /**
+   * Resolves the definition-level CSS for a custom block type. Called once
+   * per unique `customType` present in the content tree (not per instance).
+   * The non-empty results are deduped by content and emitted as additional
+   * `<mj-style>` blocks inside `<mj-head>` alongside the built-in visibility
+   * media queries.
+   *
+   * Editor consumers: pass a function that reads
+   * `blockRegistry.getDefinition(customType)?.stylesheet`.
+   *
+   * Headless consumers: provide your own resolver, typically from the same
+   * definitions map used by `renderCustomBlock`. Return `undefined` or `null`
+   * for definitions without a stylesheet — those are skipped.
+   */
+  getCustomBlockStylesheet?: (customType: string) => string | undefined | null;
+  /**
    * Base URL (no trailing slash) for the social icon PNG assets. Resolved to
    * `${baseUrl}/${style}/${platform}.png` per icon. Defaults to the
    * version-pinned unpkg mirror of this package. Override to self-host
@@ -65,6 +80,11 @@ export async function renderToMjml(
   const customBlockHtml = await resolveCustomBlocks(
     content,
     options?.renderCustomBlock,
+  );
+
+  const customBlockStylesheets = collectCustomBlockStylesheets(
+    content,
+    options?.getCustomBlockStylesheet,
   );
 
   const renderContext = new RenderContext(
@@ -109,7 +129,7 @@ export async function renderToMjml(
       @media only screen and (min-width: 481px) {
         .tpl-hide-desktop { display: none !important; mso-hide: all !important; }
       }
-    </mj-style>
+    </mj-style>${renderCustomBlockStylesheets(customBlockStylesheets)}
   </mj-head>
   <mj-body width="${renderContext.containerWidth}px" background-color="${backgroundColor}">
 ${bodyContent}
@@ -265,6 +285,70 @@ function collectCustomBlocks(blocks: Block[], out: CustomBlock[]): void {
       }
     }
   }
+}
+
+/**
+ * Walk the content tree, find every unique `customType`, ask the consumer's
+ * resolver for that definition's stylesheet, and return the non-empty,
+ * content-deduped set in insertion order.
+ *
+ * Content-level dedupe (not just by customType) means two definitions that
+ * happen to ship the same stylesheet string emit it only once — cheap and
+ * matches the "one rule, emitted once" mental model. Whitespace-only and
+ * empty stylesheets are skipped.
+ */
+function collectCustomBlockStylesheets(
+  content: TemplateContent,
+  resolver: RenderOptions["getCustomBlockStylesheet"],
+): string[] {
+  if (!resolver) {
+    return [];
+  }
+
+  const customBlocks: CustomBlock[] = [];
+  collectCustomBlocks(content.blocks, customBlocks);
+
+  if (customBlocks.length === 0) {
+    return [];
+  }
+
+  const seenTypes = new Set<string>();
+  const seenContent = new Set<string>();
+  const stylesheets: string[] = [];
+
+  for (const block of customBlocks) {
+    if (seenTypes.has(block.customType)) {
+      continue;
+    }
+    seenTypes.add(block.customType);
+
+    const css = resolver(block.customType);
+    if (!css) {
+      continue;
+    }
+
+    const trimmed = css.trim();
+    if (trimmed === "" || seenContent.has(trimmed)) {
+      continue;
+    }
+    seenContent.add(trimmed);
+    stylesheets.push(trimmed);
+  }
+
+  return stylesheets;
+}
+
+function renderCustomBlockStylesheets(stylesheets: string[]): string {
+  if (stylesheets.length === 0) {
+    return "";
+  }
+
+  // One `<mj-style>` per unique stylesheet so per-definition CSS can be
+  // independently inspected in the rendered MJML, and authors can grep their
+  // contribution without disentangling a merged blob.
+  return stylesheets
+    .map((css) => `\n    <mj-style>\n${css}\n    </mj-style>`)
+    .join("");
 }
 
 // Re-export utilities for consumers

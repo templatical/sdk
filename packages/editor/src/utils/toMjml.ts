@@ -8,6 +8,15 @@ import type { CustomBlock, TemplateContent } from "@templatical/types";
 export interface ToMjmlSource {
   getContent(): TemplateContent;
   renderCustomBlock(block: CustomBlock): Promise<string>;
+  /**
+   * Optional. Look up the definition-level CSS for a custom block type.
+   * Returns `undefined` when the definition is unknown or has no
+   * `stylesheet`. Wired to the renderer's `getCustomBlockStylesheet` option
+   * so authored responsive/hover/font CSS lands in `<mj-head>` deduped per
+   * definition. Sources that omit it produce the same MJML as before this
+   * field existed — backward compatible.
+   */
+  getCustomBlockStylesheet?: (customType: string) => string | undefined;
 }
 
 /**
@@ -35,7 +44,17 @@ export async function toMjmlForInstance(
       "[Templatical] toMjml() requires the @templatical/renderer package. Please install it.",
     );
   }
+  const stylesheetResolver = instance.getCustomBlockStylesheet;
   return renderer.renderToMjml(instance.getContent(), {
     renderCustomBlock: instance.renderCustomBlock,
+    // Only pass through when the source actually provides a resolver, so
+    // callers that don't care about stylesheets see the same options shape
+    // (and the same MJML output) as before this field existed.
+    ...(stylesheetResolver
+      ? {
+          getCustomBlockStylesheet: (customType: string) =>
+            stylesheetResolver(customType),
+        }
+      : {}),
   });
 }

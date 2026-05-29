@@ -365,8 +365,10 @@ interface CustomBlockDefinition {
   icon?: string;
   description?: string;
   fields: CustomBlockField[];
-  template: string;           // Liquid-Template
+  template: string;                       // Liquid-Template
   dataSource?: DataSourceConfig;
+  defaultStyles?: Partial<BlockStyles>;   // Stile für neue Instanzen
+  stylesheet?: string;                    // CSS, einmal in mj-head emittiert
 }
 ```
 

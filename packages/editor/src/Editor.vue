@@ -10,6 +10,7 @@ import type { UseFontsReturn } from "./composables/useFonts";
 
 import { RotateCcw } from "@lucide/vue";
 import Canvas from "./components/Canvas.vue";
+import CustomBlockStylesheets from "./components/CustomBlockStylesheets.vue";
 import Sidebar from "./components/Sidebar.vue";
 import RightSidebar from "./components/RightSidebar.vue";
 import ViewportToggle from "./components/ViewportToggle.vue";
@@ -89,6 +90,8 @@ defineExpose({
   setContent: (content: TemplateContent) => editor.setContent(content),
   setTheme: (theme: UiTheme) => editor.setUiTheme(theme),
   renderCustomBlock: core.registry.renderCustomBlock,
+  getCustomBlockStylesheet: (customType: string) =>
+    core.registry.getDefinition(customType)?.stylesheet,
 });
 </script>
 
@@ -100,6 +103,9 @@ defineExpose({
     :data-tpl-theme="core.resolvedTheme.value"
     :style="core.themeStyles.value"
   >
+    <!-- Reactive `<style>` tags for custom-block definition stylesheets in
+         use. Sits at the top so its rules apply to the canvas below. -->
+    <CustomBlockStylesheets />
     <!-- Header — absolute, full width, above everything -->
     <header
       class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[1fr_auto_1fr] tpl:items-center tpl:px-4 tpl:shadow-[var(--tpl-shadow-md)] tpl:border-b tpl:border-[var(--tpl-border)]"
