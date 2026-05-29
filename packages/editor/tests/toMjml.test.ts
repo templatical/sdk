@@ -151,6 +151,50 @@ describe("toMjmlForInstance", () => {
     expect(renderToMjml).toHaveBeenCalledTimes(2);
   });
 
+  it("wires getCustomBlockStylesheet through to the renderer when the source provides it", async () => {
+    const renderToMjml = vi.fn().mockResolvedValue("<mjml/>");
+    vi.doMock("@templatical/renderer", () => ({ renderToMjml }));
+
+    const { toMjmlForInstance } = await import("../src/utils/toMjml");
+
+    const getCustomBlockStylesheet = vi.fn(
+      (t: string) => (t === "event" ? ".tplc-event { color: red; }" : undefined),
+    );
+    const content = makeContent([createCustomBlock(definition)]);
+
+    await toMjmlForInstance({
+      getContent: () => content,
+      renderCustomBlock: vi.fn(async () => ""),
+      getCustomBlockStylesheet,
+    });
+
+    // The renderer received a stylesheet resolver and calling it with
+    // "event" returns the source's CSS — proving the wiring is end-to-end,
+    // not just a shape match.
+    const optionsArg = renderToMjml.mock.calls[0][1];
+    expect(typeof optionsArg.getCustomBlockStylesheet).toBe("function");
+    expect(optionsArg.getCustomBlockStylesheet("event")).toBe(
+      ".tplc-event { color: red; }",
+    );
+    expect(optionsArg.getCustomBlockStylesheet("unknown")).toBe(undefined);
+  });
+
+  it("omits getCustomBlockStylesheet from renderer options when the source doesn't provide one", async () => {
+    const renderToMjml = vi.fn().mockResolvedValue("<mjml/>");
+    vi.doMock("@templatical/renderer", () => ({ renderToMjml }));
+
+    const { toMjmlForInstance } = await import("../src/utils/toMjml");
+
+    await toMjmlForInstance({
+      getContent: () => makeContent([]),
+      renderCustomBlock: vi.fn(async () => ""),
+      // No getCustomBlockStylesheet
+    });
+
+    const optionsArg = renderToMjml.mock.calls[0][1];
+    expect(optionsArg).not.toHaveProperty("getCustomBlockStylesheet");
+  });
+
   it("does not call renderCustomBlock itself — that's the renderer's job", async () => {
     const renderCustomBlock = vi.fn(async () => "<p/>");
     vi.doMock("@templatical/renderer", () => ({

@@ -102,6 +102,26 @@ export interface CustomBlockDefinition {
    * }
    */
   defaultStyles?: Partial<BlockStyles>;
+  /**
+   * Optional CSS rules attached to this custom block definition. Emitted once
+   * (deduped across instances) into `<mj-head><mj-style>…</mj-style></mj-head>`
+   * in the rendered MJML, and adopted into the editor canvas (shadow root or
+   * light-DOM mount) so authored responsive/hover/font behavior previews
+   * inside the editor.
+   *
+   * Use this for media queries, hover states, or any CSS that should apply
+   * once per definition rather than per block instance. Class names are not
+   * scoped by the SDK — namespace them yourself (e.g. `.tplc-<type>-<el>`) to
+   * avoid collisions with other definitions or built-in editor styles.
+   *
+   * @example
+   * stylesheet: `
+   *   @media (max-width: 480px) {
+   *     .tplc-image-text-cell { display: block !important; width: 100% !important; }
+   *   }
+   * `
+   */
+  stylesheet?: string;
 }
 
 export interface DataSourceFetchContext {

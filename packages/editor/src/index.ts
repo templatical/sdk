@@ -131,6 +131,14 @@ export interface TemplaticalEditor extends TemplaticalEditorBase {
    * `renderCustomBlock` option from outside the editor instance).
    */
   renderCustomBlock(block: CustomBlock): Promise<string>;
+  /**
+   * Look up the definition-level `stylesheet` for a registered custom block
+   * type. Returns the raw CSS string, or `undefined` when the type is unknown
+   * or the definition has no stylesheet. Exposed for headless callers that
+   * want to drive `@templatical/renderer`'s `getCustomBlockStylesheet` option
+   * from outside the editor instance.
+   */
+  getCustomBlockStylesheet(customType: string): string | undefined;
 }
 
 /**
@@ -405,6 +413,15 @@ export async function init(
         return Promise.reject(new Error("[Templatical] Editor not ready"));
       }
       return editorRef.value.renderCustomBlock(block);
+    },
+    getCustomBlockStylesheet(customType: string) {
+      // Pre-mount: registry is empty, so no definition has a stylesheet to
+      // resolve. Returning undefined here matches the "unknown type" branch
+      // and keeps the renderer's `getCustomBlockStylesheet` resolver total.
+      if (!editorRef.value) {
+        return undefined;
+      }
+      return editorRef.value.getCustomBlockStylesheet(customType);
     },
     toMjml: () => toMjmlForInstance(instance),
   };

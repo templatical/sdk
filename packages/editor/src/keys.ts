@@ -63,6 +63,9 @@ export const CUSTOM_BLOCK_DEFINITIONS_KEY: InjectionKey<
   CustomBlockDefinition[]
 > = Symbol("customBlockDefinitions");
 
+export const CUSTOM_BLOCK_STYLESHEETS_KEY: InjectionKey<ComputedRef<string[]>> =
+  Symbol("customBlockStylesheets");
+
 export const MERGE_TAGS_KEY: InjectionKey<MergeTag[]> = Symbol("mergeTags");
 
 export const MERGE_TAG_SYNTAX_KEY: InjectionKey<SyntaxPreset> =
