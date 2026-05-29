@@ -76,17 +76,16 @@ describe("resolveBlockComponent", () => {
 });
 
 describe("getBlockWrapperStyle", () => {
-  it("computes padding, margin, and background from block styles", () => {
+  it("computes padding and background from block styles", () => {
     const block = createTitleBlock();
     block.styles = {
       padding: { top: 10, right: 20, bottom: 30, left: 40 },
-      margin: { top: 5, right: 10, bottom: 15, left: 20 },
       backgroundColor: "#ff0000",
     };
 
     const style = getBlockWrapperStyle(block);
     expect(style.padding).toBe("10px 20px 30px 40px");
-    expect(style.margin).toBe("5px 10px 15px 20px");
+    expect(style.margin).toBeUndefined();
     expect(style.backgroundColor).toBe("#ff0000");
   });
 
@@ -94,7 +93,6 @@ describe("getBlockWrapperStyle", () => {
     const block = createTitleBlock();
     block.styles = {
       padding: { top: 0, right: 0, bottom: 0, left: 0 },
-      margin: { top: 0, right: 0, bottom: 0, left: 0 },
       backgroundColor: "",
     };
 
@@ -102,16 +100,15 @@ describe("getBlockWrapperStyle", () => {
     expect(style.backgroundColor).toBe("transparent");
   });
 
-  it("handles zero padding and margin", () => {
+  it("handles zero padding", () => {
     const block = createTitleBlock();
     block.styles = {
       padding: { top: 0, right: 0, bottom: 0, left: 0 },
-      margin: { top: 0, right: 0, bottom: 0, left: 0 },
       backgroundColor: "#fff",
     };
 
     const style = getBlockWrapperStyle(block);
     expect(style.padding).toBe("0px 0px 0px 0px");
-    expect(style.margin).toBe("0px 0px 0px 0px");
+    expect(style.backgroundColor).toBe("#fff");
   });
 });

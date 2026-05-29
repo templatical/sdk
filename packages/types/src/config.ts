@@ -1,6 +1,6 @@
 import type { SyntaxPreset, SyntaxPresetName } from "./merge-tags";
 
-export type ViewportSize = "desktop" | "tablet" | "mobile";
+export type ViewportSize = "desktop" | "mobile";
 
 export type UiTheme = "light" | "dark" | "auto";
 

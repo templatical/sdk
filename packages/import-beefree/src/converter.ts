@@ -111,7 +111,6 @@ function processRow(
     children,
     styles: {
       padding: { top: 0, right: 0, bottom: 0, left: 0 },
-      margin: { top: 0, right: 0, bottom: 0, left: 0 },
       ...(rowBg ? { backgroundColor: rowBg } : {}),
     },
   });

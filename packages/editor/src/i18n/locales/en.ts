@@ -16,7 +16,6 @@ export default {
   viewport: {
     label: "Viewport",
     desktop: "Desktop",
-    tablet: "Tablet",
     mobile: "Mobile",
   },
 
@@ -383,12 +382,10 @@ export default {
   blockSettings: {
     spacing: "Spacing",
     padding: "Padding",
-    margin: "Margin",
     background: "Background",
     color: "Color",
     display: "Display",
     showOnDesktop: "Show on desktop",
-    showOnTablet: "Show on tablet",
     showOnMobile: "Show on mobile",
     hiddenOnDevice: "Hidden on {device}",
     customCss: "Custom CSS",

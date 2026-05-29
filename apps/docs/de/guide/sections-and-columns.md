@@ -107,12 +107,11 @@ const block = createParagraphBlock({
 
 block.visibility = {
   desktop: true,
-  tablet: true,
   mobile: false,
 };
 ```
 
-Siehe [Styling](/de/guide/styling) für weitere Informationen zu responsiven Überschreibungen und Blocksichtbarkeit.
+Siehe [Styling](/de/guide/styling) für weitere Informationen zur Blocksichtbarkeit.
 
 ## Stile auf Sektionsebene
 
@@ -124,6 +123,5 @@ const section = createSectionBlock({ columns: '1' });
 section.styles = {
   backgroundColor: '#f8fafc',
   padding: { top: 32, right: 24, bottom: 32, left: 24 },
-  margin: { top: 0, right: 0, bottom: 0, left: 0 },
 };
 ```

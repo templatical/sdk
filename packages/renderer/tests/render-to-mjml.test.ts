@@ -66,8 +66,8 @@ describe('renderToMjml', () => {
     const content = createDefaultTemplateContent();
     const mjml = await renderToMjml(content);
     expect(mjml).toContain('tpl-hide-mobile');
-    expect(mjml).toContain('tpl-hide-tablet');
     expect(mjml).toContain('tpl-hide-desktop');
+    expect(mjml).not.toContain('tpl-hide-tablet');
   });
 
   it('wraps blocks with display conditions', async () => {
@@ -92,7 +92,7 @@ describe('renderToMjml', () => {
     const content = createDefaultTemplateContent();
     content.blocks = [
       createParagraphBlock({ content: '<p>Keep</p>' }),
-      { id: '1', type: 'html' as const, content: '<div>Remove</div>', styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } } },
+      { id: '1', type: 'html' as const, content: '<div>Remove</div>', styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } } },
     ];
     const mjml = await renderToMjml(content, { allowHtmlBlocks: false });
     expect(mjml).toContain('Keep');
@@ -185,7 +185,7 @@ describe('renderToMjml', () => {
       }),
       createParagraphBlock({
         content: '<p>Hidden</p>',
-        visibility: { desktop: false, tablet: false, mobile: false },
+        visibility: { desktop: false, mobile: false },
       }),
     ];
     const mjml = await renderToMjml(content);

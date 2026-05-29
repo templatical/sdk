@@ -800,13 +800,11 @@ export class EditorPage {
 
   // --- Viewport & toggles ---
 
-  async switchViewport(name: "Desktop" | "Tablet" | "Mobile"): Promise<void> {
+  async switchViewport(name: "Desktop" | "Mobile"): Promise<void> {
     const selector =
       name === "Desktop"
         ? SELECTORS.viewportDesktop
-        : name === "Tablet"
-          ? SELECTORS.viewportTablet
-          : SELECTORS.viewportMobile;
+        : SELECTORS.viewportMobile;
     // Arm a transitionend listener before the click so we catch the exact
     // settled frame. Canvas.vue animates `width` with a 300ms spring-bounce
     // curve — polling for "width changed" fires mid-flight and returns an

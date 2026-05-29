@@ -19,7 +19,6 @@ const de: typeof en = {
   viewport: {
     label: "Ansichtsgröße",
     desktop: "Desktop",
-    tablet: "Tablet",
     mobile: "Mobil",
   },
 
@@ -390,12 +389,10 @@ const de: typeof en = {
   blockSettings: {
     spacing: "Abstände",
     padding: "Innenabstand",
-    margin: "Außenabstand",
     background: "Hintergrund",
     color: "Farbe",
     display: "Anzeige",
     showOnDesktop: "Auf Desktop anzeigen",
-    showOnTablet: "Auf Tablet anzeigen",
     showOnMobile: "Auf Mobilgerät anzeigen",
     hiddenOnDevice: "Ausgeblendet auf {device}",
     customCss: "Benutzerdefiniertes CSS",

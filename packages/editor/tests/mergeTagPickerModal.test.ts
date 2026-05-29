@@ -531,6 +531,23 @@ describe("MergeTagPickerModal — a11y", () => {
   });
 });
 
+describe("MergeTagPickerModal — theming", () => {
+  it("panel carries data-tpl-theme so dark-mode + theme-config tokens resolve locally", async () => {
+    // Regression: the panel has the `tpl` token class, which re-declares
+    // every design token with LIGHT defaults via the base `.tpl` rule.
+    // Without `data-tpl-theme` on the same element, the
+    // `.tpl[data-tpl-theme="dark"]` block never matches the panel and the
+    // picker ignores dark mode + the consumer's `theme` overrides. The
+    // mount helper provides UI_THEME_KEY = "light".
+    mountPicker(flatTags);
+    await nextTick();
+    const panel = findDialog()!;
+    expect(panel.getAttribute("data-tpl-theme")).toBe("light");
+    // It still carries the token class (the reason the attribute is needed).
+    expect(panel.classList.contains("tpl")).toBe(true);
+  });
+});
+
 describe("MergeTagPickerModal — i18n", () => {
   it("renders strings from t.mergeTag.picker.*", async () => {
     mountPicker(flatTags);

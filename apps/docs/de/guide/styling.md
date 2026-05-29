@@ -1,6 +1,6 @@
 ---
 title: Styling
-description: Block-Stile, Abstände, responsive Überschreibungen, Sichtbarkeit und Einstellungen auf Template-Ebene in Templatical.
+description: Block-Stile, Abstände, Sichtbarkeit und Einstellungen auf Template-Ebene in Templatical.
 ---
 
 # Styling
@@ -9,14 +9,12 @@ Jeder Block in Templatical trägt eine Eigenschaft `styles` für Layout und Ersc
 
 ## BlockStyles
 
-Die Schnittstelle `BlockStyles` steuert Padding, Margin, Hintergrund und responsive Überschreibungen.
+Die Schnittstelle `BlockStyles` steuert Padding und Hintergrund.
 
 ```ts
 interface BlockStyles {
   padding: SpacingValue;
-  margin: SpacingValue;
   backgroundColor?: string;
-  responsive?: ResponsiveStyles;
 }
 ```
 
@@ -29,14 +27,13 @@ const block = createParagraphBlock({
 
 block.styles = {
   padding: { top: 16, right: 24, bottom: 16, left: 24 },
-  margin: { top: 0, right: 0, bottom: 0, left: 0 },
   backgroundColor: '#f0f9ff',
 };
 ```
 
 ## SpacingValue
 
-Padding und Margin verwenden den Typ `SpacingValue` mit vier Richtungswerten in Pixeln.
+Padding verwendet den Typ `SpacingValue` mit vier Richtungswerten in Pixeln.
 
 ```ts
 interface SpacingValue {
@@ -52,42 +49,6 @@ Alle vier Eigenschaften sind erforderlich. Verwenden Sie `0` für Seiten, die ke
 ```ts
 block.styles = {
   padding: { top: 0, right: 16, bottom: 0, left: 16 },
-  margin: { top: 8, right: 0, bottom: 8, left: 0 },
-};
-```
-
-## Responsive Überschreibungen
-
-Die Eigenschaft `responsive` innerhalb von `BlockStyles` ermöglicht es Ihnen, partielle Stil-Überschreibungen auf Tablet- und Mobile-Breakpoints anzuwenden.
-
-```ts
-interface ResponsiveStyles {
-  tablet?: Partial<BlockStyles>;
-  mobile?: Partial<BlockStyles>;
-}
-```
-
-Der Editor verwendet diese Viewport-Breiten im Vorschaumodus:
-
-| Viewport | Vorschaubreite |
-|----------|---------------|
-| Desktop | Template-Breite (Standard 600px) |
-| Tablet | 768px |
-| Mobile | 375px |
-
-Responsive Überschreibungen werden mit den Basisstilen zusammengeführt. Geben Sie nur die Eigenschaften an, die Sie ändern möchten:
-
-```ts
-block.styles = {
-  padding: { top: 32, right: 48, bottom: 32, left: 48 },
-  responsive: {
-    tablet: {
-      padding: { top: 24, right: 24, bottom: 24, left: 24 },
-    },
-    mobile: {
-      padding: { top: 16, right: 12, bottom: 16, left: 12 },
-    },
-  },
 };
 ```
 
@@ -98,18 +59,16 @@ Die Eigenschaft `visibility` auf jedem Block steuert, ob er bei jedem Breakpoint
 ```ts
 interface BlockVisibility {
   desktop: boolean;
-  tablet: boolean;
   mobile: boolean;
 }
 ```
 
-Alle drei sind standardmäßig `true`. Setzen Sie einen Breakpoint auf `false`, um den Block bei dieser Größe auszublenden:
+Beide sind standardmäßig `true`. Setzen Sie einen Breakpoint auf `false`, um den Block bei dieser Größe auszublenden:
 
 ```ts
 // Nur auf dem Desktop anzeigen
 block.visibility = {
   desktop: true,
-  tablet: false,
   mobile: false,
 };
 ```

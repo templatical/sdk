@@ -5,21 +5,13 @@ export interface SpacingValue {
   left: number;
 }
 
-export interface ResponsiveStyles {
-  tablet?: Partial<BlockStyles>;
-  mobile?: Partial<BlockStyles>;
-}
-
 export interface BlockStyles {
   padding: SpacingValue;
-  margin: SpacingValue;
   backgroundColor?: string;
-  responsive?: ResponsiveStyles;
 }
 
 export interface BlockVisibility {
   desktop: boolean;
-  tablet: boolean;
   mobile: boolean;
 }
 

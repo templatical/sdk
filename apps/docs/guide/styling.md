@@ -1,6 +1,6 @@
 ---
 title: Styling
-description: Block styles, spacing, responsive overrides, visibility, and template-level settings in Templatical.
+description: Block styles, spacing, visibility, and template-level settings in Templatical.
 ---
 
 # Styling
@@ -9,14 +9,12 @@ Every block in Templatical carries a `styles` property for layout and appearance
 
 ## BlockStyles
 
-The `BlockStyles` interface controls padding, margin, background, and responsive overrides.
+The `BlockStyles` interface controls padding and background.
 
 ```ts
 interface BlockStyles {
   padding: SpacingValue;
-  margin: SpacingValue;
   backgroundColor?: string;
-  responsive?: ResponsiveStyles;
 }
 ```
 
@@ -29,14 +27,13 @@ const block = createParagraphBlock({
 
 block.styles = {
   padding: { top: 16, right: 24, bottom: 16, left: 24 },
-  margin: { top: 0, right: 0, bottom: 0, left: 0 },
   backgroundColor: '#f0f9ff',
 };
 ```
 
 ## SpacingValue
 
-Padding and margin use the `SpacingValue` type with four directional values in pixels.
+Padding uses the `SpacingValue` type with four directional values in pixels.
 
 ```ts
 interface SpacingValue {
@@ -52,42 +49,6 @@ All four properties are required. Use `0` for sides that need no spacing:
 ```ts
 block.styles = {
   padding: { top: 0, right: 16, bottom: 0, left: 16 },
-  margin: { top: 8, right: 0, bottom: 8, left: 0 },
-};
-```
-
-## Responsive overrides
-
-The `responsive` property inside `BlockStyles` lets you apply partial style overrides at tablet and mobile breakpoints.
-
-```ts
-interface ResponsiveStyles {
-  tablet?: Partial<BlockStyles>;
-  mobile?: Partial<BlockStyles>;
-}
-```
-
-The editor uses these viewport widths in preview mode:
-
-| Viewport | Preview Width |
-|----------|---------------|
-| Desktop | Template width (default 600px) |
-| Tablet | 768px |
-| Mobile | 375px |
-
-Responsive overrides merge with the base styles. Only specify the properties you want to change:
-
-```ts
-block.styles = {
-  padding: { top: 32, right: 48, bottom: 32, left: 48 },
-  responsive: {
-    tablet: {
-      padding: { top: 24, right: 24, bottom: 24, left: 24 },
-    },
-    mobile: {
-      padding: { top: 16, right: 12, bottom: 16, left: 12 },
-    },
-  },
 };
 ```
 
@@ -98,18 +59,16 @@ The `visibility` property on any block controls whether it renders at each break
 ```ts
 interface BlockVisibility {
   desktop: boolean;
-  tablet: boolean;
   mobile: boolean;
 }
 ```
 
-All three default to `true`. Set a breakpoint to `false` to hide the block at that size:
+Both default to `true`. Set a breakpoint to `false` to hide the block at that size:
 
 ```ts
 // Show only on desktop
 block.visibility = {
   desktop: true,
-  tablet: false,
   mobile: false,
 };
 ```

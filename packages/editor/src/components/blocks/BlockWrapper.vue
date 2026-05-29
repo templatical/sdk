@@ -103,13 +103,19 @@ const isHiddenOnViewport = computed(() => {
   return props.block.visibility[props.viewport] === false;
 });
 
+// In edit mode a viewport-hidden block stays rendered (dimmed + badge) so it
+// remains selectable. In preview mode it must actually disappear to match the
+// exported MJML, which drops it via `@media` + `tpl-hide-*` css-classes.
+const isHiddenInPreview = computed(
+  () => props.previewMode === true && isHiddenOnViewport.value,
+);
+
 const hiddenLabel = computed(() => {
   if (!props.viewport) {
     return "";
   }
   const labels: Record<string, string> = {
     desktop: t.viewport.desktop,
-    tablet: t.viewport.tablet,
     mobile: t.viewport.mobile,
   };
   return labels[props.viewport] ?? props.viewport;
@@ -128,13 +134,9 @@ const blockCommentCount = computed(
   () => caps.comments?.getBlockCount(props.block.id) ?? 0,
 );
 
-// Split the block style: margin stays on `.tpl-block` (so the block's flow
-// spacing in the canvas is unaffected), while padding + backgroundColor
-// move onto `.tpl-block-content`. Filter-based dark-mode preview targets
-// `.tpl-block-content` so the bg inverts together with its content.
-const wrapperStyle = computed(() => ({
-  margin: getBlockWrapperStyle(props.block).margin,
-}));
+// padding + backgroundColor live on `.tpl-block-content` (not `.tpl-block`).
+// Filter-based dark-mode preview targets `.tpl-block-content` so the bg
+// inverts together with its content.
 const contentStyle = computed(() => {
   const full = getBlockWrapperStyle(props.block);
   return { padding: full.padding, backgroundColor: full.backgroundColor };
@@ -167,13 +169,13 @@ function handleConditionToggle(): void {
 
 <template>
   <div
+    v-if="!isHiddenInPreview"
     class="tpl-block tpl:group tpl:relative tpl:cursor-pointer tpl:rounded-sm tpl:transition-shadow tpl:duration-150"
     :class="{
       'tpl-block--selected': isSelected,
       'tpl-block--idle': !isSelected,
       'tpl-block--lifted': isLifted,
     }"
-    :style="wrapperStyle"
     :data-block-id="block.id"
     :data-block-type="block.type"
     @click="handleClick"

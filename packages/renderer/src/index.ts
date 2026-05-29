@@ -106,10 +106,7 @@ export async function renderToMjml(
       @media only screen and (max-width: 480px) {
         .tpl-hide-mobile { display: none !important; mso-hide: all !important; }
       }
-      @media only screen and (min-width: 481px) and (max-width: 768px) {
-        .tpl-hide-tablet { display: none !important; mso-hide: all !important; }
-      }
-      @media only screen and (min-width: 769px) {
+      @media only screen and (min-width: 481px) {
         .tpl-hide-desktop { display: none !important; mso-hide: all !important; }
       }
     </mj-style>

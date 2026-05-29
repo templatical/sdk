@@ -122,7 +122,7 @@ describe('renderToMjml helpers', () => {
     const content = createDefaultTemplateContent();
     const result = await renderToMjml(content);
     expect(result).toContain('.tpl-hide-mobile');
-    expect(result).toContain('.tpl-hide-tablet');
     expect(result).toContain('.tpl-hide-desktop');
+    expect(result).not.toContain('.tpl-hide-tablet');
   });
 });

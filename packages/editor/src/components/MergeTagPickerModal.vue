@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   computed,
+  inject,
   nextTick,
   ref,
   watch,
@@ -11,7 +12,12 @@ import { ChevronDown, Search, X } from "@lucide/vue";
 import type { MergeTag } from "@templatical/types";
 import TplModal from "./TplModal.vue";
 import { useI18n } from "../composables/useI18n";
-import { MERGE_TAG_PICKER_KEY, requireInject } from "../keys";
+import {
+  MERGE_TAG_PICKER_KEY,
+  THEME_STYLES_KEY,
+  UI_THEME_KEY,
+  requireInject,
+} from "../keys";
 
 // Picker singleton — provided by useEditorCore. We require it explicitly so
 // the modal is unmountable only in a non-editor context (which we don't
@@ -19,6 +25,15 @@ import { MERGE_TAG_PICKER_KEY, requireInject } from "../keys";
 // silent inject default mask the misuse.
 const picker = requireInject(MERGE_TAG_PICKER_KEY, "MergeTagPickerModal");
 const { t, format } = useI18n();
+
+// Theming — same pattern as every other OSS panel (ParagraphToolbar,
+// RichTextLinkDialog). The panel carries the `tpl` token class, so it must
+// re-establish the theme locally: `data-tpl-theme` selects the dark token
+// block, and the inline `themeStyles` apply the consumer's `theme` config
+// overrides. Without these the base `.tpl` rule shadows both with light
+// defaults and the picker ignores dark mode + custom theme colors.
+const themeStyles = inject(THEME_STYLES_KEY, null);
+const tplUiTheme = inject(UI_THEME_KEY, null);
 
 // --- Search ---
 const rawSearch = ref("");
@@ -306,8 +321,10 @@ const showPillRow = computed(
       role="dialog"
       aria-modal="true"
       :aria-labelledby="`${listId}-title`"
+      :data-tpl-theme="tplUiTheme"
       data-testid="merge-tag-picker-modal"
       class="tpl tpl:flex tpl:max-h-[80vh] tpl:w-[min(420px,92vw)] tpl:flex-col tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:shadow-[var(--tpl-shadow-lg)]"
+      :style="themeStyles"
     >
       <!-- Header -->
       <header

@@ -155,7 +155,6 @@ test.describe("aggressive host CSS — issue #70 proof-of-fix gate", () => {
             content: "<p>shadow-protected text</p>",
             styles: {
               padding: { top: 10, right: 10, bottom: 10, left: 10 },
-              margin: { top: 0, right: 0, bottom: 0, left: 0 },
             },
           },
         ],
@@ -202,7 +201,6 @@ test.describe("aggressive host CSS — issue #70 proof-of-fix gate", () => {
             content: "<p>shadow-protected heading</p>",
             styles: {
               padding: { top: 10, right: 10, bottom: 10, left: 10 },
-              margin: { top: 0, right: 0, bottom: 0, left: 0 },
             },
           },
         ],

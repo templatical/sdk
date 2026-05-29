@@ -20,7 +20,6 @@ import type {
   MenuItemData,
   TableRowData,
   TableCellData,
-  SpacingValue,
 } from "@templatical/types";
 import type {
   BeeFreeeModule,
@@ -123,16 +122,11 @@ function stripTagsPlain(text: string): string {
   return out;
 }
 
-function defaultMargin(): SpacingValue {
-  return { top: 0, right: 0, bottom: 0, left: 0 };
-}
-
 function makeStyles(descriptor: BeeFreeeModuleDescriptor): Block["styles"] {
   const padding = extractPadding(descriptor.style);
   const bg = parseColor(descriptor.style?.["background-color"]);
   return {
     padding,
-    margin: defaultMargin(),
     ...(bg ? { backgroundColor: bg } : {}),
   };
 }

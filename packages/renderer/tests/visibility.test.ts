@@ -10,14 +10,14 @@ describe('isHiddenOnAll', () => {
 
   it('returns true when hidden on all viewports', () => {
     const block = createParagraphBlock({
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     expect(isHiddenOnAll(block)).toBe(true);
   });
 
   it('returns false when visible on at least one viewport', () => {
     const block = createParagraphBlock({
-      visibility: { desktop: true, tablet: false, mobile: false },
+      visibility: { desktop: true, mobile: false },
     });
     expect(isHiddenOnAll(block)).toBe(false);
   });
@@ -31,18 +31,9 @@ describe('getCssClasses', () => {
 
   it('returns hide classes for hidden viewports', () => {
     const block = createParagraphBlock({
-      visibility: { desktop: false, tablet: true, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     expect(getCssClasses(block)).toBe('tpl-hide-desktop tpl-hide-mobile');
-  });
-
-  it('returns all hide classes when all hidden', () => {
-    const block = createParagraphBlock({
-      visibility: { desktop: false, tablet: false, mobile: false },
-    });
-    expect(getCssClasses(block)).toBe(
-      'tpl-hide-desktop tpl-hide-tablet tpl-hide-mobile',
-    );
   });
 });
 
@@ -52,11 +43,18 @@ describe('getCssClassAttr', () => {
     expect(getCssClassAttr(block)).toBe('');
   });
 
-  it('returns css-class attribute string', () => {
+  it('returns css-class attribute string for desktop-hidden block', () => {
     const block = createParagraphBlock({
-      visibility: { desktop: true, tablet: false, mobile: true },
+      visibility: { desktop: false, mobile: true },
     });
-    expect(getCssClassAttr(block)).toBe(' css-class="tpl-hide-tablet"');
+    expect(getCssClassAttr(block)).toBe(' css-class="tpl-hide-desktop"');
+  });
+
+  it('returns css-class attribute string for mobile-hidden block', () => {
+    const block = createParagraphBlock({
+      visibility: { desktop: true, mobile: false },
+    });
+    expect(getCssClassAttr(block)).toBe(' css-class="tpl-hide-mobile"');
   });
 });
 
@@ -80,7 +78,7 @@ describe('visibility with null/undefined', () => {
 
   it('returns empty string when all viewports visible', () => {
     const block = createParagraphBlock({
-      visibility: { desktop: true, tablet: true, mobile: true },
+      visibility: { desktop: true, mobile: true },
     });
     expect(getCssClasses(block)).toBe('');
     expect(getCssClassAttr(block)).toBe('');
@@ -88,14 +86,14 @@ describe('visibility with null/undefined', () => {
 
   it('returns only desktop hide class', () => {
     const block = createParagraphBlock({
-      visibility: { desktop: false, tablet: true, mobile: true },
+      visibility: { desktop: false, mobile: true },
     });
     expect(getCssClasses(block)).toBe('tpl-hide-desktop');
   });
 
   it('returns only mobile hide class', () => {
     const block = createParagraphBlock({
-      visibility: { desktop: true, tablet: true, mobile: false },
+      visibility: { desktop: true, mobile: false },
     });
     expect(getCssClasses(block)).toBe('tpl-hide-mobile');
   });

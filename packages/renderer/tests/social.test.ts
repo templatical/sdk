@@ -12,7 +12,7 @@ describe("renderSocialIcons", () => {
   it("returns empty string for hidden block", () => {
     const block = createSocialIconsBlock({
       icons: [{ platform: "facebook", url: "https://facebook.com" }],
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     const result = renderBlock(block, ctx);
     expect(result).toBe("");

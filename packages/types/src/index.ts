@@ -14,7 +14,6 @@ export type {
   ImageBlock,
   MenuBlock,
   MenuItemData,
-  ResponsiveStyles,
   SectionBlock,
   SocialIcon,
   SocialIconSize,

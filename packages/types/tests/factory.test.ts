@@ -358,6 +358,85 @@ describe('createCustomBlock edge cases', () => {
     });
 });
 
+describe('createCustomBlock with defaultStyles', () => {
+    it('uses base 10px padding when no defaultStyles provided', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'plain',
+            name: 'Plain',
+            fields: [],
+            template: '<div></div>',
+        };
+        const block = createCustomBlock(definition);
+        expect(block.styles.padding).toEqual({ top: 10, right: 10, bottom: 10, left: 10 });
+        expect(block.styles.backgroundColor).toBeUndefined();
+    });
+
+    it('overrides padding when defaultStyles.padding provided', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'no-pad',
+            name: 'No Pad',
+            fields: [],
+            template: '<div></div>',
+            defaultStyles: {
+                padding: { top: 0, right: 0, bottom: 0, left: 0 },
+            },
+        };
+        const block = createCustomBlock(definition);
+        expect(block.styles.padding).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+        // backgroundColor remains at base (undefined)
+        expect(block.styles.backgroundColor).toBeUndefined();
+    });
+
+    it('overrides only specified BlockStyles keys (partial merge)', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'bg-only',
+            name: 'BG Only',
+            fields: [],
+            template: '<div></div>',
+            defaultStyles: {
+                backgroundColor: '#fafafa',
+            },
+        };
+        const block = createCustomBlock(definition);
+        expect(block.styles.backgroundColor).toBe('#fafafa');
+        // padding stays at base 10
+        expect(block.styles.padding).toEqual({ top: 10, right: 10, bottom: 10, left: 10 });
+    });
+
+    it('combines defaultStyles with dataSource without conflict', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'data-styled',
+            name: 'Data Styled',
+            fields: [],
+            template: '<div></div>',
+            dataSource: { label: 'Fetch', onFetch: async () => null },
+            defaultStyles: {
+                padding: { top: 0, right: 0, bottom: 0, left: 0 },
+            },
+        };
+        const block = createCustomBlock(definition);
+        expect(block.dataSourceFetched).toBe(false);
+        expect(block.styles.padding).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    });
+
+    it('still populates fieldValues alongside defaultStyles', () => {
+        const definition: CustomBlockDefinition = {
+            type: 'styled-fields',
+            name: 'Styled Fields',
+            fields: [
+                { key: 'title', label: 'Title', type: 'text', default: 'Hi' },
+            ],
+            template: '<div>{{title}}</div>',
+            defaultStyles: {
+                padding: { top: 5, right: 5, bottom: 5, left: 5 },
+            },
+        };
+        const block = createCustomBlock(definition);
+        expect(block.fieldValues.title).toBe('Hi');
+        expect(block.styles.padding).toEqual({ top: 5, right: 5, bottom: 5, left: 5 });
+    });
+});
+
 describe('createBlock with blockDefaults', () => {
     it('applies title defaults via createBlock', () => {
         const defaults: BlockDefaults = {
@@ -396,7 +475,6 @@ describe('createBlock with blockDefaults', () => {
             expect(block.textColor).toBe('#ffffff');
             expect(block.styles.padding.top).toBe(20);
             expect(block.styles.padding.right).toBe(10);
-            expect(block.styles.margin.top).toBe(0);
         }
     });
 
@@ -563,12 +641,12 @@ describe('createBlock with blockDefaults', () => {
 });
 
 describe('factory deep merge vs shallow spread', () => {
-    it('deep merges styles.padding without losing styles.margin', () => {
+    it('deep merges styles.padding', () => {
         const block = createTitleBlock({
             styles: { padding: { top: 20, right: 20, bottom: 20, left: 20 } },
         } as any);
         expect(block.styles.padding.top).toBe(20);
-        expect(block.styles.margin.top).toBe(0);
+        expect(block.styles.padding.bottom).toBe(20);
     });
 
     it('deep merges partial padding preserving other padding values', () => {

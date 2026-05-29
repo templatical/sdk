@@ -107,12 +107,11 @@ const block = createParagraphBlock({
 
 block.visibility = {
   desktop: true,
-  tablet: true,
   mobile: false,
 };
 ```
 
-See [Styling](/guide/styling) for more on responsive overrides and block visibility.
+See [Styling](/guide/styling) for more on block visibility.
 
 ## Section-level styles
 
@@ -124,6 +123,5 @@ const section = createSectionBlock({ columns: '1' });
 section.styles = {
   backgroundColor: '#f8fafc',
   padding: { top: 32, right: 24, bottom: 32, left: 24 },
-  margin: { top: 0, right: 0, bottom: 0, left: 0 },
 };
 ```

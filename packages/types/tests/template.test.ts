@@ -41,7 +41,7 @@ describe('createDefaultTemplateContent', () => {
             color: '#000',
             textAlign: 'left',
             fontWeight: 'normal',
-            styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+            styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
         } as any);
         expect(content2.blocks).toEqual([]);
     });

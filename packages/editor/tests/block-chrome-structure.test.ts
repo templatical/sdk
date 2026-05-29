@@ -37,16 +37,16 @@ describe("block chrome structure", () => {
     );
   });
 
-  it("padding + backgroundColor live on `.tpl-block-content`, not `.tpl-block`", () => {
+  it("padding + backgroundColor live on `.tpl-block-content`; `.tpl-block` carries no inline spacing", () => {
     // Block bg has to sit INSIDE the filter region — moving it back onto
     // `.tpl-block` makes the dark-preview filter invert text-only, leaving
     // inverted (white) text on an un-inverted (white) section bg = invisible.
     expect(blockWrapper).toMatch(
       /contentStyle\s*=\s*computed\(\(\)\s*=>\s*\{[\s\S]*padding[\s\S]*backgroundColor/,
     );
-    expect(blockWrapper).toMatch(
-      /wrapperStyle\s*=\s*computed\(\(\)\s*=>\s*\(\{\s*margin:/,
-    );
+    // `.tpl-block` carries no inline style; spacing lives only on the content
+    // layer. Guards against reintroducing a wrapper-level spacing style.
+    expect(blockWrapper).not.toMatch(/wrapperStyle/);
   });
 
   it("Canvas renders `.tpl-canvas-bg` sibling with conditional invert filter", () => {
@@ -308,10 +308,7 @@ describe("section drag + cycle defenses", () => {
 });
 
 describe("sidebar drag-during-collapse rect-capture defense", () => {
-  const sidebar = readFileSync(
-    join(SRC, "components/Sidebar.vue"),
-    "utf8",
-  );
+  const sidebar = readFileSync(join(SRC, "components/Sidebar.vue"), "utf8");
 
   it("declares an `isDragging` ref to guard mid-drag layout shifts", () => {
     // The auto-hide rail collapses 200px → 48px on `mouseleave`. Without
@@ -355,5 +352,36 @@ describe("sidebar drag-during-collapse rect-capture defense", () => {
     expect(sidebar).toMatch(
       /function\s+handleDragEnd\s*\([^)]*\)[^{]*\{[^}]*isDragging\.value\s*=\s*false/,
     );
+  });
+});
+
+describe("preview-mode visibility gate", () => {
+  const blockWrapper = readFileSync(
+    join(SRC, "components/blocks/BlockWrapper.vue"),
+    "utf8",
+  );
+  const sectionBlock = readFileSync(
+    join(SRC, "components/blocks/SectionBlock.vue"),
+    "utf8",
+  );
+
+  it("BlockWrapper gates its root on `isHiddenInPreview` (only previewMode hides)", () => {
+    // The block must disappear in preview mode when hidden on the current
+    // viewport (parity with exported MJML), but stay rendered + dimmed in
+    // edit mode so it remains selectable. Behavior is covered by
+    // blockWrapperVisibility.test.ts; this locks the wiring so the v-if
+    // can't be dropped or rebound to `isHiddenOnViewport` (which would
+    // also hide it mid-edit).
+    expect(blockWrapper).toMatch(
+      /const\s+isHiddenInPreview\s*=\s*computed\([\s\S]*?previewMode[\s\S]*?isHiddenOnViewport/,
+    );
+    expect(blockWrapper).toMatch(/v-if="!isHiddenInPreview"/);
+  });
+
+  it("SectionBlock forwards previewMode to child BlockWrappers", () => {
+    // Section children only receive previewMode through this binding —
+    // SectionBlock reads it off the injected editor state. Drop it and
+    // nested blocks hidden on a viewport would still show in preview.
+    expect(sectionBlock).toMatch(/:preview-mode="editor\.state\.previewMode"/);
   });
 });

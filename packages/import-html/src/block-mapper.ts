@@ -25,10 +25,6 @@ import {
 const HEADING_TAGS = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
 const TEXT_TAGS = new Set(["p", "span", "div"]);
 
-function emptyMargin(): SpacingValue {
-  return { top: 0, right: 0, bottom: 0, left: 0 };
-}
-
 function emptyPadding(): SpacingValue {
   return { top: 0, right: 0, bottom: 0, left: 0 };
 }
@@ -87,7 +83,6 @@ function convertHeading($el: Cheerio<Element>): Block {
     fontFamily: parseFontFamily(styles["font-family"]) || undefined,
     styles: {
       padding: readPaddingFromStyles(styles),
-      margin: emptyMargin(),
     },
   });
 }
@@ -133,7 +128,6 @@ function convertParagraph($el: Cheerio<Element>): Block {
     content: result,
     styles: {
       padding: readPaddingFromStyles(styles),
-      margin: emptyMargin(),
     },
   });
 }
@@ -156,7 +150,6 @@ function convertImage($el: Cheerio<Element>): Block {
     align: parseAlignment(styles["text-align"], "center"),
     styles: {
       padding: readPaddingFromStyles(styles),
-      margin: emptyMargin(),
     },
   });
 }
@@ -205,7 +198,6 @@ function convertButton($el: Cheerio<Element>): Block {
     buttonPadding: readPaddingFromStyles(styles),
     styles: {
       padding: emptyPadding(),
-      margin: emptyMargin(),
     },
   });
 }
@@ -228,7 +220,6 @@ function convertDivider($el: Cheerio<Element>): Block {
     width: 100,
     styles: {
       padding: readPaddingFromStyles(styles),
-      margin: emptyMargin(),
     },
   });
 }
@@ -249,7 +240,6 @@ function convertSpacer($el: Cheerio<Element>): Block {
     height,
     styles: {
       padding: emptyPadding(),
-      margin: emptyMargin(),
     },
   });
 }
@@ -270,7 +260,6 @@ export function convertHtmlFallback(
     content,
     styles: {
       padding: readPaddingFromStyles(styles),
-      margin: emptyMargin(),
     },
   });
 }

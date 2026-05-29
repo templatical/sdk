@@ -89,7 +89,6 @@ interface BlockStyles {
   padding: SpacingValue;
   margin: SpacingValue;
   backgroundColor?: string;
-  responsive?: ResponsiveStyles;
 }
 ```
 
@@ -104,17 +103,6 @@ interface SpacingValue {
 }
 ```
 
-### ResponsiveStyles
-
-Partielle Stil-Überschreibungen für Tablet- und Mobile-Viewports.
-
-```ts
-interface ResponsiveStyles {
-  tablet?: Partial<BlockStyles>;
-  mobile?: Partial<BlockStyles>;
-}
-```
-
 ### BlockVisibility
 
 Steuert, auf welchen Viewports ein Block sichtbar ist.
@@ -122,7 +110,6 @@ Steuert, auf welchen Viewports ein Block sichtbar ist.
 ```ts
 interface BlockVisibility {
   desktop: boolean;
-  tablet: boolean;
   mobile: boolean;
 }
 ```
@@ -435,7 +422,7 @@ interface CustomFont {
 ### ViewportSize
 
 ```ts
-type ViewportSize = 'desktop' | 'tablet' | 'mobile';
+type ViewportSize = 'desktop' | 'mobile';
 ```
 
 ## Factory-Funktionen

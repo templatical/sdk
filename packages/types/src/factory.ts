@@ -58,7 +58,6 @@ function createDefaultSpacing(value = 0): SpacingValue {
 function createDefaultStyles(padding = 10): BlockStyles {
   return {
     padding: createDefaultSpacing(padding),
-    margin: createDefaultSpacing(0),
   };
 }
 
@@ -254,12 +253,14 @@ export function createCustomBlock(
     fieldValues[field.key] = getFieldDefault(field);
   }
 
+  const styles = applyDefaults(createDefaultStyles(), definition.defaultStyles);
+
   return {
     id: generateId(),
     type: "custom",
     customType: definition.type,
     fieldValues,
-    styles: createDefaultStyles(),
+    styles,
     ...(definition.dataSource ? { dataSourceFetched: false } : {}),
   };
 }

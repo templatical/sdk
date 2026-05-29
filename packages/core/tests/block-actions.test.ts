@@ -422,7 +422,6 @@ describe('useBlockActions with blockDefaults', () => {
         if (block.type === 'paragraph') {
             expect(block.styles.padding.top).toBe(30);
             expect(block.styles.padding.right).toBe(10);
-            expect(block.styles.margin.top).toBe(0);
         }
     });
 });

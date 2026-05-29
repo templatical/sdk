@@ -17,10 +17,6 @@ import {
 } from "./style-parser";
 import type { ImportReport, ImportReportEntry, ImportResult } from "./types";
 
-function emptyMargin() {
-  return { top: 0, right: 0, bottom: 0, left: 0 };
-}
-
 function emptyPadding() {
   return { top: 0, right: 0, bottom: 0, left: 0 };
 }
@@ -78,7 +74,6 @@ function wrapInSection(blocks: Block[]): Block {
     children: [blocks],
     styles: {
       padding: emptyPadding(),
-      margin: emptyMargin(),
     },
   });
 }

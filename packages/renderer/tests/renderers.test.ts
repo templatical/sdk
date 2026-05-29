@@ -123,6 +123,29 @@ describe('renderBlock', () => {
     expect(result).toContain('<div>Custom HTML</div>');
   });
 
+  it('emits explicit padding on html block mj-text from block.styles.padding', () => {
+    const block = createHtmlBlock({
+      content: '<div>x</div>',
+      styles: {
+        padding: { top: 5, right: 10, bottom: 15, left: 20 },
+      },
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('padding="5px 10px 15px 20px"');
+  });
+
+  it('emits container-background-color on html block when set', () => {
+    const block = createHtmlBlock({
+      content: '<div>x</div>',
+      styles: {
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        backgroundColor: '#fafafa',
+      },
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('container-background-color="#fafafa"');
+  });
+
   it('returns empty for html block when not allowed', () => {
     const noHtmlCtx = new RenderContext(600, [], 'Arial, sans-serif', false);
     const block = createHtmlBlock({ content: '<div>Custom</div>' });
@@ -172,7 +195,7 @@ describe('renderBlock', () => {
 
   it('returns empty for blocks hidden on all viewports', () => {
     const block = createParagraphBlock({
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     const result = renderBlock(block, ctx);
     expect(result).toBe('');
@@ -180,10 +203,10 @@ describe('renderBlock', () => {
 
   it('adds visibility css classes', () => {
     const block = createParagraphBlock({
-      visibility: { desktop: true, tablet: false, mobile: true },
+      visibility: { desktop: false, mobile: true },
     });
     const result = renderBlock(block, ctx);
-    expect(result).toContain('css-class="tpl-hide-tablet"');
+    expect(result).toContain('css-class="tpl-hide-desktop"');
   });
 
   it('renders section with columns', () => {
@@ -219,7 +242,7 @@ describe('renderBlock', () => {
     const block = {
       id: '1',
       type: 'nonexistent' as never,
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     } as Block;
     const result = renderBlock(block, ctx);
     expect(result).toBe('');
@@ -232,7 +255,7 @@ describe('renderBlock', () => {
       customType: 'product-card',
       fieldValues: {},
       renderedHtml: '<div>Custom Content</div>',
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     };
     const result = renderBlock(block, ctx);
     expect(result).toContain('<mj-text');
@@ -245,7 +268,7 @@ describe('renderBlock', () => {
       type: 'custom',
       customType: 'product-card',
       fieldValues: {},
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     };
     const result = renderBlock(block, ctx);
     expect(result).toBe('');
@@ -258,7 +281,7 @@ describe('renderBlock', () => {
       customType: 'product-card',
       fieldValues: {},
       renderedHtml: '',
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     };
     const result = renderBlock(block, ctx);
     expect(result).toBe('');
@@ -271,8 +294,8 @@ describe('renderBlock', () => {
       customType: 'product-card',
       fieldValues: {},
       renderedHtml: '<div>Content</div>',
-      visibility: { desktop: false, tablet: false, mobile: false },
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      visibility: { desktop: false, mobile: false },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     };
     const result = renderBlock(block, ctx);
     expect(result).toBe('');
@@ -285,11 +308,53 @@ describe('renderBlock', () => {
       customType: 'product-card',
       fieldValues: {},
       renderedHtml: '<div>Content</div>',
-      visibility: { desktop: true, tablet: false, mobile: true },
-      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 }, margin: { top: 0, right: 0, bottom: 0, left: 0 } },
+      visibility: { desktop: false, mobile: true },
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     };
     const result = renderBlock(block, ctx);
-    expect(result).toContain('css-class="tpl-hide-tablet"');
+    expect(result).toContain('css-class="tpl-hide-desktop"');
+  });
+
+  it('emits explicit padding on custom block mj-text from block.styles.padding', () => {
+    const block: CustomBlock = {
+      id: '1',
+      type: 'custom',
+      customType: 'product-card',
+      fieldValues: {},
+      renderedHtml: '<div>Content</div>',
+      styles: { padding: { top: 5, right: 10, bottom: 15, left: 20 } },
+    };
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('padding="5px 10px 15px 20px"');
+  });
+
+  it('emits zero padding on custom block mj-text when block.styles.padding is zeroed', () => {
+    const block: CustomBlock = {
+      id: '1',
+      type: 'custom',
+      customType: 'product-card',
+      fieldValues: {},
+      renderedHtml: '<div>Content</div>',
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+    };
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('padding="0px 0px 0px 0px"');
+  });
+
+  it('emits container-background-color on custom block when set', () => {
+    const block: CustomBlock = {
+      id: '1',
+      type: 'custom',
+      customType: 'product-card',
+      fieldValues: {},
+      renderedHtml: '<div>Content</div>',
+      styles: {
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+        backgroundColor: '#fafafa',
+      },
+    };
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('container-background-color="#fafafa"');
   });
 
   it('renders video block with YouTube URL', () => {
@@ -322,35 +387,35 @@ describe('renderBlock', () => {
   it('returns empty for title block hidden on all viewports', () => {
     const block = createTitleBlock({
       content: '<p>Hidden</p>',
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     expect(renderBlock(block, ctx)).toBe('');
   });
 
   it('returns empty for button block hidden on all viewports', () => {
     const block = createButtonBlock({
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     expect(renderBlock(block, ctx)).toBe('');
   });
 
   it('returns empty for image block hidden on all viewports', () => {
     const block = createImageBlock({
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     expect(renderBlock(block, ctx)).toBe('');
   });
 
   it('returns empty for spacer block hidden on all viewports', () => {
     const block = createSpacerBlock({
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     expect(renderBlock(block, ctx)).toBe('');
   });
 
   it('returns empty for divider block hidden on all viewports', () => {
     const block = createDividerBlock({
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     expect(renderBlock(block, ctx)).toBe('');
   });
@@ -358,7 +423,7 @@ describe('renderBlock', () => {
   it('returns empty for html block hidden on all viewports', () => {
     const block = createHtmlBlock({
       content: '<div>Hidden</div>',
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     expect(renderBlock(block, ctx)).toBe('');
   });
@@ -367,7 +432,7 @@ describe('renderBlock', () => {
     const child = createParagraphBlock({ content: '<p>Hidden</p>' });
     const block = createSectionBlock({
       children: [[child]],
-      visibility: { desktop: false, tablet: false, mobile: false },
+      visibility: { desktop: false, mobile: false },
     });
     expect(renderBlock(block, ctx)).toBe('');
   });
