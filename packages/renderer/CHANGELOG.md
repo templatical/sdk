@@ -1,5 +1,62 @@
 # @templatical/renderer
 
+## 1.0.0
+
+### Minor Changes
+
+- 2d9779b: Custom blocks can now declare default block styles in their definition, and the renderer honors `block.styles.padding` on custom and HTML blocks.
+
+  **New `defaultStyles` on `CustomBlockDefinition`.** Custom block authors can now declare default `padding` and `backgroundColor` alongside `template` and `fields`. The value is a `Partial<BlockStyles>` deep-merged over the base defaults — specify only the fields you want to override. Controls both the editor canvas wrapper and the rendered MJML/email output.
+
+  ```ts
+  customBlocks: [
+    {
+      type: 'pricing-table',
+      template: '<table>…</table>',
+      fields: [...],
+      defaultStyles: {
+        padding: { top: 0, right: 0, bottom: 0, left: 0 },
+      },
+    },
+  ]
+  ```
+
+  **`renderCustom` and `renderHtml` now honor `block.styles.padding`.** Previously the renderer emitted `<mj-text>` without an explicit `padding` attribute for custom and HTML blocks, so MJML's built-in `10px 25px` default applied regardless of `block.styles.padding`. Both renderers now pass `padding="..."` from the block's styles, matching how every other built-in renderer (paragraph, title, menu, table) already worked.
+
+  **Behavior change for existing custom and HTML blocks.** Previously, rendered email output used MJML's `mj-text` default of `10px 25px`. Now it uses `block.styles.padding`, which defaults to `10px` all around from `createDefaultStyles()`. To restore the old visual, set `defaultStyles: { padding: { top: 10, right: 25, bottom: 10, left: 25 } }` on the custom block definition, or override `padding` on the individual block instance via the editor.
+
+- ac9eab8: Add `CustomBlockDefinition.stylesheet` — definition-level CSS that emits once into `<mj-head><mj-style>` in the rendered MJML and is mirrored in the editor canvas.
+
+  Custom blocks render as raw HTML inside an `mj-text` cell, which means MJML's automatic responsive behavior (column stacking, fluid images) only applies to the _outer_ layout — not to the internals of a custom block. Previously a developer had no clean place to put per-definition media queries, hover states, or block-specific font declarations; ad-hoc `<style>` blocks inside the `template` ended up in the email body rather than `<mj-head>`, with no dedupe across instances.
+
+  The new `stylesheet?: string` field on `CustomBlockDefinition` solves this:
+  - The renderer collects every definition's `stylesheet` from the content tree, dedupes by `customType` _and_ by trimmed content, and emits each unique stylesheet once as an additional `<mj-style>` block alongside the built-in visibility media queries.
+  - The editor canvas mirrors the same CSS via a reactive `<style>` element rendered inside the editor root — in shadow-DOM mode it scopes to the shadow root; in light-DOM mode it shares the global stylesheet surface already established by `dist/style.css`.
+  - The renderer adds an optional `getCustomBlockStylesheet?: (customType: string) => string | undefined | null` resolver to `RenderOptions`. The editor wires this from its block registry automatically; headless callers provide their own resolver from whatever definitions map they manage.
+  - `TemplaticalEditor` (the OSS init return) gains `getCustomBlockStylesheet(customType)` for parity with `renderCustomBlock`.
+
+  Class names in `stylesheet` are **not** scoped by the SDK — namespace them per definition (e.g. `.tplc-<type>-<element>`) to avoid collisions. Email-client caveats apply (Outlook desktop ignores `@media` queries, matching every other media-query-based feature in the SDK such as block visibility).
+
+  Fully backward compatible: existing definitions and renderer callers that omit the new field/option produce the same MJML and editor behavior as before.
+
+  Addresses #155 (raised as the follow-up to #146).
+
+- 4309923: Collapse the responsive model to Desktop + Mobile, dropping the `tablet` tier.
+
+  `ViewportSize` is now `"desktop" | "mobile"` and `BlockVisibility` drops its `tablet` field. The editor's viewport toggle no longer offers a Tablet preview, and the renderer emits a single 480px breakpoint (`tpl-hide-mobile` ≤480px, `tpl-hide-desktop` ≥481px) instead of three bands. A "tablet" breakpoint isn't a meaningful concept for email (bodies are ~600px wide; a tablet viewport renders at full desktop width), and the useful responsive split is binary — mobile vs. not-mobile, matching MJML's model.
+
+  **Migration:** saved templates carrying `visibility.tablet` keep parsing — the extra key is ignored at runtime. A block previously hidden only on tablet (`tablet: false` with `desktop`/`mobile` true) will now show on 481–768px devices, because there's no longer a `tpl-hide-tablet` class. No data migration is required; re-saving a block normalizes its visibility object to the new shape.
+
+### Patch Changes
+
+- Updated dependencies [2d9779b]
+- Updated dependencies [ac9eab8]
+- Updated dependencies [5d961a3]
+- Updated dependencies [4309923]
+- Updated dependencies [af913bb]
+- Updated dependencies [72e1e58]
+  - @templatical/types@1.0.0
+
 ## 0.9.1
 
 ### Patch Changes

@@ -1,5 +1,23 @@
 # @templatical/quality
 
+## 1.0.0
+
+### Minor Changes
+
+- f51fc5b: Add a single `lintTemplate(content, options?)` entry point that runs every linter — accessibility, structure, and links — and returns the merged issue list. Prefer it over calling `lintAccessibility` / `lintStructure` / `lintLinks` individually: new linter categories are picked up automatically by every consumer that funnels through it.
+
+  The editor's live linter (`useTemplateLint`) now calls `lintTemplate` internally; behavior is unchanged. The individual linter exports remain available.
+
+### Patch Changes
+
+- Updated dependencies [2d9779b]
+- Updated dependencies [ac9eab8]
+- Updated dependencies [5d961a3]
+- Updated dependencies [4309923]
+- Updated dependencies [af913bb]
+- Updated dependencies [72e1e58]
+  - @templatical/types@1.0.0
+
 ## 0.9.1
 
 ### Patch Changes
