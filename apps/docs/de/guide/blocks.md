@@ -7,7 +7,7 @@ description: Referenz für alle 14 integrierten Blocktypen in Templatical.
 
 Blöcke sind die Baueinheiten jedes Templatical-Templates. Jeder Block repräsentiert ein eigenständiges Inhaltsstück -- einen Absatz, ein Bild, eine Schaltfläche. Blöcke können direkt im Template oder innerhalb von Sektionen für mehrspaltige Layouts platziert werden. Der Editor rendert sie von oben nach unten in der Reihenfolge, in der sie erscheinen.
 
-Jeder Block erweitert eine gemeinsame `Block`-Basis mit geteilten Eigenschaften (`id`, `type`, `styles`, `displayCondition`, `customCss`, `visibility`), und jeder Typ fügt seine eigenen spezifischen Eigenschaften hinzu.
+Jeder Block erweitert eine gemeinsame `Block`-Basis mit geteilten Eigenschaften (`id`, `type`, `styles`, `displayCondition`, `visibility`), und jeder Typ fügt seine eigenen spezifischen Eigenschaften hinzu.
 
 Um Blöcke programmatisch zu erstellen, siehe [Programmatische Templates](/de/guide/programmatic-templates). Für Standardwerte der Eigenschaften und wie Sie diese anpassen können, siehe [Block- & Template-Standardwerte](/de/guide/defaults).
 

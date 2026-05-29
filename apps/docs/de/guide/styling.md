@@ -5,7 +5,7 @@ description: Block-Stile, Abstände, Sichtbarkeit und Einstellungen auf Template
 
 # Styling
 
-Jeder Block in Templatical trägt eine Eigenschaft `styles` für Layout und Erscheinungsbild sowie `visibility` und `customCss` für feinkörnige Kontrolle.
+Jeder Block in Templatical trägt eine Eigenschaft `styles` für Layout und Erscheinungsbild sowie `visibility` für viewport-spezifische Kontrolle.
 
 ## BlockStyles
 
@@ -74,22 +74,6 @@ block.visibility = {
 ```
 
 Dies ist nützlich, um unterschiedliche Inhalte bei unterschiedlichen Bildschirmgrößen anzuzeigen -- zum Beispiel eine detaillierte Tabelle auf dem Desktop und eine vereinfachte Liste auf dem Mobilgerät.
-
-## Benutzerdefiniertes CSS
-
-Jeder Block hat eine optionale String-Eigenschaft `customCss` zum Einfügen von beliebigem CSS. Das CSS wird in der gerenderten Ausgabe auf den Block beschränkt.
-
-```ts
-block.customCss = `
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-`;
-```
-
-::: warning
-Die meisten CSS-Eigenschaften funktionieren nicht zuverlässig über E-Mail-Clients hinweg. Eigenschaften wie `display: flex`, `grid`, `position`, `box-shadow` und CSS-Animationen werden von vielen Clients ignoriert (insbesondere Outlook). Halten Sie sich an `padding`, `margin`, `border`, `border-radius`, `background-color` und `text-align`, um die beste Kompatibilität zu erzielen. Testen Sie immer in echten E-Mail-Clients, bevor Sie versenden.
-:::
 
 ## Einstellungen auf Template-Ebene
 

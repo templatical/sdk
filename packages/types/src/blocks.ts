@@ -19,7 +19,6 @@ export interface BaseBlock {
   id: string;
   type: string;
   styles: BlockStyles;
-  customCss?: string;
   visibility?: BlockVisibility;
   displayCondition?: {
     label: string;

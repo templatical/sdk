@@ -16,7 +16,7 @@ import {
   ALLOW_CUSTOM_CONDITIONS_KEY,
 } from "../../keys";
 
-type SectionKey = "spacing" | "bg" | "display" | "css" | "condition";
+type SectionKey = "spacing" | "bg" | "display" | "condition";
 type VisibilityKey = "desktop" | "mobile";
 
 const props = defineProps<{
@@ -184,25 +184,6 @@ function toggleVisibility(key: VisibilityKey): void {
           {{ t.blockSettings[item.labelKey] }}
         </label>
       </div>
-    </CollapsibleSection>
-
-    <CollapsibleSection
-      :title="t.blockSettings.customCss"
-      :open="openSections.has('css')"
-      @toggle="toggleSection('css')"
-    >
-      <label :class="labelClass">{{ t.blockSettings.css }}</label>
-      <textarea
-        :value="block.customCss || ''"
-        :placeholder="t.blockSettings.cssPlaceholder"
-        rows="3"
-        :class="monoTextareaClass"
-        @input="
-          emit('update', {
-            customCss: ($event.target as HTMLTextAreaElement).value,
-          })
-        "
-      />
     </CollapsibleSection>
 
     <CollapsibleSection

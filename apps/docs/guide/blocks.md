@@ -7,7 +7,7 @@ description: Reference for all 14 built-in block types in Templatical.
 
 Blocks are the building units of every Templatical template. Each block represents a distinct piece of content -- a paragraph, an image, a button. Blocks can be placed directly in the template or inside sections for multi-column layouts. The editor renders them top-to-bottom in the order they appear.
 
-Every block extends a common `Block` base with shared properties (`id`, `type`, `styles`, `displayCondition`, `customCss`, `visibility`), and each type adds its own specific properties.
+Every block extends a common `Block` base with shared properties (`id`, `type`, `styles`, `displayCondition`, `visibility`), and each type adds its own specific properties.
 
 To create blocks programmatically, see [Programmatic Templates](/guide/programmatic-templates). For default property values and how to customize them, see [Block & Template Defaults](/guide/defaults).
 

@@ -5,7 +5,7 @@ description: Block styles, spacing, visibility, and template-level settings in T
 
 # Styling
 
-Every block in Templatical carries a `styles` property for layout and appearance, plus `visibility` and `customCss` for fine-grained control.
+Every block in Templatical carries a `styles` property for layout and appearance, plus `visibility` for per-viewport control.
 
 ## BlockStyles
 
@@ -74,22 +74,6 @@ block.visibility = {
 ```
 
 This is useful for showing different content at different screen sizes -- for example, a detailed table on desktop and a simplified list on mobile.
-
-## Custom CSS
-
-Every block has an optional `customCss` string property for injecting arbitrary CSS. The CSS is scoped to the block in the rendered output.
-
-```ts
-block.customCss = `
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-`;
-```
-
-::: warning
-Most CSS properties don't work reliably across email clients. Properties like `display: flex`, `grid`, `position`, `box-shadow`, and CSS animations are ignored by many clients (especially Outlook). Stick to `padding`, `margin`, `border`, `border-radius`, `background-color`, and `text-align` for the best compatibility. Always test in real email clients before sending.
-:::
 
 ## Template-level settings
 
