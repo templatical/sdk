@@ -202,16 +202,56 @@ export const testimonialBlock: CustomBlockDefinition = {
       default: "",
     },
   ],
-  template: `<div style="padding: 20px; background-color: #f9fafb; border-radius: 8px; border-left: 3px solid #d1d5db;">
-  <div style="font-size: 15px; color: #374151; font-style: italic; line-height: 1.6; margin-bottom: 12px;">\u201c{{ quote }}\u201d</div>
-  <div style="display: flex; align-items: center; gap: 10px;">
-    {% if avatarUrl %}<img src="{{ avatarUrl }}" width="36" height="36" style="border-radius: 50%;" />{% endif %}
-    <div>
-      <div style="font-size: 13px; font-weight: 600; color: #111827;">{{ authorName }}</div>
-      <div style="font-size: 12px; color: #6b7280;">{{ authorTitle }}</div>
-    </div>
-  </div>
+  // Author row uses a table-based 2-column layout (avatar | byline) instead
+  // of flexbox \u2014 flex is unreliable in email clients (Outlook desktop ignores
+  // it entirely). The accompanying `stylesheet` stacks the columns to a
+  // single centered column on viewports \u2264480px, which is the canonical
+  // responsive pattern for "image + text" blocks in email.
+  template: `<div class="tplc-testimonial-card" style="padding: 20px; background-color: #f9fafb; border-radius: 8px; border-left: 3px solid #d1d5db;">
+  <div style="font-size: 15px; color: #374151; font-style: italic; line-height: 1.6; margin-bottom: 16px;">\u201c{{ quote }}\u201d</div>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+    <tr>
+      {% if avatarUrl %}<td class="tplc-testimonial-avatar" style="vertical-align: middle; padding-right: 12px; width: 48px;">
+        <img src="{{ avatarUrl }}" width="48" height="48" style="display: block; border-radius: 50%;" alt="" />
+      </td>{% endif %}
+      <td class="tplc-testimonial-byline" style="vertical-align: middle;">
+        <div style="font-size: 13px; font-weight: 600; color: #111827;">{{ authorName }}</div>
+        <div style="font-size: 12px; color: #6b7280;">{{ authorTitle }}</div>
+      </td>
+    </tr>
+  </table>
 </div>`,
+  // Showcases CustomBlockDefinition.stylesheet \u2014 the canonical responsive
+  // demo: a hover state for the canvas + a mobile media query that stacks
+  // the avatar above the byline (centered) at \u2264480px. This is exactly the
+  // pattern raised in #155: MJML's auto-responsive doesn't reach inside a
+  // custom block, and the new `stylesheet` field is the right primitive
+  // for the developer to author per-definition responsive CSS.
+  //
+  // Browser coverage: `apps/playground/e2e/tests/custom-block-stylesheet.spec.ts`.
+  stylesheet: `
+.tplc-testimonial-card {
+  transition: box-shadow 200ms ease;
+}
+.tplc-testimonial-card:hover {
+  box-shadow: rgba(0, 0, 0, 0.08) 0px 6px 16px 0px;
+}
+@media (max-width: 480px) {
+  .tplc-testimonial-avatar,
+  .tplc-testimonial-byline {
+    display: block !important;
+    width: 100% !important;
+    padding-right: 0 !important;
+    text-align: center !important;
+  }
+  .tplc-testimonial-avatar {
+    padding-bottom: 12px !important;
+  }
+  .tplc-testimonial-avatar img {
+    margin: 0 auto !important;
+  }
+}
+`,
 };
 
 export const productCardBlock: CustomBlockDefinition = {
@@ -806,7 +846,9 @@ export function createProductLaunchTemplate(): TemplateContent {
         ],
         styles: white(0, 20, 0, 20),
       }),
-      // Custom block: Testimonial
+      // Custom block: Testimonial \u2014 avatar provided so the stylesheet's
+      // responsive stacking demo (avatar \u2194 byline \u2192 stacked on mobile) has
+      // two table cells to rearrange.
       {
         ...createCustomBlock(testimonialBlock),
         fieldValues: {
@@ -814,7 +856,7 @@ export function createProductLaunchTemplate(): TemplateContent {
             "Launchpad v2 is the upgrade we didn\u2019t know we needed. Our team onboarded in minutes.",
           authorName: "Maria Santos",
           authorTitle: "VP of Engineering, NovaTech",
-          avatarUrl: "",
+          avatarUrl: "https://placehold.co/96x96/0d9488/ffffff?text=MS",
         },
         styles: white(16, 24, 16, 24),
       },
@@ -1824,6 +1866,12 @@ export const templates: TemplateOption[] = [
         icon: "custom-block",
         description:
           "The Testimonial near the bottom is a custom block with its own fields: quote, author name, title, and an optional avatar.\nTo try it: click the testimonial and check the right sidebar \u2014 you\u2019ll see custom field editors instead of the usual text toolbar. Edit any field and watch the block update instantly.\nThe Quote and Author Name fields are marked as required \u2014 they show a red asterisk and cannot be left empty. The avatar is optional and uses {% if avatarUrl %} in the Liquid template to conditionally render.\nCustom blocks use Liquid templates, so developers can add conditional logic directly in the markup.",
+      },
+      {
+        label: "Responsive Stylesheet",
+        icon: "responsive",
+        description:
+          "The testimonial uses CustomBlockDefinition.stylesheet to ship its own responsive CSS \u2014 a hover state on the card, plus a @media (max-width: 480px) rule that stacks the avatar above the byline on mobile (single centered column instead of side-by-side).\nMJML's automatic responsive behavior (column stacking, fluid images) only applies to the outer mj-section / mj-column layout, not to the HTML inside a custom block \u2014 so per-definition stylesheets are how you make a custom block's internals responsive.\nTo try it: hover the testimonial card in the canvas to see the shadow lift. The full stacked layout appears in the exported MJML when the recipient opens the email on a phone \u2014 open Export to see the .tplc-testimonial-* rules emitted inside <mj-head><mj-style>\u2026</mj-style></mj-head>.",
       },
     ],
   },
