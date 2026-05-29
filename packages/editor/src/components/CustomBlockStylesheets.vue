@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { inject, type ComputedRef } from "vue";
+<script lang="ts">
+import { defineComponent, h, inject, type ComputedRef } from "vue";
 import { CUSTOM_BLOCK_STYLESHEETS_KEY } from "../keys";
 
 /**
@@ -13,24 +13,32 @@ import { CUSTOM_BLOCK_STYLESHEETS_KEY } from "../keys";
  * existing behavior of the editor's published `dist/style.css` in that mode
  * — no new global-leak vector.
  *
- * `v-html` on a `<style>` element sets its `innerHTML` (i.e., the raw CSS
- * text) without escaping; safe because the source is the consumer-authored
- * `CustomBlockDefinition.stylesheet` string they passed to `init()`. We don't
- * sanitize it — same trust model as `template`.
+ * Why a render function instead of `<template>`: Vue's template compiler
+ * treats `<style>` inside `<template>` as a side-effect tag and refuses to
+ * emit it in strict client-render compilation paths (notably the one used
+ * by `vue-tsc` and Vitest's Vue plugin). The render function below
+ * bypasses the template compiler entirely and produces the same DOM at
+ * runtime — and `innerHTML` on a `<style>` element sets the CSS rules
+ * directly, no escape/parse pass between authoring and the cssom.
  */
-const stylesheets = inject<ComputedRef<string[]> | null>(
-  CUSTOM_BLOCK_STYLESHEETS_KEY,
-  null,
-);
-</script>
+export default defineComponent({
+  name: "CustomBlockStylesheets",
+  setup() {
+    const stylesheets = inject<ComputedRef<string[]> | null>(
+      CUSTOM_BLOCK_STYLESHEETS_KEY,
+      null,
+    );
 
-<template>
-  <template v-if="stylesheets">
-    <style
-      v-for="(css, i) in stylesheets"
-      :key="i"
-      data-tpl-custom-block-stylesheet
-      v-html="css"
-    ></style>
-  </template>
-</template>
+    return () => {
+      if (!stylesheets) return null;
+      return stylesheets.value.map((css, i) =>
+        h("style", {
+          key: i,
+          "data-tpl-custom-block-stylesheet": "",
+          innerHTML: css,
+        }),
+      );
+    };
+  },
+});
+</script>
