@@ -61,11 +61,13 @@ export function resizeCanvas(
   }
 
   if (maxHeight && targetHeight > maxHeight) {
+    // Scale width by the ratio against the CURRENT target height (which may
+    // already have been reduced by the width branch). The previous formula
+    // injected a spurious maxWidth/sourceWidth factor whenever maxWidth was
+    // defined but never actually clamped, distorting the aspect ratio.
+    const ratio = maxHeight / targetHeight;
+    targetWidth = Math.round(targetWidth * ratio);
     targetHeight = maxHeight;
-    targetWidth = Math.round(
-      targetWidth *
-        (maxHeight / (sourceHeight * (maxWidth ? maxWidth / sourceWidth : 1))),
-    );
   }
 
   if (targetWidth === sourceWidth && targetHeight === sourceHeight) {

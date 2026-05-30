@@ -252,6 +252,33 @@ describe('resizeCanvas', () => {
     expect(resized.width).toBe(400);
   });
 
+  it('preserves aspect ratio when maxWidth is set but only maxHeight clamps', () => {
+    const resized = createMockCanvas(0, 0);
+    vi.mocked(document.createElement).mockReturnValue(resized as any);
+
+    // Source 400x800. maxWidth=1000 is larger than the source (width branch
+    // skipped) but maxHeight=400 clamps. The result must keep the 1:2 ratio
+    // (200x400), not collapse width via the spurious maxWidth/sourceWidth
+    // factor (which produced 80x400).
+    const source = createMockCanvas(400, 800);
+    const result = resizeCanvas(source, 1000, 400);
+
+    expect(result).toBe(resized);
+    expect(resized.width).toBe(200);
+    expect(resized.height).toBe(400);
+  });
+
+  it('agrees with calculateOutputDimensions for the same constraints', () => {
+    const resized = createMockCanvas(0, 0);
+    vi.mocked(document.createElement).mockReturnValue(resized as any);
+
+    const source = createMockCanvas(400, 800);
+    resizeCanvas(source, 1000, 400);
+
+    const preview = calculateOutputDimensions(400, 800, 1000, 400);
+    expect({ width: resized.width, height: resized.height }).toEqual(preview);
+  });
+
   it('draws source onto resized canvas', () => {
     const resized = createMockCanvas(0, 0);
     vi.mocked(document.createElement).mockReturnValue(resized as any);

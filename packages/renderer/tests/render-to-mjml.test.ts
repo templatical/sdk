@@ -88,6 +88,37 @@ describe('renderToMjml', () => {
     expect(mjml).toContain('Conditional');
   });
 
+  it('wraps display conditions on blocks nested inside a section column', async () => {
+    const content = createDefaultTemplateContent();
+    const conditional = createParagraphBlock({
+      content: '<p>VIP only</p>',
+      displayCondition: {
+        label: 'VIP',
+        before: '{% if vip %}',
+        after: '{% endif %}',
+      },
+    });
+    const section = createSectionBlock({
+      columns: '2',
+      children: [
+        [conditional],
+        [createParagraphBlock({ content: '<p>Everyone</p>' })],
+      ],
+    });
+    content.blocks = [section];
+
+    const mjml = await renderToMjml(content);
+
+    // The nested block must emit the same liquid guards as a top-level block;
+    // otherwise conditional content inside a multi-column layout renders
+    // unconditionally for every recipient.
+    expect(mjml).toContain('<mj-raw>{% if vip %}</mj-raw>');
+    expect(mjml).toContain('<mj-raw>{% endif %}</mj-raw>');
+    expect(mjml).toContain('VIP only');
+    // The non-conditional sibling stays ungated.
+    expect(mjml).toContain('Everyone');
+  });
+
   it('filters html blocks when not allowed', async () => {
     const content = createDefaultTemplateContent();
     content.blocks = [

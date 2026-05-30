@@ -124,6 +124,11 @@ function processBody(
         const innerTag = innerEl.tagName?.toLowerCase() ?? "";
         const $inner = $(innerEl) as unknown as Cheerio<Element>;
         if (innerTag === "table") {
+          // Flush loose content accumulated BEFORE this table so it keeps its
+          // source position, mirroring the top-level loop. Without this, the
+          // table is appended immediately while leading siblings are flushed
+          // only after the loop — reordering the document.
+          flushLoose();
           blocks.push(...processTable($inner, $, entries, warnings, false));
         } else {
           const r = convertElement($inner, $);

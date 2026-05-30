@@ -41,7 +41,14 @@ describe("useCollaborationBroadcast", () => {
     >[0];
     editor.addBlock(block, "section-1", 0);
 
-    expect(originalAddBlock).toHaveBeenCalledWith(block, "section-1", 0);
+    // The wrapper always forwards the 4th `index` arg (undefined here),
+    // so the underlying addBlock decides append-vs-insert consistently.
+    expect(originalAddBlock).toHaveBeenCalledWith(
+      block,
+      "section-1",
+      0,
+      undefined,
+    );
     expect(callOrder).toEqual(["original", "broadcast"]);
 
     const payload: McpOperationPayload =
@@ -53,6 +60,33 @@ describe("useCollaborationBroadcast", () => {
       column_index: 0,
     });
     expect(payload.timestamp).toBeGreaterThan(0);
+  });
+
+  it("forwards the 4th index argument to addBlock and broadcasts it", () => {
+    const editor = createMockEditor();
+    const collaboration = createMockCollaboration();
+    const originalAddBlock = editor.addBlock;
+    useCollaborationBroadcast(editor, collaboration);
+
+    const block = { id: "b1", type: "title" } as Parameters<
+      typeof editor.addBlock
+    >[0];
+    // Insert at a specific position (e.g. duplicate-block, insert-module-at).
+    editor.addBlock(block, "section-1", 0, 2);
+
+    // The wrapper must forward `index` to the underlying addBlock, otherwise
+    // positioned inserts silently fall through to append-at-end.
+    expect(originalAddBlock).toHaveBeenCalledWith(block, "section-1", 0, 2);
+
+    const payload: McpOperationPayload =
+      collaboration._broadcastOperation.mock.calls[0][0];
+    expect(payload.operation).toBe("add_block");
+    expect(payload.data).toEqual({
+      block,
+      section_id: "section-1",
+      column_index: 0,
+      index: 2,
+    });
   });
 
   it("broadcasts update_block operation with blockId and updates", () => {

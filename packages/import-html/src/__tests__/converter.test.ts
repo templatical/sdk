@@ -244,3 +244,32 @@ describe("convertHtmlTemplate — data table preservation", () => {
     expect(dataFallback).toBeDefined();
   });
 });
+
+describe("convertHtmlTemplate — wrapper-div recursion ordering", () => {
+  it("keeps loose content before a nested table in source order", () => {
+    const html = `<!doctype html><html><body>
+      <div>
+        <h1>Heading before table</h1>
+        <table role="presentation"><tr><td>Inside table cell</td></tr></table>
+        <p>Paragraph after table</p>
+      </div>
+    </body></html>`;
+
+    const { content } = convertHtmlTemplate(html);
+
+    // The blocks array reflects document order, so locate each marker by its
+    // position in the serialized tree. With the bug, the table is pushed
+    // immediately while loose siblings are flushed only AFTER the loop, so the
+    // leading heading lands after the table content.
+    const serialized = JSON.stringify(content.blocks);
+    const headingIdx = serialized.indexOf("Heading before table");
+    const cellIdx = serialized.indexOf("Inside table cell");
+    const paraIdx = serialized.indexOf("Paragraph after table");
+
+    expect(headingIdx).toBeGreaterThanOrEqual(0);
+    expect(cellIdx).toBeGreaterThanOrEqual(0);
+    expect(paraIdx).toBeGreaterThanOrEqual(0);
+    expect(headingIdx).toBeLessThan(cellIdx);
+    expect(cellIdx).toBeLessThan(paraIdx);
+  });
+});

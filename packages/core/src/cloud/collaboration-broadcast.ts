@@ -23,14 +23,15 @@ export function useCollaborationBroadcast(
   const originalUpdateSettings = editor.updateSettings;
   const originalSetContent = editor.setContent;
 
-  editor.addBlock = (block, targetSectionId?, columnIndex?) => {
-    originalAddBlock(block, targetSectionId, columnIndex);
+  editor.addBlock = (block, targetSectionId?, columnIndex?, index?) => {
+    originalAddBlock(block, targetSectionId, columnIndex, index);
     collaboration._broadcastOperation({
       operation: "add_block",
       data: {
         block,
         section_id: targetSectionId,
         column_index: columnIndex,
+        index,
       },
       timestamp: Date.now(),
     });

@@ -96,6 +96,77 @@ describe("convertBeeFreeTemplate", () => {
     expect(report.summary.converted).toBe(1);
   });
 
+  it("preserves a single-column row's background color by wrapping it in a section", () => {
+    const template: BeeFreeTemplate = {
+      page: {
+        rows: [
+          {
+            content: { style: { "background-color": "#ff0000" } },
+            columns: [
+              {
+                "grid-columns": 12,
+                modules: [
+                  {
+                    type: "mailup-bee-newsletter-modules-text",
+                    descriptor: {
+                      text: { html: "<p>Colored band</p>" },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const { content } = convertBeeFreeTemplate(template);
+
+    // A single-column row used to return bare modules, dropping the row's
+    // background. It must now wrap them in a one-column section that carries
+    // the background, mirroring the multi-column path and the Unlayer importer.
+    expect(content.blocks).toHaveLength(1);
+    const block = content.blocks[0];
+    expect(block.type).toBe("section");
+    if (block.type === "section") {
+      expect(block.columns).toBe("1");
+      expect(block.styles.backgroundColor).toBe("#ff0000");
+      expect(block.children[0][0].type).toBe("paragraph");
+      const child = block.children[0][0];
+      if (child.type === "paragraph") {
+        expect(child.content).toContain("Colored band");
+      }
+    }
+  });
+
+  it("does not wrap a single-column row without a background", () => {
+    const template: BeeFreeTemplate = {
+      page: {
+        rows: [
+          {
+            columns: [
+              {
+                "grid-columns": 12,
+                modules: [
+                  {
+                    type: "mailup-bee-newsletter-modules-text",
+                    descriptor: { text: { html: "<p>Plain</p>" } },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const { content } = convertBeeFreeTemplate(template);
+
+    // No background → no needless section wrapper; the bare paragraph stays.
+    expect(content.blocks).toHaveLength(1);
+    expect(content.blocks[0].type).toBe("paragraph");
+  });
+
   it("converts a two-column row into a section", () => {
     const template: BeeFreeTemplate = {
       page: {
@@ -369,8 +440,16 @@ describe("convertBeeFreeTemplate", () => {
     expect(report.summary.total).toBeGreaterThan(5);
     expect(report.summary.skipped).toBe(0);
 
-    // Verify block types are present
-    const types = content.blocks.map((b) => b.type);
+    // Verify block types are present. Collect recursively because rows with a
+    // background are now wrapped in a one-column section, so a paragraph may be
+    // nested inside a section rather than sitting at the top level.
+    const collectTypes = (blocks: typeof content.blocks): string[] =>
+      blocks.flatMap((b) =>
+        b.type === "section"
+          ? [b.type, ...b.children.flatMap((col) => collectTypes(col))]
+          : [b.type],
+      );
+    const types = collectTypes(content.blocks);
     expect(types).toContain("image");
     expect(types).toContain("paragraph");
 

@@ -123,4 +123,40 @@ describe("sanitizeRichTextHtml", () => {
     expect(result).not.toContain("onmouseover");
     expect(result).toContain("deep");
   });
+
+  // Regression: the scheme check ran on a value that was only `.trim()`-ed,
+  // but the browser URL parser also strips ASCII tab/LF/CR from *anywhere*
+  // in the value and leading C0 control chars. So "java\tscript:..." and
+  // "\x01javascript:..." matched no scheme (treated as safe) yet resolved to
+  // a live javascript: URL once rendered. The sanitizer must normalize the
+  // same way before matching.
+  describe("control-character scheme obfuscation (XSS bypass)", () => {
+    const hrefVariants: Array<[string, string]> = [
+      ["embedded tab", "java\tscript:alert(1)"],
+      ["embedded newline", "java\nscript:alert(1)"],
+      ["embedded carriage return", "java\rscript:alert(1)"],
+      ["leading control char U+0001", String.fromCharCode(1) + "javascript:alert(1)"],
+      ["tabs sprinkled through scheme", "\tj\na\rv\ta\nscript:alert(1)"],
+    ];
+
+    for (const [label, payload] of hrefVariants) {
+      it(`removes an href that resolves to javascript: via ${label}`, () => {
+        const result = sanitizeRichTextHtml(`<a href="${payload}">click</a>`);
+        expect(result).not.toMatch(/href=/i);
+        expect(result).toContain("click");
+      });
+    }
+
+    it("removes a src that resolves to javascript: via embedded tab", () => {
+      const result = sanitizeRichTextHtml('<img src="java\tscript:alert(1)">');
+      expect(result).not.toMatch(/\bsrc=/i);
+    });
+
+    it("still keeps a benign https href that has a leading space", () => {
+      const result = sanitizeRichTextHtml(
+        '<a href=" https://example.com">x</a>',
+      );
+      expect(result).toContain("https://example.com");
+    });
+  });
 });

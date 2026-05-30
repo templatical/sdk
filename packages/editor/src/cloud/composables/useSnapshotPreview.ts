@@ -131,6 +131,16 @@ export function useSnapshotPreview(
       if (destroyed) return;
       await snapshotHistoryInstance.value.loadSnapshots();
       if (destroyed) return;
+    } catch (error) {
+      // Restore failed. The editor is still showing the previewed snapshot
+      // content (set in handleSnapshotNavigate), so roll back to the
+      // pre-preview content before the finally discards the backup — otherwise
+      // the user is silently left editing the un-restored snapshot with the
+      // banner gone, and the next autosave persists the wrong content.
+      if (!destroyed && contentBeforePreview.value) {
+        editor.setContent(contentBeforePreview.value, false);
+      }
+      throw error;
     } finally {
       if (!destroyed) {
         previewingSnapshot.value = null;

@@ -88,6 +88,31 @@ function convertHeading($el: Cheerio<Element>): Block {
 }
 
 /**
+ * Apply a container-level `text-align` to every `<p>` opening tag in `html`,
+ * merging into an existing `style="…"` attribute when present. Tolerant of
+ * any other attributes on the `<p>` (class/id/dir/…) — the previous narrow
+ * `<p style="…">` + bare-`<p>` matchers silently dropped the alignment when
+ * the inner `<p>` carried a non-style attribute.
+ */
+function applyTextAlignToParagraphs(html: string, textAlign: string): string {
+  return html.replace(/<p\b([^>]*)>/gi, (_match, attrs: string) => {
+    const styleMatch = /\sstyle\s*=\s*"([^"]*)"/i.exec(attrs);
+    if (styleMatch) {
+      const existing = styleMatch[1].trim().replace(/;\s*$/, "");
+      const merged = existing
+        ? `${existing}; text-align: ${textAlign}`
+        : `text-align: ${textAlign}`;
+      const newAttrs =
+        attrs.slice(0, styleMatch.index) +
+        ` style="${merged}"` +
+        attrs.slice(styleMatch.index + styleMatch[0].length);
+      return `<p${newAttrs}>`;
+    }
+    return `<p${attrs} style="text-align: ${textAlign}">`;
+  });
+}
+
+/**
  * Paragraph or block-level text container → Paragraph block.
  */
 function convertParagraph($el: Cheerio<Element>): Block {
@@ -109,12 +134,7 @@ function convertParagraph($el: Cheerio<Element>): Block {
 
   let result = wrapped;
   if (textAlign && textAlign !== "left") {
-    result = result
-      .replace(
-        /<p style="([^"]*)">/g,
-        `<p style="$1; text-align: ${textAlign}">`,
-      )
-      .replaceAll("<p>", `<p style="text-align: ${textAlign}">`);
+    result = applyTextAlignToParagraphs(result, textAlign);
   }
   if (fontParts.length > 0) {
     const span = fontParts.join("; ");

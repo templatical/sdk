@@ -38,32 +38,34 @@ function createTableBlock(rows: Array<{ id: string; cells: Array<{ id: string; c
   } as any;
 }
 
-function mountTable(block: any, editor: any) {
+function tableProvides(editor: any) {
+  return {
+    [EDITOR_KEY as symbol]: editor,
+    [TRANSLATIONS_KEY as symbol]: makeStubTranslations(),
+    [FONTS_MANAGER_KEY as symbol]: {
+      fonts: ref([{ label: "Default", value: "" }]),
+      loadCustomFonts: async () => {},
+      cleanupFontLinks: () => {},
+      setCustomFontsEnabled: () => {},
+    },
+    [THEME_STYLES_KEY as symbol]: computed(() => ({})),
+    [UI_THEME_KEY as symbol]: computed(() => "light"),
+    [BLOCK_DEFAULTS_KEY as symbol]: undefined,
+    [MERGE_TAGS_KEY as symbol]: [],
+    [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
+    [ON_REQUEST_MERGE_TAG_KEY as symbol]: null,
+    [ON_REQUEST_MEDIA_KEY as symbol]: null,
+    [DISPLAY_CONDITIONS_KEY as symbol]: [],
+    [ALLOW_CUSTOM_CONDITIONS_KEY as symbol]: false,
+    [CAPABILITIES_KEY as symbol]: {},
+  };
+}
+
+function mountTable(block: any, editor: any, attachTo: Element = document.body) {
   return mount(TableBlock as any, {
     props: { block, viewport: "desktop" },
-    attachTo: document.body,
-    global: {
-      provide: {
-        [EDITOR_KEY as symbol]: editor,
-        [TRANSLATIONS_KEY as symbol]: makeStubTranslations(),
-        [FONTS_MANAGER_KEY as symbol]: {
-          fonts: ref([{ label: "Default", value: "" }]),
-          loadCustomFonts: async () => {},
-          cleanupFontLinks: () => {},
-          setCustomFontsEnabled: () => {},
-        },
-        [THEME_STYLES_KEY as symbol]: computed(() => ({})),
-        [UI_THEME_KEY as symbol]: computed(() => "light"),
-        [BLOCK_DEFAULTS_KEY as symbol]: undefined,
-        [MERGE_TAGS_KEY as symbol]: [],
-        [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
-        [ON_REQUEST_MERGE_TAG_KEY as symbol]: null,
-        [ON_REQUEST_MEDIA_KEY as symbol]: null,
-        [DISPLAY_CONDITIONS_KEY as symbol]: [],
-        [ALLOW_CUSTOM_CONDITIONS_KEY as symbol]: false,
-        [CAPABILITIES_KEY as symbol]: {},
-      },
-    },
+    attachTo,
+    global: { provide: tableProvides(editor) },
   });
 }
 
@@ -107,6 +109,48 @@ describe("TableBlock", () => {
     // focused cell untouched.
     expect(document.activeElement).toBe(cellEl);
     expect(cellEl.textContent).toBe("user typed text");
+  });
+
+  it("does not overwrite an actively-focused cell when mounted in a shadow root", async () => {
+    // The editor mounts in an open shadow root by default. Inside a shadow
+    // root, document.activeElement resolves to the HOST, never the inner <td>,
+    // so an `ownerDocument.activeElement === el` guard never fires and the
+    // directive clobbers the user's in-progress keystrokes. The guard must use
+    // el.getRootNode().activeElement, which returns the focused cell.
+    const block = createTableBlock([
+      { id: "r1", cells: [{ id: "c1", content: "initial" }] },
+    ]);
+    const editor = { selectBlock: vi.fn(), updateBlock: vi.fn() };
+
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const shadow = host.attachShadow({ mode: "open" });
+    const mountPoint = document.createElement("div");
+    shadow.appendChild(mountPoint);
+
+    const wrapper = mountTable(block, editor, mountPoint);
+    const cellEl = wrapper.find('td[contenteditable="true"]')
+      .element as HTMLElement;
+
+    cellEl.focus();
+    cellEl.textContent = "user typed text";
+
+    // Inside the shadow root, the root node tracks the focused cell while the
+    // document only sees the host — exactly why ownerDocument.activeElement
+    // is wrong here.
+    expect((cellEl.getRootNode() as ShadowRoot).activeElement).toBe(cellEl);
+
+    await wrapper.setProps({
+      block: createTableBlock([
+        { id: "r1", cells: [{ id: "c1", content: "external update" }] },
+      ]),
+      viewport: "desktop",
+    });
+
+    expect(cellEl.textContent).toBe("user typed text");
+
+    wrapper.unmount();
+    host.remove();
   });
 
   it("renders external content updates into cells that are NOT focused", async () => {

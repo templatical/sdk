@@ -10,11 +10,18 @@ import { ApiClient } from "./api";
 import type { AuthManager } from "./auth";
 import type {
   Block,
+  ColumnLayout,
   TemplateContent,
   TemplateSettings,
 } from "@templatical/types";
 import { createDefaultTemplateContent } from "@templatical/types";
 import { computed, reactive, readonly, type DeepReadonly, type Ref } from "vue";
+
+function getColumnCount(layout: ColumnLayout): number {
+  if (layout === "1") return 1;
+  if (layout === "3") return 3;
+  return 2;
+}
 
 export interface UseEditorOptions {
   authManager: AuthManager;
@@ -263,17 +270,26 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     const oldIndex = parent.blocks.findIndex((b) => b.id === blockId);
     if (oldIndex === -1) return;
 
-    const [block] = parent.blocks.splice(oldIndex, 1);
-
+    // Resolve target before mutating the source — otherwise an invalid
+    // targetSectionId (stale/deleted id, non-section block, or out-of-range
+    // columnIndex) leaves the block spliced-out and unrecoverable. Reachable
+    // via untrusted remote move_block payloads (MCP/collaboration), which take
+    // no history snapshot, so a dropped block can't even be undone.
+    let targetArray: Block[];
     if (targetSectionId) {
       const section = findBlockById(state.content.blocks, targetSectionId);
-      if (section && section.type === "section") {
-        section.children[columnIndex] = section.children[columnIndex] || [];
-        section.children[columnIndex].splice(newIndex, 0, block);
+      if (!section || section.type !== "section") return;
+      if (columnIndex < 0 || columnIndex >= getColumnCount(section.columns)) {
+        return;
       }
+      section.children[columnIndex] = section.children[columnIndex] || [];
+      targetArray = section.children[columnIndex];
     } else {
-      state.content.blocks.splice(newIndex, 0, block);
+      targetArray = state.content.blocks;
     }
+
+    const [block] = parent.blocks.splice(oldIndex, 1);
+    targetArray.splice(newIndex, 0, block);
 
     state.isDirty = true;
   }

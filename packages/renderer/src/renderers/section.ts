@@ -5,6 +5,7 @@ import { getWidthPercentages, getWidthPixels } from "../columns";
 import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
+import { wrapWithDisplayCondition } from "../display-condition";
 
 /**
  * A function type that renders a single block to MJML markup.
@@ -51,7 +52,9 @@ export function renderSection(
     const columnContext = context.withContainerWidth(columnWidth);
 
     const columnBlocks = filteredColumn
-      .map((child) => renderBlock(child, columnContext))
+      .map((child) =>
+        wrapWithDisplayCondition(child, renderBlock(child, columnContext)),
+      )
       .filter((value) => value !== "")
       .join("\n");
 

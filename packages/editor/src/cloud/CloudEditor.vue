@@ -112,6 +112,16 @@ async function handleSendTestEmail(recipient: string): Promise<void> {
   }
 }
 
+async function handleConfirmRestoreSnapshot(): Promise<void> {
+  try {
+    await snapshotPreview.confirmRestoreSnapshot();
+  } catch {
+    // Restore failure is already surfaced via onError, and the composable
+    // rolls the editor content back to the pre-preview state. Swallow here so
+    // the rejected promise from the event binding isn't an unhandled rejection.
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Module insert handler
 // ---------------------------------------------------------------------------
@@ -260,7 +270,7 @@ defineExpose({
     <SnapshotPreviewBanner
       :visible="snapshotPreview.isPreviewingSnapshot.value"
       @cancel="snapshotPreview.cancelPreview"
-      @confirm="snapshotPreview.confirmRestoreSnapshot"
+      @confirm="handleConfirmRestoreSnapshot"
     />
 
     <!-- Collaboration undo warning toast -->

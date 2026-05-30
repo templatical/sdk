@@ -343,6 +343,40 @@ describe("useSnapshotPreview", () => {
       expect(options.autoSave.resume).not.toHaveBeenCalled();
     });
 
+    it("rolls back to pre-preview content when restore fails", async () => {
+      const mockReturn = createMockSnapshotHistoryReturn();
+      mockReturn.restoreSnapshot.mockRejectedValue(new Error("API failure"));
+      vi.mocked(useSnapshotHistory).mockReturnValue(mockReturn as any);
+
+      const options = createOptions();
+      options.editor.content.value = {
+        blocks: [{ id: "original" }],
+        settings: {},
+      } as any;
+
+      const result = useSnapshotPreview(options);
+      result.initSnapshotHistory();
+
+      const snapshot = createSnapshot("snap-1");
+      await result.handleSnapshotNavigate(snapshot);
+
+      // Preview swapped the snapshot content in; capture the pre-preview backup.
+      const backup = result.contentBeforePreview.value;
+      expect(backup).toEqual({ blocks: [{ id: "original" }], settings: {} });
+      options.editor.setContent.mockClear();
+
+      await expect(result.confirmRestoreSnapshot()).rejects.toThrow(
+        "API failure",
+      );
+
+      // On failure the editor MUST be restored to the pre-preview content, not
+      // left displaying the un-restored snapshot. Rollback runs before the
+      // finally discards the backup.
+      expect(options.editor.setContent).toHaveBeenCalledWith(backup, false);
+      expect(result.previewingSnapshot.value).toBe(null);
+      expect(result.contentBeforePreview.value).toBe(null);
+    });
+
     it("resumes autoSave in finally even on error", async () => {
       const mockReturn = createMockSnapshotHistoryReturn();
       mockReturn.restoreSnapshot.mockRejectedValue(new Error("API failure"));

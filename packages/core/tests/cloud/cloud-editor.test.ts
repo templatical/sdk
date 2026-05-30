@@ -594,15 +594,49 @@ describe("cloud useEditor", () => {
       expect(editor.state.previewMode).toBe(false);
     });
 
-    it("moveBlock with invalid target section removes block from source", () => {
+    it("moveBlock with invalid target section leaves block in place (no data loss)", () => {
       const editor = setup();
       const block = createParagraphBlock();
       editor.addBlock(block);
       expect(editor.content.value.blocks).toHaveLength(1);
 
-      // Target section doesn't exist — block is spliced from root but not added anywhere
+      // Target section doesn't exist. The block must NOT be spliced out and
+      // dropped — moveBlock has to resolve+validate the target BEFORE mutating
+      // the source, otherwise the block is irrecoverably lost (no undo on the
+      // remote-operation path). Mirrors the hardened OSS editor.
       editor.moveBlock(block.id, 0, "nonexistent-section");
-      expect(editor.content.value.blocks).toHaveLength(0);
+      expect(editor.content.value.blocks).toHaveLength(1);
+      expect(editor.content.value.blocks[0].id).toBe(block.id);
+    });
+
+    it("moveBlock to an out-of-range columnIndex leaves block in place", () => {
+      const editor = setup();
+      const section = createSectionBlock({ columns: "1" });
+      const block = createParagraphBlock();
+      editor.addBlock(section);
+      editor.addBlock(block);
+      expect(editor.content.value.blocks).toHaveLength(2);
+
+      // columns "1" → only column index 0 exists; index 5 is out of range and
+      // must be rejected without corrupting the section or losing the block.
+      editor.moveBlock(block.id, 0, section.id, 5);
+      expect(editor.content.value.blocks).toHaveLength(2);
+      expect(editor.content.value.blocks[1].id).toBe(block.id);
+      expect(section.children).toHaveLength(1);
+    });
+
+    it("moveBlock onto a non-section target leaves block in place", () => {
+      const editor = setup();
+      const target = createParagraphBlock();
+      const block = createParagraphBlock();
+      editor.addBlock(target);
+      editor.addBlock(block);
+      expect(editor.content.value.blocks).toHaveLength(2);
+
+      // targetSectionId points at a paragraph (not a section) — reject.
+      editor.moveBlock(block.id, 0, target.id, 0);
+      expect(editor.content.value.blocks).toHaveLength(2);
+      expect(editor.content.value.blocks[1].id).toBe(block.id);
     });
 
     it("setContent(content, false) preserves existing isDirty=true", () => {

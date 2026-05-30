@@ -53,15 +53,25 @@ const URL_ATTRIBUTES = new Set([
 ]);
 
 function isSafeUrl(value: string, allowDataImage: boolean): boolean {
-  const trimmed = value.trim();
-  if (!trimmed) return true;
-  if (trimmed.startsWith("#")) return true;
-  const schemeMatch = /^([a-z][a-z0-9+.-]*):/i.exec(trimmed);
+  // Normalize the value the same way the WHATWG URL parser does before
+  // testing the scheme, so we inspect the string the browser will actually
+  // resolve. The parser removes ASCII tab/LF/CR from *anywhere* in a URL and
+  // strips leading C0-control + space characters. Without this, payloads like
+  // "java\tscript:alert(1)" or "\x01javascript:alert(1)" match no scheme here
+  // (and fall through to the safe branch) yet re-form a live `javascript:`
+  // URL once rendered into the anchor.
+  const normalized = value
+    .replace(/[\t\n\r]/g, "")
+    .replace(/^[\u0000-\u0020]+/, "")
+    .trimEnd();
+  if (!normalized) return true;
+  if (normalized.startsWith("#")) return true;
+  const schemeMatch = /^([a-z][a-z0-9+.-]*):/i.exec(normalized);
   if (!schemeMatch) return true;
   const scheme = schemeMatch[1].toLowerCase();
   if (SAFE_URL_SCHEMES.has(scheme)) return true;
   if (allowDataImage && scheme === "data") {
-    return /^data:image\/(png|jpe?g|gif|webp|svg\+xml);/i.test(trimmed);
+    return /^data:image\/(png|jpe?g|gif|webp|svg\+xml);/i.test(normalized);
   }
   return false;
 }

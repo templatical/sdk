@@ -96,6 +96,34 @@ describe("convertElement — paragraphs", () => {
       throw new Error("expected paragraph block");
     expect(r.block.content).toContain("text-align: center");
   });
+
+  it("applies container text-align to an inner <p> that has a non-style attribute", () => {
+    // Real email HTML routinely carries class/id/dir on the inner <p>. The
+    // alignment must still be applied even though the <p> has no leading
+    // style attribute for the narrow `<p style="...">`/`<p>` matchers to hit.
+    const { $, $el } = firstEl(
+      '<div style="text-align:center"><p class="lead">Centered</p></div>',
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toContain("Centered");
+    expect(r.block.content).toContain("text-align: center");
+    expect(r.block.content).toContain('class="lead"');
+  });
+
+  it("merges text-align into an inner <p> that already has a style attribute", () => {
+    const { $, $el } = firstEl(
+      '<div style="text-align:right"><p style="color:#123456">Right</p></div>',
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toContain("text-align: right");
+    expect(r.block.content).toContain("color:#123456");
+  });
 });
 
 describe("convertElement — images", () => {

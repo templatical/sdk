@@ -19,7 +19,14 @@ const vCellContent: Directive<HTMLElement, string> = {
   },
   updated(el, binding) {
     if (binding.value === binding.oldValue) return;
-    if (el.ownerDocument.activeElement === el) return;
+    // Resolve the focused element from the cell's own root. In the default
+    // shadow-DOM mount, `el.ownerDocument.activeElement` returns the shadow
+    // host (never the inner <td>), so that guard never fires and the
+    // directive overwrites the user's in-progress keystrokes. `getRootNode()`
+    // returns the ShadowRoot in shadow mode and the Document in light mode —
+    // both expose `activeElement` pointing at the truly-focused cell.
+    const root = el.getRootNode() as Document | ShadowRoot;
+    if (root.activeElement === el) return;
     el.textContent = binding.value ?? "";
   },
 };

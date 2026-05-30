@@ -8,6 +8,7 @@ import { isSection, isCustomBlock } from "@templatical/types";
 import { RenderContext, DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
 import { renderBlock } from "./renderers";
 import { escapeHtml, escapeAttr } from "./escape";
+import { wrapWithDisplayCondition } from "./display-condition";
 
 export interface RenderOptions {
   customFonts?: CustomFont[];
@@ -150,29 +151,6 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
   const content = renderBlock(block, context);
   const wrapped = wrapInSection(content);
   return wrapWithDisplayCondition(block, wrapped);
-}
-
-/**
- * Wrap rendered block content with display condition tags if present.
- */
-function wrapWithDisplayCondition(block: Block, rendered: string): string {
-  if (rendered === "") {
-    return "";
-  }
-
-  const displayCondition = block.displayCondition;
-
-  if (!displayCondition) {
-    return rendered;
-  }
-
-  return (
-    `<mj-raw>${displayCondition.before}</mj-raw>` +
-    "\n" +
-    rendered +
-    "\n" +
-    `<mj-raw>${displayCondition.after}</mj-raw>`
-  );
 }
 
 /**

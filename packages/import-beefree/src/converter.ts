@@ -89,11 +89,29 @@ function processRow(
 
   const layout = resolveColumnLayout(columns, warnings);
 
+  // Extract section-level background from row content styles.
+  const rowBg = parseColor(row.content?.style?.["background-color"]);
+
   if (!layout) {
-    // Single column (or flattened 4+ columns) — return modules directly
+    // Single column (or flattened 4+ columns) — return modules directly.
     const blocks: Block[] = [];
     for (const column of columns) {
       blocks.push(...convertColumnModules(column, entries, warnings));
+    }
+    // A non-transparent row background can't survive on bare modules; wrap
+    // them in a one-column section so the colored band still renders. Mirrors
+    // the multi-column path and the Unlayer importer (which wraps every row).
+    if (rowBg) {
+      return [
+        createSectionBlock({
+          columns: "1",
+          children: [blocks],
+          styles: {
+            padding: { top: 0, right: 0, bottom: 0, left: 0 },
+            backgroundColor: rowBg,
+          },
+        }),
+      ];
     }
     return blocks;
   }
@@ -102,9 +120,6 @@ function processRow(
   const children: Block[][] = columns.map((col) =>
     convertColumnModules(col, entries, warnings),
   );
-
-  // Extract section-level background from row content styles
-  const rowBg = parseColor(row.content?.style?.["background-color"]);
 
   const section = createSectionBlock({
     columns: layout,
