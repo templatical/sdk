@@ -16,7 +16,7 @@
     "typescript": "^6.0.3",
     "vite": "^8.0.14",
     "vitest": "^4.1.7",
-    "vue": "^3.5.34",
+    "vue": "^3.5.35",
     "vue-tsc": "^3.3.2"
   },
   "exports": {
@@ -42,7 +42,7 @@
   "module": "./dist/templatical-media-library.js",
   "peerDependencies": {
     "tailwindcss": "^4.3.0",
-    "vue": "^3.5.34"
+    "vue": "^3.5.35"
   },
   "publishConfig": {
     "access": "public"
