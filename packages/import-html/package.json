@@ -9,6 +9,7 @@
     "domhandler": "^6.0.1"
   },
   "devDependencies": {
+    "@types/node": "^25.8.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"
   },
