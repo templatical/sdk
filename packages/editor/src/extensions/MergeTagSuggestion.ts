@@ -83,6 +83,283 @@ export function handleSuggestionKeyDown(
   return false;
 }
 
+/**
+ * Builds the `@tiptap/suggestion` `render` factory for the merge-tag popup.
+ * The returned handler object owns the popup lifecycle: mount, ARIA wiring,
+ * positioning, scroll listeners, and cleanup. Exported as a standalone
+ * function so that lifecycle can be unit-tested with mocked `SuggestionProps`
+ * instead of a full ProseMirror editor.
+ */
+export function createMergeTagSuggestionRenderer(
+  emptyText: string,
+  popoverRootRef?: Ref<HTMLElement | null> | null,
+): NonNullable<SuggestionOptions<MergeTag>["render"]> {
+  return () => {
+    let app: App | null = null;
+    let container: HTMLElement | null = null;
+    let editableEl: HTMLElement | null = null;
+    const itemsRef = ref<MergeTag[]>([]);
+    const selectedIndex = ref(0);
+    let currentCommand: ((item: MergeTag) => void) | null = null;
+    const listId = `tpl-merge-tag-suggestion-${++POPUP_ID_SEQ}`;
+    let latestClientRect: (() => DOMRect | null) | null = null;
+    let scrollTargets: Array<EventTarget> = [];
+    let pendingRaf: number | null = null;
+
+    function reposition(): void {
+      position(latestClientRect?.() ?? null);
+    }
+
+    /**
+     * Reposition immediately and on the next animation frame.
+     * After a keystroke triggers the suggestion, TipTap may run its
+     * own `scrollIntoView` to keep the caret visible. That scroll
+     * lands AFTER the current task's `position()` call but BEFORE
+     * the browser's next paint, so we re-measure on rAF to catch
+     * the post-scroll caret rect. Without this, the popup pins to
+     * the pre-scroll caret position and ends up offset on slower
+     * runners.
+     */
+    function repositionAfterPaint(): void {
+      reposition();
+      if (pendingRaf !== null) cancelAnimationFrame(pendingRaf);
+      pendingRaf = requestAnimationFrame(() => {
+        pendingRaf = null;
+        reposition();
+      });
+    }
+
+    function collectScrollAncestors(el: HTMLElement | null): HTMLElement[] {
+      // Walk up the DOM finding scrollable ancestors. ProseMirror's
+      // scrollIntoView fires on whichever ancestor scrolls — listening
+      // to all of them ensures we reposition regardless of which one
+      // moves.
+      const result: HTMLElement[] = [];
+      let node: HTMLElement | null = el?.parentElement ?? null;
+      while (
+        node &&
+        // shadow-ok: ancestor walk terminator; not a mount target
+        node !== document.body &&
+        node !== document.documentElement
+      ) {
+        const style = window.getComputedStyle(node);
+        const overflow = style.overflow + style.overflowX + style.overflowY;
+        if (/(auto|scroll|overlay)/.test(overflow)) {
+          result.push(node);
+        }
+        node = node.parentElement;
+      }
+      return result;
+    }
+
+    function attachScrollListeners(viewDom: HTMLElement | null): void {
+      scrollTargets = [window, ...collectScrollAncestors(viewDom)];
+      for (const target of scrollTargets) {
+        target.addEventListener("scroll", reposition, {
+          passive: true,
+          capture: true,
+        });
+      }
+      window.addEventListener("resize", reposition, { passive: true });
+    }
+
+    function detachScrollListeners(): void {
+      for (const target of scrollTargets) {
+        target.removeEventListener("scroll", reposition, {
+          capture: true,
+        } as EventListenerOptions);
+      }
+      window.removeEventListener("resize", reposition);
+      scrollTargets = [];
+    }
+
+    function position(rect: DOMRect | null): void {
+      if (!container || !rect) return;
+      // If the caret has scrolled out of the viewport, freeze the
+      // popup at its last on-screen position. Following the caret
+      // off-screen produces an invisible popup the user can't reach,
+      // and lets pathological scroll loops drag the popup further
+      // each tick.
+      if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+      container.style.position = "fixed";
+      container.style.left = `${rect.left}px`;
+      container.style.zIndex = "9999";
+      // Place below caret first; offsetHeight is sync-readable after
+      // the Vue app has mounted (or after onUpdate's reactive flush).
+      container.style.top = `${rect.bottom}px`;
+      const popupHeight = container.offsetHeight;
+      if (popupHeight === 0) return;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      if (spaceBelow < popupHeight) {
+        // Not enough room below — flip above. Clamp to 0 so the
+        // popup never positions off the top of the viewport.
+        const flippedTop = Math.max(0, rect.top - popupHeight);
+        container.style.top = `${flippedTop}px`;
+      }
+    }
+
+    function applyThemeContext(
+      target: HTMLElement,
+      editorEl: HTMLElement | null | undefined,
+    ): void {
+      // When the popup mounts to document.body its `position: fixed`
+      // resolves against the viewport — any transform/filter on a
+      // consumer-page ancestor (route transitions, reveal animations,
+      // dark canvas inversion) creates a containing block and moves
+      // fixed descendants with it. Body ancestors don't transform.
+      //
+      // When mounting inside the editor's popover root, the popup is a
+      // descendant of the `.tpl[data-tpl-theme]` root so CSS vars + font
+      // would inherit — but the snapshot below is still emitted inline
+      // because inline declarations win and the cost is negligible. This
+      // keeps a single behavior across both mount paths.
+      //
+      // CSS vars (--tpl-bg-elevated, --tpl-border, etc.) are scoped to
+      // `.tpl` and `.tpl[data-tpl-theme="dark"]` in the editor's
+      // stylesheet, so the popup wouldn't inherit them at body root.
+      // Adding `class="tpl"` would also pull base rules (min-height,
+      // flex, full-page bg) we don't want on a popup. Instead, snapshot
+      // every --tpl-* custom property from the editor's theme root and
+      // re-emit them inline on the popup wrapper.
+      const themeRoot = editorEl?.closest<HTMLElement>("[data-tpl-theme]");
+      if (!themeRoot) return;
+      const themeValue = themeRoot.getAttribute("data-tpl-theme");
+      if (themeValue) target.setAttribute("data-tpl-theme", themeValue);
+      const computed = window.getComputedStyle(themeRoot);
+      for (let i = 0; i < computed.length; i++) {
+        const prop = computed[i];
+        if (prop.startsWith("--tpl-")) {
+          target.style.setProperty(prop, computed.getPropertyValue(prop));
+        }
+      }
+      // The popup no longer inherits font from the editor wrapper, so
+      // its content would render in the page's default font and end up
+      // at a different height — which changes the flip-above decision
+      // and shifts the popup off the caret. Copy typography too.
+      target.style.fontFamily = computed.fontFamily;
+      target.style.fontSize = computed.fontSize;
+      target.style.lineHeight = computed.lineHeight;
+    }
+
+    function setEditableAria(active: boolean): void {
+      if (!editableEl) return;
+      if (active) {
+        editableEl.setAttribute("role", "combobox");
+        editableEl.setAttribute("aria-haspopup", "listbox");
+        editableEl.setAttribute("aria-expanded", "true");
+        editableEl.setAttribute("aria-controls", listId);
+      } else {
+        editableEl.removeAttribute("aria-expanded");
+        editableEl.removeAttribute("aria-controls");
+        editableEl.removeAttribute("aria-activedescendant");
+        editableEl.removeAttribute("aria-haspopup");
+        editableEl.removeAttribute("role");
+      }
+    }
+
+    function setActiveDescendant(): void {
+      if (!editableEl) return;
+      if (itemsRef.value.length === 0) {
+        editableEl.removeAttribute("aria-activedescendant");
+        return;
+      }
+      editableEl.setAttribute(
+        "aria-activedescendant",
+        `${listId}-opt-${selectedIndex.value}`,
+      );
+    }
+
+    function select(item: MergeTag): void {
+      currentCommand?.(item);
+    }
+
+    return {
+      onStart: (props: SuggestionProps<MergeTag>) => {
+        itemsRef.value = props.items;
+        selectedIndex.value = 0;
+        currentCommand = (item) => props.command(item);
+
+        container = document.createElement("div");
+        container.setAttribute("data-testid", "merge-tag-suggestion-popup");
+        // Use view.dom (ProseMirror contenteditable, actually
+        // attached to the DOM) rather than options.element, which may
+        // be a detached div when no `element` is passed to the editor
+        // constructor (as is the case with @tiptap/vue-3 EditorContent).
+        const viewDom = props.editor.view?.dom as HTMLElement | undefined;
+        editableEl = viewDom ?? null;
+        applyThemeContext(container, viewDom ?? null);
+        // Prefer the editor's popover root (shadow-aware) when wired by
+        // the consumer. Falls back to document.body for headless callers
+        // that don't pass `popoverRoot` to configure().
+        // shadow-ok: fallback when popoverRoot wasn't provided (e.g., headless caller); editor mounts pass the shadow-aware root
+        const mountTarget = popoverRootRef?.value ?? document.body;
+        mountTarget.appendChild(container);
+
+        app = createApp({
+          render() {
+            return h(MergeTagSuggestionList, {
+              items: itemsRef.value,
+              selectedIndex: selectedIndex.value,
+              emptyText,
+              listId,
+              onSelect: (item: MergeTag) => select(item),
+              onHover: (index: number) => {
+                selectedIndex.value = index;
+                setActiveDescendant();
+              },
+            });
+          },
+        });
+        app.mount(container);
+        setEditableAria(true);
+        setActiveDescendant();
+        latestClientRect = props.clientRect ?? null;
+        repositionAfterPaint();
+        attachScrollListeners(viewDom ?? null);
+      },
+      onUpdate: (props: SuggestionProps<MergeTag>) => {
+        itemsRef.value = props.items;
+        // Reset selection when item set changes (query changed).
+        if (selectedIndex.value >= props.items.length) {
+          selectedIndex.value = 0;
+        }
+        currentCommand = (item) => props.command(item);
+        setActiveDescendant();
+        latestClientRect = props.clientRect ?? null;
+        repositionAfterPaint();
+      },
+      onKeyDown: (props: SuggestionKeyDownProps): boolean => {
+        if (props.event.key === "Escape") {
+          return true;
+        }
+        const handled = handleSuggestionKeyDown(
+          props.event,
+          itemsRef.value,
+          selectedIndex,
+          select,
+        );
+        if (handled) setActiveDescendant();
+        return handled;
+      },
+      onExit: () => {
+        if (pendingRaf !== null) {
+          cancelAnimationFrame(pendingRaf);
+          pendingRaf = null;
+        }
+        detachScrollListeners();
+        setEditableAria(false);
+        app?.unmount();
+        container?.remove();
+        app = null;
+        container = null;
+        editableEl = null;
+        currentCommand = null;
+        latestClientRect = null;
+      },
+    };
+  };
+}
+
 export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
   name: "mergeTagSuggestion",
 
@@ -130,270 +407,7 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
           })
           .run();
       },
-      render: () => {
-        let app: App | null = null;
-        let container: HTMLElement | null = null;
-        let editableEl: HTMLElement | null = null;
-        const itemsRef = ref<MergeTag[]>([]);
-        const selectedIndex = ref(0);
-        let currentCommand: ((item: MergeTag) => void) | null = null;
-        const listId = `tpl-merge-tag-suggestion-${++POPUP_ID_SEQ}`;
-        let latestClientRect: (() => DOMRect | null) | null = null;
-        let scrollTargets: Array<EventTarget> = [];
-        let pendingRaf: number | null = null;
-
-        function reposition(): void {
-          position(latestClientRect?.() ?? null);
-        }
-
-        /**
-         * Reposition immediately and on the next animation frame.
-         * After a keystroke triggers the suggestion, TipTap may run its
-         * own `scrollIntoView` to keep the caret visible. That scroll
-         * lands AFTER the current task's `position()` call but BEFORE
-         * the browser's next paint, so we re-measure on rAF to catch
-         * the post-scroll caret rect. Without this, the popup pins to
-         * the pre-scroll caret position and ends up offset on slower
-         * runners.
-         */
-        function repositionAfterPaint(): void {
-          reposition();
-          if (pendingRaf !== null) cancelAnimationFrame(pendingRaf);
-          pendingRaf = requestAnimationFrame(() => {
-            pendingRaf = null;
-            reposition();
-          });
-        }
-
-        function collectScrollAncestors(el: HTMLElement | null): HTMLElement[] {
-          // Walk up the DOM finding scrollable ancestors. ProseMirror's
-          // scrollIntoView fires on whichever ancestor scrolls — listening
-          // to all of them ensures we reposition regardless of which one
-          // moves.
-          const result: HTMLElement[] = [];
-          let node: HTMLElement | null = el?.parentElement ?? null;
-          while (
-            node &&
-            // shadow-ok: ancestor walk terminator; not a mount target
-            node !== document.body &&
-            node !== document.documentElement
-          ) {
-            const style = window.getComputedStyle(node);
-            const overflow = style.overflow + style.overflowX + style.overflowY;
-            if (/(auto|scroll|overlay)/.test(overflow)) {
-              result.push(node);
-            }
-            node = node.parentElement;
-          }
-          return result;
-        }
-
-        function attachScrollListeners(viewDom: HTMLElement | null): void {
-          scrollTargets = [window, ...collectScrollAncestors(viewDom)];
-          for (const target of scrollTargets) {
-            target.addEventListener("scroll", reposition, {
-              passive: true,
-              capture: true,
-            });
-          }
-          window.addEventListener("resize", reposition, { passive: true });
-        }
-
-        function detachScrollListeners(): void {
-          for (const target of scrollTargets) {
-            target.removeEventListener("scroll", reposition, {
-              capture: true,
-            } as EventListenerOptions);
-          }
-          window.removeEventListener("resize", reposition);
-          scrollTargets = [];
-        }
-
-        function position(rect: DOMRect | null): void {
-          if (!container || !rect) return;
-          // If the caret has scrolled out of the viewport, freeze the
-          // popup at its last on-screen position. Following the caret
-          // off-screen produces an invisible popup the user can't reach,
-          // and lets pathological scroll loops drag the popup further
-          // each tick.
-          if (rect.bottom < 0 || rect.top > window.innerHeight) return;
-          container.style.position = "fixed";
-          container.style.left = `${rect.left}px`;
-          container.style.zIndex = "9999";
-          // Place below caret first; offsetHeight is sync-readable after
-          // the Vue app has mounted (or after onUpdate's reactive flush).
-          container.style.top = `${rect.bottom}px`;
-          const popupHeight = container.offsetHeight;
-          if (popupHeight === 0) return;
-          const spaceBelow = window.innerHeight - rect.bottom;
-          if (spaceBelow < popupHeight) {
-            // Not enough room below — flip above. Clamp to 0 so the
-            // popup never positions off the top of the viewport.
-            const flippedTop = Math.max(0, rect.top - popupHeight);
-            container.style.top = `${flippedTop}px`;
-          }
-        }
-
-        function applyThemeContext(
-          target: HTMLElement,
-          editorEl: HTMLElement | null | undefined,
-        ): void {
-          // When the popup mounts to document.body its `position: fixed`
-          // resolves against the viewport — any transform/filter on a
-          // consumer-page ancestor (route transitions, reveal animations,
-          // dark canvas inversion) creates a containing block and moves
-          // fixed descendants with it. Body ancestors don't transform.
-          //
-          // When mounting inside the editor's popover root, the popup is a
-          // descendant of the `.tpl[data-tpl-theme]` root so CSS vars + font
-          // would inherit — but the snapshot below is still emitted inline
-          // because inline declarations win and the cost is negligible. This
-          // keeps a single behavior across both mount paths.
-          //
-          // CSS vars (--tpl-bg-elevated, --tpl-border, etc.) are scoped to
-          // `.tpl` and `.tpl[data-tpl-theme="dark"]` in the editor's
-          // stylesheet, so the popup wouldn't inherit them at body root.
-          // Adding `class="tpl"` would also pull base rules (min-height,
-          // flex, full-page bg) we don't want on a popup. Instead, snapshot
-          // every --tpl-* custom property from the editor's theme root and
-          // re-emit them inline on the popup wrapper.
-          const themeRoot = editorEl?.closest<HTMLElement>("[data-tpl-theme]");
-          if (!themeRoot) return;
-          const themeValue = themeRoot.getAttribute("data-tpl-theme");
-          if (themeValue) target.setAttribute("data-tpl-theme", themeValue);
-          const computed = window.getComputedStyle(themeRoot);
-          for (let i = 0; i < computed.length; i++) {
-            const prop = computed[i];
-            if (prop.startsWith("--tpl-")) {
-              target.style.setProperty(prop, computed.getPropertyValue(prop));
-            }
-          }
-          // The popup no longer inherits font from the editor wrapper, so
-          // its content would render in the page's default font and end up
-          // at a different height — which changes the flip-above decision
-          // and shifts the popup off the caret. Copy typography too.
-          target.style.fontFamily = computed.fontFamily;
-          target.style.fontSize = computed.fontSize;
-          target.style.lineHeight = computed.lineHeight;
-        }
-
-        function setEditableAria(active: boolean): void {
-          if (!editableEl) return;
-          if (active) {
-            editableEl.setAttribute("role", "combobox");
-            editableEl.setAttribute("aria-haspopup", "listbox");
-            editableEl.setAttribute("aria-expanded", "true");
-            editableEl.setAttribute("aria-controls", listId);
-          } else {
-            editableEl.removeAttribute("aria-expanded");
-            editableEl.removeAttribute("aria-controls");
-            editableEl.removeAttribute("aria-activedescendant");
-            editableEl.removeAttribute("aria-haspopup");
-            editableEl.removeAttribute("role");
-          }
-        }
-
-        function setActiveDescendant(): void {
-          if (!editableEl) return;
-          if (itemsRef.value.length === 0) {
-            editableEl.removeAttribute("aria-activedescendant");
-            return;
-          }
-          editableEl.setAttribute(
-            "aria-activedescendant",
-            `${listId}-opt-${selectedIndex.value}`,
-          );
-        }
-
-        function select(item: MergeTag): void {
-          currentCommand?.(item);
-        }
-
-        return {
-          onStart: (props: SuggestionProps<MergeTag>) => {
-            itemsRef.value = props.items;
-            selectedIndex.value = 0;
-            currentCommand = (item) => props.command(item);
-
-            container = document.createElement("div");
-            container.setAttribute("data-testid", "merge-tag-suggestion-popup");
-            // Use view.dom (ProseMirror contenteditable, actually
-            // attached to the DOM) rather than options.element, which may
-            // be a detached div when no `element` is passed to the editor
-            // constructor (as is the case with @tiptap/vue-3 EditorContent).
-            const viewDom = props.editor.view?.dom as HTMLElement | undefined;
-            editableEl = viewDom ?? null;
-            applyThemeContext(container, viewDom ?? null);
-            // Prefer the editor's popover root (shadow-aware) when wired by
-            // the consumer. Falls back to document.body for headless callers
-            // that don't pass `popoverRoot` to configure().
-            // shadow-ok: fallback when popoverRoot wasn't provided (e.g., headless caller); editor mounts pass the shadow-aware root
-            const mountTarget = popoverRootRef?.value ?? document.body;
-            mountTarget.appendChild(container);
-
-            app = createApp({
-              render() {
-                return h(MergeTagSuggestionList, {
-                  items: itemsRef.value,
-                  selectedIndex: selectedIndex.value,
-                  emptyText,
-                  listId,
-                  onSelect: (item: MergeTag) => select(item),
-                  onHover: (index: number) => {
-                    selectedIndex.value = index;
-                    setActiveDescendant();
-                  },
-                });
-              },
-            });
-            app.mount(container);
-            setEditableAria(true);
-            setActiveDescendant();
-            latestClientRect = props.clientRect ?? null;
-            repositionAfterPaint();
-            attachScrollListeners(viewDom ?? null);
-          },
-          onUpdate: (props: SuggestionProps<MergeTag>) => {
-            itemsRef.value = props.items;
-            // Reset selection when item set changes (query changed).
-            if (selectedIndex.value >= props.items.length) {
-              selectedIndex.value = 0;
-            }
-            currentCommand = (item) => props.command(item);
-            setActiveDescendant();
-            latestClientRect = props.clientRect ?? null;
-            repositionAfterPaint();
-          },
-          onKeyDown: (props: SuggestionKeyDownProps): boolean => {
-            if (props.event.key === "Escape") {
-              return true;
-            }
-            const handled = handleSuggestionKeyDown(
-              props.event,
-              itemsRef.value,
-              selectedIndex,
-              select,
-            );
-            if (handled) setActiveDescendant();
-            return handled;
-          },
-          onExit: () => {
-            if (pendingRaf !== null) {
-              cancelAnimationFrame(pendingRaf);
-              pendingRaf = null;
-            }
-            detachScrollListeners();
-            setEditableAria(false);
-            app?.unmount();
-            container?.remove();
-            app = null;
-            container = null;
-            editableEl = null;
-            currentCommand = null;
-            latestClientRect = null;
-          },
-        };
-      },
+      render: createMergeTagSuggestionRenderer(emptyText, popoverRootRef),
     };
 
     return [

@@ -426,4 +426,158 @@ describe("convertContent", () => {
       }
     });
   });
+
+  // Null-safety / malformed-input coverage for the hand-rolled <p> scanner and
+  // the per-block converters. Real-world Unlayer exports occasionally carry
+  // truncated HTML or missing optional fields — these must degrade, not crash.
+  describe("malformed / null-safety", () => {
+    describe("convertText malformed <p>", () => {
+      // The wrap branch only runs when a non-default style is present, so each
+      // case supplies `color` to exercise wrapParagraphInner's bail paths.
+      it("does not throw on an unclosed <p> and leaves the fragment intact", () => {
+        const warnings: string[] = [];
+        const { block, entry } = convertContent(
+          makeContent("text", { text: "<p>Unclosed", color: "#123456" }),
+          warnings,
+        );
+
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") {
+          // No `</p>` to close → scanner dumps the remainder unchanged.
+          expect(block.content).toBe("<p>Unclosed");
+        }
+        expect(entry.status).toBe("converted");
+        expect(entry.templaticalBlockType).toBe("paragraph");
+        expect(warnings).toHaveLength(0);
+      });
+
+      it("does not throw on two consecutive unclosed <p> tags", () => {
+        const { block } = convertContent(
+          makeContent("text", { text: "<p>start<p>middle", color: "#123456" }),
+          [],
+        );
+
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") {
+          // First `<p` has no `</p>` after it → remainder dumped as-is.
+          expect(block.content).toBe("<p>start<p>middle");
+        }
+      });
+
+      it("wraps the unclosed fragment's content when a closing </p> appears later", () => {
+        const { block } = convertContent(
+          makeContent("text", {
+            text: "<p>first</p><p>second",
+            color: "#123456",
+          }),
+          [],
+        );
+
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") {
+          // First (closed) paragraph is wrapped; trailing unclosed one is left.
+          expect(block.content).toBe(
+            '<p><span style="color: #123456">first</span></p><p>second',
+          );
+        }
+      });
+
+      it("recognizes a <p> with a newline right after the tag name as valid", () => {
+        const { block } = convertContent(
+          makeContent("text", { text: "<p\n>Hello</p>", color: "#123456" }),
+          [],
+        );
+
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") {
+          // `\n` is in the allowed post-tag-name char set → treated as a real
+          // <p>, so its inner content gets the styled span.
+          expect(block.content).toBe(
+            '<p\n><span style="color: #123456">Hello</span></p>',
+          );
+        }
+      });
+    });
+
+    describe("convertImage missing src", () => {
+      it("produces an image block with empty src and default sizing, no crash", () => {
+        const { block, entry } = convertContent(makeContent("image", {}), []);
+
+        expect(block.type).toBe("image");
+        if (block.type === "image") {
+          expect(block.src).toBe("");
+          expect(block.alt).toBe("");
+          expect(block.width).toBe(600);
+          expect(block.align).toBe("center");
+          expect(block.linkUrl).toBeUndefined();
+        }
+        expect(entry.status).toBe("converted");
+        expect(entry.templaticalBlockType).toBe("image");
+      });
+    });
+
+    describe("convertButton with null/absent optionals", () => {
+      it("falls back to defaults when buttonColors is null and href/padding absent", () => {
+        const { block, entry } = convertContent(
+          // buttonColors typed as optional object; real exports can send null.
+          makeContent("button", {
+            buttonColors: null as unknown as undefined,
+          }),
+          [],
+        );
+
+        expect(block.type).toBe("button");
+        if (block.type === "button") {
+          expect(block.text).toBe("Button");
+          expect(block.url).toBe("#");
+          expect(block.backgroundColor).toBe("#4f46e5");
+          expect(block.textColor).toBe("#ffffff");
+          expect(block.fontSize).toBe(16);
+          expect(block.buttonPadding).toEqual({
+            top: 12,
+            right: 24,
+            bottom: 12,
+            left: 24,
+          });
+        }
+        expect(entry.status).toBe("converted");
+        expect(entry.templaticalBlockType).toBe("button");
+      });
+    });
+
+    describe("parseHeadingLevel fallback", () => {
+      it("falls back to level 2 for an in-shape but out-of-range heading (h5)", () => {
+        const { block } = convertContent(
+          makeContent("heading", { headingType: "h5", text: "x" }),
+          [],
+        );
+        expect(block.type).toBe("title");
+        if (block.type === "title") {
+          expect(block.level).toBe(2);
+        }
+      });
+
+      it("falls back to level 2 for a double-digit heading (h7)", () => {
+        const { block } = convertContent(
+          makeContent("heading", { headingType: "h7", text: "x" }),
+          [],
+        );
+        expect(block.type).toBe("title");
+        if (block.type === "title") {
+          expect(block.level).toBe(2);
+        }
+      });
+
+      it("falls back to level 2 for a non-heading tag (span)", () => {
+        const { block } = convertContent(
+          makeContent("heading", { headingType: "span", text: "x" }),
+          [],
+        );
+        expect(block.type).toBe("title");
+        if (block.type === "title") {
+          expect(block.level).toBe(2);
+        }
+      });
+    });
+  });
 });

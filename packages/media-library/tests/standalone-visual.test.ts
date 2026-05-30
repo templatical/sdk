@@ -424,6 +424,128 @@ describe('standalone visual', () => {
     expect(secondApp.mount).toHaveBeenCalledWith(container);
   });
 
+  it('resolves with an instance whose setTheme applies CSS variables to the container', async () => {
+    const mockAuthManager = {
+      projectId: 'proj-1',
+      tenantSlug: 'acme',
+      initialize: vi.fn().mockResolvedValue(undefined),
+      authenticatedFetch: vi.fn(),
+    };
+
+    const { createSdkAuthManager: mockCreateAuth } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(mockCreateAuth).mockReturnValue(mockAuthManager as any);
+
+    const { ApiClient: MockApiClient } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(MockApiClient).mockImplementation(function (this: any) {
+      this.fetchConfig = vi.fn().mockResolvedValue({ storage: {} });
+      return this;
+    } as any);
+
+    const { loadMediaTranslations: mockLoadTranslations } = await import(
+      '../src/i18n'
+    );
+    vi.mocked(mockLoadTranslations).mockResolvedValue({} as any);
+
+    // h captures the props passed to MediaLibrary so we can drive onReady.
+    const { h: mockH, createApp: mockCreateApp } = await import('vue');
+    let capturedOnReady: (() => void) | undefined;
+    vi.mocked(mockH).mockImplementation((_component: any, props: any) => {
+      capturedOnReady = props?.onReady;
+      return { __vnode: true } as any;
+    });
+
+    // createApp calls setup() to get the render fn, then invokes it so h runs
+    // and onReady is captured. mount() then simulates the MediaLibrary
+    // component signalling readiness by firing the captured onReady callback,
+    // which is what resolves the init() promise with the instance.
+    vi.mocked(mockCreateApp).mockImplementation((...args: any[]) => {
+      const component = args[0] as any;
+      const render = component?.setup?.();
+      render?.();
+      return {
+        mount: vi.fn(() => {
+          capturedOnReady?.();
+        }),
+        unmount: vi.fn(),
+      } as any;
+    });
+
+    const container = document.createElement('div');
+
+    const instance = await initFn({
+      container,
+      auth: { projectId: 'p1', token: 't1' },
+    } as any);
+
+    // The resolved instance exposes the documented surface.
+    expect(typeof instance.setTheme).toBe('function');
+    expect(typeof instance.unmount).toBe('function');
+    expect(capturedOnReady).toBeTypeOf('function');
+
+    // setTheme applies concrete CSS custom properties on the container.
+    instance.setTheme({ primaryColor: '#abc', borderRadius: 5 });
+
+    expect(container.style.getPropertyValue('--tpl-primary')).toBe('#abc');
+    expect(container.style.getPropertyValue('--tpl-radius')).toBe('5px');
+    expect(container.style.getPropertyValue('--tpl-radius-sm')).toBe('2px');
+    expect(container.style.getPropertyValue('--tpl-radius-lg')).toBe('9px');
+  });
+
+  it('rejects when createApp/mount throws', async () => {
+    const mockAuthManager = {
+      projectId: 'proj-1',
+      tenantSlug: 'acme',
+      initialize: vi.fn().mockResolvedValue(undefined),
+      authenticatedFetch: vi.fn(),
+    };
+
+    const { createSdkAuthManager: mockCreateAuth } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(mockCreateAuth).mockReturnValue(mockAuthManager as any);
+
+    const { ApiClient: MockApiClient } = await import(
+      '@templatical/core/cloud'
+    );
+    vi.mocked(MockApiClient).mockImplementation(function (this: any) {
+      this.fetchConfig = vi.fn().mockResolvedValue({ storage: {} });
+      return this;
+    } as any);
+
+    const { loadMediaTranslations: mockLoadTranslations } = await import(
+      '../src/i18n'
+    );
+    vi.mocked(mockLoadTranslations).mockResolvedValue({} as any);
+
+    const mountError = new Error('mount blew up');
+    const { createApp: mockCreateApp } = await import('vue');
+    vi.mocked(mockCreateApp).mockImplementation((...args: any[]) => {
+      const component = args[0] as any;
+      if (component?.setup) {
+        component.setup();
+      }
+      return {
+        mount: vi.fn(() => {
+          throw mountError;
+        }),
+        unmount: vi.fn(),
+      } as any;
+    });
+
+    const container = document.createElement('div');
+
+    await expect(
+      initFn({
+        container,
+        auth: { projectId: 'p1', token: 't1' },
+      } as any),
+    ).rejects.toBe(mountError);
+  });
+
   it('passes locale to loadMediaTranslations', async () => {
     const mockAuthManager = {
       projectId: 'proj-1',

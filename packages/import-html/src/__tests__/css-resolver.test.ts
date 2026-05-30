@@ -60,6 +60,30 @@ describe("parseStyleSheet", () => {
     expect(rules[0].declarations).toEqual({ color: "red" });
     expect(rules[1].declarations).toEqual({ color: "blue" });
   });
+
+  it("skips a semicolon-terminated @charset at-rule, keeps the following rule", () => {
+    // @charset has no `{...}` block — it terminates at the `;`. The stripper
+    // must skip past the semicolon and still parse the trailing p rule.
+    const rules = parseStyleSheet('@charset "UTF-8"; p { color: red; }');
+    expect(rules).toHaveLength(1);
+    expect(rules[0].selectors).toEqual(["p"]);
+    expect(rules[0].declarations).toEqual({ color: "red" });
+  });
+
+  it("skips a semicolon-terminated @import at-rule, keeps the following rule", () => {
+    const rules = parseStyleSheet(
+      "@import url('https://x/reset.css'); h1 { color: blue; }",
+    );
+    expect(rules).toHaveLength(1);
+    expect(rules[0].selectors).toEqual(["h1"]);
+    expect(rules[0].declarations).toEqual({ color: "blue" });
+  });
+
+  it("skips an @import with no trailing semicolon (runs to end of source)", () => {
+    // No `;` and no `{` after the @import means the stripper consumes to EOF.
+    const rules = parseStyleSheet("@import url('x.css')");
+    expect(rules).toEqual([]);
+  });
 });
 
 describe("resolveCssStyles", () => {
@@ -127,5 +151,28 @@ describe("resolveCssStyles", () => {
     );
     resolveCssStyles($);
     expect($("p").attr("style")).toContain("color: green");
+  });
+
+  it("silently skips a selector cheerio cannot parse and still applies the next rule", () => {
+    // `p[` passes the pseudo-class filter (no `:` / `@`) but makes cheerio's
+    // matcher throw — the try/catch must swallow it. The following valid `p`
+    // rule must still resolve onto the element.
+    const $ = load(
+      "<html><head><style>p[ { color: blue; } p { color: red; }</style></head><body><p>hi</p></body></html>",
+    );
+    resolveCssStyles($);
+    const style = $("p").attr("style") ?? "";
+    expect(style).toBe("color: red");
+    expect(style).not.toContain("blue");
+    expect($("style").length).toBe(0);
+  });
+
+  it("does not crash and applies no style when every selector is unparseable", () => {
+    const $ = load(
+      "<html><head><style>p[ { color: blue; } span[[ { color: green; }</style></head><body><p>hi</p></body></html>",
+    );
+    resolveCssStyles($);
+    expect($("p").attr("style")).toBeUndefined();
+    expect($("style").length).toBe(0);
   });
 });

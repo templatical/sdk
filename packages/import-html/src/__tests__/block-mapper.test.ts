@@ -208,6 +208,70 @@ describe("convertElement — divider", () => {
     expect(r.block.thickness).toBe(2);
     expect(r.block.color).toBe("#cccccc");
   });
+
+  it("parses the border shorthand (thickness/style/color) when no border-top is set", () => {
+    const { $, $el } = firstEl('<hr style="border:3px solid #999999" />', "hr");
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "divider") throw new Error("expected divider block");
+    expect(r.block.thickness).toBe(3);
+    expect(r.block.lineStyle).toBe("solid");
+    expect(r.block.color).toBe("#999999");
+  });
+
+  it("prefers border-top over the border shorthand and maps dotted style", () => {
+    const { $, $el } = firstEl(
+      '<hr style="border:1px solid #000000;border-top:4px dotted #abcdef" />',
+      "hr",
+    );
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "divider") throw new Error("expected divider block");
+    expect(r.block.thickness).toBe(4);
+    expect(r.block.lineStyle).toBe("dotted");
+    expect(r.block.color).toBe("#abcdef");
+  });
+
+  it("falls back to defaults when no border styles are present", () => {
+    // No border-top / border → parseBorderShorthand returns its own fallback
+    // (width 0, solid, #000000). thickness 0 becomes 1 via `|| 1`; the
+    // shorthand's #000000 color is truthy so it wins over the #e5e7eb default.
+    const { $, $el } = firstEl("<hr />", "hr");
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "divider") throw new Error("expected divider block");
+    expect(r.block.thickness).toBe(1);
+    expect(r.block.lineStyle).toBe("solid");
+    expect(r.block.color).toBe("#000000");
+  });
+});
+
+describe("convertElement — empty text containers return null", () => {
+  it("returns null for an empty <p> with no media children", () => {
+    const { $, $el } = firstEl("<td><p></p></td>", "p");
+    expect(convertElement($el, $)).toBeNull();
+  });
+
+  it("returns null for a whitespace-only <span>", () => {
+    const { $, $el } = firstEl("<span>   </span>", "span");
+    expect(convertElement($el, $)).toBeNull();
+  });
+
+  it("returns null for an empty <div> with no media children", () => {
+    const { $, $el } = firstEl("<div></div>", "div");
+    expect(convertElement($el, $)).toBeNull();
+  });
+
+  it("still converts an empty <span> that wraps an image", () => {
+    // The null guard only fires when there is no text AND no img/a descendant.
+    const { $, $el } = firstEl(
+      '<span><img src="https://x/x.png" alt="" /></span>',
+      "span",
+    );
+    const r = convertElement($el, $)!;
+    expect(r.entry.templaticalBlockType).toBe("paragraph");
+    expect(r.entry.status).toBe("converted");
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toContain("<img");
+  });
 });
 
 describe("convertElement — fallback", () => {
