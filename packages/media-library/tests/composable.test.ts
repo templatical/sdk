@@ -937,6 +937,64 @@ describe('useMediaLibrary', () => {
       expect(lib.findFolderInTree([], 'any-id')).toBeNull();
     });
 
+    it('createFolder calls onError and returns null on failure', async () => {
+      const error = new Error('Create folder failed');
+      vi.mocked(MediaApiClient.prototype.createMediaFolder).mockRejectedValue(error);
+      const loadFoldersSpy = vi.mocked(MediaApiClient.prototype.getMediaFolders);
+      const callsBefore = loadFoldersSpy.mock.calls.length;
+
+      const onError = vi.fn();
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+        onError,
+      });
+
+      lib.folders.value = [createFolder('f1', 'Existing')];
+
+      const result = await lib.createFolder('New Folder', 'parent-1');
+
+      expect(result).toBeNull();
+      expect(onError).toHaveBeenCalledWith(error);
+      // The reject happens before loadFolders(), so the tree is not reloaded
+      // and existing folders state is left untouched.
+      expect(loadFoldersSpy.mock.calls.length - callsBefore).toBe(0);
+      expect(lib.folders.value).toHaveLength(1);
+      expect(lib.folders.value[0].id).toBe('f1');
+    });
+
+    it('deleteFolder calls onError and leaves state consistent on failure', async () => {
+      const error = new Error('Delete folder failed');
+      vi.mocked(MediaApiClient.prototype.deleteMediaFolder).mockRejectedValue(error);
+      const loadFoldersSpy = vi.mocked(MediaApiClient.prototype.getMediaFolders);
+      const browseSpy = vi.mocked(MediaApiClient.prototype.browseMedia);
+      const loadFoldersCallsBefore = loadFoldersSpy.mock.calls.length;
+      const browseCallsBefore = browseSpy.mock.calls.length;
+
+      const onError = vi.fn();
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+        onError,
+      });
+
+      lib.folders.value = [createFolder('f1', 'Parent', [createFolder('f2', 'Child')])];
+      lib.folders.value[0].children![0].parent_id = 'f1';
+      lib.currentFolderId.value = 'f2';
+
+      await lib.deleteFolder('f2');
+
+      expect(onError).toHaveBeenCalledWith(error);
+      // The deleteMediaFolder reject happens before currentFolderId is updated,
+      // so the current folder is NOT cleared and no stale reload runs.
+      expect(lib.currentFolderId.value).toBe('f2');
+      expect(loadFoldersSpy.mock.calls.length - loadFoldersCallsBefore).toBe(0);
+      expect(browseSpy.mock.calls.length - browseCallsBefore).toBe(0);
+      // Folder tree is left untouched.
+      expect(lib.folders.value).toHaveLength(1);
+      expect(lib.folders.value[0].id).toBe('f1');
+    });
+
     it('deleteFolder stays in current folder if different from deleted', async () => {
       vi.mocked(MediaApiClient.prototype.deleteMediaFolder).mockResolvedValue(undefined);
 
@@ -1056,6 +1114,31 @@ describe('useMediaLibrary', () => {
       expect(lib.pendingReplaceItem.value).toEqual(item);
       expect(lib.showReplaceWarning.value).toBe(true);
       expect(lib.replaceUsageInfo.value?.template_count).toBe(3);
+    });
+
+    it('checkUsageBeforeReplace calls onError and leaves warning closed on failure', async () => {
+      const error = new Error('Usage check failed');
+      vi.mocked(MediaApiClient.prototype.checkMediaUsage).mockRejectedValue(error);
+
+      const onError = vi.fn();
+      const lib = useMediaLibrary({
+        projectId: 'proj-1',
+        authManager: createMockAuthManager(),
+        onError,
+      });
+
+      const item = createMediaItem('m1');
+      await lib.checkUsageBeforeReplace(item);
+
+      expect(onError).toHaveBeenCalledWith(error);
+      // The reject happens before showReplaceWarning is set, so the warning
+      // stays closed and no usage info is recorded.
+      expect(lib.showReplaceWarning.value).toBe(false);
+      expect(lib.replaceUsageInfo.value).toBeNull();
+      // pendingReplaceItem is set up-front (before the await) and replaceError
+      // is reset to null at the start; both reflect that pre-await state.
+      expect(lib.pendingReplaceItem.value).toEqual(item);
+      expect(lib.replaceError.value).toBeNull();
     });
 
     it('cancelReplace clears all replace state', () => {

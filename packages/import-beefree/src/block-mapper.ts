@@ -146,7 +146,9 @@ function inlineStylesToHtml(
   const color = parseColor(style.color);
   if (color && color !== "#1a1a1a") spanParts.push(`color: ${color}`);
   const fontWeight = style["font-weight"];
-  if (fontWeight && fontWeight !== "normal")
+  // "400" is the numeric synonym for "normal" — neither needs an explicit
+  // span (matches the import-unlayer importer).
+  if (fontWeight && fontWeight !== "normal" && fontWeight !== "400")
     spanParts.push(`font-weight: ${fontWeight}`);
   const fontFamily = parseFontFamily(style["font-family"]);
   if (fontFamily) spanParts.push(`font-family: ${fontFamily}`);

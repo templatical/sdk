@@ -245,6 +245,96 @@ describe("convertHtmlTemplate — data table preservation", () => {
   });
 });
 
+describe("convertHtmlTemplate — <center> wrapper recursion", () => {
+  const result = convertHtmlTemplate(fixture("center-wrapper.html"));
+
+  it("recurses into a <center>-wrapped table and converts its content", () => {
+    expect(result.content.blocks).toHaveLength(1);
+    const section = result.content.blocks[0] as SectionBlock;
+    expect(section.type).toBe("section");
+    expect(section.columns).toBe("1");
+
+    const title = findBlock(result.content.blocks, "title");
+    expect(title).toBeDefined();
+    expect(title!.level).toBe(1);
+    expect(title!.content).toContain("Centered heading");
+
+    const para = findBlock(result.content.blocks, "paragraph");
+    expect(para).toBeDefined();
+    expect(para!.content).toContain("Inside a center-wrapped table");
+  });
+});
+
+describe("convertHtmlTemplate — <main> wrapper recursion", () => {
+  const result = convertHtmlTemplate(fixture("main-wrapper.html"));
+
+  it("recurses into a <main>-wrapped table and converts its content", () => {
+    expect(result.content.blocks).toHaveLength(1);
+    const section = result.content.blocks[0] as SectionBlock;
+    expect(section.type).toBe("section");
+    expect(section.columns).toBe("1");
+
+    const title = findBlock(result.content.blocks, "title");
+    expect(title).toBeDefined();
+    expect(title!.content).toContain("Main heading");
+
+    const para = findBlock(result.content.blocks, "paragraph");
+    expect(para).toBeDefined();
+    expect(para!.content).toContain("Inside a main-wrapped table");
+  });
+});
+
+describe("convertHtmlTemplate — div wrapping a table with no loose siblings", () => {
+  const result = convertHtmlTemplate(fixture("div-wrapped-table.html"));
+
+  it("emits exactly one section and no spurious empty wrapper section", () => {
+    // The wrapping <div> has only the table as a child — no loose content. The
+    // flushLoose calls around the table must not emit an empty single-column
+    // section, so the result is exactly the table's one section.
+    expect(result.content.blocks).toHaveLength(1);
+    const section = result.content.blocks[0] as SectionBlock;
+    expect(section.type).toBe("section");
+    expect(section.columns).toBe("1");
+
+    const para = findBlock(result.content.blocks, "paragraph");
+    expect(para).toBeDefined();
+    expect(para!.content).toContain("Only table content");
+
+    // None of the sections is an empty wrapper (every column has content).
+    const emptySection = result.content.blocks.find(
+      (b) =>
+        b.type === "section" &&
+        (b as SectionBlock).children.every((col) => col.length === 0),
+    );
+    expect(emptySection).toBeUndefined();
+  });
+});
+
+describe("convertHtmlTemplate — div wrapping a table with loose siblings", () => {
+  it("flushes loose content before AND after the table into their own sections", () => {
+    const html = `<!doctype html><html><body>
+      <div>
+        <h1>Before</h1>
+        <table role="presentation"><tr><td><p>Inside</p></td></tr></table>
+        <p>After</p>
+      </div>
+    </body></html>`;
+    const { content } = convertHtmlTemplate(html);
+
+    // Three sections: leading loose (h1), the table, trailing loose (p).
+    expect(content.blocks).toHaveLength(3);
+    expect(content.blocks.every((b) => b.type === "section")).toBe(true);
+
+    const serialized = JSON.stringify(content.blocks);
+    const beforeIdx = serialized.indexOf("Before");
+    const insideIdx = serialized.indexOf("Inside");
+    const afterIdx = serialized.indexOf("After");
+    expect(beforeIdx).toBeGreaterThanOrEqual(0);
+    expect(insideIdx).toBeGreaterThan(beforeIdx);
+    expect(afterIdx).toBeGreaterThan(insideIdx);
+  });
+});
+
 describe("convertHtmlTemplate — wrapper-div recursion ordering", () => {
   it("keeps loose content before a nested table in source order", () => {
     const html = `<!doctype html><html><body>

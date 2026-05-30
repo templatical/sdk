@@ -695,4 +695,193 @@ describe("convertModule", () => {
       }
     });
   });
+
+  // Null-safety / malformed-input coverage for convertText's content-source
+  // fan-out, the unknown-type html-fallback flow, inline font-weight emission,
+  // and menu url precedence. Real exports carry partial descriptors.
+  describe("malformed / null-safety", () => {
+    describe("convertText with no content source", () => {
+      it("returns an empty paragraph when text, paragraph, and list are all absent", () => {
+        const warnings: string[] = [];
+        const mod = makeModule("mailup-bee-newsletter-modules-text", {
+          style: { "padding-top": "5px" },
+        });
+
+        const { block, entry } = convertModule(mod, warnings);
+
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") {
+          // textContent?.html ?? "" → "" with no wrapping applied.
+          expect(block.content).toBe("");
+        }
+        expect(entry.status).toBe("converted");
+        expect(entry.templaticalBlockType).toBe("paragraph");
+        expect(warnings).toHaveLength(0);
+      });
+
+      it("returns an empty paragraph for a list module with no list content", () => {
+        const warnings: string[] = [];
+        const mod = makeModule("mailup-bee-newsletter-modules-list", {});
+
+        const { block, entry } = convertModule(mod, warnings);
+
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") {
+          expect(block.content).toBe("");
+        }
+        expect(entry.status).toBe("converted");
+        expect(entry.templaticalBlockType).toBe("paragraph");
+      });
+    });
+
+    describe("unknown module type — html-fallback flow", () => {
+      it("emits an html block and a fully-populated html-fallback report entry", () => {
+        const warnings: string[] = [];
+        const mod = makeModule("mailup-bee-newsletter-modules-brand-new", {
+          html: { html: "<section>hi</section>" },
+        });
+
+        const { block, entry } = convertModule(mod, warnings);
+
+        // Unknown type short-circuits before the switch (MODULE_TYPE_MAP miss).
+        expect(block.type).toBe("html");
+        if (block.type === "html") {
+          // convertHtmlFallback pulls html.html since text.html is absent.
+          expect(block.content).toBe("<section>hi</section>");
+        }
+        expect(entry.status).toBe("html-fallback");
+        expect(entry.templaticalBlockType).toBe("html");
+        expect(entry.beeFreeModuleType).toBe(
+          "mailup-bee-newsletter-modules-brand-new",
+        );
+        expect(entry.note).toBe(
+          'Unknown module type "mailup-bee-newsletter-modules-brand-new" converted to HTML block.',
+        );
+        expect(warnings).toHaveLength(0);
+      });
+    });
+
+    describe("inlineStylesToHtml font-weight emission", () => {
+      it("does NOT emit a weight span for empty font-weight", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-text", {
+            text: { html: "<p>Hi</p>", style: { "font-weight": "" } },
+          }),
+          [],
+        );
+
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") {
+          // "" is falsy → guard skips it entirely.
+          expect(block.content).toBe("<p>Hi</p>");
+          expect(block.content).not.toContain("font-weight");
+        }
+      });
+
+      it("does NOT emit a weight span for font-weight 'normal'", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-text", {
+            text: { html: "<p>Hi</p>", style: { "font-weight": "normal" } },
+          }),
+          [],
+        );
+
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") {
+          expect(block.content).toBe("<p>Hi</p>");
+          expect(block.content).not.toContain("font-weight");
+        }
+      });
+
+      it("emits a weight span for font-weight 'bold'", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-text", {
+            text: { html: "<p>Hi</p>", style: { "font-weight": "bold" } },
+          }),
+          [],
+        );
+
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") {
+          expect(block.content).toBe(
+            '<p><span style="font-weight: bold">Hi</span></p>',
+          );
+        }
+      });
+
+      it("emits a weight span for font-weight '700'", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-text", {
+            text: { html: "<p>Hi</p>", style: { "font-weight": "700" } },
+          }),
+          [],
+        );
+
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") {
+          expect(block.content).toBe(
+            '<p><span style="font-weight: 700">Hi</span></p>',
+          );
+        }
+      });
+
+      // "400" is the numeric synonym for "normal", so it must not produce a
+      // redundant span — matching the import-unlayer importer.
+      it("does NOT emit a weight span for font-weight '400'", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-text", {
+            text: { html: "<p>Hi</p>", style: { "font-weight": "400" } },
+          }),
+          [],
+        );
+
+        expect(block.type).toBe("paragraph");
+        if (block.type === "paragraph") {
+          expect(block.content).toBe("<p>Hi</p>");
+        }
+      });
+    });
+
+    describe("menu item url precedence", () => {
+      it("prefers item.link over item.href when both are present", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-menu", {
+            menu: {
+              items: [
+                {
+                  text: "Both",
+                  link: "https://link.test",
+                  href: "https://href.test",
+                },
+              ],
+            },
+          }),
+          [],
+        );
+
+        expect(block.type).toBe("menu");
+        if (block.type === "menu") {
+          expect(block.items).toHaveLength(1);
+          // `item.link || item.href || "#"` → link wins.
+          expect(block.items[0].url).toBe("https://link.test");
+        }
+      });
+
+      it("falls back to item.href when link is absent", () => {
+        const { block } = convertModule(
+          makeModule("mailup-bee-newsletter-modules-menu", {
+            menu: {
+              items: [{ text: "HrefOnly", href: "https://href.test" }],
+            },
+          }),
+          [],
+        );
+
+        expect(block.type).toBe("menu");
+        if (block.type === "menu") {
+          expect(block.items[0].url).toBe("https://href.test");
+        }
+      });
+    });
+  });
 });
