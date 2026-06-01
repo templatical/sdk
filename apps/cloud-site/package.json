@@ -5,7 +5,7 @@
     "@vueuse/core": "^14.3.0",
     "marked": "^18.0.4",
     "vue": "^3.5.35",
-    "vue-router": "^5.0.7"
+    "vue-router": "^5.1.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.0",
