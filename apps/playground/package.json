@@ -9,7 +9,7 @@
     "@codemirror/state": "^6.6.0",
     "@codemirror/theme-one-dark": "^6.1.3",
     "@codemirror/view": "^6.43.0",
-    "@lucide/vue": "^1.16.0",
+    "@lucide/vue": "^1.17.0",
     "@templatical/editor": "workspace:*",
     "@templatical/import-beefree": "workspace:*",
     "@templatical/import-html": "workspace:*",
@@ -22,7 +22,7 @@
     "codemirror": "^6.0.2",
     "focus-trap": "^8.2.1",
     "mjml-browser": "^5.3.0",
-    "vue": "^3.5.34"
+    "vue": "^3.5.35"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.0",
