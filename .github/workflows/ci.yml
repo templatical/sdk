@@ -16,7 +16,9 @@ concurrency:
 # default token scope is restricted to `contents: read`. The Codecov
 # upload uses `secrets.CODECOV_TOKEN` and does not need GITHUB_TOKEN
 # write scopes. Adding a write permission here would expand blast radius
-# without enabling any current job.
+# without enabling any current job. The `e2e` / `e2e-consumer` container
+# jobs additionally grant `packages: read` at the job level so the runner
+# can pull the Playwright image from our GHCR mirror (still read-only).
 permissions:
   contents: read
 
@@ -137,13 +139,26 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     # Playwright's official image ships Chromium + every system dep
     # preinstalled, skipping the ~5 min `playwright install-deps` step that
     # fresh ubuntu-latest runners would otherwise pay every run (apt state
-    # isn't cacheable across runs). Image tag must match the pinned
-    # `@playwright/test` version in pnpm-lock.yaml.
+    # isn't cacheable across runs).
+    #
+    # Pulled from our GHCR mirror, NOT mcr.microsoft.com directly: MCR's Azure
+    # edge intermittently throttles concurrent pulls ("The request is
+    # blocked."), which fails "Initialize containers" and turns this job red at
+    # random. GHCR is co-located with the runners and isn't throttled. The
+    # mirror is kept in sync by .github/workflows/mirror-playwright.yml. The tag
+    # must match the pinned `@playwright/test` version in pnpm-lock.yaml AND the
+    # tag that workflow mirrors.
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0-jammy
+      image: ghcr.io/templatical/playwright:v1.60.0-jammy
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     needs: [build]
     strategy:
       fail-fast: false
@@ -184,10 +199,17 @@ jobs:
     # gate already ran on the producing PR; the post-merge run on `main` (after
     # publish) re-covers the surface.
     runs-on: ubuntu-latest
-    # Same rationale as the `e2e` job — use the Playwright image to skip
-    # the system-dep install step.
+    permissions:
+      contents: read
+      packages: read
+    # Same rationale as the `e2e` job — the Playwright image skips the
+    # system-dep install step, pulled from our GHCR mirror to dodge MCR's
+    # intermittent edge throttling (see the `e2e` job + mirror-playwright.yml).
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0-jammy
+      image: ghcr.io/templatical/playwright:v1.60.0-jammy
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     needs: [build]
     env:
       IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') || startsWith(github.ref_name, 'changeset-release/') }}

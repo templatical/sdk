@@ -1,0 +1,57 @@
+name: Mirror Playwright image
+
+# mcr.microsoft.com intermittently throttles concurrent image pulls at its
+# Azure edge ("The request is blocked."). That fails the `container:`
+# "Initialize containers" step in ci.yml and turns the e2e / e2e-consumer jobs
+# red at random — most often when the build job fans out into 4 simultaneous
+# pulls of the same ~2GB image (e2e ×3 + e2e-consumer). GHCR sits next to the
+# Actions runners and isn't throttled, so CI pulls the Playwright image from
+# there instead. This workflow keeps the GHCR copy in sync with MCR.
+#
+# Seeding: run this once via "Run workflow" (workflow_dispatch) BEFORE the
+# matching ci.yml change lands, otherwise the first CI run has no image to
+# pull. After that the weekly schedule refreshes it.
+#
+# Version sync: TAG below must match the `container.image:` tag in BOTH the
+# `e2e` and `e2e-consumer` jobs of ci.yml AND the pinned `@playwright/test`
+# version in pnpm-lock.yaml. Bump all three together, then re-run this workflow
+# to mirror the new tag before the ci.yml bump merges.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Mondays 06:00 UTC — refresh the mirror in case MCR re-publishes the tag.
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    env:
+      TAG: v1.60.0-jammy
+    steps:
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Pull from MCR (retry through edge throttling)
+        run: |
+          SRC="mcr.microsoft.com/playwright:${TAG}"
+          for attempt in 1 2 3 4 5; do
+            if docker pull "$SRC"; then
+              exit 0
+            fi
+            echo "Pull attempt ${attempt}/5 failed; backing off ${attempt}0s before retry..."
+            sleep "${attempt}0"
+          done
+          echo "::error::Could not pull ${SRC} after 5 attempts (MCR edge throttling?)."
+          exit 1
+
+      - name: Tag and push to GHCR
+        run: |
+          SRC="mcr.microsoft.com/playwright:${TAG}"
+          DST="ghcr.io/templatical/playwright:${TAG}"
+          docker tag "$SRC" "$DST"
+          docker push "$DST"
