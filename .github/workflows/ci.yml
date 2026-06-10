@@ -131,7 +131,7 @@ jobs:
       - if: env.IS_VP != 'true'
         run: pnpm run test:coverage
       - if: env.IS_VP != 'true'
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: .
