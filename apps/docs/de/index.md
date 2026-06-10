@@ -15,33 +15,33 @@ features:
   - title: Eigene Blöcke mit API-gestützten Daten
     details: Registrieren Sie eigene Blocktypen — statische Templates oder live aus Ihrer API zur Preview-Zeit.
     link: /de/guide/custom-blocks
-    linkText: Eigenen Block bauen →
+    linkText: Eigenen Block bauen
   - title: Merge-Tags mit pluggable Syntax
     details: Handlebars, Liquid, JS-Template-Literale oder eigene Syntax — mit lesbaren Labels im Canvas.
     link: /de/guide/merge-tags
-    linkText: Merge-Tags konfigurieren →
+    linkText: Merge-Tags konfigurieren
   - title: Anzeigebedingungen
     details: Blöcke je nach Empfängerattribut ein- oder ausblenden, mit Live-Preview im Editor.
     link: /de/guide/display-conditions
-    linkText: Anzeigebedingungen ansehen →
+    linkText: Anzeigebedingungen ansehen
   - title: Vollständiges Theming über Design-Tokens
     details: 27 OKLch-Tokens, eigene Schriften, Dark Mode und komplette Theme-Overrides.
     link: /de/guide/theming
-    linkText: Theming anpassen →
+    linkText: Theming anpassen
   - title: Template- & Block-Defaults
     details: Definieren Sie Ihre Marke einmal; neue Templates und Blöcke übernehmen Farben, Schriften und Layout.
     link: /de/guide/defaults
-    linkText: Defaults setzen →
+    linkText: Defaults setzen
   - title: JSON rein, MJML raus
     details: Portables JSON, MJML-Ausgabe. Rendern Sie überall und versenden Sie über jeden Provider.
     link: /de/getting-started/how-rendering-works
-    linkText: Wie das Rendering funktioniert →
+    linkText: Wie das Rendering funktioniert
   - title: Standardmäßig style-isoliert
     details: Shadow-DOM-Mount hält Host-CSS aus dem Editor und Editor-CSS aus Ihrer App heraus. Funktioniert in jeder Seite, jedem Framework, jedem CMS — ohne Resets, ohne Konflikte.
     link: /de/guide/shadow-dom
-    linkText: So funktioniert die Isolation →
+    linkText: So funktioniert die Isolation
   - title: Bestehende Templates übernehmen
     details: Importer für BeeFree, Unlayer und rohes HTML. Migrieren Sie in Ihrem Tempo, kein Neuaufbau erforderlich.
     link: /de/guide/migration-from-beefree
-    linkText: Von BeeFree migrieren →
+    linkText: Von BeeFree migrieren
 ---

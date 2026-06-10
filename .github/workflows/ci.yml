@@ -92,6 +92,11 @@ jobs:
         uses: ./.github/actions/setup
       - if: env.IS_VP != 'true'
         run: pnpm run build
+      # Docs are otherwise never built in CI, and Renovate auto-merges
+      # devDependency bumps (including vitepress prerelease updates) — this is
+      # the only gate against a docs-breaking upgrade landing unnoticed.
+      - if: env.IS_VP != 'true'
+        run: pnpm --filter @templatical/docs run build
       # Guard the editor's published-tarball install footprint. Catches anyone
       # adding a runtime `dependency` that re-bloats consumer node_modules or
       # re-introduces the duplicate-Vue-instance bug. See packages/editor/scripts/verify-pack.mjs.
