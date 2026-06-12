@@ -17,6 +17,7 @@ import type {
   ThemeOverrides,
   UiTheme,
 } from "@templatical/types";
+import { createDefaultTemplateContent, safeClone } from "@templatical/types";
 import type { MediaRequestContext } from "@templatical/media-library";
 
 import Editor from "./Editor.vue";
@@ -391,10 +392,13 @@ export async function init(
 
   const instance: TemplaticalEditor = {
     getContent() {
+      // safeClone (not a naked JSON.stringify): a drag inside a section can
+      // leave a Sortable expando cycle reachable from live content, which a
+      // plain stringify chokes on (#203). The clone drops the back-ref.
       if (editorRef.value) {
-        return JSON.parse(JSON.stringify(editorRef.value.getContent()));
+        return safeClone(editorRef.value.getContent());
       }
-      return JSON.parse(JSON.stringify(config.content));
+      return safeClone(config.content ?? createDefaultTemplateContent());
     },
     setContent(content: TemplateContent) {
       if (editorRef.value) {
@@ -529,10 +533,13 @@ export async function initCloud(
 
   const instance: TemplaticalCloudEditor = {
     getContent() {
+      // safeClone (not a naked JSON.stringify): a drag inside a section can
+      // leave a Sortable expando cycle reachable from live content, which a
+      // plain stringify chokes on (#203). The clone drops the back-ref.
       if (cloudEditorRef.value) {
-        return JSON.parse(JSON.stringify(cloudEditorRef.value.getContent()));
+        return safeClone(cloudEditorRef.value.getContent());
       }
-      return JSON.parse(JSON.stringify(config.content));
+      return safeClone(config.content ?? createDefaultTemplateContent());
     },
     setContent(content: TemplateContent) {
       if (cloudEditorRef.value) {
