@@ -18,6 +18,26 @@
     --font-sans:
         'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
         'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Base-size rebase (issue #209) — anchor Tailwind's length scales to
+     * `--tpl-base-size` (a fixed px on `.tpl`, below) instead of `rem`, so the
+     * standalone media library is immune to the host page's `html { font-size }`.
+     * `rem` always resolves against the document root, even inside a shadow
+     * root. The `var(--tpl-base-size)` reference survives `theme(inline)` and
+     * resolves on `.tpl`. Consumers scale via `--tpl-user-base-size`. Only the
+     * scale steps the package uses are overridden. */
+    --spacing: calc(var(--tpl-base-size) / 4);
+
+    --text-xs: calc(0.75 * var(--tpl-base-size));
+    --text-sm: calc(0.875 * var(--tpl-base-size));
+
+    --radius: calc(0.25 * var(--tpl-base-size));
+    --radius-sm: calc(0.25 * var(--tpl-base-size));
+    --radius-md: calc(0.375 * var(--tpl-base-size));
+    --radius-lg: calc(0.5 * var(--tpl-base-size));
+
+    --container-sm: calc(24 * var(--tpl-base-size));
+    --container-2xl: calc(42 * var(--tpl-base-size));
 }
 
 /* Source paths for Tailwind scanning */
@@ -26,6 +46,13 @@
 
 /* SDK CSS Variables - Default theme, can be overridden via inline styles */
 .tpl {
+    /* Base sizing unit (issue #209). A fixed px so the media library is
+     * independent of the host's `html { font-size }`; defined on `.tpl` so it
+     * resolves inside the shadow root. Consumers set `--tpl-user-base-size` to
+     * scale the whole UI. The Tailwind length scale derives from this via the
+     * `@theme inline` overrides above. */
+    --tpl-base-size: var(--tpl-user-base-size, 16px);
+
     /* Warm palette */
     --tpl-bg: oklch(99.5% 0.002 60);
     --tpl-bg-elevated: oklch(98% 0.004 60);
