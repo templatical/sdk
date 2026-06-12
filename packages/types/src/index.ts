@@ -118,6 +118,9 @@ export {
 // Event emitter
 export { EventEmitter } from "./events";
 
+// Utilities
+export { safeClone } from "./clone";
+
 // Merge tags
 export type { SyntaxPreset, SyntaxPresetName } from "./merge-tags";
 export {

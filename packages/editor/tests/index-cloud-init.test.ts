@@ -28,6 +28,29 @@ let initFn: typeof import("../src/index").init;
 let initCloudFn: typeof import("../src/index").initCloud;
 let unmountFn: typeof import("../src/index").unmount;
 
+// Builds template content shaped like the #203 repro: a paragraph nested in
+// a section column whose data carries a Sortable expando cycle — a fake DOM
+// element with a `SortableXXX` instance whose `el` points back to the element.
+// A naked JSON.stringify throws `Converting circular structure to JSON` on it.
+function makeContentWithSortableCycle(): Record<string, unknown> {
+  const sortableInstance: { el: unknown } = { el: null };
+  const leakedDiv: Record<string, unknown> = {
+    Sortable1781247283888: sortableInstance,
+  };
+  sortableInstance.el = leakedDiv;
+  return {
+    blocks: [
+      {
+        id: "sec",
+        type: "section",
+        children: [
+          [{ id: "para", type: "paragraph", content: "<p>hi</p>", leaked: leakedDiv }],
+        ],
+      },
+    ],
+  };
+}
+
 beforeEach(async () => {
   vi.clearAllMocks();
   vi.resetModules();
@@ -183,6 +206,32 @@ describe("initCloud — instance methods", () => {
     expect(live.blocks[0].id).toBe("b1");
   });
 
+  it("getContent survives a Sortable expando cycle in live content (issue #203)", async () => {
+    // Repro of #203: dragging a block within a section leaks a Sortable
+    // expando back-ref (HTMLDivElement.SortableXXX → instance → el → div)
+    // into the editor's live content. The public getContent() must
+    // serialize without throwing `Converting circular structure to JSON`.
+    const live = makeContentWithSortableCycle();
+    const fakeEditor = {
+      create: vi.fn(),
+      load: vi.fn(),
+      save: vi.fn(),
+      getContent: vi.fn(() => live),
+      setContent: vi.fn(),
+      setTheme: vi.fn(),
+    };
+    const { instance } = await mountCloud(fakeEditor);
+
+    let content!: ReturnType<typeof instance.getContent>;
+    expect(() => {
+      content = instance.getContent();
+    }).not.toThrow();
+    // Block data is preserved; only the cyclic DOM back-ref is dropped.
+    const para = (content as any).blocks[0].children[0][0];
+    expect(para.content).toBe("<p>hi</p>");
+    expect(para.leaked.Sortable1781247283888).toEqual({});
+  });
+
   it("setContent and setTheme forward to the editor instance", async () => {
     const fakeEditor = {
       create: vi.fn(),
@@ -285,6 +334,31 @@ describe("OSS init — instance methods", () => {
     const html = await instance.renderCustomBlock({ id: "cb1" } as never);
     expect(html).toBe("<div>cb</div>");
     expect(instance.getCustomBlockStylesheet("custom-x")).toBe(".cb{color:red}");
+  });
+
+  it("post-ready: getContent survives a Sortable expando cycle in live content (issue #203)", async () => {
+    // Repro of #203: dragging a block within a section leaks a Sortable
+    // expando back-ref (HTMLDivElement.SortableXXX → instance → el → div)
+    // into the editor's live content. The public getContent() must
+    // serialize without throwing `Converting circular structure to JSON`.
+    const live = makeContentWithSortableCycle();
+    const fakeEditor = {
+      getContent: vi.fn(() => live),
+      setContent: vi.fn(),
+      setTheme: vi.fn(),
+      renderCustomBlock: vi.fn(),
+      getCustomBlockStylesheet: vi.fn(),
+    };
+    const { instance } = await mountOss(fakeEditor);
+
+    let content!: ReturnType<typeof instance.getContent>;
+    expect(() => {
+      content = instance.getContent();
+    }).not.toThrow();
+    // Block data is preserved; only the cyclic DOM back-ref is dropped.
+    const para = (content as any).blocks[0].children[0][0];
+    expect(para.content).toBe("<p>hi</p>");
+    expect(para.leaked.Sortable1781247283888).toEqual({});
   });
 
   it("toMjml delegates to toMjmlForInstance", async () => {
