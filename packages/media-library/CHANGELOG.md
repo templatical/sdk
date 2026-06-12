@@ -1,5 +1,13 @@
 # @templatical/media-library
 
+## 0.10.2
+
+### Patch Changes
+
+- Updated dependencies [5676cb3]
+  - @templatical/types@0.10.2
+  - @templatical/core@0.10.2
+
 ## 0.10.1
 
 ### Patch Changes
