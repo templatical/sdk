@@ -19,6 +19,37 @@
         'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
         'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
+    /* Base-size rebase (issue #209) — anchor every Tailwind length scale to
+     * `--tpl-base-size` (a fixed px on `.tpl`, below) instead of `rem`, so the
+     * editor is immune to the host page's `html { font-size }`. `rem` always
+     * resolves against the document root — even inside a shadow root — so a
+     * consumer's `html { font-size: 8px }` would otherwise shrink the whole
+     * editor. Consumers scale the editor as a whole via `--tpl-user-base-size`.
+     *
+     * Each value carries `var(--tpl-base-size)` into the inlined utility: the
+     * var survives `theme(inline)` because it can't be statically folded, and
+     * resolves on `.tpl` *inside* the shadow root (a `:root`-scoped var would
+     * be unreachable there). Only the scale steps the editor actually uses are
+     * overridden — `tests/rem-rebase-audit.test.ts` fails if a new utility
+     * reintroduces a raw `rem`, prompting the matching token to be added here. */
+    --spacing: calc(var(--tpl-base-size) / 4);
+
+    --text-xs: calc(0.75 * var(--tpl-base-size));
+    --text-sm: calc(0.875 * var(--tpl-base-size));
+    --text-base: var(--tpl-base-size);
+    --text-lg: calc(1.125 * var(--tpl-base-size));
+    --text-4xl: calc(2.25 * var(--tpl-base-size));
+
+    --radius: calc(0.25 * var(--tpl-base-size));
+    --radius-sm: calc(0.25 * var(--tpl-base-size));
+    --radius-md: calc(0.375 * var(--tpl-base-size));
+    --radius-lg: calc(0.5 * var(--tpl-base-size));
+    --radius-xl: calc(0.75 * var(--tpl-base-size));
+
+    --container-sm: calc(24 * var(--tpl-base-size));
+    --container-md: calc(28 * var(--tpl-base-size));
+    --container-2xl: calc(42 * var(--tpl-base-size));
+
     /* Z-index scale — semantic layers for stacking context */
     --z-panel: 45;
     --z-toast: 60;
@@ -47,6 +78,15 @@
  * win over both because inline specificity beats class specificity.
  */
 .tpl {
+    /* Base sizing unit (issue #209). A fixed px so the editor is independent
+     * of the host's `html { font-size }`; defined on `.tpl` so it resolves
+     * inside the shadow root. Consumers set `--tpl-user-base-size` (on the
+     * container or any ancestor) to scale the whole editor — e.g. `2rem` to
+     * compensate an `8px` design-system root, or `20px` to enlarge. The whole
+     * Tailwind length scale (spacing, text, radius, containers) derives from
+     * this via the `@theme inline` overrides above. */
+    --tpl-base-size: var(--tpl-user-base-size, 16px);
+
     /* Warm palette */
     --tpl-bg: var(--tpl-user-bg, oklch(99.5% 0.002 60));
     --tpl-bg-elevated: var(--tpl-user-bg-elevated, oklch(98% 0.004 60));

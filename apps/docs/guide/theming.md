@@ -69,6 +69,7 @@ Every token follows the same shape: declare `--tpl-user-<name>` on the container
 | `--tpl-user-danger`          | Danger/error state color              |
 | `--tpl-user-danger-light`    | Danger tinted background              |
 | `--tpl-user-canvas-bg`       | Canvas area behind the email template |
+| `--tpl-user-base-size`       | Editor UI sizing unit (`16px`) — see [Editor size](#editor-size-and-the-host-root-font-size) |
 | `--tpl-user-radius`          | Default border radius (`10px`)        |
 | `--tpl-user-radius-sm`       | Small border radius (`7px`)           |
 | `--tpl-user-radius-lg`       | Large border radius (`14px`)          |
@@ -101,6 +102,34 @@ Dark mode uses a parallel `--tpl-user-dark-*` namespace, so you can theme light 
 Replace `--tpl-user-` with `--tpl-user-dark-` in any token name from the table above to target dark mode. The editor activates dark mode via `data-tpl-theme="dark"` on its root and reads the dark-namespace defaults; your `--tpl-user-dark-*` overrides plug in there.
 
 Dark mode is opt-in via the `uiTheme` config — set `'dark'` or `'auto'` to enable. See [Dark mode](#dark-mode) below.
+
+## Editor size and the host root font-size
+
+The editor's UI sizing — spacing, font sizes, border radii — is anchored to a single base unit, `--tpl-user-base-size`, which defaults to **`16px`**.
+
+Because the default is a fixed pixel value (not `rem`), **the editor renders at a consistent size regardless of your page's root font-size.** If your design system sets a custom `html { font-size }` — for example `8px` to make `1rem = 8px` — the editor is unaffected and stays at its intended size. (A `rem` always resolves against the document root, even inside the editor's shadow root, so without this anchor a custom root font-size would scale the whole editor up or down.)
+
+### Scaling the editor up or down
+
+Set `--tpl-user-base-size` on the container (or any ancestor) to scale the entire editor UI proportionally:
+
+```css
+#editor {
+  --tpl-user-base-size: 18px; /* ~12% larger chrome, text, spacing, radii */
+}
+```
+
+```css
+#editor {
+  --tpl-user-base-size: 14px; /* more compact */
+}
+```
+
+Any CSS length works. If you prefer the editor to track your custom root font-size after all, set a `rem` value — e.g. `--tpl-user-base-size: 2rem` against an `8px` root resolves to `16px`.
+
+This affects the **editor chrome** only. The email content on the canvas uses the pixel sizes stored on each block, so your template renders identically no matter how the editor UI is scaled.
+
+The same `--tpl-user-base-size` knob applies to the standalone [`@templatical/media-library`](../cloud/media-library) SDK. Like every `--tpl-user-*` variable, it works identically in shadow-DOM and light-DOM modes.
 
 ## ThemeOverrides config
 

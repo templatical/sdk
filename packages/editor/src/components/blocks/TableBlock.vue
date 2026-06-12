@@ -151,7 +151,8 @@ function onCellBlur(rowId: string, cellId: string, event: FocusEvent): void {
 .tpl-table-editable :deep(td[contenteditable]) {
   outline: none;
   cursor: text;
-  min-width: 2rem;
+  /* base-size-relative (issue #209) — not `rem`, which couples to host html font-size */
+  min-width: calc(2 * var(--tpl-base-size));
 }
 
 .tpl-table-editable :deep(th[contenteditable]:empty::before),

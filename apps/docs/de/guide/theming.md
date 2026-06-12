@@ -69,6 +69,7 @@ Jedes Token folgt derselben Form: Deklarieren Sie `--tpl-user-<name>` auf dem Co
 | `--tpl-user-danger`          | Gefahren-/Fehlerfarbe                      |
 | `--tpl-user-danger-light`    | Gefahr getönter Hintergrund                |
 | `--tpl-user-canvas-bg`       | Canvas-Bereich hinter dem E-Mail-Template  |
+| `--tpl-user-base-size`       | Größeneinheit der Editor-UI (`16px`) — siehe [Editor-Größe](#editor-groesse) |
 | `--tpl-user-radius`          | Standard-Rahmenradius (`10px`)             |
 | `--tpl-user-radius-sm`       | Kleiner Rahmenradius (`7px`)               |
 | `--tpl-user-radius-lg`       | Großer Rahmenradius (`14px`)               |
@@ -101,6 +102,34 @@ Der Dark-Modus verwendet einen parallelen `--tpl-user-dark-*`-Namensraum, sodass
 Ersetzen Sie `--tpl-user-` durch `--tpl-user-dark-` in jedem Token-Namen aus der obigen Tabelle, um den Dark-Modus anzusprechen. Der Editor aktiviert den Dark-Modus über `data-tpl-theme="dark"` auf seinem Root und liest die Dark-Namespace-Defaults; Ihre `--tpl-user-dark-*`-Überschreibungen klinken sich dort ein.
 
 Der Dark-Modus ist über die `uiTheme`-Konfiguration optional — setzen Sie `'dark'` oder `'auto'`, um ihn zu aktivieren. Siehe [Dark Mode](#dark-mode) unten.
+
+## Editor-Größe und die Root-Schriftgröße der Host-Seite {#editor-groesse}
+
+Die UI-Größe des Editors — Abstände, Schriftgrößen, Rahmenradien — ist an eine einzige Basiseinheit gebunden, `--tpl-user-base-size`, die standardmäßig **`16px`** beträgt.
+
+Da der Standardwert ein fester Pixelwert ist (kein `rem`), **wird der Editor unabhängig von der Root-Schriftgröße Ihrer Seite in einer konstanten Größe dargestellt.** Wenn Ihr Design-System ein eigenes `html { font-size }` setzt — etwa `8px`, damit `1rem = 8px` gilt — bleibt der Editor davon unberührt und behält seine beabsichtigte Größe. (Ein `rem` bezieht sich immer auf das Dokument-Root, auch innerhalb des Shadow-Roots des Editors, sodass eine eigene Root-Schriftgröße ohne diesen Anker den gesamten Editor vergrößern oder verkleinern würde.)
+
+### Editor vergrößern oder verkleinern
+
+Setzen Sie `--tpl-user-base-size` auf dem Container (oder einem beliebigen Vorfahren), um die gesamte Editor-UI proportional zu skalieren:
+
+```css
+#editor {
+  --tpl-user-base-size: 18px; /* ~12% größere UI, Text, Abstände, Radien */
+}
+```
+
+```css
+#editor {
+  --tpl-user-base-size: 14px; /* kompakter */
+}
+```
+
+Jede CSS-Länge funktioniert. Wenn der Editor doch der eigenen Root-Schriftgröße folgen soll, setzen Sie einen `rem`-Wert — z. B. ergibt `--tpl-user-base-size: 2rem` bei einem `8px`-Root genau `16px`.
+
+Dies betrifft nur die **Editor-Oberfläche**. Der E-Mail-Inhalt auf dem Canvas verwendet die auf jedem Block gespeicherten Pixelgrößen, sodass Ihr Template unabhängig von der Skalierung der Editor-UI identisch gerendert wird.
+
+Derselbe `--tpl-user-base-size`-Schalter gilt für das eigenständige [`@templatical/media-library`](../cloud/media-library)-SDK. Wie jede `--tpl-user-*`-Variable funktioniert er in Shadow-DOM- und Light-DOM-Modus identisch.
 
 ## ThemeOverrides-Konfiguration
 
