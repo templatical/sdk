@@ -1,5 +1,16 @@
 # @templatical/editor
 
+## 0.10.4
+
+### Patch Changes
+
+- 8fb5df9: Fix the inline "Browse media" button not inserting an image when the image is nested inside a section (#219)
+
+  `SectionBlock` rendered each nested child block with only a `@fetch-data` listener, whereas `Canvas` (top-level blocks) also forwards `@update`. `ImageBlock` signals a media pick by emitting `update` and holds no editor reference of its own, so an image _inside a section_ emitted into the void and the picked media never landed. The content-sidebar path was unaffected because it updates the selected block by id, independent of nesting. `SectionBlock` now forwards the child's `@update` to `editor.updateBlock`, matching `Canvas`.
+  - @templatical/renderer@0.10.4
+  - @templatical/quality@0.10.4
+  - @templatical/media-library@0.10.4
+
 ## 0.10.3
 
 ### Patch Changes
