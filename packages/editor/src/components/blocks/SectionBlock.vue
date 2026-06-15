@@ -158,6 +158,10 @@ function handleFetchData(
                 :block="childBlock"
                 :viewport="viewport"
                 @fetch-data="handleFetchData(childBlock, $event)"
+                @update="
+                  (updates: Partial<Block>) =>
+                    editor.updateBlock(childBlock.id, updates)
+                "
               />
             </BlockWrapper>
           </div>
