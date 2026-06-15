@@ -5,13 +5,13 @@
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*",
-    "@vue/reactivity": "^3.5.35"
+    "@vue/reactivity": "^3.5.38"
   },
   "devDependencies": {
     "pusher-js": "^8.5.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8",
-    "vue": "^3.5.35"
+    "vue": "^3.5.38"
   },
   "exports": {
     ".": {
