@@ -15,7 +15,6 @@ export {
 export {
   useBlockRegistry,
   type BlockRegistration,
-  type SidebarItem,
   type UseBlockRegistryReturn,
 } from "./useBlockRegistry";
 export {

@@ -63,6 +63,13 @@ export const CUSTOM_BLOCK_DEFINITIONS_KEY: InjectionKey<
   CustomBlockDefinition[]
 > = Symbol("customBlockDefinitions");
 
+/**
+ * Consumer-supplied block-palette allowlist + order (`config.paletteBlocks`).
+ * `undefined` means the default full palette. Consumed by `Sidebar.vue`.
+ */
+export const PALETTE_BLOCKS_KEY: InjectionKey<string[] | undefined> =
+  Symbol("paletteBlocks");
+
 export const CUSTOM_BLOCK_STYLESHEETS_KEY: InjectionKey<ComputedRef<string[]>> =
   Symbol("customBlockStylesheets");
 

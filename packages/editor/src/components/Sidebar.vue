@@ -4,13 +4,16 @@ import { useCloudI18n } from "../composables/useCloudI18n";
 import type { Block, BlockType } from "@templatical/types";
 import { createBlock, createCustomBlock } from "@templatical/types";
 import { Package } from "@lucide/vue";
-import { computed, inject, ref } from "vue";
+import { computed, inject, ref, watch } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
 import CustomBlockIcon from "./CustomBlockIcon.vue";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
 import { getBlockTypeLabel } from "../utils/blockTypeLabels";
+import { resolvePaletteBlocks } from "../utils/resolvePaletteBlocks";
+import { logger } from "../utils/logger";
 import {
   CUSTOM_BLOCK_DEFINITIONS_KEY,
+  PALETTE_BLOCKS_KEY,
   BLOCK_DEFAULTS_KEY,
   CAPABILITIES_KEY,
   EDITOR_KEY,
@@ -26,6 +29,7 @@ interface BlockTypeItem {
 const { t, format } = useI18n();
 const { t: cloudT } = useCloudI18n();
 const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
+const paletteBlocks = inject(PALETTE_BLOCKS_KEY, undefined);
 const blockDefaults = inject(BLOCK_DEFAULTS_KEY, undefined);
 const editor = inject(EDITOR_KEY, null);
 
@@ -103,10 +107,38 @@ const customBlockItems = computed<BlockTypeItem[]>(() => {
   }));
 });
 
-const blockTypes = computed<BlockTypeItem[]>(() => [
+const candidateBlockTypes = computed<BlockTypeItem[]>(() => [
   ...builtInBlockTypes.value,
   ...customBlockItems.value,
 ]);
+
+// Apply the consumer's `blocks` allowlist + order when provided; otherwise show
+// the full default palette. Filtering only affects the palette — the block
+// registry stays complete, so existing content using a hidden type still renders.
+const resolvedPalette = computed(() =>
+  resolvePaletteBlocks(candidateBlockTypes.value, paletteBlocks),
+);
+
+const blockTypes = computed<BlockTypeItem[]>(() => resolvedPalette.value.items);
+
+// Warn once per unknown `blocks` entry (a typo, an unregistered custom block, or
+// `countdown` outside a Cloud plan). Done in a watcher rather than inside the
+// computed so recomputes don't repeat the warning.
+const warnedPaletteEntries = new Set<string>();
+watch(
+  () => resolvedPalette.value.unknown,
+  (unknown) => {
+    for (const entry of unknown) {
+      if (warnedPaletteEntries.has(entry)) continue;
+      warnedPaletteEntries.add(entry);
+      logger.warn(
+        `config.blocks: "${entry}" is not a built-in or registered custom block ` +
+          `(use the "custom:" prefix for custom blocks) — skipping it in the palette.`,
+      );
+    }
+  },
+  { immediate: true },
+);
 
 function createBlockFromItem(item: BlockTypeItem): Block {
   if (item.isCustom) {

@@ -81,6 +81,17 @@ export interface TemplaticalCloudEditorConfig {
   mergeTags?: MergeTagsConfig;
   displayConditions?: DisplayConditionsConfig;
   customBlocks?: CustomBlockDefinition[];
+
+  /**
+   * Allowlist + order for the block palette. When set, only the listed block
+   * types appear in the sidebar palette, in this order; unlisted built-ins are
+   * hidden. Built-ins use their bare type (`'image'`), custom blocks the
+   * `custom:`-prefixed type (`'custom:qrcode'`). Unknown entries are warned and
+   * skipped. Omit for the full default palette. See `blocks` on the OSS editor
+   * config for details.
+   */
+  blocks?: string[];
+
   fonts?: FontsConfig;
   onChange?: (content: TemplateContent) => void;
   onSave?: (result: SaveResult) => void;

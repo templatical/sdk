@@ -78,6 +78,28 @@ export interface TemplaticalEditorConfig {
   mergeTags?: MergeTagsConfig;
   displayConditions?: DisplayConditionsConfig;
   customBlocks?: CustomBlockDefinition[];
+
+  /**
+   * Allowlist + order for the block palette. When set, only the listed block
+   * types appear in the sidebar palette, in exactly this order — unlisted
+   * built-ins (e.g. `video`, `table`) are hidden. When omitted, the full
+   * default palette is shown.
+   *
+   * Reference built-in blocks by their bare type (`'section'`, `'image'`, …)
+   * and custom blocks by their `custom:`-prefixed type (`'custom:qrcode'`),
+   * so they can be interleaved freely:
+   *
+   * ```ts
+   * paletteBlocks: ['section', 'title', 'image', 'custom:qrcode', 'button']
+   * ```
+   *
+   * Unknown entries — a typo, an unregistered custom block, or `countdown`
+   * outside a Cloud plan — are logged with a warning and skipped. Filtering
+   * the palette never affects rendering: existing content using a hidden
+   * block type still renders correctly.
+   */
+  blocks?: string[];
+
   fonts?: FontsConfig;
 
   blockDefaults?: BlockDefaults;

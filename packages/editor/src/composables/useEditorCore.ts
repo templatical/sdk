@@ -53,6 +53,7 @@ import {
   BLOCK_DEFAULTS_KEY,
   BLOCK_REGISTRY_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
+  PALETTE_BLOCKS_KEY,
   CUSTOM_BLOCK_STYLESHEETS_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
@@ -185,6 +186,7 @@ export interface UseEditorCoreOptions {
     theme?: ThemeOverrides;
     blockDefaults?: BlockDefaults;
     customBlocks?: CustomBlockDefinition[];
+    paletteBlocks?: string[];
     mergeTags?: MergeTagsConfig;
     displayConditions?: DisplayConditionsConfig;
     onRequestMedia?: OnRequestMedia | null;
@@ -411,6 +413,7 @@ export function useEditorCore(
   provide(BLOCK_DEFAULTS_KEY, config.blockDefaults);
   provide(BLOCK_REGISTRY_KEY, registry);
   provide(CUSTOM_BLOCK_DEFINITIONS_KEY, config.customBlocks ?? []);
+  provide(PALETTE_BLOCKS_KEY, config.paletteBlocks);
   // Reactive deduped list of custom-block stylesheets currently in use. The
   // `<CustomBlockStylesheets>` component reads this and renders `<style>` tags
   // into the editor root so authored CSS previews live in the canvas. The

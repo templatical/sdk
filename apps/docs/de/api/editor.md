@@ -50,6 +50,7 @@ unmount();
 | `mergeTags`         | `MergeTagsConfig`                                                 | No       | Merge-Tag-Konfiguration. Siehe [Merge-Tags](/de/guide/merge-tags)                                                                                                                                                                                                                                                                 |
 | `displayConditions` | `DisplayConditionsConfig`                                         | No       | Konfiguration für Anzeigebedingungen. Siehe [Anzeigebedingungen](/de/guide/display-conditions)                                                                                                                                                                                                                                    |
 | `customBlocks`      | `CustomBlockDefinition[]`                                         | No       | Definitionen für benutzerdefinierte Blocktypen. Siehe [Benutzerdefinierte Blöcke](/de/guide/custom-blocks)                                                                                                                                                                                                                        |
+| `blocks`            | `string[]`                                                        | No       | Allowlist + Reihenfolge für die Block-Palette. Nur die aufgeführten Typen erscheinen, in dieser Reihenfolge; nicht aufgeführte integrierte Blöcke werden ausgeblendet. Integrierte Blöcke über ihren reinen Typ (`'image'`), benutzerdefinierte über den `custom:`-präfixierten Typ (`'custom:qrcode'`). Siehe [Block-Palette anpassen](#block-palette-anpassen) |
 | `blockDefaults`     | `BlockDefaults`                                                   | No       | Standard-Property-Überschreibungen für neue Blöcke. Siehe [Standardwerte](/de/guide/defaults)                                                                                                                                                                                                                                     |
 | `templateDefaults`  | `TemplateDefaults`                                                | No       | Standardeinstellungen für leere Templates. Siehe [Standardwerte](/de/guide/defaults)                                                                                                                                                                                                                                              |
 | `fonts`             | `FontsConfig`                                                     | No       | Schriftart-Konfiguration. Siehe [Benutzerdefinierte Schriftarten](/de/guide/fonts)                                                                                                                                                                                                                                                |
@@ -67,6 +68,32 @@ Das Standard-Mount (Shadow DOM) ruft `attachShadow()` auf Ihrem Container auf, u
 **Nicht erlaubt:** `<table>`, `<tr>`, `<td>`, `<form>`, `<input>`, `<button>`, `<select>`, Listenelemente (`<ul>`, `<ol>`, `<li>`), `<iframe>`, ersetzte Elemente (`<img>`, `<video>` usw.). Die Übergabe eines dieser Elemente wirft eine `DOMException` aus `attachShadow()`.
 
 Wenn Ihre Integration ein nicht unterstütztes Element verwenden muss (z. B. Mount in eine `<form>`-Zelle eines CMS-Layouts), übergeben Sie `shadowDom: false` — das Light-DOM-Mount akzeptiert jedes Element. Der Kompromiss ist die Host-CSS-Isolation, auf die Sie verzichten.
+
+### Block-Palette anpassen
+
+Standardmäßig listet die Seitenleisten-Palette jeden integrierten Blocktyp auf. Übergeben Sie `blocks`, um die Palette auf eine bestimmte Menge zu beschränken und ihre Reihenfolge zu steuern — nützlich, um nicht verwendete Blocktypen (`video`, `table`, …) auszublenden oder einen häufig genutzten [benutzerdefinierten Block](/de/guide/custom-blocks) über die integrierten Blöcke zu stellen.
+
+```ts
+const editor = await init({
+  container: "#editor",
+  customBlocks: [qrCodeDefinition],
+  blocks: [
+    "section",
+    "title",
+    "paragraph",
+    "image",
+    "custom:qrcode", // ein benutzerdefinierter Block, zwischen integrierten Blöcken
+    "button",
+  ],
+});
+```
+
+- **Strikte Allowlist + Reihenfolge.** Es werden nur die aufgeführten Typen angezeigt, in genau dieser Reihenfolge. Jeder nicht aufgeführte integrierte Block (hier `divider`, `video`, `social`, `menu`, `table`, `spacer`, `html`) wird aus der Palette ausgeblendet.
+- **Integrierte Blöcke über ihren reinen Typ** (`"section"`, `"image"`, …) und **benutzerdefinierte Blöcke über ihren `custom:`-präfixierten Typ** (`"custom:qrcode"`) referenzieren, sodass beide frei vermischt werden können.
+- **Unbekannte Einträge werden übersprungen.** Ein Tippfehler, ein nicht registrierter benutzerdefinierter Block oder `countdown` außerhalb eines Cloud-Plans wird mit einer Warnung in der Konsole protokolliert und nicht in die Palette aufgenommen.
+- **Das Filtern der Palette wirkt sich nie auf das Rendering aus.** Das Ausblenden eines Blocktyps entfernt ihn nur aus der Palette — vorhandener Inhalt, der diesen Typ bereits verwendet, wird weiterhin korrekt gerendert. `blocks` steuert, was Benutzer _einfügen_ können, nicht, was der Editor _anzeigen_ kann.
+
+Lassen Sie `blocks` weg (oder übergeben Sie ein leeres Array), um die vollständige Standard-Palette anzuzeigen.
 
 ## TemplaticalEditor
 
