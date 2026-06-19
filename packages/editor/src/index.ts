@@ -98,7 +98,7 @@ export interface TemplaticalEditorConfig {
    * the palette never affects rendering: existing content using a hidden
    * block type still renders correctly.
    */
-  blocks?: string[];
+  paletteBlocks?: string[];
 
   fonts?: FontsConfig;
 

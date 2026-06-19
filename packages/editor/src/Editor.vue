@@ -52,7 +52,7 @@ const core = useEditorCore({
     theme: props.config.theme,
     blockDefaults: props.config.blockDefaults,
     customBlocks: props.config.customBlocks,
-    paletteBlocks: props.config.blocks,
+    paletteBlocks: props.config.paletteBlocks,
     mergeTags: props.config.mergeTags,
     displayConditions: props.config.displayConditions,
     onRequestMedia: props.config.onRequestMedia,

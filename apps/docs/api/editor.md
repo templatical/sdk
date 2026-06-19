@@ -50,7 +50,7 @@ unmount();
 | `mergeTags`         | `MergeTagsConfig`                                                 | No       | Merge tag configuration. See [Merge Tags](/guide/merge-tags)                                                                                                                                                                                                                               |
 | `displayConditions` | `DisplayConditionsConfig`                                         | No       | Display condition configuration. See [Display Conditions](/guide/display-conditions)                                                                                                                                                                                                       |
 | `customBlocks`      | `CustomBlockDefinition[]`                                         | No       | Custom block type definitions. See [Custom Blocks](/guide/custom-blocks)                                                                                                                                                                                                                   |
-| `blocks`            | `string[]`                                                        | No       | Allowlist + order for the block palette. Only the listed types appear, in this order; unlisted built-ins are hidden. Built-ins use their bare type (`'image'`), custom blocks the `custom:`-prefixed type (`'custom:qrcode'`). See [Customizing the block palette](#customizing-the-block-palette) |
+| `paletteBlocks`     | `string[]`                                                        | No       | Allowlist + order for the block palette. Only the listed types appear, in this order; unlisted built-ins are hidden. Built-ins use their bare type (`'image'`), custom blocks the `custom:`-prefixed type (`'custom:qrcode'`). See [Customizing the block palette](#customizing-the-block-palette) |
 | `blockDefaults`     | `BlockDefaults`                                                   | No       | Default property overrides for new blocks. See [Defaults](/guide/defaults)                                                                                                                                                                                                                 |
 | `templateDefaults`  | `TemplateDefaults`                                                | No       | Default template settings for empty templates. See [Defaults](/guide/defaults)                                                                                                                                                                                                             |
 | `fonts`             | `FontsConfig`                                                     | No       | Font configuration. See [Custom Fonts](/guide/fonts)                                                                                                                                                                                                                                       |
@@ -71,13 +71,13 @@ If your integration must use an unsupported element (e.g. mounting into a `<form
 
 ### Customizing the block palette
 
-By default the sidebar palette lists every built-in block type. Pass `blocks` to restrict the palette to a specific set and control their order — useful for hiding block types you don't use (`video`, `table`, …) or promoting a frequently-used [custom block](/guide/custom-blocks) above the built-ins.
+By default the sidebar palette lists every built-in block type. Pass `paletteBlocks` to restrict the palette to a specific set and control their order — useful for hiding block types you don't use (`video`, `table`, …) or promoting a frequently-used [custom block](/guide/custom-blocks) above the built-ins.
 
 ```ts
 const editor = await init({
   container: "#editor",
   customBlocks: [qrCodeDefinition],
-  blocks: [
+  paletteBlocks: [
     "section",
     "title",
     "paragraph",
@@ -91,9 +91,9 @@ const editor = await init({
 - **Strict allowlist + order.** Only the listed types are shown, in exactly this order. Any built-in not listed (here `divider`, `video`, `social`, `menu`, `table`, `spacer`, `html`) is hidden from the palette.
 - **Reference built-ins by their bare type** (`"section"`, `"image"`, …) and **custom blocks by their `custom:`-prefixed type** (`"custom:qrcode"`), so the two can be interleaved freely.
 - **Unknown entries are skipped.** A typo, an unregistered custom block, or `countdown` outside a Cloud plan is logged to the console with a warning and left out of the palette.
-- **Filtering the palette never affects rendering.** Hiding a block type only removes it from the palette — existing content that already uses that type still renders correctly. `blocks` controls what users can _insert_, not what the editor can _display_.
+- **Filtering the palette never affects rendering.** Hiding a block type only removes it from the palette — existing content that already uses that type still renders correctly. `paletteBlocks` controls what users can _insert_, not what the editor can _display_.
 
-Omit `blocks` (or pass an empty array) to show the full default palette.
+Omit `paletteBlocks` (or pass an empty array) to show the full default palette.
 
 ## TemplaticalEditor
 

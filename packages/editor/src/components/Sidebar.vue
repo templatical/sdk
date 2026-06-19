@@ -112,7 +112,7 @@ const candidateBlockTypes = computed<BlockTypeItem[]>(() => [
   ...customBlockItems.value,
 ]);
 
-// Apply the consumer's `blocks` allowlist + order when provided; otherwise show
+// Apply the consumer's `paletteBlocks` allowlist + order when provided; otherwise show
 // the full default palette. Filtering only affects the palette — the block
 // registry stays complete, so existing content using a hidden type still renders.
 const resolvedPalette = computed(() =>
@@ -121,7 +121,7 @@ const resolvedPalette = computed(() =>
 
 const blockTypes = computed<BlockTypeItem[]>(() => resolvedPalette.value.items);
 
-// Warn once per unknown `blocks` entry (a typo, an unregistered custom block, or
+// Warn once per unknown `paletteBlocks` entry (a typo, an unregistered custom block, or
 // `countdown` outside a Cloud plan). Done in a watcher rather than inside the
 // computed so recomputes don't repeat the warning.
 const warnedPaletteEntries = new Set<string>();
@@ -132,7 +132,7 @@ watch(
       if (warnedPaletteEntries.has(entry)) continue;
       warnedPaletteEntries.add(entry);
       logger.warn(
-        `config.blocks: "${entry}" is not a built-in or registered custom block ` +
+        `config.paletteBlocks: "${entry}" is not a built-in or registered custom block ` +
           `(use the "custom:" prefix for custom blocks) — skipping it in the palette.`,
       );
     }

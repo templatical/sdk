@@ -86,7 +86,7 @@ const editor = await init({
 3. **Editor canvas** — The Liquid `template` renders exactly as defined, with field values populated from the settings panel.
 
 ::: tip Reordering the palette
-By default a custom block appears in the palette after all built-in blocks. To promote it — or to hide built-in types you don't use — pass the [`blocks`](/api/editor#customizing-the-block-palette) option and reference your custom block by its `custom:`-prefixed type (e.g. `"custom:testimonial"`).
+By default a custom block appears in the palette after all built-in blocks. To promote it — or to hide built-in types you don't use — pass the [`paletteBlocks`](/api/editor#customizing-the-block-palette) option and reference your custom block by its `custom:`-prefixed type (e.g. `"custom:testimonial"`).
 :::
 
 ## CustomBlockDefinition

@@ -86,7 +86,7 @@ const editor = await init({
 3. **Editor-Canvas** — Das Liquid-`template` wird genau wie definiert gerendert, wobei die Feldwerte aus dem Einstellungsbereich übernommen werden.
 
 ::: tip Palette neu anordnen
-Standardmäßig erscheint ein benutzerdefinierter Block in der Palette nach allen integrierten Blöcken. Um ihn nach oben zu holen — oder um nicht verwendete integrierte Typen auszublenden — übergeben Sie die Option [`blocks`](/de/api/editor#block-palette-anpassen) und referenzieren Sie Ihren benutzerdefinierten Block über seinen `custom:`-präfixierten Typ (z. B. `"custom:testimonial"`).
+Standardmäßig erscheint ein benutzerdefinierter Block in der Palette nach allen integrierten Blöcken. Um ihn nach oben zu holen — oder um nicht verwendete integrierte Typen auszublenden — übergeben Sie die Option [`paletteBlocks`](/de/api/editor#block-palette-anpassen) und referenzieren Sie Ihren benutzerdefinierten Block über seinen `custom:`-präfixierten Typ (z. B. `"custom:testimonial"`).
 :::
 
 ## CustomBlockDefinition
