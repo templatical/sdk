@@ -54,6 +54,36 @@ describe('Sidebar', () => {
     ]);
   });
 
+  it('palette list is a scroll region so tall block lists stay reachable on short viewports (#231)', () => {
+    // The rail is `overflow-hidden` and anchored top-14..bottom-0, so it has
+    // a bounded height. Without an inner scroll region the block-type list is
+    // clipped on short viewports and the bottom items become unreachable
+    // (issue #231). The palette must therefore scroll vertically while the
+    // rail stays a flex column (so the list fills the space the modules
+    // trigger leaves and the trigger stays pinned).
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+
+    const rail = wrapper.get('aside.tpl-sidebar-rail');
+    expect(rail.classes()).toContain('tpl:flex');
+    expect(rail.classes()).toContain('tpl:flex-col');
+
+    // The VueDraggable root wraps the palette buttons (v-for in its slot),
+    // so a button's parent is the list container that must scroll.
+    const list = wrapper.get('button[data-palette-type]').element
+      .parentElement as HTMLElement;
+    expect(list.className).toContain('tpl:overflow-y-auto');
+    expect(list.className).toContain('tpl:flex-1');
+    expect(list.className).toContain('tpl:min-h-0');
+
+    // Each palette button must keep its fixed height: in the flex column a
+    // shrinkable button would be compressed to fit the bounded list instead
+    // of overflowing it, so `overflow-y-auto` would never engage.
+    expect(wrapper.get('button[data-palette-type]').classes()).toContain(
+      'tpl:shrink-0',
+    );
+  });
+
   it('includes countdown when plan capability is provided (cloud mode)', () => {
     const { editor } = makeEditor();
     const wrapper = mountSidebar({

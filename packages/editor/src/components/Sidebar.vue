@@ -140,7 +140,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
 <template>
   <aside
     :aria-label="t.sidebarNav.palette"
-    class="tpl-sidebar-rail tpl:absolute tpl:top-14 tpl:bottom-0 tpl:left-0 tpl:z-40 tpl:overflow-hidden"
+    class="tpl-sidebar-rail tpl:absolute tpl:top-14 tpl:bottom-0 tpl:left-0 tpl:z-40 tpl:flex tpl:flex-col tpl:overflow-hidden"
     :style="{
       width: isExpanded ? '200px' : '48px',
       backgroundColor: 'var(--tpl-bg-elevated)',
@@ -183,6 +183,11 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
         </span>
       </button>
     </div>
+    <!-- The palette is the rail's scroll region: `flex-1` makes it fill the
+         height left by the (optional) modules trigger, `min-h-0` lets it
+         shrink below its content so `overflow-y-auto` engages. Without this
+         the rail's `overflow-hidden` clips items below the fold on short
+         viewports with no way to reach them (#231). -->
     <VueDraggable
       :model-value="blockTypes"
       :group="{ name: 'blocks', pull: 'clone', put: false }"
@@ -191,7 +196,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
       :animation="150"
       ghost-class="tpl-ghost"
       :force-fallback="true"
-      class="tpl:flex tpl:flex-col tpl:gap-0.5 tpl:p-1"
+      class="tpl:flex tpl:min-h-0 tpl:flex-1 tpl:flex-col tpl:gap-0.5 tpl:overflow-y-auto tpl:p-1"
       @choose="handleDragChoose"
       @end="handleDragEnd"
     >
@@ -203,7 +208,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
         :aria-label="
           format(t.sidebarNav.insertBlock, { block: blockType.label })
         "
-        class="tpl:flex tpl:h-10 tpl:w-full tpl:cursor-grab tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)] active:tpl:cursor-grabbing"
+        class="tpl:flex tpl:h-10 tpl:w-full tpl:shrink-0 tpl:cursor-grab tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)] active:tpl:cursor-grabbing"
         :style="{
           justifyContent: isExpanded ? 'flex-start' : 'center',
         }"
