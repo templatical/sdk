@@ -1,5 +1,14 @@
 # @templatical/editor
 
+## 0.11.1
+
+### Patch Changes
+
+- 130f8f7: Add a `smallScreenNotice` option (default `true`): on viewports narrower than ~768px the editor now shows a "use a larger screen" notice instead of a cramped, unusable drag-and-drop layout. The palette, canvas, and properties panel can't lay out on a phone and touch dragging is impractical, so this is the honest fallback. Opt out with `smallScreenNotice: false` to render the editor at any width if you handle small screens yourself. Applies to both the OSS and cloud editors (#235).
+  - @templatical/renderer@0.11.1
+  - @templatical/quality@0.11.1
+  - @templatical/media-library@0.11.1
+
 ## 0.11.0
 
 ### Minor Changes
