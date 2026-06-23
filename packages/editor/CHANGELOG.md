@@ -1,6 +1,6 @@
 # @templatical/editor
 
-## 1.0.0
+## 0.11.0
 
 ### Minor Changes
 
@@ -12,9 +12,9 @@
 
 - d24805f: Fix the global email background being hidden in the editor when a section has its own background. The background now renders in the gutters around the centered content, matching how it appears when the email is sent (#230).
 - 70586b3: Fix the editor clipping its own content on short viewports. The block-types palette is now a scroll region, and the editor's `min-height` floor was lowered so it fills short containers instead of overflowing them — restoring access to the bottom of the palette, the footer, and the config panel's lower controls (#231).
-  - @templatical/renderer@1.0.0
-  - @templatical/quality@1.0.0
-  - @templatical/media-library@1.0.0
+  - @templatical/renderer@0.11.0
+  - @templatical/quality@0.11.0
+  - @templatical/media-library@0.11.0
 
 ## 0.10.4
 
