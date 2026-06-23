@@ -38,6 +38,29 @@ test.describe("Small-screen notice (#235)", () => {
     expect(containerBox).not.toBeNull();
     expect(Math.abs(noticeBox!.width - containerBox!.width)).toBeLessThan(4);
     expect(Math.abs(noticeBox!.height - containerBox!.height)).toBeLessThan(4);
+
+    // Matching boxes isn't enough — the original #235 follow-up bug left the
+    // overlay at z-auto, BEHIND the explicitly-z-indexed chrome, so the box
+    // matched while the sidebar/header still showed through. Assert the notice
+    // is genuinely the top layer: the element under the header strip (chrome,
+    // z-50) must resolve into the notice. Pierces shadow roots so it holds in
+    // both the light- and shadow-DOM projects.
+    const headerPoint = {
+      x: containerBox!.x + containerBox!.width / 2,
+      y: containerBox!.y + 10,
+    };
+    const topmost = await page.evaluate(({ x, y }) => {
+      let el: Element | null = document.elementFromPoint(x, y);
+      while (el && el.shadowRoot) {
+        const inner = el.shadowRoot.elementFromPoint(x, y);
+        if (!inner || inner === el) break;
+        el = inner;
+      }
+      return el && el.closest('[data-testid="small-screen-notice"]')
+        ? "notice"
+        : "chrome";
+    }, headerPoint);
+    expect(topmost).toBe("notice");
   });
 
   test("clears the notice and restores the chrome when the viewport grows past the breakpoint", async ({

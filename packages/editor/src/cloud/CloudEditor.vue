@@ -429,8 +429,9 @@ defineExpose({
          renders nothing until `picker.isOpen` flips true. -->
     <MergeTagPickerModal />
 
-    <!-- Small-screen gate (#235). Last child so its `tpl:z-modal` ties with
-         and wins over `.tpl-popover-root`, covering all chrome + popovers. -->
+    <!-- Small-screen gate (#235). Last child + a literal z-index above the
+         chrome and `.tpl-popover-root`, so the opaque notice covers everything
+         below the breakpoint. -->
     <SmallScreenNotice v-if="showSmallScreenNotice" />
   </div>
 </template>

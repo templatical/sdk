@@ -111,11 +111,13 @@ describe("SmallScreenNotice component", () => {
     expect(mountNotice().attributes("data-testid")).toBe("small-screen-notice");
   });
 
-  it("layers above all chrome and popovers via the modal z-index", () => {
+  it("layers above all chrome and popovers via a literal top z-index", () => {
     const wrapper = mountNotice();
-    // tpl:z-modal compiles to a literal 10000, tying with .tpl-popover-root;
-    // the notice wins the tie by being the last child of .tpl.
-    expect(wrapper.classes()).toContain("tpl:z-modal");
+    // A literal z-index, NOT var(--z-modal) / a tpl:z-* utility — neither
+    // resolves inside the shadow root, so they'd leave the overlay at z-auto
+    // beneath the chrome (the #235 follow-up bug). 10001 clears the chrome
+    // (z-50/40) and .tpl-popover-root (z-10000).
+    expect(wrapper.attributes("style")).toContain("z-index: 10001");
     expect(wrapper.classes()).toContain("tpl:absolute");
     expect(wrapper.classes()).toContain("tpl:inset-0");
   });
