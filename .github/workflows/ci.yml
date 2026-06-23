@@ -44,7 +44,7 @@ jobs:
         if: env.IS_VP == 'true'
         run: echo "Skipped — Version Packages PR. Original checks ran on the producing PR."
       - if: env.IS_VP != 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - if: env.IS_VP != 'true'
         uses: ./.github/actions/setup
       - if: env.IS_VP != 'true'
@@ -71,7 +71,7 @@ jobs:
         if: env.IS_VP == 'true'
         run: echo "Skipped — Version Packages PR."
       - if: env.IS_VP != 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - if: env.IS_VP != 'true'
         uses: ./.github/actions/setup
       - if: env.IS_VP != 'true'
@@ -87,7 +87,7 @@ jobs:
         if: env.IS_VP == 'true'
         run: echo "Skipped — Version Packages PR."
       - if: env.IS_VP != 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - if: env.IS_VP != 'true'
         uses: ./.github/actions/setup
       - if: env.IS_VP != 'true'
@@ -125,7 +125,7 @@ jobs:
         if: env.IS_VP == 'true'
         run: echo "Skipped — Version Packages PR."
       - if: env.IS_VP != 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - if: env.IS_VP != 'true'
         uses: ./.github/actions/setup
       - if: env.IS_VP != 'true'
@@ -176,7 +176,7 @@ jobs:
         if: env.IS_VP == 'true'
         run: echo "Skipped — Version Packages PR."
       - if: env.IS_VP != 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - if: env.IS_VP != 'true'
         uses: ./.github/actions/setup
       - if: env.IS_VP != 'true'
@@ -223,7 +223,7 @@ jobs:
         if: env.IS_VP == 'true'
         run: echo "Skipped — Version Packages PR. Tarballs reference unreleased versions."
       - if: env.IS_VP != 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - if: env.IS_VP != 'true'
         uses: ./.github/actions/setup
       # The prep script re-builds editor + renderer. The new dts pipeline
@@ -260,7 +260,7 @@ jobs:
         if: env.IS_VP == 'true'
         run: echo "Skipped — Version Packages PR."
       - if: env.IS_VP != 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - if: env.IS_VP != 'true'
         uses: ./.github/actions/setup
       # See e2e-consumer comment — same reason.
@@ -287,7 +287,7 @@ jobs:
         if: env.IS_VP == 'true'
         run: echo "Skipped — Version Packages PR."
       - if: env.IS_VP != 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - if: env.IS_VP != 'true'
         uses: ./.github/actions/setup
       # See e2e-consumer comment — same reason.
@@ -310,7 +310,7 @@ jobs:
         if: env.IS_VP == 'true'
         run: echo "Skipped — Version Packages PR. No e2e artifacts produced."
       - if: env.IS_VP != 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - if: env.IS_VP != 'true'
         uses: ./.github/actions/setup
       - if: env.IS_VP != 'true'
