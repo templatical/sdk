@@ -211,7 +211,7 @@ jobs:
     # system-dep install step, pulled from our GHCR mirror to dodge MCR's
     # intermittent edge throttling (see the `e2e` job + mirror-playwright.yml).
     container:
-      image: ghcr.io/templatical/playwright:v1.60.0-jammy
+      image: ghcr.io/templatical/playwright:v1.61.0-jammy
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
