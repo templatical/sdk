@@ -160,7 +160,7 @@ jobs:
     # must match the pinned `@playwright/test` version in pnpm-lock.yaml AND the
     # tag that workflow mirrors.
     container:
-      image: ghcr.io/templatical/playwright:v1.60.0-jammy
+      image: ghcr.io/templatical/playwright:v1.61.0-jammy
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
