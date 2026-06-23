@@ -38,6 +38,12 @@ export {
   type UseEditorCoreReturn,
 } from "./useEditorCore";
 
+export {
+  useSmallScreenNotice,
+  SMALL_SCREEN_QUERY,
+  type UseSmallScreenNoticeReturn,
+} from "./useSmallScreenNotice";
+
 // Re-export core composables for convenience
 export type { UseEditorReturn } from "@templatical/core";
 export type { UseBlockActionsReturn } from "@templatical/core";

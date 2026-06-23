@@ -4,6 +4,7 @@ import type { TemplaticalEditorConfig } from "./index";
 import { useEditor } from "@templatical/core";
 import type { TemplateContent, UiTheme } from "@templatical/types";
 import { useEditorCore } from "./composables/useEditorCore";
+import { useSmallScreenNotice } from "./composables/useSmallScreenNotice";
 import { resolveLintOptions } from "./utils/resolveLintOptions";
 import type { Translations } from "./i18n";
 import type { UseFontsReturn } from "./composables/useFonts";
@@ -13,6 +14,7 @@ import Canvas from "./components/Canvas.vue";
 import CustomBlockStylesheets from "./components/CustomBlockStylesheets.vue";
 import Sidebar from "./components/Sidebar.vue";
 import RightSidebar from "./components/RightSidebar.vue";
+import SmallScreenNotice from "./components/SmallScreenNotice.vue";
 import ViewportToggle from "./components/ViewportToggle.vue";
 import PreviewToggle from "./components/PreviewToggle.vue";
 import DarkModeToggle from "./components/DarkModeToggle.vue";
@@ -74,6 +76,13 @@ const core = useEditorCore({
     : null,
   editorRoot: props.shadowRoot,
 });
+
+// --- Small-screen gate (#235) ---
+// Below ~768px the three-pane chrome can't lay out usably; show a notice
+// instead. Opt out with `config.smallScreenNotice: false`.
+const { showNotice: showSmallScreenNotice } = useSmallScreenNotice(
+  () => props.config.smallScreenNotice,
+);
 
 // --- Lifecycle ---
 onMounted(async () => {
@@ -237,6 +246,10 @@ defineExpose({
     <!-- Built-in merge tag picker modal. Reads picker state via injection;
          renders nothing until `picker.isOpen` flips true. -->
     <MergeTagPickerModal />
+
+    <!-- Small-screen gate (#235). Last child so its `tpl:z-modal` ties with
+         and wins over `.tpl-popover-root`, covering all chrome + popovers. -->
+    <SmallScreenNotice v-if="showSmallScreenNotice" />
   </div>
 </template>
 

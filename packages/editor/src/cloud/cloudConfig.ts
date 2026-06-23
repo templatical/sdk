@@ -67,6 +67,23 @@ export interface TemplaticalCloudEditorConfig {
    */
   branding?: boolean;
 
+  /**
+   * Show a "use a larger screen" notice instead of the editor chrome on
+   * viewports narrower than ~768px. Defaults to `true`.
+   *
+   * The drag-and-drop editor is a desktop-class tool — the block palette,
+   * canvas, and properties panel can't lay out usably on a phone, and touch
+   * dragging is impractical. Rather than render a broken, cramped layout, the
+   * editor shows a clear message below the breakpoint.
+   *
+   * Set to `false` if you handle small screens yourself (e.g. you embed the
+   * editor in a deliberately narrow desktop pane). The check is viewport-based,
+   * so it targets actual small devices, not narrow containers on a wide screen.
+   *
+   * @default true
+   */
+  smallScreenNotice?: boolean;
+
   ai?: AiConfig | false;
   commenting?: boolean;
   collaboration?: CollaborationConfig;

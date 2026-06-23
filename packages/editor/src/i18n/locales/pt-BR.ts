@@ -613,6 +613,12 @@ const ptBR: typeof en = {
     badgeWarning: "Possui avisos",
     issueCountTooltip: "{count} problema(s)",
   },
+
+  smallScreen: {
+    title: "Tela maior necessária",
+    message:
+      "O editor precisa de mais espaço do que esta tela oferece. Abra-o em um tablet ou desktop para começar a editar.",
+  },
 };
 
 export default ptBR;

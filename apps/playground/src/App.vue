@@ -1851,9 +1851,9 @@ onUnmounted(() => {
         class="flex flex-col h-screen"
       >
         <header
-          class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-2"
+          class="flex items-center justify-between h-12 px-4 bg-gray-100 shrink-0 z-[100] dark:bg-gray-800 gap-2 overflow-x-auto"
         >
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 shrink-0">
             <button
               data-testid="toolbar-back"
               class="pg-toolbar-btn no-underline"
@@ -1893,7 +1893,7 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1 shrink-0">
             <!-- Export button -->
             <button
               data-testid="toolbar-export"
