@@ -1,5 +1,21 @@
 # @templatical/editor
 
+## 0.11.0
+
+### Minor Changes
+
+- c038853: Add a `paletteBlocks` config option to reorder and filter the block palette (#232)
+
+  `init({ paletteBlocks: [...] })` now accepts an allowlist that controls which block types appear in the sidebar palette and in what order. Only the listed types are shown, in the given order — unlisted built-ins (e.g. `video`, `table`) are hidden. Reference built-ins by their bare type (`"image"`) and custom blocks by their `custom:`-prefixed type (`"custom:qrcode"`), so the two can be interleaved freely. Unknown entries (a typo, an unregistered custom block) are logged with a warning and skipped. Filtering the palette never affects rendering — existing content that uses a hidden block type still renders correctly. Omit `paletteBlocks` for the full default palette.
+
+### Patch Changes
+
+- d24805f: Fix the global email background being hidden in the editor when a section has its own background. The background now renders in the gutters around the centered content, matching how it appears when the email is sent (#230).
+- 70586b3: Fix the editor clipping its own content on short viewports. The block-types palette is now a scroll region, and the editor's `min-height` floor was lowered so it fills short containers instead of overflowing them — restoring access to the bottom of the palette, the footer, and the config panel's lower controls (#231).
+  - @templatical/renderer@0.11.0
+  - @templatical/quality@0.11.0
+  - @templatical/media-library@0.11.0
+
 ## 0.10.4
 
 ### Patch Changes
