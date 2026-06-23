@@ -236,7 +236,14 @@
 /* SDK Base Styles */
 .tpl {
     @apply tpl:flex tpl:h-full tpl:flex-col tpl:font-sans tpl:text-sm tpl:leading-normal tpl:antialiased;
-    min-height: 600px;
+    /* Anti-collapse floor for containers mounted without a defined height
+       (the documented contract is that the container sizes the editor). Kept
+       small on purpose: the editor's panels are anchored top-14..bottom-0, so
+       a floor taller than a short, overflow-hidden container pushes their
+       bottom-0 edge below the visible area — clipping the sidebar's last
+       palette items, the footer, and the config panel's lower content with no
+       way to scroll to them (issue #231). */
+    min-height: 320px;
     background-color: var(--tpl-bg);
     color: var(--tpl-text);
     font-family: var(--tpl-font-family);
