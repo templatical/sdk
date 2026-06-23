@@ -272,6 +272,7 @@ export function useCloudInitialization(
       theme: undefined, // applied in initialize() after plan check
       blockDefaults: config.blockDefaults,
       customBlocks: [], // deferred to initialize()
+      paletteBlocks: config.paletteBlocks,
       mergeTags: config.mergeTags,
       displayConditions: config.displayConditions,
       onRequestMedia: null, // cloud handles via mediaLib.handleRequestMedia

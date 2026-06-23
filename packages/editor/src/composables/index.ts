@@ -15,7 +15,6 @@ export {
 export {
   useBlockRegistry,
   type BlockRegistration,
-  type SidebarItem,
   type UseBlockRegistryReturn,
 } from "./useBlockRegistry";
 export {
@@ -38,6 +37,12 @@ export {
   type UseEditorCoreOptions,
   type UseEditorCoreReturn,
 } from "./useEditorCore";
+
+export {
+  useSmallScreenNotice,
+  SMALL_SCREEN_QUERY,
+  type UseSmallScreenNoticeReturn,
+} from "./useSmallScreenNotice";
 
 // Re-export core composables for convenience
 export type { UseEditorReturn } from "@templatical/core";

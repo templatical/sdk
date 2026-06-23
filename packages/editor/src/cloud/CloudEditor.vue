@@ -9,6 +9,7 @@ import type { Translations, CloudTranslations } from "../i18n";
 import { provide } from "vue";
 import { CLOUD_TRANSLATIONS_KEY } from "../keys";
 
+import { useSmallScreenNotice } from "../composables/useSmallScreenNotice";
 import { useCloudInitialization } from "./composables/useCloudInitialization";
 import { useCloudLifecycle } from "./composables/useCloudLifecycle";
 import { useCloudSaveGate } from "./composables/useCloudSaveGate";
@@ -21,6 +22,7 @@ import Canvas from "../components/Canvas.vue";
 import CustomBlockStylesheets from "../components/CustomBlockStylesheets.vue";
 import Sidebar from "../components/Sidebar.vue";
 import RightSidebar from "../components/RightSidebar.vue";
+import SmallScreenNotice from "../components/SmallScreenNotice.vue";
 import CloudLoadingOverlay from "./components/CloudLoadingOverlay.vue";
 import CloudErrorOverlay from "./components/CloudErrorOverlay.vue";
 import SnapshotPreviewBanner from "./components/SnapshotPreviewBanner.vue";
@@ -98,6 +100,15 @@ const {
   setThemeOverrides,
   setUiTheme,
 } = init;
+
+// --- Small-screen gate (#235) ---
+// Below ~768px the three-pane chrome can't lay out usably; show a notice
+// instead. Opt out with `config.smallScreenNotice: false`. The cloud session
+// (auth/websocket) stays connected behind the notice, so rotating back to a
+// wide viewport restores the live editor without re-initializing.
+const { showNotice: showSmallScreenNotice } = useSmallScreenNotice(
+  () => props.config.smallScreenNotice,
+);
 
 // ---------------------------------------------------------------------------
 // Test email handler
@@ -417,6 +428,10 @@ defineExpose({
     <!-- Built-in merge tag picker modal. Reads picker state via injection;
          renders nothing until `picker.isOpen` flips true. -->
     <MergeTagPickerModal />
+
+    <!-- Small-screen gate (#235). Last child so its `tpl:z-modal` ties with
+         and wins over `.tpl-popover-root`, covering all chrome + popovers. -->
+    <SmallScreenNotice v-if="showSmallScreenNotice" />
   </div>
 </template>
 

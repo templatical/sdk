@@ -21,7 +21,7 @@ jobs:
       # PAT, ci.yml fires normally; jobs detect the `changeset-release/*`
       # branch via their IS_VP env flag and no-op their work while still
       # reporting green.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           token: ${{ secrets.CHANGESETS_PAT }}
       - uses: pnpm/action-setup@v6

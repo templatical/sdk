@@ -609,4 +609,10 @@ export default {
     badgeWarning: "Has warnings",
     issueCountTooltip: "{count} issue(s)",
   },
+
+  smallScreen: {
+    title: "Larger screen required",
+    message:
+      "The editor needs more space than this screen offers. Open it on a tablet or desktop to start editing.",
+  },
 };

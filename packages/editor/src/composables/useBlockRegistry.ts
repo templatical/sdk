@@ -9,18 +9,9 @@ import { createCustomBlock } from "@templatical/types";
 import { type Component, shallowRef, triggerRef } from "vue";
 import { logger } from "../utils/logger";
 
-export interface SidebarItem {
-  type: string;
-  label: string;
-  icon?: string;
-  description?: string;
-  isCustom: boolean;
-}
-
 export interface BlockRegistration {
   component: Component;
   createBlock: () => Block;
-  sidebarItem: SidebarItem;
   definition?: CustomBlockDefinition;
 }
 
@@ -32,7 +23,6 @@ export interface UseBlockRegistryReturn {
   ) => void;
   getComponent: (block: Block) => Component | undefined;
   createBlock: (type: string) => Block | undefined;
-  getSidebarItems: () => SidebarItem[];
   getDefinition: (customType: string) => CustomBlockDefinition | undefined;
   renderCustomBlock: (block: CustomBlock) => Promise<string>;
   isRegistered: (type: string) => boolean;
@@ -57,13 +47,6 @@ export function useBlockRegistry(): UseBlockRegistryReturn {
     const registration: BlockRegistration = {
       component,
       createBlock: () => createCustomBlock(definition),
-      sidebarItem: {
-        type: registrationKey,
-        label: definition.name,
-        icon: definition.icon,
-        description: definition.description,
-        isCustom: true,
-      },
       definition,
     };
 
@@ -82,21 +65,6 @@ export function useBlockRegistry(): UseBlockRegistryReturn {
 
   function createBlockFromType(type: string): Block | undefined {
     return registry.value.get(type)?.createBlock();
-  }
-
-  function getSidebarItems(): SidebarItem[] {
-    const builtIn: SidebarItem[] = [];
-    const custom: SidebarItem[] = [];
-
-    for (const registration of registry.value.values()) {
-      if (registration.sidebarItem.isCustom) {
-        custom.push(registration.sidebarItem);
-      } else {
-        builtIn.push(registration.sidebarItem);
-      }
-    }
-
-    return [...builtIn, ...custom];
   }
 
   function getDefinition(
@@ -145,7 +113,6 @@ export function useBlockRegistry(): UseBlockRegistryReturn {
     registerCustom,
     getComponent,
     createBlock: createBlockFromType,
-    getSidebarItems,
     getDefinition,
     renderCustomBlock: renderCustomBlockHtml,
     isRegistered,

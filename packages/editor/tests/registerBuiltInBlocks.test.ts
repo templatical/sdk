@@ -39,7 +39,6 @@ describe('registerBuiltInBlocks', () => {
     for (const type of ALL_BLOCK_TYPES) {
       expect(registry.isRegistered(type)).toBe(true);
     }
-    expect(registry.getSidebarItems()).toHaveLength(13);
   });
 
   it('each registered block creates a block of the correct type', () => {
@@ -64,24 +63,6 @@ describe('registerBuiltInBlocks', () => {
     }
   });
 
-  it('all sidebar items are marked as isCustom: false', () => {
-    const registry = useBlockRegistry();
-    registerBuiltInBlocks(registry, makeFullComponentMap());
-
-    for (const item of registry.getSidebarItems()) {
-      expect(item.isCustom).toBe(false);
-    }
-  });
-
-  it('each sidebar item has a non-empty label', () => {
-    const registry = useBlockRegistry();
-    registerBuiltInBlocks(registry, makeFullComponentMap());
-
-    for (const item of registry.getSidebarItems()) {
-      expect(item.label.length).toBeGreaterThan(0);
-    }
-  });
-
   it('skips block types that have no matching component in the map', () => {
     const registry = useBlockRegistry();
     const partialMap: Record<string, any> = {
@@ -98,14 +79,12 @@ describe('registerBuiltInBlocks', () => {
     expect(registry.isRegistered('section')).toBe(false);
     expect(registry.isRegistered('paragraph')).toBe(false);
     expect(registry.isRegistered('divider')).toBe(false);
-    expect(registry.getSidebarItems()).toHaveLength(3);
   });
 
   it('registers nothing when given an empty component map', () => {
     const registry = useBlockRegistry();
     registerBuiltInBlocks(registry, {});
 
-    expect(registry.getSidebarItems()).toHaveLength(0);
     for (const type of ALL_BLOCK_TYPES) {
       expect(registry.isRegistered(type)).toBe(false);
     }
@@ -122,7 +101,6 @@ describe('registerBuiltInBlocks', () => {
       expect(ALL_BLOCK_TYPES).toContain(call[0]);
       expect(call[1]).toHaveProperty('component');
       expect(call[1]).toHaveProperty('createBlock');
-      expect(call[1]).toHaveProperty('sidebarItem');
     }
   });
 });

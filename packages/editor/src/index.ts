@@ -78,6 +78,28 @@ export interface TemplaticalEditorConfig {
   mergeTags?: MergeTagsConfig;
   displayConditions?: DisplayConditionsConfig;
   customBlocks?: CustomBlockDefinition[];
+
+  /**
+   * Allowlist + order for the block palette. When set, only the listed block
+   * types appear in the sidebar palette, in exactly this order — unlisted
+   * built-ins (e.g. `video`, `table`) are hidden. When omitted, the full
+   * default palette is shown.
+   *
+   * Reference built-in blocks by their bare type (`'section'`, `'image'`, …)
+   * and custom blocks by their `custom:`-prefixed type (`'custom:qrcode'`),
+   * so they can be interleaved freely:
+   *
+   * ```ts
+   * paletteBlocks: ['section', 'title', 'image', 'custom:qrcode', 'button']
+   * ```
+   *
+   * Unknown entries — a typo, an unregistered custom block, or `countdown`
+   * outside a Cloud plan — are logged with a warning and skipped. Filtering
+   * the palette never affects rendering: existing content using a hidden
+   * block type still renders correctly.
+   */
+  paletteBlocks?: string[];
+
   fonts?: FontsConfig;
 
   blockDefaults?: BlockDefaults;
@@ -92,6 +114,23 @@ export interface TemplaticalEditorConfig {
    * Set to `false` to hide the footer (no attribution required by the license).
    */
   branding?: boolean;
+
+  /**
+   * Show a "use a larger screen" notice instead of the editor chrome on
+   * viewports narrower than ~768px. Defaults to `true`.
+   *
+   * The drag-and-drop editor is a desktop-class tool — the block palette,
+   * canvas, and properties panel can't lay out usably on a phone, and touch
+   * dragging is impractical. Rather than render a broken, cramped layout, the
+   * editor shows a clear message below the breakpoint.
+   *
+   * Set to `false` if you handle small screens yourself (e.g. you embed the
+   * editor in a deliberately narrow desktop pane). The check is viewport-based,
+   * so it targets actual small devices, not narrow containers on a wide screen.
+   *
+   * @default true
+   */
+  smallScreenNotice?: boolean;
 
   /**
    * Template linter (`@templatical/quality`) configuration. Runs every

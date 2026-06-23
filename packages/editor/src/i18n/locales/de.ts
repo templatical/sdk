@@ -617,6 +617,12 @@ const de: typeof en = {
     badgeWarning: "Hat Warnungen",
     issueCountTooltip: "{count} Problem(e)",
   },
+
+  smallScreen: {
+    title: "Größerer Bildschirm erforderlich",
+    message:
+      "Der Editor benötigt mehr Platz, als dieser Bildschirm bietet. Öffnen Sie ihn auf einem Tablet oder Desktop, um mit der Bearbeitung zu beginnen.",
+  },
 };
 
 export default de;

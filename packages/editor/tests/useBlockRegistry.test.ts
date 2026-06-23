@@ -29,7 +29,6 @@ describe('useBlockRegistry', () => {
       registry.registerBuiltIn('text', {
         component: DummyComponent,
         createBlock: () => createMockBlock('text'),
-        sidebarItem: { type: 'text', label: 'Text', isCustom: false },
       });
 
       expect(registry.isRegistered('text')).toBe(true);
@@ -43,14 +42,12 @@ describe('useBlockRegistry', () => {
         registry.registerBuiltIn(type, {
           component: DummyComponent,
           createBlock: () => createMockBlock(type),
-          sidebarItem: { type, label: type, isCustom: false },
         });
       }
 
       for (const type of types) {
         expect(registry.isRegistered(type)).toBe(true);
       }
-      expect(registry.getSidebarItems()).toHaveLength(types.length);
     });
 
     it('getComponent returns the registered component', () => {
@@ -59,7 +56,6 @@ describe('useBlockRegistry', () => {
       registry.registerBuiltIn('image', {
         component: DummyComponent,
         createBlock: () => createMockBlock('image'),
-        sidebarItem: { type: 'image', label: 'Image', isCustom: false },
       });
 
       const component = registry.getComponent(createMockBlock('image'));
@@ -72,7 +68,6 @@ describe('useBlockRegistry', () => {
       registry.registerBuiltIn('text', {
         component: DummyComponent,
         createBlock: () => createMockBlock('text', 'new-id'),
-        sidebarItem: { type: 'text', label: 'Text', isCustom: false },
       });
 
       const block = registry.createBlock('text');
@@ -112,30 +107,8 @@ describe('useBlockRegistry', () => {
       const retrieved = registry.getDefinition('hero');
       expect(retrieved).toBe(def);
     });
-  });
 
-  describe('getSidebarItems', () => {
-    it('returns built-in before custom items', () => {
-      const registry = useBlockRegistry();
-
-      registry.registerBuiltIn('text', {
-        component: DummyComponent,
-        createBlock: () => createMockBlock('text'),
-        sidebarItem: { type: 'text', label: 'Text', isCustom: false },
-      });
-
-      registry.registerCustom(
-        createCustomBlockDef('hero', 'Hero'),
-        DummyComponent,
-      );
-
-      const items = registry.getSidebarItems();
-      expect(items).toHaveLength(2);
-      expect(items[0].isCustom).toBe(false);
-      expect(items[1].isCustom).toBe(true);
-    });
-
-    it('custom sidebar items have correct metadata', () => {
+    it('getDefinition preserves name, icon, and description metadata', () => {
       const registry = useBlockRegistry();
       const def = createCustomBlockDef('hero', 'Hero Banner');
       def.icon = '🎯';
@@ -143,13 +116,11 @@ describe('useBlockRegistry', () => {
 
       registry.registerCustom(def, DummyComponent);
 
-      const items = registry.getSidebarItems();
-      const heroItem = items.find((i) => i.type === 'custom:hero');
-      expect(heroItem).not.toBeUndefined();
-      expect(heroItem!.label).toBe('Hero Banner');
-      expect(heroItem!.isCustom).toBe(true);
-      expect(heroItem!.icon).toBe('🎯');
-      expect(heroItem!.description).toBe('A hero banner');
+      const retrieved = registry.getDefinition('hero');
+      expect(retrieved).not.toBeUndefined();
+      expect(retrieved!.name).toBe('Hero Banner');
+      expect(retrieved!.icon).toBe('🎯');
+      expect(retrieved!.description).toBe('A hero banner');
     });
   });
 
@@ -266,45 +237,6 @@ describe('useBlockRegistry', () => {
     });
   });
 
-  describe('getSidebarItems (additional)', () => {
-    it('returns empty array when nothing registered', () => {
-      const registry = useBlockRegistry();
-      const items = registry.getSidebarItems();
-      expect(items).toEqual([]);
-    });
-
-    it('returns only built-in items when no custom blocks', () => {
-      const registry = useBlockRegistry();
-
-      registry.registerBuiltIn('text', {
-        component: DummyComponent,
-        createBlock: () => createMockBlock('text'),
-        sidebarItem: { type: 'text', label: 'Text', isCustom: false },
-      });
-
-      registry.registerBuiltIn('image', {
-        component: DummyComponent,
-        createBlock: () => createMockBlock('image'),
-        sidebarItem: { type: 'image', label: 'Image', isCustom: false },
-      });
-
-      const items = registry.getSidebarItems();
-      expect(items).toHaveLength(2);
-      expect(items.every((i) => !i.isCustom)).toBe(true);
-    });
-
-    it('returns only custom items when no built-in blocks', () => {
-      const registry = useBlockRegistry();
-
-      registry.registerCustom(createCustomBlockDef('hero', 'Hero'), DummyComponent);
-      registry.registerCustom(createCustomBlockDef('cta', 'CTA'), DummyComponent);
-
-      const items = registry.getSidebarItems();
-      expect(items).toHaveLength(2);
-      expect(items.every((i) => i.isCustom)).toBe(true);
-    });
-  });
-
   describe('overwriting registrations', () => {
     it('overwrites existing built-in registration', () => {
       const registry = useBlockRegistry();
@@ -314,20 +246,15 @@ describe('useBlockRegistry', () => {
       registry.registerBuiltIn('text', {
         component: DummyComponent,
         createBlock: () => createMockBlock('text'),
-        sidebarItem: { type: 'text', label: 'Text', isCustom: false },
       });
 
       registry.registerBuiltIn('text', {
         component: OtherComponent,
         createBlock: () => createMockBlock('text'),
-        sidebarItem: { type: 'text', label: 'Rich Text', isCustom: false },
       });
 
       expect(registry.isRegistered('text')).toBe(true);
       expect(registry.getComponent(createMockBlock('text'))).toBe(OtherComponent);
-      const items = registry.getSidebarItems();
-      expect(items).toHaveLength(1);
-      expect(items[0].label).toBe('Rich Text');
     });
 
     it('overwrites existing custom registration', () => {
@@ -355,7 +282,6 @@ describe('useBlockRegistry', () => {
       registry.registerBuiltIn('text', {
         component: DummyComponent,
         createBlock: () => createMockBlock('text'),
-        sidebarItem: { type: 'text', label: 'Text', isCustom: false },
       });
 
       // getDefinition looks up "custom:text" which is not registered

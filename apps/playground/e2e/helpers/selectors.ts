@@ -37,6 +37,9 @@ export const SELECTORS = {
   // Sidebar
   sidebarRail: ".tpl-sidebar-rail",
 
+  // Small-screen gate (#235)
+  smallScreenNotice: '[data-testid="small-screen-notice"]',
+
   // Right sidebar
   rightSidebar: ".tpl-right-sidebar",
   rightTabContent: "#tpl-tab-content",
@@ -104,8 +107,7 @@ export const SELECTORS = {
   playgroundMergeTagModal: '[data-testid="playground-merge-tag-modal"]',
 
   // Config modal toggles (playground)
-  configEnableOnRequestMergeTag:
-    '[data-testid="enable-on-request-merge-tag"]',
+  configEnableOnRequestMergeTag: '[data-testid="enable-on-request-merge-tag"]',
   configApply: '[data-testid="config-apply"]',
 
   // Modals

@@ -4,13 +4,16 @@ import { useCloudI18n } from "../composables/useCloudI18n";
 import type { Block, BlockType } from "@templatical/types";
 import { createBlock, createCustomBlock } from "@templatical/types";
 import { Package } from "@lucide/vue";
-import { computed, inject, ref } from "vue";
+import { computed, inject, ref, watch } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
 import CustomBlockIcon from "./CustomBlockIcon.vue";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
 import { getBlockTypeLabel } from "../utils/blockTypeLabels";
+import { resolvePaletteBlocks } from "../utils/resolvePaletteBlocks";
+import { logger } from "../utils/logger";
 import {
   CUSTOM_BLOCK_DEFINITIONS_KEY,
+  PALETTE_BLOCKS_KEY,
   BLOCK_DEFAULTS_KEY,
   CAPABILITIES_KEY,
   EDITOR_KEY,
@@ -26,6 +29,7 @@ interface BlockTypeItem {
 const { t, format } = useI18n();
 const { t: cloudT } = useCloudI18n();
 const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
+const paletteBlocks = inject(PALETTE_BLOCKS_KEY, undefined);
 const blockDefaults = inject(BLOCK_DEFAULTS_KEY, undefined);
 const editor = inject(EDITOR_KEY, null);
 
@@ -103,10 +107,38 @@ const customBlockItems = computed<BlockTypeItem[]>(() => {
   }));
 });
 
-const blockTypes = computed<BlockTypeItem[]>(() => [
+const candidateBlockTypes = computed<BlockTypeItem[]>(() => [
   ...builtInBlockTypes.value,
   ...customBlockItems.value,
 ]);
+
+// Apply the consumer's `paletteBlocks` allowlist + order when provided; otherwise show
+// the full default palette. Filtering only affects the palette — the block
+// registry stays complete, so existing content using a hidden type still renders.
+const resolvedPalette = computed(() =>
+  resolvePaletteBlocks(candidateBlockTypes.value, paletteBlocks),
+);
+
+const blockTypes = computed<BlockTypeItem[]>(() => resolvedPalette.value.items);
+
+// Warn once per unknown `paletteBlocks` entry (a typo, an unregistered custom block, or
+// `countdown` outside a Cloud plan). Done in a watcher rather than inside the
+// computed so recomputes don't repeat the warning.
+const warnedPaletteEntries = new Set<string>();
+watch(
+  () => resolvedPalette.value.unknown,
+  (unknown) => {
+    for (const entry of unknown) {
+      if (warnedPaletteEntries.has(entry)) continue;
+      warnedPaletteEntries.add(entry);
+      logger.warn(
+        `config.paletteBlocks: "${entry}" is not a built-in or registered custom block ` +
+          `(use the "custom:" prefix for custom blocks) — skipping it in the palette.`,
+      );
+    }
+  },
+  { immediate: true },
+);
 
 function createBlockFromItem(item: BlockTypeItem): Block {
   if (item.isCustom) {
@@ -140,7 +172,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
 <template>
   <aside
     :aria-label="t.sidebarNav.palette"
-    class="tpl-sidebar-rail tpl:absolute tpl:top-14 tpl:bottom-0 tpl:left-0 tpl:z-40 tpl:overflow-hidden"
+    class="tpl-sidebar-rail tpl:absolute tpl:top-14 tpl:bottom-0 tpl:left-0 tpl:z-40 tpl:flex tpl:flex-col tpl:overflow-hidden"
     :style="{
       width: isExpanded ? '200px' : '48px',
       backgroundColor: 'var(--tpl-bg-elevated)',
@@ -183,6 +215,11 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
         </span>
       </button>
     </div>
+    <!-- The palette is the rail's scroll region: `flex-1` makes it fill the
+         height left by the (optional) modules trigger, `min-h-0` lets it
+         shrink below its content so `overflow-y-auto` engages. Without this
+         the rail's `overflow-hidden` clips items below the fold on short
+         viewports with no way to reach them (#231). -->
     <VueDraggable
       :model-value="blockTypes"
       :group="{ name: 'blocks', pull: 'clone', put: false }"
@@ -191,7 +228,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
       :animation="150"
       ghost-class="tpl-ghost"
       :force-fallback="true"
-      class="tpl:flex tpl:flex-col tpl:gap-0.5 tpl:p-1"
+      class="tpl:flex tpl:min-h-0 tpl:flex-1 tpl:flex-col tpl:gap-0.5 tpl:overflow-y-auto tpl:p-1"
       @choose="handleDragChoose"
       @end="handleDragEnd"
     >
@@ -203,7 +240,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
         :aria-label="
           format(t.sidebarNav.insertBlock, { block: blockType.label })
         "
-        class="tpl:flex tpl:h-10 tpl:w-full tpl:cursor-grab tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)] active:tpl:cursor-grabbing"
+        class="tpl:flex tpl:h-10 tpl:w-full tpl:shrink-0 tpl:cursor-grab tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)] active:tpl:cursor-grabbing"
         :style="{
           justifyContent: isExpanded ? 'flex-start' : 'center',
         }"

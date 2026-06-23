@@ -5,6 +5,7 @@ import { mountEditor } from './helpers/mount';
 import {
   EDITOR_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
+  PALETTE_BLOCKS_KEY,
   CAPABILITIES_KEY,
   CLOUD_TRANSLATIONS_KEY,
 } from '../src/keys';
@@ -52,6 +53,36 @@ describe('Sidebar', () => {
       'spacer',
       'html',
     ]);
+  });
+
+  it('palette list is a scroll region so tall block lists stay reachable on short viewports (#231)', () => {
+    // The rail is `overflow-hidden` and anchored top-14..bottom-0, so it has
+    // a bounded height. Without an inner scroll region the block-type list is
+    // clipped on short viewports and the bottom items become unreachable
+    // (issue #231). The palette must therefore scroll vertically while the
+    // rail stays a flex column (so the list fills the space the modules
+    // trigger leaves and the trigger stays pinned).
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+
+    const rail = wrapper.get('aside.tpl-sidebar-rail');
+    expect(rail.classes()).toContain('tpl:flex');
+    expect(rail.classes()).toContain('tpl:flex-col');
+
+    // The VueDraggable root wraps the palette buttons (v-for in its slot),
+    // so a button's parent is the list container that must scroll.
+    const list = wrapper.get('button[data-palette-type]').element
+      .parentElement as HTMLElement;
+    expect(list.className).toContain('tpl:overflow-y-auto');
+    expect(list.className).toContain('tpl:flex-1');
+    expect(list.className).toContain('tpl:min-h-0');
+
+    // Each palette button must keep its fixed height: in the flex column a
+    // shrinkable button would be compressed to fit the bounded list instead
+    // of overflowing it, so `overflow-y-auto` would never engage.
+    expect(wrapper.get('button[data-palette-type]').classes()).toContain(
+      'tpl:shrink-0',
+    );
   });
 
   it('includes countdown when plan capability is provided (cloud mode)', () => {
@@ -200,5 +231,104 @@ describe('Sidebar', () => {
     expect(
       wrapper.find('button[aria-label="sidebarNav.browseModules"]').exists(),
     ).toBe(false);
+  });
+});
+
+describe('Sidebar — blocks (palette allowlist + order)', () => {
+  function paletteTypes(wrapper: ReturnType<typeof mountSidebar>): (string | undefined)[] {
+    return wrapper
+      .findAll('button[data-palette-type]')
+      .map((b) => b.attributes('data-palette-type'));
+  }
+
+  it('restricts the palette to the listed types, in the given order', () => {
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({
+      [EDITOR_KEY]: editor,
+      [PALETTE_BLOCKS_KEY]: ['button', 'section', 'image'],
+    });
+    expect(paletteTypes(wrapper)).toEqual(['button', 'section', 'image']);
+  });
+
+  it('treats an empty blocks array as the full default palette', () => {
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({
+      [EDITOR_KEY]: editor,
+      [PALETTE_BLOCKS_KEY]: [],
+    });
+    expect(paletteTypes(wrapper)).toEqual([
+      'section',
+      'image',
+      'title',
+      'paragraph',
+      'button',
+      'divider',
+      'video',
+      'social',
+      'menu',
+      'table',
+      'spacer',
+      'html',
+    ]);
+  });
+
+  it('interleaves a custom block among built-ins via the custom: prefix', () => {
+    const { editor } = makeEditor();
+    const customDef = {
+      type: 'qrcode',
+      name: 'QR Code',
+      icon: 'QrCode',
+      fields: [],
+      template: '',
+    } as any;
+    const wrapper = mountSidebar({
+      [EDITOR_KEY]: editor,
+      [CUSTOM_BLOCK_DEFINITIONS_KEY]: [customDef],
+      [PALETTE_BLOCKS_KEY]: ['section', 'custom:qrcode', 'button'],
+    });
+    expect(paletteTypes(wrapper)).toEqual(['section', 'custom:qrcode', 'button']);
+  });
+
+  it('warns once and skips an unknown blocks entry', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({
+      [EDITOR_KEY]: editor,
+      [PALETTE_BLOCKS_KEY]: ['section', 'nope', 'image'],
+    });
+
+    expect(paletteTypes(wrapper)).toEqual(['section', 'image']);
+
+    const nopeWarns = warnSpy.mock.calls.filter((c) =>
+      String(c[1]).includes('"nope"'),
+    );
+    expect(nopeWarns).toHaveLength(1);
+    expect(nopeWarns[0][0]).toBe('[Templatical]');
+    warnSpy.mockRestore();
+  });
+
+  it('skips and warns countdown when listed without a plan capability', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({
+      [EDITOR_KEY]: editor,
+      [PALETTE_BLOCKS_KEY]: ['section', 'countdown'],
+    });
+
+    expect(paletteTypes(wrapper)).toEqual(['section']);
+    expect(
+      warnSpy.mock.calls.some((c) => String(c[1]).includes('"countdown"')),
+    ).toBe(true);
+    warnSpy.mockRestore();
+  });
+
+  it('includes countdown when listed and the plan capability is present', () => {
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({
+      [EDITOR_KEY]: editor,
+      [CAPABILITIES_KEY]: { plan: { hasFeature: () => true } } as any,
+      [PALETTE_BLOCKS_KEY]: ['section', 'countdown'],
+    });
+    expect(paletteTypes(wrapper)).toEqual(['section', 'countdown']);
   });
 });
