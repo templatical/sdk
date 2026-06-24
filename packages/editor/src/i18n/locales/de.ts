@@ -174,6 +174,7 @@ const de: typeof en = {
     altTextPlaceholder: "Bildbeschreibung",
     width: "Breite",
     fullWidth: "Volle Breite",
+    widthCustom: "Benutzerdefiniert",
     linkUrl: "Link-URL",
     openInNewTab: "In neuem Tab öffnen",
     placeholderUrl: "Platzhalterbild",

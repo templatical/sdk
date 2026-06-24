@@ -169,6 +169,7 @@ export default {
     altTextPlaceholder: "Image description",
     width: "Width",
     fullWidth: "Full Width",
+    widthCustom: "Custom",
     linkUrl: "Link URL",
     openInNewTab: "Open in new tab",
     placeholderUrl: "Placeholder Image",

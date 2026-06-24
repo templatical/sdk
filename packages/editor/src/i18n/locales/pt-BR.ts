@@ -171,6 +171,7 @@ const ptBR: typeof en = {
     altTextPlaceholder: "Descrição da imagem",
     width: "Largura",
     fullWidth: "Largura Total",
+    widthCustom: "Personalizada",
     linkUrl: "URL do Link",
     openInNewTab: "Abrir em nova aba",
     placeholderUrl: "Imagem de Espaço Reservado",
