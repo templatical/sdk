@@ -100,6 +100,18 @@ describe('renderBlock', () => {
     expect(result).toContain('color="#fff"');
   });
 
+  it('renders a full-width button as width="100%"', () => {
+    const block = createButtonBlock({ text: 'Click Me', width: 'full' });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('width="100%"');
+  });
+
+  it('renders a fixed-width button in px', () => {
+    const block = createButtonBlock({ text: 'Click Me', width: 240 });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('width="240px"');
+  });
+
   it('renders divider block', () => {
     const block = createDividerBlock({ color: '#ccc', thickness: 2, lineStyle: 'dashed' });
     const result = renderBlock(block, ctx);

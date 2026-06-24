@@ -8,6 +8,7 @@ import {
   createSpacerBlock,
   createParagraphBlock,
   createHtmlBlock,
+  createButtonBlock,
   createDefaultTemplateContent,
 } from "@templatical/types";
 import type { TemplateContent } from "@templatical/types";
@@ -268,6 +269,14 @@ describe("button with openInNewTab=true emits rel=noopener", () => {
     expect(anchorMatch).not.toBeNull();
     expect(anchorMatch![0]).toMatch(/target="_blank"/);
     expect(anchorMatch![0]).toMatch(/rel="[^"]*noopener/);
+  });
+});
+
+describe("button width reaches compiled HTML", () => {
+  it("width='full' should stretch the button to 100% in HTML", async () => {
+    const block = createButtonBlock({ text: "Click", width: "full" });
+    const html = await compile(wrapBlock(renderBlock(block, ctx)));
+    expect(html).toMatch(/width:\s*100%/);
   });
 });
 

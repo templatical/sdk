@@ -221,6 +221,10 @@ const de: typeof en = {
     textColor: "Textfarbe",
     borderRadius: "Eckenradius",
     fontSize: "Schriftgröße",
+    width: "Breite",
+    widthAuto: "An Inhalt anpassen",
+    fullWidth: "Volle Breite",
+    widthCustom: "Benutzerdefiniert",
   },
 
   // Toolbar - Divider

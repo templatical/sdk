@@ -25,6 +25,14 @@ const buttonStyle = computed(() => {
   if (props.block.fontFamily) {
     style.fontFamily = props.block.fontFamily;
   }
+  if (props.block.width === "full") {
+    style.display = "block";
+    style.width = "100%";
+    style.boxSizing = "border-box";
+  } else if (typeof props.block.width === "number") {
+    style.width = `${props.block.width}px`;
+    style.boxSizing = "border-box";
+  }
   return style;
 });
 </script>

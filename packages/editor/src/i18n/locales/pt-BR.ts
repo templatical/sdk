@@ -218,6 +218,10 @@ const ptBR: typeof en = {
     textColor: "Cor do Texto",
     borderRadius: "Arredondamento das Bordas",
     fontSize: "Tamanho da Fonte",
+    width: "Largura",
+    widthAuto: "Ajustar ao conteúdo",
+    fullWidth: "Largura Total",
+    widthCustom: "Personalizada",
   },
 
   // Toolbar - Divider

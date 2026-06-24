@@ -83,6 +83,7 @@ export interface ButtonBlock extends BaseBlock {
   fontSize: number;
   buttonPadding: SpacingValue;
   fontFamily?: string;
+  width?: number | "full";
 }
 
 export interface DividerBlock extends BaseBlock {

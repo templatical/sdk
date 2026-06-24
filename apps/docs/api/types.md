@@ -168,6 +168,7 @@ interface ButtonBlock extends BaseBlock {
   buttonPadding: SpacingValue;
   fontFamily?: string;
   openInNewTab?: boolean;
+  width?: number | 'full';
 }
 ```
 
