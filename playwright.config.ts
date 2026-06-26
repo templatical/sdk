@@ -35,7 +35,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `pnpm --filter '@templatical/playground' run dev --port ${E2E_PORT} --strictPort`,
+    command: `pnpm --filter @templatical/playground run dev --port ${E2E_PORT} --strictPort`,
     url: `http://localhost:${E2E_PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
