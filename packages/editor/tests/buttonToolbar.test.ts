@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createButtonBlock } from "@templatical/types";
 import type { ButtonBlock } from "@templatical/types";
 import ButtonToolbar from "../src/components/toolbar/ButtonToolbar.vue";
+import ColorPicker from "../src/components/ColorPicker.vue";
 import { mountEditor } from "./helpers/mount";
 
 function mountIt(block: ButtonBlock) {
@@ -73,5 +74,24 @@ describe("ButtonToolbar width control", () => {
     await input.setValue("-5"); // negative
 
     expect(wrapper.emitted("update")).toBeUndefined();
+  });
+});
+
+describe("ButtonToolbar color layout", () => {
+  it("stacks Background and Text Color vertically rather than in a 2-col grid", () => {
+    // Each ColorPicker is a 40px swatch + a hex input; half the sidebar width
+    // can't fit both, so a grid-cols-2 wrapper clips the hex field. The two
+    // color fields must be full-width siblings with no grid-cols-2 ancestor.
+    const wrapper = mountIt(createButtonBlock());
+    const pickers = wrapper.findAllComponents(ColorPicker);
+    expect(pickers).toHaveLength(2);
+
+    for (const picker of pickers) {
+      let el: HTMLElement | null = picker.element as HTMLElement;
+      while (el && el !== document.body) {
+        expect(el.className).not.toContain("grid-cols-2");
+        el = el.parentElement;
+      }
+    }
   });
 });

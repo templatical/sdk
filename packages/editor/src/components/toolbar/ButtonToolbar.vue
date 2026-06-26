@@ -119,21 +119,19 @@ function updateCustomWidth(raw: string): void {
       {{ t.button.openInNewTab }}
     </label>
   </div>
-  <div class="tpl:grid tpl:grid-cols-2 tpl:gap-3">
-    <div class="tpl:mb-3.5">
-      <label :class="labelClass">{{ t.button.background }}</label>
-      <ColorPicker
-        :model-value="block.backgroundColor"
-        @update:model-value="updateField('backgroundColor', $event)"
-      />
-    </div>
-    <div class="tpl:mb-3.5">
-      <label :class="labelClass">{{ t.button.textColor }}</label>
-      <ColorPicker
-        :model-value="block.textColor"
-        @update:model-value="updateField('textColor', $event)"
-      />
-    </div>
+  <div class="tpl:mb-3.5">
+    <label :class="labelClass">{{ t.button.background }}</label>
+    <ColorPicker
+      :model-value="block.backgroundColor"
+      @update:model-value="updateField('backgroundColor', $event)"
+    />
+  </div>
+  <div class="tpl:mb-3.5">
+    <label :class="labelClass">{{ t.button.textColor }}</label>
+    <ColorPicker
+      :model-value="block.textColor"
+      @update:model-value="updateField('textColor', $event)"
+    />
   </div>
   <div class="tpl:grid tpl:grid-cols-2 tpl:gap-3">
     <div class="tpl:mb-3.5">
