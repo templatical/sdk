@@ -32,6 +32,10 @@ export type {
 } from "./blocks";
 export { HEADING_LEVEL_FONT_SIZE } from "./blocks";
 
+// Social icon glyphs (shared by the editor's inline SVG + the renderer's PNG rasterizer)
+export type { SocialIconGlyph } from "./social";
+export { SOCIAL_ICON_GLYPHS } from "./social";
+
 // Type guards
 export {
   isButton,

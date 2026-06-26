@@ -260,6 +260,7 @@ const ptBR: typeof en = {
       tiktok: "TikTok",
       pinterest: "Pinterest",
       email: "E-mail",
+      website: "Site",
       whatsapp: "WhatsApp",
       telegram: "Telegram",
       discord: "Discord",
