@@ -217,6 +217,10 @@ export default {
     textColor: "Text Color",
     borderRadius: "Border Radius",
     fontSize: "Font Size",
+    width: "Width",
+    widthAuto: "Fit to content",
+    fullWidth: "Full Width",
+    widthCustom: "Custom",
   },
 
   // Toolbar - Divider

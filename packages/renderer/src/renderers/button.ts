@@ -33,6 +33,7 @@ export function renderButton(
     ? ' target="_blank" rel="noopener"'
     : "";
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
+  const widthAttr = renderWidthAttr(block.width);
   const visibilityAttr = getCssClassAttr(block);
 
   return `<mj-button${hrefAttr}${targetAttr}
@@ -42,7 +43,7 @@ export function renderButton(
   font-weight="bold"
   border-radius="${borderRadius}px"
   inner-padding="${buttonPadding}"
-  padding="${padding}"${bgColor}${fontFamilyAttr}${visibilityAttr}
+  padding="${padding}"${bgColor}${fontFamilyAttr}${widthAttr}${visibilityAttr}
 >${text}</mj-button>`;
 }
 
@@ -57,4 +58,14 @@ function renderFontFamilyAttr(
   const resolved = context.resolveFontFamily(fontFamily);
 
   return ` font-family="${resolved}"`;
+}
+
+function renderWidthAttr(width: number | "full" | undefined): string {
+  if (width === undefined) {
+    return "";
+  }
+
+  const value = width === "full" ? "100%" : `${width}px`;
+
+  return ` width="${value}"`;
 }

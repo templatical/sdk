@@ -78,6 +78,7 @@ A call-to-action button with customizable appearance.
 | `buttonPadding` | `SpacingValue` | Inner padding |
 | `fontFamily` | `string` | Font family override |
 | `openInNewTab` | `boolean` | Link target behavior |
+| `width` | `number \| 'full'` | Fixed width in px, or `'full'` for 100%. Omit to size to content. |
 
 ## Divider
 
