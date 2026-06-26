@@ -99,7 +99,7 @@ const mjml = await renderToMjml(content, {
 });
 ```
 
-The exact filenames the renderer expects are `{style}/{platform}.png` where `style` is one of `solid | outlined | rounded | square | circle` and `platform` is one of `facebook | twitter | instagram | linkedin | youtube | tiktok | pinterest | email | whatsapp | telegram | discord | snapchat | reddit | github | dribbble | behance`. The shipped 192×192 PNGs are a reasonable starting point if you want to mirror them.
+The exact filenames the renderer expects are `{style}/{platform}.png` where `style` is one of `solid | outlined | rounded | square | circle` and `platform` is one of `facebook | twitter | instagram | linkedin | youtube | tiktok | pinterest | email | whatsapp | telegram | discord | snapchat | reddit | github | dribbble | behance | website`. The shipped 192×192 PNGs are a reasonable starting point if you want to mirror them.
 
 The package also exports `DEFAULT_SOCIAL_ICONS_BASE_URL` if you want to compose URLs against the same default:
 
