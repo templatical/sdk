@@ -9,13 +9,13 @@ Placeholder marketing site for Templatical Cloud. Vite + Vue 3 SSG, deployed to 
 pnpm install
 
 # dev server
-pnpm run --filter '@templatical/cloud-site' dev
+pnpm run --filter @templatical/cloud-site dev
 ```
 
 ## Build
 
 ```bash
-pnpm run --filter '@templatical/cloud-site' build
+pnpm run --filter @templatical/cloud-site build
 ```
 
 Output: `apps/cloud-site/dist/`. Every route is prerendered to static HTML.
@@ -24,7 +24,7 @@ Output: `apps/cloud-site/dist/`. Every route is prerendered to static HTML.
 
 - Project: `templatical-cloud-site` (new Pages project)
 - Production branch: `main`
-- Build command: `pnpm install && pnpm run --filter '@templatical/cloud-site' build`
+- Build command: `pnpm install && pnpm run --filter @templatical/cloud-site build`
 - Build output: `apps/cloud-site/dist`
 - Root directory: _leave empty (monorepo root)_
 - Environment variable: `NODE_VERSION=20`

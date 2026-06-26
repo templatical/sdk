@@ -99,7 +99,7 @@ const mjml = await renderToMjml(content, {
 });
 ```
 
-Die exakten Dateinamen, die der Renderer erwartet, sind `{style}/{platform}.png`, wobei `style` einer von `solid | outlined | rounded | square | circle` und `platform` einer von `facebook | twitter | instagram | linkedin | youtube | tiktok | pinterest | email | whatsapp | telegram | discord | snapchat | reddit | github | dribbble | behance` ist. Die ausgelieferten 192×192-PNGs sind ein sinnvoller Ausgangspunkt, wenn Sie sie spiegeln möchten.
+Die exakten Dateinamen, die der Renderer erwartet, sind `{style}/{platform}.png`, wobei `style` einer von `solid | outlined | rounded | square | circle` und `platform` einer von `facebook | twitter | instagram | linkedin | youtube | tiktok | pinterest | email | whatsapp | telegram | discord | snapchat | reddit | github | dribbble | behance | website` ist. Die ausgelieferten 192×192-PNGs sind ein sinnvoller Ausgangspunkt, wenn Sie sie spiegeln möchten.
 
 Das Paket exportiert außerdem `DEFAULT_SOCIAL_ICONS_BASE_URL`, falls Sie URLs gegen denselben Standardwert komponieren möchten:
 

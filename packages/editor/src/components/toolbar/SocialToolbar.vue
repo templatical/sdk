@@ -10,10 +10,7 @@ import {
   removeItemBtnClass,
   addItemBtnClass,
 } from "../../constants/styleConstants";
-import {
-  socialIcons,
-  socialPlatformOptions,
-} from "../../constants/socialIcons";
+import { socialPlatformOptions } from "../../constants/socialIcons";
 import type {
   SocialIcon,
   SocialIconsBlock,
@@ -92,7 +89,7 @@ function removeSocialIcon(iconId: string): void {
               :key="platform"
               :value="platform"
             >
-              {{ socialIcons[platform].name }}
+              {{ t.social.platforms[platform] }}
             </option>
           </select>
           <button

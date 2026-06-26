@@ -121,7 +121,8 @@ export type SocialPlatform =
   | "reddit"
   | "github"
   | "dribbble"
-  | "behance";
+  | "behance"
+  | "website";
 
 export type SocialIconStyle =
   | "solid"

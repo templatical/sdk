@@ -2,7 +2,12 @@
 import MergeTagInput from "../MergeTagInput.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import { useI18n } from "../../composables/useI18n";
-import { inputClass, labelClass } from "../../constants/styleConstants";
+import {
+  inputClass,
+  inputGroupInputClass,
+  inputSuffixClass,
+  labelClass,
+} from "../../constants/styleConstants";
 import type { ImageBlock } from "@templatical/types";
 import { containsMergeTag, SYNTAX_PRESETS } from "@templatical/types";
 import { Image } from "@lucide/vue";
@@ -11,7 +16,7 @@ import { ON_REQUEST_MEDIA_KEY, MERGE_TAG_SYNTAX_KEY } from "../../keys";
 import { useAliveFlag } from "../../composables/useAliveFlag";
 import { useTimeoutFn } from "@vueuse/core";
 
-defineProps<{
+const props = defineProps<{
   block: ImageBlock;
 }>();
 
@@ -37,8 +42,39 @@ const { start: startPulseSrc } = useTimeoutFn(
   { immediate: false },
 );
 
+const WIDTH_PRESETS = [300, 400, 500];
+const DEFAULT_CUSTOM_WIDTH = 350;
+
+const widthMode = computed(() => {
+  const w = props.block.width;
+  if (w === "full") return "full";
+  if (WIDTH_PRESETS.includes(w)) return String(w);
+  return "custom";
+});
+
 function updateField(field: string, value: unknown): void {
   emit("update", { [field]: value } as Partial<ImageBlock>);
+}
+
+function updateWidthMode(value: string): void {
+  if (value === "custom") {
+    const w = props.block.width;
+    if (typeof w !== "number" || WIDTH_PRESETS.includes(w)) {
+      updateField("width", DEFAULT_CUSTOM_WIDTH);
+    }
+    return;
+  }
+  updateField("width", value === "full" ? "full" : Number(value));
+}
+
+function updateCustomWidth(raw: string): void {
+  // Guard against empty / NaN / non-positive input. An empty number field
+  // yields Number("") === 0, which would emit width: 0 and render an
+  // invisible image (#259). Ignore invalid values and keep the last valid
+  // width; the canvas still updates live on each valid keystroke.
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return;
+  updateField("width", n);
 }
 
 async function openMediaBrowser(): Promise<void> {
@@ -130,21 +166,30 @@ async function openMediaBrowser(): Promise<void> {
     <label :class="labelClass">{{ t.image.width }}</label>
     <select
       :class="inputClass"
-      :value="block.width"
-      @change="
-        updateField(
-          'width',
-          ($event.target as HTMLSelectElement).value === 'full'
-            ? 'full'
-            : Number(($event.target as HTMLSelectElement).value),
-        )
-      "
+      :value="widthMode"
+      @change="updateWidthMode(($event.target as HTMLSelectElement).value)"
     >
       <option value="full">{{ t.image.fullWidth }}</option>
       <option value="300">300px</option>
       <option value="400">400px</option>
       <option value="500">500px</option>
+      <option value="custom">{{ t.image.widthCustom }}</option>
     </select>
+    <div
+      v-if="widthMode === 'custom'"
+      class="tpl:mt-2 tpl:flex tpl:items-stretch"
+    >
+      <input
+        type="number"
+        :class="inputGroupInputClass"
+        :value="
+          typeof block.width === 'number' ? block.width : DEFAULT_CUSTOM_WIDTH
+        "
+        min="20"
+        @input="updateCustomWidth(($event.target as HTMLInputElement).value)"
+      />
+      <span :class="inputSuffixClass">px</span>
+    </div>
   </div>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.title.align }}</label>
