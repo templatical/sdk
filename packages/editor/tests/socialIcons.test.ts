@@ -20,8 +20,8 @@ describe('socialIcons', () => {
     }
   });
 
-  it('has 16 platforms', () => {
-    expect(socialPlatformOptions).toHaveLength(16);
+  it('has 17 platforms', () => {
+    expect(socialPlatformOptions).toHaveLength(17);
   });
 
   it('includes common platforms', () => {
@@ -30,6 +30,7 @@ describe('socialIcons', () => {
     expect(socialPlatformOptions).toContain('instagram');
     expect(socialPlatformOptions).toContain('linkedin');
     expect(socialPlatformOptions).toContain('email');
+    expect(socialPlatformOptions).toContain('website');
   });
 
   it('icon definitions have non-empty SVG paths', () => {
