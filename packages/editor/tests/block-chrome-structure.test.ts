@@ -116,6 +116,19 @@ describe("block chrome structure", () => {
     );
   });
 
+  it("no `.tpl-sidebar-rail .tpl-ghost` override exists (regression: #268 palette block vanished during drag)", () => {
+    // The sidebar palette Sortable no longer sets `ghost-class="tpl-ghost"`
+    // (see Sidebar.vue), so its `dragEl` keeps Sortable's default unstyled
+    // `sortable-ghost` and stays visible in the palette during drag.
+    //
+    // The old code applied `tpl-ghost` to the palette `dragEl` and then hid
+    // it with `.tpl-sidebar-rail .tpl-ghost { visibility: hidden }`, which
+    // made the source palette button disappear mid-drag (#268).
+    // Reintroducing ANY `.tpl-sidebar-rail .tpl-ghost` rule re-couples the
+    // palette to that styling, so guard against it.
+    expect(styles).not.toMatch(/\.tpl-sidebar-rail\s+\.tpl-ghost/);
+  });
+
   it("`.tpl-popover-root` uses a LITERAL z-index (not `var(--z-modal)`)", () => {
     // `@theme inline` emits `--z-modal` on `:root`, which is unreachable
     // from inside a shadow root. Reverting to `var(--z-modal)` drops the
@@ -231,18 +244,27 @@ describe("section drag + cycle defenses", () => {
     );
   });
 
-  it("all three Sortables wire `ghost-class` to the same `tpl-ghost` token", () => {
-    // The drop-insertion indicator CSS (`.tpl-ghost` thin dotted line +
-    // ::before "Drop here" badge in `styles/index.css`) is shared across
-    // every Sortable. If any Sortable uses a different ghostClass, its
-    // drop indicator silently disappears (default `sortable-ghost` has
-    // no editor-side styling). Also load-bearing for the
-    // `.tpl-sidebar-rail .tpl-ghost { visibility: hidden }` rule that
-    // hides the dragEl-with-ghost-class in the source list during drag
-    // — change the class name on the sidebar Sortable and that rule
-    // stops matching too.
+  it('canvas + section Sortables wire `ghost-class="tpl-ghost"`; the source-only palette does NOT', () => {
+    // Canvas + section-column Sortables share the `tpl-ghost`
+    // drop-insertion indicator (`.tpl-ghost` dotted line + ::before
+    // "Drop here" badge in `styles/index.css`). Diverging the class name
+    // BETWEEN canvas and section would break their shared indicator, so
+    // both must keep `tpl-ghost`.
+    //
+    // The sidebar palette is drag-source-only (`put: false`) and MUST NOT
+    // wire `ghost-class="tpl-ghost"`. At drag start Sortable applies the
+    // source ghostClass to `dragEl` — which, in the palette, IS the
+    // palette button itself — and the old `.tpl-sidebar-rail .tpl-ghost
+    // { visibility: hidden }` rule then hid that button mid-drag (#268).
+    // Leaving the palette on Sortable's default unstyled `sortable-ghost`
+    // keeps the button visible while dragging. The cross-list "Drop here"
+    // indicator is unaffected: Sortable's `_onDragOver` swaps in the
+    // TARGET list's ghostClass when `dragEl` is dragged over the
+    // canvas/section, so that indicator comes from their class, not the
+    // sidebar's.
     expect(canvas).toMatch(/ghost-class="tpl-ghost"/);
     expect(sectionBlock).toMatch(/ghost-class="tpl-ghost"/);
+    expect(sidebar).not.toMatch(/ghost-class=/);
   });
 });
 
