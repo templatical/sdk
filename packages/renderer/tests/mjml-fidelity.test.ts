@@ -85,9 +85,9 @@ describe("column widths sum to 100%", () => {
     const mjml = await renderToMjml(makeContent([section]));
 
     // The renderer-emitted MJML widths must sum to 100% (not 99.99%).
-    const widthMatches = [...mjml.matchAll(/<mj-column\s+width="([^"]+)"/g)].map(
-      (m) => m[1],
-    );
+    const widthMatches = [
+      ...mjml.matchAll(/<mj-column\s+width="([^"]+)"/g),
+    ].map((m) => m[1]);
     expect(widthMatches).toHaveLength(3);
 
     const numeric = widthMatches.map((w) => parseFloat(w.replace("%", "")));
@@ -105,9 +105,9 @@ describe("column widths sum to 100%", () => {
     } as Parameters<typeof createSectionBlock>[0]);
 
     const mjml = await renderToMjml(makeContent([section]));
-    const widthMatches = [...mjml.matchAll(/<mj-column\s+width="([^"]+)"/g)].map(
-      (m) => m[1],
-    );
+    const widthMatches = [
+      ...mjml.matchAll(/<mj-column\s+width="([^"]+)"/g),
+    ].map((m) => m[1]);
     const numeric = widthMatches.map((w) => parseFloat(w.replace("%", "")));
     const sum = numeric.reduce((a, b) => a + b, 0);
     expect(Math.round(sum * 100) / 100).toBe(100);
@@ -272,11 +272,34 @@ describe("button with openInNewTab=true emits rel=noopener", () => {
   });
 });
 
-describe("button width reaches compiled HTML", () => {
-  it("width='full' should stretch the button to 100% in HTML", async () => {
+describe("button width reaches the compiled button table", () => {
+  // MJML applies the mj-button `width` to the button's OWN <table> (the one
+  // with `border-collapse:separate`). The surrounding section/column tables
+  // always carry their own `width:100%`, so asserting `width:100%` anywhere
+  // in the HTML is a false positive — it passes even when the button width
+  // is dropped. Scope every assertion to the button table's style.
+  function buttonTableStyle(html: string): string {
+    return html.match(/border-collapse:separate;[^"]*/)?.[0] ?? "";
+  }
+
+  it("width='full' compiles to width:100% on the button table", async () => {
     const block = createButtonBlock({ text: "Click", width: "full" });
     const html = await compile(wrapBlock(renderBlock(block, ctx)));
-    expect(html).toMatch(/width:\s*100%/);
+    expect(buttonTableStyle(html)).toContain("width:100%");
+  });
+
+  it("a fixed px width compiles to that px width on the button table", async () => {
+    const block = createButtonBlock({ text: "Click", width: 240 });
+    const html = await compile(wrapBlock(renderBlock(block, ctx)));
+    expect(buttonTableStyle(html)).toContain("width:240px");
+  });
+
+  it("a button with no width emits no width on the button table (negative control)", async () => {
+    const block = createButtonBlock({ text: "Click" });
+    const html = await compile(wrapBlock(renderBlock(block, ctx)));
+    const style = buttonTableStyle(html);
+    expect(style).not.toBe(""); // sanity: the button table exists
+    expect(style).not.toMatch(/width:/);
   });
 });
 
@@ -307,7 +330,9 @@ describe("menu items with openInNewTab=true emit rel=noopener", () => {
     };
     const mjml = renderBlock(block as any, ctx);
     const html = await compile(wrapBlock(mjml));
-    const homeAnchor = html.match(/<a [^>]*href="https:\/\/example\.com"[^>]*>/);
+    const homeAnchor = html.match(
+      /<a [^>]*href="https:\/\/example\.com"[^>]*>/,
+    );
     expect(homeAnchor).not.toBeNull();
     expect(homeAnchor![0]).toMatch(/target="_blank"/);
     expect(homeAnchor![0]).toMatch(/rel="[^"]*noopener/);
@@ -417,7 +442,7 @@ describe("spacer ignores block.styles.padding (matches canvas)", () => {
 });
 
 describe("TipTap inline font-size overrides survive the global default", () => {
-  it("inline `style=\"font-size:24px\"` on a span inside paragraph content beats the 14px wrapper", async () => {
+  it('inline `style="font-size:24px"` on a span inside paragraph content beats the 14px wrapper', async () => {
     const block = createParagraphBlock({
       content: '<p>normal <span style="font-size:24px">BIG</span> normal</p>',
     } as Parameters<typeof createParagraphBlock>[0]);

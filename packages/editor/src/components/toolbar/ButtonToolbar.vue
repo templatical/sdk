@@ -50,6 +50,16 @@ function updateWidthMode(mode: string): void {
   }
   updateField("width", undefined);
 }
+
+function updateCustomWidth(raw: string): void {
+  // Guard against empty / NaN / non-positive input. An empty number field
+  // yields Number("") === 0, which would emit width: 0 and render a 0px
+  // button (#260). Ignore invalid values and keep the last valid width;
+  // the canvas still updates live on each valid keystroke.
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return;
+  updateField("width", n);
+}
 </script>
 
 <template>
@@ -187,12 +197,7 @@ function updateWidthMode(mode: string): void {
           typeof block.width === 'number' ? block.width : DEFAULT_CUSTOM_WIDTH
         "
         min="20"
-        @input="
-          updateField(
-            'width',
-            Number(($event.target as HTMLInputElement).value),
-          )
-        "
+        @input="updateCustomWidth(($event.target as HTMLInputElement).value)"
       />
       <span :class="inputSuffixClass">px</span>
     </div>
