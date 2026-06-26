@@ -118,7 +118,7 @@ A row of social media icons linking to platform profiles.
 | `spacing` | `number` | Space between icons in px |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
 
-16 platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, Email, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
+17 platforms are supported: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, Email, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble, and Behance.
 
 Each `SocialIcon` has:
 

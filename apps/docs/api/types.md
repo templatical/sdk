@@ -228,7 +228,8 @@ type SocialPlatform =
   | 'facebook' | 'twitter' | 'instagram' | 'linkedin'
   | 'youtube' | 'tiktok' | 'pinterest' | 'email'
   | 'whatsapp' | 'telegram' | 'discord' | 'snapchat'
-  | 'reddit' | 'github' | 'dribbble' | 'behance';
+  | 'reddit' | 'github' | 'dribbble' | 'behance'
+  | 'website';
 
 // 16 platforms total
 
