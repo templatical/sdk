@@ -226,7 +226,6 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
       :clone="createBlockFromItem"
       :sort="false"
       :animation="150"
-      ghost-class="tpl-ghost"
       :force-fallback="true"
       class="tpl:flex tpl:min-h-0 tpl:flex-1 tpl:flex-col tpl:gap-0.5 tpl:overflow-y-auto tpl:p-1"
       @choose="handleDragChoose"

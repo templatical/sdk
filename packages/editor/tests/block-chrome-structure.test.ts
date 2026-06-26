@@ -116,64 +116,17 @@ describe("block chrome structure", () => {
     );
   });
 
-  it("palette `.tpl-ghost` nullifies every paint property (no insertion-line, no 'Drop here')", () => {
-    // The shared `.tpl-ghost` rule styles drop-insertion indicators with
-    // a dashed border-top + a "Drop here" pseudo + a 12px vertical
-    // margin. In the SIDEBAR PALETTE context none of these are
-    // meaningful — the palette is drag-source-only (`put: false`) so
-    // there's never a real drop target there. But `_appendGhost` reads
-    // `dragEl`'s rect AFTER `tpl-ghost` is applied, so we can't `display:
-    // none` it (rect would be zero — that was the original bug). We
-    // null every paint property individually so the user sees nothing
-    // in the palette while the element stays in layout for rect capture.
+  it("no `.tpl-sidebar-rail .tpl-ghost` override exists (regression: #268 palette block vanished during drag)", () => {
+    // The sidebar palette Sortable no longer sets `ghost-class="tpl-ghost"`
+    // (see Sidebar.vue), so its `dragEl` keeps Sortable's default unstyled
+    // `sortable-ghost` and stays visible in the palette during drag.
     //
-    // Each property below was observed leaking through `visibility:
-    // hidden` in at least one combination, so they're belt-and-
-    // suspenders. Don't strip them.
-    const palette =
-      styles.match(/\.tpl-sidebar-rail\s+\.tpl-ghost\s*\{[^}]*\}/)?.[0] ?? "";
-    expect(palette).not.toBe("");
-    expect(palette).toMatch(/visibility:\s*hidden\s*!important/);
-    expect(palette).toMatch(/border-top:\s*none\s*!important/);
-    expect(palette).toMatch(/margin:\s*0\s*!important/);
-    expect(palette).not.toMatch(/display:\s*none/);
-
-    // The `::before` pseudo content (the "Drop here" badge) gets its
-    // own kill rule because `content: none` is the cleanest cross-
-    // browser way to disable a generated pseudo.
-    expect(styles).toMatch(
-      /\.tpl-sidebar-rail\s+\.tpl-ghost::before\s*\{[^}]*content:\s*none\s*!important/,
-    );
-  });
-
-  it("`.tpl-sidebar-rail .tpl-ghost` uses `visibility: hidden`, NOT `display: none`", () => {
-    // THIS RULE IS THE FIX FOR THE WORST DRAG REGRESSION WE HAD.
-    //
-    // Sortable.js `_dragStarted` (in fallback mode) applies the
-    // `ghostClass` (`tpl-ghost`) to `dragEl` BEFORE calling
-    // `_appendGhost`. `_appendGhost` then reads `dragEl`'s rect via
-    // `getBoundingClientRect()` to stamp the cursor-following ghost's
-    // initial `top` / `left` / `width` / `height`. If our CSS rule
-    // forces `dragEl` to `display: none` at that exact moment,
-    // `getBoundingClientRect()` returns ALL ZEROS — the ghost ends up
-    // at viewport `(0, 0)` with zero size, and the `transform`-based
-    // pointermove update translates it by `(cursor - tapEvt)` which
-    // lands it `tapEvt.x, tapEvt.y` away from the cursor. The
-    // misalignment grows linearly with the palette item's Y offset in
-    // the sidebar (~42px per index), which is the signature symptom.
-    //
-    // `visibility: hidden` keeps the element in layout — its rect stays
-    // valid — so the ghost is positioned correctly. Same for `opacity: 0`
-    // if anyone is tempted to switch.
-    //
-    // DO NOT REVERT TO `display: none`. This was a multi-hour
-    // debugging session.
-    expect(styles).toMatch(
-      /\.tpl-sidebar-rail\s+\.tpl-ghost\s*\{[^}]*visibility:\s*hidden\s*!important/,
-    );
-    expect(styles).not.toMatch(
-      /\.tpl-sidebar-rail\s+\.tpl-ghost\s*\{[^}]*display:\s*none/,
-    );
+    // The old code applied `tpl-ghost` to the palette `dragEl` and then hid
+    // it with `.tpl-sidebar-rail .tpl-ghost { visibility: hidden }`, which
+    // made the source palette button disappear mid-drag (#268).
+    // Reintroducing ANY `.tpl-sidebar-rail .tpl-ghost` rule re-couples the
+    // palette to that styling, so guard against it.
+    expect(styles).not.toMatch(/\.tpl-sidebar-rail\s+\.tpl-ghost/);
   });
 
   it("`.tpl-popover-root` uses a LITERAL z-index (not `var(--z-modal)`)", () => {
@@ -291,19 +244,27 @@ describe("section drag + cycle defenses", () => {
     );
   });
 
-  it("all three Sortables wire `ghost-class` to the same `tpl-ghost` token", () => {
-    // The drop-insertion indicator CSS (`.tpl-ghost` thin dotted line +
-    // ::before "Drop here" badge in `styles/index.css`) is shared across
-    // every Sortable. If any Sortable uses a different ghostClass, its
-    // drop indicator silently disappears (default `sortable-ghost` has
-    // no editor-side styling). Also load-bearing for the
-    // `.tpl-sidebar-rail .tpl-ghost { visibility: hidden }` rule that
-    // hides the dragEl-with-ghost-class in the source list during drag
-    // — change the class name on the sidebar Sortable and that rule
-    // stops matching too.
-    expect(sidebar).toMatch(/ghost-class="tpl-ghost"/);
+  it('canvas + section Sortables wire `ghost-class="tpl-ghost"`; the source-only palette does NOT', () => {
+    // Canvas + section-column Sortables share the `tpl-ghost`
+    // drop-insertion indicator (`.tpl-ghost` dotted line + ::before
+    // "Drop here" badge in `styles/index.css`). Diverging the class name
+    // BETWEEN canvas and section would break their shared indicator, so
+    // both must keep `tpl-ghost`.
+    //
+    // The sidebar palette is drag-source-only (`put: false`) and MUST NOT
+    // wire `ghost-class="tpl-ghost"`. At drag start Sortable applies the
+    // source ghostClass to `dragEl` — which, in the palette, IS the
+    // palette button itself — and the old `.tpl-sidebar-rail .tpl-ghost
+    // { visibility: hidden }` rule then hid that button mid-drag (#268).
+    // Leaving the palette on Sortable's default unstyled `sortable-ghost`
+    // keeps the button visible while dragging. The cross-list "Drop here"
+    // indicator is unaffected: Sortable's `_onDragOver` swaps in the
+    // TARGET list's ghostClass when `dragEl` is dragged over the
+    // canvas/section, so that indicator comes from their class, not the
+    // sidebar's.
     expect(canvas).toMatch(/ghost-class="tpl-ghost"/);
     expect(sectionBlock).toMatch(/ghost-class="tpl-ghost"/);
+    expect(sidebar).not.toMatch(/ghost-class=/);
   });
 });
 

@@ -517,52 +517,6 @@
     display: none !important;
 }
 
-/* The sidebar palette is drag-source-only (`put: false` + `sort: false`), so
-   the shared `.tpl-ghost` insertion-line styling (dashed border-top +
-   "Drop here" pseudo) is misleading there — suggests the sidebar accepts
-   drops when it cannot. Suppress every paint-related property of
-   `.tpl-ghost` inside the palette WHILE keeping it in layout.
-   IMPORTANT: must NOT use `display: none`. The `ghostClass` (`tpl-ghost`)
-   is applied to `dragEl` BEFORE Sortable's `_appendGhost` runs in
-   fallback mode. If this rule used `display: none`,
-   `getBoundingClientRect(dragEl)` inside `_appendGhost` would return all
-   zeros — the cursor-following fallback ghost ends up stamped with
-   `top: 0; left: 0; width: 0; height: 0` and visibly drifts away from
-   the cursor by the dragged palette item's Y position in the sidebar
-   (grows ~42px per item index). Keeping `display: flex` (inherited from
-   the base `.tpl-ghost` rule) means the element occupies layout space
-   and `getBoundingClientRect` returns a valid rect. The explicit
-   `border-top: none` + `margin: 0` + `content: none` overrides null out
-   every visible artifact so the user sees nothing in the palette during
-   drag — no "Drop here" text, no dashed insertion line, no awkward gap
-   from the 12px vertical margin in the base rule. */
-.tpl-sidebar-rail .tpl-ghost {
-    visibility: hidden !important;
-    /* `.tpl-ghost` sets `border: none !important; border-top: 2px dotted`
-       — we have to null `border-top` explicitly because the base rule's
-       `!important` longhand wins over a `border: none !important`
-       shorthand reset at the same specificity level. */
-    border-top: none !important;
-    /* The base rule's `margin: 12px 0 !important` would leave a 24px
-       gap in the palette where the dragged button used to be. Collapse
-       it so other palette buttons don't jump. */
-    margin: 0 !important;
-    /* Defensive null-outs in case `visibility: hidden` somehow leaks
-       (browser quirk, future Tailwind utility race, etc.). */
-    background-color: transparent !important;
-    box-shadow: none !important;
-}
-
-/* Kill the `.tpl-ghost::before { content: 'Drop here' }` pseudo in the
-   palette context. `visibility: hidden` on the parent *should* inherit
-   to the pseudo, but in practice the absolutely-positioned ::before can
-   still paint inside the collapsed palette button bounds. `content: none`
-   makes the pseudo not generate at all, which is unambiguous across
-   browsers. */
-.tpl-sidebar-rail .tpl-ghost::before {
-    content: none !important;
-}
-
 .tpl-dragging {
     @apply tpl:opacity-80;
     box-shadow: var(--tpl-shadow-xl);

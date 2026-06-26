@@ -27,6 +27,20 @@ describe('SocialToolbar CRUD', () => {
     expect((selects[1].element as HTMLSelectElement).value).toBe('twitter');
   });
 
+  it('labels platform options via i18n (t.social.platforms), not a hardcoded glyph name', () => {
+    const block = withIcons([{ id: 'a', platform: 'website', url: '' }]);
+    const wrapper = mountIt(block);
+
+    // Stub i18n echoes the dot-path, so the label resolving through
+    // t.social.platforms[platform] renders as "social.platforms.website".
+    // A regression to socialIcons[platform].name would render "Website".
+    const websiteOption = wrapper
+      .findAll('[data-testid="social-platform-select"] option')
+      .find((o) => (o.element as HTMLOptionElement).value === 'website');
+    expect(websiteOption).toBeTruthy();
+    expect(websiteOption!.text()).toBe('social.platforms.website');
+  });
+
   it('adding an icon emits update with appended facebook entry', async () => {
     const block = withIcons([]);
     const wrapper = mountIt(block);

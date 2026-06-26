@@ -264,6 +264,7 @@ const de: typeof en = {
       tiktok: "TikTok",
       pinterest: "Pinterest",
       email: "E-Mail",
+      website: "Website",
       whatsapp: "WhatsApp",
       telegram: "Telegram",
       discord: "Discord",

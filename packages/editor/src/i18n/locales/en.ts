@@ -259,6 +259,7 @@ export default {
       tiktok: "TikTok",
       pinterest: "Pinterest",
       email: "Email",
+      website: "Website",
       whatsapp: "WhatsApp",
       telegram: "Telegram",
       discord: "Discord",

@@ -6,22 +6,26 @@ import {
 } from '../src/constants/socialIcons';
 
 describe('socialIcons', () => {
-  it('has definitions for all platform options', () => {
+  it('has glyph definitions (color + path only) for all platform options', () => {
     for (const platform of socialPlatformOptions) {
-      expect(socialIcons[platform]).toEqual(
-        expect.objectContaining({
-          name: expect.any(String),
-          color: expect.stringMatching(/^#[0-9A-Fa-f]{6}$/),
-          path: expect.any(String),
-        }),
-      );
-      expect(socialIcons[platform].name.length).toBeGreaterThan(0);
+      // toEqual (not objectContaining) asserts the glyph is exactly
+      // { color, path } — no stray `name` leaked back in from the old shape.
+      expect(socialIcons[platform]).toEqual({
+        color: expect.stringMatching(/^#[0-9A-Fa-f]{6}$/),
+        path: expect.any(String),
+      });
       expect(socialIcons[platform].path.length).toBeGreaterThan(10);
     }
   });
 
-  it('has 16 platforms', () => {
-    expect(socialPlatformOptions).toHaveLength(16);
+  it('platform options and glyph keys are in lockstep', () => {
+    expect([...socialPlatformOptions].sort()).toEqual(
+      Object.keys(socialIcons).sort(),
+    );
+  });
+
+  it('has 17 platforms', () => {
+    expect(socialPlatformOptions).toHaveLength(17);
   });
 
   it('includes common platforms', () => {
@@ -30,6 +34,7 @@ describe('socialIcons', () => {
     expect(socialPlatformOptions).toContain('instagram');
     expect(socialPlatformOptions).toContain('linkedin');
     expect(socialPlatformOptions).toContain('email');
+    expect(socialPlatformOptions).toContain('website');
   });
 
   it('icon definitions have non-empty SVG paths', () => {
