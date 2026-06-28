@@ -3,7 +3,7 @@
   "dependencies": {
     "@vueuse/core": "^14.3.0",
     "liquidjs": "^10.27.1",
-    "vue": "^3.5.38",
+    "vue": "^3.5.39",
     "vue-advanced-cropper": "^2.8.9"
   },
   "devDependencies": {
@@ -18,7 +18,7 @@
     "@tiptap/extension-text-style": "^3.27.1",
     "@vitejs/plugin-vue": "^6.0.7",
     "@vitest/coverage-v8": "^4.1.9",
-    "@vue/reactivity": "^3.5.38",
+    "@vue/reactivity": "^3.5.39",
     "eslint": "^10.5.0",
     "eslint-plugin-vue": "^10.9.2",
     "husky": "^9.1.7",

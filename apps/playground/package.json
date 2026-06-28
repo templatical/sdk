@@ -22,7 +22,7 @@
     "codemirror": "^6.0.2",
     "focus-trap": "^8.2.2",
     "mjml-browser": "^5.3.0",
-    "vue": "^3.5.38"
+    "vue": "^3.5.39"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.1",
