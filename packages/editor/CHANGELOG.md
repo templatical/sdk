@@ -1,6 +1,6 @@
 # @templatical/editor
 
-## 1.0.0
+## 0.12.0
 
 ### Minor Changes
 
@@ -15,9 +15,9 @@
 - 9a1912f: Prevent palette block from disappearing during drag and drop
 - Updated dependencies [7b76e46]
 - Updated dependencies [67f44fb]
-  - @templatical/renderer@1.0.0
-  - @templatical/media-library@1.0.0
-  - @templatical/quality@1.0.0
+  - @templatical/renderer@0.12.0
+  - @templatical/media-library@0.12.0
+  - @templatical/quality@0.12.0
 
 ## 0.11.1
 
