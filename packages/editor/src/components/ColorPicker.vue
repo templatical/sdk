@@ -60,6 +60,11 @@ const isUnset = computed(() => !props.modelValue);
 // The color handed to the wheel: the stored value, or the seed when unset.
 const seed = computed(() => props.modelValue || props.seedColor);
 
+// The clear (×) lives inside the input, shown only when a value is set.
+const showClear = computed(
+  () => !props.swatchOnly && !props.disabled && !isUnset.value,
+);
+
 function onPickerChange(e: Event): void {
   pickerTouched.value = true;
   emit("update:modelValue", (e as CustomEvent).detail.value);
@@ -88,7 +93,7 @@ function clear(): void {
 <template>
   <div
     :class="[
-      'tpl:flex tpl:gap-2 tpl:relative',
+      'tpl:flex tpl:items-center tpl:gap-2 tpl:relative',
       disabled && 'tpl:opacity-60 tpl:cursor-not-allowed',
     ]"
   >
@@ -114,26 +119,28 @@ function clear(): void {
         :style="isUnset ? undefined : { backgroundColor: modelValue }"
       />
     </button>
-    <input
-      v-if="!swatchOnly"
-      type="text"
-      :class="colorTextClass"
-      :value="modelValue"
-      :placeholder="placeholder || t.colorPicker.notSet"
-      :disabled="disabled"
-      :aria-label="t.colorPicker.hexValue"
-      @input="onTextInput"
-    />
-    <button
-      v-if="!swatchOnly && !disabled && !isUnset"
-      type="button"
-      :aria-label="t.colorPicker.clear"
-      :title="t.colorPicker.clear"
-      class="tpl:flex tpl:size-10 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-dim)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-bg-hover)] hover:tpl:text-[var(--tpl-text)]"
-      @click="clear"
-    >
-      <X :size="14" :stroke-width="1.5" />
-    </button>
+    <div v-if="!swatchOnly" class="tpl:relative tpl:flex-1">
+      <input
+        type="text"
+        :class="[colorTextClass, 'tpl:w-full']"
+        :style="showClear ? { paddingRight: '2.25rem' } : undefined"
+        :value="modelValue"
+        :placeholder="placeholder || t.colorPicker.notSet"
+        :disabled="disabled"
+        :aria-label="t.colorPicker.hexValue"
+        @input="onTextInput"
+      />
+      <button
+        v-if="showClear"
+        type="button"
+        :aria-label="t.colorPicker.clear"
+        :title="t.colorPicker.clear"
+        class="tpl:absolute tpl:right-2 tpl:top-1/2 tpl:flex tpl:size-6 tpl:-translate-y-1/2 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:text-[var(--tpl-text-dim)] tpl:transition-colors tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-bg-hover)] hover:tpl:text-[var(--tpl-text)]"
+        @click="clear"
+      >
+        <X :size="14" :stroke-width="1.5" />
+      </button>
+    </div>
     <Transition
       enter-active-class="tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]"
       enter-from-class="tpl:opacity-0 tpl:scale-95 tpl:translate-y-1"
