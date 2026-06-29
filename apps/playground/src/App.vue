@@ -33,6 +33,9 @@ import {
   createDefaultTemplateContent,
   DEFAULT_BLOCK_DEFAULTS,
   DEFAULT_TEMPLATE_DEFAULTS,
+  SYNTAX_PRESETS,
+  isLogicMergeTagValue,
+  getLogicMergeTagKeyword,
 } from "@templatical/types";
 import {
   templates,
@@ -429,6 +432,39 @@ const mergeTagList = computed<MergeTag[]>(() => {
       group: tags.groups.system,
       description: tags.descriptions.currentDate,
     },
+    // Logic-tag entries: a value matching the syntax's logic pattern inserts a
+    // styled logic tag (uppercase keyword badge), not a data tag. Grouped under
+    // "Conditions" so the built-in picker surfaces them as a dedicated section.
+    {
+      label: tags.ifVip,
+      value: "{% if customer.vip %}",
+      group: tags.groups.conditions,
+      description: tags.descriptions.ifVip,
+    },
+    {
+      label: tags.elseBranch,
+      value: "{% else %}",
+      group: tags.groups.conditions,
+      description: tags.descriptions.elseBranch,
+    },
+    {
+      label: tags.endIf,
+      value: "{% endif %}",
+      group: tags.groups.conditions,
+      description: tags.descriptions.endIf,
+    },
+    {
+      label: tags.forItem,
+      value: "{% for item in order.items %}",
+      group: tags.groups.conditions,
+      description: tags.descriptions.forItem,
+    },
+    {
+      label: tags.endFor,
+      value: "{% endfor %}",
+      group: tags.groups.conditions,
+      description: tags.descriptions.endFor,
+    },
   ];
 });
 
@@ -479,6 +515,15 @@ function selectMergeTag(tag: MergeTag): void {
   mergeTagPickerOpen.value = false;
   mergeTagResolve?.(tag);
   mergeTagResolve = null;
+}
+
+// The playground configures the default (liquid) syntax, so the consumer-owned
+// picker mirrors the SDK picker's logic badge using the public type helpers.
+function isLogicTag(value: string): boolean {
+  return isLogicMergeTagValue(value, SYNTAX_PRESETS.liquid);
+}
+function logicTagKeyword(value: string): string {
+  return getLogicMergeTagKeyword(value, SYNTAX_PRESETS.liquid);
 }
 
 function cancelMergeTagPicker(): void {
@@ -2764,11 +2809,18 @@ onUnmounted(() => {
                   class="group flex flex-col items-start gap-1 w-full px-3 py-2.5 border-none bg-transparent rounded-lg cursor-pointer transition-[background] duration-[120ms] text-left font-sans hover:bg-gray-50 dark:hover:bg-gray-700"
                   @click="selectMergeTag(entry.tag)"
                 >
-                  <div class="flex w-full items-center justify-between">
-                    <span
-                      class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
-                      >{{ entry.tag.label }}</span
-                    >
+                  <div class="flex w-full items-center justify-between gap-2">
+                    <span class="flex items-center gap-2">
+                      <span
+                        class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
+                        >{{ entry.tag.label }}</span
+                      >
+                      <span
+                        v-if="isLogicTag(entry.tag.value)"
+                        class="inline-flex flex-shrink-0 items-center rounded border border-blue-400/50 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-blue-600 uppercase dark:border-blue-400/40 dark:text-blue-400"
+                        >{{ logicTagKeyword(entry.tag.value) }}</span
+                      >
+                    </span>
                     <code
                       class="text-[11px] font-mono text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded group-hover:bg-gray-200 dark:text-gray-400 dark:bg-gray-700 dark:group-hover:bg-gray-600"
                       >{{ entry.tag.value }}</code

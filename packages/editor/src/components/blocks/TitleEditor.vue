@@ -102,6 +102,7 @@ const {
                 char: triggerChar,
                 emptyText: suggestionEmptyText,
                 popoverRoot,
+                syntax,
               }),
             ]
           : []),
