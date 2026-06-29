@@ -178,6 +178,8 @@ export default {
       "Since the image URL uses a merge tag, you can provide a real image here to preview the layout while designing. This is not included in the final output.",
     clickToAdd: "Click to add image URL",
     browseMedia: "Browse Media",
+    dropToUpload: "Drop image to upload",
+    uploading: "Uploading…",
     decorative: "Decorative image",
     decorativeHint:
       "Hidden from screen readers. Use only for spacers and visual flourishes.",

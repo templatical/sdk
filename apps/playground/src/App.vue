@@ -792,7 +792,25 @@ const demoImages = computed(() => [
   },
 ]);
 
-function requestMedia(): Promise<{ url: string; alt?: string } | null> {
+function requestMedia(context?: {
+  accept?: string[];
+  files?: File[];
+}): Promise<{ url: string; alt?: string } | null> {
+  // Drag-and-drop upload (#229): when the editor passes a dropped File, a real
+  // consumer uploads it to their backend and returns the hosted URL. The
+  // playground has no backend, so it reads the file into a serializable data
+  // URL to stand in for that uploaded URL — never a `blob:` object URL, which
+  // would break export/serialization.
+  const file = context?.files?.[0];
+  if (file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () =>
+        resolve({ url: String(reader.result), alt: file.name });
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
   mediaPickerOpen.value = true;
   return new Promise((resolve) => {
     mediaResolve = resolve;

@@ -40,9 +40,48 @@ interface MediaResult {
   alt?: string;
 }
 
+interface MediaRequestContext {
+  /** Media categories the editor is asking for (e.g. `['images']`). */
+  accept?: MediaCategory[];
+  /**
+   * Files dragged directly onto an image block or field. Present only for
+   * drag-and-drop requests; absent when the user clicks "Browse Media".
+   */
+  files?: File[];
+}
+
 onRequestMedia?: (context?: MediaRequestContext) => Promise<MediaResult | null>;
 ```
 
+## Drag and drop to upload
+
+Users can drag an image file from their computer straight onto an image block (empty or filled), the sidebar image field, or a custom block's image field. When they do, the editor calls the **same** `onRequestMedia` handler — but with the dropped file in `context.files`:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  async onRequestMedia(context) {
+    // A file was dropped — upload it and return its hosted URL.
+    if (context?.files?.length) {
+      const url = await uploadToMyBackend(context.files[0]);
+      return { url };
+    }
+
+    // No file — the user clicked "Browse Media". Open your picker.
+    const image = await openMyMediaModal();
+    return image ? { url: image.url, alt: image.alt } : null;
+  },
+});
+```
+
+The editor never uploads anything itself — it hands you the `File` and uses whatever URL you return, exactly like the Browse Media path. A few notes:
+
+- **One file per drop.** `files` is an array for forward-compatibility, but the editor currently sends a single file (`files[0]`).
+- **Images only.** The editor pre-filters dropped files to image MIME types before calling you.
+- **No handler, no drop.** If `onRequestMedia` isn't provided, the drop affordance doesn't appear and drops are ignored.
+- **Don't return a `blob:` URL.** `URL.createObjectURL(file)` is session-local and breaks export. Upload the file and return a durable URL (or a `data:` URL).
+
+For [Cloud editors](/cloud/media-library), dropped files upload to your Templatical media library automatically — no `onRequestMedia` needed (a custom handler still takes precedence).
 
 ## Image Block Properties
 

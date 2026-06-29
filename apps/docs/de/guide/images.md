@@ -40,9 +40,49 @@ interface MediaResult {
   alt?: string;
 }
 
+interface MediaRequestContext {
+  /** Medienkategorien, die der Editor anfordert (z. B. `['images']`). */
+  accept?: MediaCategory[];
+  /**
+   * Dateien, die direkt auf einen Bildblock oder ein Bildfeld gezogen wurden.
+   * Nur bei Drag-and-Drop-Anfragen vorhanden; nicht, wenn der Benutzer auf
+   * „Medien durchsuchen“ klickt.
+   */
+  files?: File[];
+}
+
 onRequestMedia?: (context?: MediaRequestContext) => Promise<MediaResult | null>;
 ```
 
+## Per Drag-and-Drop hochladen
+
+Benutzer können eine Bilddatei von ihrem Computer direkt auf einen Bildblock (leer oder gefüllt), das Bildfeld in der Seitenleiste oder das Bildfeld eines benutzerdefinierten Blocks ziehen. Dabei ruft der Editor **denselben** `onRequestMedia`-Handler auf — jedoch mit der abgelegten Datei in `context.files`:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  async onRequestMedia(context) {
+    // Eine Datei wurde abgelegt — laden Sie sie hoch und geben Sie die URL zurück.
+    if (context?.files?.length) {
+      const url = await uploadToMyBackend(context.files[0]);
+      return { url };
+    }
+
+    // Keine Datei — der Benutzer hat auf „Medien durchsuchen“ geklickt.
+    const image = await openMyMediaModal();
+    return image ? { url: image.url, alt: image.alt } : null;
+  },
+});
+```
+
+Der Editor lädt selbst nichts hoch — er übergibt Ihnen die `File` und verwendet die zurückgegebene URL, genau wie beim „Medien durchsuchen“-Pfad. Einige Hinweise:
+
+- **Eine Datei pro Drop.** `files` ist aus Gründen der Vorwärtskompatibilität ein Array, aber der Editor sendet derzeit eine einzelne Datei (`files[0]`).
+- **Nur Bilder.** Der Editor filtert abgelegte Dateien vor dem Aufruf auf Bild-MIME-Typen.
+- **Kein Handler, kein Drop.** Ist `onRequestMedia` nicht gesetzt, erscheint kein Drop-Hinweis und Drops werden ignoriert.
+- **Keine `blob:`-URL zurückgeben.** `URL.createObjectURL(file)` ist sitzungslokal und bricht den Export. Laden Sie die Datei hoch und geben Sie eine dauerhafte URL (oder eine `data:`-URL) zurück.
+
+Bei [Cloud-Editoren](/de/cloud/media-library) werden abgelegte Dateien automatisch in Ihre Templatical-Medienbibliothek hochgeladen — kein `onRequestMedia` nötig (ein eigener Handler hat weiterhin Vorrang).
 
 ## Eigenschaften des Bildblocks
 

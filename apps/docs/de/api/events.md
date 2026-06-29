@@ -59,7 +59,9 @@ const editor = await init({
 
 ### `onRequestMedia`
 
-Wird aufgerufen, wenn der Benutzer klickt, um ein Bild auszuwählen (z. B. in den Einstellungen des Bild-Blocks). Geben Sie ein `MediaResult`-Objekt zurück oder `null`, wenn der Benutzer abbricht. Wenn `alt` angegeben ist, füllt der Editor den Alt-Text des Bildes automatisch aus.
+Wird aufgerufen, wenn der Benutzer klickt, um ein Bild auszuwählen (z. B. in den Einstellungen des Bild-Blocks), **oder eine Bilddatei auf einen Bildblock bzw. ein Bildfeld zieht**. Geben Sie ein `MediaResult`-Objekt zurück oder `null`, wenn der Benutzer abbricht. Wenn `alt` angegeben ist, füllt der Editor den Alt-Text des Bildes automatisch aus.
+
+Bei Drag-and-Drop landet die abgelegte Datei in `context.files` — laden Sie sie hoch und geben Sie die gehostete URL zurück. Siehe [Per Drag-and-Drop hochladen](/de/guide/images#per-drag-and-drop-hochladen) für das vollständige Muster.
 
 ```ts
 import type { MediaResult } from '@templatical/types';

@@ -183,6 +183,8 @@ const de: typeof en = {
       "Da die Bild-URL ein Merge-Tag verwendet, können Sie hier ein echtes Bild angeben, um das Layout während der Gestaltung in der Vorschau anzuzeigen. Dies wird nicht in die endgültige Ausgabe aufgenommen.",
     clickToAdd: "Klicken Sie, um eine Bild-URL hinzuzufügen",
     browseMedia: "Medien durchsuchen",
+    dropToUpload: "Bild zum Hochladen ablegen",
+    uploading: "Wird hochgeladen…",
     decorative: "Dekoratives Bild",
     decorativeHint:
       "Wird von Bildschirmlesern ignoriert. Nur für Abstandshalter und visuelle Verzierungen verwenden.",
