@@ -3,11 +3,7 @@ import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
 import CollapsibleSection from "./CollapsibleSection.vue";
 import { useI18n } from "../../composables/useI18n";
-import {
-  labelClass,
-  monoTextareaClass,
-  DEFAULT_BG_COLOR,
-} from "../../constants/styleConstants";
+import { labelClass, monoTextareaClass } from "../../constants/styleConstants";
 import type { Block, DisplayCondition } from "@templatical/types";
 import { Monitor, Smartphone } from "@lucide/vue";
 import { computed, inject, reactive, ref, watch, type Component } from "vue";
@@ -157,8 +153,7 @@ function toggleVisibility(key: VisibilityKey): void {
     >
       <label :class="labelClass">{{ t.blockSettings.color }}</label>
       <ColorPicker
-        size="large"
-        :model-value="block.styles.backgroundColor || DEFAULT_BG_COLOR"
+        :model-value="block.styles.backgroundColor ?? ''"
         @update:model-value="updateStyle('backgroundColor', $event)"
       />
     </CollapsibleSection>

@@ -456,6 +456,8 @@ export default {
   colorPicker: {
     pickColor: "Pick a color",
     hexValue: "Hex color value",
+    notSet: "Not set",
+    clear: "Clear color",
   },
 
   // Merge Tag

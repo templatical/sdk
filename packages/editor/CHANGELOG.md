@@ -1,5 +1,14 @@
 # @templatical/editor
 
+## 0.12.1
+
+### Patch Changes
+
+- 643d05e: Fix block/section background color incorrectly showing `#ffffff` when no color is set. An unset color now reads as "Not set" (a slashed swatch) instead of a fake white, and picking a color equal to the default — e.g. white on a transparent background — now persists and renders correctly instead of being silently dropped. A clear (×) button resets a color back to unset. (#282)
+  - @templatical/renderer@0.12.1
+  - @templatical/quality@0.12.1
+  - @templatical/media-library@0.12.1
+
 ## 0.12.0
 
 ### Minor Changes
