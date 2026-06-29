@@ -16,14 +16,12 @@ const props = withDefaults(
      * so an unset field still reads as "not set".
      */
     seedColor?: string;
-    size?: "default" | "large";
     swatchOnly?: boolean;
     disabled?: boolean;
   }>(),
   {
     placeholder: "",
     seedColor: "#ffffff",
-    size: "default",
     swatchOnly: false,
     disabled: false,
   },
@@ -109,7 +107,7 @@ function clear(): void {
         open
           ? 'tpl:border-[var(--tpl-primary)] tpl:shadow-[var(--tpl-ring)]'
           : !disabled && 'hover:tpl:border-[var(--tpl-text-dim)]',
-        size === 'large' ? 'tpl:size-12' : 'tpl:size-10',
+        'tpl:size-10',
       ]"
       @click="!disabled && (open = !open)"
     >

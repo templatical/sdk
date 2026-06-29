@@ -153,7 +153,6 @@ function toggleVisibility(key: VisibilityKey): void {
     >
       <label :class="labelClass">{{ t.blockSettings.color }}</label>
       <ColorPicker
-        size="large"
         :model-value="block.styles.backgroundColor ?? ''"
         @update:model-value="updateStyle('backgroundColor', $event)"
       />
