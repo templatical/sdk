@@ -1,5 +1,24 @@
 # @templatical/editor
 
+## 1.0.0
+
+### Minor Changes
+
+- 7b76e46: Add a `width` option to button blocks: buttons can be set to a fixed pixel width or stretched to full width (`'full'`), independently of their label, instead of always shrinking to fit their content. Omitting `width` keeps the previous content-sized behavior, so existing templates are unaffected (#260).
+- c865348: Allow entering a custom image width. The image width control now has a "Custom" option alongside the existing presets (Full width / 300 / 400 / 500) that reveals a pixel input, so images can be sized to any width instead of only the nearest preset (#259).
+- a209073: Add website option to social icons
+
+### Patch Changes
+
+- 16d2c46: Fix the button settings panel laying out the Background and Text Color pickers side by side in a two-column grid too narrow to hold each picker's swatch + hex input, clipping the hex field. The two color fields now stack vertically (full width), matching the rest of the panel.
+- 67f44fb: Centralize social-icon glyph data (SVG path + brand color) into a single `SOCIAL_ICON_GLYPHS` map in `@templatical/types`, shared by the editor's inline-SVG renderer and the renderer's PNG rasterizer (which previously each kept their own copy). Adding a platform to the `SocialPlatform` union is now a compile error until its glyph exists, so the editor and renderer can no longer drift out of sync. Social platform dropdown labels now resolve through i18n (`social.platforms`) instead of a hardcoded English name.
+- 9a1912f: Prevent palette block from disappearing during drag and drop
+- Updated dependencies [7b76e46]
+- Updated dependencies [67f44fb]
+  - @templatical/renderer@1.0.0
+  - @templatical/media-library@1.0.0
+  - @templatical/quality@1.0.0
+
 ## 0.11.1
 
 ### Patch Changes
