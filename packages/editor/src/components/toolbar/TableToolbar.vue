@@ -155,7 +155,8 @@ function removeTableColumn(colIndex: number): void {
   <div v-if="block.hasHeaderRow" class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.table.headerBackgroundColor }}</label>
     <ColorPicker
-      :model-value="block.headerBackgroundColor || DEFAULT_TABLE_ROW_BG"
+      :model-value="block.headerBackgroundColor ?? ''"
+      :seed-color="DEFAULT_TABLE_ROW_BG"
       :placeholder="t.table.noHeaderBg"
       @update:model-value="updateField('headerBackgroundColor', $event || null)"
     />

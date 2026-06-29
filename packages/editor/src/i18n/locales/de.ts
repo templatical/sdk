@@ -461,6 +461,8 @@ const de: typeof en = {
   colorPicker: {
     pickColor: "Farbe auswählen",
     hexValue: "Hex-Farbwert",
+    notSet: "Nicht festgelegt",
+    clear: "Farbe entfernen",
   },
 
   // Merge-Tag

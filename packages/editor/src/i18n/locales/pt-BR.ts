@@ -458,6 +458,8 @@ const ptBR: typeof en = {
   colorPicker: {
     pickColor: "Escolher uma cor",
     hexValue: "Valor hexadecimal da cor",
+    notSet: "Não definido",
+    clear: "Limpar cor",
   },
 
   // Merge Tag
