@@ -1,9 +1,5 @@
 export type AspectRatioPreset =
-  | "free"
-  | "square"
-  | "landscape43"
-  | "landscape169"
-  | "original";
+  "free" | "square" | "landscape43" | "landscape169" | "original";
 
 export interface AspectRatioOption {
   key: AspectRatioPreset;

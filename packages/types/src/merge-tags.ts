@@ -8,10 +8,7 @@ export interface SyntaxPreset {
 }
 
 export type SyntaxPresetName =
-  | "liquid"
-  | "handlebars"
-  | "mailchimp"
-  | "ampscript";
+  "liquid" | "handlebars" | "mailchimp" | "ampscript";
 
 export const SYNTAX_PRESETS: Record<SyntaxPresetName, SyntaxPreset> = {
   liquid: { value: /\{\{.+?\}\}/g, logic: /\{%-?\s*(\w+).*?-?%\}/g },

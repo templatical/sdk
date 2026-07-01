@@ -195,13 +195,10 @@ export function createMenuBlock(partial: Partial<MenuBlock> = {}): MenuBlock {
 function createDefaultTableRows(columns: number, rows: number): TableRowData[] {
   return Array.from({ length: rows }, () => ({
     id: generateId(),
-    cells: Array.from(
-      { length: columns },
-      (): TableCellData => ({
-        id: generateId(),
-        content: "",
-      }),
-    ),
+    cells: Array.from({ length: columns }, (): TableCellData => ({
+      id: generateId(),
+      content: "",
+    })),
   }));
 }
 
