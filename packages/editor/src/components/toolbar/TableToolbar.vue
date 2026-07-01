@@ -42,13 +42,10 @@ function addTableRow(): void {
     props.block.rows.length > 0 ? props.block.rows[0].cells.length : 3;
   const newRow: TableRowData = {
     id: generateId(),
-    cells: Array.from(
-      { length: columnCount },
-      (): TableCellData => ({
-        id: generateId(),
-        content: "",
-      }),
-    ),
+    cells: Array.from({ length: columnCount }, (): TableCellData => ({
+      id: generateId(),
+      content: "",
+    })),
   };
   emit("update", { rows: [...props.block.rows, newRow] });
 }

@@ -38,9 +38,7 @@ export function useCloudI18n(
   const injected =
     translationsOverride ??
     (inject(CLOUD_TRANSLATIONS_KEY, null) as
-      | CloudTranslations
-      | Ref<CloudTranslations>
-      | null);
+      CloudTranslations | Ref<CloudTranslations> | null);
 
   const t: CloudTranslations | null = injected
     ? isRef(injected)

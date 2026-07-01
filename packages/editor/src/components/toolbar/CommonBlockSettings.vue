@@ -297,13 +297,11 @@ function toggleVisibility(key: VisibilityKey): void {
           <div class="tpl:space-y-1">
             <pre
               class="tpl:m-0 tpl:overflow-x-auto tpl:rounded tpl:bg-[var(--tpl-bg)] tpl:p-2 tpl:font-mono tpl:text-[10px] tpl:text-[var(--tpl-text-muted)]"
-              >{{ block.displayCondition.before }}</pre
-            >
+              >{{ block.displayCondition.before }}</pre>
             <pre
               v-if="block.displayCondition.after"
               class="tpl:m-0 tpl:overflow-x-auto tpl:rounded tpl:bg-[var(--tpl-bg)] tpl:p-2 tpl:font-mono tpl:text-[10px] tpl:text-[var(--tpl-text-muted)]"
-              >{{ block.displayCondition.after }}</pre
-            >
+              >{{ block.displayCondition.after }}</pre>
           </div>
         </template>
       </div>

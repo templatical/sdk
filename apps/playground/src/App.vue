@@ -768,8 +768,7 @@ let currentSerializableConfig = buildSerializableConfig();
 // --- Media picker ---
 const mediaPickerOpen = ref(false);
 let mediaResolve:
-  | ((result: { url: string; alt?: string } | null) => void)
-  | null = null;
+  ((result: { url: string; alt?: string } | null) => void) | null = null;
 
 const demoImages = computed(() => [
   {
