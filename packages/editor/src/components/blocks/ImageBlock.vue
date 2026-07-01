@@ -6,10 +6,11 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { containsMergeTag } from "@templatical/types";
-import { Image } from "@lucide/vue";
-import { computed, inject } from "vue";
+import { Image, Upload, LoaderCircle } from "@lucide/vue";
+import { computed, inject, ref } from "vue";
 import { ON_REQUEST_MEDIA_KEY } from "../../keys";
 import { useAliveFlag } from "../../composables/useAliveFlag";
+import { useImageDrop } from "../../composables/useImageDrop";
 
 const props = defineProps<{
   block: ImageBlockType;
@@ -36,6 +37,37 @@ async function browseMedia(): Promise<void> {
   }
 }
 
+// --- Drag-and-drop upload (#229) ---
+const dropZoneRef = ref<HTMLElement>();
+const isUploading = ref(false);
+
+// A merge-tag src is a deliberate dynamic value — never clobber it via drop.
+const dropEnabled = computed(
+  () => canBrowseMedia.value && !isUploading.value && !hasMergeTagSrc.value,
+);
+
+async function uploadDroppedFiles(files: File[]): Promise<void> {
+  if (!onRequestMedia) return;
+  isUploading.value = true;
+  try {
+    const result = await onRequestMedia({ accept: ["images"], files });
+    if (!aliveFlag.alive) return;
+    if (result) {
+      const updates: Partial<ImageBlockType> = { src: result.url };
+      if (result.alt) updates.alt = result.alt;
+      emit("update", updates);
+    }
+  } finally {
+    if (aliveFlag.alive) isUploading.value = false;
+  }
+}
+
+const { isOver } = useImageDrop({
+  target: dropZoneRef,
+  enabled: dropEnabled,
+  onFiles: uploadDroppedFiles,
+});
+
 const containerStyle = computed(() => ({
   textAlign: props.block.align,
 }));
@@ -57,7 +89,29 @@ const hasMergeTagSrc = computed(() =>
 </script>
 
 <template>
-  <div class="tpl:w-full" :style="containerStyle">
+  <div
+    ref="dropZoneRef"
+    data-testid="image-drop-zone"
+    class="tpl:relative tpl:w-full"
+    :style="containerStyle"
+  >
+    <!-- Drag-over / uploading overlay (#229) -->
+    <div
+      v-if="dropEnabled && (isOver || isUploading)"
+      class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-10 tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-xs tpl:font-medium tpl:border-[var(--tpl-primary)] tpl:text-[var(--tpl-primary)]"
+      style="
+        background-color: color-mix(in srgb, var(--tpl-bg) 85%, transparent);
+      "
+    >
+      <template v-if="isUploading">
+        <LoaderCircle class="tpl-spinner" :size="20" :stroke-width="2" />
+        {{ t.image.uploading }}
+      </template>
+      <template v-else>
+        <Upload :size="20" :stroke-width="1.5" />
+        {{ t.image.dropToUpload }}
+      </template>
+    </div>
     <!-- Placeholder with preview image provided -->
     <template v-if="block.src && hasMergeTagSrc && block.placeholderUrl">
       <a

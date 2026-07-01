@@ -1,7 +1,22 @@
+// @vitest-environment happy-dom
 import "./dom-stubs";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { effectScope, ref } from "vue";
 import { useCloudMediaLibrary } from "../src/cloud/composables/useCloudMediaLibrary";
+
+// The built-in drag-and-drop upload lazily imports MediaApiClient from the
+// optional peer; intercept that dynamic import.
+const { uploadMediaMock, MediaApiClientMock } = vi.hoisted(() => {
+  const uploadMediaMock = vi.fn();
+  // Regular function (not arrow) so `new MediaApiClient(...)` constructs.
+  const MediaApiClientMock = vi.fn(function (this: { uploadMedia: unknown }) {
+    this.uploadMedia = uploadMediaMock;
+  });
+  return { uploadMediaMock, MediaApiClientMock };
+});
+vi.mock("@templatical/media-library", () => ({
+  MediaApiClient: MediaApiClientMock,
+}));
 
 function createMediaItem(overrides: Record<string, any> = {}) {
   return {
@@ -266,6 +281,148 @@ describe("useCloudMediaLibrary", () => {
     expect(result).toEqual({
       url: "https://cdn.test/pic.webp",
       alt: "A beautiful sunset",
+    });
+  });
+
+  describe("drag-and-drop upload (#229)", () => {
+    const authManager = {} as any;
+    const mediaConfig = {
+      use_media_library: true,
+      categories: {
+        images: { mime_types: ["image/png", "image/jpeg"], extensions: ["png", "jpg"] },
+      },
+      max_file_size: 1_000_000,
+    };
+
+    function imageFile(name = "drop.png", type = "image/png"): File {
+      return new File(["data"], name, { type });
+    }
+
+    function fileOfSize(size: number, type = "image/png"): File {
+      const file = new File(["data"], "big.png", { type });
+      Object.defineProperty(file, "size", { value: size });
+      return file;
+    }
+
+    it("uploads a dropped file (no consumer handler) and returns url/alt", async () => {
+      uploadMediaMock.mockResolvedValue(
+        createMediaItem({ url: "https://cdn/dropped.png", alt_text: "Dropped" }),
+      );
+      const { handleRequestMedia } = useCloudMediaLibrary({
+        mediaLibraryOpen: ref(false),
+        mediaLibraryAccept: ref<string[] | undefined>(undefined),
+        authManager,
+        getMediaConfig: () => mediaConfig,
+      } as any);
+
+      const file = imageFile();
+      const result = await handleRequestMedia({ accept: ["images"], files: [file] });
+
+      expect(uploadMediaMock).toHaveBeenCalledWith(file);
+      expect(result).toEqual({ url: "https://cdn/dropped.png", alt: "Dropped" });
+    });
+
+    it("forwards dropped files to a consumer handler instead of uploading", async () => {
+      const item = createMediaItem({
+        url: "https://cdn/by-consumer.png",
+        alt_text: "By consumer",
+      });
+      const onRequestMedia = vi.fn().mockResolvedValue(item);
+      const { handleRequestMedia } = useCloudMediaLibrary({
+        onRequestMedia,
+        mediaLibraryOpen: ref(false),
+        mediaLibraryAccept: ref<string[] | undefined>(undefined),
+        authManager,
+      } as any);
+
+      const file = imageFile();
+      const result = await handleRequestMedia({ accept: ["images"], files: [file] });
+
+      expect(onRequestMedia).toHaveBeenCalledWith({
+        accept: ["images"],
+        files: [file],
+      });
+      expect(uploadMediaMock).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        url: "https://cdn/by-consumer.png",
+        alt: "By consumer",
+      });
+    });
+
+    it("reports an upload failure via onError and returns null", async () => {
+      const err = new Error("network down");
+      uploadMediaMock.mockRejectedValue(err);
+      const onError = vi.fn();
+      const { handleRequestMedia } = useCloudMediaLibrary({
+        mediaLibraryOpen: ref(false),
+        mediaLibraryAccept: ref<string[] | undefined>(undefined),
+        authManager,
+        onError,
+      } as any);
+
+      const result = await handleRequestMedia({ files: [imageFile()] });
+
+      expect(onError).toHaveBeenCalledWith(err);
+      expect(result).toBe(null);
+    });
+
+    it("rejects an unsupported MIME type before uploading", async () => {
+      const onError = vi.fn();
+      const { handleRequestMedia } = useCloudMediaLibrary({
+        mediaLibraryOpen: ref(false),
+        mediaLibraryAccept: ref<string[] | undefined>(undefined),
+        authManager,
+        onError,
+        getMediaConfig: () => mediaConfig,
+      } as any);
+
+      const result = await handleRequestMedia({
+        files: [imageFile("x.gif", "image/gif")],
+      });
+
+      expect(uploadMediaMock).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError.mock.calls[0][0]).toBeInstanceOf(Error);
+      expect(result).toBe(null);
+    });
+
+    it("rejects an oversized file before uploading", async () => {
+      const onError = vi.fn();
+      const { handleRequestMedia } = useCloudMediaLibrary({
+        mediaLibraryOpen: ref(false),
+        mediaLibraryAccept: ref<string[] | undefined>(undefined),
+        authManager,
+        onError,
+        getMediaConfig: () => ({ ...mediaConfig, max_file_size: 10 }),
+      } as any);
+
+      const result = await handleRequestMedia({ files: [fileOfSize(2000)] });
+
+      expect(uploadMediaMock).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(result).toBe(null);
+    });
+
+    it("uploads without validation when no media config is available", async () => {
+      uploadMediaMock.mockResolvedValue(createMediaItem());
+      const { handleRequestMedia } = useCloudMediaLibrary({
+        mediaLibraryOpen: ref(false),
+        mediaLibraryAccept: ref<string[] | undefined>(undefined),
+        authManager,
+        getMediaConfig: () => null,
+      } as any);
+
+      // A .gif that the plan config would reject still uploads — the server
+      // becomes the authoritative validator when no config is loaded yet.
+      const result = await handleRequestMedia({
+        files: [imageFile("x.gif", "image/gif")],
+      });
+
+      expect(uploadMediaMock).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({
+        url: "https://example.com/image.png",
+        alt: "Test image",
+      });
     });
   });
 });

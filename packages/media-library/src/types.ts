@@ -62,6 +62,14 @@ export interface MediaUsageResponse {
 
 export interface MediaRequestContext {
   accept?: MediaCategory[];
+  /**
+   * Image files dragged directly onto an image block/field (issue #229).
+   * Present only on drag-and-drop requests; absent for click → Browse Media.
+   * The media handler should upload these and return the resulting
+   * `MediaResult`. Plural for forward-compat, but the editor currently sends
+   * a single file per drop.
+   */
+  files?: File[];
 }
 
 export interface StorageInfo {

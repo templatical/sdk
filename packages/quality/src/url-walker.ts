@@ -13,12 +13,7 @@ import { walkBlocks } from "./walk";
 import { extractAnchors } from "./html-utils";
 
 export type UrlSource =
-  | "anchor"
-  | "button"
-  | "image-link"
-  | "video"
-  | "menu-item"
-  | "social-icon";
+  "anchor" | "button" | "image-link" | "video" | "menu-item" | "social-icon";
 
 export interface UrlOccurrence {
   url: string;

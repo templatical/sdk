@@ -59,7 +59,9 @@ const editor = await init({
 
 ### `onRequestMedia`
 
-Called when the user clicks to select an image (e.g. in the image block settings). Return a `MediaResult` object, or `null` if the user cancels. When `alt` is provided, the editor automatically fills in the image's alt text.
+Called when the user clicks to select an image (e.g. in the image block settings) **or drags an image file onto an image block/field**. Return a `MediaResult` object, or `null` if the user cancels. When `alt` is provided, the editor automatically fills in the image's alt text.
+
+On a drag-and-drop, the dropped file arrives in `context.files` — upload it and return the hosted URL. See [Drag and drop to upload](/guide/images#drag-and-drop-to-upload) for the full pattern.
 
 ```ts
 import type { MediaResult } from '@templatical/types';

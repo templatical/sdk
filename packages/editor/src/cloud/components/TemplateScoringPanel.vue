@@ -96,8 +96,7 @@ async function handleFix(finding: ScoringFinding): Promise<void> {
 
   // Extract HTML content from the block (text blocks have content property)
   const blockContent = (block as unknown as Record<string, unknown>).content as
-    | string
-    | undefined;
+    string | undefined;
   if (!blockContent) {
     return;
   }

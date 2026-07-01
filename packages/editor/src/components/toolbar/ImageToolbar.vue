@@ -10,10 +10,11 @@ import {
 } from "../../constants/styleConstants";
 import type { ImageBlock } from "@templatical/types";
 import { containsMergeTag, SYNTAX_PRESETS } from "@templatical/types";
-import { Image } from "@lucide/vue";
+import { Image, Upload, LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
 import { ON_REQUEST_MEDIA_KEY, MERGE_TAG_SYNTAX_KEY } from "../../keys";
 import { useAliveFlag } from "../../composables/useAliveFlag";
+import { useImageDrop } from "../../composables/useImageDrop";
 import { useTimeoutFn } from "@vueuse/core";
 
 const props = defineProps<{
@@ -90,31 +91,87 @@ async function openMediaBrowser(): Promise<void> {
     startPulseSrc();
   }
 }
+
+// --- Drag-and-drop upload (#229) ---
+const dropZoneRef = ref<HTMLElement>();
+const isUploading = ref(false);
+// A merge-tag src is a deliberate dynamic value — never clobber it via drop.
+const hasMergeTagSrc = computed(() =>
+  containsMergeTag(props.block.src, mergeTagSyntax),
+);
+const dropEnabled = computed(
+  () => canBrowseMedia.value && !isUploading.value && !hasMergeTagSrc.value,
+);
+
+async function uploadDroppedFiles(files: File[]): Promise<void> {
+  if (!onRequestMedia) return;
+  isUploading.value = true;
+  try {
+    const result = await onRequestMedia({ accept: ["images"], files });
+    if (!aliveFlag.alive) return;
+    if (result) {
+      updateField("src", result.url);
+      if (result.alt) {
+        updateField("alt", result.alt);
+        pulseAlt.value = true;
+      }
+      pulseSrc.value = true;
+      startPulseSrc();
+    }
+  } finally {
+    if (aliveFlag.alive) isUploading.value = false;
+  }
+}
+
+const { isOver } = useImageDrop({
+  target: dropZoneRef,
+  enabled: dropEnabled,
+  onFiles: uploadDroppedFiles,
+});
 </script>
 
 <template>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.image.imageUrl }}</label>
-    <MergeTagInput
-      :model-value="block.src"
-      type="url"
-      :placeholder="t.image.imageUrlPlaceholder"
-      :pulse="pulseSrc"
-      @update:model-value="updateField('src', $event)"
-    />
-    <button
-      v-if="canBrowseMedia"
-      class="tpl:mt-2 tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
-      style="
-        border-color: var(--tpl-border);
-        color: var(--tpl-primary);
-        background-color: var(--tpl-bg);
-      "
-      @click="openMediaBrowser"
-    >
-      <Image :size="14" :stroke-width="1.5" />
-      {{ t.image.browseMedia }}
-    </button>
+    <div ref="dropZoneRef" class="tpl:relative">
+      <!-- Drag-over / uploading overlay (#229) -->
+      <div
+        v-if="dropEnabled && (isOver || isUploading)"
+        class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-10 tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-2 tpl:border-dashed tpl:text-xs tpl:font-medium tpl:border-[var(--tpl-primary)] tpl:text-[var(--tpl-primary)]"
+        style="
+          background-color: color-mix(in srgb, var(--tpl-bg) 90%, transparent);
+        "
+      >
+        <template v-if="isUploading">
+          <LoaderCircle class="tpl-spinner" :size="18" :stroke-width="2" />
+          {{ t.image.uploading }}
+        </template>
+        <template v-else>
+          <Upload :size="18" :stroke-width="1.5" />
+          {{ t.image.dropToUpload }}
+        </template>
+      </div>
+      <MergeTagInput
+        :model-value="block.src"
+        type="url"
+        :placeholder="t.image.imageUrlPlaceholder"
+        :pulse="pulseSrc"
+        @update:model-value="updateField('src', $event)"
+      />
+      <button
+        v-if="canBrowseMedia"
+        class="tpl:mt-2 tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
+        style="
+          border-color: var(--tpl-border);
+          color: var(--tpl-primary);
+          background-color: var(--tpl-bg);
+        "
+        @click="openMediaBrowser"
+      >
+        <Image :size="14" :stroke-width="1.5" />
+        {{ t.image.browseMedia }}
+      </button>
+    </div>
   </div>
   <div v-if="containsMergeTag(block.src, mergeTagSyntax)" class="tpl:mb-3.5">
     <label :class="labelClass"

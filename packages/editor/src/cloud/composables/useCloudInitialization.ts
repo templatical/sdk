@@ -345,6 +345,9 @@ export function useCloudInitialization(
     onRequestMedia: config.onRequestMedia,
     mediaLibraryOpen: panelState.mediaLibraryOpen,
     mediaLibraryAccept: panelState.mediaLibraryAccept,
+    authManager,
+    getMediaConfig: () => planConfigInstance.config.value?.media ?? null,
+    onError: config.onError,
   });
 
   // Install drag-drop listeners (no return value needed).

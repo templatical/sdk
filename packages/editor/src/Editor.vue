@@ -106,12 +106,18 @@ defineExpose({
 </script>
 
 <template>
+  <!-- @dragover/@drop.prevent: a file dropped outside an image drop zone would
+       otherwise make the browser navigate to the file:// URL and destroy the
+       editor session. Image zones (useImageDrop) handle their own drops; this
+       only neutralizes the default action everywhere else (#229). -->
   <div
     ref="rootEl"
     class="tpl tpl:relative tpl:h-full tpl:overflow-hidden"
     :class="{ 'tpl:dark': editor.state.darkMode }"
     :data-tpl-theme="core.resolvedTheme.value"
     :style="core.themeStyles.value"
+    @dragover.prevent
+    @drop.prevent
   >
     <!-- Reactive `<style>` tags for custom-block definition stylesheets in
          use. Sits at the top so its rules apply to the canvas below. -->

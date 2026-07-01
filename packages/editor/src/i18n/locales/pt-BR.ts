@@ -180,6 +180,8 @@ const ptBR: typeof en = {
       "Como a URL da imagem usa uma merge tag, você pode fornecer uma imagem real aqui para visualizar o layout durante o design. Isso não é incluído na saída final.",
     clickToAdd: "Clique para adicionar a URL da imagem",
     browseMedia: "Explorar Mídia",
+    dropToUpload: "Solte a imagem para enviar",
+    uploading: "Enviando…",
     decorative: "Imagem decorativa",
     decorativeHint:
       "Oculta para leitores de tela. Use apenas para espaçadores e elementos visuais.",
