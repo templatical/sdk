@@ -437,12 +437,10 @@ function convertTable(descriptor: BeeFreeeModuleDescriptor): Block {
 
   const rows: TableRowData[] = (table.rows ?? []).map((row) => ({
     id: generateId(),
-    cells: (row.cells ?? []).map(
-      (cell): TableCellData => ({
-        id: generateId(),
-        content: cell.content ?? cell.html ?? "",
-      }),
-    ),
+    cells: (row.cells ?? []).map((cell): TableCellData => ({
+      id: generateId(),
+      content: cell.content ?? cell.html ?? "",
+    })),
   }));
 
   return createTableBlock({

@@ -125,11 +125,7 @@ export type SocialPlatform =
   | "website";
 
 export type SocialIconStyle =
-  | "solid"
-  | "outlined"
-  | "rounded"
-  | "square"
-  | "circle";
+  "solid" | "outlined" | "rounded" | "square" | "circle";
 
 export type SocialIconSize = "small" | "medium" | "large";
 

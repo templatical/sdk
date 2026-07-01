@@ -62,11 +62,7 @@ export interface Comment {
 export type CommentThread = Comment;
 
 export type CommentEventType =
-  | "created"
-  | "updated"
-  | "deleted"
-  | "resolved"
-  | "unresolved";
+  "created" | "updated" | "deleted" | "resolved" | "unresolved";
 
 export interface CommentEvent {
   type: CommentEventType;
@@ -92,10 +88,7 @@ export interface SavedModule {
 export type FindingSeverity = "high" | "medium" | "low";
 
 export type ScoringCategory =
-  | "spam"
-  | "readability"
-  | "accessibility"
-  | "bestPractices";
+  "spam" | "readability" | "accessibility" | "bestPractices";
 
 export interface ScoringFinding {
   id: string;

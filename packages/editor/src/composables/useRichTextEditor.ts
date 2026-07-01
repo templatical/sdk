@@ -81,9 +81,7 @@ export function useRichTextEditor(
   } = useMergeTag();
 
   const injectedTranslations = inject(TRANSLATIONS_KEY, null) as
-    | Translations
-    | Ref<Translations>
-    | null;
+    Translations | Ref<Translations> | null;
   const resolvedTranslations: Translations | null = isRef(injectedTranslations)
     ? injectedTranslations.value
     : injectedTranslations;

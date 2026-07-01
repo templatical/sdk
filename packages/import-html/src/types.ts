@@ -6,10 +6,7 @@
  * Conversion status for each element processed in the import report.
  */
 export type ConversionStatus =
-  | "converted"
-  | "approximated"
-  | "html-fallback"
-  | "skipped";
+  "converted" | "approximated" | "html-fallback" | "skipped";
 
 /**
  * A single entry in the import report.
