@@ -253,6 +253,7 @@ describe('MergeTagNode addCommands', () => {
   it('insertMergeTag calls commands.insertContent with type and exactly { label, value }', () => {
     const commands = (MergeTagNode.config.addCommands as Function).call({
       name: 'mergeTagNode',
+      options: { syntax: SYNTAX_PRESETS.liquid },
     });
     const mergeTag = { label: 'First Name', value: '{{ first_name }}' };
     const mockInsertContent = vi.fn().mockReturnValue(true);
@@ -272,6 +273,7 @@ describe('MergeTagNode addCommands', () => {
     // document JSON (templates would bloat and serialized state would drift).
     const commands = (MergeTagNode.config.addCommands as Function).call({
       name: 'mergeTagNode',
+      options: { syntax: SYNTAX_PRESETS.liquid },
     });
     const enriched = {
       label: 'First Name',
@@ -293,6 +295,7 @@ describe('MergeTagNode addCommands', () => {
   it('insertMergeTag attrs serialize to JSON without group/description even when source carries them', () => {
     const commands = (MergeTagNode.config.addCommands as Function).call({
       name: 'mergeTagNode',
+      options: { syntax: SYNTAX_PRESETS.liquid },
     });
     const enriched = {
       label: 'First Name',
@@ -314,6 +317,29 @@ describe('MergeTagNode addCommands', () => {
     expect(json).not.toContain('description');
     expect(json).toContain('"label":"First Name"');
     expect(json).toContain('"value":"{{ first_name }}"');
+  });
+
+  it('insertMergeTag inserts a logicMergeTagNode for a logic-shaped value', () => {
+    // A tag whose value is a logic tag must insert the logic node (deriving
+    // its keyword), not a data mergeTagNode — same node manual typing yields
+    // via the input rule. Regression for issue #240 (selector-inserted logic
+    // tags were styled as data tags).
+    const commands = (MergeTagNode.config.addCommands as Function).call({
+      name: 'mergeTagNode',
+      options: { syntax: SYNTAX_PRESETS.liquid },
+    });
+    const mockInsertContent = vi.fn().mockReturnValue(true);
+    const result = commands.insertMergeTag({
+      label: 'VIP block',
+      value: '{% if customer.vip %}',
+    })({
+      commands: { insertContent: mockInsertContent },
+    });
+    expect(mockInsertContent).toHaveBeenCalledWith({
+      type: 'logicMergeTagNode',
+      attrs: { value: '{% if customer.vip %}', keyword: 'IF' },
+    });
+    expect(result).toBe(true);
   });
 });
 

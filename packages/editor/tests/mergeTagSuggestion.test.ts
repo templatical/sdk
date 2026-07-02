@@ -4,6 +4,7 @@ import './dom-stubs';
 import { describe, expect, it, vi } from 'vitest';
 import { ref, shallowRef } from 'vue';
 import type { MergeTag } from '@templatical/types';
+import { SYNTAX_PRESETS } from '@templatical/types';
 import {
   MergeTagSuggestion,
   filterMergeTags,
@@ -256,16 +257,21 @@ describe('MergeTagSuggestion mount target', () => {
 });
 
 describe('MergeTagSuggestion extension ordering in editors', () => {
-  // The suggestion plugin's command calls editor.commands.insertMergeTag,
-  // which is registered by MergeTagNode. If MergeTagSuggestion appears
-  // before MergeTagNode in the extensions array, TipTap may not have
-  // registered the command yet on first run. Guard the order in source.
+  // The suggestion command inserts either a mergeTagNode or a
+  // logicMergeTagNode (chosen by the selected tag's value shape) via
+  // insertContentAt, so BOTH node extensions must be configured before the
+  // suggestion in the extensions array. Guard that order in source.
   function assertOrder(source: string, file: string): void {
     const nodeIdx = source.indexOf('MergeTagNode.configure');
+    const logicIdx = source.indexOf('LogicMergeTagNode.configure');
     const suggIdx = source.indexOf('MergeTagSuggestion.configure');
     expect(nodeIdx, `${file}: MergeTagNode.configure missing`).toBeGreaterThan(
       -1,
     );
+    expect(
+      logicIdx,
+      `${file}: LogicMergeTagNode.configure missing`,
+    ).toBeGreaterThan(-1);
     expect(
       suggIdx,
       `${file}: MergeTagSuggestion.configure missing`,
@@ -273,6 +279,10 @@ describe('MergeTagSuggestion extension ordering in editors', () => {
     expect(
       nodeIdx,
       `${file}: MergeTagNode must be configured before MergeTagSuggestion`,
+    ).toBeLessThan(suggIdx);
+    expect(
+      logicIdx,
+      `${file}: LogicMergeTagNode must be configured before MergeTagSuggestion`,
     ).toBeLessThan(suggIdx);
   }
 
@@ -323,6 +333,9 @@ describe('MergeTagSuggestion extension', () => {
     // Phase 3.1: popoverRoot defaults to null; popup falls back to
     // document.body when not provided.
     expect(ext.options.popoverRoot).toBe(null);
+    // syntax defaults to the liquid preset — drives the logic-vs-data node
+    // choice on insert and the keyword badge shown in the popup.
+    expect(ext.options.syntax).toBe(SYNTAX_PRESETS.liquid);
   });
 
   it('accepts configuration', () => {

@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import type { MergeTag } from '@templatical/types';
+import { SYNTAX_PRESETS } from '@templatical/types';
 import MergeTagSuggestionList from '../src/components/MergeTagSuggestionList.vue';
 
 const tags: MergeTag[] = [
@@ -27,6 +28,31 @@ describe('MergeTagSuggestionList', () => {
       '{{first_name}}',
     );
     expect(buttons[2].attributes('data-merge-tag-value')).toBe('{{email}}');
+  });
+
+  it('shows a logic keyword badge for logic-shaped tags only', () => {
+    const mixed: MergeTag[] = [
+      { label: 'First Name', value: '{{first_name}}' },
+      { label: 'VIP block', value: '{% if vip %}' },
+    ];
+    const wrapper = mount(MergeTagSuggestionList, {
+      props: {
+        items: mixed,
+        selectedIndex: 0,
+        emptyText: 'none',
+        syntax: SYNTAX_PRESETS.liquid,
+      },
+    });
+    const badges = wrapper.findAll('[data-testid="merge-tag-logic-badge"]');
+    expect(badges).toHaveLength(1);
+    expect(badges[0].text()).toBe('IF');
+    const buttons = wrapper.findAll('button');
+    expect(
+      buttons[0].find('[data-testid="merge-tag-logic-badge"]').exists(),
+    ).toBe(false);
+    expect(
+      buttons[1].find('[data-testid="merge-tag-logic-badge"]').exists(),
+    ).toBe(true);
   });
 
   it('marks the selected item via data-selected="true"', () => {
