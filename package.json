@@ -11,7 +11,7 @@
     "@microsoft/api-extractor": "^7.58.9",
     "@playwright/mcp": "^0.0.77",
     "@playwright/test": "^1.61.1",
-    "@tailwindcss/vite": "^4.3.1",
+    "@tailwindcss/vite": "^4.3.2",
     "@templatical/editor": "workspace:*",
     "@tiptap/extension-color": "^3.27.1",
     "@tiptap/extension-font-family": "^3.27.1",
