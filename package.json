@@ -23,7 +23,7 @@
     "eslint-plugin-vue": "^10.9.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
-    "prettier": "^3.9.3",
+    "prettier": "^3.9.4",
     "syncpack": "^15.3.2",
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3",
