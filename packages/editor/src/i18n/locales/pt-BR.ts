@@ -128,8 +128,7 @@ const ptBR: typeof en = {
     ratio12: "Proporção 1:2",
     ratio21: "Proporção 2:1",
     borderRadius: "Arredondamento das Bordas",
-    wrapper: "Wrapper",
-    wrapperEnable: "Adicionar moldura externa",
+    wrapperEnable: "Adicionar wrapper",
   },
 
   // Text editor link dialog

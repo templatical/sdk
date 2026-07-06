@@ -8,14 +8,13 @@ import {
 } from "../../constants/styleConstants";
 import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
-import CollapsibleSection from "./CollapsibleSection.vue";
 import type {
   ColumnLayout,
   SectionBlock,
   SectionWrapper,
   SpacingValue,
 } from "@templatical/types";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { rebalanceColumnChildren } from "../../utils/rebalanceColumnChildren";
 
 const props = defineProps<{
@@ -46,8 +45,6 @@ function handleBorderRadiusChange(event: Event): void {
   const borderRadius = Number((event.target as HTMLInputElement).value);
   emit("update", { borderRadius });
 }
-
-const wrapperOpen = ref(false);
 
 function setWrapperEnabled(enabled: boolean): void {
   emit("update", {
@@ -103,11 +100,7 @@ function handleWrapperRadius(event: Event): void {
       <span :class="inputSuffixClass">px</span>
     </div>
   </div>
-  <CollapsibleSection
-    :title="t.section.wrapper"
-    :open="wrapperOpen"
-    @toggle="wrapperOpen = !wrapperOpen"
-  >
+  <div class="tpl:mb-3.5">
     <label
       class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text)]"
     >
@@ -149,5 +142,5 @@ function handleWrapperRadius(event: Event): void {
         </div>
       </div>
     </div>
-  </CollapsibleSection>
+  </div>
 </template>
