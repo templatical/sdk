@@ -9,6 +9,7 @@ import {
   createImageBlock,
   createButtonBlock,
   createDividerBlock,
+  createSectionBlock,
 } from "@templatical/types";
 import type { UseBlockRegistryReturn } from "../src/composables/useBlockRegistry";
 import { markRaw, type Component } from "vue";
@@ -110,5 +111,21 @@ describe("getBlockWrapperStyle", () => {
     const style = getBlockWrapperStyle(block);
     expect(style.padding).toBe("0px 0px 0px 0px");
     expect(style.backgroundColor).toBe("#fff");
+  });
+
+  it("includes borderRadius for a section when set (canvas/preview match export)", () => {
+    const style = getBlockWrapperStyle(createSectionBlock({ borderRadius: 12 }));
+    expect(style.borderRadius).toBe("12px");
+  });
+
+  it("omits borderRadius for a section when unset or zero", () => {
+    expect(getBlockWrapperStyle(createSectionBlock()).borderRadius).toBeUndefined();
+    expect(
+      getBlockWrapperStyle(createSectionBlock({ borderRadius: 0 })).borderRadius,
+    ).toBeUndefined();
+  });
+
+  it("never sets borderRadius for a non-section block", () => {
+    expect(getBlockWrapperStyle(createTitleBlock()).borderRadius).toBeUndefined();
   });
 });
