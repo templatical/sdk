@@ -8,6 +8,7 @@ import TitleBlock from "./TitleBlock.vue";
 import ParagraphBlock from "./ParagraphBlock.vue";
 import { useI18n } from "../../composables";
 import { resolveBlockComponent } from "../../utils/blockComponentResolver";
+import { canDropInSectionColumn } from "../../utils/sectionColumnDrop";
 import type {
   Block,
   CustomBlock as CustomBlockType,
@@ -128,7 +129,7 @@ function handleFetchData(
             name: 'blocks',
             pull: true,
             put: (_to: unknown, _from: unknown, el: HTMLElement) =>
-              el.dataset.blockType !== 'section',
+              canDropInSectionColumn(el),
           }"
           :animation="150"
           ghost-class="tpl-ghost"

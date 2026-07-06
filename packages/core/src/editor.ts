@@ -235,6 +235,12 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     columnIndex = 0,
     index?: number,
   ): void {
+    // Sections cannot be nested inside a column — MJML forbids `mj-section`
+    // inside `mj-column`, so the renderer drops them on export (issue #292).
+    // Reject the nest up front rather than lose the content silently later.
+    if (targetSectionId && block.type === "section") {
+      return;
+    }
     if (targetSectionId) {
       if (isBlockLocked(targetSectionId)) {
         return;
@@ -301,6 +307,12 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
 
     const oldIndex = parent.blocks.findIndex((b) => b.id === blockId);
     if (oldIndex === -1) return;
+
+    // Sections cannot be nested inside a column (issue #292) — refuse to move
+    // a section into a section column; MJML would drop it on export.
+    if (targetSectionId && parent.blocks[oldIndex].type === "section") {
+      return;
+    }
 
     // Resolve target before mutating the source — otherwise an invalid
     // targetSectionId leaves the block spliced-out and unrecoverable.
