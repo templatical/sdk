@@ -112,7 +112,10 @@ function handleWrapperRadius(event: Event): void {
       />
       {{ t.section.wrapperEnable }}
     </label>
-    <div v-if="block.wrapper" class="tpl:mt-3 tpl:space-y-3">
+    <div
+      v-if="block.wrapper"
+      class="tpl:mt-3 tpl:ml-0.5 tpl:space-y-3 tpl:border-l tpl:border-[var(--tpl-border)] tpl:pl-3"
+    >
       <div>
         <label :class="labelClass">{{ t.blockSettings.color }}</label>
         <ColorPicker
