@@ -125,3 +125,28 @@ section.styles = {
   padding: { top: 32, right: 24, bottom: 32, left: 24 },
 };
 ```
+
+Sektionen akzeptieren außerdem einen `borderRadius` (in px, eine sektionsspezifische Eigenschaft) für abgerundete Ecken — nützlich für eine kartenartige Sektion auf einem kontrastierenden Hintergrund:
+
+```ts
+const card = createSectionBlock({ columns: '1', borderRadius: 12 });
+
+card.styles.backgroundColor = '#ffffff';
+```
+
+### Äußerer Rahmen (Wrapper)
+
+Um eine Sektion in einem vollbreiten farbigen Band zu rahmen — z. B. eine weiße Karte auf blauem Hintergrund — setzen Sie `wrapper`. Es rendert ein `mj-wrapper` um die Sektion, mit eigenem Hintergrund, Padding und Eckenradius:
+
+```ts
+const card = createSectionBlock({ columns: '1', borderRadius: 12 });
+card.styles.backgroundColor = '#ffffff';
+
+card.wrapper = {
+  backgroundColor: '#1e3a8a',
+  padding: { top: 24, right: 24, bottom: 24, left: 24 },
+  borderRadius: 16,
+};
+```
+
+Das Padding des Wrappers sorgt dafür, dass das Band um die Sektion herum sichtbar wird. Aktivieren Sie es im Editor über das **Wrapper**-Panel in der Sektions-Symbolleiste. Der Wrapper ist eine Stilebene, kein Container — Sektionen können weiterhin nicht verschachtelt werden.

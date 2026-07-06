@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   resolveBlockComponent,
   getBlockWrapperStyle,
+  getSectionWrapperStyle,
 } from "../src/utils/blockComponentResolver";
 import type { Block } from "@templatical/types";
 import {
@@ -127,5 +128,41 @@ describe("getBlockWrapperStyle", () => {
 
   it("never sets borderRadius for a non-section block", () => {
     expect(getBlockWrapperStyle(createTitleBlock()).borderRadius).toBeUndefined();
+  });
+});
+
+describe("getSectionWrapperStyle", () => {
+  it("returns null for a non-section block", () => {
+    expect(getSectionWrapperStyle(createTitleBlock())).toBeNull();
+  });
+
+  it("returns null for a section without a wrapper", () => {
+    expect(getSectionWrapperStyle(createSectionBlock())).toBeNull();
+  });
+
+  it("builds bg + padding + radius for a wrapped section", () => {
+    const block = createSectionBlock({
+      wrapper: {
+        backgroundColor: "#0000ff",
+        padding: { top: 24, right: 20, bottom: 24, left: 20 },
+        borderRadius: 8,
+      },
+    });
+    expect(getSectionWrapperStyle(block)).toEqual({
+      backgroundColor: "#0000ff",
+      padding: "24px 20px 24px 20px",
+      borderRadius: "8px",
+    });
+  });
+
+  it("omits unset fields — a padding-only frame has no bg or radius", () => {
+    const block = createSectionBlock({
+      wrapper: {
+        padding: { top: 10, right: 10, bottom: 10, left: 10 },
+        borderRadius: 0,
+      },
+    });
+    const style = getSectionWrapperStyle(block);
+    expect(style).toEqual({ padding: "10px 10px 10px 10px" });
   });
 });

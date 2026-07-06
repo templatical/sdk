@@ -87,13 +87,27 @@ describe('block factory functions', () => {
         expect(block.type).toBe('section');
         expect(block.columns).toBe('1');
         expect(block.children).toEqual([[]]);
-        // borderRadius is opt-in: absent by default so existing content is unchanged.
+        // borderRadius + wrapper are opt-in: absent by default so existing content is unchanged.
         expect(block.borderRadius).toBeUndefined();
+        expect(block.wrapper).toBeUndefined();
     });
 
     it('applies a borderRadius override on a section block', () => {
         const block = createSectionBlock({ borderRadius: 12 });
         expect(block.borderRadius).toBe(12);
+    });
+
+    it('applies a wrapper (outer frame) override on a section block', () => {
+        const block = createSectionBlock({
+            wrapper: {
+                backgroundColor: '#123456',
+                padding: { top: 10, right: 10, bottom: 10, left: 10 },
+                borderRadius: 6,
+            },
+        });
+        expect(block.wrapper?.backgroundColor).toBe('#123456');
+        expect(block.wrapper?.padding).toEqual({ top: 10, right: 10, bottom: 10, left: 10 });
+        expect(block.wrapper?.borderRadius).toBe(6);
     });
 
     it('creates a video block with defaults', () => {

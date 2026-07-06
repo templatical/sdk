@@ -3,12 +3,15 @@ import type {
   CustomBlock,
   TemplateContent,
   CustomFont,
+  SectionWrapper,
 } from "@templatical/types";
 import { isSection, isCustomBlock } from "@templatical/types";
 import { RenderContext, DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
 import { renderBlock } from "./renderers";
 import { escapeHtml, escapeAttr } from "./escape";
 import { wrapWithDisplayCondition } from "./display-condition";
+import { bgAttr } from "./utils";
+import { toPaddingString } from "./padding";
 
 export interface RenderOptions {
   customFonts?: CustomFont[];
@@ -145,12 +148,36 @@ ${bodyContent}
 function renderTopLevelBlock(block: Block, context: RenderContext): string {
   if (isSection(block)) {
     const rendered = renderBlock(block, context);
-    return wrapWithDisplayCondition(block, rendered);
+    // An empty render (hidden section) stays empty — never emit a bare wrapper.
+    const framed =
+      block.wrapper && rendered !== ""
+        ? renderSectionWrapper(rendered, block.wrapper)
+        : rendered;
+    return wrapWithDisplayCondition(block, framed);
   }
 
   const content = renderBlock(block, context);
   const wrapped = wrapInSection(content);
   return wrapWithDisplayCondition(block, wrapped);
+}
+
+/**
+ * Wrap a rendered section's `mj-section` in an `mj-wrapper` — a full-width band
+ * (its own background + padding + optional radius) that frames the section.
+ * `mj-wrapper` is the only MJML element that may contain `mj-section`.
+ */
+function renderSectionWrapper(inner: string, wrapper: SectionWrapper): string {
+  const bg = bgAttr(wrapper.backgroundColor, "native");
+  const padding = ` padding="${
+    wrapper.padding ? toPaddingString(wrapper.padding) : "0"
+  }"`;
+  const radius =
+    wrapper.borderRadius && wrapper.borderRadius > 0
+      ? ` border-radius="${wrapper.borderRadius}px"`
+      : "";
+  return `<mj-wrapper${bg}${padding}${radius}>
+${inner}
+</mj-wrapper>`;
 }
 
 /**

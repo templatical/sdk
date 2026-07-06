@@ -15,6 +15,7 @@ export type {
   MenuBlock,
   MenuItemData,
   SectionBlock,
+  SectionWrapper,
   SocialIcon,
   SocialIconSize,
   SocialIconStyle,

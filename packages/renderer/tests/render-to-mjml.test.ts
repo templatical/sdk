@@ -71,6 +71,42 @@ describe('renderToMjml', () => {
     expect(mjml).not.toContain('border-radius');
   });
 
+  it('wraps a section in mj-wrapper (with bg/padding/radius) when section.wrapper is set', async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createSectionBlock({
+        wrapper: {
+          backgroundColor: '#0000ff',
+          padding: { top: 24, right: 20, bottom: 24, left: 20 },
+          borderRadius: 8,
+        },
+        children: [[createParagraphBlock({ content: '<p>Card</p>' })]],
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain('<mj-wrapper');
+    expect(mjml).toContain('background-color="#0000ff"');
+    expect(mjml).toContain('padding="24px 20px 24px 20px"');
+    expect(mjml).toContain('border-radius="8px"');
+    // The section's mj-section must sit INSIDE the wrapper.
+    const inside = mjml.slice(
+      mjml.indexOf('<mj-wrapper'),
+      mjml.indexOf('</mj-wrapper>'),
+    );
+    expect(inside).toContain('<mj-section');
+  });
+
+  it('does not emit mj-wrapper when the section has no wrapper', async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createSectionBlock({
+        children: [[createParagraphBlock({ content: '<p>x</p>' })]],
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).not.toContain('<mj-wrapper');
+  });
+
   it('adds preheader text', async () => {
     const content = createDefaultTemplateContent();
     content.settings.preheaderText = 'Check this out!';

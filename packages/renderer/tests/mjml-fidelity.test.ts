@@ -379,6 +379,32 @@ describe("section border-radius round-trips through MJML", () => {
   });
 });
 
+describe("section wrapper (mj-wrapper) round-trips through MJML", () => {
+  it("an outer wrapper compiles cleanly and frames the inner section card", async () => {
+    const section = createSectionBlock({
+      wrapper: {
+        backgroundColor: "#0000ff",
+        padding: { top: 24, right: 24, bottom: 24, left: 24 },
+        borderRadius: 8,
+      },
+      borderRadius: 12,
+      children: [[createParagraphBlock({ content: "<p>Card</p>" })]],
+    });
+    section.styles.backgroundColor = "#ffffff";
+
+    const mjml = await renderToMjml(makeContent([section]));
+    expect(mjml).toContain("<mj-wrapper");
+
+    // compile() asserts mjml@5 emitted no errors — proves mj-wrapper accepts the
+    // section child + background/padding/border-radius attributes.
+    const html = await compile(mjml);
+    // Outer band color reaches the HTML.
+    expect(html).toContain("#0000ff");
+    // Inner card keeps its own rounded corners (Phase 1 mj-section border-radius).
+    expect(html).toMatch(/border-radius:\s*12px/);
+  });
+});
+
 describe("button color attrs are escaped", () => {
   it("button textColor with quote should not break the MJML attribute", async () => {
     const block = {

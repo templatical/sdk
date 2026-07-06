@@ -204,6 +204,8 @@ Ein Layout-Container, der eine oder mehrere Spalten enthält. Siehe [Sektionen u
 |----------|------|-------------|
 | `columns` | `ColumnLayout` | Preset für das Spaltenlayout |
 | `children` | `Block[][]` | Array von Block-Arrays, eines pro Spalte |
+| `borderRadius` | `number` | Eckenradius in px (optional; weglassen oder `0` für keine Abrundung) |
+| `wrapper` | `SectionWrapper` | Optionaler äußerer Rahmen — `{ backgroundColor?, padding?, borderRadius? }` — gerendert als `mj-wrapper`-Band um die Sektion |
 
 ## Custom
 

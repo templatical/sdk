@@ -11,7 +11,10 @@ import {
   Trash2,
 } from "@lucide/vue";
 import { computed, defineAsyncComponent, inject, nextTick, ref } from "vue";
-import { getBlockWrapperStyle } from "../../utils/blockComponentResolver";
+import {
+  getBlockWrapperStyle,
+  getSectionWrapperStyle,
+} from "../../utils/blockComponentResolver";
 
 const BlockIssueBadge = defineAsyncComponent(
   () => import("../canvas/BlockIssueBadge.vue"),
@@ -151,6 +154,11 @@ const contentStyle = computed(() => {
   return style;
 });
 
+// Section outer frame — the canvas equivalent of the exported `mj-wrapper`:
+// a band with its own background + padding + radius framing the section's box.
+// `null` for non-wrapped blocks keeps the DOM unchanged (no extra element).
+const sectionWrapperStyle = computed(() => getSectionWrapperStyle(props.block));
+
 function handleClick(event: MouseEvent): void {
   if (props.previewMode) {
     return;
@@ -282,7 +290,16 @@ function handleConditionToggle(): void {
          filter. Block chrome (action bar, indicators, overlays) is a
          sibling of this wrapper, so the filter never reaches them — no
          counter-filter needed and no toggle flicker. -->
-    <div class="tpl-block-content" :style="contentStyle">
+    <div
+      v-if="sectionWrapperStyle"
+      class="tpl-section-wrapper"
+      :style="sectionWrapperStyle"
+    >
+      <div class="tpl-block-content" :style="contentStyle">
+        <slot />
+      </div>
+    </div>
+    <div v-else class="tpl-block-content" :style="contentStyle">
       <slot />
     </div>
   </div>

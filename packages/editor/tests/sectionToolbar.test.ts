@@ -7,25 +7,22 @@ import {
 } from "@templatical/types";
 import SectionToolbar from "../src/components/toolbar/SectionToolbar.vue";
 import { TRANSLATIONS_KEY } from "../src/keys";
-
-const translationsStub = {
-  section: {
-    columns: "Columns",
-    column1: "1",
-    column2: "2",
-    column3: "3",
-    ratio12: "1/2",
-    ratio21: "2/1",
-    borderRadius: "Border Radius",
-  },
-} as never;
+import en from "../src/i18n/locales/en";
 
 function mountToolbar(block: ReturnType<typeof createSectionBlock>) {
   return mount(SectionToolbar, {
     props: { block },
     global: {
+      // Real en translations so every label the toolbar (and its children)
+      // references resolves — no hand-maintained stub to drift.
       provide: {
-        [TRANSLATIONS_KEY as symbol]: translationsStub,
+        [TRANSLATIONS_KEY as symbol]: en,
+      },
+      // The wrapper controls mount ColorPicker + SpacingControl; stub them so
+      // these tests exercise SectionToolbar's own logic, not their internals.
+      stubs: {
+        ColorPicker: true,
+        SpacingControl: true,
       },
     },
   });
@@ -124,5 +121,59 @@ describe("SectionToolbar border radius", () => {
     const emits = wrapper.emitted("update");
     expect(emits).toHaveLength(1);
     expect(emits![0][0]).toEqual({ borderRadius: 20 });
+  });
+});
+
+describe("SectionToolbar wrapper (outer frame)", () => {
+  const framed = () =>
+    createSectionBlock({
+      wrapper: {
+        backgroundColor: "#0000ff",
+        padding: { top: 20, right: 20, bottom: 20, left: 20 },
+      },
+    });
+
+  it("enabling the wrapper emits a default frame with padding", async () => {
+    const wrapper = mountToolbar(createSectionBlock());
+    const checkbox = wrapper.find('input[type="checkbox"]');
+    expect((checkbox.element as HTMLInputElement).checked).toBe(false);
+
+    await checkbox.setValue(true);
+
+    const emits = wrapper.emitted("update");
+    expect(emits).toHaveLength(1);
+    expect(emits![0][0]).toEqual({
+      wrapper: { padding: { top: 20, right: 20, bottom: 20, left: 20 } },
+    });
+  });
+
+  it("disabling the wrapper clears it (wrapper: undefined)", async () => {
+    const wrapper = mountToolbar(framed());
+    const checkbox = wrapper.find('input[type="checkbox"]');
+    expect((checkbox.element as HTMLInputElement).checked).toBe(true);
+
+    await checkbox.setValue(false);
+
+    const emits = wrapper.emitted("update");
+    expect(emits).toHaveLength(1);
+    expect((emits![0][0] as { wrapper?: unknown }).wrapper).toBeUndefined();
+  });
+
+  it("changing the wrapper radius merges with the existing frame", async () => {
+    const wrapper = mountToolbar(framed());
+    // With a wrapper present there are two number inputs:
+    // [0] the section's own borderRadius, [1] the wrapper's borderRadius.
+    const inputs = wrapper.findAll('input[type="number"]');
+    expect(inputs).toHaveLength(2);
+
+    await inputs[1].setValue("16");
+
+    expect(wrapper.emitted("update")![0][0]).toEqual({
+      wrapper: {
+        backgroundColor: "#0000ff",
+        padding: { top: 20, right: 20, bottom: 20, left: 20 },
+        borderRadius: 16,
+      },
+    });
   });
 });

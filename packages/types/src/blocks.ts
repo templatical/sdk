@@ -31,12 +31,26 @@ export interface BaseBlock {
 
 export type ColumnLayout = "1" | "2" | "3" | "2-1" | "1-2";
 
+/**
+ * Optional outer frame for a section. When present, the section is rendered
+ * inside an `mj-wrapper` — a full-width band (its own background + padding)
+ * that frames the section, e.g. a white card sitting on a colored band.
+ */
+export interface SectionWrapper {
+  backgroundColor?: string;
+  padding?: SpacingValue;
+  /** Corner radius in px for the outer frame. Omitted/0 = square corners. */
+  borderRadius?: number;
+}
+
 export interface SectionBlock extends BaseBlock {
   type: "section";
   columns: ColumnLayout;
   children: Block[][];
   /** Corner radius in px. Omitted/0 = square corners. */
   borderRadius?: number;
+  /** Optional outer frame (rendered as an `mj-wrapper` around the section). */
+  wrapper?: SectionWrapper;
 }
 
 export type HeadingLevel = 1 | 2 | 3 | 4;
