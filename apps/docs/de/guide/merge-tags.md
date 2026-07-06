@@ -156,6 +156,8 @@ Die `value`-Regex erkennt Daten-Tags. Die `logic`-Regex erkennt Kontrollflussanw
 
 Wenn Benutzer den Syntax-Öffner (z. B. <code v-pre>{{</code> für Liquid/Handlebars, `*|` für Mailchimp, `%%=` für AMPscript) innerhalb eines Titel- oder Absatzblocks eingeben, zeigt der Editor ein Popup mit übereinstimmenden Tags aus dem konfigurierten `tags`-Array an. Das Auswählen eines Eintrags (Mausklick, `Enter` oder `Tab`) fügt es als formatiertes Merge-Tag ein — dieselbe Form, die der Toolbar-Picker erzeugt. `Esc` oder ein Klick außerhalb schließt das Popup.
 
+Ein Tag, dessen `value` ein Logik-Tag ist (z. B. <code v-pre>{% if vip %}</code>), wird als **Logik-Tag** eingefügt — dargestellt als großgeschriebenes Schlüsselwort-Badge — und im Popup mit diesem Badge gelistet, sodass Sie es von einem Daten-Tag unterscheiden können. Siehe [Bedingte Logik über den Picker](#bedingte-logik-uber-den-picker).
+
 Die Filterung ist nicht groß-/kleinschreibungsabhängig und gleicht sowohl `label` als auch `value` ab. Die Liste ist auf 10 Ergebnisse begrenzt.
 
 Die Autovervollständigung ist standardmäßig aktiviert. Sie wird **automatisch deaktiviert**, wenn:
@@ -190,6 +192,7 @@ Der Picker zeigt:
 - das **Label** (fett)
 - den rohen **Wert** (Monospace, gedimmt)
 - die optionale **Beschreibung** (klein, gedimmt), sofern gesetzt
+- ein kleines **Logik-Schlüsselwort-Badge** (IF, FOR, ENDIF…) bei jedem Tag, dessen `value` ein Logik-Tag ist
 
 Wenn mindestens ein Tag ein `group`-Feld trägt, rendert der Picker sektionierte Überschriften in Einfügereihenfolge (der Reihenfolge in Ihrem `tags`-Array). Tags ohne `group` landen unter einer lokalisierten „Sonstige"-Überschrift. Wenn kein Tag eine `group` hat, rendert der Picker eine flache Liste — keine Überschriften, kein „Sonstige"-Eimer.
 
@@ -227,6 +230,38 @@ const editor = await init({
   },
 });
 ```
+
+### Bedingte Logik über den Picker
+
+Ein konfiguriertes Tag wird als **Logik-Tag** eingefügt, sobald sein `value` zum Logik-Muster der Syntax passt (z. B. <code v-pre>{% if vip %}</code> / <code v-pre>{% endif %}</code> in Liquid) — genau die Form, die beim manuellen Tippen des Logik-Tags entsteht. Es wird im Editor als großgeschriebenes Schlüsselwort-Badge dargestellt, und der Picker (sowie die Autovervollständigung beim Tippen) zeigt dasselbe Badge neben der Zeile. So können Autoren, die die Syntax nicht selbst schreiben können, dennoch Steuerlogik einfügen, die wie ein Logik-Tag aussieht und sich auch so verhält.
+
+Geben Sie Logik-Tags eine eigene `group`, damit Benutzer einen klaren Abschnitt „Bedingungen" erhalten:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  mergeTags: {
+    tags: [
+      { label: 'Vorname', value: '{{first_name}}', group: 'Empfänger' },
+      {
+        label: 'Wenn VIP',
+        value: '{% if customer.vip %}',
+        group: 'Bedingungen',
+        description: 'Beginnt einen Block, der nur VIP-Kunden angezeigt wird',
+      },
+      { label: 'Sonst', value: '{% else %}', group: 'Bedingungen' },
+      {
+        label: 'Ende wenn',
+        value: '{% endif %}',
+        group: 'Bedingungen',
+        description: 'Schließt die letzte Bedingung',
+      },
+    ],
+  },
+});
+```
+
+Logik-Tags werden — genau wie Daten-Tags — unverändert in das gerenderte MJML übernommen; Ihre Plattform wertet sie zum Sendezeitpunkt aus. Der Editor erzwingt keine Balancierung, bieten Sie das passende öffnende und schließende Tag (z. B. <code v-pre>{% if %}</code> … <code v-pre>{% endif %}</code>) daher als separate Einträge an, so wie Sie sie auch tippen würden.
 
 ## Dynamisches Tag-Laden
 
