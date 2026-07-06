@@ -125,3 +125,11 @@ section.styles = {
   padding: { top: 32, right: 24, bottom: 32, left: 24 },
 };
 ```
+
+Sections also accept a `borderRadius` (in px, a section-specific property) for rounded corners — useful for a card-style section on a contrasting background:
+
+```ts
+const card = createSectionBlock({ columns: '1', borderRadius: 12 });
+
+card.styles.backgroundColor = '#ffffff';
+```

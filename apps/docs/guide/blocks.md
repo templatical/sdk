@@ -204,6 +204,7 @@ A layout container that holds one or more columns. See [Sections and Columns](/g
 |----------|------|-------------|
 | `columns` | `ColumnLayout` | Column layout preset |
 | `children` | `Block[][]` | Array of block arrays, one per column |
+| `borderRadius` | `number` | Corner radius in px (optional; omit or `0` for square corners) |
 
 ## Custom
 

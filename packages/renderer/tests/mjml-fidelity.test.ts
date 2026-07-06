@@ -360,6 +360,24 @@ describe("nested section does not produce invalid MJML", () => {
   });
 });
 
+describe("section border-radius round-trips through MJML", () => {
+  it("a section with borderRadius compiles cleanly and the radius reaches the HTML", async () => {
+    const section = createSectionBlock({
+      borderRadius: 16,
+      children: [[createParagraphBlock({ content: "<p>Card</p>" })]],
+    });
+    section.styles.backgroundColor = "#ffffff";
+
+    const mjml = await renderToMjml(makeContent([section]));
+    expect(mjml).toContain('border-radius="16px"');
+
+    // compile() asserts mjml@5 emitted no errors (mj-section accepts the attr);
+    // the radius must also survive into the compiled HTML.
+    const html = await compile(mjml);
+    expect(html).toContain("16px");
+  });
+});
+
 describe("button color attrs are escaped", () => {
   it("button textColor with quote should not break the MJML attribute", async () => {
     const block = {

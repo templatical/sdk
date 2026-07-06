@@ -130,6 +130,7 @@ const de: typeof en = {
     column3: "3 Spalten",
     ratio12: "1:2 Verhältnis",
     ratio21: "2:1 Verhältnis",
+    borderRadius: "Eckenradius",
   },
 
   // Text editor link dialog

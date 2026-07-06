@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
-import { inputClass, labelClass } from "../../constants/styleConstants";
+import {
+  inputClass,
+  inputGroupInputClass,
+  inputSuffixClass,
+  labelClass,
+} from "../../constants/styleConstants";
 import type { ColumnLayout, SectionBlock } from "@templatical/types";
 import { computed } from "vue";
 import { rebalanceColumnChildren } from "../../utils/rebalanceColumnChildren";
@@ -28,6 +33,11 @@ function handleColumnsChange(event: Event): void {
   const children = rebalanceColumnChildren(props.block.children, columns);
   emit("update", { columns, children });
 }
+
+function handleBorderRadiusChange(event: Event): void {
+  const borderRadius = Number((event.target as HTMLInputElement).value);
+  emit("update", { borderRadius });
+}
 </script>
 
 <template>
@@ -46,5 +56,19 @@ function handleColumnsChange(event: Event): void {
         {{ option.label }}
       </option>
     </select>
+  </div>
+  <div class="tpl:mb-3.5">
+    <label :class="labelClass">{{ t.section.borderRadius }}</label>
+    <div class="tpl:flex tpl:items-stretch">
+      <input
+        type="number"
+        :class="inputGroupInputClass"
+        :value="block.borderRadius ?? 0"
+        min="0"
+        max="50"
+        @input="handleBorderRadiusChange"
+      />
+      <span :class="inputSuffixClass">px</span>
+    </div>
   </div>
 </template>

@@ -127,6 +127,7 @@ const ptBR: typeof en = {
     column3: "3 Colunas",
     ratio12: "Proporção 1:2",
     ratio21: "Proporção 2:1",
+    borderRadius: "Arredondamento das Bordas",
   },
 
   // Text editor link dialog

@@ -16,6 +16,7 @@ const translationsStub = {
     column3: "3",
     ratio12: "1/2",
     ratio21: "2/1",
+    borderRadius: "Border Radius",
   },
 } as never;
 
@@ -100,5 +101,28 @@ describe("SectionToolbar columns change", () => {
     expect((wrapper.find("select").element as HTMLSelectElement).value).toBe(
       "3",
     );
+  });
+});
+
+describe("SectionToolbar border radius", () => {
+  it("shows 0 when borderRadius is unset", () => {
+    const wrapper = mountToolbar(createSectionBlock());
+    const input = wrapper.find('input[type="number"]');
+    expect((input.element as HTMLInputElement).value).toBe("0");
+  });
+
+  it("reflects an existing borderRadius", () => {
+    const wrapper = mountToolbar(createSectionBlock({ borderRadius: 14 }));
+    const input = wrapper.find('input[type="number"]');
+    expect((input.element as HTMLInputElement).value).toBe("14");
+  });
+
+  it("emits an update with the new borderRadius on input", async () => {
+    const wrapper = mountToolbar(createSectionBlock());
+    await wrapper.find('input[type="number"]').setValue("20");
+
+    const emits = wrapper.emitted("update");
+    expect(emits).toHaveLength(1);
+    expect(emits![0][0]).toEqual({ borderRadius: 20 });
   });
 });
