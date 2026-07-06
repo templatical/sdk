@@ -372,9 +372,10 @@ describe("section border-radius round-trips through MJML", () => {
     expect(mjml).toContain('border-radius="16px"');
 
     // compile() asserts mjml@5 emitted no errors (mj-section accepts the attr);
-    // the radius must also survive into the compiled HTML.
+    // the radius must also survive into the compiled HTML as a real CSS
+    // declaration (not just the "16px" substring floating anywhere).
     const html = await compile(mjml);
-    expect(html).toContain("16px");
+    expect(html).toMatch(/border-radius:\s*16px/);
   });
 });
 
