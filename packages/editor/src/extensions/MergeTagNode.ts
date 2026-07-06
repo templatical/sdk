@@ -3,6 +3,7 @@ import type { MergeTag, SyntaxPreset } from "@templatical/types";
 import { getMergeTagLabel, SYNTAX_PRESETS } from "@templatical/types";
 import { InputRule, mergeAttributes, Node, PasteRule } from "@tiptap/core";
 import { isNodeSelected } from "./isNodeSelected";
+import { mergeTagNodeSpec } from "../utils/mergeTagNodeSpec";
 import { renderVueNodeView } from "./renderVueNodeView";
 
 export interface MergeTagNodeOptions {
@@ -87,12 +88,13 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
       insertMergeTag:
         (attrs: InsertMergeTagAttrs) =>
         ({ commands }) => {
-          // Whitelist explicitly — even if a caller smuggles extra keys via
-          // a wider type assertion, only label/value reach the node attrs.
-          return commands.insertContent({
-            type: this.name,
-            attrs: { label: attrs.label, value: attrs.value },
-          });
+          // Insert a logicMergeTagNode when the value is logic-shaped, else a
+          // data mergeTagNode — matching what manual typing produces via the
+          // input rules. The helper also whitelists attrs, so extra keys a
+          // caller might smuggle via a wider type cannot reach the node.
+          return commands.insertContent(
+            mergeTagNodeSpec(attrs.value, attrs.label, this.options.syntax),
+          );
         },
     };
   },
