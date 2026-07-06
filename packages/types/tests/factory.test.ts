@@ -87,6 +87,13 @@ describe('block factory functions', () => {
         expect(block.type).toBe('section');
         expect(block.columns).toBe('1');
         expect(block.children).toEqual([[]]);
+        // borderRadius is opt-in: absent by default so existing content is unchanged.
+        expect(block.borderRadius).toBeUndefined();
+    });
+
+    it('applies a borderRadius override on a section block', () => {
+        const block = createSectionBlock({ borderRadius: 12 });
+        expect(block.borderRadius).toBe(12);
     });
 
     it('creates a video block with defaults', () => {

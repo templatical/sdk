@@ -639,6 +639,77 @@ describe('moveBlock into section column', () => {
     });
 });
 
+describe('prevents nesting a section inside a column (#292)', () => {
+    it('addBlock refuses to nest a section into a section column', () => {
+        const content = createDefaultTemplateContent();
+        const existingChild = createParagraphBlock({ content: '<p>child</p>' });
+        const section = createSectionBlock({ columns: '1', children: [[existingChild]] });
+        content.blocks = [section];
+        const editor = useEditor({ content });
+
+        const nested = createSectionBlock({ columns: '1' });
+        editor.addBlock(nested, section.id, 0);
+
+        const sec = editor.state.content.blocks[0];
+        expect(sec.type).toBe('section');
+        if (sec.type === 'section') {
+            // Column keeps only its original child; the section is refused.
+            expect(sec.children[0]).toHaveLength(1);
+            expect(sec.children[0][0].id).toBe(existingChild.id);
+        }
+        // Not silently appended at the top level either.
+        expect(editor.state.content.blocks).toHaveLength(1);
+    });
+
+    it('addBlock still allows a section at the top level', () => {
+        const content = createDefaultTemplateContent();
+        content.blocks = [];
+        const editor = useEditor({ content });
+
+        const section = createSectionBlock({ columns: '1' });
+        editor.addBlock(section);
+
+        expect(editor.state.content.blocks).toHaveLength(1);
+        expect(editor.state.content.blocks[0].id).toBe(section.id);
+    });
+
+    it('moveBlock refuses to move a section into a section column', () => {
+        const content = createDefaultTemplateContent();
+        const rootSection = createSectionBlock({ columns: '1' });
+        const targetSection = createSectionBlock({ columns: '1', children: [[]] });
+        content.blocks = [rootSection, targetSection];
+        const editor = useEditor({ content });
+
+        editor.moveBlock(rootSection.id, 0, targetSection.id, 0);
+
+        // Both sections stay at the top level; nothing nested.
+        expect(editor.state.content.blocks).toHaveLength(2);
+        const target = editor.state.content.blocks.find((b) => b.id === targetSection.id);
+        expect(target?.type).toBe('section');
+        if (target?.type === 'section') {
+            expect(target.children[0]).toHaveLength(0);
+        }
+    });
+
+    it('moveBlock still moves a non-section block into a section column', () => {
+        const content = createDefaultTemplateContent();
+        const rootBlock = createParagraphBlock({ content: '<p>Root</p>' });
+        const targetSection = createSectionBlock({ columns: '1', children: [[]] });
+        content.blocks = [rootBlock, targetSection];
+        const editor = useEditor({ content });
+
+        editor.moveBlock(rootBlock.id, 0, targetSection.id, 0);
+
+        expect(editor.state.content.blocks).toHaveLength(1);
+        const target = editor.state.content.blocks[0];
+        expect(target.type).toBe('section');
+        if (target.type === 'section') {
+            expect(target.children[0]).toHaveLength(1);
+            expect(target.children[0][0].id).toBe(rootBlock.id);
+        }
+    });
+});
+
 describe('column index validation', () => {
     it('addBlock rejects out-of-range columnIndex for "1" layout section', () => {
         const content = createDefaultTemplateContent();

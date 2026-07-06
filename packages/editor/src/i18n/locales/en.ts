@@ -125,6 +125,7 @@ export default {
     column3: "3 Columns",
     ratio12: "1:2 Ratio",
     ratio21: "2:1 Ratio",
+    borderRadius: "Border Radius",
   },
 
   // Text editor link dialog

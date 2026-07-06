@@ -139,7 +139,16 @@ const blockCommentCount = computed(
 // inverts together with its content.
 const contentStyle = computed(() => {
   const full = getBlockWrapperStyle(props.block);
-  return { padding: full.padding, backgroundColor: full.backgroundColor };
+  const style: Record<string, string> = {
+    padding: full.padding,
+    backgroundColor: full.backgroundColor,
+  };
+  // Section corner radius (when set) rounds the same element that carries the
+  // background, matching the exported MJML.
+  if (full.borderRadius) {
+    style.borderRadius = full.borderRadius;
+  }
+  return style;
 });
 
 function handleClick(event: MouseEvent): void {

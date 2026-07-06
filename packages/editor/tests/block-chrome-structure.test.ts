@@ -231,16 +231,22 @@ describe("section drag + cycle defenses", () => {
     );
   });
 
-  it("section's `put` predicate rejects nested section blocks", () => {
+  it("section's `put` predicate rejects nested section blocks (palette + canvas)", () => {
     // Section blocks must never accept another section as a child — a
     // nested section would create a column-inside-column layout that
-    // breaks the renderer + creates an infinite-nesting hazard for the
-    // history cycle defender. The `put` callback inspects
-    // `el.dataset.blockType` and returns false when the dragged item is
-    // a section. Don't change this predicate without updating the
-    // renderer + history defenses to cope with nested sections.
+    // MJML rejects (`mj-section` inside `mj-column`), so the renderer
+    // silently drops it on export (#292), and it's a hazard for the
+    // history cycle defender. The `put` callback delegates to
+    // `canDropInSectionColumn`, which rejects a section dragged from
+    // EITHER the canvas (`data-block-type`) or the sidebar palette
+    // (`data-palette-type`). The palette case is the hole that shipped
+    // #292; behavioral coverage lives in tests/sectionColumnDrop.test.ts.
+    // Don't change this without updating the renderer + history defenses.
     expect(sectionBlock).toMatch(
-      /put:\s*\([^)]*\)\s*=>\s*\n?\s*el\.dataset\.blockType\s*!==\s*['"]section['"]/,
+      /import\s*\{\s*canDropInSectionColumn\s*\}\s*from\s*["']\.\.\/\.\.\/utils\/sectionColumnDrop["']/,
+    );
+    expect(sectionBlock).toMatch(
+      /put:\s*\([^)]*\)\s*=>\s*\n?\s*canDropInSectionColumn\(el\)/,
     );
   });
 

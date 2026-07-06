@@ -47,6 +47,30 @@ describe('renderToMjml', () => {
     expect(mjml).toContain('In section');
   });
 
+  it('emits border-radius on a section when set', async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createSectionBlock({
+        borderRadius: 12,
+        children: [[createParagraphBlock({ content: '<p>Card</p>' })]],
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain('border-radius="12px"');
+  });
+
+  it('omits border-radius on a section when zero', async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createSectionBlock({
+        borderRadius: 0,
+        children: [[createParagraphBlock({ content: '<p>x</p>' })]],
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).not.toContain('border-radius');
+  });
+
   it('adds preheader text', async () => {
     const content = createDefaultTemplateContent();
     content.settings.preheaderText = 'Check this out!';

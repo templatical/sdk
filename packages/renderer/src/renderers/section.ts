@@ -30,6 +30,10 @@ export function renderSection(
   const padding = toPaddingString(block.styles.padding);
   const bgColor = bgAttr(block.styles.backgroundColor, "native");
   const visibilityAttr = getCssClassAttr(block);
+  const borderRadiusAttr =
+    block.borderRadius && block.borderRadius > 0
+      ? ` border-radius="${block.borderRadius}px"`
+      : "";
 
   const children = block.children;
   const columnsContent: string[] = [];
@@ -68,7 +72,7 @@ ${content}
 
   const columns = columnsContent.join("\n");
 
-  return `<mj-section${bgColor} padding="${padding}"${visibilityAttr}>
+  return `<mj-section${bgColor} padding="${padding}"${borderRadiusAttr}${visibilityAttr}>
 ${columns}
 </mj-section>`;
 }

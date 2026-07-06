@@ -35,6 +35,8 @@ export interface SectionBlock extends BaseBlock {
   type: "section";
   columns: ColumnLayout;
   children: Block[][];
+  /** Corner radius in px. Omitted/0 = square corners. */
+  borderRadius?: number;
 }
 
 export type HeadingLevel = 1 | 2 | 3 | 4;

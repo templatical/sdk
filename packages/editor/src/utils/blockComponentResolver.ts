@@ -26,8 +26,19 @@ export function resolveBlockComponent(
  */
 export function getBlockWrapperStyle(block: Block): Record<string, string> {
   const { padding, backgroundColor } = block.styles;
-  return {
+  const style: Record<string, string> = {
     padding: `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`,
     backgroundColor: backgroundColor || "transparent",
   };
+  // borderRadius is section-specific (it lives on SectionBlock, not `styles`).
+  // Mirror it into the editor box style so the canvas/preview match the
+  // exported MJML, which renders it as `border-radius` on the `mj-section`.
+  if (
+    block.type === "section" &&
+    block.borderRadius &&
+    block.borderRadius > 0
+  ) {
+    style.borderRadius = `${block.borderRadius}px`;
+  }
+  return style;
 }
