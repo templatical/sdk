@@ -18,6 +18,8 @@ import type { Translations } from "../i18n";
 import { getSyntaxTriggerChar } from "@templatical/types";
 import { EDITOR_KEY, TRANSLATIONS_KEY } from "../keys";
 import { useMergeTag } from "./useMergeTag";
+import { useLogicTag } from "./useLogicTag";
+import { insertLogicTagSelection } from "../utils/insertLogicTag";
 import { useRichTextLinkDialog } from "./useRichTextLinkDialog";
 import { logger } from "../utils/logger";
 
@@ -58,12 +60,15 @@ export interface UseRichTextEditorReturn {
   canRequestMergeTag: ReturnType<typeof useMergeTag>["canRequestMergeTag"];
   isRequestingMergeTag: ReturnType<typeof useMergeTag>["isRequesting"];
   syntax: ReturnType<typeof useMergeTag>["syntax"];
+  canInsertLogicTag: ReturnType<typeof useLogicTag>["canInsertLogicTag"];
+  isRequestingLogicTag: ReturnType<typeof useLogicTag>["isRequesting"];
   openLinkDialog: () => void;
   insertLink: () => void;
   removeLink: () => void;
   closeLinkDialog: () => void;
   handleLinkKeydown: (event: KeyboardEvent) => void;
   handleAddMergeTag: () => Promise<void>;
+  handleAddLogicTag: () => Promise<void>;
 }
 
 export function useRichTextEditor(
@@ -79,6 +84,12 @@ export function useRichTextEditor(
     syntax,
     autocomplete: autocompleteEnabled,
   } = useMergeTag();
+
+  const {
+    canInsertLogicTag,
+    isRequesting: isRequestingLogicTag,
+    requestLogicTag,
+  } = useLogicTag();
 
   const injectedTranslations = inject(TRANSLATIONS_KEY, null) as
     Translations | Ref<Translations> | null;
@@ -198,7 +209,12 @@ export function useRichTextEditor(
   );
 
   function handleClickOutside(event: MouseEvent): void {
-    if (isRequestingMergeTag.value) return;
+    // Suppress while either built-in picker is open: its modal lives in the
+    // popover root (outside .tpl-text-editor-wrapper), so a click on a picker
+    // item would otherwise fall through to onDone() and tear the block out of
+    // edit mode before the pending insert runs — the insert then no-ops on the
+    // `destroyed` guard and nothing lands.
+    if (isRequestingMergeTag.value || isRequestingLogicTag.value) return;
 
     // `event.target` gets retargeted to the shadow host when the editor
     // mounts inside a shadow root and the listener is at `document`
@@ -253,6 +269,16 @@ export function useRichTextEditor(
     }
   }
 
+  async function handleAddLogicTag(): Promise<void> {
+    const item = await requestLogicTag();
+    if (destroyed) return;
+    if (item && editor.value) {
+      insertLogicTagSelection(editor.value, item, syntax);
+    } else {
+      editor.value?.commands.focus();
+    }
+  }
+
   return {
     editor,
     EditorContent,
@@ -266,11 +292,14 @@ export function useRichTextEditor(
     canRequestMergeTag,
     isRequestingMergeTag,
     syntax,
+    canInsertLogicTag,
+    isRequestingLogicTag,
     openLinkDialog,
     insertLink,
     removeLink,
     closeLinkDialog,
     handleLinkKeydown,
     handleAddMergeTag,
+    handleAddLogicTag,
   };
 }

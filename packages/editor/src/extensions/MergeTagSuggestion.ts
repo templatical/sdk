@@ -1,5 +1,4 @@
-import type { MergeTag, SyntaxPreset } from "@templatical/types";
-import { SYNTAX_PRESETS } from "@templatical/types";
+import type { MergeTag } from "@templatical/types";
 import { Extension } from "@tiptap/core";
 import Suggestion, {
   type SuggestionOptions,
@@ -8,7 +7,6 @@ import Suggestion, {
 } from "@tiptap/suggestion";
 import { type App, createApp, h, ref, type Ref } from "vue";
 import MergeTagSuggestionList from "../components/MergeTagSuggestionList.vue";
-import { mergeTagNodeSpec } from "../utils/mergeTagNodeSpec";
 
 const MAX_RESULTS = 10;
 
@@ -22,12 +20,6 @@ export interface MergeTagSuggestionOptions {
   char: string;
   /** Localized empty-state label */
   emptyText: string;
-  /**
-   * Resolved syntax preset. Decides whether a selected tag whose `value` is
-   * logic-shaped inserts a `logicMergeTagNode` (vs a data `mergeTagNode`),
-   * and drives the keyword badge shown next to logic tags in the popup.
-   */
-  syntax: SyntaxPreset;
   /**
    * Mount target for the suggestion popup. When provided with a non-null
    * `.value`, the popup attaches into that element instead of
@@ -101,7 +93,6 @@ export function handleSuggestionKeyDown(
 export function createMergeTagSuggestionRenderer(
   emptyText: string,
   popoverRootRef?: Ref<HTMLElement | null> | null,
-  syntax: SyntaxPreset = SYNTAX_PRESETS.liquid,
 ): NonNullable<SuggestionOptions<MergeTag>["render"]> {
   return () => {
     let app: App | null = null;
@@ -311,7 +302,6 @@ export function createMergeTagSuggestionRenderer(
               selectedIndex: selectedIndex.value,
               emptyText,
               listId,
-              syntax,
               onSelect: (item: MergeTag) => select(item),
               onHover: (index: number) => {
                 selectedIndex.value = index;
@@ -379,7 +369,6 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
       char: "{{",
       emptyText: "No matching merge tags",
       popoverRoot: null,
-      syntax: SYNTAX_PRESETS.liquid,
     };
   },
 
@@ -387,7 +376,6 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
     const tags = this.options.mergeTags;
     const emptyText = this.options.emptyText;
     const popoverRootRef = this.options.popoverRoot;
-    const syntax = this.options.syntax;
 
     const config: Omit<SuggestionOptions<MergeTag>, "editor"> = {
       char: this.options.char,
@@ -409,22 +397,17 @@ export const MergeTagSuggestion = Extension.create<MergeTagSuggestionOptions>({
         // Use insertContentAt for atomic replace (matches the canonical
         // @tiptap/suggestion + Mention pattern). Avoids edge cases where
         // chained deleteRange + insertMergeTag fails to insert when the
-        // selection state shifts mid-chain. The node type is resolved from
-        // the value's shape so a logic-shaped tag inserts a logicMergeTagNode.
+        // selection state shifts mid-chain.
         editor
           .chain()
           .focus()
-          .insertContentAt(
-            range,
-            mergeTagNodeSpec(props.value, props.label, syntax),
-          )
+          .insertContentAt(range, {
+            type: "mergeTagNode",
+            attrs: { label: props.label, value: props.value },
+          })
           .run();
       },
-      render: createMergeTagSuggestionRenderer(
-        emptyText,
-        popoverRootRef,
-        syntax,
-      ),
+      render: createMergeTagSuggestionRenderer(emptyText, popoverRootRef),
     };
 
     return [

@@ -85,11 +85,15 @@ Beyond data tags, the editor also recognizes logic tags -- conditional statement
 
 When a logic tag is detected in content, the editor extracts the keyword (the first capture group from the logic regex) and displays it as an uppercase badge -- for example, `{% if customer.vip %}` renders as **IF** and `{% endif %}` renders as **ENDIF**. Hovering over the badge shows the full tag value as a tooltip. Users can click the badge to edit the raw value.
 
-![Logic tag displayed in the editor](/images/logic-tag.png)
+![Logic tag displayed in the editor](/images/logic-tags-selection-3.png)
 
 Logic tags are styled differently from data tags (outlined badge with primary color vs filled background) so template authors can distinguish between data tags and control flow at a glance.
 
 Like data tags, logic tags pass through unchanged in the rendered MJML — your sending platform evaluates them at send time.
+
+::: tip Inserting logic tags
+This section covers **highlighting** — any logic tag you type or paste is detected automatically. To let users **insert** logic tags without typing them (a dedicated **Logic** button, condition/loop blocks that wrap a selection), see the separate [Logic Tags](/guide/logic-tags) guide. Logic is configured independently of merge tags.
+:::
 
 Examples of logic tags by preset:
 
@@ -156,8 +160,6 @@ The `value` regex detects data tags. The `logic` regex detects control flow stat
 
 When users type the syntax opener (e.g. <code v-pre>{{</code> for Liquid/Handlebars, `*|` for Mailchimp, `%%=` for AMPscript) inside a title or paragraph block, the editor surfaces a popup listing matching tags from the configured `tags` array. Selecting an item (mouse click, `Enter`, or `Tab`) inserts it as a styled merge tag — the same form produced by the toolbar picker. `Esc` or clicking elsewhere dismisses the popup.
 
-A tag whose `value` is a logic tag (e.g. <code v-pre>{% if vip %}</code>) is inserted as a **logic tag** — rendered as an uppercase keyword badge — and is listed in the popup with that badge so you can tell it apart from a data tag. See [Conditional logic via the picker](#conditional-logic-via-the-picker).
-
 Filtering is case-insensitive and matches against both `label` and `value`. The list is capped at 10 results.
 
 Autocomplete is enabled by default. It is **automatically disabled** when:
@@ -179,11 +181,11 @@ const editor = await init({
 });
 ```
 
-The toolbar's "Insert merge tag" button continues to work regardless of the autocomplete setting.
+The toolbar's **Merge tag** button continues to work regardless of the autocomplete setting.
 
 ## Built-in picker
 
-When you configure `mergeTags.tags` without an `onRequest` callback, clicking the "Insert merge tag" button in the rich text toolbar (or next to a sidebar text input) opens a built-in modal picker. The picker lists every tag from `tags`, supports keyboard navigation, and offers a search field that matches against `label`, `value`, and `description`.
+When you configure `mergeTags.tags` without an `onRequest` callback, clicking the **Merge tag** button in the rich text toolbar (or next to a sidebar text input) opens a built-in modal picker. The picker lists every tag from `tags`, supports keyboard navigation, and offers a search field that matches against `label`, `value`, and `description`.
 
 ![Built-in merge tag picker](/images/merge-tag-picker.png)
 
@@ -192,7 +194,6 @@ The picker shows:
 - the **label** (bold)
 - the raw **value** (mono, dim)
 - the optional **description** (small, dim) when set
-- a small **logic keyword badge** (IF, FOR, ENDIF…) on any tag whose `value` is a logic tag
 
 When at least one tag carries a `group` field, the picker renders sectioned headers in insertion order (the order tags appear in your `tags` array). Tags without `group` fall under a localized "Other" header. When no tag has a `group`, the picker renders a plain flat list — no headers, no "Other" bucket.
 
@@ -231,38 +232,6 @@ const editor = await init({
 });
 ```
 
-### Conditional logic via the picker
-
-A configured tag is inserted as a **logic tag** whenever its `value` matches the syntax's logic pattern (e.g. <code v-pre>{% if vip %}</code> / <code v-pre>{% endif %}</code> in Liquid) — exactly the form produced by typing the logic tag by hand. It renders as an uppercase keyword badge in the editor, and the picker (and typing-autocomplete) shows that same badge next to the row. This lets authors who can't write the syntax from scratch drop in control flow that still looks and behaves like a logic tag.
-
-Give logic tags a dedicated `group` so users get a clear "Conditions" section:
-
-```ts
-const editor = await init({
-  container: '#editor',
-  mergeTags: {
-    tags: [
-      { label: 'First Name', value: '{{first_name}}', group: 'Recipient' },
-      {
-        label: 'If VIP',
-        value: '{% if customer.vip %}',
-        group: 'Conditions',
-        description: 'Start a block shown only to VIP customers',
-      },
-      { label: 'Else', value: '{% else %}', group: 'Conditions' },
-      {
-        label: 'End if',
-        value: '{% endif %}',
-        group: 'Conditions',
-        description: 'Close the most recent conditional',
-      },
-    ],
-  },
-});
-```
-
-Logic tags pass through to the rendered MJML unchanged, just like data tags — your platform evaluates them at send time. The editor does not enforce balancing, so offer the matching opening and closing tags (e.g. <code v-pre>{% if %}</code> … <code v-pre>{% endif %}</code>) as separate entries, the same way you would type them.
-
 ## Dynamic tag loading
 
 For large or context-dependent tag lists, use the `onRequest` callback instead of (or in addition to) a static `tags` array. The editor calls this function when the user clicks to insert a merge tag. Use it to open a custom picker modal, fetch available merge tags from your API, or build a context-aware tag list based on the current user. Return the selected `MergeTag` or `null` to cancel.
@@ -280,7 +249,7 @@ const editor = await init({
 ```
 
 ::: tip Precedence
-If you provide both `tags` and `onRequest`, `onRequest` takes precedence — the "Insert merge tag" button always calls your callback. The static `tags` array still powers the typing-autocomplete suggestion list.
+If you provide both `tags` and `onRequest`, `onRequest` takes precedence — the **Merge tag** button always calls your callback. The static `tags` array still powers the typing-autocomplete suggestion list.
 :::
 
 ## Merge tags in other inputs

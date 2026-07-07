@@ -671,8 +671,13 @@
     font-size: 12px;
     font-weight: 500;
     line-height: 1.4;
+    /* Size to the value's natural single-line width so short tags (e.g.
+       `{% if customer.vip %}`) don't shrink-fit against the tiny badge
+       (this ::after's positioned containing block) and wrap. The cap keeps
+       genuinely long values wrapping instead of overflowing the viewport. */
     white-space: normal;
-    max-width: 220px;
+    width: max-content;
+    max-width: min(320px, 90vw);
     text-align: center;
     pointer-events: none;
     opacity: 0;

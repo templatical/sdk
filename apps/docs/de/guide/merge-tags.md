@@ -85,11 +85,15 @@ Neben Daten-Tags erkennt der Editor auch Logik-Tags -- bedingte Anweisungen, Sch
 
 Wenn ein Logik-Tag im Inhalt erkannt wird, extrahiert der Editor das Schlüsselwort (die erste Erfassungsgruppe aus der Logik-Regex) und zeigt es als Großbuchstaben-Abzeichen an -- zum Beispiel wird `{% if customer.vip %}` als **IF** gerendert und `{% endif %}` als **ENDIF**. Beim Hovern über das Abzeichen wird der vollständige Tag-Wert als Tooltip angezeigt. Benutzer können auf das Abzeichen klicken, um den Rohwert zu bearbeiten.
 
-![Logik-Tag im Editor angezeigt](/images/logic-tag.png)
+![Logik-Tag im Editor angezeigt](/images/logic-tags-selection-3.png)
 
 Logik-Tags werden anders formatiert als Daten-Tags (umrahmtes Abzeichen mit Primärfarbe vs. gefüllter Hintergrund), sodass Template-Autoren auf einen Blick zwischen Daten-Tags und Kontrollfluss unterscheiden können.
 
 Wie Daten-Tags werden Logik-Tags unverändert im gerenderten MJML durchgereicht — Ihre Versandplattform wertet sie zum Versandzeitpunkt aus.
+
+::: tip Logik-Tags einfügen
+Dieser Abschnitt behandelt die **Hervorhebung** — jedes Logik-Tag, das Sie tippen oder einfügen, wird automatisch erkannt. Um Benutzern das **Einfügen** von Logik-Tags ohne Tippen zu ermöglichen (eine eigene Schaltfläche **Logik**, Bedingungs-/Schleifenblöcke, die eine Auswahl umschließen), siehe den separaten Leitfaden [Logik-Tags](/de/guide/logic-tags). Logik wird unabhängig von Merge-Tags konfiguriert.
+:::
 
 Beispiele für Logik-Tags nach Preset:
 
@@ -156,8 +160,6 @@ Die `value`-Regex erkennt Daten-Tags. Die `logic`-Regex erkennt Kontrollflussanw
 
 Wenn Benutzer den Syntax-Öffner (z. B. <code v-pre>{{</code> für Liquid/Handlebars, `*|` für Mailchimp, `%%=` für AMPscript) innerhalb eines Titel- oder Absatzblocks eingeben, zeigt der Editor ein Popup mit übereinstimmenden Tags aus dem konfigurierten `tags`-Array an. Das Auswählen eines Eintrags (Mausklick, `Enter` oder `Tab`) fügt es als formatiertes Merge-Tag ein — dieselbe Form, die der Toolbar-Picker erzeugt. `Esc` oder ein Klick außerhalb schließt das Popup.
 
-Ein Tag, dessen `value` ein Logik-Tag ist (z. B. <code v-pre>{% if vip %}</code>), wird als **Logik-Tag** eingefügt — dargestellt als großgeschriebenes Schlüsselwort-Badge — und im Popup mit diesem Badge gelistet, sodass Sie es von einem Daten-Tag unterscheiden können. Siehe [Bedingte Logik über den Picker](#bedingte-logik-uber-den-picker).
-
 Die Filterung ist nicht groß-/kleinschreibungsabhängig und gleicht sowohl `label` als auch `value` ab. Die Liste ist auf 10 Ergebnisse begrenzt.
 
 Die Autovervollständigung ist standardmäßig aktiviert. Sie wird **automatisch deaktiviert**, wenn:
@@ -179,11 +181,11 @@ const editor = await init({
 });
 ```
 
-Die Schaltfläche „Merge-Tag einfügen" in der Symbolleiste funktioniert weiterhin unabhängig von der Autovervollständigungs-Einstellung.
+Die Schaltfläche **Merge-Tag** in der Symbolleiste funktioniert weiterhin unabhängig von der Autovervollständigungs-Einstellung.
 
 ## Integrierter Picker
 
-Wenn Sie `mergeTags.tags` ohne `onRequest`-Callback konfigurieren, öffnet ein Klick auf die Schaltfläche „Merge-Tag einfügen" in der Rich-Text-Symbolleiste (oder neben einem Texteingabefeld in der Seitenleiste) ein integriertes modales Picker-Fenster. Der Picker listet jedes Tag aus `tags` auf, unterstützt Tastaturnavigation und bietet ein Suchfeld, das gegen `label`, `value` und `description` filtert.
+Wenn Sie `mergeTags.tags` ohne `onRequest`-Callback konfigurieren, öffnet ein Klick auf die Schaltfläche **Merge-Tag** in der Rich-Text-Symbolleiste (oder neben einem Texteingabefeld in der Seitenleiste) ein integriertes modales Picker-Fenster. Der Picker listet jedes Tag aus `tags` auf, unterstützt Tastaturnavigation und bietet ein Suchfeld, das gegen `label`, `value` und `description` filtert.
 
 ![Integrierter Merge-Tag-Picker](/images/merge-tag-picker.png)
 
@@ -192,7 +194,6 @@ Der Picker zeigt:
 - das **Label** (fett)
 - den rohen **Wert** (Monospace, gedimmt)
 - die optionale **Beschreibung** (klein, gedimmt), sofern gesetzt
-- ein kleines **Logik-Schlüsselwort-Badge** (IF, FOR, ENDIF…) bei jedem Tag, dessen `value` ein Logik-Tag ist
 
 Wenn mindestens ein Tag ein `group`-Feld trägt, rendert der Picker sektionierte Überschriften in Einfügereihenfolge (der Reihenfolge in Ihrem `tags`-Array). Tags ohne `group` landen unter einer lokalisierten „Sonstige"-Überschrift. Wenn kein Tag eine `group` hat, rendert der Picker eine flache Liste — keine Überschriften, kein „Sonstige"-Eimer.
 
@@ -231,38 +232,6 @@ const editor = await init({
 });
 ```
 
-### Bedingte Logik über den Picker
-
-Ein konfiguriertes Tag wird als **Logik-Tag** eingefügt, sobald sein `value` zum Logik-Muster der Syntax passt (z. B. <code v-pre>{% if vip %}</code> / <code v-pre>{% endif %}</code> in Liquid) — genau die Form, die beim manuellen Tippen des Logik-Tags entsteht. Es wird im Editor als großgeschriebenes Schlüsselwort-Badge dargestellt, und der Picker (sowie die Autovervollständigung beim Tippen) zeigt dasselbe Badge neben der Zeile. So können Autoren, die die Syntax nicht selbst schreiben können, dennoch Steuerlogik einfügen, die wie ein Logik-Tag aussieht und sich auch so verhält.
-
-Geben Sie Logik-Tags eine eigene `group`, damit Benutzer einen klaren Abschnitt „Bedingungen" erhalten:
-
-```ts
-const editor = await init({
-  container: '#editor',
-  mergeTags: {
-    tags: [
-      { label: 'Vorname', value: '{{first_name}}', group: 'Empfänger' },
-      {
-        label: 'Wenn VIP',
-        value: '{% if customer.vip %}',
-        group: 'Bedingungen',
-        description: 'Beginnt einen Block, der nur VIP-Kunden angezeigt wird',
-      },
-      { label: 'Sonst', value: '{% else %}', group: 'Bedingungen' },
-      {
-        label: 'Ende wenn',
-        value: '{% endif %}',
-        group: 'Bedingungen',
-        description: 'Schließt die letzte Bedingung',
-      },
-    ],
-  },
-});
-```
-
-Logik-Tags werden — genau wie Daten-Tags — unverändert in das gerenderte MJML übernommen; Ihre Plattform wertet sie zum Sendezeitpunkt aus. Der Editor erzwingt keine Balancierung, bieten Sie das passende öffnende und schließende Tag (z. B. <code v-pre>{% if %}</code> … <code v-pre>{% endif %}</code>) daher als separate Einträge an, so wie Sie sie auch tippen würden.
-
 ## Dynamisches Tag-Laden
 
 Für große oder kontextabhängige Tag-Listen verwenden Sie den `onRequest`-Callback anstelle von (oder zusätzlich zu) einem statischen `tags`-Array. Der Editor ruft diese Funktion auf, wenn der Benutzer klickt, um ein Merge-Tag einzufügen. Verwenden Sie sie, um ein benutzerdefiniertes Picker-Modal zu öffnen, verfügbare Merge-Tags von Ihrer API abzurufen oder eine kontextbezogene Tag-Liste basierend auf dem aktuellen Benutzer zu erstellen. Geben Sie das ausgewählte `MergeTag` oder `null` zurück, um abzubrechen.
@@ -280,7 +249,7 @@ const editor = await init({
 ```
 
 ::: tip Vorrangregel
-Wenn Sie sowohl `tags` als auch `onRequest` angeben, hat `onRequest` Vorrang — die Schaltfläche „Merge-Tag einfügen" ruft immer Ihren Callback auf. Das statische `tags`-Array versorgt weiterhin die Autovervollständigungs-Vorschläge beim Tippen.
+Wenn Sie sowohl `tags` als auch `onRequest` angeben, hat `onRequest` Vorrang — die Schaltfläche **Merge-Tag** ruft immer Ihren Callback auf. Das statische `tags`-Array versorgt weiterhin die Autovervollständigungs-Vorschläge beim Tippen.
 :::
 
 ## Merge-Tags in anderen Eingaben

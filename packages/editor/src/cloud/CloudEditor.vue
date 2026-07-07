@@ -28,6 +28,7 @@ import CloudErrorOverlay from "./components/CloudErrorOverlay.vue";
 import SnapshotPreviewBanner from "./components/SnapshotPreviewBanner.vue";
 import CollabUndoToast from "./components/CollabUndoToast.vue";
 import MergeTagPickerModal from "../components/MergeTagPickerModal.vue";
+import LogicTagPickerModal from "../components/LogicTagPickerModal.vue";
 import "../styles/index.css";
 
 export type { TemplaticalCloudEditorConfig } from "./cloudConfig";
@@ -434,6 +435,9 @@ defineExpose({
     <!-- Built-in merge tag picker modal. Reads picker state via injection;
          renders nothing until `picker.isOpen` flips true. -->
     <MergeTagPickerModal />
+
+    <!-- Built-in logic picker modal (standalone logic feature). -->
+    <LogicTagPickerModal />
 
     <!-- Small-screen gate (#235). Last child + a literal z-index above the
          chrome and `.tpl-popover-root`, so the opaque notice covers everything

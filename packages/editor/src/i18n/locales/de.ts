@@ -474,6 +474,7 @@ const de: typeof en = {
     clickToEdit: "Zum Bearbeiten klicken",
     remove: "Merge-Tag entfernen",
     insert: "Merge-Tag einfügen",
+    insertShort: "Merge-Tag",
     editValue: "Merge-Tag-Wert bearbeiten",
     deleteMergeTag: "Merge-Tag löschen",
     suggestionEmpty: "Keine passenden Merge-Tags",
@@ -487,6 +488,21 @@ const de: typeof en = {
       cancel: "Abbrechen",
       close: "Schließen",
       groupCount: "{count}",
+    },
+  },
+
+  // Logic tags (standalone, separate from merge tags)
+  logicTag: {
+    insert: "Logik einfügen",
+    insertShort: "Logik",
+    picker: {
+      title: "Logik einfügen",
+      searchPlaceholder: "Logik-Tags suchen",
+      searchAriaLabel: "Logik-Tags suchen",
+      noResults: "Keine passenden Logik-Tags",
+      empty: "Keine Logik-Tags konfiguriert",
+      otherGroup: "Sonstige",
+      close: "Schließen",
     },
   },
 

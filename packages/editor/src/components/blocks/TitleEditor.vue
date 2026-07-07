@@ -3,12 +3,20 @@ import { useI18n } from "../../composables";
 import { useRichTextEditor } from "../../composables/useRichTextEditor";
 import { usePopoverRoot } from "../../composables/usePopoverRoot";
 import type { TitleBlock as TitleBlockType } from "@templatical/types";
-import { Bold, Italic, Link, LoaderCircle, ScanLine } from "@lucide/vue";
+import {
+  Bold,
+  Braces,
+  Italic,
+  Link,
+  LoaderCircle,
+  ScanLine,
+} from "@lucide/vue";
 import { computed, inject } from "vue";
 import {
   THEME_STYLES_KEY,
   UI_THEME_KEY,
   MERGE_TAG_PICKER_KEY,
+  LOGIC_TAG_PICKER_KEY,
 } from "../../keys";
 import RichTextLinkDialog from "./RichTextLinkDialog.vue";
 import RichTextEditorContent from "./RichTextEditorContent.vue";
@@ -25,10 +33,13 @@ const emit = defineEmits<{
 const themeStyles = inject(THEME_STYLES_KEY, null);
 const tplUiTheme = inject(UI_THEME_KEY, null);
 const popoverRoot = usePopoverRoot();
-// Hide the floating toolbar while the built-in merge tag picker modal is
-// open — see ParagraphToolbar.vue for the same rationale.
+// Hide the floating toolbar while either built-in picker modal is open — see
+// ParagraphToolbar.vue for the same rationale.
 const picker = inject(MERGE_TAG_PICKER_KEY, null);
-const pickerIsOpen = computed(() => picker?.isOpen.value ?? false);
+const logicPicker = inject(LOGIC_TAG_PICKER_KEY, null);
+const pickerIsOpen = computed(
+  () => (picker?.isOpen.value ?? false) || (logicPicker?.isOpen.value ?? false),
+);
 
 const { t } = useI18n();
 
@@ -42,12 +53,14 @@ const {
   linkUrl,
   linkDialogRef,
   canRequestMergeTag,
+  canInsertLogicTag,
   openLinkDialog,
   insertLink,
   removeLink,
   closeLinkDialog,
   handleLinkKeydown,
   handleAddMergeTag,
+  handleAddLogicTag,
 } = useRichTextEditor({
   blockId: () => props.block.id,
   blockContent: () => props.block.content,
@@ -102,7 +115,6 @@ const {
                 char: triggerChar,
                 emptyText: suggestionEmptyText,
                 popoverRoot,
-                syntax,
               }),
             ]
           : []),
@@ -185,7 +197,24 @@ const {
             @click="handleAddMergeTag"
           >
             <ScanLine :size="16" :stroke-width="2" />
-            {{ t.mergeTag.insert }}
+            {{ t.mergeTag.insertShort }}
+          </button>
+          <!-- Insert Logic -->
+          <span
+            v-if="canInsertLogicTag"
+            class="tpl:mx-1.5 tpl:h-6 tpl:w-px tpl:bg-[var(--tpl-border)]"
+          ></span>
+          <button
+            v-if="canInsertLogicTag"
+            type="button"
+            class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+            :aria-label="t.logicTag.insert"
+            :title="t.logicTag.insert"
+            data-testid="insert-logic-button"
+            @click="handleAddLogicTag"
+          >
+            <Braces :size="16" :stroke-width="2" />
+            {{ t.logicTag.insertShort }}
           </button>
         </template>
         <template v-else>

@@ -27,12 +27,14 @@ const {
   linkUrl,
   linkDialogRef,
   canRequestMergeTag,
+  canInsertLogicTag,
   openLinkDialog,
   insertLink,
   removeLink,
   closeLinkDialog,
   handleLinkKeydown,
   handleAddMergeTag,
+  handleAddLogicTag,
 } = useRichTextEditor({
   blockId: () => props.block.id,
   blockContent: () => props.block.content,
@@ -117,7 +119,6 @@ const {
                 char: triggerChar,
                 emptyText: suggestionEmptyText,
                 popoverRoot,
-                syntax,
               }),
             ]
           : []),
@@ -134,8 +135,10 @@ const {
       :toolbar-position="toolbarPosition"
       :is-loading="isLoading"
       :can-request-merge-tag="canRequestMergeTag"
+      :can-insert-logic-tag="canInsertLogicTag"
       @open-link-dialog="openLinkDialog"
       @add-merge-tag="handleAddMergeTag"
+      @add-logic-tag="handleAddLogicTag"
     />
 
     <RichTextEditorContent

@@ -6,6 +6,7 @@ import type {
   CustomBlockDefinition,
   DisplayConditionsConfig,
   FontsConfig,
+  LogicTagsConfig,
   McpConfig,
   MergeTagsConfig,
   SaveResult,
@@ -96,6 +97,7 @@ export interface TemplaticalCloudEditorConfig {
   autoSaveDebounce?: number;
 
   mergeTags?: MergeTagsConfig;
+  logicTags?: LogicTagsConfig;
   displayConditions?: DisplayConditionsConfig;
   customBlocks?: CustomBlockDefinition[];
 

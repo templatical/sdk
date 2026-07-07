@@ -8,6 +8,8 @@ import type {
   BlockDefaults,
   CustomBlockDefinition,
   DisplayCondition,
+  LogicPair,
+  LogicTag,
   MergeTag,
   SyntaxPreset,
 } from "@templatical/types";
@@ -95,6 +97,29 @@ export const MERGE_TAG_AUTOCOMPLETE_KEY: InjectionKey<boolean> = Symbol(
 export const MERGE_TAG_PICKER_KEY: InjectionKey<
   import("./composables/useMergeTagPicker").UseMergeTagPickerReturn
 > = Symbol("mergeTagPicker");
+
+// ---------------------------------------------------------------------------
+// Logic tags — a standalone feature, separate from merge tags. Native
+// highlighting (LogicMergeTagNode) is always on; these drive the dedicated
+// logic picker + insertion.
+// ---------------------------------------------------------------------------
+
+export const LOGIC_TAGS_KEY: InjectionKey<LogicTag[]> = Symbol("logicTags");
+
+export const LOGIC_PAIRS_KEY: InjectionKey<LogicPair[]> = Symbol("logicPairs");
+
+/**
+ * Singleton state for the built-in logic picker modal. Provided by
+ * `useEditorCore`, consumed by `useLogicTag.requestLogicTag()` (to open the modal)
+ * and by `LogicTagPickerModal.vue` (to render and resolve).
+ */
+export const LOGIC_TAG_PICKER_KEY: InjectionKey<
+  import("./composables/useLogicTagPicker").UseLogicTagPickerReturn
+> = Symbol("logicPicker");
+
+export const ON_REQUEST_LOGIC_TAG_KEY: InjectionKey<
+  (() => Promise<LogicTag | LogicPair | null>) | null
+> = Symbol("onRequestLogic");
 
 export const ON_REQUEST_MEDIA_KEY: InjectionKey<OnRequestMedia | null> =
   Symbol("onRequestMedia");

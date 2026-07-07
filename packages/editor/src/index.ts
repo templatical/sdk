@@ -8,6 +8,7 @@ import type {
   CustomBlockDefinition,
   DisplayConditionsConfig,
   FontsConfig,
+  LogicTagsConfig,
   MediaResult,
   MergeTagsConfig,
   SaveResult,
@@ -76,6 +77,13 @@ export interface TemplaticalEditorConfig {
   onRequestMedia?: OnRequestMedia;
 
   mergeTags?: MergeTagsConfig;
+  /**
+   * Standalone logic tags — control-flow tokens (`{% else %}`) and open/close
+   * pairs (`{% if %}` … `{% endif %}`) inserted from a dedicated "Insert logic"
+   * button. Separate from `mergeTags`; typed/pasted logic is highlighted
+   * regardless of this config.
+   */
+  logicTags?: LogicTagsConfig;
   displayConditions?: DisplayConditionsConfig;
   customBlocks?: CustomBlockDefinition[];
 
@@ -647,6 +655,9 @@ export type {
   ThemeOverrides,
   UiTheme,
   MergeTagsConfig,
+  LogicTagsConfig,
+  LogicTag,
+  LogicPair,
   DisplayConditionsConfig,
   CustomBlockDefinition,
   ViewportSize,

@@ -11,9 +11,7 @@ import { refDebounced } from "@vueuse/core";
 import { ChevronDown, Search, X } from "@lucide/vue";
 import type { MergeTag } from "@templatical/types";
 import TplModal from "./TplModal.vue";
-import LogicTagBadge from "./LogicTagBadge.vue";
 import { useI18n } from "../composables/useI18n";
-import { useMergeTag } from "../composables/useMergeTag";
 import {
   MERGE_TAG_PICKER_KEY,
   THEME_STYLES_KEY,
@@ -27,9 +25,6 @@ import {
 // silent inject default mask the misuse.
 const picker = requireInject(MERGE_TAG_PICKER_KEY, "MergeTagPickerModal");
 const { t, format } = useI18n();
-// Drives the logic keyword badge on logic-shaped tags. Resolves from the
-// editor-provided syntax (defaults to liquid when unset).
-const { syntax } = useMergeTag();
 
 // Theming — same pattern as every other OSS panel (ParagraphToolbar,
 // RichTextLinkDialog). The panel carries the `tpl` token class, so it must
@@ -479,14 +474,9 @@ const showPillRow = computed(
               @mousemove="highlightedIndex = row.index"
               @click="selectTag(row.tag)"
             >
-              <span
-                class="tpl:flex tpl:w-full tpl:items-center tpl:justify-between tpl:gap-2"
-              >
-                <span class="tpl:text-sm tpl:font-medium">{{
-                  row.tag.label
-                }}</span>
-                <LogicTagBadge :value="row.tag.value" :syntax="syntax" />
-              </span>
+              <span class="tpl:text-sm tpl:font-medium">{{
+                row.tag.label
+              }}</span>
               <span
                 class="tpl:line-clamp-2 tpl:font-mono tpl:text-xs tpl:text-ellipsis tpl:break-all tpl:text-[var(--tpl-text-dim)]"
               >

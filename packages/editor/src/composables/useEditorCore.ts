@@ -30,6 +30,7 @@ import type {
   BlockDefaults,
   CustomBlockDefinition,
   DisplayConditionsConfig,
+  LogicTagsConfig,
   MergeTagsConfig,
   TemplateContent,
   TemplateSettings,
@@ -60,6 +61,10 @@ import {
   MERGE_TAG_AUTOCOMPLETE_KEY,
   MERGE_TAG_PICKER_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
+  LOGIC_TAGS_KEY,
+  LOGIC_PAIRS_KEY,
+  LOGIC_TAG_PICKER_KEY,
+  ON_REQUEST_LOGIC_TAG_KEY,
   ON_REQUEST_MEDIA_KEY,
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
@@ -70,6 +75,7 @@ import {
   POPOVER_ROOT_KEY,
 } from "../keys";
 import { useMergeTagPicker } from "./useMergeTagPicker";
+import { useLogicTagPicker } from "./useLogicTagPicker";
 import {
   isLintFullyDisabled,
   useTemplateLint,
@@ -188,6 +194,7 @@ export interface UseEditorCoreOptions {
     customBlocks?: CustomBlockDefinition[];
     paletteBlocks?: string[];
     mergeTags?: MergeTagsConfig;
+    logicTags?: LogicTagsConfig;
     displayConditions?: DisplayConditionsConfig;
     onRequestMedia?: OnRequestMedia | null;
     onSave?: () => void;
@@ -435,6 +442,13 @@ export function useEditorCore(
   // is a ref + ref + closure per editor — negligible.
   const mergeTagPicker = useMergeTagPicker();
   provide(MERGE_TAG_PICKER_KEY, mergeTagPicker);
+
+  // Standalone logic tags — separate from merge tags. Native highlighting
+  // (LogicMergeTagNode) is always on; these power the dedicated logic picker.
+  provide(LOGIC_TAGS_KEY, config.logicTags?.tags ?? []);
+  provide(LOGIC_PAIRS_KEY, config.logicTags?.pairs ?? []);
+  provide(ON_REQUEST_LOGIC_TAG_KEY, config.logicTags?.onRequest ?? null);
+  provide(LOGIC_TAG_PICKER_KEY, useLogicTagPicker());
 
   provide(ON_REQUEST_MEDIA_KEY, config.onRequestMedia ?? null);
 

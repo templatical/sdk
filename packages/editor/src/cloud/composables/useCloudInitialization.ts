@@ -274,6 +274,7 @@ export function useCloudInitialization(
       customBlocks: [], // deferred to initialize()
       paletteBlocks: config.paletteBlocks,
       mergeTags: config.mergeTags,
+      logicTags: config.logicTags,
       displayConditions: config.displayConditions,
       onRequestMedia: null, // cloud handles via mediaLib.handleRequestMedia
       lint: resolveLintOptions(config),

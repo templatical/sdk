@@ -1,20 +1,13 @@
 <script setup lang="ts">
-import type { MergeTag, SyntaxPreset } from "@templatical/types";
-import { SYNTAX_PRESETS } from "@templatical/types";
-import LogicTagBadge from "./LogicTagBadge.vue";
+import type { MergeTag } from "@templatical/types";
 
-const props = withDefaults(
-  defineProps<{
-    items: MergeTag[];
-    selectedIndex: number;
-    emptyText: string;
-    /** Stable id used for aria-controls + per-option id derivation. */
-    listId?: string;
-    /** Syntax preset — drives the logic keyword badge per row. */
-    syntax?: SyntaxPreset;
-  }>(),
-  { listId: undefined, syntax: () => SYNTAX_PRESETS.liquid },
-);
+const props = defineProps<{
+  items: MergeTag[];
+  selectedIndex: number;
+  emptyText: string;
+  /** Stable id used for aria-controls + per-option id derivation. */
+  listId?: string;
+}>();
 
 defineEmits<{
   (e: "select", item: MergeTag): void;
@@ -58,12 +51,7 @@ function optionId(index: number): string | undefined {
       @mousedown.prevent.stop="$emit('select', item)"
       @mousemove="index !== selectedIndex && $emit('hover', index)"
     >
-      <span
-        class="tpl:flex tpl:w-full tpl:items-center tpl:justify-between tpl:gap-2"
-      >
-        <span class="tpl:font-medium">{{ item.label }}</span>
-        <LogicTagBadge :value="item.value" :syntax="syntax" />
-      </span>
+      <span class="tpl:font-medium">{{ item.label }}</span>
       <span class="tpl:text-[var(--tpl-text-dim)] tpl:font-mono">{{
         item.value
       }}</span>
