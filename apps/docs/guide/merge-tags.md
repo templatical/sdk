@@ -92,7 +92,7 @@ Logic tags are styled differently from data tags (outlined badge with primary co
 Like data tags, logic tags pass through unchanged in the rendered MJML — your sending platform evaluates them at send time.
 
 ::: tip Inserting logic tags
-This section covers **highlighting** — any logic tag you type or paste is detected automatically. To let users **insert** logic tags without typing them (a dedicated "Insert logic" button, condition/loop blocks that wrap a selection), see the separate [Logic Tags](/guide/logic-tags) guide. Logic is configured independently of merge tags.
+This section covers **highlighting** — any logic tag you type or paste is detected automatically. To let users **insert** logic tags without typing them (a dedicated **Logic** button, condition/loop blocks that wrap a selection), see the separate [Logic Tags](/guide/logic-tags) guide. Logic is configured independently of merge tags.
 :::
 
 Examples of logic tags by preset:
@@ -181,11 +181,11 @@ const editor = await init({
 });
 ```
 
-The toolbar's "Insert merge tag" button continues to work regardless of the autocomplete setting.
+The toolbar's **Merge tag** button continues to work regardless of the autocomplete setting.
 
 ## Built-in picker
 
-When you configure `mergeTags.tags` without an `onRequest` callback, clicking the "Insert merge tag" button in the rich text toolbar (or next to a sidebar text input) opens a built-in modal picker. The picker lists every tag from `tags`, supports keyboard navigation, and offers a search field that matches against `label`, `value`, and `description`.
+When you configure `mergeTags.tags` without an `onRequest` callback, clicking the **Merge tag** button in the rich text toolbar (or next to a sidebar text input) opens a built-in modal picker. The picker lists every tag from `tags`, supports keyboard navigation, and offers a search field that matches against `label`, `value`, and `description`.
 
 ![Built-in merge tag picker](/images/merge-tag-picker.png)
 
@@ -249,7 +249,7 @@ const editor = await init({
 ```
 
 ::: tip Precedence
-If you provide both `tags` and `onRequest`, `onRequest` takes precedence — the "Insert merge tag" button always calls your callback. The static `tags` array still powers the typing-autocomplete suggestion list.
+If you provide both `tags` and `onRequest`, `onRequest` takes precedence — the **Merge tag** button always calls your callback. The static `tags` array still powers the typing-autocomplete suggestion list.
 :::
 
 ## Merge tags in other inputs

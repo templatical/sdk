@@ -10,7 +10,7 @@ Logik-Tags sind die Control-Flow-Tokens Ihrer Vorlagensyntax — Bedingungen und
 Es gibt zwei unabhängige Teile:
 
 - **Hervorhebung** — jedes Logik-Tag, das Sie in einen Titel- oder Absatzblock **tippen oder einfügen**, wird anhand des `logic`-Musters des Syntax-Presets erkannt und als großgeschriebenes Schlüsselwort-Badge dargestellt (**IF**, **ENDIF**, **FOR**…). Das ist immer aktiv und benötigt keine Konfiguration. Siehe [Merge-Tags → Logik-Tags](/de/guide/merge-tags#logik-tags) für Details zur Erkennung und zu den Syntax-Presets.
-- **Einfügen** — konfigurieren Sie eine `logicTags`-Option, um Autoren eine eigene Schaltfläche **„Logik einfügen"** zu geben, damit sie Control-Flow einfügen können, ohne die Syntax von Hand zu schreiben. Darum geht es auf dieser Seite.
+- **Einfügen** — konfigurieren Sie eine `logicTags`-Option, um Autoren eine eigene Schaltfläche **Logik** zu geben, damit sie Control-Flow einfügen können, ohne die Syntax von Hand zu schreiben. Darum geht es auf dieser Seite.
 
 ## Konfiguration
 
@@ -75,12 +75,16 @@ interface LogicTagsConfig {
 
 ## Der Picker
 
-Wenn `logicTags` konfiguriert ist, erscheint eine Schaltfläche **„Logik einfügen"** in der Titel- und Absatz-Symbolleiste (neben „Merge-Tag einfügen"). Ein Klick öffnet einen Picker:
+Wenn `logicTags` konfiguriert ist, erscheint eine Schaltfläche **Logik** in der Titel- und Absatz-Symbolleiste (neben **Merge-Tag**). Ein Klick öffnet einen Picker:
+
+![Die Schaltflächen „Logik" und „Merge-Tag" in der Rich-Text-Symbolleiste](/images/logic-tags-picker-rich-text.png)
 
 - `tags` und `pairs` teilen sich eine Liste, gegliedert nach `group` — ein Abschnitt listet zuerst die Öffnen/Schließen-Paare, dann die einzelnen Tags, sodass eine von beiden genutzte Gruppe (z. B. „Bedingungen") nur einmal erscheint.
 - Ein einzelnes Tag zeigt ein einzelnes Schlüsselwort-Badge (z. B. **ELSE**), ein Paar zeigt beide (z. B. **IF … ENDIF**) und signalisiert damit, dass es die Auswahl umschließt.
 
 Tippen filtert; mit `↑`/`↓` und `Enter` einfügen; `Esc` oder ein Klick auf den Hintergrund schließt.
+
+![Der Logik-Picker — die Gruppe „Bedingungen" listet zuerst das Paar „Wenn VIP", dann das Tag „Sonst", jeweils mit Schlüsselwort-Badges](/images/logic-tags-selection-2.png)
 
 ## Einfügeverhalten
 
@@ -88,11 +92,19 @@ Tippen filtert; mit `↑`/`↓` und `Enter` einfügen; `Esc` oder ein Klick auf 
 - Ein **Paar** umschließt die aktuelle Auswahl — `[open]{Auswahl}[close]` — sodass Autoren einen Absatz auswählen und ihn in einem Schritt bedingt machen können.
 - Ein **Paar ohne Auswahl** setzt beide Pills nebeneinander, mit dem Cursor dazwischen, sodass Sie den umschlossenen Inhalt eintippen können.
 
+Wählen Sie zum Beispiel den Text aus, den Sie bedingt machen möchten:
+
+![Ein Absatzblock mit dem markierten Text „You your VIP ticket now!"](/images/logic-tags-selection-1.png)
+
+Wählen Sie ein Paar (hier **Wenn VIP**), und es umschließt die Auswahl — der Text steht nun zwischen dem öffnenden und dem schließenden Pill:
+
+![Derselbe Absatz, dessen Auswahl nun von IF … ENDIF-Logik-Pills umschlossen ist](/images/logic-tags-selection-3.png)
+
 Beide Seiten werden als dieselben formatierten Logik-Badges wie getippte Logik dargestellt und unverändert im gerenderten MJML durchgereicht. Der Editor erzwingt keine Balancierung, bieten Sie das passende Öffnen/Schließen daher als ein einzelnes `pair` an (empfohlen) statt als zwei separate `tags`.
 
 ## Ihr eigener Picker
 
-Setzen Sie `logicTags.onRequest`, um den integrierten Picker durch Ihre eigene UI zu ersetzen — ein eigenes Modal, einen Bedingungs-Builder oder per API geladene Logik-Konstrukte (und so binden Konsumenten mit einer nicht-voreingestellten Syntax ihre eigene Erfahrung ein). Die Funktion wird aufgerufen, wenn der Benutzer „Logik einfügen" auslöst; geben Sie das gewählte `LogicTag` / `LogicPair` zurück oder `null` zum Abbrechen. Die Reihenfolge entspricht den Merge-Tags: **`onRequest` → integrierter Picker → nichts**.
+Setzen Sie `logicTags.onRequest`, um den integrierten Picker durch Ihre eigene UI zu ersetzen — ein eigenes Modal, einen Bedingungs-Builder oder per API geladene Logik-Konstrukte (und so binden Konsumenten mit einer nicht-voreingestellten Syntax ihre eigene Erfahrung ein). Die Funktion wird aufgerufen, wenn der Benutzer auf **Logik** klickt; geben Sie das gewählte `LogicTag` / `LogicPair` zurück oder `null` zum Abbrechen. Die Reihenfolge entspricht den Merge-Tags: **`onRequest` → integrierter Picker → nichts**.
 
 ```ts
 const editor = await init({
@@ -108,7 +120,11 @@ const editor = await init({
 
 ## Über Rich-Text hinaus: Textfelder
 
-Logik ist nicht auf Titel-/Absatzblöcke beschränkt. Eingabefelder und Textareas, die bereits Merge-Tags unterstützen — Button-Text, Button-/Bild-URLs, Alt-Text — erhalten ebenfalls die „Logik einfügen"-Aktion und heben Logik-Tags in ihrem Wert hervor. Machen Sie z. B. den Button-Text bedingt:
+Logik ist nicht auf Titel-/Absatzblöcke beschränkt. Eingabefelder und Textareas, die bereits Merge-Tags unterstützen — Button-Text, Button-/Bild-URLs, Alt-Text — erhalten ebenfalls die **Logik**-Schaltfläche und heben Logik-Tags in ihrem Wert hervor.
+
+![Das Textfeld eines Button-Blocks mit den Schaltflächen „Merge-Tag" und „Logik" darunter](/images/logic-tags-picker-input.png)
+
+Machen Sie z. B. den Button-Text bedingt:
 
 <code v-pre>{% if guest.status == 'vip' %}VIP-Zugang{% else %}Registrieren{% endif %}</code>
 

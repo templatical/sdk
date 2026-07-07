@@ -92,7 +92,7 @@ Logik-Tags werden anders formatiert als Daten-Tags (umrahmtes Abzeichen mit Prim
 Wie Daten-Tags werden Logik-Tags unverändert im gerenderten MJML durchgereicht — Ihre Versandplattform wertet sie zum Versandzeitpunkt aus.
 
 ::: tip Logik-Tags einfügen
-Dieser Abschnitt behandelt die **Hervorhebung** — jedes Logik-Tag, das Sie tippen oder einfügen, wird automatisch erkannt. Um Benutzern das **Einfügen** von Logik-Tags ohne Tippen zu ermöglichen (eine eigene Schaltfläche „Logik einfügen", Bedingungs-/Schleifenblöcke, die eine Auswahl umschließen), siehe den separaten Leitfaden [Logik-Tags](/de/guide/logic-tags). Logik wird unabhängig von Merge-Tags konfiguriert.
+Dieser Abschnitt behandelt die **Hervorhebung** — jedes Logik-Tag, das Sie tippen oder einfügen, wird automatisch erkannt. Um Benutzern das **Einfügen** von Logik-Tags ohne Tippen zu ermöglichen (eine eigene Schaltfläche **Logik**, Bedingungs-/Schleifenblöcke, die eine Auswahl umschließen), siehe den separaten Leitfaden [Logik-Tags](/de/guide/logic-tags). Logik wird unabhängig von Merge-Tags konfiguriert.
 :::
 
 Beispiele für Logik-Tags nach Preset:
@@ -181,11 +181,11 @@ const editor = await init({
 });
 ```
 
-Die Schaltfläche „Merge-Tag einfügen" in der Symbolleiste funktioniert weiterhin unabhängig von der Autovervollständigungs-Einstellung.
+Die Schaltfläche **Merge-Tag** in der Symbolleiste funktioniert weiterhin unabhängig von der Autovervollständigungs-Einstellung.
 
 ## Integrierter Picker
 
-Wenn Sie `mergeTags.tags` ohne `onRequest`-Callback konfigurieren, öffnet ein Klick auf die Schaltfläche „Merge-Tag einfügen" in der Rich-Text-Symbolleiste (oder neben einem Texteingabefeld in der Seitenleiste) ein integriertes modales Picker-Fenster. Der Picker listet jedes Tag aus `tags` auf, unterstützt Tastaturnavigation und bietet ein Suchfeld, das gegen `label`, `value` und `description` filtert.
+Wenn Sie `mergeTags.tags` ohne `onRequest`-Callback konfigurieren, öffnet ein Klick auf die Schaltfläche **Merge-Tag** in der Rich-Text-Symbolleiste (oder neben einem Texteingabefeld in der Seitenleiste) ein integriertes modales Picker-Fenster. Der Picker listet jedes Tag aus `tags` auf, unterstützt Tastaturnavigation und bietet ein Suchfeld, das gegen `label`, `value` und `description` filtert.
 
 ![Integrierter Merge-Tag-Picker](/images/merge-tag-picker.png)
 
@@ -249,7 +249,7 @@ const editor = await init({
 ```
 
 ::: tip Vorrangregel
-Wenn Sie sowohl `tags` als auch `onRequest` angeben, hat `onRequest` Vorrang — die Schaltfläche „Merge-Tag einfügen" ruft immer Ihren Callback auf. Das statische `tags`-Array versorgt weiterhin die Autovervollständigungs-Vorschläge beim Tippen.
+Wenn Sie sowohl `tags` als auch `onRequest` angeben, hat `onRequest` Vorrang — die Schaltfläche **Merge-Tag** ruft immer Ihren Callback auf. Das statische `tags`-Array versorgt weiterhin die Autovervollständigungs-Vorschläge beim Tippen.
 :::
 
 ## Merge-Tags in anderen Eingaben
