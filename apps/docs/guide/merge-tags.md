@@ -85,7 +85,7 @@ Beyond data tags, the editor also recognizes logic tags -- conditional statement
 
 When a logic tag is detected in content, the editor extracts the keyword (the first capture group from the logic regex) and displays it as an uppercase badge -- for example, `{% if customer.vip %}` renders as **IF** and `{% endif %}` renders as **ENDIF**. Hovering over the badge shows the full tag value as a tooltip. Users can click the badge to edit the raw value.
 
-![Logic tag displayed in the editor](/images/logic-tag.png)
+![Logic tag displayed in the editor](/images/logic-tags-selection-3.png)
 
 Logic tags are styled differently from data tags (outlined badge with primary color vs filled background) so template authors can distinguish between data tags and control flow at a glance.
 

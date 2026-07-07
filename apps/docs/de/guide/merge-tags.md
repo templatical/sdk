@@ -85,7 +85,7 @@ Neben Daten-Tags erkennt der Editor auch Logik-Tags -- bedingte Anweisungen, Sch
 
 Wenn ein Logik-Tag im Inhalt erkannt wird, extrahiert der Editor das Schlüsselwort (die erste Erfassungsgruppe aus der Logik-Regex) und zeigt es als Großbuchstaben-Abzeichen an -- zum Beispiel wird `{% if customer.vip %}` als **IF** gerendert und `{% endif %}` als **ENDIF**. Beim Hovern über das Abzeichen wird der vollständige Tag-Wert als Tooltip angezeigt. Benutzer können auf das Abzeichen klicken, um den Rohwert zu bearbeiten.
 
-![Logik-Tag im Editor angezeigt](/images/logic-tag.png)
+![Logik-Tag im Editor angezeigt](/images/logic-tags-selection-3.png)
 
 Logik-Tags werden anders formatiert als Daten-Tags (umrahmtes Abzeichen mit Primärfarbe vs. gefüllter Hintergrund), sodass Template-Autoren auf einen Blick zwischen Daten-Tags und Kontrollfluss unterscheiden können.
 
