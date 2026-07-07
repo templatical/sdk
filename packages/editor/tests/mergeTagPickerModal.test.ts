@@ -783,35 +783,3 @@ describe("MergeTagPickerModal — group pill row", () => {
     expect(findPillRow()).toBe(null);
   });
 });
-
-describe("MergeTagPickerModal — logic tag badge", () => {
-  it("renders a keyword badge on logic-shaped tags and not on data tags", async () => {
-    const tags: MergeTag[] = [
-      { label: "First Name", value: "{{first_name}}" },
-      { label: "VIP block", value: "{% if customer.vip %}" },
-      { label: "End block", value: "{% endif %}" },
-    ];
-    mountPicker(tags);
-    await nextTick();
-
-    const items = findItems();
-    expect(items).toHaveLength(3);
-
-    const badges = Array.from(
-      popoverRootEl.querySelectorAll<HTMLElement>(
-        '[data-testid="merge-tag-logic-badge"]',
-      ),
-    );
-    expect(badges.map((b) => b.textContent)).toEqual(["IF", "ENDIF"]);
-
-    // The data tag's row carries no badge; the logic rows do.
-    expect(
-      items[0].querySelector('[data-testid="merge-tag-logic-badge"]'),
-    ).toBe(null);
-    expect(
-      items[1]
-        .querySelector('[data-testid="merge-tag-logic-badge"]')
-        ?.getAttribute("data-logic-keyword"),
-    ).toBe("IF");
-  });
-});

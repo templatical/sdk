@@ -467,6 +467,7 @@ export default {
     clickToEdit: "Click to edit",
     remove: "Remove merge tag",
     insert: "Insert merge tag",
+    insertShort: "Merge tag",
     editValue: "Edit merge tag value",
     deleteMergeTag: "Delete merge tag",
     suggestionEmpty: "No matching merge tags",
@@ -480,6 +481,21 @@ export default {
       cancel: "Cancel",
       close: "Close",
       groupCount: "{count}",
+    },
+  },
+
+  // Logic tags (standalone, separate from merge tags)
+  logicTag: {
+    insert: "Insert logic",
+    insertShort: "Logic",
+    picker: {
+      title: "Insert logic",
+      searchPlaceholder: "Search logic tags",
+      searchAriaLabel: "Search logic tags",
+      noResults: "No matching logic tags",
+      empty: "No logic tags configured",
+      otherGroup: "Other",
+      close: "Close",
     },
   },
 

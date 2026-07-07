@@ -91,6 +91,10 @@ Logic tags are styled differently from data tags (outlined badge with primary co
 
 Like data tags, logic tags pass through unchanged in the rendered MJML — your sending platform evaluates them at send time.
 
+::: tip Inserting logic tags
+This section covers **highlighting** — any logic tag you type or paste is detected automatically. To let users **insert** logic tags without typing them (a dedicated "Insert logic" button, condition/loop blocks that wrap a selection), see the separate [Logic Tags](/guide/logic-tags) guide. Logic is configured independently of merge tags.
+:::
+
 Examples of logic tags by preset:
 
 ::: code-group
@@ -156,8 +160,6 @@ The `value` regex detects data tags. The `logic` regex detects control flow stat
 
 When users type the syntax opener (e.g. <code v-pre>{{</code> for Liquid/Handlebars, `*|` for Mailchimp, `%%=` for AMPscript) inside a title or paragraph block, the editor surfaces a popup listing matching tags from the configured `tags` array. Selecting an item (mouse click, `Enter`, or `Tab`) inserts it as a styled merge tag — the same form produced by the toolbar picker. `Esc` or clicking elsewhere dismisses the popup.
 
-A tag whose `value` is a logic tag (e.g. <code v-pre>{% if vip %}</code>) is inserted as a **logic tag** — rendered as an uppercase keyword badge — and is listed in the popup with that badge so you can tell it apart from a data tag. See [Conditional logic via the picker](#conditional-logic-via-the-picker).
-
 Filtering is case-insensitive and matches against both `label` and `value`. The list is capped at 10 results.
 
 Autocomplete is enabled by default. It is **automatically disabled** when:
@@ -192,7 +194,6 @@ The picker shows:
 - the **label** (bold)
 - the raw **value** (mono, dim)
 - the optional **description** (small, dim) when set
-- a small **logic keyword badge** (IF, FOR, ENDIF…) on any tag whose `value` is a logic tag
 
 When at least one tag carries a `group` field, the picker renders sectioned headers in insertion order (the order tags appear in your `tags` array). Tags without `group` fall under a localized "Other" header. When no tag has a `group`, the picker renders a plain flat list — no headers, no "Other" bucket.
 
@@ -230,38 +231,6 @@ const editor = await init({
   },
 });
 ```
-
-### Conditional logic via the picker
-
-A configured tag is inserted as a **logic tag** whenever its `value` matches the syntax's logic pattern (e.g. <code v-pre>{% if vip %}</code> / <code v-pre>{% endif %}</code> in Liquid) — exactly the form produced by typing the logic tag by hand. It renders as an uppercase keyword badge in the editor, and the picker (and typing-autocomplete) shows that same badge next to the row. This lets authors who can't write the syntax from scratch drop in control flow that still looks and behaves like a logic tag.
-
-Give logic tags a dedicated `group` so users get a clear "Conditions" section:
-
-```ts
-const editor = await init({
-  container: '#editor',
-  mergeTags: {
-    tags: [
-      { label: 'First Name', value: '{{first_name}}', group: 'Recipient' },
-      {
-        label: 'If VIP',
-        value: '{% if customer.vip %}',
-        group: 'Conditions',
-        description: 'Start a block shown only to VIP customers',
-      },
-      { label: 'Else', value: '{% else %}', group: 'Conditions' },
-      {
-        label: 'End if',
-        value: '{% endif %}',
-        group: 'Conditions',
-        description: 'Close the most recent conditional',
-      },
-    ],
-  },
-});
-```
-
-Logic tags pass through to the rendered MJML unchanged, just like data tags — your platform evaluates them at send time. The editor does not enforce balancing, so offer the matching opening and closing tags (e.g. <code v-pre>{% if %}</code> … <code v-pre>{% endif %}</code>) as separate entries, the same way you would type them.
 
 ## Dynamic tag loading
 

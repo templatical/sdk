@@ -12,7 +12,9 @@ import {
   MERGE_TAG_SYNTAX_KEY,
   MERGE_TAG_PICKER_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
+  ON_REQUEST_LOGIC_TAG_KEY,
 } from '../src/keys';
+import type { LogicPair, LogicTag } from '@templatical/types';
 
 function withProvide<T>(
   setup: () => T,
@@ -767,6 +769,122 @@ describe('useMergeTagField', () => {
       picker.resolve({ label: 'Name', value: '{{name}}' });
       await promise;
       expect(emitFn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('insertLogicTag', () => {
+    function refWithSelection(start: number, end: number) {
+      return ref({
+        focus: vi.fn(),
+        setSelectionRange: vi.fn(),
+        selectionStart: start,
+        selectionEnd: end,
+      } as any);
+    }
+
+    it('canInsertLogicTag is true when logic.onRequest is set', () => {
+      const { canInsertLogicTag } = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => '',
+            emit: vi.fn(),
+            elementRef: createElementRef(),
+          }),
+        defaultProvides({
+          [ON_REQUEST_LOGIC_TAG_KEY as symbol]: () => Promise.resolve(null),
+        }),
+      );
+      expect(canInsertLogicTag).toBe(true);
+    });
+
+    it('inserts a standalone tag at the cursor', async () => {
+      const emitFn = vi.fn();
+      const tag: LogicTag = { label: 'Else', value: '{% else %}' };
+      const { startEditing, insertLogicTag } = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => 'Hello ',
+            emit: emitFn,
+            elementRef: refWithSelection(6, 6),
+          }),
+        defaultProvides({
+          [ON_REQUEST_LOGIC_TAG_KEY as symbol]: () => Promise.resolve(tag),
+        }),
+      );
+      startEditing();
+      await insertLogicTag();
+      expect(emitFn).toHaveBeenCalledWith('Hello {% else %}');
+    });
+
+    it('wraps a non-empty selection with a pair', async () => {
+      const emitFn = vi.fn();
+      const pair: LogicPair = {
+        label: 'If VIP',
+        before: '{% if vip %}',
+        after: '{% endif %}',
+      };
+      const { startEditing, insertLogicTag } = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => 'VIP only',
+            emit: emitFn,
+            elementRef: refWithSelection(0, 8),
+          }),
+        defaultProvides({
+          [ON_REQUEST_LOGIC_TAG_KEY as symbol]: () => Promise.resolve(pair),
+        }),
+      );
+      startEditing();
+      await insertLogicTag();
+      expect(emitFn).toHaveBeenCalledWith('{% if vip %}VIP only{% endif %}');
+    });
+
+    it('inserts a pair with the caret between when there is no selection', async () => {
+      const emitFn = vi.fn();
+      const pair: LogicPair = {
+        label: 'If VIP',
+        before: '{% if vip %}',
+        after: '{% endif %}',
+      };
+      const { startEditing, insertLogicTag } = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => '',
+            emit: emitFn,
+            elementRef: refWithSelection(0, 0),
+          }),
+        defaultProvides({
+          [ON_REQUEST_LOGIC_TAG_KEY as symbol]: () => Promise.resolve(pair),
+        }),
+      );
+      startEditing();
+      await insertLogicTag();
+      expect(emitFn).toHaveBeenCalledWith('{% if vip %}{% endif %}');
+    });
+
+    it('wraps the selection even when isEditing is false (regression)', async () => {
+      // A focused field with no prior tags has isEditing=false, but its
+      // selection is still live. The pair must wrap it, not append at the end.
+      const emitFn = vi.fn();
+      const pair: LogicPair = {
+        label: 'If VIP',
+        before: '{% if vip %}',
+        after: '{% endif %}',
+      };
+      const { insertLogicTag, isEditing } = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => 'VIP only',
+            emit: emitFn,
+            elementRef: refWithSelection(0, 8),
+          }),
+        defaultProvides({
+          [ON_REQUEST_LOGIC_TAG_KEY as symbol]: () => Promise.resolve(pair),
+        }),
+      );
+      expect(isEditing.value).toBe(false);
+      await insertLogicTag();
+      expect(emitFn).toHaveBeenCalledWith('{% if vip %}VIP only{% endif %}');
     });
   });
 });

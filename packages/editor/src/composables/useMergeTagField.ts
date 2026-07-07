@@ -12,6 +12,7 @@ import {
   type Ref,
 } from "vue";
 import { useMergeTag } from "./useMergeTag";
+import { useLogicTag } from "./useLogicTag";
 
 export type MergeTagSegment =
   | { type: "text"; value: string }
@@ -29,12 +30,15 @@ export interface UseMergeTagFieldReturn {
   hasMergeTags: ComputedRef<boolean>;
   canRequestMergeTag: boolean;
   isRequestingMergeTag: Ref<boolean>;
+  canInsertLogicTag: boolean;
+  isRequestingLogicTag: Ref<boolean>;
   isEditing: Ref<boolean>;
   startEditing: () => void;
   stopEditing: () => void;
   handleInput: (event: Event) => void;
   clearValue: () => void;
   insertMergeTag: () => Promise<void>;
+  insertLogicTag: () => Promise<void>;
 }
 
 export function useMergeTagField(
@@ -50,6 +54,12 @@ export function useMergeTagField(
     requestMergeTag,
     syntax,
   } = useMergeTag();
+
+  const {
+    canInsertLogicTag,
+    isRequesting: isRequestingLogicTag,
+    requestLogicTag,
+  } = useLogicTag();
 
   const isEditing = ref(false);
   let insertingMergeTag = false;
@@ -165,16 +175,65 @@ export function useMergeTagField(
     }
   }
 
+  async function insertLogicTag(): Promise<void> {
+    // Read the selection straight from the element (kept focused via the
+    // button's mousedown.prevent). Null only in display mode → append at end.
+    const el = elementRef.value;
+    const start = el?.selectionStart ?? modelValue().length;
+    const end = el?.selectionEnd ?? start;
+
+    insertingMergeTag = true;
+    let item: Awaited<ReturnType<typeof requestLogicTag>>;
+    try {
+      item = await requestLogicTag();
+    } finally {
+      insertingMergeTag = false;
+    }
+
+    if (disposed || !item) return;
+
+    const val = modelValue();
+    let newValue: string;
+    let newPos: number;
+    if ("before" in item) {
+      // Pair: wrap the selection with before/after. With no selection
+      // (start === end) the caret lands between them so the user types the
+      // wrapped content — mirrors the rich-text behavior.
+      newValue =
+        val.slice(0, start) +
+        item.before +
+        val.slice(start, end) +
+        item.after +
+        val.slice(end);
+      newPos = start + item.before.length + (end - start);
+    } else {
+      // Tag: insert at the cursor.
+      newValue = val.slice(0, start) + item.value + val.slice(start);
+      newPos = start + item.value.length;
+    }
+    emit(newValue);
+
+    isEditing.value = true;
+    nextTick(() => {
+      if (disposed) return;
+      elementRef.value?.focus();
+      elementRef.value?.setSelectionRange(newPos, newPos);
+    });
+  }
+
   return {
     segments,
     hasMergeTags,
     canRequestMergeTag,
     isRequestingMergeTag,
+    canInsertLogicTag,
+    isRequestingLogicTag,
     isEditing,
     startEditing,
     stopEditing,
     handleInput,
     clearValue,
     insertMergeTag,
+    insertLogicTag,
   };
 }

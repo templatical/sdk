@@ -2,6 +2,7 @@
 import { useMergeTagField } from "../composables/useMergeTagField";
 import MergeTagSegments from "./MergeTagSegments.vue";
 import MergeTagInsertButton from "./MergeTagInsertButton.vue";
+import LogicTagInsertButton from "./LogicTagInsertButton.vue";
 import { ref } from "vue";
 
 const props = withDefaults(
@@ -27,12 +28,15 @@ const {
   hasMergeTags,
   canRequestMergeTag,
   isRequestingMergeTag,
+  canInsertLogicTag,
+  isRequestingLogicTag,
   isEditing,
   startEditing,
   stopEditing,
   handleInput,
   clearValue,
   insertMergeTag,
+  insertLogicTag,
 } = useMergeTagField({
   modelValue: () => props.modelValue,
   emit: (value) => emit("update:modelValue", value),
@@ -53,11 +57,21 @@ const displayClass =
       @edit="startEditing"
       @clear="clearValue"
     />
-    <MergeTagInsertButton
-      v-if="canRequestMergeTag"
-      :disabled="isRequestingMergeTag"
-      @insert="insertMergeTag"
-    />
+    <div
+      v-if="canRequestMergeTag || canInsertLogicTag"
+      class="tpl:flex tpl:flex-wrap tpl:gap-1.5"
+    >
+      <MergeTagInsertButton
+        v-if="canRequestMergeTag"
+        :disabled="isRequestingMergeTag"
+        @insert="insertMergeTag"
+      />
+      <LogicTagInsertButton
+        v-if="canInsertLogicTag"
+        :disabled="isRequestingLogicTag"
+        @insert="insertLogicTag"
+      />
+    </div>
   </div>
   <div v-else>
     <textarea
@@ -70,10 +84,20 @@ const displayClass =
       @blur="stopEditing"
       @keydown.escape="stopEditing"
     />
-    <MergeTagInsertButton
-      v-if="canRequestMergeTag"
-      :disabled="isRequestingMergeTag"
-      @insert="insertMergeTag"
-    />
+    <div
+      v-if="canRequestMergeTag || canInsertLogicTag"
+      class="tpl:flex tpl:flex-wrap tpl:gap-1.5"
+    >
+      <MergeTagInsertButton
+        v-if="canRequestMergeTag"
+        :disabled="isRequestingMergeTag"
+        @insert="insertMergeTag"
+      />
+      <LogicTagInsertButton
+        v-if="canInsertLogicTag"
+        :disabled="isRequestingLogicTag"
+        @insert="insertLogicTag"
+      />
+    </div>
   </div>
 </template>

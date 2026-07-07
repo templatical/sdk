@@ -471,6 +471,7 @@ const ptBR: typeof en = {
     clickToEdit: "Clique para editar",
     remove: "Remover merge tag",
     insert: "Inserir merge tag",
+    insertShort: "Merge tag",
     editValue: "Editar valor da merge tag",
     deleteMergeTag: "Excluir merge tag",
     suggestionEmpty: "Nenhuma merge tag correspondente",
@@ -484,6 +485,21 @@ const ptBR: typeof en = {
       cancel: "Cancelar",
       close: "Fechar",
       groupCount: "{count}",
+    },
+  },
+
+  // Logic tags (standalone, separate from merge tags)
+  logicTag: {
+    insert: "Inserir lógica",
+    insertShort: "Lógica",
+    picker: {
+      title: "Inserir lógica",
+      searchPlaceholder: "Buscar tags de lógica",
+      searchAriaLabel: "Buscar tags de lógica",
+      noResults: "Nenhuma tag de lógica correspondente",
+      empty: "Nenhuma tag de lógica configurada",
+      otherGroup: "Outros",
+      close: "Fechar",
     },
   },
 

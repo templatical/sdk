@@ -20,6 +20,7 @@ import PreviewToggle from "./components/PreviewToggle.vue";
 import DarkModeToggle from "./components/DarkModeToggle.vue";
 import EditorFooter from "./components/EditorFooter.vue";
 import MergeTagPickerModal from "./components/MergeTagPickerModal.vue";
+import LogicTagPickerModal from "./components/LogicTagPickerModal.vue";
 import "./styles/index.css";
 
 const props = defineProps<{
@@ -56,6 +57,7 @@ const core = useEditorCore({
     customBlocks: props.config.customBlocks,
     paletteBlocks: props.config.paletteBlocks,
     mergeTags: props.config.mergeTags,
+    logicTags: props.config.logicTags,
     displayConditions: props.config.displayConditions,
     onRequestMedia: props.config.onRequestMedia,
     lint: resolveLintOptions(props.config),
@@ -252,6 +254,9 @@ defineExpose({
     <!-- Built-in merge tag picker modal. Reads picker state via injection;
          renders nothing until `picker.isOpen` flips true. -->
     <MergeTagPickerModal />
+
+    <!-- Built-in logic picker modal (standalone logic feature). -->
+    <LogicTagPickerModal />
 
     <!-- Small-screen gate (#235). Last child + a literal z-index above the
          chrome and `.tpl-popover-root`, so the opaque notice covers everything

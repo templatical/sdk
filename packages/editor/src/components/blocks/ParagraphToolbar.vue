@@ -12,6 +12,7 @@ import {
   AlignRight,
   Bold,
   Italic,
+  Braces,
   Link,
   List,
   ListOrdered,
@@ -29,6 +30,7 @@ import {
   UI_THEME_KEY,
   FONTS_MANAGER_KEY,
   MERGE_TAG_PICKER_KEY,
+  LOGIC_TAG_PICKER_KEY,
   requireInject,
 } from "../../keys";
 import {
@@ -44,11 +46,13 @@ const props = defineProps<{
   toolbarPosition: { top: number; left: number };
   isLoading: boolean;
   canRequestMergeTag: boolean;
+  canInsertLogicTag: boolean;
 }>();
 
 const emit = defineEmits<{
   (e: "open-link-dialog"): void;
   (e: "add-merge-tag"): void;
+  (e: "add-logic-tag"): void;
 }>();
 
 const themeStyles = inject(THEME_STYLES_KEY, null);
@@ -61,7 +65,12 @@ const popoverRoot = usePopoverRoot();
 // z-index utility doesn't compile reliably, so it can sometimes paint
 // over the modal backdrop.
 const picker = inject(MERGE_TAG_PICKER_KEY, null);
-const pickerIsOpen = computed(() => picker?.isOpen.value ?? false);
+const logicPicker = inject(LOGIC_TAG_PICKER_KEY, null);
+// Hide the floating toolbar while either built-in picker modal is open, so it
+// doesn't overlap the dialog.
+const pickerIsOpen = computed(
+  () => (picker?.isOpen.value ?? false) || (logicPicker?.isOpen.value ?? false),
+);
 
 const { t } = useI18n();
 
@@ -293,7 +302,21 @@ function setHighlight(color: string): void {
               @click="emit('add-merge-tag')"
             >
               <ScanLine :size="16" :stroke-width="2" />
-              {{ t.mergeTag.insert }}
+              {{ t.mergeTag.insertShort }}
+            </button>
+          </template>
+          <template v-if="canInsertLogicTag">
+            <ToolbarSeparator />
+            <button
+              type="button"
+              class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              :aria-label="t.logicTag.insert"
+              :title="t.logicTag.insert"
+              data-testid="insert-logic-button"
+              @click="emit('add-logic-tag')"
+            >
+              <Braces :size="16" :stroke-width="2" />
+              {{ t.logicTag.insertShort }}
             </button>
           </template>
         </div>
