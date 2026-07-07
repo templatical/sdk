@@ -1,6 +1,6 @@
 # @templatical/renderer
 
-## 1.0.0
+## 0.14.0
 
 ### Minor Changes
 
@@ -11,7 +11,7 @@
 - 710c9be: Add an optional `borderRadius` (px) to section blocks. Set it from the section toolbar or via `createSectionBlock({ borderRadius })`; the renderer emits it as `border-radius` on the `mj-section`, so a section with a background color reads as a rounded card on a contrasting background. Omitted or `0` keeps square corners, so existing templates are unchanged. First step toward the framed "card on colored background" pattern. (#312)
 - Updated dependencies [710c9be]
 - Updated dependencies [718d781]
-  - @templatical/types@1.0.0
+  - @templatical/types@0.14.0
 
 ## 0.13.0
 
