@@ -158,7 +158,9 @@ Die `value`-Regex erkennt Daten-Tags. Die `logic`-Regex erkennt Kontrollflussanw
 
 ## Autovervollständigung
 
-Wenn Benutzer den Syntax-Öffner (z. B. <code v-pre>{{</code> für Liquid/Handlebars, `*|` für Mailchimp, `%%=` für AMPscript) innerhalb eines Titel- oder Absatzblocks eingeben, zeigt der Editor ein Popup mit übereinstimmenden Tags aus dem konfigurierten `tags`-Array an. Das Auswählen eines Eintrags (Mausklick, `Enter` oder `Tab`) fügt es als formatiertes Merge-Tag ein — dieselbe Form, die der Toolbar-Picker erzeugt. `Esc` oder ein Klick außerhalb schließt das Popup.
+Wenn Benutzer den Syntax-Öffner (z. B. <code v-pre>{{</code> für Liquid/Handlebars, `*|` für Mailchimp, `%%=` für AMPscript) eingeben, zeigt der Editor ein Popup mit übereinstimmenden Tags aus dem konfigurierten `tags`-Array an. Das Auswählen eines Eintrags (Mausklick, `Enter` oder `Tab`) fügt es als Merge-Tag ein — dieselbe Form, die der Toolbar-Picker erzeugt. `Esc` oder ein Klick außerhalb schließt das Popup.
+
+Die Autovervollständigung funktioniert sowohl in Titel- und Absatz-Rich-Text-Blöcken **als auch** in jedem Eingabe- und Textbereichsfeld mit Merge-Tag-Unterstützung (Schaltflächen- und Bild-URLs, Bild-Alt-Text, Video- und Menü-Links, Template-Einstellungen und Textfelder benutzerdefinierter Blöcke). Popup, Filterung, Tastaturnavigation und Positionierung sind auf beiden Oberflächen identisch.
 
 Die Filterung ist nicht groß-/kleinschreibungsabhängig und gleicht sowohl `label` als auch `value` ab. Die Liste ist auf 10 Ergebnisse begrenzt.
 
