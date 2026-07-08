@@ -32,8 +32,10 @@ const {
   isRequestingLogicTag,
   isEditing,
   startEditing,
-  stopEditing,
   handleInput,
+  handleKeydown,
+  handleClick,
+  handleBlur,
   clearValue,
   insertMergeTag,
   insertLogicTag,
@@ -81,8 +83,9 @@ const displayClass =
       :placeholder="placeholder"
       :rows="rows"
       @input="handleInput"
-      @blur="stopEditing"
-      @keydown.escape="stopEditing"
+      @keydown="handleKeydown"
+      @click="handleClick"
+      @blur="handleBlur"
     />
     <div
       v-if="canRequestMergeTag || canInsertLogicTag"

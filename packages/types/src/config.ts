@@ -49,8 +49,11 @@ export interface MergeTagsConfig {
   tags?: MergeTag[];
   onRequest?: () => Promise<MergeTag | null>;
   /**
-   * Enables typing-based autocomplete in rich text fields. When the user
-   * types the syntax opener (e.g. `{{`), a popup lists matching `tags`.
+   * Enables typing-based autocomplete in rich text blocks and in every
+   * merge-tag-enabled input/textarea field (toolbars, template settings,
+   * custom-block text fields). When the user types the syntax opener
+   * (e.g. `{{`), a popup lists matching `tags`. Both surfaces share the
+   * same popup, so behavior is identical.
    *
    * Defaults to `true`. Effective only when `tags` is non-empty AND
    * `syntax` matches a built-in preset (custom regex syntaxes cannot be

@@ -158,7 +158,9 @@ The `value` regex detects data tags. The `logic` regex detects control flow stat
 
 ## Autocomplete
 
-When users type the syntax opener (e.g. <code v-pre>{{</code> for Liquid/Handlebars, `*|` for Mailchimp, `%%=` for AMPscript) inside a title or paragraph block, the editor surfaces a popup listing matching tags from the configured `tags` array. Selecting an item (mouse click, `Enter`, or `Tab`) inserts it as a styled merge tag — the same form produced by the toolbar picker. `Esc` or clicking elsewhere dismisses the popup.
+When users type the syntax opener (e.g. <code v-pre>{{</code> for Liquid/Handlebars, `*|` for Mailchimp, `%%=` for AMPscript), the editor surfaces a popup listing matching tags from the configured `tags` array. Selecting an item (mouse click, `Enter`, or `Tab`) inserts it as a merge tag — the same form produced by the toolbar picker. `Esc` or clicking elsewhere dismisses the popup.
+
+Autocomplete works both inside title/paragraph rich-text blocks **and** in every merge-tag-enabled input and textarea field (button and image URLs, image alt text, video and menu links, template settings, and custom-block text fields). The popup, filtering, keyboard navigation, and positioning are identical across both surfaces.
 
 Filtering is case-insensitive and matches against both `label` and `value`. The list is capped at 10 results.
 

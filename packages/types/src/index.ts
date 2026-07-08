@@ -132,6 +132,7 @@ export {
   containsMergeTag,
   getLogicMergeTagKeyword,
   getMergeTagLabel,
+  getSyntaxClosingChar,
   getSyntaxTriggerChar,
   isLogicMergeTagValue,
   isMergeTagValue,

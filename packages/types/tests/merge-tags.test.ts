@@ -11,6 +11,7 @@ import {
     resolveSyntax,
     SYNTAX_PRESETS,
     getSyntaxTriggerChar,
+    getSyntaxClosingChar,
     type MergeTag,
 } from '../src';
 
@@ -494,11 +495,47 @@ describe('getSyntaxTriggerChar', () => {
     });
 
     it('matches by source even when regex flags differ', () => {
-        
+
         const cloned = {
             value: new RegExp(SYNTAX_PRESETS.liquid.value.source, 'gi'),
             logic: SYNTAX_PRESETS.liquid.logic,
         };
         expect(getSyntaxTriggerChar(cloned)).toBe('{{');
+    });
+});
+
+describe('getSyntaxClosingChar', () => {
+    it('returns "}}" for liquid preset', () => {
+        expect(getSyntaxClosingChar(SYNTAX_PRESETS.liquid)).toBe('}}');
+    });
+
+    it('returns "}}" for handlebars preset', () => {
+        expect(getSyntaxClosingChar(SYNTAX_PRESETS.handlebars)).toBe('}}');
+    });
+
+    it('returns "|*" for mailchimp preset', () => {
+        expect(getSyntaxClosingChar(SYNTAX_PRESETS.mailchimp)).toBe('|*');
+    });
+
+    it('returns "=%%" for ampscript preset', () => {
+        expect(getSyntaxClosingChar(SYNTAX_PRESETS.ampscript)).toBe('=%%');
+    });
+
+    it('works with resolveSyntax output', () => {
+        expect(getSyntaxClosingChar(resolveSyntax('liquid'))).toBe('}}');
+        expect(getSyntaxClosingChar(resolveSyntax('ampscript'))).toBe('=%%');
+    });
+
+    it('returns null for custom syntax', () => {
+        const custom = { value: /<<.+?>>/g, logic: /<%.+?%>/g };
+        expect(getSyntaxClosingChar(custom)).toBe(null);
+    });
+
+    it('matches by source even when regex flags differ', () => {
+        const cloned = {
+            value: new RegExp(SYNTAX_PRESETS.liquid.value.source, 'gi'),
+            logic: SYNTAX_PRESETS.liquid.logic,
+        };
+        expect(getSyntaxClosingChar(cloned)).toBe('}}');
     });
 });

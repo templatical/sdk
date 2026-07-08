@@ -27,6 +27,13 @@ const SYNTAX_TRIGGER_CHARS: Record<SyntaxPresetName, string> = {
   ampscript: "%%=",
 };
 
+const SYNTAX_CLOSING_CHARS: Record<SyntaxPresetName, string> = {
+  liquid: "}}",
+  handlebars: "}}",
+  mailchimp: "|*",
+  ampscript: "=%%",
+};
+
 /**
  * Resolves the autocomplete trigger string for a syntax preset.
  * Returns null when the syntax doesn't match any built-in preset
@@ -36,6 +43,22 @@ export function getSyntaxTriggerChar(syntax: SyntaxPreset): string | null {
   for (const name of Object.keys(SYNTAX_PRESETS) as SyntaxPresetName[]) {
     if (SYNTAX_PRESETS[name].value.source === syntax.value.source) {
       return SYNTAX_TRIGGER_CHARS[name];
+    }
+  }
+  return null;
+}
+
+/**
+ * Resolves the closing delimiter for a syntax preset (e.g. `}}` for liquid,
+ * `|*` for mailchimp). The autocomplete trigger detector uses it to tell an
+ * open tag (`{{first`) from a completed one (`{{first_name}}`) so the popup
+ * doesn't reappear over a finished tag. Returns null for custom syntaxes —
+ * the same set for which `getSyntaxTriggerChar` returns null.
+ */
+export function getSyntaxClosingChar(syntax: SyntaxPreset): string | null {
+  for (const name of Object.keys(SYNTAX_PRESETS) as SyntaxPresetName[]) {
+    if (SYNTAX_PRESETS[name].value.source === syntax.value.source) {
+      return SYNTAX_CLOSING_CHARS[name];
     }
   }
   return null;

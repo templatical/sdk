@@ -232,26 +232,30 @@ describe('MergeTagSuggestion mount target', () => {
   });
 
   // Regression: repositionAfterPaint queues a requestAnimationFrame whose
-  // callback runs after onExit has cleared `container` and `app`. The null
+  // callback runs after teardown has cleared `container` and `app`. The null
   // checks inside position() prevent a crash, but the closure still pins
-  // the unmounted Vue app and torn-down DOM nodes for one frame. onExit
-  // must cancel the pending rAF.
-  it('source stores rAF handle and cancels it in onExit', async () => {
+  // the unmounted Vue app and torn-down DOM nodes for one frame. Teardown
+  // must cancel the pending rAF. The lifecycle now lives in the shared
+  // controller's close(); onExit delegates to it — so the cancel lives in
+  // close() and onExit calls popup.close(). (Behavior is exercised end-to-end
+  // in mergeTagSuggestionRenderer.test.ts.)
+  it('source cancels the pending rAF in the controller close() that onExit calls', async () => {
     const fs = await import('node:fs');
     const src = fs.readFileSync(
       'src/extensions/MergeTagSuggestion.ts',
       'utf8',
     );
     expect(src).toContain('cancelAnimationFrame');
-    // The cancellation must live inside the onExit handler — not just
-    // anywhere in the file. Slice from onExit to the next `},` at the
-    // same indentation level.
-    const onExitStart = src.indexOf('onExit:');
-    expect(onExitStart).toBeGreaterThan(-1);
-    const onExitEnd = src.indexOf('},', onExitStart);
-    expect(onExitEnd).toBeGreaterThan(onExitStart);
-    const onExitBody = src.slice(onExitStart, onExitEnd);
-    expect(onExitBody).toContain('cancelAnimationFrame');
+    // onExit must route teardown through the shared controller.
+    expect(src).toContain('onExit: () => popup.close()');
+    // The cancellation must live inside close() — not just anywhere in the
+    // file. Slice from `close:` to the next `},` at the same level.
+    const closeStart = src.indexOf('close: () => {');
+    expect(closeStart).toBeGreaterThan(-1);
+    const closeEnd = src.indexOf('},', closeStart);
+    expect(closeEnd).toBeGreaterThan(closeStart);
+    const closeBody = src.slice(closeStart, closeEnd);
+    expect(closeBody).toContain('cancelAnimationFrame');
   });
 });
 

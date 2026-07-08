@@ -13,6 +13,7 @@ import {
 } from "vue";
 import { useMergeTag } from "./useMergeTag";
 import { useLogicTag } from "./useLogicTag";
+import { useMergeTagAutocomplete } from "./useMergeTagAutocomplete";
 
 export type MergeTagSegment =
   | { type: "text"; value: string }
@@ -36,9 +37,14 @@ export interface UseMergeTagFieldReturn {
   startEditing: () => void;
   stopEditing: () => void;
   handleInput: (event: Event) => void;
+  handleKeydown: (event: KeyboardEvent) => void;
+  handleClick: () => void;
+  handleBlur: () => void;
   clearValue: () => void;
   insertMergeTag: () => Promise<void>;
   insertLogicTag: () => Promise<void>;
+  /** Whether type-ahead autocomplete is active for this field. */
+  autocompleteAvailable: boolean;
 }
 
 export function useMergeTagField(
@@ -47,12 +53,14 @@ export function useMergeTagField(
   const { modelValue, emit, elementRef } = options;
 
   const {
+    mergeTags,
     canRequestMergeTag,
     isRequesting: isRequestingMergeTag,
     isMergeTagValue,
     getMergeTagLabel,
     requestMergeTag,
     syntax,
+    autocomplete,
   } = useMergeTag();
 
   const {
@@ -69,6 +77,21 @@ export function useMergeTagField(
       disposed = true;
     });
   }
+
+  // Type-ahead autocomplete for the raw <input>/<textarea>, sharing the exact
+  // popup used by the rich-text editor. `onInsert` keeps the field in edit mode
+  // so the freshly inserted tag stays visible instead of flipping to chips.
+  const typeahead = useMergeTagAutocomplete({
+    elementRef,
+    modelValue,
+    emit,
+    mergeTags,
+    syntax,
+    enabled: autocomplete,
+    onInsert: () => {
+      isEditing.value = true;
+    },
+  });
 
   const segments = computed((): MergeTagSegment[] => {
     const val = modelValue();
@@ -137,6 +160,33 @@ export function useMergeTagField(
 
   function handleInput(event: Event): void {
     emit((event.target as HTMLInputElement | HTMLTextAreaElement).value);
+    typeahead.refresh();
+  }
+
+  /**
+   * Field keydown: let the autocomplete popup consume navigation/selection
+   * keys first (Arrow/Enter/Tab/Escape). If it doesn't, Escape falls through
+   * to leaving edit mode — preserving the prior `@keydown.escape` behavior.
+   */
+  function handleKeydown(event: KeyboardEvent): void {
+    if (typeahead.handleKeydown(event)) {
+      event.preventDefault();
+      return;
+    }
+    if (event.key === "Escape") {
+      stopEditing();
+    }
+  }
+
+  /** A click may move the caret into or out of a trigger — re-evaluate. */
+  function handleClick(): void {
+    typeahead.refresh();
+  }
+
+  /** Blur closes the popup, then leaves edit mode. */
+  function handleBlur(): void {
+    typeahead.close();
+    stopEditing();
   }
 
   function clearValue(): void {
@@ -232,8 +282,12 @@ export function useMergeTagField(
     startEditing,
     stopEditing,
     handleInput,
+    handleKeydown,
+    handleClick,
+    handleBlur,
     clearValue,
     insertMergeTag,
     insertLogicTag,
+    autocompleteAvailable: typeahead.available,
   };
 }
