@@ -1,5 +1,13 @@
 # @templatical/import-html
 
+## 0.14.0
+
+### Patch Changes
+
+- Updated dependencies [710c9be]
+- Updated dependencies [718d781]
+  - @templatical/types@0.14.0
+
 ## 0.13.0
 
 ### Patch Changes

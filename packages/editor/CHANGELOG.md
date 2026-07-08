@@ -1,5 +1,22 @@
 # @templatical/editor
 
+## 0.14.0
+
+### Minor Changes
+
+- 12100c8: Add standalone logic tags — a control-flow feature separate from merge tags. Configure `logicTags.tags` (standalone tokens like `{% else %}`) and `logicTags.pairs` (open/close constructs like `{% if %}` … `{% endif %}`), or supply `logicTags.onRequest` to plug in your own picker (mirrors `mergeTags.onRequest`; precedence: onRequest → built-in picker). A dedicated "Insert logic" affordance appears in rich-text blocks **and** in merge-tag-enabled plain fields (button text, URLs, alt text). Standalone tags insert at the cursor; pairs wrap the current selection (or drop with the caret between them). The built-in picker is a single searchable list grouped by `group` — each group holds both its standalone tags and its open/close pairs, with keyword badges (one per tag, two per pair). Typed and pasted logic tags are still highlighted automatically, independent of this config. New exported types: `LogicTagsConfig`, `LogicTag`, `LogicPair`.
+- 718d781: Add an optional outer frame to section blocks (`section.wrapper`) — a full-width band with its own background, padding, and corner radius that frames the section, rendered as an `mj-wrapper` around the section's `mj-section`. This makes the common "white card on a colored band" layout possible without nesting sections (which MJML forbids). Enable it from the section toolbar's Wrapper panel, or set `createSectionBlock({ wrapper: { backgroundColor, padding, borderRadius } })`; omit it and existing templates are unchanged. (#312)
+
+### Patch Changes
+
+- a476576: Fix the editor allowing a section to be dropped into another section's column (dragged from the sidebar palette) and then silently losing it on export. MJML cannot nest `mj-section` inside `mj-column`, so `renderToMjml()` / `editor.toMjml()` dropped the nested section and all of its content. Dragging a section into a column is now rejected up front, and the core `addBlock` / `moveBlock` APIs refuse to nest a section into a column, so the invalid state can no longer be created. (#292)
+- 710c9be: Add an optional `borderRadius` (px) to section blocks. Set it from the section toolbar or via `createSectionBlock({ borderRadius })`; the renderer emits it as `border-radius` on the `mj-section`, so a section with a background color reads as a rounded card on a contrasting background. Omitted or `0` keeps square corners, so existing templates are unchanged. First step toward the framed "card on colored background" pattern. (#312)
+- Updated dependencies [710c9be]
+- Updated dependencies [718d781]
+  - @templatical/renderer@0.14.0
+  - @templatical/media-library@0.14.0
+  - @templatical/quality@0.14.0
+
 ## 0.13.0
 
 ### Minor Changes
