@@ -17,7 +17,7 @@
     "@tiptap/extension-font-family": "^3.27.1",
     "@tiptap/extension-text-style": "^3.27.1",
     "@vitejs/plugin-vue": "^6.0.7",
-    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.10",
     "@vue/reactivity": "^3.5.39",
     "eslint": "^10.6.0",
     "eslint-plugin-vue": "^10.9.2",
