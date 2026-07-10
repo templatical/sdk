@@ -27,7 +27,7 @@
     "syncpack": "^15.3.2",
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.62.1",
+    "typescript-eslint": "^8.63.0",
     "vite": "^8.1.3",
     "vue-eslint-parser": "^10.4.1"
   },
