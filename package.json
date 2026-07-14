@@ -19,7 +19,7 @@
     "@vitejs/plugin-vue": "^6.0.7",
     "@vitest/coverage-v8": "^4.1.10",
     "@vue/reactivity": "^3.5.39",
-    "eslint": "^10.6.0",
+    "eslint": "^10.7.0",
     "eslint-plugin-vue": "^10.9.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
