@@ -33,6 +33,11 @@
       "enabled": false
     },
     {
+      "description": "Hold TypeScript on 6.x until the native (Go) compiler ecosystem catches up. TS 7.0 is the native rewrite and ships no stable programmatic API until 7.1 (~Oct 2026); vue-tsc (vuejs/language-tools#5381) and typescript-eslint (typescript-eslint#12518, closed not planned) both break on it. Revisit when 7.1 ships alongside compatible vue-tsc + typescript-eslint releases, then bump all three together.",
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7"
+    },
+    {
       "description": "Major bumps land in their own PR with a breaking label",
       "matchUpdateTypes": ["major"],
       "groupName": null,

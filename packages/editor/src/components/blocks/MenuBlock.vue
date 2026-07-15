@@ -6,6 +6,7 @@ import type {
 } from "@templatical/types";
 import { Navigation } from "@lucide/vue";
 import { computed } from "vue";
+import { useMergeTagLabelResolver } from "../../composables/useMergeTagLabelResolver";
 
 const props = defineProps<{
   block: MenuBlockType;
@@ -13,6 +14,8 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+
+const resolveLabels = useMergeTagLabelResolver();
 
 const containerStyle = computed(() => ({
   display: "flex",
@@ -50,7 +53,7 @@ function getLinkColor(itemColor?: string): string {
           }"
           @click.prevent
         >
-          {{ item.text || "..." }}
+          {{ resolveLabels(item.text) || "..." }}
         </a>
         <span
           v-if="index < block.items.length - 1"
