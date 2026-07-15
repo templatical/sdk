@@ -1,5 +1,28 @@
 # @templatical/editor
 
+## 0.15.1
+
+### Patch Changes
+
+- 88c44ae: Fix: editor primary buttons no longer render with a transparent background in bundled/CDN builds (#357)
+
+  `@templatical/media-library`'s shared `.tpl` form-element reset authored its button reset as a bare `.tpl button { background: none; border: none }` (specificity 0,1,1). Because `@templatical/editor` bundles these styles and shares the `.tpl` scope class, that reset out-specified the editor's single-class button utilities such as `.tpl:bg-[var(--tpl-primary)]` (0,1,0) — rendering the Insert/Update Link dialog's primary action button with a transparent background (invisible on light backgrounds) and stripping button borders. It surfaced in the CDN bundle and in any app that bundles the editor from source (e.g. the deployed playground); the npm `dist` was unaffected because it externalizes media-library. The reset is now `:where(.tpl) button` (specificity 0,0,1), matching the editor's own reset, so per-button utilities always win.
+
+- 48cc7c0: Fix: clicking a link inside a rich-text block no longer opens it
+
+  Clicking a link inside a Paragraph or Title block used to navigate to its `href` (typically opening a new tab) instead of letting you work with the block. Two paths were affected:
+
+  - On the canvas (not editing), the link rendered as a plain `<a>` with no click guard — unlike Button/Menu/Image/Video/SocialIcons blocks, whose anchors carry a `@click.prevent`.
+  - While editing, StarterKit bundles its own Link extension (registered with `openOnClick: true`), which was registered alongside — and overriding — the editor's `LinkExt` (`openOnClick: false`). Disabling StarterKit's bundled Link (`link: false`) — plus its bundled Underline in the paragraph editor, which already adds its own — removes those duplicate extensions and the "duplicate extension names" console warnings TipTap logged for them.
+
+  A click on a rich-text link now selects the block on the canvas (double-click still opens the inline editor) and does nothing while editing; preview mode leaves links clickable. (#351)
+
+- Updated dependencies [88c44ae]
+- Updated dependencies [88c44ae]
+  - @templatical/media-library@0.15.1
+  - @templatical/renderer@0.15.1
+  - @templatical/quality@0.15.1
+
 ## 0.15.0
 
 ### Minor Changes
