@@ -98,6 +98,10 @@ const {
           orderedList: false,
           listItem: false,
           strike: false,
+          // StarterKit bundles @tiptap/extension-link (openOnClick: true).
+          // Disable it so the LinkExt below (openOnClick: false) is the only
+          // link extension — otherwise clicking a link while editing opens it.
+          link: false,
         }),
         LinkExt.configure({
           openOnClick: false,

@@ -91,6 +91,14 @@ const {
           codeBlock: false,
           blockquote: false,
           horizontalRule: false,
+          // StarterKit bundles @tiptap/extension-link (openOnClick: true).
+          // Disable it so the LinkExt below (openOnClick: false) is the only
+          // link extension — otherwise clicking a link while editing opens it.
+          link: false,
+          // StarterKit also bundles @tiptap/extension-underline; the editor
+          // registers its own UnderlineExt below, so disable StarterKit's copy
+          // to avoid a duplicate `underline` extension (and its console warning).
+          underline: false,
         }),
         UnderlineExt,
         SubscriptExt,
