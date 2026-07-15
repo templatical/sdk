@@ -163,6 +163,16 @@ function handleClick(event: MouseEvent): void {
   if (props.previewMode) {
     return;
   }
+  // Rich-text blocks inject their links as raw <a> via v-html, so — unlike the
+  // other link-bearing blocks (button, menu, image…) which carry a
+  // template-level `@click.prevent` — they can't attach a directive to the
+  // anchor. Suppress navigation here so a click selects the block for editing
+  // instead of opening the href. Preview mode returns above, leaving real
+  // links clickable. `closest` also walks out of nested inline markup (e.g. a
+  // <strong> inside the link).
+  if ((event.target as HTMLElement | null)?.closest("a")) {
+    event.preventDefault();
+  }
   event.stopPropagation();
   emit("select");
 }
