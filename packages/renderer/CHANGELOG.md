@@ -1,5 +1,12 @@
 # @templatical/renderer
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [7afeacb]
+  - @templatical/types@1.0.0
+
 ## 0.14.0
 
 ### Minor Changes

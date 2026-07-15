@@ -1,5 +1,24 @@
 # @templatical/editor
 
+## 1.0.0
+
+### Minor Changes
+
+- 7afeacb: Add type-ahead merge tag autocomplete to input and textarea fields
+
+  Typing the syntax opener (e.g. `{{`) in any merge-tag-enabled input or textarea — button/image/video/menu links, image alt text, template settings, and custom-block text fields — now surfaces the same autocomplete popup as the rich-text editor. The popup, filtering, keyboard navigation (Arrow / Enter / Tab / Escape), and caret positioning are shared with the TipTap path, so behavior is identical across both surfaces. Controlled by the existing `mergeTags.autocomplete` flag (default on; auto-disabled when `tags` is empty or a custom syntax is used).
+
+  `@templatical/types` gains `getSyntaxClosingChar()` alongside `getSyntaxTriggerChar()`.
+
+### Patch Changes
+
+- a48118b: Fix: show merge tag labels in Button, Menu, Video and Image block canvas display
+
+  Merge-tag-enabled fields rendered directly on the canvas now show a tag's human-readable `label` (e.g. "Shipping Method") instead of the raw `{{shipping_method}}` token, matching the rich-text editor: button labels, menu item labels, and the Video URL / Image src placeholders shown when those fields are merge tags. Resolved tags carry a subtle dotted underline (in the current text color) so a dynamic value stays distinguishable from user-typed text on any background. Display-only — the raw token is unchanged in the stored value and MJML output. (#348)
+  - @templatical/media-library@1.0.0
+  - @templatical/quality@1.0.0
+  - @templatical/renderer@1.0.0
+
 ## 0.14.0
 
 ### Minor Changes
