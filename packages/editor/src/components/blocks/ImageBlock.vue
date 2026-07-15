@@ -6,7 +6,7 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { containsMergeTag } from "@templatical/types";
-import { useMergeTagLabelResolver } from "../../composables/useMergeTagLabelResolver";
+import MergeTagPreviewText from "../MergeTagPreviewText.vue";
 import { Image, Upload, LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
 import { ON_REQUEST_MEDIA_KEY } from "../../keys";
@@ -24,8 +24,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { syntax } = useMergeTag();
-const resolveLabels = useMergeTagLabelResolver();
-const resolvedSrcLabel = computed(() => resolveLabels(props.block.src));
 const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
 const canBrowseMedia = computed(() => !!onRequestMedia);
 const aliveFlag = useAliveFlag();
@@ -159,7 +157,7 @@ const hasMergeTagSrc = computed(() =>
         class="tpl:max-w-full tpl:truncate tpl:px-3 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-primary)]"
         style="opacity: 0.7"
       >
-        {{ resolvedSrcLabel }}
+        <MergeTagPreviewText :text="block.src" />
       </span>
     </div>
     <!-- Normal image rendering -->

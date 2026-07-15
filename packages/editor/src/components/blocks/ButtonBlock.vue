@@ -4,15 +4,12 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { computed } from "vue";
-import { useMergeTagLabelResolver } from "../../composables/useMergeTagLabelResolver";
+import MergeTagPreviewText from "../MergeTagPreviewText.vue";
 
 const props = defineProps<{
   block: ButtonBlockType;
   viewport: ViewportSize;
 }>();
-
-const resolveLabels = useMergeTagLabelResolver();
-const resolvedText = computed(() => resolveLabels(props.block.text));
 
 const buttonStyle = computed(() => {
   const style: Record<string, string> = {
@@ -49,7 +46,7 @@ const buttonStyle = computed(() => {
       class="tpl:cursor-default"
       @click.prevent
     >
-      {{ resolvedText }}
+      <MergeTagPreviewText :text="block.text" />
     </a>
   </div>
 </template>

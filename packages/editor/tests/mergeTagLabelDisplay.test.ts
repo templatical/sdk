@@ -1,8 +1,10 @@
 // @vitest-environment happy-dom
 //
-// Canvas display: Button and Menu blocks render a merge-tag-enabled text field
-// directly as a string, so (unlike the rich-text blocks) they must resolve
-// tokens to labels themselves. Regression test for issue #348.
+// Canvas display: Button, Menu, Video and Image render a merge-tag-enabled text
+// field directly, so (unlike the rich-text blocks) they resolve tokens to
+// labels themselves — and mark each resolved tag with `.tpl-merge-tag-label`
+// (dotted underline) so it reads as dynamic rather than user-typed text.
+// Regression test for issue #348.
 
 import { describe, expect, it } from "vitest";
 import type { MergeTag, MenuItemData } from "@templatical/types";
@@ -24,6 +26,8 @@ const TAGS: MergeTag[] = [
   { label: "Shipping Method", value: "{{shipping_method}}" },
 ];
 
+const TAG_SELECTOR = ".tpl-merge-tag-label";
+
 function menuItem(overrides: Partial<MenuItemData>): MenuItemData {
   return {
     id: "item-1",
@@ -37,7 +41,7 @@ function menuItem(overrides: Partial<MenuItemData>): MenuItemData {
 }
 
 describe("ButtonBlock merge tag label display", () => {
-  it("replaces the merge tag token with its label on the canvas", () => {
+  it("shows the label as a marked tag while surrounding text stays plain", () => {
     const wrapper = mountEditor(ButtonBlock, {
       props: {
         block: createButtonBlock({
@@ -49,9 +53,12 @@ describe("ButtonBlock merge tag label display", () => {
     });
 
     expect(wrapper.find("a").text()).toBe("Go to Your Dashboard Shipping Method");
+    const tags = wrapper.findAll(TAG_SELECTOR);
+    expect(tags).toHaveLength(1);
+    expect(tags[0].text()).toBe("Shipping Method");
   });
 
-  it("keeps an unknown token verbatim (falls back to raw value)", () => {
+  it("marks an unknown token too, keeping it verbatim", () => {
     const wrapper = mountEditor(ButtonBlock, {
       props: {
         block: createButtonBlock({ text: "Hello {{mystery}}" }),
@@ -61,11 +68,25 @@ describe("ButtonBlock merge tag label display", () => {
     });
 
     expect(wrapper.find("a").text()).toBe("Hello {{mystery}}");
+    expect(wrapper.find(TAG_SELECTOR).text()).toBe("{{mystery}}");
+  });
+
+  it("renders no tag marker for plain text", () => {
+    const wrapper = mountEditor(ButtonBlock, {
+      props: {
+        block: createButtonBlock({ text: "Just a label" }),
+        viewport: "desktop",
+      },
+      provides: { [MERGE_TAGS_KEY]: TAGS },
+    });
+
+    expect(wrapper.find("a").text()).toBe("Just a label");
+    expect(wrapper.find(TAG_SELECTOR).exists()).toBe(false);
   });
 });
 
 describe("MenuBlock merge tag label display", () => {
-  it("replaces merge tag tokens in item labels with their labels", () => {
+  it("marks tags in item labels and leaves plain items unmarked", () => {
     const wrapper = mountEditor(MenuBlock, {
       props: {
         block: createMenuBlock({
@@ -82,12 +103,14 @@ describe("MenuBlock merge tag label display", () => {
     const links = wrapper.findAll("a");
     expect(links).toHaveLength(2);
     expect(links[0].text()).toBe("Hi First Name");
+    expect(links[0].find(TAG_SELECTOR).text()).toBe("First Name");
     expect(links[1].text()).toBe("Plain link");
+    expect(links[1].find(TAG_SELECTOR).exists()).toBe(false);
   });
 });
 
 describe("VideoBlock merge tag label display", () => {
-  it("shows the label (not the raw token) in the merge-tag URL placeholder", () => {
+  it("marks the label in the merge-tag URL placeholder", () => {
     const wrapper = mountEditor(VideoBlock, {
       props: {
         block: createVideoBlock({
@@ -102,13 +125,13 @@ describe("VideoBlock merge tag label display", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("Video URL");
+    expect(wrapper.find(TAG_SELECTOR).text()).toBe("Video URL");
     expect(wrapper.text()).not.toContain("{{video_url}}");
   });
 });
 
 describe("ImageBlock merge tag label display", () => {
-  it("shows the label (not the raw token) in the merge-tag src placeholder", () => {
+  it("marks the label in the merge-tag src placeholder", () => {
     const wrapper = mountEditor(ImageBlock, {
       props: {
         block: createImageBlock({
@@ -123,7 +146,7 @@ describe("ImageBlock merge tag label display", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("Account ID");
+    expect(wrapper.find(TAG_SELECTOR).text()).toBe("Account ID");
     expect(wrapper.text()).not.toContain("{{account_id}}");
   });
 });

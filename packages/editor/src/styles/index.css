@@ -351,6 +351,17 @@
     z-index: 10000;
 }
 
+/* Marks a merge-tag label resolved into a plain-string field preview
+   (button/menu labels, video/image placeholders). A dotted underline in
+   `currentColor` distinguishes a dynamic value from user-typed text on any
+   background — including colored buttons — without a chip that would clash.
+   Display-only; the stored value and MJML output keep the raw token. */
+.tpl-merge-tag-label {
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+}
+
 .tpl-pulse {
     animation: tpl-pulse 2s infinite;
 }
