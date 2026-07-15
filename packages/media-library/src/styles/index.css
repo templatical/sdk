@@ -145,19 +145,40 @@
     font-family: var(--tpl-font-family);
 }
 
-/* Form element reset - Preflight is omitted so form elements use browser defaults */
-.tpl button,
-.tpl input,
-.tpl select,
-.tpl textarea {
+/* Form element reset — Preflight is omitted so form controls use browser
+   defaults. `:where()` drops the scope to zero specificity so per-element
+   utilities (e.g. `tpl:bg-[…]`, `tpl:border`) always win. This is critical
+   because the SDK shares the `.tpl` class with `@templatical/editor`, which
+   bundles these styles: a bare `.tpl button` (specificity 0,1,1) would
+   out-specify the editor's single-class button utilities (0,1,0) and render
+   primary buttons transparent + strip their borders (issue #357). Mirrors the
+   editor's reset in `packages/editor/src/styles/index.css`.
+
+   `box-sizing: border-box` is required here because Tailwind preflight (which
+   would set it universally) is disabled. Without it, `tpl:w-full` on a padded
+   input resolves to `width: 100%` + horizontal padding and overflows its
+   parent — see issue #115. */
+:where(.tpl) button,
+:where(.tpl) input,
+:where(.tpl) select,
+:where(.tpl) textarea {
     font-family: inherit;
+    box-sizing: border-box;
 }
 
-.tpl button {
+:where(.tpl) button {
     border: none;
-    outline: none;
     background: none;
     cursor: pointer;
+}
+
+/* Focus ring — visible only for keyboard navigation */
+:where(.tpl) button:focus-visible,
+:where(.tpl) input:focus-visible,
+:where(.tpl) select:focus-visible,
+:where(.tpl) textarea:focus-visible {
+    outline: none;
+    box-shadow: var(--tpl-ring);
 }
 
 /* Scrollbar Styles */
