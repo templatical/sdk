@@ -6,9 +6,16 @@
 
 import { describe, expect, it } from "vitest";
 import type { MergeTag, MenuItemData } from "@templatical/types";
-import { createButtonBlock, createMenuBlock } from "@templatical/types";
+import {
+  createButtonBlock,
+  createImageBlock,
+  createMenuBlock,
+  createVideoBlock,
+} from "@templatical/types";
 import ButtonBlock from "../src/components/blocks/ButtonBlock.vue";
 import MenuBlock from "../src/components/blocks/MenuBlock.vue";
+import VideoBlock from "../src/components/blocks/VideoBlock.vue";
+import ImageBlock from "../src/components/blocks/ImageBlock.vue";
 import { mountEditor } from "./helpers/mount";
 import { MERGE_TAGS_KEY } from "../src/keys";
 
@@ -76,5 +83,47 @@ describe("MenuBlock merge tag label display", () => {
     expect(links).toHaveLength(2);
     expect(links[0].text()).toBe("Hi First Name");
     expect(links[1].text()).toBe("Plain link");
+  });
+});
+
+describe("VideoBlock merge tag label display", () => {
+  it("shows the label (not the raw token) in the merge-tag URL placeholder", () => {
+    const wrapper = mountEditor(VideoBlock, {
+      props: {
+        block: createVideoBlock({
+          url: "{{video_url}}",
+          thumbnailUrl: "",
+          placeholderUrl: "",
+        }),
+        viewport: "desktop",
+      },
+      provides: {
+        [MERGE_TAGS_KEY]: [{ label: "Video URL", value: "{{video_url}}" }],
+      },
+    });
+
+    expect(wrapper.text()).toContain("Video URL");
+    expect(wrapper.text()).not.toContain("{{video_url}}");
+  });
+});
+
+describe("ImageBlock merge tag label display", () => {
+  it("shows the label (not the raw token) in the merge-tag src placeholder", () => {
+    const wrapper = mountEditor(ImageBlock, {
+      props: {
+        block: createImageBlock({
+          src: "{{account_id}}",
+          placeholderUrl: "",
+          linkUrl: "",
+        }),
+        viewport: "desktop",
+      },
+      provides: {
+        [MERGE_TAGS_KEY]: [{ label: "Account ID", value: "{{account_id}}" }],
+      },
+    });
+
+    expect(wrapper.text()).toContain("Account ID");
+    expect(wrapper.text()).not.toContain("{{account_id}}");
   });
 });

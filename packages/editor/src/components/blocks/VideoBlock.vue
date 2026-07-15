@@ -7,6 +7,7 @@ import type {
 } from "@templatical/types";
 import { getVideoThumbnail } from "../../utils/videoThumbnail";
 import { containsMergeTag } from "@templatical/types";
+import { useMergeTagLabelResolver } from "../../composables/useMergeTagLabelResolver";
 import { Video } from "@lucide/vue";
 import { computed } from "vue";
 
@@ -17,6 +18,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { syntax } = useMergeTag();
+const resolveLabels = useMergeTagLabelResolver();
 
 const hasMergeTagUrl = computed(
   () =>
@@ -45,8 +47,10 @@ const thumbnailStyle = computed(() => {
 });
 
 const mergeTagLabel = computed(() => {
-  if (containsMergeTag(props.block.url, syntax)) return props.block.url;
-  return props.block.thumbnailUrl;
+  const value = containsMergeTag(props.block.url, syntax)
+    ? props.block.url
+    : props.block.thumbnailUrl;
+  return resolveLabels(value);
 });
 </script>
 
