@@ -83,6 +83,7 @@ Neben einzelnen Blockstilen hat das Template selbst globale Einstellungen, die d
 |---------|------|-------------|
 | `width` | `number` | Template-Inhaltsbreite in px (typischerweise 600) |
 | `backgroundColor` | `string` | Äußere Hintergrundfarbe hinter dem Template |
+| `textColor` | `string` (optional) | Standard-Textfarbe für alle Blöcke; die eigene Farbe eines Blocks oder eine Inline-Textfarbe überschreibt sie |
 | `fontFamily` | `string` | Standard-Schriftfamilie für alle Blöcke |
 
 Diese werden über die `init()`-Konfiguration des Editors oder durch direkte Änderung des Template-JSON konfiguriert:

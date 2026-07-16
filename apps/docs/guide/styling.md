@@ -83,6 +83,7 @@ Beyond individual block styles, the template itself has global settings that aff
 |---------|------|-------------|
 | `width` | `number` | Template content width in px (typically 600) |
 | `backgroundColor` | `string` | Outer background color behind the template |
+| `textColor` | `string` (optional) | Default text color for all blocks; a block's own color or an inline text-color mark overrides it |
 | `fontFamily` | `string` | Default font family for all blocks |
 
 These are configured through the editor's `init()` config or by modifying the template JSON directly:

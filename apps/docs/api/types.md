@@ -30,6 +30,7 @@ interface TemplateContent {
 interface TemplateSettings {
   width: number;                  // Template width in pixels (default: 600)
   backgroundColor: string;        // Background color
+  textColor?: string;             // Default text color (blocks override)
   fontFamily: string;             // Default font family
   preheaderText?: string;         // Email preheader text
 }

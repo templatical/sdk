@@ -259,6 +259,7 @@ content.settings.preheaderText = 'Your weekly digest is here';
 |---|---|---|
 | `width` | `number` | Email width in pixels |
 | `backgroundColor` | `string` | Outer background color |
+| `textColor` | `string` (optional) | Default text color; per-block colors override |
 | `fontFamily` | `string` | Default font stack |
 | `preheaderText` | `string` | Preview text shown in inbox list |
 
