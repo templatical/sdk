@@ -21,7 +21,9 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   // `undefined` into `font-size="${...}px"` (mjml@5 rejects "undefinedpx").
   const fontSize =
     HEADING_LEVEL_FONT_SIZE[block.level] ?? HEADING_LEVEL_FONT_SIZE[2];
-  const color = escapeAttr(block.color);
+  // Emit the color only when the block sets one; otherwise the `mj-text`
+  // inherits the document `textColor` default from `<mj-attributes>`.
+  const colorAttr = block.color ? `\n  color="${escapeAttr(block.color)}"` : "";
   const align = block.textAlign;
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const visibilityAttr = getCssClassAttr(block);
@@ -31,8 +33,7 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   const tag = `h${safeLevel}`;
 
   return `<mj-text
-  font-size="${fontSize}px"
-  color="${color}"
+  font-size="${fontSize}px"${colorAttr}
   align="${align}"
   line-height="1.3"
   padding="${padding}"${bgColor}${fontFamilyAttr}${visibilityAttr}

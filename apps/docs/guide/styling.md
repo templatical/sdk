@@ -83,7 +83,7 @@ Beyond individual block styles, the template itself has global settings that aff
 |---------|------|-------------|
 | `width` | `number` | Template content width in px (typically 600) |
 | `backgroundColor` | `string` | Outer background color behind the template |
-| `textColor` | `string` (optional) | Default text color for all blocks; a block's own color or an inline text-color mark overrides it |
+| `textColor` | `string` | Default text color, inherited by every text block (Title, Paragraph, Menu, Table) unless the block sets its own color or an inline text-color mark. Defaults to `#1a1a1a`. |
 | `fontFamily` | `string` | Default font family for all blocks |
 
 These are configured through the editor's `init()` config or by modifying the template JSON directly:
@@ -105,3 +105,5 @@ const editor = await init({
 ```
 
 Individual blocks can override the template-level `fontFamily` by setting their own `fontFamily` property. When a block does not specify a font family, it inherits from the template settings.
+
+Text color works the same way: text blocks (Title, Paragraph, Menu, Table) inherit `textColor` from the template settings, and any block that sets its own color overrides it. Customize the document default through `init({ templateDefaults: { textColor } })`.

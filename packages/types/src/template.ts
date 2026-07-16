@@ -6,13 +6,14 @@ export interface TemplateSettings {
   width: number;
   backgroundColor: string;
   /**
-   * Document-level default text color, applied as the `<mj-text>` default in
-   * the rendered MJML. Blocks inherit it unless they set their own color (e.g.
-   * a Title's `color`) or carry an inline text-color mark. Optional — when
-   * unset, text falls back to the renderer/MJML default with no document
-   * override, keeping existing templates unchanged.
+   * Document-level default text color: the `<mj-text>` default in the rendered
+   * MJML, inherited by every text block (Title, Paragraph, Menu, Table) that
+   * doesn't set its own `color`. Required, defaulting to `#1a1a1a` (see
+   * `DEFAULT_TEMPLATE_DEFAULTS`); customize the default per-consumer via
+   * `templateDefaults`. A block's explicit `color` or an inline text-color
+   * mark overrides it.
    */
-  textColor?: string;
+  textColor: string;
   fontFamily: string;
   preheaderText?: string;
   /**

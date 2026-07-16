@@ -30,7 +30,7 @@ interface TemplateContent {
 interface TemplateSettings {
   width: number;                  // Template-Breite in Pixeln (Standard: 600)
   backgroundColor: string;        // Hintergrundfarbe
-  textColor?: string;             // Standard-Textfarbe (Blöcke überschreiben)
+  textColor: string;              // Standard-Textfarbe; Textblöcke erben sie (Standard #1a1a1a)
   fontFamily: string;             // Standard-Schriftfamilie
   preheaderText?: string;         // E-Mail-Preheader-Text
 }

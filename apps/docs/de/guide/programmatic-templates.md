@@ -259,7 +259,7 @@ content.settings.preheaderText = 'Your weekly digest is here';
 |---|---|---|
 | `width` | `number` | E-Mail-Breite in Pixeln |
 | `backgroundColor` | `string` | Äußere Hintergrundfarbe |
-| `textColor` | `string` (optional) | Standard-Textfarbe; blockspezifische Farben überschreiben |
+| `textColor` | `string` | Standard-Textfarbe, die alle Textblöcke erben; blockspezifische Farben überschreiben. Standard: `#1a1a1a` |
 | `fontFamily` | `string` | Standard-Font-Stack |
 | `preheaderText` | `string` | Vorschautext, der in der Posteingangsliste angezeigt wird |
 

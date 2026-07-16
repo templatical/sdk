@@ -150,10 +150,8 @@ const widthPresets = [
           <label :class="labelClass">{{ t.templateSettings.textColor }}</label>
           <ColorPicker
             :model-value="settings.textColor ?? ''"
-            seed-color="#000000"
-            @update:model-value="
-              emit('update', { textColor: $event || undefined })
-            "
+            seed-color="#1a1a1a"
+            @update:model-value="emit('update', { textColor: $event })"
           />
         </div>
 

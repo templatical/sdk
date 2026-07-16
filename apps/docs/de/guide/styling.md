@@ -83,7 +83,7 @@ Neben einzelnen Blockstilen hat das Template selbst globale Einstellungen, die d
 |---------|------|-------------|
 | `width` | `number` | Template-Inhaltsbreite in px (typischerweise 600) |
 | `backgroundColor` | `string` | Äußere Hintergrundfarbe hinter dem Template |
-| `textColor` | `string` (optional) | Standard-Textfarbe für alle Blöcke; die eigene Farbe eines Blocks oder eine Inline-Textfarbe überschreibt sie |
+| `textColor` | `string` | Standard-Textfarbe, die jeder Textblock (Title, Paragraph, Menu, Table) erbt, sofern der Block keine eigene Farbe oder Inline-Textfarbe setzt. Standard: `#1a1a1a`. |
 | `fontFamily` | `string` | Standard-Schriftfamilie für alle Blöcke |
 
 Diese werden über die `init()`-Konfiguration des Editors oder durch direkte Änderung des Template-JSON konfiguriert:
@@ -105,3 +105,5 @@ const editor = await init({
 ```
 
 Einzelne Blöcke können die `fontFamily` auf Template-Ebene überschreiben, indem sie ihre eigene `fontFamily`-Eigenschaft setzen. Wenn ein Block keine Schriftfamilie angibt, erbt er von den Template-Einstellungen.
+
+Die Textfarbe funktioniert genauso: Textblöcke (Title, Paragraph, Menu, Table) erben `textColor` aus den Template-Einstellungen, und jeder Block, der seine eigene Farbe setzt, überschreibt sie. Passe den Dokument-Standard über `init({ templateDefaults: { textColor } })` an.

@@ -21,10 +21,18 @@ describe("renderToMjml", () => {
     expect(mjml).toContain('font-family="Arial, sans-serif"');
   });
 
-  it("omits the mj-text default color when textColor is unset", async () => {
+  it("emits the document textColor default (#1a1a1a) on the mj-text default", async () => {
     const content = createDefaultTemplateContent();
     const mjml = await renderToMjml(content);
-    // No document color override — byte-identical to pre-feature output.
+    expect(mjml).toContain('<mj-text font-size="14px" color="#1a1a1a" />');
+  });
+
+  it("omits the mj-text default color for legacy content without textColor", async () => {
+    const content = createDefaultTemplateContent();
+    // Simulate a template stored before textColor existed — the renderer still
+    // omits the color rather than emitting `color="undefined"`.
+    delete (content.settings as { textColor?: string }).textColor;
+    const mjml = await renderToMjml(content);
     expect(mjml).toContain('<mj-text font-size="14px" />');
   });
 

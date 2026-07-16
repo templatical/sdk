@@ -3,26 +3,29 @@ import mjml2html from "mjml";
 import {
   createParagraphBlock,
   createTitleBlock,
+  createMenuBlock,
+  createTableBlock,
   createDefaultTemplateContent,
+  generateId,
 } from "@templatical/types";
 import type { TemplateContent } from "@templatical/types";
 import { renderToMjml } from "../src";
 
 /**
- * Document-level text color round-trip (issue #355).
+ * Document-level text color cascade (issue #355), verified through the real
+ * MJML compiler — a string check on the MJML alone can't prove the color
+ * reaches the rendered text (MJML silently drops attributes it doesn't accept,
+ * and `mj-attributes` defaults only apply if the compiler propagates them).
  *
- * A string-presence check on the MJML is not enough: MJML silently drops
- * attributes it doesn't accept in a given position, and `mj-attributes`
- * defaults only take effect if the compiler actually propagates them. These
- * tests compile the renderer's output through the real MJML compiler and
- * assert the resulting HTML carries (or omits) the color — proving the
- * `<mj-attributes><mj-text color>` default reaches paragraph text, that an
- * unset value adds no color, and that a Title's own color still wins.
+ * Cascade: an explicit per-block `color` > the document `textColor` (the
+ * `<mj-text>` default) > MJML's own default. All text blocks (paragraph,
+ * title, menu, table) render as `mj-text`, so an unset block color inherits
+ * the document default.
  */
 
-// Distinctive colors unlikely to appear in default MJML output by accident.
-const TEXT_COLOR = "#336699";
-const TITLE_COLOR = "#cc0000";
+const DOC = "#336699"; // a custom document text color
+const OVERRIDE = "#cc0000"; // an explicit per-block override
+const DEFAULT_DOC = "#1a1a1a"; // the built-in document default
 
 async function compile(mjml: string): Promise<string> {
   const result = await mjml2html(mjml);
@@ -38,37 +41,58 @@ function makeContent(blocks: TemplateContent["blocks"]): TemplateContent {
   return { ...createDefaultTemplateContent(), blocks };
 }
 
-describe("document text color round-trip through MJML compiler", () => {
-  it("paragraph inherits the document text color in the compiled HTML", async () => {
+describe("document text color cascade — round-trip through MJML compiler", () => {
+  it("renders body text at the #1a1a1a default when nothing is customized", async () => {
     const content = makeContent([
-      createParagraphBlock({ content: "<p>Body text</p>" }),
-    ]);
-    content.settings.textColor = TEXT_COLOR;
-
-    const html = await compile(await renderToMjml(content));
-    expect(htmlContainsColor(html, TEXT_COLOR)).toBe(true);
-  });
-
-  it("adds no document color to the HTML when textColor is unset", async () => {
-    const content = makeContent([
-      createParagraphBlock({ content: "<p>Body text</p>" }),
-    ]);
-    // textColor deliberately left unset.
-    const html = await compile(await renderToMjml(content));
-    expect(htmlContainsColor(html, TEXT_COLOR)).toBe(false);
-  });
-
-  it("keeps a Title's own color while the paragraph inherits the document color", async () => {
-    const content = makeContent([
-      createTitleBlock({ content: "<p>Heading</p>", color: TITLE_COLOR }),
       createParagraphBlock({ content: "<p>Body</p>" }),
     ]);
-    content.settings.textColor = TEXT_COLOR;
-
     const html = await compile(await renderToMjml(content));
-    // Title override survives compilation...
-    expect(htmlContainsColor(html, TITLE_COLOR)).toBe(true);
-    // ...and the paragraph still picks up the document default.
-    expect(htmlContainsColor(html, TEXT_COLOR)).toBe(true);
+    expect(htmlContainsColor(html, DEFAULT_DOC)).toBe(true);
+  });
+
+  it("paragraph inherits a custom document text color", async () => {
+    const content = makeContent([
+      createParagraphBlock({ content: "<p>Body</p>" }),
+    ]);
+    content.settings.textColor = DOC;
+    const html = await compile(await renderToMjml(content));
+    expect(htmlContainsColor(html, DOC)).toBe(true);
+  });
+
+  it("title inherits the document color when unset, and overrides when set", async () => {
+    const content = makeContent([
+      createTitleBlock({ content: "<p>Inherits</p>" }), // no color → inherit
+      createTitleBlock({ content: "<p>Overrides</p>", color: OVERRIDE }),
+    ]);
+    content.settings.textColor = DOC;
+    const html = await compile(await renderToMjml(content));
+    expect(htmlContainsColor(html, DOC)).toBe(true); // first title inherits
+    expect(htmlContainsColor(html, OVERRIDE)).toBe(true); // second overrides
+  });
+
+  it("menu with no color inherits the document color (no `color: undefined` leak)", async () => {
+    const content = makeContent([
+      createMenuBlock({
+        items: [{ id: generateId(), text: "Home", url: "https://example.com" }],
+      } as Parameters<typeof createMenuBlock>[0]),
+    ]);
+    content.settings.textColor = DOC;
+    const html = await compile(await renderToMjml(content));
+    expect(htmlContainsColor(html, DOC)).toBe(true);
+    // The item anchor must omit an explicit color, not emit `color: undefined`.
+    expect(html.toLowerCase()).not.toContain("color: undefined");
+  });
+
+  it("table with no color inherits the document color", async () => {
+    const content = makeContent([
+      createTableBlock({
+        rows: [
+          { id: generateId(), cells: [{ id: generateId(), content: "Cell" }] },
+        ],
+      } as Parameters<typeof createTableBlock>[0]),
+    ]);
+    content.settings.textColor = DOC;
+    const html = await compile(await renderToMjml(content));
+    expect(htmlContainsColor(html, DOC)).toBe(true);
   });
 });

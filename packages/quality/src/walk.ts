@@ -6,6 +6,7 @@ import { isOpaqueHex } from "./contrast";
 export type Visitor = (block: Block, ctx: WalkContext) => void;
 
 const DEFAULT_BG = "#ffffff";
+const DEFAULT_TEXT = "#1a1a1a";
 
 /**
  * Pure traversal of the block tree. Calls `visit` once per block in
@@ -20,6 +21,12 @@ export function walkBlocks(content: TemplateContent, visit: Visitor): void {
   const rootBg = isOpaqueHex(content.settings.backgroundColor)
     ? content.settings.backgroundColor.toLowerCase()
     : DEFAULT_BG;
+  // Document-level default text color — constant across the tree. Text blocks
+  // that don't set their own `color` inherit it, so it's the effective color
+  // contrast rules compare against.
+  const rootTextColor = isOpaqueHex(content.settings.textColor)
+    ? content.settings.textColor.toLowerCase()
+    : DEFAULT_TEXT;
 
   const walk = (block: Block, ctx: WalkContext): void => {
     // A block's own opaque backgroundColor is what's behind its content —
@@ -48,6 +55,7 @@ export function walkBlocks(content: TemplateContent, visit: Visitor): void {
           columnIndex,
           depth: ctx.depth + 1,
           resolvedBackgroundColor: effectiveBg,
+          resolvedTextColor: ctx.resolvedTextColor,
         }),
       );
     });
@@ -60,6 +68,7 @@ export function walkBlocks(content: TemplateContent, visit: Visitor): void {
       columnIndex: null,
       depth: 0,
       resolvedBackgroundColor: rootBg,
+      resolvedTextColor: rootTextColor,
     });
   }
 }

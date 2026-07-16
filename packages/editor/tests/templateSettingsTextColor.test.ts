@@ -11,10 +11,9 @@ import { mountEditor } from "./helpers/mount";
  * Document-level text color in the settings tab (issue #355).
  *
  * The Appearance card exposes it as a second ColorPicker, right after
- * Background color. It's optional: an unset value shows the picker empty
- * (slash swatch) and clearing it emits `undefined` — so a template that never
- * sets a text color stays free of the field. A set value binds through and
- * round-trips on the `update` event.
+ * Background color. It's a required setting (defaulting to #1a1a1a), so the
+ * picker always reflects a value and mirrors how the Background color control
+ * behaves — it isn't an unset/inherit control (that's per-block).
  */
 
 function makeSettings(
@@ -23,6 +22,7 @@ function makeSettings(
   return {
     width: 600,
     backgroundColor: "#ffffff",
+    textColor: "#1a1a1a",
     fontFamily: "Arial",
     locale: "en",
     ...overrides,
@@ -52,14 +52,14 @@ function textColorPicker(wrapper: ReturnType<typeof mountSettings>) {
 }
 
 describe("TemplateSettings document text color", () => {
-  it("binds the text-color picker to settings.textColor when set", () => {
+  it("binds the text-color picker to a custom settings.textColor", () => {
     const wrapper = mountSettings(makeSettings({ textColor: "#336699" }));
     expect(textColorPicker(wrapper).props("modelValue")).toBe("#336699");
   });
 
-  it("shows the picker unset (empty) when textColor is absent", () => {
+  it("reflects the #1a1a1a default when settings use the defaults", () => {
     const wrapper = mountSettings(makeSettings());
-    expect(textColorPicker(wrapper).props("modelValue")).toBe("");
+    expect(textColorPicker(wrapper).props("modelValue")).toBe("#1a1a1a");
   });
 
   it("emits the chosen color on update", async () => {
@@ -67,14 +67,6 @@ describe("TemplateSettings document text color", () => {
     await textColorPicker(wrapper).vm.$emit("update:modelValue", "#123456");
     expect(wrapper.emitted("update")).toContainEqual([
       { textColor: "#123456" },
-    ]);
-  });
-
-  it("emits undefined when the text color is cleared", async () => {
-    const wrapper = mountSettings(makeSettings({ textColor: "#123456" }));
-    await textColorPicker(wrapper).vm.$emit("update:modelValue", "");
-    expect(wrapper.emitted("update")).toContainEqual([
-      { textColor: undefined },
     ]);
   });
 });

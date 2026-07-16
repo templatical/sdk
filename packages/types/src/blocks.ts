@@ -66,7 +66,8 @@ export interface TitleBlock extends BaseBlock {
   type: "title";
   content: string;
   level: HeadingLevel;
-  color: string;
+  /** Text color. Unset = inherit the document-level `textColor`. */
+  color?: string;
   textAlign: "left" | "center" | "right";
   fontFamily?: string;
 }
@@ -185,7 +186,8 @@ export interface MenuBlock extends BaseBlock {
   items: MenuItemData[];
   fontSize: number;
   fontFamily?: string;
-  color: string;
+  /** Base text/link color. Unset = inherit the document-level `textColor`. */
+  color?: string;
   linkColor?: string;
   textAlign: "left" | "center" | "right";
   separator: string;
@@ -213,7 +215,8 @@ export interface TableBlock extends BaseBlock {
   cellPadding: number;
   fontSize: number;
   fontFamily?: string;
-  color: string;
+  /** Text color. Unset = inherit the document-level `textColor`. */
+  color?: string;
   textAlign: "left" | "center" | "right";
 }
 

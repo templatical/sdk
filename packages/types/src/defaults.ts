@@ -39,10 +39,11 @@ export type TemplateDefaults = Partial<TemplateSettings>;
 // Built-in default values — single source of truth for factories & consumers
 // ---------------------------------------------------------------------------
 
+// `color` is intentionally omitted: a new Title inherits the document
+// `textColor` (see `TemplateSettings`) unless the user sets a per-block color.
 export const TITLE_BLOCK_DEFAULTS: BlockDefaultsFor<TitleBlock> = {
   content: "<p>Enter your title</p>",
   level: 2,
-  color: "#1a1a1a",
   textAlign: "left",
 };
 
@@ -101,22 +102,24 @@ export const HTML_BLOCK_DEFAULTS: BlockDefaultsFor<HtmlBlock> = {
   content: "",
 };
 
+// `color` is intentionally omitted: a new Menu inherits the document
+// `textColor` unless the user sets a per-block color (or per-item `linkColor`).
 export const MENU_BLOCK_DEFAULTS: BlockDefaultsFor<MenuBlock> = {
   fontSize: 15,
-  color: "#1a1a1a",
   textAlign: "center",
   separator: "|",
   separatorColor: "#e0e0e0",
   spacing: 10,
 };
 
+// `color` is intentionally omitted: a new Table inherits the document
+// `textColor` unless the user sets a per-block color.
 export const TABLE_BLOCK_DEFAULTS: BlockDefaultsFor<TableBlock> = {
   hasHeaderRow: true,
   borderColor: "#e0e0e0",
   borderWidth: 1,
   cellPadding: 8,
   fontSize: 15,
-  color: "#1a1a1a",
   textAlign: "left",
 };
 
@@ -161,6 +164,7 @@ export const DEFAULT_BLOCK_DEFAULTS: Required<BlockDefaults> = {
 export const DEFAULT_TEMPLATE_DEFAULTS: TemplateDefaults = {
   width: 600,
   backgroundColor: "#ffffff",
+  textColor: "#1a1a1a",
   fontFamily: "Arial",
   locale: "en",
 };

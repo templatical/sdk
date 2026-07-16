@@ -139,7 +139,7 @@ function removeMenuItem(itemId: string): void {
           }}</label>
           <ColorPicker
             swatch-only
-            :model-value="item.color || block.linkColor || block.color"
+            :model-value="item.color || block.linkColor || block.color || ''"
             @update:model-value="updateMenuItem(item.id, 'color', $event)"
           />
         </div>
@@ -185,14 +185,14 @@ function removeMenuItem(itemId: string): void {
 
   <FieldRow :label="t.menu.color">
     <ColorPicker
-      :model-value="block.color"
-      @update:model-value="updateField('color', $event)"
+      :model-value="block.color ?? ''"
+      @update:model-value="updateField('color', $event || undefined)"
     />
   </FieldRow>
 
   <FieldRow :label="t.menu.linkColor">
     <ColorPicker
-      :model-value="block.linkColor || block.color"
+      :model-value="block.linkColor || block.color || ''"
       @update:model-value="updateField('linkColor', $event || undefined)"
     />
   </FieldRow>
