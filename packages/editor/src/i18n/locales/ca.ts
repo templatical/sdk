@@ -1,4 +1,6 @@
-export default {
+import type en from "./en";
+
+const ca: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Amb la tecnologia de",
@@ -649,3 +651,5 @@ export default {
       "L'editor necessita més espai del que ofereix aquesta pantalla. Obriu-lo en una tauleta o ordinador d'escriptori per començar a editar.",
   },
 };
+
+export default ca;
