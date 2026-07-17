@@ -11,7 +11,7 @@
     "vue-advanced-cropper": "^2.8.9"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.7",
+    "@vitejs/plugin-vue": "^6.0.8",
     "@vue/test-utils": "^2.4.11",
     "typescript": "^6.0.3",
     "vite": "^8.1.4",
