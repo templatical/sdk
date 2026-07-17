@@ -45,11 +45,26 @@ describe("ParagraphToolbar text-color wiring (issue #373)", () => {
 
   it("resolves the effective color from the inline mark and the document textColor", () => {
     expect(SRC).toContain("resolveEffectiveTextColor(");
-    expect(SRC).toContain("editorReturn?.content.value.settings.textColor");
+    expect(SRC).toContain("editorReturn?.content.value.settings");
+    expect(SRC).toContain("settings?.textColor");
   });
 
   it("shows a reset control only when an explicit inline color exists", () => {
     expect(SRC).toContain('v-if="hasExplicitTextColor()"');
     expect(SRC).toMatch(/@click="setColor\(''\)"/);
+  });
+});
+
+describe("ParagraphToolbar color control is link-aware (per-link color, #373)", () => {
+  it("colors the link itself (not a text span) when the selection is a link", () => {
+    expect(SRC).toContain("isLinkSelection()");
+    // The <a> is recolored via its own attribute so text + underline stay in
+    // sync; the whole link is extended so it doesn't split into segments.
+    expect(SRC).toMatch(/updateAttributes\("link", \{ color:/);
+    expect(SRC).toContain('extendMarkRange("link")');
+  });
+
+  it("reads the link's own color for the effective swatch and reset gate", () => {
+    expect(SRC).toContain("linkColorAttr()");
   });
 });

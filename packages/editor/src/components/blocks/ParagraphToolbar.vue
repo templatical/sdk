@@ -101,26 +101,55 @@ function setFontSize(size: string): void {
   else chain?.unsetFontSize().run();
 }
 
+// When the selection is a link, the color control operates on the link itself
+// (its `color` attribute → inline on the `<a>`) so the link's text and underline
+// stay in sync; otherwise it applies a plain inline text-color mark.
+function isLinkSelection(): boolean {
+  return props.editor?.isActive("link") ?? false;
+}
+
+function linkColorAttr(): string {
+  return (props.editor?.getAttributes("link").color as string) || "";
+}
+
+// Set (or clear, when empty) the color of the current selection. On a link the
+// whole link is recolored (extendMarkRange) so it doesn't split into segments.
 function setColor(color: string): void {
   const chain = props.editor?.chain().focus();
-  if (color) chain?.setColor(color).run();
-  else chain?.unsetColor().run();
+  if (!chain) return;
+  if (isLinkSelection()) {
+    chain
+      .extendMarkRange("link")
+      .updateAttributes("link", { color: color || null })
+      .run();
+  } else if (color) {
+    chain.setColor(color).run();
+  } else {
+    chain.unsetColor().run();
+  }
 }
 
-// The color the current selection actually renders in: an explicit inline mark
-// if present, else the inherited document text color. Drives the swatch so it
-// shows the real color rather than a hard-coded default (issue #373).
+// The color the current selection actually renders in — a link's own color (else
+// the effective document link color: link color, then text color), or for plain
+// text the inline mark else the document text color. Keeps the swatch truthful
+// rather than showing a hard-coded default (issue #373 / per-link color).
 function effectiveTextColor(): string {
-  return resolveEffectiveTextColor(
-    textStyleAttr("color"),
-    editorReturn?.content.value.settings.textColor,
-  );
+  const settings = editorReturn?.content.value.settings;
+  if (isLinkSelection()) {
+    return resolveEffectiveTextColor(
+      linkColorAttr(),
+      settings?.linkColor || settings?.textColor,
+    );
+  }
+  return resolveEffectiveTextColor(textStyleAttr("color"), settings?.textColor);
 }
 
-// Whether the selection carries its own inline color overriding the document
-// default. Gates the reset control that clears back to the inherited color.
+// Whether the selection carries its own explicit color (a link's own color when
+// on a link, else an inline text-color mark). Gates the reset control.
 function hasExplicitTextColor(): boolean {
-  return textStyleAttr("color") !== "";
+  return isLinkSelection()
+    ? linkColorAttr() !== ""
+    : textStyleAttr("color") !== "";
 }
 
 function getCurrentLineHeight(): string {

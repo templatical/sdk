@@ -1,10 +1,13 @@
 import type { Editor } from "@tiptap/core";
 import { ref, type Ref, type ShallowRef } from "vue";
 import { useFocusTrap } from "./useFocusTrap";
+import { sanitizeLinkColor } from "../utils/linkColorExtension";
 
 export interface UseRichTextLinkDialogReturn {
   showLinkDialog: Ref<boolean>;
   linkUrl: Ref<string>;
+  /** Per-link color (inline on the `<a>`); empty = inherit the document link color. */
+  linkColor: Ref<string>;
   linkDialogRef: Ref<HTMLElement | null>;
   openLinkDialog: () => void;
   insertLink: () => void;
@@ -18,12 +21,14 @@ export function useRichTextLinkDialog(
 ): UseRichTextLinkDialogReturn {
   const showLinkDialog = ref(false);
   const linkUrl = ref("");
+  const linkColor = ref("");
   const linkDialogRef = ref<HTMLElement | null>(null);
   useFocusTrap(linkDialogRef, showLinkDialog);
 
   function openLinkDialog(): void {
-    const previousUrl = editor.value?.getAttributes("link").href || "";
-    linkUrl.value = previousUrl;
+    const attrs = editor.value?.getAttributes("link") ?? {};
+    linkUrl.value = attrs.href || "";
+    linkColor.value = attrs.color || "";
     showLinkDialog.value = true;
   }
 
@@ -31,11 +36,17 @@ export function useRichTextLinkDialog(
     if (linkUrl.value) {
       const url = normalizeLinkUrl(linkUrl.value);
       if (url !== null) {
+        // Set the link, then stamp its color on the `<a>` itself so text and
+        // underline stay in sync. Empty/invalid color → null = inherit the
+        // document link color.
         editor.value
           ?.chain()
           .focus()
           .extendMarkRange("link")
           .setLink({ href: url })
+          .updateAttributes("link", {
+            color: sanitizeLinkColor(linkColor.value),
+          })
           .run();
       }
     }
@@ -76,6 +87,7 @@ export function useRichTextLinkDialog(
   function closeLinkDialog(): void {
     showLinkDialog.value = false;
     linkUrl.value = "";
+    linkColor.value = "";
   }
 
   function handleLinkKeydown(event: KeyboardEvent): void {
@@ -90,6 +102,7 @@ export function useRichTextLinkDialog(
   return {
     showLinkDialog,
     linkUrl,
+    linkColor,
     linkDialogRef,
     openLinkDialog,
     insertLink,

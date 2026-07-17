@@ -8,16 +8,20 @@ vi.mock("../src/composables/useFocusTrap", () => ({
 
 import { useRichTextLinkDialog } from "../src/composables/useRichTextLinkDialog";
 
-function createMockEditor(existingHref = "") {
+function createMockEditor(existingHref = "", existingColor = "") {
   const chainResult = {
     focus: vi.fn().mockReturnThis(),
     extendMarkRange: vi.fn().mockReturnThis(),
     setLink: vi.fn().mockReturnThis(),
+    updateAttributes: vi.fn().mockReturnThis(),
     unsetLink: vi.fn().mockReturnThis(),
     run: vi.fn(),
   };
   return shallowRef({
-    getAttributes: vi.fn((_mark: string) => ({ href: existingHref })),
+    getAttributes: vi.fn((_mark: string) => ({
+      href: existingHref,
+      color: existingColor,
+    })),
     chain: vi.fn(() => chainResult),
     _chain: chainResult,
   } as any);
@@ -34,6 +38,7 @@ describe("useRichTextLinkDialog", () => {
 
     expect(result.showLinkDialog.value).toBe(false);
     expect(result.linkUrl.value).toBe("");
+    expect(result.linkColor.value).toBe("");
     expect(result.linkDialogRef.value).toBe(null);
   });
 
@@ -47,6 +52,15 @@ describe("useRichTextLinkDialog", () => {
       expect(result.showLinkDialog.value).toBe(true);
       expect(result.linkUrl.value).toBe("https://example.com");
       expect(editor.value.getAttributes).toHaveBeenCalledWith("link");
+    });
+
+    it("populates color from the existing link's color", () => {
+      const editor = createMockEditor("https://example.com", "#ff6600");
+      const result = useRichTextLinkDialog(editor);
+
+      result.openLinkDialog();
+
+      expect(result.linkColor.value).toBe("#ff6600");
     });
 
     it("sets empty URL when no existing link", () => {
@@ -86,6 +100,33 @@ describe("useRichTextLinkDialog", () => {
         href: "https://test.com",
       });
       expect(chain.run).toHaveBeenCalled();
+    });
+
+    it("stamps the link color on the <a> via updateAttributes", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "https://test.com";
+      result.linkColor.value = "#e11d48";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.updateAttributes).toHaveBeenCalledWith("link", {
+        color: "#e11d48",
+      });
+    });
+
+    it("clears the link color (null) when none is set", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "https://test.com";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.updateAttributes).toHaveBeenCalledWith("link", {
+        color: null,
+      });
     });
 
     it("prepends https:// when URL does not start with http", () => {
@@ -296,10 +337,12 @@ describe("useRichTextLinkDialog", () => {
 
       result.showLinkDialog.value = true;
       result.linkUrl.value = "https://example.com";
+      result.linkColor.value = "#abcabc";
       result.closeLinkDialog();
 
       expect(result.showLinkDialog.value).toBe(false);
       expect(result.linkUrl.value).toBe("");
+      expect(result.linkColor.value).toBe("");
     });
   });
 

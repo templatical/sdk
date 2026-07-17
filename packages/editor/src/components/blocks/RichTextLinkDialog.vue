@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
 import { usePopoverRoot } from "../../composables/usePopoverRoot";
+import ColorPicker from "../ColorPicker.vue";
 import { X } from "@lucide/vue";
-import { inject } from "vue";
-import { THEME_STYLES_KEY, UI_THEME_KEY } from "../../keys";
+import { computed, inject } from "vue";
+import { EDITOR_KEY, THEME_STYLES_KEY, UI_THEME_KEY } from "../../keys";
 
 defineProps<{
   visible: boolean;
@@ -11,6 +12,7 @@ defineProps<{
 }>();
 
 const linkUrl = defineModel<string>("linkUrl", { required: true });
+const linkColor = defineModel<string>("linkColor", { default: "" });
 const dialogRef = defineModel<HTMLElement | null>("dialogRef", {
   required: true,
 });
@@ -25,6 +27,12 @@ const emit = defineEmits<{
 const themeStyles = inject(THEME_STYLES_KEY, null);
 const tplUiTheme = inject(UI_THEME_KEY, null);
 const popoverRoot = usePopoverRoot();
+const editorReturn = inject(EDITOR_KEY, null);
+// Seed the picker at the document link color so opening it starts from the
+// color an unset link would inherit; an explicit value paints the swatch.
+const documentLinkColor = computed(
+  () => editorReturn?.content.value.settings.linkColor || "#2c85de",
+);
 
 const { t } = useI18n();
 </script>
@@ -80,6 +88,17 @@ const { t } = useI18n();
               :placeholder="t.linkDialog.urlPlaceholder"
               autofocus
               @keydown="emit('keydown', $event)"
+            />
+          </div>
+          <div class="tpl:mb-4 tpl:last:mb-0">
+            <label
+              class="tpl:mb-1.5 tpl:block tpl:text-xs tpl:font-medium tpl:tracking-wide tpl:text-[var(--tpl-text-muted)] tpl:uppercase"
+              >{{ t.linkDialog.colorLabel }}</label
+            >
+            <ColorPicker
+              :model-value="linkColor"
+              :seed-color="documentLinkColor"
+              @update:model-value="linkColor = $event"
             />
           </div>
         </div>

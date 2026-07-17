@@ -138,6 +138,7 @@ export default {
     cancel: "Cancel",
     urlPlaceholder: "https://example.com",
     urlLabel: "URL",
+    colorLabel: "Link Color",
   },
 
   // Toolbar - Title

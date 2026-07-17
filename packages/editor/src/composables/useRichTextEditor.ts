@@ -55,6 +55,7 @@ export interface UseRichTextEditorReturn {
   retry: () => void;
   showLinkDialog: Ref<boolean>;
   linkUrl: Ref<string>;
+  linkColor: Ref<string>;
   linkDialogRef: Ref<HTMLElement | null>;
   mergeTags: ReturnType<typeof useMergeTag>["mergeTags"];
   canRequestMergeTag: ReturnType<typeof useMergeTag>["canRequestMergeTag"];
@@ -105,6 +106,7 @@ export function useRichTextEditor(
   const {
     showLinkDialog,
     linkUrl,
+    linkColor,
     linkDialogRef,
     openLinkDialog,
     insertLink,
@@ -287,6 +289,7 @@ export function useRichTextEditor(
     retry,
     showLinkDialog,
     linkUrl,
+    linkColor,
     linkDialogRef,
     mergeTags,
     canRequestMergeTag,

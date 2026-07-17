@@ -110,4 +110,22 @@ describe("document link styling — round-trip through MJML compiler", () => {
     // …and an explicit per-item color still wins via its inline style.
     expect(anchorStyle(html, "Override")).toContain(`color: ${MENU_ITEM}`);
   });
+
+  it("renders a per-link color inline on the <a>, overriding the document link color", async () => {
+    const content = makeContent([
+      createParagraphBlock({
+        content:
+          '<p><a href="https://example.com" style="color: #e11d48">L</a></p>',
+      }),
+    ]);
+    content.settings.linkColor = LINK; // document link color (#ff6600)
+    const html = await compile(await renderToMjml(content));
+
+    // The document rule still carries the document link color + underline…
+    expect(html).toContain(`a { color: ${LINK}; text-decoration: underline; }`);
+    // …but the per-link color lives inline on the <a>, so it wins — and because
+    // it's on the anchor (not an inner span), the underline follows currentColor,
+    // keeping the link's text and underline the same color.
+    expect(anchorStyle(html, "L")).toMatch(/color:\s*#e11d48/i);
+  });
 });
