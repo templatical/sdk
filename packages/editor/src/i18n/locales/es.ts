@@ -426,6 +426,8 @@ const es: typeof en = {
     appearance: "Apariencia",
     backgroundColor: "Color de fondo",
     textColor: "Color del texto",
+    linkColor: "Color del enlace",
+    linkUnderline: "Subrayar enlaces",
     fontFamily: "Familia tipográfica",
     preheaderText: "Texto del preencabezado",
     preheaderTextPlaceholder:

@@ -426,6 +426,8 @@ const ca: typeof en = {
     appearance: "Aparença",
     backgroundColor: "Color de fons",
     textColor: "Color del text",
+    linkColor: "Color de l'enllaç",
+    linkUnderline: "Subratllar enllaços",
     fontFamily: "Tipus de lletra",
     preheaderText: "Text de la precapçalera",
     preheaderTextPlaceholder:
