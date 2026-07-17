@@ -43,56 +43,55 @@ describe("i18n locales", () => {
     return (value.match(/\{[a-zA-Z0-9_]+\}/g) ?? []).slice().sort();
   }
 
+  function localeFromPath(path: string): string {
+    return path.match(/\/([^/]+)\.ts$/)![1];
+  }
+
+  // Discover every locale file at test time so a new locale is covered
+  // automatically — no array to keep in sync with src/i18n/locales/.
+  const localeModules = import.meta.glob<{ default: typeof en }>(
+    "../src/i18n/locales/*.ts",
+    { eager: true },
+  );
   const enEntries = getNestedEntries(
     en as unknown as Record<string, unknown>,
   ).sort(([a], [b]) => a.localeCompare(b));
-  const deEntries = getNestedEntries(
-    de as unknown as Record<string, unknown>,
-  ).sort(([a], [b]) => a.localeCompare(b));
-  const ptBREntries = getNestedEntries(
-    ptBR as unknown as Record<string, unknown>,
-  ).sort(([a], [b]) => a.localeCompare(b));
 
-  it("English and German have the same nested keys", () => {
-    expect(enEntries.map(([k]) => k)).toEqual(deEntries.map(([k]) => k));
-  });
+  for (const [path, mod] of Object.entries(localeModules)) {
+    const locale = localeFromPath(path);
+    if (locale === "en") continue;
 
-  it("English and pt-BR have the same nested keys", () => {
-    expect(enEntries.map(([k]) => k)).toEqual(ptBREntries.map(([k]) => k));
-  });
+    describe(`locale ${locale}`, () => {
+      const localeEntries = getNestedEntries(
+        mod.default as unknown as Record<string, unknown>,
+      ).sort(([a], [b]) => a.localeCompare(b));
 
-  it("every key has matching placeholder tokens across locales", () => {
-    const locales = [
-      ["de", deEntries],
-      ["pt-BR", ptBREntries],
-    ] as const;
-    const mismatches: Array<{
-      locale: string;
-      key: string;
-      en: string[];
-      localePlaceholders: string[];
-    }> = [];
+      it("has the same nested keys as en", () => {
+        expect(localeEntries.map(([k]) => k)).toEqual(
+          enEntries.map(([k]) => k),
+        );
+      });
 
-    for (const [locale, localeEntries] of locales) {
-      const localeMap = new Map(localeEntries);
-      for (const [key, enValue] of enEntries) {
-        const localeValue = localeMap.get(key);
-        if (localeValue === undefined) continue;
-        const enPh = getPlaceholders(enValue);
-        const localePh = getPlaceholders(localeValue);
-        if (enPh.join(",") !== localePh.join(",")) {
-          mismatches.push({
-            locale,
-            key,
-            en: enPh,
-            localePlaceholders: localePh,
-          });
+      it("preserves placeholder tokens for every key", () => {
+        const localeMap = new Map(localeEntries);
+        const mismatches: Array<{
+          key: string;
+          en: string[];
+          locale: string[];
+        }> = [];
+        for (const [key, enValue] of enEntries) {
+          const localeValue = localeMap.get(key);
+          if (localeValue === undefined) continue;
+          const enPh = getPlaceholders(enValue);
+          const localePh = getPlaceholders(localeValue);
+          if (enPh.join(",") !== localePh.join(",")) {
+            mismatches.push({ key, en: enPh, locale: localePh });
+          }
         }
-      }
-    }
-
-    expect(mismatches).toEqual([]);
-  });
+        expect(mismatches).toEqual([]);
+      });
+    });
+  }
 });
 
 describe("loadMediaTranslations", () => {
@@ -124,6 +123,16 @@ describe("loadMediaTranslations", () => {
   it("loads pt-BR translations with case-insensitive locale", async () => {
     const translations = await loadMediaTranslations("pt-br");
     expect(translations.mediaLibrary.title).toBe("Biblioteca de Mídia");
+  });
+
+  it("loads Spanish translations", async () => {
+    const translations = await loadMediaTranslations("es");
+    expect(translations.mediaLibrary.title).toBe("Biblioteca multimedia");
+  });
+
+  it("loads Catalan translations", async () => {
+    const translations = await loadMediaTranslations("ca");
+    expect(translations.mediaLibrary.title).toBe("Biblioteca multimèdia");
   });
 
   it("accepts underscore separator (pt_BR)", async () => {

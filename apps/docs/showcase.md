@@ -51,7 +51,7 @@ You're not building a customer-facing product — you need a controlled tool for
 
 **Templatical fits because:**
 - Self-hostable in full. The OSS SDK has no required cloud dependency.
-- Bilingual (en/de) out of the box, with a clean path to add more locales for international teams.
+- Multilingual (English, German, Portuguese, Spanish, Catalan) out of the box, with a clean path to add more locales for international teams.
 - TypeScript-strict end-to-end, which makes it easy to wire into existing internal tooling and codegen pipelines.
 
 **Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) inside your internal portal, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) in your job runners or send pipeline.

@@ -12,7 +12,7 @@ The visual editor for [Templatical](https://github.com/templatical/sdk) — an o
 - 🎨 **27 design tokens** — full theming via `--tpl-user-*` CSS variables, dark mode, custom fonts
 - 🔌 **Framework-agnostic** — works in React, Vue, Svelte, Angular, vanilla
 - 📦 **JSON in, MJML out** — portable templates, render with any email provider
-- 🌍 **Bilingual** — English + German built in
+- 🌍 **Multilingual** — English, German, Portuguese, Spanish & Catalan built in
 - 🔒 **TypeScript strict** — full type safety end to end
 
 ## Install
