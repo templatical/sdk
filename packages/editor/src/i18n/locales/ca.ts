@@ -113,7 +113,8 @@ export default {
     lifted: "{block} aixecat. Posició {position} de {total}.",
     moved: "{block} mogut a la posició {position} of {total}.",
     dropped: "{block} deixat anar a la posició {position} de {total}.",
-    cancelled: "Moviment cancel·lat. {block} ha tornat a la posició {position}.",
+    cancelled:
+      "Moviment cancel·lat. {block} ha tornat a la posició {position}.",
   },
 
   // Toolbar - Section
@@ -357,7 +358,8 @@ export default {
 
   // Custom Blocks
   customBlocks: {
-    definitionNotFound: "Tipus de bloc desconegut: aquest bloc no està registrat",
+    definitionNotFound:
+      "Tipus de bloc desconegut: aquest bloc no està registrat",
     renderError:
       "No s'ha pogut renderitzar aquest bloc. Comproveu si hi ha errors a la plantilla del bloc.",
     fields: {
@@ -385,7 +387,8 @@ export default {
     content: "Contingut HTML",
     preview: "Bloc HTML personalitzat",
     empty: "Afegeix contingut HTML al panell",
-    sanitizationHint: "Els scripts i els elements no segurs s'eliminen en exportar.",
+    sanitizationHint:
+      "Els scripts i els elements no segurs s'eliminen en exportar.",
   },
 
   // Toolbar - Common block settings
@@ -420,6 +423,7 @@ export default {
     customWidth: "Amplada personalitzada",
     appearance: "Aparença",
     backgroundColor: "Color de fons",
+    textColor: "Color del text",
     fontFamily: "Tipus de lletra",
     preheaderText: "Text de la precapçalera",
     preheaderTextPlaceholder:
@@ -505,7 +509,8 @@ export default {
     dragHint: "Comenceu des de zero arrossegant blocs des de la barra lateral",
     dropHere: "Deixeu anar aquí",
     aiHintChat: "o deixeu que",
-    aiHintChatSuffix: "generi una plantilla completa per a vosaltres en pocs segons",
+    aiHintChatSuffix:
+      "generi una plantilla completa per a vosaltres en pocs segons",
     aiHintDesign:
       "Teniu un disseny existent? Pugeu una captura de pantalla, una imatge o un PDF i",
     aiHintDesignSuffix: "el recrearà a l'instant",
