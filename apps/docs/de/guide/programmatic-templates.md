@@ -261,7 +261,7 @@ content.settings.preheaderText = 'Your weekly digest is here';
 | `backgroundColor` | `string` | Äußere Hintergrundfarbe |
 | `textColor` | `string` | Standard-Textfarbe, die alle Textblöcke erben; blockspezifische Farben überschreiben. Standard: `#1a1a1a` |
 | `linkColor` | `string` | Dokument-Linkfarbe für jeden Link (Rich-Text und Menu); Links erben die Textfarbe, wenn nicht gesetzt. Optional |
-| `linkUnderline` | `boolean` | Links dokumentweit unterstreichen. Standard: `false` |
+| `linkUnderline` | `boolean` | Text-Links unterstreichen. Standard: `true` |
 | `fontFamily` | `string` | Standard-Font-Stack |
 | `preheaderText` | `string` | Vorschautext, der in der Posteingangsliste angezeigt wird |
 

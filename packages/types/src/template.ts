@@ -26,8 +26,10 @@ export interface TemplateSettings {
   /**
    * Whether links are underlined document-wide: drives the global
    * `a { text-decoration }` rule (`underline` when true, `none` when false).
-   * Required, defaulting to `false` (see `DEFAULT_TEMPLATE_DEFAULTS`) to match
-   * the previous always-`none` link rendering.
+   * Required, defaulting to `true` (see `DEFAULT_TEMPLATE_DEFAULTS`) — the
+   * common, more accessible email default. Applies to body (rich-text) links;
+   * buttons and menu items carry their own inline `text-decoration` and are
+   * unaffected. Set `false` to render links without an underline.
    */
   linkUnderline: boolean;
   fontFamily: string;

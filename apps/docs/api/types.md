@@ -32,7 +32,7 @@ interface TemplateSettings {
   backgroundColor: string;        // Background color
   textColor: string;              // Default text color; text blocks inherit it (default #1a1a1a)
   linkColor?: string;             // Link color; links inherit the text color when unset
-  linkUnderline: boolean;         // Underline links document-wide (default false)
+  linkUnderline: boolean;         // Underline body links (default true)
   fontFamily: string;             // Default font family
   preheaderText?: string;         // Email preheader text
 }

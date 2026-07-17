@@ -261,7 +261,7 @@ content.settings.preheaderText = 'Your weekly digest is here';
 | `backgroundColor` | `string` | Outer background color |
 | `textColor` | `string` | Default text color inherited by all text blocks; per-block colors override. Defaults to `#1a1a1a` |
 | `linkColor` | `string` | Document link color applied to every link (rich-text and menu); links inherit the text color when unset. Optional |
-| `linkUnderline` | `boolean` | Underline links document-wide. Defaults to `false` |
+| `linkUnderline` | `boolean` | Underline body (rich-text) links. Defaults to `true` |
 | `fontFamily` | `string` | Default font stack |
 | `preheaderText` | `string` | Preview text shown in inbox list |
 

@@ -55,11 +55,11 @@ function paragraphWithLink(): TemplateContent["blocks"] {
 }
 
 describe("document link styling — round-trip through MJML compiler", () => {
-  it("defaults to inherited color and no underline when unset", async () => {
+  it("defaults to inherited color and underlined links", async () => {
     const html = await compile(
       await renderToMjml(makeContent(paragraphWithLink())),
     );
-    expect(html).toContain("a { color: inherit; text-decoration: none; }");
+    expect(html).toContain("a { color: inherit; text-decoration: underline; }");
     expect(anchorStyle(html, "Link")).toBe("");
   });
 
@@ -67,22 +67,22 @@ describe("document link styling — round-trip through MJML compiler", () => {
     const content = makeContent(paragraphWithLink());
     content.settings.linkColor = LINK;
     const html = await compile(await renderToMjml(content));
-    expect(html).toContain(`a { color: ${LINK}; text-decoration: none; }`);
+    expect(html).toContain(`a { color: ${LINK}; text-decoration: underline; }`);
   });
 
-  it("underlines links when linkUnderline is true", async () => {
+  it("renders no underline when linkUnderline is false", async () => {
     const content = makeContent(paragraphWithLink());
-    content.settings.linkUnderline = true;
+    content.settings.linkUnderline = false;
     const html = await compile(await renderToMjml(content));
-    expect(html).toContain("a { color: inherit; text-decoration: underline; }");
+    expect(html).toContain("a { color: inherit; text-decoration: none; }");
   });
 
-  it("combines a custom link color with underline", async () => {
+  it("combines a custom link color with no underline", async () => {
     const content = makeContent(paragraphWithLink());
     content.settings.linkColor = LINK;
-    content.settings.linkUnderline = true;
+    content.settings.linkUnderline = false;
     const html = await compile(await renderToMjml(content));
-    expect(html).toContain(`a { color: ${LINK}; text-decoration: underline; }`);
+    expect(html).toContain(`a { color: ${LINK}; text-decoration: none; }`);
   });
 
   it("cascades the document link color to an unset menu item, while a per-item color overrides", async () => {
