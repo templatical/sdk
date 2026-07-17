@@ -23,9 +23,11 @@ import {
   Subscript,
   Superscript,
   Underline,
+  X,
 } from "@lucide/vue";
 import { computed, inject } from "vue";
 import {
+  EDITOR_KEY,
   THEME_STYLES_KEY,
   UI_THEME_KEY,
   FONTS_MANAGER_KEY,
@@ -34,12 +36,12 @@ import {
   requireInject,
 } from "../../keys";
 import {
-  DEFAULT_TEXT_COLOR,
   DEFAULT_HIGHLIGHT_COLOR,
   FONT_SIZE_OPTIONS,
   LINE_HEIGHT_OPTIONS,
   LETTER_SPACING_OPTIONS,
 } from "../../constants/styleConstants";
+import { resolveEffectiveTextColor } from "../../utils/richTextColor";
 
 const props = defineProps<{
   editor: Editor | null;
@@ -66,6 +68,9 @@ const popoverRoot = usePopoverRoot();
 // over the modal backdrop.
 const picker = inject(MERGE_TAG_PICKER_KEY, null);
 const logicPicker = inject(LOGIC_TAG_PICKER_KEY, null);
+// Editor may be absent in isolated tests; used only to resolve the inherited
+// document text color for the text-color swatch.
+const editorReturn = inject(EDITOR_KEY, null);
 // Hide the floating toolbar while either built-in picker modal is open, so it
 // doesn't overlap the dialog.
 const pickerIsOpen = computed(
@@ -100,6 +105,22 @@ function setColor(color: string): void {
   const chain = props.editor?.chain().focus();
   if (color) chain?.setColor(color).run();
   else chain?.unsetColor().run();
+}
+
+// The color the current selection actually renders in: an explicit inline mark
+// if present, else the inherited document text color. Drives the swatch so it
+// shows the real color rather than a hard-coded default (issue #373).
+function effectiveTextColor(): string {
+  return resolveEffectiveTextColor(
+    textStyleAttr("color"),
+    editorReturn?.content.value.settings.textColor,
+  );
+}
+
+// Whether the selection carries its own inline color overriding the document
+// default. Gates the reset control that clears back to the inherited color.
+function hasExplicitTextColor(): boolean {
+  return textStyleAttr("color") !== "";
 }
 
 function getCurrentLineHeight(): string {
@@ -168,11 +189,21 @@ function setHighlight(color: string): void {
             <input
               type="color"
               class="tpl:size-8 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-1"
-              :value="textStyleAttr('color') || DEFAULT_TEXT_COLOR"
+              :value="effectiveTextColor()"
               :aria-label="t.paragraphEditor.textColor"
               :title="t.paragraphEditor.textColor"
               @input="setColor(($event.target as HTMLInputElement).value)"
             />
+            <button
+              v-if="hasExplicitTextColor()"
+              type="button"
+              class="tpl:absolute tpl:-right-1 tpl:-top-1 tpl:flex tpl:size-4 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-dim)] tpl:shadow-sm tpl:transition-colors tpl:duration-150 hover:tpl:text-[var(--tpl-text)]"
+              :aria-label="t.colorPicker.clear"
+              :title="t.colorPicker.clear"
+              @click="setColor('')"
+            >
+              <X :size="10" :stroke-width="2.5" />
+            </button>
           </div>
           <div class="tpl:relative">
             <input
