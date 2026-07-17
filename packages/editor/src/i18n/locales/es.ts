@@ -1,4 +1,6 @@
-export default {
+import type en from "./en";
+
+const es: typeof en = {
   // Footer (OSS only)
   footer: {
     poweredBy: "Con la tecnología de",
@@ -9,7 +11,8 @@ export default {
   history: {
     undo: "Deshacer",
     redo: "Rehacer",
-    collabWarning: "Deshacer puede afectar a los cambios recientes de los colaboradores",
+    collabWarning:
+      "Deshacer puede afectar a los cambios recientes de los colaboradores",
   },
 
   // Viewport toggle
@@ -357,7 +360,8 @@ export default {
 
   // Custom Blocks
   customBlocks: {
-    definitionNotFound: "Tipo de bloque desconocido: este bloque no está registrado",
+    definitionNotFound:
+      "Tipo de bloque desconocido: este bloque no está registrado",
     renderError:
       "No se pudo renderizar este bloque. Comprueba si hay errores en la plantilla del bloque.",
     fields: {
@@ -385,7 +389,8 @@ export default {
     content: "Contenido HTML",
     preview: "Bloque HTML personalizado",
     empty: "Añadir contenido HTML en el panel",
-    sanitizationHint: "Los scripts y elementos no seguros se eliminan al exportar.",
+    sanitizationHint:
+      "Los scripts y elementos no seguros se eliminan al exportar.",
   },
 
   // Toolbar - Common block settings
@@ -420,6 +425,7 @@ export default {
     customWidth: "Ancho personalizado",
     appearance: "Apariencia",
     backgroundColor: "Color de fondo",
+    textColor: "Color del texto",
     fontFamily: "Familia tipográfica",
     preheaderText: "Texto del preencabezado",
     preheaderTextPlaceholder:
@@ -644,3 +650,5 @@ export default {
       "El editor necesita más espacio del que ofrece esta pantalla. Ábrelo en una tableta o computadora de escritorio para comenzar a editar.",
   },
 };
+
+export default es;
