@@ -29,7 +29,7 @@
     "@types/mjml-browser": "^5.0.0",
     "@vitejs/plugin-vue": "^6.0.7",
     "tailwindcss": "^4.3.2",
-    "tsx": "^4.23.0",
+    "tsx": "^4.23.1",
     "typescript": "^6.0.3",
     "vite": "^8.1.4",
     "vue-tsc": "^3.3.7"
