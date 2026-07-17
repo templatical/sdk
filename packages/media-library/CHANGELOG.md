@@ -1,6 +1,6 @@
 # @templatical/media-library
 
-## 1.0.0
+## 0.16.0
 
 ### Minor Changes
 
@@ -12,8 +12,8 @@
 - 3a42ea8: Fix `es` (Spanish) and `ca` (Catalan) translations not loading in the media library. The locale loader now auto-discovers every locale file via `import.meta.glob` (matching the editor) instead of a hardcoded supported-locales list that omitted them, so both languages resolve correctly instead of falling back to English.
 - Updated dependencies [e5156a5]
 - Updated dependencies [d35d36e]
-  - @templatical/types@1.0.0
-  - @templatical/core@1.0.0
+  - @templatical/types@0.16.0
+  - @templatical/core@0.16.0
 
 ## 0.15.1
 
