@@ -146,6 +146,15 @@ const widthPresets = [
           />
         </div>
 
+        <div class="tpl:mb-3.5">
+          <label :class="labelClass">{{ t.templateSettings.textColor }}</label>
+          <ColorPicker
+            :model-value="settings.textColor ?? ''"
+            seed-color="#1a1a1a"
+            @update:model-value="emit('update', { textColor: $event })"
+          />
+        </div>
+
         <div>
           <label :class="labelClass">{{ t.templateSettings.fontFamily }}</label>
           <select

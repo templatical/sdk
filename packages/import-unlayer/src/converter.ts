@@ -119,6 +119,7 @@ function extractSettings(
   return {
     width: width || 600,
     backgroundColor: bgColor,
+    textColor: "#1a1a1a",
     fontFamily,
     locale: "en",
   };

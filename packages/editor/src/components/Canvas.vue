@@ -129,9 +129,19 @@ const stageWidth = computed(() => viewportWidth.value + CANVAS_GUTTER * 2);
 // The email bg lives on the `.tpl-canvas-bg` sibling layer (so it can be
 // inverted by `filter` without trapping block chrome in a stacking context);
 // the `.tpl-canvas` itself stays transparent so the bg layer shows through.
-const canvasStyle = computed(() => ({
-  fontFamily: props.content.settings.fontFamily,
-}));
+const canvasStyle = computed(() => {
+  const style: Record<string, string> = {
+    fontFamily: props.content.settings.fontFamily,
+  };
+  // Mirror the exported `<mj-text>` default color so canvas text matches the
+  // sent email. Set only when configured — unset leaves the canvas at its
+  // inherited default, matching the renderer omitting the color. Titles carry
+  // their own inline color and so override this, same as in the export.
+  if (props.content.settings.textColor) {
+    style.color = props.content.settings.textColor;
+  }
+  return style;
+});
 
 // Empty canvas: the whole dashed placeholder IS the Sortable drop zone.
 // `isEmptyCanvas` toggles the styling + the inline empty-state content.

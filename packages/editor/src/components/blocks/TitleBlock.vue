@@ -28,9 +28,12 @@ const titleStyle = computed(() => {
   const fontSize = HEADING_LEVEL_FONT_SIZE[props.block.level];
   const style: Record<string, string> = {
     fontSize: `${fontSize}px`,
-    color: props.block.color,
     textAlign: props.block.textAlign,
   };
+  // Unset color = inherit the canvas text color (the document `textColor`).
+  if (props.block.color) {
+    style.color = props.block.color;
+  }
   if (props.block.fontFamily) {
     style.fontFamily = props.block.fontFamily;
   }

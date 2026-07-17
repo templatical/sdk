@@ -424,6 +424,7 @@ const ptBR: typeof en = {
     customWidth: "Largura Personalizada",
     appearance: "Aparência",
     backgroundColor: "Cor de Fundo",
+    textColor: "Cor do Texto",
     fontFamily: "Família da Fonte",
     preheaderText: "Texto de Pré-cabeçalho",
     preheaderTextPlaceholder:

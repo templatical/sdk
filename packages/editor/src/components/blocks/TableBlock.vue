@@ -41,14 +41,20 @@ const editor = requireInject(EDITOR_KEY, "TableBlock");
 
 const hasRows = computed(() => props.block.rows.length > 0);
 
-const tableStyle = computed((): Record<string, string> => ({
-  width: "100%",
-  borderCollapse: "collapse",
-  fontSize: `${props.block.fontSize}px`,
-  color: props.block.color,
-  textAlign: props.block.textAlign,
-  fontFamily: props.block.fontFamily || "inherit",
-}));
+const tableStyle = computed((): Record<string, string> => {
+  const style: Record<string, string> = {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: `${props.block.fontSize}px`,
+    textAlign: props.block.textAlign,
+    fontFamily: props.block.fontFamily || "inherit",
+  };
+  // Unset color = inherit the canvas text color (the document `textColor`).
+  if (props.block.color) {
+    style.color = props.block.color;
+  }
+  return style;
+});
 
 const cellStyle = computed((): Record<string, string> => ({
   border: `${props.block.borderWidth}px solid ${props.block.borderColor}`,

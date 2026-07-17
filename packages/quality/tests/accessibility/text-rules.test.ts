@@ -38,15 +38,15 @@ describe("a11y.text-all-caps", () => {
 
   it("fires for long all-caps Cyrillic paragraph", () => {
     expect(
-      lint(
-        "<p>СКИДКА ПЯТЬДЕСЯТ ПРОЦЕНТОВ ТОЛЬКО СЕГОДНЯ СПЕШИТЕ КУПИТЬ</p>",
-      ),
+      lint("<p>СКИДКА ПЯТЬДЕСЯТ ПРОЦЕНТОВ ТОЛЬКО СЕГОДНЯ СПЕШИТЕ КУПИТЬ</p>"),
     ).toHaveLength(1);
   });
 
   it("fires for long all-caps Greek paragraph", () => {
     expect(
-      lint("<p>ΜΕΓΑΛΗ ΠΡΟΣΦΟΡΑ ΣΗΜΕΡΑ ΜΟΝΟ ΑΓΟΡΑΣΤΕ ΤΩΡΑ ΧΩΡΙΣ ΚΑΘΥΣΤΕΡΗΣΗ</p>"),
+      lint(
+        "<p>ΜΕΓΑΛΗ ΠΡΟΣΦΟΡΑ ΣΗΜΕΡΑ ΜΟΝΟ ΑΓΟΡΑΣΤΕ ΤΩΡΑ ΧΩΡΙΣ ΚΑΘΥΣΤΕΡΗΣΗ</p>",
+      ),
     ).toHaveLength(1);
   });
 
@@ -125,6 +125,34 @@ describe("a11y.text-low-contrast", () => {
     );
     expect(issues).toHaveLength(1);
   });
+
+  it("flags a colorless title using the inherited document textColor", () => {
+    // The title sets no color, so it inherits the document textColor. A
+    // low-contrast document color must still be flagged (H3 = strict 4.5:1).
+    const block = createTitleBlock({ content: "<p>Hi</p>", level: 3 });
+    const content = createDefaultTemplateContent();
+    content.settings.preheaderText = "x";
+    content.settings.backgroundColor = "#ffffff";
+    content.settings.textColor = "#888888"; // ≈3.5:1 on white → fails 4.5:1
+    content.blocks = [block];
+    const issues = lintAccessibility(content).filter(
+      (i) => i.ruleId === "a11y.text-low-contrast",
+    );
+    expect(issues).toHaveLength(1);
+  });
+
+  it("does not flag a colorless title when the inherited document textColor contrasts", () => {
+    const block = createTitleBlock({ content: "<p>Hi</p>", level: 3 });
+    const content = createDefaultTemplateContent();
+    content.settings.preheaderText = "x";
+    content.settings.backgroundColor = "#ffffff";
+    content.settings.textColor = "#000000"; // black on white → passes
+    content.blocks = [block];
+    const issues = lintAccessibility(content).filter(
+      (i) => i.ruleId === "a11y.text-low-contrast",
+    );
+    expect(issues).toEqual([]);
+  });
 });
 
 describe("a11y.text-too-small", () => {
@@ -156,7 +184,9 @@ describe("a11y.text-too-small", () => {
     content.settings.preheaderText = "x";
     content.blocks = [block];
     expect(
-      lintAccessibility(content).filter((i) => i.ruleId === "a11y.text-too-small"),
+      lintAccessibility(content).filter(
+        (i) => i.ruleId === "a11y.text-too-small",
+      ),
     ).toEqual([]);
   });
 

@@ -427,6 +427,7 @@ const de: typeof en = {
     customWidth: "Benutzerdefinierte Breite",
     appearance: "Erscheinungsbild",
     backgroundColor: "Hintergrundfarbe",
+    textColor: "Textfarbe",
     fontFamily: "Schriftfamilie",
     preheaderText: "Preheader-Text",
     preheaderTextPlaceholder:

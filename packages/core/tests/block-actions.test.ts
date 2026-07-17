@@ -407,7 +407,9 @@ describe('useBlockActions with blockDefaults', () => {
 
         const block = actions.createAndAddBlock('title');
         if (block.type === 'title') {
-            expect(block.color).toBe('#1a1a1a');
+            // No baked-in color default — a title inherits the document textColor.
+            expect(block.color).toBeUndefined();
+            expect(block.level).toBe(2);
         }
     });
 
