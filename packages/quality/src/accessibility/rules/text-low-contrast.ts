@@ -12,10 +12,10 @@ export const textLowContrast: Rule = {
   meta,
   block(block, ctx) {
     if (!isTitle(block)) return null;
-    if (
-      !isOpaqueHex(block.color) ||
-      !isOpaqueHex(ctx.resolvedBackgroundColor)
-    ) {
+    // Unset title color inherits the document text color, so check the
+    // effective color against the background.
+    const color = block.color ?? ctx.resolvedTextColor;
+    if (!isOpaqueHex(color) || !isOpaqueHex(ctx.resolvedBackgroundColor)) {
       return null;
     }
     const fontSize = HEADING_LEVEL_FONT_SIZE[block.level];
@@ -23,7 +23,7 @@ export const textLowContrast: Rule = {
     // flag in this codebase (TipTap stores it inline), so we conservatively
     // skip the 14pt-bold (~18.66px) relaxation and apply the px threshold.
     const required = fontSize >= 24 ? 3 : 4.5;
-    const ratio = getContrastRatio(block.color, ctx.resolvedBackgroundColor);
+    const ratio = getContrastRatio(color, ctx.resolvedBackgroundColor);
     if (Number.isNaN(ratio) || ratio >= required) return null;
     return {
       blockId: block.id,

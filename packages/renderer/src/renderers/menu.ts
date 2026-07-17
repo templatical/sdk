@@ -24,13 +24,14 @@ export function renderMenu(block: MenuBlock, context: RenderContext): string {
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const align = block.textAlign;
   const fontSize = block.fontSize;
-  const color = escapeAttr(block.color);
+  // Emit the color only when set; otherwise the `mj-text` inherits the
+  // document `textColor` and the item anchors below inherit it in turn.
+  const colorAttr = block.color ? `\n  color="${escapeAttr(block.color)}"` : "";
 
   const content = renderMenuItems(block);
 
   return `<mj-text
-  font-size="${fontSize}px"
-  color="${color}"
+  font-size="${fontSize}px"${colorAttr}
   align="${align}"
   line-height="1.5"
   padding="${padding}"${bgColor}${fontFamilyAttr}${visibilityAttr}
@@ -60,13 +61,22 @@ function renderMenuItems(block: MenuBlock): string {
   return parts.join("");
 }
 
-function renderMenuItem(item: MenuItemData, linkColor: string): string {
+function renderMenuItem(
+  item: MenuItemData,
+  linkColor: string | undefined,
+): string {
   const text = escapeHtml(item.text);
   const url = escapeAttr(item.url);
-  const color = escapeCssValue(item.color ?? linkColor);
+  // Item color, else the menu link color; when neither is set the anchor omits
+  // an explicit color and inherits the mj-text color (the document `textColor`).
+  const resolvedColor = item.color ?? linkColor;
   const target = item.openInNewTab ? ' target="_blank" rel="noopener"' : "";
 
-  const styles: string[] = [`color: ${color}`, "text-decoration: none"];
+  const styles: string[] = ["text-decoration: none"];
+
+  if (resolvedColor) {
+    styles.unshift(`color: ${escapeCssValue(resolvedColor)}`);
+  }
 
   if (item.bold) {
     styles.push("font-weight: bold");

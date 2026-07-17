@@ -714,6 +714,7 @@ export function createProductLaunchTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#ffffff",
+      textColor: "#1a1a1a",
       fontFamily: "Arial",
       preheaderText: "Introducing Launchpad v2.0 — rebuilt from the ground up.",
       locale: "en",
@@ -966,6 +967,7 @@ export function createNewsletterTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#ffffff",
+      textColor: "#1a1a1a",
       fontFamily: "Georgia",
       preheaderText:
         "This week: design systems, shipping fast, and staying sane.",
@@ -1056,6 +1058,7 @@ export function createWelcomeTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#ffffff",
+      textColor: "#1a1a1a",
       fontFamily: "Arial",
       preheaderText:
         "Welcome to Flowwork — here is everything you need to get started.",
@@ -1206,6 +1209,7 @@ export function createOrderConfirmationTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#ffffff",
+      textColor: "#1a1a1a",
       fontFamily: "Arial",
       preheaderText: "Your order #{{order_id}} has been confirmed.",
       locale: "en",
@@ -1388,6 +1392,7 @@ export function createEventInvitationTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#ffffff",
+      textColor: "#1a1a1a",
       fontFamily: "Arial",
       preheaderText: "You are invited — join us for Config 2026 on April 15.",
       locale: "en",
@@ -1566,6 +1571,7 @@ export function createPasswordResetTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#ffffff",
+      textColor: "#1a1a1a",
       fontFamily: "Arial",
       preheaderText: "Reset your password \u2014 this link expires in 1 hour.",
       locale: "en",
@@ -1656,6 +1662,7 @@ export function createBlackFridayTemplate(): TemplateContent {
     settings: {
       width: 600,
       backgroundColor: "#111827",
+      textColor: "#f9fafb",
       fontFamily: "Arial",
       preheaderText: "Up to 50% off everything \u2014 Black Friday starts now.",
       locale: "en",

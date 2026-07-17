@@ -105,6 +105,12 @@ export async function renderToMjml(
     content.settings.fontFamily,
   );
   const backgroundColor = content.settings.backgroundColor;
+  // Document-level default text color → the `<mj-text>` default below. Blocks
+  // that set their own color (e.g. Title) or carry inline text-color marks
+  // override it. Omitted when unset so existing templates render identically.
+  const textColorAttr = content.settings.textColor
+    ? ` color="${escapeAttr(content.settings.textColor)}"`
+    : "";
 
   const bodyContent = blocks
     .map((block) => renderTopLevelBlock(block, renderContext))
@@ -120,7 +126,7 @@ export async function renderToMjml(
   <mj-head>${previewTag}
     <mj-attributes>
       <mj-all font-family="${fontFamily}" />
-      <mj-text font-size="14px" />
+      <mj-text font-size="14px"${textColorAttr} />
       <mj-section padding="0" />
       <mj-column padding="0" />
       <mj-image fluid-on-mobile="true" />

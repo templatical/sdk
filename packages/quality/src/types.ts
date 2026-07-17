@@ -115,6 +115,12 @@ export interface WalkContext {
    * Hex string, lowercased.
    */
   resolvedBackgroundColor: string;
+  /**
+   * Document-level default text color (`settings.textColor`), lowercased hex.
+   * A text block that doesn't set its own `color` inherits this, so contrast
+   * rules resolve the effective color against it.
+   */
+  resolvedTextColor: string;
 }
 
 export interface RuleMeta {

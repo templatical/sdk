@@ -31,14 +31,15 @@ export function renderTable(block: TableBlock, context: RenderContext): string {
   const visibilityAttr = getCssClassAttr(block);
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const fontSize = block.fontSize;
-  const color = escapeAttr(block.color);
+  // Emit the color only when set; otherwise the `mj-text` (and its cells,
+  // which carry no color of their own) inherit the document `textColor`.
+  const colorAttr = block.color ? `\n  color="${escapeAttr(block.color)}"` : "";
   const align = block.textAlign;
 
   const tableHtml = renderTableElement(block);
 
   return `<mj-text
-  font-size="${fontSize}px"
-  color="${color}"
+  font-size="${fontSize}px"${colorAttr}
   align="${align}"
   line-height="1.5"
   padding="${padding}"${bgColor}${fontFamilyAttr}${visibilityAttr}

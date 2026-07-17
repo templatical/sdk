@@ -420,6 +420,7 @@ export default {
     customWidth: "Custom Width",
     appearance: "Appearance",
     backgroundColor: "Background Color",
+    textColor: "Text Color",
     fontFamily: "Font Family",
     preheaderText: "Preheader Text",
     preheaderTextPlaceholder:

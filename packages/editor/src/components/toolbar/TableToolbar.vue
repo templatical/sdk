@@ -247,8 +247,8 @@ function removeTableColumn(colIndex: number): void {
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.table.color }}</label>
     <ColorPicker
-      :model-value="block.color"
-      @update:model-value="updateField('color', $event)"
+      :model-value="block.color ?? ''"
+      @update:model-value="updateField('color', $event || undefined)"
     />
   </div>
   <div class="tpl:mb-3.5">

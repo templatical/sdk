@@ -32,7 +32,9 @@ const containerStyle = computed(() => ({
 
 const hasItems = computed(() => props.block.items.length > 0);
 
-function getLinkColor(itemColor?: string): string {
+// Unset (all three undefined) = inherit the canvas text color (the document
+// `textColor`); the inline style omits an undefined color so it cascades.
+function getLinkColor(itemColor?: string): string | undefined {
   return itemColor || props.block.linkColor || props.block.color;
 }
 </script>
