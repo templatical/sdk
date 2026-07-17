@@ -425,6 +425,8 @@ const ptBR: typeof en = {
     appearance: "Aparência",
     backgroundColor: "Cor de Fundo",
     textColor: "Cor do Texto",
+    linkColor: "Cor do Link",
+    linkUnderline: "Sublinhar Links",
     fontFamily: "Família da Fonte",
     preheaderText: "Texto de Pré-cabeçalho",
     preheaderTextPlaceholder:

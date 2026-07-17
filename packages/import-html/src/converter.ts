@@ -59,6 +59,7 @@ function extractSettings($: CheerioAPI): TemplateContent["settings"] {
     width,
     backgroundColor,
     textColor: "#1a1a1a",
+    linkUnderline: false,
     fontFamily,
     locale: "en",
     ...(preheaderText ? { preheaderText } : {}),

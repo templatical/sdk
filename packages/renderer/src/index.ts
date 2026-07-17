@@ -8,7 +8,7 @@ import type {
 import { isSection, isCustomBlock } from "@templatical/types";
 import { RenderContext, DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
 import { renderBlock } from "./renderers";
-import { escapeHtml, escapeAttr } from "./escape";
+import { escapeHtml, escapeAttr, escapeCssValue } from "./escape";
 import { wrapWithDisplayCondition } from "./display-condition";
 import { bgAttr } from "./utils";
 import { toPaddingString } from "./padding";
@@ -111,6 +111,14 @@ export async function renderToMjml(
   const textColorAttr = content.settings.textColor
     ? ` color="${escapeAttr(content.settings.textColor)}"`
     : "";
+  // Document-level link styling → the global `a { … }` rule below, cascading to
+  // every link (rich-text and menu). An unset `linkColor` keeps `color: inherit`
+  // so links follow the text color and legacy content renders identically; a
+  // per-link/per-item color still overrides (inline styles beat this rule).
+  const linkColor = content.settings.linkColor
+    ? escapeCssValue(content.settings.linkColor)
+    : "inherit";
+  const linkDecoration = content.settings.linkUnderline ? "underline" : "none";
 
   const bodyContent = blocks
     .map((block) => renderTopLevelBlock(block, renderContext))
@@ -132,7 +140,7 @@ export async function renderToMjml(
       <mj-image fluid-on-mobile="true" />
     </mj-attributes>${fontDeclarations}
     <mj-style>
-      a { color: inherit; text-decoration: none; }
+      a { color: ${linkColor}; text-decoration: ${linkDecoration}; }
       @media only screen and (max-width: 480px) {
         .tpl-hide-mobile { display: none !important; mso-hide: all !important; }
       }

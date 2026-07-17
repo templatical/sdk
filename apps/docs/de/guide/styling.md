@@ -84,6 +84,8 @@ Neben einzelnen Blockstilen hat das Template selbst globale Einstellungen, die d
 | `width` | `number` | Template-Inhaltsbreite in px (typischerweise 600) |
 | `backgroundColor` | `string` | Äußere Hintergrundfarbe hinter dem Template |
 | `textColor` | `string` | Standard-Textfarbe, die jeder Textblock (Title, Paragraph, Menu, Table) erbt, sofern der Block keine eigene Farbe oder Inline-Textfarbe setzt. Standard: `#1a1a1a`. |
+| `linkColor` | `string` | Dokumentweite Linkfarbe für jeden Link (Rich-Text und Menu). Optional – wenn nicht gesetzt, erben Links die umgebende Textfarbe. Eine block- oder elementspezifische Farbe überschreibt weiterhin. |
+| `linkUnderline` | `boolean` | Ob Links dokumentweit unterstrichen werden. Standard: `false`. |
 | `fontFamily` | `string` | Standard-Schriftfamilie für alle Blöcke |
 
 Diese werden über die `init()`-Konfiguration des Editors oder durch direkte Änderung des Template-JSON konfiguriert:
@@ -107,3 +109,5 @@ const editor = await init({
 Einzelne Blöcke können die `fontFamily` auf Template-Ebene überschreiben, indem sie ihre eigene `fontFamily`-Eigenschaft setzen. Wenn ein Block keine Schriftfamilie angibt, erbt er von den Template-Einstellungen.
 
 Die Textfarbe funktioniert genauso: Textblöcke (Title, Paragraph, Menu, Table) erben `textColor` aus den Template-Einstellungen, und jeder Block, der seine eigene Farbe setzt, überschreibt sie. Passe den Dokument-Standard über `init({ templateDefaults: { textColor } })` an.
+
+Links folgen derselben Kaskade: Setze eine Dokument-`linkColor`, um allen Links (Rich-Text und Menu) eine Farbe zu geben, oder lasse sie ungesetzt, damit Links die umgebende Textfarbe erben. `linkUnderline` schaltet Unterstreichungen dokumentweit um. Eine block- oder elementspezifische Farbe (z. B. die Farbe eines Menu-Elements) überschreibt weiterhin die Dokument-Linkfarbe.

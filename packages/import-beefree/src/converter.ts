@@ -154,6 +154,7 @@ function extractSettings(
     width: width || 600,
     backgroundColor: bgColor,
     textColor: "#1a1a1a",
+    linkUnderline: false,
     fontFamily,
     locale: "en",
   };

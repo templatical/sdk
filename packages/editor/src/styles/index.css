@@ -641,10 +641,15 @@
     @apply tpl:align-super tpl:text-[0.75em];
 }
 
+/* Canvas links mirror the exported global `a { … }` rule so WYSIWYG holds:
+   `--tpl-doc-link-color` / `--tpl-doc-link-underline` are set on the canvas
+   root from the document settings (see Canvas.vue `canvasStyle`). Unset link
+   color falls back to `inherit` (the surrounding text color) and unset
+   underline to `none` — identical to how an unstyled link exports. */
 .tpl-text-content a,
 .tpl-text-editable a {
-    color: var(--tpl-primary);
-    @apply tpl:underline;
+    color: var(--tpl-doc-link-color, inherit);
+    text-decoration: var(--tpl-doc-link-underline, none);
 }
 
 /* Merge tag styles - Uses theme color */

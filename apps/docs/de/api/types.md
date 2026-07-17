@@ -31,6 +31,8 @@ interface TemplateSettings {
   width: number;                  // Template-Breite in Pixeln (Standard: 600)
   backgroundColor: string;        // Hintergrundfarbe
   textColor: string;              // Standard-Textfarbe; Textblöcke erben sie (Standard #1a1a1a)
+  linkColor?: string;             // Linkfarbe; Links erben die Textfarbe, wenn nicht gesetzt
+  linkUnderline: boolean;         // Links dokumentweit unterstreichen (Standard false)
   fontFamily: string;             // Standard-Schriftfamilie
   preheaderText?: string;         // E-Mail-Preheader-Text
 }

@@ -14,6 +14,22 @@ export interface TemplateSettings {
    * mark overrides it.
    */
   textColor: string;
+  /**
+   * Document-level link color: emitted as the global `a { color }` rule in the
+   * rendered MJML, so it cascades to every link — rich-text and menu alike.
+   * Optional: when unset, links inherit the surrounding text color
+   * (`color: inherit`), preserving the pre-#352 default. A per-block or
+   * per-item color (a Menu item's `color`, `MenuBlock.linkColor`) still
+   * overrides it.
+   */
+  linkColor?: string;
+  /**
+   * Whether links are underlined document-wide: drives the global
+   * `a { text-decoration }` rule (`underline` when true, `none` when false).
+   * Required, defaulting to `false` (see `DEFAULT_TEMPLATE_DEFAULTS`) to match
+   * the previous always-`none` link rendering.
+   */
+  linkUnderline: boolean;
   fontFamily: string;
   preheaderText?: string;
   /**

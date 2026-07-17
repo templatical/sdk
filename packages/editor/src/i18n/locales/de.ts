@@ -428,6 +428,8 @@ const de: typeof en = {
     appearance: "Erscheinungsbild",
     backgroundColor: "Hintergrundfarbe",
     textColor: "Textfarbe",
+    linkColor: "Linkfarbe",
+    linkUnderline: "Links unterstreichen",
     fontFamily: "Schriftfamilie",
     preheaderText: "Preheader-Text",
     preheaderTextPlaceholder:

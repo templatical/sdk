@@ -421,6 +421,8 @@ export default {
     appearance: "Appearance",
     backgroundColor: "Background Color",
     textColor: "Text Color",
+    linkColor: "Link Color",
+    linkUnderline: "Underline Links",
     fontFamily: "Font Family",
     preheaderText: "Preheader Text",
     preheaderTextPlaceholder:

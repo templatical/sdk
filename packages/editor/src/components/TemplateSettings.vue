@@ -155,6 +155,53 @@ const widthPresets = [
           />
         </div>
 
+        <div class="tpl:mb-3.5">
+          <label :class="labelClass">{{ t.templateSettings.linkColor }}</label>
+          <ColorPicker
+            :model-value="settings.linkColor ?? ''"
+            seed-color="#0066cc"
+            @update:model-value="
+              emit('update', { linkColor: $event || undefined })
+            "
+          />
+        </div>
+
+        <div class="tpl:mb-3.5">
+          <label
+            class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-between tpl:gap-2"
+          >
+            <span
+              class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+            >
+              {{ t.templateSettings.linkUnderline }}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              :aria-checked="settings.linkUnderline"
+              :aria-label="t.templateSettings.linkUnderline"
+              :class="[
+                'tpl:relative tpl:inline-flex tpl:h-5 tpl:w-9 tpl:shrink-0 tpl:cursor-pointer tpl:rounded-full tpl:border-2 tpl:border-transparent tpl:transition-colors tpl:duration-200',
+                settings.linkUnderline
+                  ? 'tpl:bg-[var(--tpl-primary)]'
+                  : 'tpl:bg-[var(--tpl-border)]',
+              ]"
+              @click="
+                emit('update', { linkUnderline: !settings.linkUnderline })
+              "
+            >
+              <span
+                class="tpl:pointer-events-none tpl:inline-block tpl:size-4 tpl:rounded-full tpl:bg-[var(--tpl-bg)] tpl:shadow tpl:transition-transform tpl:duration-200"
+                :class="
+                  settings.linkUnderline
+                    ? 'tpl:translate-x-4'
+                    : 'tpl:translate-x-0'
+                "
+              />
+            </button>
+          </label>
+        </div>
+
         <div>
           <label :class="labelClass">{{ t.templateSettings.fontFamily }}</label>
           <select

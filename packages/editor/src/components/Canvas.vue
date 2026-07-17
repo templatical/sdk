@@ -140,6 +140,18 @@ const canvasStyle = computed(() => {
   if (props.content.settings.textColor) {
     style.color = props.content.settings.textColor;
   }
+  // Mirror the exported global `a { … }` link rule so canvas links match the
+  // sent email (WYSIWYG). `--tpl-doc-link-color` is consumed by the link rules
+  // in styles/index.css; left unset when no link color is configured, so links
+  // fall back to `inherit` (the surrounding text color), exactly as they export.
+  if (props.content.settings.linkColor) {
+    style["--tpl-doc-link-color"] = props.content.settings.linkColor;
+  }
+  // Only set the underline var when true; the CSS fallback (`none`) covers the
+  // false and legacy-undefined cases, matching the export's default.
+  if (props.content.settings.linkUnderline) {
+    style["--tpl-doc-link-underline"] = "underline";
+  }
   return style;
 });
 
