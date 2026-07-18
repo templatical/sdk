@@ -19,6 +19,21 @@ export function sanitizeLinkColor(value?: string | null): string | null {
 }
 
 /**
+ * Normalize a browser-serialized `rgb()/rgba()` color to `#rrggbb`. The browser
+ * serializes an inline `style="color:#hex"` to `rgb(...)`, so reading a saved
+ * link color back via `element.style.color` would otherwise surface `rgb(...)`
+ * — mismatching the hex used everywhere else (and rejected by the native
+ * `<input type="color">`). Non-rgb input (already hex, or a keyword) is
+ * returned unchanged.
+ */
+export function normalizeColorToHex(value: string): string {
+  const m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i.exec(value.trim());
+  if (!m) return value;
+  const toHex = (n: string) => Number(n).toString(16).padStart(2, "0");
+  return `#${toHex(m[1])}${toHex(m[2])}${toHex(m[3])}`;
+}
+
+/**
  * Extend the TipTap Link mark with a `color` attribute so a link's color lives
  * on the `<a>` itself (rendered as inline `style="color: …"`), not a separate
  * inner text-color span.
@@ -44,7 +59,7 @@ export function withLinkColor(LinkExt: Mark): Mark {
         color: {
           default: null,
           parseHTML: (element: HTMLElement) =>
-            sanitizeLinkColor(element.style.color),
+            sanitizeLinkColor(normalizeColorToHex(element.style.color)),
           renderHTML: (attributes: Record<string, unknown>) => {
             const color = sanitizeLinkColor(attributes.color as string | null);
             return color ? { style: `color: ${color}` } : {};

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  normalizeColorToHex,
   sanitizeLinkColor,
   withLinkColor,
 } from "../src/utils/linkColorExtension";
@@ -35,6 +36,20 @@ describe("sanitizeLinkColor", () => {
   });
 });
 
+describe("normalizeColorToHex", () => {
+  it("converts browser-serialized rgb() to #rrggbb", () => {
+    expect(normalizeColorToHex("rgb(255, 102, 0)")).toBe("#ff6600");
+    expect(normalizeColorToHex("rgb(0, 0, 0)")).toBe("#000000");
+    expect(normalizeColorToHex("rgba(255, 141, 216, 1)")).toBe("#ff8dd8");
+  });
+
+  it("leaves hex and keyword colors unchanged", () => {
+    expect(normalizeColorToHex("#ff6600")).toBe("#ff6600");
+    expect(normalizeColorToHex("red")).toBe("red");
+    expect(normalizeColorToHex("")).toBe("");
+  });
+});
+
 describe("withLinkColor", () => {
   // Capture the config passed to LinkExt.extend() from a stub base mark, then
   // exercise the `color` attribute's parse/render without booting TipTap.
@@ -62,6 +77,14 @@ describe("withLinkColor", () => {
   it("parses a safe color from the element's inline style", () => {
     const { color } = colorAttribute();
     expect(color.parseHTML({ style: { color: "#ff6600" } })).toBe("#ff6600");
+  });
+
+  it("normalizes a browser-serialized rgb() color to hex on parse", () => {
+    const { color } = colorAttribute();
+    // The browser serializes inline `color:#ff6600` to `rgb(255, 102, 0)`.
+    expect(color.parseHTML({ style: { color: "rgb(255, 102, 0)" } })).toBe(
+      "#ff6600",
+    );
   });
 
   it("drops an unsafe parsed color", () => {

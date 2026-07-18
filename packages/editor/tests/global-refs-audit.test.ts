@@ -110,6 +110,9 @@ describe("editor global DOM-reference audit", () => {
     // two assertions in lock-step.
     const actual = filesMatching(FILES, /<Teleport[^>]*:to=["']popoverRoot["']/);
     expect(actual).toEqual([
+      // ColorPicker's wheel teleports so it escapes overflow-clipping
+      // containers (e.g. the link dialog card); see issue #373 follow-up.
+      "components/ColorPicker.vue",
       "components/TplModal.vue",
       "components/blocks/ParagraphToolbar.vue",
       "components/blocks/RichTextLinkDialog.vue",

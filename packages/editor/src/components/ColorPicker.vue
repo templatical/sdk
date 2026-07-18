@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, inject, ref } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import { X } from "@lucide/vue";
 import { useI18n } from "../composables/useI18n";
+import { usePopoverRoot } from "../composables/usePopoverRoot";
 import { colorTextClass } from "../constants/styleConstants";
+import { THEME_STYLES_KEY, UI_THEME_KEY } from "../keys";
 import "vanilla-colorful";
 
 const props = withDefaults(
@@ -86,6 +88,36 @@ function onTextInput(e: Event): void {
 function clear(): void {
   emit("update:modelValue", "");
 }
+
+// The popover teleports to the shared popover root so it escapes any clipping /
+// overflow-hidden ancestor (e.g. the link dialog's card, where clicking the
+// clipped wheel landed on the backdrop and closed the modal). Position is
+// captured from the swatch on open and applied as `fixed`.
+const popoverRoot = usePopoverRoot();
+const themeStyles = inject(THEME_STYLES_KEY, null);
+const tplUiTheme = inject(UI_THEME_KEY, null);
+const popoverPosition = ref({ top: 0, left: 0 });
+
+function toggleOpen(): void {
+  if (props.disabled) return;
+  if (!open.value) {
+    const rect = swatchRef.value?.getBoundingClientRect();
+    if (rect) {
+      const PICKER_HEIGHT = 240; // wheel + hue slider + padding, approx
+      const gap = 8;
+      // Open below the swatch, or flip above when it would overflow the viewport
+      // bottom — the popover is `fixed`, so it can't scroll into view otherwise.
+      const fitsBelow = rect.bottom + gap + PICKER_HEIGHT <= window.innerHeight;
+      popoverPosition.value = {
+        top: fitsBelow
+          ? rect.bottom + gap
+          : Math.max(gap, rect.top - PICKER_HEIGHT - gap),
+        left: rect.left,
+      };
+    }
+  }
+  open.value = !open.value;
+}
 </script>
 
 <template>
@@ -109,7 +141,7 @@ function clear(): void {
           : !disabled && 'hover:tpl:border-[var(--tpl-text-dim)]',
         'tpl:size-10',
       ]"
-      @click="!disabled && (open = !open)"
+      @click="toggleOpen"
     >
       <span
         class="tpl:block tpl:size-full tpl:rounded-[calc(var(--tpl-radius-sm)-2px)]"
@@ -139,29 +171,37 @@ function clear(): void {
         <X :size="14" :stroke-width="1.5" />
       </button>
     </div>
-    <Transition
-      enter-active-class="tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]"
-      enter-from-class="tpl:opacity-0 tpl:scale-95 tpl:translate-y-1"
-      enter-to-class="tpl:opacity-100 tpl:scale-100 tpl:translate-y-0"
-      leave-active-class="tpl:transition-all tpl:duration-[80ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]"
-      leave-from-class="tpl:opacity-100 tpl:scale-100 tpl:translate-y-0"
-      leave-to-class="tpl:opacity-0 tpl:scale-95 tpl:translate-y-1"
-    >
-      <div
-        v-if="open"
-        ref="popoverRef"
-        class="tpl:absolute tpl:left-0 tpl:top-full tpl:z-50 tpl:mt-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:p-3 tpl:shadow-lg"
+    <Teleport :to="popoverRoot" :disabled="!popoverRoot">
+      <Transition
+        enter-active-class="tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]"
+        enter-from-class="tpl:opacity-0 tpl:scale-95 tpl:translate-y-1"
+        enter-to-class="tpl:opacity-100 tpl:scale-100 tpl:translate-y-0"
+        leave-active-class="tpl:transition-all tpl:duration-[80ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]"
+        leave-from-class="tpl:opacity-100 tpl:scale-100 tpl:translate-y-0"
+        leave-to-class="tpl:opacity-0 tpl:scale-95 tpl:translate-y-1"
       >
-        <hex-color-picker
-          :color="seed"
-          :aria-label="t.colorPicker.pickColor"
-          @color-changed="onPickerChange"
-          @pointerdown="onPickerPointerDown"
-          @pointerup="onPickerPointerUp"
-          @keydown.escape="open = false"
-        />
-      </div>
-    </Transition>
+        <div
+          v-if="open"
+          ref="popoverRef"
+          :data-tpl-theme="tplUiTheme"
+          class="tpl:fixed tpl:z-modal tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:p-3 tpl:shadow-lg"
+          :style="{
+            top: `${popoverPosition.top}px`,
+            left: `${popoverPosition.left}px`,
+            ...themeStyles,
+          }"
+        >
+          <hex-color-picker
+            :color="seed"
+            :aria-label="t.colorPicker.pickColor"
+            @color-changed="onPickerChange"
+            @pointerdown="onPickerPointerDown"
+            @pointerup="onPickerPointerUp"
+            @keydown.escape="open = false"
+          />
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
