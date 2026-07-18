@@ -237,7 +237,12 @@ export function useRichTextEditor(
     if (
       innerTarget.closest(".tpl-text-editor-wrapper") ||
       innerTarget.closest(".tpl-text-toolbar") ||
-      innerTarget.closest(".tpl-link-dialog")
+      innerTarget.closest(".tpl-link-dialog") ||
+      // The link dialog's color picker teleports to the popover root, so it
+      // sits outside .tpl-link-dialog. Without this, a mousedown on the wheel
+      // falls through to onDone(), tearing the block out of edit mode (and
+      // unmounting the dialog) before the color is applied.
+      innerTarget.closest(".tpl-color-popover")
     ) {
       return;
     }

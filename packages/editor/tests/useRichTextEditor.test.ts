@@ -294,6 +294,24 @@ describe('useRichTextEditor', () => {
       expect(ctx.onDone).not.toHaveBeenCalled();
     });
 
+    it('does NOT call onDone when mousedown is inside the teleported color picker', async () => {
+      const ctx = mountRichText();
+      await flushAsync();
+
+      // The link dialog's color picker teleports to the popover root, outside
+      // .tpl-link-dialog; a mousedown on the wheel must not finish editing
+      // (which would unmount the dialog before the color is applied).
+      const popover = document.createElement('div');
+      popover.className = 'tpl-color-popover';
+      const wheel = document.createElement('div');
+      popover.appendChild(wheel);
+      document.body.appendChild(popover);
+      wheel.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+
+      expect(ctx.onDone).not.toHaveBeenCalled();
+      popover.remove();
+    });
+
     it('invokes onClickOutsideSideEffect for every outside mousedown', async () => {
       const onClickOutsideSideEffect = vi.fn();
       const ctx = mountRichText({ onClickOutsideSideEffect });
