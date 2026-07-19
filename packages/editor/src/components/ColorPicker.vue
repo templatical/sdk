@@ -5,6 +5,7 @@ import { X } from "@lucide/vue";
 import { useI18n } from "../composables/useI18n";
 import { usePopoverRoot } from "../composables/usePopoverRoot";
 import { colorTextClass } from "../constants/styleConstants";
+import { normalizeColorToHex } from "../utils/color";
 import { THEME_STYLES_KEY, UI_THEME_KEY } from "../keys";
 import "vanilla-colorful";
 
@@ -70,13 +71,20 @@ onClickOutside(
 
 const isUnset = computed(() => !props.modelValue);
 
-// The color handed to the wheel: the stored value, or the seed when unset.
-const seed = computed(() => props.modelValue || props.seedColor);
+// vanilla-colorful and the hex field are hex-only, but a stored value read back
+// from the DOM (e.g. a TipTap textStyle/highlight color) can be `rgb(...)`. Show
+// and seed the wheel with the hex form; the raw value still drives unset/emit.
+const displayValue = computed(() => normalizeColorToHex(props.modelValue));
 
-// The clear (×) lives inside the input, shown only when a value is set.
-const showClear = computed(
-  () => !props.swatchOnly && !props.disabled && !isUnset.value,
+// The color handed to the wheel: the stored value, or the seed when unset.
+const seed = computed(() =>
+  normalizeColorToHex(props.modelValue || props.seedColor),
 );
+
+// The clear (×) sits inside whichever hex field is active — the inline field in
+// full mode, or the popover field in swatch-only mode — shown only when a value
+// is set. Not gated on swatchOnly: each field renders only in its own mode.
+const showClear = computed(() => !props.disabled && !isUnset.value);
 
 function onPickerChange(e: Event): void {
   pickerTouched.value = true;
@@ -100,13 +108,6 @@ function onTextInput(e: Event): void {
 
 function clear(): void {
   emit("update:modelValue", "");
-}
-
-// Swatch-only mode has no inline hex input (so no × there) — the popover carries
-// the clear instead. Emit the unset and close, giving immediate feedback.
-function clearAndClose(): void {
-  clear();
-  open.value = false;
 }
 
 // The popover teleports to the shared popover root so it escapes any clipping /
@@ -167,7 +168,7 @@ function toggleOpen(): void {
       <span
         class="tpl:block tpl:size-full tpl:rounded-[calc(var(--tpl-radius-sm)-2px)]"
         :class="{ 'tpl-color-swatch-empty': isUnset }"
-        :style="isUnset ? undefined : { backgroundColor: modelValue }"
+        :style="isUnset ? undefined : { backgroundColor: displayValue }"
       />
     </button>
     <div v-if="!swatchOnly" class="tpl:relative tpl:flex-1">
@@ -175,7 +176,7 @@ function toggleOpen(): void {
         type="text"
         :class="[colorTextClass, 'tpl:w-full']"
         :style="showClear ? { paddingRight: '2.25rem' } : undefined"
-        :value="modelValue"
+        :value="displayValue"
         :placeholder="placeholder || t.colorPicker.notSet"
         :disabled="disabled"
         :aria-label="t.colorPicker.hexValue"
@@ -220,16 +221,38 @@ function toggleOpen(): void {
             @pointerup="onPickerPointerUp"
             @keydown.escape="open = false"
           />
-          <button
-            v-if="swatchOnly && !isUnset && !disabled"
-            type="button"
-            class="tpl:mt-2 tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border-light)] tpl:bg-[var(--tpl-bg)] tpl:px-2 tpl:py-2 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-colors tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-bg-hover)] hover:tpl:border-[var(--tpl-text-dim)]"
-            :aria-label="t.colorPicker.clear"
-            @click="clearAndClose"
-          >
-            <X :size="14" :stroke-width="2" />
-            {{ t.colorPicker.clear }}
-          </button>
+          <!-- Swatch-only mode has no inline field beside the swatch, so the
+               popover carries the manual hex field (+ inline × clear) — the same
+               control as the full-mode sidebar field. It commits on change/Enter,
+               NOT @input: in the rich-text toolbar every emit calls
+               editor.chain().focus().setColor(), and focusing the canvas mid-type
+               would steal focus after the first character. Shown even when unset
+               so a first color can be typed; the × appears only once a value is set. -->
+          <div v-if="swatchOnly" class="tpl:relative tpl:mt-2">
+            <input
+              type="text"
+              :class="[colorTextClass, 'tpl:w-full']"
+              :style="showClear ? { paddingRight: '2.25rem' } : undefined"
+              :value="displayValue"
+              :placeholder="placeholder || t.colorPicker.notSet"
+              :disabled="disabled"
+              :aria-label="t.colorPicker.hexValue"
+              @change="onTextInput"
+              @keydown.enter.prevent="
+                ($event.target as HTMLInputElement).blur()
+              "
+            />
+            <button
+              v-if="showClear"
+              type="button"
+              :aria-label="t.colorPicker.clear"
+              :title="t.colorPicker.clear"
+              class="tpl:absolute tpl:right-2 tpl:top-1/2 tpl:flex tpl:size-6 tpl:-translate-y-1/2 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:text-[var(--tpl-text-dim)] tpl:transition-colors tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-bg-hover)] hover:tpl:text-[var(--tpl-text)]"
+              @click="clear"
+            >
+              <X :size="14" :stroke-width="1.5" />
+            </button>
+          </div>
         </div>
       </Transition>
     </Teleport>

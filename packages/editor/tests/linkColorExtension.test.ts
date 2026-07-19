@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  normalizeColorToHex,
   sanitizeLinkColor,
   withLinkColor,
 } from "../src/utils/linkColorExtension";
@@ -33,20 +32,6 @@ describe("sanitizeLinkColor", () => {
     expect(sanitizeLinkColor('red"')).toBeNull();
     expect(sanitizeLinkColor("url(javascript:alert(1))")).toBeNull();
     expect(sanitizeLinkColor("}#x{color:red")).toBeNull();
-  });
-});
-
-describe("normalizeColorToHex", () => {
-  it("converts browser-serialized rgb() to #rrggbb", () => {
-    expect(normalizeColorToHex("rgb(255, 102, 0)")).toBe("#ff6600");
-    expect(normalizeColorToHex("rgb(0, 0, 0)")).toBe("#000000");
-    expect(normalizeColorToHex("rgba(255, 141, 216, 1)")).toBe("#ff8dd8");
-  });
-
-  it("leaves hex and keyword colors unchanged", () => {
-    expect(normalizeColorToHex("#ff6600")).toBe("#ff6600");
-    expect(normalizeColorToHex("red")).toBe("red");
-    expect(normalizeColorToHex("")).toBe("");
   });
 });
 

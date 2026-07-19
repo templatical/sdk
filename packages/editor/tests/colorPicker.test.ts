@@ -175,38 +175,104 @@ describe('ColorPicker', () => {
     expect(swatch.attributes('title')).toBeUndefined();
   });
 
-  it('shows a popover clear for swatch-only when set, and clears + closes on click', async () => {
-    const wrapper = mountEditor(ColorPicker, {
+  it('shows the manual hex field in the swatch-only popover, set or unset', async () => {
+    const set = mountEditor(ColorPicker, {
       props: { modelValue: '#ff0000', swatchOnly: true },
     });
-    await wrapper.find('button').trigger('click'); // open the popover
-    expect(wrapper.find('hex-color-picker').exists()).toBe(true);
-    const clearBtn = wrapper.find('.tpl-color-popover button');
-    expect(clearBtn.exists()).toBe(true);
+    await set.find('button').trigger('click'); // open the popover
+    const setInput = set.find('.tpl-color-popover input[type="text"]');
+    expect(setInput.exists()).toBe(true);
+    expect((setInput.element as HTMLInputElement).value).toBe('#ff0000');
 
-    await clearBtn.trigger('click');
-    const emitted = wrapper.emitted('update:modelValue');
-    expect(emitted).toHaveLength(1);
-    expect(emitted![0]).toEqual(['']);
-    // Clearing closes the popover for immediate feedback.
-    expect(wrapper.find('hex-color-picker').exists()).toBe(false);
+    const unset = mountEditor(ColorPicker, {
+      props: { modelValue: '', swatchOnly: true },
+    });
+    await unset.find('button').trigger('click');
+    const unsetInput = unset.find('.tpl-color-popover input[type="text"]');
+    // Shown even when unset so a first color can be typed.
+    expect(unsetInput.exists()).toBe(true);
+    expect((unsetInput.element as HTMLInputElement).value).toBe('');
   });
 
-  it('shows no popover clear for swatch-only when the color is unset', async () => {
+  it('commits the popover hex on change, not on input (avoids the focus fight)', async () => {
     const wrapper = mountEditor(ColorPicker, {
       props: { modelValue: '', swatchOnly: true },
     });
     await wrapper.find('button').trigger('click');
-    expect(wrapper.find('hex-color-picker').exists()).toBe(true);
-    expect(wrapper.find('.tpl-color-popover button').exists()).toBe(false);
+    const input = wrapper.find('.tpl-color-popover input[type="text"]');
+    (input.element as HTMLInputElement).value = '#123456';
+
+    await input.trigger('input');
+    // Live typing must NOT apply — every emit would refocus the editor.
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined();
+
+    await input.trigger('change');
+    const emitted = wrapper.emitted('update:modelValue');
+    expect(emitted).toHaveLength(1);
+    expect(emitted![0]).toEqual(['#123456']);
   });
 
-  it('adds no popover clear in full mode — the hex input × owns clearing', async () => {
+  it('clears via the popover field × when set, and hides the × when unset', async () => {
+    const set = mountEditor(ColorPicker, {
+      props: { modelValue: '#ff0000', swatchOnly: true },
+    });
+    await set.find('button').trigger('click');
+    const clearBtn = set.find('.tpl-color-popover button');
+    expect(clearBtn.exists()).toBe(true);
+    await clearBtn.trigger('click');
+    const emitted = set.emitted('update:modelValue');
+    expect(emitted).toHaveLength(1);
+    expect(emitted![0]).toEqual(['']);
+    // Clearing leaves the popover open (the field stays for a re-pick).
+    expect(set.find('hex-color-picker').exists()).toBe(true);
+
+    const unset = mountEditor(ColorPicker, {
+      props: { modelValue: '', swatchOnly: true },
+    });
+    await unset.find('button').trigger('click');
+    expect(unset.find('.tpl-color-popover button').exists()).toBe(false);
+  });
+
+  it('keeps the popover wheel-only in full mode (field + × live beside the swatch)', async () => {
     const wrapper = mountEditor(ColorPicker, {
       props: { modelValue: '#ff0000' }, // swatchOnly defaults to false
     });
     await wrapper.find('button').trigger('click'); // open popover via swatch
-    expect(wrapper.find('hex-color-picker').exists()).toBe(true);
+    expect(wrapper.find('.tpl-color-popover hex-color-picker').exists()).toBe(
+      true,
+    );
+    expect(
+      wrapper.find('.tpl-color-popover input[type="text"]').exists(),
+    ).toBe(false);
     expect(wrapper.find('.tpl-color-popover button').exists()).toBe(false);
+  });
+
+  it('normalizes an rgb modelValue to hex in the swatch, field, and wheel seed', async () => {
+    // A stored color read back from the DOM (e.g. TipTap textStyle) can be rgb.
+    const wrapper = mountEditor(ColorPicker, {
+      props: { modelValue: 'rgb(19, 100, 214)', swatchOnly: true },
+    });
+    // Swatch paints the hex form.
+    expect(wrapper.find('button span').attributes('style')).toContain(
+      'background-color: #1364d6',
+    );
+
+    await wrapper.find('button').trigger('click'); // open the popover
+    // The hex field shows hex, not the raw rgb.
+    const input = wrapper.find('.tpl-color-popover input[type="text"]');
+    expect((input.element as HTMLInputElement).value).toBe('#1364d6');
+    // The wheel (hex-only) is seeded with hex — otherwise it can't parse it.
+    const wheel = wrapper.find('hex-color-picker');
+    const seedColor =
+      wheel.attributes('color') ?? (wheel.element as { color?: string }).color;
+    expect(seedColor).toBe('#1364d6');
+  });
+
+  it('normalizes rgb to hex in the full-mode field too', () => {
+    const wrapper = mountEditor(ColorPicker, {
+      props: { modelValue: 'rgb(255, 102, 0)' },
+    });
+    const input = wrapper.find('input[type="text"]');
+    expect((input.element as HTMLInputElement).value).toBe('#ff6600');
   });
 });

@@ -1,4 +1,5 @@
 import type { Mark } from "@tiptap/core";
+import { normalizeColorToHex } from "./color";
 
 /**
  * Restrict a per-link color to safe CSS color forms — hex, `rgb()/rgba()`,
@@ -16,21 +17,6 @@ export function sanitizeLinkColor(value?: string | null): string | null {
   if (/^(rgb|rgba|hsl|hsla)\(\s*[0-9.,%/\s]+\)$/i.test(v)) return v;
   if (/^[a-z]+$/i.test(v)) return v;
   return null;
-}
-
-/**
- * Normalize a browser-serialized `rgb()/rgba()` color to `#rrggbb`. The browser
- * serializes an inline `style="color:#hex"` to `rgb(...)`, so reading a saved
- * link color back via `element.style.color` would otherwise surface `rgb(...)`
- * — mismatching the hex used everywhere else (and rejected by the native
- * `<input type="color">`). Non-rgb input (already hex, or a keyword) is
- * returned unchanged.
- */
-export function normalizeColorToHex(value: string): string {
-  const m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i.exec(value.trim());
-  if (!m) return value;
-  const toHex = (n: string) => Number(n).toString(16).padStart(2, "0");
-  return `#${toHex(m[1])}${toHex(m[2])}${toHex(m[3])}`;
 }
 
 /**
