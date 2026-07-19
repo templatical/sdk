@@ -299,10 +299,10 @@ If you prefer not to use a package manager, load the editor directly via script 
 ```html
 <link
   rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/@templatical/editor/dist/cdn/editor.css"
+  href="https://unpkg.com/@templatical/editor/dist/cdn/editor.css"
 />
 <script type="module">
-  import { init } from "https://cdn.jsdelivr.net/npm/@templatical/editor/dist/cdn/editor.js";
+  import { init } from "https://unpkg.com/@templatical/editor/dist/cdn/editor.js";
 
   const editor = await init({
     container: "#editor",

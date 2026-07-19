@@ -102,6 +102,13 @@ function clear(): void {
   emit("update:modelValue", "");
 }
 
+// Swatch-only mode has no inline hex input (so no × there) — the popover carries
+// the clear instead. Emit the unset and close, giving immediate feedback.
+function clearAndClose(): void {
+  clear();
+  open.value = false;
+}
+
 // The popover teleports to the shared popover root so it escapes any clipping /
 // overflow-hidden ancestor (e.g. the link dialog's card, where clicking the
 // clipped wheel landed on the backdrop and closed the modal). Position is
@@ -213,6 +220,16 @@ function toggleOpen(): void {
             @pointerup="onPickerPointerUp"
             @keydown.escape="open = false"
           />
+          <button
+            v-if="swatchOnly && !isUnset && !disabled"
+            type="button"
+            class="tpl:mt-2 tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border-light)] tpl:bg-[var(--tpl-bg)] tpl:px-2 tpl:py-2 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-colors tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-bg-hover)] hover:tpl:border-[var(--tpl-text-dim)]"
+            :aria-label="t.colorPicker.clear"
+            @click="clearAndClose"
+          >
+            <X :size="14" :stroke-width="2" />
+            {{ t.colorPicker.clear }}
+          </button>
         </div>
       </Transition>
     </Teleport>

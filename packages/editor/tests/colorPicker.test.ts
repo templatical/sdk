@@ -174,4 +174,39 @@ describe('ColorPicker', () => {
     expect(swatch.attributes('aria-label')).toBe('colorPicker.pickColor');
     expect(swatch.attributes('title')).toBeUndefined();
   });
+
+  it('shows a popover clear for swatch-only when set, and clears + closes on click', async () => {
+    const wrapper = mountEditor(ColorPicker, {
+      props: { modelValue: '#ff0000', swatchOnly: true },
+    });
+    await wrapper.find('button').trigger('click'); // open the popover
+    expect(wrapper.find('hex-color-picker').exists()).toBe(true);
+    const clearBtn = wrapper.find('.tpl-color-popover button');
+    expect(clearBtn.exists()).toBe(true);
+
+    await clearBtn.trigger('click');
+    const emitted = wrapper.emitted('update:modelValue');
+    expect(emitted).toHaveLength(1);
+    expect(emitted![0]).toEqual(['']);
+    // Clearing closes the popover for immediate feedback.
+    expect(wrapper.find('hex-color-picker').exists()).toBe(false);
+  });
+
+  it('shows no popover clear for swatch-only when the color is unset', async () => {
+    const wrapper = mountEditor(ColorPicker, {
+      props: { modelValue: '', swatchOnly: true },
+    });
+    await wrapper.find('button').trigger('click');
+    expect(wrapper.find('hex-color-picker').exists()).toBe(true);
+    expect(wrapper.find('.tpl-color-popover button').exists()).toBe(false);
+  });
+
+  it('adds no popover clear in full mode — the hex input × owns clearing', async () => {
+    const wrapper = mountEditor(ColorPicker, {
+      props: { modelValue: '#ff0000' }, // swatchOnly defaults to false
+    });
+    await wrapper.find('button').trigger('click'); // open popover via swatch
+    expect(wrapper.find('hex-color-picker').exists()).toBe(true);
+    expect(wrapper.find('.tpl-color-popover button').exists()).toBe(false);
+  });
 });
