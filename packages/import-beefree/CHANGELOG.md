@@ -1,5 +1,11 @@
 # @templatical/import-beefree
 
+## 0.16.3
+
+### Patch Changes
+
+- @templatical/types@0.16.3
+
 ## 0.16.2
 
 ### Patch Changes
