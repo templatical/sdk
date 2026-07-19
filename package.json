@@ -34,7 +34,7 @@
   "engines": {
     "node": ">=24.18.0"
   },
-  "packageManager": "pnpm@11.11.0+sha512.4463f65fd80ed80d69bc1d4bf163ee94f605c7380fc318bb5b2ebe15f8cd12d49c51a4d59e951b401e764d3b6ca751cbf51bc50ed7001a6bcb4935e684c34882",
+  "packageManager": "pnpm@11.13.1+sha512.b2fc7683b8a6525414e7d13e1ba28caaddde96bf66ec540bfaeb7e702b81f3e0be4d1f295edf7f9fe0396740a8dce4509c582ddf79891f4543fea32d37645f25",
   "private": true,
   "scripts": {
     "build": "pnpm --filter @templatical/types run build && pnpm --filter @templatical/core --filter @templatical/renderer --filter @templatical/import-beefree --filter @templatical/import-unlayer --filter @templatical/import-html run build && pnpm --filter @templatical/media-library run build:all && pnpm --filter @templatical/quality run build && pnpm --filter @templatical/editor run build:all",
