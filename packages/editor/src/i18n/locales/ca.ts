@@ -141,6 +141,7 @@ const ca: typeof en = {
     cancel: "Cancel·la",
     urlPlaceholder: "https://example.com",
     urlLabel: "URL",
+    colorLabel: "Color de l'enllaç",
   },
 
   // Toolbar - Title

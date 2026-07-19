@@ -143,6 +143,7 @@ const de: typeof en = {
     cancel: "Abbrechen",
     urlPlaceholder: "https://beispiel.de",
     urlLabel: "URL",
+    colorLabel: "Linkfarbe",
   },
 
   // Toolbar - Title

@@ -39,8 +39,10 @@ describe("rich-text link extension config", () => {
       expect(source).toMatch(/link:\s*false/);
     });
 
-    it(`${relPath}: adds a LinkExt with openOnClick disabled`, () => {
-      expect(source).toMatch(/LinkExt\.configure\(/);
+    it(`${relPath}: adds a LinkExt (wrapped for per-link color) with openOnClick disabled`, () => {
+      // The base LinkExt is decorated with a `color` attribute via
+      // withLinkColor before configuring (per-link color, #373).
+      expect(source).toMatch(/withLinkColor\(LinkExt\)\.configure\(/);
       expect(source).toMatch(/openOnClick:\s*false/);
     });
   }

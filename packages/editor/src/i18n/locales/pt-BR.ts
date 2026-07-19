@@ -140,6 +140,7 @@ const ptBR: typeof en = {
     cancel: "Cancelar",
     urlPlaceholder: "https://exemplo.com",
     urlLabel: "URL",
+    colorLabel: "Cor do Link",
   },
 
   // Toolbar - Title

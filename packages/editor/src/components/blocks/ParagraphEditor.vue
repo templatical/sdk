@@ -5,6 +5,7 @@ import type { ParagraphBlock as ParagraphBlockType } from "@templatical/types";
 import ParagraphToolbar from "./ParagraphToolbar.vue";
 import RichTextLinkDialog from "./RichTextLinkDialog.vue";
 import RichTextEditorContent from "./RichTextEditorContent.vue";
+import { withLinkColor } from "../../utils/linkColorExtension";
 
 const props = defineProps<{
   block: ParagraphBlockType;
@@ -25,6 +26,7 @@ const {
   retry,
   showLinkDialog,
   linkUrl,
+  linkColor,
   linkDialogRef,
   canRequestMergeTag,
   canInsertLogicTag,
@@ -103,7 +105,7 @@ const {
         UnderlineExt,
         SubscriptExt,
         SuperscriptExt,
-        LinkExt.configure({
+        withLinkColor(LinkExt).configure({
           openOnClick: false,
           HTMLAttributes: {
             target: "_blank",
@@ -162,6 +164,7 @@ const {
       :is-editing-link="editor?.isActive('link') ?? false"
       v-model:dialog-ref="linkDialogRef"
       v-model:link-url="linkUrl"
+      v-model:link-color="linkColor"
       @close="closeLinkDialog"
       @insert="insertLink"
       @remove="removeLink"
