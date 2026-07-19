@@ -1,6 +1,6 @@
 # @templatical/editor
 
-## 1.0.0
+## 0.16.1
 
 ### Minor Changes
 
@@ -15,9 +15,9 @@
 - cca4a4c: Fix the paragraph text-color control so it reflects the color actually in use
 
   The rich-text toolbar's text-color swatch used a native `<input type="color">`, which can't represent "unset" — so for text with no inline color it always painted a hard-coded `#000000`. That both looked like an explicit choice and didn't even match the real inherited color (the document `textColor`, default `#1a1a1a`). The swatch now shows the effective color the selection renders in (an explicit inline mark if present, otherwise the inherited document `textColor`), and a reset control appears only when an explicit inline color is set, clearing it back to inherited. (#373)
-  - @templatical/renderer@1.0.0
-  - @templatical/quality@1.0.0
-  - @templatical/media-library@1.0.0
+  - @templatical/renderer@0.16.1
+  - @templatical/quality@0.16.1
+  - @templatical/media-library@0.16.1
 
 ## 0.16.0
 
