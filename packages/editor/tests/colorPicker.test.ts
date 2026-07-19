@@ -142,4 +142,36 @@ describe('ColorPicker', () => {
     expect(emitted).toHaveLength(1);
     expect(emitted![0]).toEqual(['#3366cc']);
   });
+
+  it('renders the swatch at 32px for size="sm" and 40px by default', () => {
+    const sm = mountEditor(ColorPicker, {
+      props: { modelValue: '#000', size: 'sm' },
+    });
+    expect(sm.find('button').attributes('class')).toContain('tpl:size-8');
+    expect(sm.find('button').attributes('class')).not.toContain('tpl:size-10');
+
+    const md = mountEditor(ColorPicker, { props: { modelValue: '#000' } });
+    expect(md.find('button').attributes('class')).toContain('tpl:size-10');
+  });
+
+  it('uses ariaLabel for the swatch aria-label and hover title', () => {
+    const wrapper = mountEditor(ColorPicker, {
+      props: { modelValue: '#000', ariaLabel: 'Text color' },
+    });
+    const swatch = wrapper.find('button');
+    expect(swatch.attributes('aria-label')).toBe('Text color');
+    expect(swatch.attributes('title')).toBe('Text color');
+  });
+
+  it('falls back to the generic label and no title when ariaLabel is unset', () => {
+    const wrapper = mountEditor(ColorPicker, {
+      props: { modelValue: '#000' },
+    });
+    const swatch = wrapper.find('button');
+    // Stub translations stringify to their dot-path, so the generic fallback
+    // surfaces as the key itself — proving aria-label took the
+    // `ariaLabel || t.colorPicker.pickColor` branch rather than staying empty.
+    expect(swatch.attributes('aria-label')).toBe('colorPicker.pickColor');
+    expect(swatch.attributes('title')).toBeUndefined();
+  });
 });

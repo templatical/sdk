@@ -20,12 +20,25 @@ const props = withDefaults(
     seedColor?: string;
     swatchOnly?: boolean;
     disabled?: boolean;
+    /**
+     * Swatch trigger size. `"md"` (40px) is the default for sidebar panels;
+     * `"sm"` (32px) matches the compact rich-text floating toolbar controls.
+     */
+    size?: "sm" | "md";
+    /**
+     * Accessible label (and hover title) for the swatch trigger. Falls back to
+     * the generic "pick color" label. Set it when several pickers sit side by
+     * side and must be told apart (e.g. text color vs highlight in the toolbar).
+     */
+    ariaLabel?: string;
   }>(),
   {
     placeholder: "",
     seedColor: "#ffffff",
     swatchOnly: false,
     disabled: false,
+    size: "md",
+    ariaLabel: "",
   },
 );
 
@@ -131,7 +144,8 @@ function toggleOpen(): void {
       ref="swatchRef"
       type="button"
       :disabled="disabled"
-      :aria-label="t.colorPicker.pickColor"
+      :aria-label="ariaLabel || t.colorPicker.pickColor"
+      :title="ariaLabel || undefined"
       :aria-expanded="open"
       :class="[
         'tpl:shrink-0 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-0.5 tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]',
@@ -139,7 +153,7 @@ function toggleOpen(): void {
         open
           ? 'tpl:border-[var(--tpl-primary)] tpl:shadow-[var(--tpl-ring)]'
           : !disabled && 'hover:tpl:border-[var(--tpl-text-dim)]',
-        'tpl:size-10',
+        size === 'sm' ? 'tpl:size-8' : 'tpl:size-10',
       ]"
       @click="toggleOpen"
     >
