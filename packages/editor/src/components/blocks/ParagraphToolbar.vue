@@ -118,12 +118,23 @@ function setColor(color: string): void {
   const chain = props.editor?.chain().focus();
   if (!chain) return;
   if (isLinkSelection()) {
-    chain
-      .extendMarkRange("link")
-      .updateAttributes("link", { color: color || null })
-      .run();
+    chain.extendMarkRange("link").updateAttributes("link", {
+      color: color || null,
+    });
+    // A per-link color takes absolute priority over any inner text-color: strip
+    // the inline text color on the link range so the `<a>` color alone drives
+    // the glyphs and the underline (mirrors useRichTextLinkDialog.insertLink).
+    // Only when setting a color — clearing leaves the text color untouched.
+    if (color) chain.unsetColor();
+    chain.run();
   } else if (color) {
-    chain.setColor(color).run();
+    // A text color applied over a selection that includes a link unifies the
+    // link with it: update the link's own color so the `<a>` (which paints the
+    // underline and is what the dialog/toolbar read) matches the recolored
+    // glyphs. A no-op on a selection with no link. Mirror of the link branch
+    // above — either way a link never ends up with a text color fighting its
+    // own color.
+    chain.setColor(color).updateAttributes("link", { color }).run();
   } else {
     chain.unsetColor().run();
   }

@@ -234,15 +234,24 @@ export function useRichTextEditor(
 
     options.onClickOutsideSideEffect?.(innerTarget);
 
+    // The link dialog's color picker teleports to the popover root (outside
+    // .tpl-link-dialog) AND renders its wheel inside vanilla-colorful's own
+    // shadow DOM. `closest()` can't cross that inner shadow boundary, so a
+    // mousedown on the wheel has an `innerTarget` from which
+    // `.closest('.tpl-color-popover')` returns null. Match via the composed
+    // path instead — it flattens shadow boundaries. Without this, picking a
+    // color falls through to onDone(), tearing the block out of edit mode (and
+    // unmounting the dialog) before the color is applied.
+    const inColorPopover = path.some(
+      (n) =>
+        n instanceof HTMLElement && n.classList.contains("tpl-color-popover"),
+    );
+
     if (
       innerTarget.closest(".tpl-text-editor-wrapper") ||
       innerTarget.closest(".tpl-text-toolbar") ||
       innerTarget.closest(".tpl-link-dialog") ||
-      // The link dialog's color picker teleports to the popover root, so it
-      // sits outside .tpl-link-dialog. Without this, a mousedown on the wheel
-      // falls through to onDone(), tearing the block out of edit mode (and
-      // unmounting the dialog) before the color is applied.
-      innerTarget.closest(".tpl-color-popover")
+      inColorPopover
     ) {
       return;
     }

@@ -8,13 +8,18 @@ vi.mock("../src/composables/useFocusTrap", () => ({
 
 import { useRichTextLinkDialog } from "../src/composables/useRichTextLinkDialog";
 
-function createMockEditor(existingHref = "", existingColor = "") {
+function createMockEditor(
+  existingHref = "",
+  existingColor = "",
+  { hasColorExtension = true }: { hasColorExtension?: boolean } = {},
+) {
   const chainResult = {
     focus: vi.fn().mockReturnThis(),
     extendMarkRange: vi.fn().mockReturnThis(),
     setLink: vi.fn().mockReturnThis(),
     updateAttributes: vi.fn().mockReturnThis(),
     unsetLink: vi.fn().mockReturnThis(),
+    unsetColor: vi.fn().mockReturnThis(),
     run: vi.fn(),
   };
   return shallowRef({
@@ -23,6 +28,10 @@ function createMockEditor(existingHref = "", existingColor = "") {
       color: existingColor,
     })),
     chain: vi.fn(() => chainResult),
+    // The paragraph editor registers @tiptap/extension-color, so `unsetColor`
+    // is a live command; the Title editor doesn't. `hasColorExtension: false`
+    // models the Title case (the strip must be skipped there).
+    commands: hasColorExtension ? { unsetColor: vi.fn() } : {},
     _chain: chainResult,
   } as any);
 }
@@ -127,6 +136,58 @@ describe("useRichTextLinkDialog", () => {
       expect(chain.updateAttributes).toHaveBeenCalledWith("link", {
         color: null,
       });
+    });
+
+    it("strips the inner text color (unsetColor) when a link color is set", () => {
+      // Absolute priority: the color on the <a> must be the only color, so an
+      // existing inner text-color span can't keep painting the glyphs while
+      // only the underline picks up the link color.
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "https://test.com";
+      result.linkColor.value = "#e11d48";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.updateAttributes).toHaveBeenCalledWith("link", {
+        color: "#e11d48",
+      });
+      expect(chain.unsetColor).toHaveBeenCalledTimes(1);
+      expect(chain.run).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not strip the inner text color when no link color is set", () => {
+      const editor = createMockEditor();
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "https://test.com";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      expect(chain.updateAttributes).toHaveBeenCalledWith("link", {
+        color: null,
+      });
+      expect(chain.unsetColor).not.toHaveBeenCalled();
+    });
+
+    it("does not strip when the editor has no Color extension (Title links)", () => {
+      const editor = createMockEditor("", "", { hasColorExtension: false });
+      const result = useRichTextLinkDialog(editor);
+
+      result.linkUrl.value = "https://test.com";
+      result.linkColor.value = "#e11d48";
+      result.insertLink();
+
+      const chain = editor.value._chain;
+      // The color is still stamped on the <a>…
+      expect(chain.updateAttributes).toHaveBeenCalledWith("link", {
+        color: "#e11d48",
+      });
+      // …but unsetColor would throw on the Title editor (no Color command), so
+      // the strip is skipped.
+      expect(chain.unsetColor).not.toHaveBeenCalled();
+      expect(chain.run).toHaveBeenCalledTimes(1);
     });
 
     it("prepends https:// when URL does not start with http", () => {

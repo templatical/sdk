@@ -294,19 +294,30 @@ describe('useRichTextEditor', () => {
       expect(ctx.onDone).not.toHaveBeenCalled();
     });
 
-    it('does NOT call onDone when mousedown is inside the teleported color picker', async () => {
+    it('does NOT call onDone when mousedown is inside the color picker wheel (nested shadow DOM)', async () => {
       const ctx = mountRichText();
       await flushAsync();
 
-      // The link dialog's color picker teleports to the popover root, outside
-      // .tpl-link-dialog; a mousedown on the wheel must not finish editing
-      // (which would unmount the dialog before the color is applied).
+      // Reproduce the real structure: the teleported .tpl-color-popover holds
+      // vanilla-colorful's <hex-color-picker>, which renders its wheel inside
+      // its OWN shadow DOM. A mousedown there has an innerTarget inside that
+      // shadow, where closest('.tpl-color-popover') can't reach — the handler
+      // must match via the composed path (which crosses shadow boundaries).
       const popover = document.createElement('div');
       popover.className = 'tpl-color-popover';
+      const host = document.createElement('div');
+      const shadow = host.attachShadow({ mode: 'open' });
       const wheel = document.createElement('div');
-      popover.appendChild(wheel);
+      shadow.appendChild(wheel);
+      popover.appendChild(host);
       document.body.appendChild(popover);
-      wheel.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+
+      // The root cause: closest() stops at the wheel's shadow boundary.
+      expect(wheel.closest('.tpl-color-popover')).toBeNull();
+
+      wheel.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true, composed: true }),
+      );
 
       expect(ctx.onDone).not.toHaveBeenCalled();
       popover.remove();

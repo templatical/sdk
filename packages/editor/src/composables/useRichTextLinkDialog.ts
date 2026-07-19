@@ -36,18 +36,27 @@ export function useRichTextLinkDialog(
     if (linkUrl.value) {
       const url = normalizeLinkUrl(linkUrl.value);
       if (url !== null) {
+        const color = sanitizeLinkColor(linkColor.value);
         // Set the link, then stamp its color on the `<a>` itself so text and
         // underline stay in sync. Empty/invalid color → null = inherit the
         // document link color.
-        editor.value
+        const chain = editor.value
           ?.chain()
           .focus()
           .extendMarkRange("link")
           .setLink({ href: url })
-          .updateAttributes("link", {
-            color: sanitizeLinkColor(linkColor.value),
-          })
-          .run();
+          .updateAttributes("link", { color });
+        // A per-link color takes absolute priority over any inner text-color:
+        // strip the color from any text-style mark on the link range so the
+        // `<a>` color alone drives both the glyphs and the underline. Without
+        // it, an inner color span keeps painting the text while only the
+        // underline (drawn by the `<a>`) picks up the link color — the mismatch
+        // this control exists to remove. Guarded on the command existing: Title
+        // links share this dialog but register no Color extension.
+        if (color && typeof editor.value?.commands.unsetColor === "function") {
+          chain?.unsetColor();
+        }
+        chain?.run();
       }
     }
     closeLinkDialog();

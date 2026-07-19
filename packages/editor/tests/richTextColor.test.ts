@@ -60,7 +60,9 @@ describe("ParagraphToolbar color control is link-aware (per-link color, #373)", 
     expect(SRC).toContain("isLinkSelection()");
     // The <a> is recolored via its own attribute so text + underline stay in
     // sync; the whole link is extended so it doesn't split into segments.
-    expect(SRC).toMatch(/updateAttributes\("link", \{ color:/);
+    // (`\s*` tolerates the object wrapping onto its own line — see the
+    // absolute-priority strip covered in paragraphToolbarLinkColor.test.ts.)
+    expect(SRC).toMatch(/updateAttributes\("link", \{\s*color:/);
     expect(SRC).toContain('extendMarkRange("link")');
   });
 
