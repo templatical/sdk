@@ -9,7 +9,7 @@ Jede Regel emittiert ein `LintIssue` mit einem von vier Schweregraden:
 | Schweregrad | Bedeutung | UI |
 |---|---|---|
 | `error` | Harter Defekt. Empfänger könnten ausgeschlossen sein, oder das Template ist strukturell beschädigt. | Roter Punkt auf dem Canvas, „Fehler"-Gruppe im Issues-Panel. |
-| `warning` | Wahrscheinliches Problem — beheben, außer du weißt es besser. | Gelber Punkt, „Warnungen"-Gruppe. |
+| `warning` | Wahrscheinliches Problem — beheben, außer Sie wissen es besser. | Gelber Punkt, „Warnungen"-Gruppe. |
 | `info` | Empfehlung; kein Defekt. | Kein Canvas-Badge, „Hinweise"-Gruppe. |
 | `off` | Override — deaktiviert die Regel komplett. | Nichts. |
 

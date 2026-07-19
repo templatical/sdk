@@ -10,11 +10,11 @@ import { lintTemplate } from "@templatical/quality";
 const issues = lintTemplate(content); // a11y-, dann structure-, dann link-Issues
 ```
 
-Die einzelnen Linter-Funktionen — `lintAccessibility(content, options?)`, `lintStructure(content, options?)`, `lintLinks(content, options?)` — liefern dieselbe Struktur und bleiben exportiert, falls du nur eine Teilmenge ausführen willst. Du kannst eine Teilmenge auch über `lintTemplate` ausführen, indem du Kategorien deaktivierst: `lintTemplate(content, { structure: false, links: false })` führt nur die Barrierefreiheit aus.
+Die einzelnen Linter-Funktionen — `lintAccessibility(content, options?)`, `lintStructure(content, options?)`, `lintLinks(content, options?)` — liefern dieselbe Struktur und bleiben exportiert, falls Sie nur eine Teilmenge ausführen wollen. Sie können eine Teilmenge auch über `lintTemplate` ausführen, indem Sie Kategorien deaktivieren: `lintTemplate(content, { structure: false, links: false })` führt nur die Barrierefreiheit aus.
 
 ## Vor dem Speichern validieren
 
-Verweigere Template-JSON, das die Linter nicht besteht, dort wo es in dein System eintritt — CMS-Save-Handler, API-Endpunkt, Ingestion-Job:
+Verweigern Sie Template-JSON, das die Linter nicht besteht, dort wo es in Ihr System eintritt — CMS-Save-Handler, API-Endpunkt, Ingestion-Job:
 
 ```ts
 import { lintTemplate } from "@templatical/quality";
@@ -36,7 +36,7 @@ export function assertValid(content: TemplateContent): void {
 
 ## CI-Schutz für gespeicherte Templates
 
-Wenn deine Anwendung `TemplateContent`-JSON in einer Datenbank speichert, lass die Linter in CI gegen jede Fixture laufen, damit Regressionen nicht durchrutschen:
+Wenn Ihre Anwendung `TemplateContent`-JSON in einer Datenbank speichert, lassen Sie die Linter in CI gegen jede Fixture laufen, damit Regressionen nicht durchrutschen:
 
 ```ts
 // scripts/lint-templates.ts
@@ -67,7 +67,7 @@ for (const [name, content] of Object.entries(templates)) {
 if (failed > 0) process.exit(1);
 ```
 
-Per `tsx scripts/lint-templates.ts` ausführen und in deinen CI-Workflow einbinden. Das Templatical-Playground macht genau das — siehe `apps/playground/scripts/lint-templates.ts` im Repo.
+Per `tsx scripts/lint-templates.ts` ausführen und in Ihren CI-Workflow einbinden. Das Templatical-Playground macht genau das — siehe `apps/playground/scripts/lint-templates.ts` im Repo.
 
 ## Nach Kategorie filtern
 
@@ -96,7 +96,7 @@ const issues = lintAccessibility(content).filter((i) =>
 
 ## Eigene Regeln bauen
 
-Du kannst eigene Walker mit denselben Primitiven komponieren, die das Paket ausliefert:
+Sie können eigene Walker mit denselben Primitiven komponieren, die das Paket ausliefert:
 
 ```ts
 import { walkBlocks, getContrastRatio } from "@templatical/quality";
@@ -111,9 +111,9 @@ walkBlocks(content, (block, ctx) => {
 });
 ```
 
-`walkBlocks` löst den nächsten opaken Vorfahren-Hintergrund pro Block auf — Kontrast-Checks „funktionieren einfach", ohne dass du die Section/Column-Traversierung neu implementieren musst.
+`walkBlocks` löst den nächsten opaken Vorfahren-Hintergrund pro Block auf — Kontrast-Checks „funktionieren einfach", ohne dass Sie die Section/Column-Traversierung neu implementieren müssen.
 
-Für URL-bezogene Regeln nutze stattdessen `walkUrls` — es liefert pro URL-Feld im Template (Anker, Button, Image-Link, Video, Menüpunkt, Social-Icon) eine `UrlOccurrence`, ohne den Baum pro Regel neu zu durchlaufen:
+Für URL-bezogene Regeln nutzen Sie stattdessen `walkUrls` — es liefert pro URL-Feld im Template (Anker, Button, Image-Link, Video, Menüpunkt, Social-Icon) eine `UrlOccurrence`, ohne den Baum pro Regel neu zu durchlaufen:
 
 ```ts
 import { walkUrls } from "@templatical/quality";
@@ -125,4 +125,4 @@ for (const { url, blockId, source } of walkUrls(content)) {
 }
 ```
 
-Wenn deine Custom-Regel beim Orchestrator mitmachen soll (Schweregrad-Overrides, lokalisierte Nachrichten, das Editor-Issues-Panel), implementiere das `Rule`-Interface — `block` / `template` liefern einen `RuleHit` (`blockId`, optionale `params`, optionaler `fix`), und der Orchestrator kombiniert ihn mit `meta` und dem Nachrichtentemplate der aktiven Locale. Dasselbe `runRules`-Helper-Modul betreibt `lintAccessibility`, `lintStructure` und `lintLinks`, und `lintTemplate` verteilt einfach an alle drei.
+Wenn Ihre Custom-Regel beim Orchestrator mitmachen soll (Schweregrad-Overrides, lokalisierte Nachrichten, das Editor-Issues-Panel), implementieren Sie das `Rule`-Interface — `block` / `template` liefern einen `RuleHit` (`blockId`, optionale `params`, optionaler `fix`), und der Orchestrator kombiniert ihn mit `meta` und dem Nachrichtentemplate der aktiven Locale. Dasselbe `runRules`-Helper-Modul betreibt `lintAccessibility`, `lintStructure` und `lintLinks`, und `lintTemplate` verteilt einfach an alle drei.

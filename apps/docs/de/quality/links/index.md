@@ -43,13 +43,13 @@ const issues = lintLinks(content, options?);
 // issues: LintIssue[] — jeder Eintrag hat eine ruleId, die mit "link." beginnt
 ```
 
-Gleiche Signatur wie `lintAccessibility` und `lintStructure`. Gleiche `LintOptions`-Struktur. Gleicher `LintIssue`-Rückgabewert. Du kannst alle drei Linter unabhängig aufrufen oder Ergebnisse zusammenführen.
+Gleiche Signatur wie `lintAccessibility` und `lintStructure`. Gleiche `LintOptions`-Struktur. Gleicher `LintIssue`-Rückgabewert. Sie können alle drei Linter unabhängig aufrufen oder Ergebnisse zusammenführen.
 
 Im Editor lädt das `useTemplateLint`-Composable `@templatical/quality` per dynamischem Import und führt jeden Linter bei jeder (entprellten) Inhaltsänderung aus. Link-Issues erscheinen im **Issues**-Sidebar-Tab neben Barrierefreiheits- und Struktur-Issues.
 
 ## Konfiguration
 
-`lintLinks` liest seine Konfiguration unter `LintOptions.links`. Setze `links: false`, um den gesamten Linter zu deaktivieren, ohne Regeln einzeln aufzählen zu müssen.
+`lintLinks` liest seine Konfiguration unter `LintOptions.links`. Setzen Sie `links: false`, um den gesamten Linter zu deaktivieren, ohne Regeln einzeln aufzählen zu müssen.
 
 ```ts
 interface LinksLintOptions {
@@ -75,7 +75,7 @@ lintLinks(content, {
 
 Glob-Muster, die gegen den URL-Host abgeglichen werden. `*` matcht eine beliebige Zeichenfolge (auch über `.` hinweg) — `*.staging.*` matcht also `app.staging.example.com` und `*.local` matcht `acme.local` oder `a.b.c.local`. Muster sind verankert; `*.local` matcht damit NICHT `acme.local-tools`. Groß-/Kleinschreibung wird ignoriert.
 
-Übergib ein leeres Array, um `link.localhost-or-staging` stumm zu schalten, ohne die Regel komplett zu deaktivieren:
+Übergeben Sie ein leeres Array, um `link.localhost-or-staging` stumm zu schalten, ohne die Regel komplett zu deaktivieren:
 
 ```ts
 lintLinks(content, {
@@ -83,7 +83,7 @@ lintLinks(content, {
 });
 ```
 
-Oder erweitere / ersetze mit eigenen Mustern:
+Oder erweitern / ersetzen Sie mit eigenen Mustern:
 
 ```ts
 lintLinks(content, {
@@ -96,7 +96,7 @@ lintLinks(content, {
 });
 ```
 
-Die Konstante `DEFAULT_NON_PRODUCTION_HOSTS` wird exportiert, falls du den Standard programmatisch referenzieren musst.
+Die Konstante `DEFAULT_NON_PRODUCTION_HOSTS` wird exportiert, falls Sie den Standard programmatisch referenzieren müssen.
 
 ## Schnellzugriff
 

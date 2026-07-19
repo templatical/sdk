@@ -6,7 +6,7 @@ description: Installieren Sie den Templatical-E-Mail-Editor über npm oder CDN.
 # Installation
 
 ::: tip Aktive Entwicklung
-Templatical wird aktiv weiterentwickelt und veröffentlicht häufig neue Versionen. Die öffentliche API stabilisiert sich — wir folgen [SemVer](https://semver.org), nutzen [Changesets](https://github.com/changesets/changesets) für jedes Release und dokumentieren Breaking Changes im [Changelog](https://github.com/templatical/sdk/releases). Pinne in Produktion eine Version und beobachte die [GitHub-Releases](https://github.com/templatical/sdk/releases), um aktuell zu bleiben.
+Templatical wird aktiv weiterentwickelt und veröffentlicht häufig neue Versionen. Die öffentliche API stabilisiert sich — wir folgen [SemVer](https://semver.org), nutzen [Changesets](https://github.com/changesets/changesets) für jedes Release und dokumentieren Breaking Changes im [Changelog](https://github.com/templatical/sdk/releases). Pinnen Sie in Produktion eine Version und beobachten Sie die [GitHub-Releases](https://github.com/templatical/sdk/releases), um aktuell zu bleiben.
 
 Feature-Wunsch oder rauer Kante begegnet? [Diskussion eröffnen](https://github.com/templatical/sdk/discussions) — Feedback formt die Roadmap.
 :::

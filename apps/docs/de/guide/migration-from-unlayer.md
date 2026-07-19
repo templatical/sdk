@@ -1,6 +1,6 @@
 ---
 title: Migration von Unlayer
-description: Konvertiere Unlayer-E-Mail-Templates mit @templatical/import-unlayer ins Templatical-Format.
+description: Konvertieren Sie Unlayer-E-Mail-Templates mit @templatical/import-unlayer ins Templatical-Format.
 ---
 
 # Migration von Unlayer
@@ -8,7 +8,7 @@ description: Konvertiere Unlayer-E-Mail-Templates mit @templatical/import-unlaye
 Das Paket `@templatical/import-unlayer` konvertiert Unlayer-Design-JSON (die Ausgabe von `editor.saveDesign(...)` aus `react-email-editor` oder dem gehosteten Unlayer-Editor) in Templaticals `TemplateContent`-Format.
 
 ::: warning
-Dieses Paket befindet sich in aktiver Entwicklung. Einige Inhaltstypen und erweiterte Funktionen werden möglicherweise noch nicht vollständig unterstützt. Teste deine konvertierten Templates, bevor du sie in Produktion einsetzt.
+Dieses Paket befindet sich in aktiver Entwicklung. Einige Inhaltstypen und erweiterte Funktionen werden möglicherweise noch nicht vollständig unterstützt. Testen Sie Ihre konvertierten Templates, bevor Sie sie in Produktion einsetzen.
 :::
 
 ## Installation
@@ -19,7 +19,7 @@ npm install @templatical/import-unlayer
 
 ### Ohne Build-Schritt (CDN)
 
-`@templatical/import-unlayer` ist schlankes ESM mit minimalen Abhängigkeiten (die einzige Abhängigkeit, `@templatical/types`, hat selbst keine), sodass es ohne Bundler direkt im Browser läuft — praktisch für .NET/Blazor oder jeden Nicht-Node-Stack. Lade es von einem CDN und rufe es direkt auf:
+`@templatical/import-unlayer` ist schlankes ESM mit minimalen Abhängigkeiten (die einzige Abhängigkeit, `@templatical/types`, hat selbst keine), sodass es ohne Bundler direkt im Browser läuft — praktisch für .NET/Blazor oder jeden Nicht-Node-Stack. Laden Sie es von einem CDN und rufen Sie es direkt auf:
 
 ```html
 <script type="module">
@@ -28,14 +28,14 @@ npm install @templatical/import-unlayer
 </script>
 ```
 
-Der `/+esm`-Endpunkt von jsDelivr löst den transitiven `@templatical/types`-Import automatisch für dich auf. Pinne in Produktion eine Version (`@templatical/import-unlayer@<version>`), damit ein Release das Verhalten nicht unbemerkt ändert. Die Block-ID-Generierung nutzt `crypto.randomUUID()`, was einen sicheren Kontext (`https://` oder `localhost`) erfordert.
+Der `/+esm`-Endpunkt von jsDelivr löst den transitiven `@templatical/types`-Import automatisch für Sie auf. Pinnen Sie in Produktion eine Version (`@templatical/import-unlayer@<version>`), damit ein Release das Verhalten nicht unbemerkt ändert. Die Block-ID-Generierung nutzt `crypto.randomUUID()`, was einen sicheren Kontext (`https://` oder `localhost`) erfordert.
 
 ## Verwendung
 
 ```ts
 import { convertUnlayerTemplate } from '@templatical/import-unlayer';
 
-// Lade dein Unlayer-Design-JSON (was auch immer editor.saveDesign zurückgegeben hat)
+// Laden Sie Ihr Unlayer-Design-JSON (was auch immer editor.saveDesign zurückgegeben hat)
 const unlayerJson = await fetch('/api/unlayer-templates/123').then(r => r.json());
 
 // Ins Templatical-Format konvertieren
@@ -100,16 +100,16 @@ Globale Template-Einstellungen werden übertragen, wo möglich:
 
 ## Bekannte Einschränkungen
 
-- **Custom Fonts** — Unlayers Custom-Font-Deklarationen werden nicht automatisch importiert. Füge sie manuell über die `fonts`-Konfigurationsoption hinzu.
-- **Anzeigebedingungen / dynamische Inhalte** — Unlayers Syntax für bedingte Inhalte hat keine direkte Entsprechung und wird bei der Konvertierung verworfen. Nutze Templaticals [Anzeigebedingungen](/de/guide/display-conditions), um sie neu aufzubauen.
-- **Custom-Module / Blöcke aus kostenpflichtigen Tarifen** — Unlayers Custom Blocks werden in Platzhalter-HTML-Blöcke konvertiert. Baue sie als [Custom Block](/de/guide/custom-blocks) neu auf, wenn sie wiederverwendbar sind.
-- **Formulare** — Unlayers Formular-Blöcke werden übersprungen. Die meisten E-Mail-Clients blockieren aus Sicherheitsgründen das Absenden von Formularen; baue den Call-to-Action als Button neu auf, der auf ein gehostetes Formular verlinkt.
-- **Timer / Countdowns** — Werden als Platzhalter-HTML-Block importiert. Baue sie mit Templaticals `CountdownBlock` neu auf.
+- **Custom Fonts** — Unlayers Custom-Font-Deklarationen werden nicht automatisch importiert. Fügen Sie sie manuell über die `fonts`-Konfigurationsoption hinzu.
+- **Anzeigebedingungen / dynamische Inhalte** — Unlayers Syntax für bedingte Inhalte hat keine direkte Entsprechung und wird bei der Konvertierung verworfen. Nutzen Sie Templaticals [Anzeigebedingungen](/de/guide/display-conditions), um sie neu aufzubauen.
+- **Custom-Module / Blöcke aus kostenpflichtigen Tarifen** — Unlayers Custom Blocks werden in Platzhalter-HTML-Blöcke konvertiert. Bauen Sie sie als [Custom Block](/de/guide/custom-blocks) neu auf, wenn sie wiederverwendbar sind.
+- **Formulare** — Unlayers Formular-Blöcke werden übersprungen. Die meisten E-Mail-Clients blockieren aus Sicherheitsgründen das Absenden von Formularen; bauen Sie den Call-to-Action als Button neu auf, der auf ein gehostetes Formular verlinkt.
+- **Timer / Countdowns** — Werden als Platzhalter-HTML-Block importiert. Bauen Sie sie mit Templaticals `CountdownBlock` neu auf.
 - **AMP for Email** — wird in Templatical derzeit nicht unterstützt.
 
 ## Konvertierte Templates überprüfen
 
-Überprüfe nach der Konvertierung die Ausgabe im Editor auf:
+Überprüfen Sie nach der Konvertierung die Ausgabe im Editor auf:
 
 1. Fehlende Bilder (bei Bedarf neu hochladen oder URLs aktualisieren)
 2. Schriftdarstellung (Custom Fonts zur Editor-Konfiguration hinzufügen)

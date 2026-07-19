@@ -10,9 +10,9 @@
 | **[Struktur](./structure/)** | Doppelte Block-IDs, Sektionen mit falscher Spaltenanzahl, verschachtelte Sektionen, leere Sektionen, leere Spalten | überwiegend error; einige warning |
 | **[Links](./links/)** | Gefährliche URL-Schemata (`javascript:`), nicht unterstützte Protokolle, fehlerhafte `mailto:` / `tel:`, Staging-/localhost-URLs, die ins Template lecken | überwiegend warning; `link.javascript-protocol` ist error |
 
-Alle drei Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Optionsfläche (`LintOptions`) — Konsumenten können sie also in jeder Kombination ausführen, Ergebnisse zusammenführen und beim Gruppieren nach `ruleId`-Präfix (`a11y.*`, `structure.*`, `link.*`) filtern. Die Schweregrad-Overrides und tool-spezifischen Stellschrauben jedes Linters liegen unter seinem eigenen Namensraum (`accessibility`, `structure`, `links`); setze einen davon auf `false`, um den jeweiligen Linter komplett zu deaktivieren.
+Alle drei Linter liefern dieselbe `LintIssue`-Struktur und teilen sich dieselbe Optionsfläche (`LintOptions`) — Konsumenten können sie also in jeder Kombination ausführen, Ergebnisse zusammenführen und beim Gruppieren nach `ruleId`-Präfix (`a11y.*`, `structure.*`, `link.*`) filtern. Die Schweregrad-Overrides und tool-spezifischen Stellschrauben jedes Linters liegen unter seinem eigenen Namensraum (`accessibility`, `structure`, `links`); setzen Sie einen davon auf `false`, um den jeweiligen Linter komplett zu deaktivieren.
 
-**Alles mit einem Aufruf ausführen.** `lintTemplate(content, options?)` ist der einzelne aggregierte Einstiegspunkt — er führt alle drei Linter aus und liefert die zusammengeführten `LintIssue[]` (zuerst Barrierefreiheit, dann Struktur, dann Links). Greife standardmäßig dazu; die einzelnen Linter-Funktionen bleiben exportiert, falls du nur eine Teilmenge ausführen willst. Um eine Kategorie zu überspringen, setze ihren Schlüssel auf `false`: `lintTemplate(content, { structure: false })`. Siehe [Headless-Nutzung](./headless-usage).
+**Alles mit einem Aufruf ausführen.** `lintTemplate(content, options?)` ist der einzelne aggregierte Einstiegspunkt — er führt alle drei Linter aus und liefert die zusammengeführten `LintIssue[]` (zuerst Barrierefreiheit, dann Struktur, dann Links). Greifen Sie standardmäßig dazu; die einzelnen Linter-Funktionen bleiben exportiert, falls Sie nur eine Teilmenge ausführen wollen. Um eine Kategorie zu überspringen, setzen Sie ihren Schlüssel auf `false`: `lintTemplate(content, { structure: false })`. Siehe [Headless-Nutzung](./headless-usage).
 
 ## Architektur
 
@@ -73,15 +73,15 @@ bun add @templatical/quality
 ```
 :::
 
-Das Paket ist ein **optionaler Peer** von `@templatical/editor`. Installiere es, um den Issues-Tab und die Canvas-Badges zu aktivieren. Lass es weg und der Editor bleibt schlank — der dynamische Import ist gegated und tree-shakeable, der Linter-Chunk wird nie geladen.
+Das Paket ist ein **optionaler Peer** von `@templatical/editor`. Installieren Sie es, um den Issues-Tab und die Canvas-Badges zu aktivieren. Lassen Sie es weg und der Editor bleibt schlank — der dynamische Import ist gegated und tree-shakeable, der Linter-Chunk wird nie geladen.
 
 ::: tip CDN-Nutzer
-Wenn du Templatical per CDN lädst, gibt es nichts zu installieren. Das Editor-CDN-Bundle liefert `@templatical/quality` als separat ausgelagerten Code-Split-Chunk aus, der automatisch nachgeladen wird, sobald Linting aktiv ist.
+Wenn Sie Templatical per CDN laden, gibt es nichts zu installieren. Das Editor-CDN-Bundle liefert `@templatical/quality` als separat ausgelagerten Code-Split-Chunk aus, der automatisch nachgeladen wird, sobald Linting aktiv ist.
 :::
 
 ## Editor anbinden
 
-Übergib `lint` an `init()` oder `initCloud()`:
+Übergeben Sie `lint` an `init()` oder `initCloud()`:
 
 ```ts
 import { init } from "@templatical/editor";
@@ -110,7 +110,7 @@ const editor = init({
 
 Der Issues-Tab und die Canvas-Badges erscheinen automatisch, sobald der optionale Peer aufgelöst ist. Bei `lint.disabled === true` — oder wenn jeder Linter-Key (`accessibility`, `structure`, `links`) auf `false` steht — lädt der Editor das Paket gar nicht erst nach: kein Chunk-Download, keine UI.
 
-Setze einen einzelnen Linter auf `false`, um nur dessen Regeln auszuschalten:
+Setzen Sie einen einzelnen Linter auf `false`, um nur dessen Regeln auszuschalten:
 
 ```ts
 init({ container: "#editor", lint: { links: false } });
