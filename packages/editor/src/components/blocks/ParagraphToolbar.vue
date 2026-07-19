@@ -228,6 +228,7 @@ function setHighlight(color: string): void {
           <ColorPicker
             swatch-only
             size="sm"
+            data-testid="text-color-picker"
             :model-value="explicitTextColor()"
             :seed-color="effectiveTextColor()"
             :aria-label="t.paragraphEditor.textColor"
@@ -236,6 +237,7 @@ function setHighlight(color: string): void {
           <ColorPicker
             swatch-only
             size="sm"
+            data-testid="highlight-color-picker"
             :model-value="getCurrentHighlight()"
             :seed-color="DEFAULT_HIGHLIGHT_COLOR"
             :aria-label="t.paragraphEditor.highlightColor"

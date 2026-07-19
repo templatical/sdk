@@ -92,7 +92,7 @@ test.describe("Editor text editing", () => {
     await expect(toolbar.locator("select").first()).toBeVisible();
   });
 
-  test("color inputs present in toolbar", async ({
+  test("shared color pickers present in toolbar (no native color input)", async ({
     editorReady: { editorPage },
     page,
   }) => {
@@ -103,11 +103,12 @@ test.describe("Editor text editing", () => {
     await expect(
       toolbar.locator(SELECTORS.textToolbarBtn).first(),
     ).toBeVisible();
-    // Color pickers for text color and highlight — search globally since toolbar is teleported
-    const colorInputs = page.locator(
-      `${SELECTORS.textToolbar} input[type="color"]`,
-    );
-    expect(await colorInputs.count()).toBeGreaterThanOrEqual(1);
+    // Text color + highlight now use the SDK's shared ColorPicker (hex wheel),
+    // consistent with every other color control in the editor.
+    await expect(toolbar.locator(SELECTORS.textColorPicker)).toBeVisible();
+    await expect(toolbar.locator(SELECTORS.highlightColorPicker)).toBeVisible();
+    // The native OS color input must be gone.
+    await expect(toolbar.locator('input[type="color"]')).toHaveCount(0);
   });
 
   test("clicking another block exits edit mode", async ({

@@ -54,6 +54,9 @@ export const SELECTORS = {
   textToolbarBtn: ".tpl-text-toolbar-btn",
   textToolbarBtnActive: ".tpl-text-toolbar-btn--active",
   textContent: ".tpl-text-content",
+  // Rich-text color controls — the shared ColorPicker (hex wheel), not a native input
+  textColorPicker: '[data-testid="text-color-picker"]',
+  highlightColorPicker: '[data-testid="highlight-color-picker"]',
 
   // Viewport & toggles
   viewportGroup: '[role="radiogroup"][aria-label="Viewport"]',
