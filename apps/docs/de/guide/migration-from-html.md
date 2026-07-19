@@ -19,7 +19,7 @@ npm install @templatical/import-html
 
 ### Ohne Build-Schritt (CDN)
 
-`@templatical/import-html` läuft ohne Bundler direkt im Browser — praktisch für .NET/Blazor oder jeden Nicht-Node-Stack. Laden Sie es von einem CDN und rufen Sie es direkt auf:
+Sie können es auch von einem CDN laden:
 
 ```html
 <script type="module">
@@ -27,8 +27,6 @@ npm install @templatical/import-html
   // ...dann konvertieren wie im Abschnitt „Verwendung“ unten
 </script>
 ```
-
-Der `/+esm`-Endpunkt von jsDelivr löst die transitiven Importe automatisch für Sie auf. Anders als die übrigen Importer bündelt `import-html` einen HTML-Parser (den Browser-Build von cheerio), sodass der CDN-Download größer ausfällt. Pinnen Sie in Produktion eine Version (`@templatical/import-html@<version>`), damit ein Release das Verhalten nicht unbemerkt ändert. Die Block-ID-Generierung nutzt `crypto.randomUUID()`, was einen sicheren Kontext (`https://` oder `localhost`) erfordert.
 
 ## Verwendung
 

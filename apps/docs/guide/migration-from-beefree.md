@@ -19,7 +19,7 @@ npm install @templatical/import-beefree
 
 ### Without a build step (CDN)
 
-`@templatical/import-beefree` is dependency-light ESM (its only dependency, `@templatical/types`, has none), so it runs in the browser with no bundler — handy for .NET/Blazor or any non-Node stack. Load it from a CDN and call it directly:
+You can also load it from a CDN:
 
 ```html
 <script type="module">
@@ -27,8 +27,6 @@ npm install @templatical/import-beefree
   // ...then convert as shown in Usage below
 </script>
 ```
-
-jsDelivr's `/+esm` endpoint resolves the transitive `@templatical/types` import for you. Pin a version (`@templatical/import-beefree@<version>`) in production so a release can't shift behavior. Block-ID generation uses `crypto.randomUUID()`, which requires a secure context (`https://` or `localhost`).
 
 ## Usage
 
