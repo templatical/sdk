@@ -17,6 +17,17 @@ This package is in active development. Some content types and advanced features 
 npm install @templatical/import-unlayer
 ```
 
+### Without a build step (CDN)
+
+You can also load it from a CDN:
+
+```html
+<script type="module">
+  import { convertUnlayerTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-unlayer/+esm';
+  // ...then convert as shown in Usage below
+</script>
+```
+
 ## Usage
 
 ```ts

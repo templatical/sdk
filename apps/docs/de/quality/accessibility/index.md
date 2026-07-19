@@ -27,7 +27,7 @@ const issues = lintAccessibility(content, options?);
 
 Die Funktion nimmt ein `TemplateContent` und ein optionales [`LintOptions`](../options)-Objekt. Sie liefert ein flaches Array von `LintIssue`-Objekten mit `ruleId`, `severity`, `message`, `blockId` und optional einem `fix`-Patch.
 
-Barrierefreiheits-spezifische Konfiguration liegt unter `LintOptions.accessibility`. Setze `accessibility: false`, um den Linter komplett zu deaktivieren.
+Barrierefreiheits-spezifische Konfiguration liegt unter `LintOptions.accessibility`. Setzen Sie `accessibility: false`, um den Linter komplett zu deaktivieren.
 
 ```ts
 lintAccessibility(content, {

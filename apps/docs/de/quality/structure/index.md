@@ -25,9 +25,9 @@ const issues = lintStructure(content, options?);
 // issues: LintIssue[] — jeder Eintrag hat eine ruleId, die mit "structure." beginnt
 ```
 
-Gleiche Signatur wie `lintAccessibility`. Gleiche `LintOptions`-Struktur. Gleicher `LintIssue`-Rückgabewert. Du kannst beide Linter unabhängig aufrufen oder Ergebnisse zusammenführen.
+Gleiche Signatur wie `lintAccessibility`. Gleiche `LintOptions`-Struktur. Gleicher `LintIssue`-Rückgabewert. Sie können beide Linter unabhängig aufrufen oder Ergebnisse zusammenführen.
 
-Struktur-spezifische Konfiguration liegt unter `LintOptions.structure`. Setze `structure: false`, um den Linter komplett zu deaktivieren.
+Struktur-spezifische Konfiguration liegt unter `LintOptions.structure`. Setzen Sie `structure: false`, um den Linter komplett zu deaktivieren.
 
 ```ts
 lintStructure(content, {

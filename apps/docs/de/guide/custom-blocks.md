@@ -284,9 +284,9 @@ Dies ist der empfohlene Weg, um benutzerdefinierte Blöcke vom Standard-Wrapper-
 
 ## Stylesheets
 
-Der Renderer hüllt die Ausgabe deines `template` in eine `mj-text`-Zelle. Das bedeutet: MJMLs automatische responsive Behandlung — Spaltenstapelung, fluide Bilder, mobile-first Padding — greift auf das *äußere* Layout, aber **nicht innerhalb** des HTMLs deines Custom Blocks. Ein zweispaltiger Custom Block mit `<table>`-Layout muss z. B. selbst per Media Query für das mobile Stapeln sorgen.
+Der Renderer hüllt die Ausgabe Ihres `template` in eine `mj-text`-Zelle. Das bedeutet: MJMLs automatische responsive Behandlung — Spaltenstapelung, fluide Bilder, mobile-first Padding — greift auf das *äußere* Layout, aber **nicht innerhalb** des HTMLs Ihres Custom Blocks. Ein zweispaltiger Custom Block mit `<table>`-Layout muss z. B. selbst per Media Query für das mobile Stapeln sorgen.
 
-Verwende `stylesheet` auf der Definition für CSS, das auf alle Instanzen des Blocks angewendet werden soll: Media Queries, Hover-Zustände, blockspezifische Font-Deklarationen, Anchor-Farb-Überschreibungen. Der Renderer sammelt jedes `stylesheet` aus dem Inhaltsbaum, dedupliziert (pro `customType` und nochmals pro getrimmtem Inhalt) und gibt jedes eindeutige Stylesheet **einmal** als `<mj-style>` innerhalb von `<mj-head>` aus — unabhängig davon, wie viele Instanzen das Template enthält. Das Editor-Canvas spiegelt dasselbe CSS, sodass das authoring responsive Verhalten live in der Vorschau erscheint.
+Verwenden Sie `stylesheet` auf der Definition für CSS, das auf alle Instanzen des Blocks angewendet werden soll: Media Queries, Hover-Zustände, blockspezifische Font-Deklarationen, Anchor-Farb-Überschreibungen. Der Renderer sammelt jedes `stylesheet` aus dem Inhaltsbaum, dedupliziert (pro `customType` und nochmals pro getrimmtem Inhalt) und gibt jedes eindeutige Stylesheet **einmal** als `<mj-style>` innerhalb von `<mj-head>` aus — unabhängig davon, wie viele Instanzen das Template enthält. Das Editor-Canvas spiegelt dasselbe CSS, sodass das authoring responsive Verhalten live in der Vorschau erscheint.
 
 ```ts
 {
@@ -326,13 +326,13 @@ Verwende `stylesheet` auf der Definition für CSS, das auf alle Instanzen des Bl
 ```
 
 ::: tip Klassennamen mit Namespace versehen
-Das SDK scoped `stylesheet`-Selektoren nicht automatisch. Zwei Definitionen, die denselben Klassennamen verwenden, kollidieren im ausgegebenen `<mj-head>`. Versieh deine Klassen pro Definition mit einem Präfix — die Konvention `tplc-<type>-<element>` (`tplc-image-text-cell`, `tplc-product-card-button`, …) hält das CSS jeder Definition ohne Laufzeitkosten isoliert.
+Das SDK scoped `stylesheet`-Selektoren nicht automatisch. Zwei Definitionen, die denselben Klassennamen verwenden, kollidieren im ausgegebenen `<mj-head>`. Versehen Sie Ihre Klassen pro Definition mit einem Präfix — die Konvention `tplc-<type>-<element>` (`tplc-image-text-cell`, `tplc-product-card-button`, …) hält das CSS jeder Definition ohne Laufzeitkosten isoliert.
 :::
 
 ::: warning E-Mail-Client-Einschränkungen gelten
-Wie bei jedem CSS in einer E-Mail unterliegen auch deine `stylesheet`-Regeln dem Support des jeweiligen Clients. Insbesondere **ignoriert Outlook unter Windows (2007–2021, Word-Rendering-Engine) `@media`-Queries vollständig** — dein Block behält dort sein Desktop-Layout. Das ist der erwartete Fallback: Outlook Desktop ist ein Desktop-Client, daher ist das Beibehalten der Desktop-Darstellung in der Regel das richtige Ergebnis. Mobile Clients (iOS Mail, Apple Mail, Gmail, Outlook Mobile) unterstützen Media Queries und wenden deine responsiven Regeln normal an.
+Wie bei jedem CSS in einer E-Mail unterliegen auch Ihre `stylesheet`-Regeln dem Support des jeweiligen Clients. Insbesondere **ignoriert Outlook unter Windows (2007–2021, Word-Rendering-Engine) `@media`-Queries vollständig** — Ihr Block behält dort sein Desktop-Layout. Das ist der erwartete Fallback: Outlook Desktop ist ein Desktop-Client, daher ist das Beibehalten der Desktop-Darstellung in der Regel das richtige Ergebnis. Mobile Clients (iOS Mail, Apple Mail, Gmail, Outlook Mobile) unterstützen Media Queries und wenden Ihre responsiven Regeln normal an.
 
-Setze auf breit unterstütztes CSS: `display`, `width`, `padding`, `background-color`, `border`, einfache Media Queries auf `max-width`. Vermeide `flex`, `grid`, `position`, CSS-Animationen und ähnliche fortgeschrittene Features in E-Mail-Kontexten.
+Setzen Sie auf breit unterstütztes CSS: `display`, `width`, `padding`, `background-color`, `border`, einfache Media Queries auf `max-width`. Vermeiden Sie `flex`, `grid`, `position`, CSS-Animationen und ähnliche fortgeschrittene Features in E-Mail-Kontexten.
 :::
 
 ## Liquid-Templates

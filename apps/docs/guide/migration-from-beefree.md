@@ -17,6 +17,17 @@ This package is in active development. Some block types and advanced features ma
 npm install @templatical/import-beefree
 ```
 
+### Without a build step (CDN)
+
+You can also load it from a CDN:
+
+```html
+<script type="module">
+  import { convertBeeFreeTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-beefree/+esm';
+  // ...then convert as shown in Usage below
+</script>
+```
+
 ## Usage
 
 ```ts

@@ -46,7 +46,7 @@ Bei `true`:
 Sinnvoll, wenn ein Mandant ausdrücklich verzichtet hat oder das Standard-OSS-Bundle möglichst klein bleiben soll. Es gibt kein Soft-Disable — `disabled: true` ist eine vollständige, pro Instanz nicht rückgängig zu machende Abschaltung.
 
 ::: tip Jeden Linter einzeln zu deaktivieren hat denselben Effekt
-Der Editor behandelt `{ accessibility: false, structure: false, links: false }` wie `{ disabled: true }`: kein Chunk-Download, kein Sidebar-Tab, keine Canvas-Badges. Wenn jeder Linter bereits aus ist, brauchst du das globale Flag nicht zusätzlich.
+Der Editor behandelt `{ accessibility: false, structure: false, links: false }` wie `{ disabled: true }`: kein Chunk-Download, kein Sidebar-Tab, keine Canvas-Badges. Wenn jeder Linter bereits aus ist, brauchen Sie das globale Flag nicht zusätzlich.
 :::
 
 ## `locale`
@@ -82,7 +82,7 @@ Das Dictionary ist eine Vereinigung aller registrierten Locales — eine deutsch
 | Standard | `{}` (Linter aktiv, Defaults für jede Stellschraube) |
 |---|---|
 
-Konfiguration für `lintAccessibility`. Setze auf `false`, um den gesamten Barrierefreiheits-Linter zu deaktivieren, ohne Regeln einzeln aufzählen zu müssen.
+Konfiguration für `lintAccessibility`. Setzen Sie auf `false`, um den gesamten Barrierefreiheits-Linter zu deaktivieren, ohne Regeln einzeln aufzählen zu müssen.
 
 ```ts
 // Gesamten Barrierefreiheits-Linter abschalten
@@ -94,7 +94,7 @@ lintAccessibility(content, { accessibility: false });
 | Standard | `{}` |
 |---|---|
 
-Schweregrad-Override pro Regel für Barrierefreiheits-Regeln. Setze eine Regel auf `'off'`, um sie komplett zu deaktivieren. Setze sie auf einen anderen Schweregrad, um die Standardklassifikation zu verbiegen:
+Schweregrad-Override pro Regel für Barrierefreiheits-Regeln. Setzen Sie eine Regel auf `'off'`, um sie komplett zu deaktivieren. Setzen Sie sie auf einen anderen Schweregrad, um die Standardklassifikation zu verbiegen:
 
 ```ts
 lintAccessibility(content, {
@@ -132,14 +132,14 @@ lintAccessibility(content, {
 });
 ```
 
-Die Konstante `DEFAULT_A11Y_THRESHOLDS` wird ebenfalls exportiert, falls du die Baseline programmatisch referenzieren willst.
+Die Konstante `DEFAULT_A11Y_THRESHOLDS` wird ebenfalls exportiert, falls Sie die Baseline programmatisch referenzieren wollen.
 
 ## `structure`
 
 | Standard | `{}` |
 |---|---|
 
-Konfiguration für `lintStructure`. Setze auf `false`, um den gesamten Struktur-Linter zu deaktivieren.
+Konfiguration für `lintStructure`. Setzen Sie auf `false`, um den gesamten Struktur-Linter zu deaktivieren.
 
 ```ts
 lintStructure(content, { structure: false });
@@ -164,7 +164,7 @@ Schlüssel verwenden das `structure.*`-Präfix. Siehe [Struktur-Regelkatalog](./
 | Standard | `{}` |
 |---|---|
 
-Konfiguration für `lintLinks`. Setze auf `false`, um den gesamten Links-Linter zu deaktivieren.
+Konfiguration für `lintLinks`. Setzen Sie auf `false`, um den gesamten Links-Linter zu deaktivieren.
 
 ```ts
 lintLinks(content, { links: false });

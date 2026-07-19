@@ -12,7 +12,7 @@ import { isHiddenOnAll, getCssClassAttr } from "../visibility";
  * does not support SVG and rejects base64 in `<img src>`, so hosted PNGs are
  * the only format that renders across every mainstream client. The base URL
  * is read from `context.socialIconsBaseUrl` (configurable via
- * `RenderOptions.socialIconsBaseUrl`; default is the version-pinned unpkg
+ * `RenderOptions.socialIconsBaseUrl`; default is the version-pinned jsDelivr
  * mirror of this package).
  */
 export function renderSocialIcons(

@@ -8,13 +8,24 @@ description: HTML-E-Mail-Templates mit @templatical/import-html in das Templatic
 Das Paket `@templatical/import-html` konvertiert HTML-E-Mail-Templates in das `TemplateContent`-Format von Templatical. Es ist auf das tabellenbasierte HTML zugeschnitten, das echte Marketing-E-Mails tatsächlich verschicken — Ausgaben von MJML, Mailchimp/SendGrid/Campaign-Monitor-Exports, handgeschriebene Kampagnen.
 
 ::: warning
-Dieses Paket ist in aktiver Entwicklung. Modernes HTML (Flex/Grid) wird als HTML-Fallback-Block erhalten, statt neu zerlegt zu werden — prüfe konvertierte Templates vor dem Produktiveinsatz.
+Dieses Paket ist in aktiver Entwicklung. Modernes HTML (Flex/Grid) wird als HTML-Fallback-Block erhalten, statt neu zerlegt zu werden — prüfen Sie konvertierte Templates vor dem Produktiveinsatz.
 :::
 
 ## Installation
 
 ```bash
 npm install @templatical/import-html
+```
+
+### Ohne Build-Schritt (CDN)
+
+Sie können es auch von einem CDN laden:
+
+```html
+<script type="module">
+  import { convertHtmlTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-html/+esm';
+  // ...dann konvertieren wie im Abschnitt „Verwendung“ unten
+</script>
 ```
 
 ## Verwendung
@@ -85,7 +96,7 @@ Templatical-Sections können nicht verschachtelt werden. Tabellen, die in einem 
 - **Externe Stylesheets (`<link rel="stylesheet">`)** werden nicht geladen.
 - **`!important`-Marker** werden entfernt.
 
-Beste Treue erreichst du, indem du Styles vor dem Import inlinst. Produktions-Pipelines erledigen das in der Regel ohnehin.
+Beste Treue erreichen Sie, indem Sie Styles vor dem Import inlinen. Produktions-Pipelines erledigen das in der Regel ohnehin.
 
 ## Template-Einstellungen
 
@@ -101,7 +112,7 @@ Beste Treue erreichst du, indem du Styles vor dem Import inlinst. Produktions-Pi
 - **Anzeigebedingungen / Merge-Tags** — proprietäre Merge-Tag-Syntax (`{{var}}`, `*|VAR|*`, `<%= var %>`) bleibt als reiner Text erhalten. Mit Templaticals [Merge-Tags](/de/guide/merge-tags) bzw. [Anzeigebedingungen](/de/guide/display-conditions) neu aufbauen.
 - **Externe Ressourcen** — `<link>`, externe Stylesheets, Web Fonts und Remote-Bilder werden nicht geladen. Bild-`src`-URLs bleiben unverändert.
 - **Outlook-MSO-Conditionals** — bleiben innerhalb des umgebenden Blocks als HTML erhalten (in Nicht-Outlook-Clients ohnehin inert).
-- **Formularelemente (`<form>`/`<input>`/`<button>`)** — bleiben als HTML-Fallback. Die meisten Mail-Clients blockieren Formular-Submits ohnehin; baue den CTA als Button mit Link auf eine gehostete Seite.
+- **Formularelemente (`<form>`/`<input>`/`<button>`)** — bleiben als HTML-Fallback. Die meisten Mail-Clients blockieren Formular-Submits ohnehin; bauen Sie den CTA als Button mit Link auf eine gehostete Seite.
 - **AMP for Email** — wird in Templatical derzeit nicht unterstützt.
 
 ## Konvertierte Templates prüfen

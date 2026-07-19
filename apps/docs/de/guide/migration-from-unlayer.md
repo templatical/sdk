@@ -1,112 +1,115 @@
 ---
 title: Migration von Unlayer
-description: So migrierst du E-Mail-Templates von Unlayer zu Templatical — Schema-Mapping, manueller Konvertierungsweg und was als Nächstes kommt.
+description: Konvertieren Sie Unlayer-E-Mail-Templates mit @templatical/import-unlayer ins Templatical-Format.
 ---
 
 # Migration von Unlayer
 
-Diese Anleitung hilft dir, E-Mail-Templates aus Unlayers `react-email-editor` (und dem Unlayer Cloud Editor) zu Templatical zu migrieren.
-
-::: tip Automatischer Importer in Arbeit
-Wir entwickeln einen automatischen **`@templatical/import-unlayer`** — gleicher Aufbau wie der bereits existierende [`@templatical/import-beefree`](/de/guide/migration-from-beefree). Aktiv in Entwicklung. Bis er ausgeliefert ist, dokumentiert diese Seite den manuellen Weg. Abonniere die [GitHub-Releases](https://github.com/templatical/sdk/releases) oder beobachte die [Discussions](https://github.com/templatical/sdk/discussions), um benachrichtigt zu werden, sobald er da ist.
-:::
-
-## Was du hast vs. was du brauchst
-
-Unlayer speichert Templates als proprietäres JSON-Design-Objekt, das du dem Editor mit `editor.exportHtml(...)` oder `editor.saveDesign(...)` entnimmst. Templatical speichert Templates als anders strukturiertes proprietäres JSON mit expliziten Blocktypen, Design-Tokens und einem Inhaltsbaum.
-
-Beide Formate beschreiben logisch dasselbe — eine E-Mail aus Reihen, Spalten und Inhaltsmodulen — aber Feldnamen, Verschachtelung und Funktionsumfang unterscheiden sich.
-
-## Pfad 1 — Visuell neu aufbauen (empfohlen für kleine Bibliotheken)
-
-Hast du **weniger als 20 Templates**, ist der schnellste Weg meist, sie in Templatical visuell nachzubauen:
-
-1. Öffne dein bestehendes Unlayer-Template im Unlayer-Editor und behalte es als Referenz sichtbar.
-2. Öffne den Templatical-Editor (oder den [Playground](https://play.templatical.com)) daneben.
-3. Ziehe die entsprechenden Templatical-Blöcke für jedes Unlayer-Modul hinein — siehe die [Mapping-Tabelle](#unlayer-modul-mapping) unten.
-4. Kopiere Textinhalte direkt. Lade Bilder über deine Medienbibliothek neu hoch.
-5. Wende Theme-Farben, Schriftarten und Abstände über Templaticals Design-Tokens an.
-
-Die meisten Templates sind in 5–15 Minuten umgezogen, sobald du das erste oder zweite gemacht hast.
-
-## Pfad 2 — Ein einmaliges Konvertierungs-Skript schreiben
-
-Hast du **Dutzende oder Hunderte Templates** und willst nicht auf den offiziellen Importer warten, kannst du mit der [Mapping-Tabelle](#unlayer-modul-mapping) ein einmaliges Skript schreiben. Die Form ist überschaubar:
-
-```ts
-import { writeFileSync } from 'node:fs';
-import {
-  createTitleBlock,
-  createParagraphBlock,
-  createImageBlock,
-  createButtonBlock,
-  createSectionBlock,
-} from '@templatical/types';
-import type { TemplateContent, Block } from '@templatical/types';
-
-interface UnlayerDesign {
-  body: {
-    rows: UnlayerRow[];
-    values: { backgroundColor?: string; contentWidth?: string };
-  };
-}
-
-function convertUnlayerDesign(design: UnlayerDesign): TemplateContent {
-  const blocks: Block[] = design.body.rows.map(convertRow);
-
-  return {
-    blocks,
-    settings: {
-      width: parseInt(design.body.values.contentWidth ?? '600'),
-      backgroundColor: design.body.values.backgroundColor ?? '#ffffff',
-      // …weitere Settings je nach Bedarf
-    },
-  };
-}
-
-function convertRow(row: UnlayerRow): Block {
-  // Spalten/Zellen auf Templaticals SectionBlock-Children abbilden.
-  // Modulebene siehe Mapping-Tabelle unten.
-  return createSectionBlock({ /* … */ });
-}
-```
-
-Verwende die Factory-Funktionen aus [`@templatical/types`](/de/api/types) (`createTitleBlock`, `createImageBlock` usw.), um Blöcke zu bauen — sie setzen sinnvolle Defaults und vergeben UUIDv7-IDs für dich.
+Das Paket `@templatical/import-unlayer` konvertiert Unlayer-Design-JSON (die Ausgabe von `editor.saveDesign(...)` aus `react-email-editor` oder dem gehosteten Unlayer-Editor) in Templaticals `TemplateContent`-Format.
 
 ::: warning
-Dein Konvertierungs-Skript wird Iteration brauchen. Lass es zuerst auf einer kleinen Stichprobe laufen, rendere das Ergebnis mit `@templatical/renderer` und vergleiche es visuell im Playground, bevor du deine Bibliothek im Bulk konvertierst.
+Dieses Paket befindet sich in aktiver Entwicklung. Einige Inhaltstypen und erweiterte Funktionen werden möglicherweise noch nicht vollständig unterstützt. Testen Sie Ihre konvertierten Templates, bevor Sie sie in Produktion einsetzen.
 :::
 
-## Unlayer-Modul-Mapping {#unlayer-modul-mapping}
+## Installation
 
-Eine Richtungs-Referenz, keine vollständige Spezifikation. Unlayer hat Tarif-gebundene Module und Custom Blocks ohne direkte Entsprechungen.
+```bash
+npm install @templatical/import-unlayer
+```
 
-| Unlayer-Modul | Templatical-Block | Hinweise |
+### Ohne Build-Schritt (CDN)
+
+Sie können es auch von einem CDN laden:
+
+```html
+<script type="module">
+  import { convertUnlayerTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-unlayer/+esm';
+  // ...dann konvertieren wie im Abschnitt „Verwendung“ unten
+</script>
+```
+
+## Verwendung
+
+```ts
+import { convertUnlayerTemplate } from '@templatical/import-unlayer';
+
+// Laden Sie Ihr Unlayer-Design-JSON (was auch immer editor.saveDesign zurückgegeben hat)
+const unlayerJson = await fetch('/api/unlayer-templates/123').then(r => r.json());
+
+// Ins Templatical-Format konvertieren
+const { content, report } = convertUnlayerTemplate(unlayerJson);
+
+// Im Editor verwenden
+const editor = await init({
+  container: '#editor',
+  content,
+});
+
+// Den Konvertierungsbericht auf Probleme prüfen
+console.log(report);
+```
+
+Die Funktion gibt ein `ImportResult` zurück mit:
+- `content` — das konvertierte `TemplateContent`, bereit für den Editor
+- `report` — ein Konvertierungsbericht mit dem Status jedes Inhaltsknotens (`converted`, `approximated`, `html-fallback` oder `skipped`)
+
+## Block-Mapping
+
+Unlayer-Inhaltstypen werden auf Templatical-Entsprechungen abgebildet:
+
+| Unlayer-Inhalt | Templatical-Block | Status |
 |---|---|---|
-| `row` (mit `columns`) | `SectionBlock` (mit `columns`) | Section = Reihe + mehrspaltiges Layout. Templatical-Sections unterstützen 1–4 Spalten, die auf Mobil stapeln. |
-| `column` | Section-Spalte | Eine Spalte innerhalb einer Section, hält eine Liste von Blöcken. |
-| `heading` | `TitleBlock` | Heading-Level (h1–h6) mappen auf Templaticals `level`-Property. |
-| `text` | `ParagraphBlock` | Inline-Rich-Text. Verwende TipTap-kompatibles HTML für Runs. |
-| `image` | `ImageBlock` | `src`, `alt`, `href`, `width`. Bilder über deine Medienbibliothek neu hosten. |
-| `button` | `ButtonBlock` | `text`, `href`, `backgroundColor`, `color`, Padding. |
-| `divider` | `DividerBlock` | Farbe, Breite, Padding. |
-| `social` | `SocialIconsBlock` | Jedes Icon → ein `SocialIcon`-Eintrag mit `platform` und `href`. |
-| `menu` | `MenuBlock` | Menüeinträge → `MenuItemData`-Einträge. |
-| `html` | `HtmlBlock` | Roher HTML-Pass-Through. |
-| `video` | `VideoBlock` | `src`, `thumbnail`, `href`. |
-| Spacer | `SpacerBlock` | Nur vertikaler Abstand. |
-| Custom-Module / Tarif-gebundene Module | `HtmlBlock` (Fallback) | In einen rohen HTML-Block konvertieren oder als [Custom Block](/de/guide/custom-blocks) implementieren, wenn er wiederverwendbar ist. |
+| Text | `paragraph` | Konvertiert |
+| Heading | `title` | Konvertiert |
+| Image | `image` | Konvertiert |
+| Button | `button` | Konvertiert |
+| Divider | `divider` | Konvertiert |
+| Html | `html` | Konvertiert |
+| Menu | `menu` | Angenähert (Stile können abweichen) |
+| Social | `social` | Konvertiert (16 Plattformen abgebildet) |
+| Video | `video` | Konvertiert |
+| Timer | `html` | HTML-Fallback (manuell neu aufbauen) |
+| Form | — | Übersprungen |
 
-## Was sich nicht automatisch übertragen lässt
+Unbekannte Inhaltstypen werden als Fallback in HTML-Blöcke konvertiert.
 
-Diese Funktionen unterscheiden sich genug zwischen den beiden Produkten, dass du sie von Hand übersetzen musst:
+## Konvertierung des Spaltenlayouts
 
-- **Anzeigebedingungen** — Unlayers Conditional-Content-Syntax weicht von Templaticals [Anzeigebedingungen](/de/guide/display-conditions) ab. Plane das Umschreiben der Bedingungen ein.
-- **Merge-Tags** — beide Produkte unterstützen Merge-Tags, aber die Merge-Tag-Syntax kann abweichen. Prüfe [Templaticals Merge-Tag-Konfiguration](/de/guide/merge-tags) und passe die Tag-Tokens in deinen Texten an.
-- **Custom CSS** — Unlayers Tarif-gebundenes Custom CSS lässt sich nicht direkt übertragen. Nutze stattdessen Templaticals [Theming-System](/de/guide/theming) und Design-Tokens.
+Unlayer organisiert Inhalte in Reihen mit Spalten, deren Breiten aus einem `cells`-Gewichtungsarray stammen. Diese werden auf Templaticals `SectionBlock` mit dem passenden `ColumnLayout` abgebildet:
+
+| Unlayer-cells | Templatical-Layout |
+|---|---|
+| `[1]` (einzelne Spalte) | reduziert — kein Section-Wrapper |
+| `[1, 1]` (gleiche Hälften) | `'2'` |
+| `[1, 1, 1]` (gleiche Drittel) | `'3'` |
+| `[1, 2]` | `'1-2'` |
+| `[2, 1]` | `'2-1'` |
+| 4+ Zellen | auf eine einzelne Spalte reduziert, mit Warnung |
+
+Zellverhältnisse, die keinem Standardlayout entsprechen, werden auf das nächstliegende verfügbare abgebildet.
+
+## Template-Einstellungen
+
+Globale Template-Einstellungen werden übertragen, wo möglich:
+
+- **Breite** — Unlayers `body.values.contentWidth` wird auf `settings.width` abgebildet
+- **Hintergrundfarbe** — `body.values.backgroundColor` bleibt erhalten; Hintergründe auf Reihenebene werden auf den entsprechenden `SectionBlock` übertragen
+- **Schriftfamilie** — `body.values.fontFamily.value` wird auf `settings.fontFamily` übertragen
+
+## Bekannte Einschränkungen
+
+- **Custom Fonts** — Unlayers Custom-Font-Deklarationen werden nicht automatisch importiert. Fügen Sie sie manuell über die `fonts`-Konfigurationsoption hinzu.
+- **Anzeigebedingungen / dynamische Inhalte** — Unlayers Syntax für bedingte Inhalte hat keine direkte Entsprechung und wird bei der Konvertierung verworfen. Nutzen Sie Templaticals [Anzeigebedingungen](/de/guide/display-conditions), um sie neu aufzubauen.
+- **Custom-Module / Blöcke aus kostenpflichtigen Tarifen** — Unlayers Custom Blocks werden in Platzhalter-HTML-Blöcke konvertiert. Bauen Sie sie als [Custom Block](/de/guide/custom-blocks) neu auf, wenn sie wiederverwendbar sind.
+- **Formulare** — Unlayers Formular-Blöcke werden übersprungen. Die meisten E-Mail-Clients blockieren aus Sicherheitsgründen das Absenden von Formularen; bauen Sie den Call-to-Action als Button neu auf, der auf ein gehostetes Formular verlinkt.
+- **Timer / Countdowns** — Werden als Platzhalter-HTML-Block importiert. Bauen Sie sie mit Templaticals `CountdownBlock` neu auf.
 - **AMP for Email** — wird in Templatical derzeit nicht unterstützt.
-- **Page-/Popup-/Document-Templates** — Unlayers Nicht-E-Mail-Builder haben keine Templatical-Entsprechung.
 
-## Wenn diese Anleitung etwas nicht abdeckt
+## Konvertierte Templates überprüfen
 
-[Eröffne eine Diskussion](https://github.com/templatical/sdk/discussions) mit einem geschwärzten Ausschnitt des Unlayer-JSONs und was du erreichen willst. Wir nutzen diese Rückmeldungen, um zu priorisieren, welche Unlayer-Funktionen der automatische Importer zuerst abdeckt.
+Überprüfen Sie nach der Konvertierung die Ausgabe im Editor auf:
+
+1. Fehlende Bilder (bei Bedarf neu hochladen oder URLs aktualisieren)
+2. Schriftdarstellung (Custom Fonts zur Editor-Konfiguration hinzufügen)
+3. Spaltenverhältnisse (Layouts anpassen, falls das automatische Mapping nicht passt)
+4. Abstände und Padding (im Block-Einstellungspanel feinjustieren)

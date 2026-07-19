@@ -35,9 +35,9 @@ packages/quality/src/links/messages/
 
 ## Eine Locale hinzufügen
 
-Du brauchst **drei** Dateien (oder zwei, falls du das Vague-Text-Dictionary auslässt): eine Message-Map pro Linter und ein Dictionary. Dateien ablegen — sie werden automatisch erkannt. Jede Locale-Registry wird zur Compile-Zeit per `import.meta.glob` gebaut, es gibt keine Map zu pflegen.
+Sie brauchen **drei** Dateien (oder zwei, falls Sie das Vague-Text-Dictionary auslassen): eine Message-Map pro Linter und ein Dictionary. Dateien ablegen — sie werden automatisch erkannt. Jede Locale-Registry wird zur Compile-Zeit per `import.meta.glob` gebaut, es gibt keine Map zu pflegen.
 
-Folge dem `typeof en`-Muster in jeder Datei. Die Annotation ist der Vertrag: jeder fehlende Key, jeder zusätzliche Key oder jeder falsche Typ lässt `pnpm run typecheck` scheitern. Laufzeit-Paritätstests prüfen zusätzlich, dass `{name}`-Platzhalter über Locales hinweg übereinstimmen.
+Folgen Sie dem `typeof en`-Muster in jeder Datei. Die Annotation ist der Vertrag: jeder fehlende Key, jeder zusätzliche Key oder jeder falsche Typ lässt `pnpm run typecheck` scheitern. Laufzeit-Paritätstests prüfen zusätzlich, dass `{name}`-Platzhalter über Locales hinweg übereinstimmen.
 
 ### 1. Barrierefreiheits-Regelnachrichten
 
@@ -117,12 +117,12 @@ Das war's — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPP
 
 ## Phrasen-Richtlinien (Vague-Text-Dictionary)
 
-- **Match, nicht Regex.** Die Vague-Text-Regeln normalisieren den Anchor- / Button-Text — kleinschreiben, Whitespace zusammenfassen, führende/abschließende nicht-alphanumerische Zeichen (Interpunktion, Pfeile, dekorative Anführungszeichen) entfernen — und testen dann `phrases.includes(text)`. „Click here!", „→ click here" und „»click here«" kollabieren also alle zu `click here` und matchen denselben Dictionary-Eintrag. Füge keine Interpunktionsvarianten hinzu — sie sind redundant. Jeder Eintrag ist trotzdem ein exakter Phrasen-Match; versuche nicht, Regex-Muster zu codieren.
+- **Match, nicht Regex.** Die Vague-Text-Regeln normalisieren den Anchor- / Button-Text — kleinschreiben, Whitespace zusammenfassen, führende/abschließende nicht-alphanumerische Zeichen (Interpunktion, Pfeile, dekorative Anführungszeichen) entfernen — und testen dann `phrases.includes(text)`. „Click here!", „→ click here" und „»click here«" kollabieren also alle zu `click here` und matchen denselben Dictionary-Eintrag. Fügen Sie keine Interpunktionsvarianten hinzu — sie sind redundant. Jeder Eintrag ist trotzdem ein exakter Phrasen-Match; versuchen Sie nicht, Regex-Muster zu codieren.
 - **Nur Kleinbuchstaben.** Der Vergleich ist auf der Input-Seite case-insensitive.
 - **Häufig, nicht erschöpfend.** Ziel ist, die häufigsten vagen Phrasen zu erwischen, die Autoren der Sprache schreiben. Eine 50-Einträge-Liste richtet mehr Schaden an als Nutzen (False Positives).
-- **Englische Phrasen nicht übersetzen.** Das Dictionary ist eine sprachübergreifende Vereinigung — die Phrasen jeder registrierten Locale matchen unabhängig von der aktiven `locale`-Option. Deine `pt.ts` braucht also nur portugiesische Phrasen; das englische `click here` ist über die Vereinigung bereits abgedeckt.
+- **Englische Phrasen nicht übersetzen.** Das Dictionary ist eine sprachübergreifende Vereinigung — die Phrasen jeder registrierten Locale matchen unabhängig von der aktiven `locale`-Option. Ihre `pt.ts` braucht also nur portugiesische Phrasen; das englische `click here` ist über die Vereinigung bereits abgedeckt.
 - **Keine Regions-Duplikate.** `de-AT` löst sich auf dieselbe Vereinigung auf; ein Eintrag pro Sprache.
-- **`linkedImageActionHints` ist pro Token, nicht pro Phrase.** `a11y.img-linked-no-context` tokenisiert den Alt-Text an Nicht-Buchstaben/Ziffer-Grenzen und prüft jeden Token gegen die Hint-Liste. Trage **einzelne Action-Verben** in der Form ein, in der Autoren sie schreiben („buy", „kaufen", „compre") — nicht Mehrwort-Phrasen. „jetzt kaufen" wird nie matchen, weil Tokens einzeln geprüft werden.
+- **`linkedImageActionHints` ist pro Token, nicht pro Phrase.** `a11y.img-linked-no-context` tokenisiert den Alt-Text an Nicht-Buchstaben/Ziffer-Grenzen und prüft jeden Token gegen die Hint-Liste. Tragen Sie **einzelne Action-Verben** in der Form ein, in der Autoren sie schreiben („buy", „kaufen", „compre") — nicht Mehrwort-Phrasen. „jetzt kaufen" wird nie matchen, weil Tokens einzeln geprüft werden.
 
 ## Wie das Matching aufgelöst wird
 

@@ -1,6 +1,6 @@
 ---
 title: Migration von handgeschriebenem MJML
-description: So migrierst du bestehende MJML-E-Mail-Templates in Templaticals visuellen Editor — Mapping-Tabelle, Vorgehen beim Neuaufbau und was als Nächstes kommt.
+description: So migrieren Sie bestehende MJML-E-Mail-Templates in Templaticals visuellen Editor — Mapping-Tabelle, Vorgehen beim Neuaufbau und was als Nächstes kommt.
 ---
 
 # Migration von handgeschriebenem MJML
@@ -17,40 +17,40 @@ MJML → Templatical ist schwerer vollständig zu automatisieren als BeeFree →
 
 Diese Migration ist etwas kontraintuitiv. Templaticals Renderer erzeugt *MJML als Ausgabe* — auf den ersten Blick sehen MJML und Templatical identisch aus. Aber:
 
-- **MJML** ist eine Markup-Sprache. Du schreibst XML-ähnliche Tags (`<mj-section>`, `<mj-column>`, `<mj-text>`) und der MJML-Compiler verwandelt das in tabellenbasiertes HTML.
+- **MJML** ist eine Markup-Sprache. Sie schreiben XML-ähnliche Tags (`<mj-section>`, `<mj-column>`, `<mj-text>`) und der MJML-Compiler verwandelt das in tabellenbasiertes HTML.
 - **Templatical** speichert Templates als JSON-Baum mit typisierten Blöcken (`SectionBlock`, `ParagraphBlock` usw.) und rendert diesen Baum beim Export zu MJML.
 
-Um ein MJML-Template in Templatical zu bringen, musst du das **MJML parsen** und einen **äquivalenten JSON-Baum aufbauen**. Dafür gibt es noch kein integriertes Werkzeug — siehe "Automatischer Importer in Entwicklung" oben.
+Um ein MJML-Template in Templatical zu bringen, müssen Sie das **MJML parsen** und einen **äquivalenten JSON-Baum aufbauen**. Dafür gibt es noch kein integriertes Werkzeug — siehe "Automatischer Importer in Entwicklung" oben.
 
 ## Pfad 1 — Visuell mit dem MJML als Referenz neu aufbauen (empfohlen)
 
-Hast du **weniger als 20 MJML-Templates**, ist das mit Abstand der schnellste Weg:
+Haben Sie **weniger als 20 MJML-Templates**, ist das mit Abstand der schnellste Weg:
 
-1. Öffne deine MJML-Quelle im Editor deiner Wahl.
-2. Öffne den Templatical-Editor (oder den [Playground](https://play.templatical.com)) daneben.
-3. Kompiliere dein MJML einmal zu HTML und sieh es dir an — das ist dein visuelles Ziel.
-4. Ziehe die entsprechenden Templatical-Blöcke hinein (siehe [Mapping-Tabelle](#mjml-tag-mapping) unten).
-5. Kopiere Textinhalte direkt. Bilder über deine Medienbibliothek neu hosten.
-6. Bilde Styling über Templaticals [Design-Tokens](/de/guide/theming) ab, statt über inline `mj-attributes`.
+1. Öffnen Sie Ihre MJML-Quelle im Editor Ihrer Wahl.
+2. Öffnen Sie den Templatical-Editor (oder den [Playground](https://play.templatical.com)) daneben.
+3. Kompilieren Sie Ihr MJML einmal zu HTML und sehen Sie es sich an — das ist Ihr visuelles Ziel.
+4. Ziehen Sie die entsprechenden Templatical-Blöcke hinein (siehe [Mapping-Tabelle](#mjml-tag-mapping) unten).
+5. Kopieren Sie Textinhalte direkt. Bilder über Ihre Medienbibliothek neu hosten.
+6. Bilden Sie Styling über Templaticals [Design-Tokens](/de/guide/theming) ab, statt über inline `mj-attributes`.
 
-Die meisten MJML-Templates sind in 10–20 Minuten umgezogen, sobald du eines oder zwei gemacht hast.
+Die meisten MJML-Templates sind in 10–20 Minuten umgezogen, sobald Sie eines oder zwei gemacht haben.
 
 ## Pfad 2 — Templaticals Renderer zur Verifikation nutzen
 
-Sobald du ein Template visuell nachgebaut hast:
+Sobald Sie ein Template visuell nachgebaut haben:
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
 
 const mjml = await renderToMjml(content);
-// Vergleiche dieses MJML mit deinem ursprünglichen MJML-Quelltext.
+// Vergleichen Sie dieses MJML mit Ihrem ursprünglichen MJML-Quelltext.
 ```
 
 Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt strukturelle Unterschiede. Eine sinnvolle Sanity-Prüfung vor einer Bulk-Migration.
 
 ## Pfad 3 — Ein einmaliges Konvertierungs-Skript schreiben
 
-Hast du Hunderte MJML-Templates und willst automatische Konvertierung versuchen, bevor der offizielle Importer da ist, ist der praktische Ansatz, einen kleinen XML-/HTML-Parser zu nutzen (`htmlparser2`, `node-html-parser`), den MJML-Baum zu durchwandern und für jedes Tag Templaticals [Block-Factories](/de/api/types) aufzurufen.
+Haben Sie Hunderte MJML-Templates und wollen automatische Konvertierung versuchen, bevor der offizielle Importer da ist, ist der praktische Ansatz, einen kleinen XML-/HTML-Parser zu nutzen (`htmlparser2`, `node-html-parser`), den MJML-Baum zu durchwandern und für jedes Tag Templaticals [Block-Factories](/de/api/types) aufzurufen.
 
 Hier die grobe Form:
 
@@ -96,7 +96,7 @@ function convertNode(node: any): Block | null {
 ```
 
 ::: warning
-Ein selbst geschriebener Parser wird Edge Cases übersehen — verschachtelte `mj-wrapper`, Custom Components, bedingte Tags, Includes (`mj-include`) und Attribut-Vererbung über `mj-attributes`. Lass die Konvertierung zuerst auf einer kleinen Stichprobe laufen und vergleiche visuell, bevor du im Bulk konvertierst.
+Ein selbst geschriebener Parser wird Edge Cases übersehen — verschachtelte `mj-wrapper`, Custom Components, bedingte Tags, Includes (`mj-include`) und Attribut-Vererbung über `mj-attributes`. Lassen Sie die Konvertierung zuerst auf einer kleinen Stichprobe laufen und vergleichen Sie visuell, bevor Sie im Bulk konvertieren.
 :::
 
 ## MJML-Tag-Mapping {#mjml-tag-mapping}
@@ -120,11 +120,11 @@ Ein selbst geschriebener Parser wird Edge Cases übersehen — verschachtelte `m
 
 ## Was sich nicht automatisch übertragen lässt
 
-- **`mj-attributes`-Defaults** — MJML erlaubt globale Defaults für jedes Tag. Übertrage diese in Templaticals [Block-Defaults](/de/guide/defaults) und [Theme-Overrides](/de/guide/theming).
+- **`mj-attributes`-Defaults** — MJML erlaubt globale Defaults für jedes Tag. Übertragen Sie diese in Templaticals [Block-Defaults](/de/guide/defaults) und [Theme-Overrides](/de/guide/theming).
 - **`mj-include`** — MJMLs Include-Direktive hat keine direkte Entsprechung. Inkludierten Inhalt während der Konvertierung inlinen.
-- **Custom MJML-Components** — wenn du eigene MJML-Komponenten registriert hast, musst du sie entweder (a) als [Templatical Custom Blocks](/de/guide/custom-blocks) implementieren oder (b) auf `HtmlBlock` mit dem gerenderten HTML zurückfallen.
-- **Bedingte MSO-Tags innerhalb von `mj-raw`** — bewahre sie, indem du das ursprüngliche Markup in einen `HtmlBlock` packst.
+- **Custom MJML-Components** — wenn Sie eigene MJML-Komponenten registriert haben, müssen Sie sie entweder (a) als [Templatical Custom Blocks](/de/guide/custom-blocks) implementieren oder (b) auf `HtmlBlock` mit dem gerenderten HTML zurückfallen.
+- **Bedingte MSO-Tags innerhalb von `mj-raw`** — bewahren Sie sie, indem Sie das ursprüngliche Markup in einen `HtmlBlock` packen.
 
 ## Wenn diese Anleitung etwas nicht abdeckt
 
-[Eröffne eine Diskussion](https://github.com/templatical/sdk/discussions) mit einem geschwärzten Ausschnitt deines MJMLs und was du erreichen willst. Wir nutzen diese Rückmeldungen, um zu priorisieren, welche MJML-Muster der automatische Importer zuerst abdeckt.
+[Eröffnen Sie eine Diskussion](https://github.com/templatical/sdk/discussions) mit einem geschwärzten Ausschnitt Ihres MJMLs und was Sie erreichen wollen. Wir nutzen diese Rückmeldungen, um zu priorisieren, welche MJML-Muster der automatische Importer zuerst abdeckt.

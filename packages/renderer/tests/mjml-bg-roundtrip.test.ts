@@ -264,7 +264,7 @@ describe("social icons render as hosted <img>, not inline SVG (Outlook safety)",
     const html = await compile(wrapBlock(mjml));
 
     expect(html).toContain(
-      'src="https://unpkg.com/@templatical/renderer@',
+      'src="https://cdn.jsdelivr.net/npm/@templatical/renderer@',
     );
     expect(html).toContain("/circle/facebook.png");
     expect(html).toContain("/circle/twitter.png");
