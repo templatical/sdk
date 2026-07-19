@@ -367,7 +367,7 @@ describe("renderToMjml", () => {
     expect(mjml).toContain('role="presentation"');
   });
 
-  it("uses default unpkg URL for social icons", async () => {
+  it("uses default jsDelivr URL for social icons", async () => {
     const content = createDefaultTemplateContent();
     content.blocks = [
       createSocialIconsBlock({

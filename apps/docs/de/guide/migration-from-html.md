@@ -17,6 +17,19 @@ Dieses Paket ist in aktiver Entwicklung. Modernes HTML (Flex/Grid) wird als HTML
 npm install @templatical/import-html
 ```
 
+### Ohne Build-Schritt (CDN)
+
+`@templatical/import-html` läuft ohne Bundler direkt im Browser — praktisch für .NET/Blazor oder jeden Nicht-Node-Stack. Lade es von einem CDN und rufe es direkt auf:
+
+```html
+<script type="module">
+  import { convertHtmlTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-html/+esm';
+  // ...dann konvertieren wie im Abschnitt „Verwendung“ unten
+</script>
+```
+
+Der `/+esm`-Endpunkt von jsDelivr löst die transitiven Importe automatisch für dich auf. Anders als die übrigen Importer bündelt `import-html` einen HTML-Parser (den Browser-Build von cheerio), sodass der CDN-Download größer ausfällt. Pinne in Produktion eine Version (`@templatical/import-html@<version>`), damit ein Release das Verhalten nicht unbemerkt ändert. Die Block-ID-Generierung nutzt `crypto.randomUUID()`, was einen sicheren Kontext (`https://` oder `localhost`) erfordert.
+
 ## Verwendung
 
 ```ts

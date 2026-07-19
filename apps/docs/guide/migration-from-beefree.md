@@ -17,6 +17,19 @@ This package is in active development. Some block types and advanced features ma
 npm install @templatical/import-beefree
 ```
 
+### Without a build step (CDN)
+
+`@templatical/import-beefree` is dependency-light ESM (its only dependency, `@templatical/types`, has none), so it runs in the browser with no bundler — handy for .NET/Blazor or any non-Node stack. Load it from a CDN and call it directly:
+
+```html
+<script type="module">
+  import { convertBeeFreeTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-beefree/+esm';
+  // ...then convert as shown in Usage below
+</script>
+```
+
+jsDelivr's `/+esm` endpoint resolves the transitive `@templatical/types` import for you. Pin a version (`@templatical/import-beefree@<version>`) in production so a release can't shift behavior. Block-ID generation uses `crypto.randomUUID()`, which requires a secure context (`https://` or `localhost`).
+
 ## Usage
 
 ```ts
