@@ -28,7 +28,7 @@
     "tsdown": "^0.22.8",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.64.0",
-    "vite": "^8.1.4",
+    "vite": "^8.1.5",
     "vue-eslint-parser": "^10.4.1"
   },
   "engines": {

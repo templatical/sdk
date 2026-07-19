@@ -12,7 +12,7 @@
     "@vitejs/plugin-vue": "^6.0.8",
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
-    "vite": "^8.1.4",
+    "vite": "^8.1.5",
     "vite-ssg": "^28.3.0"
   },
   "private": true,
