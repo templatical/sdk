@@ -17,6 +17,17 @@ This package is in active development. Modern (flex/grid) HTML is preserved via 
 npm install @templatical/import-html
 ```
 
+### Without a build step (CDN)
+
+You can also load it from a CDN:
+
+```html
+<script type="module">
+  import { convertHtmlTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-html/+esm';
+  // ...then convert as shown in Usage below
+</script>
+```
+
 ## Usage
 
 ```ts

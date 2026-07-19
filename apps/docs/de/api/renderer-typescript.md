@@ -50,7 +50,7 @@ interface RenderOptions {
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback-Schriftart-Stack |
 | `allowHtmlBlocks` | `true` | Auf `false` setzen, um HTML-Blöcke aus der Ausgabe zu entfernen |
 | `renderCustomBlock` | -- | Wandelt benutzerdefinierte Blöcke in HTML um. Wird einmal pro benutzerdefiniertem Block aufgerufen. Editor-Konsumenten übergeben `editor.renderCustomBlock`; Headless-Konsumenten verwenden einen eigenen Resolver. Wenn weggelassen, fällt der Renderer auf das `renderedHtml`-Feld des Blocks zurück (falls vorhanden) und lässt den Block andernfalls weg. |
-| `socialIconsBaseUrl` | versionsgebundene unpkg-URL | Basis-URL (ohne abschließenden Schrägstrich) für die PNG-Assets der Social-Media-Icons. Wird pro Icon zu `${baseUrl}/${style}/${platform}.png` aufgelöst. Siehe [Social-Media-Icons](#social-media-icons) unten. |
+| `socialIconsBaseUrl` | versionsgebundene jsDelivr-URL | Basis-URL (ohne abschließenden Schrägstrich) für die PNG-Assets der Social-Media-Icons. Wird pro Icon zu `${baseUrl}/${style}/${platform}.png` aufgelöst. Siehe [Social-Media-Icons](#social-media-icons) unten. |
 
 ### Benutzerdefinierte Blöcke
 
@@ -81,17 +81,17 @@ const mjml = await renderToMjml(content, {
 
 ### Social-Media-Icons
 
-Social-Icon-Blöcke werden als `<img src="…/{style}/{platform}.png">` ausgegeben. Der Standardwert von `socialIconsBaseUrl` verweist auf den versionsgebundenen unpkg-Mirror von `@templatical/renderer`, der vorgerasterte PNGs (16 Plattformen × 5 Stile) mit dem Paket ausliefert:
+Social-Icon-Blöcke werden als `<img src="…/{style}/{platform}.png">` ausgegeben. Der Standardwert von `socialIconsBaseUrl` verweist auf den versionsgebundenen jsDelivr-Mirror von `@templatical/renderer`, der vorgerasterte PNGs (16 Plattformen × 5 Stile) mit dem Paket ausliefert:
 
 ```
-https://unpkg.com/@templatical/renderer@<version>/assets/social/{style}/{platform}.png
+https://cdn.jsdelivr.net/npm/@templatical/renderer@<version>/assets/social/{style}/{platform}.png
 ```
 
 **Warum PNGs.** Outlook Desktop (Word-Rendering-Engine) unterstützt kein SVG und lehnt base64-Daten-URIs in `<img src>` ab. Gehostete PNGs sind das einzige Format, das in allen gängigen E-Mail-Clients zuverlässig dargestellt wird.
 
 **Warum versionsgebunden.** E-Mails sind Archivinhalt — Empfänger öffnen Nachrichten Monate oder Jahre nach dem Versand. Die Versionsbindung friert die Icon-Darstellung zum Renderzeitpunkt ein, sodass ein späteres Redesign oder ein Regressionsfehler im Paket bereits zugestellte E-Mails nicht rückwirkend beschädigt. Außerdem entfällt eine 302-Weiterleitung pro Icon und es können langlebige, unveränderliche Cache-Header gesetzt werden.
 
-**Selbst hosten.** Überschreiben Sie `socialIconsBaseUrl`, um die Assets über Ihr eigenes CDN auszuliefern — nützlich für Air-Gapped-Umgebungen, markenspezifische Themen oder um die Abhängigkeit von unpkg zu entfernen:
+**Selbst hosten.** Überschreiben Sie `socialIconsBaseUrl`, um die Assets über Ihr eigenes CDN auszuliefern — nützlich für Air-Gapped-Umgebungen, markenspezifische Themen oder um die Abhängigkeit von jsDelivr zu entfernen:
 
 ```ts
 const mjml = await renderToMjml(content, {
@@ -201,7 +201,7 @@ Berechnen Spaltenbreiten für ein gegebenes `ColumnLayout`. Gibt ein Array von P
 
 ### `DEFAULT_SOCIAL_ICONS_BASE_URL`
 
-Der Standardwert von `RenderOptions.socialIconsBaseUrl` — die versionsgebundene unpkg-URL, die auf die in diesem Paket mitgelieferten PNGs der Social-Media-Icons verweist. Siehe [Social-Media-Icons](#social-media-icons).
+Der Standardwert von `RenderOptions.socialIconsBaseUrl` — die versionsgebundene jsDelivr-URL, die auf die in diesem Paket mitgelieferten PNGs der Social-Media-Icons verweist. Siehe [Social-Media-Icons](#social-media-icons).
 
 ## MJML zu HTML kompilieren
 

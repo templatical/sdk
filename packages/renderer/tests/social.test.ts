@@ -154,9 +154,9 @@ describe("renderSocialIcons", () => {
     expect(result).not.toContain("image/svg+xml");
   });
 
-  it("default base URL points at version-pinned unpkg mirror", () => {
+  it("default base URL points at version-pinned jsDelivr mirror", () => {
     expect(DEFAULT_SOCIAL_ICONS_BASE_URL).toMatch(
-      /^https:\/\/unpkg\.com\/@templatical\/renderer@\d+\.\d+\.\d+\/assets\/social$/,
+      /^https:\/\/cdn\.jsdelivr\.net\/npm\/@templatical\/renderer@\d+\.\d+\.\d+\/assets\/social$/,
     );
   });
 

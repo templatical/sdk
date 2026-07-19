@@ -50,7 +50,7 @@ export interface RenderOptions {
   /**
    * Base URL (no trailing slash) for the social icon PNG assets. Resolved to
    * `${baseUrl}/${style}/${platform}.png` per icon. Defaults to the
-   * version-pinned unpkg mirror of this package. Override to self-host
+   * version-pinned jsDelivr mirror of this package. Override to self-host
    * (e.g., behind your own CDN or for air-gapped environments).
    *
    * Why PNGs: Outlook desktop (Word rendering engine) does not support SVG

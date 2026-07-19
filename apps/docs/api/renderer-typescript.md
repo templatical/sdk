@@ -50,7 +50,7 @@ interface RenderOptions {
 | `defaultFallbackFont` | `'Arial, sans-serif'` | Fallback font stack |
 | `allowHtmlBlocks` | `true` | Set to `false` to strip HTML blocks from output |
 | `renderCustomBlock` | -- | Resolves custom blocks to HTML. Called once per custom block. Editor consumers pass `editor.renderCustomBlock`; headless consumers wire their own resolver. If omitted, custom blocks fall back to the block's `renderedHtml` field (if present) and otherwise are omitted. |
-| `socialIconsBaseUrl` | version-pinned unpkg URL | Base URL (no trailing slash) for the social icon PNG assets. Resolved per icon to `${baseUrl}/${style}/${platform}.png`. See [Social icons](#social-icons) below. |
+| `socialIconsBaseUrl` | version-pinned jsDelivr URL | Base URL (no trailing slash) for the social icon PNG assets. Resolved per icon to `${baseUrl}/${style}/${platform}.png`. See [Social icons](#social-icons) below. |
 
 ### Custom blocks
 
@@ -81,17 +81,17 @@ const mjml = await renderToMjml(content, {
 
 ### Social icons
 
-Social icon blocks are emitted as `<img src="…/{style}/{platform}.png">`. The default `socialIconsBaseUrl` points at the version-pinned unpkg mirror of `@templatical/renderer`, which ships pre-rasterized PNGs (16 platforms × 5 styles) alongside the package:
+Social icon blocks are emitted as `<img src="…/{style}/{platform}.png">`. The default `socialIconsBaseUrl` points at the version-pinned jsDelivr mirror of `@templatical/renderer`, which ships pre-rasterized PNGs (16 platforms × 5 styles) alongside the package:
 
 ```
-https://unpkg.com/@templatical/renderer@<version>/assets/social/{style}/{platform}.png
+https://cdn.jsdelivr.net/npm/@templatical/renderer@<version>/assets/social/{style}/{platform}.png
 ```
 
 **Why PNGs.** Outlook desktop (Word rendering engine) does not support SVG and rejects base64 data URIs in `<img src>`. Hosted PNGs are the only format that renders across every mainstream email client.
 
 **Why version-pinned.** Email is archival — recipients open messages months or years after they're sent. The version pin freezes the icon visuals at render time so a future redesign or regression in the package doesn't retroactively break already-delivered emails. It also avoids a per-image 302 redirect and unlocks long-lived immutable cache headers.
 
-**Self-hosting.** Override `socialIconsBaseUrl` to serve the assets from your own CDN — useful for air-gapped environments, brand-specific theming, or removing the unpkg dependency:
+**Self-hosting.** Override `socialIconsBaseUrl` to serve the assets from your own CDN — useful for air-gapped environments, brand-specific theming, or removing the jsDelivr dependency:
 
 ```ts
 const mjml = await renderToMjml(content, {
@@ -201,7 +201,7 @@ Calculate column widths for a given `ColumnLayout`. Returns an array of percenta
 
 ### `DEFAULT_SOCIAL_ICONS_BASE_URL`
 
-The default value of `RenderOptions.socialIconsBaseUrl` — the version-pinned unpkg URL pointing at this package's bundled social icon PNGs. See [Social icons](#social-icons).
+The default value of `RenderOptions.socialIconsBaseUrl` — the version-pinned jsDelivr URL pointing at this package's bundled social icon PNGs. See [Social icons](#social-icons).
 
 ## Compiling MJML to HTML
 
