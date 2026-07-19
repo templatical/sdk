@@ -1,5 +1,15 @@
 # @templatical/editor
 
+## 0.16.2
+
+### Patch Changes
+
+- 971fea6: Rich-text toolbar (text color + highlight) now uses the SDK's shared color picker — the same hex-wheel `ColorPicker` used everywhere else in the editor — instead of the native OS color input. The controls are unset-aware (an inherited-color selection shows the "not set" swatch, with the wheel seeded on the color the text actually renders in) and sized to match the toolbar. Adds `size` (`"sm" | "md"`) and `ariaLabel` props to the internal `ColorPicker`.
+- Updated dependencies [3cefbc0]
+  - @templatical/renderer@0.16.2
+  - @templatical/quality@0.16.2
+  - @templatical/media-library@0.16.2
+
 ## 0.16.1
 
 ### Minor Changes
