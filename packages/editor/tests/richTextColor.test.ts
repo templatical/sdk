@@ -4,10 +4,14 @@ import { describe, expect, it } from "vitest";
 import { resolveEffectiveTextColor } from "../src/utils/richTextColor";
 
 /**
- * Paragraph text-color control (issue #373). The swatch must show the color the
- * selection actually renders in — an explicit inline mark, else the inherited
- * document `textColor` — instead of the old hard-coded `#000000`, and expose a
- * reset only when an explicit override exists.
+ * Paragraph text-color control (issue #373). The control now uses the shared
+ * ColorPicker (see paragraphToolbarColorPicker.test.ts). It is unset-aware: the
+ * selection's raw color drives the swatch's set/unset state, while the resolved
+ * effective color — an explicit inline mark, else the inherited document
+ * `textColor`, else the built-in default — seeds the wheel so it still opens on
+ * the color the selection actually renders in (never the old hard-coded
+ * `#000000`). The reset is the ColorPicker's own clear, shown only when an
+ * explicit color exists.
  *
  * ParagraphToolbar is asserted at the source level (mounting it boots TipTap +
  * every formatting child); the resolution logic is unit-tested directly.
@@ -37,8 +41,8 @@ describe("resolveEffectiveTextColor", () => {
 });
 
 describe("ParagraphToolbar text-color wiring (issue #373)", () => {
-  it("binds the swatch to the resolved effective color, not a hard-coded default", () => {
-    expect(SRC).toContain(':value="effectiveTextColor()"');
+  it("seeds the wheel with the resolved effective color, not a hard-coded default", () => {
+    expect(SRC).toContain(':seed-color="effectiveTextColor()"');
     // The old always-black fallback must be gone.
     expect(SRC).not.toContain("textStyleAttr('color') || DEFAULT_TEXT_COLOR");
   });
@@ -49,9 +53,14 @@ describe("ParagraphToolbar text-color wiring (issue #373)", () => {
     expect(SRC).toContain("settings?.textColor");
   });
 
-  it("shows a reset control only when an explicit inline color exists", () => {
-    expect(SRC).toContain('v-if="hasExplicitTextColor()"');
-    expect(SRC).toMatch(/@click="setColor\(''\)"/);
+  it("delegates the reset to the ColorPicker's built-in clear (unset-aware)", () => {
+    // The raw mark (may be "") drives the swatch's set/unset state, so the
+    // ColorPicker shows its own clear only when an explicit color exists;
+    // clearing routes back through setColor(""). The old hand-rolled reset
+    // button gated by hasExplicitTextColor() is gone.
+    expect(SRC).toContain(':model-value="explicitTextColor()"');
+    expect(SRC).toContain('@update:model-value="setColor"');
+    expect(SRC).not.toContain("hasExplicitTextColor");
   });
 });
 

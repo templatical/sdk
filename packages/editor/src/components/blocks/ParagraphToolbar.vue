@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ColorPicker from "../ColorPicker.vue";
 import EmojiPickerDropdown from "./EmojiPickerDropdown.vue";
 import ToolbarIconButton from "../toolbar/ToolbarIconButton.vue";
 import ToolbarSeparator from "../toolbar/ToolbarSeparator.vue";
@@ -23,7 +24,6 @@ import {
   Subscript,
   Superscript,
   Underline,
-  X,
 } from "@lucide/vue";
 import { computed, inject } from "vue";
 import {
@@ -155,12 +155,12 @@ function effectiveTextColor(): string {
   return resolveEffectiveTextColor(textStyleAttr("color"), settings?.textColor);
 }
 
-// Whether the selection carries its own explicit color (a link's own color when
-// on a link, else an inline text-color mark). Gates the reset control.
-function hasExplicitTextColor(): boolean {
-  return isLinkSelection()
-    ? linkColorAttr() !== ""
-    : textStyleAttr("color") !== "";
+// The selection's own explicit color: a link's color when on a link, else the
+// inline text-color mark. May be "" when the selection only inherits its color
+// — that drives the swatch's set/unset state, while `effectiveTextColor()`
+// seeds the wheel so it still opens on the real rendered color.
+function explicitTextColor(): string {
+  return isLinkSelection() ? linkColorAttr() : textStyleAttr("color");
 }
 
 function getCurrentLineHeight(): string {
@@ -225,39 +225,24 @@ function setHighlight(color: string): void {
             @update:model-value="setFontSize"
           />
           <ToolbarSeparator />
-          <div class="tpl:relative">
-            <input
-              type="color"
-              class="tpl:size-8 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-1"
-              :value="effectiveTextColor()"
-              :aria-label="t.paragraphEditor.textColor"
-              :title="t.paragraphEditor.textColor"
-              @input="setColor(($event.target as HTMLInputElement).value)"
-            />
-            <button
-              v-if="hasExplicitTextColor()"
-              type="button"
-              class="tpl:absolute tpl:-right-1 tpl:-top-1 tpl:flex tpl:size-4 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-dim)] tpl:shadow-sm tpl:transition-colors tpl:duration-150 hover:tpl:text-[var(--tpl-text)]"
-              :aria-label="t.colorPicker.clear"
-              :title="t.colorPicker.clear"
-              @click="setColor('')"
-            >
-              <X :size="10" :stroke-width="2.5" />
-            </button>
-          </div>
-          <div class="tpl:relative">
-            <input
-              type="color"
-              class="tpl:size-8 tpl:cursor-pointer tpl:rounded tpl:border tpl:border-[var(--tpl-border)] tpl:p-1"
-              :style="{
-                backgroundColor: getCurrentHighlight() || 'var(--tpl-bg)',
-              }"
-              :value="getCurrentHighlight() || DEFAULT_HIGHLIGHT_COLOR"
-              :aria-label="t.paragraphEditor.highlightColor"
-              :title="t.paragraphEditor.highlightColor"
-              @input="setHighlight(($event.target as HTMLInputElement).value)"
-            />
-          </div>
+          <ColorPicker
+            swatch-only
+            size="sm"
+            data-testid="text-color-picker"
+            :model-value="explicitTextColor()"
+            :seed-color="effectiveTextColor()"
+            :aria-label="t.paragraphEditor.textColor"
+            @update:model-value="setColor"
+          />
+          <ColorPicker
+            swatch-only
+            size="sm"
+            data-testid="highlight-color-picker"
+            :model-value="getCurrentHighlight()"
+            :seed-color="DEFAULT_HIGHLIGHT_COLOR"
+            :aria-label="t.paragraphEditor.highlightColor"
+            @update:model-value="setHighlight"
+          />
           <ToolbarSeparator />
           <ToolbarIconButton
             :icon="Bold"
