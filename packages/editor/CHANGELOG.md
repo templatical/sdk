@@ -1,5 +1,52 @@
 # @templatical/editor
 
+## 0.17.0
+
+### Minor Changes
+
+- bfce2ea: Add an opt-in `htmlBlockPreview` config option that renders HTML blocks as a live preview in the editor canvas.
+
+  When enabled (`htmlBlockPreview: true` or `{ enabled: true }` — off by default), each HTML block's content is rendered verbatim inside a sandboxed `<iframe>` (`sandbox="allow-same-origin"`, no `allow-scripts`) instead of the static placeholder card. Scripts and inline event handlers never execute and the fragment's styles can't leak into the editor. This is preview-only — the MJML/HTML export path renders HTML blocks regardless.
+
+  Also corrects the HTML block's editing-panel hint, which previously claimed scripts and unsafe elements were stripped on export; the OSS renderer does not sanitize HTML block content, so the hint now states that content is exported as-is.
+
+### Patch Changes
+
+- @templatical/renderer@0.17.0
+- @templatical/quality@0.17.0
+- @templatical/media-library@0.17.0
+
+## 0.16.5
+
+### Patch Changes
+
+- 1150894: Fix two shadow-DOM rendering bugs surfaced when the editor is embedded under a transformed ancestor
+
+  - **Popovers mispositioned under a transformed ancestor.** The color picker, the rich-text floating toolbars (Title + Paragraph), and the merge-tag autocomplete positioned their teleported popovers with `position: fixed` using viewport coordinates. When any ancestor of the editor has a `transform` / `filter` / `will-change` (a host's scroll-parallax wrapper, route transition, or reveal animation — even while its computed `transform` reads `none`, since a running/animated transform still promotes the element), that ancestor becomes the containing block for the `fixed` popover and offset it far from its trigger. They now anchor `position: absolute` inside the (positioned) `.tpl-popover-root`, converting the viewport target to root-local coordinates via the new `usePopoverPosition` helper — immune to the ancestor transform.
+
+  - **`ToggleSwitch` knob off-center / overflowing its track.** Tailwind Preflight is intentionally omitted, and the hand-rolled form reset never zeroed native `<button>` padding — so a button with no padding utility kept the UA default (`1px 6px` in Chromium). In shadow-DOM mode (no host reset to mask it) that shrank the fixed-size toggle track and pushed the knob off-center. The `:where(.tpl) button` reset now zeroes `padding`/`margin` (specificity stays 0, so per-button `tpl:p-*` utilities still win).
+
+  - **Block palette rail stayed expanded after a drag-drop.** Dropping a block leaves the cursor out in the canvas, so no `mouseleave` fired to collapse the hover-expanded sidebar rail (and the mid-drag `mouseleave` was intentionally suppressed) — it stayed open until the next hover-in/out. It now collapses on drag-end.
+
+  Also documents the containing-block caveat (a `transform`/`filter`/`will-change` on an ancestor of the mount point offsets the editor's `fixed`-positioned overlays and drag ghost) on the `init()` `container` option and in the installation docs.
+  - @templatical/renderer@0.16.5
+  - @templatical/quality@0.16.5
+  - @templatical/media-library@0.16.5
+
+## 0.16.4
+
+### Patch Changes
+
+- 1801876: Add a per-section "Stack on mobile" control and make the mobile preview stack columns
+
+  - **Fix (#395):** the editor's canvas mobile preview now stacks multi-column sections (each column full-width) on the mobile viewport, matching the exported email. Previously columns stayed side-by-side in the preview while the sent email stacked them.
+  - **Feature (#396):** new optional `SectionBlock.stackOnMobile`. A "Stack on mobile" toggle in the section settings (shown for multi-column sections, on by default) lets you opt out of stacking — the columns then render inside an `<mj-group>` and stay side-by-side on mobile, reflected in both the canvas preview and the MJML output. Existing templates are unaffected: an absent value keeps MJML's default stacking behavior.
+
+- Updated dependencies [1801876]
+  - @templatical/renderer@0.16.4
+  - @templatical/media-library@0.16.4
+  - @templatical/quality@0.16.4
+
 ## 0.16.3
 
 ### Patch Changes

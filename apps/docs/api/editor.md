@@ -51,6 +51,7 @@ unmount();
 | `displayConditions` | `DisplayConditionsConfig`                                         | No       | Display condition configuration. See [Display Conditions](/guide/display-conditions)                                                                                                                                                                                                       |
 | `customBlocks`      | `CustomBlockDefinition[]`                                         | No       | Custom block type definitions. See [Custom Blocks](/guide/custom-blocks)                                                                                                                                                                                                                   |
 | `paletteBlocks`     | `string[]`                                                        | No       | Allowlist + order for the block palette. Only the listed types appear, in this order; unlisted built-ins are hidden. Built-ins use their bare type (`'image'`), custom blocks the `custom:`-prefixed type (`'custom:qrcode'`). See [Customizing the block palette](#customizing-the-block-palette) |
+| `htmlBlockPreview`  | `boolean \| { enabled: boolean }`                                 | No       | Render each HTML block's content as a live preview in the canvas — inside a sandboxed `<iframe>` with no script execution — instead of the static placeholder. Defaults to `false`. Preview-only; the MJML/HTML export renders HTML blocks regardless. See [Previewing HTML blocks](#previewing-html-blocks) |
 | `blockDefaults`     | `BlockDefaults`                                                   | No       | Default property overrides for new blocks. See [Defaults](/guide/defaults)                                                                                                                                                                                                                 |
 | `templateDefaults`  | `TemplateDefaults`                                                | No       | Default template settings for empty templates. See [Defaults](/guide/defaults)                                                                                                                                                                                                             |
 | `fonts`             | `FontsConfig`                                                     | No       | Font configuration. See [Custom Fonts](/guide/fonts)                                                                                                                                                                                                                                       |
@@ -95,6 +96,21 @@ const editor = await init({
 - **Filtering the palette never affects rendering.** Hiding a block type only removes it from the palette — existing content that already uses that type still renders correctly. `paletteBlocks` controls what users can _insert_, not what the editor can _display_.
 
 Omit `paletteBlocks` (or pass an empty array) to show the full default palette.
+
+### Previewing HTML blocks {#previewing-html-blocks}
+
+By default, an HTML block shows a placeholder card in the canvas rather than rendering its markup — the content is only realized on export. Set `htmlBlockPreview` to render each HTML block's content live in the canvas instead:
+
+```ts
+const editor = await init({
+  container: "#editor",
+  htmlBlockPreview: true, // shorthand for { enabled: true }
+});
+```
+
+- **Off by default.** Omit the option (or pass `false` / `{ enabled: false }`) to keep the static placeholder.
+- **Rendered in a sandboxed iframe.** The content is shown verbatim inside an `<iframe sandbox="allow-same-origin">` with **no** `allow-scripts` — scripts and inline event handlers never execute, and the fragment's styles can't leak into the rest of the editor. This keeps arbitrary or collaborator-authored HTML from running in your app's origin.
+- **Preview-only.** This setting controls the editor canvas, not output — `renderToMjml()` / `editor.toMjml()` render HTML blocks regardless.
 
 ## TemplaticalEditor
 

@@ -14,6 +14,7 @@ import {
   createSocialIconsBlock,
   createSpacerBlock,
   createTableBlock,
+  createHtmlBlock,
   generateId,
 } from "@templatical/types";
 
@@ -1713,6 +1714,24 @@ export function createBlackFridayTemplate(): TemplateContent {
         styles: { ...pad(8, 20, 28, 20), backgroundColor: "#111827" },
       }),
 
+      // ── Custom HTML block — raw markup rendered live on the canvas ──
+      // This template opts into the SDK's `htmlBlockPreview` (see its registry
+      // entry below), so this block's markup renders verbatim inside a
+      // sandboxed iframe on the canvas instead of the static placeholder card.
+      // A gradient "countdown" banner the built-in blocks can't express.
+      createHtmlBlock({
+        content: `<div style="background:linear-gradient(135deg,#fbbf24 0%,#f59e0b 100%);border-radius:12px;padding:20px;text-align:center;font-family:Arial,Helvetica,sans-serif">
+  <div style="font-size:11px;font-weight:700;letter-spacing:3px;color:#7c2d12">HURRY &mdash; SALE ENDS SOON</div>
+  <div style="margin-top:10px">
+    <span style="display:inline-block;background:#111827;color:#fbbf24;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">02</span>
+    <span style="display:inline-block;background:#111827;color:#fbbf24;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">14</span>
+    <span style="display:inline-block;background:#111827;color:#fbbf24;font-size:24px;font-weight:800;padding:10px 14px;border-radius:8px;margin:0 4px">37</span>
+  </div>
+  <div style="font-size:11px;color:#7c2d12;margin-top:8px;letter-spacing:2px">DAYS &nbsp;&middot;&nbsp; HOURS &nbsp;&middot;&nbsp; MINS</div>
+</div>`,
+        styles: { ...pad(4, 20, 24, 20), backgroundColor: "#111827" },
+      }),
+
       // ── Display Condition: Enterprise special ──
       createParagraphBlock({
         content:
@@ -1829,7 +1848,8 @@ export type FeatureIcon =
   | "display-condition"
   | "data-source"
   | "custom-block"
-  | "responsive";
+  | "responsive"
+  | "html";
 
 export interface TemplateFeature {
   label: string;
@@ -1853,6 +1873,14 @@ export interface TemplateOption {
    * built-in path without flipping a config toggle.
    */
   useBuiltInMergeTagPicker?: boolean;
+  /**
+   * Enable the SDK's `htmlBlockPreview` option — live rendering of HTML blocks
+   * in the canvas — for this template only. The playground reads it per
+   * template in `chooseTemplate` and passes it to `init()`, so every other
+   * template keeps the default static placeholder. Preview-only; the MJML/HTML
+   * export renders HTML blocks regardless of this flag.
+   */
+  htmlBlockPreview?: boolean;
 }
 
 export const templates: TemplateOption[] = [
@@ -2025,7 +2053,14 @@ export const templates: TemplateOption[] = [
     create: createBlackFridayTemplate,
     preview: "sale",
     customBlocks: [productShowcaseBlock],
+    htmlBlockPreview: true,
     features: [
+      {
+        label: "Custom HTML Block (Live Preview)",
+        icon: "html",
+        description:
+          'The amber "countdown" banner under the CTA is a raw HTML block — an inline-styled markup snippet the built-in blocks can’t produce.\nThis template opts into `htmlBlockPreview`, so the block renders live on the canvas inside a sandboxed <iframe> (no script execution, and its styles can’t leak into the editor) instead of the default placeholder card.\nTo try it: the banner you see on the canvas IS the HTML rendering. Select it and edit the markup in the right sidebar to watch the preview update. Every other template leaves `htmlBlockPreview` off, so an HTML block there shows a static placeholder instead — either way, the MJML/HTML export renders the block.',
+      },
       {
         label: "Custom Block with Repeatable Fields + Data Source",
         icon: "data-source",

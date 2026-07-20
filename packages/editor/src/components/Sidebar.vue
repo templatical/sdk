@@ -64,6 +64,11 @@ function handleDragChoose(): void {
 
 function handleDragEnd(): void {
   isDragging.value = false;
+  // Collapse the rail on drop. A drag ends with the cursor out in the canvas,
+  // so no `mouseleave` fires to collapse it — and `handleSidebarLeave` had
+  // bailed out earlier because `isDragging` was true. Without this the rail
+  // stays expanded until the next hover-in/hover-out cycle.
+  isExpanded.value = false;
 }
 
 const builtInBlockTypeOrder: string[] = [

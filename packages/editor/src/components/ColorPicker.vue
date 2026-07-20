@@ -4,6 +4,7 @@ import { onClickOutside } from "@vueuse/core";
 import { X } from "@lucide/vue";
 import { useI18n } from "../composables/useI18n";
 import { usePopoverRoot } from "../composables/usePopoverRoot";
+import { usePopoverPosition } from "../composables/usePopoverPosition";
 import { colorTextClass } from "../constants/styleConstants";
 import { normalizeColorToHex } from "../utils/color";
 import { THEME_STYLES_KEY, UI_THEME_KEY } from "../keys";
@@ -113,8 +114,11 @@ function clear(): void {
 // The popover teleports to the shared popover root so it escapes any clipping /
 // overflow-hidden ancestor (e.g. the link dialog's card, where clicking the
 // clipped wheel landed on the backdrop and closed the modal). Position is
-// captured from the swatch on open and applied as `fixed`.
+// captured from the swatch on open and applied as `absolute`, in coordinates
+// local to the popover root (`toLocal`) so a transformed ancestor of the
+// editor doesn't offset it — see usePopoverPosition.
 const popoverRoot = usePopoverRoot();
+const { toLocal } = usePopoverPosition();
 const themeStyles = inject(THEME_STYLES_KEY, null);
 const tplUiTheme = inject(UI_THEME_KEY, null);
 const popoverPosition = ref({ top: 0, left: 0 });
@@ -129,12 +133,10 @@ function toggleOpen(): void {
       // Open below the swatch, or flip above when it would overflow the viewport
       // bottom — the popover is `fixed`, so it can't scroll into view otherwise.
       const fitsBelow = rect.bottom + gap + PICKER_HEIGHT <= window.innerHeight;
-      popoverPosition.value = {
-        top: fitsBelow
-          ? rect.bottom + gap
-          : Math.max(gap, rect.top - PICKER_HEIGHT - gap),
-        left: rect.left,
-      };
+      const viewportTop = fitsBelow
+        ? rect.bottom + gap
+        : Math.max(gap, rect.top - PICKER_HEIGHT - gap);
+      popoverPosition.value = toLocal({ top: viewportTop, left: rect.left });
     }
   }
   open.value = !open.value;
@@ -206,7 +208,7 @@ function toggleOpen(): void {
           v-if="open"
           ref="popoverRef"
           :data-tpl-theme="tplUiTheme"
-          class="tpl-color-popover tpl:fixed tpl:z-modal tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:p-3 tpl:shadow-lg"
+          class="tpl-color-popover tpl:absolute tpl:z-modal tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:p-3 tpl:shadow-lg"
           :style="{
             top: `${popoverPosition.top}px`,
             left: `${popoverPosition.left}px`,

@@ -2,7 +2,7 @@
 import ColorPicker from "../ColorPicker.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import FieldRow from "./FieldRow.vue";
-import CheckboxItem from "./CheckboxItem.vue";
+import ToggleSwitch from "../ToggleSwitch.vue";
 import NumberWithSuffix from "./NumberWithSuffix.vue";
 import { useI18n } from "../../composables/useI18n";
 import { inputClass } from "../../constants/styleConstants";
@@ -88,9 +88,10 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
 
   <FieldRow :label="t.countdown.display">
     <div class="tpl:grid tpl:grid-cols-2 tpl:gap-2">
-      <CheckboxItem
+      <ToggleSwitch
         v-for="item in unitItems"
         :key="item.unit"
+        class="tpl:text-[12px] tpl:text-[var(--tpl-text)]"
         :model-value="block[item.showKey]"
         :label="t.countdown[item.translationKey]"
         @update:model-value="updateField(item.showKey, $event)"
@@ -214,10 +215,10 @@ function updateField(field: keyof CountdownBlock, value: unknown): void {
     />
   </FieldRow>
 
-  <CheckboxItem
+  <ToggleSwitch
+    class="tpl:mb-3.5 tpl:text-[12px] tpl:text-[var(--tpl-text)]"
     :model-value="block.hideOnExpiry"
     :label="t.countdown.hideOnExpiry"
-    class="tpl:mb-3.5"
     @update:model-value="updateField('hideOnExpiry', $event)"
   />
 </template>

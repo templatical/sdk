@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
+import ToggleSwitch from "../ToggleSwitch.vue";
 import CollapsibleSection from "./CollapsibleSection.vue";
 import { useI18n } from "../../composables/useI18n";
 import { labelClass, monoTextareaClass } from "../../constants/styleConstants";
@@ -164,20 +165,19 @@ function toggleVisibility(key: VisibilityKey): void {
       @toggle="toggleSection('display')"
     >
       <div class="tpl:space-y-2">
-        <label
+        <ToggleSwitch
           v-for="item in VISIBILITY_ITEMS"
           :key="item.key"
-          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text)]"
+          class="tpl:text-xs tpl:text-[var(--tpl-text)]"
+          :model-value="isVisible(item.key)"
+          :label="t.blockSettings[item.labelKey]"
+          @update:model-value="toggleVisibility(item.key)"
         >
-          <input
-            type="checkbox"
-            class="tpl:accent-[var(--tpl-primary)]"
-            :checked="isVisible(item.key)"
-            @change="toggleVisibility(item.key)"
-          />
-          <component :is="item.icon" :size="14" :stroke-width="1.5" />
-          {{ t.blockSettings[item.labelKey] }}
-        </label>
+          <span class="tpl:flex tpl:items-center tpl:gap-2">
+            <component :is="item.icon" :size="14" :stroke-width="1.5" />
+            {{ t.blockSettings[item.labelKey] }}
+          </span>
+        </ToggleSwitch>
       </div>
     </CollapsibleSection>
 

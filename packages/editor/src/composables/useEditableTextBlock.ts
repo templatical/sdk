@@ -6,6 +6,7 @@ import { useElementBounding } from "@vueuse/core";
 import { computed, inject, ref, type ComputedRef, type Ref } from "vue";
 import { MERGE_TAGS_KEY } from "../keys";
 import { useMergeTag } from "./useMergeTag";
+import { usePopoverPosition } from "./usePopoverPosition";
 import { sanitizeRichTextHtml } from "../utils/sanitizeRichTextHtml";
 
 export interface UseEditableTextBlockReturn {
@@ -40,10 +41,15 @@ export function useEditableTextBlock(
   const isEditing = ref(false);
   const blockRef = ref<HTMLElement | null>(null);
   const { top: boundingTop, left: boundingLeft } = useElementBounding(blockRef);
-  const toolbarPosition = computed(() => ({
-    top: boundingTop.value - 8,
-    left: boundingLeft.value,
-  }));
+  // The floating toolbar teleports into the popover root and positions itself
+  // `absolute`; convert the block's viewport rect to popover-root-local coords
+  // so a transformed ancestor of the editor doesn't offset it. Recomputes with
+  // `boundingTop/Left` (which track scroll/resize), re-reading the root each
+  // time so the toolbar stays glued to the block. See usePopoverPosition.
+  const { toLocal } = usePopoverPosition();
+  const toolbarPosition = computed(() =>
+    toLocal({ top: boundingTop.value - 8, left: boundingLeft.value }),
+  );
 
   function handleDoubleClick(): void {
     isEditing.value = true;
