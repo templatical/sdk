@@ -41,11 +41,25 @@
 
 Things that are usually paid features in commercial editors — open-source in Templatical:
 
-- **Custom blocks with API-backed data sources** — register your own block types whose content is rendered from a static template *or* fetched live from your API at preview time. Typically a paid-tier feature in commercial editors.
+- **Custom blocks with API-backed data sources** — register your own block types whose content is rendered from a static template _or_ fetched live from your API at preview time. Typically a paid-tier feature in commercial editors.
 - **Merge tags with pluggable syntax** — `{{handlebars}}`, `{liquid}`, `${js}`, or your own — with automatic human-readable label replacement directly in the editor canvas. Build your CRM-aware tag picker in minutes.
 - **Display conditions** — show/hide blocks based on recipient attributes, with live preview in the editor.
 - **Full theming via design tokens** — 27 OKLch tokens, custom fonts, dark mode, complete theme overrides. No CSS hacking, no paid tier.
 - **Template & block defaults** — define your brand once. New templates and new blocks pick up your brand automatically.
+
+### AI — generate emails from a prompt
+
+Describe the email you want and let your coding agent build it — **free, open-source, no backend and no API key.** The [`templatical-email` Agent Skill](./skills/templatical-email) teaches Claude Code, Cursor, Claude Desktop, or any [Agent Skills](https://code.claude.com/docs/en/skills)–compatible agent your template format, so it generates valid Templatical JSON and validates it against the block schema — then you refine the result in the editor. The agent is the inference; nothing is sent to us.
+
+```text
+# Claude Code
+/plugin marketplace add templatical/sdk
+/plugin install templatical-email@templatical
+```
+
+Or copy `skills/templatical-email/` into any agent's skills folder. [Skill guide →](https://docs.templatical.com/guide/agent-skill)
+
+> Want a hosted, managed experience instead — AI chat inside the editor, tuned prompts, an MCP server we run? That's the Templatical Cloud tier (below).
 
 > **Cloud features** — AI rewrite, AI chat, real-time collaboration with block locking, comments, snapshots and version history, saved modules, hosted media library, template scoring, test email sending, MCP integration, multi-tenancy, headless API, and more — are part of the Templatical Cloud tier currently in development. The Cloud implementation is also open code in `@templatical/core/cloud`. [Learn more about Cloud →](https://docs.templatical.com/cloud/)
 
@@ -68,14 +82,14 @@ npm install @templatical/editor @templatical/renderer
 ```
 
 ```js
-import { init } from '@templatical/editor';
-import '@templatical/editor/style.css';
+import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   onChange(content) {
     // content is JSON — store it, version it, send it anywhere
-    console.log('Template updated:', content);
+    console.log("Template updated:", content);
   },
 });
 
@@ -91,17 +105,17 @@ const mjml = await editor.toMjml();
 
 ## Packages
 
-| Package | Description | License |
-|---------|-------------|---------|
-| [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) | Visual drag-and-drop editor | [FSL-1.1-MIT](./LICENSE) |
-| [`@templatical/core`](https://www.npmjs.com/package/@templatical/core) | Framework-agnostic editor logic, state, history | [FSL-1.1-MIT](./LICENSE) |
-| [`@templatical/media-library`](https://www.npmjs.com/package/@templatical/media-library) | Media library — composable, components, standalone SDK | [FSL-1.1-MIT](./LICENSE) |
-| [`@templatical/types`](https://www.npmjs.com/package/@templatical/types) | Shared TypeScript types and block factories | [MIT](./LICENSE-MIT) |
-| [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) | JSON → MJML → HTML renderer (browser + Node) | [MIT](./LICENSE-MIT) |
-| [`@templatical/quality`](https://www.npmjs.com/package/@templatical/quality) | Accessibility linter for templates (browser + Node) | [MIT](./LICENSE-MIT) |
-| [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert BeeFree templates to Templatical format | [MIT](./LICENSE-MIT) |
-| [`@templatical/import-unlayer`](https://www.npmjs.com/package/@templatical/import-unlayer) | Convert Unlayer templates to Templatical format | [MIT](./LICENSE-MIT) |
-| [`@templatical/import-html`](https://www.npmjs.com/package/@templatical/import-html) | Convert HTML email templates (table-based) to Templatical format | [MIT](./LICENSE-MIT) |
+| Package                                                                                    | Description                                                      | License                  |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- | ------------------------ |
+| [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor)                 | Visual drag-and-drop editor                                      | [FSL-1.1-MIT](./LICENSE) |
+| [`@templatical/core`](https://www.npmjs.com/package/@templatical/core)                     | Framework-agnostic editor logic, state, history                  | [FSL-1.1-MIT](./LICENSE) |
+| [`@templatical/media-library`](https://www.npmjs.com/package/@templatical/media-library)   | Media library — composable, components, standalone SDK           | [FSL-1.1-MIT](./LICENSE) |
+| [`@templatical/types`](https://www.npmjs.com/package/@templatical/types)                   | Shared TypeScript types and block factories                      | [MIT](./LICENSE-MIT)     |
+| [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer)             | JSON → MJML → HTML renderer (browser + Node)                     | [MIT](./LICENSE-MIT)     |
+| [`@templatical/quality`](https://www.npmjs.com/package/@templatical/quality)               | Accessibility linter for templates (browser + Node)              | [MIT](./LICENSE-MIT)     |
+| [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert BeeFree templates to Templatical format                  | [MIT](./LICENSE-MIT)     |
+| [`@templatical/import-unlayer`](https://www.npmjs.com/package/@templatical/import-unlayer) | Convert Unlayer templates to Templatical format                  | [MIT](./LICENSE-MIT)     |
+| [`@templatical/import-html`](https://www.npmjs.com/package/@templatical/import-html)       | Convert HTML email templates (table-based) to Templatical format | [MIT](./LICENSE-MIT)     |
 
 ## Why FSL-1.1-MIT?
 
@@ -121,6 +135,7 @@ The only restriction: don't repackage Templatical itself as a directly competing
 - [Block Reference](https://docs.templatical.com/guide/blocks) — all 14 block types
 - [Theming](https://docs.templatical.com/guide/theming) — design tokens, dark mode, custom fonts
 - [Custom Blocks](https://docs.templatical.com/guide/custom-blocks) — extend with your own
+- [AI Agent Skill](https://docs.templatical.com/guide/agent-skill) — generate emails from a prompt in your own agent
 - [Cloud (AI, Collab, Comments)](https://docs.templatical.com/cloud/) — optional managed tier
 - [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)
 - [Migrating from Unlayer](https://docs.templatical.com/guide/migration-from-unlayer)
