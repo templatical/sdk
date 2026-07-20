@@ -20,6 +20,7 @@ import type {
   MediaItem,
   MediaRequestContext,
 } from "@templatical/media-library";
+import type { HtmlBlockPreviewConfig } from "../utils/resolveHtmlBlockPreview";
 
 export interface TemplaticalCloudEditorConfig {
   container: string | HTMLElement;
@@ -110,6 +111,20 @@ export interface TemplaticalCloudEditorConfig {
    * editor config for details.
    */
   paletteBlocks?: string[];
+
+  /**
+   * Render each HTML block's raw content as a live preview in the editor
+   * canvas instead of the static placeholder card. **Off by default.** Accepts
+   * `true` (shorthand for `{ enabled: true }`) or `{ enabled: boolean }`.
+   *
+   * Content is rendered verbatim inside a sandboxed `<iframe>`
+   * (`sandbox="allow-same-origin"`, no `allow-scripts`), so scripts never run
+   * and styles can't bleed. Preview-only — export is unaffected. See
+   * `htmlBlockPreview` on the OSS editor config for details.
+   *
+   * @default false
+   */
+  htmlBlockPreview?: HtmlBlockPreviewConfig;
 
   fonts?: FontsConfig;
   onChange?: (content: TemplateContent) => void;

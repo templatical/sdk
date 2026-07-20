@@ -51,6 +51,7 @@ unmount();
 | `displayConditions` | `DisplayConditionsConfig`                                         | No       | Konfiguration für Anzeigebedingungen. Siehe [Anzeigebedingungen](/de/guide/display-conditions)                                                                                                                                                                                                                                    |
 | `customBlocks`      | `CustomBlockDefinition[]`                                         | No       | Definitionen für benutzerdefinierte Blocktypen. Siehe [Benutzerdefinierte Blöcke](/de/guide/custom-blocks)                                                                                                                                                                                                                        |
 | `paletteBlocks`     | `string[]`                                                        | No       | Allowlist + Reihenfolge für die Block-Palette. Nur die aufgeführten Typen erscheinen, in dieser Reihenfolge; nicht aufgeführte integrierte Blöcke werden ausgeblendet. Integrierte Blöcke über ihren reinen Typ (`'image'`), benutzerdefinierte über den `custom:`-präfixierten Typ (`'custom:qrcode'`). Siehe [Block-Palette anpassen](#block-palette-anpassen) |
+| `htmlBlockPreview`  | `boolean \| { enabled: boolean }`                                 | No       | Rendert den Inhalt jedes HTML-Blocks als Live-Vorschau in der Leinwand — in einem sandboxed `<iframe>` ohne Skriptausführung — statt des statischen Platzhalters. Standardmäßig `false`. Nur Vorschau; der MJML-/HTML-Export rendert HTML-Blöcke unabhängig davon. Siehe [HTML-Blöcke in der Vorschau](#html-bloecke-in-der-vorschau) |
 | `blockDefaults`     | `BlockDefaults`                                                   | No       | Standard-Property-Überschreibungen für neue Blöcke. Siehe [Standardwerte](/de/guide/defaults)                                                                                                                                                                                                                                     |
 | `templateDefaults`  | `TemplateDefaults`                                                | No       | Standardeinstellungen für leere Templates. Siehe [Standardwerte](/de/guide/defaults)                                                                                                                                                                                                                                              |
 | `fonts`             | `FontsConfig`                                                     | No       | Schriftart-Konfiguration. Siehe [Benutzerdefinierte Schriftarten](/de/guide/fonts)                                                                                                                                                                                                                                                |
@@ -95,6 +96,21 @@ const editor = await init({
 - **Das Filtern der Palette wirkt sich nie auf das Rendering aus.** Das Ausblenden eines Blocktyps entfernt ihn nur aus der Palette — vorhandener Inhalt, der diesen Typ bereits verwendet, wird weiterhin korrekt gerendert. `paletteBlocks` steuert, was Benutzer _einfügen_ können, nicht, was der Editor _anzeigen_ kann.
 
 Lassen Sie `paletteBlocks` weg (oder übergeben Sie ein leeres Array), um die vollständige Standard-Palette anzuzeigen.
+
+### HTML-Blöcke in der Vorschau {#html-bloecke-in-der-vorschau}
+
+Standardmäßig zeigt ein HTML-Block in der Leinwand eine Platzhalterkarte an, anstatt sein Markup zu rendern — der Inhalt wird erst beim Export realisiert. Setzen Sie `htmlBlockPreview`, um den Inhalt jedes HTML-Blocks stattdessen live in der Leinwand zu rendern:
+
+```ts
+const editor = await init({
+  container: "#editor",
+  htmlBlockPreview: true, // Kurzform für { enabled: true }
+});
+```
+
+- **Standardmäßig aus.** Lassen Sie die Option weg (oder übergeben Sie `false` / `{ enabled: false }`), um den statischen Platzhalter beizubehalten.
+- **In einem sandboxed `<iframe>` gerendert.** Der Inhalt wird unverändert in einem `<iframe sandbox="allow-same-origin">` **ohne** `allow-scripts` angezeigt — Skripte und Inline-Event-Handler werden nie ausgeführt, und die Styles des Fragments können nicht in den Rest des Editors gelangen. So wird verhindert, dass beliebiges oder von Mitarbeitenden erstelltes HTML im Origin Ihrer App ausgeführt wird.
+- **Nur Vorschau.** Diese Einstellung steuert die Editor-Leinwand, nicht die Ausgabe — `renderToMjml()` / `editor.toMjml()` rendern HTML-Blöcke unabhängig davon.
 
 ## TemplaticalEditor
 

@@ -390,7 +390,7 @@ const ptBR: typeof en = {
     preview: "Bloco HTML personalizado",
     empty: "Adicione conteúdo HTML no painel",
     sanitizationHint:
-      "Scripts e elementos não seguros são removidos na exportação.",
+      "O HTML é exportado como está e não é sanitizado — garanta que o conteúdo seja seguro.",
   },
 
   // Toolbar - Common block settings
