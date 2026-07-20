@@ -394,7 +394,7 @@ const de: typeof en = {
     preview: "Benutzerdefinierter HTML-Block",
     empty: "HTML-Inhalt im Bereich hinzufügen",
     sanitizationHint:
-      "Skripte und unsichere Elemente werden beim Export entfernt.",
+      "HTML wird unverändert exportiert und nicht bereinigt – stellen Sie sicher, dass der Inhalt sicher ist.",
   },
 
   // Toolbar - Common block settings

@@ -25,6 +25,7 @@ import Editor from "./Editor.vue";
 import { loadTranslations, loadCloudTranslations } from "./i18n";
 import { useFonts } from "./composables";
 import { toMjmlForInstance } from "./utils/toMjml";
+import type { HtmlBlockPreviewConfig } from "./utils/resolveHtmlBlockPreview";
 // Compiled-CSS-as-string for shadow root adoption. The `virtual:editor-css`
 // module is owned by `scripts/inline-style-css-plugin.ts` — at build time it
 // captures every emitted CSS asset (Tailwind utilities + every `.vue` SFC
@@ -119,6 +120,25 @@ export interface TemplaticalEditorConfig {
    * block type still renders correctly.
    */
   paletteBlocks?: string[];
+
+  /**
+   * Render each HTML block's raw content as a live preview in the editor
+   * canvas instead of the static placeholder card. **Off by default.**
+   *
+   * ```ts
+   * htmlBlockPreview: true                 // shorthand for { enabled: true }
+   * htmlBlockPreview: { enabled: true }
+   * ```
+   *
+   * The content is rendered verbatim inside a sandboxed `<iframe>`
+   * (`sandbox="allow-same-origin"`, **no** `allow-scripts`): scripts and
+   * inline event handlers never execute and styles can't bleed into the rest
+   * of the editor. This is a preview-only setting — the MJML/HTML export path
+   * renders HTML blocks regardless of it.
+   *
+   * @default false
+   */
+  htmlBlockPreview?: HtmlBlockPreviewConfig;
 
   fonts?: FontsConfig;
 
@@ -682,6 +702,7 @@ export type {
 export type { UseFontsReturn, FontOption } from "./composables/useFonts";
 export { useFonts } from "./composables/useFonts";
 export type { EditorCapabilities } from "./types/editor-capabilities";
+export type { HtmlBlockPreviewConfig } from "./utils/resolveHtmlBlockPreview";
 
 export {
   getSupportedLocales,

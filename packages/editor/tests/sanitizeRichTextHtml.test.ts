@@ -22,8 +22,14 @@ describe("sanitizeRichTextHtml", () => {
   });
 
   it("strips <style> and <iframe>", () => {
+    // The iframe src is intentionally `about:blank` (inert), not a real URL:
+    // the sanitizer parses input via DOMParser, and happy-dom eagerly loads an
+    // iframe's src even from a parsed-but-uninserted document — a real URL here
+    // fires an actual network fetch that then throws an "AsyncTaskManager
+    // destroyed" error at environment teardown. The assertion is tag-based
+    // (iframe stripped regardless of src), so the value doesn't matter.
     const result = sanitizeRichTextHtml(
-      "<style>body{display:none}</style><iframe src=\"https://evil.com\"></iframe><p>ok</p>",
+      '<style>body{display:none}</style><iframe src="about:blank"></iframe><p>ok</p>',
     );
     expect(result).not.toContain("<style");
     expect(result).not.toContain("<iframe");
