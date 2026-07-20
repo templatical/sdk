@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import ColorPicker from "../ColorPicker.vue";
 import MergeTagInput from "../MergeTagInput.vue";
+import ToggleSwitch from "../ToggleSwitch.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
   inputClass,
@@ -101,23 +102,13 @@ function updateCustomWidth(raw: string): void {
       :placeholder="t.button.urlPlaceholder"
       @update:model-value="updateField('url', $event)"
     />
-    <label
+    <ToggleSwitch
       v-if="block.url"
-      class="tpl:mt-2 tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
-    >
-      <input
-        type="checkbox"
-        class="tpl:size-3.5 tpl:cursor-pointer tpl:accent-[var(--tpl-primary)]"
-        :checked="block.openInNewTab ?? false"
-        @change="
-          updateField(
-            'openInNewTab',
-            ($event.target as HTMLInputElement).checked,
-          )
-        "
-      />
-      {{ t.button.openInNewTab }}
-    </label>
+      class="tpl:mt-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
+      :model-value="block.openInNewTab ?? false"
+      :label="t.button.openInNewTab"
+      @update:model-value="updateField('openInNewTab', $event)"
+    />
   </div>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.button.background }}</label>

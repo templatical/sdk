@@ -132,6 +132,7 @@ const de: typeof en = {
     ratio21: "2:1 Verhältnis",
     borderRadius: "Eckenradius",
     wrapperEnable: "Wrapper hinzufügen",
+    stackOnMobile: "Auf Mobilgeräten stapeln",
   },
 
   // Text editor link dialog

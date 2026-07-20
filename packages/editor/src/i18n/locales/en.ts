@@ -127,6 +127,7 @@ export default {
     ratio21: "2:1 Ratio",
     borderRadius: "Border Radius",
     wrapperEnable: "Add wrapper",
+    stackOnMobile: "Stack on mobile",
   },
 
   // Text editor link dialog
