@@ -130,6 +130,7 @@ const es: typeof en = {
     ratio21: "Proporción 2:1",
     borderRadius: "Radio del borde",
     wrapperEnable: "Añadir contenedor",
+    stackOnMobile: "Apilar en móvil",
   },
 
   // Text editor link dialog
@@ -391,7 +392,7 @@ const es: typeof en = {
     preview: "Bloque HTML personalizado",
     empty: "Añadir contenido HTML en el panel",
     sanitizationHint:
-      "Los scripts y elementos no seguros se eliminan al exportar.",
+      "El HTML se exporta tal cual y no se sanea — asegúrate de que el contenido sea seguro.",
   },
 
   // Toolbar - Common block settings

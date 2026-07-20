@@ -130,6 +130,7 @@ const ca: typeof en = {
     ratio21: "Proporció 2:1",
     borderRadius: "Radi de la vora",
     wrapperEnable: "Afegeix un contenidor",
+    stackOnMobile: "Apila en mòbil",
   },
 
   // Text editor link dialog
@@ -391,7 +392,7 @@ const ca: typeof en = {
     preview: "Bloc HTML personalitzat",
     empty: "Afegeix contingut HTML al panell",
     sanitizationHint:
-      "Els scripts i els elements no segurs s'eliminen en exportar.",
+      "L'HTML s'exporta tal qual i no es depura — assegura't que el contingut sigui segur.",
   },
 
   // Toolbar - Common block settings

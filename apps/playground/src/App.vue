@@ -71,6 +71,7 @@ import {
   MonitorSmartphone,
   Layers,
   Square,
+  Code,
 } from "@lucide/vue";
 import {
   usePlaygroundI18n,
@@ -583,6 +584,7 @@ const displayConditions = {
 
 let selectedContent: TemplateContent | null = null;
 let selectedCustomBlocks: CustomBlockDefinition[] | undefined;
+let currentHtmlBlockPreview: boolean | undefined;
 let pendingEditorInit = false;
 
 function chooseTemplate(
@@ -591,6 +593,9 @@ function chooseTemplate(
 ): void {
   selectedContent = content;
   selectedCustomBlocks = template?.customBlocks;
+  // Per-template opt-in for the SDK's live HTML-block preview; reset on each
+  // template open so other templates keep the default static placeholder.
+  currentHtmlBlockPreview = template?.htmlBlockPreview;
   // A template can opt out of the playground's consumer-owned `onRequest`
   // modal — that's how the Welcome Email template demos the SDK's built-in
   // picker without making the user flip a config toggle. The flag is
@@ -945,6 +950,7 @@ async function initEditor(): Promise<void> {
       },
       blockDefaults: currentBlockDefaults,
       templateDefaults: currentTemplateDefaults,
+      htmlBlockPreview: currentHtmlBlockPreview,
       theme: { ...currentTheme, dark: currentDarkTheme },
       uiTheme: uiTheme.value,
       locale: sdkLocale.value,
@@ -3087,6 +3093,12 @@ onUnmounted(() => {
                   />
                   <MonitorSmartphone
                     v-else-if="feature.icon === 'responsive'"
+                    :size="16"
+                    :stroke-width="1.5"
+                    aria-hidden="true"
+                  />
+                  <Code
+                    v-else-if="feature.icon === 'html'"
                     :size="16"
                     :stroke-width="1.5"
                     aria-hidden="true"

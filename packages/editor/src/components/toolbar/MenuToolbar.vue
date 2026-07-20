@@ -2,6 +2,7 @@
 import ColorPicker from "../ColorPicker.vue";
 import MergeTagInput from "../MergeTagInput.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
+import ToggleSwitch from "../ToggleSwitch.vue";
 import FieldRow from "./FieldRow.vue";
 import NumberWithSuffix from "./NumberWithSuffix.vue";
 import { useI18n } from "../../composables/useI18n";
@@ -111,27 +112,15 @@ function removeMenuItem(itemId: string): void {
           @update:model-value="updateMenuItem(item.id, 'url', $event)"
         />
         <div
-          class="tpl:flex tpl:items-center tpl:gap-3 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
+          class="tpl:flex tpl:flex-wrap tpl:items-center tpl:gap-x-3 tpl:gap-y-1.5 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
         >
-          <label
+          <ToggleSwitch
             v-for="toggle in ITEM_TOGGLES"
             :key="toggle.key"
-            class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1"
-          >
-            <input
-              type="checkbox"
-              :checked="item[toggle.key]"
-              class="tpl:accent-[var(--tpl-primary)]"
-              @change="
-                updateMenuItem(
-                  item.id,
-                  toggle.key,
-                  ($event.target as HTMLInputElement).checked,
-                )
-              "
-            />
-            {{ toggle.label }}
-          </label>
+            :model-value="item[toggle.key]"
+            :label="toggle.label"
+            @update:model-value="updateMenuItem(item.id, toggle.key, $event)"
+          />
         </div>
         <div class="tpl:flex tpl:items-center tpl:gap-2">
           <label :class="labelClass" class="tpl:!mb-0">{{

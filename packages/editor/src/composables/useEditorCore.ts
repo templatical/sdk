@@ -55,6 +55,7 @@ import {
   BLOCK_REGISTRY_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   PALETTE_BLOCKS_KEY,
+  HTML_BLOCK_PREVIEW_KEY,
   CUSTOM_BLOCK_STYLESHEETS_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
@@ -96,6 +97,10 @@ import {
 } from "./useBlockRegistry";
 import { useCustomBlockStylesheets } from "./useCustomBlockStylesheets";
 import { registerBuiltInBlocks } from "../utils/registerBuiltInBlocks";
+import {
+  resolveHtmlBlockPreview,
+  type HtmlBlockPreviewConfig,
+} from "../utils/resolveHtmlBlockPreview";
 import { handleEditorKeydown } from "../utils/keyboardShortcuts";
 
 // Block components — shared between OSS and Cloud editors
@@ -193,6 +198,7 @@ export interface UseEditorCoreOptions {
     blockDefaults?: BlockDefaults;
     customBlocks?: CustomBlockDefinition[];
     paletteBlocks?: string[];
+    htmlBlockPreview?: HtmlBlockPreviewConfig;
     mergeTags?: MergeTagsConfig;
     logicTags?: LogicTagsConfig;
     displayConditions?: DisplayConditionsConfig;
@@ -421,6 +427,10 @@ export function useEditorCore(
   provide(BLOCK_REGISTRY_KEY, registry);
   provide(CUSTOM_BLOCK_DEFINITIONS_KEY, config.customBlocks ?? []);
   provide(PALETTE_BLOCKS_KEY, config.paletteBlocks);
+  provide(
+    HTML_BLOCK_PREVIEW_KEY,
+    resolveHtmlBlockPreview(config.htmlBlockPreview),
+  );
   // Reactive deduped list of custom-block stylesheets currently in use. The
   // `<CustomBlockStylesheets>` component reads this and renders `<style>` tags
   // into the editor root so authored CSS previews live in the canvas. The

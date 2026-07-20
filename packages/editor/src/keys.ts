@@ -72,6 +72,14 @@ export const CUSTOM_BLOCK_DEFINITIONS_KEY: InjectionKey<
 export const PALETTE_BLOCKS_KEY: InjectionKey<string[] | undefined> =
   Symbol("paletteBlocks");
 
+/**
+ * Whether HTML blocks render a live sandboxed-iframe preview in the canvas
+ * (`config.htmlBlockPreview`), normalized to a boolean. `false` (the default)
+ * keeps the static placeholder card. Consumed by `HtmlBlock.vue`.
+ */
+export const HTML_BLOCK_PREVIEW_KEY: InjectionKey<boolean> =
+  Symbol("htmlBlockPreview");
+
 export const CUSTOM_BLOCK_STYLESHEETS_KEY: InjectionKey<ComputedRef<string[]>> =
   Symbol("customBlockStylesheets");
 

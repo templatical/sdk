@@ -35,6 +35,20 @@ describe('ColorPicker', () => {
     expect(emitted![0]).toEqual(['#123456']);
   });
 
+  it('anchors the popover with tpl:absolute (transform-proof), not tpl:fixed', async () => {
+    // A `fixed` popover resolves against a transformed ancestor of the editor
+    // and lands off-target; `absolute` inside the (positioned) popover root,
+    // fed root-local coords, does not. See usePopoverPosition.
+    const wrapper = mountEditor(ColorPicker, {
+      props: { modelValue: '#000' },
+    });
+    await wrapper.find('button').trigger('click');
+    const popover = wrapper.find('.tpl-color-popover');
+    expect(popover.exists()).toBe(true);
+    expect(popover.classes()).toContain('tpl:absolute');
+    expect(popover.classes()).not.toContain('tpl:fixed');
+  });
+
   it('toggles popover visibility when the swatch is clicked', async () => {
     const wrapper = mountEditor(ColorPicker, {
       props: { modelValue: '#000' },

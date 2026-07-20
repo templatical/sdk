@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
+import { VueDraggable } from 'vue-draggable-plus';
 import Sidebar from '../src/components/Sidebar.vue';
 import { mountEditor } from './helpers/mount';
 import {
@@ -53,6 +54,31 @@ describe('Sidebar', () => {
       'spacer',
       'html',
     ]);
+  });
+
+  it('collapses the rail on drag-end, even after mouseleave was suppressed mid-drag', async () => {
+    // Repro: hover expands the rail; a drag starts (choose); the cursor leaves
+    // the rail mid-drag but the collapse is suppressed while dragging; on drop
+    // (end) no fresh mouseleave fires because the cursor is out in the canvas.
+    // handleDragEnd must collapse the rail itself, or it stays stuck open.
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+    const rail = wrapper.get('aside.tpl-sidebar-rail');
+    const draggable = wrapper.findComponent(VueDraggable);
+
+    await rail.trigger('mouseenter');
+    expect(rail.attributes('style')).toContain('width: 200px');
+
+    // Drag begins; leaving the rail mid-drag must NOT collapse it (the
+    // getBoundingClientRect-during-collapse ghost bug this guards against).
+    draggable.vm.$emit('choose');
+    await rail.trigger('mouseleave');
+    expect(rail.attributes('style')).toContain('width: 200px');
+
+    // Drop: the rail collapses.
+    draggable.vm.$emit('end');
+    await wrapper.vm.$nextTick();
+    expect(rail.attributes('style')).toContain('width: 48px');
   });
 
   it('palette list is a scroll region so tall block lists stay reachable on short viewports (#231)', () => {

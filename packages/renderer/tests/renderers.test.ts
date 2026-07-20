@@ -234,6 +234,54 @@ describe('renderBlock', () => {
     expect(result).toContain('&nbsp;');
   });
 
+  it('wraps columns in mj-group when stackOnMobile is false', () => {
+    const block = createSectionBlock({
+      columns: '2',
+      stackOnMobile: false,
+      children: [
+        [createParagraphBlock({ content: '<p>Left</p>' })],
+        [createParagraphBlock({ content: '<p>Right</p>' })],
+      ],
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('<mj-group>');
+    expect(result).toContain('</mj-group>');
+    expect(result).toContain('<mj-column width="50%"');
+    expect(result).toContain('Left');
+    expect(result).toContain('Right');
+  });
+
+  it('does not wrap columns in mj-group when stackOnMobile is unset', () => {
+    const block = createSectionBlock({
+      columns: '2',
+      children: [
+        [createParagraphBlock({ content: '<p>Left</p>' })],
+        [createParagraphBlock({ content: '<p>Right</p>' })],
+      ],
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).not.toContain('<mj-group>');
+    expect(result).toContain('<mj-column width="50%"');
+  });
+
+  it('does not wrap columns in mj-group when stackOnMobile is explicitly true', () => {
+    const block = createSectionBlock({
+      columns: '2',
+      stackOnMobile: true,
+      children: [[createParagraphBlock({ content: '<p>Left</p>' })], []],
+    });
+    expect(renderBlock(block, ctx)).not.toContain('<mj-group>');
+  });
+
+  it('does not emit mj-group for a single-column section even when stackOnMobile is false', () => {
+    const block = createSectionBlock({
+      columns: '1',
+      stackOnMobile: false,
+      children: [[createParagraphBlock({ content: '<p>Only</p>' })]],
+    });
+    expect(renderBlock(block, ctx)).not.toContain('<mj-group>');
+  });
+
   it('renders empty string for empty menu', () => {
     const block = createMenuBlock({ items: [] });
     expect(renderBlock(block, ctx)).toBe('');

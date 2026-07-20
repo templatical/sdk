@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import TplModal from "../../components/TplModal.vue";
+import ToggleSwitch from "../../components/ToggleSwitch.vue";
 import { useI18n } from "../../composables";
 import { useCloudI18nStrict } from "../../composables";
 import {
@@ -155,26 +156,21 @@ function handleKeydown(event: KeyboardEvent): void {
         <div
           class="tpl:max-h-40 tpl:space-y-1 tpl:overflow-y-auto tpl:rounded-md tpl:border tpl:p-2 tpl:border-[var(--tpl-border)]"
         >
-          <label
+          <ToggleSwitch
             v-for="(block, index) in topLevelBlocks"
             :key="block.id"
-            class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:rounded-sm tpl:px-2 tpl:py-1.5 tpl:text-sm tpl:transition-colors tpl:duration-100"
+            class="tpl:rounded-sm tpl:px-2 tpl:py-1.5 tpl:text-sm tpl:transition-colors tpl:duration-100"
             :style="{
               color: 'var(--tpl-text)',
               backgroundColor: selectedBlockIds.has(block.id)
                 ? 'var(--tpl-primary-light)'
                 : 'transparent',
             }"
-          >
-            <input
-              type="checkbox"
-              :checked="selectedBlockIds.has(block.id)"
-              class="tpl:accent-[var(--tpl-primary)]"
-              :disabled="isSaving"
-              @change="toggleBlock(block.id)"
-            />
-            {{ blockLabel(block, index) }}
-          </label>
+            :model-value="selectedBlockIds.has(block.id)"
+            :label="blockLabel(block, index)"
+            :disabled="isSaving"
+            @update:model-value="toggleBlock(block.id)"
+          />
         </div>
       </div>
 

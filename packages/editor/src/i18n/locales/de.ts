@@ -132,6 +132,7 @@ const de: typeof en = {
     ratio21: "2:1 Verhältnis",
     borderRadius: "Eckenradius",
     wrapperEnable: "Wrapper hinzufügen",
+    stackOnMobile: "Auf Mobilgeräten stapeln",
   },
 
   // Text editor link dialog
@@ -393,7 +394,7 @@ const de: typeof en = {
     preview: "Benutzerdefinierter HTML-Block",
     empty: "HTML-Inhalt im Bereich hinzufügen",
     sanitizationHint:
-      "Skripte und unsichere Elemente werden beim Export entfernt.",
+      "HTML wird unverändert exportiert und nicht bereinigt – stellen Sie sicher, dass der Inhalt sicher ist.",
   },
 
   // Toolbar - Common block settings

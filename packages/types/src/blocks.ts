@@ -47,6 +47,13 @@ export interface SectionBlock extends BaseBlock {
   type: "section";
   columns: ColumnLayout;
   children: Block[][];
+  /**
+   * Whether columns stack vertically on mobile. Absent or `true` keeps MJML's
+   * default responsive behavior (columns stack below 480px). `false` renders
+   * the columns inside an `<mj-group>` so they stay side-by-side on mobile,
+   * proportionally shrunk to fit.
+   */
+  stackOnMobile?: boolean;
   /** Corner radius in px. Omitted/0 = square corners. */
   borderRadius?: number;
   /** Optional outer frame (rendered as an `mj-wrapper` around the section). */

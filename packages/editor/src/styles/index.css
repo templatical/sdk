@@ -268,6 +268,14 @@
 }
 
 :where(.tpl) button {
+    /* Zero the UA default button padding (`1px 6px` in Chromium). Preflight
+       is omitted, so without this a native <button> with no padding utility
+       keeps browser padding — which, in shadow-DOM mode (no host reset to
+       mask it), shrinks fixed-size controls like ToggleSwitch's track and
+       pushes/overflows the knob. `:where()` keeps specificity 0 so any
+       per-button `tpl:p-*` / `tpl:px-*` utility still wins. */
+    padding: 0;
+    margin: 0;
     border: none;
     background: none;
     cursor: pointer;
@@ -339,11 +347,16 @@
 }
 
 /* Popover mount target — Teleport root for toolbars, link dialog, modals.
-   Empty by default; descendants are popovers/modals that position
-   themselves via `position: fixed`. The explicit z-index (above the modal
-   token) establishes a stacking context that wins over editor chrome
-   (header z-50, sidebars), since the popover root lives inside the editor
-   container rather than at document.body. */
+   Empty by default. `position: relative` makes it the positioning context
+   for its children: coordinate-computed popovers (color picker, rich-text
+   toolbars) mount here `position: absolute` in root-LOCAL coordinates (see
+   usePopoverPosition) rather than `fixed` in viewport coordinates. That is
+   deliberate — a consumer `transform`/`filter` on an ancestor of the editor
+   would establish a containing block and offset a `fixed` popover; anchoring
+   `absolute` inside this (relative) root cancels that ancestor offset.
+   The explicit z-index (above the modal token) establishes a stacking
+   context that wins over editor chrome (header z-50, sidebars), since the
+   popover root lives inside the editor container rather than at document.body. */
 .tpl-popover-root {
     position: relative;
     /* Literal — `var(--z-modal)` resolves to :root which is unreachable
@@ -543,7 +556,18 @@
    time (`css(ghostEl, 'transition', '')`), but an empty inline value lets
    the inherited class rule apply. Force `transition: none` here so the
    transform tracks the cursor 1:1. Same logic for any `animation`
-   inherited from the source. */
+   inherited from the source.
+
+   Positioning caveat: Sortable positions this ghost with `position: fixed`
+   internally. If a consumer applies `transform`/`filter`/`will-change` to an
+   ancestor of the editor's mount point, that ancestor becomes the containing
+   block for the fixed ghost and it renders offset from the cursor. We keep the
+   ghost inside the shadow root (so it stays styled/themed) and deliberately do
+   NOT set Sortable's `fallbackOnBody`: mounting the clone on document.body
+   would fix the offset but strip its shadow-scoped styles (unthemed, and this
+   anti-lag reset wouldn't apply). Supported contract: do not transform an
+   ancestor of the editor container (see the init() `container` option and the
+   Shadow DOM docs guide). */
 .sortable-fallback {
     transition: none !important;
     animation: none !important;

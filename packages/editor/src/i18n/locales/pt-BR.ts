@@ -129,6 +129,7 @@ const ptBR: typeof en = {
     ratio21: "Proporção 2:1",
     borderRadius: "Arredondamento das Bordas",
     wrapperEnable: "Adicionar wrapper",
+    stackOnMobile: "Empilhar no celular",
   },
 
   // Text editor link dialog
@@ -390,7 +391,7 @@ const ptBR: typeof en = {
     preview: "Bloco HTML personalizado",
     empty: "Adicione conteúdo HTML no painel",
     sanitizationHint:
-      "Scripts e elementos não seguros são removidos na exportação.",
+      "O HTML é exportado como está e não é sanitizado — garanta que o conteúdo seja seguro.",
   },
 
   // Toolbar - Common block settings

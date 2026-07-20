@@ -184,6 +184,8 @@ interface SectionBlock extends BaseBlock {
   type: 'section';
   columns: ColumnLayout;
   children: Block[][];      // Array von Spalten, die jeweils Blöcke enthalten
+  stackOnMobile?: boolean;  // fehlt/true: Spalten stapeln auf Mobilgeräten (MJML-Standard).
+                            // false: als <mj-group> gerendert, bleiben nebeneinander.
 }
 
 type ColumnLayout = '1' | '2' | '3' | '2-1' | '1-2';

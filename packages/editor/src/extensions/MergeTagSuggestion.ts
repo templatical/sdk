@@ -231,12 +231,22 @@ export function createMergeTagPopup(
     // and lets pathological scroll loops drag the popup further
     // each tick.
     if (rect.bottom < 0 || rect.top > window.innerHeight) return;
-    container.style.position = "fixed";
-    container.style.left = `${rect.left}px`;
+    // Position `absolute` relative to the mount target — the popover root
+    // (`position: relative`) or the <body> fallback. The caret rect is in
+    // viewport space, so subtract the offset parent's rect to get local
+    // coords: a transformed ancestor of the editor becomes the containing
+    // block for a `fixed` popup and would offset it, but not for an
+    // `absolute` popup anchored inside the positioned popover root. The
+    // off-screen freeze and flip-above decisions still use viewport metrics.
+    container.style.position = "absolute";
     container.style.zIndex = "9999";
+    const origin = container.offsetParent?.getBoundingClientRect();
+    const originTop = origin?.top ?? 0;
+    const originLeft = origin?.left ?? 0;
+    container.style.left = `${rect.left - originLeft}px`;
     // Place below caret first; offsetHeight is sync-readable after
     // the Vue app has mounted (or after onUpdate's reactive flush).
-    container.style.top = `${rect.bottom}px`;
+    container.style.top = `${rect.bottom - originTop}px`;
     const popupHeight = container.offsetHeight;
     if (popupHeight === 0) return;
     const spaceBelow = window.innerHeight - rect.bottom;
@@ -244,7 +254,7 @@ export function createMergeTagPopup(
       // Not enough room below — flip above. Clamp to 0 so the
       // popup never positions off the top of the viewport.
       const flippedTop = Math.max(0, rect.top - popupHeight);
-      container.style.top = `${flippedTop}px`;
+      container.style.top = `${flippedTop - originTop}px`;
     }
   }
 

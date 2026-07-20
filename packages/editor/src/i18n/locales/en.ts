@@ -127,6 +127,7 @@ export default {
     ratio21: "2:1 Ratio",
     borderRadius: "Border Radius",
     wrapperEnable: "Add wrapper",
+    stackOnMobile: "Stack on mobile",
   },
 
   // Text editor link dialog
@@ -386,7 +387,8 @@ export default {
     content: "HTML Content",
     preview: "Custom HTML block",
     empty: "Add HTML content in the panel",
-    sanitizationHint: "Scripts and unsafe elements are removed on export.",
+    sanitizationHint:
+      "HTML is exported as-is and isn't sanitized — make sure the content is safe.",
   },
 
   // Toolbar - Common block settings
