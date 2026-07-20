@@ -137,7 +137,7 @@ const {
         :data-tpl-theme="tplUiTheme"
         role="toolbar"
         :aria-label="t.titleEditor.toolbar"
-        class="tpl tpl-text-toolbar tpl:fixed tpl:z-popover tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:shadow-lg"
+        class="tpl tpl-text-toolbar tpl:absolute tpl:z-popover tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:shadow-lg"
         :style="{
           ...themeStyles,
           top: `${toolbarPosition.top}px`,

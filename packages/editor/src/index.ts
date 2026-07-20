@@ -46,6 +46,18 @@ import editorStylesInline from "virtual:editor-css";
 // ---------------------------------------------------------------------------
 
 export interface TemplaticalEditorConfig {
+  /**
+   * Where to mount the editor — a CSS selector or an `HTMLElement`.
+   *
+   * Layout caveat: do NOT apply `transform`, `filter`, `perspective`, or
+   * `will-change` to an ancestor of this element. Each establishes a CSS
+   * containing block for `position: fixed`, which offsets the editor's
+   * floating UI (color pickers, rich-text toolbars) and its drag ghost away
+   * from their anchor — even when the transform's computed value is `none`
+   * (an active/animated transform still promotes the element). For a
+   * scroll/entrance effect on a wrapper, animate `opacity` instead of
+   * `transform`.
+   */
   container: string | HTMLElement;
   content?: TemplateContent;
 
