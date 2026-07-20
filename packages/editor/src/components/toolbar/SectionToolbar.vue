@@ -8,6 +8,7 @@ import {
 } from "../../constants/styleConstants";
 import ColorPicker from "../ColorPicker.vue";
 import SpacingControl from "../SpacingControl.vue";
+import ToggleSwitch from "../ToggleSwitch.vue";
 import type {
   ColumnLayout,
   SectionBlock,
@@ -91,19 +92,12 @@ function handleWrapperRadius(event: Event): void {
     </select>
   </div>
   <div v-if="block.columns !== '1'" class="tpl:mb-3.5">
-    <label
-      class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text)]"
-    >
-      <input
-        type="checkbox"
-        class="tpl:accent-[var(--tpl-primary)]"
-        :checked="block.stackOnMobile !== false"
-        @change="
-          handleStackOnMobileChange(($event.target as HTMLInputElement).checked)
-        "
-      />
-      {{ t.section.stackOnMobile }}
-    </label>
+    <ToggleSwitch
+      class="tpl:text-xs tpl:text-[var(--tpl-text)]"
+      :model-value="block.stackOnMobile !== false"
+      :label="t.section.stackOnMobile"
+      @update:model-value="handleStackOnMobileChange($event)"
+    />
   </div>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.section.borderRadius }}</label>
@@ -120,17 +114,12 @@ function handleWrapperRadius(event: Event): void {
     </div>
   </div>
   <div class="tpl:mb-3.5">
-    <label
-      class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text)]"
-    >
-      <input
-        type="checkbox"
-        class="tpl:accent-[var(--tpl-primary)]"
-        :checked="!!block.wrapper"
-        @change="setWrapperEnabled(($event.target as HTMLInputElement).checked)"
-      />
-      {{ t.section.wrapperEnable }}
-    </label>
+    <ToggleSwitch
+      class="tpl:text-xs tpl:text-[var(--tpl-text)]"
+      :model-value="!!block.wrapper"
+      :label="t.section.wrapperEnable"
+      @update:model-value="setWrapperEnabled($event)"
+    />
     <div
       v-if="block.wrapper"
       class="tpl:mt-3 tpl:ml-0.5 tpl:space-y-3 tpl:border-l tpl:border-[var(--tpl-border)] tpl:pl-3"

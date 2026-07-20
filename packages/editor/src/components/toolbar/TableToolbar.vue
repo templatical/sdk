@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ColorPicker from "../ColorPicker.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
+import ToggleSwitch from "../ToggleSwitch.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
   inputClass,
@@ -132,22 +133,12 @@ function removeTableColumn(colIndex: number): void {
     </div>
   </div>
   <div class="tpl:mb-3.5">
-    <label
-      class="tpl:mb-1.5 tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-    >
-      <input
-        type="checkbox"
-        :checked="block.hasHeaderRow"
-        class="tpl:accent-[var(--tpl-primary)]"
-        @change="
-          updateField(
-            'hasHeaderRow',
-            ($event.target as HTMLInputElement).checked,
-          )
-        "
-      />
-      {{ t.table.hasHeaderRow }}
-    </label>
+    <ToggleSwitch
+      class="tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+      :model-value="block.hasHeaderRow"
+      :label="t.table.hasHeaderRow"
+      @update:model-value="updateField('hasHeaderRow', $event)"
+    />
   </div>
   <div v-if="block.hasHeaderRow" class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.table.headerBackgroundColor }}</label>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import MergeTagInput from "../MergeTagInput.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
+import ToggleSwitch from "../ToggleSwitch.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
   inputClass,
@@ -200,24 +201,19 @@ const { isOver } = useImageDrop({
       :disabled="block.decorative === true"
       @update:model-value="updateField('alt', $event)"
     />
-    <label
-      class="tpl:mt-2 tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
+    <ToggleSwitch
+      class="tpl:mt-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
+      :model-value="block.decorative === true"
+      :label="t.image.decorative"
+      @update:model-value="updateField('decorative', $event)"
     >
-      <input
-        type="checkbox"
-        class="tpl:size-3.5 tpl:cursor-pointer tpl:accent-[var(--tpl-primary)]"
-        :checked="block.decorative === true"
-        @change="
-          updateField('decorative', ($event.target as HTMLInputElement).checked)
-        "
-      />
       <span>
         {{ t.image.decorative }}
         <span class="tpl:block tpl:text-[var(--tpl-text-dim)]">
           {{ t.image.decorativeHint }}
         </span>
       </span>
-    </label>
+    </ToggleSwitch>
   </div>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.image.width }}</label>
@@ -268,22 +264,12 @@ const { isOver } = useImageDrop({
       :placeholder="t.image.imageUrlPlaceholder"
       @update:model-value="updateField('linkUrl', $event)"
     />
-    <label
+    <ToggleSwitch
       v-if="block.linkUrl"
-      class="tpl:mt-2 tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
-    >
-      <input
-        type="checkbox"
-        class="tpl:size-3.5 tpl:cursor-pointer tpl:accent-[var(--tpl-primary)]"
-        :checked="block.linkOpenInNewTab ?? false"
-        @change="
-          updateField(
-            'linkOpenInNewTab',
-            ($event.target as HTMLInputElement).checked,
-          )
-        "
-      />
-      {{ t.image.openInNewTab }}
-    </label>
+      class="tpl:mt-2 tpl:text-[12px] tpl:text-[var(--tpl-text-muted)]"
+      :model-value="block.linkOpenInNewTab ?? false"
+      :label="t.image.openInNewTab"
+      @update:model-value="updateField('linkOpenInNewTab', $event)"
+    />
   </div>
 </template>
