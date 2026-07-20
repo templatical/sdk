@@ -135,10 +135,10 @@ describe("SectionToolbar wrapper (outer frame)", () => {
 
   it("enabling the wrapper emits a default frame with padding", async () => {
     const wrapper = mountToolbar(createSectionBlock());
-    const checkbox = wrapper.find('input[type="checkbox"]');
-    expect((checkbox.element as HTMLInputElement).checked).toBe(false);
+    const toggle = wrapper.find('button[role="switch"]');
+    expect(toggle.attributes("aria-checked")).toBe("false");
 
-    await checkbox.setValue(true);
+    await toggle.trigger("click");
 
     const emits = wrapper.emitted("update");
     expect(emits).toHaveLength(1);
@@ -149,10 +149,10 @@ describe("SectionToolbar wrapper (outer frame)", () => {
 
   it("disabling the wrapper clears it (wrapper: undefined)", async () => {
     const wrapper = mountToolbar(framed());
-    const checkbox = wrapper.find('input[type="checkbox"]');
-    expect((checkbox.element as HTMLInputElement).checked).toBe(true);
+    const toggle = wrapper.find('button[role="switch"]');
+    expect(toggle.attributes("aria-checked")).toBe("true");
 
-    await checkbox.setValue(false);
+    await toggle.trigger("click");
 
     const emits = wrapper.emitted("update");
     expect(emits).toHaveLength(1);
@@ -182,28 +182,28 @@ describe("SectionToolbar stack-on-mobile toggle", () => {
   const twoCol = (stackOnMobile?: boolean) =>
     createSectionBlock({ columns: "2", stackOnMobile });
 
-  // The wrapper checkbox is always present; target the stack toggle by its
+  // The wrapper toggle is always present; target the stack toggle by its
   // label text so the two don't get confused.
-  const stackCheckbox = (wrapper: ReturnType<typeof mountToolbar>) => {
+  const stackToggle = (wrapper: ReturnType<typeof mountToolbar>) => {
     const label = wrapper
       .findAll("label")
       .find((l) => l.text().includes(en.section.stackOnMobile));
-    return label?.find('input[type="checkbox"]');
+    return label?.find('button[role="switch"]');
   };
 
   it("is not rendered for a single-column section", () => {
     const wrapper = mountToolbar(createSectionBlock({ columns: "1" }));
-    expect(stackCheckbox(wrapper)).toBeUndefined();
+    expect(stackToggle(wrapper)).toBeUndefined();
   });
 
   it("is checked by default for a multi-column section (columns stack)", () => {
-    const checkbox = stackCheckbox(mountToolbar(twoCol()));
-    expect((checkbox!.element as HTMLInputElement).checked).toBe(true);
+    const toggle = stackToggle(mountToolbar(twoCol()));
+    expect(toggle!.attributes("aria-checked")).toBe("true");
   });
 
   it("emits stackOnMobile:false when unchecked", async () => {
     const wrapper = mountToolbar(twoCol());
-    await stackCheckbox(wrapper)!.setValue(false);
+    await stackToggle(wrapper)!.trigger("click");
 
     const emits = wrapper.emitted("update");
     expect(emits).toHaveLength(1);
@@ -212,10 +212,10 @@ describe("SectionToolbar stack-on-mobile toggle", () => {
 
   it("shows unchecked when opted out and re-checking emits stackOnMobile:true", async () => {
     const wrapper = mountToolbar(twoCol(false));
-    const checkbox = stackCheckbox(wrapper)!;
-    expect((checkbox.element as HTMLInputElement).checked).toBe(false);
+    const toggle = stackToggle(wrapper)!;
+    expect(toggle.attributes("aria-checked")).toBe("false");
 
-    await checkbox.setValue(true);
+    await toggle.trigger("click");
     expect(wrapper.emitted("update")![0][0]).toEqual({ stackOnMobile: true });
   });
 });
