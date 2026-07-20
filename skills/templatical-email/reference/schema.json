@@ -122,6 +122,10 @@
             }
           }
         },
+        "stackOnMobile": {
+          "type": "boolean",
+          "description": "Whether columns stack vertically on mobile. Absent or `true` keeps MJML's default responsive behavior (columns stack below 480px). `false` renders the columns inside an `<mj-group>` so they stay side-by-side on mobile, proportionally shrunk to fit."
+        },
         "borderRadius": {
           "type": "number",
           "description": "Corner radius in px. Omitted/0 = square corners."
