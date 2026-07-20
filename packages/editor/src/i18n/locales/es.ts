@@ -130,6 +130,7 @@ const es: typeof en = {
     ratio21: "Proporción 2:1",
     borderRadius: "Radio del borde",
     wrapperEnable: "Añadir contenedor",
+    stackOnMobile: "Apilar en móvil",
   },
 
   // Text editor link dialog

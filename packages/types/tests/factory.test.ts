@@ -92,11 +92,20 @@ describe("block factory functions", () => {
     // borderRadius + wrapper are opt-in: absent by default so existing content is unchanged.
     expect(block.borderRadius).toBeUndefined();
     expect(block.wrapper).toBeUndefined();
+    // stackOnMobile is opt-in: absent means columns stack on mobile (MJML default).
+    expect(block.stackOnMobile).toBeUndefined();
   });
 
   it("applies a borderRadius override on a section block", () => {
     const block = createSectionBlock({ borderRadius: 12 });
     expect(block.borderRadius).toBe(12);
+  });
+
+  it("applies a stackOnMobile override on a section block", () => {
+    expect(createSectionBlock({ stackOnMobile: false }).stackOnMobile).toBe(
+      false,
+    );
+    expect(createSectionBlock({ stackOnMobile: true }).stackOnMobile).toBe(true);
   });
 
   it("applies a wrapper (outer frame) override on a section block", () => {

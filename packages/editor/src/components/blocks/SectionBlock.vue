@@ -67,6 +67,13 @@ const columns = computed(() => {
   return children.slice(0, count);
 });
 
+// Mirror MJML's responsive behavior in the canvas: on the mobile viewport,
+// columns stack full-width unless the section opts out via `stackOnMobile:
+// false` (which renders as `<mj-group>` and keeps them side-by-side).
+const isMobileStacked = computed(
+  () => props.viewport === "mobile" && props.block.stackOnMobile !== false,
+);
+
 function getColumnBlocks(colIndex: number): Block[] {
   return columns.value[colIndex] || [];
 }
@@ -111,7 +118,10 @@ function handleFetchData(
 
 <template>
   <div class="tpl:w-full">
-    <div class="tpl:flex tpl:gap-0">
+    <div
+      class="tpl:flex tpl:gap-0"
+      :class="{ 'tpl:flex-col': isMobileStacked }"
+    >
       <div
         v-for="(_, colIndex) in columns"
         :key="colIndex"
@@ -121,7 +131,7 @@ function handleFetchData(
             ? 'tpl:border tpl:border-dashed tpl:border-[var(--tpl-border)]'
             : ''
         "
-        :style="{ width: columnWidths[colIndex] }"
+        :style="{ width: isMobileStacked ? '100%' : columnWidths[colIndex] }"
       >
         <VueDraggable
           :model-value="getColumnBlocks(colIndex)"

@@ -72,8 +72,19 @@ ${content}
 
   const columns = columnsContent.join("\n");
 
-  return `<mj-section${bgColor} padding="${padding}"${borderRadiusAttr}${visibilityAttr}>
+  // Opting out of mobile stacking wraps the columns in an `<mj-group>`, which
+  // keeps them side-by-side below 480px instead of stacking (MJML's default).
+  // `mj-group` requires percentage column widths — `getWidthPercentages`
+  // already guarantees that. Only meaningful with 2+ columns.
+  const body =
+    block.stackOnMobile === false && columnsContent.length > 1
+      ? `<mj-group>
 ${columns}
+</mj-group>`
+      : columns;
+
+  return `<mj-section${bgColor} padding="${padding}"${borderRadiusAttr}${visibilityAttr}>
+${body}
 </mj-section>`;
 }
 

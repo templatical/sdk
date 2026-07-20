@@ -130,6 +130,7 @@ const ca: typeof en = {
     ratio21: "Proporció 2:1",
     borderRadius: "Radi de la vora",
     wrapperEnable: "Afegeix un contenidor",
+    stackOnMobile: "Apila en mòbil",
   },
 
   // Text editor link dialog

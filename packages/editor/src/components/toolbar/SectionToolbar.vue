@@ -41,6 +41,10 @@ function handleColumnsChange(event: Event): void {
   emit("update", { columns, children });
 }
 
+function handleStackOnMobileChange(checked: boolean): void {
+  emit("update", { stackOnMobile: checked });
+}
+
 function handleBorderRadiusChange(event: Event): void {
   const borderRadius = Number((event.target as HTMLInputElement).value);
   emit("update", { borderRadius });
@@ -85,6 +89,21 @@ function handleWrapperRadius(event: Event): void {
         {{ option.label }}
       </option>
     </select>
+  </div>
+  <div v-if="block.columns !== '1'" class="tpl:mb-3.5">
+    <label
+      class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:text-xs tpl:text-[var(--tpl-text)]"
+    >
+      <input
+        type="checkbox"
+        class="tpl:accent-[var(--tpl-primary)]"
+        :checked="block.stackOnMobile !== false"
+        @change="
+          handleStackOnMobileChange(($event.target as HTMLInputElement).checked)
+        "
+      />
+      {{ t.section.stackOnMobile }}
+    </label>
   </div>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.section.borderRadius }}</label>

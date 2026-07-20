@@ -129,6 +129,7 @@ const ptBR: typeof en = {
     ratio21: "Proporção 2:1",
     borderRadius: "Arredondamento das Bordas",
     wrapperEnable: "Adicionar wrapper",
+    stackOnMobile: "Empilhar no celular",
   },
 
   // Text editor link dialog
