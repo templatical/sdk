@@ -43,3 +43,22 @@ describe("form element reset", () => {
     expect(resetBlock).toMatch(/font-family:\s*inherit\s*;/);
   });
 });
+
+describe("button reset", () => {
+  // The standalone `:where(.tpl) button { … }` block (not the combined
+  // four-element rule above, which is `:where(.tpl) button, …`).
+  const buttonBlock =
+    STYLES.match(/:where\(\.tpl\)\s+button\s*\{[^}]*\}/)?.[0] ?? "";
+
+  it("exists as a standalone button rule", () => {
+    expect(buttonBlock).not.toBe("");
+  });
+
+  // Regression locked: native <button> UA padding (`1px 6px` in Chromium)
+  // must be zeroed. Preflight is omitted; in shadow-DOM mode no host reset
+  // masks it, so ToggleSwitch's fixed-size track shrinks and the knob
+  // overflows/off-centers without this.
+  it("zeroes padding so fixed-size button controls (ToggleSwitch) aren't shifted by UA padding", () => {
+    expect(buttonBlock).toMatch(/padding:\s*0\s*;/);
+  });
+});

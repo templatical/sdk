@@ -152,14 +152,18 @@ describe("merge-tag suggestion popup — onStart", () => {
 });
 
 describe("merge-tag suggestion popup — positioning", () => {
-  it("positions fixed at the caret rect when on-screen", () => {
+  it("positions absolute at the caret rect (offset parent at origin) when on-screen", () => {
     const handlers = createMergeTagSuggestionRenderer("No matches", null)();
     const { props } = makeProps({ rect: { left: 42, top: 100, bottom: 118 } });
 
     handlers.onStart!(props);
 
     const el = popup()!;
-    expect(el.style.position).toBe("fixed");
+    // `absolute` (not `fixed`) so a transformed ancestor of the editor can't
+    // offset the popup; coords are viewport minus the offset parent's rect,
+    // which is the origin here (no layout in the test env), so they match the
+    // caret rect.
+    expect(el.style.position).toBe("absolute");
     expect(el.style.left).toBe("42px");
     expect(el.style.top).toBe("118px");
     expect(el.style.zIndex).toBe("9999");
