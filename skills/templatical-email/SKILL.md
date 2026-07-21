@@ -2,10 +2,14 @@
 name: templatical-email
 description: >-
   Generate and validate Templatical email templates as JSON (content blocks +
-  settings). Use when the user wants to create, design, or draft an email
-  template for the Templatical editor from a natural-language brief, or whenever
-  producing or editing Templatical template JSON that must validate against the
-  block schema.
+  settings) that load into the Templatical drag-and-drop editor. This skill
+  should be used whenever the user wants to create, design, draft, mock up, or
+  edit a marketing, transactional, or newsletter email — for example "make a
+  product-launch email", "design a welcome email", "build an event invite with a
+  countdown", "draft an order-confirmation email", or "turn this copy into an
+  email template" — even when they don't say "Templatical" or "JSON". Also use it
+  when producing or editing Templatical template JSON that must validate against
+  the block schema.
 ---
 
 # Templatical Email Templates
@@ -14,9 +18,9 @@ Generate and validate email templates for the [Templatical](https://templatical.
 editor. A template is a single JSON document — an array of content **blocks** plus
 global **settings** — that loads straight into the editor for a human to refine.
 
-You (the agent) are the generator: read the brief, emit valid template JSON, then
-validate it with the bundled script before handing it back. No API key or server
-is involved — you are the inference.
+The workflow is simple: read the brief, emit valid template JSON, validate it
+with the bundled script, then hand it back. No API key or server is involved —
+the agent running this skill is the inference.
 
 ## Setup (first run)
 
@@ -65,8 +69,9 @@ structure / link linting on top of structural validation.
   `styles.padding` (`{ top, right, bottom, left }` in px).
 - **Structure content in sections.** A `section` has `children`: an array of
   columns, each column an array of blocks. `columns` is `"1"`, `"2"`, `"3"`,
-  `"2-1"`, or `"1-2"`, and the column count in `children` must match. Never nest
-  a section inside a section.
+  `"2-1"`, or `"1-2"`, and the column count in `children` must match. Don't nest
+  a section inside another section — MJML has no equivalent, so the renderer
+  drops it on export.
 - **Rich text** (`title.content`, `paragraph.content`, table cell `content`) is
   HTML — use inline tags (`<b>`, `<i>`, `<a href>`, `<br>`, `<ul>`). Use blocks,
   not HTML, for layout.

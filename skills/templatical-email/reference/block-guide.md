@@ -5,6 +5,8 @@ template is `{ "blocks": Block[], "settings": Settings }`. All sizes are pixels
 and all colors are hex strings unless noted. Fields marked _optional_ may be
 omitted; everything else is required.
 
+**Contents:** [Settings](#settings) · [Common fields](#common-block-fields) · Layout — [section](#section), [spacer](#spacer), [divider](#divider) · Text — [title](#title), [paragraph](#paragraph), [menu](#menu), [table](#table) · Media & actions — [image](#image), [button](#button), [social](#social), [video](#video), [countdown](#countdown) · [html](#html) · [Merge tags](#merge-tags). Complete templates that exercise the trickier blocks (wrapper cards, multi-column layouts, tables, countdowns) live in [`examples/`](./examples/).
+
 ## Settings
 
 - `width` (int) — template width, typically `600`.
@@ -44,10 +46,14 @@ Container that arranges blocks into columns.
   `columns` (`"1"` → one inner array; `"2"`/`"2-1"`/`"1-2"` → two; `"3"` →
   three).
 - `borderRadius` (int, _optional_) — corner radius; omit or `0` for square.
+- `stackOnMobile` (bool, _optional_) — whether columns stack vertically on
+  mobile; omit or `true` keeps the default responsive stacking (columns stack
+  below 480px), `false` keeps them side by side.
 - `wrapper` (_optional_) — outer full-width band: `{ backgroundColor?, padding?,
 borderRadius? }` (e.g. a white card on a colored band).
 
-Never nest a section inside a section.
+Don't nest a section inside another section — MJML has no equivalent, so the
+renderer drops it on export.
 
 ### spacer
 

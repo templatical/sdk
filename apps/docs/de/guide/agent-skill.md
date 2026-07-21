@@ -77,3 +77,13 @@ Es prüft jeden Block gegen seinen Typ im [Block-Schema](/de/guide/blocks) und m
 ## Wie es korrekt bleibt
 
 Das JSON-Schema des Skills wird direkt aus `@templatical/types` generiert — denselben Typen, die Editor und Renderer verwenden —, sodass es nie vom tatsächlichen Blockmodell abweicht. Details zur Neugenerierung und zu Beiträgen finden Sie in der [README des Skills](https://github.com/templatical/sdk/tree/main/skills/templatical-email).
+
+## Wo das in Ihr Produkt passt
+
+Dieser Skill ist eine Hilfe zur **Entwicklungszeit**, keine Laufzeit-Integration. Ihre eigentliche Integration sind zwei Pakete: [`@templatical/editor`](/de/getting-started/quick-start), um den Editor einzubetten (Ihre Nutzer bauen E-Mails, Sie erhalten JSON), und [`@templatical/renderer`](/de/api/renderer-typescript), um dieses JSON in MJML/HTML zum Versand umzuwandeln. Den Skill selbst binden Sie nicht in Ihr Produkt ein.
+
+Nutzen Sie den Skill beim _Bauen_ — um markenkonforme Start-Templates, Fixtures und Prototypen in Ihrem eigenen Coding-Agenten zu erzeugen.
+
+Für eine **„Mit KI erstellen"**-Funktion im Produkt (Ihre Nutzer geben einen Prompt ein und erhalten ein Template) ruft Ihr Backend ein LLM mit dem Block-Schema auf, validiert das Ergebnis mit [`@templatical/quality`](/de/quality/) und rendert es. Wenn Sie das nicht selbst bauen und hosten möchten, bietet [Templatical Cloud](/de/cloud/) verwaltete KI-Generierung und Zusammenarbeit.
+
+Ein hauseigener lokaler MCP-Server (`@templatical/mcp`) ist für **agentenbasierte** Integrationen geplant — er läuft lokal über stdio (kein Konto und kein Schlüssel nötig) und stellt Validieren / Rendern / Linten als aufrufbare Tools bereit. Bis er verfügbar ist, verwenden Sie die obigen Pakete direkt.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 // The validator is what consumers actually run; import it as-is.
@@ -24,22 +24,22 @@ import {
 import { createDefaultTemplateContent } from "../../../packages/types/src/template";
 
 const here = dirname(fileURLToPath(import.meta.url));
+const examplesDir = resolve(here, "../reference/examples");
 const readExample = (name: string) =>
-  JSON.parse(
-    readFileSync(resolve(here, `../reference/examples/${name}`), "utf8"),
-  );
+  JSON.parse(readFileSync(resolve(examplesDir, name), "utf8"));
+const exampleFiles = readdirSync(examplesDir)
+  .filter((f) => f.endsWith(".json"))
+  .sort();
 
 describe("validateTemplate — valid examples", () => {
-  it("accepts the product-sale example with no errors", () => {
-    const { valid, errors } = validateTemplate(
-      readExample("product-sale.json"),
-    );
-    expect(errors).toEqual([]);
-    expect(valid).toBe(true);
+  it("bundles a diverse set of example templates for few-shot coverage", () => {
+    expect(exampleFiles.length).toBeGreaterThanOrEqual(5);
   });
 
-  it("accepts the newsletter example (2-column + menu) with no errors", () => {
-    const { valid, errors } = validateTemplate(readExample("newsletter.json"));
+  // Every committed example must validate — a broken few-shot would teach the
+  // model to emit invalid JSON. Globbed so new examples are covered automatically.
+  it.each(exampleFiles)("accepts %s with no structural errors", (file) => {
+    const { valid, errors } = validateTemplate(readExample(file));
     expect(errors).toEqual([]);
     expect(valid).toBe(true);
   });

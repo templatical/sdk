@@ -77,3 +77,13 @@ It checks each block against its type in the [block schema](/guide/blocks) and r
 ## How it stays correct
 
 The skill's JSON Schema is generated directly from `@templatical/types` — the same types the editor and renderer use — so it never drifts from the real block model. See the [skill's README](https://github.com/templatical/sdk/tree/main/skills/templatical-email) for regeneration and contribution details.
+
+## Where this fits in your product
+
+This skill is a **build-time** aid, not a runtime integration. Your actual integration is two packages: [`@templatical/editor`](/getting-started/quick-start) to embed the editor (your users build emails; you get JSON out) and [`@templatical/renderer`](/api/renderer-typescript) to turn that JSON into MJML/HTML to send. You don't embed the skill itself in your product.
+
+Use the skill while _building_ — to generate branded starter templates, fixtures, and prototypes in your own coding agent.
+
+For an in-product **"generate with AI"** feature (your users type a prompt and get a template), your backend calls an LLM with the block schema, validates the result with [`@templatical/quality`](/quality/), and renders it. If you'd rather not build and host that, [Templatical Cloud](/cloud/) offers managed AI generation and collaboration.
+
+A first-party local MCP server (`@templatical/mcp`) is planned for **agent-based** integrations — it runs locally over stdio (no account or key needed) and exposes validate / render / lint as callable tools. Until it ships, use the packages above directly.

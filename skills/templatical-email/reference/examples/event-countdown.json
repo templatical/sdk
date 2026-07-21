@@ -1,0 +1,164 @@
+{
+  "blocks": [
+    {
+      "id": "sec_hero",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 32, "right": 24, "bottom": 8, "left": 24 },
+        "backgroundColor": "#ffffff"
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "title_evt",
+            "type": "title",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 8, "left": 0 }
+            },
+            "content": "You're invited: Trailhead 2026",
+            "level": 1,
+            "color": "#111827",
+            "textAlign": "center"
+          },
+          {
+            "id": "para_evt",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 16, "left": 0 }
+            },
+            "content": "<p>A one-day gathering for trail runners and gear nerds — talks, demos, and a group run at dawn.</p>"
+          },
+          {
+            "id": "vid_evt",
+            "type": "video",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "url": "https://www.youtube.com/watch?v=example",
+            "thumbnailUrl": "https://placehold.co/560x315?text=Watch+the+teaser",
+            "alt": "Trailhead 2026 teaser video",
+            "width": "full",
+            "align": "center"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "sec_countdown",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 24, "right": 24, "bottom": 24, "left": 24 },
+        "backgroundColor": "#f4f1ea"
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "para_cd",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 12, "left": 0 }
+            },
+            "content": "<p style=\"text-align:center\">Doors open in</p>"
+          },
+          {
+            "id": "cd_evt",
+            "type": "countdown",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 16, "left": 0 }
+            },
+            "targetDate": "2026-09-19T14:00:00Z",
+            "timezone": "America/Denver",
+            "showDays": true,
+            "showHours": true,
+            "showMinutes": true,
+            "showSeconds": false,
+            "separator": ":",
+            "digitFontSize": 32,
+            "digitColor": "#111827",
+            "labelFontSize": 12,
+            "labelColor": "#6b7280",
+            "backgroundColor": "#f4f1ea",
+            "labelDays": "Days",
+            "labelHours": "Hours",
+            "labelMinutes": "Minutes",
+            "labelSeconds": "Seconds",
+            "expiredMessage": "The event has started!",
+            "expiredImageUrl": "",
+            "hideOnExpiry": false
+          },
+          {
+            "id": "btn_rsvp",
+            "type": "button",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "text": "RSVP now",
+            "url": "https://example.com/trailhead/rsvp",
+            "backgroundColor": "#92400e",
+            "textColor": "#ffffff",
+            "borderRadius": 6,
+            "fontSize": 16,
+            "buttonPadding": {
+              "top": 14,
+              "right": 28,
+              "bottom": 14,
+              "left": 28
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "id": "sec_footer",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 16, "right": 24, "bottom": 24, "left": 24 }
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "soc_evt",
+            "type": "social",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "icons": [
+              {
+                "id": "se1",
+                "platform": "instagram",
+                "url": "https://instagram.com/example"
+              },
+              {
+                "id": "se2",
+                "platform": "twitter",
+                "url": "https://twitter.com/example"
+              },
+              {
+                "id": "se3",
+                "platform": "website",
+                "url": "https://example.com"
+              }
+            ],
+            "iconStyle": "circle",
+            "iconSize": "medium",
+            "spacing": 12,
+            "align": "center"
+          }
+        ]
+      ]
+    }
+  ],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#ffffff",
+    "textColor": "#1f2937",
+    "linkColor": "#92400e",
+    "linkUnderline": true,
+    "fontFamily": "Georgia, serif",
+    "preheaderText": "Trailhead 2026 — save your spot.",
+    "locale": "en"
+  }
+}
