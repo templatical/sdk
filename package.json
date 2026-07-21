@@ -42,6 +42,7 @@
     "build:all-sdk": "pnpm run build:email-editor && pnpm run build:media-library",
     "build:email-editor": "pnpm --filter @templatical/editor run build:cdn",
     "build:media-library": "pnpm --filter @templatical/media-library run build:cdn",
+    "changeset:version": "changeset version && pnpm --filter @templatical/email-skill run sync-editor-version",
     "ci": "pnpm run format && pnpm run lint && pnpm run typecheck && pnpm run test",
     "deps:check": "syncpack lint && syncpack format --check",
     "deps:fix": "syncpack fix && syncpack format",

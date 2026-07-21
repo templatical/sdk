@@ -57,6 +57,8 @@ Describe the email you want and let your coding agent build it — **free, open-
 /plugin install templatical-email@templatical
 ```
 
+In **Claude Code**, you can also **preview it live**: ask to "show it live" and the skill opens your template in the real Templatical editor in a browser, updating it as you prompt and reconciling any edits you make by hand. It's local and adds no dependencies (a tiny Node bridge; the editor loads from the CDN).
+
 Or copy `skills/templatical-email/` into any agent's skills folder. [Skill guide →](https://docs.templatical.com/guide/agent-skill)
 
 > Want a hosted, managed experience instead — AI chat inside the editor, tuned prompts, an MCP server we run? That's the Templatical Cloud tier (below).

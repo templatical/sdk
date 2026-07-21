@@ -7,6 +7,7 @@
   "license": "MIT",
   "scripts": {
     "generate-schema": "node scripts/generate-schema.mjs",
+    "sync-editor-version": "node scripts/sync-editor-version.mjs",
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {

@@ -38,6 +38,11 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
+          # Custom version command: `changeset version` (bumps package.jsons +
+          # changelogs) then sync the templatical-email skill's live-mode CDN
+          # pin (EDITOR_VERSION) to the new @templatical/editor version, so the
+          # Version Packages PR carries it and no manual bump is needed.
+          version: pnpm run changeset:version
           publish: pnpm exec changeset publish
         env:
           GITHUB_TOKEN: ${{ secrets.CHANGESETS_PAT }}

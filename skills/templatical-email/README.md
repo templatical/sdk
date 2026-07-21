@@ -20,7 +20,21 @@ templatical-email/
   scripts/
     validate.mjs           # validates a template JSON (ajv + optional quality lint)
     generate-schema.mjs    # regenerates schema.json from @templatical/types (maintainers)
+    sync-editor-version.mjs # syncs live mode's CDN editor pin to @templatical/editor (release)
+    live-server.mjs        # live mode: zero-dep Node bridge (serves the editor, syncs edits)
+  live/
+    index.html             # live mode: CDN editor harness + sync + export buttons
 ```
+
+## Two modes
+
+- **Build mode** (default) — generate and validate template JSON. Fully offline,
+  cross-agent, needs only `ajv`.
+- **Live mode** (optional) — open the template in the **real** Templatical editor
+  in a browser, update it live as you prompt, and reconcile in-browser hand-edits.
+  Local and Claude-Code-first (needs Node + a browser); adds **no** npm
+  dependencies (the bridge is Node built-ins; the editor and `mjml-browser` load
+  from the CDN). See the "Live mode" section of [`SKILL.md`](./SKILL.md).
 
 ## Install
 

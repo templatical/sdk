@@ -58,6 +58,21 @@ The agent will:
 3. Run the bundled validator itself and fix any structural or accessibility issues it reports — repeating until the template passes.
 4. Hand you the JSON — load it with `editor.setContent(json)` (or your framework's equivalent) and refine it visually.
 
+## Preview it live
+
+In **Claude Code**, you don't have to stop at JSON — you can watch the template render in the **real** editor and keep refining it by prompting. Ask to **"show it live"** (or run `/templatical-email:live`) and the skill:
+
+1. Starts a tiny local bridge and opens `http://localhost:4747/` in the browser pane — the page loads the editor from the CDN and shows your current template.
+2. Updates the preview **live** each time you prompt a change (over Server-Sent Events — no refresh).
+3. Lets you **hand-edit in the browser** too; the agent notices when you've diverged and asks whether to build on your browser version or replace it before it overwrites anything.
+4. Exports straight from the page: **Copy JSON**, **Get MJML**, or **Get HTML**.
+
+Both modes share one working file (`.templatical/template.json`), so you can build in plain JSON first and switch to a live preview mid-session — it picks up right where you are. Live mode is local and single-user (not the [Cloud](/cloud/) realtime path), and adds **no** dependencies: the bridge is Node built-ins, and the editor and MJML compiler load from the CDN.
+
+::: tip Other agents
+Live mode is Claude-Code-first — it needs a long-running local process and a browser the agent can open. In other agents, build mode works exactly the same; the live preview is the Claude Code extra.
+:::
+
 ## Bring your own brand and rules
 
 The skill defines the _format_; you supply the _taste_. Layer your own context on top — brand colors and fonts, tone of voice, a house system prompt, a mandatory footer or unsubscribe block. When you give the agent your brand settings, it uses them instead of generic defaults.

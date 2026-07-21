@@ -58,6 +58,21 @@ Der Agent wird:
 3. den mitgelieferten Validator selbst ausführen und die gemeldeten Struktur- oder Barrierefreiheitsprobleme beheben — so lange, bis das Template besteht,
 4. Ihnen das JSON übergeben — laden Sie es mit `editor.setContent(json)` (oder dem Äquivalent Ihres Frameworks) und verfeinern Sie es visuell.
 
+## Live-Vorschau
+
+In **Claude Code** müssen Sie nicht beim JSON aufhören — Sie können das Template im **echten** Editor rendern sehen und es per Prompt weiter verfeinern. Bitten Sie darum, es „live zu zeigen" (oder führen Sie `/templatical-email:live` aus), und der Skill:
+
+1. startet eine kleine lokale Bridge und öffnet `http://localhost:4747/` im Browser-Bereich — die Seite lädt den Editor aus dem CDN und zeigt Ihr aktuelles Template.
+2. aktualisiert die Vorschau bei jeder Änderung, die Sie prompten, **live** (über Server-Sent Events — ohne Neuladen).
+3. lässt Sie auch **im Browser von Hand bearbeiten**; der Agent erkennt, wenn Sie abgewichen sind, und fragt, ob er auf Ihrer Browser-Version aufbauen oder sie ersetzen soll, bevor er etwas überschreibt.
+4. exportiert direkt aus der Seite: **JSON kopieren**, **MJML abrufen** oder **HTML abrufen**.
+
+Beide Modi teilen sich eine Arbeitsdatei (`.templatical/template.json`), sodass Sie zuerst in reinem JSON bauen und mitten in der Sitzung zu einer Live-Vorschau wechseln können — sie knüpft genau dort an, wo Sie stehen. Der Live-Modus ist lokal und für einen einzelnen Nutzer (nicht der Echtzeit-Weg der [Cloud](/de/cloud/)) und fügt **keine** Abhängigkeiten hinzu: Die Bridge nutzt Node-Bordmittel, und der Editor sowie der MJML-Compiler werden aus dem CDN geladen.
+
+::: tip Andere Agenten
+Der Live-Modus ist Claude-Code-first — er benötigt einen langlaufenden lokalen Prozess und einen Browser, den der Agent öffnen kann. In anderen Agenten funktioniert der Build-Modus genau gleich; die Live-Vorschau ist das Extra für Claude Code.
+:::
+
 ## Bringen Sie Ihre eigene Marke und Regeln mit
 
 Der Skill definiert das _Format_ — den _Stil_ bringen Sie ein. Ergänzen Sie Ihren eigenen Kontext: Markenfarben und -schriften, Tonalität, einen eigenen System-Prompt, einen verpflichtenden Footer oder Abmelde-Block. Wenn Sie dem Agenten Ihre Markeneinstellungen mitgeben, verwendet er diese anstelle generischer Standardwerte.

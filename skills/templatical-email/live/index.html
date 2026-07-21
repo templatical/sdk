@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Templatical — Live preview</title>
+    <!--
+      The real Templatical editor, loaded from the CDN. {{EDITOR_VERSION}} is
+      injected by scripts/live-server.mjs (pinned to the skill's schema version).
+      In shadow-DOM mode the editor adopts its own CSS; the stylesheet link is
+      kept for parity with the documented consumer setup.
+    -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@templatical/editor@{{EDITOR_VERSION}}/dist/cdn/editor.css"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        color: #1a1a1a;
+        background: #f4f4f5;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        background: #111;
+        color: #fff;
+        flex: none;
+      }
+      .bar .brand {
+        font-weight: 600;
+        letter-spacing: 0.2px;
+      }
+      .bar .spacer {
+        flex: 1;
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #d4d4d8;
+      }
+      .status .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #a1a1aa;
+      }
+      .status[data-state="live"] .dot {
+        background: #22c55e;
+      }
+      .status[data-state="reconnecting"] .dot {
+        background: #f59e0b;
+      }
+      .status[data-state="error"] .dot {
+        background: #ef4444;
+      }
+      .bar button {
+        font: inherit;
+        font-size: 13px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid #3f3f46;
+        background: #27272a;
+        color: #fff;
+        cursor: pointer;
+      }
+      .bar button:hover {
+        background: #3f3f46;
+      }
+      .bar button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      #editor {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+      }
+      dialog {
+        width: min(820px, 92vw);
+        border: none;
+        border-radius: 10px;
+        padding: 0;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+      }
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.5);
+      }
+      .dlg-head {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid #e4e4e7;
+      }
+      .dlg-head strong {
+        flex: 1;
+      }
+      .dlg-head button {
+        font: inherit;
+        border: 1px solid #d4d4d8;
+        background: #fff;
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      dialog textarea {
+        width: 100%;
+        height: 52vh;
+        border: none;
+        padding: 16px;
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-size: 12.5px;
+        resize: none;
+        outline: none;
+      }
+      .toast {
+        position: fixed;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #111;
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-size: 13px;
+        opacity: 0;
+        transition: opacity 0.15s;
+        pointer-events: none;
+      }
+      .toast.show {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <span class="brand">Templatical · Live</span>
+      <span id="status" class="status" data-state="connecting">
+        <span class="dot"></span><span id="status-text">Connecting…</span>
+      </span>
+      <span class="spacer"></span>
+      <button id="btn-json">Copy JSON</button>
+      <button id="btn-mjml">Get MJML</button>
+      <button id="btn-html">Get HTML</button>
+    </header>
+
+    <div id="editor"></div>
+
+    <dialog id="export">
+      <div class="dlg-head">
+        <strong id="export-title">Export</strong>
+        <button id="export-copy">Copy</button>
+        <button id="export-close" style="margin-left: 8px">Close</button>
+      </div>
+      <textarea id="export-body" readonly spellcheck="false"></textarea>
+    </dialog>
+
+    <div id="toast" class="toast"></div>
+
+    <script type="module">
+      import { init } from "https://unpkg.com/@templatical/editor@{{EDITOR_VERSION}}/dist/cdn/editor.js";
+
+      const statusEl = document.getElementById("status");
+      const statusText = document.getElementById("status-text");
+      const toastEl = document.getElementById("toast");
+
+      let editor = null;
+      // Guards the setContent() we trigger from an agent update so its onChange
+      // isn't mistaken for (and reported back as) a user hand-edit.
+      let applyingRemote = false;
+      let debounceTimer = null;
+
+      function setStatus(state, text) {
+        statusEl.dataset.state = state;
+        statusText.textContent = text;
+      }
+
+      let toastTimer = null;
+      function toast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1600);
+      }
+
+      async function copy(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      // Report the editor's current content to the bridge. `baseline: true`
+      // marks a post-apply snapshot (the normalized view of the agent's
+      // content), which resets the divergence tracker rather than counting as
+      // an edit.
+      async function postContent(baseline = false) {
+        if (!editor) return;
+        try {
+          await fetch("/content", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ content: editor.getContent(), baseline }),
+          });
+        } catch {
+          /* bridge gone; ignore */
+        }
+      }
+
+      function scheduleContentPost() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => postContent(false), 500);
+      }
+
+      async function applyRemote(content) {
+        if (!editor) return;
+        applyingRemote = true;
+        editor.setContent(content);
+        // Let Vue flush the setContent before snapshotting the baseline.
+        await new Promise((r) => setTimeout(r, 0));
+        await postContent(true);
+        applyingRemote = false;
+        toast("Updated from agent");
+      }
+
+      const exportDialog = document.getElementById("export");
+      function showExport(title, body) {
+        document.getElementById("export-title").textContent = title;
+        document.getElementById("export-body").value = body;
+        exportDialog.showModal();
+      }
+      document.getElementById("export-close").onclick = () =>
+        exportDialog.close();
+      document.getElementById("export-copy").onclick = async () => {
+        const ok = await copy(document.getElementById("export-body").value);
+        toast(ok ? "Copied" : "Copy failed — select and copy manually");
+      };
+
+      document.getElementById("btn-json").onclick = async () => {
+        const json = JSON.stringify(editor.getContent(), null, 2);
+        const ok = await copy(json);
+        toast(ok ? "JSON copied" : "Showing JSON");
+        showExport("JSON", json);
+      };
+
+      document.getElementById("btn-mjml").onclick = async () => {
+        try {
+          const mjml = await editor.toMjml();
+          await copy(mjml);
+          showExport("MJML", mjml);
+        } catch (err) {
+          showExport("MJML — error", String(err?.message ?? err));
+        }
+      };
+
+      // mjml-browser is heavy; load it lazily from the CDN only when the user
+      // asks for HTML. This is the one place HTML compilation happens client-side
+      // (fine for a local dev preview).
+      //
+      // jsDelivr's /+esm (NOT unpkg) on purpose: mjml-browser is a CommonJS
+      // package, and unpkg's ?module only rewrites import specifiers — it does
+      // not transpile CJS to ESM, so `import()` from unpkg yields an empty
+      // module. jsDelivr's /+esm does the CJS→ESM conversion and exposes a
+      // callable default. (The editor bundle above stays on unpkg; this is the
+      // repo's convention for ESM-import packages — see @templatical/import-*.)
+      let mjml2html = null;
+      document.getElementById("btn-html").onclick = async () => {
+        setStatus("live", "Compiling HTML…");
+        try {
+          if (!mjml2html) {
+            const mod =
+              await import("https://cdn.jsdelivr.net/npm/mjml-browser@4/+esm");
+            mjml2html = mod.default ?? mod.mjml2html ?? mod;
+          }
+          const mjml = await editor.toMjml();
+          const { html } = mjml2html(mjml);
+          await copy(html);
+          showExport("HTML", html);
+        } catch (err) {
+          showExport("HTML — error", String(err?.message ?? err));
+        } finally {
+          setStatus("live", "Live");
+        }
+      };
+
+      async function boot() {
+        let content;
+        try {
+          const res = await fetch("/template");
+          if (res.status === 200) content = await res.json();
+        } catch {
+          /* fall through to an empty editor */
+        }
+
+        editor = await init({
+          container: "#editor",
+          content, // undefined → editor starts from its default empty template
+          onChange: () => {
+            if (!applyingRemote) scheduleContentPost();
+          },
+        });
+
+        // Seed the baseline with the editor's normalized view of the initial
+        // content so its own load-time normalization never reads as an edit.
+        await postContent(true);
+        setStatus("live", "Live");
+
+        const es = new EventSource("/events");
+        es.addEventListener("template", (e) => {
+          try {
+            applyRemote(JSON.parse(e.data));
+          } catch {
+            /* malformed frame; ignore */
+          }
+        });
+        es.onopen = () => setStatus("live", "Live");
+        es.onerror = () => setStatus("reconnecting", "Reconnecting…");
+      }
+
+      boot().catch((err) => {
+        setStatus("error", "Failed to load editor");
+        showExport("Startup error", String(err?.stack ?? err));
+      });
+    </script>
+  </body>
+</html>

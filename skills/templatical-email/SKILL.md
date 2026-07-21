@@ -9,7 +9,10 @@ description: >-
   countdown", "draft an order-confirmation email", or "turn this copy into an
   email template" — even when they don't say "Templatical" or "JSON". Also use it
   when producing or editing Templatical template JSON that must validate against
-  the block schema.
+  the block schema. It can also open a live preview of the template in the real
+  Templatical editor (loaded from the CDN) and update it as the user prompts,
+  reconciling any in-browser hand-edits — triggered by "show it live", "preview
+  it live", "open it in the editor", or the "/templatical-email:live" argument.
 ---
 
 # Templatical Email Templates
@@ -21,6 +24,19 @@ global **settings** — that loads straight into the editor for a human to refin
 The workflow is simple: read the brief, emit valid template JSON, validate it
 with the bundled script, then hand it back. No API key or server is involved —
 the agent running this skill is the inference.
+
+This skill has **two modes**, one install:
+
+- **Build mode** (default) — generate and validate template JSON. Fully offline,
+  cross-agent, needs only `ajv`. This is everything below up to "Live mode".
+- **[Live mode](#live-mode)** (optional) — open the template in the **real**
+  Templatical editor in a browser, update it live as the user prompts, and
+  reconcile their in-browser hand-edits. Local, Claude-Code-first, adds **no**
+  npm dependencies. Entered on request; build mode is otherwise unchanged.
+
+Both modes operate on one **shared working file** — `.templatical/template.json`
+in the user's project — so a user who built JSON in build mode can say "show it
+live" and the editor picks up the current template seamlessly.
 
 ## Setup (first run)
 
@@ -47,15 +63,18 @@ structure / link linting on top of structural validation.
      output on.
 3. **Generate the JSON** — a complete `{ "blocks": [...], "settings": {...} }`
    document, following the schema exactly (see Rules).
-4. **Validate before returning** — write the JSON to a file and run:
+4. **Validate before returning** — write the JSON to the shared working file
+   `.templatical/template.json` (create the folder if needed) and run:
    ```
-   node scripts/validate.mjs path/to/template.json
+   node scripts/validate.mjs .templatical/template.json
    ```
    Fix every structural error reported and re-run until it passes. When
    `@templatical/quality` is installed, also resolve reported accessibility /
-   structure / link warnings.
+   structure / link warnings. Writing to this canonical path is what lets a
+   later "show it live" pick up the current template with no extra step.
 5. **Hand off** — return the validated JSON. The user loads it into the editor
-   (`editor.setContent(json)`) and refines it there.
+   (`editor.setContent(json)`) and refines it there — or asks to preview it live
+   (see [Live mode](#live-mode)).
 
 ## Rules
 
@@ -101,3 +120,93 @@ user's context defines the _taste_.
 - Readable body text (14–16px), sufficient contrast, alt text on every image.
 - A footer section (divider + social/menu + an unsubscribe line) for anything
   campaign-like.
+
+## Live mode
+
+Live mode opens the template in the **real** Templatical editor in a browser and
+keeps it in sync as the user prompts, so they watch the email take shape and can
+also drag-edit it directly. It's optional and **Claude-Code-first** — it needs
+Node (for a tiny local bridge) and a browser the agent can open. Build mode above
+stays fully cross-agent and unchanged.
+
+**It adds no npm dependencies.** The bridge (`scripts/live-server.mjs`) uses only
+Node built-ins; the editor and `mjml-browser` load from the CDN. These assets are
+inert until live mode is started.
+
+### Entering live mode
+
+Enter it when the user runs `/templatical-email:live`, or asks to "show it live",
+"preview it live", "open it in the editor", or similar — mid-session is fine.
+Both modes share `.templatical/template.json`, so live mode just serves whatever
+is already there (build the template first if the file doesn't exist yet).
+
+> **Working directory matters.** The working file and the server's pidfile live
+> under the **user's project** directory (`<project>/.templatical/`), not this
+> skill's folder. Run every command below — `live-server.mjs` (start/`reload`/
+> `stop`) and `validate.mjs` — with the project as the current directory,
+> referencing the skill script by its path (`node <skill>/scripts/live-server.mjs`).
+> If you can't control the cwd, pass `--cwd <project>` (and optionally
+> `--file <path>`) so `start`/`reload`/`stop` all agree on the same location.
+
+1. Ensure `.templatical/template.json` exists and is valid (run the validator).
+2. Start the bridge in the background (from the project root):
+   ```
+   node <skill>/scripts/live-server.mjs
+   ```
+   It serves `http://localhost:4747/` and prints the working-file path. It is
+   single-instance (a fixed port + a `.templatical/live-server.pid` guard); a
+   second start just reports the running one. Optional flags: `--port <n>`,
+   `--cwd <project>`, `--file <path>`.
+3. Open `http://localhost:4747/` — in Claude Code use the browser/preview pane;
+   in other agents open the system browser. The page loads the editor from the
+   CDN and shows the current template.
+
+### The prompt → live-update loop
+
+When the user asks for a change:
+
+1. **Check for divergence first.** Read the editor's latest state from the bridge
+   (`GET http://localhost:4747/content` → `{ divergent, content }`).
+   - `divergent: false` → no in-browser hand-edits since your last write. Proceed.
+   - `divergent: true` → the user hand-edited in the browser. **Ask before
+     overwriting:** _"You've edited the template in the browser since I last
+     updated it. Build on your browser version, or replace it with what I have?"_
+     - **Browser version** → take the returned `content` as your new base, apply
+       the requested change on top of it, and continue.
+     - **Replace with mine** → apply to your own version; say explicitly that
+       this discards their browser edits.
+2. **Validate**, always, before writing: `node <skill>/scripts/validate.mjs .templatical/template.json`
+   (write your candidate first). Never push invalid content to the editor.
+3. **Write** the validated JSON to `.templatical/template.json`, then push it:
+   ```
+   node <skill>/scripts/live-server.mjs reload
+   ```
+   The page updates live (over Server-Sent Events) — no refresh.
+
+### Export
+
+The page has **Copy JSON**, **Get MJML**, and **Get HTML** buttons (HTML compiles
+in-browser via `mjml-browser`, loaded from the CDN on demand). You can also hand
+the user JSON directly, or MJML/HTML via `@templatical/renderer` in build mode.
+
+### Ending live mode
+
+Stop the bridge when the user is done (or the session ends) so no process or port
+is orphaned:
+
+```
+node <skill>/scripts/live-server.mjs stop
+```
+
+### Notes & limits
+
+- **`.templatical/` is a working directory** — it holds the shared template and
+  the bridge's pidfile. Suggest the user add `.templatical/` to their project's
+  `.gitignore` (don't edit their `.gitignore` without asking).
+- **Local and single-user.** This is an ephemeral local bridge, not the Cloud
+  realtime/collaboration path (no accounts, no persistence, no multi-user).
+- **`html` blocks run as-is** in the preview (the editor sanitizes rich text, but
+  raw `html` blocks are not sanitized). It's the user's own local content, but be
+  aware the preview executes it.
+- The CDN editor version is **pinned** to this skill's schema version, so the
+  live editor's block model matches `reference/schema.json`.
