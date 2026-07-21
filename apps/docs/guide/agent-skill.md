@@ -62,7 +62,7 @@ The agent will:
 
 In **Claude Code**, you don't have to stop at JSON — you can watch the template render in the **real** editor and keep refining it by prompting. Ask to **"show it live"** (or run `/templatical-email:live`) and the skill:
 
-1. Starts a tiny local bridge and opens `http://localhost:4747/` in the browser pane — the page loads the editor from the CDN and shows your current template.
+1. Starts a tiny local bridge and opens the preview in the browser pane — the page loads the editor from the CDN and shows your current template.
 2. Updates the preview **live** each time you prompt a change (over Server-Sent Events — no refresh).
 3. Lets you **hand-edit in the browser** too; the agent notices when you've diverged and asks whether to build on your browser version or replace it before it overwrites anything.
 4. Exports straight from the page: **Copy JSON**, **Get MJML**, or **Get HTML**.

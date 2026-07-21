@@ -62,7 +62,7 @@ Der Agent wird:
 
 In **Claude Code** müssen Sie nicht beim JSON aufhören — Sie können das Template im **echten** Editor rendern sehen und es per Prompt weiter verfeinern. Bitten Sie darum, es „live zu zeigen" (oder führen Sie `/templatical-email:live` aus), und der Skill:
 
-1. startet eine kleine lokale Bridge und öffnet `http://localhost:4747/` im Browser-Bereich — die Seite lädt den Editor aus dem CDN und zeigt Ihr aktuelles Template.
+1. startet eine kleine lokale Bridge und öffnet die Vorschau im Browser-Bereich — die Seite lädt den Editor aus dem CDN und zeigt Ihr aktuelles Template.
 2. aktualisiert die Vorschau bei jeder Änderung, die Sie prompten, **live** (über Server-Sent Events — ohne Neuladen).
 3. lässt Sie auch **im Browser von Hand bearbeiten**; der Agent erkennt, wenn Sie abgewichen sind, und fragt, ob er auf Ihrer Browser-Version aufbauen oder sie ersetzen soll, bevor er etwas überschreibt.
 4. exportiert direkt aus der Seite: **JSON kopieren**, **MJML abrufen** oder **HTML abrufen**.

@@ -16,6 +16,7 @@ import {
   EDITOR_VERSION,
   readWorkingFile,
   startBridge,
+  startBridgePreferring,
 } from "../scripts/live-server.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -256,6 +257,45 @@ async function collectSse(
   await pump;
   return frames;
 }
+
+// --------------------------------------------------------------------------
+// Port selection: prefer the requested port, fall back when it's busy
+// --------------------------------------------------------------------------
+
+describe("startBridgePreferring", () => {
+  let cwd: string;
+  let blocker: Awaited<ReturnType<typeof startBridge>> | null = null;
+  let handle: Awaited<ReturnType<typeof startBridgePreferring>> | null = null;
+
+  beforeEach(() => {
+    cwd = mkdtempSync(join(tmpdir(), "tpl-port-"));
+  });
+  afterEach(async () => {
+    if (handle) await handle.close();
+    if (blocker) await blocker.close();
+    handle = blocker = null;
+    rmSync(cwd, { recursive: true, force: true });
+  });
+
+  it("uses the preferred port without falling back when it is free", async () => {
+    handle = await startBridgePreferring({ cwd, preferredPort: 0 });
+    expect(handle.fellBack).toBe(false);
+    expect(handle.port).toBeGreaterThan(0);
+    const res = await fetch(`${handle.url}template`);
+    expect(res.status).toBe(204);
+  });
+
+  it("falls back to a free port when the preferred one is occupied", async () => {
+    blocker = await startBridge({ cwd, port: 0 });
+    const taken = blocker.port;
+    handle = await startBridgePreferring({ cwd, preferredPort: taken });
+    expect(handle.fellBack).toBe(true);
+    expect(handle.port).not.toBe(taken);
+    // and it actually serves on the fallback port
+    const res = await fetch(`${handle.url}template`);
+    expect(res.status).toBe(204);
+  });
+});
 
 // --------------------------------------------------------------------------
 // CLI lifecycle: single-instance guard + stop (spawns the real script)

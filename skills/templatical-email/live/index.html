@@ -4,6 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Templatical — Live preview</title>
+    <link rel="icon" href="https://templatical.com/logo-small.svg" />
+    <!-- Geist, matching the playground (fonts.bunny.net). -->
+    <link rel="preconnect" href="https://fonts.bunny.net" crossorigin />
+    <link
+      href="https://fonts.bunny.net/css?family=geist:400,500,600&display=swap"
+      rel="stylesheet"
+    />
     <!--
       The real Templatical editor, loaded from the CDN. {{EDITOR_VERSION}} is
       injected by scripts/live-server.mjs (pinned to the skill's schema version).
@@ -14,7 +21,96 @@
       rel="stylesheet"
       href="https://unpkg.com/@templatical/editor@{{EDITOR_VERSION}}/dist/cdn/editor.css"
     />
+    <!-- Set the stored theme before paint to avoid a flash. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("tpl-live-theme");
+          if (t === "light" || t === "dark")
+            document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
     <style>
+      /*
+        Design language borrowed from the playground + the SDK design system
+        (DESIGN.md): warm neutrals tinted toward hue 60, Signal Amber as the one
+        signal color, Geist, and the 120ms house spring on every transition.
+      */
+      :root {
+        --spring: cubic-bezier(0.16, 1, 0.3, 1);
+
+        --paper: oklch(99.5% 0.002 60);
+        --n-50: oklch(97% 0.004 60);
+        --n-100: oklch(96% 0.006 60);
+        --n-200: oklch(92% 0.006 60);
+        --n-300: oklch(86% 0.01 60);
+        --n-400: oklch(68% 0.012 60);
+        --n-500: oklch(50% 0.015 60);
+        --n-700: oklch(30% 0.012 60);
+        --n-900: oklch(18% 0.01 60);
+
+        --primary: oklch(70% 0.16 55);
+        --primary-hover: oklch(63% 0.17 55);
+        --primary-tint: oklch(95% 0.04 55);
+        --ring: oklch(70% 0.16 55 / 0.32);
+
+        --success: oklch(62.8% 0.194 155.1);
+        --warning: oklch(76.9% 0.168 70.08);
+        --danger: oklch(63.7% 0.237 25.33);
+
+        --canvas: var(--n-100);
+        --bar: color-mix(in oklch, var(--paper) 82%, var(--n-100));
+        --surface: var(--paper);
+        --raised: var(--paper);
+        --border: var(--n-200);
+        --text: var(--n-900);
+        --muted: var(--n-500);
+        --hover: var(--n-100);
+        --shadow-modal: 0 24px 64px oklch(18% 0.01 60 / 0.18);
+        --scrim: oklch(24% 0.02 60 / 0.5);
+        color-scheme: light;
+      }
+
+      /* Dark tokens — applied on system-dark (unless explicitly overridden to
+         light) and whenever the toggle sets data-theme="dark". */
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --canvas: oklch(16% 0.008 60);
+          --bar: oklch(22% 0.011 60);
+          --surface: oklch(24% 0.012 60);
+          --raised: oklch(27% 0.013 60);
+          --border: oklch(32% 0.012 60);
+          --text: oklch(96% 0.006 60);
+          --muted: oklch(70% 0.012 60);
+          --hover: oklch(30% 0.013 60);
+          --primary: oklch(78% 0.14 55);
+          --primary-hover: oklch(84% 0.12 55);
+          --primary-tint: oklch(40% 0.09 55);
+          --ring: oklch(78% 0.14 55 / 0.4);
+          --shadow-modal: 0 24px 64px oklch(0% 0 0 / 0.5);
+          --scrim: oklch(10% 0.01 60 / 0.6);
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme="dark"] {
+        --canvas: oklch(16% 0.008 60);
+        --bar: oklch(22% 0.011 60);
+        --surface: oklch(24% 0.012 60);
+        --raised: oklch(27% 0.013 60);
+        --border: oklch(32% 0.012 60);
+        --text: oklch(96% 0.006 60);
+        --muted: oklch(70% 0.012 60);
+        --hover: oklch(30% 0.013 60);
+        --primary: oklch(78% 0.14 55);
+        --primary-hover: oklch(84% 0.12 55);
+        --primary-tint: oklch(40% 0.09 55);
+        --ring: oklch(78% 0.14 55 / 0.4);
+        --shadow-modal: 0 24px 64px oklch(0% 0 0 / 0.5);
+        --scrim: oklch(10% 0.01 60 / 0.6);
+        color-scheme: dark;
+      }
+
       * {
         box-sizing: border-box;
       }
@@ -22,155 +118,465 @@
       body {
         margin: 0;
         height: 100%;
-        font-family:
-          ui-sans-serif,
-          system-ui,
-          -apple-system,
-          "Segoe UI",
-          Roboto,
-          sans-serif;
-        color: #1a1a1a;
-        background: #f4f4f5;
       }
       body {
         display: flex;
         flex-direction: column;
+        background: var(--canvas);
+        color: var(--text);
+        font-family:
+          Geist,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
       }
+
+      /* ---- Top bar ---------------------------------------------------- */
       .bar {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 12px;
-        padding: 8px 16px;
-        background: #111;
-        color: #fff;
+        height: 52px;
+        flex: none;
+        padding: 0 14px 0 16px;
+        background: var(--bar);
+        border-bottom: 1px solid var(--border);
+        overflow-x: auto;
+        scrollbar-width: none;
+        z-index: 10;
+      }
+      .bar::-webkit-scrollbar {
+        display: none;
+      }
+      .bar .group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         flex: none;
       }
-      .bar .brand {
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 15px;
         font-weight: 600;
-        letter-spacing: 0.2px;
+        letter-spacing: -0.01em;
+        color: var(--text);
       }
-      .bar .spacer {
-        flex: 1;
+      .brand img {
+        width: 22px;
+        height: 22px;
+        display: block;
       }
+      .brand .sub {
+        font-weight: 500;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .brand .sep {
+        color: var(--n-300);
+        font-weight: 400;
+      }
+
       .status {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        color: #d4d4d8;
+        gap: 7px;
+        padding: 4px 11px 4px 9px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--muted);
+        white-space: nowrap;
       }
       .status .dot {
-        width: 8px;
-        height: 8px;
+        width: 7px;
+        height: 7px;
         border-radius: 50%;
-        background: #a1a1aa;
+        background: var(--n-400);
+        position: relative;
+      }
+      .status[data-state="live"] {
+        color: color-mix(in oklch, var(--success) 72%, var(--text));
       }
       .status[data-state="live"] .dot {
-        background: #22c55e;
+        background: var(--success);
+        box-shadow: 0 0 0 3px
+          color-mix(in oklch, var(--success) 22%, transparent);
+      }
+      .status[data-state="live"] .dot::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: var(--success);
+        animation: pulse 2s var(--spring) infinite;
+      }
+      .status[data-state="reconnecting"] {
+        color: color-mix(in oklch, var(--warning) 66%, var(--text));
       }
       .status[data-state="reconnecting"] .dot {
-        background: #f59e0b;
+        background: var(--warning);
+      }
+      .status[data-state="error"] {
+        color: color-mix(in oklch, var(--danger) 72%, var(--text));
       }
       .status[data-state="error"] .dot {
-        background: #ef4444;
+        background: var(--danger);
       }
-      .bar button {
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+          opacity: 0.6;
+        }
+        70%,
+        100% {
+          transform: scale(2.6);
+          opacity: 0;
+        }
+      }
+
+      .divider {
+        width: 1px;
+        height: 20px;
+        background: var(--border);
+        flex: none;
+      }
+
+      /* ---- Buttons ---------------------------------------------------- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--muted);
         font: inherit;
         font-size: 13px;
-        padding: 6px 12px;
-        border-radius: 6px;
-        border: 1px solid #3f3f46;
-        background: #27272a;
-        color: #fff;
+        font-weight: 500;
+        white-space: nowrap;
         cursor: pointer;
+        transition:
+          color 120ms var(--spring),
+          background-color 120ms var(--spring),
+          border-color 120ms var(--spring),
+          box-shadow 120ms var(--spring),
+          transform 120ms var(--spring);
       }
-      .bar button:hover {
-        background: #3f3f46;
+      .btn:hover {
+        color: var(--text);
+        background: var(--hover);
       }
-      .bar button:disabled {
-        opacity: 0.5;
-        cursor: default;
+      .btn:active {
+        transform: translateY(0.5px);
       }
-      #editor {
+      .btn svg {
+        width: 14px;
+        height: 14px;
+        flex: none;
+      }
+      .btn.icon-only {
+        width: 32px;
+        padding: 0;
+        justify-content: center;
+      }
+      .btn.primary {
+        background: var(--primary);
+        border-color: transparent;
+        color: var(--paper);
+      }
+      .btn.primary:hover {
+        background: var(--primary-hover);
+        color: var(--paper);
+      }
+      :focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--ring);
+      }
+
+      /* ---- Editor + loading ------------------------------------------- */
+      .stage {
+        position: relative;
         flex: 1;
         min-height: 0;
+      }
+      #editor {
+        position: absolute;
+        inset: 0;
         overflow: auto;
       }
+      .loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: var(--canvas);
+        z-index: 5;
+        transition: opacity 260ms var(--spring);
+      }
+      body.ready .loading {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loading img {
+        width: 40px;
+        height: 40px;
+        opacity: 0.9;
+      }
+      .loading .spinner {
+        width: 22px;
+        height: 22px;
+        border: 2px solid var(--border);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      .loading .msg {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .loading.error .spinner {
+        display: none;
+      }
+      .loading.error .msg {
+        color: color-mix(in oklch, var(--danger) 70%, var(--text));
+        max-width: 460px;
+        text-align: center;
+        line-height: 1.5;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ---- Export dialog ---------------------------------------------- */
       dialog {
-        width: min(820px, 92vw);
-        border: none;
-        border-radius: 10px;
+        width: min(840px, 92vw);
+        max-height: 86vh;
+        border: 1px solid var(--border);
+        border-radius: 14px;
         padding: 0;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        background: var(--raised);
+        color: var(--text);
+        box-shadow: var(--shadow-modal);
+        overflow: hidden;
       }
       dialog::backdrop {
-        background: rgba(0, 0, 0, 0.5);
+        background: var(--scrim);
+        backdrop-filter: blur(4px);
+      }
+      dialog[open] {
+        animation: dialog-in 200ms var(--spring);
+      }
+      dialog[open]::backdrop {
+        animation: backdrop-in 200ms var(--spring);
+      }
+      @keyframes dialog-in {
+        from {
+          opacity: 0;
+          transform: scale(0.97) translateY(6px);
+        }
+      }
+      @keyframes backdrop-in {
+        from {
+          opacity: 0;
+        }
       }
       .dlg-head {
         display: flex;
         align-items: center;
-        padding: 12px 16px;
-        border-bottom: 1px solid #e4e4e7;
+        gap: 10px;
+        padding: 13px 14px 13px 18px;
+        border-bottom: 1px solid var(--border);
       }
       .dlg-head strong {
         flex: 1;
+        font-size: 14px;
+        font-weight: 600;
       }
-      .dlg-head button {
-        font: inherit;
-        border: 1px solid #d4d4d8;
-        background: #fff;
+      .dlg-head .kind {
+        display: inline-flex;
+        align-items: center;
+        height: 22px;
+        padding: 0 8px;
         border-radius: 6px;
-        padding: 6px 12px;
-        cursor: pointer;
+        background: var(--primary-tint);
+        color: var(--primary);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
       }
       dialog textarea {
+        display: block;
         width: 100%;
-        height: 52vh;
+        height: 56vh;
         border: none;
-        padding: 16px;
-        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        padding: 16px 18px;
+        background: var(--n-50);
+        color: var(--text);
+        font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
         font-size: 12.5px;
+        line-height: 1.55;
         resize: none;
         outline: none;
       }
+
+      /* ---- Toast ------------------------------------------------------ */
       .toast {
         position: fixed;
-        bottom: 18px;
+        bottom: 20px;
         left: 50%;
-        transform: translateX(-50%);
-        background: #111;
-        color: #fff;
-        padding: 8px 16px;
+        transform: translate(-50%, 8px);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--n-900);
+        color: var(--paper);
+        padding: 9px 16px;
         border-radius: 999px;
         font-size: 13px;
+        font-weight: 500;
+        box-shadow: 0 8px 28px oklch(18% 0.01 60 / 0.28);
         opacity: 0;
-        transition: opacity 0.15s;
         pointer-events: none;
+        transition:
+          opacity 200ms var(--spring),
+          transform 200ms var(--spring);
+        z-index: 50;
+      }
+      :root[data-theme="dark"] .toast,
+      .toast {
+        /* keep the toast readable in both themes */
       }
       .toast.show {
         opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      @media (max-width: 720px) {
+        .btn .label,
+        .brand .sub,
+        .brand .sep {
+          display: none;
+        }
+        .btn {
+          width: 32px;
+          padding: 0;
+          justify-content: center;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
       }
     </style>
   </head>
   <body>
     <header class="bar">
-      <span class="brand">Templatical · Live</span>
-      <span id="status" class="status" data-state="connecting">
-        <span class="dot"></span><span id="status-text">Connecting…</span>
-      </span>
-      <span class="spacer"></span>
-      <button id="btn-json">Copy JSON</button>
-      <button id="btn-mjml">Get MJML</button>
-      <button id="btn-html">Get HTML</button>
+      <div class="group">
+        <span class="brand">
+          <img
+            src="https://templatical.com/logo.svg"
+            alt=""
+            aria-hidden="true"
+          />
+          Templatical <span class="sep">·</span>
+          <span class="sub">Live preview</span>
+        </span>
+      </div>
+
+      <div class="group">
+        <span id="status" class="status" data-state="connecting">
+          <span class="dot"></span><span id="status-text">Connecting…</span>
+        </span>
+        <span class="divider"></span>
+        <button id="btn-json" class="btn" title="Copy the template JSON">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="9" y="9" width="12" height="12" rx="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+          <span class="label">Copy JSON</span>
+        </button>
+        <button id="btn-mjml" class="btn" title="Render to MJML">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
+          </svg>
+          <span class="label">Get MJML</span>
+        </button>
+        <button id="btn-html" class="btn" title="Compile to HTML">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="2" y="3" width="20" height="14" rx="2" />
+            <line x1="8" y1="21" x2="16" y2="21" />
+            <line x1="12" y1="17" x2="12" y2="21" />
+          </svg>
+          <span class="label">Get HTML</span>
+        </button>
+        <span class="divider"></span>
+        <button
+          id="btn-theme"
+          class="btn icon-only"
+          title="Toggle theme"
+          aria-label="Toggle theme"
+        ></button>
+      </div>
     </header>
 
-    <div id="editor"></div>
+    <div class="stage">
+      <div id="editor"></div>
+      <div id="loading" class="loading">
+        <img src="https://templatical.com/logo.svg" alt="Templatical" />
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="msg" id="loading-msg">Loading the editor…</div>
+      </div>
+    </div>
 
     <dialog id="export">
       <div class="dlg-head">
         <strong id="export-title">Export</strong>
-        <button id="export-copy">Copy</button>
-        <button id="export-close" style="margin-left: 8px">Close</button>
+        <span class="kind" id="export-kind">JSON</span>
+        <button id="export-copy" class="btn">Copy</button>
+        <button id="export-close" class="btn">Close</button>
       </div>
       <textarea id="export-body" readonly spellcheck="false"></textarea>
     </dialog>
@@ -180,9 +586,11 @@
     <script type="module">
       import { init } from "https://unpkg.com/@templatical/editor@{{EDITOR_VERSION}}/dist/cdn/editor.js";
 
-      const statusEl = document.getElementById("status");
-      const statusText = document.getElementById("status-text");
-      const toastEl = document.getElementById("toast");
+      const $ = (id) => document.getElementById(id);
+      const statusEl = $("status");
+      const statusText = $("status-text");
+      const toastEl = $("toast");
+      const loadingEl = $("loading");
 
       let editor = null;
       // Guards the setContent() we trigger from an agent update so its onChange
@@ -190,17 +598,63 @@
       let applyingRemote = false;
       let debounceTimer = null;
 
+      // ---- Theme (auto default, manual light/dark override) ----
+      const SUN =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+      const MOON =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+      const readTheme = () => {
+        try {
+          return localStorage.getItem("tpl-live-theme") || "auto";
+        } catch {
+          return "auto";
+        }
+      };
+      const effective = (stored) =>
+        stored === "auto" ? (prefersDark.matches ? "dark" : "light") : stored;
+      function applyTheme(stored) {
+        if (stored === "auto")
+          document.documentElement.removeAttribute("data-theme");
+        else document.documentElement.setAttribute("data-theme", stored);
+        const eff = effective(stored);
+        const btn = $("btn-theme");
+        btn.innerHTML = eff === "dark" ? SUN : MOON;
+        btn.setAttribute(
+          "aria-label",
+          eff === "dark" ? "Switch to light theme" : "Switch to dark theme",
+        );
+        if (editor) {
+          try {
+            editor.setTheme(stored);
+          } catch {
+            /* older editor build without setTheme */
+          }
+        }
+      }
+      $("btn-theme").onclick = () => {
+        const next = effective(readTheme()) === "dark" ? "light" : "dark";
+        try {
+          localStorage.setItem("tpl-live-theme", next);
+        } catch {}
+        applyTheme(next);
+      };
+      prefersDark.addEventListener("change", () => {
+        if (readTheme() === "auto") applyTheme("auto");
+      });
+      applyTheme(readTheme());
+
+      // ---- Status + toast ----
       function setStatus(state, text) {
         statusEl.dataset.state = state;
         statusText.textContent = text;
       }
-
       let toastTimer = null;
       function toast(msg) {
         toastEl.textContent = msg;
         toastEl.classList.add("show");
         clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1600);
+        toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1700);
       }
 
       async function copy(text) {
@@ -212,10 +666,10 @@
         }
       }
 
-      // Report the editor's current content to the bridge. `baseline: true`
-      // marks a post-apply snapshot (the normalized view of the agent's
-      // content), which resets the divergence tracker rather than counting as
-      // an edit.
+      // ---- Sync with the bridge ----
+      // Report the editor's current content. `baseline: true` marks a post-apply
+      // snapshot (the normalized view of the agent's content), which resets the
+      // divergence tracker rather than counting as an edit.
       async function postContent(baseline = false) {
         if (!editor) return;
         try {
@@ -228,53 +682,50 @@
           /* bridge gone; ignore */
         }
       }
-
       function scheduleContentPost() {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => postContent(false), 500);
       }
-
       async function applyRemote(content) {
         if (!editor) return;
         applyingRemote = true;
         editor.setContent(content);
-        // Let Vue flush the setContent before snapshotting the baseline.
-        await new Promise((r) => setTimeout(r, 0));
+        await new Promise((r) => setTimeout(r, 0)); // let Vue flush setContent
         await postContent(true);
         applyingRemote = false;
         toast("Updated from agent");
       }
 
-      const exportDialog = document.getElementById("export");
-      function showExport(title, body) {
-        document.getElementById("export-title").textContent = title;
-        document.getElementById("export-body").value = body;
+      // ---- Export ----
+      const exportDialog = $("export");
+      function showExport(kind, body) {
+        $("export-title").textContent =
+          kind === "error" ? "Something went wrong" : `Exported ${kind}`;
+        $("export-kind").textContent = kind === "error" ? "ERROR" : kind;
+        $("export-body").value = body;
         exportDialog.showModal();
       }
-      document.getElementById("export-close").onclick = () =>
-        exportDialog.close();
-      document.getElementById("export-copy").onclick = async () => {
-        const ok = await copy(document.getElementById("export-body").value);
-        toast(ok ? "Copied" : "Copy failed — select and copy manually");
+      $("export-close").onclick = () => exportDialog.close();
+      $("export-copy").onclick = async () => {
+        const ok = await copy($("export-body").value);
+        toast(ok ? "Copied to clipboard" : "Select the text to copy");
       };
 
-      document.getElementById("btn-json").onclick = async () => {
+      $("btn-json").onclick = async () => {
         const json = JSON.stringify(editor.getContent(), null, 2);
         const ok = await copy(json);
         toast(ok ? "JSON copied" : "Showing JSON");
         showExport("JSON", json);
       };
-
-      document.getElementById("btn-mjml").onclick = async () => {
+      $("btn-mjml").onclick = async () => {
         try {
           const mjml = await editor.toMjml();
           await copy(mjml);
           showExport("MJML", mjml);
         } catch (err) {
-          showExport("MJML — error", String(err?.message ?? err));
+          showExport("error", String(err?.message ?? err));
         }
       };
-
       // mjml-browser is heavy; load it lazily from the CDN only when the user
       // asks for HTML. This is the one place HTML compilation happens client-side
       // (fine for a local dev preview).
@@ -286,7 +737,7 @@
       // callable default. (The editor bundle above stays on unpkg; this is the
       // repo's convention for ESM-import packages — see @templatical/import-*.)
       let mjml2html = null;
-      document.getElementById("btn-html").onclick = async () => {
+      $("btn-html").onclick = async () => {
         setStatus("live", "Compiling HTML…");
         try {
           if (!mjml2html) {
@@ -299,12 +750,13 @@
           await copy(html);
           showExport("HTML", html);
         } catch (err) {
-          showExport("HTML — error", String(err?.message ?? err));
+          showExport("error", String(err?.message ?? err));
         } finally {
           setStatus("live", "Live");
         }
       };
 
+      // ---- Boot ----
       async function boot() {
         let content;
         try {
@@ -317,14 +769,14 @@
         editor = await init({
           container: "#editor",
           content, // undefined → editor starts from its default empty template
+          uiTheme: readTheme(),
           onChange: () => {
             if (!applyingRemote) scheduleContentPost();
           },
         });
 
-        // Seed the baseline with the editor's normalized view of the initial
-        // content so its own load-time normalization never reads as an edit.
-        await postContent(true);
+        document.body.classList.add("ready");
+        await postContent(true); // seed the baseline with the normalized view
         setStatus("live", "Live");
 
         const es = new EventSource("/events");
@@ -340,8 +792,11 @@
       }
 
       boot().catch((err) => {
-        setStatus("error", "Failed to load editor");
-        showExport("Startup error", String(err?.stack ?? err));
+        setStatus("error", "Editor failed to load");
+        loadingEl.classList.add("error");
+        $("loading-msg").textContent =
+          "The editor couldn't load from the CDN. Check your connection and reload.\n\n" +
+          String(err?.message ?? err);
       });
     </script>
   </body>

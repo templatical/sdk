@@ -247,6 +247,27 @@ export function startBridge({
   });
 }
 
+/**
+ * Start the bridge on `preferredPort`, falling back to an OS-assigned free port
+ * when that one is occupied — so a busy port never fails the launch. The page
+ * uses relative URLs and `reload`/`stop` read the port from the pidfile, so the
+ * actual port is discovered, not assumed. The returned handle carries
+ * `fellBack: true` when it landed on a different port than requested.
+ */
+export async function startBridgePreferring({
+  preferredPort = DEFAULT_PORT,
+  ...opts
+} = {}) {
+  try {
+    const handle = await startBridge({ ...opts, port: preferredPort });
+    return { ...handle, fellBack: false };
+  } catch (err) {
+    if (err?.code !== "EADDRINUSE") throw err;
+    const handle = await startBridge({ ...opts, port: 0 });
+    return { ...handle, fellBack: true, preferredPort };
+  }
+}
+
 // --------------------------------------------------------------------------
 // CLI (start / reload / stop) with pidfile-based single-instance lifecycle
 // --------------------------------------------------------------------------
@@ -326,8 +347,8 @@ async function main() {
     process.exit(0);
   }
 
-  // start
-  const port = args.port ?? DEFAULT_PORT;
+  // start — prefer the requested/default port, fall back to a free one if busy
+  const preferredPort = args.port ?? DEFAULT_PORT;
   const existing = readPidfile(cwd);
   if (existing && processAlive(existing.pid)) {
     console.log(
@@ -337,18 +358,11 @@ async function main() {
   }
   if (existing) rmSync(pidfilePath(cwd), { force: true }); // stale pidfile
 
-  let handle;
-  try {
-    handle = await startBridge({ cwd, port, file: args.file });
-  } catch (err) {
-    if (err?.code === "EADDRINUSE") {
-      console.error(
-        `Port ${port} is already in use. Stop the other process, or pass --port <n>.`,
-      );
-      process.exit(1);
-    }
-    throw err;
-  }
+  const handle = await startBridgePreferring({
+    cwd,
+    preferredPort,
+    file: args.file,
+  });
 
   mkdirSync(dirname(pidfilePath(cwd)), { recursive: true });
   writeFileSync(
@@ -365,6 +379,9 @@ async function main() {
   process.on("SIGTERM", cleanup);
 
   console.log(`Templatical live preview running at ${handle.url}`);
+  if (handle.fellBack) {
+    console.log(`(port ${preferredPort} was busy — using ${handle.port})`);
+  }
   console.log(`Working file: ${resolve(cwd, args.file ?? WORKING_FILE)}`);
   console.log(
     `Open the URL in a browser. After writing the working file, run:\n  node ${SELF} reload`,

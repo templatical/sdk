@@ -153,20 +153,22 @@ is already there (build the template first if the file doesn't exist yet).
    ```
    node <skill>/scripts/live-server.mjs
    ```
-   It serves `http://localhost:4747/` and prints the working-file path. It is
-   single-instance (a fixed port + a `.templatical/live-server.pid` guard); a
-   second start just reports the running one. Optional flags: `--port <n>`,
-   `--cwd <project>`, `--file <path>`.
-3. Open `http://localhost:4747/` — in Claude Code use the browser/preview pane;
-   in other agents open the system browser. The page loads the editor from the
-   CDN and shows the current template.
+   It **prints the URL it's serving** and the working-file path. It prefers port
+   4747 but falls back to a free port if that's taken, so **read the actual URL
+   from its output** (the port is also recorded in `.templatical/live-server.pid`
+   as `port`) — don't assume a fixed port. It is single-instance via the pidfile
+   guard; a second start just reports the running one. Optional flags:
+   `--port <n>`, `--cwd <project>`, `--file <path>`.
+3. Open that URL — in Claude Code use the browser/preview pane; in other agents
+   open the system browser. The page loads the editor from the CDN and shows the
+   current template.
 
 ### The prompt → live-update loop
 
 When the user asks for a change:
 
-1. **Check for divergence first.** Read the editor's latest state from the bridge
-   (`GET http://localhost:4747/content` → `{ divergent, content }`).
+1. **Check for divergence first.** Read the editor's latest state from the
+   bridge's `GET /content` endpoint (at the URL from step 2) → `{ divergent, content }`.
    - `divergent: false` → no in-browser hand-edits since your last write. Proceed.
    - `divergent: true` → the user hand-edited in the browser. **Ask before
      overwriting:** _"You've edited the template in the browser since I last
