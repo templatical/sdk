@@ -29,7 +29,7 @@ const emit = defineEmits<{
       :aria-label="label"
       :disabled="disabled"
       :class="[
-        'tpl:relative tpl:inline-flex tpl:h-5 tpl:w-9 tpl:shrink-0 tpl:rounded-full tpl:border-2 tpl:border-transparent tpl:transition-colors tpl:duration-200',
+        'tpl:relative tpl:inline-flex tpl:h-5 tpl:w-9 tpl:p-0 tpl:shrink-0 tpl:rounded-full tpl:border-2 tpl:border-transparent tpl:transition-colors tpl:duration-200',
         modelValue
           ? 'tpl:bg-[var(--tpl-primary)]'
           : 'tpl:bg-[var(--tpl-border)]',
