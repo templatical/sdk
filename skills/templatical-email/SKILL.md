@@ -5,9 +5,9 @@ description: >-
   settings) that load into the Templatical drag-and-drop editor. This skill
   should be used whenever the user wants to create, design, draft, mock up, or
   edit a marketing, transactional, or newsletter email — for example "make a
-  product-launch email", "design a welcome email", "build an event invite with a
-  countdown", "draft an order-confirmation email", or "turn this copy into an
-  email template" — even when they don't say "Templatical" or "JSON". Also use it
+  product-launch email", "design a welcome email", "build an event invite",
+  "draft an order-confirmation email", or "turn this copy into an email
+  template" — even when they don't say "Templatical" or "JSON". Also use it
   when producing or editing Templatical template JSON that must validate against
   the block schema. It can also open a live preview of the template in the real
   Templatical editor (loaded from the CDN) and update it as the user prompts,
@@ -132,11 +132,16 @@ unrelated sessions.
 ## Rules
 
 - **Emit these block types:** `section`, `title`, `paragraph`, `image`,
-  `button`, `divider`, `spacer`, `social`, `video`, `menu`, `table`, `countdown`,
-  `html`. Prefer native blocks — reach for `html` only when nothing else fits,
-  since raw HTML is not visually editable afterward. Do **not** emit `custom`
-  blocks — those are consumer-registered runtime extensions and cannot be created
-  from a prompt.
+  `button`, `divider`, `spacer`, `social`, `video`, `menu`, `table`, `html`.
+  Prefer native blocks — reach for `html` only when nothing else fits, since raw
+  HTML is not visually editable afterward.
+- **Never emit `countdown` or `custom` blocks** (even though the schema allows
+  them): `countdown` needs the Templatical **Cloud** backend to render its
+  animated GIF — the open-source renderer can't, so it would break — and `custom`
+  blocks are consumer-registered runtime extensions that can't be produced from a
+  prompt. If the user asks for a countdown, say it's a Cloud feature and offer a
+  static stand-in instead — a `title`/`paragraph` with the date/time, or a "X days
+  to go" line (optionally a `{{merge_tag}}`).
 - **Every block needs** `id` (unique, e.g. `"title_1"`), `type`, and
   `styles.padding` (`{ top, right, bottom, left }` in px).
 - **Structure content in sections.** A `section` has `children`: an array of

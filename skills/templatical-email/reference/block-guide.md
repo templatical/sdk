@@ -5,7 +5,7 @@ template is `{ "blocks": Block[], "settings": Settings }`. All sizes are pixels
 and all colors are hex strings unless noted. Fields marked _optional_ may be
 omitted; everything else is required.
 
-**Contents:** [Settings](#settings) · [Common fields](#common-block-fields) · Layout — [section](#section), [spacer](#spacer), [divider](#divider) · Text — [title](#title), [paragraph](#paragraph), [menu](#menu), [table](#table) · Media & actions — [image](#image), [button](#button), [social](#social), [video](#video), [countdown](#countdown) · [html](#html) · [Merge tags](#merge-tags). Complete templates that exercise the trickier blocks (wrapper cards, multi-column layouts, tables, countdowns) live in [`examples/`](./examples/).
+**Contents:** [Settings](#settings) · [Common fields](#common-block-fields) · Layout — [section](#section), [spacer](#spacer), [divider](#divider) · Text — [title](#title), [paragraph](#paragraph), [menu](#menu), [table](#table) · Media & actions — [image](#image), [button](#button), [social](#social), [video](#video) · [html](#html) · [Merge tags](#merge-tags). Complete templates that exercise the trickier blocks (wrapper cards, multi-column layouts, tables) live in [`examples/`](./examples/).
 
 ## Settings
 
@@ -133,17 +133,6 @@ Renders as a thumbnail with a play button linking to the video.
 - `url` (URL), `thumbnailUrl` (URL), `alt` (string).
 - `width` (int | `"full"`), `align`.
 - `openInNewTab` (bool, _optional_).
-
-### countdown
-
-- `targetDate` (ISO 8601 string), `timezone` (string).
-- `showDays`, `showHours`, `showMinutes`, `showSeconds` (bool).
-- `separator` — `":" | "-" | " "`.
-- `digitFontSize` (int), `digitColor` (hex).
-- `labelFontSize` (int), `labelColor` (hex), `backgroundColor` (hex).
-- `labelDays`, `labelHours`, `labelMinutes`, `labelSeconds` (strings).
-- `expiredMessage` (string), `expiredImageUrl` (URL), `hideOnExpiry` (bool).
-- `fontFamily` (_optional_).
 
 ### html
 

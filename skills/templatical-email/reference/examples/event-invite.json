@@ -45,7 +45,7 @@
       ]
     },
     {
-      "id": "sec_countdown",
+      "id": "sec_details",
       "type": "section",
       "styles": {
         "padding": { "top": 24, "right": 24, "bottom": 24, "left": 24 },
@@ -55,38 +55,23 @@
       "children": [
         [
           {
-            "id": "para_cd",
-            "type": "paragraph",
+            "id": "title_when",
+            "type": "title",
             "styles": {
-              "padding": { "top": 0, "right": 0, "bottom": 12, "left": 0 }
+              "padding": { "top": 0, "right": 0, "bottom": 4, "left": 0 }
             },
-            "content": "<p style=\"text-align:center\">Doors open in</p>"
+            "content": "Saturday, September 19, 2026",
+            "level": 2,
+            "color": "#111827",
+            "textAlign": "center"
           },
           {
-            "id": "cd_evt",
-            "type": "countdown",
+            "id": "para_when",
+            "type": "paragraph",
             "styles": {
               "padding": { "top": 0, "right": 0, "bottom": 16, "left": 0 }
             },
-            "targetDate": "2026-09-19T14:00:00Z",
-            "timezone": "America/Denver",
-            "showDays": true,
-            "showHours": true,
-            "showMinutes": true,
-            "showSeconds": false,
-            "separator": ":",
-            "digitFontSize": 32,
-            "digitColor": "#111827",
-            "labelFontSize": 12,
-            "labelColor": "#6b7280",
-            "backgroundColor": "#f4f1ea",
-            "labelDays": "Days",
-            "labelHours": "Hours",
-            "labelMinutes": "Minutes",
-            "labelSeconds": "Seconds",
-            "expiredMessage": "The event has started!",
-            "expiredImageUrl": "",
-            "hideOnExpiry": false
+            "content": "<p style=\"text-align:center\">Doors open 2:00 PM · Boulder Community Trailhead, CO</p>"
           },
           {
             "id": "btn_rsvp",
