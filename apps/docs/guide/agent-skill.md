@@ -5,7 +5,7 @@ description: Generate and validate Templatical email templates from a natural-la
 
 # AI Agent Skill
 
-Generate email templates from a natural-language prompt — **free, open-source, and running entirely in your own AI agent.** The `templatical-email` [Agent Skill](https://code.claude.com/docs/en/skills) teaches Claude Code, Cursor, Claude Desktop, or any Agent Skills–compatible agent how Templatical templates are structured, so it produces valid template JSON and validates it against the block schema. You then load the result into the editor and refine it like any other template.
+Generate email templates from a natural-language prompt — **free, open-source, and running entirely in your own AI agent.** The `templatical-email` [Agent Skill](https://code.claude.com/docs/en/skills) teaches your coding agent how Templatical templates are structured, so it produces valid template JSON and validates it against the block schema. You then load the result into the editor and refine it like any other template.
 
 There is no backend and no API key: your agent is the inference. Nothing is sent to Templatical.
 
@@ -26,23 +26,22 @@ Add the marketplace from the git repository (not a raw file URL) so the plugin's
 
 ### Any agent (copy the folder)
 
-The `SKILL.md` format is an open standard, so the skill works across compatible agents. Copy it from a clone of the repository into your agent's skills directory:
+`SKILL.md` is an open standard, so the skill works in any compatible agent. Copy `skills/templatical-email` from a clone of the repository into your agent's skills directory:
 
 ```bash
-# Claude Code / Claude Desktop
+# Claude Code
 cp -r skills/templatical-email ~/.claude/skills/
 # Cursor
 cp -r skills/templatical-email ~/.cursor/skills/
-# OpenAI Codex (and other agents that read the vendor-neutral Agent Skills dir)
+# OpenAI Codex (and other agents using the vendor-neutral dir)
 cp -r skills/templatical-email ~/.agents/skills/
 ```
 
 Then install the validator's one dependency inside the copied folder:
 
 ```bash
-npm install ajv
-# optional — adds accessibility / structure / link linting:
-npm install @templatical/quality
+npm install ajv                    # required
+npm install @templatical/quality   # optional but highly recommended — adds accessibility / structure / link linting
 ```
 
 ## Using it
@@ -60,18 +59,14 @@ The agent will:
 
 ## Preview it live
 
-You don't have to stop at JSON — in an agent that runs locally, you can watch the template render in the **real** editor and keep refining it by prompting. Just say what you want — **"show it live"**, "preview it live", "build this in live mode" — and the skill:
+You don't have to stop at JSON — you can watch the template render in the **real** editor and keep refining it by prompting. Ask to **show it live** (or "preview it live", "build this in live mode") and the skill:
 
-1. Starts a tiny local bridge and opens the preview in your browser (the built-in pane in Claude Code, otherwise your system browser) — the page loads the editor from the CDN and shows your current template.
-2. Updates the preview **live** each time you prompt a change (over Server-Sent Events — no refresh).
-3. Lets you **hand-edit in the browser** too; the agent notices when you've diverged and asks whether to build on your browser version or replace it before it overwrites anything.
+1. Opens a live preview in your browser, showing your current template in the real editor.
+2. Updates it **live** each time you prompt a change — no refresh.
+3. Lets you **hand-edit in the browser** too; the agent notices when you've diverged and asks whether to build on your version or replace it before overwriting.
 4. Exports straight from the page: **Copy JSON**, **Get MJML**, or **Get HTML**.
 
-Within a session both modes work on one template file in `.templatical/` — each template gets its own name (like a Claude plan file, e.g. `misty-copper-otter.json`), so you can build in plain JSON first and switch to a live preview mid-session, and it picks up right where you are. A new session starts a fresh template rather than silently resuming an old one; ask to "continue" a previous one to reopen it. Live mode is local and single-user (not the [Cloud](/cloud/) realtime path), and adds **no** dependencies: the bridge is Node built-ins, and the editor and MJML compiler load from the CDN.
-
-::: tip Where live mode runs
-Live mode needs an agent that runs locally, keeps a background process alive, and can reach `localhost`: **Claude Code, Cursor, and the Agent SDK** work today, and **Codex CLI** with a local-network opt-in. It can't run in the **claude.ai / Claude Desktop** server sandbox or cloud runners (no local filesystem, no user-reachable port) — there, build mode works exactly the same. In Claude Code you can also trigger it with the space argument `/templatical-email live`.
-:::
+Build in plain JSON first and switch to a live preview mid-session — it picks up right where you are. Each template is saved under its own name, and a new session starts a fresh one (ask to "continue" a previous template to reopen it). Live mode is local and single-user — not the [Cloud](/cloud/) realtime path — and needs nothing beyond a coding agent running on your own machine.
 
 ## Bring your own brand and rules
 

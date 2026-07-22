@@ -10,10 +10,25 @@
 //
 // Usage (after `npm i ajv` in this folder, `@templatical/quality` optional):
 //   node scripts/validate.mjs path/to/template.json
-import Ajv from "ajv";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
+// `ajv` is the skill's one required dependency. Load it dynamically so a fresh
+// install (where it isn't installed yet) gets an actionable message instead of a
+// raw "Cannot find package 'ajv'" stack trace.
+let Ajv;
+try {
+  ({ default: Ajv } = await import("ajv"));
+} catch {
+  console.error(
+    "This skill's validator needs its dependency `ajv`, which isn't installed.\n" +
+      "Install it in the skill folder:\n" +
+      "  npm install ajv @templatical/quality\n" +
+      "(`ajv` is required; `@templatical/quality` is optional but highly recommended.)",
+  );
+  process.exit(2);
+}
 
 const here = dirname(fileURLToPath(import.meta.url));
 const schema = JSON.parse(
@@ -175,7 +190,7 @@ async function main() {
   const quality = await runQualityLint(data);
   if (!quality.available) {
     console.log(
-      "• Quality lint skipped (install @templatical/quality to enable a11y/structure/link checks)",
+      "• Quality lint skipped — install @templatical/quality (optional but highly recommended) for accessibility/structure/link checks",
     );
     process.exit(0);
   }

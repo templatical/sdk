@@ -5,7 +5,7 @@ description: Erstellen und validieren Sie Templatical-E-Mail-Templates aus einem
 
 # KI-Agent-Skill
 
-Erstellen Sie E-Mail-Templates aus einem natürlichsprachlichen Prompt — **kostenlos, quelloffen und vollständig in Ihrem eigenen KI-Agenten ausgeführt.** Der `templatical-email`-[Agent Skill](https://code.claude.com/docs/en/skills) bringt Claude Code, Cursor, Claude Desktop oder jedem Agent-Skills-kompatiblen Agenten bei, wie Templatical-Templates aufgebaut sind, sodass er gültiges Template-JSON erzeugt und es gegen das Block-Schema validiert. Anschließend laden Sie das Ergebnis in den Editor und verfeinern es wie jedes andere Template.
+Erstellen Sie E-Mail-Templates aus einem natürlichsprachlichen Prompt — **kostenlos, quelloffen und vollständig in Ihrem eigenen KI-Agenten ausgeführt.** Der `templatical-email`-[Agent Skill](https://code.claude.com/docs/en/skills) bringt Ihrem Coding-Agenten bei, wie Templatical-Templates aufgebaut sind, sodass er gültiges Template-JSON erzeugt und es gegen das Block-Schema validiert. Anschließend laden Sie das Ergebnis in den Editor und verfeinern es wie jedes andere Template.
 
 Es gibt kein Backend und keinen API-Schlüssel: Ihr Agent ist die Inferenz. Nichts wird an Templatical gesendet.
 
@@ -26,23 +26,22 @@ Fügen Sie den Marketplace über das Git-Repository hinzu (nicht über eine rohe
 
 ### Beliebiger Agent (Ordner kopieren)
 
-Das `SKILL.md`-Format ist ein offener Standard, daher funktioniert der Skill mit kompatiblen Agenten. Kopieren Sie ihn aus einem Klon des Repositorys in das Skills-Verzeichnis Ihres Agenten:
+`SKILL.md` ist ein offener Standard, daher funktioniert der Skill in jedem kompatiblen Agenten. Kopieren Sie `skills/templatical-email` aus einem Klon des Repositorys in das Skills-Verzeichnis Ihres Agenten:
 
 ```bash
-# Claude Code / Claude Desktop
+# Claude Code
 cp -r skills/templatical-email ~/.claude/skills/
 # Cursor
 cp -r skills/templatical-email ~/.cursor/skills/
-# OpenAI Codex (und andere Agenten, die das neutrale Agent-Skills-Verzeichnis lesen)
+# OpenAI Codex (und andere Agenten, die das neutrale Verzeichnis nutzen)
 cp -r skills/templatical-email ~/.agents/skills/
 ```
 
 Installieren Sie anschließend die einzige Abhängigkeit des Validators im kopierten Ordner:
 
 ```bash
-npm install ajv
-# optional — ergänzt Barrierefreiheits-, Struktur- und Link-Prüfungen:
-npm install @templatical/quality
+npm install ajv                    # erforderlich
+npm install @templatical/quality   # optional, aber sehr empfohlen — ergänzt Barrierefreiheits-, Struktur- und Link-Prüfungen
 ```
 
 ## Verwendung
@@ -60,18 +59,14 @@ Der Agent wird:
 
 ## Live-Vorschau
 
-Sie müssen nicht beim JSON aufhören — in einem Agenten, der lokal läuft, können Sie das Template im **echten** Editor rendern sehen und es per Prompt weiter verfeinern. Sagen Sie einfach, was Sie möchten — „live zeigen", „live in der Vorschau", „im Live-Modus bauen" — und der Skill:
+Sie müssen nicht beim JSON aufhören — Sie können das Template im **echten** Editor rendern sehen und es per Prompt weiter verfeinern. Bitten Sie darum, es **live zu zeigen** (oder „live in der Vorschau", „im Live-Modus bauen"), und der Skill:
 
-1. startet eine kleine lokale Bridge und öffnet die Vorschau in Ihrem Browser (dem eingebauten Bereich in Claude Code, sonst Ihrem System-Browser) — die Seite lädt den Editor aus dem CDN und zeigt Ihr aktuelles Template.
-2. aktualisiert die Vorschau bei jeder Änderung, die Sie prompten, **live** (über Server-Sent Events — ohne Neuladen).
-3. lässt Sie auch **im Browser von Hand bearbeiten**; der Agent erkennt, wenn Sie abgewichen sind, und fragt, ob er auf Ihrer Browser-Version aufbauen oder sie ersetzen soll, bevor er etwas überschreibt.
+1. öffnet eine Live-Vorschau in Ihrem Browser, die Ihr aktuelles Template im echten Editor zeigt.
+2. aktualisiert sie bei jeder Änderung, die Sie prompten, **live** — ohne Neuladen.
+3. lässt Sie auch **im Browser von Hand bearbeiten**; der Agent erkennt, wenn Sie abgewichen sind, und fragt, ob er auf Ihrer Version aufbauen oder sie ersetzen soll, bevor er überschreibt.
 4. exportiert direkt aus der Seite: **JSON kopieren**, **MJML abrufen** oder **HTML abrufen**.
 
-Innerhalb einer Sitzung arbeiten beide Modi an einer Vorlagendatei in `.templatical/` — jede Vorlage erhält einen eigenen Namen (wie eine Claude-Plandatei, z. B. `misty-copper-otter.json`), sodass Sie zuerst in reinem JSON bauen und mitten in der Sitzung zu einer Live-Vorschau wechseln können, und sie knüpft genau dort an, wo Sie stehen. Eine neue Sitzung beginnt mit einer frischen Vorlage, statt stillschweigend eine alte fortzusetzen; bitten Sie darum, eine frühere „fortzusetzen", um sie erneut zu öffnen. Der Live-Modus ist lokal und für einen einzelnen Nutzer (nicht der Echtzeit-Weg der [Cloud](/de/cloud/)) und fügt **keine** Abhängigkeiten hinzu: Die Bridge nutzt Node-Bordmittel, und der Editor sowie der MJML-Compiler werden aus dem CDN geladen.
-
-::: tip Wo der Live-Modus läuft
-Der Live-Modus benötigt einen Agenten, der lokal läuft, einen Hintergrundprozess am Leben hält und `localhost` erreichen kann: **Claude Code, Cursor und das Agent SDK** funktionieren heute, und **Codex CLI** mit einer Freigabe für das lokale Netzwerk. Er läuft nicht in der Server-Sandbox von **claude.ai / Claude Desktop** oder in Cloud-Runnern (kein lokales Dateisystem, kein vom Nutzer erreichbarer Port) — dort funktioniert der Build-Modus genau gleich. In Claude Code können Sie ihn auch mit dem Leerzeichen-Argument `/templatical-email live` auslösen.
-:::
+Bauen Sie zuerst in reinem JSON und wechseln Sie mitten in der Sitzung zu einer Live-Vorschau — sie knüpft genau dort an, wo Sie stehen. Jede Vorlage wird unter einem eigenen Namen gespeichert, und eine neue Sitzung beginnt mit einer frischen (bitten Sie darum, eine frühere Vorlage „fortzusetzen", um sie erneut zu öffnen). Der Live-Modus ist lokal und für einen einzelnen Nutzer — nicht der Echtzeit-Weg der [Cloud](/de/cloud/) — und benötigt nichts außer einem Coding-Agenten, der auf Ihrem eigenen Rechner läuft.
 
 ## Bringen Sie Ihre eigene Marke und Regeln mit
 

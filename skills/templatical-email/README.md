@@ -32,12 +32,8 @@ templatical-email/
   cross-agent, needs only `ajv`.
 - **Live mode** (optional) — open the template in the **real** Templatical editor
   in a browser, update it live as you prompt, and reconcile in-browser hand-edits.
-  Local, adds **no** npm dependencies (the bridge is Node built-ins; the editor
-  and `mjml-browser` load from the CDN), and runs on any local-shell agent with
-  Agent Skills + a persistent process + localhost — Claude Code, Cursor, the
-  Agent SDK, and Codex CLI (with a local-network opt-in); not the
-  claude.ai/Desktop server sandbox. See the "Live mode" section of
-  [`SKILL.md`](./SKILL.md).
+  Local, single-user, and adds **no** npm dependencies. Runs in a coding agent on
+  your own machine. See the "Live mode" section of [`SKILL.md`](./SKILL.md).
 
 ## Install
 
@@ -66,9 +62,8 @@ cp -r skills/templatical-email ~/.claude/skills/
 # Cursor: use ~/.cursor/skills/  ·  OpenAI Codex: use ~/.agents/skills/
 
 cd ~/.claude/skills/templatical-email
-npm install ajv
-# optional — adds accessibility / structure / link linting (if available):
-npm install @templatical/quality
+npm install ajv                    # required (structural validation)
+npm install @templatical/quality   # optional but highly recommended — adds accessibility / structure / link linting
 ```
 
 Your agent picks the skill up automatically when you ask it to build a

@@ -64,14 +64,19 @@ the references, picking an example, validating, generating file names, managing
 
 ## Setup (first run)
 
-From this skill's folder, install the validator's one dependency:
+From this skill's folder, install the validator's dependencies:
 
 ```
-npm install ajv
+npm install ajv @templatical/quality
 ```
 
-Optionally also `npm install @templatical/quality` to layer accessibility /
-structure / link linting on top of structural validation.
+`ajv` is **required** (structural validation). `@templatical/quality` is
+**optional but highly recommended** — it layers accessibility / structure / link
+linting on top, catching issues structural validation alone can't. If you skip
+it, validation still works; the quality layer just doesn't run.
+
+If the validator ever reports a missing dependency, it prints the exact
+`npm install` to run — run that in the skill folder, then re-run the validator.
 
 ## Workflow
 
@@ -175,15 +180,11 @@ Live mode opens the template in the **real** Templatical editor in a browser and
 keeps it in sync as the user prompts, so they watch the email take shape and can
 also drag-edit it directly. It's optional.
 
-**Where it runs.** Live mode needs an agent that can (a) run this skill, (b) keep
-a background process alive across turns, and (c) reach `localhost`. That's **Claude
-Code, Cursor, and the Agent SDK** today, and **Codex CLI with a local-network
-opt-in** (its sandbox blocks the agent's own localhost calls by default, so the
-agent's `GET /content` / `reload` need that enabled — the user opening the browser
-is unaffected). It can **not** run where the skill executes in a server-side
-sandbox with no local filesystem or user-reachable port — **claude.ai / Claude
-Desktop and cloud runners**; there, stay in build mode. Build mode itself is fully
-cross-agent and unchanged.
+**Where it runs.** Live mode runs on the user's own machine — it keeps a
+background process (the bridge) alive across turns and reaches `localhost`. If
+your environment can't do that (e.g. a hosted or server-side sandbox with no
+local filesystem or reachable port), tell the user live mode isn't available here
+and stay in build mode. Build mode itself is unchanged.
 
 **It adds no npm dependencies.** The bridge (`scripts/live-server.mjs`) uses only
 Node built-ins; the editor and `mjml-browser` load from the CDN. These assets are
