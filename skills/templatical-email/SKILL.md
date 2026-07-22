@@ -34,9 +34,11 @@ This skill has **two modes**, one install:
   reconcile their in-browser hand-edits. Local, Claude-Code-first, adds **no**
   npm dependencies. Entered on request; build mode is otherwise unchanged.
 
-Both modes operate on one **shared working file** — `.templatical/template.json`
-in the user's project — so a user who built JSON in build mode can say "show it
-live" and the editor picks up the current template seamlessly.
+Within a session both modes operate on one **working template file** in the
+user's `.templatical/` folder — so building in JSON and then saying "show it
+live" picks up the current template seamlessly. Each template gets its own
+uniquely named file and **each new session starts a new template by default** —
+see [Working files](#working-files).
 
 ## Setup (first run)
 
@@ -63,18 +65,42 @@ structure / link linting on top of structural validation.
      output on.
 3. **Generate the JSON** — a complete `{ "blocks": [...], "settings": {...} }`
    document, following the schema exactly (see Rules).
-4. **Validate before returning** — write the JSON to the shared working file
-   `.templatical/template.json` (create the folder if needed) and run:
+4. **Validate before returning** — write the JSON to the session's working file
+   `.templatical/<name>.json` (see [Working files](#working-files) — generate a
+   fresh three-word name for a new template; create the folder if needed) and run:
    ```
-   node scripts/validate.mjs .templatical/template.json
+   node scripts/validate.mjs .templatical/<name>.json
    ```
    Fix every structural error reported and re-run until it passes. When
    `@templatical/quality` is installed, also resolve reported accessibility /
-   structure / link warnings. Writing to this canonical path is what lets a
-   later "show it live" pick up the current template with no extra step.
+   structure / link warnings. Writing to that file is what lets a later "show it
+   live" pick up the current template with no extra step.
 5. **Hand off** — return the validated JSON. The user loads it into the editor
    (`editor.setContent(json)`) and refines it there — or asks to preview it live
    (see [Live mode](#live-mode)).
+
+## Working files
+
+Every template lives in the user's `.templatical/` folder as its own file with a
+random three-word name, like a Claude plan file — e.g.
+`.templatical/misty-copper-otter.json`. This keeps finished work around as a
+browsable history instead of one file that silently carries state between
+unrelated sessions.
+
+- **New by default.** When the user asks for a template, treat it as a **new**
+  one: generate a fresh three-word kebab-case name (playful is fine), confirm no
+  file of that name already exists in `.templatical/` (regenerate if it does —
+  never overwrite an existing template), and write there. A fresh session thus
+  starts a fresh template; never silently resume an earlier one.
+- **Resume only on request.** If the user asks to continue a previous template
+  ("keep working on the welcome email", "open misty-copper-otter"), list
+  `.templatical/*.json` — using each file's first title/heading block as a hint —
+  and use the one they mean.
+- **One template per session.** Track the active file name for the whole session
+  so build mode and live mode operate on the same template — validate, preview,
+  and reload all target that file. The `.templatical/` folder is a working area;
+  it's fine to leave old templates there (suggest the user gitignore it), and the
+  user can clear it whenever they like.
 
 ## Rules
 
@@ -137,8 +163,9 @@ inert until live mode is started.
 
 Enter it when the user runs `/templatical-email:live`, or asks to "show it live",
 "preview it live", "open it in the editor", or similar — mid-session is fine.
-Both modes share `.templatical/template.json`, so live mode just serves whatever
-is already there (build the template first if the file doesn't exist yet).
+Live mode serves the session's working template (`.templatical/<name>.json`, see
+[Working files](#working-files)); if the user hasn't built one yet, create a new
+template first. A mid-session switch just points the bridge at that file.
 
 > **Working directory matters.** The working file and the server's pidfile live
 > under the **user's project** directory (`<project>/.templatical/`), not this
@@ -148,17 +175,19 @@ is already there (build the template first if the file doesn't exist yet).
 > If you can't control the cwd, pass `--cwd <project>` (and optionally
 > `--file <path>`) so `start`/`reload`/`stop` all agree on the same location.
 
-1. Ensure `.templatical/template.json` exists and is valid (run the validator).
-2. Start the bridge in the background (from the project root):
+1. Ensure the session's `.templatical/<name>.json` exists and is valid (run the
+   validator; build a new template first if there isn't one yet).
+2. Start the bridge in the background (from the project root), pointing it at the
+   session's template with `--file`:
    ```
-   node <skill>/scripts/live-server.mjs
+   node <skill>/scripts/live-server.mjs --file .templatical/<name>.json
    ```
    It **prints the URL it's serving** and the working-file path. It prefers port
    4747 but falls back to a free port if that's taken, so **read the actual URL
    from its output** (the port is also recorded in `.templatical/live-server.pid`
    as `port`) — don't assume a fixed port. It is single-instance via the pidfile
-   guard; a second start just reports the running one. Optional flags:
-   `--port <n>`, `--cwd <project>`, `--file <path>`.
+   guard; a second start just reports the running one. Other flags: `--port <n>`,
+   `--cwd <project>`.
 3. Open that URL — in Claude Code use the browser/preview pane; in other agents
    open the system browser. The page loads the editor from the CDN and shows the
    current template.
@@ -177,9 +206,9 @@ When the user asks for a change:
        the requested change on top of it, and continue.
      - **Replace with mine** → apply to your own version; say explicitly that
        this discards their browser edits.
-2. **Validate**, always, before writing: `node <skill>/scripts/validate.mjs .templatical/template.json`
+2. **Validate**, always, before writing: `node <skill>/scripts/validate.mjs .templatical/<name>.json`
    (write your candidate first). Never push invalid content to the editor.
-3. **Write** the validated JSON to `.templatical/template.json`, then push it:
+3. **Write** the validated JSON to the session's `.templatical/<name>.json`, then push it:
    ```
    node <skill>/scripts/live-server.mjs reload
    ```

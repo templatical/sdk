@@ -217,6 +217,26 @@ describe("bridge endpoints", () => {
     const res = await fetch(`${base}nope`);
     expect(res.status).toBe(404);
   });
+
+  it("serves a custom --file working path (per-template naming)", async () => {
+    mkdirSync(join(cwd, ".templatical"), { recursive: true });
+    writeFileSync(
+      join(cwd, ".templatical", "misty-copper-otter.json"),
+      JSON.stringify(TEMPLATE_B),
+    );
+    const b = await startBridge({
+      cwd,
+      port: 0,
+      file: ".templatical/misty-copper-otter.json",
+    });
+    try {
+      const res = await fetch(`${b.url}template`);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual(TEMPLATE_B);
+    } finally {
+      await b.close();
+    }
+  });
 });
 
 /**

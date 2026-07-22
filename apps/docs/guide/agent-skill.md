@@ -67,7 +67,7 @@ In **Claude Code**, you don't have to stop at JSON — you can watch the templat
 3. Lets you **hand-edit in the browser** too; the agent notices when you've diverged and asks whether to build on your browser version or replace it before it overwrites anything.
 4. Exports straight from the page: **Copy JSON**, **Get MJML**, or **Get HTML**.
 
-Both modes share one working file (`.templatical/template.json`), so you can build in plain JSON first and switch to a live preview mid-session — it picks up right where you are. Live mode is local and single-user (not the [Cloud](/cloud/) realtime path), and adds **no** dependencies: the bridge is Node built-ins, and the editor and MJML compiler load from the CDN.
+Within a session both modes work on one template file in `.templatical/` — each template gets its own name (like a Claude plan file, e.g. `misty-copper-otter.json`), so you can build in plain JSON first and switch to a live preview mid-session, and it picks up right where you are. A new session starts a fresh template rather than silently resuming an old one; ask to "continue" a previous one to reopen it. Live mode is local and single-user (not the [Cloud](/cloud/) realtime path), and adds **no** dependencies: the bridge is Node built-ins, and the editor and MJML compiler load from the CDN.
 
 ::: tip Other agents
 Live mode is Claude-Code-first — it needs a long-running local process and a browser the agent can open. In other agents, build mode works exactly the same; the live preview is the Claude Code extra.
