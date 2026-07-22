@@ -60,17 +60,17 @@ The agent will:
 
 ## Preview it live
 
-In **Claude Code**, you don't have to stop at JSON — you can watch the template render in the **real** editor and keep refining it by prompting. Ask to **"show it live"** (or run `/templatical-email:live`) and the skill:
+You don't have to stop at JSON — in an agent that runs locally, you can watch the template render in the **real** editor and keep refining it by prompting. Just say what you want — **"show it live"**, "preview it live", "build this in live mode" — and the skill:
 
-1. Starts a tiny local bridge and opens the preview in the browser pane — the page loads the editor from the CDN and shows your current template.
+1. Starts a tiny local bridge and opens the preview in your browser (the built-in pane in Claude Code, otherwise your system browser) — the page loads the editor from the CDN and shows your current template.
 2. Updates the preview **live** each time you prompt a change (over Server-Sent Events — no refresh).
 3. Lets you **hand-edit in the browser** too; the agent notices when you've diverged and asks whether to build on your browser version or replace it before it overwrites anything.
 4. Exports straight from the page: **Copy JSON**, **Get MJML**, or **Get HTML**.
 
 Within a session both modes work on one template file in `.templatical/` — each template gets its own name (like a Claude plan file, e.g. `misty-copper-otter.json`), so you can build in plain JSON first and switch to a live preview mid-session, and it picks up right where you are. A new session starts a fresh template rather than silently resuming an old one; ask to "continue" a previous one to reopen it. Live mode is local and single-user (not the [Cloud](/cloud/) realtime path), and adds **no** dependencies: the bridge is Node built-ins, and the editor and MJML compiler load from the CDN.
 
-::: tip Other agents
-Live mode is Claude-Code-first — it needs a long-running local process and a browser the agent can open. In other agents, build mode works exactly the same; the live preview is the Claude Code extra.
+::: tip Where live mode runs
+Live mode needs an agent that runs locally, keeps a background process alive, and can reach `localhost`: **Claude Code, Cursor, and the Agent SDK** work today, and **Codex CLI** with a local-network opt-in. It can't run in the **claude.ai / Claude Desktop** server sandbox or cloud runners (no local filesystem, no user-reachable port) — there, build mode works exactly the same. In Claude Code you can also trigger it with the space argument `/templatical-email live`.
 :::
 
 ## Bring your own brand and rules

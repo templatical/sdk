@@ -60,17 +60,17 @@ Der Agent wird:
 
 ## Live-Vorschau
 
-In **Claude Code** müssen Sie nicht beim JSON aufhören — Sie können das Template im **echten** Editor rendern sehen und es per Prompt weiter verfeinern. Bitten Sie darum, es „live zu zeigen" (oder führen Sie `/templatical-email:live` aus), und der Skill:
+Sie müssen nicht beim JSON aufhören — in einem Agenten, der lokal läuft, können Sie das Template im **echten** Editor rendern sehen und es per Prompt weiter verfeinern. Sagen Sie einfach, was Sie möchten — „live zeigen", „live in der Vorschau", „im Live-Modus bauen" — und der Skill:
 
-1. startet eine kleine lokale Bridge und öffnet die Vorschau im Browser-Bereich — die Seite lädt den Editor aus dem CDN und zeigt Ihr aktuelles Template.
+1. startet eine kleine lokale Bridge und öffnet die Vorschau in Ihrem Browser (dem eingebauten Bereich in Claude Code, sonst Ihrem System-Browser) — die Seite lädt den Editor aus dem CDN und zeigt Ihr aktuelles Template.
 2. aktualisiert die Vorschau bei jeder Änderung, die Sie prompten, **live** (über Server-Sent Events — ohne Neuladen).
 3. lässt Sie auch **im Browser von Hand bearbeiten**; der Agent erkennt, wenn Sie abgewichen sind, und fragt, ob er auf Ihrer Browser-Version aufbauen oder sie ersetzen soll, bevor er etwas überschreibt.
 4. exportiert direkt aus der Seite: **JSON kopieren**, **MJML abrufen** oder **HTML abrufen**.
 
 Innerhalb einer Sitzung arbeiten beide Modi an einer Vorlagendatei in `.templatical/` — jede Vorlage erhält einen eigenen Namen (wie eine Claude-Plandatei, z. B. `misty-copper-otter.json`), sodass Sie zuerst in reinem JSON bauen und mitten in der Sitzung zu einer Live-Vorschau wechseln können, und sie knüpft genau dort an, wo Sie stehen. Eine neue Sitzung beginnt mit einer frischen Vorlage, statt stillschweigend eine alte fortzusetzen; bitten Sie darum, eine frühere „fortzusetzen", um sie erneut zu öffnen. Der Live-Modus ist lokal und für einen einzelnen Nutzer (nicht der Echtzeit-Weg der [Cloud](/de/cloud/)) und fügt **keine** Abhängigkeiten hinzu: Die Bridge nutzt Node-Bordmittel, und der Editor sowie der MJML-Compiler werden aus dem CDN geladen.
 
-::: tip Andere Agenten
-Der Live-Modus ist Claude-Code-first — er benötigt einen langlaufenden lokalen Prozess und einen Browser, den der Agent öffnen kann. In anderen Agenten funktioniert der Build-Modus genau gleich; die Live-Vorschau ist das Extra für Claude Code.
+::: tip Wo der Live-Modus läuft
+Der Live-Modus benötigt einen Agenten, der lokal läuft, einen Hintergrundprozess am Leben hält und `localhost` erreichen kann: **Claude Code, Cursor und das Agent SDK** funktionieren heute, und **Codex CLI** mit einer Freigabe für das lokale Netzwerk. Er läuft nicht in der Server-Sandbox von **claude.ai / Claude Desktop** oder in Cloud-Runnern (kein lokales Dateisystem, kein vom Nutzer erreichbarer Port) — dort funktioniert der Build-Modus genau gleich. In Claude Code können Sie ihn auch mit dem Leerzeichen-Argument `/templatical-email live` auslösen.
 :::
 
 ## Bringen Sie Ihre eigene Marke und Regeln mit

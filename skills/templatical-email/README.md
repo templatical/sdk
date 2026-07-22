@@ -32,9 +32,12 @@ templatical-email/
   cross-agent, needs only `ajv`.
 - **Live mode** (optional) — open the template in the **real** Templatical editor
   in a browser, update it live as you prompt, and reconcile in-browser hand-edits.
-  Local and Claude-Code-first (needs Node + a browser); adds **no** npm
-  dependencies (the bridge is Node built-ins; the editor and `mjml-browser` load
-  from the CDN). See the "Live mode" section of [`SKILL.md`](./SKILL.md).
+  Local, adds **no** npm dependencies (the bridge is Node built-ins; the editor
+  and `mjml-browser` load from the CDN), and runs on any local-shell agent with
+  Agent Skills + a persistent process + localhost — Claude Code, Cursor, the
+  Agent SDK, and Codex CLI (with a local-network opt-in); not the
+  claude.ai/Desktop server sandbox. See the "Live mode" section of
+  [`SKILL.md`](./SKILL.md).
 
 ## Install
 

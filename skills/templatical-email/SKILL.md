@@ -11,8 +11,9 @@ description: >-
   when producing or editing Templatical template JSON that must validate against
   the block schema. It can also open a live preview of the template in the real
   Templatical editor (loaded from the CDN) and update it as the user prompts,
-  reconciling any in-browser hand-edits — triggered by "show it live", "preview
-  it live", "open it in the editor", or the "/templatical-email:live" argument.
+  reconciling any in-browser hand-edits — triggered by natural-language intent
+  such as "show it live", "preview it live", "open it in the editor", or "build
+  this in live mode".
 ---
 
 # Templatical Email Templates
@@ -31,14 +32,35 @@ This skill has **two modes**, one install:
   cross-agent, needs only `ajv`. This is everything below up to "Live mode".
 - **[Live mode](#live-mode)** (optional) — open the template in the **real**
   Templatical editor in a browser, update it live as the user prompts, and
-  reconcile their in-browser hand-edits. Local, Claude-Code-first, adds **no**
-  npm dependencies. Entered on request; build mode is otherwise unchanged.
+  reconcile their in-browser hand-edits. Local, needs **no** npm dependencies,
+  and runs on any local-shell agent that supports this skill (not just Claude
+  Code — see [Live mode](#live-mode)). Entered by intent; build mode is otherwise
+  unchanged.
 
 Within a session both modes operate on one **working template file** in the
 user's `.templatical/` folder — so building in JSON and then saying "show it
 live" picks up the current template seamlessly. Each template gets its own
 uniquely named file and **each new session starts a new template by default** —
 see [Working files](#working-files).
+
+## Talking to the user
+
+Communicate about the _email_, not the machinery. The mechanical steps — reading
+the references, picking an example, validating, generating file names, managing
+`.templatical/` — are for you, not the user; do them silently.
+
+- **Lead with intent and result.** A sentence of what you're building is plenty
+  ("Building an event invitation with clean neutral defaults"), then hand over
+  the template. Skip the play-by-play of your own file reads and checks.
+- **Surface real choices, not internals.** Worth saying: "there's a template
+  from a previous session — start fresh or continue it?" Not worth saying:
+  dependency names (`ajv`), file paths, example filenames, or "reading the
+  schema / validating" — keep those out of user-facing messages.
+- **Mention setup only on action or failure** — say something when you're
+  installing the validator or a step actually fails, not to confirm that routine
+  state is fine.
+- **Report real problems plainly** when they happen (a validation error you
+  couldn't resolve, a missing dependency) with the fix — that's signal, not noise.
 
 ## Setup (first run)
 
@@ -151,9 +173,17 @@ user's context defines the _taste_.
 
 Live mode opens the template in the **real** Templatical editor in a browser and
 keeps it in sync as the user prompts, so they watch the email take shape and can
-also drag-edit it directly. It's optional and **Claude-Code-first** — it needs
-Node (for a tiny local bridge) and a browser the agent can open. Build mode above
-stays fully cross-agent and unchanged.
+also drag-edit it directly. It's optional.
+
+**Where it runs.** Live mode needs an agent that can (a) run this skill, (b) keep
+a background process alive across turns, and (c) reach `localhost`. That's **Claude
+Code, Cursor, and the Agent SDK** today, and **Codex CLI with a local-network
+opt-in** (its sandbox blocks the agent's own localhost calls by default, so the
+agent's `GET /content` / `reload` need that enabled — the user opening the browser
+is unaffected). It can **not** run where the skill executes in a server-side
+sandbox with no local filesystem or user-reachable port — **claude.ai / Claude
+Desktop and cloud runners**; there, stay in build mode. Build mode itself is fully
+cross-agent and unchanged.
 
 **It adds no npm dependencies.** The bridge (`scripts/live-server.mjs`) uses only
 Node built-ins; the editor and `mjml-browser` load from the CDN. These assets are
@@ -161,8 +191,12 @@ inert until live mode is started.
 
 ### Entering live mode
 
-Enter it when the user runs `/templatical-email:live`, or asks to "show it live",
-"preview it live", "open it in the editor", or similar — mid-session is fine.
+Enter it whenever the user expresses the intent — "show it live", "preview it
+live", "open it in the editor", "build this in live mode", or similar — mid-session
+is fine. Natural-language intent is the portable trigger and works on every
+harness. (In Claude Code you can also pass it as an argument with a **space**:
+`/templatical-email live` — use a space, not a colon; `/templatical-email:live` is
+plugin-command-namespace syntax that silently starts build mode instead.)
 Live mode serves the session's working template (`.templatical/<name>.json`, see
 [Working files](#working-files)); if the user hasn't built one yet, create a new
 template first. A mid-session switch just points the bridge at that file.
