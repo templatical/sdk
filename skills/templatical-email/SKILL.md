@@ -223,9 +223,12 @@ template first. A mid-session switch just points the bridge at that file.
    as `port`) — don't assume a fixed port. It is single-instance via the pidfile
    guard; a second start just reports the running one. Other flags: `--port <n>`,
    `--cwd <project>`.
-3. Open that URL — in Claude Code use the browser/preview pane; in other agents
-   open the system browser. The page loads the editor from the CDN and shows the
-   current template.
+3. Open that URL for the user. The preview is for **them** to see and drag-edit,
+   so use a browser they can interact with — a built-in preview pane (e.g. Claude
+   Code's), or simply give them the URL to open in their own browser. **Don't
+   launch a browser-automation/testing tool (e.g. Playwright) for it** — that's an
+   agent-driven browser, not the user's. The page shows the current template in
+   the real editor.
 
 ### The prompt → live-update loop
 
