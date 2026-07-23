@@ -84,6 +84,38 @@ Der Editor lädt selbst nichts hoch — er übergibt Ihnen die `File` und verwen
 
 Bei [Cloud-Editoren](/de/cloud/media-library) werden abgelegte Dateien automatisch in Ihre Templatical-Medienbibliothek hochgeladen — kein `onRequestMedia` nötig (ein eigener Handler hat weiterhin Vorrang).
 
+## Reine Anzeige-Auflösung von Bild-URLs {#reine-anzeige-aufloesung-von-bild-urls}
+
+Manche Integrationen speichern kanonische Bildreferenzen, die nicht direkt anzeigbar sind — zum Beispiel eine offlinefähige Anwendung, deren Vorlagen Bilder über einen einfachen Dateinamen (`logo.png`) referenzieren, anzeigbar nur über kurzlebige `blob:`-URLs aus dem lokalen Speicher. `onRequestMedia` deckt den Medien-Browser-Pfad ab; tippt oder fügt ein Benutzer einen solchen Wert jedoch direkt in das `src`-Feld ein, kann die Arbeitsfläche nichts anzeigen.
+
+Der Callback `resolveImageUrl` schließt diese Lücke. Er bildet einen src-Wert auf eine **Vorschau-URL nur für die Arbeitsfläche** ab — das Inhaltsmodell behält den kanonischen Wert, und `toMjml()` exportiert ihn unverändert:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  async resolveImageUrl(src) {
+    const file = await myFileStore.lookup(src);
+    return file ? URL.createObjectURL(file) : null;
+  },
+});
+```
+
+Die Typsignatur:
+
+```ts
+resolveImageUrl?: (src: string) => string | null | Promise<string | null>;
+```
+
+Geben Sie die Vorschau-URL zurück, oder `null` (bzw. den Eingabewert), um den src unverändert zu verwenden.
+
+So ruft der Editor den Callback auf:
+
+- **Einmal pro bestätigtem Wert.** Eingaben im src-Feld werden entprellt, sodass Teilwerte (`lo`, `logo.p`, …) Ihren Resolver nie erreichen.
+- **Pro src zwischengespeichert** für die Lebensdauer der Editor-Instanz — derselbe src in mehreren Blöcken wird nur einmal aufgelöst.
+- **Fehler werden abgefangen.** Ein geworfener Fehler oder eine abgelehnte Promise wird als „unverändert verwenden" zwischengespeichert; der Editor wiederholt den Aufruf für denselben src nicht.
+- **Merge-Tag-srcs werden übersprungen.** Ein src wie <code v-pre>{{product.image}}</code> wird nie an den Resolver übergeben; stattdessen wird die `placeholderUrl` (falls gesetzt) aufgelöst.
+- **Bewusst nur für die Anzeige.** Anders als eine `blob:`-URL aus `onRequestMedia` (die im Export landen würde — siehe oben) gelangt eine URL aus `resolveImageUrl` nie in den Vorlageninhalt.
+
 ## Eigenschaften des Bildblocks
 
 Der Typ `ImageBlock` definiert alle konfigurierbaren Eigenschaften:

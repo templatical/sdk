@@ -83,6 +83,38 @@ The editor never uploads anything itself — it hands you the `File` and uses wh
 
 For [Cloud editors](/cloud/media-library), dropped files upload to your Templatical media library automatically — no `onRequestMedia` needed (a custom handler still takes precedence).
 
+## Display-only URL resolution
+
+Some integrations store canonical image references that aren't directly displayable — for example, an offline-capable app whose templates reference images by plain file name (`logo.png`), displayable only via ephemeral `blob:` URLs created from local storage. `onRequestMedia` covers the media-browser path, but when a user types or pastes such a value into the `src` input, the canvas has nothing to show.
+
+The `resolveImageUrl` callback closes that gap. It maps a src value to a **preview URL for the canvas only** — the content model keeps the canonical value, and `toMjml()` exports it untouched:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  async resolveImageUrl(src) {
+    const file = await myFileStore.lookup(src);
+    return file ? URL.createObjectURL(file) : null;
+  },
+});
+```
+
+The type signature:
+
+```ts
+resolveImageUrl?: (src: string) => string | null | Promise<string | null>;
+```
+
+Return the preview URL, or `null` (or the input value) to use the src as-is.
+
+How the editor calls it:
+
+- **Once per committed value.** Typing in the src input is debounced, so partial values (`lo`, `logo.p`, …) never reach your resolver.
+- **Cached per src** for the editor instance's lifetime — the same src in several blocks resolves once.
+- **Failures fall back gracefully.** A thrown error or rejected promise is cached as "use as-is"; the editor won't retry the same src.
+- **Merge-tag srcs are skipped.** A src like <code v-pre>{{product.image}}</code> is never passed to the resolver; its `placeholderUrl` (if set) is resolved instead.
+- **Display-only, by design.** Unlike returning a `blob:` URL from `onRequestMedia` (which would end up in the export — see above), a URL from `resolveImageUrl` never enters the template content.
+
 ## Image Block Properties
 
 The `ImageBlock` type defines all configurable properties:

@@ -22,6 +22,7 @@ import { createDefaultTemplateContent, safeClone } from "@templatical/types";
 import type { MediaRequestContext } from "@templatical/media-library";
 
 import Editor from "./Editor.vue";
+import type { ResolveImageUrl } from "./composables/useImageUrlResolver";
 import { loadTranslations, loadCloudTranslations } from "./i18n";
 import { useFonts } from "./composables";
 import { toMjmlForInstance } from "./utils/toMjml";
@@ -88,6 +89,30 @@ export interface TemplaticalEditorConfig {
   onError?: (error: Error) => void;
 
   onRequestMedia?: OnRequestMedia;
+
+  /**
+   * Display-only resolver for image `src` values. The canvas calls this to
+   * obtain a preview URL for a src the user entered; the content model (and
+   * `toMjml()` output) always keeps the canonical value. Return `null` — or
+   * the input value — to use the src as-is.
+   *
+   * Use this when templates reference images by a value that isn't directly
+   * displayable, e.g. plain file names resolved to ephemeral `blob:` URLs
+   * from local storage:
+   *
+   * ```ts
+   * resolveImageUrl: async (src) => {
+   *   const file = await fileStore.lookup(src);
+   *   return file ? URL.createObjectURL(file) : null;
+   * }
+   * ```
+   *
+   * The resolver is called once per committed src value (typing in the src
+   * input is debounced, so partial values never reach it) and results are
+   * cached per src for the editor's lifetime — including failures, which
+   * fall back to displaying the src verbatim.
+   */
+  resolveImageUrl?: ResolveImageUrl;
 
   mergeTags?: MergeTagsConfig;
   /**
@@ -699,6 +724,7 @@ export type {
   Template,
 } from "@templatical/types";
 
+export type { ResolveImageUrl } from "./composables/useImageUrlResolver";
 export type { UseFontsReturn, FontOption } from "./composables/useFonts";
 export { useFonts } from "./composables/useFonts";
 export type { EditorCapabilities } from "./types/editor-capabilities";
