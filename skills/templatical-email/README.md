@@ -19,6 +19,7 @@ templatical-email/
     examples/*.json        # complete, valid templates to model output on
   scripts/
     validate.mjs           # validates a template JSON (ajv + optional quality lint)
+    import.mjs             # import Unlayer/BeeFree/HTML → Templatical JSON (via @templatical/import-*)
     generate-schema.mjs    # regenerates schema.json from @templatical/types (maintainers)
     sync-editor-version.mjs # syncs live mode's CDN editor pin to @templatical/editor (release)
     live-server.mjs        # live mode: zero-dep Node bridge (serves the editor, syncs edits)
@@ -34,6 +35,10 @@ templatical-email/
   in a browser, update it live as you prompt, and reconcile in-browser hand-edits.
   Local, single-user, and adds **no** npm dependencies. Runs in a coding agent on
   your own machine. See the "Live mode" section of [`SKILL.md`](./SKILL.md).
+
+You can also **import** an existing Unlayer / BeeFree / HTML template as a starting
+point (via the `@templatical/import-*` converters, install-on-demand) — see
+"Importing an existing template" in [`SKILL.md`](./SKILL.md).
 
 ## Install
 

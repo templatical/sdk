@@ -129,6 +129,32 @@ unrelated sessions.
   it's fine to leave old templates there (suggest the user gitignore it), and the
   user can clear it whenever they like.
 
+## Importing an existing template
+
+If the user has a template from another editor in their project — **Unlayer**,
+**BeeFree**, or an **HTML email** — convert it to Templatical instead of building
+from scratch. `scripts/import.mjs` runs the matching `@templatical/import-*`
+converter:
+
+```
+node <skill>/scripts/import.mjs <source-file> [--format unlayer|beefree|html]
+```
+
+It auto-detects the format (Unlayer / BeeFree JSON, or `.html`), writes the
+result to a working file `.templatical/<name>.json` (same as a generated
+template — `--out <name>` overrides the default, which is the source file's
+name), and prints a **conversion report**: how many blocks converted cleanly vs.
+fell back to `html` vs. were skipped, plus warnings.
+
+- **Optional, install-on-demand.** Each format needs its converter installed; the
+  script prints the exact `npm install @templatical/import-<format>` if it's
+  missing. Build mode stays `ajv`-only.
+- **Import is lossy** — unmapped constructs become `html` blocks or get dropped.
+  So after importing: **validate**, then open it in **live mode** and refine the
+  html-fallback / skipped blocks into native blocks. That convert → preview →
+  refine loop is the whole point of importing through the skill rather than using
+  the converter package raw.
+
 ## Rules
 
 - **Emit these block types:** `section`, `title`, `paragraph`, `image`,
