@@ -9,6 +9,7 @@ import {
   createParagraphBlock,
   createHtmlBlock,
   createButtonBlock,
+  createTableBlock,
   createDefaultTemplateContent,
 } from "@templatical/types";
 import type { TemplateContent } from "@templatical/types";
@@ -434,6 +435,29 @@ describe("button color attrs are escaped", () => {
       (e) => !/has invalid value/i.test(e.message),
     );
     expect(structuralErrors).toEqual([]);
+  });
+});
+
+describe("table cell content is escaped, not injected as markup", () => {
+  it("a cell of <b>Weight</b> compiles to escaped text, not a live <b> element", async () => {
+    const block = createTableBlock({
+      rows: [
+        {
+          id: "row-0",
+          cells: [{ id: "cell-0-0", content: "<b>Weight</b>" }],
+        },
+      ],
+      hasHeaderRow: false,
+    } as Parameters<typeof createTableBlock>[0]);
+
+    const mjml = renderBlock(block, ctx);
+    const html = await compile(wrapBlock(mjml));
+
+    // Cells are a plain-text field, so the tag must survive as literal
+    // characters through the full MJML→HTML compile — matching how the
+    // editor shows it on canvas. A raw passthrough would emit a live <b>.
+    expect(html).toContain("&lt;b&gt;Weight&lt;/b&gt;");
+    expect(html).not.toContain("<b>Weight</b>");
   });
 });
 

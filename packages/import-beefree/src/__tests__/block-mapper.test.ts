@@ -538,6 +538,48 @@ describe("convertModule", () => {
         expect(block.headerBackgroundColor).toBe("#dddddd");
       }
     });
+
+    it("strips HTML in cell content to plain text and flags it as approximated", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-table", {
+        table: {
+          rows: [
+            {
+              cells: [
+                { html: "<b>Weight</b>" },
+                { content: '<a href="https://example.com">Buy</a>' },
+              ],
+            },
+          ],
+        },
+      });
+
+      const { block, entry } = convertModule(mod, warnings);
+
+      expect(block.type).toBe("table");
+      if (block.type === "table") {
+        // Tags removed; the cell keeps only its text (the link URL is lost).
+        expect(block.rows[0].cells[0].content).toBe("Weight");
+        expect(block.rows[0].cells[1].content).toBe("Buy");
+      }
+      expect(entry.status).toBe("approximated");
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toContain("table cells");
+    });
+
+    it("keeps a plain-text table as a clean conversion with no warning", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-table", {
+        table: {
+          rows: [{ cells: [{ content: "Weight" }, { html: "10kg" }] }],
+        },
+      });
+
+      const { entry } = convertModule(mod, warnings);
+
+      expect(entry.status).toBe("converted");
+      expect(warnings).toHaveLength(0);
+    });
   });
 
   describe("html", () => {

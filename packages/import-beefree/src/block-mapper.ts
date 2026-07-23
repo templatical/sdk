@@ -427,37 +427,56 @@ function convertMenu(descriptor: BeeFreeeModuleDescriptor): Block {
   });
 }
 
-function convertTable(descriptor: BeeFreeeModuleDescriptor): Block {
+function convertTable(descriptor: BeeFreeeModuleDescriptor): {
+  block: Block;
+  approximated: boolean;
+} {
   const table = descriptor.table;
   if (!table) {
-    return createTableBlock({ styles: makeStyles(descriptor) });
+    return {
+      block: createTableBlock({ styles: makeStyles(descriptor) }),
+      approximated: false,
+    };
   }
 
   const style = table.style ?? {};
 
+  // Templatical table cells are a plain-text field (the editor stores the
+  // cell's innerText), so strip any HTML a BeeFree cell carried the same way
+  // button labels are stripped. If a strip actually removed markup, the cell
+  // lost formatting or a link URL, so the conversion is an approximation.
+  let approximated = false;
   const rows: TableRowData[] = (table.rows ?? []).map((row) => ({
     id: generateId(),
-    cells: (row.cells ?? []).map((cell): TableCellData => ({
-      id: generateId(),
-      content: cell.content ?? cell.html ?? "",
-    })),
+    cells: (row.cells ?? []).map((cell): TableCellData => {
+      const raw = cell.content ?? cell.html ?? "";
+      const content = stripTagsPlain(raw);
+      if (content !== raw) {
+        approximated = true;
+      }
+      return { id: generateId(), content };
+    }),
   }));
 
-  return createTableBlock({
-    rows,
-    hasHeaderRow: table.hasHeaderRow ?? false,
-    headerBackgroundColor: parseColor(table.headerBackgroundColor) || undefined,
-    borderColor: parseColor(style["border-color"]) || "#dddddd",
-    borderWidth: parsePxValue(style["border-width"]) || 1,
-    cellPadding:
-      typeof table.cellPadding === "number"
-        ? table.cellPadding
-        : parsePxValue(table.cellPadding as string) || 8,
-    fontSize: parsePxValue(style["font-size"]) || 14,
-    color: parseColor(style.color) || "#1a1a1a",
-    textAlign: toAlign(style["text-align"]),
-    styles: makeStyles(descriptor),
-  });
+  return {
+    block: createTableBlock({
+      rows,
+      hasHeaderRow: table.hasHeaderRow ?? false,
+      headerBackgroundColor:
+        parseColor(table.headerBackgroundColor) || undefined,
+      borderColor: parseColor(style["border-color"]) || "#dddddd",
+      borderWidth: parsePxValue(style["border-width"]) || 1,
+      cellPadding:
+        typeof table.cellPadding === "number"
+          ? table.cellPadding
+          : parsePxValue(table.cellPadding as string) || 8,
+      fontSize: parsePxValue(style["font-size"]) || 14,
+      color: parseColor(style.color) || "#1a1a1a",
+      textAlign: toAlign(style["text-align"]),
+      styles: makeStyles(descriptor),
+    }),
+    approximated,
+  };
 }
 
 function convertHtmlFallback(module: BeeFreeeModule): Block {
@@ -536,9 +555,17 @@ export function convertModule(
       block = convertMenu(descriptor);
       isApproximation = true; // menu styles are approximate
       break;
-    case "table":
-      block = convertTable(descriptor);
+    case "table": {
+      const result = convertTable(descriptor);
+      block = result.block;
+      if (result.approximated) {
+        isApproximation = true;
+        warnings.push(
+          "HTML inside one or more table cells was reduced to plain text; any cell formatting or links were dropped.",
+        );
+      }
       break;
+    }
     default:
       block = convertHtmlFallback(module);
       return {
