@@ -6,6 +6,7 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { getVideoThumbnail } from "../../utils/videoThumbnail";
+import { useResolvedImageSrc } from "../../composables/useImageUrlResolver";
 import { containsMergeTag } from "@templatical/types";
 import MergeTagPreviewText from "../MergeTagPreviewText.vue";
 import { Video } from "@lucide/vue";
@@ -25,9 +26,21 @@ const hasMergeTagUrl = computed(
     containsMergeTag(props.block.thumbnailUrl, syntax),
 );
 
+// Display-only preview URLs (#415). Only the explicit, user-entered
+// thumbnailUrl / placeholderUrl go through resolveImageUrl — an auto-derived
+// provider thumbnail (getVideoThumbnail) is already a real URL. The canonical
+// values stay on the block; the resolver only changes what the canvas shows.
+const displayThumbnailUrl = useResolvedImageSrc(() =>
+  hasMergeTagUrl.value ? undefined : props.block.thumbnailUrl || undefined,
+);
+const displayPlaceholderUrl = useResolvedImageSrc(() =>
+  hasMergeTagUrl.value ? props.block.placeholderUrl : undefined,
+);
+
 const effectiveThumbnail = computed(() => {
   if (hasMergeTagUrl.value) return null;
-  return getVideoThumbnail(props.block.url, props.block.thumbnailUrl);
+  if (props.block.thumbnailUrl) return displayThumbnailUrl.value ?? null;
+  return getVideoThumbnail(props.block.url);
 });
 
 const containerStyle = computed(() => ({
@@ -62,7 +75,7 @@ const mergeTagValue = computed(() =>
     >
       <img
         class="tpl:w-full tpl:border-0"
-        :src="block.placeholderUrl"
+        :src="displayPlaceholderUrl"
         :alt="block.alt"
       />
       <VideoPlayButton />

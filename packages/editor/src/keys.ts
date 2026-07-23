@@ -22,6 +22,7 @@ import type {
   UseTemplateScoringReturn,
 } from "@templatical/core/cloud";
 import type { BaseEditorReturn } from "./composables/useEditorCore";
+import type { ImageUrlResolver } from "./composables/useImageUrlResolver";
 import type { UseFontsReturn } from "./composables/useFonts";
 import type { UseBlockRegistryReturn } from "./composables/useBlockRegistry";
 import type { UseKeyboardReorderReturn } from "./composables/useKeyboardReorder";
@@ -131,6 +132,15 @@ export const ON_REQUEST_LOGIC_TAG_KEY: InjectionKey<
 
 export const ON_REQUEST_MEDIA_KEY: InjectionKey<OnRequestMedia | null> =
   Symbol("onRequestMedia");
+
+/**
+ * Per-editor display-only image URL resolver (`config.resolveImageUrl`),
+ * wrapped with a per-src cache by `createImageUrlResolver`. `null` when the
+ * host doesn't resolve — the canvas then displays canonical src values
+ * verbatim. Consumed via `useResolvedImageSrc` in image-displaying blocks.
+ */
+export const IMAGE_URL_RESOLVER_KEY: InjectionKey<ImageUrlResolver | null> =
+  Symbol("imageUrlResolver");
 
 export const DISPLAY_CONDITIONS_KEY: InjectionKey<DisplayCondition[]> =
   Symbol("displayConditions");

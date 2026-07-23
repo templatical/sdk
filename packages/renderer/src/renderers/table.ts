@@ -7,6 +7,7 @@ import type { RenderContext } from "../render-context";
 import {
   escapeAttr,
   escapeCssValue,
+  escapeHtml,
   convertMergeTagsToValues,
 } from "../escape";
 import { toPaddingString } from "../padding";
@@ -104,7 +105,12 @@ function renderCell(
   }
 
   const styleAttr = styles.join("; ");
-  const content = convertMergeTagsToValues(cell.content);
+  // Cells are a plain-text field (the editor stores innerText; TableCellData
+  // carries no rich-text hint), so escape the content like menu/button. Merge
+  // tags are resolved first: convertMergeTagsToValues matches a literal
+  // `<span`, so escaping has to run after it — escaping first would turn the
+  // span into `&lt;span` and the `{{value}}` placeholder would never resolve.
+  const content = escapeHtml(convertMergeTagsToValues(cell.content));
 
   const tag = isHeader ? "th" : "td";
 
