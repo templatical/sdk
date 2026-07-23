@@ -145,6 +145,7 @@ export {
 
 // Config
 export type {
+  ColorsConfig,
   CustomFont,
   DisplayCondition,
   DisplayConditionsConfig,

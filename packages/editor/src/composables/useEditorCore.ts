@@ -28,6 +28,7 @@ import type {
 import type {
   Block,
   BlockDefaults,
+  ColorsConfig,
   CustomBlockDefinition,
   DisplayConditionsConfig,
   LogicTagsConfig,
@@ -56,6 +57,7 @@ import {
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   PALETTE_BLOCKS_KEY,
   HTML_BLOCK_PREVIEW_KEY,
+  COLORS_KEY,
   CUSTOM_BLOCK_STYLESHEETS_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
@@ -106,6 +108,8 @@ import {
   resolveHtmlBlockPreview,
   type HtmlBlockPreviewConfig,
 } from "../utils/resolveHtmlBlockPreview";
+import { resolveColorsConfig } from "../utils/resolveColorsConfig";
+import { logger } from "../utils/logger";
 import { handleEditorKeydown } from "../utils/keyboardShortcuts";
 
 // Block components — shared between OSS and Cloud editors
@@ -204,6 +208,7 @@ export interface UseEditorCoreOptions {
     customBlocks?: CustomBlockDefinition[];
     paletteBlocks?: string[];
     htmlBlockPreview?: HtmlBlockPreviewConfig;
+    colors?: ColorsConfig;
     mergeTags?: MergeTagsConfig;
     logicTags?: LogicTagsConfig;
     displayConditions?: DisplayConditionsConfig;
@@ -437,6 +442,18 @@ export function useEditorCore(
     HTML_BLOCK_PREVIEW_KEY,
     resolveHtmlBlockPreview(config.htmlBlockPreview),
   );
+  // Editor-wide color-picker palette. Resolved once; custom-block color fields
+  // layer their own presets over this. The resolver is pure, so the warning for
+  // a nonsensical config (`allowCustom: false` with no presets) is emitted here
+  // — once, at the config surface that owns it.
+  const resolvedColors = resolveColorsConfig(config.colors);
+  if (resolvedColors.allowCustomIgnored) {
+    logger.warn(
+      "config.colors.allowCustom: false is ignored without presets — " +
+        "keeping the color wheel and hex input so a color can still be chosen.",
+    );
+  }
+  provide(COLORS_KEY, resolvedColors);
   // Reactive deduped list of custom-block stylesheets currently in use. The
   // `<CustomBlockStylesheets>` component reads this and renders `<style>` tags
   // into the editor root so authored CSS previews live in the canvas. The

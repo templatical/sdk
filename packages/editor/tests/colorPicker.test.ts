@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import ColorPicker from '../src/components/ColorPicker.vue';
 import { mountEditor } from './helpers/mount';
+import { COLORS_KEY } from '../src/keys';
 
 describe('ColorPicker', () => {
   it('renders the swatch with modelValue as background color', () => {
@@ -288,5 +289,183 @@ describe('ColorPicker', () => {
     });
     const input = wrapper.find('input[type="text"]');
     expect((input.element as HTMLInputElement).value).toBe('#ff6600');
+  });
+
+  describe('presets', () => {
+    it('renders a preset grid in the popover from the presets prop', async () => {
+      const wrapper = mountEditor(ColorPicker, {
+        props: { modelValue: '#000', presets: ['#ff0000', '#00ff00'] },
+      });
+      await wrapper.find('button').trigger('click'); // open the popover
+
+      const group = wrapper.find('.tpl-color-popover [role="group"]');
+      expect(group.exists()).toBe(true);
+      const presetButtons = group.findAll('button');
+      expect(presetButtons.map((b) => b.attributes('aria-label'))).toEqual([
+        '#ff0000',
+        '#00ff00',
+      ]);
+    });
+
+    it('renders a duplicate preset entry only once', async () => {
+      const wrapper = mountEditor(ColorPicker, {
+        props: {
+          modelValue: '#000',
+          presets: ['#ff0000', '#ff0000', '#00ff00'],
+        },
+      });
+      await wrapper.find('button').trigger('click');
+
+      const presetButtons = wrapper.findAll(
+        '.tpl-color-popover [role="group"] button',
+      );
+      expect(presetButtons.map((b) => b.attributes('aria-label'))).toEqual([
+        '#ff0000',
+        '#00ff00',
+      ]);
+    });
+
+    it('applies a preset color on click', async () => {
+      const wrapper = mountEditor(ColorPicker, {
+        props: { modelValue: '', presets: ['#ff0000', '#00ff00'] },
+      });
+      await wrapper.find('button').trigger('click');
+
+      const presetButtons = wrapper.findAll(
+        '.tpl-color-popover [role="group"] button',
+      );
+      await presetButtons[0].trigger('click');
+
+      const emitted = wrapper.emitted('update:modelValue');
+      expect(emitted).toHaveLength(1);
+      expect(emitted![0]).toEqual(['#ff0000']);
+    });
+
+    it('marks the preset matching the current value as selected (case-insensitive)', async () => {
+      const wrapper = mountEditor(ColorPicker, {
+        props: { modelValue: '#FF0000', presets: ['#ff0000', '#00ff00'] },
+      });
+      await wrapper.find('button').trigger('click');
+
+      const presetButtons = wrapper.findAll(
+        '.tpl-color-popover [role="group"] button',
+      );
+      expect(presetButtons[0].attributes('aria-pressed')).toBe('true');
+      expect(presetButtons[1].attributes('aria-pressed')).toBe('false');
+    });
+
+    it('marks the preset selected when the current value is stored as rgb', async () => {
+      const wrapper = mountEditor(ColorPicker, {
+        props: { modelValue: 'rgb(255, 0, 0)', presets: ['#ff0000', '#00ff00'] },
+      });
+      await wrapper.find('button').trigger('click');
+
+      const presetButtons = wrapper.findAll(
+        '.tpl-color-popover [role="group"] button',
+      );
+      expect(presetButtons[0].attributes('aria-pressed')).toBe('true');
+    });
+
+    it('shows no preset as selected when the value is unset', async () => {
+      const wrapper = mountEditor(ColorPicker, {
+        props: { modelValue: '', presets: ['#ff0000', '#00ff00'] },
+      });
+      await wrapper.find('button').trigger('click');
+
+      const presetButtons = wrapper.findAll(
+        '.tpl-color-popover [role="group"] button',
+      );
+      expect(
+        presetButtons.every((b) => b.attributes('aria-pressed') === 'false'),
+      ).toBe(true);
+    });
+
+    it('hides the wheel and hex inputs when allowCustom is false with presets', async () => {
+      const wrapper = mountEditor(ColorPicker, {
+        props: {
+          modelValue: '#ff0000',
+          presets: ['#ff0000', '#00ff00'],
+          allowCustom: false,
+        },
+      });
+      await wrapper.find('button').trigger('click');
+
+      // Popover is preset-grid only: no wheel, no hex field anywhere.
+      expect(wrapper.find('.tpl-color-popover [role="group"]').exists()).toBe(
+        true,
+      );
+      expect(wrapper.find('hex-color-picker').exists()).toBe(false);
+      expect(wrapper.find('input[type="text"]').exists()).toBe(false);
+    });
+
+    it('keeps the wheel when allowCustom is false but no presets resolve (guard)', async () => {
+      const wrapper = mountEditor(ColorPicker, {
+        props: { modelValue: '#000', allowCustom: false },
+      });
+      await wrapper.find('button').trigger('click');
+
+      // With nothing to fall back on, the free-form controls stay so a color
+      // can still be chosen.
+      expect(wrapper.find('.tpl-color-popover [role="group"]').exists()).toBe(
+        false,
+      );
+      expect(wrapper.find('hex-color-picker').exists()).toBe(true);
+    });
+
+    it('renders unchanged when no presets are configured', async () => {
+      const wrapper = mountEditor(ColorPicker, {
+        props: { modelValue: '#000' },
+      });
+      // Full-mode inline field is present before opening (unchanged behavior).
+      expect(wrapper.find('input[type="text"]').exists()).toBe(true);
+
+      await wrapper.find('button').trigger('click');
+      expect(wrapper.find('.tpl-color-popover [role="group"]').exists()).toBe(
+        false,
+      );
+      expect(wrapper.find('hex-color-picker').exists()).toBe(true);
+    });
+
+    it('reads presets from the injected editor colors when no prop is given', async () => {
+      const wrapper = mountEditor(ColorPicker, {
+        props: { modelValue: '#000' },
+        provides: {
+          [COLORS_KEY]: {
+            presets: ['#abc123'],
+            allowCustom: true,
+            allowCustomIgnored: false,
+          },
+        },
+      });
+      await wrapper.find('button').trigger('click');
+
+      const presetButtons = wrapper.findAll(
+        '.tpl-color-popover [role="group"] button',
+      );
+      expect(presetButtons.map((b) => b.attributes('aria-label'))).toEqual([
+        '#abc123',
+      ]);
+    });
+
+    it('a presets prop overrides the injected editor colors', async () => {
+      const wrapper = mountEditor(ColorPicker, {
+        props: { modelValue: '#000', presets: ['#123456'] },
+        provides: {
+          [COLORS_KEY]: {
+            presets: ['#abcdef'],
+            allowCustom: true,
+            allowCustomIgnored: false,
+          },
+        },
+      });
+      await wrapper.find('button').trigger('click');
+
+      const presetButtons = wrapper.findAll(
+        '.tpl-color-popover [role="group"] button',
+      );
+      expect(presetButtons.map((b) => b.attributes('aria-label'))).toEqual([
+        '#123456',
+      ]);
+    });
   });
 });

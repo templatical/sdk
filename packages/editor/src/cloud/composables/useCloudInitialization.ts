@@ -274,6 +274,7 @@ export function useCloudInitialization(
       customBlocks: [], // deferred to initialize()
       paletteBlocks: config.paletteBlocks,
       htmlBlockPreview: config.htmlBlockPreview,
+      colors: config.colors,
       mergeTags: config.mergeTags,
       logicTags: config.logicTags,
       displayConditions: config.displayConditions,

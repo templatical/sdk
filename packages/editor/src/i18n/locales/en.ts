@@ -466,6 +466,7 @@ export default {
     hexValue: "Hex color value",
     notSet: "Not set",
     clear: "Clear color",
+    presetColors: "Preset colors",
   },
 
   // Merge Tag

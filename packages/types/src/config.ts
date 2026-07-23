@@ -34,6 +34,28 @@ export interface FontsConfig {
   builtIns?: boolean | string[];
 }
 
+export interface ColorsConfig {
+  /**
+   * Preset colors rendered as a clickable grid inside every color picker
+   * popover. Each entry is a hex string (`'#0b5cff'`); clicking one applies it,
+   * and the preset matching the current value is marked selected (matched
+   * case-insensitively). The grid supplements the wheel and hex input unless
+   * `allowCustom` is `false`.
+   */
+  presets?: string[];
+  /**
+   * Allow free-form color entry — the wheel and hex input — alongside the
+   * presets. Defaults to `true`.
+   *
+   * Set to `false` together with `presets` to lock authors to the preset
+   * palette: the popover then offers only the preset grid, with no wheel or hex
+   * field (a white-label / brand-kit constraint). Ignored with a warning when
+   * no `presets` are configured — hiding the only inputs would leave the picker
+   * with no way to choose a color.
+   */
+  allowCustom?: boolean;
+}
+
 export interface ExportResult {
   html: string;
   mjml: string;

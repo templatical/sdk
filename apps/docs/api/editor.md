@@ -56,6 +56,7 @@ unmount();
 | `blockDefaults`     | `BlockDefaults`                                                   | No       | Default property overrides for new blocks. See [Defaults](/guide/defaults)                                                                                                                                                                                                                 |
 | `templateDefaults`  | `TemplateDefaults`                                                | No       | Default template settings for empty templates. See [Defaults](/guide/defaults)                                                                                                                                                                                                             |
 | `fonts`             | `FontsConfig`                                                     | No       | Font configuration. See [Custom Fonts](/guide/fonts)                                                                                                                                                                                                                                       |
+| `colors`            | `ColorsConfig`                                                    | No       | Color-picker palette. `presets` render as a clickable grid in every picker; `allowCustom: false` locks authors to them. See [Preset colors](#preset-colors)                                                                                                                                |
 | `theme`             | `ThemeOverrides`                                                  | No       | Color token overrides. Supports a `dark` key for dark mode overrides. See [Theming](/guide/theming)                                                                                                                                                                                        |
 | `uiTheme`           | `'light' \| 'dark' \| 'auto'`                                     | No       | UI color scheme. `'auto'` follows system preference. Defaults to `'auto'`                                                                                                                                                                                                                  |
 | `locale`            | `string`                                                          | No       | Locale code (e.g. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`). Defaults to `'en'`                                                                                                                                                                                                                                      |
@@ -112,6 +113,23 @@ const editor = await init({
 - **Off by default.** Omit the option (or pass `false` / `{ enabled: false }`) to keep the static placeholder.
 - **Rendered in a sandboxed iframe.** The content is shown verbatim inside an `<iframe sandbox="allow-same-origin">` with **no** `allow-scripts` — scripts and inline event handlers never execute, and the fragment's styles can't leak into the rest of the editor. This keeps arbitrary or collaborator-authored HTML from running in your app's origin.
 - **Preview-only.** This setting controls the editor canvas, not output — `renderToMjml()` / `editor.toMjml()` render HTML blocks regardless.
+
+### Preset colors {#preset-colors}
+
+Every color picker in the editor — block toolbars, template settings, rich-text color, custom-block color fields — opens a popover with a color wheel and a hex input. Pass `colors` to add a row of preset colors to that popover, and optionally to remove the free-form controls:
+
+```ts
+const editor = await init({
+  container: "#editor",
+  colors: {
+    presets: ["#0b5cff", "#111827", "#6b7280", "#ffffff"],
+    allowCustom: false,
+  },
+});
+```
+
+- **`presets`** — hex strings rendered as a clickable grid. Clicking one applies it; the preset matching the current value is marked selected. Supplements the wheel and hex input.
+- **`allowCustom`** — defaults to `true`. Set to `false` (together with `presets`) to hide the wheel and hex input so authors can only pick from the palette — useful when embedding the editor as a white-label / brand-kit tool. Ignored with a warning when no `presets` are configured, since that would leave the picker with no way to set a color.
 
 ## TemplaticalEditor
 

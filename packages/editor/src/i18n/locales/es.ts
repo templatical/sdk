@@ -470,6 +470,7 @@ const es: typeof en = {
     hexValue: "Valor de color Hex",
     notSet: "No establecido",
     clear: "Limpiar color",
+    presetColors: "Colores predefinidos",
   },
 
   // Merge Tag

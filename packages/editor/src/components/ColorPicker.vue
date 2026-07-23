@@ -7,7 +7,8 @@ import { usePopoverRoot } from "../composables/usePopoverRoot";
 import { usePopoverPosition } from "../composables/usePopoverPosition";
 import { colorTextClass } from "../constants/styleConstants";
 import { normalizeColorToHex } from "../utils/color";
-import { THEME_STYLES_KEY, UI_THEME_KEY } from "../keys";
+import { COLORS_KEY, THEME_STYLES_KEY, UI_THEME_KEY } from "../keys";
+import { DEFAULT_RESOLVED_COLORS } from "../utils/resolveColorsConfig";
 import "vanilla-colorful";
 
 const props = withDefaults(
@@ -33,6 +34,17 @@ const props = withDefaults(
      * side and must be told apart (e.g. text color vs highlight in the toolbar).
      */
     ariaLabel?: string;
+    /**
+     * Per-instance override of the editor-wide `colors.presets` for this one
+     * picker. This is the extension seam a caller uses to scope a single picker
+     * to its own palette; when omitted, the injected editor-level presets apply.
+     */
+    presets?: string[];
+    /**
+     * Per-instance override of the editor-wide `colors.allowCustom` for this one
+     * picker. When omitted, the injected editor-level setting applies.
+     */
+    allowCustom?: boolean;
   }>(),
   {
     placeholder: "",
@@ -41,6 +53,8 @@ const props = withDefaults(
     disabled: false,
     size: "md",
     ariaLabel: "",
+    presets: undefined,
+    allowCustom: undefined,
   },
 );
 
@@ -86,6 +100,43 @@ const seed = computed(() =>
 // full mode, or the popover field in swatch-only mode — shown only when a value
 // is set. Not gated on swatchOnly: each field renders only in its own mode.
 const showClear = computed(() => !props.disabled && !isUnset.value);
+
+// Color palette: a per-instance `presets`/`allowCustom` prop wins over the
+// injected editor-wide `colors` config, per property. Default keeps the picker
+// unchanged when neither is configured. "preset" is kept distinct from the
+// trigger "swatch" (swatchOnly/swatchRef) on purpose — they are two different
+// concepts in this file.
+const editorColors = inject(COLORS_KEY, DEFAULT_RESOLVED_COLORS);
+// Deduplicated: a repeated entry in the configured palette would render a
+// pointless second chip and collide on the value-based `v-for` key.
+const presets = computed(() => [
+  ...new Set(props.presets ?? editorColors.presets),
+]);
+const allowCustom = computed(
+  () => props.allowCustom ?? editorColors.allowCustom,
+);
+const hasPresets = computed(() => presets.value.length > 0);
+
+// Show the free-form controls (wheel + hex inputs) whenever custom entry is
+// allowed OR there are no presets to fall back on — so a picker is never left
+// with no way to choose a color (a belt-and-braces guard; `resolveColorsConfig`
+// already forbids `allowCustom: false` without presets).
+const showFreeform = computed(() => allowCustom.value || !hasPresets.value);
+
+// A preset reads as selected when its hex equals the current value, compared in
+// the normalized (rgb→hex) lowercase form both sides are stored in.
+const normalizedValue = computed(() =>
+  normalizeColorToHex(props.modelValue).toLowerCase(),
+);
+function isPresetSelected(preset: string): boolean {
+  return (
+    normalizedValue.value !== "" &&
+    normalizeColorToHex(preset).toLowerCase() === normalizedValue.value
+  );
+}
+function selectPreset(preset: string): void {
+  emit("update:modelValue", preset);
+}
 
 function onPickerChange(e: Event): void {
   pickerTouched.value = true;
@@ -173,7 +224,7 @@ function toggleOpen(): void {
         :style="isUnset ? undefined : { backgroundColor: displayValue }"
       />
     </button>
-    <div v-if="!swatchOnly" class="tpl:relative tpl:flex-1">
+    <div v-if="!swatchOnly && showFreeform" class="tpl:relative tpl:flex-1">
       <input
         type="text"
         :class="[colorTextClass, 'tpl:w-full']"
@@ -215,7 +266,37 @@ function toggleOpen(): void {
             ...themeStyles,
           }"
         >
+          <!-- Preset color grid. Supplements the wheel/hex field; the only
+               control when `allowCustom` is false. Each preset carries its color
+               value as its accessible label. -->
+          <div
+            v-if="hasPresets"
+            role="group"
+            :aria-label="t.colorPicker.presetColors"
+            :class="[
+              'tpl:flex tpl:flex-wrap tpl:gap-1.5',
+              showFreeform && 'tpl:mb-2',
+            ]"
+          >
+            <button
+              v-for="preset in presets"
+              :key="preset"
+              type="button"
+              :aria-label="preset"
+              :title="preset"
+              :aria-pressed="isPresetSelected(preset)"
+              :style="{ backgroundColor: preset }"
+              :class="[
+                'tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]',
+                isPresetSelected(preset)
+                  ? 'tpl:ring-2 tpl:ring-[var(--tpl-primary)] tpl:ring-offset-1 tpl:ring-offset-[var(--tpl-bg-elevated)]'
+                  : 'hover:tpl:border-[var(--tpl-text-dim)]',
+              ]"
+              @click="selectPreset(preset)"
+            />
+          </div>
           <hex-color-picker
+            v-if="showFreeform"
             :color="seed"
             :aria-label="t.colorPicker.pickColor"
             @color-changed="onPickerChange"
@@ -230,7 +311,7 @@ function toggleOpen(): void {
                editor.chain().focus().setColor(), and focusing the canvas mid-type
                would steal focus after the first character. Shown even when unset
                so a first color can be typed; the × appears only once a value is set. -->
-          <div v-if="swatchOnly" class="tpl:relative tpl:mt-2">
+          <div v-if="swatchOnly && showFreeform" class="tpl:relative tpl:mt-2">
             <input
               type="text"
               :class="[colorTextClass, 'tpl:w-full']"

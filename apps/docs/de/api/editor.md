@@ -56,6 +56,7 @@ unmount();
 | `blockDefaults`     | `BlockDefaults`                                                   | No       | Standard-Property-Überschreibungen für neue Blöcke. Siehe [Standardwerte](/de/guide/defaults)                                                                                                                                                                                                                                     |
 | `templateDefaults`  | `TemplateDefaults`                                                | No       | Standardeinstellungen für leere Templates. Siehe [Standardwerte](/de/guide/defaults)                                                                                                                                                                                                                                              |
 | `fonts`             | `FontsConfig`                                                     | No       | Schriftart-Konfiguration. Siehe [Benutzerdefinierte Schriftarten](/de/guide/fonts)                                                                                                                                                                                                                                                |
+| `colors`            | `ColorsConfig`                                                    | No       | Farbwähler-Palette. `presets` werden als anklickbares Raster in jedem Farbwähler gerendert; `allowCustom: false` beschränkt Autoren darauf. Siehe [Vordefinierte Farben](#vordefinierte-farben)                                                                                                                                   |
 | `theme`             | `ThemeOverrides`                                                  | No       | Überschreibungen für Farb-Tokens. Unterstützt einen `dark`-Schlüssel für Dark-Mode-Überschreibungen. Siehe [Theming](/de/guide/theming)                                                                                                                                                                                           |
 | `uiTheme`           | `'light' \| 'dark' \| 'auto'`                                     | No       | UI-Farbschema. `'auto'` folgt den Systemeinstellungen. Standardwert ist `'auto'`                                                                                                                                                                                                                                                  |
 | `locale`            | `string`                                                          | No       | Locale-Code (z. B. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`). Standardwert ist `'en'`                                                                                                                                                                                                                                                                       |
@@ -112,6 +113,23 @@ const editor = await init({
 - **Standardmäßig aus.** Lassen Sie die Option weg (oder übergeben Sie `false` / `{ enabled: false }`), um den statischen Platzhalter beizubehalten.
 - **In einem sandboxed `<iframe>` gerendert.** Der Inhalt wird unverändert in einem `<iframe sandbox="allow-same-origin">` **ohne** `allow-scripts` angezeigt — Skripte und Inline-Event-Handler werden nie ausgeführt, und die Styles des Fragments können nicht in den Rest des Editors gelangen. So wird verhindert, dass beliebiges oder von Mitarbeitenden erstelltes HTML im Origin Ihrer App ausgeführt wird.
 - **Nur Vorschau.** Diese Einstellung steuert die Editor-Leinwand, nicht die Ausgabe — `renderToMjml()` / `editor.toMjml()` rendern HTML-Blöcke unabhängig davon.
+
+### Vordefinierte Farben {#vordefinierte-farben}
+
+Jeder Farbwähler im Editor — Block-Symbolleisten, Template-Einstellungen, Rich-Text-Farbe, Farbfelder benutzerdefinierter Blöcke — öffnet ein Popover mit einem Farbrad und einem Hex-Eingabefeld. Übergeben Sie `colors`, um diesem Popover eine Reihe vordefinierter Farben hinzuzufügen und optional die freien Eingabefelder zu entfernen:
+
+```ts
+const editor = await init({
+  container: "#editor",
+  colors: {
+    presets: ["#0b5cff", "#111827", "#6b7280", "#ffffff"],
+    allowCustom: false,
+  },
+});
+```
+
+- **`presets`** — Hex-Zeichenketten, die als anklickbares Raster gerendert werden. Ein Klick übernimmt die Farbe; die vordefinierte Farbe, die dem aktuellen Wert entspricht, wird als ausgewählt markiert. Ergänzt das Farbrad und das Hex-Eingabefeld.
+- **`allowCustom`** — standardmäßig `true`. Auf `false` gesetzt (zusammen mit `presets`) werden das Farbrad und das Hex-Eingabefeld ausgeblendet, sodass Autoren nur aus der Palette wählen können — nützlich beim Einbetten des Editors als White-Label- / Brand-Kit-Werkzeug. Wird mit einer Warnung ignoriert, wenn keine `presets` konfiguriert sind, da der Farbwähler sonst keine Möglichkeit hätte, eine Farbe festzulegen.
 
 ## TemplaticalEditor
 

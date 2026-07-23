@@ -472,6 +472,7 @@ const de: typeof en = {
     hexValue: "Hex-Farbwert",
     notSet: "Nicht festgelegt",
     clear: "Farbe entfernen",
+    presetColors: "Vordefinierte Farben",
   },
 
   // Merge-Tag

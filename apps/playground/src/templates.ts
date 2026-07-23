@@ -1,6 +1,7 @@
 import type {
   TemplateContent,
   CustomBlockDefinition,
+  ColorsConfig,
   FontsConfig,
 } from "@templatical/types";
 import {
@@ -1888,6 +1889,13 @@ export interface TemplateOption {
    * to `init()`, so every other template keeps the full font list.
    */
   fonts?: FontsConfig;
+  /**
+   * Editor-wide `colors` config for this template only — a preset palette
+   * (optionally with `allowCustom: false` to lock authors to it). Read per
+   * template in `chooseTemplate` and passed to `init()`, so every other
+   * template keeps the default free-form pickers.
+   */
+  colors?: ColorsConfig;
 }
 
 export const templates: TemplateOption[] = [
@@ -2028,7 +2036,25 @@ export const templates: TemplateOption[] = [
     create: createEventInvitationTemplate,
     preview: "event",
     customBlocks: [eventDetailsBlock],
+    // Brand-locked palette: fixed swatches + `allowCustom: false`, so every
+    // color picker in this template offers only these presets (no wheel / hex).
+    colors: {
+      presets: [
+        "#7c3aed",
+        "#ec4899",
+        "#f59e0b",
+        "#10b981",
+        "#111827",
+        "#ffffff",
+      ],
+      allowCustom: false,
+    },
     features: [
+      {
+        label: "Brand Color Palette",
+        description:
+          "This template passes a `colors` config to init(): a fixed set of brand swatches plus `allowCustom: false`. Every color picker in the editor — the RSVP button colors, the Event Details accent color, template settings — shows only those presets as a clickable grid, with no wheel or hex input.\nTo try it: select the RSVP button (or the Event Details card) and open a color control in the sidebar. You can only pick from the approved palette. This is the white-label / brand-kit path: keep non-designers on-brand by removing free-form color entry.",
+      },
       {
         label: "Display Conditions (Multiple Groups)",
         icon: "display-condition",

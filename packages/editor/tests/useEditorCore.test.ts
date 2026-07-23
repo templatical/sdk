@@ -399,4 +399,30 @@ describe('useEditorCore', () => {
       }
     });
   });
+
+  describe('colors config', () => {
+    it('warns when colors.allowCustom is false with no presets', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mountCore({ config: { colors: { allowCustom: false } } });
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining(
+          'config.colors.allowCustom: false is ignored without presets',
+        ),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('does not warn when colors provides presets', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mountCore({
+        config: { colors: { presets: ['#0b5cff'], allowCustom: false } },
+      });
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('config.colors'),
+      );
+      warnSpy.mockRestore();
+    });
+  });
 });
