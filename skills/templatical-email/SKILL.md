@@ -149,9 +149,11 @@ unrelated sessions.
   `"2-1"`, or `"1-2"`, and the column count in `children` must match. Don't nest
   a section inside another section — MJML has no equivalent, so the renderer
   drops it on export.
-- **Rich text** (`title.content`, `paragraph.content`, table cell `content`) is
-  HTML — use inline tags (`<b>`, `<i>`, `<a href>`, `<br>`, `<ul>`). Use blocks,
-  not HTML, for layout.
+- **Rich text** (`title.content`, `paragraph.content`) is HTML — use inline tags
+  (`<b>`, `<i>`, `<a href>`, `<br>`, `<ul>`). Use blocks, not HTML, for layout.
+  **Table cell `content` is the exception — plain text, no inline HTML** (tags
+  render literally); for emphasis use `hasHeaderRow`, or a 2-column `section` of
+  `paragraph` blocks for a label/value layout.
 - **Merge tags** for personalization use `{{contact.field_name}}` (e.g.
   `{{contact.first_name}}`); they're substituted when the email is sent.
 - **No extra fields** — the schema rejects unknown properties. If unsure a field

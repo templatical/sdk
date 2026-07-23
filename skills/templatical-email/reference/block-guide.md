@@ -92,8 +92,16 @@ underline: bool, color?: hex }`.
 
 ### table
 
-- `rows` — array of `{ id, cells: [{ id, content }] }`; `content` is HTML.
-- `hasHeaderRow` (bool), `headerBackgroundColor` (hex, _optional_).
+- `rows` — array of `{ id, cells: [{ id, content }] }`. Cell `content` is
+  **plain text — no inline HTML** (unlike `title`/`paragraph`). Inline tags render
+  literally: a cell of `"<b>Weight</b>"` shows the characters `<b>Weight</b>`, not
+  a bold "Weight". A cell has only `id` and `content` — there is **no per-cell or
+  per-column style field**.
+- `hasHeaderRow` (bool), `headerBackgroundColor` (hex, _optional_) — the **only**
+  table emphasis. `hasHeaderRow: true` bolds (and, with `headerBackgroundColor`,
+  shades) the **top row only**. A label/value table with a bold left column is
+  therefore **not** achievable in a `table` block — for that, use a 2-column
+  `section` of `paragraph` blocks (whose `content` _is_ HTML) instead.
 - `borderColor` (hex), `borderWidth` (int), `cellPadding` (int).
 - `fontSize` (int), `textAlign`, `color` (hex, _optional_), `fontFamily`
   (_optional_).
