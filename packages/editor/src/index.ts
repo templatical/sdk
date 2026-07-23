@@ -110,7 +110,12 @@ export interface TemplaticalEditorConfig {
    * The resolver is called once per committed src value (typing in the src
    * input is debounced, so partial values never reach it) and results are
    * cached per src for the editor's lifetime — including failures, which
-   * fall back to displaying the src verbatim.
+   * fall back to displaying the src verbatim. Note the caching applies to
+   * transient failures too: a src that failed to resolve stays unresolved
+   * until the editor is re-initialized (a re-resolve hook may be added
+   * later). Applies to image srcs, design-time placeholder previews, and
+   * explicit video thumbnails; auto-derived provider thumbnails (YouTube/
+   * Vimeo) are already real URLs and are never resolved.
    */
   resolveImageUrl?: ResolveImageUrl;
 

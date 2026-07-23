@@ -111,8 +111,9 @@ How the editor calls it:
 
 - **Once per committed value.** Typing in the src input is debounced, so partial values (`lo`, `logo.p`, …) never reach your resolver.
 - **Cached per src** for the editor instance's lifetime — the same src in several blocks resolves once.
-- **Failures fall back gracefully.** A thrown error or rejected promise is cached as "use as-is"; the editor won't retry the same src.
+- **Failures fall back gracefully.** A thrown error or rejected promise is cached as "use as-is"; the editor won't retry the same src. Note this also holds for *transient* failures: a src that failed to resolve stays unresolved until the editor is re-initialized. A hook to re-trigger resolution may be added in a future release.
 - **Merge-tag srcs are skipped.** A src like <code v-pre>{{product.image}}</code> is never passed to the resolver; its `placeholderUrl` (if set) is resolved instead.
+- **Video thumbnails are covered too.** An explicit video `thumbnailUrl` (and a video block's `placeholderUrl`) resolves the same way. Thumbnails auto-derived from a YouTube/Vimeo URL are already real URLs and are never passed to the resolver.
 - **Display-only, by design.** Unlike returning a `blob:` URL from `onRequestMedia` (which would end up in the export — see above), a URL from `resolveImageUrl` never enters the template content.
 
 ## Image Block Properties

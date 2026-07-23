@@ -112,8 +112,9 @@ So ruft der Editor den Callback auf:
 
 - **Einmal pro bestätigtem Wert.** Eingaben im src-Feld werden entprellt, sodass Teilwerte (`lo`, `logo.p`, …) Ihren Resolver nie erreichen.
 - **Pro src zwischengespeichert** für die Lebensdauer der Editor-Instanz — derselbe src in mehreren Blöcken wird nur einmal aufgelöst.
-- **Fehler werden abgefangen.** Ein geworfener Fehler oder eine abgelehnte Promise wird als „unverändert verwenden" zwischengespeichert; der Editor wiederholt den Aufruf für denselben src nicht.
+- **Fehler werden abgefangen.** Ein geworfener Fehler oder eine abgelehnte Promise wird als „unverändert verwenden" zwischengespeichert; der Editor wiederholt den Aufruf für denselben src nicht. Das gilt auch für *vorübergehende* Fehler: Ein src, dessen Auflösung fehlgeschlagen ist, bleibt unaufgelöst, bis der Editor neu initialisiert wird. Ein Hook zum erneuten Auslösen der Auflösung ist für eine zukünftige Version angedacht.
 - **Merge-Tag-srcs werden übersprungen.** Ein src wie <code v-pre>{{product.image}}</code> wird nie an den Resolver übergeben; stattdessen wird die `placeholderUrl` (falls gesetzt) aufgelöst.
+- **Video-Thumbnails sind ebenfalls abgedeckt.** Eine explizite Video-`thumbnailUrl` (und die `placeholderUrl` eines Videoblocks) wird auf dieselbe Weise aufgelöst. Automatisch aus einer YouTube-/Vimeo-URL abgeleitete Thumbnails sind bereits echte URLs und werden nie an den Resolver übergeben.
 - **Bewusst nur für die Anzeige.** Anders als eine `blob:`-URL aus `onRequestMedia` (die im Export landen würde — siehe oben) gelangt eine URL aus `resolveImageUrl` nie in den Vorlageninhalt.
 
 ## Eigenschaften des Bildblocks

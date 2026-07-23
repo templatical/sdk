@@ -36,4 +36,10 @@ describe("resolveImageUrl config wiring", () => {
     expect(src).not.toContain(':src="block.src"');
     expect(src).not.toContain(':src="block.placeholderUrl"');
   });
+
+  it("VideoBlock renders through the resolved display values, not raw block fields", () => {
+    const src = readSrc("components/blocks/VideoBlock.vue");
+    expect(src).toContain("useResolvedImageSrc");
+    expect(src).not.toContain(':src="block.placeholderUrl"');
+  });
 });
