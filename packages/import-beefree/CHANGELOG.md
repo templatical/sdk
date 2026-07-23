@@ -1,10 +1,10 @@
 # @templatical/import-beefree
 
-## 1.0.0
+## 0.18.0
 
 ### Patch Changes
 
-- @templatical/types@1.0.0
+- @templatical/types@0.18.0
 
 ## 0.17.1
 
