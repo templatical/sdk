@@ -67,6 +67,7 @@ import {
   LOGIC_TAG_PICKER_KEY,
   ON_REQUEST_LOGIC_TAG_KEY,
   ON_REQUEST_MEDIA_KEY,
+  IMAGE_URL_RESOLVER_KEY,
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
   CAPABILITIES_KEY,
@@ -75,6 +76,10 @@ import {
   EDITOR_ROOT_KEY,
   POPOVER_ROOT_KEY,
 } from "../keys";
+import {
+  createImageUrlResolver,
+  type ResolveImageUrl,
+} from "./useImageUrlResolver";
 import { useMergeTagPicker } from "./useMergeTagPicker";
 import { useLogicTagPicker } from "./useLogicTagPicker";
 import {
@@ -203,6 +208,7 @@ export interface UseEditorCoreOptions {
     logicTags?: LogicTagsConfig;
     displayConditions?: DisplayConditionsConfig;
     onRequestMedia?: OnRequestMedia | null;
+    resolveImageUrl?: ResolveImageUrl | null;
     onSave?: () => void;
     lint?: LintOptions;
   };
@@ -461,6 +467,15 @@ export function useEditorCore(
   provide(LOGIC_TAG_PICKER_KEY, useLogicTagPicker());
 
   provide(ON_REQUEST_MEDIA_KEY, config.onRequestMedia ?? null);
+
+  // Display-only image src resolver (#415). Created once per editor so the
+  // per-src cache spans all image-displaying blocks of the instance.
+  provide(
+    IMAGE_URL_RESOLVER_KEY,
+    config.resolveImageUrl
+      ? createImageUrlResolver(config.resolveImageUrl)
+      : null,
+  );
 
   provide(DISPLAY_CONDITIONS_KEY, config.displayConditions?.conditions ?? []);
   provide(

@@ -61,6 +61,7 @@ const core = useEditorCore({
     logicTags: props.config.logicTags,
     displayConditions: props.config.displayConditions,
     onRequestMedia: props.config.onRequestMedia,
+    resolveImageUrl: props.config.resolveImageUrl,
     lint: resolveLintOptions(props.config),
     onSave: props.config.onSave
       ? () =>

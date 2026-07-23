@@ -12,6 +12,7 @@ import { computed, inject, ref } from "vue";
 import { ON_REQUEST_MEDIA_KEY } from "../../keys";
 import { useAliveFlag } from "../../composables/useAliveFlag";
 import { useImageDrop } from "../../composables/useImageDrop";
+import { useResolvedImageSrc } from "../../composables/useImageUrlResolver";
 
 const props = defineProps<{
   block: ImageBlockType;
@@ -87,6 +88,17 @@ const imageStyle = computed(() => {
 const hasMergeTagSrc = computed(() =>
   containsMergeTag(props.block.src, syntax),
 );
+
+// Display-only preview URLs (#415). The canonical values stay in block.src /
+// block.placeholderUrl (and thus in the MJML export) — the resolver only
+// changes what the canvas <img> shows. A merge-tag src is never displayable,
+// so it's opted out of resolution; its placeholder preview resolves instead.
+const displaySrc = useResolvedImageSrc(() =>
+  hasMergeTagSrc.value ? undefined : props.block.src,
+);
+const displayPlaceholderUrl = useResolvedImageSrc(() =>
+  hasMergeTagSrc.value ? props.block.placeholderUrl : undefined,
+);
 </script>
 
 <template>
@@ -125,7 +137,7 @@ const hasMergeTagSrc = computed(() =>
         <img
           class="tpl:border-0"
           loading="lazy"
-          :src="block.placeholderUrl"
+          :src="displayPlaceholderUrl"
           :alt="block.alt || t.image.altTextPlaceholder"
           :style="imageStyle"
         />
@@ -133,7 +145,7 @@ const hasMergeTagSrc = computed(() =>
       <img
         v-else
         class="tpl:border-0"
-        :src="block.placeholderUrl"
+        :src="displayPlaceholderUrl"
         :alt="block.alt"
         :style="imageStyle"
       />
@@ -172,7 +184,7 @@ const hasMergeTagSrc = computed(() =>
         <img
           class="tpl:border-0"
           loading="lazy"
-          :src="block.src"
+          :src="displaySrc"
           :alt="block.alt || t.image.altTextPlaceholder"
           :style="imageStyle"
         />
@@ -180,7 +192,7 @@ const hasMergeTagSrc = computed(() =>
       <img
         v-else
         class="tpl:border-0"
-        :src="block.src"
+        :src="displaySrc"
         :alt="block.alt"
         :style="imageStyle"
       />
