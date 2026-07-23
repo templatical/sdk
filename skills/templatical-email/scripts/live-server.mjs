@@ -18,6 +18,7 @@
 //   node scripts/live-server.mjs reload   # tell the running bridge to re-read the working file and push it
 //   node scripts/live-server.mjs stop     # stop the running bridge (reads the pidfile)
 import { createServer } from "node:http";
+import { spawn } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -279,9 +280,30 @@ function parseArgs(argv) {
     if (a === "--port") args.port = Number(argv[++i]);
     else if (a === "--cwd") args.cwd = argv[++i];
     else if (a === "--file") args.file = argv[++i];
+    else if (a === "--no-open") args.open = false;
     else args._.push(a);
   }
   return args;
+}
+
+// Open a URL in the user's default browser — best-effort and cross-platform.
+// Fired once when the bridge starts so the preview pops up without the user
+// copy-pasting. A silent no-op where there's no browser (headless / CI /
+// sandbox); the URL is always printed too, so nothing is lost.
+function openBrowser(url) {
+  const [cmd, cmdArgs] =
+    process.platform === "darwin"
+      ? ["open", [url]]
+      : process.platform === "win32"
+        ? ["cmd", ["/c", "start", "", url]]
+        : ["xdg-open", [url]];
+  try {
+    const child = spawn(cmd, cmdArgs, { stdio: "ignore", detached: true });
+    child.on("error", () => {}); // no browser available — ignore
+    child.unref();
+  } catch {
+    /* ignore — the URL is printed regardless */
+  }
 }
 
 function pidfilePath(cwd) {
@@ -383,9 +405,13 @@ async function main() {
     console.log(`(port ${preferredPort} was busy — using ${handle.port})`);
   }
   console.log(`Working file: ${resolve(cwd, args.file ?? WORKING_FILE)}`);
-  console.log(
-    `Open the URL in a browser. After writing the working file, run:\n  node ${SELF} reload`,
-  );
+  if (args.open === false) {
+    console.log(`Open ${handle.url} in a browser.`);
+  } else {
+    console.log(`Opening ${handle.url} in your default browser…`);
+    openBrowser(handle.url);
+  }
+  console.log(`After writing the working file, run:\n  node ${SELF} reload`);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {

@@ -95,9 +95,12 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "Logic Tags", link: "/guide/logic-tags" },
         { text: "Display Conditions", link: "/guide/display-conditions" },
         { text: "Custom Blocks", link: "/guide/custom-blocks" },
-        { text: "AI Agent Skill", link: "/guide/agent-skill" },
         { text: "Images", link: "/guide/images" },
       ],
+    },
+    {
+      text: "AI",
+      items: [{ text: "Agent Skill", link: "/guide/agent-skill" }],
     },
     {
       text: "Customization",
@@ -250,9 +253,12 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Logik-Tags", link: "/de/guide/logic-tags" },
         { text: "Anzeigebedingungen", link: "/de/guide/display-conditions" },
         { text: "Benutzerdefinierte Blöcke", link: "/de/guide/custom-blocks" },
-        { text: "KI-Agent-Skill", link: "/de/guide/agent-skill" },
         { text: "Bilder", link: "/de/guide/images" },
       ],
+    },
+    {
+      text: "KI",
+      items: [{ text: "Agent-Skill", link: "/de/guide/agent-skill" }],
     },
     {
       text: "Anpassung",

@@ -64,7 +64,6 @@ You don't have to stop at JSON — you can watch the template render in the **re
 1. Opens a live preview in your browser, showing your current template in the real editor.
 2. Updates it **live** each time you prompt a change — no refresh.
 3. Lets you **hand-edit in the browser** too; the agent notices when you've diverged and asks whether to build on your version or replace it before overwriting.
-4. Exports straight from the page: **Copy JSON**, **Get MJML**, or **Get HTML**.
 
 Build in plain JSON first and switch to a live preview mid-session — it picks up right where you are. Each template is saved under its own name, and a new session starts a fresh one (ask to "continue" a previous template to reopen it). Live mode is local and single-user — not the [Cloud](/cloud/) realtime path — and needs nothing beyond a coding agent running on your own machine.
 

@@ -222,18 +222,19 @@ template first. A mid-session switch just points the bridge at that file.
    ```
    node <skill>/scripts/live-server.mjs --file .templatical/<name>.json
    ```
-   It **prints the URL it's serving** and the working-file path. It prefers port
-   4747 but falls back to a free port if that's taken, so **read the actual URL
-   from its output** (the port is also recorded in `.templatical/live-server.pid`
-   as `port`) — don't assume a fixed port. It is single-instance via the pidfile
-   guard; a second start just reports the running one. Other flags: `--port <n>`,
-   `--cwd <project>`.
-3. Open that URL for the user. The preview is for **them** to see and drag-edit,
-   so use a browser they can interact with — a built-in preview pane (e.g. Claude
-   Code's), or simply give them the URL to open in their own browser. **Don't
-   launch a browser-automation/testing tool (e.g. Playwright) for it** — that's an
-   agent-driven browser, not the user's. The page shows the current template in
-   the real editor.
+   It **prints the URL it's serving**, **opens it in the user's default browser**,
+   and prints the working-file path. It prefers port 4747 but falls back to a free
+   port if that's taken, so **read the actual URL from its output** (the port is
+   also recorded in `.templatical/live-server.pid` as `port`) — don't assume a
+   fixed port. It is single-instance via the pidfile guard; a second start just
+   reports the running one. Other flags: `--port <n>`, `--cwd <project>`,
+   `--no-open` (skip the auto-open).
+3. Share the URL in your reply so the user has it (to reopen, or open on another
+   device). The bridge **already opened it in their default browser** on start, so
+   you don't need to open it yourself — and never with a browser-automation/testing
+   tool (e.g. Playwright). If the auto-open didn't fire (a headless or sandboxed
+   environment), just point the user to the URL. The page shows the current
+   template in the real editor.
 
 ### The prompt → live-update loop
 
@@ -259,9 +260,9 @@ When the user asks for a change:
 
 ### Export
 
-The page has **Copy JSON**, **Get MJML**, and **Get HTML** buttons (HTML compiles
-in-browser via `mjml-browser`, loaded from the CDN on demand). You can also hand
-the user JSON directly, or MJML/HTML via `@templatical/renderer` in build mode.
+The page's **Export** button opens a modal with **JSON / MJML / HTML** tabs (HTML
+compiles in-browser via `mjml-browser`, loaded on demand). You can also hand the
+user JSON directly, or MJML/HTML via `@templatical/renderer` in build mode.
 
 ### Ending live mode
 

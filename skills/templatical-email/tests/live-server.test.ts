@@ -355,8 +355,9 @@ describe("CLI lifecycle", () => {
     });
 
   it("refuses a second instance and stops cleanly via the pidfile", async () => {
-    // Start a long-running bridge on an ephemeral port.
-    server = spawn(process.execPath, [SCRIPT, "--port", "0"], {
+    // Start a long-running bridge on an ephemeral port. `--no-open` so the test
+    // doesn't pop a real browser.
+    server = spawn(process.execPath, [SCRIPT, "--port", "0", "--no-open"], {
       cwd,
       stdio: "ignore",
     });
