@@ -47,9 +47,9 @@ Things that are usually paid features in commercial editors — open-source in T
 - **Full theming via design tokens** — 27 OKLch tokens, custom fonts, dark mode, complete theme overrides. No CSS hacking, no paid tier.
 - **Template & block defaults** — define your brand once. New templates and new blocks pick up your brand automatically.
 
-### AI — generate emails from a prompt
+### AI — design a complete email from a prompt
 
-Describe the email you want and let your coding agent build it — **free, open-source, no backend and no API key.** The [`templatical-email` Agent Skill](./skills/templatical-email) teaches Claude Code, Cursor, Claude Desktop, or any [Agent Skills](https://code.claude.com/docs/en/skills)–compatible agent your template format, so it generates valid Templatical JSON and validates it against the block schema — then you refine the result in the editor. The agent is the inference; nothing is sent to us.
+Describe the email you want and your coding agent builds it — **free, open-source, no backend and no API key.** The [`templatical-email` Agent Skill](./skills/templatical-email) teaches Claude Code, Cursor, or any [Agent Skills](https://code.claude.com/docs/en/skills)–compatible agent your template format, so it produces a valid email you can **preview and hand-edit in the real editor, then export as MJML/HTML to send** — through Amazon SES, Postmark, Resend, anything. No app or integration required; the agent is the inference and nothing is sent to us. (Building a product? Use it to generate branded starter templates for your [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) integration too.)
 
 ```text
 # Claude Code

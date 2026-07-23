@@ -102,9 +102,12 @@ If the validator ever reports a missing dependency, it prints the exact
    `@templatical/quality` is installed, also resolve reported accessibility /
    structure / link warnings. Writing to that file is what lets a later "show it
    live" pick up the current template with no extra step.
-5. **Hand off** — return the validated JSON. The user loads it into the editor
-   (`editor.setContent(json)`) and refines it there — or asks to preview it live
-   (see [Live mode](#live-mode)).
+5. **Hand off** — return the validated JSON. What the user does with it depends on
+   who they are: a developer loads it into their editor integration
+   (`editor.setContent(json)`); many others just want a finished email — for them,
+   **preview it live and export MJML/HTML to send** (see [Live mode](#live-mode))
+   through any provider (SES, Postmark, …), no integration needed. Frame the
+   hand-off for what they're actually doing.
 
 ## Working files
 

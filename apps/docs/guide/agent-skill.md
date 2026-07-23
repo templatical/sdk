@@ -1,13 +1,18 @@
 ---
 title: AI Agent Skill
-description: Generate and validate Templatical email templates from a natural-language prompt using your own AI coding agent — free, open-source, no backend or API key.
+description: Design a complete email from a natural-language prompt, preview it in the real editor, and export sendable MJML/HTML — in your own AI coding agent. Free, open-source, no backend or API key.
 ---
 
 # AI Agent Skill
 
-Generate email templates from a natural-language prompt — **free, open-source, and running entirely in your own AI agent.** The `templatical-email` [Agent Skill](https://code.claude.com/docs/en/skills) teaches your coding agent how Templatical templates are structured, so it produces valid template JSON and validates it against the block schema. You then load the result into the editor and refine it like any other template.
+Design a complete email just by describing it — **free, open-source, and running entirely in your own AI coding agent.** The `templatical-email` [Agent Skill](https://code.claude.com/docs/en/skills) teaches your agent how Templatical templates are structured, so it builds valid emails you can **preview and hand-edit in the real editor, then export as sendable MJML or HTML** — ready to send through any provider (Amazon SES, Postmark, Resend, Mailchimp, …), or to load into your own [`@templatical/editor`](/getting-started/quick-start) integration.
 
 There is no backend and no API key: your agent is the inference. Nothing is sent to Templatical.
+
+**Two ways to use it:**
+
+- **Design and send** — build an email end to end, preview and tweak it live, export the HTML, and send it through your email provider. No app, no integration, nothing to embed — all you need is a coding agent.
+- **A developer aid** — generate branded starter templates, fixtures, and prototypes for your own editor integration. See [Where this fits](#where-this-fits-in-your-product).
 
 ::: tip Prefer a hosted experience?
 An in-editor AI chat, tuned prompts, and a hosted MCP server are part of the [Templatical Cloud](/cloud/) tier. This skill is the open, self-hosted path — bring your own agent, keep full control.
@@ -55,7 +60,7 @@ The agent will:
 1. Read the block schema and worked examples bundled with the skill.
 2. Generate a complete template as `{ blocks, settings }` JSON.
 3. Run the bundled validator itself and fix any structural or accessibility issues it reports — repeating until the template passes.
-4. Hand you the JSON — load it with `editor.setContent(json)` (or your framework's equivalent) and refine it visually.
+4. Hand you the finished email — preview and refine it live (below), then **export MJML/HTML to send**, or load the JSON into your own editor integration with `editor.setContent(json)`.
 
 ## Preview it live
 
@@ -66,6 +71,8 @@ You don't have to stop at JSON — you can watch the template render in the **re
 3. Lets you **hand-edit in the browser** too; the agent notices when you've diverged and asks whether to build on your version or replace it before overwriting.
 
 Build in plain JSON first and switch to a live preview mid-session — it picks up right where you are. Each template is saved under its own name, and a new session starts a fresh one (ask to "continue" a previous template to reopen it). Live mode is local and single-user — not the [Cloud](/cloud/) realtime path — and needs nothing beyond a coding agent running on your own machine.
+
+When it looks right, hit **Export** for the MJML or HTML and send it through your provider — that's a complete email, start to finish, with no integration to build.
 
 ## Import an existing template
 
@@ -93,9 +100,11 @@ The skill's JSON Schema is generated directly from `@templatical/types` — the 
 
 ## Where this fits in your product
 
-This skill is a **build-time** aid, not a runtime integration. Your actual integration is two packages: [`@templatical/editor`](/getting-started/quick-start) to embed the editor (your users build emails; you get JSON out) and [`@templatical/renderer`](/api/renderer-typescript) to turn that JSON into MJML/HTML to send. You don't embed the skill itself in your product.
+The skill covers two very different needs.
 
-Use the skill while _building_ — to generate branded starter templates, fixtures, and prototypes in your own coding agent.
+**Design and ship an email — no integration.** If you just need an email out the door — a campaign, a transactional message, a one-off — build it here, preview and tweak it live, then export the **MJML/HTML** and send it through your ESP (Amazon SES, Postmark, Resend, Mailchimp, …). You never touch `@templatical/editor` or write a line of integration code — it's a complete authoring tool for anyone with a coding agent.
+
+**A build-time aid for an editor integration.** If you're embedding the editor in your own app, the skill is the fastest way to generate branded starter templates, fixtures, and prototypes. Your _runtime_ integration is still [`@templatical/editor`](/getting-started/quick-start) (your users build emails, you get JSON out) + [`@templatical/renderer`](/api/renderer-typescript) (JSON → MJML/HTML to send) — you don't embed the skill itself.
 
 For an in-product **"generate with AI"** feature (your users type a prompt and get a template), your backend calls an LLM with the block schema, validates the result with [`@templatical/quality`](/quality/), and renders it. If you'd rather not build and host that, [Templatical Cloud](/cloud/) offers managed AI generation and collaboration.
 

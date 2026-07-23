@@ -41,7 +41,7 @@ const SELF = fileURLToPath(import.meta.url);
 // line from packages/editor/package.json at release time (the root
 // `changeset:version` step), so no manual bump per release. tests/cdn-pin.test.ts
 // is the safety net that fails CI if it ever drifts from the editor version.
-export const EDITOR_VERSION = "0.17.0";
+export const EDITOR_VERSION = "0.17.1";
 
 export const DEFAULT_PORT = 4747;
 const WORKING_FILE = join(".templatical", "template.json");
