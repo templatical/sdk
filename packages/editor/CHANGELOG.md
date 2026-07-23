@@ -1,5 +1,14 @@
 # @templatical/editor
 
+## 0.17.1
+
+### Patch Changes
+
+- Updated dependencies [956664e]
+  - @templatical/renderer@0.17.1
+  - @templatical/quality@0.17.1
+  - @templatical/media-library@0.17.1
+
 ## 0.17.0
 
 ### Minor Changes
