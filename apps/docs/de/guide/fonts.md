@@ -42,6 +42,7 @@ const editor = await init({
 | `defaultFont` | `string` | Schriftartname, der in neuen Templates standardmäßig ausgewählt ist |
 | `defaultFallback` | `string` | Fallback-Stack, der verwendet wird, wenn eine benutzerdefinierte Schriftart nicht verfügbar ist |
 | `customFonts` | `CustomFont[]` | Liste benutzerdefinierter Schriftarten, die registriert werden sollen |
+| `builtIns` | `boolean \| string[]` | Schränkt ein, welche integrierten Schriftarten in der Auswahl erscheinen (siehe [unten](#integrierte-schriftarten-einschraenken)) |
 
 ## CustomFont
 
@@ -52,6 +53,28 @@ const editor = await init({
 | `fallback` | `string` | Optionaler Fallback-Font-Stack für diese Schriftart |
 
 Benutzerdefinierte Schriftarten werden automatisch als `<mj-font>`-Deklarationen in der gerenderten MJML-Ausgabe eingefügt.
+
+## Integrierte Schriftarten einschränken {#integrierte-schriftarten-einschraenken}
+
+Standardmäßig bietet die Auswahl alle sieben integrierten websicheren Schriftarten (Arial, Helvetica, Georgia, Times New Roman, Verdana, Trebuchet MS, Courier New) zusammen mit Ihren `customFonts` an. Verwenden Sie `builtIns`, um diese Liste einzugrenzen — nützlich, wenn Sie den Editor als White-Label- / Brand-Kit-Werkzeug einbetten und möchten, dass Autoren bei genehmigten Schriftarten bleiben.
+
+```ts
+const fonts: FontsConfig = {
+  // Nur diese integrierten Schriftarten behalten, plus alle customFonts:
+  builtIns: ['Georgia', 'Arial'],
+  // Oder die integrierten Schriftarten ganz weglassen und nur eigene anbieten:
+  // builtIns: false,
+  customFonts: [
+    /* ... */
+  ],
+};
+```
+
+- `true` oder weggelassen — alle sieben integrierten Schriftarten werden angeboten (Standard).
+- `false` — keine integrierten Schriftarten; die Auswahl listet nur Ihre `customFonts`.
+- `string[]` — eine Zulassungsliste der zu behaltenden integrierten Schriftartnamen, ohne Beachtung der Groß-/Kleinschreibung abgeglichen. Ein Name, der keine integrierte Schriftart ist, wird mit einer Warnung protokolliert und übersprungen.
+
+Das Einschränken der Liste betrifft nur die Auswahl. Eine benutzerdefinierte Schriftart kann weiterhin die `defaultFont` sein, wenn alle integrierten Schriftarten ausgeschlossen sind, und Inhalte, die bereits eine ausgeblendete integrierte Schriftart verwenden, werden weiterhin mit ihrem korrekten Fallback-Stack gerendert.
 
 ## Best Practices
 

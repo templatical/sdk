@@ -42,6 +42,7 @@ const editor = await init({
 | `defaultFont` | `string` | Font name selected by default in new templates |
 | `defaultFallback` | `string` | Fallback stack used when a custom font is unavailable |
 | `customFonts` | `CustomFont[]` | List of custom fonts to register |
+| `builtIns` | `boolean \| string[]` | Restrict which built-in fonts appear in the picker (see [below](#restricting-the-built-in-fonts)) |
 
 ## CustomFont
 
@@ -52,6 +53,28 @@ const editor = await init({
 | `fallback` | `string` | Optional fallback font stack for this font |
 
 Custom fonts are automatically included as `<mj-font>` declarations in the rendered MJML output.
+
+## Restricting the built-in fonts
+
+By default the picker offers all seven built-in web-safe fonts (Arial, Helvetica, Georgia, Times New Roman, Verdana, Trebuchet MS, Courier New) alongside your `customFonts`. Use `builtIns` to narrow that list — useful when you embed the editor as a white-label / brand-kit tool and want authors to stay on approved typefaces.
+
+```ts
+const fonts: FontsConfig = {
+  // Keep only these built-ins, plus any customFonts:
+  builtIns: ['Georgia', 'Arial'],
+  // Or drop the built-ins entirely and offer only your custom fonts:
+  // builtIns: false,
+  customFonts: [
+    /* ... */
+  ],
+};
+```
+
+- `true` or omitted — all seven built-ins are offered (the default).
+- `false` — no built-ins; the picker lists only your `customFonts`.
+- `string[]` — an allowlist of built-in names to keep, matched case-insensitively. A name that isn't a built-in is logged with a warning and skipped.
+
+Restricting the list only affects the picker. A custom font can still be the `defaultFont` when every built-in is excluded, and content already using a hidden built-in still renders with its proper fallback stack.
 
 ## Best practices
 

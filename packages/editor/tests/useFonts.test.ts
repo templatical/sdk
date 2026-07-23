@@ -76,6 +76,115 @@ describe('useFonts', () => {
     });
   });
 
+  describe('builtIns allowlist', () => {
+    const ALL_BUILT_INS = [
+      'Arial',
+      'Helvetica',
+      'Georgia',
+      'Times New Roman',
+      'Verdana',
+      'Trebuchet MS',
+      'Courier New',
+    ];
+
+    it('offers all seven built-ins when builtIns is true', () => {
+      const { fonts } = useFonts({ builtIns: true });
+      const labels = fonts.value.map((f) => f.label);
+      for (const name of ALL_BUILT_INS) {
+        expect(labels).toContain(name);
+      }
+      expect(fonts.value.length).toBe(7);
+    });
+
+    it('offers all seven built-ins when builtIns is omitted (default)', () => {
+      const { fonts } = useFonts({});
+      expect(fonts.value.length).toBe(7);
+    });
+
+    it('drops every built-in when builtIns is false', () => {
+      const { fonts } = useFonts({ builtIns: false });
+      expect(fonts.value).toEqual([]);
+    });
+
+    it('keeps only custom fonts when builtIns is false', () => {
+      const { fonts } = useFonts({
+        builtIns: false,
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+      });
+      expect(fonts.value.map((f) => f.label)).toEqual(['Roboto']);
+      expect(fonts.value[0].isCustom).toBe(true);
+    });
+
+    it('keeps only the named built-ins for a string[] allowlist', () => {
+      const { fonts } = useFonts({ builtIns: ['Georgia', 'Arial'] });
+      expect(fonts.value.map((f) => f.label)).toEqual(['Arial', 'Georgia']);
+    });
+
+    it('matches allowlist names case-insensitively', () => {
+      const { fonts } = useFonts({ builtIns: ['georgia', 'COURIER NEW'] });
+      expect(fonts.value.map((f) => f.label)).toEqual([
+        'Courier New',
+        'Georgia',
+      ]);
+    });
+
+    it('warns and skips an allowlist entry that is not a built-in', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { fonts } = useFonts({ builtIns: ['Georgia', 'Comic Sans'] });
+
+      expect(fonts.value.map((f) => f.label)).toEqual(['Georgia']);
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('"Comic Sans" is not a built-in font'),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('renders a duplicate built-in once (case-insensitive)', () => {
+      // The `seen` set dedupes an allowlist that names the same family twice.
+      const { fonts } = useFonts({ builtIns: ['Arial', 'arial'] });
+      expect(fonts.value.map((f) => f.label)).toEqual(['Arial']);
+    });
+
+    it('warns for a duplicate unknown entry only once (case-insensitive)', () => {
+      // The `warned` set collapses repeats so a typo isn't logged per occurrence.
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      useFonts({ builtIns: ['Papyrus', 'papyrus'] });
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('"Papyrus" is not a built-in font'),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('keeps a custom font usable as defaultFont when builtIns is false', () => {
+      const { defaultFont, getDefaultFont } = useFonts({
+        builtIns: false,
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+        defaultFont: 'Roboto',
+      });
+      expect(getDefaultFont()).toBe('Roboto');
+      expect(defaultFont.value).toBe('Roboto');
+    });
+
+    it('falls back to the default when defaultFont names an excluded built-in', () => {
+      const { getDefaultFont } = useFonts({
+        builtIns: ['Arial'],
+        defaultFont: 'Georgia',
+      });
+      // Georgia is excluded from the picker, so it can't be the default.
+      expect(getDefaultFont()).toBe('Arial, sans-serif');
+    });
+
+    it('still resolves an excluded built-in to its fallback stack (rendering is unaffected)', () => {
+      const { getFontWithFallback } = useFonts({ builtIns: ['Arial'] });
+      // Filtering the picker never breaks content already using the family.
+      expect(getFontWithFallback('Georgia')).toBe('Georgia, serif');
+    });
+  });
+
   describe('defaultFont', () => {
     it('returns Arial fallback when no config', () => {
       const { defaultFont } = useFonts();

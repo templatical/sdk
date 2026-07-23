@@ -1,6 +1,7 @@
 import type {
   TemplateContent,
   CustomBlockDefinition,
+  FontsConfig,
 } from "@templatical/types";
 import {
   createTitleBlock,
@@ -1881,6 +1882,12 @@ export interface TemplateOption {
    * export renders HTML blocks regardless of this flag.
    */
   htmlBlockPreview?: boolean;
+  /**
+   * `fonts` config for this template only — e.g. a `builtIns` allowlist that
+   * narrows the font picker. Read per template in `chooseTemplate` and passed
+   * to `init()`, so every other template keeps the full font list.
+   */
+  fonts?: FontsConfig;
 }
 
 export const templates: TemplateOption[] = [
@@ -1923,7 +1930,17 @@ export const templates: TemplateOption[] = [
     create: createNewsletterTemplate,
     preview: "newsletter",
     customBlocks: [featuredArticleBlock],
+    // Curated font list: only these built-ins appear in the font picker (the
+    // other four built-ins are hidden). Showcases `fonts.builtIns`.
+    fonts: {
+      builtIns: ["Georgia", "Times New Roman", "Arial"],
+    },
     features: [
+      {
+        label: "Curated Font List",
+        description:
+          "This template passes a `fonts` config to init() with `builtIns: ['Georgia', 'Times New Roman', 'Arial']`. The font picker — in template settings and the rich-text toolbar — offers only those three built-ins instead of the default seven, keeping the newsletter on a small, on-brand set.\nTo try it: open the template settings (or select text and open the font control) and note the shortened font list. Content already using another font still renders with its proper fallback — filtering only affects the picker.",
+      },
       {
         label: "Custom Block with Data Source",
         icon: "data-source",

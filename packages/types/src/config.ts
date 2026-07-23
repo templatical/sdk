@@ -14,6 +14,24 @@ export interface FontsConfig {
   defaultFallback?: string;
   defaultFont?: string;
   customFonts?: CustomFont[];
+  /**
+   * Restrict which of the seven built-in fonts the font picker offers.
+   *
+   * - `true` / omitted — every built-in is offered (the default).
+   * - `false` — no built-ins; the picker lists only `customFonts`. Use this to
+   *   keep authors on an embedded brand kit's typefaces.
+   * - `string[]` — an allowlist of built-in names to keep, matched
+   *   case-insensitively (`['Georgia', 'arial']`). A name that isn't a built-in
+   *   is logged with a warning and skipped — consistent with how
+   *   `paletteBlocks` treats an unknown entry — so a typo narrows the list
+   *   rather than silently offering all seven.
+   *
+   * Independent of `customFonts`: excluding the built-ins never removes a custom
+   * font, and a custom font can still be the `defaultFont` when every built-in
+   * is excluded. Filtering the picker never affects rendering — content already
+   * using an excluded built-in still resolves to its proper fallback stack.
+   */
+  builtIns?: boolean | string[];
 }
 
 export interface ExportResult {
