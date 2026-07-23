@@ -126,7 +126,7 @@ describe('renderTable', () => {
     expect(result).toContain('padding: 12px');
   });
 
-  it('converts merge tags in cell content', () => {
+  it('converts merge tags in cell content and the tag survives escaping', () => {
     const block = createTableBlock({
       rows: makeRows([
         ['Hi <span data-merge-tag="{{name}}">Name</span>'],
@@ -134,8 +134,11 @@ describe('renderTable', () => {
       hasHeaderRow: false,
     });
     const result = renderBlock(block, ctx);
-    expect(result).toContain('{{name}}');
+    // Merge-tag spans are resolved before escaping, and `{`/`}` are not
+    // escaped, so the `{{name}}` placeholder passes through intact.
+    expect(result).toContain('Hi {{name}}');
     expect(result).not.toContain('data-merge-tag');
+    expect(result).not.toContain('&lt;span');
   });
 
   it('returns empty for hidden block', () => {
@@ -159,15 +162,28 @@ describe('renderTable', () => {
   });
 
   describe('edge cases', () => {
-    it('passes cell content through raw (supports HTML/merge tags)', () => {
+    it('escapes HTML special characters in cell content', () => {
       const block = createTableBlock({
         rows: makeRows([['Price: $10 & <free>']]),
         hasHeaderRow: false,
       });
       const result = renderBlock(block, ctx);
       expect(result).toContain('<table');
-      // Cell content is NOT escaped — it's passed through raw to support merge tags/HTML
-      expect(result).toContain('Price: $10 & <free>');
+      // Cells are plain text (like menu/button), so HTML special characters
+      // are entity-escaped — a cell of "<b>x</b>" must render as literal
+      // characters in the email, matching how the editor shows it on canvas.
+      expect(result).toContain('Price: $10 &amp; &lt;free&gt;');
+      expect(result).not.toContain('Price: $10 & <free>');
+    });
+
+    it('escapes HTML tags in cell content so they render as text, not markup', () => {
+      const block = createTableBlock({
+        rows: makeRows([['<b>Weight</b>']]),
+        hasHeaderRow: false,
+      });
+      const result = renderBlock(block, ctx);
+      expect(result).toContain('&lt;b&gt;Weight&lt;/b&gt;');
+      expect(result).not.toContain('<b>Weight</b>');
     });
 
     it('renders single-cell table', () => {
