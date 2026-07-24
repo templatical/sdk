@@ -111,6 +111,7 @@ import {
 } from "../utils/resolveHtmlBlockPreview";
 import { resolveColorsConfig } from "../utils/resolveColorsConfig";
 import { collectOffPaletteDefaults } from "../utils/collectOffPaletteDefaults";
+import { collectColorFieldIssues } from "../utils/collectColorFieldIssues";
 import { logger } from "../utils/logger";
 import { handleEditorKeydown } from "../utils/keyboardShortcuts";
 
@@ -355,21 +356,77 @@ export function useEditorCore(
   // --- Keyboard reorder (GitHub-style lift/move/drop via keyboard) ---
   const keyboardReorder = useKeyboardReorder(editor, { t, format });
 
+  // --- Color palette ---
+  // Editor-wide color-picker palette. Resolved here, ahead of the block
+  // registry, because custom-block color fields are audited against it at
+  // definition-registration time (below); it is provided to the component tree
+  // further down. Custom-block color fields layer their own presets over this.
+  // The resolver is pure, so the warning for a nonsensical config
+  // (`allowCustom: false` with no presets) is emitted here — once, at the
+  // config surface that owns it.
+  const resolvedColors = resolveColorsConfig(config.colors);
+  if (resolvedColors.allowCustomIgnored) {
+    logger.warn(
+      "config.colors.allowCustom: false is ignored without presets — " +
+        "keeping the color wheel and hex input so a color can still be chosen.",
+    );
+  }
+  if (resolvedColors.invalidPresets.length > 0) {
+    logger.warn(
+      "config.colors.presets skipped invalid entries: " +
+        `${resolvedColors.invalidPresets.join(", ")} — presets must be hex ` +
+        "colors (#rgb or #rrggbb).",
+    );
+  }
+  // Off-palette default-colour audit. Only meaningful when custom colours are
+  // locked (`allowCustom: false`): a block/template default outside the palette
+  // then paints new blocks a colour no picker can reselect. Warn — do NOT
+  // auto-seed the defaults from the palette; the maintainer flagged that as a
+  // separate discussion. Pure util, consumer-owned warning — same split as the
+  // resolver above.
+  if (resolvedColors.allowCustom === false) {
+    const offPaletteDefaults = collectOffPaletteDefaults(
+      resolvedColors.presets,
+      config.blockDefaults,
+      config.templateDefaults,
+    );
+    if (offPaletteDefaults.length > 0) {
+      logger.warn(
+        "config.colors locks custom colours, but these block/template " +
+          "default colours fall outside colors.presets: " +
+          `${offPaletteDefaults.join(", ")}. New blocks start on a colour the ` +
+          "palette can't reselect — set blockDefaults / templateDefaults from " +
+          "the same palette.",
+      );
+    }
+  }
+
   // --- Block registry ---
   const registry = useBlockRegistry();
   registerBuiltInBlocks(registry, BLOCK_COMPONENT_MAP);
 
-  // Register custom blocks provided at init time (Cloud may defer this to initialize())
-  if (config.customBlocks?.length) {
-    for (const definition of config.customBlocks) {
-      registry.registerCustom(definition, CustomBlockComponent);
-    }
-  }
+  // Per-field color configs are audited ONCE per definition, here at
+  // registration — not in `ColorField.vue`, which remounts on every block
+  // selection and renders once per repeater item. Keyed by
+  // `<block type>:<field path>:<kind>` so a re-registration (Cloud defers
+  // registration to `initialize()`) can't repeat a message either — the same
+  // once-guard `Sidebar.vue` uses for unknown `paletteBlocks` entries.
+  const warnedColorFieldIssues = new Set<string>();
 
   function registerCustomBlocks(definitions: CustomBlockDefinition[]): void {
     for (const definition of definitions) {
       registry.registerCustom(definition, CustomBlockComponent);
+      for (const issue of collectColorFieldIssues(definition, resolvedColors)) {
+        if (warnedColorFieldIssues.has(issue.id)) continue;
+        warnedColorFieldIssues.add(issue.id);
+        logger.warn(issue.message);
+      }
     }
+  }
+
+  // Register custom blocks provided at init time (Cloud may defer this to initialize())
+  if (config.customBlocks?.length) {
+    registerCustomBlocks(config.customBlocks);
   }
 
   // --- Keyboard shortcuts ---
@@ -445,46 +502,8 @@ export function useEditorCore(
     HTML_BLOCK_PREVIEW_KEY,
     resolveHtmlBlockPreview(config.htmlBlockPreview),
   );
-  // Editor-wide color-picker palette. Resolved once; custom-block color fields
-  // layer their own presets over this. The resolver is pure, so the warning for
-  // a nonsensical config (`allowCustom: false` with no presets) is emitted here
-  // — once, at the config surface that owns it.
-  const resolvedColors = resolveColorsConfig(config.colors);
-  if (resolvedColors.allowCustomIgnored) {
-    logger.warn(
-      "config.colors.allowCustom: false is ignored without presets — " +
-        "keeping the color wheel and hex input so a color can still be chosen.",
-    );
-  }
-  if (resolvedColors.invalidPresets.length > 0) {
-    logger.warn(
-      "config.colors.presets skipped invalid entries: " +
-        `${resolvedColors.invalidPresets.join(", ")} — presets must be hex ` +
-        "colors (#rgb or #rrggbb).",
-    );
-  }
-  // Off-palette default-colour audit. Only meaningful when custom colours are
-  // locked (`allowCustom: false`): a block/template default outside the palette
-  // then paints new blocks a colour no picker can reselect. Warn — do NOT
-  // auto-seed the defaults from the palette; the maintainer flagged that as a
-  // separate discussion. Pure util, consumer-owned warning — same split as the
-  // resolver above.
-  if (resolvedColors.allowCustom === false) {
-    const offPaletteDefaults = collectOffPaletteDefaults(
-      resolvedColors.presets,
-      config.blockDefaults,
-      config.templateDefaults,
-    );
-    if (offPaletteDefaults.length > 0) {
-      logger.warn(
-        "config.colors locks custom colours, but these block/template " +
-          "default colours fall outside colors.presets: " +
-          `${offPaletteDefaults.join(", ")}. New blocks start on a colour the ` +
-          "palette can't reselect — set blockDefaults / templateDefaults from " +
-          "the same palette.",
-      );
-    }
-  }
+  // Editor-wide color-picker palette (resolved + audited above, ahead of the
+  // block registry).
   provide(COLORS_KEY, resolvedColors);
   // Reactive deduped list of custom-block stylesheets currently in use. The
   // `<CustomBlockStylesheets>` component reads this and renders `<style>` tags

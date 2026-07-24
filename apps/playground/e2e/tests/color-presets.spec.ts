@@ -114,6 +114,29 @@ test.describe("Color presets — Event Invitation brand-locked palette", () => {
     await expect(popover.locator("hex-color-picker")).toHaveCount(0);
     await expect(popover.locator('input[type="text"]')).toHaveCount(0);
   });
+
+  test("a custom-block colour field narrows the palette to its own presets", async ({
+    page,
+  }) => {
+    // The Event Details block's `accentColor` field carries its own two-swatch
+    // `presets`, drawn from the template's six brand colours.
+    await page.locator('[data-block-type="custom"]').first().click();
+    const panel = page.locator(SELECTORS.rightPanelContent);
+    await expect(panel).toBeVisible();
+    await panel.locator(PICK_COLOR).first().click();
+    const popover = page.locator(".tpl-color-popover");
+    await expect(popover).toBeVisible();
+
+    const group = popover.locator('[role="radiogroup"]');
+    // Two field presets plus the leading "no colour" chip — not the six the
+    // rest of the template's pickers show.
+    await expect(group.locator("button")).toHaveCount(3);
+    await expect(group.locator('button[aria-label="#7c3aed"]')).toBeVisible();
+    await expect(group.locator('button[aria-label="#ec4899"]')).toBeVisible();
+    // The editor-wide lock is inherited: still no wheel, still no hex field.
+    await expect(popover.locator("hex-color-picker")).toHaveCount(0);
+    await expect(popover.locator('input[type="text"]')).toHaveCount(0);
+  });
 });
 
 test.describe("Color presets — unconfigured picker is unchanged", () => {

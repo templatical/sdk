@@ -511,4 +511,140 @@ describe('useEditorCore', () => {
       warnSpy.mockRestore();
     });
   });
+
+  describe('custom-block colour fields', () => {
+    /** A definition whose colour field carries the given per-field config. */
+    function defWith(colorFieldConfig: Record<string, unknown>) {
+      return {
+        type: 'event-details',
+        name: 'Event Details',
+        template: '<div />',
+        fields: [
+          {
+            type: 'color',
+            key: 'accentColor',
+            label: 'Accent Color',
+            ...colorFieldConfig,
+          },
+        ],
+      } as any;
+    }
+
+    /** Every `[Templatical]` warning naming a custom-block colour field. */
+    function fieldWarnings(warnSpy: ReturnType<typeof vi.spyOn>): string[] {
+      return warnSpy.mock.calls
+        .filter(
+          (call) =>
+            call[0] === '[Templatical]' &&
+            typeof call[1] === 'string' &&
+            call[1].startsWith('custom block '),
+        )
+        .map((call) => call[1] as string);
+    }
+
+    it('audits config.customBlocks at init, naming the block and field', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mountCore({
+        config: {
+          colors: { presets: ['#0b5cff'], allowCustom: false },
+          customBlocks: [defWith({ allowCustom: true })],
+        } as any,
+      });
+
+      expect(fieldWarnings(warnSpy)).toEqual([
+        'custom block "event-details" field "accentColor": allowCustom: true ' +
+          'is ignored because colors.allowCustom is false — a field can ' +
+          'narrow the editor-wide palette, never unlock it.',
+      ]);
+      warnSpy.mockRestore();
+    });
+
+    it('audits definitions registered later via registerCustomBlocks', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { captured } = mountCore();
+
+      expect(fieldWarnings(warnSpy)).toEqual([]);
+      captured.core!.registerCustomBlocks([defWith({ presets: ['nope'] })]);
+
+      expect(fieldWarnings(warnSpy)).toHaveLength(1);
+      expect(fieldWarnings(warnSpy)[0]).toContain(
+        'presets skipped invalid entries: nope',
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('warns once per issue however often a definition is re-registered', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const definition = defWith({ presets: ['nope'] });
+      // Init-time registration + Cloud's deferred re-registration of the same
+      // definitions: the once-guard has to survive both.
+      const { captured } = mountCore({
+        config: { customBlocks: [definition] } as any,
+      });
+      captured.core!.registerCustomBlocks([definition]);
+      captured.core!.registerCustomBlocks([definition]);
+
+      expect(fieldWarnings(warnSpy)).toHaveLength(1);
+      warnSpy.mockRestore();
+    });
+
+    it('warns once for a repeater sub-field, however many items exist', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mountCore({
+        config: {
+          customBlocks: [
+            {
+              type: 'gallery',
+              name: 'Gallery',
+              template: '<div />',
+              fields: [
+                {
+                  type: 'repeatable',
+                  key: 'items',
+                  label: 'Items',
+                  // Three seeded items → three ColorField mounts at render
+                  // time, but the audit runs on the definition, so: one warning.
+                  default: [{}, {}, {}],
+                  fields: [
+                    {
+                      type: 'color',
+                      key: 'swatch',
+                      label: 'Swatch',
+                      presets: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        } as any,
+      });
+
+      expect(fieldWarnings(warnSpy)).toEqual([
+        'custom block "gallery" field "items[].swatch": presets is empty — a ' +
+          "field palette can only narrow the editor's, so an empty list is " +
+          'ignored and the field inherits colors.presets.',
+      ]);
+      warnSpy.mockRestore();
+    });
+
+    it('stays silent for a valid narrowing field config', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mountCore({
+        config: {
+          colors: { presets: ['#0b5cff', '#111827'] },
+          customBlocks: [
+            defWith({
+              presets: ['#0b5cff'],
+              allowCustom: false,
+              default: '#0b5cff',
+            }),
+          ],
+        } as any,
+      });
+
+      expect(fieldWarnings(warnSpy)).toEqual([]);
+      warnSpy.mockRestore();
+    });
+  });
 });
