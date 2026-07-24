@@ -41,7 +41,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const EDITOR_DIR = resolve(__dirname, "..");
 const REPO_ROOT = resolve(EDITOR_DIR, "../..");
 const FIXTURE_DIR = join(EDITOR_DIR, "tests/e2e-fixtures/webpack-consumer");
-const CONSUMER_DIR = join(REPO_ROOT, "node_modules/.cache/webpack-consumer");
+// Materialize the consumer OUTSIDE the monorepo so webpack resolves modules the
+// way a real installed consumer does — it must NOT walk up into the workspace and
+// resolve hoisted workspace packages (@templatical/quality et al.) or their
+// TypeScript source. Keeps the check immune to lockfile/hoisting layout changes.
+const CONSUMER_DIR = mkdtempSync(join(tmpdir(), "tpl-webpack-consumer-"));
 
 const OPTIONAL_PEERS = [
   "pusher-js",
@@ -147,4 +151,5 @@ try {
   );
 } finally {
   rmSync(packDir, { recursive: true, force: true });
+  rmSync(CONSUMER_DIR, { recursive: true, force: true });
 }
