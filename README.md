@@ -37,19 +37,11 @@
 
 **Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (so they render correctly in every email client), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. An optional Cloud tier is in development for AI rewrites, real-time collaboration, comments, snapshots, saved modules, multi-tenancy, test email sending, MCP support, and more.
 
-## Power features
+## Design a complete email from a prompt
 
-Things that are usually paid features in commercial editors — open-source in Templatical:
+Describe the email you want and your AI coding agent builds it — then preview it in the real editor, hand-edit anything, and export send-ready MJML/HTML. **Free, open-source, no backend, no API key** — your agent is the inference, and nothing is sent to us. Ship a one-off campaign, or generate branded starter templates for your [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) integration: if you have a coding agent, you have a complete email tool.
 
-- **Custom blocks with API-backed data sources** — register your own block types whose content is rendered from a static template _or_ fetched live from your API at preview time. Typically a paid-tier feature in commercial editors.
-- **Merge tags with pluggable syntax** — `{{handlebars}}`, `{liquid}`, `${js}`, or your own — with automatic human-readable label replacement directly in the editor canvas. Build your CRM-aware tag picker in minutes.
-- **Display conditions** — show/hide blocks based on recipient attributes, with live preview in the editor.
-- **Full theming via design tokens** — 27 OKLch tokens, custom fonts, dark mode, complete theme overrides. No CSS hacking, no paid tier.
-- **Template & block defaults** — define your brand once. New templates and new blocks pick up your brand automatically.
-
-### AI — design a complete email from a prompt
-
-Describe the email you want and your coding agent builds it — **free, open-source, no backend and no API key.** The [`templatical-email` Agent Skill](./skills/templatical-email) teaches Claude Code, Cursor, or any [Agent Skills](https://code.claude.com/docs/en/skills)–compatible agent your template format, so it produces a valid email you can **preview and hand-edit in the real editor, then export as MJML/HTML to send** — through Amazon SES, Postmark, Resend, anything. No app or integration required; the agent is the inference and nothing is sent to us. (Building a product? Use it to generate branded starter templates for your [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) integration too.)
+The [`templatical-email` Agent Skill](./skills/templatical-email) runs in Claude Code, Cursor, or any [Agent Skills](https://code.claude.com/docs/en/skills)–compatible agent, and the email it exports sends through any provider — Amazon SES, Postmark, Resend, Mailchimp, anything.
 
 ```text
 # Claude Code
@@ -63,7 +55,15 @@ Or copy `skills/templatical-email/` into any agent's skills folder. [Skill guide
 
 > Want a hosted, managed experience instead — AI chat inside the editor, tuned prompts, an MCP server we run? That's the Templatical Cloud tier (below).
 
-> **Cloud features** — AI rewrite, AI chat, real-time collaboration with block locking, comments, snapshots and version history, saved modules, hosted media library, template scoring, test email sending, MCP integration, multi-tenancy, headless API, and more — are part of the Templatical Cloud tier currently in development. The Cloud implementation is also open code in `@templatical/core/cloud`. [Learn more about Cloud →](https://docs.templatical.com/cloud/)
+## Power features
+
+Things that are usually paid features in commercial editors — open-source in Templatical:
+
+- **Custom blocks with API-backed data sources** — register your own block types whose content is rendered from a static template _or_ fetched live from your API at preview time. Typically a paid-tier feature in commercial editors.
+- **Merge tags with pluggable syntax** — `{{handlebars}}`, `{liquid}`, `${js}`, or your own — with automatic human-readable label replacement directly in the editor canvas. Build your CRM-aware tag picker in minutes.
+- **Display conditions** — show/hide blocks based on recipient attributes, with live preview in the editor.
+- **Full theming via design tokens** — 27 OKLch tokens, custom fonts, dark mode, complete theme overrides. No CSS hacking, no paid tier.
+- **Template & block defaults** — define your brand once. New templates and new blocks pick up your brand automatically.
 
 ### And more
 
