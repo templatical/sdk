@@ -12,6 +12,10 @@ hero:
       text: Try Playground
       link: https://play.templatical.com
 features:
+  - title: Design emails from a prompt
+    details: An open Agent Skill teaches Claude Code, Cursor, or any AI agent your template format — describe an email, preview it in the real editor, export MJML/HTML.
+    link: /guide/agent-skill
+    linkText: Use the Agent Skill
   - title: Custom blocks with API-backed data
     details: Register your own block types — static templates or live API data at preview time.
     link: /guide/custom-blocks
