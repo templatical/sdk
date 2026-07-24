@@ -119,8 +119,10 @@ const hasPresets = computed(() => presets.value.length > 0);
 
 // Show the free-form controls (wheel + hex inputs) whenever custom entry is
 // allowed OR there are no presets to fall back on — so a picker is never left
-// with no way to choose a color (a belt-and-braces guard; `resolveColorsConfig`
-// already forbids `allowCustom: false` without presets).
+// with no way to choose a color. `resolveColorsConfig` already forbids
+// `allowCustom: false` without presets at the editor level; a custom-block
+// color field locking itself with no palette anywhere (`resolveFieldColors`)
+// relies on this guard instead.
 const showFreeform = computed(() => allowCustom.value || !hasPresets.value);
 
 // A preset reads as selected when its hex equals the current value, compared in

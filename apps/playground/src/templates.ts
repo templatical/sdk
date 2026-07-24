@@ -127,6 +127,12 @@ export const eventDetailsBlock: CustomBlockDefinition = {
       key: "accentColor",
       label: "Accent Color",
       default: "#7c3aed",
+      // Field-level narrowing of the Event Invitation template's six-colour
+      // brand palette: the accent role is only ever violet or pink, so this one
+      // picker offers just those two. `allowCustom` is left unset — the field
+      // inherits the template's editor-wide lock, which it could not undo
+      // anyway (a field config narrows, never widens).
+      presets: ["#7c3aed", "#ec4899"],
     },
   ],
   template: `<div style="border: 2px solid {{ accentColor }}; border-radius: 8px; padding: 20px; text-align: center;">
@@ -2077,7 +2083,7 @@ export const templates: TemplateOption[] = [
       {
         label: "Brand Color Palette",
         description:
-          "This template passes a `colors` config to init(): a fixed set of brand swatches plus `allowCustom: false`. Every color picker in the editor — the RSVP button colors, the Event Details accent color, template settings — shows only those presets as a clickable grid, with no wheel or hex input.\nTo try it: select the RSVP button (or the Event Details card) and open a color control in the sidebar. You can only pick from the approved palette. This is the white-label / brand-kit path: keep non-designers on-brand by removing free-form color entry.\nThe template also sets on-brand `blockDefaults` and `templateDefaults`, so blocks you add start on palette colors instead of the factory defaults that would land outside it.",
+          "This template passes a `colors` config to init(): a fixed set of brand swatches plus `allowCustom: false`. Every color picker in the editor — the RSVP button colors, the Event Details accent color, template settings — shows only those presets as a clickable grid, with no wheel or hex input.\nTo try it: select the RSVP button (or the Event Details card) and open a color control in the sidebar. You can only pick from the approved palette. This is the white-label / brand-kit path: keep non-designers on-brand by removing free-form color entry.\nThe Event Details card goes one step further: its Accent Color field carries its own `presets`, so it offers just the two colors that role allows out of the six. A field can narrow the editor-wide palette like this, but never widen it.\nThe template also sets on-brand `blockDefaults` and `templateDefaults`, so blocks you add start on palette colors instead of the factory defaults that would land outside it.",
       },
       {
         label: "Display Conditions (Multiple Groups)",

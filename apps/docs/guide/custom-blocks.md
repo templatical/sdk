@@ -194,6 +194,27 @@ Color picker input.
 }
 ```
 
+Scope a color field to a specific color role — or lock it to one — with `presets` and `allowCustom`. They take the same shape as the editor-wide [`colors`](/api/editor#preset-colors) config but apply to this field only, so one field can offer an accent/ink pair while every other color field keeps the global palette:
+
+```ts
+{
+  key: 'buttonColor',
+  label: 'Button Color',
+  type: 'color',
+  presets: ['#0b5cff', '#111827'],
+  allowCustom: false, // authors pick only from the two brand colors
+}
+```
+
+A field config can only **narrow** the editor-wide one, never widen it:
+
+- **Unset inherits.** A field that sets neither gets the editor's palette and its `allowCustom` setting.
+- **`presets`** must be `#rgb` / `#rrggbb` hex, validated exactly like editor-level presets — invalid entries are skipped with a console warning naming the block and the field. A non-empty valid list replaces the editor's palette for this field. An empty list (`presets: []`) or a list whose entries are all invalid narrows nothing, so the field falls back to the editor's palette (also warned).
+- **`allowCustom: false`** locks this field to its palette even while the rest of the editor allows free-form entry. **`allowCustom: true` cannot unlock a field when the editor-wide `colors.allowCustom` is `false`** — that request is ignored with a warning.
+- **Off-palette defaults are flagged.** When the field ends up locked, a `default` outside its effective palette is warned about: new blocks would start on a color the picker offers no chip for.
+
+Narrowing a palette on a template that already has saved content can leave a stored color unselectable in locked mode — the picker then shows no chip checked; clearing the value with the leading "no color" chip re-enters the palette.
+
 ### number
 
 Numeric input with optional min, max, and step constraints.

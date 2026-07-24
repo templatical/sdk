@@ -116,7 +116,7 @@ const editor = await init({
 
 ### Preset colors {#preset-colors}
 
-Every color picker in the editor — block toolbars, template settings, rich-text color, custom-block color fields — opens a popover with a color wheel and a hex input. Pass `colors` to add a row of preset colors to that popover, and optionally to remove the free-form controls:
+Every color picker in the editor — block toolbars, template settings, rich-text color, custom-block color fields — opens a popover with a color wheel and a hex input. Pass `colors` to add a row of preset colors to that popover, and optionally to remove the free-form controls. It is the baseline for every picker; a custom block's color field can narrow it for itself (see the last bullet):
 
 ```ts
 const editor = await init({
@@ -130,6 +130,7 @@ const editor = await init({
 
 - **`presets`** — hex strings rendered as a clickable grid. Clicking one applies it; the preset matching the current value is marked selected. Supplements the wheel and hex input. Each entry must be a `#rgb` or `#rrggbb` hex string — 4-/8-digit alpha hex and other formats are skipped with a console warning listing the offending entries.
 - **`allowCustom`** — defaults to `true`. Set to `false` (together with `presets`) to hide the wheel and hex input so authors can only pick from the palette — useful when embedding the editor as a white-label / brand-kit tool. In this locked mode the palette leads with a "no colour" chip that restores the unset (inherit) state, since the hex field's clear button is hidden. Also in locked mode, the editor logs a development warning when any `blockDefaults` / `templateDefaults` colour falls outside `presets` — new blocks would otherwise start on a colour no picker can reselect, so set those defaults from the same palette. Ignored with a warning when no `presets` are configured, since that would leave the picker with no way to set a color.
+- **Per-field narrowing.** A custom block's `color` field can carry its own `presets` / `allowCustom` — see [per-field color presets](/guide/custom-blocks#color). A field can only narrow this config: it may restrict the palette, or lock one field while the rest of the editor stays free-form. It can never widen it, so `allowCustom: false` here still locks every picker.
 
 ## TemplaticalEditor
 

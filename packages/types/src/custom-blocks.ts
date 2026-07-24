@@ -1,6 +1,7 @@
 /** @see https://templatical.com/docs/v1/custom-blocks */
 
 import type { BlockStyles } from "./blocks";
+import type { ColorsConfig } from "./config";
 
 export type CustomBlockFieldType =
   | "text"
@@ -35,7 +36,29 @@ export interface CustomBlockImageField extends CustomBlockFieldBase {
   default?: string;
 }
 
-export interface CustomBlockColorField extends CustomBlockFieldBase {
+/**
+ * A color-picker field. Beyond the shared field props it accepts the same flat
+ * `presets` / `allowCustom` pair as the editor-wide `colors` config (their
+ * shapes are derived from `ColorsConfig`, so the two can't drift), scoping this
+ * one field to a color *role* — e.g. a button-color field offering only the
+ * brand's accent/ink pair while other color fields inherit the global palette.
+ *
+ * **Narrowing only.** A field may restrict what the editor-wide `colors` config
+ * offers, never widen it:
+ *
+ * - `presets` — entries are validated exactly like editor-level presets
+ *   (`#rgb` / `#rrggbb` hex; invalid ones are skipped with a console warning
+ *   naming the block and field). A non-empty valid list replaces the editor's
+ *   palette for this field; leaving it unset, passing `[]`, or passing only
+ *   invalid entries all inherit the editor's palette.
+ * - `allowCustom` — `false` locks this field to its palette even while the rest
+ *   of the editor allows free-form entry. `true` cannot unlock a field when the
+ *   editor-wide `colors.allowCustom` is `false`; it is ignored with a warning.
+ *
+ * @see https://docs.templatical.com/guide/custom-blocks
+ */
+export interface CustomBlockColorField
+  extends CustomBlockFieldBase, Pick<ColorsConfig, "presets" | "allowCustom"> {
   type: "color";
   default?: string;
 }

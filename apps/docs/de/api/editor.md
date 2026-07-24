@@ -116,7 +116,7 @@ const editor = await init({
 
 ### Vordefinierte Farben {#vordefinierte-farben}
 
-Jeder Farbwähler im Editor — Block-Symbolleisten, Template-Einstellungen, Rich-Text-Farbe, Farbfelder benutzerdefinierter Blöcke — öffnet ein Popover mit einem Farbrad und einem Hex-Eingabefeld. Übergeben Sie `colors`, um diesem Popover eine Reihe vordefinierter Farben hinzuzufügen und optional die freien Eingabefelder zu entfernen:
+Jeder Farbwähler im Editor — Block-Symbolleisten, Template-Einstellungen, Rich-Text-Farbe, Farbfelder benutzerdefinierter Blöcke — öffnet ein Popover mit einem Farbrad und einem Hex-Eingabefeld. Übergeben Sie `colors`, um diesem Popover eine Reihe vordefinierter Farben hinzuzufügen und optional die freien Eingabefelder zu entfernen. Die Konfiguration ist die Grundlage für jeden Farbwähler; das Farbfeld eines benutzerdefinierten Blocks kann sie für sich selbst weiter einschränken (siehe den letzten Punkt):
 
 ```ts
 const editor = await init({
@@ -130,6 +130,7 @@ const editor = await init({
 
 - **`presets`** — Hex-Zeichenketten, die als anklickbares Raster gerendert werden. Ein Klick übernimmt die Farbe; die vordefinierte Farbe, die dem aktuellen Wert entspricht, wird als ausgewählt markiert. Ergänzt das Farbrad und das Hex-Eingabefeld. Jeder Eintrag muss eine `#rgb`- oder `#rrggbb`-Hex-Zeichenkette sein — 4-/8-stellige Alpha-Hex-Werte und andere Formate werden übersprungen und mit einer Konsolenwarnung protokolliert, die die betreffenden Einträge auflistet.
 - **`allowCustom`** — standardmäßig `true`. Auf `false` gesetzt (zusammen mit `presets`) werden das Farbrad und das Hex-Eingabefeld ausgeblendet, sodass Autoren nur aus der Palette wählen können — nützlich beim Einbetten des Editors als White-Label- / Brand-Kit-Werkzeug. In diesem gesperrten Modus beginnt die Palette mit einem „Keine Farbe“-Feld, das den nicht gesetzten (geerbten) Zustand wiederherstellt, da die Schaltfläche zum Löschen des Hex-Eingabefelds ausgeblendet ist. Ebenfalls im gesperrten Modus protokolliert der Editor eine Entwicklungswarnung, wenn eine Farbe aus `blockDefaults` / `templateDefaults` außerhalb von `presets` liegt — neue Blöcke würden sonst mit einer Farbe beginnen, die kein Farbwähler erneut auswählen kann; setzen Sie diese Standardwerte daher aus derselben Palette. Wird mit einer Warnung ignoriert, wenn keine `presets` konfiguriert sind, da der Farbwähler sonst keine Möglichkeit hätte, eine Farbe festzulegen.
+- **Einschränkung auf Feldebene.** Das `color`-Feld eines benutzerdefinierten Blocks kann eigene `presets` / `allowCustom` mitbringen — siehe [vordefinierte Farben pro Feld](/de/guide/custom-blocks#color). Ein Feld kann diese Konfiguration nur einschränken: Es darf die Palette begrenzen oder ein einzelnes Feld sperren, während der übrige Editor freie Eingaben zulässt. Erweitern kann es sie nie — `allowCustom: false` sperrt hier also weiterhin jeden Farbwähler.
 
 ## TemplaticalEditor
 
