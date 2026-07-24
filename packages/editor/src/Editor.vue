@@ -54,6 +54,7 @@ const core = useEditorCore({
     uiTheme: props.config.uiTheme,
     theme: props.config.theme,
     blockDefaults: props.config.blockDefaults,
+    templateDefaults: props.config.templateDefaults,
     customBlocks: props.config.customBlocks,
     paletteBlocks: props.config.paletteBlocks,
     htmlBlockPreview: props.config.htmlBlockPreview,

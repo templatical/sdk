@@ -81,6 +81,29 @@ test.describe("Color presets — Event Invitation brand-locked palette", () => {
     await expect(swatch).toHaveClass(/tpl-color-swatch-empty/);
   });
 
+  test("a newly-added button starts on the on-brand default preset", async ({
+    editorPage,
+    page,
+  }) => {
+    // Drag in a fresh Button block. Its backgroundColor comes from the
+    // template's on-brand `blockDefaults` (#7c3aed), which is one of the locked
+    // presets — so the coordinated setup opens its picker with that chip already
+    // checked, no off-palette default in sight.
+    await editorPage.dragBlockFromSidebar("button");
+    await editorPage.getBlockByType("button").last().click();
+    await page.locator(SELECTORS.blockSelected).waitFor();
+
+    const panel = page.locator(SELECTORS.rightPanelContent);
+    await expect(panel).toBeVisible();
+    await panel.locator(PICK_COLOR).first().click();
+    const popover = page.locator(".tpl-color-popover");
+    await expect(popover).toBeVisible();
+
+    await expect(
+      popover.locator('button[aria-label="#7c3aed"]'),
+    ).toHaveAttribute("aria-checked", "true");
+  });
+
   test("allowCustom:false hides the wheel and hex input", async ({
     editorPage,
     page,

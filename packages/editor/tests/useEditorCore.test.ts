@@ -413,14 +413,17 @@ describe('useEditorCore', () => {
       warnSpy.mockRestore();
     });
 
-    it('does not warn when colors provides presets', () => {
+    it('does not warn about ignored allowCustom when colors provides presets', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       mountCore({
         config: { colors: { presets: ['#0b5cff'], allowCustom: false } },
       });
+      // The allowCustomIgnored warning is specifically about the empty-presets
+      // case; providing presets must not trip it. (The off-palette default
+      // audit is a separate warning, exercised in its own describe below.)
       expect(warnSpy).not.toHaveBeenCalledWith(
         '[Templatical]',
-        expect.stringContaining('config.colors'),
+        expect.stringContaining('allowCustom: false is ignored'),
       );
       warnSpy.mockRestore();
     });
@@ -447,6 +450,63 @@ describe('useEditorCore', () => {
       expect(warnSpy).not.toHaveBeenCalledWith(
         '[Templatical]',
         expect.stringContaining('skipped invalid entries'),
+      );
+      warnSpy.mockRestore();
+    });
+  });
+
+  describe('off-palette default-colour audit', () => {
+    // A palette that leaves the button/divider factory defaults off-palette.
+    const lockedPalette = ['#7c3aed', '#ffffff'];
+
+    it('warns listing off-palette block/template defaults when custom colours are locked', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mountCore({
+        config: { colors: { presets: lockedPalette, allowCustom: false } },
+      });
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('default colours fall outside colors.presets'),
+      );
+      // The factory button background (#333333) is one of the offenders listed.
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('button.backgroundColor: #333333'),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('does not run the audit when custom colours are unlocked', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      // Same off-palette defaults, but allowCustom defaults to true → no audit.
+      mountCore({
+        config: { colors: { presets: lockedPalette } },
+      });
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('default colours fall outside colors.presets'),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('does not warn when locked and every default colour is on-palette', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mountCore({
+        config: {
+          colors: { presets: ['#7c3aed', '#ffffff', '#111827'], allowCustom: false },
+          blockDefaults: {
+            button: { backgroundColor: '#7c3aed' },
+            divider: { color: '#111827' },
+            menu: { separatorColor: '#111827' },
+            table: { borderColor: '#111827' },
+            countdown: { digitColor: '#111827', labelColor: '#7c3aed' },
+          },
+          templateDefaults: { textColor: '#111827' },
+        } as any,
+      });
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('default colours fall outside colors.presets'),
       );
       warnSpy.mockRestore();
     });

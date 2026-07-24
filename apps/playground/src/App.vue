@@ -589,6 +589,11 @@ let selectedCustomBlocks: CustomBlockDefinition[] | undefined;
 let currentHtmlBlockPreview: boolean | undefined;
 let currentFonts: FontsConfig | undefined;
 let currentColors: ColorsConfig | undefined;
+// Per-template block/template defaults (Event Invitation's on-brand set). When
+// set they fully replace the app-level DefaultsPreset selection for this
+// template — resolved in `initEditor`, same override idiom as `currentColors`.
+let currentTemplateBlockDefaults: BlockDefaults | undefined;
+let currentTemplateTemplateDefaults: TemplateDefaults | undefined;
 let pendingEditorInit = false;
 
 function chooseTemplate(
@@ -606,6 +611,10 @@ function chooseTemplate(
   // Per-template `colors` palette (e.g. the Event Invitation brand-lock demo);
   // reset on each open so other templates keep the default free-form pickers.
   currentColors = template?.colors;
+  // Per-template defaults, reset on each open. When a template sets its own,
+  // they shadow the app-level DefaultsPreset selector (see initEditor).
+  currentTemplateBlockDefaults = template?.blockDefaults;
+  currentTemplateTemplateDefaults = template?.templateDefaults;
   // A template can opt out of the playground's consumer-owned `onRequest`
   // modal — that's how the Welcome Email template demos the SDK's built-in
   // picker without making the user flip a config toggle. The flag is
@@ -958,8 +967,11 @@ async function initEditor(): Promise<void> {
         ...currentSerializableConfig.mergeTags,
         onRequest: enableRequestMergeTag.value ? requestMergeTag : undefined,
       },
-      blockDefaults: currentBlockDefaults,
-      templateDefaults: currentTemplateDefaults,
+      // A template's own defaults (Event Invitation) shadow the app-level
+      // DefaultsPreset selector; every other template uses the preset value.
+      blockDefaults: currentTemplateBlockDefaults ?? currentBlockDefaults,
+      templateDefaults:
+        currentTemplateTemplateDefaults ?? currentTemplateDefaults,
       htmlBlockPreview: currentHtmlBlockPreview,
       fonts: currentFonts,
       colors: currentColors,

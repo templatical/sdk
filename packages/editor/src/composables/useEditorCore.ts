@@ -34,6 +34,7 @@ import type {
   LogicTagsConfig,
   MergeTagsConfig,
   TemplateContent,
+  TemplateDefaults,
   TemplateSettings,
   ThemeOverrides,
   UiTheme,
@@ -109,6 +110,7 @@ import {
   type HtmlBlockPreviewConfig,
 } from "../utils/resolveHtmlBlockPreview";
 import { resolveColorsConfig } from "../utils/resolveColorsConfig";
+import { collectOffPaletteDefaults } from "../utils/collectOffPaletteDefaults";
 import { logger } from "../utils/logger";
 import { handleEditorKeydown } from "../utils/keyboardShortcuts";
 
@@ -205,6 +207,7 @@ export interface UseEditorCoreOptions {
     uiTheme?: UiTheme;
     theme?: ThemeOverrides;
     blockDefaults?: BlockDefaults;
+    templateDefaults?: TemplateDefaults;
     customBlocks?: CustomBlockDefinition[];
     paletteBlocks?: string[];
     htmlBlockPreview?: HtmlBlockPreviewConfig;
@@ -459,6 +462,28 @@ export function useEditorCore(
         `${resolvedColors.invalidPresets.join(", ")} — presets must be hex ` +
         "colors (#rgb or #rrggbb).",
     );
+  }
+  // Off-palette default-colour audit. Only meaningful when custom colours are
+  // locked (`allowCustom: false`): a block/template default outside the palette
+  // then paints new blocks a colour no picker can reselect. Warn — do NOT
+  // auto-seed the defaults from the palette; the maintainer flagged that as a
+  // separate discussion. Pure util, consumer-owned warning — same split as the
+  // resolver above.
+  if (resolvedColors.allowCustom === false) {
+    const offPaletteDefaults = collectOffPaletteDefaults(
+      resolvedColors.presets,
+      config.blockDefaults,
+      config.templateDefaults,
+    );
+    if (offPaletteDefaults.length > 0) {
+      logger.warn(
+        "config.colors locks custom colours, but these block/template " +
+          "default colours fall outside colors.presets: " +
+          `${offPaletteDefaults.join(", ")}. New blocks start on a colour the ` +
+          "palette can't reselect — set blockDefaults / templateDefaults from " +
+          "the same palette.",
+      );
+    }
   }
   provide(COLORS_KEY, resolvedColors);
   // Reactive deduped list of custom-block stylesheets currently in use. The

@@ -271,6 +271,7 @@ export function useCloudInitialization(
       uiTheme: config.uiTheme,
       theme: undefined, // applied in initialize() after plan check
       blockDefaults: config.blockDefaults,
+      templateDefaults: config.templateDefaults,
       customBlocks: [], // deferred to initialize()
       paletteBlocks: config.paletteBlocks,
       htmlBlockPreview: config.htmlBlockPreview,
