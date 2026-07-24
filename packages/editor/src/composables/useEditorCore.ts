@@ -453,6 +453,13 @@ export function useEditorCore(
         "keeping the color wheel and hex input so a color can still be chosen.",
     );
   }
+  if (resolvedColors.invalidPresets.length > 0) {
+    logger.warn(
+      "config.colors.presets skipped invalid entries: " +
+        `${resolvedColors.invalidPresets.join(", ")} — presets must be hex ` +
+        "colors (#rgb or #rrggbb).",
+    );
+  }
   provide(COLORS_KEY, resolvedColors);
   // Reactive deduped list of custom-block stylesheets currently in use. The
   // `<CustomBlockStylesheets>` component reads this and renders `<style>` tags

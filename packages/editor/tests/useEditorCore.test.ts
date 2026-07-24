@@ -424,5 +424,31 @@ describe('useEditorCore', () => {
       );
       warnSpy.mockRestore();
     });
+
+    it('warns listing the invalid preset entries that were skipped', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mountCore({
+        config: { colors: { presets: ['#0b5cff', 'not-a-color', '#abcd'] } },
+      });
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining(
+          'config.colors.presets skipped invalid entries: not-a-color, #abcd',
+        ),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('does not warn about invalid presets when every entry is valid hex', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      mountCore({
+        config: { colors: { presets: ['#0b5cff', '#abc'] } },
+      });
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('skipped invalid entries'),
+      );
+      warnSpy.mockRestore();
+    });
   });
 });

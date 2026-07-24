@@ -16,6 +16,15 @@ export interface ResolvedColors {
   presets: string[];
   allowCustom: boolean;
   allowCustomIgnored: boolean;
+  /**
+   * Preset entries dropped because they are not a valid `#rgb` / `#rrggbb` hex
+   * string (see the validity rule on {@link resolveColorsConfig}). Collected —
+   * not logged — so the config-owning consumer can warn once listing them,
+   * exactly as `allowCustomIgnored` is surfaced. Reflects THIS resolution's
+   * `colors.presets` input only: when a `fallback`'s already-resolved (already
+   * filtered) presets are inherited, its invalids are never re-reported here.
+   */
+  invalidPresets: string[];
 }
 
 /**
@@ -27,7 +36,17 @@ export const DEFAULT_RESOLVED_COLORS: ResolvedColors = {
   presets: [],
   allowCustom: true,
   allowCustomIgnored: false,
+  invalidPresets: [],
 };
+
+/**
+ * A valid preset is a `#rgb` or `#rrggbb` hex string. 4-/8-digit alpha hex is
+ * deliberately rejected: the wheel (vanilla-colorful) is RGB-only,
+ * `normalizeColorToHex` drops alpha on the DOM round-trip so a selected alpha
+ * preset would never read back as selected, and alpha degrades unpredictably
+ * across email clients.
+ */
+const VALID_PRESET_HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 /**
  * Resolve a `ColorsConfig` against an already-resolved `fallback`, applying
@@ -40,22 +59,45 @@ export const DEFAULT_RESOLVED_COLORS: ResolvedColors = {
  * be resolved against a broader already-resolved one, inheriting whichever
  * property it does not set.
  *
- * Validation: `allowCustom: false` with no presets anywhere in the chain is
- * ignored — forced back to `true`, with `allowCustomIgnored` set so the caller
- * can warn — because hiding the wheel and hex input without a preset grid would
- * leave the picker unable to set a color. This mirrors how `paletteBlocks` is
- * resolved: `resolvePaletteBlocks` collects the offending entries and the
- * consumer warns; this util stays pure the same way.
+ * Validation: entries in `colors.presets` that aren't valid hex
+ * ({@link VALID_PRESET_HEX}) are dropped from `presets` and collected into
+ * `invalidPresets` for the caller to warn about. Separately, `allowCustom:
+ * false` with no presets anywhere in the chain is ignored — forced back to
+ * `true`, with `allowCustomIgnored` set so the caller can warn — because
+ * hiding the wheel and hex input without a preset grid would leave the picker
+ * unable to set a color. Filtering runs BEFORE that guard, so an all-invalid
+ * list with `allowCustom: false` cascades into the forced-true path. This
+ * mirrors how `paletteBlocks` is resolved: `resolvePaletteBlocks` collects the
+ * offending entries and the consumer warns; this util stays pure the same way.
  */
 export function resolveColorsConfig(
   colors: ColorsConfig | undefined,
   fallback: ResolvedColors = DEFAULT_RESOLVED_COLORS,
 ): ResolvedColors {
-  const presets = colors?.presets ?? fallback.presets;
+  // Validate only presets this resolution actually supplies. When it inherits
+  // `fallback.presets`, those were already resolved (already filtered), so
+  // re-validating would double-report an upstream invalid entry.
+  let presets: string[];
+  let invalidPresets: string[];
+  if (colors?.presets === undefined) {
+    presets = fallback.presets;
+    invalidPresets = [];
+  } else {
+    presets = [];
+    invalidPresets = [];
+    for (const entry of colors.presets) {
+      if (VALID_PRESET_HEX.test(entry)) {
+        presets.push(entry);
+      } else {
+        invalidPresets.push(entry);
+      }
+    }
+  }
+
   const requestedAllowCustom = colors?.allowCustom ?? fallback.allowCustom;
 
   const allowCustomIgnored = !requestedAllowCustom && presets.length === 0;
   const allowCustom = allowCustomIgnored ? true : requestedAllowCustom;
 
-  return { presets, allowCustom, allowCustomIgnored };
+  return { presets, allowCustom, allowCustomIgnored, invalidPresets };
 }

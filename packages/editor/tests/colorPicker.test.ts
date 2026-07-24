@@ -366,6 +366,24 @@ describe('ColorPicker', () => {
       expect(presetButtons[0].attributes('aria-pressed')).toBe('true');
     });
 
+    it('marks a 3-digit preset selected against a 6-digit rgb round-trip value', async () => {
+      // #abc expands to #aabbcc = rgb(170, 187, 204); canonicalization makes the
+      // shorthand preset compare equal to the browser-serialized value.
+      const wrapper = mountEditor(ColorPicker, {
+        props: {
+          modelValue: 'rgb(170, 187, 204)',
+          presets: ['#abc', '#00ff00'],
+        },
+      });
+      await wrapper.find('button').trigger('click');
+
+      const presetButtons = wrapper.findAll(
+        '.tpl-color-popover [role="group"] button',
+      );
+      expect(presetButtons[0].attributes('aria-pressed')).toBe('true');
+      expect(presetButtons[1].attributes('aria-pressed')).toBe('false');
+    });
+
     it('shows no preset as selected when the value is unset', async () => {
       const wrapper = mountEditor(ColorPicker, {
         props: { modelValue: '', presets: ['#ff0000', '#00ff00'] },
@@ -434,6 +452,7 @@ describe('ColorPicker', () => {
             presets: ['#abc123'],
             allowCustom: true,
             allowCustomIgnored: false,
+            invalidPresets: [],
           },
         },
       });
@@ -455,6 +474,7 @@ describe('ColorPicker', () => {
             presets: ['#abcdef'],
             allowCustom: true,
             allowCustomIgnored: false,
+            invalidPresets: [],
           },
         },
       });

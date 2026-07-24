@@ -128,7 +128,7 @@ const editor = await init({
 });
 ```
 
-- **`presets`** — hex strings rendered as a clickable grid. Clicking one applies it; the preset matching the current value is marked selected. Supplements the wheel and hex input.
+- **`presets`** — hex strings rendered as a clickable grid. Clicking one applies it; the preset matching the current value is marked selected. Supplements the wheel and hex input. Each entry must be a `#rgb` or `#rrggbb` hex string — 4-/8-digit alpha hex and other formats are skipped with a console warning listing the offending entries.
 - **`allowCustom`** — defaults to `true`. Set to `false` (together with `presets`) to hide the wheel and hex input so authors can only pick from the palette — useful when embedding the editor as a white-label / brand-kit tool. Ignored with a warning when no `presets` are configured, since that would leave the picker with no way to set a color.
 
 ## TemplaticalEditor

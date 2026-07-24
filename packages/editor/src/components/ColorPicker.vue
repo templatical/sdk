@@ -6,7 +6,7 @@ import { useI18n } from "../composables/useI18n";
 import { usePopoverRoot } from "../composables/usePopoverRoot";
 import { usePopoverPosition } from "../composables/usePopoverPosition";
 import { colorTextClass } from "../constants/styleConstants";
-import { normalizeColorToHex } from "../utils/color";
+import { canonicalizeHexColor, normalizeColorToHex } from "../utils/color";
 import { COLORS_KEY, THEME_STYLES_KEY, UI_THEME_KEY } from "../keys";
 import { DEFAULT_RESOLVED_COLORS } from "../utils/resolveColorsConfig";
 import "vanilla-colorful";
@@ -124,14 +124,13 @@ const hasPresets = computed(() => presets.value.length > 0);
 const showFreeform = computed(() => allowCustom.value || !hasPresets.value);
 
 // A preset reads as selected when its hex equals the current value, compared in
-// the normalized (rgb→hex) lowercase form both sides are stored in.
-const normalizedValue = computed(() =>
-  normalizeColorToHex(props.modelValue).toLowerCase(),
-);
+// the canonical (rgb→hex, 3-digit expanded, lowercased) form — so a `#abc`
+// preset matches an `#aabbcc` browser round-trip and case never matters.
+const normalizedValue = computed(() => canonicalizeHexColor(props.modelValue));
 function isPresetSelected(preset: string): boolean {
   return (
     normalizedValue.value !== "" &&
-    normalizeColorToHex(preset).toLowerCase() === normalizedValue.value
+    canonicalizeHexColor(preset) === normalizedValue.value
   );
 }
 function selectPreset(preset: string): void {
