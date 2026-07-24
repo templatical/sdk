@@ -1,0 +1,151 @@
+{
+  "blocks": [
+    {
+      "id": "sec_head",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 32, "right": 24, "bottom": 8, "left": 24 },
+        "backgroundColor": "#ffffff"
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "title_receipt",
+            "type": "title",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 8, "left": 0 }
+            },
+            "content": "Order confirmed",
+            "level": 1,
+            "color": "#111827",
+            "textAlign": "left"
+          },
+          {
+            "id": "para_receipt",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "content": "<p>Thanks {{contact.first_name}} — your order <b>#10432</b> is confirmed and ships within 2 business days.</p>"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "sec_items",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 8, "right": 24, "bottom": 8, "left": 24 },
+        "backgroundColor": "#ffffff"
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "tbl_items",
+            "type": "table",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 16, "left": 0 }
+            },
+            "rows": [
+              {
+                "id": "r0",
+                "cells": [
+                  { "id": "c0", "content": "Item" },
+                  { "id": "c1", "content": "Qty" },
+                  { "id": "c2", "content": "Price" }
+                ]
+              },
+              {
+                "id": "r1",
+                "cells": [
+                  { "id": "c3", "content": "Summit Pack" },
+                  { "id": "c4", "content": "1" },
+                  { "id": "c5", "content": "$149.00" }
+                ]
+              },
+              {
+                "id": "r2",
+                "cells": [
+                  { "id": "c6", "content": "Trail Bottle" },
+                  { "id": "c7", "content": "2" },
+                  { "id": "c8", "content": "$38.00" }
+                ]
+              }
+            ],
+            "hasHeaderRow": true,
+            "headerBackgroundColor": "#f3f4f6",
+            "borderColor": "#e5e7eb",
+            "borderWidth": 1,
+            "cellPadding": 10,
+            "fontSize": 14,
+            "color": "#1f2937",
+            "textAlign": "left"
+          },
+          {
+            "id": "div_receipt",
+            "type": "divider",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 12, "left": 0 }
+            },
+            "lineStyle": "solid",
+            "color": "#e5e7eb",
+            "thickness": 1,
+            "width": "full"
+          },
+          {
+            "id": "para_total",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "content": "<p style=\"text-align:right\"><b>Total: $187.00</b></p>"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "sec_cta",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 16, "right": 24, "bottom": 32, "left": 24 },
+        "backgroundColor": "#ffffff"
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "btn_order",
+            "type": "button",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "text": "View your order",
+            "url": "https://example.com/orders/10432",
+            "backgroundColor": "#1d4ed8",
+            "textColor": "#ffffff",
+            "borderRadius": 6,
+            "fontSize": 15,
+            "buttonPadding": {
+              "top": 12,
+              "right": 24,
+              "bottom": 12,
+              "left": 24
+            }
+          }
+        ]
+      ]
+    }
+  ],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#f3f4f6",
+    "textColor": "#1f2937",
+    "linkColor": "#1d4ed8",
+    "linkUnderline": true,
+    "fontFamily": "Arial, sans-serif",
+    "preheaderText": "Your order #10432 is confirmed.",
+    "locale": "en"
+  }
+}

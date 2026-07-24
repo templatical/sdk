@@ -1,0 +1,1466 @@
+{
+  "$id": "https://templatical.com/schema/template-content.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/TemplateContent",
+  "definitions": {
+    "TemplateContent": {
+      "type": "object",
+      "properties": {
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Block"
+          }
+        },
+        "settings": {
+          "$ref": "#/definitions/TemplateSettings"
+        }
+      },
+      "required": [
+        "blocks",
+        "settings"
+      ],
+      "additionalProperties": false
+    },
+    "Block": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/SectionBlock"
+        },
+        {
+          "$ref": "#/definitions/TitleBlock"
+        },
+        {
+          "$ref": "#/definitions/ParagraphBlock"
+        },
+        {
+          "$ref": "#/definitions/ImageBlock"
+        },
+        {
+          "$ref": "#/definitions/ButtonBlock"
+        },
+        {
+          "$ref": "#/definitions/DividerBlock"
+        },
+        {
+          "$ref": "#/definitions/VideoBlock"
+        },
+        {
+          "$ref": "#/definitions/SocialIconsBlock"
+        },
+        {
+          "$ref": "#/definitions/SpacerBlock"
+        },
+        {
+          "$ref": "#/definitions/HtmlBlock"
+        },
+        {
+          "$ref": "#/definitions/MenuBlock"
+        },
+        {
+          "$ref": "#/definitions/TableBlock"
+        },
+        {
+          "$ref": "#/definitions/CountdownBlock"
+        },
+        {
+          "$ref": "#/definitions/CustomBlock"
+        }
+      ]
+    },
+    "SectionBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "section"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "columns": {
+          "$ref": "#/definitions/ColumnLayout"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Block"
+            }
+          }
+        },
+        "stackOnMobile": {
+          "type": "boolean",
+          "description": "Whether columns stack vertically on mobile. Absent or `true` keeps MJML's default responsive behavior (columns stack below 480px). `false` renders the columns inside an `<mj-group>` so they stay side-by-side on mobile, proportionally shrunk to fit."
+        },
+        "borderRadius": {
+          "type": "number",
+          "description": "Corner radius in px. Omitted/0 = square corners."
+        },
+        "wrapper": {
+          "$ref": "#/definitions/SectionWrapper",
+          "description": "Optional outer frame (rendered as an `mj-wrapper` around the section)."
+        }
+      },
+      "required": [
+        "children",
+        "columns",
+        "id",
+        "styles",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "BlockStyles": {
+      "type": "object",
+      "properties": {
+        "padding": {
+          "$ref": "#/definitions/SpacingValue"
+        },
+        "backgroundColor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "padding"
+      ],
+      "additionalProperties": false
+    },
+    "SpacingValue": {
+      "type": "object",
+      "properties": {
+        "top": {
+          "type": "number"
+        },
+        "right": {
+          "type": "number"
+        },
+        "bottom": {
+          "type": "number"
+        },
+        "left": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "top",
+        "right",
+        "bottom",
+        "left"
+      ],
+      "additionalProperties": false
+    },
+    "BlockVisibility": {
+      "type": "object",
+      "properties": {
+        "desktop": {
+          "type": "boolean"
+        },
+        "mobile": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "desktop",
+        "mobile"
+      ],
+      "additionalProperties": false
+    },
+    "ColumnLayout": {
+      "type": "string",
+      "enum": [
+        "1",
+        "2",
+        "3",
+        "2-1",
+        "1-2"
+      ]
+    },
+    "SectionWrapper": {
+      "type": "object",
+      "properties": {
+        "backgroundColor": {
+          "type": "string"
+        },
+        "padding": {
+          "$ref": "#/definitions/SpacingValue"
+        },
+        "borderRadius": {
+          "type": "number",
+          "description": "Corner radius in px for the outer frame. Omitted/0 = square corners."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Optional outer frame for a section. When present, the section is rendered inside an `mj-wrapper` — a full-width band (its own background + padding) that frames the section, e.g. a white card sitting on a colored band."
+    },
+    "TitleBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "title"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "content": {
+          "type": "string"
+        },
+        "level": {
+          "$ref": "#/definitions/HeadingLevel"
+        },
+        "color": {
+          "type": "string",
+          "description": "Text color. Unset = inherit the document-level `textColor`."
+        },
+        "textAlign": {
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        },
+        "fontFamily": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "content",
+        "id",
+        "level",
+        "styles",
+        "textAlign",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "HeadingLevel": {
+      "type": "number",
+      "enum": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    "ParagraphBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "paragraph"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "content": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "content",
+        "id",
+        "styles",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "ImageBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "image"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "src": {
+          "type": "string"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "full"
+            }
+          ]
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        },
+        "linkUrl": {
+          "type": "string"
+        },
+        "linkOpenInNewTab": {
+          "type": "boolean"
+        },
+        "placeholderUrl": {
+          "type": "string"
+        },
+        "decorative": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "align",
+        "alt",
+        "id",
+        "src",
+        "styles",
+        "type",
+        "width"
+      ],
+      "additionalProperties": false
+    },
+    "ButtonBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "button"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "text": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "openInNewTab": {
+          "type": "boolean"
+        },
+        "backgroundColor": {
+          "type": "string"
+        },
+        "textColor": {
+          "type": "string"
+        },
+        "borderRadius": {
+          "type": "number"
+        },
+        "fontSize": {
+          "type": "number"
+        },
+        "buttonPadding": {
+          "$ref": "#/definitions/SpacingValue"
+        },
+        "fontFamily": {
+          "type": "string"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "full"
+            }
+          ]
+        }
+      },
+      "required": [
+        "backgroundColor",
+        "borderRadius",
+        "buttonPadding",
+        "fontSize",
+        "id",
+        "styles",
+        "text",
+        "textColor",
+        "type",
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "DividerBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "divider"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "lineStyle": {
+          "type": "string",
+          "enum": [
+            "solid",
+            "dashed",
+            "dotted"
+          ]
+        },
+        "color": {
+          "type": "string"
+        },
+        "thickness": {
+          "type": "number"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "full"
+            }
+          ]
+        }
+      },
+      "required": [
+        "color",
+        "id",
+        "lineStyle",
+        "styles",
+        "thickness",
+        "type",
+        "width"
+      ],
+      "additionalProperties": false
+    },
+    "VideoBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "video"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "url": {
+          "type": "string"
+        },
+        "openInNewTab": {
+          "type": "boolean"
+        },
+        "thumbnailUrl": {
+          "type": "string"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "const": "full"
+            }
+          ]
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        },
+        "placeholderUrl": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "align",
+        "alt",
+        "id",
+        "styles",
+        "thumbnailUrl",
+        "type",
+        "url",
+        "width"
+      ],
+      "additionalProperties": false
+    },
+    "SocialIconsBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "social"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "icons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SocialIcon"
+          }
+        },
+        "iconStyle": {
+          "$ref": "#/definitions/SocialIconStyle"
+        },
+        "iconSize": {
+          "$ref": "#/definitions/SocialIconSize"
+        },
+        "spacing": {
+          "type": "number"
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        }
+      },
+      "required": [
+        "align",
+        "iconSize",
+        "iconStyle",
+        "icons",
+        "id",
+        "spacing",
+        "styles",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "SocialIcon": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "platform": {
+          "$ref": "#/definitions/SocialPlatform"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "platform",
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "SocialPlatform": {
+      "type": "string",
+      "enum": [
+        "facebook",
+        "twitter",
+        "instagram",
+        "linkedin",
+        "youtube",
+        "tiktok",
+        "pinterest",
+        "email",
+        "whatsapp",
+        "telegram",
+        "discord",
+        "snapchat",
+        "reddit",
+        "github",
+        "dribbble",
+        "behance",
+        "website"
+      ]
+    },
+    "SocialIconStyle": {
+      "type": "string",
+      "enum": [
+        "solid",
+        "outlined",
+        "rounded",
+        "square",
+        "circle"
+      ]
+    },
+    "SocialIconSize": {
+      "type": "string",
+      "enum": [
+        "small",
+        "medium",
+        "large"
+      ]
+    },
+    "SpacerBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "spacer"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "height": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "height",
+        "id",
+        "styles",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "HtmlBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "html"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "content": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "content",
+        "id",
+        "styles",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "MenuBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "menu"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/MenuItemData"
+          }
+        },
+        "fontSize": {
+          "type": "number"
+        },
+        "fontFamily": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string",
+          "description": "Base text/link color. Unset = inherit the document-level `textColor`."
+        },
+        "linkColor": {
+          "type": "string"
+        },
+        "textAlign": {
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        },
+        "separator": {
+          "type": "string"
+        },
+        "separatorColor": {
+          "type": "string"
+        },
+        "spacing": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "fontSize",
+        "id",
+        "items",
+        "separator",
+        "separatorColor",
+        "spacing",
+        "styles",
+        "textAlign",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "MenuItemData": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "openInNewTab": {
+          "type": "boolean"
+        },
+        "bold": {
+          "type": "boolean"
+        },
+        "underline": {
+          "type": "boolean"
+        },
+        "color": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "url",
+        "openInNewTab",
+        "bold",
+        "underline"
+      ],
+      "additionalProperties": false
+    },
+    "TableBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "table"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TableRowData"
+          }
+        },
+        "hasHeaderRow": {
+          "type": "boolean"
+        },
+        "headerBackgroundColor": {
+          "type": "string"
+        },
+        "borderColor": {
+          "type": "string"
+        },
+        "borderWidth": {
+          "type": "number"
+        },
+        "cellPadding": {
+          "type": "number"
+        },
+        "fontSize": {
+          "type": "number"
+        },
+        "fontFamily": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string",
+          "description": "Text color. Unset = inherit the document-level `textColor`."
+        },
+        "textAlign": {
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ]
+        }
+      },
+      "required": [
+        "borderColor",
+        "borderWidth",
+        "cellPadding",
+        "fontSize",
+        "hasHeaderRow",
+        "id",
+        "rows",
+        "styles",
+        "textAlign",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "TableRowData": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "cells": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TableCellData"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "cells"
+      ],
+      "additionalProperties": false
+    },
+    "TableCellData": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "content"
+      ],
+      "additionalProperties": false
+    },
+    "CountdownBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "countdown"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "targetDate": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "showDays": {
+          "type": "boolean"
+        },
+        "showHours": {
+          "type": "boolean"
+        },
+        "showMinutes": {
+          "type": "boolean"
+        },
+        "showSeconds": {
+          "type": "boolean"
+        },
+        "separator": {
+          "type": "string",
+          "enum": [
+            ":",
+            "-",
+            " "
+          ]
+        },
+        "digitFontSize": {
+          "type": "number"
+        },
+        "digitColor": {
+          "type": "string"
+        },
+        "labelColor": {
+          "type": "string"
+        },
+        "labelFontSize": {
+          "type": "number"
+        },
+        "backgroundColor": {
+          "type": "string"
+        },
+        "fontFamily": {
+          "type": "string"
+        },
+        "labelDays": {
+          "type": "string"
+        },
+        "labelHours": {
+          "type": "string"
+        },
+        "labelMinutes": {
+          "type": "string"
+        },
+        "labelSeconds": {
+          "type": "string"
+        },
+        "expiredMessage": {
+          "type": "string"
+        },
+        "expiredImageUrl": {
+          "type": "string"
+        },
+        "hideOnExpiry": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "backgroundColor",
+        "digitColor",
+        "digitFontSize",
+        "expiredImageUrl",
+        "expiredMessage",
+        "hideOnExpiry",
+        "id",
+        "labelColor",
+        "labelDays",
+        "labelFontSize",
+        "labelHours",
+        "labelMinutes",
+        "labelSeconds",
+        "separator",
+        "showDays",
+        "showHours",
+        "showMinutes",
+        "showSeconds",
+        "styles",
+        "targetDate",
+        "timezone",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "CustomBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "const": "custom"
+        },
+        "styles": {
+          "$ref": "#/definitions/BlockStyles"
+        },
+        "visibility": {
+          "$ref": "#/definitions/BlockVisibility"
+        },
+        "displayCondition": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "before": {
+              "type": "string"
+            },
+            "after": {
+              "type": "string"
+            },
+            "group": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "before",
+            "after"
+          ],
+          "additionalProperties": false
+        },
+        "customType": {
+          "type": "string"
+        },
+        "fieldValues": {
+          "type": "object",
+          "additionalProperties": {}
+        },
+        "renderedHtml": {
+          "type": "string"
+        },
+        "dataSourceFetched": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "customType",
+        "fieldValues",
+        "id",
+        "styles",
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "TemplateSettings": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "number"
+        },
+        "backgroundColor": {
+          "type": "string"
+        },
+        "textColor": {
+          "type": "string",
+          "description": "Document-level default text color: the `<mj-text>` default in the rendered MJML, inherited by every text block (Title, Paragraph, Menu, Table) that doesn't set its own `color`. Required, defaulting to `#1a1a1a` (see `DEFAULT_TEMPLATE_DEFAULTS`); customize the default per-consumer via `templateDefaults`. A block's explicit `color` or an inline text-color mark overrides it."
+        },
+        "linkColor": {
+          "type": "string",
+          "description": "Document-level link color: emitted as the global `a { color }` rule in the rendered MJML, so it cascades to every link — rich-text and menu alike. Optional: when unset, links inherit the surrounding text color (`color: inherit`), preserving the pre-#352 default. A per-block or per-item color (a Menu item's `color`, `MenuBlock.linkColor`) still overrides it."
+        },
+        "linkUnderline": {
+          "type": "boolean",
+          "description": "Whether links are underlined document-wide: drives the global `a { text-decoration }` rule (`underline` when true, `none` when false). Required, defaulting to `true` (see `DEFAULT_TEMPLATE_DEFAULTS`) — the common, more accessible email default. Applies to body (rich-text) links; buttons and menu items carry their own inline `text-decoration` and are unaffected. Set `false` to render links without an underline."
+        },
+        "fontFamily": {
+          "type": "string"
+        },
+        "preheaderText": {
+          "type": "string"
+        },
+        "locale": {
+          "type": "string",
+          "description": "BCP-47 language code for the rendered email's `<html lang>`. Drives screen-reader pronunciation. Default `'en'` via `DEFAULT_TEMPLATE_DEFAULTS`."
+        }
+      },
+      "required": [
+        "width",
+        "backgroundColor",
+        "textColor",
+        "linkUnderline",
+        "fontFamily",
+        "locale"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

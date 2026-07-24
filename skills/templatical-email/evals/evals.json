@@ -1,0 +1,35 @@
+{
+  "skill_name": "templatical-email",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "make me an email announcing a sale on our new hiking backpack, the Summit Pack — 30% off this week only. audience is outdoorsy weekend-warrior types. friendly, not too salesy, use kelly green and a warm dirt-brown. big shop button, and put our instagram + facebook in the footer.",
+      "expected_output": "Single-column hero (image + title + short intro paragraph + one primary CTA button) and a footer section with a divider and social icons. Brand palette applied, button text meets AA contrast, every image has meaningful alt text, exactly one clear call to action. Valid TemplateContent JSON.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "welcome email for people who just signed up for our project-management app (Tasker). warm and short, goal is to get them to create their first project. show 2-3 things they can do next. brand blue is #1d4ed8.",
+      "expected_output": "Greeting hero (title using {{contact.first_name}}, short paragraph, 'Get started' CTA) plus a multi-column or stacked feature section with 2-3 next steps. Brand blue on the button with white text (AA contrast). Footer with help links + an unsubscribe line. Valid JSON.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "event invite for a one-day conference 'Trailhead 2026' on Sept 19. i want a countdown to the event, a short blurb, and an RSVP button. a teaser video up top would be nice if that's supported.",
+      "expected_output": "Title + blurb, an optional video block (thumbnail linking out), a countdown block set to the event date/timezone with all required fields and sensible labels/colors, and an RSVP button. Valid JSON.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "monthly newsletter for our running-gear shop. header nav (Shop / Trails / Journal), a short intro, two featured stories side by side each with a small image, and a little table comparing two shoe models (name, weight, price).",
+      "expected_output": "A nav menu block, an intro section, a 2-column section with image + text per column, and a table block (header row + two data rows). Columns balanced, table has borders and padding, readable font sizes. Valid JSON.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "order confirmation email. order #10432, ships in 2 days. show the items in a table (Summit Pack x1 $149, Trail Bottle x2 $38) and a total of $187, plus a 'view order' button. keep it transactional and clean, not marketing-y.",
+      "expected_output": "Clean transactional layout: confirmation title, short paragraph with the order number and {{contact.first_name}}, an items table with a header row and correct values, a total line, and a 'View your order' button. Restrained styling. Valid JSON.",
+      "files": []
+    }
+  ]
+}

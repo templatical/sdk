@@ -1,0 +1,144 @@
+{
+  "blocks": [
+    {
+      "id": "sec_nav",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 16, "right": 24, "bottom": 16, "left": 24 }
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "menu_nav",
+            "type": "menu",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "items": [
+              {
+                "id": "m1",
+                "text": "Shop",
+                "url": "https://example.com/shop",
+                "openInNewTab": false,
+                "bold": false,
+                "underline": false
+              },
+              {
+                "id": "m2",
+                "text": "Trails",
+                "url": "https://example.com/trails",
+                "openInNewTab": false,
+                "bold": false,
+                "underline": false
+              },
+              {
+                "id": "m3",
+                "text": "Journal",
+                "url": "https://example.com/journal",
+                "openInNewTab": false,
+                "bold": false,
+                "underline": false
+              }
+            ],
+            "fontSize": 14,
+            "textAlign": "center",
+            "separator": "•",
+            "separatorColor": "#c9c9c9",
+            "spacing": 12
+          }
+        ]
+      ]
+    },
+    {
+      "id": "sec_intro",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 24, "right": 24, "bottom": 8, "left": 24 }
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "title_intro",
+            "type": "title",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 8, "left": 0 }
+            },
+            "content": "Field Notes: October",
+            "level": 2,
+            "textAlign": "left"
+          },
+          {
+            "id": "para_intro",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "content": "<p>Two stories from the backcountry this month, plus a gear pick we can't stop recommending.</p>"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "sec_two",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 16, "right": 16, "bottom": 16, "left": 16 }
+      },
+      "columns": "2",
+      "children": [
+        [
+          {
+            "id": "img_a",
+            "type": "image",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 8, "left": 0 }
+            },
+            "src": "https://placehold.co/280x160",
+            "alt": "Alpine lake reflecting the peaks at dawn",
+            "width": "full",
+            "align": "center"
+          },
+          {
+            "id": "para_a",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "content": "<p><b>The high route.</b> Three days above the treeline with nothing but switchbacks and silence.</p>"
+          }
+        ],
+        [
+          {
+            "id": "img_b",
+            "type": "image",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 8, "left": 0 }
+            },
+            "src": "https://placehold.co/280x160",
+            "alt": "Close-up of well-worn hiking boots on rock",
+            "width": "full",
+            "align": "center"
+          },
+          {
+            "id": "para_b",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "content": "<p><b>Broken in.</b> Why we resole instead of replace, and the boots worth the trouble.</p>"
+          }
+        ]
+      ]
+    }
+  ],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#ffffff",
+    "textColor": "#2b2b2b",
+    "linkUnderline": false,
+    "fontFamily": "Helvetica, Arial, sans-serif",
+    "locale": "en"
+  }
+}

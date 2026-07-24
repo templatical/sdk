@@ -99,6 +99,10 @@ const enSidebar: DefaultTheme.SidebarMulti = {
       ],
     },
     {
+      text: "AI",
+      items: [{ text: "Agent Skill", link: "/guide/agent-skill" }],
+    },
+    {
       text: "Customization",
       items: [
         { text: "Theming", link: "/guide/theming" },
@@ -251,6 +255,10 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Benutzerdefinierte Blöcke", link: "/de/guide/custom-blocks" },
         { text: "Bilder", link: "/de/guide/images" },
       ],
+    },
+    {
+      text: "KI",
+      items: [{ text: "Agent-Skill", link: "/de/guide/agent-skill" }],
     },
     {
       text: "Anpassung",

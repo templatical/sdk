@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Templatical — Live preview</title>
+    <link rel="icon" href="https://templatical.com/logo-small.svg" />
+    <!-- Geist, matching the playground (fonts.bunny.net). -->
+    <link rel="preconnect" href="https://fonts.bunny.net" crossorigin />
+    <link
+      href="https://fonts.bunny.net/css?family=geist:400,500,600&display=swap"
+      rel="stylesheet"
+    />
+    <!--
+      The real Templatical editor, loaded from the CDN. {{EDITOR_VERSION}} is
+      injected by scripts/live-server.mjs (pinned to the skill's schema version).
+      In shadow-DOM mode the editor adopts its own CSS; the stylesheet link is
+      kept for parity with the documented consumer setup.
+    -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@templatical/editor@{{EDITOR_VERSION}}/dist/cdn/editor.css"
+    />
+    <!-- Set the stored theme before paint to avoid a flash. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("tpl-live-theme");
+          if (t === "light" || t === "dark")
+            document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      /*
+        Design language borrowed from the playground + the SDK design system
+        (DESIGN.md): warm neutrals tinted toward hue 60, Signal Amber as the one
+        signal color, Geist, and the 120ms house spring on every transition.
+      */
+      :root {
+        --spring: cubic-bezier(0.16, 1, 0.3, 1);
+
+        --paper: oklch(99.5% 0.002 60);
+        --n-50: oklch(97% 0.004 60);
+        --n-100: oklch(96% 0.006 60);
+        --n-200: oklch(92% 0.006 60);
+        --n-300: oklch(86% 0.01 60);
+        --n-400: oklch(68% 0.012 60);
+        --n-500: oklch(50% 0.015 60);
+        --n-700: oklch(30% 0.012 60);
+        --n-900: oklch(18% 0.01 60);
+
+        --primary: oklch(70% 0.16 55);
+        --primary-hover: oklch(63% 0.17 55);
+        --primary-tint: oklch(95% 0.04 55);
+        --ring: oklch(70% 0.16 55 / 0.32);
+
+        --success: oklch(62.8% 0.194 155.1);
+        --warning: oklch(76.9% 0.168 70.08);
+        --danger: oklch(63.7% 0.237 25.33);
+
+        --canvas: var(--n-100);
+        --bar: color-mix(in oklch, var(--paper) 82%, var(--n-100));
+        --surface: var(--paper);
+        --raised: var(--paper);
+        --border: var(--n-200);
+        --text: var(--n-900);
+        --muted: var(--n-500);
+        --hover: var(--n-100);
+        --shadow-modal: 0 24px 64px oklch(18% 0.01 60 / 0.18);
+        --scrim: oklch(24% 0.02 60 / 0.5);
+        color-scheme: light;
+      }
+
+      /* Dark tokens — applied on system-dark (unless explicitly overridden to
+         light) and whenever the toggle sets data-theme="dark". */
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --canvas: oklch(16% 0.008 60);
+          --bar: oklch(22% 0.011 60);
+          --surface: oklch(24% 0.012 60);
+          --raised: oklch(27% 0.013 60);
+          --border: oklch(32% 0.012 60);
+          --text: oklch(96% 0.006 60);
+          --muted: oklch(70% 0.012 60);
+          --hover: oklch(30% 0.013 60);
+          --primary: oklch(78% 0.14 55);
+          --primary-hover: oklch(84% 0.12 55);
+          --primary-tint: oklch(40% 0.09 55);
+          --ring: oklch(78% 0.14 55 / 0.4);
+          --shadow-modal: 0 24px 64px oklch(0% 0 0 / 0.5);
+          --scrim: oklch(10% 0.01 60 / 0.6);
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme="dark"] {
+        --canvas: oklch(16% 0.008 60);
+        --bar: oklch(22% 0.011 60);
+        --surface: oklch(24% 0.012 60);
+        --raised: oklch(27% 0.013 60);
+        --border: oklch(32% 0.012 60);
+        --text: oklch(96% 0.006 60);
+        --muted: oklch(70% 0.012 60);
+        --hover: oklch(30% 0.013 60);
+        --primary: oklch(78% 0.14 55);
+        --primary-hover: oklch(84% 0.12 55);
+        --primary-tint: oklch(40% 0.09 55);
+        --ring: oklch(78% 0.14 55 / 0.4);
+        --shadow-modal: 0 24px 64px oklch(0% 0 0 / 0.5);
+        --scrim: oklch(10% 0.01 60 / 0.6);
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        background: var(--canvas);
+        color: var(--text);
+        font-family:
+          Geist,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ---- Top bar ---------------------------------------------------- */
+      .bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        height: 52px;
+        flex: none;
+        padding: 0 14px 0 16px;
+        background: var(--bar);
+        border-bottom: 1px solid var(--border);
+        overflow-x: auto;
+        scrollbar-width: none;
+        z-index: 10;
+      }
+      .bar::-webkit-scrollbar {
+        display: none;
+      }
+      .bar .group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: none;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--text);
+      }
+      .brand img {
+        width: 22px;
+        height: 22px;
+        display: block;
+      }
+      .brand .sub {
+        font-weight: 500;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .brand .sep {
+        color: var(--n-300);
+        font-weight: 400;
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 4px 11px 4px 9px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--surface);
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .status .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--n-400);
+        position: relative;
+      }
+      .status[data-state="live"] {
+        color: color-mix(in oklch, var(--success) 72%, var(--text));
+      }
+      .status[data-state="live"] .dot {
+        background: var(--success);
+        box-shadow: 0 0 0 3px
+          color-mix(in oklch, var(--success) 22%, transparent);
+      }
+      .status[data-state="live"] .dot::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: var(--success);
+        animation: pulse 2s var(--spring) infinite;
+      }
+      .status[data-state="reconnecting"] {
+        color: color-mix(in oklch, var(--warning) 66%, var(--text));
+      }
+      .status[data-state="reconnecting"] .dot {
+        background: var(--warning);
+      }
+      .status[data-state="error"] {
+        color: color-mix(in oklch, var(--danger) 72%, var(--text));
+      }
+      .status[data-state="error"] .dot {
+        background: var(--danger);
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+          opacity: 0.6;
+        }
+        70%,
+        100% {
+          transform: scale(2.6);
+          opacity: 0;
+        }
+      }
+
+      .divider {
+        width: 1px;
+        height: 20px;
+        background: var(--border);
+        flex: none;
+      }
+
+      /* ---- Buttons ---------------------------------------------------- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--muted);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        white-space: nowrap;
+        cursor: pointer;
+        transition:
+          color 120ms var(--spring),
+          background-color 120ms var(--spring),
+          border-color 120ms var(--spring),
+          box-shadow 120ms var(--spring),
+          transform 120ms var(--spring);
+      }
+      .btn:hover {
+        color: var(--text);
+        background: var(--hover);
+      }
+      .btn:active {
+        transform: translateY(0.5px);
+      }
+      .btn svg {
+        width: 14px;
+        height: 14px;
+        flex: none;
+      }
+      .btn.icon-only {
+        width: 32px;
+        padding: 0;
+        justify-content: center;
+      }
+      .btn.primary {
+        background: var(--primary);
+        border-color: transparent;
+        color: var(--paper);
+      }
+      .btn.primary:hover {
+        background: var(--primary-hover);
+        color: var(--paper);
+      }
+      :focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--ring);
+      }
+
+      /* ---- Editor + loading ------------------------------------------- */
+      .stage {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+      }
+      #editor {
+        position: absolute;
+        inset: 0;
+        overflow: auto;
+      }
+      .loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: var(--canvas);
+        z-index: 5;
+        transition: opacity 260ms var(--spring);
+      }
+      body.ready .loading {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loading img {
+        width: 40px;
+        height: 40px;
+        opacity: 0.9;
+      }
+      .loading .spinner {
+        width: 22px;
+        height: 22px;
+        border: 2px solid var(--border);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      .loading .msg {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .loading.error .spinner {
+        display: none;
+      }
+      .loading.error .msg {
+        color: color-mix(in oklch, var(--danger) 70%, var(--text));
+        max-width: 460px;
+        text-align: center;
+        line-height: 1.5;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ---- Export dialog ---------------------------------------------- */
+      dialog {
+        width: min(840px, 92vw);
+        max-height: 86vh;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 0;
+        background: var(--raised);
+        color: var(--text);
+        box-shadow: var(--shadow-modal);
+        overflow: hidden;
+      }
+      dialog::backdrop {
+        background: var(--scrim);
+        backdrop-filter: blur(4px);
+      }
+      dialog[open] {
+        animation: dialog-in 200ms var(--spring);
+      }
+      dialog[open]::backdrop {
+        animation: backdrop-in 200ms var(--spring);
+      }
+      @keyframes dialog-in {
+        from {
+          opacity: 0;
+          transform: scale(0.97) translateY(6px);
+        }
+      }
+      @keyframes backdrop-in {
+        from {
+          opacity: 0;
+        }
+      }
+      .dlg-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 13px 14px 13px 18px;
+        border-bottom: 1px solid var(--border);
+      }
+      .dlg-head strong {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .dlg-head .dlg-spacer {
+        flex: 1;
+      }
+      .tabs {
+        display: inline-flex;
+        gap: 4px;
+      }
+      .tab {
+        height: 28px;
+        padding: 0 12px;
+        border: none;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition:
+          color 120ms var(--spring),
+          background-color 120ms var(--spring);
+      }
+      .tab:hover {
+        color: var(--text);
+      }
+      .tab[aria-selected="true"] {
+        background: var(--hover);
+        color: var(--text);
+        font-weight: 600;
+      }
+      dialog textarea {
+        display: block;
+        width: 100%;
+        height: 56vh;
+        border: none;
+        padding: 16px 18px;
+        background: var(--n-50);
+        color: var(--text);
+        font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+        font-size: 12.5px;
+        line-height: 1.55;
+        resize: none;
+        outline: none;
+      }
+
+      /* ---- Toast ------------------------------------------------------ */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translate(-50%, 8px);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--n-900);
+        color: var(--paper);
+        padding: 9px 16px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 500;
+        box-shadow: 0 8px 28px oklch(18% 0.01 60 / 0.28);
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity 200ms var(--spring),
+          transform 200ms var(--spring);
+        z-index: 50;
+      }
+      :root[data-theme="dark"] .toast,
+      .toast {
+        /* keep the toast readable in both themes */
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      @media (max-width: 720px) {
+        .btn .label,
+        .brand .sub,
+        .brand .sep {
+          display: none;
+        }
+        .btn {
+          width: 32px;
+          padding: 0;
+          justify-content: center;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <div class="group">
+        <span class="brand">
+          <img
+            src="https://templatical.com/logo.svg"
+            alt=""
+            aria-hidden="true"
+          />
+          Templatical <span class="sep">·</span>
+          <span class="sub">Live preview</span>
+        </span>
+      </div>
+
+      <div class="group">
+        <span
+          id="status"
+          class="status"
+          data-state="connecting"
+          title="Connecting to the live preview…"
+        >
+          <span class="dot"></span><span id="status-text">Connecting…</span>
+        </span>
+        <span class="divider"></span>
+        <button id="btn-export" class="btn" title="Export the template">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span class="label">Export</span>
+        </button>
+        <span class="divider"></span>
+        <button
+          id="btn-theme"
+          class="btn icon-only"
+          title="Toggle theme"
+          aria-label="Toggle theme"
+        ></button>
+      </div>
+    </header>
+
+    <div class="stage">
+      <div id="editor"></div>
+      <div id="loading" class="loading">
+        <img src="https://templatical.com/logo.svg" alt="Templatical" />
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="msg" id="loading-msg">Loading the editor…</div>
+      </div>
+    </div>
+
+    <dialog id="export">
+      <div class="dlg-head">
+        <strong>Export</strong>
+        <div class="tabs" role="tablist">
+          <button class="tab" data-format="json" aria-selected="true">
+            JSON
+          </button>
+          <button class="tab" data-format="mjml" aria-selected="false">
+            MJML
+          </button>
+          <button class="tab" data-format="html" aria-selected="false">
+            HTML
+          </button>
+        </div>
+        <span class="dlg-spacer"></span>
+        <button id="export-copy" class="btn">Copy</button>
+        <button id="export-close" class="btn">Close</button>
+      </div>
+      <textarea id="export-body" readonly spellcheck="false"></textarea>
+    </dialog>
+
+    <div id="toast" class="toast"></div>
+
+    <script type="module">
+      import { init } from "https://unpkg.com/@templatical/editor@{{EDITOR_VERSION}}/dist/cdn/editor.js";
+
+      const $ = (id) => document.getElementById(id);
+      const statusEl = $("status");
+      const statusText = $("status-text");
+      const toastEl = $("toast");
+      const loadingEl = $("loading");
+
+      let editor = null;
+      // Guards the setContent() we trigger from an agent update so its onChange
+      // isn't mistaken for (and reported back as) a user hand-edit.
+      let applyingRemote = false;
+      let debounceTimer = null;
+
+      // ---- Theme (auto default, manual light/dark override) ----
+      const SUN =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+      const MOON =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+      const readTheme = () => {
+        try {
+          return localStorage.getItem("tpl-live-theme") || "auto";
+        } catch {
+          return "auto";
+        }
+      };
+      const effective = (stored) =>
+        stored === "auto" ? (prefersDark.matches ? "dark" : "light") : stored;
+      function applyTheme(stored) {
+        if (stored === "auto")
+          document.documentElement.removeAttribute("data-theme");
+        else document.documentElement.setAttribute("data-theme", stored);
+        const eff = effective(stored);
+        const btn = $("btn-theme");
+        btn.innerHTML = eff === "dark" ? SUN : MOON;
+        btn.setAttribute(
+          "aria-label",
+          eff === "dark" ? "Switch to light theme" : "Switch to dark theme",
+        );
+        if (editor) {
+          try {
+            editor.setTheme(stored);
+          } catch {
+            /* older editor build without setTheme */
+          }
+        }
+      }
+      $("btn-theme").onclick = () => {
+        const next = effective(readTheme()) === "dark" ? "light" : "dark";
+        try {
+          localStorage.setItem("tpl-live-theme", next);
+        } catch {}
+        applyTheme(next);
+      };
+      prefersDark.addEventListener("change", () => {
+        if (readTheme() === "auto") applyTheme("auto");
+      });
+      applyTheme(readTheme());
+
+      // ---- Status + toast ----
+      // The status pill is a connection-state signal, not decoration: when it's
+      // "live" the SSE link is up, so agent updates land here and your in-browser
+      // edits are reported back for the divergence check. The hover title spells
+      // that out (a native tooltip — the bar's overflow would clip a styled one).
+      const STATUS_TITLE = {
+        connecting: "Connecting to the live preview…",
+        live: "Connected — your edits and the agent's changes sync here in real time.",
+        reconnecting:
+          "Reconnecting to the live server — changes won't sync until it's back.",
+        error:
+          "Disconnected — changes won't sync until the connection is restored.",
+      };
+      function setStatus(state, text) {
+        statusEl.dataset.state = state;
+        statusText.textContent = text;
+        statusEl.title = STATUS_TITLE[state] ?? "";
+      }
+      let toastTimer = null;
+      function toast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1700);
+      }
+
+      async function copy(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      // ---- Sync with the bridge ----
+      // Report the editor's current content. `baseline: true` marks a post-apply
+      // snapshot (the normalized view of the agent's content), which resets the
+      // divergence tracker rather than counting as an edit.
+      async function postContent(baseline = false) {
+        if (!editor) return;
+        try {
+          await fetch("/content", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ content: editor.getContent(), baseline }),
+          });
+        } catch {
+          /* bridge gone; ignore */
+        }
+      }
+      function scheduleContentPost() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => postContent(false), 500);
+      }
+      async function applyRemote(content) {
+        if (!editor) return;
+        applyingRemote = true;
+        editor.setContent(content);
+        await new Promise((r) => setTimeout(r, 0)); // let Vue flush setContent
+        await postContent(true);
+        applyingRemote = false;
+        toast("Updated from agent");
+      }
+
+      // ---- Export ----
+      // One "Export" button opens a modal with JSON / MJML / HTML tabs. JSON is
+      // instant; MJML calls editor.toMjml() (bundled in the CDN editor); HTML
+      // compiles that MJML in-browser via mjml-browser.
+      //
+      // mjml-browser loads from jsDelivr's /+esm (NOT unpkg) on purpose: it's a
+      // CommonJS package, and unpkg's ?module only rewrites import specifiers —
+      // it does not transpile CJS to ESM, so `import()` from unpkg yields an
+      // empty module. jsDelivr's /+esm does the CJS→ESM conversion and exposes a
+      // callable default. (The editor bundle stays on unpkg; this matches the
+      // repo's convention for ESM-import packages — see @templatical/import-*.)
+      const exportDialog = $("export");
+      const tabs = [...document.querySelectorAll("#export .tab")];
+      let mjml2html = null;
+
+      async function renderFormat(format) {
+        tabs.forEach((t) =>
+          t.setAttribute("aria-selected", String(t.dataset.format === format)),
+        );
+        const body = $("export-body");
+        if (!editor) return;
+        if (format === "json") {
+          body.value = JSON.stringify(editor.getContent(), null, 2);
+          return;
+        }
+        body.value = format === "html" ? "Compiling HTML…" : "Rendering MJML…";
+        try {
+          const mjml = await editor.toMjml();
+          if (format === "mjml") {
+            body.value = mjml;
+            return;
+          }
+          if (!mjml2html) {
+            const mod =
+              await import("https://cdn.jsdelivr.net/npm/mjml-browser@4/+esm");
+            mjml2html = mod.default ?? mod.mjml2html ?? mod;
+          }
+          body.value = mjml2html(mjml).html;
+        } catch (err) {
+          body.value = String(err?.message ?? err);
+        }
+      }
+
+      $("btn-export").onclick = () => {
+        exportDialog.showModal();
+        renderFormat("json");
+      };
+      tabs.forEach((t) => (t.onclick = () => renderFormat(t.dataset.format)));
+      $("export-close").onclick = () => exportDialog.close();
+      $("export-copy").onclick = async () => {
+        const ok = await copy($("export-body").value);
+        toast(ok ? "Copied to clipboard" : "Select the text to copy");
+      };
+
+      // ---- Boot ----
+      async function boot() {
+        let content;
+        try {
+          const res = await fetch("/template");
+          if (res.status === 200) content = await res.json();
+        } catch {
+          /* fall through to an empty editor */
+        }
+
+        editor = await init({
+          container: "#editor",
+          content, // undefined → editor starts from its default empty template
+          uiTheme: readTheme(),
+          onChange: () => {
+            if (!applyingRemote) scheduleContentPost();
+          },
+        });
+
+        document.body.classList.add("ready");
+        await postContent(true); // seed the baseline with the normalized view
+        setStatus("live", "Live");
+
+        const es = new EventSource("/events");
+        es.addEventListener("template", (e) => {
+          try {
+            applyRemote(JSON.parse(e.data));
+          } catch {
+            /* malformed frame; ignore */
+          }
+        });
+        es.onopen = () => setStatus("live", "Live");
+        es.onerror = () => setStatus("reconnecting", "Reconnecting…");
+      }
+
+      boot().catch((err) => {
+        setStatus("error", "Editor failed to load");
+        loadingEl.classList.add("error");
+        $("loading-msg").textContent =
+          "The editor couldn't load from the CDN. Check your connection and reload.\n\n" +
+          String(err?.message ?? err);
+      });
+    </script>
+  </body>
+</html>

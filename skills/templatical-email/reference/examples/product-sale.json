@@ -1,0 +1,128 @@
+{
+  "blocks": [
+    {
+      "id": "section_hero",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+        "backgroundColor": "#ffffff"
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "img_hero",
+            "type": "image",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "src": "https://placehold.co/600x300/4CBB17/ffffff?text=Trail+Ready",
+            "alt": "Hiker on a mountain trail at sunrise",
+            "width": "full",
+            "align": "center"
+          },
+          {
+            "id": "title_hero",
+            "type": "title",
+            "styles": {
+              "padding": { "top": 32, "right": 24, "bottom": 8, "left": 24 }
+            },
+            "content": "The Summit Pack is 30% off",
+            "level": 1,
+            "color": "#6B4423",
+            "textAlign": "center"
+          },
+          {
+            "id": "para_hero",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 24, "bottom": 24, "left": 24 }
+            },
+            "content": "<p>Built for long days on the trail — weatherproof, featherlight, and now at its best price of the season. Hi {{contact.first_name}}, your next adventure just got lighter.</p>"
+          },
+          {
+            "id": "btn_hero",
+            "type": "button",
+            "styles": {
+              "padding": { "top": 0, "right": 24, "bottom": 32, "left": 24 }
+            },
+            "text": "Shop the Summit Pack",
+            "url": "https://example.com/summit-pack",
+            "backgroundColor": "#1B5E20",
+            "textColor": "#ffffff",
+            "borderRadius": 6,
+            "fontSize": 16,
+            "buttonPadding": {
+              "top": 14,
+              "right": 28,
+              "bottom": 14,
+              "left": 28
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "id": "section_footer",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 16, "right": 24, "bottom": 16, "left": 24 },
+        "backgroundColor": "#f4f1ec"
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "div_footer",
+            "type": "divider",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 16, "left": 0 }
+            },
+            "lineStyle": "solid",
+            "color": "#d9d2c5",
+            "thickness": 1,
+            "width": "full"
+          },
+          {
+            "id": "social_footer",
+            "type": "social",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "icons": [
+              {
+                "id": "ic_ig",
+                "platform": "instagram",
+                "url": "https://instagram.com/example"
+              },
+              {
+                "id": "ic_fb",
+                "platform": "facebook",
+                "url": "https://facebook.com/example"
+              },
+              {
+                "id": "ic_yt",
+                "platform": "youtube",
+                "url": "https://youtube.com/@example"
+              }
+            ],
+            "iconStyle": "circle",
+            "iconSize": "medium",
+            "spacing": 12,
+            "align": "center"
+          }
+        ]
+      ]
+    }
+  ],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#e9e4da",
+    "textColor": "#3a3a3a",
+    "linkColor": "#4CBB17",
+    "linkUnderline": true,
+    "fontFamily": "Georgia, serif",
+    "preheaderText": "Your season's best price on the Summit Pack — 30% off.",
+    "locale": "en"
+  }
+}

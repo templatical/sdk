@@ -1,0 +1,214 @@
+{
+  "blocks": [
+    {
+      "id": "sec_hero",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 32, "right": 24, "bottom": 32, "left": 24 },
+        "backgroundColor": "#ffffff"
+      },
+      "columns": "1",
+      "borderRadius": 12,
+      "wrapper": {
+        "backgroundColor": "#eef2f7",
+        "padding": { "top": 24, "right": 16, "bottom": 24, "left": 16 }
+      },
+      "children": [
+        [
+          {
+            "id": "img_logo",
+            "type": "image",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 16, "left": 0 }
+            },
+            "src": "https://placehold.co/120x40?text=Acme",
+            "alt": "Acme logo",
+            "width": 120,
+            "align": "center"
+          },
+          {
+            "id": "title_welcome",
+            "type": "title",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 8, "left": 0 }
+            },
+            "content": "Welcome to Acme, {{contact.first_name}}",
+            "level": 1,
+            "color": "#111827",
+            "textAlign": "center"
+          },
+          {
+            "id": "para_welcome",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 20, "left": 0 }
+            },
+            "content": "<p>Your account is ready. Let's get your first project set up in under two minutes.</p>"
+          },
+          {
+            "id": "btn_start",
+            "type": "button",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "text": "Get started",
+            "url": "https://app.example.com/onboarding",
+            "backgroundColor": "#1d4ed8",
+            "textColor": "#ffffff",
+            "borderRadius": 6,
+            "fontSize": 16,
+            "buttonPadding": {
+              "top": 14,
+              "right": 28,
+              "bottom": 14,
+              "left": 28
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "id": "sec_features",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 24, "right": 24, "bottom": 8, "left": 24 }
+      },
+      "columns": "2",
+      "children": [
+        [
+          {
+            "id": "img_f1",
+            "type": "image",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 8, "left": 0 }
+            },
+            "src": "https://placehold.co/64x64?text=1",
+            "alt": "Data import illustration",
+            "width": 64,
+            "align": "center"
+          },
+          {
+            "id": "title_f1",
+            "type": "title",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 4, "left": 0 }
+            },
+            "content": "Import your data",
+            "level": 2,
+            "textAlign": "center"
+          },
+          {
+            "id": "para_f1",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "content": "<p>Bring in your contacts from a CSV in one click.</p>"
+          }
+        ],
+        [
+          {
+            "id": "img_f2",
+            "type": "image",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 8, "left": 0 }
+            },
+            "src": "https://placehold.co/64x64?text=2",
+            "alt": "Team invitation illustration",
+            "width": 64,
+            "align": "center"
+          },
+          {
+            "id": "title_f2",
+            "type": "title",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 4, "left": 0 }
+            },
+            "content": "Invite your team",
+            "level": 2,
+            "textAlign": "center"
+          },
+          {
+            "id": "para_f2",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "content": "<p>Add teammates so everyone stays in sync from day one.</p>"
+          }
+        ]
+      ]
+    },
+    {
+      "id": "sec_footer",
+      "type": "section",
+      "styles": {
+        "padding": { "top": 16, "right": 24, "bottom": 24, "left": 24 }
+      },
+      "columns": "1",
+      "children": [
+        [
+          {
+            "id": "div_footer",
+            "type": "divider",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 16, "left": 0 }
+            },
+            "lineStyle": "solid",
+            "color": "#e5e7eb",
+            "thickness": 1,
+            "width": "full"
+          },
+          {
+            "id": "menu_footer",
+            "type": "menu",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 8, "left": 0 }
+            },
+            "items": [
+              {
+                "id": "mf1",
+                "text": "Help Center",
+                "url": "https://example.com/help",
+                "openInNewTab": false,
+                "bold": false,
+                "underline": false
+              },
+              {
+                "id": "mf2",
+                "text": "Docs",
+                "url": "https://example.com/docs",
+                "openInNewTab": false,
+                "bold": false,
+                "underline": false
+              }
+            ],
+            "fontSize": 14,
+            "textAlign": "center",
+            "separator": "·",
+            "separatorColor": "#9ca3af",
+            "spacing": 10
+          },
+          {
+            "id": "para_footer",
+            "type": "paragraph",
+            "styles": {
+              "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+            },
+            "content": "<p>You're receiving this because you signed up for Acme. <a href=\"https://example.com/unsubscribe\">Unsubscribe</a>.</p>"
+          }
+        ]
+      ]
+    }
+  ],
+  "settings": {
+    "width": 600,
+    "backgroundColor": "#eef2f7",
+    "textColor": "#1f2937",
+    "linkColor": "#1d4ed8",
+    "linkUnderline": true,
+    "fontFamily": "Helvetica, Arial, sans-serif",
+    "preheaderText": "Welcome aboard — here's how to get started.",
+    "locale": "en"
+  }
+}

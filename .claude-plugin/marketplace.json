@@ -1,0 +1,16 @@
+{
+  "name": "templatical",
+  "owner": { "name": "Templatical" },
+  "metadata": {
+    "description": "Official Templatical plugins for building email templates with AI."
+  },
+  "plugins": [
+    {
+      "name": "templatical-email",
+      "source": "./skills/templatical-email",
+      "description": "Generate and validate Templatical email templates as JSON — no backend, no API key.",
+      "version": "0.1.0",
+      "author": { "name": "Templatical" }
+    }
+  ]
+}
