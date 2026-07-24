@@ -12,6 +12,10 @@ hero:
       text: Playground ausprobieren
       link: https://play.templatical.com
 features:
+  - title: E-Mails per Prompt gestalten
+    details: Ein offener Agent Skill bringt Claude Code, Cursor oder jedem KI-Agenten Ihr Template-Format bei — beschreiben Sie eine E-Mail, sehen Sie sie im echten Editor an und exportieren Sie MJML/HTML.
+    link: /de/guide/agent-skill
+    linkText: Agent Skill nutzen
   - title: Eigene Blöcke mit API-gestützten Daten
     details: Registrieren Sie eigene Blocktypen — statische Templates oder live aus Ihrer API zur Preview-Zeit.
     link: /de/guide/custom-blocks
