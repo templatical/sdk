@@ -76,6 +76,190 @@ describe('useFonts', () => {
     });
   });
 
+  describe('builtIns allowlist', () => {
+    const ALL_BUILT_INS = [
+      'Arial',
+      'Helvetica',
+      'Georgia',
+      'Times New Roman',
+      'Verdana',
+      'Trebuchet MS',
+      'Courier New',
+    ];
+
+    it('offers all seven built-ins when builtIns is true', () => {
+      const { fonts } = useFonts({ builtIns: true });
+      const labels = fonts.value.map((f) => f.label);
+      for (const name of ALL_BUILT_INS) {
+        expect(labels).toContain(name);
+      }
+      expect(fonts.value.length).toBe(7);
+    });
+
+    it('offers all seven built-ins when builtIns is omitted (default)', () => {
+      const { fonts } = useFonts({});
+      expect(fonts.value.length).toBe(7);
+    });
+
+    it('drops every built-in when builtIns is false', () => {
+      const { fonts } = useFonts({ builtIns: false });
+      expect(fonts.value).toEqual([]);
+    });
+
+    it('keeps only custom fonts when builtIns is false', () => {
+      const { fonts } = useFonts({
+        builtIns: false,
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+      });
+      expect(fonts.value.map((f) => f.label)).toEqual(['Roboto']);
+      expect(fonts.value[0].isCustom).toBe(true);
+    });
+
+    it('keeps only the named built-ins for a string[] allowlist', () => {
+      const { fonts } = useFonts({ builtIns: ['Georgia', 'Arial'] });
+      expect(fonts.value.map((f) => f.label)).toEqual(['Arial', 'Georgia']);
+    });
+
+    it('matches allowlist names case-insensitively', () => {
+      const { fonts } = useFonts({ builtIns: ['georgia', 'COURIER NEW'] });
+      expect(fonts.value.map((f) => f.label)).toEqual([
+        'Courier New',
+        'Georgia',
+      ]);
+    });
+
+    it('warns and skips an allowlist entry that is not a built-in', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { fonts } = useFonts({ builtIns: ['Georgia', 'Comic Sans'] });
+
+      expect(fonts.value.map((f) => f.label)).toEqual(['Georgia']);
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('"Comic Sans" is not a built-in font'),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('renders a duplicate built-in once (case-insensitive)', () => {
+      // The `seen` set dedupes an allowlist that names the same family twice.
+      const { fonts } = useFonts({ builtIns: ['Arial', 'arial'] });
+      expect(fonts.value.map((f) => f.label)).toEqual(['Arial']);
+    });
+
+    it('warns for a duplicate unknown entry only once (case-insensitive)', () => {
+      // The `warned` set collapses repeats so a typo isn't logged per occurrence.
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      useFonts({ builtIns: ['Papyrus', 'papyrus'] });
+
+      // Scope the count to the unknown-entry warning: an all-invalid allowlist
+      // leaves the picker empty, which also triggers the separate seeded-font
+      // warning, so a bare `toHaveBeenCalledTimes(1)` would over-count.
+      const papyrusWarnings = warnSpy.mock.calls.filter(
+        (call) =>
+          typeof call[1] === 'string' &&
+          call[1].includes('"Papyrus" is not a built-in font'),
+      );
+      expect(papyrusWarnings).toHaveLength(1);
+      warnSpy.mockRestore();
+    });
+
+    it('keeps a custom font usable as defaultFont when builtIns is false', () => {
+      const { defaultFont, getDefaultFont } = useFonts({
+        builtIns: false,
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+        defaultFont: 'Roboto',
+      });
+      expect(getDefaultFont()).toBe('Roboto');
+      expect(defaultFont.value).toBe('Roboto');
+    });
+
+    it('falls back to the default when defaultFont names an excluded built-in', () => {
+      const { getDefaultFont } = useFonts({
+        builtIns: ['Arial'],
+        defaultFont: 'Georgia',
+      });
+      // Georgia is excluded from the picker, so it can't be the default.
+      expect(getDefaultFont()).toBe('Arial, sans-serif');
+    });
+
+    it('still resolves an excluded built-in to its fallback stack (rendering is unaffected)', () => {
+      const { getFontWithFallback } = useFonts({ builtIns: ['Arial'] });
+      // Filtering the picker never breaks content already using the family.
+      expect(getFontWithFallback('Georgia')).toBe('Georgia, serif');
+    });
+  });
+
+  describe('seeded default font warning', () => {
+    const SEEDED = 'new templates seed';
+
+    it('warns naming Arial when builtIns excludes it and no defaultFont is set', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      // No defaultFont → new templates seed Arial (from DEFAULT_FALLBACK), but
+      // the picker only offers Georgia.
+      useFonts({ builtIns: ['Georgia'] });
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('new templates seed "Arial"'),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('stays silent when the seeded Arial is still offered', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      useFonts({ builtIns: ['Georgia', 'Arial'] });
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining(SEEDED),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('stays silent when defaultFont points at the one offered built-in', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      useFonts({ builtIns: ['Georgia'], defaultFont: 'Georgia' });
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining(SEEDED),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('warns when defaultFont names a built-in excluded from the picker', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      useFonts({ builtIns: ['Georgia'], defaultFont: 'Verdana' });
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('new templates seed "Verdana"'),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('stays silent when defaultFont is a provided custom font and builtIns is false', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      useFonts({
+        builtIns: false,
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+        defaultFont: 'Roboto',
+      });
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining(SEEDED),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('stays silent for the default built-in set (builtIns true or omitted)', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      useFonts({ builtIns: true });
+      useFonts();
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining(SEEDED),
+      );
+      warnSpy.mockRestore();
+    });
+  });
+
   describe('defaultFont', () => {
     it('returns Arial fallback when no config', () => {
       const { defaultFont } = useFonts();

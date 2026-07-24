@@ -51,10 +51,63 @@ const BUILT_IN_FONT_STACKS: Record<string, string> = {
 
 const DEFAULT_FALLBACK = "Arial, sans-serif";
 
+/**
+ * Resolve which built-in fonts the picker offers, honoring `FontsConfig.builtIns`:
+ * `true`/`undefined` keeps all seven, `false` drops them all, and a `string[]`
+ * keeps only the named families (case-insensitive, exact name). An entry that
+ * isn't a built-in is warned and skipped (like an unknown `paletteBlocks` entry)
+ * so a typo narrows the list instead of silently reinstating the full set. The
+ * warning is emitted here rather than in a separate consumer: `useFonts` builds
+ * its font list eagerly at init, so resolution and warning naturally live
+ * together (unlike the palette, resolved lazily in `Sidebar`, which warns from a
+ * watcher).
+ *
+ * Only the *picker* list is filtered; `BUILT_IN_FONT_STACKS` (fallback stacks)
+ * and `isBuiltInFont` stay complete, so content already using an excluded family
+ * still renders with its proper stack.
+ */
+function resolveBuiltInFonts(builtIns: FontsConfig["builtIns"]): FontOption[] {
+  if (builtIns === undefined || builtIns === true) {
+    return [...BUILT_IN_FONTS];
+  }
+  if (builtIns === false) {
+    return [];
+  }
+
+  const allowed: FontOption[] = [];
+  const seen = new Set<string>();
+  const warned = new Set<string>();
+  for (const name of builtIns) {
+    const key = name.toLowerCase();
+    const match = BUILT_IN_FONTS.find(
+      (font) => font.value.toLowerCase() === key,
+    );
+    if (!match) {
+      if (!warned.has(key)) {
+        warned.add(key);
+        logger.warn(
+          `config.fonts.builtIns: "${name}" is not a built-in font — skipping it. ` +
+            `Built-in fonts are: ${BUILT_IN_FONTS.map((font) => font.value).join(", ")}.`,
+        );
+      }
+      continue;
+    }
+    if (seen.has(match.value)) continue;
+    seen.add(match.value);
+    allowed.push(match);
+  }
+  return allowed;
+}
+
 export function useFonts(config?: FontsConfig): UseFontsReturn {
   const customFonts = ref<CustomFont[]>(config?.customFonts ?? []);
   const customFontsEnabled = ref(true);
   const isLoaded = ref(false);
+
+  // Built-in fonts the picker offers, after applying the `builtIns` allowlist.
+  // Resolved once from config (not reactive): the allowlist can't change after
+  // init, so an unknown-name warning fires exactly once per editor.
+  const enabledBuiltInFonts = resolveBuiltInFonts(config?.builtIns);
 
   const defaultFallback = computed(
     () => config?.defaultFallback ?? DEFAULT_FALLBACK,
@@ -65,7 +118,7 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
   }
 
   const fonts = computed<FontOption[]>(() => {
-    const builtInFonts = [...BUILT_IN_FONTS];
+    const builtInFonts = [...enabledBuiltInFonts];
 
     if (!customFontsEnabled.value) {
       return builtInFonts.sort((a, b) => a.label.localeCompare(b.label));
@@ -89,6 +142,25 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
       (font) =>
         font.label.toLowerCase() === fontName.toLowerCase() ||
         font.value.toLowerCase().startsWith(fontName.toLowerCase()),
+    );
+  }
+
+  // Init-time check, same rationale as `resolveBuiltInFonts` above: `useFonts`
+  // resolves everything eagerly at init, so a config-mismatch warning lives
+  // here rather than in a separate consumer. A NEW template seeds
+  // `config.defaultFont`, or the family from `DEFAULT_FALLBACK` when it's unset
+  // (matching `createDefaultTemplateContent`'s "Arial" default). If the picker
+  // doesn't offer that family — an excluded built-in, or no matching custom
+  // font — authors land on a font they can't reselect, so warn once. Uses the
+  // same case-insensitive family matching as `isBuiltInFont`, over the offered
+  // list.
+  const seededFontFamily =
+    config?.defaultFont ?? DEFAULT_FALLBACK.split(",")[0].trim();
+  if (!isFontAvailable(seededFontFamily)) {
+    logger.warn(
+      `config.fonts: new templates seed "${seededFontFamily}", which the font ` +
+        `picker doesn't offer — authors can't reselect it. Either add it to ` +
+        `fonts.builtIns, or set fonts.defaultFont to an offered font.`,
     );
   }
 

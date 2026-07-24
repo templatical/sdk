@@ -29,6 +29,7 @@ import type {
   CustomBlockDefinition,
   BlockDefaults,
   TemplateDefaults,
+  FontsConfig,
 } from "@templatical/types";
 import {
   createDefaultTemplateContent,
@@ -585,6 +586,7 @@ const displayConditions = {
 let selectedContent: TemplateContent | null = null;
 let selectedCustomBlocks: CustomBlockDefinition[] | undefined;
 let currentHtmlBlockPreview: boolean | undefined;
+let currentFonts: FontsConfig | undefined;
 let pendingEditorInit = false;
 
 function chooseTemplate(
@@ -596,6 +598,9 @@ function chooseTemplate(
   // Per-template opt-in for the SDK's live HTML-block preview; reset on each
   // template open so other templates keep the default static placeholder.
   currentHtmlBlockPreview = template?.htmlBlockPreview;
+  // Per-template `fonts` config (e.g. the Newsletter curated-font-list demo);
+  // reset on each open so other templates keep the full built-in font list.
+  currentFonts = template?.fonts;
   // A template can opt out of the playground's consumer-owned `onRequest`
   // modal — that's how the Welcome Email template demos the SDK's built-in
   // picker without making the user flip a config toggle. The flag is
@@ -951,6 +956,7 @@ async function initEditor(): Promise<void> {
       blockDefaults: currentBlockDefaults,
       templateDefaults: currentTemplateDefaults,
       htmlBlockPreview: currentHtmlBlockPreview,
+      fonts: currentFonts,
       theme: { ...currentTheme, dark: currentDarkTheme },
       uiTheme: uiTheme.value,
       locale: sdkLocale.value,
