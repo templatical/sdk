@@ -137,6 +137,53 @@ function selectPreset(preset: string): void {
   emit("update:modelValue", preset);
 }
 
+// Roving tabindex (WAI-ARIA APG radio group): the grid exposes exactly one tab
+// stop — the checked chip, or the first chip when nothing is checked (value
+// unset or off-palette) — so the group is reachable by Tab but a single Tab
+// steps past it. Arrow keys then rove focus between the chips.
+const rovingIndex = computed(() => {
+  const selected = presets.value.findIndex((preset) =>
+    isPresetSelected(preset),
+  );
+  return selected === -1 ? 0 : selected;
+});
+function presetTabindex(index: number): number {
+  return index === rovingIndex.value ? 0 : -1;
+}
+
+// Arrow keys rove FOCUS across the chips (wrapping); they do NOT select.
+// Enter/Space activate the focused chip via native button click. This
+// deviates from APG's default "selection follows focus" on purpose: every
+// selection emits `update:modelValue`, and on the rich-text toolbar path that
+// runs `editor.chain().focus().setColor()` (see the swatch-only field comment
+// in the template), which refocuses the canvas — so following focus would
+// steal focus after the first arrow key and break traversal. APG sanctions
+// explicit activation when moving focus has side effects.
+function onPresetGridKeydown(e: KeyboardEvent): void {
+  const arrows = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"];
+  if (!arrows.includes(e.key)) {
+    return;
+  }
+  // Resolve the current chip from `event.target`, never `document.activeElement`
+  // — the latter is unreliable across a shadow-DOM boundary (this editor can
+  // mount in a shadow root; the repo threads the real root via EDITOR_ROOT_KEY
+  // for the same reason).
+  const group = e.currentTarget as HTMLElement;
+  const radios = Array.from(
+    group.querySelectorAll<HTMLElement>('[role="radio"]'),
+  );
+  const current = (e.target as HTMLElement).closest('[role="radio"]');
+  const currentIndex = current ? radios.indexOf(current as HTMLElement) : -1;
+  if (currentIndex === -1) {
+    return;
+  }
+  const forward = e.key === "ArrowRight" || e.key === "ArrowDown";
+  const nextIndex =
+    (currentIndex + (forward ? 1 : -1) + radios.length) % radios.length;
+  radios[nextIndex]?.focus();
+  e.preventDefault();
+}
+
 function onPickerChange(e: Event): void {
   pickerTouched.value = true;
   emit("update:modelValue", (e as CustomEvent).detail.value);
@@ -265,28 +312,33 @@ function toggleOpen(): void {
             ...themeStyles,
           }"
         >
-          <!-- Preset color grid. Supplements the wheel/hex field; the only
-               control when `allowCustom` is false. Each preset carries its color
-               value as its accessible label. -->
+          <!-- Preset color grid — an ARIA radio group: each chip is a
+               `role="radio"`, arrow keys rove focus between them (roving
+               tabindex), and Enter/Space activate. Supplements the wheel/hex
+               field; the only control when `allowCustom` is false. Each preset
+               carries its color value as its accessible label. -->
           <div
             v-if="hasPresets"
-            role="group"
+            role="radiogroup"
             :aria-label="t.colorPicker.presetColors"
             :class="[
               'tpl:flex tpl:flex-wrap tpl:gap-1.5',
               showFreeform && 'tpl:mb-2',
             ]"
+            @keydown="onPresetGridKeydown"
           >
             <button
-              v-for="preset in presets"
+              v-for="(preset, index) in presets"
               :key="preset"
               type="button"
+              role="radio"
               :aria-label="preset"
               :title="preset"
-              :aria-pressed="isPresetSelected(preset)"
+              :aria-checked="isPresetSelected(preset)"
+              :tabindex="presetTabindex(index)"
               :style="{ backgroundColor: preset }"
               :class="[
-                'tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)]',
+                'tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:outline-none tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:focus-visible:ring-2 tpl:focus-visible:ring-[var(--tpl-primary)] tpl:focus-visible:ring-offset-1 tpl:focus-visible:ring-offset-[var(--tpl-bg-elevated)]',
                 isPresetSelected(preset)
                   ? 'tpl:ring-2 tpl:ring-[var(--tpl-primary)] tpl:ring-offset-1 tpl:ring-offset-[var(--tpl-bg-elevated)]'
                   : 'hover:tpl:border-[var(--tpl-text-dim)]',

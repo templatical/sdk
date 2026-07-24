@@ -42,7 +42,7 @@ test.describe("Color presets — Event Invitation brand-locked palette", () => {
     page,
   }) => {
     const popover = await openButtonColorPicker(editorPage, page);
-    const group = popover.locator('[role="group"]');
+    const group = popover.locator('[role="radiogroup"]');
     await expect(group).toBeVisible();
     // The template configures six brand presets.
     await expect(group.locator("button")).toHaveCount(6);
@@ -67,7 +67,7 @@ test.describe("Color presets — Event Invitation brand-locked palette", () => {
   }) => {
     const popover = await openButtonColorPicker(editorPage, page);
     // Preset grid only — no colour wheel, no hex text field.
-    await expect(popover.locator('[role="group"]')).toBeVisible();
+    await expect(popover.locator('[role="radiogroup"]')).toBeVisible();
     await expect(popover.locator("hex-color-picker")).toHaveCount(0);
     await expect(popover.locator('input[type="text"]')).toHaveCount(0);
   });
@@ -82,6 +82,6 @@ test.describe("Color presets — unconfigured picker is unchanged", () => {
   }) => {
     const popover = await openButtonColorPicker(editorPage, page);
     await expect(popover.locator("hex-color-picker")).toBeVisible();
-    await expect(popover.locator('[role="group"]')).toHaveCount(0);
+    await expect(popover.locator('[role="radiogroup"]')).toHaveCount(0);
   });
 });

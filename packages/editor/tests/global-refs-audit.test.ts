@@ -85,8 +85,12 @@ describe("editor global DOM-reference audit", () => {
     //
     // `keys.ts` mentions `document.activeElement` in the JSDoc for
     // `EDITOR_ROOT_KEY` — no code reference.
+    //
+    // `components/ColorPicker.vue` mentions it in a comment on the preset
+    // radiogroup's arrow-key handler, explaining why it reads `event.target`
+    // instead (shadow-DOM safety) — no code reference.
     const actual = filesMatching(FILES, /document\.activeElement/);
-    expect(actual).toEqual(["keys.ts"]);
+    expect(actual).toEqual(["components/ColorPicker.vue", "keys.ts"]);
   });
 
   it("no source file references `window.getSelection` (use TipTap selection APIs instead)", () => {

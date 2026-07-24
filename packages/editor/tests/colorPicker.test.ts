@@ -298,7 +298,7 @@ describe('ColorPicker', () => {
       });
       await wrapper.find('button').trigger('click'); // open the popover
 
-      const group = wrapper.find('.tpl-color-popover [role="group"]');
+      const group = wrapper.find('.tpl-color-popover [role="radiogroup"]');
       expect(group.exists()).toBe(true);
       const presetButtons = group.findAll('button');
       expect(presetButtons.map((b) => b.attributes('aria-label'))).toEqual([
@@ -317,7 +317,7 @@ describe('ColorPicker', () => {
       await wrapper.find('button').trigger('click');
 
       const presetButtons = wrapper.findAll(
-        '.tpl-color-popover [role="group"] button',
+        '.tpl-color-popover [role="radiogroup"] button',
       );
       expect(presetButtons.map((b) => b.attributes('aria-label'))).toEqual([
         '#ff0000',
@@ -332,7 +332,7 @@ describe('ColorPicker', () => {
       await wrapper.find('button').trigger('click');
 
       const presetButtons = wrapper.findAll(
-        '.tpl-color-popover [role="group"] button',
+        '.tpl-color-popover [role="radiogroup"] button',
       );
       await presetButtons[0].trigger('click');
 
@@ -348,10 +348,10 @@ describe('ColorPicker', () => {
       await wrapper.find('button').trigger('click');
 
       const presetButtons = wrapper.findAll(
-        '.tpl-color-popover [role="group"] button',
+        '.tpl-color-popover [role="radiogroup"] button',
       );
-      expect(presetButtons[0].attributes('aria-pressed')).toBe('true');
-      expect(presetButtons[1].attributes('aria-pressed')).toBe('false');
+      expect(presetButtons[0].attributes('aria-checked')).toBe('true');
+      expect(presetButtons[1].attributes('aria-checked')).toBe('false');
     });
 
     it('marks the preset selected when the current value is stored as rgb', async () => {
@@ -361,9 +361,9 @@ describe('ColorPicker', () => {
       await wrapper.find('button').trigger('click');
 
       const presetButtons = wrapper.findAll(
-        '.tpl-color-popover [role="group"] button',
+        '.tpl-color-popover [role="radiogroup"] button',
       );
-      expect(presetButtons[0].attributes('aria-pressed')).toBe('true');
+      expect(presetButtons[0].attributes('aria-checked')).toBe('true');
     });
 
     it('marks a 3-digit preset selected against a 6-digit rgb round-trip value', async () => {
@@ -378,10 +378,10 @@ describe('ColorPicker', () => {
       await wrapper.find('button').trigger('click');
 
       const presetButtons = wrapper.findAll(
-        '.tpl-color-popover [role="group"] button',
+        '.tpl-color-popover [role="radiogroup"] button',
       );
-      expect(presetButtons[0].attributes('aria-pressed')).toBe('true');
-      expect(presetButtons[1].attributes('aria-pressed')).toBe('false');
+      expect(presetButtons[0].attributes('aria-checked')).toBe('true');
+      expect(presetButtons[1].attributes('aria-checked')).toBe('false');
     });
 
     it('shows no preset as selected when the value is unset', async () => {
@@ -391,10 +391,10 @@ describe('ColorPicker', () => {
       await wrapper.find('button').trigger('click');
 
       const presetButtons = wrapper.findAll(
-        '.tpl-color-popover [role="group"] button',
+        '.tpl-color-popover [role="radiogroup"] button',
       );
       expect(
-        presetButtons.every((b) => b.attributes('aria-pressed') === 'false'),
+        presetButtons.every((b) => b.attributes('aria-checked') === 'false'),
       ).toBe(true);
     });
 
@@ -409,7 +409,7 @@ describe('ColorPicker', () => {
       await wrapper.find('button').trigger('click');
 
       // Popover is preset-grid only: no wheel, no hex field anywhere.
-      expect(wrapper.find('.tpl-color-popover [role="group"]').exists()).toBe(
+      expect(wrapper.find('.tpl-color-popover [role="radiogroup"]').exists()).toBe(
         true,
       );
       expect(wrapper.find('hex-color-picker').exists()).toBe(false);
@@ -424,7 +424,7 @@ describe('ColorPicker', () => {
 
       // With nothing to fall back on, the free-form controls stay so a color
       // can still be chosen.
-      expect(wrapper.find('.tpl-color-popover [role="group"]').exists()).toBe(
+      expect(wrapper.find('.tpl-color-popover [role="radiogroup"]').exists()).toBe(
         false,
       );
       expect(wrapper.find('hex-color-picker').exists()).toBe(true);
@@ -438,7 +438,7 @@ describe('ColorPicker', () => {
       expect(wrapper.find('input[type="text"]').exists()).toBe(true);
 
       await wrapper.find('button').trigger('click');
-      expect(wrapper.find('.tpl-color-popover [role="group"]').exists()).toBe(
+      expect(wrapper.find('.tpl-color-popover [role="radiogroup"]').exists()).toBe(
         false,
       );
       expect(wrapper.find('hex-color-picker').exists()).toBe(true);
@@ -459,7 +459,7 @@ describe('ColorPicker', () => {
       await wrapper.find('button').trigger('click');
 
       const presetButtons = wrapper.findAll(
-        '.tpl-color-popover [role="group"] button',
+        '.tpl-color-popover [role="radiogroup"] button',
       );
       expect(presetButtons.map((b) => b.attributes('aria-label'))).toEqual([
         '#abc123',
@@ -481,11 +481,125 @@ describe('ColorPicker', () => {
       await wrapper.find('button').trigger('click');
 
       const presetButtons = wrapper.findAll(
-        '.tpl-color-popover [role="group"] button',
+        '.tpl-color-popover [role="radiogroup"] button',
       );
       expect(presetButtons.map((b) => b.attributes('aria-label'))).toEqual([
         '#123456',
       ]);
     });
+
+    describe('radiogroup semantics + roving tabindex', () => {
+      it('exposes the preset grid as a radiogroup of role=radio chips', async () => {
+        const wrapper = mountEditor(ColorPicker, {
+          props: { modelValue: '#000', presets: ['#ff0000', '#00ff00'] },
+        });
+        await wrapper.find('button').trigger('click');
+
+        const group = wrapper.find('.tpl-color-popover [role="radiogroup"]');
+        expect(group.exists()).toBe(true);
+        const chips = group.findAll('[role="radio"]');
+        expect(chips).toHaveLength(2);
+      });
+
+      it('gives the checked chip tabindex 0 and the others -1', async () => {
+        const wrapper = mountEditor(ColorPicker, {
+          props: {
+            modelValue: '#00ff00',
+            presets: ['#ff0000', '#00ff00', '#0000ff'],
+          },
+        });
+        await wrapper.find('button').trigger('click');
+
+        const chips = wrapper.findAll('.tpl-color-popover [role="radio"]');
+        expect(chips.map((c) => c.attributes('tabindex'))).toEqual([
+          '-1',
+          '0',
+          '-1',
+        ]);
+      });
+
+      it('gives the first chip tabindex 0 when no preset is checked', async () => {
+        const wrapper = mountEditor(ColorPicker, {
+          props: { modelValue: '', presets: ['#ff0000', '#00ff00', '#0000ff'] },
+        });
+        await wrapper.find('button').trigger('click');
+
+        const chips = wrapper.findAll('.tpl-color-popover [role="radio"]');
+        expect(chips.map((c) => c.attributes('tabindex'))).toEqual([
+          '0',
+          '-1',
+          '-1',
+        ]);
+      });
+
+      it('roves focus with arrow keys (wrapping) without emitting', async () => {
+        const wrapper = mountEditor(ColorPicker, {
+          props: { modelValue: '', presets: ['#ff0000', '#00ff00', '#0000ff'] },
+          attachTo: document.body,
+        });
+        await wrapper.find('button').trigger('click');
+        const [a, b, c] = wrapper
+          .findAll('.tpl-color-popover [role="radio"]')
+          .map((chip) => chip.element as HTMLElement);
+
+        a.focus();
+        const right = dispatchArrow(a, 'ArrowRight');
+        expect(right.defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(b);
+
+        dispatchArrow(b, 'ArrowDown');
+        expect(document.activeElement).toBe(c);
+
+        // Wrap forward: last → first.
+        dispatchArrow(c, 'ArrowRight');
+        expect(document.activeElement).toBe(a);
+
+        // Wrap backward: first → last.
+        dispatchArrow(a, 'ArrowLeft');
+        expect(document.activeElement).toBe(c);
+
+        // Moving focus never selects.
+        expect(wrapper.emitted('update:modelValue')).toBeUndefined();
+        wrapper.unmount();
+      });
+
+      it('leaves Enter/Space to native button activation to emit', async () => {
+        const wrapper = mountEditor(ColorPicker, {
+          props: { modelValue: '', presets: ['#ff0000', '#00ff00'] },
+          attachTo: document.body,
+        });
+        await wrapper.find('button').trigger('click');
+        const chips = wrapper.findAll('.tpl-color-popover [role="radio"]');
+        const first = chips[0].element as HTMLElement;
+        first.focus();
+
+        // The roving handler only claims the four arrow keys, so Enter is not
+        // consumed — the browser's native button activation still fires.
+        const enter = new KeyboardEvent('keydown', {
+          key: 'Enter',
+          bubbles: true,
+          cancelable: true,
+        });
+        first.dispatchEvent(enter);
+        expect(enter.defaultPrevented).toBe(false);
+        expect(document.activeElement).toBe(first);
+        expect(wrapper.emitted('update:modelValue')).toBeUndefined();
+
+        // Native activation = click, which applies the preset.
+        await chips[0].trigger('click');
+        expect(wrapper.emitted('update:modelValue')![0]).toEqual(['#ff0000']);
+        wrapper.unmount();
+      });
+    });
   });
 });
+
+function dispatchArrow(el: HTMLElement, key: string): KeyboardEvent {
+  const event = new KeyboardEvent('keydown', {
+    key,
+    bubbles: true,
+    cancelable: true,
+  });
+  el.dispatchEvent(event);
+  return event;
+}
