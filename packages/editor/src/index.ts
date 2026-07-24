@@ -4,6 +4,7 @@ import { createApp, h, ref, type App, type Ref } from "vue";
 import { INIT_TIMEOUT_MS } from "./constants/timeouts";
 import type {
   BlockDefaults,
+  ColorsConfig,
   CustomBlock,
   CustomBlockDefinition,
   DisplayConditionsConfig,
@@ -171,6 +172,27 @@ export interface TemplaticalEditorConfig {
   htmlBlockPreview?: HtmlBlockPreviewConfig;
 
   fonts?: FontsConfig;
+
+  /**
+   * Editor-wide color-picker palette. `presets` appear as a clickable grid in
+   * every color picker popover (block toolbars, template settings, rich-text
+   * color, custom-block color fields) — clicking one applies it, and the preset
+   * matching the current value is marked selected.
+   *
+   * ```ts
+   * colors: {
+   *   presets: ['#0b5cff', '#111827', '#6b7280', '#ffffff'],
+   *   allowCustom: false, // lock authors to the presets above
+   * }
+   * ```
+   *
+   * `allowCustom` defaults to `true`. Set it to `false` (together with
+   * `presets`) to hide the wheel and hex input so authors can only pick from the
+   * palette — useful when embedding the editor as a white-label / brand-kit
+   * tool. `allowCustom: false` is ignored, with a warning, when no `presets` are
+   * configured, since that would leave the picker with no way to set a color.
+   */
+  colors?: ColorsConfig;
 
   blockDefaults?: BlockDefaults;
   templateDefaults?: TemplateDefaults;
@@ -723,6 +745,7 @@ export type {
   DisplayConditionsConfig,
   CustomBlockDefinition,
   ViewportSize,
+  ColorsConfig,
   CustomFont,
   FontsConfig,
   SaveResult,

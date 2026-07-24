@@ -1,7 +1,10 @@
 import type {
   TemplateContent,
   CustomBlockDefinition,
+  ColorsConfig,
   FontsConfig,
+  BlockDefaults,
+  TemplateDefaults,
 } from "@templatical/types";
 import {
   createTitleBlock,
@@ -1888,6 +1891,22 @@ export interface TemplateOption {
    * to `init()`, so every other template keeps the full font list.
    */
   fonts?: FontsConfig;
+  /**
+   * Editor-wide `colors` config for this template only — a preset palette
+   * (optionally with `allowCustom: false` to lock authors to it). Read per
+   * template in `chooseTemplate` and passed to `init()`, so every other
+   * template keeps the default free-form pickers.
+   */
+  colors?: ColorsConfig;
+  /**
+   * Per-template `blockDefaults` / `templateDefaults`. When set, they fully
+   * replace the app-level DefaultsPreset selection for this template (read in
+   * `chooseTemplate`, passed to `init()`) — the same override idiom as `colors`
+   * / `htmlBlockPreview`. Event Invitation uses them to keep new blocks inside
+   * its brand-locked palette.
+   */
+  blockDefaults?: BlockDefaults;
+  templateDefaults?: TemplateDefaults;
 }
 
 export const templates: TemplateOption[] = [
@@ -2028,7 +2047,38 @@ export const templates: TemplateOption[] = [
     create: createEventInvitationTemplate,
     preview: "event",
     customBlocks: [eventDetailsBlock],
+    // Brand-locked palette: fixed swatches + `allowCustom: false`, so every
+    // color picker in this template offers only these presets (no wheel / hex).
+    colors: {
+      presets: [
+        "#7c3aed",
+        "#ec4899",
+        "#f59e0b",
+        "#10b981",
+        "#111827",
+        "#ffffff",
+      ],
+      allowCustom: false,
+    },
+    // On-brand block/template defaults so newly-added blocks start INSIDE the
+    // locked palette above. These override exactly the seven factory default
+    // colors that would otherwise fall outside it (the SDK warns about those
+    // when custom colors are locked); the remaining factory color defaults are
+    // already `#ffffff`, which is a preset.
+    blockDefaults: {
+      button: { backgroundColor: "#7c3aed" },
+      divider: { color: "#111827" },
+      menu: { separatorColor: "#111827" },
+      table: { borderColor: "#111827" },
+      countdown: { digitColor: "#111827", labelColor: "#7c3aed" },
+    },
+    templateDefaults: { textColor: "#111827" },
     features: [
+      {
+        label: "Brand Color Palette",
+        description:
+          "This template passes a `colors` config to init(): a fixed set of brand swatches plus `allowCustom: false`. Every color picker in the editor — the RSVP button colors, the Event Details accent color, template settings — shows only those presets as a clickable grid, with no wheel or hex input.\nTo try it: select the RSVP button (or the Event Details card) and open a color control in the sidebar. You can only pick from the approved palette. This is the white-label / brand-kit path: keep non-designers on-brand by removing free-form color entry.\nThe template also sets on-brand `blockDefaults` and `templateDefaults`, so blocks you add start on palette colors instead of the factory defaults that would land outside it.",
+      },
       {
         label: "Display Conditions (Multiple Groups)",
         icon: "display-condition",

@@ -6,8 +6,9 @@ import { useI18n } from "../composables/useI18n";
 import { usePopoverRoot } from "../composables/usePopoverRoot";
 import { usePopoverPosition } from "../composables/usePopoverPosition";
 import { colorTextClass } from "../constants/styleConstants";
-import { normalizeColorToHex } from "../utils/color";
-import { THEME_STYLES_KEY, UI_THEME_KEY } from "../keys";
+import { canonicalizeHexColor, normalizeColorToHex } from "../utils/color";
+import { COLORS_KEY, THEME_STYLES_KEY, UI_THEME_KEY } from "../keys";
+import { DEFAULT_RESOLVED_COLORS } from "../utils/resolveColorsConfig";
 import "vanilla-colorful";
 
 const props = withDefaults(
@@ -33,6 +34,17 @@ const props = withDefaults(
      * side and must be told apart (e.g. text color vs highlight in the toolbar).
      */
     ariaLabel?: string;
+    /**
+     * Per-instance override of the editor-wide `colors.presets` for this one
+     * picker. This is the extension seam a caller uses to scope a single picker
+     * to its own palette; when omitted, the injected editor-level presets apply.
+     */
+    presets?: string[];
+    /**
+     * Per-instance override of the editor-wide `colors.allowCustom` for this one
+     * picker. When omitted, the injected editor-level setting applies.
+     */
+    allowCustom?: boolean;
   }>(),
   {
     placeholder: "",
@@ -41,6 +53,8 @@ const props = withDefaults(
     disabled: false,
     size: "md",
     ariaLabel: "",
+    presets: undefined,
+    allowCustom: undefined,
   },
 );
 
@@ -86,6 +100,108 @@ const seed = computed(() =>
 // full mode, or the popover field in swatch-only mode — shown only when a value
 // is set. Not gated on swatchOnly: each field renders only in its own mode.
 const showClear = computed(() => !props.disabled && !isUnset.value);
+
+// Color palette: a per-instance `presets`/`allowCustom` prop wins over the
+// injected editor-wide `colors` config, per property. Default keeps the picker
+// unchanged when neither is configured. "preset" is kept distinct from the
+// trigger "swatch" (swatchOnly/swatchRef) on purpose — they are two different
+// concepts in this file.
+const editorColors = inject(COLORS_KEY, DEFAULT_RESOLVED_COLORS);
+// Deduplicated: a repeated entry in the configured palette would render a
+// pointless second chip and collide on the value-based `v-for` key.
+const presets = computed(() => [
+  ...new Set(props.presets ?? editorColors.presets),
+]);
+const allowCustom = computed(
+  () => props.allowCustom ?? editorColors.allowCustom,
+);
+const hasPresets = computed(() => presets.value.length > 0);
+
+// Show the free-form controls (wheel + hex inputs) whenever custom entry is
+// allowed OR there are no presets to fall back on — so a picker is never left
+// with no way to choose a color (a belt-and-braces guard; `resolveColorsConfig`
+// already forbids `allowCustom: false` without presets).
+const showFreeform = computed(() => allowCustom.value || !hasPresets.value);
+
+// A preset reads as selected when its hex equals the current value, compared in
+// the canonical (rgb→hex, 3-digit expanded, lowercased) form — so a `#abc`
+// preset matches an `#aabbcc` browser round-trip and case never matters.
+const normalizedValue = computed(() => canonicalizeHexColor(props.modelValue));
+function isPresetSelected(preset: string): boolean {
+  return (
+    normalizedValue.value !== "" &&
+    canonicalizeHexColor(preset) === normalizedValue.value
+  );
+}
+function selectPreset(preset: string): void {
+  emit("update:modelValue", preset);
+}
+
+// A leading "no colour" (unset/inherit) chip is rendered ONLY in locked mode
+// (`!showFreeform`) — the one mode with no other clear affordance. The freeform
+// modes already own clear via the hex-field ×; a preset-only grid otherwise has
+// no way back to unset once a colour is picked.
+const showNoneChip = computed(() => hasPresets.value && !showFreeform.value);
+
+// Group-position of preset `index`, shifted by the leading none chip when it's
+// present, so the whole grid indexes as one radio list.
+function presetPosition(index: number): number {
+  return showNoneChip.value ? index + 1 : index;
+}
+
+// Roving tabindex (WAI-ARIA APG radio group): the grid exposes exactly one tab
+// stop — the checked radio, or the FIRST radio when nothing is checked (value
+// unset with no none chip, or off-palette) — so the group is reachable by Tab
+// but a single Tab steps past it. The none chip counts as checked when the
+// value is unset. Arrow keys then rove focus between the radios.
+const rovingIndex = computed(() => {
+  if (showNoneChip.value && isUnset.value) {
+    return 0;
+  }
+  const selected = presets.value.findIndex((preset) =>
+    isPresetSelected(preset),
+  );
+  return selected === -1 ? 0 : presetPosition(selected);
+});
+function noneChipTabindex(): number {
+  return rovingIndex.value === 0 ? 0 : -1;
+}
+function presetTabindex(index: number): number {
+  return presetPosition(index) === rovingIndex.value ? 0 : -1;
+}
+
+// Arrow keys rove FOCUS across the chips (wrapping); they do NOT select.
+// Enter/Space activate the focused chip via native button click. This
+// deviates from APG's default "selection follows focus" on purpose: every
+// selection emits `update:modelValue`, and on the rich-text toolbar path that
+// runs `editor.chain().focus().setColor()` (see the swatch-only field comment
+// in the template), which refocuses the canvas — so following focus would
+// steal focus after the first arrow key and break traversal. APG sanctions
+// explicit activation when moving focus has side effects.
+function onPresetGridKeydown(e: KeyboardEvent): void {
+  const arrows = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"];
+  if (!arrows.includes(e.key)) {
+    return;
+  }
+  // Resolve the current chip from `event.target`, never `document.activeElement`
+  // — the latter is unreliable across a shadow-DOM boundary (this editor can
+  // mount in a shadow root; the repo threads the real root via EDITOR_ROOT_KEY
+  // for the same reason).
+  const group = e.currentTarget as HTMLElement;
+  const radios = Array.from(
+    group.querySelectorAll<HTMLElement>('[role="radio"]'),
+  );
+  const current = (e.target as HTMLElement).closest('[role="radio"]');
+  const currentIndex = current ? radios.indexOf(current as HTMLElement) : -1;
+  if (currentIndex === -1) {
+    return;
+  }
+  const forward = e.key === "ArrowRight" || e.key === "ArrowDown";
+  const nextIndex =
+    (currentIndex + (forward ? 1 : -1) + radios.length) % radios.length;
+  radios[nextIndex]?.focus();
+  e.preventDefault();
+}
 
 function onPickerChange(e: Event): void {
   pickerTouched.value = true;
@@ -173,7 +289,7 @@ function toggleOpen(): void {
         :style="isUnset ? undefined : { backgroundColor: displayValue }"
       />
     </button>
-    <div v-if="!swatchOnly" class="tpl:relative tpl:flex-1">
+    <div v-if="!swatchOnly && showFreeform" class="tpl:relative tpl:flex-1">
       <input
         type="text"
         :class="[colorTextClass, 'tpl:w-full']"
@@ -215,7 +331,64 @@ function toggleOpen(): void {
             ...themeStyles,
           }"
         >
+          <!-- Preset color grid — an ARIA radio group: each chip is a
+               `role="radio"`, arrow keys rove focus between them (roving
+               tabindex), and Enter/Space activate. Supplements the wheel/hex
+               field; the only control when `allowCustom` is false. Each preset
+               carries its color value as its accessible label. -->
+          <div
+            v-if="hasPresets"
+            role="radiogroup"
+            :aria-label="t.colorPicker.presetColors"
+            :class="[
+              'tpl:flex tpl:flex-wrap tpl:gap-1.5',
+              showFreeform && 'tpl:mb-2',
+            ]"
+            @keydown="onPresetGridKeydown"
+          >
+            <!-- Leading "no colour" (unset/inherit) chip — locked mode only.
+                 Always present, never gated on the current value: unset is a
+                 first-class member of the value domain, and a chip that
+                 disappeared on activation would strand keyboard focus mid-grid.
+                 Reuses the diagonal-slash unset visual and the same chip
+                 chrome; activating it emits "" to clear. -->
+            <button
+              v-if="showNoneChip"
+              type="button"
+              role="radio"
+              :aria-label="t.colorPicker.clear"
+              :title="t.colorPicker.clear"
+              :aria-checked="isUnset"
+              :tabindex="noneChipTabindex()"
+              :class="[
+                'tpl-color-swatch-empty tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:outline-none tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:focus-visible:ring-2 tpl:focus-visible:ring-[var(--tpl-primary)] tpl:focus-visible:ring-offset-1 tpl:focus-visible:ring-offset-[var(--tpl-bg-elevated)]',
+                isUnset
+                  ? 'tpl:ring-2 tpl:ring-[var(--tpl-primary)] tpl:ring-offset-1 tpl:ring-offset-[var(--tpl-bg-elevated)]'
+                  : 'hover:tpl:border-[var(--tpl-text-dim)]',
+              ]"
+              @click="clear"
+            />
+            <button
+              v-for="(preset, index) in presets"
+              :key="preset"
+              type="button"
+              role="radio"
+              :aria-label="preset"
+              :title="preset"
+              :aria-checked="isPresetSelected(preset)"
+              :tabindex="presetTabindex(index)"
+              :style="{ backgroundColor: preset }"
+              :class="[
+                'tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:outline-none tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:focus-visible:ring-2 tpl:focus-visible:ring-[var(--tpl-primary)] tpl:focus-visible:ring-offset-1 tpl:focus-visible:ring-offset-[var(--tpl-bg-elevated)]',
+                isPresetSelected(preset)
+                  ? 'tpl:ring-2 tpl:ring-[var(--tpl-primary)] tpl:ring-offset-1 tpl:ring-offset-[var(--tpl-bg-elevated)]'
+                  : 'hover:tpl:border-[var(--tpl-text-dim)]',
+              ]"
+              @click="selectPreset(preset)"
+            />
+          </div>
           <hex-color-picker
+            v-if="showFreeform"
             :color="seed"
             :aria-label="t.colorPicker.pickColor"
             @color-changed="onPickerChange"
@@ -230,7 +403,7 @@ function toggleOpen(): void {
                editor.chain().focus().setColor(), and focusing the canvas mid-type
                would steal focus after the first character. Shown even when unset
                so a first color can be typed; the × appears only once a value is set. -->
-          <div v-if="swatchOnly" class="tpl:relative tpl:mt-2">
+          <div v-if="swatchOnly && showFreeform" class="tpl:relative tpl:mt-2">
             <input
               type="text"
               :class="[colorTextClass, 'tpl:w-full']"

@@ -81,6 +81,18 @@ export const PALETTE_BLOCKS_KEY: InjectionKey<string[] | undefined> =
 export const HTML_BLOCK_PREVIEW_KEY: InjectionKey<boolean> =
   Symbol("htmlBlockPreview");
 
+/**
+ * Consumer-supplied color-picker palette (`config.colors`), normalized to
+ * `{ presets, allowCustom, allowCustomIgnored }` by `resolveColorsConfig`.
+ * Provided by `useEditorCore`, consumed by every `ColorPicker`. The inject
+ * default (`DEFAULT_RESOLVED_COLORS` = `{ presets: [], allowCustom: true,
+ * allowCustomIgnored: false }`) makes an unconfigured picker render exactly
+ * as before.
+ */
+export const COLORS_KEY: InjectionKey<
+  import("./utils/resolveColorsConfig").ResolvedColors
+> = Symbol("colors");
+
 export const CUSTOM_BLOCK_STYLESHEETS_KEY: InjectionKey<ComputedRef<string[]>> =
   Symbol("customBlockStylesheets");
 

@@ -2,6 +2,7 @@ import type {
   AiConfig,
   BlockDefaults,
   CollaborationConfig,
+  ColorsConfig,
   CommentEvent,
   CustomBlockDefinition,
   DisplayConditionsConfig,
@@ -127,6 +128,15 @@ export interface TemplaticalCloudEditorConfig {
   htmlBlockPreview?: HtmlBlockPreviewConfig;
 
   fonts?: FontsConfig;
+
+  /**
+   * Editor-wide color-picker palette. `presets` render as a clickable grid in
+   * every color picker popover; `allowCustom: false` (with `presets`) hides the
+   * wheel and hex input so authors can only pick from the palette. Ignored with
+   * a warning when no `presets` are configured. See `colors` on the OSS editor
+   * config for details and an example.
+   */
+  colors?: ColorsConfig;
   onChange?: (content: TemplateContent) => void;
   onSave?: (result: SaveResult) => void;
   onCreate?: (template: Template) => void;

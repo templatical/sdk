@@ -469,6 +469,7 @@ const ptBR: typeof en = {
     hexValue: "Valor hexadecimal da cor",
     notSet: "Não definido",
     clear: "Limpar cor",
+    presetColors: "Cores predefinidas",
   },
 
   // Merge Tag
