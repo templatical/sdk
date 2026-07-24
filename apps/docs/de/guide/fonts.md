@@ -76,6 +76,8 @@ const fonts: FontsConfig = {
 
 Das Einschränken der Liste betrifft nur die Auswahl. Eine benutzerdefinierte Schriftart kann weiterhin die `defaultFont` sein, wenn alle integrierten Schriftarten ausgeschlossen sind, und Inhalte, die bereits eine ausgeblendete integrierte Schriftart verwenden, werden weiterhin mit ihrem korrekten Fallback-Stack gerendert.
 
+Wenn Sie die Schriftart ausschließen, mit der neue Templates beginnen — standardmäßig Arial oder die als `defaultFont` festgelegte —, protokolliert der Editor beim Start eine Entwicklungswarnung, da Autoren sonst auf einer Schriftart landen, die die Auswahl nicht erneut anbieten kann. Behalten Sie diese Schriftart entweder in `builtIns` oder setzen Sie `defaultFont` auf eine angebotene Schriftart.
+
 ## Best Practices
 
 - **Immer einen Fallback festlegen** — Die meisten E-Mail-Clients unterstützen keine benutzerdefinierten Schriftarten. Der Fallback-Stack stellt sicher, dass Ihre E-Mail auch dann gut aussieht, wenn die benutzerdefinierte Schriftart nicht geladen wird.

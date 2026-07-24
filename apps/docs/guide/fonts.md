@@ -76,6 +76,8 @@ const fonts: FontsConfig = {
 
 Restricting the list only affects the picker. A custom font can still be the `defaultFont` when every built-in is excluded, and content already using a hidden built-in still renders with its proper fallback stack.
 
+If you exclude the family that new templates start on — Arial by default, or whatever you set as `defaultFont` — the editor logs a development warning at startup, because authors would land on a font the picker can't reselect. Either keep that family in `builtIns`, or set `defaultFont` to one you do offer.
+
 ## Best practices
 
 - **Always set a fallback** — Most email clients don't support custom fonts. The fallback stack ensures your email still looks good when the custom font doesn't load.

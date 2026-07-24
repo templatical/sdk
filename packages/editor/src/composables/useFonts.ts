@@ -145,6 +145,25 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
     );
   }
 
+  // Init-time check, same rationale as `resolveBuiltInFonts` above: `useFonts`
+  // resolves everything eagerly at init, so a config-mismatch warning lives
+  // here rather than in a separate consumer. A NEW template seeds
+  // `config.defaultFont`, or the family from `DEFAULT_FALLBACK` when it's unset
+  // (matching `createDefaultTemplateContent`'s "Arial" default). If the picker
+  // doesn't offer that family — an excluded built-in, or no matching custom
+  // font — authors land on a font they can't reselect, so warn once. Uses the
+  // same case-insensitive family matching as `isBuiltInFont`, over the offered
+  // list.
+  const seededFontFamily =
+    config?.defaultFont ?? DEFAULT_FALLBACK.split(",")[0].trim();
+  if (!isFontAvailable(seededFontFamily)) {
+    logger.warn(
+      `config.fonts: new templates seed "${seededFontFamily}", which the font ` +
+        `picker doesn't offer — authors can't reselect it. Either add it to ` +
+        `fonts.builtIns, or set fonts.defaultFont to an offered font.`,
+    );
+  }
+
   function isBuiltInFont(fontName: string): boolean {
     return BUILT_IN_FONTS.some(
       (font) =>

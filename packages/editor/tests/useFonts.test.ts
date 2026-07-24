@@ -151,11 +151,15 @@ describe('useFonts', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       useFonts({ builtIns: ['Papyrus', 'papyrus'] });
 
-      expect(warnSpy).toHaveBeenCalledTimes(1);
-      expect(warnSpy).toHaveBeenCalledWith(
-        '[Templatical]',
-        expect.stringContaining('"Papyrus" is not a built-in font'),
+      // Scope the count to the unknown-entry warning: an all-invalid allowlist
+      // leaves the picker empty, which also triggers the separate seeded-font
+      // warning, so a bare `toHaveBeenCalledTimes(1)` would over-count.
+      const papyrusWarnings = warnSpy.mock.calls.filter(
+        (call) =>
+          typeof call[1] === 'string' &&
+          call[1].includes('"Papyrus" is not a built-in font'),
       );
+      expect(papyrusWarnings).toHaveLength(1);
       warnSpy.mockRestore();
     });
 
@@ -182,6 +186,77 @@ describe('useFonts', () => {
       const { getFontWithFallback } = useFonts({ builtIns: ['Arial'] });
       // Filtering the picker never breaks content already using the family.
       expect(getFontWithFallback('Georgia')).toBe('Georgia, serif');
+    });
+  });
+
+  describe('seeded default font warning', () => {
+    const SEEDED = 'new templates seed';
+
+    it('warns naming Arial when builtIns excludes it and no defaultFont is set', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      // No defaultFont → new templates seed Arial (from DEFAULT_FALLBACK), but
+      // the picker only offers Georgia.
+      useFonts({ builtIns: ['Georgia'] });
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('new templates seed "Arial"'),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('stays silent when the seeded Arial is still offered', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      useFonts({ builtIns: ['Georgia', 'Arial'] });
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining(SEEDED),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('stays silent when defaultFont points at the one offered built-in', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      useFonts({ builtIns: ['Georgia'], defaultFont: 'Georgia' });
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining(SEEDED),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('warns when defaultFont names a built-in excluded from the picker', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      useFonts({ builtIns: ['Georgia'], defaultFont: 'Verdana' });
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining('new templates seed "Verdana"'),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('stays silent when defaultFont is a provided custom font and builtIns is false', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      useFonts({
+        builtIns: false,
+        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
+        defaultFont: 'Roboto',
+      });
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining(SEEDED),
+      );
+      warnSpy.mockRestore();
+    });
+
+    it('stays silent for the default built-in set (builtIns true or omitted)', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      useFonts({ builtIns: true });
+      useFonts();
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        '[Templatical]',
+        expect.stringContaining(SEEDED),
+      );
+      warnSpy.mockRestore();
     });
   });
 
