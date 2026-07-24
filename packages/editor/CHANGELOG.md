@@ -1,6 +1,6 @@
 # @templatical/editor
 
-## 1.0.0
+## 0.19.0
 
 ### Minor Changes
 
@@ -18,9 +18,9 @@
 
 ### Patch Changes
 
-- @templatical/media-library@1.0.0
-- @templatical/quality@1.0.0
-- @templatical/renderer@1.0.0
+- @templatical/media-library@0.19.0
+- @templatical/quality@0.19.0
+- @templatical/renderer@0.19.0
 
 ## 0.18.0
 
