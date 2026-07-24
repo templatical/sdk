@@ -1,5 +1,21 @@
 # @templatical/types
 
+## 1.0.0
+
+### Minor Changes
+
+- ef6deec: Add a `colors` editor option for a preset color-picker palette.
+
+  `colors.presets` renders a clickable grid inside every color picker popover (block toolbars, template settings, rich text, custom-block color fields); clicking a preset applies it and the preset matching the current value is marked selected. Presets must be `#rgb` / `#rrggbb` hex — invalid entries are skipped with a console warning. The grid is an ARIA radio group: arrow keys rove focus between chips (roving tabindex) and Enter/Space activate.
+
+  `colors.allowCustom: false` (with presets) hides the wheel and hex input so authors can only pick from the palette — a white-label / brand-kit constraint. In this locked mode the palette leads with a "no colour" chip that restores the unset (inherit) state, and the editor warns when any `blockDefaults` / `templateDefaults` colour falls outside the palette. It is ignored with a warning when no presets are configured. Non-breaking — pickers render exactly as before when `colors` is unset.
+
+- b8fbca0: Add a `fonts.builtIns` option to restrict which of the seven built-in fonts the font picker offers.
+
+  `builtIns: true` (or omitting it) keeps all seven built-ins — the current behaviour. `builtIns: false` drops them all so the picker lists only `customFonts`. A `builtIns: string[]` allowlist keeps just the named families, matched case-insensitively; a name that isn't a built-in is logged with a warning and skipped, the same way `paletteBlocks` treats an unknown entry.
+
+  Filtering only affects the picker: excluding a built-in never removes a custom font, a custom font stays usable as `defaultFont` when every built-in is excluded, and content already using an excluded family still resolves to its proper fallback stack. When the family new templates seed (`fonts.defaultFont`, or Arial by default) isn't in the offered list, the editor warns once at init so the mismatch is caught. Non-breaking — the default is unchanged.
+
 ## 0.18.0
 
 ## 0.17.1
