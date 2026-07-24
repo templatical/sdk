@@ -259,3 +259,63 @@ Wenn Sie sowohl `tags` als auch `onRequest` angeben, hat `onRequest` Vorrang —
 Merge-Tags sind nicht auf Titel- und Absatzblöcke beschränkt. Der Editor erkennt und hebt Merge-Tags auch in anderen Blockeingaben hervor — Schaltflächentext, Schaltflächen-URL, Bild-URL, Bild-Alternativtext und Link-href-Werte. Das gleiche Label-Ersetzungs- und Tooltip-Verhalten gilt in diesen Feldern.
 
 <img src="/images/button-merge-tag.png" alt="Merge-Tag in einer Schaltflächen-URL" style="max-width: 360px;" />
+
+## Merge-Tags außerhalb des Editors verwenden
+
+Der Editor verwaltet Merge-Tags auf allen Oberflächen, die zu ihm gehören — Rich-Text-Blöcke, den Toolbar-Picker und die oben genannten weiteren Blockeingaben. Für Eingaben **außerhalb** des Editors, etwa ein Betreffzeilenfeld in Ihrer eigenen Anwendung, bauen Sie ein kleines eigenes Feld mit den Merge-Tag-Primitiven, die `@templatical/types` exportiert. Es sind dieselben Funktionen, die der Editor intern verwendet, sodass Ihr Feld konsistent mit der `syntax` bleibt, die Sie für den Editor konfiguriert haben.
+
+Das Paket (MIT) exportiert das vollständige Toolkit:
+
+- `SYNTAX_PRESETS` — die integrierten Syntaxdefinitionen (`liquid`, `handlebars`, `mailchimp`, `ampscript`)
+- `getSyntaxTriggerChar` / `getSyntaxClosingChar` — die öffnenden/schließenden Trennzeichen eines Presets, für die Autovervollständigungs-Erkennung
+- `isMergeTagValue`, `getMergeTagLabel`, `containsMergeTag` — Abgleich und Label-Auflösung
+- `isLogicMergeTagValue`, `getLogicMergeTagKeyword` — dasselbe für Logik-Tags
+- die Typen `MergeTag` und `SyntaxPreset`
+
+### Einen gespeicherten Wert als Label-Chips darstellen
+
+Teilen Sie eine Rohzeichenkette in Klartext und aufgelöste Tag-Labels auf — im Wesentlichen die Segmentierung des Editors selbst:
+
+```ts
+import { SYNTAX_PRESETS, getMergeTagLabel, type MergeTag } from '@templatical/types';
+
+const syntax = SYNTAX_PRESETS.liquid;
+const tags: MergeTag[] = [{ label: 'First name', value: '{{first_name}}' }];
+
+function segments(value: string) {
+  const re = new RegExp(syntax.value.source, 'g');
+  const out: { text: string; isTag: boolean; label?: string }[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(value))) {
+    if (m.index > last) out.push({ text: value.slice(last, m.index), isTag: false });
+    out.push({ text: m[0], isTag: true, label: getMergeTagLabel(m[0], tags) });
+    last = m.index + m[0].length;
+  }
+  if (last < value.length) out.push({ text: value.slice(last), isTag: false });
+  return out;
+}
+
+// segments('Hi {{first_name}}!') →
+//   [ { text: 'Hi ', isTag: false },
+//     { text: '{{first_name}}', isTag: true, label: 'First name' },
+//     { text: '!', isTag: false } ]
+```
+
+### Autovervollständigung in einer einfachen Eingabe
+
+Die Trennzeichen-Helfer halten Ihr eigenes Dropdown über alle Presets hinweg syntaxgenau:
+
+```ts
+import { SYNTAX_PRESETS, getSyntaxTriggerChar, getSyntaxClosingChar } from '@templatical/types';
+
+const syntax = SYNTAX_PRESETS.liquid;
+const open = getSyntaxTriggerChar(syntax);   // '{{'
+const close = getSyntaxClosingChar(syntax);  // '}}'
+
+// Prüfen Sie bei jedem Tastendruck den Text vor dem Cursor: Enthält er ein
+// nicht geschlossenes `open`-Trennzeichen, nehmen Sie das Fragment danach als
+// Suchbegriff und filtern Sie Ihre Tags in ein eigenes Dropdown.
+```
+
+Ein eigenes Feld bedeutet, dass es in Ihrem Framework gerendert wird, im Stil Ihres Designsystems und gegen Ihr eigenes Tag-Modell — was für etwas wie eine Betreffzeile in der Regel genau das ist, was Sie möchten.

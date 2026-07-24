@@ -259,3 +259,63 @@ If you provide both `tags` and `onRequest`, `onRequest` takes precedence — the
 Merge tags aren't limited to title and paragraph blocks. The editor detects and highlights merge tags in other block inputs too — button text, button URL, image URL, image alt text, and link href values. The same label replacement and tooltip behavior applies in these fields.
 
 <img src="/images/button-merge-tag.png" alt="Merge tag in a button URL" style="max-width: 360px;" />
+
+## Using merge tags outside the editor
+
+The editor handles merge tags on every surface it owns — rich-text blocks, the toolbar picker, and the other block inputs above. For inputs **outside** the editor, such as an email subject field in your own app, build a small field of your own using the merge-tag primitives that `@templatical/types` exports. These are the same functions the editor uses internally, so your field stays consistent with whatever `syntax` you configured the editor with.
+
+The package (MIT) exports the full toolkit:
+
+- `SYNTAX_PRESETS` — the built-in syntax definitions (`liquid`, `handlebars`, `mailchimp`, `ampscript`)
+- `getSyntaxTriggerChar` / `getSyntaxClosingChar` — a preset's opening/closing delimiters, for autocomplete detection
+- `isMergeTagValue`, `getMergeTagLabel`, `containsMergeTag` — matching and label resolution
+- `isLogicMergeTagValue`, `getLogicMergeTagKeyword` — the same for logic tags
+- the `MergeTag` and `SyntaxPreset` types
+
+### Render a stored value as labeled chips
+
+Split a raw string into plain text and resolved tag labels — essentially the editor's own segmentation:
+
+```ts
+import { SYNTAX_PRESETS, getMergeTagLabel, type MergeTag } from '@templatical/types';
+
+const syntax = SYNTAX_PRESETS.liquid;
+const tags: MergeTag[] = [{ label: 'First name', value: '{{first_name}}' }];
+
+function segments(value: string) {
+  const re = new RegExp(syntax.value.source, 'g');
+  const out: { text: string; isTag: boolean; label?: string }[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(value))) {
+    if (m.index > last) out.push({ text: value.slice(last, m.index), isTag: false });
+    out.push({ text: m[0], isTag: true, label: getMergeTagLabel(m[0], tags) });
+    last = m.index + m[0].length;
+  }
+  if (last < value.length) out.push({ text: value.slice(last), isTag: false });
+  return out;
+}
+
+// segments('Hi {{first_name}}!') →
+//   [ { text: 'Hi ', isTag: false },
+//     { text: '{{first_name}}', isTag: true, label: 'First name' },
+//     { text: '!', isTag: false } ]
+```
+
+### Autocomplete on a plain input
+
+The delimiter helpers keep your own dropdown syntax-accurate across every preset:
+
+```ts
+import { SYNTAX_PRESETS, getSyntaxTriggerChar, getSyntaxClosingChar } from '@templatical/types';
+
+const syntax = SYNTAX_PRESETS.liquid;
+const open = getSyntaxTriggerChar(syntax);   // '{{'
+const close = getSyntaxClosingChar(syntax);  // '}}'
+
+// On each keystroke, look at the text before the caret: if it contains an
+// unclosed `open` delimiter, take the fragment after it as the query and
+// filter your tags into a dropdown of your own.
+```
+
+Owning the field means it renders in your framework, styled to your design system, against your own tag model — which for something like a subject line is usually what you want.
