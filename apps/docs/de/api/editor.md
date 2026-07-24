@@ -129,7 +129,7 @@ const editor = await init({
 ```
 
 - **`presets`** — Hex-Zeichenketten, die als anklickbares Raster gerendert werden. Ein Klick übernimmt die Farbe; die vordefinierte Farbe, die dem aktuellen Wert entspricht, wird als ausgewählt markiert. Ergänzt das Farbrad und das Hex-Eingabefeld. Jeder Eintrag muss eine `#rgb`- oder `#rrggbb`-Hex-Zeichenkette sein — 4-/8-stellige Alpha-Hex-Werte und andere Formate werden übersprungen und mit einer Konsolenwarnung protokolliert, die die betreffenden Einträge auflistet.
-- **`allowCustom`** — standardmäßig `true`. Auf `false` gesetzt (zusammen mit `presets`) werden das Farbrad und das Hex-Eingabefeld ausgeblendet, sodass Autoren nur aus der Palette wählen können — nützlich beim Einbetten des Editors als White-Label- / Brand-Kit-Werkzeug. Wird mit einer Warnung ignoriert, wenn keine `presets` konfiguriert sind, da der Farbwähler sonst keine Möglichkeit hätte, eine Farbe festzulegen.
+- **`allowCustom`** — standardmäßig `true`. Auf `false` gesetzt (zusammen mit `presets`) werden das Farbrad und das Hex-Eingabefeld ausgeblendet, sodass Autoren nur aus der Palette wählen können — nützlich beim Einbetten des Editors als White-Label- / Brand-Kit-Werkzeug. In diesem gesperrten Modus beginnt die Palette mit einem „Keine Farbe“-Feld, das den nicht gesetzten (geerbten) Zustand wiederherstellt, da die Schaltfläche zum Löschen des Hex-Eingabefelds ausgeblendet ist. Wird mit einer Warnung ignoriert, wenn keine `presets` konfiguriert sind, da der Farbwähler sonst keine Möglichkeit hätte, eine Farbe festzulegen.
 
 ## TemplaticalEditor
 

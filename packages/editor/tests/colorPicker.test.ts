@@ -591,6 +591,112 @@ describe('ColorPicker', () => {
         wrapper.unmount();
       });
     });
+
+    describe('none chip (locked-mode unset)', () => {
+      it('renders the none chip only in locked mode, as the first radio', async () => {
+        const locked = mountEditor(ColorPicker, {
+          props: { modelValue: '', presets: ['#ff0000'], allowCustom: false },
+        });
+        await locked.find('button').trigger('click');
+        const lockedChips = locked.findAll('.tpl-color-popover [role="radio"]');
+        // Leading none chip + the single preset.
+        expect(lockedChips).toHaveLength(2);
+        expect(lockedChips[0].attributes('aria-label')).toBe(
+          'colorPicker.clear',
+        );
+        expect(lockedChips[1].attributes('aria-label')).toBe('#ff0000');
+      });
+
+      it('renders no none chip in freeform mode (clear lives on the hex field)', async () => {
+        const freeform = mountEditor(ColorPicker, {
+          // allowCustom defaults to true → freeform controls present.
+          props: { modelValue: '', presets: ['#ff0000'] },
+        });
+        await freeform.find('button').trigger('click');
+        const chips = freeform.findAll('.tpl-color-popover [role="radio"]');
+        expect(chips).toHaveLength(1);
+        expect(chips[0].attributes('aria-label')).toBe('#ff0000');
+      });
+
+      it('marks the none chip checked when unset and unchecked when a value is set', async () => {
+        const unset = mountEditor(ColorPicker, {
+          props: { modelValue: '', presets: ['#ff0000'], allowCustom: false },
+        });
+        await unset.find('button').trigger('click');
+        expect(
+          unset
+            .find('.tpl-color-popover [role="radio"]')
+            .attributes('aria-checked'),
+        ).toBe('true');
+
+        const set = mountEditor(ColorPicker, {
+          props: {
+            modelValue: '#ff0000',
+            presets: ['#ff0000'],
+            allowCustom: false,
+          },
+        });
+        await set.find('button').trigger('click');
+        const setChips = set.findAll('.tpl-color-popover [role="radio"]');
+        // none chip unchecked, preset checked.
+        expect(setChips[0].attributes('aria-checked')).toBe('false');
+        expect(setChips[1].attributes('aria-checked')).toBe('true');
+      });
+
+      it('emits empty (unset) when the none chip is activated', async () => {
+        const wrapper = mountEditor(ColorPicker, {
+          props: {
+            modelValue: '#ff0000',
+            presets: ['#ff0000'],
+            allowCustom: false,
+          },
+        });
+        await wrapper.find('button').trigger('click');
+        const none = wrapper.findAll('.tpl-color-popover [role="radio"]')[0];
+        await none.trigger('click');
+        const emitted = wrapper.emitted('update:modelValue');
+        expect(emitted).toHaveLength(1);
+        expect(emitted![0]).toEqual(['']);
+      });
+
+      it('holds the single tab stop as the first radio when the value is unset', async () => {
+        const wrapper = mountEditor(ColorPicker, {
+          props: {
+            modelValue: '',
+            presets: ['#ff0000', '#00ff00'],
+            allowCustom: false,
+          },
+        });
+        await wrapper.find('button').trigger('click');
+        const chips = wrapper.findAll('.tpl-color-popover [role="radio"]');
+        expect(chips.map((c) => c.attributes('tabindex'))).toEqual([
+          '0',
+          '-1',
+          '-1',
+        ]);
+      });
+
+      it('checks no chip for an off-palette value but keeps the none chip as the tab stop', async () => {
+        // A factory default like #333333 is outside the offered palette: correct
+        // radiogroup semantics leave every chip unchecked, and the first radio
+        // (the none chip) still holds the tab stop.
+        const wrapper = mountEditor(ColorPicker, {
+          props: {
+            modelValue: '#333333',
+            presets: ['#ff0000', '#00ff00'],
+            allowCustom: false,
+          },
+        });
+        await wrapper.find('button').trigger('click');
+        const chips = wrapper.findAll('.tpl-color-popover [role="radio"]');
+        expect(chips.map((c) => c.attributes('aria-checked'))).toEqual([
+          'false',
+          'false',
+          'false',
+        ]);
+        expect(chips[0].attributes('tabindex')).toBe('0');
+      });
+    });
   });
 });
 

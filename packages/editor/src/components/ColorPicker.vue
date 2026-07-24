@@ -137,18 +137,37 @@ function selectPreset(preset: string): void {
   emit("update:modelValue", preset);
 }
 
+// A leading "no colour" (unset/inherit) chip is rendered ONLY in locked mode
+// (`!showFreeform`) — the one mode with no other clear affordance. The freeform
+// modes already own clear via the hex-field ×; a preset-only grid otherwise has
+// no way back to unset once a colour is picked.
+const showNoneChip = computed(() => hasPresets.value && !showFreeform.value);
+
+// Group-position of preset `index`, shifted by the leading none chip when it's
+// present, so the whole grid indexes as one radio list.
+function presetPosition(index: number): number {
+  return showNoneChip.value ? index + 1 : index;
+}
+
 // Roving tabindex (WAI-ARIA APG radio group): the grid exposes exactly one tab
-// stop — the checked chip, or the first chip when nothing is checked (value
-// unset or off-palette) — so the group is reachable by Tab but a single Tab
-// steps past it. Arrow keys then rove focus between the chips.
+// stop — the checked radio, or the FIRST radio when nothing is checked (value
+// unset with no none chip, or off-palette) — so the group is reachable by Tab
+// but a single Tab steps past it. The none chip counts as checked when the
+// value is unset. Arrow keys then rove focus between the radios.
 const rovingIndex = computed(() => {
+  if (showNoneChip.value && isUnset.value) {
+    return 0;
+  }
   const selected = presets.value.findIndex((preset) =>
     isPresetSelected(preset),
   );
-  return selected === -1 ? 0 : selected;
+  return selected === -1 ? 0 : presetPosition(selected);
 });
+function noneChipTabindex(): number {
+  return rovingIndex.value === 0 ? 0 : -1;
+}
 function presetTabindex(index: number): number {
-  return index === rovingIndex.value ? 0 : -1;
+  return presetPosition(index) === rovingIndex.value ? 0 : -1;
 }
 
 // Arrow keys rove FOCUS across the chips (wrapping); they do NOT select.
@@ -327,6 +346,28 @@ function toggleOpen(): void {
             ]"
             @keydown="onPresetGridKeydown"
           >
+            <!-- Leading "no colour" (unset/inherit) chip — locked mode only.
+                 Always present, never gated on the current value: unset is a
+                 first-class member of the value domain, and a chip that
+                 disappeared on activation would strand keyboard focus mid-grid.
+                 Reuses the diagonal-slash unset visual and the same chip
+                 chrome; activating it emits "" to clear. -->
+            <button
+              v-if="showNoneChip"
+              type="button"
+              role="radio"
+              :aria-label="t.colorPicker.clear"
+              :title="t.colorPicker.clear"
+              :aria-checked="isUnset"
+              :tabindex="noneChipTabindex()"
+              :class="[
+                'tpl-color-swatch-empty tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:outline-none tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:focus-visible:ring-2 tpl:focus-visible:ring-[var(--tpl-primary)] tpl:focus-visible:ring-offset-1 tpl:focus-visible:ring-offset-[var(--tpl-bg-elevated)]',
+                isUnset
+                  ? 'tpl:ring-2 tpl:ring-[var(--tpl-primary)] tpl:ring-offset-1 tpl:ring-offset-[var(--tpl-bg-elevated)]'
+                  : 'hover:tpl:border-[var(--tpl-text-dim)]',
+              ]"
+              @click="clear"
+            />
             <button
               v-for="(preset, index) in presets"
               :key="preset"

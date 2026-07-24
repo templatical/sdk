@@ -44,8 +44,9 @@ test.describe("Color presets — Event Invitation brand-locked palette", () => {
     const popover = await openButtonColorPicker(editorPage, page);
     const group = popover.locator('[role="radiogroup"]');
     await expect(group).toBeVisible();
-    // The template configures six brand presets.
-    await expect(group.locator("button")).toHaveCount(6);
+    // Six brand presets plus the leading "no colour" chip (locked mode has no
+    // other clear affordance).
+    await expect(group.locator("button")).toHaveCount(7);
   });
 
   test("clicking a preset applies the colour", async ({ editorPage, page }) => {
@@ -59,6 +60,25 @@ test.describe("Color presets — Event Invitation brand-locked palette", () => {
       .first()
       .locator("span");
     await expect(swatch).toHaveCSS("background-color", "rgb(236, 72, 153)");
+  });
+
+  test("the none chip clears back to the unset state", async ({
+    editorPage,
+    page,
+  }) => {
+    const popover = await openButtonColorPicker(editorPage, page);
+    // Apply a preset, then clear it via the leading none chip. Its label is the
+    // `colorPicker.clear` translation ("Clear color", from en.ts).
+    await popover.locator('button[aria-label="#ec4899"]').click();
+    await popover.locator('button[aria-label="Clear color"]').click();
+
+    // The trigger swatch wears the unset diagonal-slash class again.
+    const swatch = page
+      .locator(SELECTORS.rightPanelContent)
+      .locator(PICK_COLOR)
+      .first()
+      .locator("span");
+    await expect(swatch).toHaveClass(/tpl-color-swatch-empty/);
   });
 
   test("allowCustom:false hides the wheel and hex input", async ({
