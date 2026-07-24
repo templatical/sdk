@@ -1,6 +1,7 @@
 packages:
   - 'packages/*'
   - 'apps/*'
+  - 'skills/*'
 allowBuilds:
   esbuild: true
 minimumReleaseAge: 4320
