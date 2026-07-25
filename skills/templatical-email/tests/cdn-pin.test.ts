@@ -46,7 +46,11 @@ describe("live-mode CDN pin", () => {
         .map((match) => match[1].toLowerCase())
         // Fonts and doc links are not module/asset CDNs — only script, style
         // and dynamic-import sources matter here.
-        .filter((host) => !host.includes("fonts.") && !host.includes("templatical.com")),
+        .filter(
+          (host) =>
+            !host.includes("fonts.") &&
+            !(host === "templatical.com" || host.endsWith(".templatical.com")),
+        ),
     );
     expect([...hosts]).toEqual(["cdn.jsdelivr.net"]);
   });
