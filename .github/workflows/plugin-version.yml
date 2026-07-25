@@ -1,0 +1,70 @@
+name: Plugin version
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'skills/templatical-email/**'
+
+concurrency:
+  group: plugin-version-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only: the job diffs two commits and exits. It never pushes, comments,
+# or bumps the version itself — the bump is the author's decision.
+permissions:
+  contents: read
+
+jobs:
+  version-bumped:
+    runs-on: ubuntu-latest
+    env:
+      # Version Packages PRs are generated from changesets and never touch this
+      # private skill (changesets skips private packages), but skip them the way
+      # ci.yml does so a stray one can't block the release train.
+      IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') }}
+      MANIFEST: skills/templatical-email/.claude-plugin/plugin.json
+    steps:
+      - name: Skip on Version Packages PR
+        if: env.IS_VP == 'true'
+        run: echo "Skipped — Version Packages PR."
+
+      - if: env.IS_VP != 'true'
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Claude Code resolves the plugin's version from plugin.json first, and
+      # caches the plugin under that version. Shipping a change without bumping
+      # it means existing installs keep the stale copy indefinitely, while fresh
+      # installs get the new code under the SAME version string — two users on
+      # "0.2.0" running different code. Nothing else in the repo bumps this:
+      # the skill's package.json is private, so changesets leaves it alone.
+      - name: Require a plugin.json version bump
+        if: env.IS_VP != 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+
+          head_version="$(jq -r '.version // empty' "$MANIFEST")"
+          if [ -z "$head_version" ]; then
+            echo "::error file=$MANIFEST::No \`version\` field. Either restore it, or drop it deliberately to switch this plugin to commit-SHA versioning (and delete this workflow)."
+            exit 1
+          fi
+
+          # Absent on the base ref = the plugin is new in this PR; nothing to bump against.
+          if ! git cat-file -e "$BASE_SHA:$MANIFEST" 2>/dev/null; then
+            echo "New plugin manifest in this PR (version $head_version) — no bump required."
+            exit 0
+          fi
+
+          base_version="$(git show "$BASE_SHA:$MANIFEST" | jq -r '.version // empty')"
+
+          if [ "$head_version" = "$base_version" ]; then
+            echo "::error file=$MANIFEST::This PR changes skills/templatical-email/** but leaves version at $head_version. Bump it so installed plugins actually update (see docs: version resolution). Files changed:"
+            git diff --name-only "$BASE_SHA" HEAD -- skills/templatical-email/ | sed 's/^/  /'
+            exit 1
+          fi
+
+          echo "Version bumped: $base_version -> $head_version"

@@ -34,6 +34,28 @@ describe("live-mode CDN pin", () => {
     // A literal @x.y.z on the editor URL would silently drift from EDITOR_VERSION.
     expect(html).not.toMatch(/@templatical\/editor@\d+\.\d+\.\d+/);
   });
+
+  // The harness rides ONE CDN. A mixed setup is what broke MJML export: unpkg
+  // served the editor's lazy chunks as text/plain with a failed CORS preflight,
+  // so the entry booted but the deferred renderer chunk died — reported by
+  // toMjml()'s catch-all as a missing @templatical/renderer install.
+  it("loads every CDN asset from a single host", () => {
+    const html = read("../live/index.html");
+    const hosts = new Set(
+      [...html.matchAll(/https:\/\/([a-z0-9.-]+)\/[^"'\s)]*/gi)]
+        .map((match) => match[1].toLowerCase())
+        // Fonts and doc links are not module/asset CDNs — only script, style
+        // and dynamic-import sources matter here.
+        .filter((host) => !host.includes("fonts.") && !host.includes("templatical.com")),
+    );
+    expect([...hosts]).toEqual(["cdn.jsdelivr.net"]);
+  });
+
+  it("keeps the editor off unpkg", () => {
+    // Named explicitly so the reason survives even if the host set above is
+    // ever widened for an unrelated asset.
+    expect(read("../live/index.html")).not.toMatch(/unpkg\.com\/@templatical\/editor/);
+  });
 });
 
 describe("sync-editor-version", () => {
