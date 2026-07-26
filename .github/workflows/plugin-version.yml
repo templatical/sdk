@@ -1,10 +1,13 @@
 name: Plugin version
 
+# No `paths:` filter, deliberately. This job is a REQUIRED check, and a
+# workflow that never starts reports no status — branch protection then parks
+# the PR on "Expected" forever (same reason ci.yml gates inside its jobs
+# instead of with a job-level `if:`). So it runs on every PR and decides
+# internally whether there is anything to check.
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'skills/templatical-email/**'
 
 concurrency:
   group: plugin-version-${{ github.workflow }}-${{ github.ref }}
@@ -47,6 +50,14 @@ jobs:
         run: |
           set -euo pipefail
 
+          # The path gate lives here rather than in `on:` so the check always
+          # reports a status. Most PRs land in this branch and pass instantly.
+          changed="$(git diff --name-only "$BASE_SHA" HEAD -- skills/templatical-email/)"
+          if [ -z "$changed" ]; then
+            echo "No changes under skills/templatical-email/ — no bump required."
+            exit 0
+          fi
+
           head_version="$(jq -r '.version // empty' "$MANIFEST")"
           if [ -z "$head_version" ]; then
             echo "::error file=$MANIFEST::No \`version\` field. Either restore it, or drop it deliberately to switch this plugin to commit-SHA versioning (and delete this workflow)."
@@ -63,7 +74,7 @@ jobs:
 
           if [ "$head_version" = "$base_version" ]; then
             echo "::error file=$MANIFEST::This PR changes skills/templatical-email/** but leaves version at $head_version. Bump it so installed plugins actually update (see docs: version resolution). Files changed:"
-            git diff --name-only "$BASE_SHA" HEAD -- skills/templatical-email/ | sed 's/^/  /'
+            printf '%s\n' "$changed" | sed 's/^/  /'
             exit 1
           fi
 
