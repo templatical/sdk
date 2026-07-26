@@ -43,8 +43,11 @@ export interface CustomBlockImageField extends CustomBlockFieldBase {
  * one field to a color *role* — e.g. a button-color field offering only the
  * brand's accent/ink pair while other color fields inherit the global palette.
  *
- * **Narrowing only.** A field may restrict what the editor-wide `colors` config
- * offers, never widen it:
+ * **Narrowing only — of the author's freedom, not the palette.** A field can
+ * restrict what authors may do (lock this field, or give it its own `presets`),
+ * but never unlock what the editor locked. Its `presets` *replace* the
+ * editor-wide grid rather than intersecting it, so a locked field may offer
+ * colors outside `colors.presets`:
  *
  * - `presets` — entries are validated exactly like editor-level presets
  *   (`#rgb` / `#rrggbb` hex; invalid ones are skipped with a console warning
