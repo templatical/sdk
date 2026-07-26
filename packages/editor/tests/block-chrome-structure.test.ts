@@ -274,6 +274,108 @@ describe("section drag + cycle defenses", () => {
   });
 });
 
+describe("chrome tokens survive the email-content override", () => {
+  const styles = read("styles/index.css");
+  const blockWrapper = read("components/blocks/BlockWrapper.vue");
+  const sectionBlock = read("components/blocks/SectionBlock.vue");
+
+  /* `.tpl[data-tpl-theme="dark"] .tpl-block-content` re-declares these tokens so
+     email content renders light. A section's children render INSIDE that
+     wrapper, so chrome referencing the raw token inherits the light value and
+     stops matching the dark editor UI (the near-white nested action bar). The
+     `--tpl-chrome-*` aliases are declared on `.tpl`, where substitution happens,
+     so a descendant redefinition cannot reach them. */
+  const SHADOWED = [
+    "bg-elevated",
+    "border-light",
+    "text-muted",
+    "text-dim",
+    "primary-light",
+    "primary-hover",
+  ];
+
+  /** The real rule body — `indexOf` would match the selector inside a comment. */
+  function overrideBody(): string {
+    const m = styles.match(
+      /^\.tpl\[data-tpl-theme="dark"\]\s+\.tpl-block-content\s*\{([^}]*)\}/m,
+    );
+    expect(m).not.toBe(null);
+    return m![1];
+  }
+
+  it("declares a chrome alias for every token the content override shadows", () => {
+    const override = overrideBody();
+
+    for (const name of [...SHADOWED, "text"]) {
+      // Each token the override shadows...
+      expect(override).toContain(`--tpl-${name}:`);
+      // ...has a chrome alias pointing back at the un-shadowed source.
+      expect(styles).toContain(`--tpl-chrome-${name}: var(--tpl-${name});`);
+    }
+  });
+
+  it("declares the chrome aliases OUTSIDE the override (or they'd be shadowed too)", () => {
+    // The whole mechanism depends on the aliases being substituted at `.tpl`.
+    // Declaring one inside the override would defeat it.
+    expect(overrideBody()).not.toContain("--tpl-chrome-");
+    expect(styles).toContain("--tpl-chrome-bg-elevated: var(--tpl-bg-elevated);");
+  });
+
+  it("block chrome never references a shadowed token directly", () => {
+    // Every reference to these tokens inside BlockWrapper/SectionBlock is
+    // chrome — email content is styled from block data via inline styles — so
+    // any raw usage here is the regression.
+    for (const src of [blockWrapper, sectionBlock]) {
+      for (const name of [...SHADOWED, "text"]) {
+        expect(src).not.toContain(`var(--tpl-${name})`);
+      }
+    }
+  });
+
+  it("the action bar and nested placeholders use chrome tokens", () => {
+    expect(blockWrapper).toContain("var(--tpl-chrome-bg-elevated)");
+    expect(blockWrapper).toContain("var(--tpl-chrome-text-muted)");
+    expect(sectionBlock).toContain("var(--tpl-chrome-text-dim)");
+  });
+});
+
+describe("saved blocks: section children are not savable", () => {
+  const blockWrapper = read("components/blocks/BlockWrapper.vue");
+  const sectionBlock = read("components/blocks/SectionBlock.vue");
+
+  // Regression: the bookmark rendered on section children too, but the save
+  // dialog only lists top-level blocks — so the pre-selected id matched
+  // nothing, Save still enabled, and it persisted an EMPTY saved block.
+  // Insertion is top-level-only, so a nested block could never round-trip
+  // back into its column anyway; save the whole section instead.
+  it("SectionBlock marks its column children as `nested`", () => {
+    const childWrapper = sectionBlock.slice(
+      sectionBlock.indexOf("<BlockWrapper"),
+      sectionBlock.indexOf(">", sectionBlock.indexOf("<BlockWrapper")),
+    );
+    expect(childWrapper).toContain(':block="childBlock"');
+    expect(childWrapper).toMatch(/\bnested\b/);
+  });
+
+  it("BlockWrapper gates the save action on NOT being nested", () => {
+    expect(blockWrapper).toContain("nested?: boolean");
+    // The gate must include the nested check, not just capability presence.
+    expect(blockWrapper).toMatch(
+      /canSaveAsBlock = computed\(\s*\(\) =>\s*!props\.nested &&/,
+    );
+  });
+
+  it("Canvas does NOT mark top-level blocks as nested", () => {
+    const canvasSrc = read("components/Canvas.vue");
+    const topWrapper = canvasSrc.slice(
+      canvasSrc.indexOf("<BlockWrapper"),
+      canvasSrc.indexOf(">", canvasSrc.indexOf("<BlockWrapper")),
+    );
+    expect(topWrapper).toContain(':block="block"');
+    expect(topWrapper).not.toMatch(/\bnested\b/);
+  });
+});
+
 describe("sidebar drag-during-collapse rect-capture defense", () => {
   const sidebar = readFileSync(join(SRC, "components/Sidebar.vue"), "utf8");
 

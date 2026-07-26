@@ -111,6 +111,29 @@
     --tpl-danger-light: var(--tpl-user-danger-light, oklch(93.6% 0.032 17.72));
     --tpl-canvas-bg: var(--tpl-user-canvas-bg, oklch(97.5% 0.003 60));
 
+    /* Chrome tokens — editor-UI values that survive the email-content override.
+       `.tpl[data-tpl-theme="dark"] .tpl-block-content` re-declares the tokens
+       above so email content always renders light. A section's children render
+       INSIDE that wrapper, so their chrome (action bar, viewport badge,
+       condition toggle, comment indicator, empty-column placeholder) inherits
+       those light values and stops matching the surrounding dark UI.
+
+       Declared only here, on `.tpl`: a custom property's value is substituted
+       at computed-value time, so these capture the theme value that won at this
+       level — including the dark override and any `--tpl-user-*` customization
+       — and descendants inherit that resolved value. A nested element
+       redefining the source token therefore cannot reach them.
+
+       Any chrome that can render inside `.tpl-block-content` must use these,
+       never the raw tokens. Locked by `block-chrome-structure.test.ts`. */
+    --tpl-chrome-bg-elevated: var(--tpl-bg-elevated);
+    --tpl-chrome-border-light: var(--tpl-border-light);
+    --tpl-chrome-text: var(--tpl-text);
+    --tpl-chrome-text-muted: var(--tpl-text-muted);
+    --tpl-chrome-text-dim: var(--tpl-text-dim);
+    --tpl-chrome-primary-light: var(--tpl-primary-light);
+    --tpl-chrome-primary-hover: var(--tpl-primary-hover);
+
     /* 3-level radius */
     --tpl-radius: var(--tpl-user-radius, 10px);
     --tpl-radius-sm: var(--tpl-user-radius-sm, 7px);

@@ -128,6 +128,10 @@ describe('SaveBlockDialog', () => {
     const { headless } = mountDialog([a, b], b.id);
     await nextTick();
 
+    // Positive control for the aria-checked selector used by the
+    // unselectable-pre-selection test below: a valid id DOES check its row.
+    expect(qAll('button[role="switch"][aria-checked="true"]')).toHaveLength(1);
+
     await fillAndSave('My Footer');
 
     expect(headless.create).toHaveBeenCalledTimes(1);
@@ -190,6 +194,38 @@ describe('SaveBlockDialog', () => {
 
     expect(get('[role="alert"]').textContent?.trim()).toBe('Quota exceeded');
     expect(wrapper.emitted('close')).toBeUndefined();
+  });
+
+  // Root cause of the nested-block bug: a pre-selected id that isn't in the
+  // list left the checklist empty while Save stayed enabled, and saving then
+  // persisted an empty saved block. Both halves are guarded below.
+  it('ignores a pre-selected id that is not a top-level block', async () => {
+    const a = createTitleBlock();
+    const { headless } = mountDialog([a], 'id-of-a-section-child');
+    await nextTick();
+
+    // Nothing checked...
+    expect(
+      qAll('button[role="switch"][aria-checked="true"]'),
+    ).toHaveLength(0);
+
+    // ...and Save cannot produce anything, even with a name typed.
+    await fillAndSave('Named');
+    expect(headless.create).not.toHaveBeenCalled();
+  });
+
+  it('never creates a saved block with empty content', async () => {
+    const a = createTitleBlock();
+    const { headless } = mountDialog([a], 'stale-or-nested-id');
+    await nextTick();
+
+    await fillAndSave('Named');
+
+    // The critical assertion: no create call at all, rather than create(name, []).
+    expect(headless.create).not.toHaveBeenCalled();
+    for (const call of headless.create.mock.calls) {
+      expect((call[1] as unknown[]).length).toBeGreaterThan(0);
+    }
   });
 
   it('toggling the pre-selected block off blocks the save', async () => {

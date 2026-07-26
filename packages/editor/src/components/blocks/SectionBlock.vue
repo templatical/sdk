@@ -162,6 +162,7 @@ function handleFetchData(
               :is-selected="editor.state.selectedBlockId === childBlock.id"
               :viewport="viewport"
               :preview-mode="editor.state.previewMode"
+              nested
               @select="editor.selectBlock(childBlock.id)"
             >
               <component
@@ -180,7 +181,7 @@ function handleFetchData(
         <div
           v-if="getColumnBlocks(colIndex).length === 0"
           data-testid="section-drop-hint"
-          class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:flex tpl:items-center tpl:justify-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
+          class="tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:flex tpl:items-center tpl:justify-center tpl:text-xs tpl:text-[var(--tpl-chrome-text-dim)]"
         >
           <span>{{ t.section.dropHere }}</span>
         </div>

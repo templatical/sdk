@@ -43,9 +43,15 @@ watch(
     if (visible) {
       name.value = "";
       error.value = null;
-      selectedBlockIds.value = new Set(
-        props.preSelectedBlockId ? [props.preSelectedBlockId] : [],
-      );
+      // Only honor a pre-selection that's actually in the list. `openSaveDialog`
+      // is reachable programmatically, so the id may be stale or (before the
+      // nested-block guard) point at a section child — seeding it anyway would
+      // show an empty checklist while making Save look valid.
+      const preSelected = props.preSelectedBlockId;
+      const selectable =
+        preSelected !== null &&
+        topLevelBlocks.value.some((b) => b.id === preSelected);
+      selectedBlockIds.value = new Set(selectable ? [preSelected] : []);
     }
   },
   { immediate: true },
@@ -71,13 +77,18 @@ const canSave = computed(
 async function handleSave(): Promise<void> {
   if (!canSave.value) return;
 
+  const selectedBlocks = topLevelBlocks.value.filter((b) =>
+    selectedBlockIds.value.has(b.id),
+  );
+  // Defence in depth: if the selection resolves to nothing, bail rather than
+  // persist an empty saved block (which would list as "0 block(s)" and insert
+  // nothing). Guards any caller that seeds an id we can't resolve.
+  if (selectedBlocks.length === 0) return;
+
   isSaving.value = true;
   error.value = null;
 
   try {
-    const selectedBlocks = topLevelBlocks.value.filter((b) =>
-      selectedBlockIds.value.has(b.id),
-    );
     await savedBlocks.create(name.value.trim(), selectedBlocks);
     emit("saved");
     emit("close");

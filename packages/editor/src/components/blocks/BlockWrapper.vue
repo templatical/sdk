@@ -31,6 +31,14 @@ const props = defineProps<{
   isSelected: boolean;
   viewport?: ViewportSize;
   previewMode?: boolean;
+  /**
+   * This block sits inside a section column rather than at the top level.
+   * Section children can't be saved as saved blocks: a saved block's content is
+   * a top-level `Block[]` and insertion always targets the top level, so a
+   * nested block could be saved but never re-inserted where it came from.
+   * Save the whole section instead — its `children` round-trip with it.
+   */
+  nested?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -132,7 +140,7 @@ const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 const caps = inject(CAPABILITIES_KEY, {});
 
 const canSaveAsBlock = computed(
-  () => caps.savedBlocks?.isAvailable.value === true,
+  () => !props.nested && caps.savedBlocks?.isAvailable.value === true,
 );
 
 const blockCommentCount = computed(
@@ -215,7 +223,7 @@ function handleConditionToggle(): void {
       v-if="isSelected"
       role="toolbar"
       :aria-label="t.blockActions.drag"
-      class="tpl-block-actions tpl-fade-in tpl:absolute tpl:-right-2 tpl:top-1/2 tpl:z-10 tpl:flex tpl:-translate-y-1/2 tpl:translate-x-full tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-bg-elevated)] tpl:shadow-[var(--tpl-shadow-md)] tpl:border tpl:border-[var(--tpl-border)]"
+      class="tpl-block-actions tpl-fade-in tpl:absolute tpl:-right-2 tpl:top-1/2 tpl:z-10 tpl:flex tpl:-translate-y-1/2 tpl:translate-x-full tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:shadow-[var(--tpl-shadow-md)] tpl:border tpl:border-[var(--tpl-border)]"
     >
       <button
         ref="dragButtonRef"
@@ -259,7 +267,7 @@ function handleConditionToggle(): void {
       class="tpl-block-hidden-overlay tpl:pointer-events-none tpl:absolute tpl:inset-0 tpl:z-[5] tpl:flex tpl:items-center tpl:justify-center tpl:rounded-sm"
     >
       <span
-        class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-2 tpl:py-1 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-bg-elevated)] tpl:text-[var(--tpl-text-muted)] tpl:shadow-[var(--tpl-shadow-sm)]"
+        class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-2 tpl:py-1 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:text-[var(--tpl-chrome-text-muted)] tpl:shadow-[var(--tpl-shadow-sm)]"
       >
         <EyeOff :size="12" :stroke-width="1.5" />
         {{
@@ -274,7 +282,7 @@ function handleConditionToggle(): void {
       class="tpl:absolute tpl:-left-1 tpl:top-1/2 tpl:z-[5] tpl:-translate-x-full tpl:-translate-y-1/2"
     >
       <button
-        class="tpl-condition-toggle tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1 tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-bg-elevated)] tpl:text-[var(--tpl-primary)] tpl:border tpl:border-[var(--tpl-border)]"
+        class="tpl-condition-toggle tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1 tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:text-[var(--tpl-primary)] tpl:border tpl:border-[var(--tpl-border)]"
         :aria-label="t.blockActions.conditionToggle"
         :title="block.displayCondition?.label"
         @click.stop="handleConditionToggle"
@@ -288,7 +296,7 @@ function handleConditionToggle(): void {
       class="tpl:absolute tpl:-right-1 tpl:-top-1 tpl:z-[5] tpl:translate-x-full"
     >
       <button
-        class="tpl-comment-indicator tpl:flex tpl:min-h-6 tpl:min-w-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-0.5 tpl:rounded-full tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary)]"
+        class="tpl-comment-indicator tpl:flex tpl:min-h-6 tpl:min-w-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-0.5 tpl:rounded-full tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-chrome-primary-light)] tpl:text-[var(--tpl-primary)]"
         :aria-label="
           format(t.blockActions.comments, { count: String(blockCommentCount) })
         "
@@ -346,13 +354,13 @@ function handleConditionToggle(): void {
 
 /* Action buttons — muted text, warm hover, press feedback */
 .tpl-block-action-btn {
-  color: var(--tpl-text-muted);
+  color: var(--tpl-chrome-text-muted);
   background-color: transparent;
 }
 
 .tpl-block-action-btn:hover {
   background-color: var(--tpl-bg-hover);
-  color: var(--tpl-text);
+  color: var(--tpl-chrome-text);
 }
 
 .tpl-block-action-btn:active {
