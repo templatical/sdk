@@ -206,12 +206,14 @@ Scope a color field to a specific color role — or lock it to one — with `pre
 }
 ```
 
-A field config can only **narrow** the editor-wide one, never widen it:
+A field config refines the editor-wide one — it can restrict what authors may do, but never unlock what the editor locked:
 
 - **Unset inherits.** A field that sets neither gets the editor's palette and its `allowCustom` setting.
-- **`presets`** must be `#rgb` / `#rrggbb` hex, validated exactly like editor-level presets — invalid entries are skipped with a console warning naming the block and the field. A non-empty valid list replaces the editor's palette for this field. An empty list (`presets: []`) or a list whose entries are all invalid narrows nothing, so the field falls back to the editor's palette (also warned).
+- **`presets`** must be `#rgb` / `#rrggbb` hex, validated exactly like editor-level presets — invalid entries are skipped with a console warning naming the block and the field. An empty list (`presets: []`) or a list whose entries are all invalid narrows nothing, so the field falls back to the editor's palette (also warned).
 - **`allowCustom: false`** locks this field to its palette even while the rest of the editor allows free-form entry. **`allowCustom: true` cannot unlock a field when the editor-wide `colors.allowCustom` is `false`** — that request is ignored with a warning.
 - **Off-palette defaults are flagged.** When the field ends up locked, a `default` outside its effective palette is warned about: new blocks would start on a color the picker offers no chip for.
+
+A field's `presets` **replace** the editor palette for that field rather than intersecting it, so a locked field can carry its own colors: with the editor locked to `['#0b5cff', '#111827']` and a field set to `presets: ['#e11d48']`, that field's picker offers `#e11d48` alone, plus the leading "no color" chip every locked picker renders. What a field restricts is the author's freedom, not the size or membership of the palette — a field may list more colors than the editor-wide grid, and what it can never do is unlock a locked editor.
 
 Narrowing a palette on a template that already has saved content can leave a stored color unselectable in locked mode — the picker then shows no chip checked; clearing the value with the leading "no color" chip re-enters the palette.
 
