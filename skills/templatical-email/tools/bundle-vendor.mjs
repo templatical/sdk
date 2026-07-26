@@ -57,11 +57,14 @@ export const TARGETS = [
     contents: `export * from ${JSON.stringify(resolve(packages, "quality/dist/index.js"))};\n`,
     requires: {
       path: resolve(packages, "quality/dist/index.js"),
-      // The `...` suffix builds quality's dependency graph too: its own build
-      // runs tsc, which needs @templatical/types' declarations emitted first.
-      // Without it this fails on any tree where nothing has been built yet —
-      // a fresh clone, or CI.
-      hint: 'pnpm --filter "@templatical/quality..." build',
+      // Both packages, explicitly: quality's build runs tsc, which needs
+      // @templatical/types' declarations emitted first, so filtering to quality
+      // alone fails on any tree where nothing is built yet (a fresh clone, or
+      // CI). Don't reach for pnpm's `...` dependency-graph suffix — it also
+      // drags in core and media-library, whose type builds fail here for
+      // reasons that have nothing to do with this bundle. This list mirrors
+      // quality's workspace dependencies; if it gains another, add it here.
+      hint: "pnpm --filter @templatical/types --filter @templatical/quality build",
     },
     notice:
       "MIT License, Copyright (c) Templatical — bundles htmlparser2 (MIT)\n// https://github.com/templatical/sdk",

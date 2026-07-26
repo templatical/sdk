@@ -46,12 +46,13 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
 
-      # The skill's `bundle-vendor` script builds @templatical/quality AND its
-      # dependency graph first (the `...` filter suffix): the bundle is produced
-      # from quality's dist, because its rule registries use Vite's
-      # import.meta.glob which esbuild cannot resolve from source — and quality's
-      # own build runs tsc, which needs @templatical/types' declarations. On a
-      # fresh checkout nothing is built yet, so filtering to quality alone fails.
+      # The skill's `bundle-vendor` script builds @templatical/types and
+      # @templatical/quality first. The bundle comes from quality's dist (its rule
+      # registries use Vite's import.meta.glob, which esbuild cannot resolve from
+      # source), and quality's build runs tsc, which needs types' declarations —
+      # on a fresh checkout nothing is built yet. Two packages, named explicitly:
+      # pnpm's `...` graph suffix also pulls in core and media-library, whose type
+      # builds fail here for reasons unrelated to this bundle.
       - name: Re-bundle
         run: pnpm --filter @templatical/email-skill run bundle-vendor
 

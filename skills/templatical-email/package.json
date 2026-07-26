@@ -6,7 +6,7 @@
   "description": "Agent Skill: generate and validate Templatical email template JSON",
   "license": "MIT",
   "scripts": {
-    "bundle-vendor": "pnpm --filter \"@templatical/quality...\" build && node tools/bundle-vendor.mjs",
+    "bundle-vendor": "pnpm --filter @templatical/types --filter @templatical/quality build && node tools/bundle-vendor.mjs",
     "generate-schema": "node tools/generate-schema.mjs",
     "sync-editor-version": "node tools/sync-editor-version.mjs",
     "test": "vitest run --config vitest.config.ts"
