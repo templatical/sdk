@@ -39,9 +39,13 @@ jobs:
         uses: changesets/action@v1
         with:
           # Custom version command: `changeset version` (bumps package.jsons +
-          # changelogs) then sync the templatical-email skill's live-mode CDN
-          # pin (EDITOR_VERSION) to the new @templatical/editor version, so the
-          # Version Packages PR carries it and no manual bump is needed.
+          # changelogs) then sync the templatical-email skill, so the Version
+          # Packages PR carries everything and no manual bump is needed:
+          #   1. live-mode CDN pin (EDITOR_VERSION) -> new @templatical/editor
+          #   2. re-bundle vendor/*.mjs -> new @templatical/quality lint rules
+          #      (needs the `pnpm run build` above: quality is bundled from dist)
+          #   3. patch-bump .claude-plugin/plugin.json if either moved, since
+          #      Claude Code caches the plugin by that version
           version: pnpm run changeset:version
           publish: pnpm exec changeset publish
         env:
