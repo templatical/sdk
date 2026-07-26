@@ -42,8 +42,6 @@ cp -r skills/templatical-email ~/.cursor/skills/
 cp -r skills/templatical-email ~/.agents/skills/
 ```
 
-Kein Installationsschritt nötig: Die Abhängigkeiten des Validators sind im Skill enthalten, unter `vendor/`. Die strukturelle Validierung und die Barrierefreiheits-, Struktur- und Link-Prüfungen funktionieren direkt nach dem Kopieren – auch offline.
-
 ## Verwendung
 
 Beschreiben Sie die gewünschte E-Mail. Zum Beispiel:
@@ -87,7 +85,7 @@ Der Agent führt diesen Validator bereits selbst aus (Schritt 3 oben), Sie müss
 node scripts/validate.mjs pfad/zum/template.json
 ```
 
-Es prüft jeden Block gegen seinen Typ im [Block-Schema](/de/guide/blocks) und meldet präzise Fehler (zum Beispiel `blocks[2] (button) must have required property 'url'`). Wenn `@templatical/quality` installiert ist, kommen Barrierefreiheits-, Struktur- und Link-Prüfungen hinzu. Exit-Code `0` bei Erfolg, `1` bei Fehler.
+Es prüft jeden Block gegen seinen Typ im [Block-Schema](/de/guide/blocks) und meldet präzise Fehler (zum Beispiel `blocks[2] (button) must have required property 'url'`). Anschließend kommen Barrierefreiheits-, Struktur- und Link-Prüfungen hinzu. Exit-Code `0` bei Erfolg, `1` bei Fehler.
 
 ## Wie es korrekt bleibt
 

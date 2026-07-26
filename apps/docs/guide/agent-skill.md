@@ -42,8 +42,6 @@ cp -r skills/templatical-email ~/.cursor/skills/
 cp -r skills/templatical-email ~/.agents/skills/
 ```
 
-No install step: the validator's dependencies ship with the skill, in `vendor/`. Structural validation and the accessibility / structure / link lint both work straight after copying, offline included.
-
 ## Using it
 
 Describe the email you want. For example:
@@ -87,7 +85,7 @@ The agent already runs this validator itself (step 3 above), so you don't have t
 node scripts/validate.mjs path/to/template.json
 ```
 
-It checks each block against its type in the [block schema](/guide/blocks) and reports precise errors (for example, `blocks[2] (button) must have required property 'url'`). When `@templatical/quality` is installed, it layers accessibility, structure, and link checks on top. Exit code `0` on success, `1` on failure.
+It checks each block against its type in the [block schema](/guide/blocks) and reports precise errors (for example, `blocks[2] (button) must have required property 'url'`). It then layers accessibility, structure, and link checks on top. Exit code `0` on success, `1` on failure.
 
 ## How it stays correct
 
