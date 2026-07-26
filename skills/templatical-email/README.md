@@ -66,7 +66,7 @@ email.
 
 The `SKILL.md` format is an open standard, so this works in Claude Code, Claude
 Desktop, Cursor, OpenAI Codex, the Agent SDK, and other compatible agents. Copy
-the folder into your agent's skills directory — there is nothing to install:
+the folder into your agent's skills directory:
 
 ```
 # Claude Code / Claude Desktop
