@@ -17,15 +17,24 @@ templatical-email/
     schema.json            # JSON Schema for TemplateContent — the validation contract
     block-guide.md         # concise per-block field reference
     examples/*.json        # complete, valid templates to model output on
-  scripts/
+  scripts/                 # invoked by the skill — ships and runs on the user's machine
     validate.mjs           # validates a template JSON (ajv + optional quality lint)
     import.mjs             # import Unlayer/BeeFree/HTML → Templatical JSON (via @templatical/import-*)
-    generate-schema.mjs    # regenerates schema.json from @templatical/types (maintainers)
-    sync-editor-version.mjs # syncs live mode's CDN editor pin to @templatical/editor (release)
     live-server.mjs        # live mode: zero-dep Node bridge (serves the editor, syncs edits)
+  vendor/                  # committed bundles — why the skill needs no install
+    ajv.mjs                # ajv, for structural validation
+    quality.mjs            # @templatical/quality, for the a11y/structure/link lint
+  tools/                   # maintainer-only — never invoked by the skill
+    generate-schema.mjs    # regenerates schema.json from @templatical/types (maintainers)
+    bundle-vendor.mjs      # rebuilds vendor/*.mjs (esbuild)
+    sync-editor-version.mjs # release: syncs the CDN editor pin, re-bundles vendor, bumps plugin.json
   live/
     index.html             # live mode: CDN editor harness + sync + export buttons
 ```
+
+The `scripts/` vs `tools/` split is load-bearing: a change under `scripts/`, `reference/`, `live/`, `vendor/` or `SKILL.md` reaches installed users, so
+`.github/workflows/plugin-version.yml` requires a `plugin.json` version bump for it. Changes confined to `tools/`, `tests/`, `evals/` or `package.json`
+are exempt — `package.json` declares no runtime dependencies (they are vendored), so a devDependency bump cannot change what an installed skill does.
 
 ## Two modes
 
@@ -58,17 +67,12 @@ email.
 
 The `SKILL.md` format is an open standard, so this works in Claude Code, Claude
 Desktop, Cursor, OpenAI Codex, the Agent SDK, and other compatible agents. Copy
-the folder into your agent's skills directory and install the validator
-dependency:
+the folder into your agent's skills directory:
 
 ```
 # Claude Code / Claude Desktop
 cp -r skills/templatical-email ~/.claude/skills/
 # Cursor: use ~/.cursor/skills/  ·  OpenAI Codex: use ~/.agents/skills/
-
-cd ~/.claude/skills/templatical-email
-npm install ajv                    # required (structural validation)
-npm install @templatical/quality   # optional but highly recommended — adds accessibility / structure / link linting
 ```
 
 Your agent picks the skill up automatically when you ask it to build a

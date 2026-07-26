@@ -19,7 +19,7 @@
     -->
     <link
       rel="stylesheet"
-      href="https://unpkg.com/@templatical/editor@{{EDITOR_VERSION}}/dist/cdn/editor.css"
+      href="https://cdn.jsdelivr.net/npm/@templatical/editor@{{EDITOR_VERSION}}/dist/cdn/editor.css"
     />
     <!-- Set the stored theme before paint to avoid a flash. -->
     <script>
@@ -441,7 +441,10 @@
         height: 56vh;
         border: none;
         padding: 16px 18px;
-        background: var(--n-50);
+        /* Must be a semantic token: the --n-* / --paper primitives are declared
+           only in the light :root, so pairing one with `color: var(--text)`
+           rendered the export near-white on near-white in dark mode. */
+        background: var(--canvas);
         color: var(--text);
         font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
         font-size: 12.5px;
@@ -588,7 +591,7 @@
     <div id="toast" class="toast"></div>
 
     <script type="module">
-      import { init } from "https://unpkg.com/@templatical/editor@{{EDITOR_VERSION}}/dist/cdn/editor.js";
+      import { init } from "https://cdn.jsdelivr.net/npm/@templatical/editor@{{EDITOR_VERSION}}/dist/cdn/editor.js";
 
       const $ = (id) => document.getElementById(id);
       const statusEl = $("status");
@@ -722,8 +725,15 @@
       // CommonJS package, and unpkg's ?module only rewrites import specifiers —
       // it does not transpile CJS to ESM, so `import()` from unpkg yields an
       // empty module. jsDelivr's /+esm does the CJS→ESM conversion and exposes a
-      // callable default. (The editor bundle stays on unpkg; this matches the
-      // repo's convention for ESM-import packages — see @templatical/import-*.)
+      // callable default.
+      //
+      // The editor bundle is on jsDelivr too, so the whole harness rides one
+      // CDN. It used to load from unpkg, which intermittently served the
+      // editor's LAZY chunks as text/plain with a failed CORS preflight — the
+      // entry resolved, the editor booted, and only the deferred chunk died. For
+      // the renderer chunk that surfaced as toMjml()'s "install @templatical/
+      // renderer" error (its catch can't tell a missing package from a failed
+      // fetch), even though the CDN build bundles the renderer.
       const exportDialog = $("export");
       const tabs = [...document.querySelectorAll("#export .tab")];
       let mjml2html = null;

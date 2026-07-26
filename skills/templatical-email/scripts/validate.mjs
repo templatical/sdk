@@ -8,27 +8,21 @@
 // must have required property 'url'") instead of the raw anyOf's "must match
 // exactly one schema in anyOf".
 //
-// Usage (after `npm i ajv` in this folder, `@templatical/quality` optional):
+// Usage (no install needed; `@templatical/quality` optional):
 //   node scripts/validate.mjs path/to/template.json
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-// `ajv` is the skill's one required dependency. Load it dynamically so a fresh
-// install (where it isn't installed yet) gets an actionable message instead of a
-// raw "Cannot find package 'ajv'" stack trace.
-let Ajv;
-try {
-  ({ default: Ajv } = await import("ajv"));
-} catch {
-  console.error(
-    "This skill's validator needs its dependency `ajv`, which isn't installed.\n" +
-      "Install it in the skill folder:\n" +
-      "  npm install ajv @templatical/quality\n" +
-      "(`ajv` is required; `@templatical/quality` is optional but highly recommended.)",
-  );
-  process.exit(2);
-}
+// ajv ships vendored (vendor/ajv.mjs, built by tools/bundle-ajv.mjs) rather than
+// being installed. Claude Code's plugin cache is keyed by plugin VERSION, so
+// every update lands in a fresh, empty directory — an installed node_modules
+// does not survive it, and structural validation would silently break until the
+// user reinstalled. Vendoring keeps this script working on a clean install and
+// offline. The schema is still compiled at runtime (~18 ms), so error paths stay
+// discriminator-aware exactly as before.
+import Ajv from "../vendor/ajv.mjs";
+import { lintTemplate } from "../vendor/quality.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const schema = JSON.parse(
@@ -138,18 +132,14 @@ export function validateTemplate(data) {
 }
 
 /**
- * Optional quality layer. Resolves to `available: false` (rather than throwing)
- * when @templatical/quality isn't installed, mirroring the editor's optional-peer
- * pattern.
+ * Quality layer — accessibility / structure / link linting. Vendored alongside
+ * ajv (vendor/quality.mjs), so it runs for everyone instead of only for users
+ * who happened to install an optional package into a plugin-cache directory that
+ * the next update throws away. `available` is kept in the return shape for
+ * callers that branch on it.
  * @returns {Promise<{ available: boolean, issues: Array<object> }>}
  */
 export async function runQualityLint(data) {
-  let lintTemplate;
-  try {
-    ({ lintTemplate } = await import("@templatical/quality"));
-  } catch {
-    return { available: false, issues: [] };
-  }
   // The linter assumes structurally-valid input; guard so a malformed template
   // (which the caller should reject structurally first) can't crash it.
   try {
@@ -188,12 +178,6 @@ async function main() {
   // Quality linting assumes a structurally-valid template, so it runs only after
   // structural validation passes.
   const quality = await runQualityLint(data);
-  if (!quality.available) {
-    console.log(
-      "• Quality lint skipped — install @templatical/quality (optional but highly recommended) for accessibility/structure/link checks",
-    );
-    process.exit(0);
-  }
   if (quality.error) {
     console.log(`• Quality lint could not run: ${quality.error}`);
     process.exit(0);

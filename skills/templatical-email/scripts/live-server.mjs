@@ -37,7 +37,7 @@ const SELF = fileURLToPath(import.meta.url);
 // and types + editor bump in lockstep (changesets fixed group), so the editor
 // at this version has the same block model the schema describes.
 //
-// Kept in step automatically: scripts/sync-editor-version.mjs rewrites this
+// Kept in step automatically: tools/sync-editor-version.mjs rewrites this
 // line from packages/editor/package.json at release time (the root
 // `changeset:version` step), so no manual bump per release. tests/cdn-pin.test.ts
 // is the safety net that fails CI if it ever drifts from the editor version.

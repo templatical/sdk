@@ -108,6 +108,15 @@
       "automerge": true
     },
     {
+      "description": "ajv is vendored into skills/templatical-email/vendor/ajv.mjs, so bumping the devDependency alone leaves the shipped bundle on the old version. tests/vendor-freshness.test.ts fails until it is re-bundled, which would block automerge anyway — so opt out of it explicitly and say what to run. Must stay AFTER the devDependency automerge rule to override it. (Renovate's postUpgradeTasks can't do this for us: the allowedCommands allowlist is a self-hosted option and we use the hosted app.)",
+      "matchPackageNames": ["ajv"],
+      "automerge": false,
+      "addLabels": ["needs-rebundle"],
+      "prBodyNotes": [
+        "⚠️ `ajv` is vendored. Run `pnpm --filter @templatical/email-skill run bundle-vendor`, then commit `skills/templatical-email/vendor/` and a `.claude-plugin/plugin.json` version bump — otherwise installed skills keep the old ajv."
+      ]
+    },
+    {
       "description": "Don't pin GitHub Actions or Docker images to digests — version tags are sufficient",
       "matchManagers": ["github-actions"],
       "pinDigests": false

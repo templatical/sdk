@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { buildSchema, SCHEMA_PATH } from "../scripts/generate-schema.mjs";
+import { buildSchema, SCHEMA_PATH } from "../tools/generate-schema.mjs";
 
 describe("schema freshness", () => {
   // Regenerate the schema from @templatical/types and compare to the committed

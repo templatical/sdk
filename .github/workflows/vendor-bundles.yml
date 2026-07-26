@@ -1,0 +1,70 @@
+name: Vendor bundles
+
+# Verifies that skills/templatical-email/vendor/*.mjs matches what
+# tools/bundle-vendor.mjs produces from the current sources. Catches the one gap
+# tests/vendor-freshness.test.ts can't see: that test compares the recorded
+# dependency VERSION, so a change to packages/quality/src/** without a version
+# bump leaves the vendored copy stale and still passes.
+#
+# Verify-only by design — it never writes or pushes. An auto-commit variant would
+# need a PAT, and workflows on Dependabot PRs get a read-only token with no access
+# to repo secrets, so it could not fix the very PRs that most often need it.
+#
+# Byte comparison is safe here: re-running the bundler with no changes, and
+# re-running it after a fresh `pnpm --filter @templatical/quality build`, both
+# reproduce the committed bundles exactly.
+#
+# The paths filter is deliberate: the bundles depend on the ajv version, quality's
+# source and the bundler — NOT on SKILL.md, reference/ or live/, which cannot
+# change a byte of the output.
+#
+# ⚠️ Do NOT make this a required status check. It is path-filtered, so it does not
+# run on most PRs, and a required check that never reports leaves the PR stuck on
+# "Expected" forever (see the comment in plugin-version.yml, which is required and
+# therefore has no paths filter).
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'skills/templatical-email/package.json'
+      - 'skills/templatical-email/tools/bundle-vendor.mjs'
+      - 'skills/templatical-email/vendor/**'
+      - 'packages/quality/**'
+      - '.github/workflows/vendor-bundles.yml'
+
+concurrency:
+  group: vendor-bundles-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  up-to-date:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      # The skill's `bundle-vendor` script builds @templatical/types and
+      # @templatical/quality first. The bundle comes from quality's dist (its rule
+      # registries use Vite's import.meta.glob, which esbuild cannot resolve from
+      # source), and quality's build runs tsc, which needs types' declarations —
+      # on a fresh checkout nothing is built yet. Two packages, named explicitly:
+      # pnpm's `...` graph suffix also pulls in core and media-library, whose type
+      # builds fail here for reasons unrelated to this bundle.
+      - name: Re-bundle
+        run: pnpm --filter @templatical/email-skill run bundle-vendor
+
+      - name: Fail if the committed bundles are stale
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- skills/templatical-email/vendor/; then
+            echo "vendor/ is up to date with the current sources."
+            exit 0
+          fi
+          echo "::error file=skills/templatical-email/vendor/::Committed bundles are stale. Run \`pnpm --filter @templatical/email-skill run bundle-vendor\` and commit skills/templatical-email/vendor/ (plus a .claude-plugin/plugin.json version bump — vendor/ is user-facing, so plugin-version.yml requires one)."
+          # vendor/*.mjs is `-diff` in .gitattributes, so this reports sizes
+          # rather than dumping 200 KB of minified output into the log.
+          git diff --stat -- skills/templatical-email/vendor/
+          exit 1

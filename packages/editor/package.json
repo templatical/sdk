@@ -4,7 +4,7 @@
   "version": "0.19.0",
   "bugs": "https://github.com/templatical/sdk/issues",
   "devDependencies": {
-    "@lucide/vue": "^1.25.0",
+    "@lucide/vue": "^1.26.0",
     "@templatical/core": "workspace:*",
     "@templatical/quality": "workspace:*",
     "@templatical/types": "workspace:*",
@@ -25,7 +25,7 @@
     "@vue/test-utils": "^2.4.11",
     "@vueuse/core": "^14.3.0",
     "es-module-lexer": "^2.3.1",
-    "happy-dom": "^20.11.0",
+    "happy-dom": "^20.11.1",
     "liquidjs": "^10.27.2",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
@@ -34,7 +34,7 @@
     "vitest": "^4.1.10",
     "vue": "^3.5.40",
     "vue-draggable-plus": "^0.6.1",
-    "vue-tsc": "^3.3.7"
+    "vue-tsc": "^3.3.8"
   },
   "exports": {
     ".": {

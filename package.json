@@ -26,7 +26,7 @@
     "eslint": "^10.7.0",
     "eslint-plugin-vue": "^10.10.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.1.0",
+    "lint-staged": "^17.2.0",
     "prettier": "^3.9.6",
     "syncpack": "^15.3.2",
     "tsdown": "^0.22.13",
@@ -38,7 +38,7 @@
   "engines": {
     "node": ">=24.18.0"
   },
-  "packageManager": "pnpm@11.15.1+sha512.81350b07e53c9538a02f1f2303b4290fa2d7be04e56e2a970c4cc4b417dc761de196edabd49d55c7dc9580db81007c44143e4e3d7e462b3000d23c255122d065",
+  "packageManager": "pnpm@11.16.0+sha512.b767e9a98fc87aec0f42daefcd0e84941c2cdb45d73c4e1e68860fb2bdfdbe032ab592105479e5e05c237f740c8a5ffdbbb52385797ddc2296745a1bbb883e8d",
   "private": true,
   "scripts": {
     "build": "pnpm --filter @templatical/types run build && pnpm --filter @templatical/core --filter @templatical/renderer --filter @templatical/import-beefree --filter @templatical/import-unlayer --filter @templatical/import-html run build && pnpm --filter @templatical/media-library run build:all && pnpm --filter @templatical/quality run build && pnpm --filter @templatical/editor run build:all",

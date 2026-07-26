@@ -62,21 +62,13 @@ the references, picking an example, validating, generating file names, managing
 - **Report real problems plainly** when they happen (a validation error you
   couldn't resolve, a missing dependency) with the fix — that's signal, not noise.
 
-## Setup (first run)
+## Setup
 
-From this skill's folder, install the validator's dependencies:
-
-```
-npm install ajv @templatical/quality
-```
-
-`ajv` is **required** (structural validation). `@templatical/quality` is
-**optional but highly recommended** — it layers accessibility / structure / link
-linting on top, catching issues structural validation alone can't. If you skip
-it, validation still works; the quality layer just doesn't run.
-
-If the validator ever reports a missing dependency, it prints the exact
-`npm install` to run — run that in the skill folder, then re-run the validator.
+None. `scripts/validate.mjs` runs on a clean install and offline — its two
+dependencies ship vendored in `vendor/` (ajv for structural validation,
+`@templatical/quality` for the accessibility / structure / link lint that
+catches what structural validation can't). Never `npm install` anything to make
+validation work; if it errors, that is a bug to report, not a missing package.
 
 ## Workflow
 
@@ -98,9 +90,8 @@ If the validator ever reports a missing dependency, it prints the exact
    ```
    node scripts/validate.mjs .templatical/<name>.json
    ```
-   Fix every structural error reported and re-run until it passes. When
-   `@templatical/quality` is installed, also resolve reported accessibility /
-   structure / link warnings. Writing to that file is what lets a later "show it
+   Fix every structural error reported and re-run until it passes, and resolve
+   the reported accessibility / structure / link warnings too. Writing to that file is what lets a later "show it
    live" pick up the current template with no extra step.
 5. **Hand off** — return the validated JSON. What the user does with it depends on
    who they are: a developer loads it into their editor integration

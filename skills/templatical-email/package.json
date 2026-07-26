@@ -6,14 +6,14 @@
   "description": "Agent Skill: generate and validate Templatical email template JSON",
   "license": "MIT",
   "scripts": {
-    "generate-schema": "node scripts/generate-schema.mjs",
-    "sync-editor-version": "node scripts/sync-editor-version.mjs",
+    "bundle-vendor": "pnpm --filter @templatical/types --filter @templatical/quality build && node tools/bundle-vendor.mjs",
+    "generate-schema": "node tools/generate-schema.mjs",
+    "sync-editor-version": "node tools/sync-editor-version.mjs",
     "test": "vitest run --config vitest.config.ts"
   },
-  "dependencies": {
-    "ajv": "^8.20.0"
-  },
   "devDependencies": {
+    "ajv": "^8.20.0",
+    "esbuild": "^0.28.1",
     "ts-json-schema-generator": "^2.9.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"

@@ -3,7 +3,11 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { EDITOR_VERSION } from "../scripts/live-server.mjs";
-import { applyEditorVersion } from "../scripts/sync-editor-version.mjs";
+import {
+  applyEditorVersion,
+  applyPluginPatchBump,
+  bumpPatch,
+} from "../tools/sync-editor-version.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (rel: string) => readFileSync(resolve(here, rel), "utf8");
@@ -34,6 +38,32 @@ describe("live-mode CDN pin", () => {
     // A literal @x.y.z on the editor URL would silently drift from EDITOR_VERSION.
     expect(html).not.toMatch(/@templatical\/editor@\d+\.\d+\.\d+/);
   });
+
+  // The harness rides ONE CDN. A mixed setup is what broke MJML export: unpkg
+  // served the editor's lazy chunks as text/plain with a failed CORS preflight,
+  // so the entry booted but the deferred renderer chunk died — reported by
+  // toMjml()'s catch-all as a missing @templatical/renderer install.
+  it("loads every CDN asset from a single host", () => {
+    const html = read("../live/index.html");
+    const hosts = new Set(
+      [...html.matchAll(/https:\/\/([a-z0-9.-]+)\/[^"'\s)]*/gi)]
+        .map((match) => match[1].toLowerCase())
+        // Fonts and doc links are not module/asset CDNs — only script, style
+        // and dynamic-import sources matter here.
+        .filter(
+          (host) =>
+            !host.includes("fonts.") &&
+            !(host === "templatical.com" || host.endsWith(".templatical.com")),
+        ),
+    );
+    expect([...hosts]).toEqual(["cdn.jsdelivr.net"]);
+  });
+
+  it("keeps the editor off unpkg", () => {
+    // Named explicitly so the reason survives even if the host set above is
+    // ever widened for an unrelated asset.
+    expect(read("../live/index.html")).not.toMatch(/unpkg\.com\/@templatical\/editor/);
+  });
 });
 
 describe("sync-editor-version", () => {
@@ -50,6 +80,37 @@ describe("sync-editor-version", () => {
     expect(() => applyEditorVersion("no declaration here", "1.2.3")).toThrow(
       /EDITOR_VERSION/,
     );
+  });
+
+  // A new EDITOR_VERSION changes what the live harness loads, but Claude Code
+  // caches the plugin by plugin.json's version — so the release-time sync has to
+  // bump that too or existing installs keep the old pin. See the doc comment on
+  // bumpPluginVersion.
+  it("patch-bumps a plain semver plugin version", () => {
+    expect(bumpPatch("0.2.0")).toBe("0.2.1");
+    expect(bumpPatch("1.9.9")).toBe("1.9.10");
+  });
+
+  it("refuses to guess at a non-semver plugin version", () => {
+    for (const bad of ["0.2", "1.0.0-beta.1", "v1.0.0", "", undefined]) {
+      expect(() => bumpPatch(bad as string)).toThrow(/plain x\.y\.z/);
+    }
+  });
+
+  it("rewrites only the version string in plugin.json, preserving formatting", () => {
+    const src = read("../.claude-plugin/plugin.json");
+    const { src: next, from, to } = applyPluginPatchBump(src);
+
+    expect(to).toBe(bumpPatch(from));
+    // Same document, one field changed: byte-identical apart from the version,
+    // so key order and 2-space formatting survive a release-time bump.
+    expect(next.replace(`"version": "${to}"`, `"version": "${from}"`)).toBe(src);
+    expect(JSON.parse(next).version).toBe(to);
+    expect(Object.keys(JSON.parse(next))).toEqual(Object.keys(JSON.parse(src)));
+  });
+
+  it("throws when plugin.json has no version field", () => {
+    expect(() => applyPluginPatchBump('{ "name": "x" }')).toThrow(/version/);
   });
 
   it("leaves the committed live-server.mjs unchanged (pin already synced)", () => {
