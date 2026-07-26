@@ -55,10 +55,14 @@ jobs:
           # reports a status. Most PRs land in this branch and pass instantly.
           #
           # Only files an INSTALLED user gets the behavior of count. The excluded
-          # dirs ship in the plugin cache but are never invoked from SKILL.md:
-          # tools/ is maintainer tooling (its OUTPUT — reference/schema.json and
-          # the EDITOR_VERSION pin in scripts/live-server.mjs — is what reaches
-          # users, and both sit outside this list), tests/ and evals/ are CI-only.
+          # paths ship in the plugin cache but are never invoked from SKILL.md:
+          # tools/ is maintainer tooling (its OUTPUT — reference/schema.json, the
+          # EDITOR_VERSION pin in scripts/live-server.mjs, and vendor/*.mjs — is
+          # what reaches users, and all of it sits outside this list), tests/ and
+          # evals/ are CI-only, and package.json now declares NO runtime
+          # dependencies at all (ajv and @templatical/quality are vendored), so
+          # it is maintainer metadata: a devDependency bump cannot change what an
+          # installed skill does, and must not force every user to re-download.
           # This is a denylist on purpose: any new path defaults to requiring a
           # bump, so forgetting to update this list fails safe.
           changed="$(git diff --name-only "$BASE_SHA" HEAD -- \
@@ -66,7 +70,8 @@ jobs:
             ":(exclude)$SKILL/tools/**" \
             ":(exclude)$SKILL/tests/**" \
             ":(exclude)$SKILL/evals/**" \
-            ":(exclude)$SKILL/vitest.config.ts")"
+            ":(exclude)$SKILL/vitest.config.ts" \
+            ":(exclude)$SKILL/package.json")"
 
           if [ -z "$changed" ]; then
             echo "No user-facing changes under $SKILL/ — no bump required."

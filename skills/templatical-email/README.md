@@ -32,8 +32,9 @@ templatical-email/
     index.html             # live mode: CDN editor harness + sync + export buttons
 ```
 
-The `scripts/` vs `tools/` split is load-bearing: a change under `scripts/`, `reference/`, `live/` or `SKILL.md` reaches installed users, so
-`.github/workflows/plugin-version.yml` requires a `plugin.json` version bump for it. Changes confined to `tools/`, `tests/` or `evals/` are exempt.
+The `scripts/` vs `tools/` split is load-bearing: a change under `scripts/`, `reference/`, `live/`, `vendor/` or `SKILL.md` reaches installed users, so
+`.github/workflows/plugin-version.yml` requires a `plugin.json` version bump for it. Changes confined to `tools/`, `tests/`, `evals/` or `package.json`
+are exempt — `package.json` declares no runtime dependencies (they are vendored), so a devDependency bump cannot change what an installed skill does.
 
 ## Two modes
 
