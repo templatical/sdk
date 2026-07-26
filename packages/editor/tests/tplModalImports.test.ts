@@ -19,20 +19,35 @@ describe("TplModal location + importers", () => {
     );
   });
 
-  it("ModuleBrowserModal imports the new shared path", () => {
-    const content = read("cloud/components/ModuleBrowserModal.vue");
-    expect(content).toContain(
+  // The saved-blocks dialogs live in `src/components/` alongside TplModal, so
+  // for them the canonical import is the sibling path — the inverse of the
+  // cloud-resident importers below.
+  it("SavedBlocksBrowserModal imports TplModal as a sibling", () => {
+    const content = read("components/SavedBlocksBrowserModal.vue");
+    expect(content).toContain('import TplModal from "./TplModal.vue"');
+    expect(content).not.toContain(
       'import TplModal from "../../components/TplModal.vue"',
     );
-    expect(content).not.toContain('import TplModal from "./TplModal.vue"');
   });
 
-  it("SaveModuleDialog imports the new shared path", () => {
-    const content = read("cloud/components/SaveModuleDialog.vue");
-    expect(content).toContain(
+  it("SaveBlockDialog imports TplModal as a sibling", () => {
+    const content = read("components/SaveBlockDialog.vue");
+    expect(content).toContain('import TplModal from "./TplModal.vue"');
+    expect(content).not.toContain(
       'import TplModal from "../../components/TplModal.vue"',
     );
-    expect(content).not.toContain('import TplModal from "./TplModal.vue"');
+  });
+
+  it("the saved-blocks dialogs no longer live under src/cloud/", () => {
+    expect(
+      existsSync(resolve(SRC, "cloud/components/SaveModuleDialog.vue")),
+    ).toBe(false);
+    expect(
+      existsSync(resolve(SRC, "cloud/components/ModuleBrowserModal.vue")),
+    ).toBe(false);
+    expect(
+      existsSync(resolve(SRC, "cloud/components/ModulePreviewCanvas.vue")),
+    ).toBe(false);
   });
 
   it("TestEmailModal imports the new shared path", () => {

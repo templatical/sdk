@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { defineAsyncComponent, onMounted, onUnmounted, ref } from "vue";
 import type { TemplaticalEditorConfig } from "./index";
 import { useEditor } from "@templatical/core";
 import type { TemplateContent, UiTheme } from "@templatical/types";
 import { useEditorCore } from "./composables/useEditorCore";
+import { useSavedBlocksFeature } from "./composables/useSavedBlocksFeature";
 import { useSmallScreenNotice } from "./composables/useSmallScreenNotice";
 import { resolveLintOptions } from "./utils/resolveLintOptions";
 import type { Translations } from "./i18n";
@@ -46,6 +47,23 @@ const editor = useEditor({
 // tracker can route keyboard shortcuts when two editors share a page.
 const rootEl = ref<HTMLElement | null>(null);
 
+// --- Saved blocks (opt-in: only when a storage provider is configured) ---
+// Instantiated before `useEditorCore` so its capability can be passed in,
+// which is what lights up the shared save button and sidebar rail.
+const savedBlocks = props.config.savedBlocks
+  ? useSavedBlocksFeature({
+      provider: props.config.savedBlocks,
+      editor,
+      onError: props.config.onError,
+    })
+  : null;
+
+// Lazily loaded so a consumer without a provider downloads none of the
+// saved-blocks UI. Rendered only when the feature is active.
+const SavedBlocksPanels = defineAsyncComponent(
+  () => import("./components/SavedBlocksPanels.vue"),
+);
+
 // --- Shared editor core (composables, provides, plugins, keyboard) ---
 const core = useEditorCore({
   editor,
@@ -80,6 +98,7 @@ const core = useEditorCore({
           ),
       }
     : null,
+  capabilities: savedBlocks ? { savedBlocks: savedBlocks.capability } : {},
   editorRoot: props.shadowRoot,
 });
 
@@ -261,6 +280,13 @@ defineExpose({
 
     <!-- Built-in logic picker modal (standalone logic feature). -->
     <LogicTagPickerModal />
+
+    <!-- Saved blocks dialogs. Only mounted when a provider is configured;
+         each dialog's chunk loads on first open. -->
+    <SavedBlocksPanels
+      v-if="savedBlocks?.isAvailable.value"
+      :feature="savedBlocks"
+    />
 
     <!-- Small-screen gate (#235). Last child + a literal z-index above the
          chrome and `.tpl-popover-root`, so the opaque notice covers everything

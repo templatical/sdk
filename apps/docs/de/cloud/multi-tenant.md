@@ -5,7 +5,7 @@ description: Projekt- und Mandanten-Isolation mit API-Schlüsseln.
 
 # Multi-Tenant-Architektur
 
-Templatical Cloud ist für Multi-Tenant-SaaS-Anwendungen gebaut. Jeder Ihrer Kunden erhält eine eigene, isolierte Menge an Templates, Medien, Modulen und Einstellungen – alles über eine einzige Integration verwaltet.
+Templatical Cloud ist für Multi-Tenant-SaaS-Anwendungen gebaut. Jeder Ihrer Kunden erhält eine eigene, isolierte Menge an Templates, Medien, gespeicherten Blöcken und Einstellungen – alles über eine einzige Integration verwaltet.
 
 ## Konzepte
 
@@ -50,7 +50,7 @@ Jeder Mandant verfügt über vollständig isolierte:
 
 - **Templates** – CRUD-Operationen betreffen nur die Templates des jeweiligen Mandanten
 - **Medien** – Hochgeladene Bilder sind auf den Mandanten beschränkt
-- **Gespeicherte Module** – Die Modul-Bibliothek ist pro Mandant
+- **Gespeicherte Blöcke** – Die Bibliothek gespeicherter Blöcke ist pro Mandant
 - **Snapshots** – Der Versionsverlauf ist pro Template und pro Mandant
 - **Kommentare** – Kommentar-Threads sind pro Template und pro Mandant
 - **KI-Verlauf** – Der Gesprächsverlauf ist pro Template und pro Mandant

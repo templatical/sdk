@@ -104,7 +104,7 @@ const editor = await initCloud({
     enabled: true,
   },
   commenting: true,            // Inline-Kommentare aktivieren
-  modules: true,               // Gespeicherte Module aktivieren
+  savedBlocks: true,           // Gespeicherte Blöcke (Standard; false deaktiviert)
 
   // Callbacks
   onChange: (content) => { /* Template geändert */ },

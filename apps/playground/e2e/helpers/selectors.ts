@@ -37,6 +37,15 @@ export const SELECTORS = {
   // Sidebar
   sidebarRail: ".tpl-sidebar-rail",
 
+  // Saved blocks (OSS, backed by the playground's localStorage provider)
+  savedBlocksRailBtn: 'button[aria-label="Browse saved blocks"]',
+  savedBlocksBrowser: '[data-testid="saved-blocks-browser"]',
+  savedBlocksBrowserTitle: "#tpl-saved-blocks-browser-title",
+  savedBlocksCard: '[data-testid="saved-block-card"]',
+  savedBlocksRenameBtn: 'button[aria-label="Rename"]',
+  savedBlocksDeleteBtn: 'button[aria-label="Delete"]',
+  saveBlockDialogTitle: "#tpl-save-block-title",
+
   // Small-screen gate (#235)
   smallScreenNotice: '[data-testid="small-screen-notice"]',
 

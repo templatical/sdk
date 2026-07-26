@@ -1,5 +1,4 @@
 import type {
-  Block,
   CustomBlockDefinition,
   DisplayConditionsConfig,
   FontsConfig,
@@ -67,18 +66,6 @@ export type CommentEventType =
 export interface CommentEvent {
   type: CommentEventType;
   comment: Comment;
-}
-
-// ---------------------------------------------------------------------------
-// Saved Modules
-// ---------------------------------------------------------------------------
-
-export interface SavedModule {
-  id: string;
-  name: string;
-  content: Block[];
-  created_at: string;
-  updated_at: string;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import ButtonBlock from "../../components/blocks/ButtonBlock.vue";
-import CustomBlock from "../../components/blocks/CustomBlock.vue";
-import DividerBlock from "../../components/blocks/DividerBlock.vue";
-import HtmlBlock from "../../components/blocks/HtmlBlock.vue";
-import ImageBlock from "../../components/blocks/ImageBlock.vue";
-import MenuBlock from "../../components/blocks/MenuBlock.vue";
-import PreviewSectionBlock from "../../components/blocks/PreviewSectionBlock.vue";
-import SocialIconsBlock from "../../components/blocks/SocialIconsBlock.vue";
-import SpacerBlock from "../../components/blocks/SpacerBlock.vue";
-import TableBlock from "../../components/blocks/TableBlock.vue";
-import TitleBlock from "../../components/blocks/TitleBlock.vue";
-import ParagraphBlock from "../../components/blocks/ParagraphBlock.vue";
-import VideoBlock from "../../components/blocks/VideoBlock.vue";
-import { BLOCK_REGISTRY_KEY } from "../../keys";
+import ButtonBlock from "./blocks/ButtonBlock.vue";
+import CustomBlock from "./blocks/CustomBlock.vue";
+import DividerBlock from "./blocks/DividerBlock.vue";
+import HtmlBlock from "./blocks/HtmlBlock.vue";
+import ImageBlock from "./blocks/ImageBlock.vue";
+import MenuBlock from "./blocks/MenuBlock.vue";
+import PreviewSectionBlock from "./blocks/PreviewSectionBlock.vue";
+import SocialIconsBlock from "./blocks/SocialIconsBlock.vue";
+import SpacerBlock from "./blocks/SpacerBlock.vue";
+import TableBlock from "./blocks/TableBlock.vue";
+import TitleBlock from "./blocks/TitleBlock.vue";
+import ParagraphBlock from "./blocks/ParagraphBlock.vue";
+import VideoBlock from "./blocks/VideoBlock.vue";
+import { BLOCK_REGISTRY_KEY } from "../keys";
 import {
   resolveBlockComponent,
   getBlockWrapperStyle,
-} from "../../utils/blockComponentResolver";
+} from "../utils/blockComponentResolver";
 import type { Block } from "@templatical/types";
 import { inject, type Component } from "vue";
 
@@ -26,7 +26,7 @@ defineProps<{
 
 const blockRegistry = inject(BLOCK_REGISTRY_KEY);
 
-const modulePreviewComponentMap: Record<string, Component> = {
+const previewComponentMap: Record<string, Component> = {
   section: PreviewSectionBlock,
   title: TitleBlock,
   paragraph: ParagraphBlock,
@@ -43,7 +43,7 @@ const modulePreviewComponentMap: Record<string, Component> = {
 };
 
 function getBlockComponent(block: Block): Component | null {
-  return resolveBlockComponent(block, blockRegistry, modulePreviewComponentMap);
+  return resolveBlockComponent(block, blockRegistry, previewComponentMap);
 }
 </script>
 

@@ -11,7 +11,7 @@ import {
   useExport,
   useMcpListener,
   usePlanConfig,
-  useSavedModules,
+  createCloudSavedBlocksProvider,
   useTemplateScoring,
   useTestEmail,
   useWebSocket,
@@ -20,12 +20,15 @@ import {
   type UseCommentsReturn,
   type UseExportReturn,
   type UsePlanConfigReturn,
-  type UseSavedModulesReturn,
   type UseTemplateScoringReturn,
   type UseTestEmailReturn,
   type UseWebSocketReturn,
   type UseEditorReturn as CloudUseEditorReturn,
 } from "@templatical/core/cloud";
+import {
+  useSavedBlocksFeature,
+  type UseSavedBlocksFeatureReturn,
+} from "../../composables/useSavedBlocksFeature";
 import type {
   McpOperationPayload,
   ThemeOverrides,
@@ -46,7 +49,6 @@ import {
   AUTH_MANAGER_KEY,
   AI_CONFIG_KEY,
   COMMENTS_KEY,
-  SAVED_MODULES_HEADLESS_KEY,
   SCORING_KEY,
   CAPABILITIES_KEY,
 } from "../../keys";
@@ -130,16 +132,11 @@ export interface UseCloudInitializationReturn {
   exporter: UseExportReturn;
   testEmail: UseTestEmailReturn;
   commentsInstance: UseCommentsReturn;
-  savedModulesHeadless: UseSavedModulesReturn;
+  savedBlocks: UseSavedBlocksFeatureReturn;
   scoringInstance: UseTemplateScoringReturn;
   panelState: UseCloudPanelStateReturn;
   snapshotPreview: UseSnapshotPreviewReturn;
   collabWarning: ReturnType<typeof useCollabUndoWarning>;
-
-  // Local UI state surfaced through capabilities
-  showSaveModuleDialog: Ref<boolean>;
-  showModuleBrowserModal: Ref<boolean>;
-  saveModulePreSelectedBlockId: Ref<string | null>;
 
   // Late-bound save hook — set by `useCloudLifecycle` after it wires saveTemplate.
   // The `onSave` keyboard shortcut + `useEditorCore` autoSave both route here.
@@ -393,13 +390,18 @@ export function useCloudInitialization(
     channel: websocket.channel,
   });
 
-  const savedModulesHeadless = useSavedModules({
-    authManager,
+  // Saved blocks run on the same shared composable as OSS; only the storage
+  // adapter differs. Availability is read reactively from the plan, which
+  // resolves after `fetchConfig()` — so the capability never advertises a
+  // feature the plan doesn't grant.
+  const savedBlocks = useSavedBlocksFeature({
+    provider: createCloudSavedBlocksProvider(authManager),
+    editor,
     onError: config.onError,
+    isAvailable: () =>
+      config.savedBlocks !== false &&
+      planConfigInstance.hasFeature("saved_modules"),
   });
-  const showSaveModuleDialog = ref(false);
-  const saveModulePreSelectedBlockId = ref<string | null>(null);
-  const showModuleBrowserModal = ref(false);
 
   const scoringInstance = useTemplateScoring({
     authManager,
@@ -420,7 +422,6 @@ export function useCloudInitialization(
   provide(AUTH_MANAGER_KEY, authManager);
   provide(AI_CONFIG_KEY, aiConfig);
   provide(COMMENTS_KEY, commentsInstance);
-  provide(SAVED_MODULES_HEADLESS_KEY, savedModulesHeadless);
   provide(SCORING_KEY, scoringInstance);
 
   // Override default capabilities from useEditorCore with cloud capabilities.
@@ -432,16 +433,7 @@ export function useCloudInitialization(
         commentsInstance.commentCountByBlock.value.get(blockId) ?? 0,
       openForBlock: openCommentsForBlock,
     },
-    savedModules: {
-      openSaveDialog: (blockId: string) => {
-        saveModulePreSelectedBlockId.value = blockId ?? null;
-        showSaveModuleDialog.value = true;
-      },
-      openBrowser: () => {
-        showModuleBrowserModal.value = true;
-      },
-      moduleCount: computed(() => savedModulesHeadless.modules.value.length),
-    },
+    savedBlocks: savedBlocks.capability,
   } satisfies EditorCapabilities);
 
   // --- Theme setters (plan-gated) ---
@@ -506,13 +498,6 @@ export function useCloudInitialization(
         core.themeOverrides.value = config.theme;
       }
 
-      if (
-        config.modules !== false &&
-        planConfigInstance.hasFeature("saved_modules")
-      ) {
-        savedModulesHeadless.loadModules();
-      }
-
       emit("ready");
     } catch (error) {
       if (_destroyed) return;
@@ -558,15 +543,11 @@ export function useCloudInitialization(
     exporter,
     testEmail,
     commentsInstance,
-    savedModulesHeadless,
+    savedBlocks,
     scoringInstance,
     panelState,
     snapshotPreview,
     collabWarning,
-
-    showSaveModuleDialog,
-    showModuleBrowserModal,
-    saveModulePreSelectedBlockId,
 
     onSaveHook,
 

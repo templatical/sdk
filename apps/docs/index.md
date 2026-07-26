@@ -20,6 +20,10 @@ features:
     details: Register your own block types — static templates or live API data at preview time.
     link: /guide/custom-blocks
     linkText: Build a custom block
+  - title: Reusable saved blocks
+    details: Let users save block groups and re-insert them across templates — backed by your own storage, or a bundled browser-local provider for zero setup.
+    link: /guide/saved-blocks
+    linkText: Set up saved blocks
   - title: Merge tags with pluggable syntax
     details: Handlebars, Liquid, JS literals, or your own — with human-readable labels in the canvas.
     link: /guide/merge-tags

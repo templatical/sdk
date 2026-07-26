@@ -12,6 +12,7 @@ import type {
   LogicTagsConfig,
   MediaResult,
   MergeTagsConfig,
+  SavedBlocksProvider,
   SaveResult,
   Template,
   TemplateContent,
@@ -193,6 +194,29 @@ export interface TemplaticalEditorConfig {
    * configured, since that would leave the picker with no way to set a color.
    */
   colors?: ColorsConfig;
+
+  /**
+   * Storage backend for **saved blocks** — reusable groups of blocks a user
+   * saves from the canvas and re-inserts into other templates.
+   *
+   * The editor owns the UI (a save action on each block, a searchable browser
+   * with preview, insert-at-position, rename, delete); you own persistence.
+   * Implement the four methods of `SavedBlocksProvider` against your own API,
+   * or use the bundled browser-local provider for demos and prototypes:
+   *
+   * ```ts
+   * import { init, createLocalStorageSavedBlocksProvider } from "@templatical/editor";
+   *
+   * init({ container, savedBlocks: createLocalStorageSavedBlocksProvider() });
+   * ```
+   *
+   * **Omitted by default.** With no provider the feature is entirely off — no
+   * save action, no sidebar entry, and none of its UI code is downloaded.
+   *
+   * Not to be confused with `customBlocks`, which registers developer-defined
+   * block *types* with their own templates and field schemas.
+   */
+  savedBlocks?: SavedBlocksProvider;
 
   blockDefaults?: BlockDefaults;
   templateDefaults?: TemplateDefaults;
@@ -748,9 +772,18 @@ export type {
   ColorsConfig,
   CustomFont,
   FontsConfig,
+  SavedBlock,
+  SavedBlocksListParams,
+  SavedBlocksProvider,
   SaveResult,
   Template,
 } from "@templatical/types";
+
+// Bundled browser-local saved-blocks provider. Re-exported here (rather than
+// leaving it to `@templatical/core`) because consumers install only this
+// package — core is bundled inline and isn't resolvable on their side.
+export { createLocalStorageSavedBlocksProvider } from "@templatical/core";
+export type { LocalStorageSavedBlocksOptions } from "@templatical/core";
 
 export type { ResolveImageUrl } from "./composables/useImageUrlResolver";
 export type { UseFontsReturn, FontOption } from "./composables/useFonts";

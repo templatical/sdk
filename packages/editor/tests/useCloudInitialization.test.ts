@@ -49,9 +49,11 @@ vi.mock('@templatical/core/cloud', () => {
       fetchConfig: vi.fn().mockResolvedValue(undefined),
       hasFeature: vi.fn(() => true),
     })),
-    useSavedModules: vi.fn(() => ({
-      modules: ref([]),
-      loadModules: vi.fn(),
+    createCloudSavedBlocksProvider: vi.fn(() => ({
+      list: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     })),
     useTemplateScoring: vi.fn(() => ({ fixError: ref(null) })),
     useTestEmail: vi.fn(() => ({})),

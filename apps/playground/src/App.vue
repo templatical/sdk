@@ -20,7 +20,11 @@ import {
   useTimeoutFn,
 } from "@vueuse/core";
 import { useFocusTrap } from "@vueuse/integrations/useFocusTrap";
-import { init, unmount } from "@templatical/editor";
+import {
+  init,
+  unmount,
+  createLocalStorageSavedBlocksProvider,
+} from "@templatical/editor";
 import type { TemplaticalEditor } from "@templatical/editor";
 import type {
   TemplateContent,
@@ -205,6 +209,11 @@ function cancelDataSourcePicker(): void {
 
 const editorContainer = ref<HTMLElement | null>(null);
 const editor = ref<TemplaticalEditor | null>(null);
+
+// One provider for the app's lifetime. `init()` re-runs whenever config or
+// locale changes, and a single instance keeps every editor incarnation reading
+// the same localStorage key, so saved blocks survive those re-inits.
+const savedBlocksProvider = createLocalStorageSavedBlocksProvider();
 
 type ExportTab = "mjml" | "html" | "json";
 const exportTabs: readonly ExportTab[] = ["mjml", "html", "json"] as const;
@@ -979,6 +988,10 @@ async function initEditor(): Promise<void> {
       uiTheme: uiTheme.value,
       locale: sdkLocale.value,
       onRequestMedia: enableRequestMedia.value ? requestMedia : undefined,
+      // Always on in the playground: saved blocks are backed by the bundled
+      // browser-local provider, so the OSS path is exercised on every run
+      // without needing a backend. Entries persist in this browser profile.
+      savedBlocks: savedBlocksProvider,
     });
     // E2E affordance: expose `editor.toMjml()` on window so Playwright tests
     // can read the export-path output without depending on the playground's

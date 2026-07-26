@@ -5,7 +5,7 @@ description: Project and tenant isolation with API keys.
 
 # Multi-Tenant Architecture
 
-Templatical Cloud is built for multi-tenant SaaS applications. Each of your customers gets their own isolated set of templates, media, modules, and settings — all managed through a single integration.
+Templatical Cloud is built for multi-tenant SaaS applications. Each of your customers gets their own isolated set of templates, media, saved blocks, and settings — all managed through a single integration.
 
 ## Concepts
 
@@ -50,7 +50,7 @@ Each tenant has completely isolated:
 
 - **Templates** — CRUD operations only affect the tenant's own templates
 - **Media** — Uploaded images are scoped to the tenant
-- **Saved Modules** — Module library is per-tenant
+- **Saved Blocks** — The saved-block library is per-tenant
 - **Snapshots** — Version history is per-template, per-tenant
 - **Comments** — Comment threads are per-template, per-tenant
 - **AI History** — Conversation history is per-template, per-tenant

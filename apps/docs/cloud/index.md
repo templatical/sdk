@@ -33,7 +33,7 @@ All Cloud features communicate through authenticated API endpoints and WebSocket
 | [Comments](/cloud/comments) | Inline review threads on specific blocks |
 | [Media Library](/cloud/media-library) | Upload, organize, and manage images with folders and search |
 | [Template Scoring](/cloud/template-scoring) | Automated quality checks for deliverability and accessibility |
-| [Saved Modules](/cloud/saved-modules) | Reusable template sections shared across your team |
+| [Saved Blocks](/guide/saved-blocks) | Reusable block groups, persisted server-side and shared across your team |
 | [Test Emails](/cloud/test-emails) | Send test emails directly from the editor |
 | [Snapshots](/cloud/snapshots) | Version history with side-by-side comparison and restore |
 | [MCP Integration](/cloud/mcp) | Connect AI agents to build and modify templates programmatically |

@@ -20,6 +20,10 @@ features:
     details: Registrieren Sie eigene Blocktypen — statische Templates oder live aus Ihrer API zur Preview-Zeit.
     link: /de/guide/custom-blocks
     linkText: Eigenen Block bauen
+  - title: Wiederverwendbare gespeicherte Blöcke
+    details: Nutzer speichern Blockgruppen und fügen sie in andere Templates ein — mit Ihrem eigenen Speicher oder dem mitgelieferten browserlokalen Provider ohne Einrichtung.
+    link: /de/guide/saved-blocks
+    linkText: Gespeicherte Blöcke einrichten
   - title: Merge-Tags mit pluggable Syntax
     details: Handlebars, Liquid, JS-Template-Literale oder eigene Syntax — mit lesbaren Labels im Canvas.
     link: /de/guide/merge-tags

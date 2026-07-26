@@ -363,7 +363,7 @@ export default {
       aiWriting: "KI-Schreiben",
       realtimeCollaboration: "Echtzeit-Zusammenarbeit",
       mediaLibrary: "Medienbibliothek",
-      savedModules: "Gespeicherte Module",
+      savedBlocks: "Gespeicherte Blöcke",
       testEmail: "Test-E-Mail",
       mcpIntegration: "MCP-Integration",
       commenting: "Kommentare",

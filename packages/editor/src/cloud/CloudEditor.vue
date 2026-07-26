@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { Block, TemplateContent } from "@templatical/types";
-import { cloneBlock } from "@templatical/types";
+import type { TemplateContent } from "@templatical/types";
 
 import type { UseFontsReturn } from "../composables/useFonts";
-import { onMounted, onUnmounted, ref } from "vue";
+import { defineAsyncComponent, onMounted, onUnmounted, ref } from "vue";
 import { RotateCcw } from "@lucide/vue";
 import type { Translations, CloudTranslations } from "../i18n";
 import { provide } from "vue";
@@ -30,6 +29,12 @@ import CollabUndoToast from "./components/CollabUndoToast.vue";
 import MergeTagPickerModal from "../components/MergeTagPickerModal.vue";
 import LogicTagPickerModal from "../components/LogicTagPickerModal.vue";
 import "../styles/index.css";
+
+// Lazy so the saved-blocks UI stays out of the initial cloud chunk; the inner
+// dialogs are lazy in turn and load only when opened.
+const SavedBlocksPanels = defineAsyncComponent(
+  () => import("../components/SavedBlocksPanels.vue"),
+);
 
 export type { TemplaticalCloudEditorConfig } from "./cloudConfig";
 import type { TemplaticalCloudEditorConfig } from "./cloudConfig";
@@ -91,13 +96,10 @@ const {
   exporter,
   testEmail,
   commentsInstance,
-  savedModulesHeadless,
+  savedBlocks,
   panelState,
   snapshotPreview,
   collabWarning,
-  showSaveModuleDialog,
-  showModuleBrowserModal,
-  saveModulePreSelectedBlockId,
   setThemeOverrides,
   setUiTheme,
 } = init;
@@ -132,22 +134,6 @@ async function handleConfirmRestoreSnapshot(): Promise<void> {
     // rolls the editor content back to the pre-preview state. Swallow here so
     // the rejected promise from the event binding isn't an unhandled rejection.
   }
-}
-
-// ---------------------------------------------------------------------------
-// Module insert handler
-// ---------------------------------------------------------------------------
-
-function handleModuleInsert(
-  module: { content: Block[] },
-  insertIndex: number | undefined,
-): void {
-  for (let i = 0; i < module.content.length; i++) {
-    const cloned = cloneBlock(module.content[i]);
-    const position = insertIndex !== undefined ? insertIndex + i : undefined;
-    editor.addBlock(cloned, undefined, undefined, position);
-  }
-  showModuleBrowserModal.value = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -411,17 +397,14 @@ defineExpose({
       :plan-config-instance="planConfigInstance"
       :test-email="testEmail"
       :media-lib="mediaLib"
-      :saved-modules-headless="savedModulesHeadless"
-      :show-save-module-dialog="showSaveModuleDialog"
-      :save-module-pre-selected-block-id="saveModulePreSelectedBlockId"
-      :show-module-browser-modal="showModuleBrowserModal"
-      @update:show-save-module-dialog="showSaveModuleDialog = $event"
-      @update:save-module-pre-selected-block-id="
-        saveModulePreSelectedBlockId = $event
-      "
-      @update:show-module-browser-modal="showModuleBrowserModal = $event"
       @send-test-email="handleSendTestEmail"
-      @module-insert="handleModuleInsert"
+    />
+
+    <!-- Saved blocks dialogs. Shared with the OSS editor; each dialog's chunk
+         loads on first open, and nothing mounts unless the plan allows it. -->
+    <SavedBlocksPanels
+      v-if="savedBlocks.isAvailable.value"
+      :feature="savedBlocks"
     />
 
     <!-- Popover mount — Teleport target for toolbars, link dialog, modal.

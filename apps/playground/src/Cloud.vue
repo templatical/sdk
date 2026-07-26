@@ -957,7 +957,7 @@ onUnmounted(() => {
               class="shrink-0 text-primary"
               :size="14"
               aria-hidden="true"
-            />{{ t.cloud.features.savedModules }}
+            />{{ t.cloud.features.savedBlocks }}
           </li>
           <li class="flex items-center gap-2">
             <Send

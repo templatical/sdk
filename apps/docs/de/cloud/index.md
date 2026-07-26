@@ -33,7 +33,7 @@ Alle Cloud-Funktionen kommunizieren über authentifizierte API-Endpunkte und Web
 | [Kommentare](/de/cloud/comments) | Inline-Review-Threads an einzelnen Blöcken |
 | [Medienbibliothek](/de/cloud/media-library) | Bilder hochladen, organisieren und verwalten – mit Ordnern und Suche |
 | [Template-Bewertung](/de/cloud/template-scoring) | Automatische Qualitätsprüfungen für Zustellbarkeit und Barrierefreiheit |
-| [Gespeicherte Module](/de/cloud/saved-modules) | Wiederverwendbare Template-Abschnitte, die im Team geteilt werden |
+| [Gespeicherte Blöcke](/de/guide/saved-blocks) | Wiederverwendbare Blockgruppen, serverseitig persistiert und im Team geteilt |
 | [Test-E-Mails](/de/cloud/test-emails) | Test-E-Mails direkt aus dem Editor senden |
 | [Snapshots](/de/cloud/snapshots) | Versionsverlauf mit Side-by-Side-Vergleich und Wiederherstellung |
 | [MCP-Integration](/de/cloud/mcp) | KI-Agenten anbinden, um Templates programmatisch zu erstellen und zu verändern |

@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, type ShallowRef, shallowRef } from "vue";
-import { init, type TemplaticalEditor } from "@templatical/editor";
+import {
+  init,
+  createLocalStorageSavedBlocksProvider,
+  type TemplaticalEditor,
+} from "@templatical/editor";
 import {
   createDefaultTemplateContent,
   createTitleBlock,
@@ -19,6 +23,10 @@ import {
  * regression surface that needs gating. Light-DOM multi-instance is a
  * separate concern (the SDK assumes one editor per page in light mode).
  */
+
+// Shared across both instances on purpose: two editors over one saved-blocks
+// store is the interesting multi-instance case.
+const savedBlocksProvider = createLocalStorageSavedBlocksProvider();
 
 const containerA = ref<HTMLDivElement | null>(null);
 const containerB = ref<HTMLDivElement | null>(null);
@@ -40,6 +48,7 @@ onMounted(async () => {
       container: containerA.value,
       shadowDom: true,
       content: seedContentA,
+      savedBlocks: savedBlocksProvider,
     });
   }
   if (containerB.value) {
@@ -47,6 +56,7 @@ onMounted(async () => {
       container: containerB.value,
       shadowDom: true,
       content: seedContentB,
+      savedBlocks: savedBlocksProvider,
     });
   }
 });

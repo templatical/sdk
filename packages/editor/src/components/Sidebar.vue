@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useI18n } from "../composables/useI18n";
-import { useCloudI18n } from "../composables/useCloudI18n";
 import type { Block, BlockType } from "@templatical/types";
 import { createBlock, createCustomBlock } from "@templatical/types";
 import { Package } from "@lucide/vue";
@@ -27,7 +26,6 @@ interface BlockTypeItem {
 }
 
 const { t, format } = useI18n();
-const { t: cloudT } = useCloudI18n();
 const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 const paletteBlocks = inject(PALETTE_BLOCKS_KEY, undefined);
 const blockDefaults = inject(BLOCK_DEFAULTS_KEY, undefined);
@@ -35,8 +33,10 @@ const editor = inject(EDITOR_KEY, null);
 
 const caps = inject(CAPABILITIES_KEY, {});
 
-const showModulesSection = computed(
-  () => (caps.savedModules?.moduleCount.value ?? 0) > 0,
+const showSavedBlocksSection = computed(
+  () =>
+    caps.savedBlocks?.isAvailable.value === true &&
+    caps.savedBlocks.count.value > 0,
 );
 
 const isExpanded = ref(false);
@@ -191,32 +191,34 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
     @focusin="isExpanded = true"
     @focusout="isExpanded = false"
   >
-    <!-- Saved Modules browser trigger (cloud only) -->
+    <!-- Saved blocks browser trigger. Needs the feature to be available (a
+         provider configured, and in Cloud the plan to allow it) and at least
+         one saved block to browse. -->
     <div
-      v-if="showModulesSection && cloudT"
+      v-if="showSavedBlocksSection"
       class="tpl:border-b tpl:px-1 tpl:pb-1 tpl:border-[var(--tpl-border)]"
     >
       <button
         type="button"
-        :aria-label="t.sidebarNav.browseModules"
+        :aria-label="t.sidebarNav.browseSavedBlocks"
         class="tpl:flex tpl:h-10 tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)]"
         :style="{
           justifyContent: isExpanded ? 'flex-start' : 'center',
         }"
-        @click="caps.savedModules?.openBrowser()"
+        @click="caps.savedBlocks?.openBrowser()"
       >
         <Package :size="20" :stroke-width="1.5" class="tpl:shrink-0" />
         <span
           v-if="isExpanded"
           class="tpl:flex-1 tpl:truncate tpl:text-sm tpl:font-medium"
         >
-          {{ cloudT.modules.title }}
+          {{ t.savedBlocks.title }}
         </span>
         <span
           v-if="isExpanded"
           class="tpl:shrink-0 tpl:rounded-full tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
         >
-          {{ caps.savedModules?.moduleCount.value ?? 0 }}
+          {{ caps.savedBlocks?.count.value ?? 0 }}
         </span>
       </button>
     </div>

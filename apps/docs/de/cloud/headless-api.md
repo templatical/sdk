@@ -112,21 +112,29 @@ await api.resolveComment('template-id', 'comment-id', {
 });
 ```
 
-## Gespeicherte Module
+## Gespeicherte Blöcke
 
 ```js
-// Module auflisten
-const modules = await api.listModules();
+// Gespeicherte Blöcke auflisten
+const savedBlocks = await api.listModules();
 
-// Modul erstellen
-const module = await api.createModule({
+// Gespeicherten Block erstellen
+const savedBlock = await api.createModule({
   name: 'Product Card',
   content: sectionContent,
 });
 
-// Modul löschen
-await api.deleteModule('module-id');
+// Gespeicherten Block löschen
+await api.deleteModule('saved-block-id');
 ```
+
+::: tip
+Die REST-Routen und die Methodennamen von `ApiClient` behalten aus
+Kompatibilitätsgründen ihre ursprüngliche `module`-Benennung — geändert hat
+sich nur der Name der Funktion. Zur editorseitigen Funktion und zur
+Speicher-Provider-Schnittstelle siehe
+[Gespeicherte Blöcke](/de/guide/saved-blocks).
+:::
 
 ## Test-E-Mails
 
@@ -177,10 +185,10 @@ Alle Routen sind auf ein Projekt und einen Mandanten bezogen:
 | `templates/{id}/ai/score` | POST | Template-Qualitätsbewertung |
 | `templates/{id}/ai/fix-finding` | POST | KI-Behebung eines Bewertungs-Findings |
 | `templates/{id}/ai/generate-from-design` | POST | Umwandlung von Design zu Template |
-| `saved-modules` | GET | Module auflisten |
-| `saved-modules` | POST | Modul erstellen |
-| `saved-modules/{id}` | PUT | Modul aktualisieren |
-| `saved-modules/{id}` | DELETE | Modul löschen |
+| `saved-modules` | GET | Gespeicherte Blöcke auflisten |
+| `saved-modules` | POST | Gespeicherten Block erstellen |
+| `saved-modules/{id}` | PUT | Gespeicherten Block aktualisieren |
+| `saved-modules/{id}` | DELETE | Gespeicherten Block löschen |
 | `media/browse` | GET | Medien durchsuchen |
 | `media/upload` | POST | Medien hochladen |
 | `media/delete` | POST | Medien löschen |

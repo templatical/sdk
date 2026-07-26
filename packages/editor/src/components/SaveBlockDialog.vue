@@ -1,13 +1,8 @@
 <script setup lang="ts">
-import TplModal from "../../components/TplModal.vue";
-import ToggleSwitch from "../../components/ToggleSwitch.vue";
-import { useI18n } from "../../composables";
-import { useCloudI18nStrict } from "../../composables";
-import {
-  EDITOR_KEY,
-  SAVED_MODULES_HEADLESS_KEY,
-  requireInject,
-} from "../../keys";
+import TplModal from "./TplModal.vue";
+import ToggleSwitch from "./ToggleSwitch.vue";
+import { useI18n } from "../composables";
+import { EDITOR_KEY, SAVED_BLOCKS_KEY, requireInject } from "../keys";
 import type { Block } from "@templatical/types";
 import { LoaderCircle } from "@lucide/vue";
 import { computed, ref, watch } from "vue";
@@ -23,14 +18,10 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { t: cloudT } = useCloudI18nStrict();
-const editor = requireInject(EDITOR_KEY, "SaveModuleDialog");
-const savedModules = requireInject(
-  SAVED_MODULES_HEADLESS_KEY,
-  "SaveModuleDialog",
-);
+const editor = requireInject(EDITOR_KEY, "SaveBlockDialog");
+const savedBlocks = requireInject(SAVED_BLOCKS_KEY, "SaveBlockDialog");
 
-const moduleName = ref("");
+const name = ref("");
 const selectedBlockIds = ref<Set<string>>(new Set());
 const isSaving = ref(false);
 const error = ref<string | null>(null);
@@ -43,17 +34,21 @@ function blockLabel(block: Block, index: number): string {
   return `${label} ${index + 1}`;
 }
 
+// `immediate` matters: the dialog is mounted lazily behind a `v-if` on the
+// same state that drives `visible`, so it can mount with `visible` already
+// true and would otherwise never seed the pre-selection.
 watch(
   () => props.visible,
   (visible) => {
     if (visible) {
-      moduleName.value = "";
+      name.value = "";
       error.value = null;
       selectedBlockIds.value = new Set(
         props.preSelectedBlockId ? [props.preSelectedBlockId] : [],
       );
     }
   },
+  { immediate: true },
 );
 
 function toggleBlock(blockId: string): void {
@@ -68,7 +63,7 @@ function toggleBlock(blockId: string): void {
 
 const canSave = computed(
   () =>
-    moduleName.value.trim().length > 0 &&
+    name.value.trim().length > 0 &&
     selectedBlockIds.value.size > 0 &&
     !isSaving.value,
 );
@@ -83,7 +78,7 @@ async function handleSave(): Promise<void> {
     const selectedBlocks = topLevelBlocks.value.filter((b) =>
       selectedBlockIds.value.has(b.id),
     );
-    await savedModules.createModule(moduleName.value.trim(), selectedBlocks);
+    await savedBlocks.create(name.value.trim(), selectedBlocks);
     emit("saved");
     emit("close");
   } catch (err) {
@@ -116,7 +111,7 @@ function handleKeydown(event: KeyboardEvent): void {
       role="dialog"
       aria-modal="true"
       :aria-busy="isSaving"
-      aria-labelledby="tpl-save-module-title"
+      aria-labelledby="tpl-save-block-title"
       class="tpl-scale-in tpl:mx-4 tpl:w-full tpl:max-w-sm tpl:rounded-[var(--tpl-radius-lg)] tpl:p-5"
       style="
         background-color: var(--tpl-bg-elevated);
@@ -124,23 +119,23 @@ function handleKeydown(event: KeyboardEvent): void {
       "
     >
       <h3
-        id="tpl-save-module-title"
+        id="tpl-save-block-title"
         class="tpl:mb-4 tpl:text-sm tpl:font-semibold tpl:text-[var(--tpl-text)]"
       >
-        {{ cloudT.modules.saveAsModule }}
+        {{ t.savedBlocks.saveAsBlock }}
       </h3>
 
-      <!-- Module name -->
+      <!-- Saved block name -->
       <div class="tpl:mb-3">
         <label
           class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
         >
-          {{ cloudT.modules.moduleName }}
+          {{ t.savedBlocks.name }}
         </label>
         <input
-          v-model="moduleName"
+          v-model="name"
           type="text"
-          :placeholder="cloudT.modules.moduleNamePlaceholder"
+          :placeholder="t.savedBlocks.namePlaceholder"
           class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
           :disabled="isSaving"
         />
@@ -151,7 +146,7 @@ function handleKeydown(event: KeyboardEvent): void {
         <label
           class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
         >
-          {{ cloudT.modules.selectBlocks }}
+          {{ t.savedBlocks.selectBlocks }}
         </label>
         <div
           class="tpl:max-h-40 tpl:space-y-1 tpl:overflow-y-auto tpl:rounded-md tpl:border tpl:p-2 tpl:border-[var(--tpl-border)]"
@@ -194,7 +189,7 @@ function handleKeydown(event: KeyboardEvent): void {
           }"
           @click="handleClose"
         >
-          {{ cloudT.modules.cancel }}
+          {{ t.savedBlocks.cancel }}
         </button>
         <button
           type="button"
@@ -208,10 +203,10 @@ function handleKeydown(event: KeyboardEvent): void {
               :size="12"
               :stroke-width="2"
             />
-            {{ cloudT.modules.saving }}
+            {{ t.savedBlocks.saving }}
           </span>
           <span v-else>
-            {{ cloudT.modules.save }}
+            {{ t.savedBlocks.save }}
           </span>
         </button>
       </div>

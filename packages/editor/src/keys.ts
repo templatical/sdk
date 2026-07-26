@@ -18,9 +18,9 @@ import type {
   AuthManager,
   UseAiConfigReturn,
   UseCommentsReturn,
-  UseSavedModulesReturn,
   UseTemplateScoringReturn,
 } from "@templatical/core/cloud";
+import type { UseSavedBlocksReturn } from "@templatical/core";
 import type { BaseEditorReturn } from "./composables/useEditorCore";
 import type { ImageUrlResolver } from "./composables/useImageUrlResolver";
 import type { UseFontsReturn } from "./composables/useFonts";
@@ -194,6 +194,14 @@ export const EDITOR_ROOT_KEY: InjectionKey<Document | ShadowRoot> =
 export const POPOVER_ROOT_KEY: InjectionKey<Ref<HTMLElement | null>> =
   Symbol("popoverRoot");
 
+/**
+ * Reactive saved-blocks state, provided by `useSavedBlocksFeature` when a
+ * `SavedBlocksProvider` is configured. Shared by OSS and Cloud — the storage
+ * transport lives behind the provider, so this key is not cloud-specific.
+ */
+export const SAVED_BLOCKS_KEY: InjectionKey<UseSavedBlocksReturn> =
+  Symbol("savedBlocks");
+
 // ---------------------------------------------------------------------------
 // Cloud-only keys (provided by CloudEditor, consumed by cloud components)
 // ---------------------------------------------------------------------------
@@ -205,9 +213,6 @@ export const AI_CONFIG_KEY: InjectionKey<UseAiConfigReturn> =
   Symbol("aiConfig");
 
 export const COMMENTS_KEY: InjectionKey<UseCommentsReturn> = Symbol("comments");
-
-export const SAVED_MODULES_HEADLESS_KEY: InjectionKey<UseSavedModulesReturn> =
-  Symbol("savedModulesHeadless");
 
 export const SCORING_KEY: InjectionKey<UseTemplateScoringReturn> =
   Symbol("scoring");

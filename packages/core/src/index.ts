@@ -26,3 +26,12 @@ export { useDataSourceFetch } from "./data-source-fetch";
 
 // History interceptor
 export { useHistoryInterceptor } from "./history-interceptor";
+
+// Saved blocks (reusable block groups over a consumer-supplied storage provider)
+export { useSavedBlocks } from "./saved-blocks";
+export type {
+  UseSavedBlocksOptions,
+  UseSavedBlocksReturn,
+} from "./saved-blocks";
+export { createLocalStorageSavedBlocksProvider } from "./saved-blocks-local";
+export type { LocalStorageSavedBlocksOptions } from "./saved-blocks-local";

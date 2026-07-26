@@ -50,10 +50,12 @@ watch(editor.content, (next) => {
 - `useAutoSave` — debounced save with onSave callback
 - `useConditionPreview` — display condition preview state
 - `useDataSourceFetch` — fetch helper for custom block data sources
+- `useSavedBlocks` — reactive list/create/update/remove over a `SavedBlocksProvider` (saved blocks)
+- `createLocalStorageSavedBlocksProvider` — bundled browser-local `SavedBlocksProvider`, for demos and prototypes
 
 ## Cloud subpath
 
-The `@templatical/core/cloud` subpath provides Templatical Cloud integrations (Auth, API client, WebSocket, AI chat/rewrite, collaboration, comments, scoring). Used by `@templatical/editor`'s `initCloud()`. See [Cloud docs](https://docs.templatical.com/cloud/).
+The `@templatical/core/cloud` subpath provides Templatical Cloud integrations (Auth, API client, WebSocket, AI chat/rewrite, collaboration, comments, scoring, and `createCloudSavedBlocksProvider`). Used by `@templatical/editor`'s `initCloud()`. See [Cloud docs](https://docs.templatical.com/cloud/).
 
 ## Documentation
 

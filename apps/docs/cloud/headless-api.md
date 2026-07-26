@@ -112,21 +112,28 @@ await api.resolveComment('template-id', 'comment-id', {
 });
 ```
 
-## Saved Modules
+## Saved Blocks
 
 ```js
-// List modules
-const modules = await api.listModules();
+// List saved blocks
+const savedBlocks = await api.listModules();
 
-// Create a module
-const module = await api.createModule({
+// Create a saved block
+const savedBlock = await api.createModule({
   name: 'Product Card',
   content: sectionContent,
 });
 
-// Delete a module
-await api.deleteModule('module-id');
+// Delete a saved block
+await api.deleteModule('saved-block-id');
 ```
+
+::: tip
+The REST routes and `ApiClient` method names keep their original `module`
+wording for backward compatibility — only the feature's name changed. For the
+editor-side feature and the storage-provider interface, see
+[Saved Blocks](/guide/saved-blocks).
+:::
 
 ## Test Emails
 
@@ -177,10 +184,10 @@ All routes are scoped to a project and tenant:
 | `templates/{id}/ai/score` | POST | Template quality scoring |
 | `templates/{id}/ai/fix-finding` | POST | AI fix scoring finding |
 | `templates/{id}/ai/generate-from-design` | POST | Design-to-template conversion |
-| `saved-modules` | GET | List modules |
-| `saved-modules` | POST | Create module |
-| `saved-modules/{id}` | PUT | Update module |
-| `saved-modules/{id}` | DELETE | Delete module |
+| `saved-modules` | GET | List saved blocks |
+| `saved-modules` | POST | Create saved block |
+| `saved-modules/{id}` | PUT | Update saved block |
+| `saved-modules/{id}` | DELETE | Delete saved block |
 | `media/browse` | GET | Browse media |
 | `media/upload` | POST | Upload media |
 | `media/delete` | POST | Delete media |

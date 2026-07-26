@@ -131,7 +131,9 @@ const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 
 const caps = inject(CAPABILITIES_KEY, {});
 
-const canSaveAsModule = computed(() => !!caps.savedModules);
+const canSaveAsBlock = computed(
+  () => caps.savedBlocks?.isAvailable.value === true,
+);
 
 const blockCommentCount = computed(
   () => caps.comments?.getBlockCount(props.block.id) ?? 0,
@@ -185,8 +187,8 @@ function handleDuplicate(): void {
   blockActions?.duplicateBlock(props.block);
 }
 
-function handleSaveAsModule(): void {
-  caps.savedModules?.openSaveDialog(props.block.id);
+function handleSaveAsBlock(): void {
+  caps.savedBlocks?.openSaveDialog(props.block.id);
 }
 
 function handleConditionToggle(): void {
@@ -235,11 +237,11 @@ function handleConditionToggle(): void {
         <Copy :size="14" :stroke-width="1.5" />
       </button>
       <button
-        v-if="canSaveAsModule"
+        v-if="canSaveAsBlock"
         class="tpl-block-action-btn tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-sm tpl:border-none tpl:transition-colors tpl:duration-150"
-        :aria-label="t.blockActions.saveAsModule"
-        :title="t.blockActions.saveAsModule"
-        @click.stop="handleSaveAsModule"
+        :aria-label="t.blockActions.saveAsBlock"
+        :title="t.blockActions.saveAsBlock"
+        @click.stop="handleSaveAsBlock"
       >
         <Bookmark :size="14" :stroke-width="1.5" />
       </button>

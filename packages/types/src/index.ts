@@ -37,6 +37,13 @@ export { HEADING_LEVEL_FONT_SIZE } from "./blocks";
 export type { SocialIconGlyph } from "./social";
 export { SOCIAL_ICON_GLYPHS } from "./social";
 
+// Saved blocks (reusable user-authored block groups + the storage contract)
+export type {
+  SavedBlock,
+  SavedBlocksListParams,
+  SavedBlocksProvider,
+} from "./saved-blocks";
+
 // Type guards
 export {
   isButton,
@@ -195,7 +202,6 @@ export type {
   PlanLimits,
   ProxyAuthConfig,
   RewriteData,
-  SavedModule,
   SaveResult,
   ScoringCategory,
   ScoringFinding,

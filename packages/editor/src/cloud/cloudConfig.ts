@@ -94,7 +94,7 @@ export interface TemplaticalCloudEditorConfig {
   blockDefaults?: BlockDefaults;
   templateDefaults?: TemplateDefaults;
 
-  modules?: boolean;
+  savedBlocks?: boolean;
   autoSave?: boolean;
   autoSaveDebounce?: number;
 

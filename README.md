@@ -35,7 +35,7 @@
 
 ---
 
-**Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (so they render correctly in every email client), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. An optional Cloud tier is in development for AI rewrites, real-time collaboration, comments, snapshots, saved modules, multi-tenancy, test email sending, MCP support, and more.
+**Templatical** is a production-ready drag-and-drop email editor you can drop into any web app with a single function call. Templates are portable JSON, output is MJML (so they render correctly in every email client), and the editor itself is framework-agnostic — Vue under the hood, but you embed it in React, Svelte, Angular, or vanilla JS the same way. An optional Cloud tier is in development for AI rewrites, real-time collaboration, comments, snapshots, saved blocks, multi-tenancy, test email sending, MCP support, and more.
 
 ## Design a complete email from a prompt
 
@@ -62,6 +62,7 @@ Things that are usually paid features in commercial editors — open-source in T
 - **Custom blocks with API-backed data sources** — register your own block types whose content is rendered from a static template _or_ fetched live from your API at preview time. Typically a paid-tier feature in commercial editors.
 - **Merge tags with pluggable syntax** — `{{handlebars}}`, `{liquid}`, `${js}`, or your own — with automatic human-readable label replacement directly in the editor canvas. Build your CRM-aware tag picker in minutes.
 - **Display conditions** — show/hide blocks based on recipient attributes, with live preview in the editor.
+- **Reusable saved blocks** — let users save a group of blocks and re-insert it across templates, with search, preview, rename and delete. You supply storage via a small provider interface (or use the bundled browser-local one); the editor owns the whole UI.
 - **Full theming via design tokens** — 27 OKLch tokens, custom fonts, dark mode, complete theme overrides. No CSS hacking, no paid tier.
 - **Template & block defaults** — define your brand once. New templates and new blocks pick up your brand automatically.
 
@@ -75,7 +76,7 @@ Things that are usually paid features in commercial editors — open-source in T
 - **Framework-agnostic** — first-class examples for React, Vue, Svelte, Angular, vanilla.
 - **Multilingual** — English, German, Portuguese, Spanish & Catalan built in, easy to add more locales.
 - **TypeScript strict** — full types for blocks, config, and callbacks.
-- **Battle-tested** — ~1,400 unit tests + Playwright E2E coverage.
+- **Battle-tested** — ~3,900 unit tests + Playwright E2E coverage.
 
 ## Quick Start
 
@@ -137,6 +138,7 @@ The only restriction: don't repackage Templatical itself as a directly competing
 - [Block Reference](https://docs.templatical.com/guide/blocks) — all 14 block types
 - [Theming](https://docs.templatical.com/guide/theming) — design tokens, dark mode, custom fonts
 - [Custom Blocks](https://docs.templatical.com/guide/custom-blocks) — extend with your own
+- [Saved Blocks](https://docs.templatical.com/guide/saved-blocks) — reusable block groups over your own storage
 - [AI Agent Skill](https://docs.templatical.com/guide/agent-skill) — generate emails from a prompt in your own agent
 - [Cloud (AI, Collab, Comments)](https://docs.templatical.com/cloud/) — optional managed tier
 - [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)

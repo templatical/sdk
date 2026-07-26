@@ -73,12 +73,9 @@ export type {
 export { useWebSocket } from "./web-socket";
 export type { UseWebSocketOptions, UseWebSocketReturn } from "./web-socket";
 
-// Saved modules
-export { useSavedModules } from "./saved-modules";
-export type {
-  UseSavedModulesOptions,
-  UseSavedModulesReturn,
-} from "./saved-modules";
+// Saved blocks — Cloud storage adapter for the shared `useSavedBlocks`
+// composable in `@templatical/core`. Replaces the former `useSavedModules`.
+export { createCloudSavedBlocksProvider } from "./saved-blocks-provider";
 
 // Snapshots
 export { useSnapshotHistory } from "./snapshots";

@@ -95,6 +95,7 @@ For AI rewrite, real-time collaboration, comments, snapshots, and saved modules,
 - [Theming](https://docs.templatical.com/guide/theming)
 - [Shadow DOM](https://docs.templatical.com/guide/shadow-dom)
 - [Custom blocks](https://docs.templatical.com/guide/custom-blocks)
+- [Saved blocks](https://docs.templatical.com/guide/saved-blocks)
 
 Full docs at **[docs.templatical.com](https://docs.templatical.com)**.
 

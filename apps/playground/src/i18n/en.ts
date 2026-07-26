@@ -354,7 +354,7 @@ export default {
       aiWriting: "AI Writing",
       realtimeCollaboration: "Real-time Collaboration",
       mediaLibrary: "Media Library",
-      savedModules: "Saved Modules",
+      savedBlocks: "Saved Blocks",
       testEmail: "Test Email",
       mcpIntegration: "MCP Integration",
       commenting: "Commenting",
