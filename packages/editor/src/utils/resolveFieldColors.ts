@@ -40,8 +40,11 @@ export interface ResolvedFieldColors {
 
 /**
  * Resolve a custom-block color field's own `presets` / `allowCustom` against
- * the already-resolved editor-wide palette. **Narrowing only** — a field can
- * restrict what the editor-wide `colors` config offers, never widen it:
+ * the already-resolved editor-wide palette. A field narrows the author's
+ * freedom, not the palette: it can lock this field or give it its own presets,
+ * but never unlock what the editor locked — and its `presets` *replace* the
+ * editor grid rather than intersecting it (a locked field may list colors
+ * outside it):
  *
  * - `allowCustom` — locked stays locked. `editorResolved.allowCustom === false`
  *   wins outright, so an explicit field `allowCustom: true` under a locked
