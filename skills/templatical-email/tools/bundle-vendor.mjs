@@ -57,7 +57,11 @@ export const TARGETS = [
     contents: `export * from ${JSON.stringify(resolve(packages, "quality/dist/index.js"))};\n`,
     requires: {
       path: resolve(packages, "quality/dist/index.js"),
-      hint: "pnpm --filter @templatical/quality build",
+      // The `...` suffix builds quality's dependency graph too: its own build
+      // runs tsc, which needs @templatical/types' declarations emitted first.
+      // Without it this fails on any tree where nothing has been built yet —
+      // a fresh clone, or CI.
+      hint: 'pnpm --filter "@templatical/quality..." build',
     },
     notice:
       "MIT License, Copyright (c) Templatical — bundles htmlparser2 (MIT)\n// https://github.com/templatical/sdk",
