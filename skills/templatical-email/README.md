@@ -17,15 +17,19 @@ templatical-email/
     schema.json            # JSON Schema for TemplateContent — the validation contract
     block-guide.md         # concise per-block field reference
     examples/*.json        # complete, valid templates to model output on
-  scripts/
+  scripts/                 # invoked by the skill — ships and runs on the user's machine
     validate.mjs           # validates a template JSON (ajv + optional quality lint)
     import.mjs             # import Unlayer/BeeFree/HTML → Templatical JSON (via @templatical/import-*)
+    live-server.mjs        # live mode: zero-dep Node bridge (serves the editor, syncs edits)
+  tools/                   # maintainer-only — never invoked by the skill
     generate-schema.mjs    # regenerates schema.json from @templatical/types (maintainers)
     sync-editor-version.mjs # syncs live mode's CDN editor pin to @templatical/editor (release)
-    live-server.mjs        # live mode: zero-dep Node bridge (serves the editor, syncs edits)
   live/
     index.html             # live mode: CDN editor harness + sync + export buttons
 ```
+
+The `scripts/` vs `tools/` split is load-bearing: a change under `scripts/`, `reference/`, `live/` or `SKILL.md` reaches installed users, so
+`.github/workflows/plugin-version.yml` requires a `plugin.json` version bump for it. Changes confined to `tools/`, `tests/` or `evals/` are exempt.
 
 ## Two modes
 

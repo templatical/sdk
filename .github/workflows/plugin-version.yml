@@ -26,6 +26,7 @@ jobs:
       # private skill (changesets skips private packages), but skip them the way
       # ci.yml does so a stray one can't block the release train.
       IS_VP: ${{ startsWith(github.head_ref, 'changeset-release/') }}
+      SKILL: skills/templatical-email
       MANIFEST: skills/templatical-email/.claude-plugin/plugin.json
     steps:
       - name: Skip on Version Packages PR
@@ -52,9 +53,23 @@ jobs:
 
           # The path gate lives here rather than in `on:` so the check always
           # reports a status. Most PRs land in this branch and pass instantly.
-          changed="$(git diff --name-only "$BASE_SHA" HEAD -- skills/templatical-email/)"
+          #
+          # Only files an INSTALLED user gets the behavior of count. The excluded
+          # dirs ship in the plugin cache but are never invoked from SKILL.md:
+          # tools/ is maintainer tooling (its OUTPUT — reference/schema.json and
+          # the EDITOR_VERSION pin in scripts/live-server.mjs — is what reaches
+          # users, and both sit outside this list), tests/ and evals/ are CI-only.
+          # This is a denylist on purpose: any new path defaults to requiring a
+          # bump, so forgetting to update this list fails safe.
+          changed="$(git diff --name-only "$BASE_SHA" HEAD -- \
+            "$SKILL/" \
+            ":(exclude)$SKILL/tools/**" \
+            ":(exclude)$SKILL/tests/**" \
+            ":(exclude)$SKILL/evals/**" \
+            ":(exclude)$SKILL/vitest.config.ts")"
+
           if [ -z "$changed" ]; then
-            echo "No changes under skills/templatical-email/ — no bump required."
+            echo "No user-facing changes under $SKILL/ — no bump required."
             exit 0
           fi
 
@@ -72,8 +87,16 @@ jobs:
 
           base_version="$(git show "$BASE_SHA:$MANIFEST" | jq -r '.version // empty')"
 
+          # Must INCREASE, not merely differ — a downgrade would re-issue a
+          # version some installs already cached, so they'd never see the change.
+          if [ "$head_version" != "$base_version" ] &&
+             [ "$(printf '%s\n%s\n' "$base_version" "$head_version" | sort -V | tail -1)" != "$head_version" ]; then
+            echo "::error file=$MANIFEST::Version went backwards: $base_version -> $head_version. Installs that already cached $head_version would never pick this up."
+            exit 1
+          fi
+
           if [ "$head_version" = "$base_version" ]; then
-            echo "::error file=$MANIFEST::This PR changes skills/templatical-email/** but leaves version at $head_version. Bump it so installed plugins actually update (see docs: version resolution). Files changed:"
+            echo "::error file=$MANIFEST::This PR changes user-facing files under $SKILL/ but leaves version at $head_version. Bump it so installed plugins actually update (see docs: version resolution). Tests, evals and dev tooling are exempt — these files are not:"
             printf '%s\n' "$changed" | sed 's/^/  /'
             exit 1
           fi

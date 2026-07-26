@@ -6,8 +6,8 @@
   "description": "Agent Skill: generate and validate Templatical email template JSON",
   "license": "MIT",
   "scripts": {
-    "generate-schema": "node scripts/generate-schema.mjs",
-    "sync-editor-version": "node scripts/sync-editor-version.mjs",
+    "generate-schema": "node tools/generate-schema.mjs",
+    "sync-editor-version": "node tools/sync-editor-version.mjs",
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {

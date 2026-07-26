@@ -7,7 +7,7 @@ import {
   applyEditorVersion,
   applyPluginPatchBump,
   bumpPatch,
-} from "../scripts/sync-editor-version.mjs";
+} from "../tools/sync-editor-version.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (rel: string) => readFileSync(resolve(here, rel), "utf8");

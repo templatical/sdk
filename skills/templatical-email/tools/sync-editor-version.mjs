@@ -13,7 +13,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const EDITOR_PKG = resolve(here, "../../../packages/editor/package.json");
-const LIVE_SERVER = resolve(here, "./live-server.mjs");
+const LIVE_SERVER = resolve(here, "../scripts/live-server.mjs");
 const PLUGIN_MANIFEST = resolve(here, "../.claude-plugin/plugin.json");
 
 const EDITOR_VERSION_RE = /(export const EDITOR_VERSION = ")[^"]*(";)/;
