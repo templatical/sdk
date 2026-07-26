@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "ajv": "^8.20.0",
-    "esbuild": "^0.27.0",
+    "esbuild": "^0.28.1",
     "ts-json-schema-generator": "^2.9.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
