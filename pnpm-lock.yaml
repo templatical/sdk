@@ -250,8 +250,8 @@ importers:
         version: 3.5.40
     devDependencies:
       pusher-js:
-        specifier: ^8.5.0
-        version: 8.5.0
+        specifier: ^8.6.0
+        version: 8.6.0
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -3993,8 +3993,8 @@ packages:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
 
-  pusher-js@8.5.0:
-    resolution: {integrity: sha512-V7uzGi9bqOOOyM/6IkJdpFyjGZj7llz1v0oWnYkZKcYLvbz6VcHVLmzKqkvegjuMumpfIEKGLmWHwFb39XFCpw==}
+  pusher-js@8.6.0:
+    resolution: {integrity: sha512-wShJPfCS/kYkCBVzVW67wa9cnQIgHTszEK2XHNrFkOgGruuGw081aERAxfRjfdFU+WcIt8x6dvbwkTW4iZuQ8Q==}
 
   quansync@0.2.11:
     resolution: {integrity: sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA==}
@@ -8611,7 +8611,7 @@ snapshots:
 
   punycode@2.3.1: {}
 
-  pusher-js@8.5.0:
+  pusher-js@8.6.0:
     dependencies:
       tweetnacl: 1.0.3
 
