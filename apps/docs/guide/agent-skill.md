@@ -42,12 +42,7 @@ cp -r skills/templatical-email ~/.cursor/skills/
 cp -r skills/templatical-email ~/.agents/skills/
 ```
 
-Then install the validator's one dependency inside the copied folder:
-
-```bash
-npm install ajv                    # required
-npm install @templatical/quality   # optional but highly recommended — adds accessibility / structure / link linting
-```
+No install step: the validator's dependencies ship with the skill, in `vendor/`. Structural validation and the accessibility / structure / link lint both work straight after copying, offline included.
 
 ## Using it
 

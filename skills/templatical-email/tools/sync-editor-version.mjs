@@ -7,6 +7,7 @@
 // then this, so the Version Packages PR carries the bumped pin. Also runnable
 // by hand: `pnpm --filter @templatical/email-skill run sync-editor-version`.
 // tests/cdn-pin.test.ts is the safety net that fails CI if the two ever drift.
+import { bundleVendor } from "./bundle-vendor.mjs";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -85,19 +86,38 @@ export function bumpPluginVersion() {
   return { from, to };
 }
 
-function main() {
+async function main() {
   const { version, changed } = syncEditorVersion();
-  if (!changed) {
-    console.log(`EDITOR_VERSION already ${version} — no change`);
+  console.log(
+    changed
+      ? `Synced EDITOR_VERSION → ${version} in scripts/live-server.mjs`
+      : `EDITOR_VERSION already ${version} — no change`,
+  );
+
+  // @templatical/quality is vendored into vendor/quality.mjs, so a release that
+  // bumps it must re-bundle or installed skills keep linting with the old rules.
+  // Same for ajv when a dependency bump lands. Re-bundling here means the
+  // Version Packages PR carries the fresh artifact automatically.
+  let vendorChanged = false;
+  for (const r of await bundleVendor()) {
+    console.log(
+      `${r.changed ? "Re-bundled" : "Unchanged"} vendor/${r.file} — ${r.name} v${r.version}`,
+    );
+    vendorChanged ||= r.changed;
+  }
+
+  if (!changed && !vendorChanged) {
     return;
   }
-  console.log(`Synced EDITOR_VERSION → ${version} in scripts/live-server.mjs`);
+
+  // One bump covers whatever moved: the plugin is cached by this version, so
+  // without it neither the new pin nor the new lint rules reach existing installs.
   const { from, to } = bumpPluginVersion();
   console.log(
-    `Bumped plugin version ${from} → ${to} so installed plugins pick up the new pin`,
+    `Bumped plugin version ${from} → ${to} so installed plugins pick up the change`,
   );
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  main();
+  await main();
 }

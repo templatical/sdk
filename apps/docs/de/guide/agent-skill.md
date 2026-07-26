@@ -42,12 +42,7 @@ cp -r skills/templatical-email ~/.cursor/skills/
 cp -r skills/templatical-email ~/.agents/skills/
 ```
 
-Installieren Sie anschließend die einzige Abhängigkeit des Validators im kopierten Ordner:
-
-```bash
-npm install ajv                    # erforderlich
-npm install @templatical/quality   # optional, aber sehr empfohlen — ergänzt Barrierefreiheits-, Struktur- und Link-Prüfungen
-```
+Kein Installationsschritt nötig: Die Abhängigkeiten des Validators sind im Skill enthalten, unter `vendor/`. Die strukturelle Validierung und die Barrierefreiheits-, Struktur- und Link-Prüfungen funktionieren direkt nach dem Kopieren – auch offline.
 
 ## Verwendung
 
