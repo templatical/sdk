@@ -36,8 +36,35 @@ describe('createCloudSavedBlocksProvider', () => {
     const provider = createCloudSavedBlocksProvider(createMockAuthManager());
     const result = await provider.list({ search: 'head' });
 
-    expect(ApiClient.prototype.listModules).toHaveBeenCalledWith('head');
+    expect(ApiClient.prototype.listModules).toHaveBeenCalledWith(
+      'head',
+      undefined,
+    );
     expect(result).toEqual(stored);
+  });
+
+  it('maps list() to ApiClient.listModules with the category filter', async () => {
+    vi.mocked(ApiClient.prototype.listModules).mockResolvedValue([]);
+
+    const provider = createCloudSavedBlocksProvider(createMockAuthManager());
+    await provider.list({ category: 'Promos' });
+
+    expect(ApiClient.prototype.listModules).toHaveBeenCalledWith(
+      undefined,
+      'Promos',
+    );
+  });
+
+  it('forwards both filters together', async () => {
+    vi.mocked(ApiClient.prototype.listModules).mockResolvedValue([]);
+
+    const provider = createCloudSavedBlocksProvider(createMockAuthManager());
+    await provider.list({ search: 'head', category: 'Promos' });
+
+    expect(ApiClient.prototype.listModules).toHaveBeenCalledWith(
+      'head',
+      'Promos',
+    );
   });
 
   it('passes undefined when list() is called with no params', async () => {
@@ -46,16 +73,49 @@ describe('createCloudSavedBlocksProvider', () => {
     const provider = createCloudSavedBlocksProvider(createMockAuthManager());
     await provider.list();
 
-    expect(ApiClient.prototype.listModules).toHaveBeenCalledWith(undefined);
+    expect(ApiClient.prototype.listModules).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+    );
   });
 
-  it('passes undefined when params omit search', async () => {
+  it('passes undefined when params omit both filters', async () => {
     vi.mocked(ApiClient.prototype.listModules).mockResolvedValue([]);
 
     const provider = createCloudSavedBlocksProvider(createMockAuthManager());
     await provider.list({});
 
-    expect(ApiClient.prototype.listModules).toHaveBeenCalledWith(undefined);
+    expect(ApiClient.prototype.listModules).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+    );
+  });
+
+  it('forwards category on create, so Cloud works once the column lands', async () => {
+    const created = createSavedBlock('b1', 'Hero');
+    vi.mocked(ApiClient.prototype.createModule).mockResolvedValue(created);
+
+    const provider = createCloudSavedBlocksProvider(createMockAuthManager());
+    const content = [createTitleBlock()];
+    await provider.create({ name: 'Hero', content, category: 'Promos' });
+
+    expect(ApiClient.prototype.createModule).toHaveBeenCalledWith({
+      name: 'Hero',
+      content,
+      category: 'Promos',
+    });
+  });
+
+  it('forwards a category-only patch on update', async () => {
+    const updated = createSavedBlock('b1', 'Hero');
+    vi.mocked(ApiClient.prototype.updateModule).mockResolvedValue(updated);
+
+    const provider = createCloudSavedBlocksProvider(createMockAuthManager());
+    await provider.update('b1', { category: 'Footers' });
+
+    expect(ApiClient.prototype.updateModule).toHaveBeenCalledWith('b1', {
+      category: 'Footers',
+    });
   });
 
   it('maps create() to ApiClient.createModule', async () => {

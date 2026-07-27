@@ -43,22 +43,48 @@ describe('useSavedBlocks', () => {
       expect(savedBlocks.value).toEqual(stored);
     });
 
-    it('forwards the search term as a params object', async () => {
+    /* `load` forwards its params verbatim. The editor's own browser always
+       calls it bare and filters in memory; these params only arrive from
+       headless callers driving the composable themselves. */
+    it('forwards a search term to the provider', async () => {
       const provider = createMockProvider();
 
       const { load } = useSavedBlocks({ provider });
-      await load('header');
+      await load({ search: 'header' });
 
       expect(provider.list).toHaveBeenCalledWith({ search: 'header' });
     });
 
-    it('passes undefined search when called with no argument', async () => {
+    it('forwards a category filter to the provider', async () => {
+      const provider = createMockProvider();
+
+      const { load } = useSavedBlocks({ provider });
+      await load({ category: 'Promos' });
+
+      expect(provider.list).toHaveBeenCalledWith({ category: 'Promos' });
+    });
+
+    it('forwards both filters together', async () => {
+      const provider = createMockProvider();
+
+      const { load } = useSavedBlocks({ provider });
+      await load({ search: 'header', category: 'Promos' });
+
+      expect(provider.list).toHaveBeenCalledWith({
+        search: 'header',
+        category: 'Promos',
+      });
+    });
+
+    it('passes nothing through when called with no argument', async () => {
       const provider = createMockProvider();
 
       const { load } = useSavedBlocks({ provider });
       await load();
 
-      expect(provider.list).toHaveBeenCalledWith({ search: undefined });
+      // Bare, not `{ search: undefined }` — a provider inspecting its argument
+      // sees "no filters requested" rather than an object of empty keys.
+      expect(provider.list).toHaveBeenCalledWith(undefined);
     });
 
     it('sets isLoading during the fetch and clears it after', async () => {
@@ -254,5 +280,160 @@ describe('useSavedBlocks', () => {
 
       await expect(remove('b1')).rejects.toThrow('Delete failed');
     });
+  });
+});
+
+describe('useSavedBlocks categories', () => {
+  function categorised(
+    id: string,
+    name: string,
+    category?: string,
+  ): SavedBlock {
+    return { id, name, content: [], ...(category ? { category } : {}) };
+  }
+
+  /* Derived, never stored: a category exists exactly as long as some entry
+     carries it, which is what lets the browser build its filter without a
+     registry or a fifth provider method. */
+  it('derives the distinct categories of the loaded entries', async () => {
+    const provider = createMockProvider({
+      list: vi.fn().mockResolvedValue([
+        categorised('a', 'A', 'Promos'),
+        categorised('b', 'B', 'Headers'),
+        categorised('c', 'C', 'Promos'),
+      ]),
+    });
+
+    const { categories, load } = useSavedBlocks({ provider });
+    await load();
+
+    expect(categories.value).toEqual(['Headers', 'Promos']);
+  });
+
+  it('sorts alphabetically regardless of provider order', async () => {
+    const provider = createMockProvider({
+      list: vi.fn().mockResolvedValue([
+        categorised('a', 'A', 'Zeta'),
+        categorised('b', 'B', 'alpha'),
+        categorised('c', 'C', 'Mid'),
+      ]),
+    });
+
+    const { categories, load } = useSavedBlocks({ provider });
+    await load();
+
+    // `localeCompare`, so case doesn't push lowercase to the end.
+    expect(categories.value).toEqual(['alpha', 'Mid', 'Zeta']);
+  });
+
+  it('ignores entries with no category, and blank ones', async () => {
+    const provider = createMockProvider({
+      list: vi.fn().mockResolvedValue([
+        categorised('a', 'A'),
+        categorised('b', 'B', '   '),
+        categorised('c', 'C', 'Real'),
+      ]),
+    });
+
+    const { categories, load } = useSavedBlocks({ provider });
+    await load();
+
+    expect(categories.value).toEqual(['Real']);
+  });
+
+  it('is empty when nothing is categorised', async () => {
+    const provider = createMockProvider({
+      list: vi.fn().mockResolvedValue([categorised('a', 'A')]),
+    });
+
+    const { categories, load } = useSavedBlocks({ provider });
+    await load();
+
+    expect(categories.value).toEqual([]);
+  });
+
+  it('picks up a category introduced by a create', async () => {
+    const provider = createMockProvider({
+      create: vi.fn().mockResolvedValue(categorised('n', 'New', 'Fresh')),
+    });
+
+    const { categories, create } = useSavedBlocks({ provider });
+    expect(categories.value).toEqual([]);
+
+    await create('New', [], 'Fresh');
+
+    expect(categories.value).toEqual(['Fresh']);
+  });
+
+  it('drops a category whose last entry was removed', async () => {
+    const provider = createMockProvider({
+      list: vi
+        .fn()
+        .mockResolvedValue([
+          categorised('a', 'A', 'Solo'),
+          categorised('b', 'B', 'Kept'),
+        ]),
+    });
+
+    const { categories, load, remove } = useSavedBlocks({ provider });
+    await load();
+    expect(categories.value).toEqual(['Kept', 'Solo']);
+
+    await remove('a');
+
+    expect(categories.value).toEqual(['Kept']);
+  });
+
+  it('follows a recategorising update', async () => {
+    const provider = createMockProvider({
+      list: vi.fn().mockResolvedValue([categorised('a', 'A', 'Before')]),
+      update: vi.fn().mockResolvedValue(categorised('a', 'A', 'After')),
+    });
+
+    const { categories, load, update } = useSavedBlocks({ provider });
+    await load();
+    expect(categories.value).toEqual(['Before']);
+
+    await update('a', { category: 'After' });
+
+    expect(categories.value).toEqual(['After']);
+  });
+});
+
+describe('useSavedBlocks create with category', () => {
+  it('sends the category through to the provider', async () => {
+    const provider = createMockProvider();
+
+    const { create } = useSavedBlocks({ provider });
+    await create('Hero', [], 'Promos');
+
+    expect(provider.create).toHaveBeenCalledWith({
+      name: 'Hero',
+      content: [],
+      category: 'Promos',
+    });
+  });
+
+  it('omits the key entirely when no category is given', async () => {
+    const provider = createMockProvider();
+
+    const { create } = useSavedBlocks({ provider });
+    await create('Hero', []);
+
+    // Not `{ category: undefined }` — a provider serialising this to JSON
+    // should not receive a field the caller never set.
+    expect(provider.create).toHaveBeenCalledWith({ name: 'Hero', content: [] });
+    const [input] = (provider.create as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect('category' in input).toBe(false);
+  });
+
+  it('omits the key for an empty-string category', async () => {
+    const provider = createMockProvider();
+
+    const { create } = useSavedBlocks({ provider });
+    await create('Hero', [], '');
+
+    const [input] = (provider.create as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect('category' in input).toBe(false);
   });
 });

@@ -25,6 +25,15 @@ export interface SavedBlock {
    */
   content: Block[];
   /**
+   * Optional free-text grouping, surfaced in the browser as a filter.
+   *
+   * Flat and free-text by design — there is no category registry and no
+   * nesting. The editor derives the set of available categories from the
+   * entries it has loaded, so a category exists exactly as long as something
+   * carries it; an entry without one is simply uncategorised.
+   */
+  category?: string;
+  /**
    * Store-assigned timestamps, used for display only: the browser shows a
    * relative "5m ago" label per entry (preferring `updated_at`, falling back
    * to `created_at`) with the absolute date on hover.
@@ -41,14 +50,19 @@ export interface SavedBlock {
  * Parameters for {@link SavedBlocksProvider.list}. An object (rather than
  * positional arguments) so future filters can be added without breaking
  * existing provider implementations.
+ *
+ * **These are only sent by headless callers.** The editor's own browser calls
+ * `list()` with no parameters and filters the loaded entries in memory — that
+ * way a provider stays four dumb methods and still gets a working search box
+ * and category filter. They arrive only when you drive `useSavedBlocks`
+ * yourself (see the guide's "Headless use"), so implement them if you want
+ * server-side filtering for your own UI and ignore them otherwise.
  */
 export interface SavedBlocksListParams {
-  /**
-   * Free-text filter over the saved block's `name`. Matching is the provider's
-   * responsibility — server-side implementations typically push this into the
-   * query, local ones filter in memory.
-   */
+  /** Free-text filter over the saved block's `name`. */
   search?: string;
+  /** Exact-match filter over {@link SavedBlock.category}. */
+  category?: string;
 }
 
 /**
@@ -84,17 +98,27 @@ export interface SavedBlocksListParams {
  * ```
  */
 export interface SavedBlocksProvider {
-  /** Fetch all saved blocks, optionally filtered. */
+  /**
+   * Fetch saved blocks. The editor calls this with no arguments and expects
+   * everything the current user may see — scoping the result per user, tenant
+   * or permission is yours to do here. {@link SavedBlocksListParams} is only
+   * populated by headless callers; honouring it is optional.
+   */
   list(params?: SavedBlocksListParams): Promise<SavedBlock[]>;
   /** Persist a new saved block and return it with its store-assigned `id`. */
-  create(input: { name: string; content: Block[] }): Promise<SavedBlock>;
+  create(input: {
+    name: string;
+    content: Block[];
+    category?: string;
+  }): Promise<SavedBlock>;
   /**
    * Apply a partial update and return the stored result. Renaming is
-   * `update(id, { name })` — there is no separate rename method.
+   * `update(id, { name })` and recategorising is `update(id, { category })` —
+   * there are no separate methods for either.
    */
   update(
     id: string,
-    patch: Partial<{ name: string; content: Block[] }>,
+    patch: Partial<{ name: string; content: Block[]; category: string }>,
   ): Promise<SavedBlock>;
   /** Remove a saved block. Resolves once the store has applied the delete. */
   delete(id: string): Promise<void>;

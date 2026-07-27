@@ -26,23 +26,39 @@ const savedBlocks = requireInject(SAVED_BLOCKS_KEY, "SavedBlocksBrowserModal");
 const editor = requireInject(EDITOR_KEY, "SavedBlocksBrowserModal");
 
 const searchQuery = ref("");
+/** `""` = no category filter. Matched exactly against `SavedBlock.category`. */
+const categoryFilter = ref("");
 const selectedId = ref<string | null>(null);
 const confirmDeleteId = ref<string | null>(null);
 const renamingId = ref<string | null>(null);
 const renameDraft = ref("");
+const renameCategoryDraft = ref("");
 const renameInput = ref<HTMLInputElement | null>(null);
 // 'end' = append, 'beginning' = index 0, or block id = after that block
 const insertPosition = ref<string>("end");
 
 // Order is the provider's to decide — the editor never re-sorts. Whatever
 // `list()` returns is what the user sees (the bundled localStorage adapter, for
-// instance, returns newest-first). Search only filters; it never reorders.
+// instance, returns newest-first). Filters only narrow; they never reorder.
+//
+// Both filters run in memory over the loaded entries rather than round-tripping
+// to the provider: that keeps a BYO provider at four dumb methods, and it is
+// what lets the category options below be derived at all — a provider-filtered
+// response could not tell us which other categories exist.
 const filtered = computed(() => {
-  const all = savedBlocks.savedBlocks.value;
-  if (!searchQuery.value) return all;
-  const query = searchQuery.value.toLowerCase();
-  return all.filter((b) => b.name.toLowerCase().includes(query));
+  const query = searchQuery.value.trim().toLowerCase();
+  const category = categoryFilter.value;
+  return savedBlocks.savedBlocks.value.filter((b) => {
+    if (query && !b.name.toLowerCase().includes(query)) return false;
+    if (category && b.category !== category) return false;
+    return true;
+  });
 });
+
+/** Whether any filter is narrowing the list — drives the empty-state copy. */
+const isFiltering = computed(
+  () => searchQuery.value.trim().length > 0 || categoryFilter.value !== "",
+);
 
 const selected = computed(() => {
   if (!selectedId.value) return null;
@@ -93,6 +109,7 @@ watch(
   (visible) => {
     if (visible) {
       searchQuery.value = "";
+      categoryFilter.value = "";
       selectedId.value = null;
       confirmDeleteId.value = null;
       renamingId.value = null;
@@ -160,6 +177,7 @@ async function handleDelete(id: string): Promise<void> {
 async function startRename(saved: SavedBlock): Promise<void> {
   renamingId.value = saved.id;
   renameDraft.value = saved.name;
+  renameCategoryDraft.value = saved.category ?? "";
   confirmDeleteId.value = null;
   await nextTick();
   renameInput.value?.focus();
@@ -169,6 +187,7 @@ async function startRename(saved: SavedBlock): Promise<void> {
 function cancelRename(): void {
   renamingId.value = null;
   renameDraft.value = "";
+  renameCategoryDraft.value = "";
 }
 
 async function commitRename(id: string): Promise<void> {
@@ -176,18 +195,39 @@ async function commitRename(id: string): Promise<void> {
   // input can still emit `blur`, and Enter commits then blurs. Either would
   // otherwise fire a second, unwanted update.
   if (renamingId.value !== id) return;
-  const next = renameDraft.value.trim();
+  const nextName = renameDraft.value.trim();
+  const nextCategory = renameCategoryDraft.value.trim();
   const current = savedBlocks.savedBlocks.value.find((b) => b.id === id);
-  // Skip the round-trip when the name is empty or unchanged.
-  if (!next || next === current?.name) {
+
+  // An empty name is not a rename — fall back to what's stored, so clearing
+  // the field and blurring can't wipe the entry's name.
+  const patch: Partial<{ name: string; category: string }> = {};
+  if (nextName && nextName !== current?.name) patch.name = nextName;
+  // "" is meaningful here: it clears the category. Only skip when unchanged.
+  if (nextCategory !== (current?.category ?? "")) patch.category = nextCategory;
+
+  // Skip the round-trip when nothing actually changed.
+  if (Object.keys(patch).length === 0) {
     cancelRename();
     return;
   }
   try {
-    await savedBlocks.update(id, { name: next });
+    await savedBlocks.update(id, patch);
   } finally {
     cancelRename();
   }
+}
+
+/**
+ * Commit when focus leaves the edit row entirely — not when it moves between
+ * the name and category inputs. A plain `@blur` on each input would commit
+ * (and unmount the row) the moment the user tabbed from one to the other.
+ */
+function onEditFocusOut(event: FocusEvent, id: string): void {
+  const row = event.currentTarget as HTMLElement;
+  const next = event.relatedTarget as Node | null;
+  if (next && row.contains(next)) return;
+  void commitRename(id);
 }
 
 function handleInsert(): void {
@@ -252,8 +292,10 @@ function handleKeydown(event: KeyboardEvent): void {
         <div
           class="tpl:flex tpl:w-[300px] tpl:shrink-0 tpl:flex-col tpl:overflow-hidden"
         >
-          <!-- Search -->
-          <div class="tpl:px-4 tpl:pt-4 tpl:pb-3">
+          <!-- Search + category filter -->
+          <div
+            class="tpl:flex tpl:flex-col tpl:gap-2 tpl:px-4 tpl:pt-4 tpl:pb-3"
+          >
             <div class="tpl:relative">
               <Search
                 :size="14"
@@ -267,7 +309,33 @@ function handleKeydown(event: KeyboardEvent): void {
                 class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:pl-9 tpl:pr-3 tpl:text-sm tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
               />
             </div>
+            <!-- Only worth showing once something is actually categorised. -->
+            <select
+              v-if="savedBlocks.categories.value.length > 0"
+              v-model="categoryFilter"
+              data-testid="saved-blocks-category-filter"
+              :aria-label="t.savedBlocks.filterByCategory"
+              class="tpl:h-8 tpl:w-full tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+            >
+              <option value="">{{ t.savedBlocks.allCategories }}</option>
+              <option
+                v-for="option in savedBlocks.categories.value"
+                :key="option"
+                :value="option"
+              >
+                {{ option }}
+              </option>
+            </select>
           </div>
+
+          <!-- Suggestions for the inline category editor, shared by every row -->
+          <datalist id="tpl-saved-block-browser-categories">
+            <option
+              v-for="option in savedBlocks.categories.value"
+              :key="option"
+              :value="option"
+            />
+          </datalist>
 
           <!-- List -->
           <div class="tpl:flex-1 tpl:overflow-y-auto tpl:px-4 tpl:pb-4">
@@ -281,8 +349,9 @@ function handleKeydown(event: KeyboardEvent): void {
                      wouldn't focus reliably. -->
                 <div
                   v-if="renamingId === item.id"
-                  class="tpl:w-full tpl:rounded-[var(--tpl-radius-md)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-primary)]"
+                  class="tpl:flex tpl:w-full tpl:flex-col tpl:gap-1 tpl:rounded-[var(--tpl-radius-md)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-primary)]"
                   style="background-color: var(--tpl-primary-light)"
+                  @focusout="onEditFocusOut($event, item.id)"
                 >
                   <input
                     :ref="(el) => (renameInput = el as HTMLInputElement | null)"
@@ -292,7 +361,17 @@ function handleKeydown(event: KeyboardEvent): void {
                     class="tpl:h-7 tpl:w-full tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
                     @keydown.enter.prevent.stop="commitRename(item.id)"
                     @keydown.esc.prevent.stop="cancelRename()"
-                    @blur="commitRename(item.id)"
+                  />
+                  <input
+                    v-model="renameCategoryDraft"
+                    type="text"
+                    data-testid="saved-blocks-edit-category"
+                    :aria-label="t.savedBlocks.category"
+                    :placeholder="t.savedBlocks.categoryPlaceholder"
+                    list="tpl-saved-block-browser-categories"
+                    class="tpl:h-7 tpl:w-full tpl:rounded-md tpl:border tpl:px-2 tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+                    @keydown.enter.prevent.stop="commitRename(item.id)"
+                    @keydown.esc.prevent.stop="cancelRename()"
                   />
                 </div>
 
@@ -328,6 +407,17 @@ function handleKeydown(event: KeyboardEvent): void {
                           count: item.content.length,
                         })
                       }}
+                    </span>
+                  </div>
+                  <div
+                    v-if="item.category"
+                    class="tpl:mt-1 tpl:flex tpl:items-center"
+                  >
+                    <span
+                      data-testid="saved-block-category"
+                      class="tpl:max-w-full tpl:truncate tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary)]"
+                    >
+                      {{ item.category }}
                     </span>
                   </div>
                   <div class="tpl:mt-1 tpl:flex tpl:items-center tpl:gap-1">
@@ -396,7 +486,7 @@ function handleKeydown(event: KeyboardEvent): void {
                 class="tpl:text-[var(--tpl-text-dim)]"
               />
               <p
-                v-if="searchQuery"
+                v-if="isFiltering"
                 class="tpl:mt-2 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
               >
                 {{ t.savedBlocks.noResults }}

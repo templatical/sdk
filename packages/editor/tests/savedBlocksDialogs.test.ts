@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import './dom-stubs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ref, nextTick } from 'vue';
+import { computed, ref, nextTick } from 'vue';
 import SaveBlockDialog from '../src/components/SaveBlockDialog.vue';
 import SavedBlocksBrowserModal from '../src/components/SavedBlocksBrowserModal.vue';
 import { mountEditor } from './helpers/mount';
@@ -94,9 +94,19 @@ function makeEditor(blocks: Block[], selectedBlockId: string | null = null) {
 }
 
 function makeHeadless(saved: SavedBlock[] = []) {
+  const savedBlocks = ref(saved);
   return {
-    savedBlocks: ref(saved),
+    savedBlocks,
     isLoading: ref(false),
+    // Mirrors the real derivation so the dialogs' category UI sees what the
+    // composable would actually give them.
+    categories: computed(() =>
+      [
+        ...new Set(
+          savedBlocks.value.map((b) => b.category?.trim()).filter(Boolean),
+        ),
+      ].sort() as string[],
+    ),
     load: vi.fn().mockResolvedValue(undefined),
     create: vi.fn().mockResolvedValue({ id: 'new', name: 'New', content: [] }),
     update: vi
@@ -398,6 +408,98 @@ describe('SaveBlockDialog', () => {
       const summary = get('[data-testid="saved-blocks-save-summary"]');
       expect(summary.textContent).toContain('Featured Article');
       expect(summary.textContent).toContain('Title');
+    });
+  });
+
+
+  describe('category', () => {
+    it('sends the typed category to create', async () => {
+      const a = createTitleBlock();
+      const { headless } = mountDialog([a], [a.id]);
+      await nextTick();
+
+      await setValue(
+        get<HTMLInputElement>('[data-testid="saved-blocks-category-input"]'),
+        'Promos',
+      );
+      await fillAndSave('Hero');
+
+      expect(headless.create).toHaveBeenCalledWith('Hero', [a], 'Promos');
+    });
+
+    it('sends undefined when the category is left blank', async () => {
+      const a = createTitleBlock();
+      const { headless } = mountDialog([a], [a.id]);
+      await nextTick();
+
+      await fillAndSave('Hero');
+
+      // An entry is either categorised or it is not — "" would surface as a
+      // nameless option in the browser's filter.
+      expect(headless.create).toHaveBeenCalledWith('Hero', [a], undefined);
+    });
+
+    it('sends undefined for a whitespace-only category', async () => {
+      const a = createTitleBlock();
+      const { headless } = mountDialog([a], [a.id]);
+      await nextTick();
+
+      await setValue(
+        get<HTMLInputElement>('[data-testid="saved-blocks-category-input"]'),
+        '   ',
+      );
+      await fillAndSave('Hero');
+
+      expect(headless.create.mock.calls[0][2]).toBe(undefined);
+    });
+
+    it('trims the category before saving', async () => {
+      const a = createTitleBlock();
+      const { headless } = mountDialog([a], [a.id]);
+      await nextTick();
+
+      await setValue(
+        get<HTMLInputElement>('[data-testid="saved-blocks-category-input"]'),
+        '  Promos  ',
+      );
+      await fillAndSave('Hero');
+
+      expect(headless.create.mock.calls[0][2]).toBe('Promos');
+    });
+
+    it('offers the already-used categories as datalist suggestions', async () => {
+      const a = createTitleBlock();
+      const headless = makeHeadless([
+        { id: 'x', name: 'X', content: [], category: 'Promos' },
+        { id: 'y', name: 'Y', content: [], category: 'Headers' },
+      ]);
+      mountDialog([a], [a.id], headless);
+      await nextTick();
+
+      const options = qAll<HTMLOptionElement>(
+        '#tpl-saved-block-categories option',
+      );
+      expect(options.map((o) => o.value)).toEqual(['Headers', 'Promos']);
+    });
+
+    it('resets the category when the dialog reopens', async () => {
+      const a = createTitleBlock();
+      const { wrapper } = mountDialog([a], [a.id]);
+      await nextTick();
+
+      const input = get<HTMLInputElement>(
+        '[data-testid="saved-blocks-category-input"]',
+      );
+      await setValue(input, 'Promos');
+
+      await wrapper.setProps({ visible: false });
+      await wrapper.setProps({ visible: true });
+      await nextTick();
+
+      expect(
+        get<HTMLInputElement>('[data-testid="saved-blocks-category-input"]')
+          .value,
+      ).toBe('');
     });
   });
 
@@ -787,6 +889,304 @@ describe('SavedBlocksBrowserModal', () => {
       await nextTick();
 
       expect(qAll('[data-testid="saved-block-updated"]')).toHaveLength(0);
+    });
+  });
+
+
+  describe('category filtering', () => {
+    const promoA: SavedBlock = {
+      id: 'p1',
+      name: 'Spring sale',
+      content: [createTitleBlock()],
+      category: 'Promos',
+    };
+    const promoB: SavedBlock = {
+      id: 'p2',
+      name: 'Winter sale',
+      content: [createTitleBlock()],
+      category: 'Promos',
+    };
+    const header: SavedBlock = {
+      id: 'h1',
+      name: 'Spring header',
+      content: [createTitleBlock()],
+      category: 'Headers',
+    };
+    const loose: SavedBlock = {
+      id: 'u1',
+      name: 'Uncategorised',
+      content: [createTitleBlock()],
+    };
+
+    function categorySelect(): HTMLSelectElement {
+      return get<HTMLSelectElement>(
+        '[data-testid="saved-blocks-category-filter"]',
+      );
+    }
+
+    function cardNames(): string[] {
+      return cards().map(
+        (c) => c.querySelector('span')?.textContent?.trim() ?? '',
+      );
+    }
+
+    /* Filtering runs in memory over the loaded entries. That is what keeps a
+       BYO provider at four dumb methods, and it is the only reason the option
+       list below can be derived at all — a provider-filtered response could
+       not say which other categories exist. */
+    it('narrows the list to the chosen category', async () => {
+      mountBrowser([promoA, header, loose]);
+      await nextTick();
+
+      await setValue(categorySelect(), 'Promos');
+
+      expect(cardNames()).toEqual(['Spring sale']);
+    });
+
+    it('shows everything again when the filter is cleared', async () => {
+      mountBrowser([promoA, header, loose]);
+      await nextTick();
+
+      await setValue(categorySelect(), 'Promos');
+      await setValue(categorySelect(), '');
+
+      expect(cardNames()).toEqual([
+        'Spring sale',
+        'Spring header',
+        'Uncategorised',
+      ]);
+    });
+
+    it('composes with the search box', async () => {
+      mountBrowser([promoA, promoB, header]);
+      await nextTick();
+
+      await setValue(categorySelect(), 'Promos');
+      await setValue(get<HTMLInputElement>('input[type="text"]'), 'spring');
+
+      // "Spring header" matches the search but not the category; "Winter sale"
+      // matches the category but not the search.
+      expect(cardNames()).toEqual(['Spring sale']);
+    });
+
+    it('excludes uncategorised entries from a category filter', async () => {
+      mountBrowser([promoA, loose]);
+      await nextTick();
+
+      await setValue(categorySelect(), 'Promos');
+
+      expect(cardNames()).toEqual(['Spring sale']);
+    });
+
+    it('preserves provider order while filtering', async () => {
+      mountBrowser([promoB, header, promoA]);
+      await nextTick();
+
+      await setValue(categorySelect(), 'Promos');
+
+      // Provider put Winter before Spring — filtering must not re-sort.
+      expect(cardNames()).toEqual(['Winter sale', 'Spring sale']);
+    });
+
+    it('shows the no-results state when a filter matches nothing', async () => {
+      mountBrowser([promoA]);
+      await nextTick();
+
+      await setValue(get<HTMLInputElement>('input[type="text"]'), 'zzz');
+
+      expect(popoverRootEl.textContent).toContain('savedBlocks.noResults');
+      expect(popoverRootEl.textContent).not.toContain('savedBlocks.emptyHint');
+    });
+
+    it('lists each category once, sorted, as filter options', async () => {
+      mountBrowser([promoA, header, promoB, loose]);
+      await nextTick();
+
+      const values = Array.from(categorySelect().options).map((o) => o.value);
+      expect(values).toEqual(['', 'Headers', 'Promos']);
+    });
+
+    it('hides the filter entirely when nothing is categorised', async () => {
+      mountBrowser([loose]);
+      await nextTick();
+
+      expect(qAll('[data-testid="saved-blocks-category-filter"]')).toHaveLength(
+        0,
+      );
+    });
+
+    it('shows the category on the card, and omits it when absent', async () => {
+      mountBrowser([promoA, loose]);
+      await nextTick();
+
+      const badges = qAll('[data-testid="saved-block-category"]');
+      expect(badges).toHaveLength(1);
+      expect(badges[0].textContent?.trim()).toBe('Promos');
+    });
+
+    it('resets the filter when the modal reopens', async () => {
+      const { wrapper } = mountBrowser([promoA, header]);
+      await nextTick();
+
+      await setValue(categorySelect(), 'Promos');
+      await wrapper.setProps({ visible: false });
+      await wrapper.setProps({ visible: true });
+      await nextTick();
+
+      expect(categorySelect().value).toBe('');
+      expect(cardNames()).toHaveLength(2);
+    });
+  });
+
+  describe('inline category editing', () => {
+    const entry: SavedBlock = {
+      id: 'a',
+      name: 'Header',
+      content: [createTitleBlock()],
+      category: 'Promos',
+    };
+
+    function editCategoryInput(): HTMLInputElement {
+      return get<HTMLInputElement>('[data-testid="saved-blocks-edit-category"]');
+    }
+
+    it('seeds the editor with the current category', async () => {
+      mountBrowser([entry]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.rename"]'));
+
+      expect(editCategoryInput().value).toBe('Promos');
+    });
+
+    it('patches only the category when only it changed', async () => {
+      const { headless } = mountBrowser([entry]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.rename"]'));
+      const input = editCategoryInput();
+      await setValue(input, 'Footers');
+      await keydown(input, 'Enter');
+
+      expect(headless.update).toHaveBeenCalledWith('a', {
+        category: 'Footers',
+      });
+    });
+
+    it('clears the category with an empty value', async () => {
+      const { headless } = mountBrowser([entry]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.rename"]'));
+      const input = editCategoryInput();
+      await setValue(input, '');
+      await keydown(input, 'Enter');
+
+      // "" is a real instruction here — it uncategorises the entry — unlike an
+      // empty name, which falls back to the stored one.
+      expect(headless.update).toHaveBeenCalledWith('a', { category: '' });
+    });
+
+    it('patches name and category together', async () => {
+      const { headless } = mountBrowser([entry]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.rename"]'));
+      await setValue(
+        get<HTMLInputElement>('input[aria-label="savedBlocks.rename"]'),
+        'Renamed',
+      );
+      const category = editCategoryInput();
+      await setValue(category, 'Footers');
+      await keydown(category, 'Enter');
+
+      expect(headless.update).toHaveBeenCalledWith('a', {
+        name: 'Renamed',
+        category: 'Footers',
+      });
+    });
+
+    it('skips the round-trip when neither field changed', async () => {
+      const { headless } = mountBrowser([entry]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.rename"]'));
+      await keydown(editCategoryInput(), 'Enter');
+
+      expect(headless.update).not.toHaveBeenCalled();
+    });
+
+    it('keeps the stored name when the name field is blanked', async () => {
+      const { headless } = mountBrowser([entry]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.rename"]'));
+      await setValue(
+        get<HTMLInputElement>('input[aria-label="savedBlocks.rename"]'),
+        '   ',
+      );
+      const category = editCategoryInput();
+      await setValue(category, 'Footers');
+      await keydown(category, 'Enter');
+
+      // Blanking the name must not wipe it — only the category is patched.
+      expect(headless.update).toHaveBeenCalledWith('a', {
+        category: 'Footers',
+      });
+    });
+
+    it('escape discards both drafts', async () => {
+      const { headless } = mountBrowser([entry]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.rename"]'));
+      const input = editCategoryInput();
+      await setValue(input, 'Discarded');
+      await keydown(input, 'Escape');
+
+      expect(headless.update).not.toHaveBeenCalled();
+      expect(cards()).toHaveLength(1);
+    });
+
+    /* Two inputs in one row: a plain per-input blur handler would commit and
+       unmount the row the moment focus moved from the name to the category. */
+    it('does not commit when focus moves between the two inputs', async () => {
+      const { headless } = mountBrowser([entry]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.rename"]'));
+      const name = get<HTMLInputElement>(
+        'input[aria-label="savedBlocks.rename"]',
+      );
+      const category = editCategoryInput();
+      await setValue(name, 'Renamed');
+
+      name.dispatchEvent(
+        new FocusEvent('focusout', { bubbles: true, relatedTarget: category }),
+      );
+      await nextTick();
+
+      expect(headless.update).not.toHaveBeenCalled();
+      // Still editing — the row did not collapse back to a card.
+      expect(qAll('[data-testid="saved-blocks-edit-category"]')).toHaveLength(1);
+    });
+
+    it('commits when focus leaves the row entirely', async () => {
+      const { headless } = mountBrowser([entry]);
+      await nextTick();
+
+      await click(get('button[aria-label="savedBlocks.rename"]'));
+      const category = editCategoryInput();
+      await setValue(category, 'Footers');
+
+      category.dispatchEvent(
+        new FocusEvent('focusout', { bubbles: true, relatedTarget: null }),
+      );
+      await nextTick();
+
+      expect(headless.update).toHaveBeenCalledWith('a', {
+        category: 'Footers',
+      });
     });
   });
 

@@ -38,6 +38,7 @@ const savedBlocks = requireInject(SAVED_BLOCKS_KEY, "SaveBlockDialog");
 const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 
 const name = ref("");
+const category = ref("");
 const isSaving = ref(false);
 const error = ref<string | null>(null);
 const announcement = ref("");
@@ -112,6 +113,7 @@ watch(
   (visible) => {
     if (visible) {
       name.value = "";
+      category.value = "";
       error.value = null;
       announcement.value = "";
       orderedIds.value = [...props.pickedIds];
@@ -140,7 +142,13 @@ async function handleSave(): Promise<void> {
   error.value = null;
 
   try {
-    await savedBlocks.create(name.value.trim(), blocks);
+    // Empty stays undefined rather than "": an entry is either categorised or
+    // it isn't, and a blank string would show up as a nameless filter option.
+    await savedBlocks.create(
+      name.value.trim(),
+      blocks,
+      category.value.trim() || undefined,
+    );
     emit("saved");
     emit("close");
   } catch (err) {
@@ -198,10 +206,41 @@ function handleKeydown(event: KeyboardEvent): void {
         <input
           v-model="name"
           type="text"
+          data-testid="saved-blocks-name-input"
           :placeholder="t.savedBlocks.namePlaceholder"
           class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
           :disabled="isSaving"
         />
+      </div>
+
+      <!-- Category: free text, with the already-used categories offered as
+           suggestions. A datalist rather than a <select> because the set is
+           derived from existing entries — there is no registry to pick from,
+           and the first entry in a category has to be able to name it. -->
+      <div class="tpl:mb-3 tpl:shrink-0">
+        <label
+          for="tpl-save-block-category"
+          class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+        >
+          {{ t.savedBlocks.category }}
+        </label>
+        <input
+          id="tpl-save-block-category"
+          v-model="category"
+          type="text"
+          data-testid="saved-blocks-category-input"
+          list="tpl-saved-block-categories"
+          :placeholder="t.savedBlocks.categoryPlaceholder"
+          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+          :disabled="isSaving"
+        />
+        <datalist id="tpl-saved-block-categories">
+          <option
+            v-for="option in savedBlocks.categories.value"
+            :key="option"
+            :value="option"
+          />
+        </datalist>
       </div>
 
       <!-- Summary of what the pick session chose. Which blocks were picked is

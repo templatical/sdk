@@ -347,7 +347,9 @@ test.describe("saved blocks — pick session", () => {
     // The checklist is gone for good.
     await expect(dialog.locator('button[role="switch"]')).toHaveCount(0);
 
-    await dialog.locator('input[type="text"]').fill("Header group");
+    await dialog
+      .locator(SELECTORS.savedBlocksNameInput)
+      .fill("Header group");
     await dialog
       .getByRole("button", { name: "Save Block", exact: true })
       .click();
@@ -504,7 +506,9 @@ test.describe("saved blocks — pick session", () => {
     const draggedOrder = [canvasIds[2], canvasIds[0], canvasIds[1]];
     await expect.poll(rowIds, { timeout: 5000 }).toEqual(draggedOrder);
 
-    await dialog.locator('input[type="text"]').fill("Dragged group");
+    await dialog
+      .locator(SELECTORS.savedBlocksNameInput)
+      .fill("Dragged group");
     await dialog
       .getByRole("button", { name: "Save Block", exact: true })
       .click();
@@ -553,5 +557,243 @@ test.describe("saved blocks — pick session", () => {
     await expect(
       page.locator(`[data-block-type="section"]${SELECTORS.blockPicked}`),
     ).toHaveCount(1);
+  });
+});
+
+/**
+ * Categories: optional free-text grouping. Filtering runs in the editor over
+ * whatever `list()` returned, so the provider stays a dumb store.
+ */
+test.describe("saved blocks — categories", () => {
+  const CATEGORISED = [
+    {
+      id: "seed-promo",
+      name: "Spring promo",
+      category: "Promos",
+      content: [
+        {
+          id: "cat-title-1",
+          type: "title",
+          content: "<p>Promo</p>",
+          level: 2,
+          textAlign: "left",
+          styles: PAD,
+        },
+      ],
+    },
+    {
+      id: "seed-head",
+      name: "Main header",
+      category: "Headers",
+      content: [
+        {
+          id: "cat-title-2",
+          type: "title",
+          content: "<p>Header</p>",
+          level: 2,
+          textAlign: "left",
+          styles: PAD,
+        },
+      ],
+    },
+    {
+      id: "seed-plain",
+      name: "Uncategorised bit",
+      content: [
+        {
+          id: "cat-title-3",
+          type: "title",
+          content: "<p>Plain</p>",
+          level: 3,
+          textAlign: "left",
+          styles: PAD,
+        },
+      ],
+    },
+  ];
+
+  async function openBrowser(
+    page: Page,
+    chooserPage: { goto(): Promise<void>; selectFirstTemplate(): Promise<void> },
+    editorPage: { waitForReady(): Promise<void>; dismissOverlays(): Promise<void> },
+  ): Promise<void> {
+    await page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
+      localStorage.setItem("tpl-playground-features-dismissed", "true");
+    });
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    await expect(page.locator(SELECTORS.savedBlocksBrowserTitle)).toBeVisible();
+  }
+
+  test("filters the browser by category and composes with search", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await seedSavedBlocks(page, CATEGORISED);
+    await openBrowser(page, chooserPage, editorPage);
+
+    const cards = page.locator(SELECTORS.savedBlocksCard);
+    await expect(cards).toHaveCount(3);
+
+    // Options are derived from the entries, so exactly the used ones appear.
+    const filter = page.locator(SELECTORS.savedBlocksCategoryFilter);
+    await expect(filter.locator("option")).toHaveText([
+      "All categories",
+      "Headers",
+      "Promos",
+    ]);
+
+    await filter.selectOption("Promos");
+    await expect(cards).toHaveCount(1);
+    await expect(cards.first()).toContainText("Spring promo");
+
+    // Search narrows further, and the two compose rather than replacing.
+    await page
+      .locator(SELECTORS.savedBlocksBrowser)
+      .locator('input[type="text"]')
+      .fill("zzz");
+    await expect(cards).toHaveCount(0);
+
+    await page
+      .locator(SELECTORS.savedBlocksBrowser)
+      .locator('input[type="text"]')
+      .fill("");
+    await filter.selectOption("");
+    await expect(cards).toHaveCount(3);
+  });
+
+  test("saves a new block with a category and filters by it", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await clearSavedBlocks(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
+      localStorage.setItem("tpl-playground-features-dismissed", "true");
+    });
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    await editorPage.selectBlock(0);
+    await page.locator(SELECTORS.savedBlocksSaveAction).click();
+    await page.locator(SELECTORS.savedBlocksPickConfirm).click();
+
+    const dialog = page.locator('[role="dialog"]', {
+      has: page.locator(SELECTORS.saveBlockDialogTitle),
+    });
+    await dialog.locator(SELECTORS.savedBlocksNameInput).fill("Categorised");
+    await dialog.locator(SELECTORS.savedBlocksCategoryInput).fill("Promos");
+    await dialog
+      .getByRole("button", { name: "Save Block", exact: true })
+      .click();
+
+    // Persisted with the category attached.
+    await expect
+      .poll(async () => {
+        const stored = await page.evaluate(
+          (key) => JSON.parse(localStorage.getItem(key as string) ?? "[]"),
+          STORE_KEY,
+        );
+        return stored.map((e: { name: string; category?: string }) => [
+          e.name,
+          e.category,
+        ]);
+      })
+      .toEqual([["Categorised", "Promos"]]);
+
+    // And it shows on the card in the browser.
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    await expect(page.locator(SELECTORS.savedBlocksCategoryBadge)).toHaveText(
+      "Promos",
+    );
+  });
+
+  test("saves without a category when the field is left empty", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await clearSavedBlocks(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
+      localStorage.setItem("tpl-playground-features-dismissed", "true");
+    });
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    await editorPage.selectBlock(0);
+    await page.locator(SELECTORS.savedBlocksSaveAction).click();
+    await page.locator(SELECTORS.savedBlocksPickConfirm).click();
+
+    const dialog = page.locator('[role="dialog"]', {
+      has: page.locator(SELECTORS.saveBlockDialogTitle),
+    });
+    await dialog.locator(SELECTORS.savedBlocksNameInput).fill("Plain");
+    await dialog
+      .getByRole("button", { name: "Save Block", exact: true })
+      .click();
+
+    await expect
+      .poll(async () => {
+        const stored = await page.evaluate(
+          (key) => JSON.parse(localStorage.getItem(key as string) ?? "[]"),
+          STORE_KEY,
+        );
+        return stored.map((e: Record<string, unknown>) => "category" in e);
+      })
+      .toEqual([false]);
+
+    // With nothing categorised, the filter isn't rendered at all.
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    await expect(page.locator(SELECTORS.savedBlocksBrowserTitle)).toBeVisible();
+    await expect(
+      page.locator(SELECTORS.savedBlocksCategoryFilter),
+    ).toHaveCount(0);
+  });
+
+  test("recategorises an existing block inline", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await seedSavedBlocks(page, CATEGORISED);
+    await openBrowser(page, chooserPage, editorPage);
+
+    await page
+      .locator(SELECTORS.savedBlocksBrowser)
+      .locator(SELECTORS.savedBlocksRenameBtn)
+      .first()
+      .click();
+
+    const categoryInput = page.locator(SELECTORS.savedBlocksEditCategory);
+    await expect(categoryInput).toHaveValue("Promos");
+    await categoryInput.fill("Footers");
+    await categoryInput.press("Enter");
+
+    await expect
+      .poll(async () => {
+        const stored = await page.evaluate(
+          (key) => JSON.parse(localStorage.getItem(key as string) ?? "[]"),
+          STORE_KEY,
+        );
+        return stored.find((e: { id: string }) => e.id === "seed-promo")
+          ?.category;
+      })
+      .toBe("Footers");
+
+    // The filter options follow the change — "Promos" no longer exists.
+    await expect(
+      page.locator(SELECTORS.savedBlocksCategoryFilter).locator("option"),
+    ).toHaveText(["All categories", "Footers", "Headers"]);
   });
 });

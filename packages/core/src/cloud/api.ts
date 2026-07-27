@@ -306,15 +306,19 @@ export class ApiClient {
     );
   }
 
-  async listModules(search?: string): Promise<SavedBlock[]> {
+  async listModules(search?: string, category?: string): Promise<SavedBlock[]> {
     const url = buildUrl(API_ROUTES["savedModules.index"], this.baseParams);
-    const query = search ? `?search=${encodeURIComponent(search)}` : "";
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (category) params.set("category", category);
+    const query = params.size > 0 ? `?${params}` : "";
     return this.request<SavedBlock[]>(`${url}${query}`);
   }
 
   async createModule(data: {
     name: string;
     content: Block[];
+    category?: string;
   }): Promise<SavedBlock> {
     return this.request<SavedBlock>(
       buildUrl(API_ROUTES["savedModules.store"], this.baseParams),
@@ -327,7 +331,7 @@ export class ApiClient {
 
   async updateModule(
     id: string,
-    data: Partial<{ name: string; content: Block[] }>,
+    data: Partial<{ name: string; content: Block[]; category: string }>,
   ): Promise<SavedBlock> {
     return this.request<SavedBlock>(
       buildUrl(API_ROUTES["savedModules.update"], {

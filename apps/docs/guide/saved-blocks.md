@@ -34,11 +34,15 @@ That stores entries in `localStorage` under `templatical:saved-blocks`. Good for
 
 ```ts
 interface SavedBlocksProvider {
-  list(params?: { search?: string }): Promise<SavedBlock[]>;
-  create(input: { name: string; content: Block[] }): Promise<SavedBlock>;
+  list(params?: { search?: string; category?: string }): Promise<SavedBlock[]>;
+  create(input: {
+    name: string;
+    content: Block[];
+    category?: string;
+  }): Promise<SavedBlock>;
   update(
     id: string,
-    patch: Partial<{ name: string; content: Block[] }>,
+    patch: Partial<{ name: string; content: Block[]; category: string }>,
   ): Promise<SavedBlock>;
   delete(id: string): Promise<void>;
 }
@@ -56,8 +60,10 @@ const json = (res: Response) => {
 };
 
 const savedBlocks: SavedBlocksProvider = {
-  list: ({ search } = {}) =>
-    fetch(`/api/saved-blocks?search=${encodeURIComponent(search ?? '')}`).then(json),
+  // Return everything the current user may see — scope it per user, team or
+  // account here. The editor calls this with no arguments and filters in the
+  // browser, so you don't have to implement search or category filtering.
+  list: () => fetch('/api/saved-blocks').then(json),
 
   create: (input) =>
     fetch('/api/saved-blocks', {
@@ -89,16 +95,18 @@ interface SavedBlock {
   id: string;            // assigned by your store, returned from create()
   name: string;
   content: Block[];      // top-level blocks; a section carries its own children
+  category?: string;     // optional — free-text grouping, drives the browser filter
   created_at?: string;   // optional — display only, never affects ordering
   updated_at?: string;
 }
 ```
 
-Four contract points worth knowing:
+Five contract points worth knowing:
 
 - **Your store owns `id`.** The editor never generates one; it uses whatever `create()` returns. Scope entries per user, per team, or per account however you like — the editor doesn't care.
-- **Renaming is `update(id, { name })`.** There is no separate rename method; `update` takes a partial patch.
-- **You own the ordering.** The editor renders entries in exactly the order `list()` returns and never re-sorts them — not by date, not by name. Search filters the list without reordering it. Sort server-side however you like.
+- **Renaming is `update(id, { name })`, recategorising is `update(id, { category })`.** There are no separate methods; `update` takes a partial patch.
+- **You own the ordering.** The editor renders entries in exactly the order `list()` returns and never re-sorts them — not by date, not by name. Filtering narrows the list without reordering it. Sort server-side however you like.
+- **Filtering is the editor's job, not yours.** The browser's search box and category filter run in memory over whatever `list()` returned, so a provider that just returns an array gets both for free. `list()` does accept a `{ search, category }` params object, but the editor never sends it — it only arrives if you drive `useSavedBlocks` yourself (see [Headless use](#headless-use)). Deciding *which* entries a user may see at all is still entirely yours, in `list()`.
 - **Timestamps are display only.** Each entry shows a relative "5m ago" label (from `updated_at`, falling back to `created_at`) with the absolute date on hover. They never affect ordering. Both are optional — omit them and the label is simply not shown.
 
 ### Error handling
@@ -111,9 +119,11 @@ Once a provider is configured:
 
 - **Save** — selecting a top-level block reveals a bookmark action, which starts a *pick session*: that block is picked, and plain clicks (no modifier keys) add or remove others. A bar over the canvas shows the count with Save and Cancel; Save then opens a dialog that asks for a name and previews the picked blocks. Escape cancels, Enter confirms.
   The preview lists the blocks in the order you picked them, and each row has a grip handle to drag it — or Arrow Up / Arrow Down with the handle focused — so you can reorder before saving. Whatever order the list ends in is the order the blocks are stored in. Clicking inside a section picks the whole section — section children aren't individually savable, since a section carries its columns and their contents with it.
+  The dialog also asks for an optional **category**, suggesting the ones already in use.
 - **Browse** — a saved-blocks entry appears in the left rail once at least one block is saved, opening a searchable browser with a live preview.
+- **Categorise** — a category is free text, flat, and optional; there are no folders and no nesting. The browser shows a category filter as soon as anything is categorised, listing exactly the categories in use — a category exists for as long as some entry carries it. Search and the category filter narrow the list together.
 - **Insert** — choose a position (at the beginning, after any existing block, or at the end) and insert. Inserted blocks always get **fresh IDs**, so inserting the same entry twice never collides.
-- **Rename / delete** — inline on each row in the browser; delete asks for confirmation first.
+- **Rename / recategorise / delete** — inline on each row in the browser; the edit row covers both the name and the category, and clearing the category field uncategorises the entry. Delete asks for confirmation first.
 
 ## Off by default
 
@@ -145,8 +155,9 @@ import { useSavedBlocks } from '@templatical/core';
 const {
   savedBlocks, // Ref<SavedBlock[]>
   isLoading,   // Ref<boolean>
-  load,        // (search?) => Promise<void>
-  create,      // (name, content) => Promise<SavedBlock>
+  categories,  // ComputedRef<string[]> — distinct categories, sorted
+  load,        // (params?: { search?, category? }) => Promise<void>
+  create,      // (name, content, category?) => Promise<SavedBlock>
   update,      // (id, patch) => Promise<SavedBlock>
   remove,      // (id) => Promise<void>
 } = useSavedBlocks({

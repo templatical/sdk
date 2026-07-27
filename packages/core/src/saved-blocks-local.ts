@@ -67,22 +67,30 @@ export function createLocalStorageSavedBlocksProvider(
   // promise rather than a sync throw — callers of a `Promise`-returning
   // contract must be able to rely on `.catch()`.
   return {
+    // The editor calls this bare and filters in memory; the params are honored
+    // for headless callers that would rather the provider did the work.
     async list(params?: SavedBlocksListParams): Promise<SavedBlock[]> {
       const all = readAll();
       const search = params?.search?.trim().toLowerCase();
-      if (!search) return all;
-      return all.filter((b) => b.name.toLowerCase().includes(search));
+      const category = params?.category?.trim();
+      return all.filter((b) => {
+        if (search && !b.name.toLowerCase().includes(search)) return false;
+        if (category && b.category !== category) return false;
+        return true;
+      });
     },
 
     async create(input: {
       name: string;
       content: Block[];
+      category?: string;
     }): Promise<SavedBlock> {
       const now = new Date().toISOString();
       const created: SavedBlock = {
         id: generateId(),
         name: input.name,
         content: input.content,
+        ...(input.category ? { category: input.category } : {}),
         created_at: now,
         updated_at: now,
       };
@@ -94,7 +102,7 @@ export function createLocalStorageSavedBlocksProvider(
 
     async update(
       id: string,
-      patch: Partial<{ name: string; content: Block[] }>,
+      patch: Partial<{ name: string; content: Block[]; category: string }>,
     ): Promise<SavedBlock> {
       const all = readAll();
       const index = all.findIndex((b) => b.id === id);

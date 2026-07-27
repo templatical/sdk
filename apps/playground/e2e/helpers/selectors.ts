@@ -57,6 +57,12 @@ export const SELECTORS = {
   savedBlocksReorderList: '[data-testid="saved-blocks-reorder-list"]',
   savedBlocksReorderRow: '[data-testid="saved-blocks-reorder-row"]',
   savedBlocksReorderHandle: '[data-testid="saved-blocks-reorder-handle"]',
+  // Categories (optional free-text grouping)
+  savedBlocksNameInput: '[data-testid="saved-blocks-name-input"]',
+  savedBlocksCategoryInput: '[data-testid="saved-blocks-category-input"]',
+  savedBlocksCategoryFilter: '[data-testid="saved-blocks-category-filter"]',
+  savedBlocksCategoryBadge: '[data-testid="saved-block-category"]',
+  savedBlocksEditCategory: '[data-testid="saved-blocks-edit-category"]',
 
   // Small-screen gate (#235)
   smallScreenNotice: '[data-testid="small-screen-notice"]',

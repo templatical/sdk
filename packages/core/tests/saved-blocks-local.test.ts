@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLocalStorageSavedBlocksProvider } from '../src/saved-blocks-local';
 import { createTitleBlock } from '@templatical/types';
 
@@ -231,5 +231,96 @@ describe('createLocalStorageSavedBlocksProvider', () => {
         /createLocalStorageSavedBlocksProvider requires a browser environment/,
       );
     });
+  });
+});
+
+describe('createLocalStorageSavedBlocksProvider categories', () => {
+  beforeEach(() => {
+    stubLocalStorage();
+  });
+
+  it('persists a category on create and returns it', async () => {
+    const provider = createLocalStorageSavedBlocksProvider();
+
+    const created = await provider.create({
+      name: 'Hero',
+      content: [],
+      category: 'Promos',
+    });
+
+    expect(created.category).toBe('Promos');
+    const [stored] = await provider.list();
+    expect(stored.category).toBe('Promos');
+  });
+
+  it('omits the key when no category is supplied', async () => {
+    const provider = createLocalStorageSavedBlocksProvider();
+
+    const created = await provider.create({ name: 'Hero', content: [] });
+
+    expect('category' in created).toBe(false);
+  });
+
+  it('sets a category on an existing entry through update', async () => {
+    const provider = createLocalStorageSavedBlocksProvider();
+    const created = await provider.create({ name: 'Hero', content: [] });
+
+    const updated = await provider.update(created.id, { category: 'Promos' });
+
+    expect(updated.category).toBe('Promos');
+  });
+
+  it('clears a category with an empty-string patch', async () => {
+    const provider = createLocalStorageSavedBlocksProvider();
+    const created = await provider.create({
+      name: 'Hero',
+      content: [],
+      category: 'Promos',
+    });
+
+    const updated = await provider.update(created.id, { category: '' });
+
+    expect(updated.category).toBe('');
+  });
+
+  /* These params only arrive from headless callers — the editor's browser
+     filters in memory — but the bundled adapter honors them anyway so that
+     path is real rather than aspirational. */
+  it('filters by exact category', async () => {
+    const provider = createLocalStorageSavedBlocksProvider();
+    await provider.create({ name: 'A', content: [], category: 'Promos' });
+    await provider.create({ name: 'B', content: [], category: 'Headers' });
+    await provider.create({ name: 'C', content: [] });
+
+    const result = await provider.list({ category: 'Promos' });
+
+    expect(result.map((b) => b.name)).toEqual(['A']);
+  });
+
+  it('combines the category filter with search', async () => {
+    const provider = createLocalStorageSavedBlocksProvider();
+    await provider.create({ name: 'Spring sale', content: [], category: 'Promos' });
+    await provider.create({ name: 'Spring header', content: [], category: 'Headers' });
+    await provider.create({ name: 'Winter sale', content: [], category: 'Promos' });
+
+    const result = await provider.list({ search: 'spring', category: 'Promos' });
+
+    expect(result.map((b) => b.name)).toEqual(['Spring sale']);
+  });
+
+  it('returns everything when no filters are given', async () => {
+    const provider = createLocalStorageSavedBlocksProvider();
+    await provider.create({ name: 'A', content: [], category: 'Promos' });
+    await provider.create({ name: 'B', content: [] });
+
+    expect(await provider.list()).toHaveLength(2);
+    expect(await provider.list({})).toHaveLength(2);
+  });
+
+  it('matches nothing for an unknown category', async () => {
+    const provider = createLocalStorageSavedBlocksProvider();
+    await provider.create({ name: 'A', content: [], category: 'Promos' });
+
+    expect(await provider.list({ category: 'Nope' })).toEqual([]);
   });
 });
