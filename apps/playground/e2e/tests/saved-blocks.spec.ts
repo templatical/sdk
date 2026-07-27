@@ -11,7 +11,9 @@ import type { Page } from "@playwright/test";
  * localStorage after `goto()` would race the initial load.
  */
 
-const STORE_KEY = "templatical:saved-blocks";
+// Per template: `selectFirstTemplate()` opens Product Launch, so that's the
+// library these tests read and write.
+const STORE_KEY = "templatical:saved-blocks:product-launch";
 
 /** Padding matches what the block factories emit, so the canvas renders it. */
 const PAD = { padding: { top: 10, right: 10, bottom: 10, left: 10 } };
@@ -68,9 +70,16 @@ async function seedSavedBlocks(page: Page, entries: unknown[]): Promise<void> {
   );
 }
 
+/**
+ * An empty library — written as `[]` rather than removing the key.
+ *
+ * The playground seeds a template's demo saved blocks when its key is *absent*,
+ * so deleting the key would hand these tests three fixtures instead of nothing.
+ * An explicit empty array is how a caller opts out of seeding.
+ */
 async function clearSavedBlocks(page: Page): Promise<void> {
   await page.addInitScript((key) => {
-    localStorage.removeItem(key as string);
+    localStorage.setItem(key as string, "[]");
   }, STORE_KEY);
 }
 
@@ -1039,5 +1048,180 @@ test.describe("saved blocks — browser modal width", () => {
     const selectedWidth = await widthOf();
 
     expect(selectedWidth).toBe(emptyWidth);
+  });
+});
+
+/**
+ * The playground seeds a per-template demo library on first open, so the feature
+ * is never shown against an empty rail. Each fixture set mixes one entry the
+ * store locks (`canUpdate: false` / `canDelete: false`) with ordinary editable
+ * ones — the locked entry is the floor that stops the library being emptied.
+ *
+ * These tests deliberately do NOT pre-write the storage key: an absent key is
+ * exactly what triggers seeding.
+ */
+test.describe("saved blocks — playground demo defaults", () => {
+  /**
+   * Deliberately does NOT touch the saved-blocks key. Each Playwright test gets
+   * a fresh context with empty storage, so the key is already absent and seeding
+   * runs. Removing it here would be worse than redundant: `addInitScript` re-runs
+   * on every navigation, so a reload would wipe the seeded library and re-seed
+   * it, which is precisely what the persistence assertion below needs to rule
+   * out.
+   */
+  async function bootFresh(page: Page): Promise<void> {
+    await page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
+      localStorage.setItem("tpl-playground-features-dismissed", "true");
+    });
+  }
+
+  test("seeds a library on first open, with the locked entry among them", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await bootFresh(page);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    await expect(page.locator(SELECTORS.savedBlocksBrowserTitle)).toBeVisible();
+
+    const cards = page.locator(SELECTORS.savedBlocksCard);
+    await expect(cards).toHaveCount(3);
+    await expect(cards.first()).toContainText("Launch hero");
+
+    // Categories came along with the fixtures, so the filter has real options.
+    await expect(
+      page.locator(SELECTORS.savedBlocksCategoryFilter).locator("option"),
+    ).toHaveText(["All categories", "Calls to action", "Footers", "Headers"]);
+  });
+
+  test("locked entry has no rename or delete; siblings have both", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await bootFresh(page);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+
+    const browser = page.locator(SELECTORS.savedBlocksBrowser);
+    // Three entries, one of them locked → two pencils and two trashes.
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(3);
+    await expect(browser.locator(SELECTORS.savedBlocksRenameBtn)).toHaveCount(2);
+    await expect(browser.locator(SELECTORS.savedBlocksDeleteBtn)).toHaveCount(2);
+
+    // And it's specifically the locked one that has neither.
+    const locked = page.locator(SELECTORS.savedBlocksCard, {
+      hasText: "Launch hero",
+    });
+    await expect(locked.locator(SELECTORS.savedBlocksRenameBtn)).toHaveCount(0);
+    await expect(locked.locator(SELECTORS.savedBlocksDeleteBtn)).toHaveCount(0);
+  });
+
+  test("an editable default can be deleted, and the deletion sticks", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await bootFresh(page);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(3);
+
+    const browser = page.locator(SELECTORS.savedBlocksBrowser);
+    await browser.locator(SELECTORS.savedBlocksDeleteBtn).first().click();
+    await browser
+      .locator('button[aria-label="Delete this saved block?"]')
+      .click();
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
+
+    // Persisted, and NOT re-seeded on the next visit — re-seeding would make
+    // delete look broken in the demo built to show it working. A reload lands
+    // back on the chooser, so the template has to be reopened.
+    await page.reload();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
+    // The locked entry is still there, so the library can't be emptied.
+    await expect(
+      page.locator(SELECTORS.savedBlocksCard, { hasText: "Launch hero" }),
+    ).toHaveCount(1);
+  });
+
+  /**
+   * Fixture integrity: every seeded entry must actually render. A fixture built
+   * from a hand-written block literal rather than the factories can be missing a
+   * field the block components read, which shows up as an empty preview pane
+   * rather than a thrown error — so assert the preview paints for each one.
+   */
+  test("every seeded entry renders a preview", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await bootFresh(page);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    // The browser is a lazily-loaded chunk; wait for it before counting.
+    await expect(page.locator(SELECTORS.savedBlocksBrowserTitle)).toBeVisible();
+
+    const cards = page.locator(SELECTORS.savedBlocksCard);
+    await expect(cards).toHaveCount(3);
+    const count = await cards.count();
+
+    for (let i = 0; i < count; i++) {
+      await cards.nth(i).click();
+      const canvas = page.locator(SELECTORS.savedBlocksPreviewCanvas);
+      await expect(canvas).toBeVisible();
+      // Non-empty: a fixture that renders no components would still mount the
+      // frame, so assert the frame actually has painted content in it.
+      const height = await canvas.evaluate((el) => (el as HTMLElement).offsetHeight);
+      expect(height).toBeGreaterThan(10);
+    }
+  });
+
+  test("each template gets its own library", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
+      localStorage.setItem("tpl-playground-features-dismissed", "true");
+    });
+    await chooserPage.goto();
+    // Newsletter is the second card and carries a different fixture set.
+    await page.locator(SELECTORS.templateCard).nth(1).click();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    await expect(page.locator(SELECTORS.savedBlocksCard).first()).toContainText(
+      "Issue masthead",
+    );
+
+    // Stored under the Newsletter's own key, leaving Product Launch's untouched.
+    const keys = await page.evaluate(() =>
+      Object.keys(localStorage).filter((k) =>
+        k.startsWith("templatical:saved-blocks"),
+      ),
+    );
+    expect(keys).toContain("templatical:saved-blocks:newsletter");
   });
 });

@@ -1,6 +1,7 @@
 import type {
   TemplateContent,
   CustomBlockDefinition,
+  SavedBlock,
   ColorsConfig,
   FontsConfig,
   BlockDefaults,
@@ -1853,6 +1854,138 @@ export function createBlackFridayTemplate(): TemplateContent {
 
 // ─── Template Registry ───────────────────────────────────────
 
+// ─── Saved-block fixtures ────────────────────────────────────
+//
+// Seeded into the playground's saved-blocks store the first time a template is
+// opened (see `savedBlocksProviderFor` in App.vue), so the feature is never
+// demoed against an empty library.
+//
+// Each set deliberately mixes two kinds of entry:
+//   • one **locked** — `canUpdate: false` / `canDelete: false`, so the browser
+//     renders no pencil or trash on it. It's the floor that keeps the library
+//     from being emptied, and it's the only place per-entry permissions are
+//     visible in the playground.
+//   • the rest **ordinary** — rename, recategorise and delete all really work
+//     and really persist, so the whole CRUD surface stays exercisable.
+//
+// `id`s are stable strings rather than generated: the store owns identity, and
+// fixed ids keep e2e assertions readable. Block ids inside `content` are
+// regenerated on insert (`cloneBlock`), so reusing them across entries is safe.
+
+const productLaunchSavedBlocks: SavedBlock[] = [
+  {
+    id: "demo-launch-hero",
+    name: "Launch hero",
+    category: "Headers",
+    // Locked: shows a row whose actions are withheld by the store.
+    canUpdate: false,
+    canDelete: false,
+    content: [
+      createTitleBlock({
+        content: "<p>Introducing something new</p>",
+        level: 2,
+        color: "#111827",
+        textAlign: "center",
+        styles: white(32, 24, 8, 24),
+      }),
+      createParagraphBlock({
+        content:
+          '<p style="text-align: center"><span style="color: #4b5563">One short line of context under the headline.</span></p>',
+        styles: white(0, 24, 24, 24),
+      }),
+    ],
+  },
+  {
+    id: "demo-launch-cta",
+    name: "Centered CTA",
+    category: "Calls to action",
+    content: [
+      createButtonBlock({
+        text: "See what's new",
+        url: "https://example.com/whats-new",
+        backgroundColor: "#2f6f5e",
+        textColor: "#ffffff",
+        borderRadius: 6,
+        fontSize: 16,
+        styles: white(8, 24, 32, 24),
+      }),
+    ],
+  },
+  {
+    id: "demo-launch-footer",
+    name: "Footer + legal",
+    category: "Footers",
+    content: [
+      createDividerBlock({
+        lineStyle: "solid",
+        color: "#e5e7eb",
+        thickness: 1,
+        width: "full",
+        styles: white(0, 40, 0, 40),
+      }),
+      createParagraphBlock({
+        content:
+          '<p style="text-align: center"><span style="font-size: 12px; color: #9ca3af">You are receiving this because you signed up. <a href="{{unsubscribe_url}}">Unsubscribe</a></span></p>',
+        styles: white(16, 24, 32, 24),
+      }),
+    ],
+  },
+];
+
+const newsletterSavedBlocks: SavedBlock[] = [
+  {
+    id: "demo-news-masthead",
+    name: "Issue masthead",
+    category: "Headers",
+    // Locked, as above.
+    canUpdate: false,
+    canDelete: false,
+    content: [
+      createTitleBlock({
+        content: "<p>The Weekly Brief</p>",
+        level: 3,
+        color: "#111827",
+        textAlign: "center",
+        styles: white(32, 20, 4, 20),
+      }),
+      createParagraphBlock({
+        content:
+          '<p style="text-align: center"><span style="font-size: 13px; color: #9ca3af">Issue #00 \u00b7 Replace with this week\u2019s date</span></p>',
+        styles: white(0, 20, 20, 20),
+      }),
+    ],
+  },
+  {
+    id: "demo-news-links",
+    name: "Quick links",
+    category: "Sections",
+    content: [
+      createParagraphBlock({
+        content:
+          '<p><span style="font-size: 13px; color: #9ca3af">Quick Links</span></p>',
+        styles: white(8, 40, 4, 40),
+      }),
+      createParagraphBlock({
+        content:
+          '<p><a href="https://example.com/one">First link</a></p><p><a href="https://example.com/two">Second link</a></p>',
+        styles: white(0, 40, 16, 40),
+      }),
+    ],
+  },
+  {
+    id: "demo-news-signoff",
+    name: "Sign-off",
+    category: "Footers",
+    content: [
+      createParagraphBlock({
+        content:
+          '<p><span style="color: #4b5563">That\u2019s all for this week \u2014 reply if anything here was useful.</span></p>',
+        styles: white(16, 40, 32, 40),
+      }),
+    ],
+  },
+];
+
 export type FeatureIcon =
   | "merge-tag"
   | "display-condition"
@@ -1875,6 +2008,12 @@ export interface TemplateOption {
   customBlocks?: CustomBlockDefinition[];
   /** Features showcased by this template, displayed in the overlay */
   features?: TemplateFeature[];
+  /**
+   * Saved blocks seeded into this template's store on first open, so the
+   * feature always has something to browse. Per template, like `customBlocks` —
+   * each template gets its own library under its own storage key.
+   */
+  savedBlocks?: SavedBlock[];
   /**
    * When set, this template intentionally omits `mergeTags.onRequest` so the
    * SDK's built-in picker handles "Insert merge tag" clicks. The playground
@@ -1922,7 +2061,14 @@ export const templates: TemplateOption[] = [
     create: createProductLaunchTemplate,
     preview: "product",
     customBlocks: [testimonialBlock],
+    savedBlocks: productLaunchSavedBlocks,
     features: [
+      {
+        label: "Saved Blocks",
+        icon: "custom-block",
+        description:
+          'The left rail has a Saved Blocks entry with three reusable groups pre-seeded in it. Select one to preview it at full width, pick where to insert it, and it lands on the canvas with fresh block IDs \u2014 so inserting the same entry twice never collides.\nTo try it: select any block on the canvas and click the bookmark icon in its action bar. Every block you then click is added to the selection; the bar at the bottom confirms. The dialog that follows asks for a name and an optional category, and lets you drag the picked blocks into the order they should be stored in.\n"Launch hero" has no rename or delete button, while the others do. That is the store\u2019s decision, not the editor\u2019s: it returned canUpdate: false and canDelete: false on that one entry. Everything else is fully editable \u2014 rename, recategorise and delete all persist, and the locked entry is what keeps this library from being emptied.',
+      },
       {
         label: "Display Conditions",
         icon: "display-condition",
@@ -1955,12 +2101,19 @@ export const templates: TemplateOption[] = [
     create: createNewsletterTemplate,
     preview: "newsletter",
     customBlocks: [featuredArticleBlock],
+    savedBlocks: newsletterSavedBlocks,
     // Curated font list: only these built-ins appear in the font picker (the
     // other four built-ins are hidden). Showcases `fonts.builtIns`.
     fonts: {
       builtIns: ["Georgia", "Times New Roman", "Arial"],
     },
     features: [
+      {
+        label: "Saved Blocks",
+        icon: "custom-block",
+        description:
+          'The left rail has a Saved Blocks entry with three reusable groups pre-seeded in it \u2014 a masthead, a quick-links section and a sign-off. Select one to preview it at full width, choose where to insert it, and it lands on the canvas with fresh block IDs.\nNote the library is per template: what you see here is seeded for the Newsletter and is a different set from the one in Product Launch, under its own storage key. Anything you save is stored the same way.\n"Issue masthead" has no rename or delete button, while the other two do \u2014 the store returned canUpdate: false and canDelete: false for that entry. The rest are fully editable, and that one locked entry is what keeps the library from being emptied.',
+      },
       {
         label: "Curated Font List",
         description:
