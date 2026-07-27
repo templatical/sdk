@@ -12,6 +12,8 @@ Saving starts from a block's bookmark action and opens a **pick session**: plain
 
 **Permissions are the implementer's to set.** Each mutation on the provider is `false | fn`: pass `false` and the editor hides that affordance rather than letting the user try and fail. For exceptions on individual entries, return `canUpdate` / `canDelete` on them — absent means allowed. Setting all three to `false` gives a read-only library users still browse, preview and insert from, since insertion never touches your store. `list` cannot be disabled.
 
+**Nothing is fetched until the user opens the browser or the save dialog** — `list()` is never called on editor load. The rail entry is present from the first paint whenever a provider is configured, so a slow or empty `list()` can neither delay the editor nor shift the sidebar; the browser shows skeleton rows on a first open, and reopens render the previous entries while refreshing underneath.
+
 ```js
 import { init, createLocalStorageSavedBlocksProvider } from '@templatical/editor';
 

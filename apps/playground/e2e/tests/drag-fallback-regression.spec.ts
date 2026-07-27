@@ -19,6 +19,68 @@ import { blockByType } from "../helpers/selectors";
  * helpers, so a single page-object regression catches everything.
  */
 test.describe("Drag fallback-mode regression suite", () => {
+  /**
+   * Regression: a palette drag failed whenever the grabbed item happened to sit
+   * at nearly the same y as the drop target. The pointer path was a straight
+   * diagonal, so a co-linear pair produced an almost horizontal slide ending
+   * exactly on the target's midpoint — where Sortable's fallback `_onDragOver`
+   * has no insertion direction to compute, and the drop was silently discarded.
+   *
+   * That made palette drags depend on the item's screen position and on
+   * viewport height: adding one row above the palette was enough to push an item
+   * into the dead zone, which is how this was found. `pointerDriveFromPalette`
+   * now stages the approach so the final segment is always a 30px descent (or
+   * ascent, for a "before" insertion).
+   *
+   * Rather than hoping the layout produces the condition, this picks the palette
+   * item that is *already* level with what `dragBlockFromSidebar` aims at (the
+   * last block's centre). Only fully-visible items qualify: one below the fold
+   * gets scrolled by `scrollIntoViewIfNeeded` and would no longer be level.
+   */
+  test("sidebar → canvas: drops even when item and target are level (co-linear dead zone)", async ({
+    page,
+    editorReady: { editorPage },
+  }) => {
+    await editorPage.hoverSidebar();
+
+    const last = editorPage.getTopLevelBlocks().last();
+    await last.scrollIntoViewIfNeeded();
+    const lastBox = await last.boundingBox();
+    if (!lastBox) throw new Error("Last block bounds unavailable");
+    const targetY = lastBox.y + lastBox.height / 2;
+
+    const candidates = await page
+      .locator("[data-palette-type]")
+      .evaluateAll((els, wantY) => {
+        const pal = els[0]?.parentElement;
+        const palBox = pal?.getBoundingClientRect();
+        return els
+          .map((el) => {
+            const b = el.getBoundingClientRect();
+            const visible =
+              !palBox || (b.top >= palBox.top && b.bottom <= palBox.bottom);
+            return {
+              type: (el as HTMLElement).dataset.paletteType ?? "",
+              gap: Math.abs(b.top + b.height / 2 - (wantY as number)),
+              visible,
+            };
+          })
+          .filter((c) => c.visible)
+          .sort((a, b) => a.gap - b.gap);
+      }, targetY);
+
+    const closest = candidates[0];
+    // Guard the guard: without a level pair this test would stop exercising the
+    // dead zone and quietly pass forever.
+    expect(closest).toBeTruthy();
+    expect(closest.gap).toBeLessThan(40);
+
+    const before = await editorPage.getBlocks().count();
+    await editorPage.dragBlockFromSidebar(closest.type);
+
+    expect(await editorPage.getBlocks().count()).toBe(before + 1);
+  });
+
   test("sidebar → canvas: drop creates a new block (force-fallback path)", async ({
     editorReady: { editorPage },
   }) => {

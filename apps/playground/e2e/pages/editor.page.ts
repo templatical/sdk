@@ -170,6 +170,13 @@ export class EditorPage {
   private async pointerDriveFromPalette(
     blockType: string,
     target: { x: number; y: number },
+    /**
+     * Which side the final segment approaches the target from. Must match the
+     * insertion the caller wants: descending into a target reads as "after",
+     * ascending into it reads as "before". Aiming at a block's top zone while
+     * descending from above fights the test's own intent.
+     */
+    approachFrom: "above" | "below" = "above",
   ): Promise<void> {
     const sidebarItem = this.page
       .locator(SELECTORS.sidebarRail)
@@ -186,7 +193,21 @@ export class EditorPage {
     // Sortable.js gates drag-start on a small initial movement; tiny
     // nudge fires the threshold check before the interpolated long move.
     await this.page.mouse.move(startX + 4, startY + 4);
-    await this.page.mouse.move(target.x, target.y, { steps: 30 });
+    // Approach the target from clearly above it, then descend.
+    //
+    // A straight diagonal from the palette to the target breaks down when the
+    // two happen to sit at nearly the same y: the move becomes an almost
+    // horizontal slide that ends on the target's midpoint, where Sortable's
+    // fallback `_onDragOver` has no unambiguous insertion direction to compute
+    // and the drop is dropped. That made palette drags depend on which item was
+    // grabbed and on viewport height — adding one row to the sidebar was enough
+    // to push an item into the dead zone. Staging the approach so the final
+    // segment is always a descent gives direction=1 (insert after) every time,
+    // whatever the item's position.
+    const approachY =
+      approachFrom === "above" ? target.y - 30 : target.y + 30;
+    await this.page.mouse.move(target.x, approachY, { steps: 20 });
+    await this.page.mouse.move(target.x, target.y, { steps: 10 });
     // Settle frames so Sortable's 50ms `_emulateDragOver` interval has a
     // chance to resolve the drop target before mouseup commits.
     await this.page.mouse.move(target.x, target.y);
@@ -277,10 +298,13 @@ export class EditorPage {
         ? targetBox.y + Math.max(4, targetBox.height * 0.1)
         : targetBox.y + targetBox.height - Math.max(4, targetBox.height * 0.1);
 
-    await this.pointerDriveFromPalette(blockType, {
-      x: targetBox.x + targetBox.width / 2,
-      y: targetY,
-    });
+    await this.pointerDriveFromPalette(
+      blockType,
+      { x: targetBox.x + targetBox.width / 2, y: targetY },
+      // "before" aims at the target's top zone, so the cursor must arrive
+      // going up; arriving from above would read as an "after" insertion.
+      position === "before" ? "below" : "above",
+    );
 
     await expect
       .poll(() => this.getBlocks().count(), { timeout: 5000 })

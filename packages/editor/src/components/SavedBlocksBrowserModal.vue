@@ -55,6 +55,20 @@ const filtered = computed(() => {
   });
 });
 
+/**
+ * The list is fetched when this modal opens, not at editor mount, so a first
+ * open can arrive before the provider answers. Show the skeleton only while
+ * there is *nothing* to display: on a reopen the previous entries render
+ * immediately and the refetch lands underneath them.
+ *
+ * Without this the empty state would claim "No saved blocks yet" for the whole
+ * duration of the request — false, not merely unhelpful.
+ */
+const isInitialLoad = computed(
+  () =>
+    savedBlocks.isLoading.value && savedBlocks.savedBlocks.value.length === 0,
+);
+
 /** Whether any filter is narrowing the list — drives the empty-state copy. */
 const isFiltering = computed(
   () => searchQuery.value.trim().length > 0 || categoryFilter.value !== "",
@@ -258,12 +272,20 @@ function handleKeydown(event: KeyboardEvent): void {
 
 <template>
   <TplModal :visible="visible" @close="handleClose" @keydown="handleKeydown">
+    <!-- Explicit width, not `w-full`: the modal's parent is shrink-to-fit, so
+         `width: 100%` resolved against its own contents and the 600px preview
+         canvas drove the dialog's size — it measured 523px with nothing selected
+         and 965px with a block selected, nearly doubling on click. A pinned
+         width makes every state identical and stops any future right-pane
+         content from moving it. `max-w` keeps it inside narrow viewports, expressed
+         against `--tpl-base-size` rather than `rem` so the editor stays immune to
+         the host page's root font-size (issue #209); the preview scrolls within. -->
     <div
       role="dialog"
       aria-modal="true"
       data-testid="saved-blocks-browser"
       aria-labelledby="tpl-saved-blocks-browser-title"
-      class="tpl-scale-in tpl:mx-4 tpl:flex tpl:w-full tpl:max-w-[1000px] tpl:flex-col tpl:rounded-[var(--tpl-radius-lg)]"
+      class="tpl-scale-in tpl:mx-4 tpl:flex tpl:w-[1000px] tpl:max-w-[calc(100vw_-_2*var(--tpl-base-size))] tpl:flex-col tpl:rounded-[var(--tpl-radius-lg)]"
       style="
         background-color: var(--tpl-bg-elevated);
         box-shadow: var(--tpl-shadow-xl);
@@ -309,7 +331,8 @@ function handleKeydown(event: KeyboardEvent): void {
                 v-model="searchQuery"
                 type="text"
                 :placeholder="t.savedBlocks.search"
-                class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:pl-9 tpl:pr-3 tpl:text-sm tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+                :disabled="isInitialLoad"
+                class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:pl-9 tpl:pr-3 tpl:text-sm tpl:outline-none tpl:disabled:opacity-50 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
               />
             </div>
             <!-- Only worth showing once something is actually categorised. -->
@@ -342,8 +365,34 @@ function handleKeydown(event: KeyboardEvent): void {
 
           <!-- List -->
           <div class="tpl:flex-1 tpl:overflow-y-auto tpl:px-4 tpl:pb-4">
+            <!-- Skeleton rows: same height and gap as a real card, so the pane
+                 doesn't resize when the entries land. `aria-busy` on the region
+                 is what a screen reader announces; the bars are decorative. -->
             <div
-              v-if="filtered.length > 0"
+              v-if="isInitialLoad"
+              data-testid="saved-blocks-loading"
+              class="tpl:flex tpl:flex-col tpl:gap-1"
+              role="status"
+              aria-busy="true"
+              :aria-label="t.savedBlocks.loading"
+            >
+              <div
+                v-for="n in 3"
+                :key="n"
+                aria-hidden="true"
+                class="tpl-saved-block-skeleton tpl:rounded-[var(--tpl-radius-md)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)]"
+              >
+                <div
+                  class="tpl:h-3 tpl:w-1/2 tpl:rounded tpl:bg-[var(--tpl-bg-hover)]"
+                />
+                <div
+                  class="tpl:mt-2 tpl:h-2.5 tpl:w-1/4 tpl:rounded tpl:bg-[var(--tpl-bg-hover)]"
+                />
+              </div>
+            </div>
+
+            <div
+              v-else-if="filtered.length > 0"
               class="tpl:flex tpl:flex-col tpl:gap-1"
             >
               <template v-for="item in filtered" :key="item.id">
@@ -486,7 +535,7 @@ function handleKeydown(event: KeyboardEvent): void {
               </template>
             </div>
 
-            <!-- Empty state -->
+            <!-- Empty state — only once we actually know the library is empty -->
             <div
               v-else
               class="tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:py-12"
@@ -575,6 +624,7 @@ function handleKeydown(event: KeyboardEvent): void {
         <div class="tpl:flex tpl:gap-2">
           <button
             type="button"
+            data-testid="saved-blocks-browser-close"
             class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
             @click="handleClose"
           >
@@ -595,6 +645,29 @@ function handleKeydown(event: KeyboardEvent): void {
 </template>
 
 <style>
+/* Subtle breathing so the placeholders read as "loading" rather than as empty
+   rows. `prefers-reduced-motion` holds them still at full opacity — the bars
+   still communicate shape without animating. */
+.tpl-saved-block-skeleton {
+  animation: tpl-saved-block-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes tpl-saved-block-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tpl-saved-block-skeleton {
+    animation: none;
+  }
+}
+
 .tpl-saved-block-delete-btn:hover {
   color: var(--tpl-danger) !important;
 }

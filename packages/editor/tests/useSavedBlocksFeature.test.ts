@@ -274,39 +274,82 @@ describe('useSavedBlocksFeature', () => {
   });
 
   describe('availability', () => {
-    it('defaults to available and loads immediately', async () => {
+    it('defaults to available', async () => {
       const provider = createMockProvider();
       const { feature } = withFeature({ provider });
       await nextTick();
 
       expect(feature.isAvailable.value).toBe(true);
-      expect(provider.list).toHaveBeenCalledTimes(1);
     });
 
-    it('does not load while unavailable', async () => {
+    /* Inverted deliberately: the feature used to load on mount (and again when
+       availability flipped), which meant every editor boot fired a request for
+       a feature most sessions never touch — and the rail, then gated on the
+       loaded count, appeared only once that request answered. Nothing is
+       fetched until the user opens a surface that shows the list. */
+    it('fetches nothing at mount', async () => {
       const provider = createMockProvider();
-      withFeature({ provider, isAvailable: () => false });
+      withFeature({ provider });
+      await nextTick();
       await nextTick();
 
       expect(provider.list).not.toHaveBeenCalled();
     });
 
-    it('loads once availability flips true (the Cloud plan-fetch case)', async () => {
+    it('fetches nothing when availability flips true', async () => {
       const provider = createMockProvider();
-      // A ref, because Cloud's `hasFeature()` reads reactive plan config that
-      // only resolves after an async fetch — that flip is what this covers.
+      // Cloud's `hasFeature()` reads plan config that resolves asynchronously;
+      // that flip must no longer trigger a load of its own.
       const allowed = ref(false);
       const { feature } = withFeature({
         provider,
         isAvailable: () => allowed.value,
       });
-      await nextTick();
-      expect(provider.list).not.toHaveBeenCalled();
 
       allowed.value = true;
       await nextTick();
 
       expect(feature.isAvailable.value).toBe(true);
+      expect(provider.list).not.toHaveBeenCalled();
+    });
+
+    it('loads when the browser opens', async () => {
+      const provider = createMockProvider();
+      const { feature } = withFeature({ provider });
+      await nextTick();
+
+      feature.openBrowser();
+      await nextTick();
+
+      expect(provider.list).toHaveBeenCalledTimes(1);
+    });
+
+    it('reloads on each browser open, to pick up other people’s changes', async () => {
+      const provider = createMockProvider();
+      const { feature } = withFeature({ provider });
+
+      feature.openBrowser();
+      feature.closeBrowser();
+      feature.openBrowser();
+      await nextTick();
+
+      expect(provider.list).toHaveBeenCalledTimes(2);
+    });
+
+    /* The save dialog's category field suggests the categories already in use,
+       and those derive from the loaded list. Without a load here they'd be empty
+       for anyone who saves without ever opening the browser, and the derived
+       categories would drift into near-duplicates. */
+    it('loads when the save dialog opens, for the category suggestions', async () => {
+      const provider = createMockProvider();
+      const { feature } = withFeature({ provider });
+      await nextTick();
+
+      feature.startPicking('block-1');
+      feature.confirmPicking();
+      await nextTick();
+
+      expect(feature.isSaveDialogOpen.value).toBe(true);
       expect(provider.list).toHaveBeenCalledTimes(1);
     });
 
@@ -329,11 +372,15 @@ describe('useSavedBlocksFeature', () => {
           },
         }),
       );
+      feature.openBrowser();
       await nextTick();
       await nextTick();
 
       expect(onError).toHaveBeenCalledWith(error);
       expect(feature.count.value).toBe(0);
+      // The browser stays open on a failed load — it shows the empty state
+      // rather than vanishing under the user.
+      expect(feature.isBrowserOpen.value).toBe(true);
     });
   });
 
@@ -347,6 +394,10 @@ describe('useSavedBlocksFeature', () => {
         list: vi.fn().mockResolvedValue(stored),
       });
       const { feature } = withFeature({ provider });
+      // Zero until something actually loads — nothing is fetched at mount.
+      expect(feature.count.value).toBe(0);
+
+      feature.openBrowser();
       await nextTick();
       await nextTick();
 

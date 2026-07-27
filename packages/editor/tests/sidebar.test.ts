@@ -246,7 +246,13 @@ describe('Sidebar', () => {
     expect(openBrowser).toHaveBeenCalledTimes(1);
   });
 
-  it('does NOT show the saved blocks browser when count is 0', () => {
+  /* Inverted deliberately: this used to require `count > 0`. Gating on the
+     loaded count meant the entry only appeared once the consumer's `list()`
+     resolved — a slow endpoint shifted the rail mid-session, and an empty
+     library hid the feature so a user could never discover it or learn the
+     save flow. The list is now fetched when the browser opens, so availability
+     is the whole gate and an empty library opens to the empty state. */
+  it('shows the saved blocks browser even when nothing is loaded yet', () => {
     const { editor } = makeEditor();
     const wrapper = mountSidebar({
       [EDITOR_KEY]: editor,
@@ -264,7 +270,29 @@ describe('Sidebar', () => {
       wrapper
         .find('button[aria-label="sidebarNav.browseSavedBlocks"]')
         .exists(),
-    ).toBe(false);
+    ).toBe(true);
+  });
+
+  it('renders no count badge — it would pop in when the list lands', () => {
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({
+      [EDITOR_KEY]: editor,
+      [CAPABILITIES_KEY]: {
+        savedBlocks: {
+          count: { value: 7 },
+          isAvailable: { value: true },
+          openBrowser: vi.fn(),
+          openSaveDialog: vi.fn(),
+        },
+      } as any,
+    });
+
+    const btn = wrapper.find(
+      'button[aria-label="sidebarNav.browseSavedBlocks"]',
+    );
+    expect(btn.exists()).toBe(true);
+    // The count is still on the capability, just not rendered here.
+    expect(btn.text()).not.toContain('7');
   });
 
   // Guards the dead-button class of bug: Cloud provides the capability before

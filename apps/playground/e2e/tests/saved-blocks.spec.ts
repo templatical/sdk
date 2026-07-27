@@ -75,7 +75,14 @@ async function clearSavedBlocks(page: Page): Promise<void> {
 }
 
 test.describe("saved blocks", () => {
-  test("hides the browser rail when nothing is saved", async ({
+  /**
+   * Inverted deliberately: the rail entry used to be gated on the loaded count,
+   * so it appeared only once the provider's `list()` resolved — a slow endpoint
+   * shifted the rail mid-session, and an empty library hid the feature so a user
+   * could never find it. It is now gated on availability alone, and an empty
+   * library opens to the empty state that explains how to fill it.
+   */
+  test("shows the browser rail with an empty library, opening to the empty state", async ({
     page,
     chooserPage,
     editorPage,
@@ -90,10 +97,38 @@ test.describe("saved blocks", () => {
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
-    // The palette rail is present, but the saved-blocks entry is not — the
-    // count gate keeps it hidden until something exists to browse.
     await expect(page.locator(SELECTORS.sidebarRail)).toBeVisible();
-    await expect(page.locator(SELECTORS.savedBlocksRailBtn)).toHaveCount(0);
+    const rail = page.locator(SELECTORS.savedBlocksRailBtn);
+    await expect(rail).toBeVisible();
+
+    await rail.click();
+    await expect(page.locator(SELECTORS.savedBlocksBrowserTitle)).toBeVisible();
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(0);
+    await expect(
+      page.locator(SELECTORS.savedBlocksBrowser),
+    ).toContainText("No saved blocks yet");
+  });
+
+  test("carries no count badge on the rail entry", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await seedSavedBlocks(page, SEEDED);
+    await page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
+      localStorage.setItem("tpl-playground-features-dismissed", "true");
+    });
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    // Two entries are seeded, but the rail never renders the number — it would
+    // read 0 and then pop once the list landed.
+    const rail = page.locator(SELECTORS.savedBlocksRailBtn);
+    await expect(rail).toBeVisible();
+    await expect(rail).not.toContainText("2");
   });
 
   test("lists saved blocks and inserts one with fresh block ids", async ({
@@ -304,8 +339,9 @@ test.describe("saved blocks — pick session", () => {
     await editorPage.waitForReady();
     await editorPage.dismissOverlays();
 
-    // No rail yet — nothing saved.
-    await expect(page.locator(SELECTORS.savedBlocksRailBtn)).toHaveCount(0);
+    // The rail entry is present from the start now, empty library or not — it's
+    // gated on availability, not on how many entries happen to be loaded.
+    await expect(page.locator(SELECTORS.savedBlocksRailBtn)).toBeVisible();
 
     await startSession(page, editorPage);
     await expect(page.locator(SELECTORS.savedBlocksPickCount)).toContainText(
@@ -368,7 +404,7 @@ test.describe("saved blocks — pick session", () => {
       })
       .toEqual([["Header group", 2]]);
 
-    // And the rail now appears, since the store is no longer empty.
+    // The rail entry was already there and is unmoved by the save — no shift.
     await expect(page.locator(SELECTORS.savedBlocksRailBtn)).toBeVisible();
   });
 
@@ -876,5 +912,132 @@ test.describe("saved blocks — read-only library", () => {
       STORE_KEY,
     );
     expect(stored).toHaveLength(2);
+  });
+});
+
+/**
+ * The reason the rail is gated on availability rather than the loaded count, and
+ * the reason the browser needs a skeleton: with a slow `list()`, the old design
+ * left the rail empty and then shifted it mid-session, and a naive fix would
+ * have shown "No saved blocks yet" for the whole request instead.
+ */
+test.describe("saved blocks — slow list()", () => {
+  const DELAY_MS = 2000;
+
+  test("rail is immediate; the browser shows a skeleton, never a false empty state", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await seedSavedBlocks(page, SEEDED);
+    await page.addInitScript((delay) => {
+      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
+      localStorage.setItem("tpl-playground-features-dismissed", "true");
+      localStorage.setItem(
+        "tpl-playground-saved-blocks-delay",
+        String(delay as number),
+      );
+    }, DELAY_MS);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    // Present straight away, with `list()` still unanswered — the whole point.
+    await expect(page.locator(SELECTORS.savedBlocksRailBtn)).toBeVisible();
+
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+
+    const browser = page.locator(SELECTORS.savedBlocksBrowser);
+    const skeleton = page.locator(SELECTORS.savedBlocksLoading);
+
+    // Skeleton while in flight, and crucially NOT the empty state, which would
+    // be false for two seconds.
+    await expect(skeleton).toBeVisible();
+    await expect(browser).not.toContainText("No saved blocks yet");
+    await expect(
+      browser.locator('input[type="text"]'),
+    ).toBeDisabled();
+
+    // Then the entries land and the skeleton goes.
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
+    await expect(skeleton).toBeHidden();
+    await expect(browser.locator('input[type="text"]')).toBeEnabled();
+  });
+
+  test("a reopen shows the previous entries instead of the skeleton", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await seedSavedBlocks(page, SEEDED);
+    await page.addInitScript((delay) => {
+      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
+      localStorage.setItem("tpl-playground-features-dismissed", "true");
+      localStorage.setItem(
+        "tpl-playground-saved-blocks-delay",
+        String(delay as number),
+      );
+    }, DELAY_MS);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    // First open pays the wait.
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
+    await page.locator(SELECTORS.savedBlocksBrowserClose).click();
+    await expect(page.locator(SELECTORS.savedBlocksBrowserTitle)).toBeHidden();
+
+    // Reopen: the refetch is in flight again, but there are entries in hand, so
+    // they render immediately rather than being flashed away by a skeleton.
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
+    await expect(page.locator(SELECTORS.savedBlocksLoading)).toHaveCount(0);
+  });
+});
+
+/**
+ * The dialog used to be sized by its own contents (`w-full` resolving against a
+ * shrink-to-fit parent), so selecting a block inflated it from 523px to 965px —
+ * an ~85% jump on a single click. Its width is pinned now.
+ */
+test.describe("saved blocks — browser modal width", () => {
+  test("does not resize when a block is selected", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await seedSavedBlocks(page, SEEDED);
+    await page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
+      localStorage.setItem("tpl-playground-features-dismissed", "true");
+    });
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    await expect(page.locator(SELECTORS.savedBlocksBrowserTitle)).toBeVisible();
+
+    const modal = page.locator(SELECTORS.savedBlocksBrowser);
+    // `offsetWidth`, not `boundingBox()`: the dialog animates in with
+    // `tpl-scale-in`, and a transformed bounding rect reports the mid-animation
+    // visual size (0.97 scale reads as 970px). Layout width is what's pinned.
+    const widthOf = () => modal.evaluate((el) => (el as HTMLElement).offsetWidth);
+
+    const emptyWidth = await widthOf();
+
+    await page.locator(SELECTORS.savedBlocksCard).first().click();
+    // Wait for the preview to actually render, so the measurement isn't taken
+    // before the pane has content that could have resized it.
+    await expect(
+      modal.locator(SELECTORS.savedBlocksPreviewCanvas),
+    ).toBeVisible();
+    const selectedWidth = await widthOf();
+
+    expect(selectedWidth).toBe(emptyWidth);
   });
 });

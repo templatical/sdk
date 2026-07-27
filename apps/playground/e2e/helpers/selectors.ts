@@ -63,6 +63,9 @@ export const SELECTORS = {
   savedBlocksCategoryFilter: '[data-testid="saved-blocks-category-filter"]',
   savedBlocksCategoryBadge: '[data-testid="saved-block-category"]',
   savedBlocksEditCategory: '[data-testid="saved-blocks-edit-category"]',
+  savedBlocksLoading: '[data-testid="saved-blocks-loading"]',
+  savedBlocksBrowserClose: '[data-testid="saved-blocks-browser-close"]',
+  savedBlocksPreviewCanvas: '[data-testid="saved-blocks-preview-canvas"]',
 
   // Small-screen gate (#235)
   smallScreenNotice: '[data-testid="small-screen-notice"]',

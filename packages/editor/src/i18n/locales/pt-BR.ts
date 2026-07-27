@@ -624,6 +624,7 @@ const ptBR: typeof en = {
     emptyHint: "Salve blocos dos seus templates para reutilizá-los depois.",
     noResults: "Nenhum bloco salvo corresponde à sua busca",
     search: "Buscar blocos salvos...",
+    loading: "Carregando blocos salvos…",
     category: "Categoria",
     categoryPlaceholder: "ex.: Cabeçalhos, Promoções... (opcional)",
     allCategories: "Todas as categorias",

@@ -30,6 +30,11 @@ export interface EditorCapabilities {
     confirmPicking(): void;
     cancelPicking(): void;
     openBrowser(): void;
+    /**
+     * How many entries are loaded. Informational only — the sidebar rail is
+     * gated on {@link isAvailable} alone, never on this, so a slow or empty
+     * `list()` can't make the entry appear late or shift the rail.
+     */
     count: ComputedRef<number>;
     /**
      * Whether the feature is usable right now. Reactive because Cloud only

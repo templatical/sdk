@@ -220,7 +220,25 @@ const editor = ref<TemplaticalEditor | null>(null);
 // function, and the editor then hides every affordance that would need them
 // while browsing, previewing and inserting keep working.
 const savedBlocksProvider: SavedBlocksProvider = (() => {
-  const provider = createLocalStorageSavedBlocksProvider();
+  const base = createLocalStorageSavedBlocksProvider();
+
+  // `…-slow` stands in for a sluggish backend, so the browser's first-open
+  // skeleton is exercisable: localStorage answers instantly, which is the one
+  // latency profile that can't reproduce it.
+  const delayMs = Number(
+    localStorage.getItem("tpl-playground-saved-blocks-delay") ?? "0",
+  );
+  const provider: SavedBlocksProvider =
+    delayMs > 0
+      ? {
+          ...base,
+          list: async (params) => {
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+            return base.list(params);
+          },
+        }
+      : base;
+
   const readOnly =
     localStorage.getItem("tpl-playground-saved-blocks-readonly") === "true";
   return readOnly

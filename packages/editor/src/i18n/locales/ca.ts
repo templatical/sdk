@@ -627,6 +627,7 @@ const ca: typeof en = {
       "Desa blocs de les teves plantilles per reutilitzar-los més tard.",
     noResults: "Cap bloc desat coincideix amb la teva cerca",
     search: "Cerca blocs desats...",
+    loading: "S'estan carregant els blocs desats…",
     category: "Categoria",
     categoryPlaceholder: "p. ex. Capçaleres, Promocions... (opcional)",
     allCategories: "Totes les categories",

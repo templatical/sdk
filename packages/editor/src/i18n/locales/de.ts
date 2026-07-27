@@ -629,6 +629,7 @@ const de: typeof en = {
       "Speichern Sie Blöcke aus Ihren Vorlagen, um sie später wiederzuverwenden.",
     noResults: "Keine gespeicherten Blöcke gefunden",
     search: "Gespeicherte Blöcke suchen...",
+    loading: "Gespeicherte Blöcke werden geladen…",
     category: "Kategorie",
     categoryPlaceholder: "z. B. Kopfzeilen, Aktionen... (optional)",
     allCategories: "Alle Kategorien",

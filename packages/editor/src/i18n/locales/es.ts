@@ -625,6 +625,7 @@ const es: typeof en = {
     emptyHint: "Guarda bloques de tus plantillas para reutilizarlos más tarde.",
     noResults: "Ningún bloque guardado coincide con tu búsqueda",
     search: "Buscar bloques guardados...",
+    loading: "Cargando bloques guardados…",
     category: "Categoría",
     categoryPlaceholder: "p. ej. Cabeceras, Promociones... (opcional)",
     allCategories: "Todas las categorías",

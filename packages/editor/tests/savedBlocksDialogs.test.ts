@@ -1324,6 +1324,105 @@ describe('SavedBlocksBrowserModal', () => {
     });
   });
 
+
+  describe('first-load skeleton', () => {
+    const entry: SavedBlock = {
+      id: 'a',
+      name: 'Header',
+      content: [createTitleBlock()],
+    };
+
+    /**
+     * The list is fetched when this modal opens, not at editor mount, so a first
+     * open can render before the provider answers. `isLoading` alone isn't the
+     * condition — a *reopen* is also loading, but already has entries to show.
+     */
+    function mountLoading(saved: SavedBlock[], isLoading: boolean) {
+      const headless = makeHeadless(saved);
+      headless.isLoading = ref(isLoading) as never;
+      return mountEditor(SavedBlocksBrowserModal, {
+        props: { visible: true },
+        attachTo: document.body,
+        provides: {
+          [EDITOR_KEY]: makeEditor([createTitleBlock()]),
+          [SAVED_BLOCKS_KEY]: headless,
+          [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
+        },
+        global: { stubs: { SavedBlockPreviewCanvas: true } },
+      } as never);
+    }
+
+    const SKELETON = '[data-testid="saved-blocks-loading"]';
+
+    it('shows the skeleton while a first load is in flight', async () => {
+      mountLoading([], true);
+      await nextTick();
+
+      expect(qAll(SKELETON)).toHaveLength(1);
+      // Crucially NOT the empty state, which would be false for the duration.
+      expect(popoverRootEl.textContent).not.toContain('savedBlocks.empty');
+      expect(cards()).toHaveLength(0);
+    });
+
+    it('marks the skeleton region busy for assistive tech', async () => {
+      mountLoading([], true);
+      await nextTick();
+
+      const region = get(SKELETON);
+      expect(region.getAttribute('aria-busy')).toBe('true');
+      expect(region.getAttribute('role')).toBe('status');
+      expect(region.getAttribute('aria-label')).toBe('savedBlocks.loading');
+    });
+
+    it('renders the placeholder bars as decorative', async () => {
+      mountLoading([], true);
+      await nextTick();
+
+      const bars = qAll(`${SKELETON} > div`);
+      expect(bars).toHaveLength(3);
+      for (const bar of bars) {
+        expect(bar.getAttribute('aria-hidden')).toBe('true');
+      }
+    });
+
+    it('disables the search box while loading, so it cannot filter nothing', async () => {
+      mountLoading([], true);
+      await nextTick();
+
+      expect(
+        get<HTMLInputElement>('input[type="text"]').disabled,
+      ).toBe(true);
+    });
+
+    /* The reopen case: still loading, but the previous entries are in hand, so
+       showing a skeleton would flash away perfectly good content. */
+    it('shows the existing entries during a reload, not the skeleton', async () => {
+      mountLoading([entry], true);
+      await nextTick();
+
+      expect(qAll(SKELETON)).toHaveLength(0);
+      expect(cards()).toHaveLength(1);
+      expect(get<HTMLInputElement>('input[type="text"]').disabled).toBe(false);
+    });
+
+    it('shows the empty state once a load finishes with nothing', async () => {
+      mountLoading([], false);
+      await nextTick();
+
+      expect(qAll(SKELETON)).toHaveLength(0);
+      expect(popoverRootEl.textContent).toContain('savedBlocks.empty');
+      expect(popoverRootEl.textContent).toContain('savedBlocks.emptyHint');
+    });
+
+    it('shows entries once a load finishes with results', async () => {
+      mountLoading([entry], false);
+      await nextTick();
+
+      expect(qAll(SKELETON)).toHaveLength(0);
+      expect(cards()).toHaveLength(1);
+    });
+  });
+
   it('defaults the insert position to after the selected canvas block', async () => {
     const canvasBlock = createTitleBlock();
     mountBrowser([savedA], [canvasBlock], canvasBlock.id);

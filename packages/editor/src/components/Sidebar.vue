@@ -33,10 +33,12 @@ const editor = inject(EDITOR_KEY, null);
 
 const caps = inject(CAPABILITIES_KEY, {});
 
+// Availability only — deliberately NOT `count > 0`. Gating on the loaded count
+// meant the entry appeared only once the consumer's `list()` resolved, so a slow
+// endpoint shifted the rail mid-session and an empty library hid the feature
+// entirely. The list is now fetched when the browser opens instead.
 const showSavedBlocksSection = computed(
-  () =>
-    caps.savedBlocks?.isAvailable.value === true &&
-    caps.savedBlocks.count.value > 0,
+  () => caps.savedBlocks?.isAvailable.value === true,
 );
 
 const isExpanded = ref(false);
@@ -208,17 +210,15 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
         @click="caps.savedBlocks?.openBrowser()"
       >
         <Package :size="20" :stroke-width="1.5" class="tpl:shrink-0" />
+        <!-- No `flex-1`: the rail inherits `text-align: center`, so a label
+             stretched to fill the row centres its glyphs and sits visibly
+             further right than the palette labels below it. Shrink-to-fit
+             matches them exactly. -->
         <span
           v-if="isExpanded"
-          class="tpl:flex-1 tpl:truncate tpl:text-sm tpl:font-medium"
+          class="tpl:truncate tpl:text-sm tpl:font-medium"
         >
           {{ t.savedBlocks.title }}
-        </span>
-        <span
-          v-if="isExpanded"
-          class="tpl:shrink-0 tpl:rounded-full tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
-        >
-          {{ caps.savedBlocks?.count.value ?? 0 }}
         </span>
       </button>
     </div>

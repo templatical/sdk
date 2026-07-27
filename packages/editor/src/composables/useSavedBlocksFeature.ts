@@ -139,6 +139,11 @@ export function useSavedBlocksFeature(
     // saving. `closeSaveDialog` is what clears it.
     picking.value = false;
     isSaveDialogOpen.value = true;
+    // The dialog offers the categories already in use as suggestions, and those
+    // are derived from the loaded list — without this they'd be empty for anyone
+    // who saves without ever opening the browser, and the derived-category model
+    // would drift into near-duplicates.
+    refresh();
   }
 
   function closeSaveDialog(): void {
@@ -157,6 +162,7 @@ export function useSavedBlocksFeature(
 
   function openBrowser(): void {
     isBrowserOpen.value = true;
+    refresh();
   }
 
   function closeBrowser(): void {
@@ -184,17 +190,22 @@ export function useSavedBlocksFeature(
   const count = computed(() => headless.savedBlocks.value.length);
   const isAvailable = computed(() => options.isAvailable?.() ?? true);
 
-  // Populate the list as soon as the feature becomes available, so the sidebar
-  // rail (gated on count > 0) appears without the user opening the browser
-  // first. `immediate` covers OSS, where availability is true from the start;
-  // the watch covers Cloud, where it flips once the plan config resolves.
-  watch(
-    isAvailable,
-    (available) => {
-      if (available) refresh();
-    },
-    { immediate: true },
-  );
+  /**
+   * Nothing is fetched at mount — the list loads when the browser or the save
+   * dialog opens. So a consumer's `list()` latency can neither delay the editor
+   * nor shift the sidebar: the rail entry is gated purely on availability, and
+   * its presence no longer depends on whether anything happens to be saved.
+   *
+   * True only while there is *nothing to show*, which is what makes the browser
+   * skeleton appear on a first open and stay away on a reopen — the previous
+   * results render immediately while the refetch lands underneath. Without that
+   * distinction the empty state would read "No saved blocks yet" for however
+   * long the request takes, which is false rather than merely unhelpful.
+   *
+   * The browser modal derives that condition itself from the injected composable
+   * — it is the only surface that displays the list, so there is no reason to
+   * widen the capability with it.
+   */
 
   provide(SAVED_BLOCKS_KEY, headless);
 

@@ -621,6 +621,7 @@ export default {
     emptyHint: "Save blocks from your templates to reuse them later.",
     noResults: "No saved blocks match your search",
     search: "Search saved blocks...",
+    loading: "Loading saved blocks…",
     category: "Category",
     categoryPlaceholder: "e.g. Headers, Promos... (optional)",
     allCategories: "All categories",
