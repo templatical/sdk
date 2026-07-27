@@ -637,6 +637,13 @@ export default {
     pickCount: "{count} block(s) selected",
     pickHint: "Click blocks to add or remove them",
     savingCount: "Saving {count} block(s):",
+    reorderHint: "Drag to reorder — blocks are saved in this order",
+    reorderHandle: "Reorder {block}, position {position} of {total}",
+    reorderAnnouncement: "{block} moved to position {position} of {total}",
+    expand: "Expand",
+    collapse: "Collapse",
+    expandPreview: "Expand {block} preview",
+    collapsePreview: "Collapse {block} preview",
     time: {
       justNow: "Just now",
       minutesAgo: "{minutes}m ago",

@@ -354,7 +354,11 @@ export function useEditorCore(
   }
 
   // --- Keyboard reorder (GitHub-style lift/move/drop via keyboard) ---
-  const keyboardReorder = useKeyboardReorder(editor, { t, format });
+  const keyboardReorder = useKeyboardReorder(
+    editor,
+    { t, format },
+    config.customBlocks ?? [],
+  );
 
   // --- Color palette ---
   // Editor-wide color-picker palette. Resolved here, ahead of the block

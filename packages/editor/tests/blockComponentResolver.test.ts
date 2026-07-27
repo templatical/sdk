@@ -3,14 +3,16 @@ import {
   resolveBlockComponent,
   getBlockWrapperStyle,
   getSectionWrapperStyle,
+  getDocumentStyle,
 } from "../src/utils/blockComponentResolver";
-import type { Block } from "@templatical/types";
+import type { Block, TemplateSettings } from "@templatical/types";
 import {
   createTitleBlock,
   createImageBlock,
   createButtonBlock,
   createDividerBlock,
   createSectionBlock,
+  createDefaultTemplateContent,
 } from "@templatical/types";
 import type { UseBlockRegistryReturn } from "../src/composables/useBlockRegistry";
 import { markRaw, type Component } from "vue";
@@ -164,5 +166,79 @@ describe("getSectionWrapperStyle", () => {
     });
     const style = getSectionWrapperStyle(block);
     expect(style).toEqual({ padding: "10px 10px 10px 10px" });
+  });
+});
+
+describe("getDocumentStyle", () => {
+  /* Every surface that renders blocks must apply this. Omitting it is what made
+     saved-block previews drop the template font and the link underline while
+     the canvas kept them — the link rules in styles/index.css fall through to
+     `text-decoration: none` / `color: inherit` when the vars are unset. */
+  function settings(overrides: Partial<TemplateSettings> = {}) {
+    return {
+      ...createDefaultTemplateContent().settings,
+      ...overrides,
+    } as TemplateSettings;
+  }
+
+  it("carries the template font family and nothing else when unconfigured", () => {
+    expect(
+      getDocumentStyle(
+        settings({
+          fontFamily: "Georgia, serif",
+          textColor: "",
+          linkColor: "",
+          linkUnderline: false,
+        }),
+      ),
+    ).toEqual({ fontFamily: "Georgia, serif" });
+  });
+
+  it("sets the link underline variable only when enabled", () => {
+    const on = getDocumentStyle(settings({ linkUnderline: true }));
+    expect(on["--tpl-doc-link-underline"]).toBe("underline");
+
+    // Unset, NOT "none": the CSS fallback supplies `none`, and emitting it here
+    // would also override an inherited value.
+    const off = getDocumentStyle(settings({ linkUnderline: false }));
+    expect(off).not.toHaveProperty("--tpl-doc-link-underline");
+  });
+
+  it("sets the link colour variable only when configured", () => {
+    expect(
+      getDocumentStyle(settings({ linkColor: "#ff0000" }))[
+        "--tpl-doc-link-color"
+      ],
+    ).toBe("#ff0000");
+    expect(getDocumentStyle(settings({ linkColor: "" }))).not.toHaveProperty(
+      "--tpl-doc-link-color",
+    );
+  });
+
+  it("sets the text colour only when configured", () => {
+    expect(getDocumentStyle(settings({ textColor: "#123456" })).color).toBe(
+      "#123456",
+    );
+    expect(getDocumentStyle(settings({ textColor: "" }))).not.toHaveProperty(
+      "color",
+    );
+  });
+
+  it("emits every property together for a fully configured template", () => {
+    expect(
+      getDocumentStyle(
+        settings({
+          fontFamily: "Georgia, serif",
+          textColor: "#111827",
+          linkColor: "#c0392b",
+          linkUnderline: true,
+        }),
+      ),
+    ).toEqual({
+      fontFamily: "Georgia, serif",
+      color: "#111827",
+      "--tpl-doc-link-color": "#c0392b",
+      "--tpl-doc-link-underline": "underline",
+    });
   });
 });

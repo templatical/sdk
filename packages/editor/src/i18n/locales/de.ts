@@ -645,6 +645,15 @@ const de: typeof en = {
     pickCount: "{count} Block/Blöcke ausgewählt",
     pickHint: "Blöcke anklicken, um sie hinzuzufügen oder zu entfernen",
     savingCount: "{count} Block/Blöcke werden gespeichert:",
+    reorderHint:
+      "Zum Umsortieren ziehen — in dieser Reihenfolge werden die Blöcke gespeichert",
+    reorderHandle: "{block} umsortieren, Position {position} von {total}",
+    reorderAnnouncement:
+      "{block} an Position {position} von {total} verschoben",
+    expand: "Aufklappen",
+    collapse: "Zuklappen",
+    expandPreview: "Vorschau von {block} aufklappen",
+    collapsePreview: "Vorschau von {block} zuklappen",
     time: {
       justNow: "Gerade eben",
       minutesAgo: "vor {minutes} Min.",

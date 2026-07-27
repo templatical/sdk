@@ -12,19 +12,35 @@ import TableBlock from "./blocks/TableBlock.vue";
 import TitleBlock from "./blocks/TitleBlock.vue";
 import ParagraphBlock from "./blocks/ParagraphBlock.vue";
 import VideoBlock from "./blocks/VideoBlock.vue";
-import { BLOCK_REGISTRY_KEY } from "../keys";
+import { BLOCK_REGISTRY_KEY, EDITOR_KEY } from "../keys";
 import {
   resolveBlockComponent,
   getBlockWrapperStyle,
+  getDocumentStyle,
 } from "../utils/blockComponentResolver";
 import type { Block } from "@templatical/types";
-import { inject, type Component } from "vue";
+import { computed, inject, type Component } from "vue";
 
 defineProps<{
   blocks: Block[];
 }>();
 
 const blockRegistry = inject(BLOCK_REGISTRY_KEY);
+const editor = inject(EDITOR_KEY, null);
+
+/**
+ * The same document-level style the canvas applies, so a previewed block
+ * renders identically to the canvas one: without it the font falls back to the
+ * editor UI's and the link rules hit their unset defaults, dropping the
+ * underline and the link colour.
+ *
+ * Read from the *current* template even in the saved-blocks browser, where the
+ * previewed content came from elsewhere — a saved block stores only `Block[]`,
+ * and the current settings are what it will actually look like once inserted.
+ */
+const documentStyle = computed(() =>
+  editor ? getDocumentStyle(editor.content.value.settings) : {},
+);
 
 const previewComponentMap: Record<string, Component> = {
   section: PreviewSectionBlock,
@@ -50,10 +66,11 @@ function getBlockComponent(block: Block): Component | null {
 <template>
   <div
     class="tpl:pointer-events-none tpl:mx-auto tpl:w-[600px] tpl:select-none tpl:rounded-lg"
-    style="
-      background-color: var(--tpl-canvas-bg);
-      box-shadow: var(--tpl-shadow-sm);
-    "
+    :style="{
+      backgroundColor: 'var(--tpl-canvas-bg)',
+      boxShadow: 'var(--tpl-shadow-sm)',
+      ...documentStyle,
+    }"
   >
     <div
       v-for="block in blocks"

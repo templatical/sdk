@@ -53,6 +53,10 @@ export const SELECTORS = {
   savedBlocksPickConfirm: '[data-testid="saved-blocks-pick-confirm"]',
   savedBlocksPickCancel: '[data-testid="saved-blocks-pick-cancel"]',
   blockPicked: "[data-tpl-picked]",
+  // Save dialog's reorderable preview list (seeded in pick order)
+  savedBlocksReorderList: '[data-testid="saved-blocks-reorder-list"]',
+  savedBlocksReorderRow: '[data-testid="saved-blocks-reorder-row"]',
+  savedBlocksReorderHandle: '[data-testid="saved-blocks-reorder-handle"]',
 
   // Small-screen gate (#235)
   smallScreenNotice: '[data-testid="small-screen-notice"]',

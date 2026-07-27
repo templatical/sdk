@@ -3,12 +3,14 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { nextTick } from "vue";
 import { useEditor } from "@templatical/core";
 import {
+  createCustomBlock,
   createDefaultTemplateContent,
   createParagraphBlock,
   createTitleBlock,
   createImageBlock,
   createSectionBlock,
 } from "@templatical/types";
+import type { CustomBlockDefinition } from "@templatical/types";
 import { useKeyboardReorder } from "../src/composables/useKeyboardReorder";
 import en from "../src/i18n/locales/en";
 import { useI18n } from "../src/composables/useI18n";
@@ -207,6 +209,63 @@ describe("useKeyboardReorder", () => {
 
       expect(reorder.announcement.value.toLowerCase()).toContain("cancelled");
       expect(reorder.announcement.value).toContain("position 2.");
+    });
+  });
+
+  /* `translations.blocks` has no `custom` key, so announcing by block *type*
+     read out the literal word "custom" — and identically for every custom
+     block, which is useless to a screen-reader user reordering two of them. */
+  describe("custom block announcements", () => {
+    const featuredArticle = {
+      type: "featured-article",
+      name: "Featured Article",
+      fields: [],
+      template: "",
+    } as CustomBlockDefinition;
+
+    /** A custom block followed by a built-in, plus the reorder bound to `definitions`. */
+    function createCustomFixture(definitions: CustomBlockDefinition[]) {
+      const content = createDefaultTemplateContent();
+      const custom = createCustomBlock(featuredArticle);
+      const title = createTitleBlock({ content: "<h1>A</h1>" });
+      content.blocks = [custom, title];
+      const editor = useEditor({ content });
+      const reorder = useKeyboardReorder(editor, useI18n(en), definitions);
+      return { reorder, custom, title };
+    }
+
+    it("announces the consumer's name for a custom block", async () => {
+      const { reorder, custom } = createCustomFixture([featuredArticle]);
+
+      reorder.lift(custom.id);
+      await nextTick();
+      await nextTick();
+
+      expect(reorder.announcement.value).toContain("Featured Article");
+      expect(reorder.announcement.value).not.toContain("custom");
+    });
+
+    it("announces the customType slug when the definition is missing", async () => {
+      const { reorder, custom } = createCustomFixture([]);
+
+      reorder.lift(custom.id);
+      await nextTick();
+      await nextTick();
+
+      // Still specific to the block, never the bare word "custom".
+      expect(reorder.announcement.value).toContain("featured-article");
+    });
+
+    it("leaves built-in block announcements unchanged", async () => {
+      const { reorder, title } = createCustomFixture([featuredArticle]);
+
+      reorder.lift(title.id);
+      await nextTick();
+      await nextTick();
+
+      // Definitions in play must not disturb a built-in's i18n label.
+      expect(reorder.announcement.value).toContain("Title");
+      expect(reorder.announcement.value).toContain("Position 2 of 2");
     });
   });
 });

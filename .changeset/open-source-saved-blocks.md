@@ -8,7 +8,7 @@ Open-source **Saved Blocks** — reusable groups of blocks users save and re-ins
 
 The editor owns the UI; you own persistence. Templatical Cloud now consumes the same interface as one adapter rather than a separate implementation.
 
-Saving starts from a block's bookmark action and opens a **pick session**: plain clicks add or remove blocks on the canvas, a bar shows the count with Save/Cancel (Escape cancels, Enter confirms), and Save just asks for a name. Blocks are stored in canvas order regardless of pick order, and picking never touches the editor's block selection. Browsing gives search, live preview, insert-at-position, rename and delete.
+Saving starts from a block's bookmark action and opens a **pick session**: plain clicks add or remove blocks on the canvas, a bar shows the count with Save/Cancel (Escape cancels, Enter confirms), and Save opens a dialog that asks for a name and previews the picked blocks. The preview lists them in pick order and each row can be dragged (or moved with the arrow keys from its grip handle) to reorder before saving; blocks are stored in whatever order the list ends in. Picking never touches the editor's block selection. Browsing gives search, live preview, insert-at-position, rename and delete.
 
 ```js
 import { init, createLocalStorageSavedBlocksProvider } from '@templatical/editor';

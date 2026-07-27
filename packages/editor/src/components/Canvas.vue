@@ -18,7 +18,10 @@ import {
   requireInject,
 } from "../keys";
 import { VueDraggable } from "vue-draggable-plus";
-import { resolveBlockComponent } from "../utils/blockComponentResolver";
+import {
+  getDocumentStyle,
+  resolveBlockComponent,
+} from "../utils/blockComponentResolver";
 import { readableTextColor } from "../utils/readableTextColor";
 
 import BlockWrapper from "./blocks/BlockWrapper.vue";
@@ -129,31 +132,9 @@ const stageWidth = computed(() => viewportWidth.value + CANVAS_GUTTER * 2);
 // The email bg lives on the `.tpl-canvas-bg` sibling layer (so it can be
 // inverted by `filter` without trapping block chrome in a stacking context);
 // the `.tpl-canvas` itself stays transparent so the bg layer shows through.
-const canvasStyle = computed(() => {
-  const style: Record<string, string> = {
-    fontFamily: props.content.settings.fontFamily,
-  };
-  // Mirror the exported `<mj-text>` default color so canvas text matches the
-  // sent email. Set only when configured — unset leaves the canvas at its
-  // inherited default, matching the renderer omitting the color. Titles carry
-  // their own inline color and so override this, same as in the export.
-  if (props.content.settings.textColor) {
-    style.color = props.content.settings.textColor;
-  }
-  // Mirror the exported global `a { … }` link rule so canvas links match the
-  // sent email (WYSIWYG). `--tpl-doc-link-color` is consumed by the link rules
-  // in styles/index.css; left unset when no link color is configured, so links
-  // fall back to `inherit` (the surrounding text color), exactly as they export.
-  if (props.content.settings.linkColor) {
-    style["--tpl-doc-link-color"] = props.content.settings.linkColor;
-  }
-  // Only set the underline var when true; the CSS fallback (`none`) covers the
-  // false and legacy-undefined cases, matching the export's default.
-  if (props.content.settings.linkUnderline) {
-    style["--tpl-doc-link-underline"] = "underline";
-  }
-  return style;
-});
+// Shared with every other surface that renders blocks (the saved-block
+// previews), so a block looks the same wherever it is drawn.
+const canvasStyle = computed(() => getDocumentStyle(props.content.settings));
 
 // Empty canvas: the whole dashed placeholder IS the Sortable drop zone.
 // `isEmptyCanvas` toggles the styling + the inline empty-state content.

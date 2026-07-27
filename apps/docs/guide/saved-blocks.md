@@ -109,8 +109,8 @@ Any method may reject. The editor reports the failure through the editor's `onEr
 
 Once a provider is configured:
 
-- **Save** — selecting a top-level block reveals a bookmark action, which starts a *pick session*: that block is picked, and plain clicks (no modifier keys) add or remove others. A bar over the canvas shows the count with Save and Cancel; Save then just asks for a name. Escape cancels, Enter confirms.
-  Blocks are stored in canvas order no matter what order you picked them in. Clicking inside a section picks the whole section — section children aren't individually savable, since a section carries its columns and their contents with it.
+- **Save** — selecting a top-level block reveals a bookmark action, which starts a *pick session*: that block is picked, and plain clicks (no modifier keys) add or remove others. A bar over the canvas shows the count with Save and Cancel; Save then opens a dialog that asks for a name and previews the picked blocks. Escape cancels, Enter confirms.
+  The preview lists the blocks in the order you picked them, and each row has a grip handle to drag it — or Arrow Up / Arrow Down with the handle focused — so you can reorder before saving. Whatever order the list ends in is the order the blocks are stored in. Clicking inside a section picks the whole section — section children aren't individually savable, since a section carries its columns and their contents with it.
 - **Browse** — a saved-blocks entry appears in the left rail once at least one block is saved, opening a searchable browser with a live preview.
 - **Insert** — choose a position (at the beginning, after any existing block, or at the end) and insert. Inserted blocks always get **fresh IDs**, so inserting the same entry twice never collides.
 - **Rename / delete** — inline on each row in the browser; delete asks for confirmation first.

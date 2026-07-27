@@ -421,6 +421,110 @@ test.describe("saved blocks — pick session", () => {
     await expect(page.locator(SELECTORS.blockPicked)).toHaveCount(0);
   });
 
+  /**
+   * The dialog previews the picks in the order they were picked — not canvas
+   * order — and lets that order be dragged before saving.
+   *
+   * Sortable runs in force-fallback (pointer-event) mode, so `locator.dragTo`
+   * can't drive it: the drag is mouse-stepped like `EditorPage.reorderBlock`.
+   */
+  test("previews picks in pick order and saves the dragged order", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await bootEmptyStore(page);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    const canvasIds = await editorPage.getTopLevelBlockIds();
+    expect(canvasIds.length).toBeGreaterThanOrEqual(3);
+
+    await startSession(page, editorPage);
+
+    // Pick the THIRD block before the SECOND, so pick order and canvas order
+    // disagree — that disagreement is the whole point of the assertion below.
+    const blocks = editorPage.getTopLevelBlocks();
+    await blocks.nth(2).click({ position: { x: 5, y: 5 } });
+    await blocks.nth(1).click({ position: { x: 5, y: 5 } });
+    await expect(page.locator(SELECTORS.savedBlocksPickCount)).toContainText(
+      "3",
+    );
+
+    await page.locator(SELECTORS.savedBlocksPickConfirm).click();
+    await expect(page.locator(SELECTORS.saveBlockDialogTitle)).toBeVisible();
+
+    const dialog = page.locator('[role="dialog"]', {
+      has: page.locator(SELECTORS.saveBlockDialogTitle),
+    });
+    const rows = dialog.locator(SELECTORS.savedBlocksReorderRow);
+    await expect(rows).toHaveCount(3);
+
+    const rowIds = () =>
+      rows.evaluateAll((els) =>
+        els.map((el) => el.getAttribute("data-block-id") ?? ""),
+      );
+
+    const pickOrder = [canvasIds[0], canvasIds[2], canvasIds[1]];
+    expect(await rowIds()).toEqual(pickOrder);
+    // Guard against a vacuous pass: pick order must differ from canvas order,
+    // or this test would also pass with the old document-order derivation.
+    expect(pickOrder).not.toEqual(canvasIds.slice(0, 3));
+
+    // Drag the first row past the second.
+    const handle = rows.nth(0).locator(SELECTORS.savedBlocksReorderHandle);
+    const handleBox = await handle.boundingBox();
+    const targetBox = await rows.nth(1).boundingBox();
+    if (!handleBox || !targetBox) throw new Error("Drag bounds unavailable");
+
+    const startX = handleBox.x + handleBox.width / 2;
+    const startY = handleBox.y + handleBox.height / 2;
+    const endX = targetBox.x + targetBox.width / 2;
+    // Just past the target's midpoint — that's the threshold Sortable swaps on.
+    // Aiming at the target's bottom edge instead overshoots: the list reflows
+    // the moment the first swap lands, and the pointer ends up past the NEXT
+    // row's midpoint too, producing a two-position move. Rows here are
+    // block-sized and uneven, so the margin for that is small.
+    const endY = targetBox.y + targetBox.height / 2 + 4;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    const steps = 20;
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      await page.mouse.move(
+        startX + (endX - startX) * t,
+        startY + (endY - startY) * t,
+      );
+    }
+    await page.mouse.up();
+
+    const draggedOrder = [canvasIds[2], canvasIds[0], canvasIds[1]];
+    await expect.poll(rowIds, { timeout: 5000 }).toEqual(draggedOrder);
+
+    await dialog.locator('input[type="text"]').fill("Dragged group");
+    await dialog
+      .getByRole("button", { name: "Save Block", exact: true })
+      .click();
+
+    // Persisted in the dragged order, with the canvas block ids intact (the
+    // provider stores content verbatim; ids are only regenerated on insert).
+    await expect
+      .poll(async () => {
+        const stored = await page.evaluate(
+          (key) => JSON.parse(localStorage.getItem(key as string) ?? "[]"),
+          STORE_KEY,
+        );
+        return stored.map((e: { name: string; content: { id: string }[] }) => [
+          e.name,
+          e.content.map((b) => b.id),
+        ]);
+      })
+      .toEqual([["Dragged group", draggedOrder]]);
+  });
+
   test("clicking inside a section picks the whole section, not the child", async ({
     page,
     chooserPage,

@@ -152,10 +152,15 @@ describe("section drag + cycle defenses", () => {
     join(SRC, "components/blocks/BlockWrapper.vue"),
     "utf8",
   );
+  const saveDialog = readFileSync(
+    join(SRC, "components/SaveBlockDialog.vue"),
+    "utf8",
+  );
 
-  it("all three Sortables use force-fallback", () => {
-    // ALL THREE Sortables (sidebar, canvas, section column) MUST use
-    // `:force-fallback="true"`. Two reasons compose:
+  it("all four Sortables use force-fallback", () => {
+    // ALL FOUR Sortables (sidebar, canvas, section column, and the save
+    // dialog's reorder list) MUST use `:force-fallback="true"`. Two reasons
+    // compose:
     //   1. Chrome's HTML5 native-drag mode silently fails to initiate
     //      drag from a child block's grip inside a SECTION column
     //      (nested Sortable case). Sortable's `_prepareDragStart` runs
@@ -192,6 +197,7 @@ describe("section drag + cycle defenses", () => {
     expect(canvas).toMatch(/:force-fallback="true"/);
     expect(sidebar).toMatch(/:force-fallback="true"/);
     expect(sectionBlock).toMatch(/:force-fallback="true"/);
+    expect(saveDialog).toMatch(/:force-fallback="true"/);
 
     // Both canvas + section Sortables retain `handle=".tpl-block-btn"`.
     // In fallback mode the handle still gates drag initiation; without
@@ -272,6 +278,31 @@ describe("section drag + cycle defenses", () => {
     expect(sectionBlock).toMatch(/ghost-class="tpl-ghost"/);
     expect(sidebar).not.toMatch(/ghost-class=/);
   });
+
+  it("the save dialog's reorder list declares no `group`", () => {
+    // The canvas and section-column Sortables share `group="blocks"`, which is
+    // what lets a block move between them. The dialog's list reorders a
+    // throwaway array of already-picked blocks and must never exchange items
+    // with a live canvas list — a drop from the canvas into it would insert a
+    // block the pick session never chose, and a drop out of it would put a
+    // block on the canvas from inside a modal. Omitting `group` leaves Sortable
+    // on a private auto-generated one, which cannot pair with any other list.
+    const dialogSortable = saveDialog.match(
+      /<VueDraggable[\s\S]*?>/,
+    )?.[0] as string;
+    expect(dialogSortable).toBeTypeOf("string");
+    expect(dialogSortable).not.toMatch(/\bgroup=/);
+  });
+
+  it("the save dialog's reorder list drags only from its grip handle", () => {
+    // Without a handle the whole row is a drag target, and the row is mostly a
+    // live block preview — pointer-drags meant as clicks on the preview would
+    // start reordering. The handle class must match the button that renders it.
+    expect(saveDialog).toMatch(/handle="\.tpl-saved-block-reorder-handle"/);
+    expect(
+      readFileSync(join(SRC, "components/SavedBlockPreviewRow.vue"), "utf8"),
+    ).toMatch(/class="tpl-saved-block-reorder-handle/);
+  });
 });
 
 describe("saved blocks: picked state cannot be hidden by a block's own fill", () => {
@@ -348,6 +379,21 @@ describe("saved blocks: pick session stays lazily loaded", () => {
     expect(panels).toContain('v-if="feature.isPicking.value"');
     expect(panels).toContain('v-if="feature.isSaveDialogOpen.value"');
     expect(panels).toContain('v-if="feature.isBrowserOpen.value"');
+  });
+
+  /* The save dialog's preview rows pull in the block preview components, which
+     is the heaviest thing saved blocks touch. They're allowed to ride along in
+     the dialog's own async chunk, but nothing outside it may reference them —
+     a static import from either editor would hoist the whole preview tree into
+     the main entry for consumers who never configure a provider. */
+  it("preview rows are reachable only through the async save dialog", () => {
+    const saveDialog = read("components/SaveBlockDialog.vue");
+    expect(saveDialog).toContain('from "./SavedBlockPreviewRow.vue"');
+
+    for (const src of [ossEditor, cloudEditor, panels]) {
+      expect(src).not.toContain("SavedBlockPreviewRow");
+      expect(src).not.toContain("SavedBlockPreviewCanvas");
+    }
   });
 });
 

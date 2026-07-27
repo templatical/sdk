@@ -641,6 +641,14 @@ const es: typeof en = {
     pickCount: "{count} bloque(s) seleccionado(s)",
     pickHint: "Haz clic en los bloques para añadirlos o quitarlos",
     savingCount: "Guardando {count} bloque(s):",
+    reorderHint:
+      "Arrastra para reordenar: los bloques se guardan en este orden",
+    reorderHandle: "Reordenar {block}, posición {position} de {total}",
+    reorderAnnouncement: "{block} movido a la posición {position} de {total}",
+    expand: "Expandir",
+    collapse: "Contraer",
+    expandPreview: "Expandir la vista previa de {block}",
+    collapsePreview: "Contraer la vista previa de {block}",
     time: {
       justNow: "Ahora mismo",
       minutesAgo: "hace {minutes} min",

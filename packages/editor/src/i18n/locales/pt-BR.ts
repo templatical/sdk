@@ -640,6 +640,13 @@ const ptBR: typeof en = {
     pickCount: "{count} bloco(s) selecionado(s)",
     pickHint: "Clique nos blocos para adicionar ou remover",
     savingCount: "Salvando {count} bloco(s):",
+    reorderHint: "Arraste para reordenar — os blocos são salvos nesta ordem",
+    reorderHandle: "Reordenar {block}, posição {position} de {total}",
+    reorderAnnouncement: "{block} movido para a posição {position} de {total}",
+    expand: "Expandir",
+    collapse: "Recolher",
+    expandPreview: "Expandir a prévia de {block}",
+    collapsePreview: "Recolher a prévia de {block}",
     time: {
       justNow: "Agora mesmo",
       minutesAgo: "há {minutes}min",

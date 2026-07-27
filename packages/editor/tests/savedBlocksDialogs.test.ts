@@ -5,9 +5,24 @@ import { ref, nextTick } from 'vue';
 import SaveBlockDialog from '../src/components/SaveBlockDialog.vue';
 import SavedBlocksBrowserModal from '../src/components/SavedBlocksBrowserModal.vue';
 import { mountEditor } from './helpers/mount';
-import { EDITOR_KEY, SAVED_BLOCKS_KEY, POPOVER_ROOT_KEY } from '../src/keys';
-import { createTitleBlock, createButtonBlock } from '@templatical/types';
-import type { Block, SavedBlock } from '@templatical/types';
+import {
+  EDITOR_KEY,
+  SAVED_BLOCKS_KEY,
+  POPOVER_ROOT_KEY,
+  CUSTOM_BLOCK_DEFINITIONS_KEY,
+  TRANSLATIONS_KEY,
+} from '../src/keys';
+import en from '../src/i18n/locales/en';
+import {
+  createTitleBlock,
+  createButtonBlock,
+  createCustomBlock,
+} from '@templatical/types';
+import type {
+  Block,
+  CustomBlockDefinition,
+  SavedBlock,
+} from '@templatical/types';
 
 /**
  * Both dialogs wrap TplModal, which teleports into the injected popover root —
@@ -93,8 +108,11 @@ function makeHeadless(saved: SavedBlock[] = []) {
 
 describe('SaveBlockDialog', () => {
   /**
-   * The dialog is now name-only: the pick session already chose the blocks on
-   * the canvas, so the dialog just names them and shows a read-only summary.
+   * The dialog names the picked blocks and previews them in a reorderable
+   * list — which blocks are in it was settled by the canvas pick session.
+   *
+   * `SavedBlockPreviewCanvas` is stubbed: the rows' own structure (handle,
+   * order, count) is what's under test, not the block components it renders.
    */
   function mountDialog(
     blocks: Block[],
@@ -109,8 +127,22 @@ describe('SaveBlockDialog', () => {
         [SAVED_BLOCKS_KEY]: headless,
         [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
       },
+      global: { stubs: { SavedBlockPreviewCanvas: true } },
     } as never);
     return { wrapper, headless };
+  }
+
+  /** Preview rows in render order, identified by the block each one shows. */
+  function rowBlockIds(): string[] {
+    return qAll('[data-testid="saved-blocks-reorder-row"]').map(
+      (row) => row.getAttribute('data-block-id') ?? '',
+    );
+  }
+
+  function handles(): HTMLButtonElement[] {
+    return qAll<HTMLButtonElement>(
+      '[data-testid="saved-blocks-reorder-handle"]',
+    );
   }
 
   async function fillAndSave(name: string): Promise<void> {
@@ -142,18 +174,231 @@ describe('SaveBlockDialog', () => {
     expect(content[0].id).toBe(b.id);
   });
 
-  it('saves in document order regardless of pick order', async () => {
+  /**
+   * Selection order, NOT document order. The order the user picks in is the
+   * order they mean, and the dialog's list makes it visible and editable —
+   * silently re-deriving it from the canvas would discard that intent.
+   * `pickedIds` carries it: the session's `Set` iterates in insertion order.
+   */
+  it('saves in pick order, not document order', async () => {
     const a = createTitleBlock();
     const b = createButtonBlock();
     const c = createTitleBlock();
-    // Picked last-to-first; the canvas order is what must win.
+    // Picked last-to-first; the pick order is what must win.
     const { headless } = mountDialog([a, b, c], [c.id, a.id]);
     await nextTick();
 
     await fillAndSave('Pair');
 
     const content = headless.create.mock.calls[0][1];
-    expect(content.map((x: { id: string }) => x.id)).toEqual([a.id, c.id]);
+    expect(content.map((x: { id: string }) => x.id)).toEqual([c.id, a.id]);
+  });
+
+  it('renders one preview row per picked block, in pick order', async () => {
+    const a = createTitleBlock();
+    const b = createButtonBlock();
+    const c = createTitleBlock();
+    mountDialog([a, b, c], [c.id, a.id, b.id]);
+    await nextTick();
+
+    expect(rowBlockIds()).toEqual([c.id, a.id, b.id]);
+  });
+
+  it('renders no row for an id that no longer resolves', async () => {
+    const a = createTitleBlock();
+    const b = createButtonBlock();
+    mountDialog([a, b], [a.id, 'deleted-mid-session', b.id]);
+    await nextTick();
+
+    expect(rowBlockIds()).toEqual([a.id, b.id]);
+  });
+
+  /**
+   * Sortable is pointer-event driven (force-fallback) and can't be driven in
+   * jsdom/happy-dom, so the keyboard path — which exists for accessibility
+   * parity with the canvas — is also how reordering is covered here.
+   */
+  it('arrow-down on a handle moves that block later in the saved order', async () => {
+    const a = createTitleBlock();
+    const b = createButtonBlock();
+    const c = createTitleBlock();
+    const { headless } = mountDialog([a, b, c], [a.id, b.id, c.id]);
+    await nextTick();
+
+    await keydown(handles()[0], 'ArrowDown');
+
+    expect(rowBlockIds()).toEqual([b.id, a.id, c.id]);
+
+    await fillAndSave('Reordered');
+
+    const content = headless.create.mock.calls[0][1];
+    expect(content.map((x: { id: string }) => x.id)).toEqual([b.id, a.id, c.id]);
+  });
+
+  it('arrow-up on a handle moves that block earlier in the saved order', async () => {
+    const a = createTitleBlock();
+    const b = createButtonBlock();
+    const { headless } = mountDialog([a, b], [a.id, b.id]);
+    await nextTick();
+
+    await keydown(handles()[1], 'ArrowUp');
+
+    expect(rowBlockIds()).toEqual([b.id, a.id]);
+
+    await fillAndSave('Swapped');
+
+    expect(
+      headless.create.mock.calls[0][1].map((x: { id: string }) => x.id),
+    ).toEqual([b.id, a.id]);
+  });
+
+  it('refuses to move the first row up or the last row down', async () => {
+    const a = createTitleBlock();
+    const b = createButtonBlock();
+    mountDialog([a, b], [a.id, b.id]);
+    await nextTick();
+
+    await keydown(handles()[0], 'ArrowUp');
+    expect(rowBlockIds()).toEqual([a.id, b.id]);
+
+    await keydown(handles()[1], 'ArrowDown');
+    expect(rowBlockIds()).toEqual([a.id, b.id]);
+
+    // Positive control: the same handles DO move when the move is in range.
+    await keydown(handles()[0], 'ArrowDown');
+    expect(rowBlockIds()).toEqual([b.id, a.id]);
+  });
+
+  it('announces a keyboard move in the live region', async () => {
+    const a = createTitleBlock();
+    const b = createButtonBlock();
+    mountDialog([a, b], [a.id, b.id]);
+    await nextTick();
+
+    const live = get('[role="status"]');
+    expect(live.textContent?.trim()).toBe('');
+
+    await keydown(handles()[0], 'ArrowDown');
+
+    // Stub translations echo key paths, so the wording is never hard-coded
+    // here — only that the announcement resolves through the i18n key.
+    expect(live.textContent).toContain('savedBlocks.reorderAnnouncement');
+  });
+
+  it('announces nothing for a refused move', async () => {
+    const a = createTitleBlock();
+    const b = createButtonBlock();
+    mountDialog([a, b], [a.id, b.id]);
+    await nextTick();
+
+    await keydown(handles()[0], 'ArrowUp');
+
+    expect(get('[role="status"]').textContent?.trim()).toBe('');
+  });
+
+  it('reordering never leaks a Sortable back-ref into the saved payload', async () => {
+    const a = createTitleBlock();
+    const b = createButtonBlock();
+    const { wrapper, headless } = mountDialog([a, b], [a.id, b.id]);
+    await nextTick();
+
+    // What vue-draggable-plus emits: the reordered entries, each potentially
+    // carrying a Sortable `el` expando. The dialog reads ids off them and
+    // re-resolves from editor state, so the expando can't reach the provider.
+    const emitted = [
+      { ...b, el: document.createElement('div') },
+      { ...a, el: document.createElement('div') },
+    ];
+    (wrapper.vm as any).orderedBlocks = emitted;
+    await nextTick();
+
+    await fillAndSave('Clean');
+
+    const content = headless.create.mock.calls[0][1];
+    expect(content.map((x: { id: string }) => x.id)).toEqual([b.id, a.id]);
+    expect(content[0]).not.toHaveProperty('el');
+    expect(content[1]).not.toHaveProperty('el');
+  });
+
+  /* `translations.blocks` has no `custom` key, so a type-only lookup rendered
+     every custom block as the literal word "custom" — identical rows for two
+     different blocks, in the one dialog whose job is telling them apart. */
+  describe('custom block labels', () => {
+    const featuredArticle = {
+      type: 'featured-article',
+      name: 'Featured Article',
+      fields: [],
+      template: '',
+    } as CustomBlockDefinition;
+
+    /**
+     * Uses the REAL `en` translations, not the key-path stubs: the labels here
+     * are interpolated through `format()`, and the stub proxy swallows the
+     * substituted values (it returns a dot-path for `.replace`), so the block
+     * name would never reach the rendered string.
+     */
+    function mountWithDefinitions(
+      blocks: Block[],
+      pickedIds: string[],
+      definitions: CustomBlockDefinition[],
+    ) {
+      return mountEditor(SaveBlockDialog, {
+        props: { visible: true, pickedIds },
+        attachTo: document.body,
+        provides: {
+          [EDITOR_KEY]: makeEditor(blocks),
+          [SAVED_BLOCKS_KEY]: makeHeadless(),
+          [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
+          [CUSTOM_BLOCK_DEFINITIONS_KEY]: definitions,
+          [TRANSLATIONS_KEY]: en,
+        },
+        global: { stubs: { SavedBlockPreviewCanvas: true } },
+      } as never);
+    }
+
+    it("names a custom block by the consumer's definition, not its type", async () => {
+      const custom = createCustomBlock(featuredArticle);
+      mountWithDefinitions([custom], [custom.id], [featuredArticle]);
+      await nextTick();
+
+      const summary = get('[data-testid="saved-blocks-save-summary"]');
+      expect(summary.textContent).toContain('Featured Article');
+      expect(summary.textContent).not.toContain('custom');
+    });
+
+    it("labels the drag handle with the custom block's name", async () => {
+      const custom = createCustomBlock(featuredArticle);
+      mountWithDefinitions([custom], [custom.id], [featuredArticle]);
+      await nextTick();
+
+      const handle = get('[data-testid="saved-blocks-reorder-handle"]');
+      expect(handle.getAttribute('aria-label')).toContain('Featured Article');
+    });
+
+    it('falls back to the customType slug when no definition is provided', async () => {
+      const custom = createCustomBlock(featuredArticle);
+      mountWithDefinitions([custom], [custom.id], []);
+      await nextTick();
+
+      const summary = get('[data-testid="saved-blocks-save-summary"]');
+      // Still specific to the block, and never the bare word "custom".
+      expect(summary.textContent).toContain('featured-article');
+    });
+
+    it('keeps built-in labels working alongside a custom block', async () => {
+      const custom = createCustomBlock(featuredArticle);
+      const title = createTitleBlock();
+      mountWithDefinitions(
+        [custom, title],
+        [custom.id, title.id],
+        [featuredArticle],
+      );
+      await nextTick();
+
+      const summary = get('[data-testid="saved-blocks-save-summary"]');
+      expect(summary.textContent).toContain('Featured Article');
+      expect(summary.textContent).toContain('Title');
+    });
   });
 
   it('shows a read-only summary of what is being saved', async () => {

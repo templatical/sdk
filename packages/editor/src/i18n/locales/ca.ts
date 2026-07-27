@@ -643,6 +643,13 @@ const ca: typeof en = {
     pickCount: "{count} bloc(s) seleccionat(s)",
     pickHint: "Fes clic als blocs per afegir-los o treure'ls",
     savingCount: "S'estan desant {count} bloc(s):",
+    reorderHint: "Arrossega per reordenar: els blocs es desen en aquest ordre",
+    reorderHandle: "Reordena {block}, posició {position} de {total}",
+    reorderAnnouncement: "{block} mogut a la posició {position} de {total}",
+    expand: "Amplia",
+    collapse: "Redueix",
+    expandPreview: "Amplia la vista prèvia de {block}",
+    collapsePreview: "Redueix la vista prèvia de {block}",
     time: {
       justNow: "Ara mateix",
       minutesAgo: "fa {minutes} min",

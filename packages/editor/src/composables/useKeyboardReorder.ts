@@ -1,8 +1,12 @@
 import { ref, type Ref } from "vue";
-import type { Block, SectionBlock } from "@templatical/types";
+import type {
+  Block,
+  CustomBlockDefinition,
+  SectionBlock,
+} from "@templatical/types";
 import type { BaseEditorReturn } from "./useEditorCore";
 import type { UseI18nReturn } from "./useI18n";
-import { getBlockTypeLabel } from "../utils/blockTypeLabels";
+import { getBlockLabel } from "../utils/blockTypeLabels";
 
 interface BlockLocation {
   index: number;
@@ -30,6 +34,13 @@ export interface UseKeyboardReorderReturn {
 export function useKeyboardReorder(
   editor: BaseEditorReturn,
   i18n: UseI18nReturn,
+  /**
+   * Consumer-registered custom blocks, so announcements name them the way the
+   * user knows them ("Featured Article") instead of the type `custom`. Passed
+   * in rather than injected: this runs inside `useEditorCore`, which already
+   * holds the definitions before it provides them.
+   */
+  customBlockDefinitions: readonly CustomBlockDefinition[] = [],
 ): UseKeyboardReorderReturn {
   const liftedBlockId = ref<string | null>(null);
   const announcement = ref("");
@@ -68,7 +79,7 @@ export function useKeyboardReorder(
       : editor.content.value.blocks;
     const block = blocks?.[location.index];
     if (!block) return "";
-    return getBlockTypeLabel(block.type, i18n.t);
+    return getBlockLabel(block, i18n.t, customBlockDefinitions);
   }
 
   function resolveColumnBlocks(
