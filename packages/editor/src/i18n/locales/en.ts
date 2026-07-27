@@ -614,7 +614,6 @@ export default {
     saveAsBlock: "Save as Block",
     name: "Name",
     namePlaceholder: "e.g. Header, Footer, CTA...",
-    selectBlocks: "Select Blocks",
     save: "Save Block",
     saving: "Saving...",
     cancel: "Cancel",
@@ -634,6 +633,10 @@ export default {
     insertAtEnd: "At end",
     insertPosition: "Insert position",
     close: "Close",
+    pickToolbar: "Saved block selection",
+    pickCount: "{count} block(s) selected",
+    pickHint: "Click blocks to add or remove them",
+    savingCount: "Saving {count} block(s):",
     time: {
       justNow: "Just now",
       minutesAgo: "{minutes}m ago",

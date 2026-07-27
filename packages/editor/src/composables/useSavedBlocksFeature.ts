@@ -17,6 +17,8 @@ interface SavedBlocksEditor {
     columnIndex?: number,
     index?: number,
   ) => void;
+  /** Read reactively to cancel a pick session when preview mode turns on. */
+  state: { previewMode: boolean };
 }
 
 export interface UseSavedBlocksFeatureOptions {
@@ -34,13 +36,24 @@ export interface UseSavedBlocksFeatureOptions {
 
 export interface UseSavedBlocksFeatureReturn {
   headless: UseSavedBlocksReturn;
+
+  // --- Pick session ---
+  isPicking: ComputedRef<boolean>;
+  pickedIds: Ref<Set<string>>;
+  pickedCount: ComputedRef<number>;
+  startPicking: (blockId: string) => void;
+  togglePick: (blockId: string) => void;
+  isPicked: (blockId: string) => boolean;
+  confirmPicking: () => void;
+  cancelPicking: () => void;
+
+  // --- Dialogs ---
   isSaveDialogOpen: Ref<boolean>;
-  preSelectedBlockId: Ref<string | null>;
-  isBrowserOpen: Ref<boolean>;
-  openSaveDialog: (blockId?: string) => void;
   closeSaveDialog: () => void;
+  isBrowserOpen: Ref<boolean>;
   openBrowser: () => void;
   closeBrowser: () => void;
+
   /** Insert a saved block's content into the canvas, with fresh block IDs. */
   insert: (saved: SavedBlock, insertIndex: number | undefined) => void;
   /** Re-read the list from the provider (used after a successful save). */
@@ -52,14 +65,22 @@ export interface UseSavedBlocksFeatureReturn {
 }
 
 /**
- * Shared glue for the saved-blocks feature: reactive list, dialog state, the
- * insert operation, and the capability object the shared UI gates on.
+ * Shared glue for the saved-blocks feature: reactive list, the canvas pick
+ * session, the insert operation, and the capability object the shared UI gates
+ * on.
  *
  * Both `Editor.vue` (OSS) and `useCloudInitialization` (Cloud) call this with
  * their own provider, so the two entry points run identical logic over
  * different transports. Nothing here is auth- or plan-aware — callers decide
- * whether the feature is available *before* constructing it, which is why the
- * capability's presence alone is a truthful signal that the UI will work.
+ * whether the feature is available *before* constructing it.
+ *
+ * **The pick session is deliberately local to this feature.** Choosing which
+ * blocks to save happens on the canvas (the user's mental model is spatial),
+ * but it does NOT touch `EditorState.selectedBlockId`: keeping it a transient
+ * mode avoids a breaking core-state change, leaves Cloud's single-block
+ * selection broadcast and block locking untouched, and steers clear of
+ * Sortable multi-drag. Promote it to real multi-select only if a second
+ * consumer needs it.
  *
  * Must be called from `setup()`: it `provide()`s the headless instance under
  * {@link SAVED_BLOCKS_KEY} for the dialogs to inject.
@@ -72,17 +93,63 @@ export function useSavedBlocksFeature(
   const headless = useSavedBlocks({ provider, onError: options.onError });
 
   const isSaveDialogOpen = ref(false);
-  const preSelectedBlockId = ref<string | null>(null);
   const isBrowserOpen = ref(false);
 
-  function openSaveDialog(blockId?: string): void {
-    preSelectedBlockId.value = blockId ?? null;
+  // --- Pick session ---
+  const picking = ref(false);
+  const pickedIds = ref<Set<string>>(new Set());
+  const isPicking = computed(() => picking.value);
+  const pickedCount = computed(() => pickedIds.value.size);
+
+  function startPicking(blockId: string): void {
+    // Preview mode has no block chrome to pick with, and its click handlers are
+    // suppressed — a session there could never be completed or cancelled.
+    if (editor.state.previewMode) return;
+    pickedIds.value = new Set([blockId]);
+    picking.value = true;
+  }
+
+  function togglePick(blockId: string): void {
+    if (!picking.value) return;
+    const next = new Set(pickedIds.value);
+    if (next.has(blockId)) {
+      next.delete(blockId);
+    } else {
+      next.add(blockId);
+    }
+    pickedIds.value = next;
+  }
+
+  function isPicked(blockId: string): boolean {
+    return pickedIds.value.has(blockId);
+  }
+
+  function cancelPicking(): void {
+    picking.value = false;
+    pickedIds.value = new Set();
+  }
+
+  function confirmPicking(): void {
+    if (pickedCount.value === 0) return;
+    // Leave pick mode but keep the set — the dialog reads it to know what it's
+    // saving. `closeSaveDialog` is what clears it.
+    picking.value = false;
     isSaveDialogOpen.value = true;
   }
 
   function closeSaveDialog(): void {
     isSaveDialogOpen.value = false;
+    pickedIds.value = new Set();
   }
+
+  // A session can't survive entering preview mode: the canvas stops responding
+  // to selection there, so the bar would be the only way out.
+  watch(
+    () => editor.state.previewMode,
+    (previewMode) => {
+      if (previewMode && picking.value) cancelPicking();
+    },
+  );
 
   function openBrowser(): void {
     isBrowserOpen.value = true;
@@ -129,17 +196,31 @@ export function useSavedBlocksFeature(
 
   return {
     headless,
+
+    isPicking,
+    pickedIds,
+    pickedCount,
+    startPicking,
+    togglePick,
+    isPicked,
+    confirmPicking,
+    cancelPicking,
+
     isSaveDialogOpen,
-    preSelectedBlockId,
-    isBrowserOpen,
-    openSaveDialog,
     closeSaveDialog,
+    isBrowserOpen,
     openBrowser,
     closeBrowser,
+
     insert,
     refresh,
     capability: {
-      openSaveDialog: (blockId: string) => openSaveDialog(blockId),
+      startPicking,
+      togglePick,
+      isPicked,
+      isPicking,
+      confirmPicking,
+      cancelPicking,
       openBrowser,
       count,
       isAvailable,

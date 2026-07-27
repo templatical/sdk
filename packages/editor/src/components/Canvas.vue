@@ -187,6 +187,12 @@ function handleCanvasClick(event: MouseEvent): void {
   if (props.previewMode) {
     return;
   }
+  // During a pick session, a stray background click must not clear anything —
+  // the session is left only via the bar's Save/Cancel or Escape. Deselecting
+  // here would also be meaningless, since picking doesn't touch selection.
+  if (caps.savedBlocks?.isPicking.value) {
+    return;
+  }
   if (event.target === event.currentTarget) {
     emit("select-block", null);
   }
@@ -199,6 +205,28 @@ function getBlockComponent(block: Block): Component | null {
 function getBlockLock(blockId: string): Collaborator | null {
   return props.lockedBlocks?.get(blockId) ?? null;
 }
+
+/**
+ * A click on a block either toggles its pick (while a saved-blocks pick
+ * session is running) or selects it. Preview mode and collaborator locks are
+ * checked first, so a locked block can be neither selected nor picked.
+ */
+function handleBlockSelect(blockId: string): void {
+  if (props.previewMode || getBlockLock(blockId)) return;
+  const savedBlocks = caps.savedBlocks;
+  if (savedBlocks?.isPicking.value) {
+    savedBlocks.togglePick(blockId);
+    return;
+  }
+  emit("select-block", blockId);
+}
+
+function isPickedBlock(blockId: string): boolean {
+  return caps.savedBlocks?.isPicked(blockId) ?? false;
+}
+
+/** True while a pick session runs — swaps block chrome into picking behaviour. */
+const isPicking = computed(() => caps.savedBlocks?.isPicking.value === true);
 
 function handleFetchData(
   block: Block,
@@ -391,16 +419,14 @@ function handleFetchData(
                 :block="block"
                 :is-selected="
                   !previewMode &&
+                  !isPicking &&
                   selectedBlockId === block.id &&
                   !getBlockLock(block.id)
                 "
+                :picked="isPickedBlock(block.id)"
                 :viewport="viewport"
                 :preview-mode="previewMode"
-                @select="
-                  previewMode || getBlockLock(block.id)
-                    ? undefined
-                    : emit('select-block', block.id)
-                "
+                @select="handleBlockSelect(block.id)"
               >
                 <component
                   :is="getBlockComponent(block)"

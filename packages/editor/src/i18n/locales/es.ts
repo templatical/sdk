@@ -618,7 +618,6 @@ const es: typeof en = {
     saveAsBlock: "Guardar como bloque",
     name: "Nombre",
     namePlaceholder: "p. ej. Encabezado, Pie de página, CTA...",
-    selectBlocks: "Seleccionar bloques",
     save: "Guardar bloque",
     saving: "Guardando...",
     cancel: "Cancelar",
@@ -638,6 +637,10 @@ const es: typeof en = {
     insertAtEnd: "Al final",
     insertPosition: "Posición de inserción",
     close: "Cerrar",
+    pickToolbar: "Selección de bloque guardado",
+    pickCount: "{count} bloque(s) seleccionado(s)",
+    pickHint: "Haz clic en los bloques para añadirlos o quitarlos",
+    savingCount: "Guardando {count} bloque(s):",
     time: {
       justNow: "Ahora mismo",
       minutesAgo: "hace {minutes} min",

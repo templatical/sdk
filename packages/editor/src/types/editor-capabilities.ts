@@ -16,7 +16,19 @@ export interface EditorCapabilities {
    * `init({ savedBlocks })`, in Cloud whenever cloud mode is active.
    */
   savedBlocks?: {
-    openSaveDialog(blockId: string): void;
+    /**
+     * Begin a canvas pick session seeded with this block. Blocks are then
+     * chosen by plain clicks until the floating bar confirms or cancels —
+     * `EditorState.selectedBlockId` is untouched throughout.
+     */
+    startPicking(blockId: string): void;
+    togglePick(blockId: string): void;
+    isPicked(blockId: string): boolean;
+    /** True while a pick session is running; block chrome swaps behaviour. */
+    isPicking: ComputedRef<boolean>;
+    /** Exposed so the shared keyboard handler can drive Enter/Escape. */
+    confirmPicking(): void;
+    cancelPicking(): void;
     openBrowser(): void;
     count: ComputedRef<number>;
     /**

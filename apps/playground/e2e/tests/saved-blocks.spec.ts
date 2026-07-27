@@ -266,3 +266,188 @@ test.describe("saved blocks", () => {
       .toEqual(["seed-footer"]);
   });
 });
+
+/**
+ * The canvas pick session — the flow that replaced the save dialog's checklist.
+ *
+ * The checklist labelled rows `"${type} ${index + 1}"`, so with several same-type
+ * blocks in a row you couldn't tell which row was which block. Picking happens on
+ * the canvas instead, where the user's mental model already is.
+ */
+test.describe("saved blocks — pick session", () => {
+  async function bootEmptyStore(page: Page): Promise<void> {
+    await clearSavedBlocks(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
+      localStorage.setItem("tpl-playground-features-dismissed", "true");
+    });
+  }
+
+  /** Select the first block and start a session from its bookmark action. */
+  async function startSession(
+    page: Page,
+    editorPage: { selectBlock(i: number): Promise<void> },
+  ): Promise<void> {
+    await editorPage.selectBlock(0);
+    await page.locator(SELECTORS.savedBlocksSaveAction).click();
+    await expect(page.locator(SELECTORS.savedBlocksPickBar)).toBeVisible();
+  }
+
+  test("picks multiple blocks on the canvas and saves them", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await bootEmptyStore(page);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    // No rail yet — nothing saved.
+    await expect(page.locator(SELECTORS.savedBlocksRailBtn)).toHaveCount(0);
+
+    await startSession(page, editorPage);
+    await expect(page.locator(SELECTORS.savedBlocksPickCount)).toContainText(
+      "1",
+    );
+    // The seeding block is marked, and the action bar steps aside for the mode.
+    await expect(page.locator(SELECTORS.blockPicked)).toHaveCount(1);
+    await expect(page.locator(SELECTORS.blockActions)).toHaveCount(0);
+
+    // Pick two more by plain clicks — no modifier keys.
+    const blocks = editorPage.getTopLevelBlocks();
+    await blocks.nth(1).click({ position: { x: 5, y: 5 } });
+    await blocks.nth(2).click({ position: { x: 5, y: 5 } });
+    await expect(page.locator(SELECTORS.savedBlocksPickCount)).toContainText(
+      "3",
+    );
+    await expect(page.locator(SELECTORS.blockPicked)).toHaveCount(3);
+
+    // Clicking a picked block again removes it.
+    await blocks.nth(2).click({ position: { x: 5, y: 5 } });
+    await expect(page.locator(SELECTORS.savedBlocksPickCount)).toContainText(
+      "2",
+    );
+
+    await page.locator(SELECTORS.savedBlocksPickConfirm).click();
+
+    // Bar gives way to the name-only dialog, which reports what it's saving.
+    await expect(page.locator(SELECTORS.savedBlocksPickBar)).toHaveCount(0);
+    await expect(page.locator(SELECTORS.saveBlockDialogTitle)).toBeVisible();
+    await expect(page.locator(SELECTORS.savedBlocksSaveSummary)).toContainText(
+      "2",
+    );
+    // Everything below is scoped to the dialog: ToggleSwitch and text inputs are
+    // used widely elsewhere in the editor, and "Save Block" also labels the pick
+    // bar's confirm button.
+    const dialog = page.locator('[role="dialog"]', {
+      has: page.locator(SELECTORS.saveBlockDialogTitle),
+    });
+    // The checklist is gone for good.
+    await expect(dialog.locator('button[role="switch"]')).toHaveCount(0);
+
+    await dialog.locator('input[type="text"]').fill("Header group");
+    await dialog
+      .getByRole("button", { name: "Save Block", exact: true })
+      .click();
+
+    // Persisted with exactly the two picked blocks.
+    await expect
+      .poll(async () => {
+        const stored = await page.evaluate(
+          (key) => JSON.parse(localStorage.getItem(key as string) ?? "[]"),
+          STORE_KEY,
+        );
+        return stored.map((e: { name: string; content: unknown[] }) => [
+          e.name,
+          e.content.length,
+        ]);
+      })
+      .toEqual([["Header group", 2]]);
+
+    // And the rail now appears, since the store is no longer empty.
+    await expect(page.locator(SELECTORS.savedBlocksRailBtn)).toBeVisible();
+  });
+
+  test("Cancel leaves the store and the canvas untouched", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await bootEmptyStore(page);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    const idsBefore = await editorPage.getTopLevelBlockIds();
+
+    await startSession(page, editorPage);
+    await editorPage.getTopLevelBlocks().nth(1).click({ position: { x: 5, y: 5 } });
+    await expect(page.locator(SELECTORS.savedBlocksPickCount)).toContainText(
+      "2",
+    );
+
+    await page.locator(SELECTORS.savedBlocksPickCancel).click();
+
+    await expect(page.locator(SELECTORS.savedBlocksPickBar)).toHaveCount(0);
+    await expect(page.locator(SELECTORS.blockPicked)).toHaveCount(0);
+    await expect(page.locator(SELECTORS.saveBlockDialogTitle)).toHaveCount(0);
+    // Nothing saved, nothing moved.
+    const stored = await page.evaluate(
+      (key) => JSON.parse(localStorage.getItem(key as string) ?? "[]"),
+      STORE_KEY,
+    );
+    expect(stored).toEqual([]);
+    expect(await editorPage.getTopLevelBlockIds()).toEqual(idsBefore);
+  });
+
+  test("Escape cancels the session", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await bootEmptyStore(page);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    await startSession(page, editorPage);
+    await page.keyboard.press("Escape");
+
+    await expect(page.locator(SELECTORS.savedBlocksPickBar)).toHaveCount(0);
+    await expect(page.locator(SELECTORS.blockPicked)).toHaveCount(0);
+  });
+
+  test("clicking inside a section picks the whole section, not the child", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await bootEmptyStore(page);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    await startSession(page, editorPage);
+
+    // Click a block nested in a section column.
+    const child = page
+      .locator('[data-block-type="section"] .tpl-block-content .tpl-block')
+      .first();
+    await child.click({ position: { x: 5, y: 5 } });
+
+    // Two picks: the seeding block plus the section — never the child itself.
+    await expect(page.locator(SELECTORS.savedBlocksPickCount)).toContainText(
+      "2",
+    );
+    // The section element itself carries the picked state — a stronger check
+    // than looking for a marker somewhere inside it.
+    await expect(
+      page.locator(`[data-block-type="section"]${SELECTORS.blockPicked}`),
+    ).toHaveCount(1);
+  });
+});

@@ -7,6 +7,10 @@ export interface KeyboardShortcutHandlers {
   removeBlock: (blockId: string) => void;
   onSave?: () => void;
   onBeforeUndo?: () => void;
+  /** True while a saved-blocks pick session is running. */
+  isPicking?: () => boolean;
+  onConfirmPick?: () => void;
+  onCancelPick?: () => void;
 }
 
 /**
@@ -46,6 +50,9 @@ export function isEditingText(e: KeyboardEvent): boolean {
  * - Cmd/Ctrl+S: save
  * - Escape: deselect block
  * - Delete/Backspace: remove selected block (skipped when editing text)
+ *
+ * While a saved-blocks pick session runs, Escape/Enter drive the session and
+ * Delete/Backspace are swallowed — see the block below.
  */
 export function handleEditorKeydown(
   e: KeyboardEvent,
@@ -76,6 +83,28 @@ export function handleEditorKeydown(
       handlers.history.undo();
     }
     return;
+  }
+
+  // Pick session owns Escape/Enter, and blocks destructive keys. Placed after
+  // save/undo (those stay useful) but before selection handling: Escape must
+  // cancel the session rather than deselect, and Delete must not remove a block
+  // the user is only trying to pick. Text-editing contexts are excluded so
+  // typing a name in a nested input is unaffected.
+  if (handlers.isPicking?.() && !isEditingText(e)) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      handlers.onCancelPick?.();
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handlers.onConfirmPick?.();
+      return;
+    }
+    if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault();
+      return;
+    }
   }
 
   // Escape: deselect

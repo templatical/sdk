@@ -465,6 +465,12 @@ export function useEditorCore(
       removeBlock: (id) => editor.removeBlock(id),
       onSave: config.onSave,
       onBeforeUndo: options.keyboardOptions?.onBeforeUndo,
+      // Read off the capability rather than a new option, so neither editor has
+      // to know about the pick session to get Escape/Enter working.
+      isPicking: () =>
+        options.capabilities?.savedBlocks?.isPicking.value === true,
+      onConfirmPick: () => options.capabilities?.savedBlocks?.confirmPicking(),
+      onCancelPick: () => options.capabilities?.savedBlocks?.cancelPicking(),
     });
   }
 

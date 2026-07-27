@@ -109,7 +109,8 @@ Jede Methode kann ablehnen. Der Editor meldet den Fehler über den `onError`-Cal
 
 Sobald ein Provider konfiguriert ist:
 
-- **Speichern** — beim Auswählen eines Blocks der obersten Ebene erscheint eine Lesezeichen-Aktion, die einen Dialog öffnet: Eintrag benennen und auswählen, welche Blöcke enthalten sein sollen. Blöcke innerhalb einer Section-Spalte sind nicht einzeln speicherbar — speichern Sie stattdessen die gesamte Section, die ihre Spalten samt Inhalt mitnimmt.
+- **Speichern** — beim Auswählen eines Blocks der obersten Ebene erscheint eine Lesezeichen-Aktion, die eine *Auswahl-Sitzung* startet: dieser Block ist ausgewählt, weitere kommen per einfachem Klick hinzu oder fallen wieder heraus (ohne Zusatztasten). Eine Leiste über der Arbeitsfläche zeigt die Anzahl mit „Speichern" und „Abbrechen"; danach wird nur noch der Name erfragt. Esc bricht ab, Enter bestätigt.
+  Die Blöcke werden in der Reihenfolge der Arbeitsfläche gespeichert, unabhängig von der Klickreihenfolge. Ein Klick innerhalb einer Section wählt die gesamte Section aus — Section-Kinder sind nicht einzeln speicherbar, da eine Section ihre Spalten samt Inhalt mitnimmt.
 - **Durchsuchen** — sobald mindestens ein Block gespeichert ist, erscheint ein Eintrag in der linken Leiste, der einen durchsuchbaren Browser mit Live-Vorschau öffnet.
 - **Einfügen** — wählen Sie eine Position (am Anfang, nach einem bestehenden Block oder am Ende) und fügen Sie ein. Eingefügte Blöcke erhalten immer **neue IDs**, sodass zweimaliges Einfügen desselben Eintrags nie kollidiert.
 - **Umbenennen / Löschen** — direkt in jeder Zeile des Browsers; das Löschen wird zuvor bestätigt.

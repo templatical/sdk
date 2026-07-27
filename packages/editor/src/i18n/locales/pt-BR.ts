@@ -617,7 +617,6 @@ const ptBR: typeof en = {
     saveAsBlock: "Salvar como Bloco",
     name: "Nome",
     namePlaceholder: "ex.: Cabeçalho, Rodapé, CTA...",
-    selectBlocks: "Selecionar Blocos",
     save: "Salvar Bloco",
     saving: "Salvando...",
     cancel: "Cancelar",
@@ -637,6 +636,10 @@ const ptBR: typeof en = {
     insertAtEnd: "No final",
     insertPosition: "Posição de inserção",
     close: "Fechar",
+    pickToolbar: "Seleção de bloco salvo",
+    pickCount: "{count} bloco(s) selecionado(s)",
+    pickHint: "Clique nos blocos para adicionar ou remover",
+    savingCount: "Salvando {count} bloco(s):",
     time: {
       justNow: "Agora mesmo",
       minutesAgo: "há {minutes}min",

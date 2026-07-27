@@ -39,6 +39,11 @@ const props = defineProps<{
    * Save the whole section instead — its `children` round-trip with it.
    */
   nested?: boolean;
+  /**
+   * Chosen during a saved-blocks pick session. Independent of `isSelected` —
+   * picking never touches `EditorState.selectedBlockId`.
+   */
+  picked?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -139,9 +144,15 @@ const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 
 const caps = inject(CAPABILITIES_KEY, {});
 
+const isPicking = computed(() => caps.savedBlocks?.isPicking.value === true);
+
 const canSaveAsBlock = computed(
   () => !props.nested && caps.savedBlocks?.isAvailable.value === true,
 );
+
+// The action bar is chrome for editing a single block; during a pick session the
+// canvas is in a different mode and N bars would be noise.
+const showActions = computed(() => props.isSelected && !isPicking.value);
 
 const blockCommentCount = computed(
   () => caps.comments?.getBlockCount(props.block.id) ?? 0,
@@ -196,7 +207,9 @@ function handleDuplicate(): void {
 }
 
 function handleSaveAsBlock(): void {
-  caps.savedBlocks?.openSaveDialog(props.block.id);
+  // Seeds a canvas pick session with this block rather than opening the dialog
+  // straight away — the user picks any others by clicking them.
+  caps.savedBlocks?.startPicking(props.block.id);
 }
 
 function handleConditionToggle(): void {
@@ -210,17 +223,19 @@ function handleConditionToggle(): void {
     class="tpl-block tpl:group tpl:relative tpl:cursor-pointer tpl:rounded-sm tpl:transition-shadow tpl:duration-150"
     :class="{
       'tpl-block--selected': isSelected,
-      'tpl-block--idle': !isSelected,
+      'tpl-block--picked': picked,
+      'tpl-block--idle': !isSelected && !picked,
       'tpl-block--lifted': isLifted,
     }"
     :data-block-id="block.id"
     :data-block-type="block.type"
+    :data-tpl-picked="picked || undefined"
     @click="handleClick"
   >
     <BlockIssueBadge :block-id="block.id" />
     <!-- Floating action bar — positioned to the right of selected block -->
     <div
-      v-if="isSelected"
+      v-if="showActions"
       role="toolbar"
       :aria-label="t.blockActions.drag"
       class="tpl-block-actions tpl-fade-in tpl:absolute tpl:-right-2 tpl:top-1/2 tpl:z-10 tpl:flex tpl:-translate-y-1/2 tpl:translate-x-full tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:shadow-[var(--tpl-shadow-md)] tpl:border tpl:border-[var(--tpl-border)]"
@@ -340,6 +355,29 @@ function handleConditionToggle(): void {
   outline: 1.5px solid color-mix(in srgb, var(--tpl-primary) 50%, transparent);
   outline-offset: -1px;
   box-shadow: 0 0 8px color-mix(in srgb, var(--tpl-primary) 8%, transparent);
+}
+
+/* Picked (saved-blocks pick session) — a solid outline plus a crisp outer ring.
+   Deliberately NOT a background fill: the block's own background is painted on
+   the inner `.tpl-block-content` (`backgroundColor || "transparent"`), so a tint
+   on `.tpl-block` is covered by any block that sets one and shows through only
+   on transparent ones — the picked state would appear on some blocks and not
+   others in the same template. `outline` and a non-inset `box-shadow` draw on
+   this element's border box, outside the content's paint area, so they read
+   identically regardless of what the block itself is filled with.
+
+   The differentiator from idle is line style and weight (dashed 1.5px @30% →
+   solid 2px @100%) plus the ring — not hue alone — so the state survives without
+   colour perception, and the pick bar's live count is the numeric confirmation.
+   Distinct from `--selected`'s soft blurred glow; the two never co-occur anyway,
+   since Canvas suppresses selection styling while a session runs. */
+.tpl-block--picked {
+  outline: 2px solid var(--tpl-primary);
+  outline-offset: -1px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tpl-primary) 18%, transparent);
+  transition:
+    outline 150ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Selection — solid outline + soft outer glow */

@@ -274,6 +274,83 @@ describe("section drag + cycle defenses", () => {
   });
 });
 
+describe("saved blocks: picked state cannot be hidden by a block's own fill", () => {
+  const blockWrapper = read("components/blocks/BlockWrapper.vue");
+
+  /* Regression: the picked state was a background tint on `.tpl-block`. But each
+     block paints its own background on the INNER `.tpl-block-content`
+     (`getBlockWrapperStyle` → `backgroundColor || "transparent"`), which covers
+     the parent. Blocks with a colour set showed no tint; transparent ones showed
+     it — so picking looked different block to block within one template.
+
+     `outline` and a non-inset `box-shadow` draw on `.tpl-block`'s border box,
+     outside the content's paint area, so they're immune to the block's own fill.
+     Anything conveying picked-ness must use those, never a fill. */
+  function pickedRule(): string {
+    const m = blockWrapper.match(/\.tpl-block--picked\s*\{([^}]*)\}/);
+    expect(m).not.toBe(null);
+    return m![1];
+  }
+
+  it("does NOT convey picked via background-color", () => {
+    expect(pickedRule()).not.toMatch(/background(-color)?\s*:/);
+  });
+
+  it("conveys picked via outline + a non-inset box-shadow ring", () => {
+    const rule = pickedRule();
+    expect(rule).toMatch(/outline:\s*2px solid/);
+    expect(rule).toContain("box-shadow:");
+    // `inset` would paint inside the border box and be covered like a fill.
+    expect(rule).not.toContain("inset");
+  });
+
+  it("stays distinguishable from idle by line style, not colour alone", () => {
+    const idle = blockWrapper.match(/\.tpl-block--idle\s*\{([^}]*)\}/);
+    expect(idle).not.toBe(null);
+    // idle is dashed, picked is solid — a non-colour differentiator, so the
+    // state survives without colour perception.
+    expect(idle![1]).toMatch(/outline:\s*[\d.]+px dashed/);
+    expect(pickedRule()).toMatch(/outline:\s*[\d.]+px solid/);
+  });
+});
+
+describe("saved blocks: pick session stays lazily loaded", () => {
+  const panels = read("components/SavedBlocksPanels.vue");
+  const ossEditor = read("Editor.vue");
+  const cloudEditor = read("cloud/CloudEditor.vue");
+
+  /* Cost has to track usage: a consumer with no `SavedBlocksProvider` must
+     download none of this. Both editors lazy-load `SavedBlocksPanels` behind a
+     `v-if` on availability, and every piece of saved-blocks UI hangs off that
+     wrapper — including the pick bar. Importing the bar directly from an editor
+     would pull it into the main entry for everyone. */
+  it("the pick bar is lazily imported by SavedBlocksPanels", () => {
+    expect(panels).toMatch(
+      /defineAsyncComponent\(\s*\(\) => import\("\.\/SavedBlocksPickBar\.vue"\)/,
+    );
+  });
+
+  it("neither editor references the pick bar directly", () => {
+    expect(ossEditor).not.toContain("SavedBlocksPickBar");
+    expect(cloudEditor).not.toContain("SavedBlocksPickBar");
+  });
+
+  it("every saved-blocks surface is async and gated on its own state", () => {
+    for (const name of [
+      "SavedBlocksPickBar",
+      "SaveBlockDialog",
+      "SavedBlocksBrowserModal",
+    ]) {
+      expect(panels).toContain(`import("./${name}.vue")`);
+    }
+    // Rendered only while a session runs / a dialog is open, so the chunk fetch
+    // is deferred to first actual use rather than to mount.
+    expect(panels).toContain('v-if="feature.isPicking.value"');
+    expect(panels).toContain('v-if="feature.isSaveDialogOpen.value"');
+    expect(panels).toContain('v-if="feature.isBrowserOpen.value"');
+  });
+});
+
 describe("chrome tokens survive the email-content override", () => {
   const styles = read("styles/index.css");
   const blockWrapper = read("components/blocks/BlockWrapper.vue");

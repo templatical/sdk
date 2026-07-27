@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import TplModal from "./TplModal.vue";
-import ToggleSwitch from "./ToggleSwitch.vue";
 import { useI18n } from "../composables";
 import { EDITOR_KEY, SAVED_BLOCKS_KEY, requireInject } from "../keys";
-import type { Block } from "@templatical/types";
 import { LoaderCircle } from "@lucide/vue";
 import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;
-  preSelectedBlockId: string | null;
+  /**
+   * Blocks chosen during the canvas pick session. Order is irrelevant — the
+   * saved content is derived in document order below — but every id must be a
+   * top-level block, which is what the session guarantees.
+   */
+  pickedIds: readonly string[];
 }>();
 
 const emit = defineEmits<{
@@ -17,79 +20,69 @@ const emit = defineEmits<{
   (e: "saved"): void;
 }>();
 
-const { t } = useI18n();
+const { t, format } = useI18n();
 const editor = requireInject(EDITOR_KEY, "SaveBlockDialog");
 const savedBlocks = requireInject(SAVED_BLOCKS_KEY, "SaveBlockDialog");
 
 const name = ref("");
-const selectedBlockIds = ref<Set<string>>(new Set());
 const isSaving = ref(false);
 const error = ref<string | null>(null);
 
-const topLevelBlocks = computed(() => editor.content.value.blocks);
+/**
+ * The picked blocks in **document order**, regardless of the order they were
+ * clicked in — filtering the canvas list is what guarantees that. Ids that no
+ * longer resolve (a block deleted mid-session) simply drop out.
+ */
+const pickedBlocks = computed(() => {
+  const picked = new Set(props.pickedIds);
+  return editor.content.value.blocks.filter((b) => picked.has(b.id));
+});
 
-function blockLabel(block: Block, index: number): string {
-  const typeKey = block.type as keyof typeof t.blocks;
-  const label = t.blocks[typeKey] ?? block.type;
-  return `${label} ${index + 1}`;
-}
+/** e.g. "Title, Paragraph, Button" — what the user is about to save. */
+const summary = computed(() =>
+  pickedBlocks.value
+    .map((b) => {
+      const typeKey = b.type as keyof typeof t.blocks;
+      return t.blocks[typeKey] ?? b.type;
+    })
+    .join(", "),
+);
 
 // `immediate` matters: the dialog is mounted lazily behind a `v-if` on the
 // same state that drives `visible`, so it can mount with `visible` already
-// true and would otherwise never seed the pre-selection.
+// true and would otherwise never reset the name field.
 watch(
   () => props.visible,
   (visible) => {
     if (visible) {
       name.value = "";
       error.value = null;
-      // Only honor a pre-selection that's actually in the list. `openSaveDialog`
-      // is reachable programmatically, so the id may be stale or (before the
-      // nested-block guard) point at a section child — seeding it anyway would
-      // show an empty checklist while making Save look valid.
-      const preSelected = props.preSelectedBlockId;
-      const selectable =
-        preSelected !== null &&
-        topLevelBlocks.value.some((b) => b.id === preSelected);
-      selectedBlockIds.value = new Set(selectable ? [preSelected] : []);
     }
   },
   { immediate: true },
 );
 
-function toggleBlock(blockId: string): void {
-  const newSet = new Set(selectedBlockIds.value);
-  if (newSet.has(blockId)) {
-    newSet.delete(blockId);
-  } else {
-    newSet.add(blockId);
-  }
-  selectedBlockIds.value = newSet;
-}
-
 const canSave = computed(
   () =>
     name.value.trim().length > 0 &&
-    selectedBlockIds.value.size > 0 &&
+    pickedBlocks.value.length > 0 &&
     !isSaving.value,
 );
 
 async function handleSave(): Promise<void> {
   if (!canSave.value) return;
 
-  const selectedBlocks = topLevelBlocks.value.filter((b) =>
-    selectedBlockIds.value.has(b.id),
-  );
-  // Defence in depth: if the selection resolves to nothing, bail rather than
-  // persist an empty saved block (which would list as "0 block(s)" and insert
-  // nothing). Guards any caller that seeds an id we can't resolve.
-  if (selectedBlocks.length === 0) return;
+  const blocks = pickedBlocks.value;
+  // Defence in depth: never persist an empty saved block (it would list as
+  // "0 block(s)" and insert nothing). Guards a pick set whose ids no longer
+  // resolve to anything on the canvas.
+  if (blocks.length === 0) return;
 
   isSaving.value = true;
   error.value = null;
 
   try {
-    await savedBlocks.create(name.value.trim(), selectedBlocks);
+    await savedBlocks.create(name.value.trim(), blocks);
     emit("saved");
     emit("close");
   } catch (err) {
@@ -152,33 +145,16 @@ function handleKeydown(event: KeyboardEvent): void {
         />
       </div>
 
-      <!-- Block selection -->
-      <div class="tpl:mb-3">
-        <label
-          class="tpl:mb-1.5 tpl:block tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
-        >
-          {{ t.savedBlocks.selectBlocks }}
-        </label>
-        <div
-          class="tpl:max-h-40 tpl:space-y-1 tpl:overflow-y-auto tpl:rounded-md tpl:border tpl:p-2 tpl:border-[var(--tpl-border)]"
-        >
-          <ToggleSwitch
-            v-for="(block, index) in topLevelBlocks"
-            :key="block.id"
-            class="tpl:rounded-sm tpl:px-2 tpl:py-1.5 tpl:text-sm tpl:transition-colors tpl:duration-100"
-            :style="{
-              color: 'var(--tpl-text)',
-              backgroundColor: selectedBlockIds.has(block.id)
-                ? 'var(--tpl-primary-light)'
-                : 'transparent',
-            }"
-            :model-value="selectedBlockIds.has(block.id)"
-            :label="blockLabel(block, index)"
-            :disabled="isSaving"
-            @update:model-value="toggleBlock(block.id)"
-          />
-        </div>
-      </div>
+      <!-- Read-only summary of what the pick session chose. The picking already
+           happened on the canvas, so re-presenting it as an editable list would
+           reintroduce the ambiguity that flow exists to avoid. -->
+      <p
+        data-testid="saved-blocks-save-summary"
+        class="tpl:mb-4 tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
+      >
+        {{ format(t.savedBlocks.savingCount, { count: pickedBlocks.length }) }}
+        <span class="tpl:text-[var(--tpl-text-dim)]">{{ summary }}</span>
+      </p>
 
       <!-- Error message -->
       <p

@@ -45,6 +45,14 @@ export const SELECTORS = {
   savedBlocksRenameBtn: 'button[aria-label="Rename"]',
   savedBlocksDeleteBtn: 'button[aria-label="Delete"]',
   saveBlockDialogTitle: "#tpl-save-block-title",
+  savedBlocksSaveSummary: '[data-testid="saved-blocks-save-summary"]',
+  // Pick session (canvas multi-pick started from a block's bookmark action)
+  savedBlocksSaveAction: 'button[aria-label="Save as Block"]',
+  savedBlocksPickBar: '[data-testid="saved-blocks-pick-bar"]',
+  savedBlocksPickCount: '[data-testid="saved-blocks-pick-count"]',
+  savedBlocksPickConfirm: '[data-testid="saved-blocks-pick-confirm"]',
+  savedBlocksPickCancel: '[data-testid="saved-blocks-pick-cancel"]',
+  blockPicked: "[data-tpl-picked]",
 
   // Small-screen gate (#235)
   smallScreenNotice: '[data-testid="small-screen-notice"]',

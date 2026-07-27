@@ -1,14 +1,17 @@
 <script setup lang="ts">
 /**
- * Mount point for the saved-blocks dialogs, shared by the OSS and Cloud
- * editors.
+ * Mount point for the saved-blocks UI, shared by the OSS and Cloud editors.
  *
- * Both dialogs are `defineAsyncComponent`s rendered behind `v-if` on their
- * open state, so their chunks are fetched only when a user actually opens one
- * — `defineAsyncComponent` triggers its `import()` on first render, not at
+ * Everything here is `defineAsyncComponent` rendered behind `v-if` on its own
+ * state, so each chunk is fetched only when actually needed —
+ * `defineAsyncComponent` triggers its `import()` on first render, not at
  * definition time. The editors in turn lazy-load *this* wrapper and render it
  * only when a `SavedBlocksProvider` is configured, so a consumer without one
  * downloads none of it.
+ *
+ * The pick bar lives here rather than in `Editor.vue` / `CloudEditor.vue` so
+ * neither editor needs to know about saved blocks, and the lazy-load guarantee
+ * covers the bar too.
  */
 import { defineAsyncComponent } from "vue";
 import type { SavedBlock } from "@templatical/types";
@@ -18,6 +21,9 @@ const props = defineProps<{
   feature: UseSavedBlocksFeatureReturn;
 }>();
 
+const SavedBlocksPickBar = defineAsyncComponent(
+  () => import("./SavedBlocksPickBar.vue"),
+);
 const SaveBlockDialog = defineAsyncComponent(
   () => import("./SaveBlockDialog.vue"),
 );
@@ -34,10 +40,17 @@ function handleInsert(
 </script>
 
 <template>
+  <SavedBlocksPickBar
+    v-if="feature.isPicking.value"
+    :count="feature.pickedCount.value"
+    @confirm="feature.confirmPicking()"
+    @cancel="feature.cancelPicking()"
+  />
+
   <SaveBlockDialog
     v-if="feature.isSaveDialogOpen.value"
     :visible="feature.isSaveDialogOpen.value"
-    :pre-selected-block-id="feature.preSelectedBlockId.value"
+    :picked-ids="[...feature.pickedIds.value]"
     @close="feature.closeSaveDialog()"
     @saved="feature.refresh()"
   />

@@ -438,3 +438,91 @@ describe("useEditorCore keydown wiring", () => {
   });
 });
 
+describe("handleEditorKeydown — saved-blocks pick session", () => {
+  function pickHandlers(
+    isPicking: boolean,
+    overrides: Partial<KeyboardShortcutHandlers> = {},
+  ) {
+    const onConfirmPick = vi.fn();
+    const onCancelPick = vi.fn();
+    const handlers = createMockHandlers({
+      isPicking: () => isPicking,
+      onConfirmPick,
+      onCancelPick,
+      getSelectedBlockId: vi.fn().mockReturnValue("block-1"),
+      ...overrides,
+    });
+    return { handlers, onConfirmPick, onCancelPick };
+  }
+
+  it("Escape cancels the session instead of deselecting", () => {
+    const { handlers, onCancelPick } = pickHandlers(true);
+
+    handleEditorKeydown(createKeyEvent("Escape"), handlers);
+
+    expect(onCancelPick).toHaveBeenCalledTimes(1);
+    expect(handlers.selectBlock).not.toHaveBeenCalled();
+  });
+
+  it("Enter confirms the session", () => {
+    const { handlers, onConfirmPick } = pickHandlers(true);
+
+    handleEditorKeydown(createKeyEvent("Enter"), handlers);
+
+    expect(onConfirmPick).toHaveBeenCalledTimes(1);
+  });
+
+  it("Delete does not remove a block while picking", () => {
+    const { handlers } = pickHandlers(true);
+
+    handleEditorKeydown(createKeyEvent("Delete"), handlers);
+
+    expect(handlers.removeBlock).not.toHaveBeenCalled();
+    expect(handlers.history.record).not.toHaveBeenCalled();
+  });
+
+  it("Backspace does not remove a block while picking", () => {
+    const { handlers } = pickHandlers(true);
+
+    handleEditorKeydown(createKeyEvent("Backspace"), handlers);
+
+    expect(handlers.removeBlock).not.toHaveBeenCalled();
+  });
+
+  it("outside a session Escape still deselects and Delete still removes", () => {
+    const { handlers, onCancelPick } = pickHandlers(false);
+
+    handleEditorKeydown(createKeyEvent("Escape"), handlers);
+    expect(onCancelPick).not.toHaveBeenCalled();
+    expect(handlers.selectBlock).toHaveBeenCalledWith(null);
+
+    handleEditorKeydown(createKeyEvent("Delete"), handlers);
+    expect(handlers.removeBlock).toHaveBeenCalledWith("block-1");
+  });
+
+  it("Cmd+S and undo still work during a session", () => {
+    const { handlers } = pickHandlers(true);
+
+    handleEditorKeydown(createKeyEvent("s", { metaKey: true }), handlers);
+    expect(handlers.onSave).toHaveBeenCalledTimes(1);
+
+    handleEditorKeydown(createKeyEvent("z", { metaKey: true }), handlers);
+    expect(handlers.history.undo).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not hijack keys while typing in a text field", () => {
+    const { handlers, onCancelPick, onConfirmPick } = pickHandlers(true);
+
+    handleEditorKeydown(
+      createKeyEvent("Escape", { targetTag: "INPUT" }),
+      handlers,
+    );
+    handleEditorKeydown(
+      createKeyEvent("Enter", { targetTag: "INPUT" }),
+      handlers,
+    );
+
+    expect(onCancelPick).not.toHaveBeenCalled();
+    expect(onConfirmPick).not.toHaveBeenCalled();
+  });
+});

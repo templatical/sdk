@@ -6,7 +6,9 @@
 
 Open-source **Saved Blocks** — reusable groups of blocks users save and re-insert — backed by a consumer-supplied storage provider. Previously Cloud-only ("Saved Modules").
 
-The editor owns the UI (save action per block, searchable browser with live preview, insert-at-position, rename, delete); you own persistence. Templatical Cloud now consumes the same interface as one adapter rather than a separate implementation.
+The editor owns the UI; you own persistence. Templatical Cloud now consumes the same interface as one adapter rather than a separate implementation.
+
+Saving starts from a block's bookmark action and opens a **pick session**: plain clicks add or remove blocks on the canvas, a bar shows the count with Save/Cancel (Escape cancels, Enter confirms), and Save just asks for a name. Blocks are stored in canvas order regardless of pick order, and picking never touches the editor's block selection. Browsing gives search, live preview, insert-at-position, rename and delete.
 
 ```js
 import { init, createLocalStorageSavedBlocksProvider } from '@templatical/editor';
@@ -21,7 +23,7 @@ await init({
 await init({ container: '#editor', savedBlocks: myProvider });
 ```
 
-**Off by default.** With no `savedBlocks` provider the feature is entirely absent and none of its UI code is downloaded — the dialogs are lazily loaded chunks fetched only when opened.
+**Off by default.** With no `savedBlocks` provider the feature is entirely absent and none of its UI code is downloaded — the pick bar and both dialogs are lazily loaded chunks fetched only when actually used.
 
 Ordering belongs to the provider: the browser renders `list()`'s order verbatim and never re-sorts, so you control it server-side. `created_at` / `updated_at` are display only — each entry shows a relative timestamp (hover for the absolute date) and both fields are optional.
 

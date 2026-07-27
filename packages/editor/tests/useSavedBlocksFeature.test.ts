@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { defineComponent, h, nextTick, ref } from 'vue';
+import { defineComponent, h, nextTick, reactive, ref } from 'vue';
 import { mount } from '@vue/test-utils';
 import { createSectionBlock, createTitleBlock } from '@templatical/types';
 import type { SavedBlock, SavedBlocksProvider } from '@templatical/types';
@@ -23,15 +23,18 @@ function createMockProvider(
 
 /**
  * `useSavedBlocksFeature` calls provide(), so it must run inside setup().
- * Mount a throwaway component and hand the return value back out.
+ * Mount a throwaway component and hand the return value back out. `editor.state`
+ * is reactive so the preview-mode watcher can be exercised.
  */
 function withFeature(options: {
   provider?: SavedBlocksProvider;
   isAvailable?: () => boolean;
   addBlock?: ReturnType<typeof vi.fn>;
+  previewMode?: boolean;
 }) {
   const addBlock = options.addBlock ?? vi.fn();
   const provider = options.provider ?? createMockProvider();
+  const state = reactive({ previewMode: options.previewMode ?? false });
   let feature!: UseSavedBlocksFeatureReturn;
 
   const wrapper = mount(
@@ -39,7 +42,7 @@ function withFeature(options: {
       setup() {
         feature = useSavedBlocksFeature({
           provider,
-          editor: { addBlock },
+          editor: { addBlock, state },
           isAvailable: options.isAvailable,
         });
         return () => h('div');
@@ -47,46 +50,133 @@ function withFeature(options: {
     }),
   );
 
-  return { feature, addBlock, provider, wrapper };
+  return { feature, addBlock, provider, state, wrapper };
 }
 
 describe('useSavedBlocksFeature', () => {
-  describe('dialog state', () => {
-    it('starts with both dialogs closed', () => {
+  describe('pick session', () => {
+    it('starts idle with nothing picked and no dialogs open', () => {
       const { feature } = withFeature({});
 
+      expect(feature.isPicking.value).toBe(false);
+      expect(feature.pickedCount.value).toBe(0);
       expect(feature.isSaveDialogOpen.value).toBe(false);
       expect(feature.isBrowserOpen.value).toBe(false);
-      expect(feature.preSelectedBlockId.value).toBe(null);
     });
 
-    it('openSaveDialog records the pre-selected block id', () => {
+    it('startPicking enters the session seeded with that block', () => {
       const { feature } = withFeature({});
 
-      feature.openSaveDialog('block-1');
+      feature.startPicking('block-1');
 
+      expect(feature.isPicking.value).toBe(true);
+      expect(feature.isPicked('block-1')).toBe(true);
+      expect(feature.pickedCount.value).toBe(1);
+      // Picking must not open the dialog — that's what confirm is for.
+      expect(feature.isSaveDialogOpen.value).toBe(false);
+    });
+
+    it('togglePick adds and removes blocks', () => {
+      const { feature } = withFeature({});
+      feature.startPicking('a');
+
+      feature.togglePick('b');
+      expect(feature.pickedCount.value).toBe(2);
+      expect(feature.isPicked('b')).toBe(true);
+
+      feature.togglePick('b');
+      expect(feature.pickedCount.value).toBe(1);
+      expect(feature.isPicked('b')).toBe(false);
+    });
+
+    it('lets the seeding block be un-picked, down to an empty session', () => {
+      const { feature } = withFeature({});
+      feature.startPicking('a');
+
+      feature.togglePick('a');
+
+      expect(feature.pickedCount.value).toBe(0);
+      // The session stays open — only Cancel/Save leave it.
+      expect(feature.isPicking.value).toBe(true);
+    });
+
+    it('togglePick is inert outside a session', () => {
+      const { feature } = withFeature({});
+
+      feature.togglePick('a');
+
+      expect(feature.pickedCount.value).toBe(0);
+      expect(feature.isPicking.value).toBe(false);
+    });
+
+    it('confirmPicking leaves the session, opens the dialog, and keeps the picks', () => {
+      const { feature } = withFeature({});
+      feature.startPicking('a');
+      feature.togglePick('b');
+
+      feature.confirmPicking();
+
+      expect(feature.isPicking.value).toBe(false);
       expect(feature.isSaveDialogOpen.value).toBe(true);
-      expect(feature.preSelectedBlockId.value).toBe('block-1');
+      // The dialog reads the set to know what it's saving.
+      expect([...feature.pickedIds.value].sort()).toEqual(['a', 'b']);
     });
 
-    it('openSaveDialog with no id clears any previous pre-selection', () => {
+    it('confirmPicking is a no-op with nothing picked', () => {
       const { feature } = withFeature({});
+      feature.startPicking('a');
+      feature.togglePick('a');
+      expect(feature.pickedCount.value).toBe(0);
 
-      feature.openSaveDialog('block-1');
+      feature.confirmPicking();
+
+      expect(feature.isSaveDialogOpen.value).toBe(false);
+      expect(feature.isPicking.value).toBe(true);
+    });
+
+    it('cancelPicking exits and clears the picks', () => {
+      const { feature } = withFeature({});
+      feature.startPicking('a');
+      feature.togglePick('b');
+
+      feature.cancelPicking();
+
+      expect(feature.isPicking.value).toBe(false);
+      expect(feature.pickedCount.value).toBe(0);
+      expect(feature.isSaveDialogOpen.value).toBe(false);
+    });
+
+    it('closing the save dialog clears the picks', () => {
+      const { feature } = withFeature({});
+      feature.startPicking('a');
+      feature.confirmPicking();
+      expect(feature.pickedCount.value).toBe(1);
+
       feature.closeSaveDialog();
-      feature.openSaveDialog();
 
-      expect(feature.preSelectedBlockId.value).toBe(null);
+      expect(feature.isSaveDialogOpen.value).toBe(false);
+      expect(feature.pickedCount.value).toBe(0);
     });
 
-    it('openBrowser / closeBrowser toggle the browser', () => {
-      const { feature } = withFeature({});
+    it('refuses to start in preview mode', () => {
+      const { feature } = withFeature({ previewMode: true });
 
-      feature.openBrowser();
-      expect(feature.isBrowserOpen.value).toBe(true);
+      feature.startPicking('a');
 
-      feature.closeBrowser();
-      expect(feature.isBrowserOpen.value).toBe(false);
+      expect(feature.isPicking.value).toBe(false);
+      expect(feature.pickedCount.value).toBe(0);
+    });
+
+    it('cancels an active session when preview mode turns on', async () => {
+      const { feature, state } = withFeature({});
+      feature.startPicking('a');
+      expect(feature.isPicking.value).toBe(true);
+
+      state.previewMode = true;
+      await nextTick();
+
+      expect(feature.isPicking.value).toBe(false);
+      expect(feature.pickedCount.value).toBe(0);
     });
   });
 
@@ -107,7 +197,6 @@ describe('useSavedBlocksFeature', () => {
       expect(firstInserted.id).not.toBe(a.id);
       expect(secondInserted.id).not.toBe(b.id);
       expect(firstInserted.id).not.toBe(secondInserted.id);
-      // Everything else survives the clone.
       expect(firstInserted.type).toBe('title');
     });
 
@@ -233,7 +322,7 @@ describe('useSavedBlocksFeature', () => {
           setup() {
             feature = useSavedBlocksFeature({
               provider,
-              editor: { addBlock: vi.fn() },
+              editor: { addBlock: vi.fn(), state: reactive({ previewMode: false }) },
               onError,
             });
             return () => h('div');
@@ -265,13 +354,29 @@ describe('useSavedBlocksFeature', () => {
       expect(feature.count.value).toBe(2);
     });
 
-    it('routes capability.openSaveDialog through to dialog state', () => {
+    it('routes the capability through to the pick session', () => {
       const { feature } = withFeature({});
 
-      feature.capability.openSaveDialog('block-9');
+      feature.capability.startPicking('block-9');
+      expect(feature.isPicking.value).toBe(true);
+      expect(feature.capability.isPicked('block-9')).toBe(true);
+      expect(feature.capability.isPicking.value).toBe(true);
 
+      feature.capability.togglePick('block-10');
+      expect(feature.pickedCount.value).toBe(2);
+
+      feature.capability.confirmPicking();
       expect(feature.isSaveDialogOpen.value).toBe(true);
-      expect(feature.preSelectedBlockId.value).toBe('block-9');
+    });
+
+    it('capability.cancelPicking exits the session', () => {
+      const { feature } = withFeature({});
+      feature.capability.startPicking('a');
+
+      feature.capability.cancelPicking();
+
+      expect(feature.isPicking.value).toBe(false);
+      expect(feature.pickedCount.value).toBe(0);
     });
 
     it('mirrors availability onto the capability', () => {

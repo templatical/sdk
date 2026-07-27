@@ -92,20 +92,24 @@ function makeHeadless(saved: SavedBlock[] = []) {
 }
 
 describe('SaveBlockDialog', () => {
+  /**
+   * The dialog is now name-only: the pick session already chose the blocks on
+   * the canvas, so the dialog just names them and shows a read-only summary.
+   */
   function mountDialog(
     blocks: Block[],
-    preSelectedBlockId: string | null = null,
+    pickedIds: string[],
     headless = makeHeadless(),
   ) {
     const wrapper = mountEditor(SaveBlockDialog, {
-      props: { visible: true, preSelectedBlockId },
+      props: { visible: true, pickedIds },
       attachTo: document.body,
       provides: {
         [EDITOR_KEY]: makeEditor(blocks),
         [SAVED_BLOCKS_KEY]: headless,
         [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
       },
-    } as any);
+    } as never);
     return { wrapper, headless };
   }
 
@@ -115,22 +119,19 @@ describe('SaveBlockDialog', () => {
     await nextTick();
   }
 
-  it('lists one toggle per top-level block', async () => {
-    mountDialog([createTitleBlock(), createButtonBlock()]);
+  it('has no block checklist — picking happened on the canvas', async () => {
+    const a = createTitleBlock();
+    mountDialog([a, createButtonBlock()], [a.id]);
     await nextTick();
 
-    expect(qAll('button[role="switch"]')).toHaveLength(2);
+    expect(qAll('button[role="switch"]')).toHaveLength(0);
   });
 
-  it('saves only the pre-selected block when one is passed', async () => {
+  it('saves exactly the picked blocks', async () => {
     const a = createTitleBlock();
     const b = createButtonBlock();
-    const { headless } = mountDialog([a, b], b.id);
+    const { headless } = mountDialog([a, b], [b.id]);
     await nextTick();
-
-    // Positive control for the aria-checked selector used by the
-    // unselectable-pre-selection test below: a valid id DOES check its row.
-    expect(qAll('button[role="switch"][aria-checked="true"]')).toHaveLength(1);
 
     await fillAndSave('My Footer');
 
@@ -141,9 +142,36 @@ describe('SaveBlockDialog', () => {
     expect(content[0].id).toBe(b.id);
   });
 
+  it('saves in document order regardless of pick order', async () => {
+    const a = createTitleBlock();
+    const b = createButtonBlock();
+    const c = createTitleBlock();
+    // Picked last-to-first; the canvas order is what must win.
+    const { headless } = mountDialog([a, b, c], [c.id, a.id]);
+    await nextTick();
+
+    await fillAndSave('Pair');
+
+    const content = headless.create.mock.calls[0][1];
+    expect(content.map((x: { id: string }) => x.id)).toEqual([a.id, c.id]);
+  });
+
+  it('shows a read-only summary of what is being saved', async () => {
+    const a = createTitleBlock();
+    const b = createButtonBlock();
+    mountDialog([a, b], [a.id, b.id]);
+    await nextTick();
+
+    const summary = get('[data-testid="saved-blocks-save-summary"]');
+    // Stub translations echo key paths; the count is interpolated by format().
+    expect(summary.textContent).toContain('savedBlocks.savingCount');
+    expect(summary.textContent).toContain('blocks.title');
+    expect(summary.textContent).toContain('blocks.button');
+  });
+
   it('trims the name before saving', async () => {
     const a = createTitleBlock();
-    const { headless } = mountDialog([a], a.id);
+    const { headless } = mountDialog([a], [a.id]);
     await nextTick();
 
     await fillAndSave('   Padded   ');
@@ -153,7 +181,7 @@ describe('SaveBlockDialog', () => {
 
   it('does not save when the name is blank', async () => {
     const a = createTitleBlock();
-    const { headless } = mountDialog([a], a.id);
+    const { headless } = mountDialog([a], [a.id]);
     await nextTick();
 
     await fillAndSave('   ');
@@ -161,19 +189,9 @@ describe('SaveBlockDialog', () => {
     expect(headless.create).not.toHaveBeenCalled();
   });
 
-  it('does not save when no block is selected', async () => {
-    const a = createTitleBlock();
-    const { headless } = mountDialog([a], null);
-    await nextTick();
-
-    await fillAndSave('Named');
-
-    expect(headless.create).not.toHaveBeenCalled();
-  });
-
   it('emits saved + close on success', async () => {
     const a = createTitleBlock();
-    const { wrapper } = mountDialog([a], a.id);
+    const { wrapper } = mountDialog([a], [a.id]);
     await nextTick();
 
     await fillAndSave('Named');
@@ -186,7 +204,7 @@ describe('SaveBlockDialog', () => {
     const a = createTitleBlock();
     const headless = makeHeadless();
     headless.create = vi.fn().mockRejectedValue(new Error('Quota exceeded'));
-    const { wrapper } = mountDialog([a], a.id, headless);
+    const { wrapper } = mountDialog([a], [a.id], headless);
     await nextTick();
 
     await fillAndSave('Named');
@@ -196,47 +214,28 @@ describe('SaveBlockDialog', () => {
     expect(wrapper.emitted('close')).toBeUndefined();
   });
 
-  // Root cause of the nested-block bug: a pre-selected id that isn't in the
-  // list left the checklist empty while Save stayed enabled, and saving then
-  // persisted an empty saved block. Both halves are guarded below.
-  it('ignores a pre-selected id that is not a top-level block', async () => {
+  // Defence in depth: ids that no longer resolve must never produce an empty
+  // saved block (it would list as "0 block(s)" and insert nothing).
+  it('never creates a saved block from ids that no longer resolve', async () => {
     const a = createTitleBlock();
-    const { headless } = mountDialog([a], 'id-of-a-section-child');
+    const { headless } = mountDialog([a], ['deleted-mid-session']);
     await nextTick();
 
-    // Nothing checked...
-    expect(
-      qAll('button[role="switch"][aria-checked="true"]'),
-    ).toHaveLength(0);
-
-    // ...and Save cannot produce anything, even with a name typed.
     await fillAndSave('Named');
+
     expect(headless.create).not.toHaveBeenCalled();
   });
 
-  it('never creates a saved block with empty content', async () => {
+  it('drops unresolvable ids but still saves the ones that resolve', async () => {
     const a = createTitleBlock();
-    const { headless } = mountDialog([a], 'stale-or-nested-id');
+    const { headless } = mountDialog([a], [a.id, 'deleted-mid-session']);
     await nextTick();
 
     await fillAndSave('Named');
 
-    // The critical assertion: no create call at all, rather than create(name, []).
-    expect(headless.create).not.toHaveBeenCalled();
-    for (const call of headless.create.mock.calls) {
-      expect((call[1] as unknown[]).length).toBeGreaterThan(0);
-    }
-  });
-
-  it('toggling the pre-selected block off blocks the save', async () => {
-    const a = createTitleBlock();
-    const { headless } = mountDialog([a], a.id);
-    await nextTick();
-
-    await click(get('button[role="switch"]'));
-    await fillAndSave('Named');
-
-    expect(headless.create).not.toHaveBeenCalled();
+    const content = headless.create.mock.calls[0][1];
+    expect(content).toHaveLength(1);
+    expect(content[0].id).toBe(a.id);
   });
 });
 

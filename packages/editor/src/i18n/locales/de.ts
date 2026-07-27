@@ -621,7 +621,6 @@ const de: typeof en = {
     saveAsBlock: "Als Block speichern",
     name: "Name",
     namePlaceholder: "z.B. Header, Footer, CTA...",
-    selectBlocks: "Blöcke auswählen",
     save: "Block speichern",
     saving: "Wird gespeichert...",
     cancel: "Abbrechen",
@@ -642,6 +641,10 @@ const de: typeof en = {
     insertAtEnd: "Am Ende",
     insertPosition: "Einfügeposition",
     close: "Schließen",
+    pickToolbar: "Auswahl für gespeicherten Block",
+    pickCount: "{count} Block/Blöcke ausgewählt",
+    pickHint: "Blöcke anklicken, um sie hinzuzufügen oder zu entfernen",
+    savingCount: "{count} Block/Blöcke werden gespeichert:",
     time: {
       justNow: "Gerade eben",
       minutesAgo: "vor {minutes} Min.",

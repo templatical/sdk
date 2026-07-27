@@ -619,7 +619,6 @@ const ca: typeof en = {
     saveAsBlock: "Desa com a bloc",
     name: "Nom",
     namePlaceholder: "p. ex. Encapçalament, Peu de pàgina, CTA...",
-    selectBlocks: "Selecciona els blocs",
     save: "Desa el bloc",
     saving: "S'està desant...",
     cancel: "Cancel·la",
@@ -640,6 +639,10 @@ const ca: typeof en = {
     insertAtEnd: "Al final",
     insertPosition: "Posició d'inserció",
     close: "Tanca",
+    pickToolbar: "Selecció de bloc desat",
+    pickCount: "{count} bloc(s) seleccionat(s)",
+    pickHint: "Fes clic als blocs per afegir-los o treure'ls",
+    savingCount: "S'estan desant {count} bloc(s):",
     time: {
       justNow: "Ara mateix",
       minutesAgo: "fa {minutes} min",
