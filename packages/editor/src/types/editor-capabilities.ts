@@ -38,5 +38,17 @@ export interface EditorCapabilities {
      * UI must gate on this, or it will render controls that do nothing.
      */
     isAvailable: ComputedRef<boolean>;
+    /**
+     * Which mutations the provider supplied — a provider may pass `false`
+     * instead of a function to withhold one. Shared UI hides the corresponding
+     * affordance: with `canCreate` false there is no bookmark action and so no
+     * pick session, leaving a browse-and-insert-only library.
+     *
+     * Separate from {@link isAvailable}, which answers whether the feature
+     * exists at all.
+     */
+    canCreate: ComputedRef<boolean>;
+    canUpdate: ComputedRef<boolean>;
+    canDelete: ComputedRef<boolean>;
   };
 }

@@ -23,6 +23,7 @@ import { CAPABILITIES_KEY } from "../src/keys";
 
 function makeCapability(opts: {
   isAvailable?: boolean;
+  canCreate?: boolean;
   isPicking?: boolean;
   pickedIds?: string[];
   startPicking?: ReturnType<typeof vi.fn>;
@@ -39,6 +40,9 @@ function makeCapability(opts: {
       openBrowser: vi.fn(),
       count: computed(() => 0),
       isAvailable: computed(() => opts.isAvailable ?? true),
+      canCreate: computed(() => opts.canCreate ?? true),
+      canUpdate: computed(() => true),
+      canDelete: computed(() => true),
     },
   };
 }
@@ -48,6 +52,7 @@ function mountWrapper(opts: {
   picked?: boolean;
   isSelected?: boolean;
   isAvailable?: boolean;
+  canCreate?: boolean;
   isPicking?: boolean;
   withCapability?: boolean;
   startPicking?: ReturnType<typeof vi.fn>;
@@ -83,6 +88,24 @@ describe("BlockWrapper save-as-block action", () => {
 
   it("does NOT render when the feature is unavailable", () => {
     expect(saveButtons(mountWrapper({ isAvailable: false }))).toHaveLength(0);
+  });
+
+  /* A provider that passed `create: false` yields a read-only library. Offering
+     the bookmark would start a pick session whose dialog could never persist. */
+  it("does NOT render when the provider withheld create", () => {
+    expect(saveButtons(mountWrapper({ canCreate: false }))).toHaveLength(0);
+  });
+
+  it("still shows the other actions when only create is withheld", () => {
+    const wrapper = mountWrapper({ canCreate: false });
+
+    // The bar itself is intact — this is a targeted gate, not a blanket hide.
+    expect(
+      wrapper.findAll('button[aria-label="blockActions.duplicate"]'),
+    ).toHaveLength(1);
+    expect(
+      wrapper.findAll('button[aria-label="blockActions.delete"]'),
+    ).toHaveLength(1);
   });
 
   it("does NOT render when no saved-blocks capability is provided", () => {

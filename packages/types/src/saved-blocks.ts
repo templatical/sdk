@@ -34,16 +34,29 @@ export interface SavedBlock {
    */
   category?: string;
   /**
+   * Per-entry permission carve-outs. **Absent means allowed** — the provider's
+   * `update` / `delete` already say whether the capability exists at all, so
+   * these exist only to forbid it on *particular* entries (a shared block a
+   * viewer may insert but not edit, someone else's block, a locked entry).
+   *
+   * Return them from your API alongside the row, where the answer is already
+   * known — the editor never second-guesses them and never computes its own.
+   * When one is `false` the corresponding control is not rendered for that
+   * entry.
+   */
+  canUpdate?: boolean;
+  canDelete?: boolean;
+  /**
    * Store-assigned timestamps, used for display only: the browser shows a
-   * relative "5m ago" label per entry (preferring `updated_at`, falling back
-   * to `created_at`) with the absolute date on hover.
+   * relative "5m ago" label per entry (preferring `updatedAt`, falling back to
+   * `createdAt`) with the absolute date on hover.
    *
    * They do **not** affect ordering — the editor renders whatever order
    * `list()` returns and never re-sorts. Both are optional; omit them and the
    * label is simply not shown.
    */
-  created_at?: string;
-  updated_at?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**
@@ -53,8 +66,8 @@ export interface SavedBlock {
  *
  * **These are only sent by headless callers.** The editor's own browser calls
  * `list()` with no parameters and filters the loaded entries in memory — that
- * way a provider stays four dumb methods and still gets a working search box
- * and category filter. They arrive only when you drive `useSavedBlocks`
+ * way a provider stays a dumb store and still gets a working search box and
+ * category filter. They arrive only when you drive `useSavedBlocks`
  * yourself (see the guide's "Headless use"), so implement them if you want
  * server-side filtering for your own UI and ignore them otherwise.
  */
@@ -64,6 +77,24 @@ export interface SavedBlocksListParams {
   /** Exact-match filter over {@link SavedBlock.category}. */
   category?: string;
 }
+
+/** Payload for {@link SavedBlocksProvider.create}. */
+export interface SavedBlockInput {
+  name: string;
+  content: Block[];
+  category?: string;
+}
+
+/**
+ * Partial patch for {@link SavedBlocksProvider.update}. Only the keys present
+ * are being changed — `category: ""` clears the category, whereas omitting the
+ * key leaves it alone.
+ */
+export type SavedBlockPatch = Partial<{
+  name: string;
+  content: Block[];
+  category: string;
+}>;
 
 /**
  * Storage contract for saved blocks. Implement it to back the editor's saved
@@ -75,6 +106,13 @@ export interface SavedBlocksListParams {
  *
  * Every method may reject; the editor surfaces the failure through the
  * editor's `onError` callback and leaves its in-memory list untouched.
+ *
+ * **Each mutation can be turned off by passing `false` instead of a function.**
+ * The editor then hides the affordance rather than letting the user try and
+ * fail. They are required rather than optional precisely so that disabling is a
+ * decision you state, never something you get by forgetting a method. Setting
+ * all three yields a **read-only library**: users still browse, preview and
+ * insert, because insertion only touches the canvas and never your store.
  *
  * ```ts
  * const provider: SavedBlocksProvider = {
@@ -103,23 +141,30 @@ export interface SavedBlocksProvider {
    * everything the current user may see — scoping the result per user, tenant
    * or permission is yours to do here. {@link SavedBlocksListParams} is only
    * populated by headless callers; honouring it is optional.
+   *
+   * The one method that cannot be disabled: without it the feature has nothing
+   * to show.
    */
   list(params?: SavedBlocksListParams): Promise<SavedBlock[]>;
-  /** Persist a new saved block and return it with its store-assigned `id`. */
-  create(input: {
-    name: string;
-    content: Block[];
-    category?: string;
-  }): Promise<SavedBlock>;
   /**
-   * Apply a partial update and return the stored result. Renaming is
-   * `update(id, { name })` and recategorising is `update(id, { category })` —
-   * there are no separate methods for either.
+   * Persist a new saved block and return it with its store-assigned `id`, or
+   * `false` to disable saving entirely — the block chrome's bookmark action
+   * disappears and no pick session can be started.
    */
-  update(
-    id: string,
-    patch: Partial<{ name: string; content: Block[]; category: string }>,
-  ): Promise<SavedBlock>;
-  /** Remove a saved block. Resolves once the store has applied the delete. */
-  delete(id: string): Promise<void>;
+  create: false | ((input: SavedBlockInput) => Promise<SavedBlock>);
+  /**
+   * Apply a partial update and return the stored result, or `false` to disable
+   * editing entirely. Renaming is `update(id, { name })` and recategorising is
+   * `update(id, { category })` — there are no separate methods for either.
+   *
+   * To allow editing in general but forbid it on particular entries, keep the
+   * function and set {@link SavedBlock.canUpdate} to `false` on those.
+   */
+  update: false | ((id: string, patch: SavedBlockPatch) => Promise<SavedBlock>);
+  /**
+   * Remove a saved block, resolving once the store has applied the delete, or
+   * `false` to disable deletion entirely. Per-entry exceptions go through
+   * {@link SavedBlock.canDelete}.
+   */
+  delete: false | ((id: string) => Promise<void>);
 }

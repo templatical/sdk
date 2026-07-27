@@ -93,11 +93,29 @@ function makeEditor(blocks: Block[], selectedBlockId: string | null = null) {
   } as any;
 }
 
-function makeHeadless(saved: SavedBlock[] = []) {
+/**
+ * `permissions` overrides the provider-level capability flags; per-entry
+ * `canUpdate` / `canDelete` come from the fixtures themselves.
+ */
+function makeHeadless(
+  saved: SavedBlock[] = [],
+  permissions: { create?: boolean; update?: boolean; delete?: boolean } = {},
+) {
   const savedBlocks = ref(saved);
+  const canCreate = computed(() => permissions.create !== false);
+  const canUpdate = computed(() => permissions.update !== false);
+  const canDelete = computed(() => permissions.delete !== false);
   return {
     savedBlocks,
     isLoading: ref(false),
+    canCreate,
+    canUpdate,
+    canDelete,
+    // Mirrors core: capability AND the entry not opting out, absent = allowed.
+    canUpdateBlock: (b: SavedBlock) =>
+      canUpdate.value && b.canUpdate !== false,
+    canDeleteBlock: (b: SavedBlock) =>
+      canDelete.value && b.canDelete !== false,
     // Mirrors the real derivation so the dialogs' category UI sees what the
     // composable would actually give them.
     categories: computed(() =>
@@ -786,13 +804,13 @@ describe('SavedBlocksBrowserModal', () => {
           id: 'oldest',
           name: 'Oldest first',
           content: [createTitleBlock()],
-          updated_at: iso(5000),
+          updatedAt: iso(5000),
         },
         {
           id: 'newest',
           name: 'Newest second',
           content: [createTitleBlock()],
-          updated_at: iso(1),
+          updatedAt: iso(1),
         },
       ]);
       await nextTick();
@@ -808,7 +826,7 @@ describe('SavedBlocksBrowserModal', () => {
           id: 'd1',
           name: 'Dated',
           content: [createTitleBlock()],
-          updated_at: iso(50),
+          updatedAt: iso(50),
         },
         { id: 'u2', name: 'Undated two', content: [createTitleBlock()] },
       ]);
@@ -841,7 +859,7 @@ describe('SavedBlocksBrowserModal', () => {
           id: 'a',
           name: 'Recent',
           content: [createTitleBlock()],
-          updated_at: iso(5),
+          updatedAt: iso(5),
         },
       ]);
       await nextTick();
@@ -854,13 +872,13 @@ describe('SavedBlocksBrowserModal', () => {
       expect(label!.getAttribute('title')).not.toBe('');
     });
 
-    it('falls back to created_at for the label when updated_at is absent', async () => {
+    it('falls back to createdAt for the label when updatedAt is absent', async () => {
       mountBrowser([
         {
           id: 'a',
           name: 'Created only',
           content: [createTitleBlock()],
-          created_at: iso(30),
+          createdAt: iso(30),
         },
       ]);
       await nextTick();
@@ -883,7 +901,7 @@ describe('SavedBlocksBrowserModal', () => {
           id: 'a',
           name: 'Bad stamp',
           content: [createTitleBlock()],
-          updated_at: 'not-a-date',
+          updatedAt: 'not-a-date',
         },
       ]);
       await nextTick();
@@ -1187,6 +1205,122 @@ describe('SavedBlocksBrowserModal', () => {
       expect(headless.update).toHaveBeenCalledWith('a', {
         category: 'Footers',
       });
+    });
+  });
+
+
+  describe('permission gating', () => {
+    const plain: SavedBlock = {
+      id: 'a',
+      name: 'Header',
+      content: [createTitleBlock()],
+    };
+
+    function mountWithPermissions(
+      saved: SavedBlock[],
+      permissions: { update?: boolean; delete?: boolean } = {},
+    ) {
+      const headless = makeHeadless(saved, permissions);
+      const wrapper = mountEditor(SavedBlocksBrowserModal, {
+        props: { visible: true },
+        attachTo: document.body,
+        provides: {
+          [EDITOR_KEY]: makeEditor([createTitleBlock()]),
+          [SAVED_BLOCKS_KEY]: headless,
+          [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
+        },
+        global: { stubs: { SavedBlockPreviewCanvas: true } },
+      } as never);
+      return { wrapper, headless };
+    }
+
+    function pencils(): HTMLElement[] {
+      return qAll('button[aria-label="savedBlocks.rename"]');
+    }
+
+    function trashes(): HTMLElement[] {
+      return qAll('button[aria-label="savedBlocks.delete"]');
+    }
+
+    it('shows both row actions when everything is permitted', async () => {
+      mountWithPermissions([plain]);
+      await nextTick();
+
+      expect(pencils()).toHaveLength(1);
+      expect(trashes()).toHaveLength(1);
+    });
+
+    /* Hidden rather than disabled: an action the user cannot perform is better
+       absent than greyed out. */
+    it('hides every pencil when the provider withheld update', async () => {
+      mountWithPermissions([plain, { ...plain, id: 'b' }], { update: false });
+      await nextTick();
+
+      expect(pencils()).toHaveLength(0);
+      // Delete is unaffected — the two capabilities are independent.
+      expect(trashes()).toHaveLength(2);
+    });
+
+    it('hides every trash when the provider withheld delete', async () => {
+      mountWithPermissions([plain, { ...plain, id: 'b' }], { delete: false });
+      await nextTick();
+
+      expect(trashes()).toHaveLength(0);
+      expect(pencils()).toHaveLength(2);
+    });
+
+    it('leaves a read-only library browsable with no row actions', async () => {
+      mountWithPermissions([plain], { update: false, delete: false });
+      await nextTick();
+
+      expect(pencils()).toHaveLength(0);
+      expect(trashes()).toHaveLength(0);
+      // The entry itself still renders and can be selected for insertion.
+      expect(cards()).toHaveLength(1);
+    });
+
+    it('hides the pencil only on the entry that opted out', async () => {
+      mountWithPermissions([
+        { ...plain, id: 'locked', canUpdate: false },
+        { ...plain, id: 'free' },
+      ]);
+      await nextTick();
+
+      // One of two rows keeps its pencil; both keep their trash.
+      expect(pencils()).toHaveLength(1);
+      expect(trashes()).toHaveLength(2);
+    });
+
+    it('hides the trash only on the entry that opted out', async () => {
+      mountWithPermissions([
+        { ...plain, id: 'locked', canDelete: false },
+        { ...plain, id: 'free' },
+      ]);
+      await nextTick();
+
+      expect(trashes()).toHaveLength(1);
+      expect(pencils()).toHaveLength(2);
+    });
+
+    it('treats an explicit true per entry as allowed', async () => {
+      mountWithPermissions([{ ...plain, canUpdate: true, canDelete: true }]);
+      await nextTick();
+
+      expect(pencils()).toHaveLength(1);
+      expect(trashes()).toHaveLength(1);
+    });
+
+    it('does not open the editor for a row that cannot be updated', async () => {
+      // Guards the programmatic path — the pencil is already gone.
+      const { wrapper } = mountWithPermissions([
+        { ...plain, canUpdate: false },
+      ]);
+      await nextTick();
+
+      (wrapper.vm as any).startRename({ ...plain, canUpdate: false });
+      await nextTick();
+
+      expect(qAll('input[aria-label="savedBlocks.rename"]')).toHaveLength(0);
     });
   });
 

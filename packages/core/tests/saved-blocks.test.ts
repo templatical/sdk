@@ -3,7 +3,7 @@ import { useSavedBlocks } from '../src/saved-blocks';
 import type { SavedBlock, SavedBlocksProvider } from '@templatical/types';
 
 function createSavedBlock(id: string, name: string): SavedBlock {
-  return { id, name, content: [], created_at: '', updated_at: '' };
+  return { id, name, content: [], createdAt: '', updatedAt: '' };
 }
 
 /**
@@ -435,5 +435,229 @@ describe('useSavedBlocks create with category', () => {
 
     const [input] = (provider.create as ReturnType<typeof vi.fn>).mock.calls[0];
     expect('category' in input).toBe(false);
+  });
+});
+
+describe('useSavedBlocks permissions', () => {
+  function entry(
+    id: string,
+    flags: Partial<Pick<SavedBlock, 'canUpdate' | 'canDelete'>> = {},
+  ): SavedBlock {
+    return { id, name: id, content: [], ...flags };
+  }
+
+  /* A provider passes `false` instead of a function to withhold a mutation.
+     Required rather than optional so disabling is stated, never accidental. */
+  describe('capability flags', () => {
+    it('reports all three enabled for a fully implemented provider', () => {
+      const { canCreate, canUpdate, canDelete } = useSavedBlocks({
+        provider: createMockProvider(),
+      });
+
+      expect(canCreate.value).toBe(true);
+      expect(canUpdate.value).toBe(true);
+      expect(canDelete.value).toBe(true);
+    });
+
+    it('reports create disabled without affecting the others', () => {
+      const { canCreate, canUpdate, canDelete } = useSavedBlocks({
+        provider: createMockProvider({ create: false }),
+      });
+
+      expect(canCreate.value).toBe(false);
+      expect(canUpdate.value).toBe(true);
+      expect(canDelete.value).toBe(true);
+    });
+
+    it('reports update disabled without affecting the others', () => {
+      const { canCreate, canUpdate, canDelete } = useSavedBlocks({
+        provider: createMockProvider({ update: false }),
+      });
+
+      expect(canUpdate.value).toBe(false);
+      expect(canCreate.value).toBe(true);
+      expect(canDelete.value).toBe(true);
+    });
+
+    it('reports delete disabled without affecting the others', () => {
+      const { canCreate, canUpdate, canDelete } = useSavedBlocks({
+        provider: createMockProvider({ delete: false }),
+      });
+
+      expect(canDelete.value).toBe(false);
+      expect(canCreate.value).toBe(true);
+      expect(canUpdate.value).toBe(true);
+    });
+
+    // The read-only library: browse and insert still work, because inserting
+    // never touches the store.
+    it('supports a fully read-only provider that can still list', async () => {
+      const stored = [entry('a')];
+      const { canCreate, canUpdate, canDelete, savedBlocks, load } =
+        useSavedBlocks({
+          provider: createMockProvider({
+            list: vi.fn().mockResolvedValue(stored),
+            create: false,
+            update: false,
+            delete: false,
+          }),
+        });
+
+      await load();
+
+      expect([canCreate.value, canUpdate.value, canDelete.value]).toEqual([
+        false,
+        false,
+        false,
+      ]);
+      expect(savedBlocks.value).toEqual(stored);
+    });
+  });
+
+  describe('refusing disabled mutations', () => {
+    /* The UI hides these, so arriving here means a programmatic caller went
+       around it — reject rather than resolve, or the caller reads it as saved. */
+    it('rejects create when the provider disabled it', async () => {
+      const { create } = useSavedBlocks({
+        provider: createMockProvider({ create: false }),
+      });
+
+      await expect(create('Hero', [])).rejects.toThrow(/create is disabled/);
+    });
+
+    it('rejects update when the provider disabled it', async () => {
+      const { update } = useSavedBlocks({
+        provider: createMockProvider({ update: false }),
+      });
+
+      await expect(update('a', { name: 'x' })).rejects.toThrow(
+        /update is disabled/,
+      );
+    });
+
+    it('rejects remove when the provider disabled it', async () => {
+      const { remove } = useSavedBlocks({
+        provider: createMockProvider({ delete: false }),
+      });
+
+      await expect(remove('a')).rejects.toThrow(/delete is disabled/);
+    });
+
+    it('leaves the list untouched when a mutation is refused', async () => {
+      const stored = [entry('a')];
+      const { savedBlocks, load, remove } = useSavedBlocks({
+        provider: createMockProvider({
+          list: vi.fn().mockResolvedValue(stored),
+          delete: false,
+        }),
+      });
+      await load();
+
+      await expect(remove('a')).rejects.toThrow();
+
+      expect(savedBlocks.value).toEqual(stored);
+    });
+
+    it('never calls the provider for a refused mutation', async () => {
+      const provider = createMockProvider({ create: false });
+
+      const { create } = useSavedBlocks({ provider });
+      await expect(create('Hero', [])).rejects.toThrow();
+
+      // `list` is the only thing that should have been reachable.
+      expect(provider.list).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('per-entry permissions', () => {
+    /* Absent means allowed: the capability flags already say whether an action
+       exists at all, so these exist purely to carve out exceptions. */
+    it('allows an entry with no flags', async () => {
+      const { canUpdateBlock, canDeleteBlock } = useSavedBlocks({
+        provider: createMockProvider(),
+      });
+      const block = entry('a');
+
+      expect(canUpdateBlock(block)).toBe(true);
+      expect(canDeleteBlock(block)).toBe(true);
+    });
+
+    it('honours an explicit false per entry', () => {
+      const { canUpdateBlock, canDeleteBlock } = useSavedBlocks({
+        provider: createMockProvider(),
+      });
+
+      expect(canUpdateBlock(entry('a', { canUpdate: false }))).toBe(false);
+      expect(canDeleteBlock(entry('a', { canDelete: false }))).toBe(false);
+    });
+
+    it('treats the two flags independently', () => {
+      const { canUpdateBlock, canDeleteBlock } = useSavedBlocks({
+        provider: createMockProvider(),
+      });
+      const block = entry('a', { canUpdate: false, canDelete: true });
+
+      expect(canUpdateBlock(block)).toBe(false);
+      expect(canDeleteBlock(block)).toBe(true);
+    });
+
+    it('an entry flag cannot re-enable a capability the provider withheld', () => {
+      const { canUpdateBlock } = useSavedBlocks({
+        provider: createMockProvider({ update: false }),
+      });
+
+      // `canUpdate: true` is not an override — the capability wins.
+      expect(canUpdateBlock(entry('a', { canUpdate: true }))).toBe(false);
+    });
+
+    it('rejects updating a loaded entry that opted out', async () => {
+      const { load, update } = useSavedBlocks({
+        provider: createMockProvider({
+          list: vi.fn().mockResolvedValue([entry('a', { canUpdate: false })]),
+        }),
+      });
+      await load();
+
+      await expect(update('a', { name: 'x' })).rejects.toThrow(
+        /not permitted for entry "a"/,
+      );
+    });
+
+    it('rejects deleting a loaded entry that opted out', async () => {
+      const { load, remove } = useSavedBlocks({
+        provider: createMockProvider({
+          list: vi.fn().mockResolvedValue([entry('a', { canDelete: false })]),
+        }),
+      });
+      await load();
+
+      await expect(remove('a')).rejects.toThrow(/not permitted for entry "a"/);
+    });
+
+    it('still permits sibling entries that did not opt out', async () => {
+      const provider = createMockProvider({
+        list: vi
+          .fn()
+          .mockResolvedValue([entry('locked', { canDelete: false }), entry('free')]),
+      });
+      const { load, remove } = useSavedBlocks({ provider });
+      await load();
+
+      await remove('free');
+
+      expect(provider.delete).toHaveBeenCalledWith('free');
+    });
+
+    it('does not refuse an id that was never loaded', async () => {
+      // A headless caller may legitimately patch something outside the list.
+      const provider = createMockProvider();
+      const { update } = useSavedBlocks({ provider });
+
+      await update('never-loaded', { name: 'x' });
+
+      expect(provider.update).toHaveBeenCalledWith('never-loaded', {
+        name: 'x',
+      });
+    });
   });
 });

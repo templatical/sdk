@@ -35,6 +35,7 @@ import type {
   TemplateDefaults,
   ColorsConfig,
   FontsConfig,
+  SavedBlocksProvider,
 } from "@templatical/types";
 import {
   createDefaultTemplateContent,
@@ -213,7 +214,19 @@ const editor = ref<TemplaticalEditor | null>(null);
 // One provider for the app's lifetime. `init()` re-runs whenever config or
 // locale changes, and a single instance keeps every editor incarnation reading
 // the same localStorage key, so saved blocks survive those re-inits.
-const savedBlocksProvider = createLocalStorageSavedBlocksProvider();
+//
+// Setting `tpl-playground-saved-blocks-readonly` demonstrates the read-only
+// library: a provider withholds its mutations by passing `false` instead of a
+// function, and the editor then hides every affordance that would need them
+// while browsing, previewing and inserting keep working.
+const savedBlocksProvider: SavedBlocksProvider = (() => {
+  const provider = createLocalStorageSavedBlocksProvider();
+  const readOnly =
+    localStorage.getItem("tpl-playground-saved-blocks-readonly") === "true";
+  return readOnly
+    ? { ...provider, create: false, update: false, delete: false }
+    : provider;
+})();
 
 type ExportTab = "mjml" | "html" | "json";
 const exportTabs: readonly ExportTab[] = ["mjml", "html", "json"] as const;

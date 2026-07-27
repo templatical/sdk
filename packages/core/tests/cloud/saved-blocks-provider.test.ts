@@ -16,7 +16,7 @@ function createMockAuthManager(): AuthManager {
 }
 
 function createSavedBlock(id: string, name: string): SavedBlock {
-  return { id, name, content: [], created_at: '', updated_at: '' };
+  return { id, name, content: [], createdAt: '', updatedAt: '' };
 }
 
 /**

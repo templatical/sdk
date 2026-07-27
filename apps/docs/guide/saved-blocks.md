@@ -30,23 +30,19 @@ That stores entries in `localStorage` under `templatical:saved-blocks`. Good for
 
 ## Bring your own storage
 
-`savedBlocks` takes any object implementing `SavedBlocksProvider` — four promise-returning methods:
+`savedBlocks` takes any object implementing `SavedBlocksProvider` — four members. `list` is a method; each mutation is **either a function or `false`**:
 
 ```ts
 interface SavedBlocksProvider {
   list(params?: { search?: string; category?: string }): Promise<SavedBlock[]>;
-  create(input: {
-    name: string;
-    content: Block[];
-    category?: string;
-  }): Promise<SavedBlock>;
-  update(
-    id: string,
-    patch: Partial<{ name: string; content: Block[]; category: string }>,
-  ): Promise<SavedBlock>;
-  delete(id: string): Promise<void>;
+
+  create: false | ((input: SavedBlockInput) => Promise<SavedBlock>);
+  update: false | ((id: string, patch: SavedBlockPatch) => Promise<SavedBlock>);
+  delete: false | ((id: string) => Promise<void>);
 }
 ```
+
+Passing `false` tells the editor the current user may not perform that action, and it hides the affordance instead of letting them try and fail. They're required rather than optional on purpose: disabling something should be a decision you write down, not something you get by forgetting a method.
 
 A minimal REST implementation:
 
@@ -96,8 +92,10 @@ interface SavedBlock {
   name: string;
   content: Block[];      // top-level blocks; a section carries its own children
   category?: string;     // optional — free-text grouping, drives the browser filter
-  created_at?: string;   // optional — display only, never affects ordering
-  updated_at?: string;
+  canUpdate?: boolean;   // optional — absent means allowed; set false to forbid
+  canDelete?: boolean;
+  createdAt?: string;    // optional — display only, never affects ordering
+  updatedAt?: string;
 }
 ```
 
@@ -107,7 +105,55 @@ Five contract points worth knowing:
 - **Renaming is `update(id, { name })`, recategorising is `update(id, { category })`.** There are no separate methods; `update` takes a partial patch.
 - **You own the ordering.** The editor renders entries in exactly the order `list()` returns and never re-sorts them — not by date, not by name. Filtering narrows the list without reordering it. Sort server-side however you like.
 - **Filtering is the editor's job, not yours.** The browser's search box and category filter run in memory over whatever `list()` returned, so a provider that just returns an array gets both for free. `list()` does accept a `{ search, category }` params object, but the editor never sends it — it only arrives if you drive `useSavedBlocks` yourself (see [Headless use](#headless-use)). Deciding *which* entries a user may see at all is still entirely yours, in `list()`.
-- **Timestamps are display only.** Each entry shows a relative "5m ago" label (from `updated_at`, falling back to `created_at`) with the absolute date on hover. They never affect ordering. Both are optional — omit them and the label is simply not shown.
+- **You decide who may change what.** Pass `false` for `create`, `update` or `delete` to withhold it, and set `canUpdate` / `canDelete` on individual entries to carve out exceptions. See [Controlling permissions](#controlling-permissions).
+- **Timestamps are display only.** Each entry shows a relative "5m ago" label (from `updatedAt`, falling back to `createdAt`) with the absolute date on hover. They never affect ordering. Both are optional — omit them and the label is simply not shown.
+
+### Controlling permissions
+
+Two independent levers, both yours:
+
+**Withhold a whole capability** by passing `false` instead of a function. The editor hides what it can't do — no bookmark action on blocks when `create` is off (so no save flow at all), no rename control when `update` is off, no delete control when `delete` is off.
+
+```ts
+const savedBlocks: SavedBlocksProvider = {
+  list: () => fetch('/api/saved-blocks').then(json),
+
+  // This user may add to the library but never change or remove what's there.
+  create: (input) => post('/api/saved-blocks', input),
+  update: false,
+  delete: false,
+};
+```
+
+**Withhold a single entry** by returning `canUpdate` / `canDelete` on it. Absent means allowed — these exist only to forbid, so you set them just on the exceptions. Return them from your API where the answer is already known; the editor never computes its own and never second-guesses yours.
+
+```json
+[
+  { "id": "1", "name": "My header", "content": [] },
+  { "id": "2", "name": "Team footer", "content": [], "canUpdate": false, "canDelete": false }
+]
+```
+
+That renders a library where the user can edit their own entry and only insert the shared one. Note the two levers compose in one direction: `canUpdate: true` cannot re-enable an `update` you passed as `false` — the capability wins.
+
+#### A read-only library
+
+Set all three to `false` and you get a curated library users browse, preview and insert from but never modify:
+
+```ts
+const savedBlocks: SavedBlocksProvider = {
+  list: () => fetch('/api/saved-blocks').then(json),
+  create: false,
+  update: false,
+  delete: false,
+};
+```
+
+Insertion still works, because it only ever touches the canvas — nothing reaches your store. `list` is the one member that can't be disabled; without it the feature has nothing to show.
+
+::: tip These are UI affordances, not security
+Hiding a control stops the editor from offering an action; it doesn't stop a determined caller. Enforce permissions in your API as well — the provider methods run in the user's browser.
+:::
 
 ### Error handling
 
@@ -156,6 +202,11 @@ const {
   savedBlocks, // Ref<SavedBlock[]>
   isLoading,   // Ref<boolean>
   categories,  // ComputedRef<string[]> — distinct categories, sorted
+  canCreate,   // ComputedRef<boolean> — did the provider supply create?
+  canUpdate,
+  canDelete,
+  canUpdateBlock, // (block) => boolean — capability AND the entry's own flag
+  canDeleteBlock,
   load,        // (params?: { search?, category? }) => Promise<void>
   create,      // (name, content, category?) => Promise<SavedBlock>
   update,      // (id, patch) => Promise<SavedBlock>
@@ -169,3 +220,5 @@ const {
 ```
 
 It keeps the list in sync after each successful call — prepending on create, replacing on update, removing on delete — and re-throws after reporting to `onError`.
+
+Check `canCreate` / `canUpdateBlock` / `canDeleteBlock` before offering an action in your own UI. Calling a mutation the provider withheld — or one an entry forbids — rejects rather than silently resolving, so a caller can never mistake a refusal for a save.

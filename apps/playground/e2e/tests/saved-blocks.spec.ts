@@ -38,8 +38,8 @@ const SEEDED = [
     ],
     // Distinct from Footer CTA so the relative-timestamp label has real data;
     // list order comes from this array, not from the timestamps.
-    created_at: "2026-01-01T00:00:00.000Z",
-    updated_at: "2026-01-02T00:00:00.000Z",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-02T00:00:00.000Z",
   },
   {
     id: "seed-footer",
@@ -54,8 +54,8 @@ const SEEDED = [
         styles: PAD,
       },
     ],
-    created_at: "2026-01-01T00:00:00.000Z",
-    updated_at: "2026-01-01T00:00:00.000Z",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
   },
 ];
 
@@ -795,5 +795,86 @@ test.describe("saved blocks — categories", () => {
     await expect(
       page.locator(SELECTORS.savedBlocksCategoryFilter).locator("option"),
     ).toHaveText(["All categories", "Footers", "Headers"]);
+  });
+});
+
+/**
+ * A provider that withholds its mutations by passing `false` instead of a
+ * function. The editor hides every affordance that would need them, while
+ * browsing, previewing and inserting keep working — insertion only touches the
+ * canvas, never the store.
+ */
+test.describe("saved blocks — read-only library", () => {
+  async function bootReadOnly(page: Page): Promise<void> {
+    await seedSavedBlocks(page, SEEDED);
+    await page.addInitScript(() => {
+      localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
+      localStorage.setItem("tpl-playground-features-dismissed", "true");
+      localStorage.setItem("tpl-playground-saved-blocks-readonly", "true");
+    });
+  }
+
+  test("hides the save action so no pick session can start", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await bootReadOnly(page);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    await editorPage.selectBlock(0);
+
+    // The bookmark is gone...
+    await expect(page.locator(SELECTORS.savedBlocksSaveAction)).toHaveCount(0);
+    // ...but the rest of the block chrome is intact, so this is a targeted gate.
+    await expect(page.locator(SELECTORS.blockActions)).toHaveCount(1);
+    await expect(page.locator(SELECTORS.savedBlocksPickBar)).toHaveCount(0);
+  });
+
+  test("browses and inserts, with no rename or delete controls", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await bootReadOnly(page);
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    const idsBefore = await editorPage.getTopLevelBlockIds();
+
+    // The rail still appears — there is something to browse.
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    await expect(page.locator(SELECTORS.savedBlocksBrowserTitle)).toBeVisible();
+
+    const browser = page.locator(SELECTORS.savedBlocksBrowser);
+    await expect(page.locator(SELECTORS.savedBlocksCard)).toHaveCount(2);
+    await expect(
+      browser.locator(SELECTORS.savedBlocksRenameBtn),
+    ).toHaveCount(0);
+    await expect(
+      browser.locator(SELECTORS.savedBlocksDeleteBtn),
+    ).toHaveCount(0);
+
+    // Insertion is unaffected: it never calls the provider.
+    await page.locator(SELECTORS.savedBlocksCard).first().click();
+    await browser
+      .getByRole("button", { name: "Insert", exact: true })
+      .click();
+
+    await expect
+      .poll(() => editorPage.getTopLevelBlockIds().then((ids) => ids.length))
+      .toBe(idsBefore.length + 2);
+
+    // And the store is untouched by the whole session.
+    const stored = await page.evaluate(
+      (key) => JSON.parse(localStorage.getItem(key as string) ?? "[]"),
+      STORE_KEY,
+    );
+    expect(stored).toHaveLength(2);
   });
 });

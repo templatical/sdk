@@ -150,14 +150,14 @@ function getRemainingTypeCount(saved: SavedBlock): number {
 
 /** Compact "5m ago" label, or "" when the provider supplies no usable timestamp. */
 function relativeLabel(saved: SavedBlock): string {
-  const raw = saved.updated_at ?? saved.created_at;
+  const raw = saved.updatedAt ?? saved.createdAt;
   if (!raw) return "";
   return formatRelativeTime(raw, t.savedBlocks.time, format) ?? "";
 }
 
 /** Absolute timestamp for the row's tooltip — locale-formatted, no i18n keys. */
 function absoluteLabel(saved: SavedBlock): string {
-  const raw = saved.updated_at ?? saved.created_at;
+  const raw = saved.updatedAt ?? saved.createdAt;
   if (!raw) return "";
   const parsed = new Date(raw);
   return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleString();
@@ -175,6 +175,9 @@ async function handleDelete(id: string): Promise<void> {
 }
 
 async function startRename(saved: SavedBlock): Promise<void> {
+  // The pencil is already hidden when editing isn't permitted; this stops a
+  // programmatic call opening an editor whose commit could only fail.
+  if (!savedBlocks.canUpdateBlock(saved)) return;
   renamingId.value = saved.id;
   renameDraft.value = saved.name;
   renameCategoryDraft.value = saved.category ?? "";
@@ -452,8 +455,12 @@ function handleKeydown(event: KeyboardEvent): void {
                     >
                       {{ t.savedBlocks.deleteConfirm }}
                     </button>
+                    <!-- Hidden, not disabled: an action the user can't perform
+                         is better absent than greyed out. `ml-auto` moves to
+                         whichever button survives so the row stays aligned. -->
                     <template v-else>
                       <button
+                        v-if="savedBlocks.canUpdateBlock(item)"
                         class="tpl-saved-block-rename-btn tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-0.5 tpl:transition-colors tpl:duration-100 tpl:text-[var(--tpl-text-dim)]"
                         :aria-label="t.savedBlocks.rename"
                         :title="t.savedBlocks.rename"
@@ -462,7 +469,11 @@ function handleKeydown(event: KeyboardEvent): void {
                         <Pencil :size="12" :stroke-width="1.5" />
                       </button>
                       <button
+                        v-if="savedBlocks.canDeleteBlock(item)"
                         class="tpl-saved-block-delete-btn tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-0.5 tpl:transition-colors tpl:duration-100 tpl:text-[var(--tpl-text-dim)]"
+                        :class="{
+                          'tpl:ml-auto': !savedBlocks.canUpdateBlock(item),
+                        }"
                         :aria-label="t.savedBlocks.delete"
                         :title="t.savedBlocks.delete"
                         @click.stop="confirmDeleteId = item.id"

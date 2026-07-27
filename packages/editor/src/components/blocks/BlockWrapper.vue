@@ -146,8 +146,13 @@ const caps = inject(CAPABILITIES_KEY, {});
 
 const isPicking = computed(() => caps.savedBlocks?.isPicking.value === true);
 
+// `canCreate` too: a provider that withheld `create` gets a read-only library,
+// so offering the bookmark would start a pick session that could never save.
 const canSaveAsBlock = computed(
-  () => !props.nested && caps.savedBlocks?.isAvailable.value === true,
+  () =>
+    !props.nested &&
+    caps.savedBlocks?.isAvailable.value === true &&
+    caps.savedBlocks?.canCreate.value === true,
 );
 
 // The action bar is chrome for editing a single block; during a pick session the

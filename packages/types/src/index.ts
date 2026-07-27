@@ -40,6 +40,8 @@ export { SOCIAL_ICON_GLYPHS } from "./social";
 // Saved blocks (reusable user-authored block groups + the storage contract)
 export type {
   SavedBlock,
+  SavedBlockInput,
+  SavedBlockPatch,
   SavedBlocksListParams,
   SavedBlocksProvider,
 } from "./saved-blocks";

@@ -1,6 +1,7 @@
 import type {
-  Block,
   SavedBlock,
+  SavedBlockInput,
+  SavedBlockPatch,
   SavedBlocksListParams,
   SavedBlocksProvider,
 } from "@templatical/types";
@@ -80,19 +81,17 @@ export function createLocalStorageSavedBlocksProvider(
       });
     },
 
-    async create(input: {
-      name: string;
-      content: Block[];
-      category?: string;
-    }): Promise<SavedBlock> {
+    // All three mutations are enabled: a browser-local store has no notion of
+    // permissions, so there is nothing to forbid.
+    async create(input: SavedBlockInput): Promise<SavedBlock> {
       const now = new Date().toISOString();
       const created: SavedBlock = {
         id: generateId(),
         name: input.name,
         content: input.content,
         ...(input.category ? { category: input.category } : {}),
-        created_at: now,
-        updated_at: now,
+        createdAt: now,
+        updatedAt: now,
       };
       // Newest-first, matching the order the composable applies locally after
       // a create — so a reload preserves what the user just saw.
@@ -100,10 +99,7 @@ export function createLocalStorageSavedBlocksProvider(
       return created;
     },
 
-    async update(
-      id: string,
-      patch: Partial<{ name: string; content: Block[]; category: string }>,
-    ): Promise<SavedBlock> {
+    async update(id: string, patch: SavedBlockPatch): Promise<SavedBlock> {
       const all = readAll();
       const index = all.findIndex((b) => b.id === id);
       // Mirrors a REST 404 so provider behavior is consistent across adapters.
@@ -113,7 +109,7 @@ export function createLocalStorageSavedBlocksProvider(
       const updated: SavedBlock = {
         ...all[index],
         ...patch,
-        updated_at: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
       const next = [...all];
       next[index] = updated;

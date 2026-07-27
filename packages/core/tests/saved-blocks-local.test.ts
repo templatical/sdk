@@ -92,8 +92,8 @@ describe('createLocalStorageSavedBlocksProvider', () => {
       expect(created.name).toBe('Hero');
       expect(created.content).toEqual([block]);
       expect(created.id).toMatch(/^[0-9a-f-]{36}$/i);
-      expect(created.created_at).toBe(created.updated_at);
-      expect(Number.isNaN(Date.parse(created.created_at!))).toBe(false);
+      expect(created.createdAt).toBe(created.updatedAt);
+      expect(Number.isNaN(Date.parse(created.createdAt!))).toBe(false);
     });
 
     it('stores newest-first', async () => {
@@ -146,7 +146,7 @@ describe('createLocalStorageSavedBlocksProvider', () => {
   });
 
   describe('update', () => {
-    it('renames and bumps updated_at without touching created_at', async () => {
+    it('renames and bumps updatedAt without touching createdAt', async () => {
       stubLocalStorage();
       const provider = createLocalStorageSavedBlocksProvider();
       const created = await provider.create({ name: 'Old', content: [] });
@@ -155,9 +155,9 @@ describe('createLocalStorageSavedBlocksProvider', () => {
 
       expect(updated.id).toBe(created.id);
       expect(updated.name).toBe('New');
-      expect(updated.created_at).toBe(created.created_at);
-      expect(Date.parse(updated.updated_at!)).toBeGreaterThanOrEqual(
-        Date.parse(created.updated_at!),
+      expect(updated.createdAt).toBe(created.createdAt);
+      expect(Date.parse(updated.updatedAt!)).toBeGreaterThanOrEqual(
+        Date.parse(created.updatedAt!),
       );
     });
 

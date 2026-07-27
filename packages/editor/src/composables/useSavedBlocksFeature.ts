@@ -102,6 +102,10 @@ export function useSavedBlocksFeature(
   const pickedCount = computed(() => pickedIds.value.size);
 
   function startPicking(blockId: string): void {
+    // Nothing to pick *for* when the provider withheld `create` — the dialog at
+    // the end of the session would have no way to persist. The bookmark action
+    // is already hidden; this covers programmatic callers.
+    if (!headless.canCreate.value) return;
     // Preview mode has no block chrome to pick with, and its click handlers are
     // suppressed — a session there could never be completed or cancelled.
     if (editor.state.previewMode) return;
@@ -224,6 +228,9 @@ export function useSavedBlocksFeature(
       openBrowser,
       count,
       isAvailable,
+      canCreate: headless.canCreate,
+      canUpdate: headless.canUpdate,
+      canDelete: headless.canDelete,
     },
     count,
     isAvailable,

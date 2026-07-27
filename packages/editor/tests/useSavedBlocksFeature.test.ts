@@ -385,4 +385,69 @@ describe('useSavedBlocksFeature', () => {
       expect(feature.capability.isAvailable.value).toBe(false);
     });
   });
+
+  describe('provider withheld create', () => {
+    /* A read-only library: the bookmark is hidden, but the session entry point
+       is guarded too so a programmatic caller can't strand the user in a mode
+       whose dialog could never persist. */
+    it('refuses to start a pick session', () => {
+      const { feature } = withFeature({
+        provider: createMockProvider({ create: false }),
+      });
+
+      feature.startPicking('block-1');
+
+      expect(feature.isPicking.value).toBe(false);
+      expect(feature.pickedCount.value).toBe(0);
+    });
+
+    it('reports the capability as unavailable to shared UI', () => {
+      const { feature } = withFeature({
+        provider: createMockProvider({ create: false }),
+      });
+
+      expect(feature.capability.canCreate.value).toBe(false);
+      // The feature itself is still available — browsing and inserting work.
+      expect(feature.capability.isAvailable.value).toBe(true);
+    });
+
+    it('still allows browsing and inserting', () => {
+      const addBlock = vi.fn();
+      const { feature } = withFeature({
+        addBlock,
+        provider: createMockProvider({ create: false }),
+      });
+
+      feature.openBrowser();
+      expect(feature.isBrowserOpen.value).toBe(true);
+
+      feature.insert(
+        { id: 's1', name: 'Saved', content: [createTitleBlock()] },
+        undefined,
+      );
+
+      // Insertion never touches the provider, so withholding create can't stop it.
+      expect(addBlock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('capability exposes the provider permissions', () => {
+    it('passes all three through when the provider implements them', () => {
+      const { feature } = withFeature({});
+
+      expect(feature.capability.canCreate.value).toBe(true);
+      expect(feature.capability.canUpdate.value).toBe(true);
+      expect(feature.capability.canDelete.value).toBe(true);
+    });
+
+    it('reflects update and delete being withheld independently', () => {
+      const { feature } = withFeature({
+        provider: createMockProvider({ update: false }),
+      });
+
+      expect(feature.capability.canUpdate.value).toBe(false);
+      expect(feature.capability.canCreate.value).toBe(true);
+      expect(feature.capability.canDelete.value).toBe(true);
+    });
+  });
 });

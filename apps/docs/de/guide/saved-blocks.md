@@ -30,23 +30,19 @@ Damit werden Einträge im `localStorage` unter `templatical:saved-blocks` gespei
 
 ## Eigenen Speicher anbinden
 
-`savedBlocks` akzeptiert jedes Objekt, das `SavedBlocksProvider` implementiert — vier Methoden, die Promises zurückgeben:
+`savedBlocks` akzeptiert jedes Objekt, das `SavedBlocksProvider` implementiert — vier Mitglieder. `list` ist eine Methode; jede Mutation ist **entweder eine Funktion oder `false`**:
 
 ```ts
 interface SavedBlocksProvider {
   list(params?: { search?: string; category?: string }): Promise<SavedBlock[]>;
-  create(input: {
-    name: string;
-    content: Block[];
-    category?: string;
-  }): Promise<SavedBlock>;
-  update(
-    id: string,
-    patch: Partial<{ name: string; content: Block[]; category: string }>,
-  ): Promise<SavedBlock>;
-  delete(id: string): Promise<void>;
+
+  create: false | ((input: SavedBlockInput) => Promise<SavedBlock>);
+  update: false | ((id: string, patch: SavedBlockPatch) => Promise<SavedBlock>);
+  delete: false | ((id: string) => Promise<void>);
 }
 ```
+
+Mit `false` teilen Sie dem Editor mit, dass die aktuelle Person diese Aktion nicht ausführen darf; er blendet das Bedienelement dann aus, statt einen Versuch zuzulassen, der scheitern muss. Die drei sind absichtlich erforderlich und nicht optional: Das Abschalten soll eine Entscheidung sein, die Sie festhalten — nicht etwas, das durch eine vergessene Methode entsteht.
 
 Eine minimale REST-Implementierung:
 
@@ -97,8 +93,10 @@ interface SavedBlock {
   name: string;
   content: Block[];      // Blöcke der obersten Ebene; eine Section enthält ihre eigenen Kinder
   category?: string;     // optional — freie Gruppierung, steuert den Filter im Browser
-  created_at?: string;   // optional — nur Anzeige, ohne Einfluss auf die Reihenfolge
-  updated_at?: string;
+  canUpdate?: boolean;   // optional — fehlt = erlaubt; false verbietet
+  canDelete?: boolean;
+  createdAt?: string;    // optional — nur Anzeige, ohne Einfluss auf die Reihenfolge
+  updatedAt?: string;
 }
 ```
 
@@ -108,7 +106,55 @@ Fünf Punkte des Vertrags sind wichtig:
 - **Umbenennen ist `update(id, { name })`, Umkategorisieren `update(id, { category })`.** Es gibt für beides keine separate Methode; `update` nimmt ein partielles Patch-Objekt.
 - **Die Reihenfolge liegt bei Ihnen.** Der Editor stellt die Einträge genau in der Reihenfolge dar, die `list()` zurückgibt, und sortiert nie um — weder nach Datum noch nach Name. Das Filtern grenzt die Liste ein, ohne sie umzuordnen. Sortieren Sie serverseitig, wie Sie möchten.
 - **Das Filtern übernimmt der Editor, nicht Sie.** Suchfeld und Kategoriefilter des Browsers arbeiten im Speicher auf dem, was `list()` zurückgegeben hat — ein Provider, der einfach ein Array liefert, erhält beides ohne Zutun. `list()` akzeptiert zwar ein `{ search, category }`-Objekt, doch der Editor sendet es nie; es kommt nur an, wenn Sie `useSavedBlocks` selbst ansteuern (siehe [Headless-Nutzung](#headless-nutzung)). Welche Einträge jemand überhaupt sehen darf, entscheiden weiterhin ausschließlich Sie in `list()`.
-- **Zeitstempel dienen nur der Anzeige.** Jeder Eintrag zeigt eine relative Angabe wie „vor 5 Min." (aus `updated_at`, ersatzweise `created_at`); das absolute Datum erscheint beim Überfahren. Auf die Reihenfolge haben sie keinen Einfluss. Beide Felder sind optional — ohne sie entfällt einfach die Angabe.
+- **Sie entscheiden, wer was ändern darf.** Übergeben Sie `false` für `create`, `update` oder `delete`, um die Aktion vorzuenthalten, und setzen Sie `canUpdate` / `canDelete` an einzelnen Einträgen für Ausnahmen. Siehe [Berechtigungen steuern](#berechtigungen-steuern).
+- **Zeitstempel dienen nur der Anzeige.** Jeder Eintrag zeigt eine relative Angabe wie „vor 5 Min." (aus `updatedAt`, ersatzweise `createdAt`); das absolute Datum erscheint beim Überfahren. Auf die Reihenfolge haben sie keinen Einfluss. Beide Felder sind optional — ohne sie entfällt einfach die Angabe.
+
+### Berechtigungen steuern
+
+Zwei unabhängige Hebel, beide in Ihrer Hand:
+
+**Eine ganze Fähigkeit vorenthalten**, indem Sie `false` statt einer Funktion übergeben. Der Editor blendet aus, was er nicht kann — keine Lesezeichen-Aktion an Blöcken, wenn `create` aus ist (und damit gar kein Speicherablauf), kein Umbenennen bei `update: false`, kein Löschen bei `delete: false`.
+
+```ts
+const savedBlocks: SavedBlocksProvider = {
+  list: () => fetch('/api/saved-blocks').then(json),
+
+  // Diese Person darf hinzufügen, aber Bestehendes nie ändern oder entfernen.
+  create: (input) => post('/api/saved-blocks', input),
+  update: false,
+  delete: false,
+};
+```
+
+**Einen einzelnen Eintrag ausnehmen**, indem Sie `canUpdate` / `canDelete` mitliefern. Fehlt der Wert, ist die Aktion erlaubt — die Felder dienen ausschließlich dem Verbieten, Sie setzen sie also nur bei den Ausnahmen. Liefern Sie sie aus Ihrer API, wo die Antwort ohnehin bekannt ist; der Editor ermittelt nichts selbst und zieht Ihre Angabe nicht in Zweifel.
+
+```json
+[
+  { "id": "1", "name": "Mein Header", "content": [] },
+  { "id": "2", "name": "Team-Footer", "content": [], "canUpdate": false, "canDelete": false }
+]
+```
+
+Damit entsteht eine Bibliothek, in der die Person den eigenen Eintrag bearbeiten und den geteilten nur einfügen kann. Die beiden Hebel greifen nur in einer Richtung zusammen: `canUpdate: true` kann ein als `false` übergebenes `update` nicht wieder aktivieren — die Fähigkeit hat Vorrang.
+
+#### Eine schreibgeschützte Bibliothek
+
+Setzen Sie alle drei auf `false`, erhalten Sie eine kuratierte Bibliothek, die Nutzer durchsehen, in der Vorschau ansehen und einfügen, aber nie verändern können:
+
+```ts
+const savedBlocks: SavedBlocksProvider = {
+  list: () => fetch('/api/saved-blocks').then(json),
+  create: false,
+  update: false,
+  delete: false,
+};
+```
+
+Das Einfügen funktioniert weiterhin, denn es berührt ausschließlich die Arbeitsfläche — Ihren Speicher erreicht dabei nichts. `list` ist das einzige Mitglied, das sich nicht abschalten lässt; ohne es hätte die Funktion nichts zu zeigen.
+
+::: tip Bedienelemente, keine Sicherheitsgrenze
+Ein ausgeblendetes Element verhindert, dass der Editor die Aktion anbietet — es hält niemanden auf, der es darauf anlegt. Erzwingen Sie Berechtigungen zusätzlich in Ihrer API: Die Provider-Methoden laufen im Browser der Nutzerin.
+:::
 
 ### Fehlerbehandlung
 
@@ -157,6 +203,11 @@ const {
   savedBlocks, // Ref<SavedBlock[]>
   isLoading,   // Ref<boolean>
   categories,  // ComputedRef<string[]> — verwendete Kategorien, sortiert
+  canCreate,   // ComputedRef<boolean> — hat der Provider create geliefert?
+  canUpdate,
+  canDelete,
+  canUpdateBlock, // (block) => boolean — Fähigkeit UND das Flag des Eintrags
+  canDeleteBlock,
   load,        // (params?: { search?, category? }) => Promise<void>
   create,      // (name, content, category?) => Promise<SavedBlock>
   update,      // (id, patch) => Promise<SavedBlock>
@@ -170,3 +221,5 @@ const {
 ```
 
 Die Liste bleibt nach jedem erfolgreichen Aufruf synchron — beim Erstellen vorangestellt, beim Aktualisieren ersetzt, beim Löschen entfernt — und Fehler werden nach der Meldung an `onError` erneut geworfen.
+
+Prüfen Sie `canCreate` / `canUpdateBlock` / `canDeleteBlock`, bevor Sie eine Aktion in Ihrer eigenen Oberfläche anbieten. Der Aufruf einer Mutation, die der Provider vorenthält — oder die ein Eintrag verbietet —, wird abgelehnt statt still erfüllt, sodass niemand eine Ablehnung für ein Speichern halten kann.
