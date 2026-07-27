@@ -65,6 +65,7 @@ function getBlockComponent(block: Block): Component | null {
 
 <template>
   <div
+    data-testid="saved-blocks-preview-canvas"
     class="tpl:pointer-events-none tpl:mx-auto tpl:w-[600px] tpl:select-none tpl:rounded-lg"
     :style="{
       backgroundColor: 'var(--tpl-canvas-bg)',
