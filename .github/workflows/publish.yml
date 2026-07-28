@@ -48,9 +48,50 @@ jobs:
           #      Claude Code caches the plugin by that version
           version: pnpm run changeset:version
           publish: pnpm exec changeset publish
+          # One aggregated release is created below instead. The nine packages are a
+          # changesets `fixed` group, so the default produced nine near-identical
+          # releases per version and whichever published last became "Latest" on the
+          # repo home page (it was `import-beefree`). Per-package git tags are
+          # unaffected — `changeset publish` creates and pushes those, not the action.
+          createGithubReleases: false
         env:
           GITHUB_TOKEN: ${{ secrets.CHANGESETS_PAT }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Single `v<version>` release whose body is the aggregated changelog for that
+      # version — the same generator that writes the docs page, so the two can't
+      # diverge. Gives the repo sidebar, the releases.atom feed and watch-for-releases
+      # notifications one meaningful entry per release.
+      - name: Create aggregated GitHub release
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.CHANGESETS_PAT }}
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+        run: |
+          set -euo pipefail
+          # Every package in the fixed group publishes at the same version, so the
+          # first entry's version is the release version.
+          VERSION="$(printf '%s' "$PUBLISHED_PACKAGES" | jq -r '.[0].version // empty')"
+          if [ -z "$VERSION" ]; then
+            echo "Could not determine the published version — skipping release creation."
+            exit 0
+          fi
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists — nothing to do."
+            exit 0
+          fi
+          # npm publish already succeeded by this point, so a notes-generation problem
+          # must not fail the run — fall back to a minimal body and surface the reason
+          # in the log instead of leaving the release missing and the workflow red.
+          if ! node apps/docs/scripts/build-changelog.mjs --release-notes "$VERSION" > release-notes.md; then
+            echo "::warning::Could not generate aggregated notes for $VERSION — using a minimal release body."
+            printf 'Full changelog: https://docs.templatical.com/changelog\n' > release-notes.md
+          fi
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --notes-file release-notes.md \
+            --target "$GITHUB_SHA"
+          rm -f release-notes.md
 
       - name: Trigger marketing-site rebuild
         if: steps.changesets.outputs.published == 'true'
