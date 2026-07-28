@@ -19,6 +19,7 @@
 <p align="center">
   <a href="https://play.templatical.com"><b>Playground</b></a> ·
   <a href="https://docs.templatical.com"><b>Documentation</b></a> ·
+  <a href="https://docs.templatical.com/changelog"><b>Changelog</b></a> ·
   <a href="https://templatical.com"><b>Website</b></a> ·
   <a href="https://github.com/templatical/sdk/discussions"><b>Discussions</b></a>
 </p>
@@ -144,8 +145,11 @@ The only restriction: don't repackage Templatical itself as a directly competing
 - [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)
 - [Migrating from Unlayer](https://docs.templatical.com/guide/migration-from-unlayer)
 - [Migrating from HTML](https://docs.templatical.com/guide/migration-from-html)
+- [Changelog](https://docs.templatical.com/changelog) — every release, all packages, one page
 
 Full docs: **[docs.templatical.com](https://docs.templatical.com)** (English + Deutsch).
+
+Releases are also published as [GitHub Releases](https://github.com/templatical/sdk/releases) — one per version. Subscribe via the [Atom feed](https://github.com/templatical/sdk/releases.atom) or _Watch → Custom → Releases_.
 
 ## Contributing
 
