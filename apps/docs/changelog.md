@@ -15,7 +15,7 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
-## 1.0.0
+## 0.21.0
 
 <time datetime="2026-07-29">2026-07-29</time>
 
