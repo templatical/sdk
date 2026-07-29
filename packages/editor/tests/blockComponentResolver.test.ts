@@ -10,6 +10,7 @@ import {
   createTitleBlock,
   createImageBlock,
   createButtonBlock,
+  createCountdownBlock,
   createDividerBlock,
   createSectionBlock,
   createDefaultTemplateContent,
@@ -76,6 +77,30 @@ describe("resolveBlockComponent", () => {
 
     const result = resolveBlockComponent(block, registry, componentMap);
     expect(result).toBeNull();
+  });
+
+  /**
+   * The registry is the ONLY source for `countdown`, on purpose: it's the one
+   * Cloud-only block, so `useEditorCore` registers it as a lazy
+   * `defineAsyncComponent` and every fallback map omits it. A static entry in a
+   * fallback map would never be reached (registry wins) yet its static import
+   * would still drag the module into the eager bundle — which is exactly what
+   * `Canvas.vue` used to do.
+   */
+  it("resolves a registry-only block type that no fallback map carries", () => {
+    const block = createCountdownBlock();
+    const registry = {
+      getComponent: vi.fn().mockReturnValue(FakeRegistered),
+    } as unknown as UseBlockRegistryReturn;
+
+    // `componentMap` deliberately has no `countdown` key.
+    expect(componentMap.countdown).toBeUndefined();
+    expect(resolveBlockComponent(block, registry, componentMap)).toBe(
+      FakeRegistered,
+    );
+    // Without a registry there is nothing to fall back to — the block simply
+    // doesn't render, which is how the three preview surfaces already behave.
+    expect(resolveBlockComponent(block, null, componentMap)).toBeNull();
   });
 });
 

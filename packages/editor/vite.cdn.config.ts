@@ -43,6 +43,30 @@ export default defineConfig({
             external: [],
             output: {
                 chunkFileNames: 'chunks/[name]-[hash].js',
+                // THIRD-PARTY DEPENDENCIES ONLY — never group first-party source.
+                //
+                // Forcing our own modules into a named chunk creates static import
+                // edges between otherwise-independent lazy subgraphs, which silently
+                // makes a lazy chunk EAGER. That is not theoretical: the former
+                // `features` group (6 `defineAsyncComponent` cloud panels) became
+                // statically reachable from the entry, so every Cloud session
+                // downloaded all 66.5 KB gzip of it whether or not the user opened a
+                // single panel — `defineAsyncComponent` was fully defeated for them.
+                //
+                // The failure also moves: removing only `features` promoted
+                // `media-library` to eager (41.2 -> 65.7 KB) and grew the eager
+                // payload by 32.7 KB; removing that too promoted `quality` instead.
+                // Grouping source is what creates the bridge, so the rule is a ban,
+                // not a list to curate.
+                //
+                // Third-party groups stay because they earn their keep on caching:
+                // tiptap alone is 145 KB gzip, and keeping it in a content-addressed
+                // chunk of its own means an editor-only release doesn't invalidate it
+                // for repeat visitors.
+                //
+                // Guarded by `tests/cdn-chunk-granularity.test.ts` — it enumerates
+                // `defineAsyncComponent` call sites from source and fails if any of
+                // them lands in a chunk reachable from the entry by static import.
                 manualChunks: (id) => {
                     if (id.includes('@lucide/vue')) {
                         return 'icons';
@@ -62,35 +86,14 @@ export default defineConfig({
                     if (id.includes('pusher-js')) {
                         return 'pusher';
                     }
-                    if (id.includes('/quality/src/') || id.includes('htmlparser2')) {
-                        return 'quality';
-                    }
-                    if (id.includes('/renderer/src/')) {
-                        return 'renderer';
+                    if (id.includes('htmlparser2')) {
+                        return 'htmlparser';
                     }
                     if (
                         id.includes('vue-draggable-plus') ||
                         id.includes('sortablejs')
                     ) {
                         return 'draggable';
-                    }
-                    if (
-                        id.includes('/media-library/src/components/') ||
-                        id.includes('/media-library/src/composable') ||
-                        id.includes('/media-library/src/api-client') ||
-                        id.includes('/media-library/src/composables/')
-                    ) {
-                        return 'media-library';
-                    }
-                    if (
-                        id.includes('/cloud/components/AiChatSidebar') ||
-                        id.includes('/cloud/components/CommentsSidebar') ||
-                        id.includes('/cloud/components/DesignReferenceSidebar') ||
-                        id.includes('/cloud/components/TemplateScoringPanel') ||
-                        id.includes('/cloud/components/TestEmailModal') ||
-                        id.includes('/cloud/components/SnapshotHistory')
-                    ) {
-                        return 'features';
                     }
                     return undefined;
                 },

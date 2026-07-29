@@ -38,8 +38,14 @@ import MenuBlock from "./blocks/MenuBlock.vue";
 import TableBlock from "./blocks/TableBlock.vue";
 import CustomBlock from "./blocks/CustomBlock.vue";
 import VideoBlock from "./blocks/VideoBlock.vue";
-import CountdownBlockComponent from "./blocks/CountdownBlock.vue";
 
+// `countdown` is deliberately absent: it resolves from the block registry, which
+// `useEditorCore` populates with a lazy `defineAsyncComponent` so OSS bundles
+// don't carry a Cloud-only block. `resolveBlockComponent` checks the registry
+// first, so a static entry here would never be reached — but its static import
+// would still pull the module into the eager graph and defeat the laziness.
+// The other fallback maps (SectionBlock, SavedBlockPreviewCanvas,
+// PreviewSectionBlock) omit it for the same reason.
 const blockComponentMap: Record<string, Component> = {
   section: SectionBlock,
   title: TitleBlock,
@@ -53,7 +59,6 @@ const blockComponentMap: Record<string, Component> = {
   menu: MenuBlock,
   table: TableBlock,
   video: VideoBlock,
-  countdown: CountdownBlockComponent,
   custom: CustomBlock,
 };
 

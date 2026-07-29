@@ -577,3 +577,51 @@ describe("preview-mode visibility gate", () => {
     expect(sectionBlock).toMatch(/:preview-mode="editor\.state\.previewMode"/);
   });
 });
+
+describe("countdown resolves only through the block registry", () => {
+  /**
+   * `countdown` is the one Cloud-only block (its animated GIF is rendered
+   * server-side), so `useEditorCore` registers it as a lazy
+   * `defineAsyncComponent` to keep it out of the OSS payload.
+   *
+   * Regression this guards: `Canvas.vue` also listed it in its static
+   * `blockComponentMap`. That entry was unreachable at runtime — the registry is
+   * checked first — but its static `import` put the module in the entry's
+   * static-import closure, so the CDN bundle shipped it eagerly and the
+   * `defineAsyncComponent` bought nothing. The fallback maps are for surfaces
+   * without a registry; countdown deliberately isn't in any of them.
+   */
+  const FALLBACK_MAP_SURFACES = [
+    "components/Canvas.vue",
+    "components/blocks/SectionBlock.vue",
+    "components/SavedBlockPreviewCanvas.vue",
+    "components/blocks/PreviewSectionBlock.vue",
+  ];
+
+  it.each(FALLBACK_MAP_SURFACES)(
+    "%s does not statically import CountdownBlock.vue",
+    (relPath) => {
+      const source = read(relPath);
+      // A static import — `import X from "..."`. The lazy form lives only in
+      // useEditorCore and is `import("...")`, which this pattern won't match.
+      expect(source).not.toMatch(/^\s*import\s+[^(\n]*CountdownBlock\.vue/m);
+    },
+  );
+
+  it.each(FALLBACK_MAP_SURFACES)(
+    "%s has no countdown entry in its fallback component map",
+    (relPath) => {
+      expect(read(relPath)).not.toMatch(/^\s*countdown:/m);
+    },
+  );
+
+  it("useEditorCore still registers countdown, lazily", () => {
+    const core = read("composables/useEditorCore.ts");
+    // The registry is the single source for the component, so losing this would
+    // make countdown blocks silently stop rendering everywhere.
+    expect(core).toMatch(/countdown:\s*CountdownBlockComponent/);
+    expect(core).toMatch(
+      /CountdownBlockComponent\s*=\s*defineAsyncComponent\(\s*\(\)\s*=>\s*import\(/,
+    );
+  });
+});
