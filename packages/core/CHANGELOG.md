@@ -1,6 +1,6 @@
 # @templatical/core
 
-## 1.0.0
+## 0.21.0
 
 ### Minor Changes
 
@@ -55,7 +55,7 @@
 ### Patch Changes
 
 - Updated dependencies [fc545c2]
-  - @templatical/types@1.0.0
+  - @templatical/types@0.21.0
 
 ## 0.20.0
 
