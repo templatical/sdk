@@ -18,6 +18,21 @@ There is no backend and no API key: your agent is the inference. Nothing is sent
 An in-editor AI chat, tuned prompts, and a hosted MCP server are part of the [Templatical Cloud](/cloud/) tier. This skill is the open, self-hosted path — bring your own agent, keep full control.
 :::
 
+## What you need
+
+A few things need to be in place on your machine before you start.
+
+| | What | Needed for |
+|---|---|---|
+| **A coding agent** | One that supports Agent Skills and runs on your own machine — [Claude Code](https://claude.com/claude-code), [Cursor](https://cursor.com) 2.4+, [OpenAI Codex CLI](https://github.com/openai/codex), or the [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview). It must be allowed to run commands and write files. | Everything |
+| **Node.js 20+** | Version 22 (LTS) recommended. Check with `node -v`; if that prints nothing or a version below 20, install it from [nodejs.org](https://nodejs.org). | Everything |
+| **A modern browser** | Chrome/Edge 80+, Firefox 101+, Safari 16.4+ — you almost certainly have this. | [Live preview](#preview-it-live) |
+| **An internet connection** | The live preview loads the editor and the HTML compiler from a CDN. Generating and validating JSON works fully offline. | [Live preview](#preview-it-live) |
+| **`npm`** | Fetches the converter for your source format the first time you import. Comes with Node.js. | [Importing](#import-an-existing-template) |
+| **`git`** | Only for the plugin install below (the marketplace is a git repository), or to clone the repo for the copy-the-folder route. | Install |
+
+**Nothing else** — no Templatical account, no API key, no backend, and no `npm install` to generate or validate a template. Hosted agents (claude.ai, Claude Desktop) can build and validate JSON, but the live preview needs an agent on your own machine — it opens a local server in your browser.
+
 ## Install
 
 ### Claude Code (plugin)

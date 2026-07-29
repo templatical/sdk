@@ -194,8 +194,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
     @focusout="isExpanded = false"
   >
     <!-- Saved blocks browser trigger. Needs the feature to be available (a
-         provider configured, and in Cloud the plan to allow it) and at least
-         one saved block to browse. -->
+         provider configured, and in Cloud the plan to allow it). -->
     <div
       v-if="showSavedBlocksSection"
       class="tpl:border-b tpl:px-1 tpl:pb-1 tpl:border-[var(--tpl-border)]"

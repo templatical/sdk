@@ -18,6 +18,21 @@ Es gibt kein Backend und keinen API-Schlüssel: Ihr Agent ist die Inferenz. Nich
 Ein KI-Chat direkt im Editor, feinabgestimmte Prompts und ein gehosteter MCP-Server sind Teil des [Templatical-Cloud](/de/cloud/)-Tarifs. Dieser Skill ist der offene, selbst gehostete Weg — bringen Sie Ihren eigenen Agenten mit und behalten Sie die volle Kontrolle.
 :::
 
+## Was Sie brauchen
+
+Ein paar Dinge müssen auf Ihrem Rechner vorhanden sein, bevor Sie starten.
+
+| | Was | Nötig für |
+|---|---|---|
+| **Ein Coding-Agent** | Einer, der Agent Skills unterstützt und auf Ihrem eigenen Rechner läuft — [Claude Code](https://claude.com/claude-code), [Cursor](https://cursor.com) 2.4+, [OpenAI Codex CLI](https://github.com/openai/codex) oder das [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview). Er muss Befehle ausführen und Dateien schreiben dürfen. | Alles |
+| **Node.js 20+** | Version 22 (LTS) empfohlen. Prüfen Sie es mit `node -v`; wenn dabei nichts oder eine Version unter 20 erscheint, installieren Sie es von [nodejs.org](https://nodejs.org). | Alles |
+| **Ein moderner Browser** | Chrome/Edge 80+, Firefox 101+, Safari 16.4+ — haben Sie mit hoher Wahrscheinlichkeit bereits. | [Live-Vorschau](#live-vorschau) |
+| **Eine Internetverbindung** | Die Live-Vorschau lädt den Editor und den HTML-Compiler von einem CDN. Das Erzeugen und Validieren von JSON funktioniert vollständig offline. | [Live-Vorschau](#live-vorschau) |
+| **`npm`** | Lädt beim ersten Import den Konverter für Ihr Quellformat. Ist in Node.js enthalten. | [Import](#eine-bestehende-vorlage-importieren) |
+| **`git`** | Nur für die Plugin-Installation unten (der Marketplace ist ein Git-Repository) oder um das Repository für den Ordner-kopieren-Weg zu klonen. | Installation |
+
+**Sonst nichts** — kein Templatical-Konto, kein API-Schlüssel, kein Backend und kein `npm install`, um ein Template zu erzeugen oder zu validieren. Gehostete Agenten (claude.ai, Claude Desktop) können JSON erstellen und validieren, die Live-Vorschau benötigt jedoch einen Agenten auf Ihrem eigenen Rechner — sie öffnet einen lokalen Server in Ihrem Browser.
+
 ## Installation
 
 ### Claude Code (Plugin)

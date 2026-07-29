@@ -29,7 +29,7 @@ the agent running this skill is the inference.
 This skill has **two modes**, one install:
 
 - **Build mode** (default) — generate and validate template JSON. Fully offline,
-  cross-agent, needs only `ajv`. This is everything below up to "Live mode".
+  cross-agent, nothing to install. This is everything below up to "Live mode".
 - **[Live mode](#live-mode)** (optional) — open the template in the **real**
   Templatical editor in a browser, update it live as the user prompts, and
   reconcile their in-browser hand-edits. Local, needs **no** npm dependencies,
@@ -56,19 +56,36 @@ the references, picking an example, validating, generating file names, managing
   from a previous session — start fresh or continue it?" Not worth saying:
   dependency names (`ajv`), file paths, example filenames, or "reading the
   schema / validating" — keep those out of user-facing messages.
-- **Mention setup only on action or failure** — say something when you're
-  installing the validator or a step actually fails, not to confirm that routine
-  state is fine.
+- **Mention setup only on action or failure** — say something when a
+  prerequisite is genuinely missing (see [Requirements](#requirements)) or a
+  step actually fails, not to confirm that routine state is fine.
 - **Report real problems plainly** when they happen (a validation error you
   couldn't resolve, a missing dependency) with the fix — that's signal, not noise.
 
-## Setup
+## Requirements
 
-None. `scripts/validate.mjs` runs on a clean install and offline — its two
-dependencies ship vendored in `vendor/` (ajv for structural validation,
-`@templatical/quality` for the accessibility / structure / link lint that
-catches what structural validation can't). Never `npm install` anything to make
-validation work; if it errors, that is a bug to report, not a missing package.
+**Build mode needs Node.js 20 or newer, and nothing else.** `scripts/validate.mjs`
+runs on a clean install and offline — its two dependencies ship vendored in
+`vendor/` (ajv for structural validation, `@templatical/quality` for the
+accessibility / structure / link lint that catches what structural validation
+can't). Never `npm install` anything to make validation work; if it errors, that
+is a bug to report, not a missing package.
+
+Each optional mode adds one thing:
+
+- **[Live mode](#live-mode)** — a machine where you can keep a background
+  process alive across turns and reach `localhost`, plus the user's browser and
+  an internet connection (the editor and the MJML compiler load from the CDN).
+  Browser floor: Chrome/Edge 80+, Firefox 101+, Safari 16.4+.
+- **[Import mode](#importing-an-existing-template)** — `npm`, to fetch the
+  converter for the source format on demand. `scripts/import.mjs` prints the
+  exact command when it's missing.
+
+When a prerequisite is absent, say so plainly with the fix and fall back to a
+mode that works — no Node or too old a version (`node -v`, then
+<https://nodejs.org>) blocks everything; no background process or reachable port
+(a hosted, server-side sandbox) blocks only live mode, and build mode is
+unchanged.
 
 ## Workflow
 

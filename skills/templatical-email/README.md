@@ -49,6 +49,30 @@ You can also **import** an existing Unlayer / BeeFree / HTML template as a start
 point (via the `@templatical/import-*` converters, install-on-demand) — see
 "Importing an existing template" in [`SKILL.md`](./SKILL.md).
 
+## Requirements
+
+- **A coding agent that supports Agent Skills, running on your own machine** —
+  and allowed to run commands and write files. Verified: Claude Code, Cursor
+  2.4+, OpenAI Codex CLI, the Claude Agent SDK. Build mode also works in hosted
+  agents (claude.ai, Claude Desktop); **live mode does not** — it needs a local
+  filesystem and a port you can open in your browser. (Codex CLI additionally
+  needs its local-network access enabled for live mode — its sandbox blocks the
+  agent's own `localhost` calls by default.)
+- **Node.js 20 or newer** (22 LTS recommended) — the validator, importer and
+  live bridge are plain Node scripts. Check with `node -v`; install from
+  <https://nodejs.org> if it's missing.
+- **A modern browser** — live mode only. Chrome/Edge 80+, Firefox 101+,
+  Safari 16.4+ (the editor mounts in shadow DOM).
+- **An internet connection** — live mode only: the editor and the MJML compiler
+  load from the CDN. Build mode is fully offline.
+- **`npm`** — import mode only, to fetch the converter for your source format
+  on demand. Ships with Node.
+- **`git`** — only to install as a Claude Code plugin (the marketplace is a git
+  repo) or to clone this repo for the folder-copy route.
+
+Not needed: a Templatical account, an API key, a backend, or `npm install` of
+anything for build mode — `ajv` and `@templatical/quality` are vendored.
+
 ## Install
 
 ### Option A — Claude Code plugin (recommended)
@@ -59,9 +83,8 @@ point (via the `@templatical/import-*` converters, install-on-demand) — see
 ```
 
 (Add the marketplace from the git repo, not a raw file URL, so the plugin's
-relative source resolves.) The skill installs its one dependency (`ajv`) on first
-use, then auto-activates whenever you ask Claude Code to build a Templatical
-email.
+relative source resolves.) There is nothing to install afterwards — the skill
+auto-activates whenever you ask Claude Code to build a Templatical email.
 
 ### Option B — copy the folder (any agent)
 

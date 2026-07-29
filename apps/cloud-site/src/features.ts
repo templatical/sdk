@@ -57,11 +57,11 @@ export const features: Feature[] = [
     icon: "gauge",
   },
   {
-    slug: "saved-modules",
-    title: "Saved Modules",
+    slug: "saved-blocks",
+    title: "Saved Blocks",
     tagline: "Your design system, ready to drop in.",
     summary:
-      "Save a hero, footer, or entire section and reuse it across every template in the workspace. One source of truth for your team.",
+      "Save a hero, footer, or entire section and reuse it across every template in the workspace. A shared library your whole team inserts from.",
     icon: "package",
   },
   {
