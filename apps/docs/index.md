@@ -20,10 +20,6 @@ features:
     details: Register your own block types — static templates or live API data at preview time.
     link: /guide/custom-blocks
     linkText: Build a custom block
-  - title: Test emails from the editor
-    details: Let users mail themselves the template they are editing, sent through your own infrastructure — one callback, no backend of ours involved.
-    link: /guide/test-email
-    linkText: Wire up test emails
   - title: Reusable saved blocks
     details: Let users save block groups and re-insert them across templates — backed by your own storage, or a bundled browser-local provider for zero setup.
     link: /guide/saved-blocks
@@ -44,6 +40,10 @@ features:
     details: Define your brand once; new templates and blocks inherit colors, fonts, and layout.
     link: /guide/defaults
     linkText: Set defaults
+  - title: Test emails from the editor
+    details: Let users mail themselves the template they are editing, sent through your own infrastructure — one callback, no backend of ours involved.
+    link: /guide/test-email
+    linkText: Wire up test emails
   - title: JSON in, MJML out
     details: Portable JSON templates, MJML output. Render anywhere, send through any provider.
     link: /getting-started/how-rendering-works

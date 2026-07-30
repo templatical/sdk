@@ -20,10 +20,6 @@ features:
     details: Registrieren Sie eigene Blocktypen — statische Templates oder live aus Ihrer API zur Preview-Zeit.
     link: /de/guide/custom-blocks
     linkText: Eigenen Block bauen
-  - title: Test-E-Mails aus dem Editor
-    details: Nutzer senden sich die Vorlage zu, die sie gerade bearbeiten — über Ihre eigene Infrastruktur, mit einem einzigen Callback und ohne Backend von uns.
-    link: /de/guide/test-email
-    linkText: Test-E-Mails einrichten
   - title: Wiederverwendbare gespeicherte Blöcke
     details: Nutzer speichern Blockgruppen und fügen sie in andere Templates ein — mit Ihrem eigenen Speicher oder dem mitgelieferten browserlokalen Provider ohne Einrichtung.
     link: /de/guide/saved-blocks
@@ -44,6 +40,10 @@ features:
     details: Definieren Sie Ihre Marke einmal; neue Templates und Blöcke übernehmen Farben, Schriften und Layout.
     link: /de/guide/defaults
     linkText: Defaults setzen
+  - title: Test-E-Mails aus dem Editor
+    details: Nutzer senden sich die Vorlage zu, die sie gerade bearbeiten — über Ihre eigene Infrastruktur, mit einem einzigen Callback und ohne Backend von uns.
+    link: /de/guide/test-email
+    linkText: Test-E-Mails einrichten
   - title: JSON rein, MJML raus
     details: Portables JSON, MJML-Ausgabe. Rendern Sie überall und versenden Sie über jeden Provider.
     link: /de/getting-started/how-rendering-works
