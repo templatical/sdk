@@ -135,6 +135,23 @@ describe("loadMediaTranslations", () => {
     expect(translations.mediaLibrary.title).toBe("Biblioteca multimèdia");
   });
 
+  it("loads French translations", async () => {
+    const translations = await loadMediaTranslations("fr");
+    expect(translations.mediaLibrary.title).toBe("Médiathèque");
+  });
+
+  it("loads Dutch translations", async () => {
+    const translations = await loadMediaTranslations("nl");
+    expect(translations.mediaLibrary.title).toBe("Mediabibliotheek");
+  });
+
+  it("resolves region variants of French and Dutch to the base locale", async () => {
+    const frBE = await loadMediaTranslations("fr-BE");
+    const nlBE = await loadMediaTranslations("nl-BE");
+    expect(frBE.mediaLibrary.title).toBe("Médiathèque");
+    expect(nlBE.mediaLibrary.title).toBe("Mediabibliotheek");
+  });
+
   it("accepts underscore separator (pt_BR)", async () => {
     const translations = await loadMediaTranslations("pt_BR");
     expect(translations.mediaLibrary.title).toBe("Biblioteca de Mídia");
@@ -148,7 +165,7 @@ describe("loadMediaTranslations", () => {
   });
 
   it("falls back to English for unsupported locale", async () => {
-    const translations = await loadMediaTranslations("fr");
+    const translations = await loadMediaTranslations("it");
     expect(translations.mediaLibrary.title).toBe("Media Library");
   });
 

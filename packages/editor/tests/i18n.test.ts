@@ -104,16 +104,20 @@ describe("isLocaleSupported", () => {
     expect(isLocaleSupported("en")).toBe(true);
     expect(isLocaleSupported("de")).toBe(true);
     expect(isLocaleSupported("pt-BR")).toBe(true);
+    expect(isLocaleSupported("fr")).toBe(true);
+    expect(isLocaleSupported("nl")).toBe(true);
   });
 
   it("returns true for locale with region if base is supported", () => {
     expect(isLocaleSupported("en-US")).toBe(true);
     expect(isLocaleSupported("de-AT")).toBe(true);
     expect(isLocaleSupported("pt-br")).toBe(true);
+    expect(isLocaleSupported("fr-BE")).toBe(true);
+    expect(isLocaleSupported("nl-BE")).toBe(true);
   });
 
   it("returns false for unsupported locales", () => {
-    expect(isLocaleSupported("fr")).toBe(false);
+    expect(isLocaleSupported("it")).toBe(false);
     expect(isLocaleSupported("ja")).toBe(false);
     expect(isLocaleSupported("pt")).toBe(false);
     expect(isLocaleSupported("pt-PT")).toBe(false);
@@ -202,8 +206,18 @@ describe("loadTranslations", () => {
     expect(ptPT.footer.poweredBy).toBe("Powered by");
   });
 
-  it("falls back to English for unsupported locale", async () => {
+  it("loads French translations", async () => {
     const t = await loadTranslations("fr");
+    expect(t.history.undo).toBe("Annuler");
+  });
+
+  it("loads Dutch translations", async () => {
+    const t = await loadTranslations("nl");
+    expect(t.history.undo).toBe("Ongedaan maken");
+  });
+
+  it("falls back to English for unsupported locale", async () => {
+    const t = await loadTranslations("it");
     expect(t.footer.poweredBy).toBe("Powered by");
   });
 });
