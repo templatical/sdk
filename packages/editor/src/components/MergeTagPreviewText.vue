@@ -1,7 +1,11 @@
 <script lang="ts">
 import { SYNTAX_PRESETS } from "@templatical/types";
 import { computed, defineComponent, h, inject } from "vue";
-import { MERGE_TAGS_KEY, MERGE_TAG_SYNTAX_KEY } from "../keys";
+import {
+  MERGE_TAGS_KEY,
+  MERGE_TAG_SYNTAX_KEY,
+  USE_MERGE_TAG_SAMPLES_KEY,
+} from "../keys";
 import { splitMergeTagLabelSegments } from "../utils/mergeTagLabelSegments";
 
 /**
@@ -22,8 +26,15 @@ export default defineComponent({
   setup(props) {
     const mergeTags = inject(MERGE_TAGS_KEY, []);
     const syntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
+    // Absent on the editing canvas, so field values keep showing labels there.
+    const useSamples = inject(USE_MERGE_TAG_SAMPLES_KEY, null);
     const segments = computed(() =>
-      splitMergeTagLabelSegments(props.text, mergeTags, syntax),
+      splitMergeTagLabelSegments(
+        props.text,
+        mergeTags,
+        syntax,
+        useSamples?.value ?? false,
+      ),
     );
 
     return () =>

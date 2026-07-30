@@ -431,6 +431,7 @@ const nl: typeof en = {
       cancel: "Annuleren",
       close: "Sluiten",
       groupCount: "{count}",
+      sample: "Voorbeeld: {sample}",
     },
   },
   logicTag: {
@@ -595,6 +596,11 @@ const nl: typeof en = {
       daysAgo: "{days} d geleden",
     },
   },
+  mergeTagPreview: {
+    label: "Weergave van samenvoegvelden",
+    sample: "Voorbeeldwaarde",
+    labelView: "Naam",
+  },
   testEmail: {
     title: "Test-e-mail verzenden",
     recipientLabel: "Ontvanger",
@@ -603,6 +609,8 @@ const nl: typeof en = {
     preview: "Voorbeeld",
     previewHint:
       "Samenvoegvelden worden onopgelost weergegeven — uw backend vult ze in.",
+    previewHintSample:
+      "Samenvoegvelden tonen voorbeeldwaarden — uw backend vult de echte gegevens in.",
     recipientNotAllowed:
       "Dit adres staat niet in de lijst met toegestane ontvangers.",
     send: "Verzenden",

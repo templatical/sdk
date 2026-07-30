@@ -4,7 +4,12 @@ import type {
   HtmlBlock as HtmlBlockType,
   ViewportSize,
 } from "@templatical/types";
-import { HTML_BLOCK_PREVIEW_KEY } from "../../keys";
+import { substituteTextMergeTagSamples } from "@templatical/types";
+import {
+  HTML_BLOCK_PREVIEW_KEY,
+  MERGE_TAGS_KEY,
+  USE_MERGE_TAG_SAMPLES_KEY,
+} from "../../keys";
 import { Code } from "@lucide/vue";
 import { computed, inject, onBeforeUnmount, ref, watch } from "vue";
 
@@ -20,6 +25,20 @@ const previewEnabled = inject(HTML_BLOCK_PREVIEW_KEY, false);
 
 const hasContent = computed(() => props.block.content.trim().length > 0);
 const showPreview = computed(() => previewEnabled && hasContent.value);
+
+/**
+ * An `html` block reaches no label-resolving component, so its tokens are the
+ * one place a raw `{{tag}}` really does render verbatim. In Sample mode they get
+ * substituted; a tag with no sample stays a visible token, which is what shows
+ * an author a sample is still missing.
+ */
+const mergeTags = inject(MERGE_TAGS_KEY, []);
+const useSamples = inject(USE_MERGE_TAG_SAMPLES_KEY, null);
+const previewContent = computed(() =>
+  useSamples?.value
+    ? substituteTextMergeTagSamples(props.block.content, mergeTags)
+    : props.block.content,
+);
 
 // --- Sandboxed-iframe live preview ----------------------------------------
 // The fragment renders verbatim with scripting disabled
@@ -73,7 +92,7 @@ onBeforeUnmount(() => {
     <iframe
       v-if="showPreview"
       ref="iframeRef"
-      :srcdoc="block.content"
+      :srcdoc="previewContent"
       sandbox="allow-same-origin"
       :title="t.html.preview"
       class="tpl:block tpl:w-full tpl:border-0"

@@ -72,3 +72,76 @@ describe("splitMergeTagLabelSegments", () => {
     ]);
   });
 });
+
+/**
+ * Sample mode. The segment *type* is the load-bearing part: a resolved sample is
+ * emitted as `text`, not `tag`, and that is what stops `MergeTagPreviewText`
+ * wrapping it in `.tpl-merge-tag-label` — so a sample renders with no dotted
+ * underline and reads as ordinary content.
+ */
+const SAMPLE_TAGS: MergeTag[] = [
+  { label: "First Name", value: "{{first_name}}", sample: "Ada" },
+  { label: "Plan Name", value: "{{plan}}" }, // no sample on purpose
+];
+
+describe("splitMergeTagLabelSegments in sample mode", () => {
+  it("defaults to labels when the flag is omitted", () => {
+    // The default matters: the editing canvas passes nothing.
+    expect(
+      splitMergeTagLabelSegments("{{first_name}}", SAMPLE_TAGS, liquid),
+    ).toEqual([{ type: "tag", value: "First Name" }]);
+  });
+
+  it("emits a resolved sample as a text segment, not a tag segment", () => {
+    expect(
+      splitMergeTagLabelSegments("{{first_name}}", SAMPLE_TAGS, liquid, true),
+    ).toEqual([{ type: "text", value: "Ada" }]);
+  });
+
+  it("keeps a tag segment for a tag with no sample, so its cue survives", () => {
+    expect(
+      splitMergeTagLabelSegments("{{plan}}", SAMPLE_TAGS, liquid, true),
+    ).toEqual([{ type: "tag", value: "Plan Name" }]);
+  });
+
+  it("mixes substituted and unsubstituted tags in one value", () => {
+    expect(
+      splitMergeTagLabelSegments(
+        "Hi {{first_name}} on {{plan}}",
+        SAMPLE_TAGS,
+        liquid,
+        true,
+      ),
+    ).toEqual([
+      { type: "text", value: "Hi " },
+      { type: "text", value: "Ada" },
+      { type: "text", value: " on " },
+      { type: "tag", value: "Plan Name" },
+    ]);
+  });
+
+  it("leaves logic tags as tag segments in sample mode", () => {
+    const result = splitMergeTagLabelSegments(
+      "{% if vip %}",
+      SAMPLE_TAGS,
+      liquid,
+      true,
+    );
+
+    expect(result).toEqual([{ type: "tag", value: "IF" }]);
+  });
+
+  it("substitutes inside a URL value", () => {
+    expect(
+      splitMergeTagLabelSegments(
+        "https://x.test/{{first_name}}",
+        SAMPLE_TAGS,
+        liquid,
+        true,
+      ),
+    ).toEqual([
+      { type: "text", value: "https://x.test/" },
+      { type: "text", value: "Ada" },
+    ]);
+  });
+});

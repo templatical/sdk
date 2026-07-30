@@ -144,6 +144,8 @@ export {
   containsMergeTag,
   getLogicMergeTagKeyword,
   getMergeTagLabel,
+  getMergeTagSample,
+  hasMergeTagSamples,
   getSyntaxClosingChar,
   getSyntaxTriggerChar,
   isLogicMergeTagValue,
@@ -152,6 +154,8 @@ export {
   resolveHtmlMergeTagLabels,
   resolveSyntax,
   restoreMergeTagMarkup,
+  substituteHtmlMergeTagSamples,
+  substituteTextMergeTagSamples,
   SYNTAX_PRESETS,
 } from "./merge-tags";
 

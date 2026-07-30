@@ -488,6 +488,7 @@ export default {
       cancel: "Cancel",
       close: "Close",
       groupCount: "{count}",
+      sample: "Preview: {sample}",
     },
   },
 
@@ -656,6 +657,11 @@ export default {
       daysAgo: "{days}d ago",
     },
   },
+  mergeTagPreview: {
+    label: "Merge tag view",
+    sample: "Sample",
+    labelView: "Label",
+  },
   testEmail: {
     title: "Send Test Email",
     recipientLabel: "Recipient",
@@ -664,6 +670,8 @@ export default {
     preview: "Preview",
     previewHint:
       "Merge tags are shown unresolved — your backend fills them in.",
+    previewHintSample:
+      "Merge tags show example values — your backend fills in the real data.",
     recipientNotAllowed: "That address isn't in the allowed list.",
     send: "Send",
     sending: "Sending...",

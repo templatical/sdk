@@ -1,6 +1,7 @@
 import {
   getLogicMergeTagKeyword,
   getMergeTagLabel,
+  getMergeTagSample,
   isLogicMergeTagValue,
   isMergeTagValue,
   type MergeTag,
@@ -30,6 +31,7 @@ export function splitMergeTagLabelSegments(
   text: string,
   mergeTags: MergeTag[],
   syntax: SyntaxPreset,
+  useSamples = false,
 ): MergeTagLabelSegment[] {
   if (!text) return [];
 
@@ -51,10 +53,17 @@ export function splitMergeTagLabelSegments(
 
     const matched = match[0];
     if (isMergeTagValue(matched, syntax)) {
-      segments.push({
-        type: "tag",
-        value: getMergeTagLabel(matched, mergeTags),
-      });
+      const sample = useSamples
+        ? getMergeTagSample(matched, mergeTags)
+        : undefined;
+      // A resolved sample is emitted as `text`, not `tag` — that is what drops
+      // the dotted-underline cue, so the value reads as ordinary content. With
+      // no sample configured we fall back to the label, still cued.
+      segments.push(
+        sample !== undefined
+          ? { type: "text", value: sample }
+          : { type: "tag", value: getMergeTagLabel(matched, mergeTags) },
+      );
     } else if (isLogicMergeTagValue(matched, syntax)) {
       segments.push({
         type: "tag",

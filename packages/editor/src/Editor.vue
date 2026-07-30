@@ -19,6 +19,7 @@ import Sidebar from "./components/Sidebar.vue";
 import RightSidebar from "./components/RightSidebar.vue";
 import SmallScreenNotice from "./components/SmallScreenNotice.vue";
 import ViewportToggle from "./components/ViewportToggle.vue";
+import MergeTagModeToggle from "./components/MergeTagModeToggle.vue";
 import PreviewToggle from "./components/PreviewToggle.vue";
 import DarkModeToggle from "./components/DarkModeToggle.vue";
 import EditorFooter from "./components/EditorFooter.vue";
@@ -212,6 +213,14 @@ defineExpose({
         <PreviewToggle
           :preview-mode="editor.state.previewMode"
           @change="editor.setPreviewMode"
+        />
+        <!-- Preview mode only. Merge tags are never substituted on the editing
+             canvas, so offering the choice there would be a control with no
+             effect. -->
+        <MergeTagModeToggle
+          v-if="editor.state.previewMode"
+          :sample-mode="core.mergeTagSampleMode.value"
+          @change="core.mergeTagSampleMode.value = $event"
         />
       </div>
 

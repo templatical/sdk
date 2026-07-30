@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
     isMergeTagValue,
     getMergeTagLabel,
+    getMergeTagSample,
+    hasMergeTagSamples,
+    substituteHtmlMergeTagSamples,
+    substituteTextMergeTagSamples,
     containsMergeTag,
     isLogicMergeTagValue,
     getLogicMergeTagKeyword,
@@ -537,5 +541,178 @@ describe('getSyntaxClosingChar', () => {
             logic: SYNTAX_PRESETS.liquid.logic,
         };
         expect(getSyntaxClosingChar(cloned)).toBe('}}');
+    });
+});
+
+/**
+ * Sample values — the previews' Sample mode.
+ *
+ * Two invariants carry the feature. First, a sample is *display-only*: the
+ * substituted HTML must never be able to reach an export, which is asserted
+ * end-to-end below by checking the token survives in the untouched content.
+ * Second, Sample mode never shows a raw token — a tag without a sample falls
+ * back to its label, not to `{{…}}`.
+ */
+const sampleTags: MergeTag[] = [
+    { label: 'First Name', value: '{{first_name}}', sample: 'Ada' },
+    { label: 'Plan Name', value: '{{plan}}' }, // deliberately no sample
+];
+
+describe('getMergeTagSample', () => {
+    it('returns the configured sample', () => {
+        expect(getMergeTagSample('{{first_name}}', sampleTags)).toBe('Ada');
+    });
+
+    it('returns undefined for a declared tag with no sample', () => {
+        expect(getMergeTagSample('{{plan}}', sampleTags)).toBeUndefined();
+    });
+
+    it('returns undefined for an unknown token rather than echoing it', () => {
+        // Deliberately unlike getMergeTagLabel, which falls back to the token.
+        expect(getMergeTagSample('{{nope}}', sampleTags)).toBeUndefined();
+        expect(getMergeTagLabel('{{nope}}', sampleTags)).toBe('{{nope}}');
+    });
+});
+
+describe('substituteHtmlMergeTagSamples', () => {
+    it('replaces the span with the bare sample, dropping the wrapper', () => {
+        const html = '<p>Hi <span data-merge-tag="{{first_name}}">First Name</span>!</p>';
+
+        const result = substituteHtmlMergeTagSamples(html, sampleTags);
+
+        expect(result).toBe('<p>Hi Ada!</p>');
+        // The wrapper is what carries the highlight; it must be gone.
+        expect(result).not.toContain('<span');
+        expect(result).not.toContain('data-merge-tag');
+    });
+
+    it('KEEPS the span for a tag with no sample, so its highlight survives', () => {
+        // Per-tag, not per-mode: a sample-less tag stays visibly dynamic, and the
+        // surviving highlight doubles as a signal that a sample is still unset.
+        const html = '<p><span data-merge-tag="{{plan}}">Plan Name</span></p>';
+
+        const result = substituteHtmlMergeTagSamples(html, sampleTags);
+
+        expect(result).toBe(
+            '<p><span data-merge-tag="{{plan}}">Plan Name</span></p>',
+        );
+    });
+
+    it('unwraps only the sampled tag when a string mixes both', () => {
+        const html =
+            '<p><span data-merge-tag="{{first_name}}">x</span> on <span data-merge-tag="{{plan}}">y</span></p>';
+
+        expect(substituteHtmlMergeTagSamples(html, sampleTags)).toBe(
+            '<p>Ada on <span data-merge-tag="{{plan}}">Plan Name</span></p>',
+        );
+    });
+
+    it('leaves logic tag spans completely untouched', () => {
+        // Logic needs evaluation, not substitution — explicitly out of scope.
+        const html =
+            '<p><span data-logic-merge-tag="{% if vip %}">IF</span><span data-merge-tag="{{first_name}}">First Name</span></p>';
+
+        const result = substituteHtmlMergeTagSamples(html, sampleTags);
+
+        expect(result).toContain('<span data-logic-merge-tag="{% if vip %}">IF</span>');
+        expect(result).toContain('Ada');
+    });
+
+    it('escapes a sample containing markup so it cannot alter the HTML', () => {
+        const nasty: MergeTag[] = [
+            { label: 'Bio', value: '{{bio}}', sample: '<img src=x onerror="alert(1)">' },
+        ];
+        const html = '<p><span data-merge-tag="{{bio}}">Bio</span></p>';
+
+        const result = substituteHtmlMergeTagSamples(html, nasty);
+
+        expect(result).toBe('<p>&lt;img src=x onerror=&quot;alert(1)&quot;&gt;</p>');
+        expect(result).not.toContain('<img');
+    });
+
+    it('leaves html with no merge tag spans byte-identical', () => {
+        const html = '<p>Nothing dynamic here</p>';
+        expect(substituteHtmlMergeTagSamples(html, sampleTags)).toBe(html);
+    });
+
+    it('does not mutate the input string', () => {
+        const html = '<p><span data-merge-tag="{{first_name}}">First Name</span></p>';
+        const before = html;
+
+        substituteHtmlMergeTagSamples(html, sampleTags);
+
+        expect(html).toBe(before);
+    });
+});
+
+describe('substituteTextMergeTagSamples', () => {
+    it('replaces a declared token with its sample', () => {
+        expect(substituteTextMergeTagSamples('Hi {{first_name}}!', sampleTags)).toBe(
+            'Hi Ada!',
+        );
+    });
+
+    it('leaves a token with no sample as the raw token', () => {
+        // Unlike the HTML path: here a missing sample stays visible, which is
+        // what tells an author a sample is still unset.
+        expect(substituteTextMergeTagSamples('Plan: {{plan}}', sampleTags)).toBe(
+            'Plan: {{plan}}',
+        );
+    });
+
+    it('replaces every occurrence of the same token', () => {
+        expect(
+            substituteTextMergeTagSamples('{{first_name}} {{first_name}}', sampleTags),
+        ).toBe('Ada Ada');
+    });
+
+    it('substitutes inside a URL', () => {
+        expect(
+            substituteTextMergeTagSamples('https://x.test/u/{{first_name}}', sampleTags),
+        ).toBe('https://x.test/u/Ada');
+    });
+
+    it('handles tokens containing regex metacharacters', () => {
+        // Mailchimp/ampscript syntaxes use *|…|* and %%=…=%%; a RegExp-based
+        // implementation would need escaping, split/join does not.
+        const odd: MergeTag[] = [
+            { label: 'First', value: '*|FNAME|*', sample: 'Ada' },
+            { label: 'Amp', value: '%%=v(@x)=%%', sample: 'Grace' },
+        ];
+
+        expect(substituteTextMergeTagSamples('Hi *|FNAME|* and %%=v(@x)=%%', odd)).toBe(
+            'Hi Ada and Grace',
+        );
+    });
+
+    it('returns an empty string unchanged', () => {
+        expect(substituteTextMergeTagSamples('', sampleTags)).toBe('');
+    });
+
+    it('leaves text with no tokens byte-identical', () => {
+        expect(substituteTextMergeTagSamples('plain text', sampleTags)).toBe('plain text');
+    });
+});
+
+describe('hasMergeTagSamples', () => {
+    it('is true when any tag declares a sample', () => {
+        expect(hasMergeTagSamples(sampleTags)).toBe(true);
+    });
+
+    it('is false when no tag declares one', () => {
+        // The gate for the whole feature: no samples ⇒ Label view by default and
+        // no toggle, so a consumer who never sets `sample` sees no change at all.
+        expect(hasMergeTagSamples(tags)).toBe(false);
+    });
+
+    it('is false for an empty tag list', () => {
+        expect(hasMergeTagSamples([])).toBe(false);
+    });
+
+    it('is true for an empty-string sample, which is a deliberate blank', () => {
+        // `''` is a configured choice ("render nothing here"), unlike undefined.
+        expect(
+            hasMergeTagSamples([{ label: 'X', value: '{{x}}', sample: '' }]),
+        ).toBe(true);
     });
 });

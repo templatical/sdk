@@ -119,6 +119,97 @@ export function resolveHtmlMergeTagLabels(
   );
 }
 
+/**
+ * The example value configured for `value`, or `undefined` when the tag is
+ * unknown or declares none. Unlike `getMergeTagLabel`, which falls back to the
+ * raw token, absence is reported as `undefined` so callers can choose their own
+ * fallback — Sample mode falls back to the label, never to a raw token.
+ */
+export function getMergeTagSample(
+  value: string,
+  mergeTags: MergeTag[],
+): string | undefined {
+  return mergeTags.find((p) => p.value === value)?.sample;
+}
+
+/**
+ * Rewrite rich-text HTML for the previews' Sample mode.
+ *
+ * A tag **with** a sample is replaced by that value as bare text, wrapper and
+ * all — dropping the `<span>` is what removes the merge-tag highlight, so the
+ * value reads as ordinary content. A tag **without** one keeps its span and
+ * shows its label, so it stays visibly dynamic; that difference is deliberate,
+ * and it doubles as a signal that a sample is still unset.
+ *
+ * The unwrapped output is inert — `data-merge-tag` is gone from it — so this
+ * result must only ever reach a preview surface, never `getContent()`, an
+ * export or a send.
+ */
+export function substituteHtmlMergeTagSamples(
+  html: string,
+  mergeTags: MergeTag[],
+): string {
+  return rewriteSpanByAttr(
+    html,
+    "data-merge-tag",
+    (value) =>
+      escapeTagText(
+        getMergeTagSample(value, mergeTags) ??
+          getMergeTagLabel(value, mergeTags),
+      ),
+    { unwrap: (value) => getMergeTagSample(value, mergeTags) !== undefined },
+  );
+}
+
+/**
+ * Whether any configured tag declares a `sample`.
+ *
+ * Gates the whole feature: with no samples anywhere the previews' Sample view
+ * would be identical to the Label view, so the editor defaults to Label and
+ * renders no toggle. That keeps the feature invisible until a consumer opts in.
+ */
+export function hasMergeTagSamples(mergeTags: MergeTag[]): boolean {
+  return mergeTags.some((tag) => tag.sample !== undefined);
+}
+
+/**
+ * Replace declared tokens with their sample values in a plain string — used for
+ * values that reach no label-resolving component, namely `html` block content
+ * and custom-block field values.
+ *
+ * Matching is on the exact configured `value`, so consumer text cannot
+ * false-positive and `href="{{link}}"` resolves correctly. Tags without a
+ * sample are left untouched, which is what keeps a missing sample visible.
+ */
+export function substituteTextMergeTagSamples(
+  text: string,
+  mergeTags: MergeTag[],
+): string {
+  if (!text) return text;
+
+  let out = text;
+  for (const tag of mergeTags) {
+    if (tag.sample === undefined) continue;
+    // split/join rather than a RegExp: the token is a literal, so this needs no
+    // escaping of regex metacharacters (`{`, `|`, `*` all appear in real syntaxes).
+    out = out.split(tag.value).join(tag.sample);
+  }
+  return out;
+}
+
+/**
+ * Escape a sample before it is inlined into rich-text HTML. Samples are
+ * consumer-authored strings, so `<`, `&` and quotes would otherwise alter the
+ * surrounding markup.
+ */
+function escapeTagText(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 export function containsMergeTag(value: string, syntax: SyntaxPreset): boolean {
   if (!value) return false;
 
@@ -198,6 +289,7 @@ function rewriteSpanByAttr(
   html: string,
   attrName: string,
   relabel: (value: string) => string,
+  options?: { unwrap?: (value: string) => boolean },
 ): string {
   // Anchored on `>` per match. `[^<>"]*` for the attribute value fails fast
   // on a missing closing quote instead of backtracking across the input.
@@ -246,9 +338,19 @@ function rewriteSpanByAttr(
     }
     const value = attrMatch[1];
     const newLabel = relabel(value);
-    out += html.substring(i, openEnd + 1);
-    out += newLabel;
-    out += "</span>";
+    if (options?.unwrap?.(value)) {
+      // Emit the text before the span, then the replacement alone — the open
+      // and close tags are dropped, so the span's styling (the merge-tag
+      // highlight) no longer applies to it. Decided per tag, so a tag that
+      // resolved to a sample loses the highlight while one that fell back to
+      // its label keeps it.
+      out += html.substring(i, open);
+      out += newLabel;
+    } else {
+      out += html.substring(i, openEnd + 1);
+      out += newLabel;
+      out += "</span>";
+    }
     i = closeStart + 7;
   }
   return out;

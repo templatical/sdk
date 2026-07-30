@@ -110,6 +110,31 @@ export const MERGE_TAG_AUTOCOMPLETE_KEY: InjectionKey<boolean> = Symbol(
 );
 
 /**
+ * The user's choice between the previews' two merge-tag views: `true` for
+ * Sample (tags replaced by their `MergeTag.sample`, rendered as ordinary text)
+ * and `false` for Label (tags shown as their label with the usual cue).
+ *
+ * Session state owned by `useEditorCore` and driven by a toggle that exists
+ * only on preview surfaces. Defaults to Sample.
+ */
+export const MERGE_TAG_SAMPLE_MODE_KEY: InjectionKey<Ref<boolean>> =
+  Symbol("mergeTagSampleMode");
+
+/**
+ * Whether **the current render surface** substitutes samples.
+ *
+ * Provided per surface rather than globally, and that is the whole point:
+ * substitution must never happen while editing, so `Canvas.vue` folds in its
+ * `previewMode` flag and provides `false` whenever the canvas is editable, no
+ * matter what the mode ref says. Preview surfaces provide the mode directly.
+ *
+ * Block components inject **this** key. They must never read
+ * `MERGE_TAG_SAMPLE_MODE_KEY`, which would bypass the editing guard.
+ */
+export const USE_MERGE_TAG_SAMPLES_KEY: InjectionKey<ComputedRef<boolean>> =
+  Symbol("useMergeTagSamples");
+
+/**
  * Singleton state for the built-in merge tag picker modal. Provided by
  * `useEditorCore`, consumed by `useMergeTag.requestMergeTag()` (to open
  * the modal as a fall-through when only `mergeTags.tags` is configured)

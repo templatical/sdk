@@ -491,6 +491,7 @@ const ptBR: typeof en = {
       cancel: "Cancelar",
       close: "Fechar",
       groupCount: "{count}",
+      sample: "Pré-visualização: {sample}",
     },
   },
 
@@ -659,6 +660,11 @@ const ptBR: typeof en = {
       daysAgo: "há {days}d",
     },
   },
+  mergeTagPreview: {
+    label: "Exibição de merge tags",
+    sample: "Exemplo",
+    labelView: "Rótulo",
+  },
   testEmail: {
     title: "Enviar E-mail de Teste",
     recipientLabel: "Destinatário",
@@ -667,6 +673,8 @@ const ptBR: typeof en = {
     preview: "Pré-visualização",
     previewHint:
       "As merge tags aparecem sem resolução — seu backend as preenche.",
+    previewHintSample:
+      "As merge tags mostram valores de exemplo — seu backend insere os dados reais.",
     recipientNotAllowed:
       "Esse endereço não está na lista de destinatários permitidos.",
     send: "Enviar",

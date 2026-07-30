@@ -26,12 +26,13 @@ import BlockPreviewCanvas from "./BlockPreviewCanvas.vue";
 // The editor header's own control, reused verbatim so the two viewport switches
 // are the same component rather than two things that resemble each other.
 import ViewportToggle from "./ViewportToggle.vue";
+import MergeTagModeToggle from "./MergeTagModeToggle.vue";
 import { useI18n } from "../composables/useI18n";
 import { looksLikeEmail } from "../utils/validateEmailShape";
 import { Check, LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref, watch } from "vue";
 import type { ViewportSize } from "@templatical/types";
-import { EDITOR_KEY } from "../keys";
+import { EDITOR_KEY, MERGE_TAG_SAMPLE_MODE_KEY } from "../keys";
 import type { TestEmailError } from "../composables/useTestEmailFeature";
 
 const props = defineProps<{
@@ -55,6 +56,21 @@ const editor = inject(EDITOR_KEY, null);
 const recipient = ref("");
 
 const previewViewport = ref<ViewportSize>("desktop");
+
+/**
+ * Shared with the editor's own preview, so switching here and switching there
+ * are the same choice — it is a property of how the user wants to read a
+ * preview, not of one dialog. Falls back to a local ref for headless mounts.
+ */
+const sharedSampleMode = inject(MERGE_TAG_SAMPLE_MODE_KEY, null);
+const localSampleMode = ref(true);
+const sampleMode = computed({
+  get: () => sharedSampleMode?.value ?? localSampleMode.value,
+  set: (on: boolean) => {
+    if (sharedSampleMode) sharedSampleMode.value = on;
+    else localSampleMode.value = on;
+  },
+});
 
 /**
  * Read live from the editor rather than passed in, so a preview left open while
@@ -220,23 +236,38 @@ function handleKeydown(event: KeyboardEvent): void {
       <!-- Preview header: a label plus the viewport switch. Always shown — the
            preview is part of the dialog rather than something to opt into. -->
       <div class="tpl:mb-2 tpl:shrink-0">
-        <div class="tpl:flex tpl:items-center tpl:justify-between tpl:gap-2">
+        <!-- Two segmented controls: `flex-wrap` so they drop to their own row
+             rather than crushing the label on a narrow viewport. -->
+        <div
+          class="tpl:flex tpl:flex-wrap tpl:items-center tpl:justify-between tpl:gap-2"
+        >
           <span
             class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
           >
             {{ t.testEmail.preview }}
           </span>
 
-          <!-- Without this the preview would silently show only the desktop
-               variant of any responsive block. -->
-          <ViewportToggle
-            :viewport="previewViewport"
-            @change="previewViewport = $event"
-          />
+          <div class="tpl:flex tpl:items-center tpl:gap-2">
+            <MergeTagModeToggle
+              :sample-mode="sampleMode"
+              @change="sampleMode = $event"
+            />
+
+            <!-- Without this the preview would silently show only the desktop
+                 variant of any responsive block. -->
+            <ViewportToggle
+              :viewport="previewViewport"
+              @change="previewViewport = $event"
+            />
+          </div>
         </div>
 
+        <!-- The hint has to follow the mode: "shown unresolved" is simply false
+             once every tag renders a realistic value. -->
         <p class="tpl:mt-1 tpl:text-xs tpl:text-[var(--tpl-text-dim)]">
-          {{ t.testEmail.previewHint }}
+          {{
+            sampleMode ? t.testEmail.previewHintSample : t.testEmail.previewHint
+          }}
         </p>
       </div>
 

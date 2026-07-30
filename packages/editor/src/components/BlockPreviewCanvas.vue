@@ -12,7 +12,13 @@ import TableBlock from "./blocks/TableBlock.vue";
 import TitleBlock from "./blocks/TitleBlock.vue";
 import ParagraphBlock from "./blocks/ParagraphBlock.vue";
 import VideoBlock from "./blocks/VideoBlock.vue";
-import { BLOCK_REGISTRY_KEY, CONDITION_PREVIEW_KEY, EDITOR_KEY } from "../keys";
+import {
+  BLOCK_REGISTRY_KEY,
+  CONDITION_PREVIEW_KEY,
+  EDITOR_KEY,
+  MERGE_TAG_SAMPLE_MODE_KEY,
+  USE_MERGE_TAG_SAMPLES_KEY,
+} from "../keys";
 import {
   resolveBlockComponent,
   getBlockWrapperStyle,
@@ -23,7 +29,7 @@ import {
   getEmailFrameWidth,
 } from "../utils/emailFrameWidth";
 import type { Block, ViewportSize } from "@templatical/types";
-import { computed, inject, type Component } from "vue";
+import { computed, inject, provide, type Component } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -42,6 +48,18 @@ const props = withDefaults(
 const blockRegistry = inject(BLOCK_REGISTRY_KEY);
 const editor = inject(EDITOR_KEY, null);
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
+
+/**
+ * This canvas is only ever a preview — nothing here is editable — so it honours
+ * the user's mode directly, with no `previewMode` gate of the kind `Canvas.vue`
+ * needs. Re-provided rather than left to inherit, because a `BlockPreviewCanvas`
+ * inside a dialog may sit under an editing `Canvas` that provides `false`.
+ */
+const mergeTagSampleMode = inject(MERGE_TAG_SAMPLE_MODE_KEY, null);
+provide(
+  USE_MERGE_TAG_SAMPLES_KEY,
+  computed(() => mergeTagSampleMode?.value ?? false),
+);
 
 /**
  * Blocks a display condition currently excludes, so a preview never shows

@@ -1,10 +1,11 @@
 import {
   resolveHtmlLogicMergeTagLabels,
   resolveHtmlMergeTagLabels,
+  substituteHtmlMergeTagSamples,
 } from "@templatical/types";
 import { useElementBounding } from "@vueuse/core";
 import { computed, inject, ref, type ComputedRef, type Ref } from "vue";
-import { MERGE_TAGS_KEY } from "../keys";
+import { MERGE_TAGS_KEY, USE_MERGE_TAG_SAMPLES_KEY } from "../keys";
 import { useMergeTag } from "./useMergeTag";
 import { usePopoverPosition } from "./usePopoverPosition";
 import { sanitizeRichTextHtml } from "../utils/sanitizeRichTextHtml";
@@ -22,7 +23,24 @@ export function useEditableTextBlock(
   blockContent: () => string,
 ): UseEditableTextBlockReturn {
   const mergeTags = inject(MERGE_TAGS_KEY, []);
+  // Defaults to `false`, so any surface that doesn't opt in — the editing
+  // canvas above all — keeps showing labels.
+  const useSamples = inject(USE_MERGE_TAG_SAMPLES_KEY, null);
   const { syntax } = useMergeTag();
+
+  /**
+   * Data merge tags resolve to either their sample or their label. Sample mode
+   * drops the `<span>` wrapper too, so the value renders as ordinary text with
+   * no highlight — which is the whole point of the mode.
+   *
+   * Logic tags are resolved to keywords in both modes: substitution can't
+   * evaluate a branch, so they stay visible as badges either way.
+   */
+  const withResolvedDataTags = computed(() =>
+    useSamples?.value
+      ? substituteHtmlMergeTagSamples(blockContent(), mergeTags)
+      : resolveHtmlMergeTagLabels(blockContent(), mergeTags),
+  );
 
   // Sanitize before binding to `v-html`. TipTap-authored content is
   // already safe, but template JSON loaded from a consumer can carry
@@ -31,10 +49,7 @@ export function useEditableTextBlock(
   // renders in the canvas.
   const resolvedContent = computed(() =>
     sanitizeRichTextHtml(
-      resolveHtmlLogicMergeTagLabels(
-        resolveHtmlMergeTagLabels(blockContent(), mergeTags),
-        syntax,
-      ),
+      resolveHtmlLogicMergeTagLabels(withResolvedDataTags.value, syntax),
     ),
   );
 

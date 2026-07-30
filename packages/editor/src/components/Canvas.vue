@@ -9,12 +9,14 @@ import type {
   ViewportSize,
 } from "@templatical/types";
 import { ImageUp, Sparkles, SquarePlus } from "@lucide/vue";
-import { computed, inject, ref, type Component } from "vue";
+import { computed, inject, provide, ref, type Component } from "vue";
 import {
   EDITOR_KEY,
   CONDITION_PREVIEW_KEY,
   BLOCK_REGISTRY_KEY,
   CAPABILITIES_KEY,
+  MERGE_TAG_SAMPLE_MODE_KEY,
+  USE_MERGE_TAG_SAMPLES_KEY,
   requireInject,
 } from "../keys";
 import { VueDraggable } from "vue-draggable-plus";
@@ -89,6 +91,20 @@ const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 
 const caps = inject(CAPABILITIES_KEY, {});
+
+/**
+ * Merge-tag samples render on this canvas **only while preview mode is on**.
+ * The `previewMode &&` is the load-bearing half: the canvas is the editing
+ * surface, and substituted text in a block a user is about to edit would be
+ * text they never wrote. Preview mode is already fully non-editing (clicks and
+ * dragging are blocked above), so it is the one state where swapping the
+ * displayed value is safe.
+ */
+const mergeTagSampleMode = inject(MERGE_TAG_SAMPLE_MODE_KEY, null);
+provide(
+  USE_MERGE_TAG_SAMPLES_KEY,
+  computed(() => props.previewMode && (mergeTagSampleMode?.value ?? false)),
+);
 
 const canUseAiChat = computed(
   () =>

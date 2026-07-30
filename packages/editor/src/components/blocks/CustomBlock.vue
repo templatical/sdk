@@ -7,10 +7,15 @@ import type {
   CustomBlock as CustomBlockType,
   ViewportSize,
 } from "@templatical/types";
+import { substituteTextMergeTagSamples } from "@templatical/types";
 import { useDebounceFn } from "@vueuse/core";
 import { TriangleAlert, Puzzle } from "@lucide/vue";
 import { computed, inject, onMounted, ref, watch } from "vue";
-import { BLOCK_REGISTRY_KEY } from "../../keys";
+import {
+  BLOCK_REGISTRY_KEY,
+  MERGE_TAGS_KEY,
+  USE_MERGE_TAG_SAMPLES_KEY,
+} from "../../keys";
 
 const props = defineProps<{
   block: CustomBlockType;
@@ -55,6 +60,30 @@ const {
   },
 });
 
+const mergeTags = inject(MERGE_TAGS_KEY, []);
+const useSamples = inject(USE_MERGE_TAG_SAMPLES_KEY, null);
+
+/**
+ * The block handed to the renderer. In Sample mode its field values have their
+ * tokens substituted, so the consumer's own template renders sample data.
+ *
+ * Top-level strings only: `fieldValues` is `Record<string, unknown>` of
+ * consumer-defined shape, and recursing arbitrary nested data on every render
+ * is not worth it. Non-string values pass through untouched.
+ */
+const blockForRender = computed<CustomBlockType>(() => {
+  if (!useSamples?.value) return props.block;
+
+  const fieldValues: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(props.block.fieldValues)) {
+    fieldValues[key] =
+      typeof value === "string"
+        ? substituteTextMergeTagSamples(value, mergeTags)
+        : value;
+  }
+  return { ...props.block, fieldValues };
+});
+
 async function renderBlock(): Promise<void> {
   if (!blockRegistry) {
     return;
@@ -63,7 +92,7 @@ async function renderBlock(): Promise<void> {
   hasError.value = false;
 
   try {
-    const html = await blockRegistry.renderCustomBlock(props.block);
+    const html = await blockRegistry.renderCustomBlock(blockForRender.value);
     if (html.includes("Template render error:")) {
       hasError.value = true;
     }
@@ -86,6 +115,15 @@ watch(
     debouncedRender();
   },
   { deep: true },
+);
+
+// The render is async and cached in `renderedHtml`, so flipping the mode has to
+// re-run it — otherwise the preview keeps showing whichever view rendered first.
+watch(
+  () => useSamples?.value,
+  () => {
+    debouncedRender();
+  },
 );
 </script>
 

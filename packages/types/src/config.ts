@@ -77,6 +77,17 @@ export interface MergeTag {
    * MJML output) and not stored on the inserted document node.
    */
   description?: string;
+  /**
+   * Example value shown in place of this tag on preview surfaces — e.g.
+   * `"Ada"` for `{{first_name}}` — so a preview reads like a delivered
+   * email instead of a list of field names.
+   *
+   * Display-only, and only in the previews' Sample mode: never written to
+   * the template, never sent, never present in MJML output. Setting it is
+   * the whole opt-in; there is no accompanying flag. A tag without a
+   * sample keeps showing its `label`.
+   */
+  sample?: string;
 }
 
 export interface MediaResult {

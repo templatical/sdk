@@ -488,6 +488,17 @@ const showPillRow = computed(
               >
                 {{ row.tag.description }}
               </span>
+              <!-- What the previews will render in Sample mode, so an author
+                   knows before inserting. Shown only when configured. -->
+              <span
+                v-if="row.tag.sample !== undefined"
+                data-testid="merge-tag-picker-sample"
+                class="tpl:line-clamp-1 tpl:text-xs tpl:text-ellipsis tpl:text-[var(--tpl-text-dim)]"
+              >
+                {{
+                  format(t.mergeTag.picker.sample, { sample: row.tag.sample })
+                }}
+              </span>
             </button>
           </template>
         </template>

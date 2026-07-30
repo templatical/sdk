@@ -494,6 +494,7 @@ const de: typeof en = {
       cancel: "Abbrechen",
       close: "Schließen",
       groupCount: "{count}",
+      sample: "Vorschau: {sample}",
     },
   },
 
@@ -666,6 +667,11 @@ const de: typeof en = {
       daysAgo: "vor {days} Tagen",
     },
   },
+  mergeTagPreview: {
+    label: "Merge-Tag-Ansicht",
+    sample: "Beispiel",
+    labelView: "Bezeichnung",
+  },
   testEmail: {
     title: "Test-E-Mail senden",
     recipientLabel: "Empfänger",
@@ -674,6 +680,8 @@ const de: typeof en = {
     preview: "Vorschau",
     previewHint:
       "Merge-Tags werden unaufgelöst angezeigt — Ihr Backend setzt sie ein.",
+    previewHintSample:
+      "Merge-Tags zeigen Beispielwerte — Ihr Backend setzt die echten Daten ein.",
     recipientNotAllowed:
       "Diese Adresse steht nicht auf der Liste der erlaubten Empfänger.",
     send: "Senden",

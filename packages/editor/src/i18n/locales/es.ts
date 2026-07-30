@@ -492,6 +492,7 @@ const es: typeof en = {
       cancel: "Cancelar",
       close: "Cerrar",
       groupCount: "{count}",
+      sample: "Vista previa: {sample}",
     },
   },
 
@@ -661,6 +662,11 @@ const es: typeof en = {
       daysAgo: "hace {days} d",
     },
   },
+  mergeTagPreview: {
+    label: "Vista de etiquetas de combinación",
+    sample: "Ejemplo",
+    labelView: "Etiqueta",
+  },
   testEmail: {
     title: "Enviar correo de prueba",
     recipientLabel: "Destinatario",
@@ -669,6 +675,8 @@ const es: typeof en = {
     preview: "Vista previa",
     previewHint:
       "Las etiquetas de combinación se muestran sin resolver — tu backend las rellena.",
+    previewHintSample:
+      "Las etiquetas de combinación muestran valores de ejemplo; tu backend inserta los datos reales.",
     recipientNotAllowed:
       "Esa dirección no está en la lista de destinatarios permitidos.",
     send: "Enviar",

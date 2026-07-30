@@ -40,7 +40,7 @@ import type {
   UiTheme,
   ViewportSize,
 } from "@templatical/types";
-import { resolveSyntax } from "@templatical/types";
+import { hasMergeTagSamples, resolveSyntax } from "@templatical/types";
 import type { Translations } from "../i18n";
 import type { OnRequestMedia } from "../index";
 import type { EditorCapabilities } from "../types/editor-capabilities";
@@ -64,6 +64,7 @@ import {
   MERGE_TAG_SYNTAX_KEY,
   MERGE_TAG_AUTOCOMPLETE_KEY,
   MERGE_TAG_PICKER_KEY,
+  MERGE_TAG_SAMPLE_MODE_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
   LOGIC_TAGS_KEY,
   LOGIC_PAIRS_KEY,
@@ -284,6 +285,13 @@ export interface UseEditorCoreReturn {
    * root (shadow-aware) instead of escaping to `document.body`.
    */
   popoverRoot: Ref<HTMLElement | null>;
+  /**
+   * Which merge-tag view the previews use: `true` for Sample, `false` for
+   * Label. Returned so the editors can bind the toggle they render in preview
+   * mode; block components must read `USE_MERGE_TAG_SAMPLES_KEY` instead, which
+   * folds in the surface's editing guard.
+   */
+  mergeTagSampleMode: Ref<boolean>;
   registerCustomBlocks: (definitions: CustomBlockDefinition[]) => void;
   destroy: () => void;
 }
@@ -530,6 +538,23 @@ export function useEditorCore(
   provide(ON_REQUEST_MERGE_TAG_KEY, config.mergeTags?.onRequest ?? null);
   provide(MERGE_TAG_AUTOCOMPLETE_KEY, config.mergeTags?.autocomplete !== false);
 
+  // Which merge-tag view the previews use. Session state only — deliberately
+  // not persisted and not a config option: it is a per-look choice.
+  //
+  // Defaults to Sample **only when a sample exists to show**. With none
+  // configured the two views would render identically, so defaulting to Sample
+  // would mean an inert toggle and — worse — labels shown without their usual
+  // highlight. Every consumer who never sets `sample` therefore sees exactly
+  // the previous behaviour, and no toggle at all.
+  //
+  // Only preview surfaces act on it; `Canvas.vue` gates it behind its own
+  // `previewMode`, so editing never sees substituted values. See
+  // USE_MERGE_TAG_SAMPLES_KEY.
+  const mergeTagSampleMode = ref(
+    hasMergeTagSamples(config.mergeTags?.tags ?? []),
+  );
+  provide(MERGE_TAG_SAMPLE_MODE_KEY, mergeTagSampleMode);
+
   // Built-in merge tag picker singleton. Always instantiated so
   // `useMergeTag.requestMergeTag()` can fall through to it whenever
   // static `tags` are configured without an `onRequest` callback. Cost
@@ -605,6 +630,7 @@ export function useEditorCore(
     keyboardReorder,
     templateLint,
     popoverRoot,
+    mergeTagSampleMode,
     registerCustomBlocks,
     destroy,
   };

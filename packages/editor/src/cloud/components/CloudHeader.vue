@@ -23,6 +23,7 @@ import { headerBtnClass } from "../../constants/styleConstants";
 import ViewportToggle from "../../components/ViewportToggle.vue";
 import PreviewToggle from "../../components/PreviewToggle.vue";
 import DarkModeToggle from "../../components/DarkModeToggle.vue";
+import MergeTagModeToggle from "../../components/MergeTagModeToggle.vue";
 import type { UseCloudFeatureFlagsReturn } from "../composables/useCloudFeatureFlags";
 import type { UseCloudPanelStateReturn } from "../composables/useCloudPanelState";
 import type { UseSnapshotPreviewReturn } from "../composables/useSnapshotPreview";
@@ -102,6 +103,13 @@ const { t: cloudT, format: cloudFormat } = useCloudI18nStrict();
       <PreviewToggle
         :preview-mode="editor.state.previewMode"
         @change="editor.setPreviewMode"
+      />
+      <!-- Preview mode only, exactly as in the OSS header: the editing canvas
+           never substitutes, so the control would do nothing there. -->
+      <MergeTagModeToggle
+        v-if="editor.state.previewMode"
+        :sample-mode="core.mergeTagSampleMode.value"
+        @change="core.mergeTagSampleMode.value = $event"
       />
       <CollaboratorBar
         v-if="collaboration && isCollaborationEnabled"

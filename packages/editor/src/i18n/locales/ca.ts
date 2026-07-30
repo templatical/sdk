@@ -492,6 +492,7 @@ const ca: typeof en = {
       cancel: "Cancel·la",
       close: "Tanca",
       groupCount: "{count}",
+      sample: "Vista prèvia: {sample}",
     },
   },
 
@@ -662,6 +663,11 @@ const ca: typeof en = {
       daysAgo: "fa {days} d",
     },
   },
+  mergeTagPreview: {
+    label: "Vista d’etiquetes de combinació",
+    sample: "Exemple",
+    labelView: "Etiqueta",
+  },
   testEmail: {
     title: "Envia un correu de prova",
     recipientLabel: "Destinatari",
@@ -670,6 +676,8 @@ const ca: typeof en = {
     preview: "Previsualització",
     previewHint:
       "Les etiquetes de combinació es mostren sense resoldre — el vostre backend les omple.",
+    previewHintSample:
+      "Les etiquetes de combinació mostren valors d’exemple; el teu backend insereix les dades reals.",
     recipientNotAllowed:
       "Aquesta adreça no és a la llista de destinataris permesos.",
     send: "Envia",

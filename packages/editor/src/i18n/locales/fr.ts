@@ -430,6 +430,7 @@ const fr: typeof en = {
       cancel: "Annuler",
       close: "Fermer",
       groupCount: "{count}",
+      sample: "Aperçu : {sample}",
     },
   },
   logicTag: {
@@ -594,6 +595,11 @@ const fr: typeof en = {
       daysAgo: "il y a {days} j",
     },
   },
+  mergeTagPreview: {
+    label: "Affichage des balises de fusion",
+    sample: "Exemple",
+    labelView: "Libellé",
+  },
   testEmail: {
     title: "Envoyer un e-mail de test",
     recipientLabel: "Destinataire",
@@ -602,6 +608,8 @@ const fr: typeof en = {
     preview: "Aperçu",
     previewHint:
       "Les balises de fusion sont affichées non résolues — votre backend les remplace.",
+    previewHintSample:
+      "Les balises de fusion affichent des valeurs d’exemple — votre backend insère les données réelles.",
     recipientNotAllowed:
       "Cette adresse ne figure pas dans la liste des destinataires autorisés.",
     send: "Envoyer",
