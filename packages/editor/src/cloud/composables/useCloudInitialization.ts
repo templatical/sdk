@@ -12,6 +12,7 @@ import {
   useMcpListener,
   usePlanConfig,
   createCloudSavedBlocksProvider,
+  createCloudTestEmailProvider,
   useTemplateScoring,
   useTestEmail,
   useWebSocket,
@@ -21,7 +22,6 @@ import {
   type UseExportReturn,
   type UsePlanConfigReturn,
   type UseTemplateScoringReturn,
-  type UseTestEmailReturn,
   type UseWebSocketReturn,
   type UseEditorReturn as CloudUseEditorReturn,
 } from "@templatical/core/cloud";
@@ -29,6 +29,11 @@ import {
   useSavedBlocksFeature,
   type UseSavedBlocksFeatureReturn,
 } from "../../composables/useSavedBlocksFeature";
+import {
+  useTestEmailFeature,
+  type UseTestEmailFeatureReturn,
+} from "../../composables/useTestEmailFeature";
+import { toMjmlForInstance } from "../../utils/toMjml";
 import type {
   McpOperationPayload,
   ThemeOverrides,
@@ -130,7 +135,7 @@ export interface UseCloudInitializationReturn {
   featureFlags: UseCloudFeatureFlagsReturn;
   mediaLib: UseCloudMediaLibraryReturn;
   exporter: UseExportReturn;
-  testEmail: UseTestEmailReturn;
+  testEmail: UseTestEmailFeatureReturn;
   commentsInstance: UseCommentsReturn;
   savedBlocks: UseSavedBlocksFeatureReturn;
   scoringInstance: UseTemplateScoringReturn;
@@ -363,14 +368,51 @@ export function useCloudInitialization(
     canUseCustomFonts: () => planConfigInstance.hasFeature("custom_fonts"),
   });
 
-  const testEmail = useTestEmail({
-    authManager,
-    getTemplateId: () => editor.state.template?.id ?? null,
-    save: () => editor.save(),
-    exportHtml: (templateId: string) => exporter.exportHtml(templateId),
+  // Cloud's test-email *config* — plan enablement, the signed allowlist. Sending
+  // runs through the shared feature below, on whichever provider is selected.
+  const testEmailConfig = useTestEmail({ authManager, isAuthReady });
+
+  // A consumer may supply their own sender, which then replaces Cloud's — the
+  // key and its type are identical to `init()`'s, so upgrading from OSS is a
+  // deletion rather than a rewrite. `??` short-circuits, so Cloud's adapter isn't
+  // constructed when one was supplied.
+  const consumerTestEmailProvider = config.testEmail ?? null;
+
+  const testEmail = useTestEmailFeature({
+    provider:
+      consumerTestEmailProvider ??
+      createCloudTestEmailProvider({
+        authManager,
+        getTemplateId: () => editor.state.template?.id ?? null,
+        save: () => editor.save(),
+        exportHtml: (templateId: string) => exporter.exportHtml(templateId),
+        allowedEmails: testEmailConfig.allowedEmails,
+        getSignature: testEmailConfig.getSignature,
+        onBeforeTestEmail: config.onBeforeTestEmail,
+      }),
+    getContent: () => editor.content.value,
+    // Cloud renders server-side, so no MJML is ever produced for its own sender.
+    // A consumer-supplied provider that opted into `includeMjml` gets it.
+    renderMjml: () =>
+      toMjmlForInstance({
+        getContent: () => editor.content.value,
+        renderCustomBlock: core.registry.renderCustomBlock,
+        getCustomBlockStylesheet: (customType: string) =>
+          core.registry.getDefinition(customType)?.stylesheet,
+      }),
     onError: config.onError,
-    isAuthReady,
-    onBeforeTestEmail: config.onBeforeTestEmail,
+    isAvailable: consumerTestEmailProvider
+      ? // Their sender, their rules — the `test_email` plan feature licenses
+        // Cloud's sending, and "template must be saved" is a constraint of
+        // Cloud's server-side render, not of an arbitrary backend.
+        () => true
+      : // All three matter, and none implies another: the plan may grant the
+        // feature while the project's token omits a recipient config, and Cloud
+        // renders from the *saved* template so there must be one.
+        () =>
+          testEmailConfig.isEnabled.value &&
+          featureFlags.canSendTestEmail.value &&
+          featureFlags.hasTemplateSaved.value,
   });
 
   const commentsInstance = useComments({
@@ -452,6 +494,7 @@ export function useCloudInitialization(
       openForBlock: openCommentsForBlock,
     },
     savedBlocks: savedBlocks.capability,
+    testEmail: testEmail.capability,
   } satisfies EditorCapabilities);
 
   // --- Theme setters (plan-gated) ---

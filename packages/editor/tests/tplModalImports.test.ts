@@ -50,12 +50,14 @@ describe("TplModal location + importers", () => {
     ).toBe(false);
   });
 
-  it("TestEmailModal imports the new shared path", () => {
-    const content = read("cloud/components/TestEmailModal.vue");
-    expect(content).toContain(
+  /* TestEmailModal moved out of `cloud/components/` when test email became a
+     BYO feature shared by both editors, so it now sits alongside TplModal. */
+  it("TestEmailModal imports TplModal from its own directory", () => {
+    const content = read("components/TestEmailModal.vue");
+    expect(content).toContain('import TplModal from "./TplModal.vue"');
+    expect(content).not.toContain(
       'import TplModal from "../../components/TplModal.vue"',
     );
-    expect(content).not.toContain('import TplModal from "./TplModal.vue"');
   });
 
   it("no file under src/ imports from cloud/components/TplModal", () => {

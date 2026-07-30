@@ -11,13 +11,14 @@ import {
 import { defineAsyncComponent } from "vue";
 import type {
   UseCommentsReturn,
-  UseTestEmailReturn,
   UseWebSocketReturn,
   UseEditorReturn as CloudUseEditorReturn,
 } from "@templatical/core/cloud";
 
 import type { UseEditorCoreReturn } from "../../composables/useEditorCore";
 import { useCloudI18nStrict } from "../../composables/useCloudI18n";
+import { useI18n } from "../../composables/useI18n";
+import type { UseTestEmailFeatureReturn } from "../../composables/useTestEmailFeature";
 import { headerBtnClass } from "../../constants/styleConstants";
 import ViewportToggle from "../../components/ViewportToggle.vue";
 import PreviewToggle from "../../components/PreviewToggle.vue";
@@ -42,7 +43,7 @@ defineProps<{
   panelState: UseCloudPanelStateReturn;
   snapshotPreview: UseSnapshotPreviewReturn;
   commentsInstance: UseCommentsReturn;
-  testEmail: UseTestEmailReturn;
+  testEmail: UseTestEmailFeatureReturn;
   websocket: UseWebSocketReturn;
   collaboration: UseCloudInitializationReturn["collaboration"];
   isCollaborationEnabled: boolean;
@@ -54,6 +55,7 @@ defineEmits<{
   (e: "save"): void;
 }>();
 
+const { t } = useI18n();
 const { t: cloudT, format: cloudFormat } = useCloudI18nStrict();
 </script>
 
@@ -228,23 +230,24 @@ const { t: cloudT, format: cloudFormat } = useCloudI18nStrict();
         </Transition>
       </div>
 
-      <!-- Test email button -->
+      <!-- Test email button. Availability comes from the shared capability, which
+           folds in the plan feature, the signed allowlist and "a template
+           exists" — so this markup carries no gating of its own. -->
       <button
-        v-if="testEmail.isEnabled.value && featureFlags.canSendTestEmail.value"
+        v-if="testEmail.isAvailable.value"
         :class="headerBtnClass"
+        data-testid="test-email-trigger"
         style="
           background-color: transparent;
           color: var(--tpl-primary);
           border-color: var(--tpl-primary);
         "
-        :disabled="
-          testEmail.isSending.value || !featureFlags.hasTemplateSaved.value
-        "
-        @click="panelState.testEmailModalOpen.value = true"
+        :disabled="testEmail.isSending.value"
+        @click="testEmail.open()"
       >
         <Send v-if="!testEmail.isSending.value" :size="16" :stroke-width="2" />
         <LoaderCircle v-else class="tpl-spinner" :size="16" :stroke-width="2" />
-        {{ cloudT.testEmail.button }}
+        {{ t.testEmail.button }}
       </button>
 
       <!-- Save button -->

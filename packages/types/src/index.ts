@@ -46,6 +46,9 @@ export type {
   SavedBlocksProvider,
 } from "./saved-blocks";
 
+// Test email (the bring-your-own sending contract)
+export type { TestEmailPayload, TestEmailProvider } from "./test-email";
+
 // Type guards
 export {
   isButton,

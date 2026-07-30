@@ -40,15 +40,6 @@ const de: typeof en = {
     olderSnapshot: "Ältere Version",
     newerSnapshot: "Neuere Version",
   },
-  testEmail: {
-    title: "Test-E-Mail senden",
-    recipientLabel: "Empfänger",
-    send: "Senden",
-    sending: "Wird gesendet...",
-    cancel: "Abbrechen",
-    success: "Test-E-Mail erfolgreich gesendet",
-    button: "Test",
-  },
   aiRewrite: {
     title: "KI-Umschreibung",
     tone: "Tonalität",

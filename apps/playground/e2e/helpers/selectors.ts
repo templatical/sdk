@@ -62,10 +62,28 @@ export const SELECTORS = {
   savedBlocksCategoryInput: '[data-testid="saved-blocks-category-input"]',
   savedBlocksCategoryFilter: '[data-testid="saved-blocks-category-filter"]',
   savedBlocksCategoryBadge: '[data-testid="saved-block-category"]',
+  // Test email (BYO sender; the playground's fake provider is always on)
+  testEmailTrigger: '[data-testid="test-email-trigger"]',
+  testEmailRecipient: '[data-testid="test-email-recipient"]',
+  testEmailSend: '[data-testid="test-email-send"]',
+  testEmailCancel: '[data-testid="test-email-cancel"]',
+  testEmailSuccess: '[data-testid="test-email-success"]',
+  testEmailError: '[data-testid="test-email-error"]',
+  testEmailPreview: '[data-testid="test-email-preview"]',
+  /**
+   * The dialog itself. Scoping through this matters: the preview reuses the
+   * header's `ViewportToggle`, so an unscoped `[role="radiogroup"]` would also
+   * match the editor header's own viewport control.
+   */
+  testEmailDialog: '[role="dialog"][aria-labelledby="tpl-test-email-title"]',
+  testEmailPreviewViewport:
+    '[role="dialog"][aria-labelledby="tpl-test-email-title"] [role="radiogroup"]',
+  // Shared chrome-free block renderer, also used by the saved-blocks previews.
+  blockPreviewCanvas: '[data-testid="block-preview-canvas"]',
   savedBlocksEditCategory: '[data-testid="saved-blocks-edit-category"]',
   savedBlocksLoading: '[data-testid="saved-blocks-loading"]',
   savedBlocksBrowserClose: '[data-testid="saved-blocks-browser-close"]',
-  savedBlocksPreviewCanvas: '[data-testid="saved-blocks-preview-canvas"]',
+  savedBlocksPreviewCanvas: '[data-testid="block-preview-canvas"]',
 
   // Small-screen gate (#235)
   smallScreenNotice: '[data-testid="small-screen-notice"]',

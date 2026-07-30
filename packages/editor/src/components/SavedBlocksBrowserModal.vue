@@ -17,8 +17,8 @@ const emit = defineEmits<{
   (e: "insert", saved: SavedBlock, insertIndex: number | undefined): void;
 }>();
 
-const SavedBlockPreviewCanvas = defineAsyncComponent(
-  () => import("./SavedBlockPreviewCanvas.vue"),
+const BlockPreviewCanvas = defineAsyncComponent(
+  () => import("./BlockPreviewCanvas.vue"),
 );
 
 const { t, format } = useI18n();
@@ -575,7 +575,7 @@ function handleKeydown(event: KeyboardEvent): void {
           >
             <!-- Visual preview -->
             <div class="tpl:flex-1 tpl:overflow-y-auto tpl:p-4">
-              <SavedBlockPreviewCanvas :blocks="selected.content" />
+              <BlockPreviewCanvas :blocks="selected.content" />
             </div>
           </div>
 

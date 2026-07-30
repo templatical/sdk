@@ -9,7 +9,6 @@ export interface UseCloudPanelStateReturn {
   scoringPanelOpen: ComputedRef<boolean> & { value: boolean };
   designReferenceOpen: ComputedRef<boolean> & { value: boolean };
   commentsOpen: ComputedRef<boolean> & { value: boolean };
-  testEmailModalOpen: Ref<boolean>;
   mediaLibraryOpen: Ref<boolean>;
   mediaLibraryAccept: Ref<MediaCategory[] | undefined>;
   aiMenuOpen: Ref<boolean>;
@@ -43,7 +42,6 @@ export function useCloudPanelState(): UseCloudPanelStateReturn {
     set: (v) => (activePanel.value = v ? "comments" : null),
   });
 
-  const testEmailModalOpen = ref(false);
   const mediaLibraryOpen = ref(false);
   const mediaLibraryAccept = ref<MediaCategory[] | undefined>(undefined);
   const aiMenuOpen = ref(false);
@@ -85,7 +83,6 @@ export function useCloudPanelState(): UseCloudPanelStateReturn {
     scoringPanelOpen,
     designReferenceOpen,
     commentsOpen,
-    testEmailModalOpen,
     mediaLibraryOpen,
     mediaLibraryAccept,
     aiMenuOpen,

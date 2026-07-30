@@ -35,6 +35,9 @@ import "../styles/index.css";
 const SavedBlocksPanels = defineAsyncComponent(
   () => import("../components/SavedBlocksPanels.vue"),
 );
+const TestEmailPanel = defineAsyncComponent(
+  () => import("../components/TestEmailPanel.vue"),
+);
 
 export type { TemplaticalCloudEditorConfig } from "./cloudConfig";
 import type { TemplaticalCloudEditorConfig } from "./cloudConfig";
@@ -113,19 +116,6 @@ const { showNotice: showSmallScreenNotice } = useSmallScreenNotice(
   () => props.config.smallScreenNotice,
 );
 
-// ---------------------------------------------------------------------------
-// Test email handler
-// ---------------------------------------------------------------------------
-
-async function handleSendTestEmail(recipient: string): Promise<void> {
-  try {
-    await testEmail.sendTestEmail(recipient);
-    panelState.testEmailModalOpen.value = false;
-  } catch {
-    // Error is already handled in the composable
-  }
-}
-
 async function handleConfirmRestoreSnapshot(): Promise<void> {
   try {
     await snapshotPreview.confirmRestoreSnapshot();
@@ -192,7 +182,7 @@ defineExpose({
   create: lifecycle.createTemplate,
   load: lifecycle.loadTemplate,
   save: lifecycle.saveTemplate,
-  sendTestEmail: testEmail.sendTestEmail,
+  sendTestEmail: (recipient: string) => testEmail.send(recipient),
 });
 </script>
 
@@ -395,9 +385,7 @@ defineExpose({
       :core="core"
       :panel-state="panelState"
       :plan-config-instance="planConfigInstance"
-      :test-email="testEmail"
       :media-lib="mediaLib"
-      @send-test-email="handleSendTestEmail"
     />
 
     <!-- Saved blocks dialogs. Shared with the OSS editor; each dialog's chunk
@@ -406,6 +394,10 @@ defineExpose({
       v-if="savedBlocks.isAvailable.value"
       :feature="savedBlocks"
     />
+
+    <!-- Test email dialog. Shared with the OSS editor; its chunk loads on first
+         open, and nothing mounts unless the feature is available. -->
+    <TestEmailPanel v-if="testEmail.isAvailable.value" :feature="testEmail" />
 
     <!-- Popover mount — Teleport target for toolbars, link dialog, modal.
          Replaces the historical body-level teleport pattern so popups

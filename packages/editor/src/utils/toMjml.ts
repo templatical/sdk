@@ -33,13 +33,34 @@ export interface ToMjmlSource {
  * The dynamic import is cached by the module system, so subsequent calls
  * skip the import overhead.
  */
+/**
+ * Resolve `@templatical/renderer`, or `null` when it isn't installed.
+ *
+ * The single `import("@templatical/renderer")` site in the package, so callers
+ * can choose their own failure behaviour without duplicating the dynamic import
+ * or matching on an error message. {@link toMjmlForInstance} throws when this
+ * returns `null`; the test-email path degrades to JSON-only and warns once,
+ * because there the renderer is opt-in and a missing install must not break
+ * sending.
+ *
+ * Cheap to call repeatedly — the module system caches the import, so a second
+ * call after a successful first one costs nothing.
+ */
+export async function tryLoadRenderer(): Promise<
+  typeof import("@templatical/renderer") | null
+> {
+  try {
+    return await import("@templatical/renderer");
+  } catch {
+    return null;
+  }
+}
+
 export async function toMjmlForInstance(
   instance: ToMjmlSource,
 ): Promise<string> {
-  let renderer: typeof import("@templatical/renderer");
-  try {
-    renderer = await import("@templatical/renderer");
-  } catch {
+  const renderer = await tryLoadRenderer();
+  if (!renderer) {
     throw new Error(
       "[Templatical] toMjml() requires the @templatical/renderer package. Please install it.",
     );

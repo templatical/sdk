@@ -46,7 +46,7 @@ function mountRow(block: Block = createTitleBlock()) {
     // Real strings: the toggle's aria-label is interpolated through `format()`,
     // which the key-path stub proxy swallows.
     provides: { [TRANSLATIONS_KEY]: en },
-    global: { stubs: { SavedBlockPreviewCanvas: true } },
+    global: { stubs: { BlockPreviewCanvas: true } },
   } as never);
 }
 

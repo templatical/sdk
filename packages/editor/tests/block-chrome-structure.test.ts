@@ -392,7 +392,7 @@ describe("saved blocks: pick session stays lazily loaded", () => {
 
     for (const src of [ossEditor, cloudEditor, panels]) {
       expect(src).not.toContain("SavedBlockPreviewRow");
-      expect(src).not.toContain("SavedBlockPreviewCanvas");
+      expect(src).not.toContain("BlockPreviewCanvas");
     }
   });
 });
@@ -594,7 +594,7 @@ describe("countdown resolves only through the block registry", () => {
   const FALLBACK_MAP_SURFACES = [
     "components/Canvas.vue",
     "components/blocks/SectionBlock.vue",
-    "components/SavedBlockPreviewCanvas.vue",
+    "components/BlockPreviewCanvas.vue",
     "components/blocks/PreviewSectionBlock.vue",
   ];
 

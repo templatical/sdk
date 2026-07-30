@@ -39,15 +39,6 @@ const ptBR: typeof en = {
     olderSnapshot: "Versão anterior",
     newerSnapshot: "Versão mais recente",
   },
-  testEmail: {
-    title: "Enviar E-mail de Teste",
-    recipientLabel: "Destinatário",
-    send: "Enviar",
-    sending: "Enviando...",
-    cancel: "Cancelar",
-    success: "E-mail de teste enviado com sucesso",
-    button: "Testar",
-  },
   aiRewrite: {
     title: "Reescrita com IA",
     tone: "Tom",

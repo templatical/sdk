@@ -666,6 +666,22 @@ const de: typeof en = {
       daysAgo: "vor {days} Tagen",
     },
   },
+  testEmail: {
+    title: "Test-E-Mail senden",
+    recipientLabel: "Empfänger",
+    recipientPlaceholder: "sie@beispiel.de",
+    invalidAddress: "Geben Sie eine gültige E-Mail-Adresse ein.",
+    preview: "Vorschau",
+    previewHint:
+      "Merge-Tags werden unaufgelöst angezeigt — Ihr Backend setzt sie ein.",
+    recipientNotAllowed:
+      "Diese Adresse steht nicht auf der Liste der erlaubten Empfänger.",
+    send: "Senden",
+    sending: "Wird gesendet...",
+    cancel: "Abbrechen",
+    success: "Test-E-Mail erfolgreich gesendet",
+    button: "Test",
+  },
   sidebarNav: {
     browseSavedBlocks: "Gespeicherte Blöcke durchsuchen",
     expandSidebar: "Block-Seitenleiste erweitern",

@@ -1,45 +1,38 @@
-import type {
-  ExportResult,
-  Template,
-  TestEmailConfig,
-} from "@templatical/types";
+import type { TestEmailConfig } from "@templatical/types";
 import type { AuthManager } from "./auth";
-import { ApiClient } from "./api";
 import type { ComputedRef, Ref } from "vue";
 import { computed, ref, watch } from "vue";
 
+/**
+ * Cloud's test-email *configuration* — whether the project has the feature, who
+ * may be sent to, and the signature that lets the backend verify that list.
+ *
+ * Sending itself lives in `createCloudTestEmailProvider`, which plugs into the
+ * shared `useTestEmailFeature` seam in `@templatical/editor` alongside a
+ * consumer's own sender. Keeping the send body in exactly one place is the point:
+ * both editors then drive identical UI, state and error handling, so the sending
+ * spinner, the inline error and the success confirmation can't drift apart.
+ */
 export interface UseTestEmailOptions {
   authManager: AuthManager;
-  getTemplateId: () => string | null;
-  save: () => Promise<Template>;
-  exportHtml: (templateId: string) => Promise<ExportResult>;
-  onError?: (error: Error) => void;
+  /** Gates reading the config off the auth manager until the JWT has resolved. */
   isAuthReady?: Ref<boolean>;
-  onBeforeTestEmail?: (html: string) => string | Promise<string>;
 }
 
 export interface UseTestEmailReturn {
+  /** Whether the project's token carries a test-email config at all. */
   isEnabled: ComputedRef<boolean>;
+  /**
+   * Addresses the project permits. Empty until auth resolves — read it
+   * reactively, never snapshot it, or it stays empty for the session.
+   */
   allowedEmails: ComputedRef<string[]>;
-  isSending: Ref<boolean>;
-  error: Ref<string | null>;
-  sendTestEmail: (recipient: string) => Promise<void>;
+  /** The signature accompanying {@link allowedEmails}, or `null` when disabled. */
+  getSignature: () => string | null;
 }
 
 export function useTestEmail(options: UseTestEmailOptions): UseTestEmailReturn {
-  const {
-    authManager,
-    getTemplateId,
-    save,
-    exportHtml,
-    onError,
-    isAuthReady,
-    onBeforeTestEmail,
-  } = options;
-  const api = new ApiClient(authManager);
-
-  const isSending = ref(false);
-  const error = ref<string | null>(null);
+  const { authManager, isAuthReady } = options;
 
   const testEmailConfig = ref<TestEmailConfig | null>(null);
 
@@ -61,52 +54,9 @@ export function useTestEmail(options: UseTestEmailOptions): UseTestEmailReturn {
     () => testEmailConfig.value?.allowedEmails ?? [],
   );
 
-  async function sendTestEmail(recipient: string): Promise<void> {
-    if (!testEmailConfig.value) {
-      throw new Error("Test email is not enabled for this project");
-    }
-
-    const templateId = getTemplateId();
-    if (!templateId) {
-      throw new Error("Template must be saved before sending a test email");
-    }
-
-    isSending.value = true;
-    error.value = null;
-
-    try {
-      await save();
-
-      let { html } = await exportHtml(templateId);
-
-      if (onBeforeTestEmail) {
-        html = await onBeforeTestEmail(html);
-      }
-
-      await api.sendTestEmail(templateId, {
-        recipient,
-        html,
-        allowed_emails: testEmailConfig.value.allowedEmails,
-        signature: testEmailConfig.value.signature,
-      });
-    } catch (err) {
-      const wrappedError =
-        err instanceof Error
-          ? err
-          : new Error("Failed to send test email", { cause: err });
-      error.value = wrappedError.message;
-      onError?.(wrappedError);
-      throw wrappedError;
-    } finally {
-      isSending.value = false;
-    }
+  function getSignature(): string | null {
+    return testEmailConfig.value?.signature ?? null;
   }
 
-  return {
-    isEnabled,
-    allowedEmails,
-    isSending,
-    error,
-    sendTestEmail,
-  };
+  return { isEnabled, allowedEmails, getSignature };
 }

@@ -161,7 +161,7 @@ describe("CDN chunk granularity", () => {
     // What matters is only whether the component ends up eagerly reachable, and
     // the closure already answers that — a component can be statically imported
     // by a parent that is itself lazy and stay correctly lazy (as
-    // `SavedBlockPreviewCanvas` does, shared by the save dialog's preview rows and
+    // `BlockPreviewCanvas` does, shared by the save dialog's preview rows and
     // the browser modal's preview pane). Excusing every component with a static
     // site would have silently stopped covering those.
     const eagerlyShipped: string[] = [];

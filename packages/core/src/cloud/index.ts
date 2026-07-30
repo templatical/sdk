@@ -84,9 +84,15 @@ export type {
   UseSnapshotHistoryReturn,
 } from "./snapshots";
 
-// Test email
+// Test email — the Cloud sending adapter for the shared `useTestEmailFeature`
+// seam in `@templatical/editor`. `useTestEmail` remains for the config/state it
+// still owns (plan enablement, the allowed-recipient list and its signature);
+// the send body lives in the provider so both editors drive one code path.
 export { useTestEmail } from "./test-email";
 export type { UseTestEmailOptions, UseTestEmailReturn } from "./test-email";
+
+export { createCloudTestEmailProvider } from "./test-email-provider";
+export type { CreateCloudTestEmailProviderOptions } from "./test-email-provider";
 
 // Export
 export { useExport } from "./export";

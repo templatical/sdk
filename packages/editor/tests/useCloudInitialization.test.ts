@@ -55,8 +55,20 @@ vi.mock('@templatical/core/cloud', () => {
       update: vi.fn(),
       delete: vi.fn(),
     })),
+    createCloudTestEmailProvider: vi.fn(() => ({
+      send: vi.fn().mockResolvedValue(undefined),
+      // Mirrors the real adapter: a getter over the reactive allowlist, so a
+      // consumer reading it late still sees the resolved value.
+      get allowedRecipients() {
+        return ['qa@templatical.test'];
+      },
+    })),
     useTemplateScoring: vi.fn(() => ({ fixError: ref(null) })),
-    useTestEmail: vi.fn(() => ({})),
+    useTestEmail: vi.fn(() => ({
+      isEnabled: computed(() => true),
+      allowedEmails: computed(() => ['qa@templatical.test']),
+      getSignature: () => 'sig',
+    })),
     useWebSocket: vi.fn(() => ({
       channel: ref(null),
       disconnect: vi.fn(),

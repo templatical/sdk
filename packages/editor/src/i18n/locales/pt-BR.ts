@@ -659,6 +659,22 @@ const ptBR: typeof en = {
       daysAgo: "há {days}d",
     },
   },
+  testEmail: {
+    title: "Enviar E-mail de Teste",
+    recipientLabel: "Destinatário",
+    recipientPlaceholder: "voce@exemplo.com",
+    invalidAddress: "Informe um endereço de e-mail válido.",
+    preview: "Pré-visualização",
+    previewHint:
+      "As merge tags aparecem sem resolução — seu backend as preenche.",
+    recipientNotAllowed:
+      "Esse endereço não está na lista de destinatários permitidos.",
+    send: "Enviar",
+    sending: "Enviando...",
+    cancel: "Cancelar",
+    success: "E-mail de teste enviado com sucesso",
+    button: "Testar",
+  },
   sidebarNav: {
     browseSavedBlocks: "Explorar blocos salvos",
     expandSidebar: "Expandir barra lateral de blocos",

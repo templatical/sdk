@@ -3,7 +3,7 @@
  * One reorderable row in the save dialog's preview list: a grip handle beside a
  * scaled-down render of the real block.
  *
- * The preview is the same `SavedBlockPreviewCanvas` the browser modal uses, so
+ * The preview is the same `BlockPreviewCanvas` the browser modal uses, so
  * a row shows what the block actually looks like rather than a description of
  * it. That canvas is fixed at the 600px email width every block component
  * renders against, so the row shrinks it with `transform: scale()` instead of
@@ -19,9 +19,10 @@
  * chrome is an ancestor and a sibling of the rendered email content, never a
  * descendant, so the `.tpl-block-content` token override can't reach it.
  */
-import SavedBlockPreviewCanvas from "./SavedBlockPreviewCanvas.vue";
+import BlockPreviewCanvas from "./BlockPreviewCanvas.vue";
 import { useI18n } from "../composables";
-import { CUSTOM_BLOCK_DEFINITIONS_KEY } from "../keys";
+import { CUSTOM_BLOCK_DEFINITIONS_KEY, EDITOR_KEY } from "../keys";
+import { getEmailFrameWidth } from "../utils/emailFrameWidth";
 import { getBlockLabel } from "../utils/blockTypeLabels";
 import { ChevronDown, ChevronUp, GripVertical } from "@lucide/vue";
 import type { Block } from "@templatical/types";
@@ -42,8 +43,19 @@ const { t, format } = useI18n();
 // Optional: absent when the consumer registers no custom blocks.
 const customBlockDefinitions = inject(CUSTOM_BLOCK_DEFINITIONS_KEY, []);
 
-/** The email width every block component lays itself out against. */
-const PREVIEW_WIDTH = 600;
+const editor = inject(EDITOR_KEY, null);
+
+/**
+ * The width the nested `BlockPreviewCanvas` actually renders at.
+ *
+ * MUST come from the same helper the canvas uses, because the scale factor below
+ * divides by it: a mismatch scales every row by the wrong amount, so a template
+ * with a custom body width would overflow its frame or under-fill it. Rows are
+ * always the desktop width — the save dialog has no viewport control.
+ */
+const previewWidth = computed(() =>
+  getEmailFrameWidth(editor?.content.value.settings),
+);
 /**
  * Collapsed height for a tall block. A hero card or a multi-row section would
  * otherwise be taller than the whole list, leaving one row on screen — and
@@ -80,7 +92,7 @@ function measure(): void {
   if (width <= 0) return;
   // Never scale up: a dialog wider than the email would blow the preview past
   // its real proportions.
-  const next = Math.min(1, width / PREVIEW_WIDTH);
+  const next = Math.min(1, width / previewWidth.value);
   scale.value = next;
   fullHeight.value = content.offsetHeight * next;
 }
@@ -154,12 +166,12 @@ const toggleLabel = computed(() =>
         <div
           ref="contentEl"
           :style="{
-            width: `${PREVIEW_WIDTH}px`,
+            width: `${previewWidth}px`,
             transform: `scale(${scale})`,
             transformOrigin: 'top left',
           }"
         >
-          <SavedBlockPreviewCanvas :blocks="[block]" />
+          <BlockPreviewCanvas :blocks="[block]" />
         </div>
       </div>
 

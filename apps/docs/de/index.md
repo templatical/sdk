@@ -20,6 +20,10 @@ features:
     details: Registrieren Sie eigene Blocktypen — statische Templates oder live aus Ihrer API zur Preview-Zeit.
     link: /de/guide/custom-blocks
     linkText: Eigenen Block bauen
+  - title: Test-E-Mails aus dem Editor
+    details: Nutzer senden sich die Vorlage zu, die sie gerade bearbeiten — über Ihre eigene Infrastruktur, mit einem einzigen Callback und ohne Backend von uns.
+    link: /de/guide/test-email
+    linkText: Test-E-Mails einrichten
   - title: Wiederverwendbare gespeicherte Blöcke
     details: Nutzer speichern Blockgruppen und fügen sie in andere Templates ein — mit Ihrem eigenen Speicher oder dem mitgelieferten browserlokalen Provider ohne Einrichtung.
     link: /de/guide/saved-blocks

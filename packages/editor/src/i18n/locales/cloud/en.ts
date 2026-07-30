@@ -37,15 +37,6 @@ const en = {
     olderSnapshot: "Older version",
     newerSnapshot: "Newer version",
   },
-  testEmail: {
-    title: "Send Test Email",
-    recipientLabel: "Recipient",
-    send: "Send",
-    sending: "Sending...",
-    cancel: "Cancel",
-    success: "Test email sent successfully",
-    button: "Test",
-  },
   aiRewrite: {
     title: "AI Rewrite",
     tone: "Tone",

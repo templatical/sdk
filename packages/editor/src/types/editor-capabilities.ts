@@ -56,4 +56,21 @@ export interface EditorCapabilities {
     canUpdate: ComputedRef<boolean>;
     canDelete: ComputedRef<boolean>;
   };
+  /**
+   * Present only when a `TestEmailProvider` is configured — in OSS via
+   * `init({ testEmail })`, in Cloud whenever cloud mode is active (or when a
+   * consumer supplied their own sender to `initCloud()`).
+   */
+  testEmail?: {
+    /** Open the send dialog. A no-op while {@link isAvailable} is false. */
+    open(): void;
+    /**
+     * Whether the feature is usable right now. Reactive for the same reason as
+     * `savedBlocks.isAvailable`: Cloud resolves its plan entitlement and its
+     * allowed-recipient list *after* capabilities are provided, and an
+     * explicitly empty allowlist makes the feature unusable. UI must gate on
+     * this or it renders a button that does nothing.
+     */
+    isAvailable: ComputedRef<boolean>;
+  };
 }

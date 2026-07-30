@@ -13,6 +13,7 @@ import type {
   MediaResult,
   MergeTagsConfig,
   SavedBlocksProvider,
+  TestEmailProvider,
   SaveResult,
   Template,
   TemplateContent,
@@ -217,6 +218,37 @@ export interface TemplaticalEditorConfig {
    * block *types* with their own templates and field schemas.
    */
   savedBlocks?: SavedBlocksProvider;
+
+  /**
+   * Sending backend for **test emails** — letting a user mail themselves the
+   * template they're editing.
+   *
+   * The editor owns the trigger, the dialog, recipient validation and the
+   * sending/success/error states; you own delivery. One method is enough:
+   *
+   * ```ts
+   * init({
+   *   container,
+   *   testEmail: {
+   *     send: ({ recipient, content }) =>
+   *       fetch("/api/test-email", {
+   *         method: "POST",
+   *         headers: { "Content-Type": "application/json" },
+   *         body: JSON.stringify({ recipient, content }),
+   *       }).then((r) => {
+   *         if (!r.ok) throw new Error("Could not send the test email");
+   *       }),
+   *   },
+   * });
+   * ```
+   *
+   * **Omitted by default.** With no provider the feature is entirely off — no
+   * button, and none of its UI code is downloaded.
+   *
+   * `allowedRecipients` restricts the picker but is **not** a security boundary:
+   * it lives in the user's browser. Validate the recipient on your server.
+   */
+  testEmail?: TestEmailProvider;
 
   blockDefaults?: BlockDefaults;
   templateDefaults?: TemplateDefaults;
@@ -777,6 +809,8 @@ export type {
   SavedBlocksProvider,
   SaveResult,
   Template,
+  TestEmailPayload,
+  TestEmailProvider,
 } from "@templatical/types";
 
 // Bundled browser-local saved-blocks provider. Re-exported here (rather than

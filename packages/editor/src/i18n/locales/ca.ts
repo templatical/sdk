@@ -662,6 +662,22 @@ const ca: typeof en = {
       daysAgo: "fa {days} d",
     },
   },
+  testEmail: {
+    title: "Envia un correu de prova",
+    recipientLabel: "Destinatari",
+    recipientPlaceholder: "tu@exemple.cat",
+    invalidAddress: "Introduïu una adreça de correu vàlida.",
+    preview: "Previsualització",
+    previewHint:
+      "Les etiquetes de combinació es mostren sense resoldre — el vostre backend les omple.",
+    recipientNotAllowed:
+      "Aquesta adreça no és a la llista de destinataris permesos.",
+    send: "Envia",
+    sending: "S'està enviant...",
+    cancel: "Cancel·la",
+    success: "Correu de prova enviat correctament",
+    button: "Prova",
+  },
   sidebarNav: {
     browseSavedBlocks: "Explora els blocs desats",
     expandSidebar: "Expandeix la barra lateral de blocs",

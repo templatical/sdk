@@ -5,12 +5,14 @@ import { useEditor } from "@templatical/core";
 import type { TemplateContent, UiTheme } from "@templatical/types";
 import { useEditorCore } from "./composables/useEditorCore";
 import { useSavedBlocksFeature } from "./composables/useSavedBlocksFeature";
+import { useTestEmailFeature } from "./composables/useTestEmailFeature";
 import { useSmallScreenNotice } from "./composables/useSmallScreenNotice";
 import { resolveLintOptions } from "./utils/resolveLintOptions";
+import { toMjmlForInstance } from "./utils/toMjml";
 import type { Translations } from "./i18n";
 import type { UseFontsReturn } from "./composables/useFonts";
 
-import { RotateCcw } from "@lucide/vue";
+import { RotateCcw, Send } from "@lucide/vue";
 import Canvas from "./components/Canvas.vue";
 import CustomBlockStylesheets from "./components/CustomBlockStylesheets.vue";
 import Sidebar from "./components/Sidebar.vue";
@@ -64,6 +66,24 @@ const SavedBlocksPanels = defineAsyncComponent(
   () => import("./components/SavedBlocksPanels.vue"),
 );
 
+// --- Test email (opt-in: only when a sending provider is configured) ---
+// Created before `useEditorCore` so its capability can be passed in, same as
+// saved blocks. `renderCurrentMjml` is a hoisted function declaration, so it can
+// be referenced here and still read `core` — which is declared below — because
+// it isn't called until the user sends.
+const testEmail = props.config.testEmail
+  ? useTestEmailFeature({
+      provider: props.config.testEmail,
+      getContent: () => editor.content.value,
+      renderMjml: renderCurrentMjml,
+      onError: props.config.onError,
+    })
+  : null;
+
+const TestEmailPanel = defineAsyncComponent(
+  () => import("./components/TestEmailPanel.vue"),
+);
+
 // --- Shared editor core (composables, provides, plugins, keyboard) ---
 const core = useEditorCore({
   editor,
@@ -98,9 +118,29 @@ const core = useEditorCore({
           ),
       }
     : null,
-  capabilities: savedBlocks ? { savedBlocks: savedBlocks.capability } : {},
+  capabilities: {
+    ...(savedBlocks ? { savedBlocks: savedBlocks.capability } : {}),
+    ...(testEmail ? { testEmail: testEmail.capability } : {}),
+  },
   editorRoot: props.shadowRoot,
 });
+
+/**
+ * Render the current template to MJML for `testEmail`'s `includeMjml` option.
+ *
+ * Assembles the same three members `defineExpose` hands to the public instance,
+ * so a test email carries byte-identical MJML to `editor.toMjml()`. Only reached
+ * when a provider opted in; the dynamic renderer import inside
+ * `toMjmlForInstance` means an OSS consumer who didn't opt in never loads it.
+ */
+function renderCurrentMjml(): Promise<string> {
+  return toMjmlForInstance({
+    getContent: () => editor.content.value,
+    renderCustomBlock: core.registry.renderCustomBlock,
+    getCustomBlockStylesheet: (customType: string) =>
+      core.registry.getDefinition(customType)?.stylesheet,
+  });
+}
 
 // --- Small-screen gate (#235) ---
 // Below ~768px the three-pane chrome can't lay out usably; show a notice
@@ -175,10 +215,32 @@ defineExpose({
         />
       </div>
 
-      <!-- Right: empty in OSS mode -->
+      <!-- Right: the test-email trigger when a sender is configured, else empty.
+           Same slot CloudHeader puts its Test button in, so placement matches
+           between the two editors. -->
       <div
         class="tpl:flex tpl:min-w-[200px] tpl:items-center tpl:justify-end tpl:gap-3"
-      ></div>
+      >
+        <!-- A real button — border, surface fill and `shadow-xs`, the same subtle
+             elevation `inputClass` uses — but coloured down: muted text rather
+             than full-strength `--tpl-text`, and no primary tint until hover. It
+             reads as a raised control against the header's translucent backdrop
+             while staying clearly secondary; sending a test is not the page's
+             primary action. Recipe follows `removeItemBtnClass` (border + surface
+             + muted text) with elevation added. -->
+        <button
+          v-if="testEmail?.isAvailable.value"
+          type="button"
+          data-testid="test-email-trigger"
+          :aria-label="core.t.testEmail.title"
+          :title="core.t.testEmail.title"
+          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] hover:tpl:bg-[var(--tpl-bg-hover)] hover:tpl:text-[var(--tpl-text)]"
+          @click="testEmail.open()"
+        >
+          <Send :size="14" :stroke-width="1.75" />
+          {{ core.t.testEmail.button }}
+        </button>
+      </div>
     </header>
 
     <!-- Left sidebar — absolute, below header -->
@@ -287,6 +349,8 @@ defineExpose({
       v-if="savedBlocks?.isAvailable.value"
       :feature="savedBlocks"
     />
+
+    <TestEmailPanel v-if="testEmail?.isAvailable.value" :feature="testEmail" />
 
     <!-- Small-screen gate (#235). Last child + a literal z-index above the
          chrome and `.tpl-popover-root`, so the opaque notice covers everything

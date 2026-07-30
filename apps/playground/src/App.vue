@@ -37,6 +37,7 @@ import type {
   FontsConfig,
   SavedBlock,
   SavedBlocksProvider,
+  TestEmailProvider,
 } from "@templatical/types";
 import {
   createDefaultTemplateContent,
@@ -296,6 +297,58 @@ function savedBlocksProviderFor(
   savedBlocksProviders.set(name, provider);
   return provider;
 }
+
+/**
+ * Fake test-email sender, on for every template.
+ *
+ * Nothing is delivered — the playground has no backend and shouldn't acquire
+ * one. The provider waits, logs exactly what a real `send` would have received,
+ * and resolves. That exercises the full UI path: the sending spinner, the success
+ * confirmation and the auto-close.
+ *
+ * Unlike `savedBlocksProviderFor`, this is a single module-level provider rather
+ * than one per template: a sender depends on the recipient and the current
+ * content, never on which template is open.
+ *
+ * Everything is fixed rather than flag-driven, so what a visitor sees is what a
+ * sensible integration looks like:
+ *
+ *  - **Two allowed recipients**, which is the realistic shape (send only to
+ *    verified addresses) and renders the picker rather than a free-text field.
+ *    `example.com` is IANA-reserved for documentation, so nothing here could
+ *    resolve to a real mailbox even if the send weren't faked.
+ *  - **`includeMjml` on**, so the logged payload shows the rendered MJML a real
+ *    backend would hand to its mail service.
+ *  - **Always succeeds.** A demo that intermittently errors reads as broken.
+ *
+ * The other branches — free text, a single read-only recipient, an empty
+ * allowlist hiding the button, and a rejected send — are covered by unit and
+ * component tests rather than here, where they'd need a control surface no
+ * visitor would find.
+ */
+const FAKE_SEND_LATENCY_MS = 800;
+
+const testEmailProvider: TestEmailProvider = {
+  includeMjml: true,
+  allowedRecipients: ["you@example.com", "teammate@example.com"],
+
+  send: async (payload) => {
+    await new Promise((resolve) => setTimeout(resolve, FAKE_SEND_LATENCY_MS));
+
+    console.info("[playground] test email 'sent'", {
+      recipient: payload.recipient,
+      blocks: payload.content.blocks.length,
+      mjmlBytes: payload.mjml?.length ?? null,
+      allowedRecipients: payload.allowedRecipients ?? null,
+    });
+
+    // E2E affordance, same rationale as `__tplPlaygroundGetMjml` below: lets a
+    // spec assert on the payload without scraping console output.
+    (
+      window as { __tplPlaygroundLastTestEmail?: unknown }
+    ).__tplPlaygroundLastTestEmail = payload;
+  },
+};
 
 /** Swapped on each template open; read by `init()` via the config below. */
 let savedBlocksProvider: SavedBlocksProvider = savedBlocksProviderFor();
@@ -1081,6 +1134,9 @@ async function initEditor(): Promise<void> {
       // browser-local provider, so the OSS path is exercised on every run
       // without needing a backend. Entries persist in this browser profile.
       savedBlocks: savedBlocksProvider,
+      // Also always on, and also backend-free — the provider fakes delivery so
+      // the send/success/error path is exercisable on every template.
+      testEmail: testEmailProvider,
     });
     // E2E affordance: expose `editor.toMjml()` on window so Playwright tests
     // can read the export-path output without depending on the playground's

@@ -22,6 +22,10 @@ import {
   getDocumentStyle,
   resolveBlockComponent,
 } from "../utils/blockComponentResolver";
+import {
+  EMAIL_FRAME_WIDTH_TRANSITION,
+  getEmailFrameWidth,
+} from "../utils/emailFrameWidth";
 import { readableTextColor } from "../utils/readableTextColor";
 
 import BlockWrapper from "./blocks/BlockWrapper.vue";
@@ -44,7 +48,7 @@ import VideoBlock from "./blocks/VideoBlock.vue";
 // don't carry a Cloud-only block. `resolveBlockComponent` checks the registry
 // first, so a static entry here would never be reached — but its static import
 // would still pull the module into the eager graph and defeat the laziness.
-// The other fallback maps (SectionBlock, SavedBlockPreviewCanvas,
+// The other fallback maps (SectionBlock, BlockPreviewCanvas,
 // PreviewSectionBlock) omit it for the same reason.
 const blockComponentMap: Record<string, Component> = {
   section: SectionBlock,
@@ -107,14 +111,11 @@ const blocks = computed({
   },
 });
 
-const viewportWidth = computed(() => {
-  switch (props.viewport) {
-    case "mobile":
-      return 375;
-    default:
-      return props.content.settings.width;
-  }
-});
+// Shared with the preview canvas and the save dialog's scaled rows, so all
+// three lay out against the same width.
+const viewportWidth = computed(() =>
+  getEmailFrameWidth(props.content.settings, props.viewport),
+);
 
 // Email-background band shown on each side of the content column. The editor
 // canvas is sized to the email's content width, so without this there are no
@@ -244,7 +245,7 @@ function handleFetchData(
     :style="{
       width: `${stageWidth}px`,
       boxShadow: darkMode ? 'none' : 'var(--tpl-shadow-xl)',
-      transition: 'width 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+      transition: EMAIL_FRAME_WIDTH_TRANSITION,
     }"
   >
     <!-- Background layer — holds the email bg and the dark-preview filter,
@@ -271,7 +272,7 @@ function handleFetchData(
       class="tpl-canvas-wrapper tpl:relative"
       :style="{
         width: `${viewportWidth}px`,
-        transition: 'width 300ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+        transition: EMAIL_FRAME_WIDTH_TRANSITION,
       }"
     >
       <div

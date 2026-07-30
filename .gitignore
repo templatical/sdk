@@ -14,6 +14,7 @@ DESIGN.md
 PRODUCT.md
 DESIGN.json
 design-notes
+.claude
 
 # templatical-email skill live mode: local working file + bridge pidfile
 .templatical/

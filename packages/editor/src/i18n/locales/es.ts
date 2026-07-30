@@ -661,6 +661,22 @@ const es: typeof en = {
       daysAgo: "hace {days} d",
     },
   },
+  testEmail: {
+    title: "Enviar correo de prueba",
+    recipientLabel: "Destinatario",
+    recipientPlaceholder: "tu@ejemplo.com",
+    invalidAddress: "Introduce una dirección de correo válida.",
+    preview: "Vista previa",
+    previewHint:
+      "Las etiquetas de combinación se muestran sin resolver — tu backend las rellena.",
+    recipientNotAllowed:
+      "Esa dirección no está en la lista de destinatarios permitidos.",
+    send: "Enviar",
+    sending: "Enviando...",
+    cancel: "Cancelar",
+    success: "Correo de prueba enviado correctamente",
+    button: "Prueba",
+  },
   sidebarNav: {
     browseSavedBlocks: "Explorar bloques guardados",
     expandSidebar: "Expandir barra lateral de bloques",

@@ -656,6 +656,21 @@ export default {
       daysAgo: "{days}d ago",
     },
   },
+  testEmail: {
+    title: "Send Test Email",
+    recipientLabel: "Recipient",
+    recipientPlaceholder: "you@example.com",
+    invalidAddress: "Enter a valid email address.",
+    preview: "Preview",
+    previewHint:
+      "Merge tags are shown unresolved — your backend fills them in.",
+    recipientNotAllowed: "That address isn't in the allowed list.",
+    send: "Send",
+    sending: "Sending...",
+    cancel: "Cancel",
+    success: "Test email sent successfully",
+    button: "Test",
+  },
   sidebarNav: {
     browseSavedBlocks: "Browse saved blocks",
     expandSidebar: "Expand block sidebar",

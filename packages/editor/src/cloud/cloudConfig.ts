@@ -13,6 +13,7 @@ import type {
   SavedBlocksProvider,
   SaveResult,
   Template,
+  TestEmailProvider,
   TemplateContent,
   TemplateDefaults,
   ThemeOverrides,
@@ -161,7 +162,29 @@ export interface TemplaticalCloudEditorConfig {
   onUnmount?: () => void;
 
   onRequestMedia?: (context: MediaRequestContext) => Promise<MediaItem | null>;
+  /**
+   * Transform the rendered HTML just before Cloud sends a test email.
+   *
+   * Cloud-only, and deliberately so: it exists because *Cloud* renders the HTML,
+   * so a consumer needs a seam into it. A consumer-supplied {@link testEmail}
+   * provider *is* that seam, and this hook is not applied to it.
+   */
   onBeforeTestEmail?: (html: string) => string | Promise<string>;
+
+  /**
+   * Sending backend for test emails.
+   *
+   * - **omitted** — sent by Templatical Cloud, gated on the `test_email` plan
+   *   feature and its signed allowed-recipient list.
+   * - **a {@link TestEmailProvider}** — sent by *you* instead, which is what to
+   *   reach for when mail must leave your own infrastructure for compliance or
+   *   data-residency reasons.
+   *
+   * The same type `init()` takes, so moving an OSS integration to Cloud means
+   * deleting this key (to adopt Cloud's sender) or leaving it exactly as-is (to
+   * keep your own) — never rewriting it.
+   */
+  testEmail?: TestEmailProvider;
 
   /**
    * Template linter (`@templatical/quality`) configuration. Runs every

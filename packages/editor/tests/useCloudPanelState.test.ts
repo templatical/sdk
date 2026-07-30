@@ -197,11 +197,9 @@ describe("useCloudPanelState", () => {
     expect(activeAiFeature.value).toBe(null);
   });
 
-  it("testEmailModalOpen starts as false", () => {
-    const { testEmailModalOpen } = useCloudPanelState();
-
-    expect(testEmailModalOpen.value).toBe(false);
-  });
+  /* `testEmailModalOpen` used to live here. The test-email dialog's open state
+     moved into `useTestEmailFeature` when the feature became shared with the OSS
+     editor — panel state is for Cloud-only surfaces. */
 
   it("mediaLibraryOpen starts as false", () => {
     const { mediaLibraryOpen } = useCloudPanelState();

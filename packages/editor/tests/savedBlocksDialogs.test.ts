@@ -139,7 +139,7 @@ describe('SaveBlockDialog', () => {
    * The dialog names the picked blocks and previews them in a reorderable
    * list — which blocks are in it was settled by the canvas pick session.
    *
-   * `SavedBlockPreviewCanvas` is stubbed: the rows' own structure (handle,
+   * `BlockPreviewCanvas` is stubbed: the rows' own structure (handle,
    * order, count) is what's under test, not the block components it renders.
    */
   function mountDialog(
@@ -155,7 +155,7 @@ describe('SaveBlockDialog', () => {
         [SAVED_BLOCKS_KEY]: headless,
         [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
       },
-      global: { stubs: { SavedBlockPreviewCanvas: true } },
+      global: { stubs: { BlockPreviewCanvas: true } },
     } as never);
     return { wrapper, headless };
   }
@@ -380,7 +380,7 @@ describe('SaveBlockDialog', () => {
           [CUSTOM_BLOCK_DEFINITIONS_KEY]: definitions,
           [TRANSLATIONS_KEY]: en,
         },
-        global: { stubs: { SavedBlockPreviewCanvas: true } },
+        global: { stubs: { BlockPreviewCanvas: true } },
       } as never);
     }
 
@@ -630,7 +630,7 @@ describe('SavedBlocksBrowserModal', () => {
         [SAVED_BLOCKS_KEY]: headless,
         [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
       },
-      global: { stubs: { SavedBlockPreviewCanvas: true } },
+      global: { stubs: { BlockPreviewCanvas: true } },
     } as any);
     return { wrapper, headless };
   }
@@ -1229,7 +1229,7 @@ describe('SavedBlocksBrowserModal', () => {
           [SAVED_BLOCKS_KEY]: headless,
           [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
         },
-        global: { stubs: { SavedBlockPreviewCanvas: true } },
+        global: { stubs: { BlockPreviewCanvas: true } },
       } as never);
       return { wrapper, headless };
     }
@@ -1348,7 +1348,7 @@ describe('SavedBlocksBrowserModal', () => {
           [SAVED_BLOCKS_KEY]: headless,
           [POPOVER_ROOT_KEY]: ref<HTMLElement | null>(popoverRootEl),
         },
-        global: { stubs: { SavedBlockPreviewCanvas: true } },
+        global: { stubs: { BlockPreviewCanvas: true } },
       } as never);
     }
 

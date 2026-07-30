@@ -3,7 +3,6 @@ import { defineAsyncComponent, ref } from "vue";
 import type { TemplateContent } from "@templatical/types";
 import type {
   UsePlanConfigReturn,
-  UseTestEmailReturn,
   UseEditorReturn as CloudUseEditorReturn,
 } from "@templatical/core/cloud";
 
@@ -21,9 +20,6 @@ const DesignReferenceSidebar = defineAsyncComponent(
 );
 const TemplateScoringPanel = defineAsyncComponent(
   () => import("./TemplateScoringPanel.vue"),
-);
-const TestEmailModal = defineAsyncComponent(
-  () => import("./TestEmailModal.vue"),
 );
 const MediaLibraryModal = defineAsyncComponent(async () => {
   // try/catch downgrades Webpack's "Module not found" from error to warning
@@ -44,12 +40,7 @@ defineProps<{
   core: UseEditorCoreReturn;
   panelState: UseCloudPanelStateReturn;
   planConfigInstance: UsePlanConfigReturn;
-  testEmail: UseTestEmailReturn;
   mediaLib: UseCloudMediaLibraryReturn;
-}>();
-
-const emit = defineEmits<{
-  (e: "send-test-email", recipient: string): void;
 }>();
 
 function applyContent(
@@ -99,15 +90,6 @@ defineExpose({ filterCommentsByBlock });
     ref="commentsSidebar"
     :visible="panelState.commentsOpen.value"
     @close="panelState.commentsOpen.value = false"
-  />
-
-  <TestEmailModal
-    :visible="panelState.testEmailModalOpen.value"
-    :allowed-emails="testEmail.allowedEmails.value"
-    :is-sending="testEmail.isSending.value"
-    :error="testEmail.error.value"
-    @send="(recipient: string) => emit('send-test-email', recipient)"
-    @close="panelState.testEmailModalOpen.value = false"
   />
 
   <MediaLibraryModal
