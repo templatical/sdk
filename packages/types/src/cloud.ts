@@ -1,22 +1,14 @@
 import type {
-  CustomBlockDefinition,
-  DisplayConditionsConfig,
-  FontsConfig,
-  MergeTagsConfig,
   SyntaxPreset,
   SyntaxPresetName,
   TemplateContent,
-  ThemeOverrides,
   UiTheme,
   ViewportSize,
 } from "./index";
 
-import type {
-  MediaConfig,
-  MediaItem,
-  MediaRequestContext,
-  StorageInfo,
-} from "@templatical/media-library";
+// Still a type-only import, so the media-library devDependency (and the
+// media-library-before-types build order) stays load-bearing for `PlanConfig`.
+import type { MediaConfig, StorageInfo } from "@templatical/media-library";
 
 // Re-export OSS types used by Cloud consumers
 export type { SyntaxPreset, SyntaxPresetName, ViewportSize };
@@ -242,40 +234,13 @@ export interface WebSocketServerConfig {
   app_key: string;
 }
 
-export interface TemplaticalConfig {
-  container: string | HTMLElement;
-  auth: Omit<AuthConfig, "onError">;
-  baseUrl?: string;
-  theme?: ThemeOverrides;
-  locale?: string;
-  ai?: AiConfig | false;
-  onCreate?: (template: Template) => void;
-  onLoad?: (template: Template) => void;
-  onSave?: (result: SaveResult) => void;
-  onError?: (error: Error) => void;
-  onUnmount?: () => void;
-  mergeTags?: MergeTagsConfig;
-  onRequestMedia?: (context: MediaRequestContext) => Promise<MediaItem | null>;
-  displayConditions?: DisplayConditionsConfig;
-  fonts?: FontsConfig;
-  autoSave?: boolean;
-  autoSaveDebounce?: number;
-  onBeforeTestEmail?: (html: string) => string | Promise<string>;
-  customBlocks?: CustomBlockDefinition[];
-  commenting?: boolean;
-  onComment?: (event: CommentEvent) => void;
-  mcp?: McpConfig;
-  collaboration?: CollaborationConfig;
-  modules?: boolean;
-}
-
-export interface TemplaticalInstance {
-  setTheme(theme: ThemeOverrides): void;
-  create(content?: TemplateContent): Promise<Template>;
-  load(templateId: string): Promise<Template>;
-  save(): Promise<SaveResult>;
-  unmount(): void;
-}
+// `TemplaticalConfig` and `TemplaticalInstance` used to live here. They were
+// duplicates of the cloud editor's real config/instance types and had drifted
+// from them — `modules` was never renamed to `savedBlocks`, and later options
+// were never added. The authoritative types are `TemplaticalCloudEditorConfig`
+// and `TemplaticalCloudEditor`, both exported from `@templatical/editor`, which
+// is where `initCloud()` actually reads its config. Don't reintroduce a copy
+// here: this package can't import from the editor, so any copy drifts again.
 
 export interface EditorState {
   template: Template | null;

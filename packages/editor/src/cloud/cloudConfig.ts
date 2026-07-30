@@ -10,6 +10,7 @@ import type {
   LogicTagsConfig,
   McpConfig,
   MergeTagsConfig,
+  SavedBlocksProvider,
   SaveResult,
   Template,
   TemplateContent,
@@ -94,7 +95,21 @@ export interface TemplaticalCloudEditorConfig {
   blockDefaults?: BlockDefaults;
   templateDefaults?: TemplateDefaults;
 
-  savedBlocks?: boolean;
+  /**
+   * Reusable saved blocks.
+   *
+   * - **omitted / `true`** — backed by Templatical Cloud, gated on the
+   *   `saved_modules` plan feature.
+   * - **`false`** — off entirely; no UI renders.
+   * - **a {@link SavedBlocksProvider}** — backed by *your* store instead of
+   *   Cloud's, and **not plan-gated**, because the plan feature licenses Cloud's
+   *   storage rather than the editor's UI.
+   *
+   * The provider form is the same type `init()` takes, so moving an OSS
+   * integration to Cloud means deleting this key (to adopt Cloud's store) or
+   * leaving it exactly as-is (to keep your own) — never rewriting it.
+   */
+  savedBlocks?: boolean | SavedBlocksProvider;
   autoSave?: boolean;
   autoSaveDebounce?: number;
 

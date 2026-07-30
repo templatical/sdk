@@ -183,6 +183,20 @@ Sobald ein Provider konfiguriert ist:
 
 Lassen Sie `savedBlocks` weg, und die Funktion ist vollständig abwesend: keine Speicheraktion, kein Eintrag in der Leiste und **kein zugehöriger Code wird geladen**. Die Oberfläche ist in verzögert geladene Chunks aufgeteilt, die erst beim Öffnen eines Dialogs abgerufen werden.
 
+## Wechsel zu Templatical Cloud
+
+`initCloud()` akzeptiert denselben `savedBlocks`-Schlüssel — ein Upgrade erfordert also nie, ihn umzuschreiben:
+
+| Wert | Speicher | Plan-gebunden? |
+| --- | --- | --- |
+| weggelassen oder `true` | Templatical Cloud | Ja — über das Feature `saved_modules` |
+| `false` | keiner; die Funktion ist aus | — |
+| ein `SavedBlocksProvider` | Ihr eigener Speicher | **Nein** |
+
+Eine bestehende Integration hat damit zwei Optionen, jeweils eine Zeile. **Löschen Sie den Schlüssel**, um den Cloud-Speicher zu übernehmen und Blöcke geräteübergreifend zu synchronisieren, oder **lassen Sie ihn unverändert**, um Ihr eigenes Backend zu behalten — nützlich, wenn die Blöcke aus Gründen der Datenresidenz oder Compliance in Ihrer eigenen Datenbank bleiben müssen.
+
+Ein selbst bereitgestellter Provider ist bewusst **nicht** plan-gebunden: Das Plan-Feature lizenziert den Cloud-Speicher, nicht die Oberfläche des Editors. In beiden Fällen sehen Ihre Nutzer keinen Unterschied — Speicheraktion, Browser und Auswahlmodus sind in beiden Editoren dieselben Komponenten.
+
 ## Headless-Nutzung
 
 Die reaktive Zustandsebene wird aus `@templatical/core` exportiert, falls Sie eine eigene Oberfläche über einem Provider bauen möchten:

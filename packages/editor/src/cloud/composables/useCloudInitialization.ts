@@ -394,13 +394,31 @@ export function useCloudInitialization(
   // adapter differs. Availability is read reactively from the plan, which
   // resolves after `fetchConfig()` — so the capability never advertises a
   // feature the plan doesn't grant.
+  //
+  // A consumer may pass their own provider instead of a boolean, in which case
+  // it replaces Cloud's store. That path is deliberately NOT plan-gated: the
+  // `saved_modules` feature licenses Cloud's *storage*, and someone else's
+  // backend isn't Cloud's to sell. It keeps the config key type-identical to
+  // `init()`'s, so an OSS integration upgrades by deleting the key or leaving it
+  // alone rather than rewriting it.
+  const consumerSavedBlocksProvider =
+    typeof config.savedBlocks === "object" && config.savedBlocks !== null
+      ? config.savedBlocks
+      : null;
+
   const savedBlocks = useSavedBlocksFeature({
-    provider: createCloudSavedBlocksProvider(authManager),
+    // `??` short-circuits, so Cloud's adapter isn't constructed at all when the
+    // consumer supplied one.
+    provider:
+      consumerSavedBlocksProvider ??
+      createCloudSavedBlocksProvider(authManager),
     editor,
     onError: config.onError,
-    isAvailable: () =>
-      config.savedBlocks !== false &&
-      planConfigInstance.hasFeature("saved_modules"),
+    isAvailable: consumerSavedBlocksProvider
+      ? () => true
+      : () =>
+          config.savedBlocks !== false &&
+          planConfigInstance.hasFeature("saved_modules"),
   });
 
   const scoringInstance = useTemplateScoring({

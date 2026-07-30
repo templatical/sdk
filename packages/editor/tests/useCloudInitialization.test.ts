@@ -122,10 +122,13 @@ vi.mock('./useCloudMediaLibrary', () => ({
 }));
 
 import {
+  createCloudSavedBlocksProvider,
   performHealthCheck,
+  usePlanConfig,
   useCollaboration,
   useCollaborationBroadcast,
 } from '@templatical/core/cloud';
+import type { SavedBlocksProvider } from '@templatical/types';
 import { useEditorCore } from '../src/composables/useEditorCore';
 import { useCloudInitialization } from '../src/cloud/composables/useCloudInitialization';
 
@@ -173,6 +176,7 @@ describe('useCloudInitialization', () => {
     vi.mocked(useCollaboration).mockClear();
     vi.mocked(useCollaborationBroadcast).mockClear();
     vi.mocked(useEditorCore).mockClear();
+    vi.mocked(createCloudSavedBlocksProvider).mockClear();
   });
 
   describe('construction', () => {
@@ -368,6 +372,131 @@ describe('useCloudInitialization', () => {
       expect(() => init().openCommentsForBlock('block-1')).not.toThrow();
       await new Promise((r) => queueMicrotask(() => r(null)));
       expect(init().panelState.commentsOpen.value).toBe(true);
+    });
+  });
+});
+
+/**
+ * `config.savedBlocks` accepts a boolean OR a `SavedBlocksProvider`, so the same
+ * key means the same thing in `init()` and `initCloud()` — an OSS integration
+ * upgrades by deleting the key (to adopt Cloud's store) or leaving it untouched
+ * (to keep its own), never by rewriting it.
+ *
+ * The plan gate applies only to Cloud's own store: `saved_modules` licenses
+ * Cloud storage, and someone else's backend isn't Cloud's to sell.
+ */
+describe('useCloudInitialization savedBlocks provider selection', () => {
+  function makeProvider(): SavedBlocksProvider {
+    return {
+      list: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+  }
+
+  /** Force the plan gate off for the next `useCloudInitialization` call. */
+  function withoutPlanFeature() {
+    vi.mocked(usePlanConfig).mockReturnValueOnce({
+      config: ref(null),
+      fetchConfig: vi.fn().mockResolvedValue(undefined),
+      hasFeature: vi.fn(() => false),
+    } as any);
+  }
+
+  describe('Cloud store (boolean or omitted)', () => {
+    it.each([
+      ['omitted', {}],
+      ['true', { savedBlocks: true }],
+      ['false', { savedBlocks: false }],
+    ])('builds Cloud\'s adapter when savedBlocks is %s', (_label, config) => {
+      mountInit({ config });
+      expect(createCloudSavedBlocksProvider).toHaveBeenCalledTimes(1);
+    });
+
+    it("reads the list through Cloud's adapter when the browser opens", async () => {
+      const { init } = mountInit({ config: { savedBlocks: true } });
+      const cloudProvider =
+        vi.mocked(createCloudSavedBlocksProvider).mock.results[0].value;
+      // Loading is lazy — nothing is fetched until a surface needs the list.
+      expect(cloudProvider.list).not.toHaveBeenCalled();
+
+      init().savedBlocks.openBrowser();
+      await Promise.resolve();
+
+      expect(cloudProvider.list).toHaveBeenCalledTimes(1);
+    });
+
+    it('is available when the plan grants saved_modules', () => {
+      const { init } = mountInit({ config: { savedBlocks: true } });
+      expect(init().savedBlocks.isAvailable.value).toBe(true);
+    });
+
+    it('is NOT available when the plan withholds saved_modules', () => {
+      withoutPlanFeature();
+      const { init } = mountInit({ config: { savedBlocks: true } });
+      expect(init().savedBlocks.isAvailable.value).toBe(false);
+    });
+
+    it('is NOT available when savedBlocks is false, even on an entitled plan', () => {
+      const { init } = mountInit({ config: { savedBlocks: false } });
+      expect(init().savedBlocks.isAvailable.value).toBe(false);
+    });
+  });
+
+  describe('consumer-supplied provider', () => {
+    it("does NOT construct Cloud's adapter", () => {
+      mountInit({ config: { savedBlocks: makeProvider() } });
+      expect(createCloudSavedBlocksProvider).not.toHaveBeenCalled();
+    });
+
+    it('routes reads to the supplied provider', async () => {
+      const provider = makeProvider();
+      const { init } = mountInit({ config: { savedBlocks: provider } });
+      expect(provider.list).not.toHaveBeenCalled();
+
+      init().savedBlocks.openBrowser();
+      await Promise.resolve();
+
+      // The provider reaching `useSavedBlocksFeature` is the whole point — a
+      // construction-only assertion would pass even if the wiring dropped it.
+      expect(provider.list).toHaveBeenCalledTimes(1);
+    });
+
+    it('routes writes to the supplied provider', async () => {
+      const provider = makeProvider();
+      vi.mocked(provider.create as any).mockResolvedValue({
+        id: 's1',
+        name: 'Hero',
+        content: [],
+      });
+      const { init } = mountInit({ config: { savedBlocks: provider } });
+
+      // `create` takes positional args and assembles the provider payload.
+      await init().savedBlocks.headless.create('Hero', []);
+
+      expect(provider.create).toHaveBeenCalledWith({
+        name: 'Hero',
+        content: [],
+        category: undefined,
+      });
+    });
+
+    it('is available even when the plan withholds saved_modules', () => {
+      // The plan feature licenses Cloud's storage, not the editor's UI.
+      withoutPlanFeature();
+      const { init } = mountInit({ config: { savedBlocks: makeProvider() } });
+      expect(init().savedBlocks.isAvailable.value).toBe(true);
+    });
+
+    it('builds the same capability object shared UI consumes', () => {
+      // This is the object handed to `provide(CAPABILITIES_KEY, …)`, so the
+      // bookmark action and sidebar rail light up identically to the Cloud path.
+      const { init } = mountInit({ config: { savedBlocks: makeProvider() } });
+      const capability = init().savedBlocks.capability;
+      expect(capability.isAvailable.value).toBe(true);
+      expect(capability.canCreate.value).toBe(true);
+      expect(typeof capability.openBrowser).toBe('function');
     });
   });
 });

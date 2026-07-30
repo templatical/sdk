@@ -209,8 +209,6 @@ export type {
   ScoringFinding,
   ScoringResult,
   Template,
-  TemplaticalConfig,
-  TemplaticalInstance,
   TemplateSnapshot,
   TestEmailConfig,
   TokenData,
