@@ -183,20 +183,6 @@ Once a provider is configured:
 
 Omit `savedBlocks` and the feature is completely absent: no save action, no rail entry, and **none of its code is downloaded**. The UI is split into lazily-loaded chunks that are fetched only when a dialog is actually opened.
 
-## Moving to Templatical Cloud
-
-`initCloud()` takes the **same** `savedBlocks` key, so upgrading never means rewriting it:
-
-| Value | Storage | Plan-gated? |
-| --- | --- | --- |
-| omitted or `true` | Templatical Cloud | Yes — the `saved_modules` feature |
-| `false` | none; the feature is off | — |
-| a `SavedBlocksProvider` | your own store | **No** |
-
-So an existing integration has two one-line options. **Delete the key** to adopt Cloud's store and let it sync across your users' devices, or **leave it exactly as it is** to keep your own backend — useful when the blocks must stay in your own database for data-residency or compliance reasons.
-
-A consumer-supplied provider is deliberately **not** plan-gated: the plan feature licenses Cloud's storage, not the editor's UI. Either way your users see no difference — the save action, the browser and the pick flow are the same components in both editors.
-
 ## Headless use
 
 The reactive state layer is exported from `@templatical/core` if you want to build your own UI over a provider:
