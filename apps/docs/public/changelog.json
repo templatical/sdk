@@ -11,8 +11,23 @@
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.21.2",
+  "latest": "1.0.0",
   "versions": [
+    {
+      "version": "1.0.0",
+      "date": "2026-07-30",
+      "changes": [
+        {
+          "hash": "09d4fa2",
+          "level": "minor",
+          "title": "Add French (fr) and Dutch (nl) OSS locales.",
+          "body": "Both files follow the existing pattern: typed `typeof en` so a missing key is a\ncompile error, auto-registered through the `import.meta.glob` locale registry, and\ncovered by the \"OSS locale parity\" test (keys and placeholder tokens).\n`isLocaleSupported(\"fr\")` / `isLocaleSupported(\"nl\")` now return `true`, and region\nvariants such as `fr-BE` / `nl-BE` resolve to the base locale as usual. Cloud\ntranslations are intentionally not included; `loadCloudTranslations` keeps falling\nback to English for these locales.\n\nThe i18n test suite previously used `\"fr\"` as its canonical unsupported locale;\nthose assertions now use `\"it\"`.",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.21.2",
       "date": "2026-07-30",
