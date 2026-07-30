@@ -1,7 +1,7 @@
 ---
-"@templatical/editor": patch
-"@templatical/types": patch
-"@templatical/core": patch
+"@templatical/editor": minor
+"@templatical/types": minor
+"@templatical/core": minor
 ---
 
 Add **bring-your-own test emails** — let users mail themselves the template they're editing, sent through your own infrastructure.
