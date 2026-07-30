@@ -9,10 +9,6 @@ Let a user send themselves the template they're editing, so they can see it land
 
 The editor owns the trigger, the dialog, recipient validation, and the sending / success / error states. **You own delivery.** One method is enough.
 
-::: tip You almost certainly already have this
-If you're embedding an email editor, you have a transactional sending pipeline already — SES, Postmark, Resend, SendGrid, your own SMTP. This feature plugs into it rather than asking you to build anything new.
-:::
-
 ## Quick start
 
 ```ts
@@ -34,6 +30,8 @@ await init({
 ```
 
 That's the whole integration. A **Test** button appears in the editor header; clicking it opens a dialog, and the address the user picks is handed to your `send`.
+
+![The Test button in the top-right of the editor header](/images/test-email-button.png)
 
 **Omit `testEmail` and the feature is completely absent** — no button, and none of its UI code is downloaded.
 
@@ -119,7 +117,7 @@ testEmail: {
 
 An empty array is read as a decision ("nobody may be sent to"), not as "unset". Use `defaultRecipient` to pre-select a specific entry; it's ignored if it isn't on the list.
 
-::: danger This is not a security boundary
+::: warning This is not a security boundary
 `allowedRecipients` lives in the user's browser and is trivially edited there. It restricts the *picker*, nothing more.
 
 **Validate the recipient on your server**, every time. Without that, your endpoint is an open relay — anyone who can reach it can mail arbitrary addresses from your domain.
@@ -128,6 +126,8 @@ An empty array is read as a decision ("nobody may be sent to"), not as "unset". 
 The payload echoes the list back as `allowedRecipients` so one `send` implementation stays portable between your backend and Templatical Cloud. It is **untrusted** — unsigned, and read out of the browser. It's useful for one thing beyond portability: comparing it against `recipient` server-side, where a mismatch means the client was tampered with or is buggy, which is worth logging.
 
 ## What the user sees
+
+<img src="/images/test-email-modal.png" alt="The Send Test Email dialog — a recipient picker above a chrome-free preview of the template with a Desktop / Mobile switch, and Cancel / Send at the bottom" style="max-width: 480px;" />
 
 1. A **Test** button in the editor header.
 2. A dialog with the recipient control described above.
@@ -147,17 +147,3 @@ It is accurate about two things that a naive preview would get wrong:
 It is deliberately **not** a preview of the delivered email. Merge tags render unresolved — your backend substitutes them — and the real message is compiled HTML rendered by a mail client. The dialog says so beneath the switch. Treat it as "is this the right template?", not "is this exactly what lands in the inbox?".
 
 The preview rides the dialog's own lazily-loaded chunk, so a consumer who never configures `testEmail` downloads none of it.
-
-## Moving to Templatical Cloud
-
-`initCloud()` takes the **same** `testEmail` key, so upgrading never means rewriting it:
-
-- **Omit it** and Templatical Cloud sends, using its own deliverability infrastructure and a server-signed recipient allowlist.
-- **Leave it exactly as it is** and your sender keeps working — which is what to reach for when mail must leave your own infrastructure for compliance or data-residency reasons.
-
-Two differences to expect after switching to Cloud's sender:
-
-- Cloud renders the HTML server-side, so `includeMjml` is irrelevant there.
-- Cloud requires the template to be **saved** before sending, so the button is absent until it is.
-
-Your users see no difference either way — the button, the dialog and the flow are the same components in both editors.

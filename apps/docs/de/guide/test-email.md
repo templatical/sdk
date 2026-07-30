@@ -9,10 +9,6 @@ Lassen Sie Nutzer sich selbst die Vorlage zusenden, die sie gerade bearbeiten, d
 
 Der Editor übernimmt den Auslöser, den Dialog, die Empfängerprüfung sowie alle Zustände für Versand, Erfolg und Fehler. **Der Versand liegt bei Ihnen.** Eine einzige Methode genügt.
 
-::: tip Das haben Sie mit hoher Wahrscheinlichkeit bereits
-Wenn Sie einen E-Mail-Editor einbetten, besteht bei Ihnen schon eine Pipeline für Transaktions-E-Mails — SES, Postmark, Resend, SendGrid oder eigenes SMTP. Diese Funktion nutzt sie, statt etwas Neues von Ihnen zu verlangen.
-:::
-
 ## Schnellstart
 
 ```ts
@@ -34,6 +30,8 @@ await init({
 ```
 
 Das ist die vollständige Integration. Im Editor-Header erscheint eine Schaltfläche **Test**; ein Klick öffnet den Dialog, und die gewählte Adresse wird an Ihr `send` übergeben.
+
+![Die Schaltfläche „Test" oben rechts im Editor-Header](/images/test-email-button.png)
 
 **Lassen Sie `testEmail` weg, und die Funktion ist vollständig abwesend** — keine Schaltfläche, und kein zugehöriger Code wird geladen.
 
@@ -119,7 +117,7 @@ testEmail: {
 
 Ein leeres Array wird als Entscheidung gelesen („niemand darf angeschrieben werden"), nicht als „nicht gesetzt". Mit `defaultRecipient` wählen Sie einen bestimmten Eintrag vor; er wird ignoriert, wenn er nicht auf der Liste steht.
 
-::: danger Das ist keine Sicherheitsgrenze
+::: warning Das ist keine Sicherheitsgrenze
 `allowedRecipients` liegt im Browser des Nutzers und lässt sich dort trivial ändern. Die Angabe schränkt die *Auswahl* ein, nicht mehr.
 
 **Prüfen Sie den Empfänger auf Ihrem Server**, und zwar jedes Mal. Ohne diese Prüfung ist Ihr Endpunkt ein offenes Relay: Wer ihn erreicht, kann beliebige Adressen von Ihrer Domain aus anschreiben.
@@ -128,6 +126,8 @@ Ein leeres Array wird als Entscheidung gelesen („niemand darf angeschrieben we
 Die Nutzlast gibt die Liste als `allowedRecipients` zurück, damit eine `send`-Implementierung zwischen Ihrem Backend und Templatical Cloud portabel bleibt. Sie ist **nicht vertrauenswürdig** — ohne Signatur und aus dem Browser gelesen. Über die Portabilität hinaus ist sie für eines nützlich: den Vergleich mit `recipient` auf dem Server. Eine Abweichung bedeutet, dass der Client manipuliert wurde oder fehlerhaft ist — das lohnt sich zu protokollieren.
 
 ## Was Nutzer sehen
+
+<img src="/images/test-email-modal.png" alt="Der Dialog „Test-E-Mail senden" — ein Empfängerfeld über einer Vorschau der Vorlage ohne Editor-Elemente mit einem Umschalter für Desktop / Mobil sowie „Abbrechen" und „Senden" am unteren Rand" style="max-width: 480px;" />
 
 1. Eine Schaltfläche **Test** im Editor-Header.
 2. Einen Dialog mit dem oben beschriebenen Empfängerfeld.
@@ -147,17 +147,3 @@ In zwei Punkten ist sie korrekt, die eine naive Vorschau falsch darstellen würd
 Sie ist bewusst **keine** Vorschau der zugestellten E-Mail. Merge-Tags erscheinen unaufgelöst — Ihr Backend setzt sie ein —, und die eigentliche Nachricht ist kompiliertes HTML, das ein E-Mail-Client darstellt. Der Dialog weist unter dem Umschalter darauf hin. Verstehen Sie sie als „Ist das die richtige Vorlage?", nicht als „Sieht es im Postfach genau so aus?".
 
 Die Vorschau liegt im ohnehin verzögert geladenen Chunk des Dialogs — wer `testEmail` nicht konfiguriert, lädt davon nichts.
-
-## Wechsel zu Templatical Cloud
-
-`initCloud()` akzeptiert denselben `testEmail`-Schlüssel — ein Upgrade erfordert also nie, ihn umzuschreiben:
-
-- **Lassen Sie ihn weg**, und Templatical Cloud versendet, mit eigener Zustellinfrastruktur und einer serverseitig signierten Empfängerliste.
-- **Lassen Sie ihn unverändert**, und Ihr Versand bleibt aktiv — das ist der Weg, wenn E-Mails aus Compliance- oder Datenresidenz-Gründen Ihre eigene Infrastruktur nicht verlassen dürfen.
-
-Nach dem Wechsel auf den Cloud-Versand gibt es zwei Unterschiede:
-
-- Cloud erzeugt das HTML serverseitig, `includeMjml` ist dort also ohne Bedeutung.
-- Cloud setzt eine **gespeicherte** Vorlage voraus; bis dahin fehlt die Schaltfläche.
-
-Ihre Nutzer merken in beiden Fällen keinen Unterschied — Schaltfläche, Dialog und Ablauf sind in beiden Editoren dieselben Komponenten.

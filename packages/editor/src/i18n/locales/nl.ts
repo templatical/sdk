@@ -595,6 +595,22 @@ const nl: typeof en = {
       daysAgo: "{days} d geleden",
     },
   },
+  testEmail: {
+    title: "Test-e-mail verzenden",
+    recipientLabel: "Ontvanger",
+    recipientPlaceholder: "u@voorbeeld.nl",
+    invalidAddress: "Voer een geldig e-mailadres in.",
+    preview: "Voorbeeld",
+    previewHint:
+      "Samenvoegvelden worden onopgelost weergegeven — uw backend vult ze in.",
+    recipientNotAllowed:
+      "Dit adres staat niet in de lijst met toegestane ontvangers.",
+    send: "Verzenden",
+    sending: "Wordt verzonden...",
+    cancel: "Annuleren",
+    success: "Test-e-mail succesvol verzonden",
+    button: "Test",
+  },
   sidebarNav: {
     browseSavedBlocks: "Opgeslagen blokken bekijken",
     expandSidebar: "Blokzijbalk uitvouwen",

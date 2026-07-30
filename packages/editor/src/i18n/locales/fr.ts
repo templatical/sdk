@@ -594,6 +594,22 @@ const fr: typeof en = {
       daysAgo: "il y a {days} j",
     },
   },
+  testEmail: {
+    title: "Envoyer un e-mail de test",
+    recipientLabel: "Destinataire",
+    recipientPlaceholder: "vous@exemple.fr",
+    invalidAddress: "Saisissez une adresse e-mail valide.",
+    preview: "Aperçu",
+    previewHint:
+      "Les balises de fusion sont affichées non résolues — votre backend les remplace.",
+    recipientNotAllowed:
+      "Cette adresse ne figure pas dans la liste des destinataires autorisés.",
+    send: "Envoyer",
+    sending: "Envoi en cours...",
+    cancel: "Annuler",
+    success: "E-mail de test envoyé avec succès",
+    button: "Test",
+  },
   sidebarNav: {
     browseSavedBlocks: "Parcourir les blocs enregistrés",
     expandSidebar: "Développer la barre latérale des blocs",
