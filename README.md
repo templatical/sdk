@@ -75,7 +75,7 @@ Things that are usually paid features in commercial editors — open-source in T
 - **JSON templates** — portable, versionable, store anywhere, render anywhere.
 - **MJML output** — works with any email provider (Postmark, Resend, SES, Mailgun, anything).
 - **Framework-agnostic** — first-class examples for React, Vue, Svelte, Angular, vanilla.
-- **Multilingual** — English, German, Portuguese, Spanish & Catalan built in, easy to add more locales.
+- **Multilingual** — English, German, Portuguese, Spanish, Catalan, French & Dutch built in, easy to add more locales.
 - **TypeScript strict** — full types for blocks, config, and callbacks.
 - **Battle-tested** — ~3,900 unit tests + Playwright E2E coverage.
 
