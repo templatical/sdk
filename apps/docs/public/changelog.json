@@ -11,10 +11,10 @@
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "1.0.0",
+  "latest": "0.23.0",
   "versions": [
     {
-      "version": "1.0.0",
+      "version": "0.23.0",
       "date": "2026-07-30",
       "changes": [
         {
