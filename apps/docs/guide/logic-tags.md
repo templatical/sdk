@@ -9,7 +9,7 @@ Logic tags are the control-flow tokens of your template syntax — conditionals 
 
 There are two independent parts:
 
-- **Highlighting** — any logic tag you **type or paste** into a title or paragraph is detected from the syntax preset's `logic` pattern and rendered as an uppercase keyword badge (**IF**, **ENDIF**, **FOR**…). This is always on and needs no configuration. See [Merge Tags → Logic tags](/guide/merge-tags#logic-tags) for how detection and the syntax presets work.
+- **Highlighting** — any logic tag you **type or paste** into a title or paragraph is detected from the syntax preset's `logic` pattern and rendered as an uppercase keyword badge (**IF**, **ENDIF**, **FOR**…). This is always on and needs no configuration. See [Merge Tags → Logic tag highlighting](/guide/merge-tags#logic-tag-highlighting) for how detection and the syntax presets work.
 - **Insertion** — configure a `logicTags` option to give authors a dedicated **Logic** button, so they can drop in control flow without writing the syntax by hand. That's what this page covers.
 
 ## Configuration

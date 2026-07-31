@@ -126,7 +126,7 @@ mergeTags: {
 }
 ```
 
-## Logik-Tags
+## Hervorhebung von Logik-Tags
 
 Neben Daten-Tags erkennt der Editor auch Logik-Tags -- bedingte Anweisungen, Schleifen und andere Kontrollflusssyntax, die von Ihrer E-Mail-Plattform verwendet wird. Diese werden automatisch mit dem `logic`-Regex-Muster aus dem ausgewählten Syntax-Preset erkannt.
 

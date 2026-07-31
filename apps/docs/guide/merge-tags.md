@@ -126,7 +126,7 @@ mergeTags: {
 }
 ```
 
-## Logic tags
+## Logic tag highlighting
 
 Beyond data tags, the editor also recognizes logic tags -- conditional statements, loops, and other control flow syntax used by your email platform. These are detected automatically using the `logic` regex pattern from the selected syntax preset.
 

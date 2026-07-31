@@ -9,7 +9,7 @@ Logik-Tags sind die Control-Flow-Tokens Ihrer Vorlagensyntax — Bedingungen und
 
 Es gibt zwei unabhängige Teile:
 
-- **Hervorhebung** — jedes Logik-Tag, das Sie in einen Titel- oder Absatzblock **tippen oder einfügen**, wird anhand des `logic`-Musters des Syntax-Presets erkannt und als großgeschriebenes Schlüsselwort-Badge dargestellt (**IF**, **ENDIF**, **FOR**…). Das ist immer aktiv und benötigt keine Konfiguration. Siehe [Merge-Tags → Logik-Tags](/de/guide/merge-tags#logik-tags) für Details zur Erkennung und zu den Syntax-Presets.
+- **Hervorhebung** — jedes Logik-Tag, das Sie in einen Titel- oder Absatzblock **tippen oder einfügen**, wird anhand des `logic`-Musters des Syntax-Presets erkannt und als großgeschriebenes Schlüsselwort-Badge dargestellt (**IF**, **ENDIF**, **FOR**…). Das ist immer aktiv und benötigt keine Konfiguration. Siehe [Merge-Tags → Hervorhebung von Logik-Tags](/de/guide/merge-tags#hervorhebung-von-logik-tags) für Details zur Erkennung und zu den Syntax-Presets.
 - **Einfügen** — konfigurieren Sie eine `logicTags`-Option, um Autoren eine eigene Schaltfläche **Logik** zu geben, damit sie Control-Flow einfügen können, ohne die Syntax von Hand zu schreiben. Darum geht es auf dieser Seite.
 
 ## Konfiguration
