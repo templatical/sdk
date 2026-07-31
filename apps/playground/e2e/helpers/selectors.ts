@@ -113,6 +113,14 @@ export const SELECTORS = {
   darkModeToggle: ".tpl-dark-mode-toggle",
   previewToggle: ".tpl-preview-toggle",
 
+  // Merge tag sample values. The mode toggle renders only when some configured
+  // tag declares a `sample`, and only while a preview is showing.
+  mergeTagModeToggle: '[data-testid="merge-tag-mode-toggle"]',
+  /** A merge tag still rendered as a chip — i.e. NOT substituted. */
+  mergeTagSpan: "span[data-merge-tag]",
+  /** The dotted-underline cue used for tags in plain-string fields. */
+  mergeTagLabelCue: ".tpl-merge-tag-label",
+
   // Export modal
   exportModal: '[data-testid="export-modal"]',
   exportModalClose: '[data-testid="export-modal-close"]',

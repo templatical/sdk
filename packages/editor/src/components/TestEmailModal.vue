@@ -31,8 +31,8 @@ import { useI18n } from "../composables/useI18n";
 import { looksLikeEmail } from "../utils/validateEmailShape";
 import { Check, LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref, watch } from "vue";
-import type { ViewportSize } from "@templatical/types";
-import { EDITOR_KEY, MERGE_TAG_SAMPLE_MODE_KEY } from "../keys";
+import { hasMergeTagSamples, type ViewportSize } from "@templatical/types";
+import { EDITOR_KEY, MERGE_TAGS_KEY, MERGE_TAG_SAMPLE_MODE_KEY } from "../keys";
 import type { TestEmailError } from "../composables/useTestEmailFeature";
 
 const props = defineProps<{
@@ -63,7 +63,11 @@ const previewViewport = ref<ViewportSize>("desktop");
  * preview, not of one dialog. Falls back to a local ref for headless mounts.
  */
 const sharedSampleMode = inject(MERGE_TAG_SAMPLE_MODE_KEY, null);
-const localSampleMode = ref(true);
+// Seeded from availability, matching how `useEditorCore` seeds the shared ref.
+// A blanket `true` would make the dialog claim tags "show example values" for a
+// consumer who configured none — false, and with no toggle rendered to correct
+// it, since the toggle hides itself when nothing has a sample.
+const localSampleMode = ref(hasMergeTagSamples(inject(MERGE_TAGS_KEY, [])));
 const sampleMode = computed({
   get: () => sharedSampleMode?.value ?? localSampleMode.value,
   set: (on: boolean) => {
@@ -264,7 +268,10 @@ function handleKeydown(event: KeyboardEvent): void {
 
         <!-- The hint has to follow the mode: "shown unresolved" is simply false
              once every tag renders a realistic value. -->
-        <p class="tpl:mt-1 tpl:text-xs tpl:text-[var(--tpl-text-dim)]">
+        <p
+          data-testid="test-email-preview-hint"
+          class="tpl:mt-1 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
+        >
           {{
             sampleMode ? t.testEmail.previewHintSample : t.testEmail.previewHint
           }}

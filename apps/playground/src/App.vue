@@ -506,7 +506,9 @@ const mergeTagList = computed<MergeTag[]>(() => {
     {
       label: tags.lastName,
       value: "{{last_name}}",
-      sample: "Lovelace",
+      // Deliberately sample-less. Order Confirmation renders it as a span right
+      // beside {{first_name}}, so the demo shows both halves of the per-tag rule
+      // in one line: the sampled tag as plain text, this one still highlighted.
       group: tags.groups.recipient,
       description: tags.descriptions.lastName,
     },

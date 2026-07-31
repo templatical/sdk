@@ -3,7 +3,12 @@ import "./dom-stubs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import TestEmailModal from "../src/components/TestEmailModal.vue";
 import { mountEditor } from "./helpers/mount";
-import { POPOVER_ROOT_KEY } from "../src/keys";
+import {
+  MERGE_TAGS_KEY,
+  MERGE_TAG_SAMPLE_MODE_KEY,
+  POPOVER_ROOT_KEY,
+} from "../src/keys";
+import type { MergeTag } from "@templatical/types";
 import { nextTick, ref } from "vue";
 import type { TestEmailError } from "../src/composables/useTestEmailFeature";
 
@@ -32,6 +37,11 @@ afterEach(() => {
   popoverRootEl.remove();
 });
 
+/** One tag with a sample, so the dialog's Sample view has something to show. */
+const SAMPLED_TAGS: MergeTag[] = [
+  { label: "First Name", value: "{{first_name}}", sample: "Ada" },
+];
+
 const FIELD = '[data-testid="test-email-recipient"]';
 const SEND = '[data-testid="test-email-send"]';
 const CANCEL = '[data-testid="test-email-cancel"]';
@@ -57,6 +67,8 @@ function mountModal(
     isSending?: boolean;
     justSent?: boolean;
     error?: TestEmailError | null;
+    mergeTags?: MergeTag[];
+    sampleMode?: boolean;
   } = {},
 ) {
   return mountEditor(TestEmailModal, {
@@ -72,7 +84,13 @@ function mountModal(
         ? { defaultRecipient: props.defaultRecipient }
         : {}),
     },
-    provides: { [POPOVER_ROOT_KEY]: ref(popoverRootEl) },
+    provides: {
+      [POPOVER_ROOT_KEY]: ref(popoverRootEl),
+      [MERGE_TAGS_KEY]: props.mergeTags ?? [],
+      ...(props.sampleMode !== undefined
+        ? { [MERGE_TAG_SAMPLE_MODE_KEY]: ref(props.sampleMode) }
+        : {}),
+    },
   } as never);
 }
 
@@ -302,12 +320,34 @@ describe("TestEmailModal preview", () => {
     expect(get(DESKTOP).getAttribute("aria-checked")).toBe("false");
   });
 
-  it("states that merge tags are unresolved", () => {
+  /**
+   * Asserted on the element's exact text, never with `toContain`:
+   * `"testEmail.previewHintSample"` *contains* `"testEmail.previewHint"`, so a
+   * substring check passes even when the wrong hint is rendered.
+   */
+  function hintText(): string {
+    return get('[data-testid="test-email-preview-hint"]').textContent?.trim() ?? "";
+  }
+
+  it("states that merge tags are unresolved when no sample is configured", () => {
     // The preview shows the template, not the delivered email — saying so is what
     // keeps it from implying more fidelity than it has.
     mountModal();
 
-    expect(text()).toContain("testEmail.previewHint");
+    expect(hintText()).toBe("testEmail.previewHint");
+  });
+
+  it("says values are examples once samples exist and Sample view is on", () => {
+    // The old wording ("shown unresolved") is simply false in this state.
+    mountModal({ mergeTags: SAMPLED_TAGS });
+
+    expect(hintText()).toBe("testEmail.previewHintSample");
+  });
+
+  it("returns to the unresolved wording in Label view", () => {
+    mountModal({ mergeTags: SAMPLED_TAGS, sampleMode: false });
+
+    expect(hintText()).toBe("testEmail.previewHint");
   });
 });
 
