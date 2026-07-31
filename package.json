@@ -17,9 +17,9 @@
     "@templatical/import-html": "workspace:*",
     "@templatical/import-unlayer": "workspace:*",
     "@templatical/quality": "workspace:*",
-    "@tiptap/extension-color": "^3.29.1",
-    "@tiptap/extension-font-family": "^3.29.1",
-    "@tiptap/extension-text-style": "^3.29.1",
+    "@tiptap/extension-color": "^3.29.2",
+    "@tiptap/extension-font-family": "^3.29.2",
+    "@tiptap/extension-text-style": "^3.29.2",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vitest/coverage-v8": "^4.1.10",
     "@vue/reactivity": "^3.5.40",
@@ -36,7 +36,7 @@
     "vue-eslint-parser": "^10.4.1"
   },
   "engines": {
-    "node": ">=24.18.0"
+    "node": ">=24.18.1"
   },
   "packageManager": "pnpm@11.17.0+sha512.cca3cea332ad254bb84145f966d19f4879615210346fc92c79a047f23a0d7b3cca3c3792f0076ba1f1831d277efbcf0a9119b31a9a60eca7fb3d6231f331ef72",
   "private": true,
