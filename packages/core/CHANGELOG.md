@@ -1,11 +1,11 @@
 # @templatical/core
 
-## 1.0.0
+## 0.24.0
 
 ### Patch Changes
 
 - Updated dependencies [c9b9eea]
-  - @templatical/types@1.0.0
+  - @templatical/types@0.24.0
 
 ## 0.23.0
 
