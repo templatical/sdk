@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import "./dom-stubs";
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { nextTick, ref } from "vue";
 import BlockPreviewCanvas from "../src/components/BlockPreviewCanvas.vue";
 import Canvas from "../src/components/Canvas.vue";
@@ -231,5 +233,50 @@ describe("availability gates on a sample existing", () => {
     expect(wrapper.text()).toContain("Plan Name");
     expect(wrapper.html()).toContain('data-merge-tag="{{first_name}}"');
     expect(wrapper.html()).toContain('data-merge-tag="{{plan}}"');
+  });
+});
+
+/**
+ * The mode toggle has to *be* the viewport toggle's twin, not merely resemble
+ * it: the two sit side by side in the editor header, so any divergence in icon
+ * size, padding or pill geometry reads as a visual bug.
+ *
+ * This drifted once already — the mode toggle shipped with 16px icons against
+ * the header's 18px, which made its pill 2px shorter than every neighbour
+ * (`py-1.5` + `p-1` means icon height drives pill height). Source-level
+ * assertions, in the style of `block-chrome-structure.test.ts`.
+ */
+describe("MergeTagModeToggle matches the header's other controls", () => {
+  const dir = join(__dirname, "..", "src", "components");
+  const read = (name: string) =>
+    readFileSync(join(dir, `${name}.vue`), "utf-8");
+
+  const iconSizes = (src: string) =>
+    [...new Set([...src.matchAll(/:size="(\d+)"/g)].map((m) => m[1]))].sort();
+
+  /** Every `tpl:` utility used, as a sorted set. */
+  const tplClasses = (src: string) =>
+    [...new Set(src.match(/tpl:[a-z0-9:[\]().,%/_-]+/g) ?? [])].sort();
+
+  it("uses the same icon size as every other header control", () => {
+    // 18 is the header baseline — viewport, dark mode and preview all use it.
+    expect(iconSizes(read("MergeTagModeToggle"))).toEqual(["18"]);
+    expect(iconSizes(read("ViewportToggle"))).toEqual(["18"]);
+    expect(iconSizes(read("DarkModeToggle"))).toEqual(["18"]);
+    expect(iconSizes(read("PreviewToggle"))).toEqual(["18"]);
+  });
+
+  it("uses exactly the viewport toggle's Tailwind utilities", () => {
+    // Identical sets, so padding, gap, radius and text size cannot diverge.
+    expect(tplClasses(read("MergeTagModeToggle"))).toEqual(
+      tplClasses(read("ViewportToggle")),
+    );
+  });
+
+  it("keeps the same radiogroup semantics", () => {
+    const src = read("MergeTagModeToggle");
+    expect(src).toContain('role="radiogroup"');
+    expect(src).toContain('role="radio"');
+    expect(src).toContain(":aria-checked=");
   });
 });

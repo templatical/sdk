@@ -91,8 +91,8 @@ const pillOffset = computed(() => {
       :title="mode.label"
       @click="emit('change', mode.value)"
     >
-      <Sparkles v-if="mode.value" :size="16" :stroke-width="1.5" />
-      <TextCursorInput v-else :size="16" :stroke-width="1.5" />
+      <Sparkles v-if="mode.value" :size="18" :stroke-width="1.5" />
+      <TextCursorInput v-else :size="18" :stroke-width="1.5" />
       <span>{{ mode.label }}</span>
     </button>
   </div>
