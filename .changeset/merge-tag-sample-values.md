@@ -1,6 +1,6 @@
 ---
-"@templatical/editor": patch
-"@templatical/types": patch
+"@templatical/editor": minor
+"@templatical/types": minor
 ---
 
 Add **`MergeTag.sample`** — an example value that previews render in place of the tag, so a preview reads like a delivered email instead of a list of field names.
