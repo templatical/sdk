@@ -7,7 +7,7 @@
     "@lucide/vue": "^1.27.0",
     "@templatical/core": "workspace:*",
     "@templatical/types": "workspace:*",
-    "@vueuse/core": "^14.3.0",
+    "@vueuse/core": "^14.4.0",
     "vue-advanced-cropper": "^2.8.9"
   },
   "devDependencies": {
