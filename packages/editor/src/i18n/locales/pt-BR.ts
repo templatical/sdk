@@ -660,6 +660,12 @@ const ptBR: typeof en = {
       daysAgo: "há {days}d",
     },
   },
+  previewResolution: {
+    resolving: "Resolvendo a pré-visualização…",
+    failed:
+      "Não foi possível resolver a pré-visualização — exibindo o modelo não resolvido.",
+    hint: "A pré-visualização usa dados resolvidos pelo seu backend.",
+  },
   mergeTagPreview: {
     label: "Exibição de merge tags",
     sample: "Exemplo",

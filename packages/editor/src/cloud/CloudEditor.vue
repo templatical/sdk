@@ -324,7 +324,7 @@ defineExpose({
       <main class="tpl-main tpl:flex tpl:justify-center tpl:p-8">
         <Canvas
           :viewport="editor.state.viewport"
-          :content="editor.content.value"
+          :content="core.previewResolution.content.value"
           :selected-block-id="editor.state.selectedBlockId"
           :dark-mode="editor.state.darkMode"
           :preview-mode="editor.state.previewMode"

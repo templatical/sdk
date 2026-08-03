@@ -38,9 +38,14 @@ import type {
   TemplateSettings,
   ThemeOverrides,
   UiTheme,
+  ResolvePreview,
   ViewportSize,
 } from "@templatical/types";
 import { hasMergeTagSamples, resolveSyntax } from "@templatical/types";
+import {
+  usePreviewResolution,
+  type UsePreviewResolutionReturn,
+} from "./usePreviewResolution";
 import type { Translations } from "../i18n";
 import type { OnRequestMedia } from "../index";
 import type { EditorCapabilities } from "../types/editor-capabilities";
@@ -65,6 +70,8 @@ import {
   MERGE_TAG_AUTOCOMPLETE_KEY,
   MERGE_TAG_PICKER_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
+  PREVIEW_RESOLUTION_KEY,
+  RESOLVE_PREVIEW_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
   LOGIC_TAGS_KEY,
   LOGIC_PAIRS_KEY,
@@ -218,6 +225,7 @@ export interface UseEditorCoreOptions {
     logicTags?: LogicTagsConfig;
     displayConditions?: DisplayConditionsConfig;
     onRequestMedia?: OnRequestMedia | null;
+    resolvePreview?: ResolvePreview;
     resolveImageUrl?: ResolveImageUrl | null;
     onSave?: () => void;
     lint?: LintOptions;
@@ -292,6 +300,8 @@ export interface UseEditorCoreReturn {
    * folds in the surface's editing guard.
    */
   mergeTagSampleMode: Ref<boolean>;
+  /** The `resolvePreview` seam, shared by every preview surface. */
+  previewResolution: UsePreviewResolutionReturn;
   registerCustomBlocks: (definitions: CustomBlockDefinition[]) => void;
   destroy: () => void;
 }
@@ -555,6 +565,20 @@ export function useEditorCore(
   );
   provide(MERGE_TAG_SAMPLE_MODE_KEY, mergeTagSampleMode);
 
+  // The `resolvePreview` seam. Instantiated unconditionally so the injection is
+  // always present, but it never calls the hook unless one is configured *and* a
+  // preview is showing — `isActive` is the editor's own preview mode.
+  //
+  // The test-email dialog has its own recipient, so it re-runs resolution
+  // through its own instance rather than this one; see `TestEmailModal`.
+  const previewResolution = usePreviewResolution({
+    resolvePreview: config.resolvePreview,
+    getContent: () => editor.content.value,
+    isActive: () => editor.state.previewMode,
+  });
+  provide(PREVIEW_RESOLUTION_KEY, previewResolution);
+  provide(RESOLVE_PREVIEW_KEY, config.resolvePreview);
+
   // Built-in merge tag picker singleton. Always instantiated so
   // `useMergeTag.requestMergeTag()` can fall through to it whenever
   // static `tags` are configured without an `onRequest` callback. Cost
@@ -631,6 +655,7 @@ export function useEditorCore(
     templateLint,
     popoverRoot,
     mergeTagSampleMode,
+    previewResolution,
     registerCustomBlocks,
     destroy,
   };

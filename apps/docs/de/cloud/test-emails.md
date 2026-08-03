@@ -26,7 +26,7 @@ Drei Bedingungen steuern die Schaltfläche, und keine folgt aus einer anderen �
 
 Die Liste kommt mit dem Auth-Token und wird mit einer Signatur zurückgesendet, die das Backend prüft. Das ist wesentlich, weil das SDK im Browser des Nutzers läuft: ohne eine serverseitig signierte Liste wäre der Endpunkt ein offenes Relay.
 
-Das ist der einzige Punkt, an dem sich Cloud und ein eigener Versand wirklich unterscheiden. Ein von Ihnen bereitgestellter Provider trägt ein `allowedRecipients`-Array, das **nicht signiert** ist — es schränkt die Auswahl ein, und Ihr eigenes Backend muss es durchsetzen. Siehe [Empfänger einschränken](/de/guide/test-email#empfänger-einschränken).
+Das ist der einzige Punkt, an dem sich Cloud und ein eigener Versand wirklich unterscheiden. Ein von Ihnen bereitgestellter Provider trägt ein `allowedRecipients`-Array, das **nicht signiert** ist — es schränkt die Auswahl ein, und Ihr eigenes Backend muss es durchsetzen. Siehe [Empfänger einschränken](/de/guide/test-email#empfanger-einschranken).
 
 ## Before-Send-Hook
 

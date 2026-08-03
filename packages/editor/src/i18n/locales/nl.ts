@@ -596,6 +596,12 @@ const nl: typeof en = {
       daysAgo: "{days} d geleden",
     },
   },
+  previewResolution: {
+    resolving: "Voorbeeld wordt opgelost…",
+    failed:
+      "Het voorbeeld kon niet worden opgelost — het niet-opgeloste sjabloon wordt weergegeven.",
+    hint: "Het voorbeeld gebruikt opgeloste gegevens uit uw backend.",
+  },
   mergeTagPreview: {
     label: "Weergave van samenvoegvelden",
     sample: "Voorbeeldwaarde",

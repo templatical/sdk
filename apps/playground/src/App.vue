@@ -27,6 +27,7 @@ import {
 } from "@templatical/editor";
 import type { TemplaticalEditor } from "@templatical/editor";
 import type {
+  PreviewResolveContext,
   TemplateContent,
   MergeTag,
   LogicTagsConfig,
@@ -348,6 +349,109 @@ const testEmailProvider: TestEmailProvider = {
       window as { __tplPlaygroundLastTestEmail?: unknown }
     ).__tplPlaygroundLastTestEmail = payload;
   },
+};
+
+/**
+ * Demo `resolvePreview`: evaluates the Liquid logic tags the showcase templates
+ * use, against a fixed fake recipient record, and substitutes value tags.
+ *
+ * Deliberately synchronous work behind an artificial delay, so the skeleton and
+ * the debounce are both observable in the playground without a backend. A real
+ * implementation would POST the template to your own service.
+ */
+const FAKE_RESOLVE_LATENCY_MS = 400;
+
+/** Per-recipient fake data, so switching recipient visibly changes the preview. */
+/**
+ * Per-recipient fake data. Deliberately **different from the `sample` values**
+ * on the same tags (`{{first_name}}`'s sample is "Ada"): if the two matched, a
+ * test asserting "the preview shows X" could be satisfied by sample
+ * substitution and would prove nothing about resolution.
+ */
+const FAKE_RECIPIENTS: Record<string, Record<string, string>> = {
+  "you@example.com": { first_name: "Grace", plan_name: "pro" },
+  "teammate@example.com": { first_name: "Marie", plan_name: "free" },
+};
+const FAKE_DEFAULT: Record<string, string> = {
+  first_name: "Grace",
+  plan_name: "pro",
+};
+
+/**
+ * Evaluates `{% if … %}` … `{% endif %}` blocks, keeping the body when the
+ * condition holds and dropping it otherwise. Handles both the bare form
+ * (`{% if vip %}`) and the comparison the showcase templates use
+ * (`{% if plan_name == 'pro' %}`).
+ *
+ * Intentionally minimal — a real resolver would use a template engine on the
+ * server. What matters for the demo is that logic tags **disappear** from a
+ * resolved preview, which is the one thing `MergeTag.sample` can never do.
+ */
+function evaluateLiquidLogic(
+  html: string,
+  data: Record<string, string>,
+): string {
+  const IF_BLOCK =
+    /<span data-logic-merge-tag="\{%\s*if\s+([^"%]+?)\s*%\}"[^>]*>.*?<\/span>([\s\S]*?)<span data-logic-merge-tag="\{%\s*endif\s*%\}"[^>]*>.*?<\/span>/g;
+
+  return html.replace(IF_BLOCK, (_m, condition: string, body: string) => {
+    // Quotes may arrive plain (`'pro'`) or entity-encoded (`&#39;pro&#39;`)
+    // depending on how the content was authored, so accept both. An earlier
+    // version required the entity form, which meant every comparison fell
+    // through to the truthiness branch and *both* arms of an if/else were
+    // dropped — the blue block rendered empty.
+    const QUOTE = "(?:&#0?39;|&#x27;|&quot;|[\"'])?";
+    const comparison = condition.match(
+      new RegExp(`^([\\w.]+)\\s*(==|!=)\\s*${QUOTE}(.*?)${QUOTE}$`),
+    );
+
+    if (comparison) {
+      const [, name, op, expected] = comparison;
+      const matches = data[name!] === expected;
+      return (op === "==" ? matches : !matches) ? body : "";
+    }
+
+    // Bare `{% if vip %}` — plain truthiness.
+    return data[condition.trim()] ? body : "";
+  });
+}
+
+const resolvePreviewDemo = async ({
+  content,
+  recipient,
+}: PreviewResolveContext): Promise<TemplateContent> => {
+  await new Promise((r) => setTimeout(r, FAKE_RESOLVE_LATENCY_MS));
+
+  const data = (recipient && FAKE_RECIPIENTS[recipient]) || FAKE_DEFAULT;
+
+  const resolveHtml = (html: string): string => {
+    let out = evaluateLiquidLogic(html, data);
+    // Spans FIRST, then bare tokens. The other order rewrites the token inside
+    // `data-merge-tag="{{x}}"`, which corrupts the attribute so the span no
+    // longer matches — the chip then survives and the editor renders the
+    // mangled attribute as the tag's label.
+    out = out.replace(
+      /<span data-merge-tag="\{\{(\w+)\}\}"[^>]*>.*?<\/span>/g,
+      (m, name: string) => data[name] ?? m,
+    );
+    for (const [key, value] of Object.entries(data)) {
+      out = out.split(`{{${key}}}`).join(value);
+    }
+    return out;
+  };
+
+  const walk = (blocks: TemplateContent["blocks"]): TemplateContent["blocks"] =>
+    blocks.map((block) => {
+      if (block.type === "section") {
+        return { ...block, children: block.children.map(walk) };
+      }
+      if (block.type === "title" || block.type === "paragraph") {
+        return { ...block, content: resolveHtml(block.content) };
+      }
+      return block;
+    });
+
+  return { ...content, blocks: walk(content.blocks) };
 };
 
 /** Swapped on each template open; read by `init()` via the config below. */
@@ -748,6 +852,13 @@ const displayConditions = {
 let selectedContent: TemplateContent | null = null;
 let selectedCustomBlocks: CustomBlockDefinition[] | undefined;
 let currentHtmlBlockPreview: boolean | undefined;
+/**
+ * Per-template opt-in for `resolvePreview`. Only one template wires it: a
+ * configured resolver supersedes `MergeTag.sample`, so a playground-wide
+ * resolver would hide the Sample/Label switch everywhere and leave that feature
+ * undemonstrable.
+ */
+let currentResolvePreview: boolean | undefined;
 let currentFonts: FontsConfig | undefined;
 let currentColors: ColorsConfig | undefined;
 // Per-template block/template defaults (Event Invitation's on-brand set). When
@@ -770,6 +881,8 @@ function chooseTemplate(
   // Per-template opt-in for the SDK's live HTML-block preview; reset on each
   // template open so other templates keep the default static placeholder.
   currentHtmlBlockPreview = template?.htmlBlockPreview;
+  // Reset on each open so every other template keeps showing sample values.
+  currentResolvePreview = template?.resolvePreview;
   // Per-template `fonts` config (e.g. the Newsletter curated-font-list demo);
   // reset on each open so other templates keep the full built-in font list.
   currentFonts = template?.fonts;
@@ -1151,6 +1264,7 @@ async function initEditor(): Promise<void> {
       // Also always on, and also backend-free — the provider fakes delivery so
       // the send/success/error path is exercisable on every template.
       testEmail: testEmailProvider,
+      resolvePreview: currentResolvePreview ? resolvePreviewDemo : undefined,
     });
     // E2E affordance: expose `editor.toMjml()` on window so Playwright tests
     // can read the export-path output without depending on the playground's

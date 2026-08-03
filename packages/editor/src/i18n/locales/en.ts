@@ -657,6 +657,11 @@ export default {
       daysAgo: "{days}d ago",
     },
   },
+  previewResolution: {
+    resolving: "Resolving preview…",
+    failed: "Preview couldn't be resolved — showing the unresolved template.",
+    hint: "Preview uses resolved data from your backend.",
+  },
   mergeTagPreview: {
     label: "Merge tag view",
     sample: "Sample",

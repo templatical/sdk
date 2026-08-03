@@ -11,6 +11,7 @@ import type {
   LogicPair,
   LogicTag,
   MergeTag,
+  ResolvePreview,
   SyntaxPreset,
 } from "@templatical/types";
 import type { Translations, CloudTranslations } from "./i18n";
@@ -133,6 +134,29 @@ export const MERGE_TAG_SAMPLE_MODE_KEY: InjectionKey<Ref<boolean>> =
  */
 export const USE_MERGE_TAG_SAMPLES_KEY: InjectionKey<ComputedRef<boolean>> =
   Symbol("useMergeTagSamples");
+
+/**
+ * The `resolvePreview` seam — resolved content plus its loading and failure
+ * state. Provided by `useEditorCore` so every preview surface shares one
+ * lifecycle; `null` when the consumer configured no hook.
+ *
+ * Surfaces read `content` from here instead of `editor.content`, and gate the
+ * Sample/Label toggle on `supersedesSamples`.
+ */
+/**
+ * The raw `config.resolvePreview` hook.
+ *
+ * Provided alongside PREVIEW_RESOLUTION_KEY because the test-email dialog needs
+ * its **own** resolution instance — it resolves for the selected recipient,
+ * which the editor's canvas has no notion of — and so cannot reuse the shared
+ * one. `undefined` when the consumer configured no hook.
+ */
+export const RESOLVE_PREVIEW_KEY: InjectionKey<ResolvePreview | undefined> =
+  Symbol("resolvePreview");
+
+export const PREVIEW_RESOLUTION_KEY: InjectionKey<
+  import("./composables/usePreviewResolution").UsePreviewResolutionReturn | null
+> = Symbol("previewResolution");
 
 /**
  * Singleton state for the built-in merge tag picker modal. Provided by

@@ -663,6 +663,12 @@ const ca: typeof en = {
       daysAgo: "fa {days} d",
     },
   },
+  previewResolution: {
+    resolving: "S’està resolent la vista prèvia…",
+    failed:
+      "No s’ha pogut resoldre la vista prèvia; es mostra la plantilla sense resoldre.",
+    hint: "La vista prèvia utilitza dades resoltes pel teu backend.",
+  },
   mergeTagPreview: {
     label: "Vista d’etiquetes de combinació",
     sample: "Exemple",

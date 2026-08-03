@@ -107,7 +107,10 @@ const { t: cloudT, format: cloudFormat } = useCloudI18nStrict();
       <!-- Preview mode only, exactly as in the OSS header: the editing canvas
            never substitutes, so the control would do nothing there. -->
       <MergeTagModeToggle
-        v-if="editor.state.previewMode"
+        v-if="
+          editor.state.previewMode &&
+          !core.previewResolution.supersedesSamples.value
+        "
         :sample-mode="core.mergeTagSampleMode.value"
         @change="core.mergeTagSampleMode.value = $event"
       />

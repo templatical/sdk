@@ -159,6 +159,13 @@ export {
   SYNTAX_PRESETS,
 } from "./merge-tags";
 
+// Preview resolution
+export type {
+  PreviewResolveContext,
+  ResolvePreview,
+} from "./preview-resolution";
+export { isRenderableTemplateContent } from "./preview-resolution";
+
 // Config
 export type {
   ColorsConfig,

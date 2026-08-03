@@ -20,6 +20,7 @@ import type {
   TemplateDefaults,
   ThemeOverrides,
   UiTheme,
+  ResolvePreview,
 } from "@templatical/types";
 import { createDefaultTemplateContent, safeClone } from "@templatical/types";
 import type { MediaRequestContext } from "@templatical/media-library";
@@ -92,6 +93,20 @@ export interface TemplaticalEditorConfig {
   onError?: (error: Error) => void;
 
   onRequestMedia?: OnRequestMedia;
+
+  /**
+   * Resolves the template for preview surfaces — typically evaluating logic
+   * tags (`{% if %}` … `{% endif %}`) against real data on your backend.
+   *
+   * Called when a preview opens and when the test-email recipient changes,
+   * debounced. Display-only: the result never reaches `getContent()`, a send or
+   * an export. Rejecting is safe — the preview falls back to the unresolved
+   * template and says so.
+   *
+   * Supersedes `MergeTag.sample` when configured: real data beats example data,
+   * so the Sample/Label switch stops rendering.
+   */
+  resolvePreview?: ResolvePreview;
 
   /**
    * Display-only resolver for image `src` values. The canvas calls this to

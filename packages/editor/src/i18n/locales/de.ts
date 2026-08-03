@@ -667,6 +667,12 @@ const de: typeof en = {
       daysAgo: "vor {days} Tagen",
     },
   },
+  previewResolution: {
+    resolving: "Vorschau wird aufgelöst…",
+    failed:
+      "Die Vorschau konnte nicht aufgelöst werden — die unaufgelöste Vorlage wird angezeigt.",
+    hint: "Die Vorschau verwendet aufgelöste Daten aus Ihrem Backend.",
+  },
   mergeTagPreview: {
     label: "Merge-Tag-Ansicht",
     sample: "Beispiel",

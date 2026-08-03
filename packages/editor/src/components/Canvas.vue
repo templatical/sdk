@@ -16,6 +16,7 @@ import {
   BLOCK_REGISTRY_KEY,
   CAPABILITIES_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
+  PREVIEW_RESOLUTION_KEY,
   USE_MERGE_TAG_SAMPLES_KEY,
   requireInject,
 } from "../keys";
@@ -101,9 +102,20 @@ const caps = inject(CAPABILITIES_KEY, {});
  * displayed value is safe.
  */
 const mergeTagSampleMode = inject(MERGE_TAG_SAMPLE_MODE_KEY, null);
+// Null in headless mounts and when no resolver is configured.
+const previewResolution = inject(PREVIEW_RESOLUTION_KEY, null);
 provide(
   USE_MERGE_TAG_SAMPLES_KEY,
-  computed(() => props.previewMode && (mergeTagSampleMode?.value ?? false)),
+  computed(
+    () =>
+      props.previewMode &&
+      (mergeTagSampleMode?.value ?? false) &&
+      // A configured resolver owns what the preview shows. Substituting samples
+      // underneath it would mix invented values with real ones, and on the
+      // failure path would contradict the note saying the *unresolved* template
+      // is showing.
+      !previewResolution?.isConfigured,
+  ),
 );
 
 const canUseAiChat = computed(
@@ -300,7 +312,38 @@ function handleFetchData(
         :style="canvasStyle"
         @click="handleCanvasClick"
       >
+        <!-- Preview resolution. The skeleton shows only on a *first* resolve —
+             `isInitialResolve` — so switching recipient or reopening keeps the
+             last good preview on screen instead of flashing over it. -->
+        <div
+          v-if="previewResolution?.isInitialResolve.value"
+          role="status"
+          aria-busy="true"
+          data-testid="preview-resolution-loading"
+          class="tpl:flex tpl:flex-col tpl:gap-3 tpl:p-6"
+        >
+          <span class="tpl:sr-only">{{ t.previewResolution.resolving }}</span>
+          <div
+            v-for="n in 3"
+            :key="n"
+            aria-hidden="true"
+            class="tpl-pulse tpl:h-16 tpl:rounded-md tpl:bg-[var(--tpl-bg-hover)]"
+          ></div>
+        </div>
+
+        <!-- Resolution failed: the unresolved template still renders below, so
+             the preview degrades rather than disappearing. -->
+        <p
+          v-else-if="previewResolution?.hasFailed.value"
+          role="status"
+          data-testid="preview-resolution-failed"
+          class="tpl:mx-6 tpl:mt-4 tpl:rounded-md tpl:px-3 tpl:py-2 tpl:text-xs tpl:text-[var(--tpl-text-muted)] tpl:bg-[var(--tpl-bg-hover)]"
+        >
+          {{ t.previewResolution.failed }}
+        </p>
+
         <VueDraggable
+          v-show="!previewResolution?.isInitialResolve.value"
           v-model="blocks"
           group="blocks"
           :animation="150"

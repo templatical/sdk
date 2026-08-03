@@ -102,6 +102,7 @@ const core = useEditorCore({
     logicTags: props.config.logicTags,
     displayConditions: props.config.displayConditions,
     onRequestMedia: props.config.onRequestMedia,
+    resolvePreview: props.config.resolvePreview,
     resolveImageUrl: props.config.resolveImageUrl,
     lint: resolveLintOptions(props.config),
     onSave: props.config.onSave
@@ -218,7 +219,10 @@ defineExpose({
              canvas, so offering the choice there would be a control with no
              effect. -->
         <MergeTagModeToggle
-          v-if="editor.state.previewMode"
+          v-if="
+            editor.state.previewMode &&
+            !core.previewResolution.supersedesSamples.value
+          "
           :sample-mode="core.mergeTagSampleMode.value"
           @change="core.mergeTagSampleMode.value = $event"
         />
@@ -283,7 +287,7 @@ defineExpose({
       <div class="tpl:flex tpl:justify-center tpl:p-8">
         <Canvas
           :viewport="editor.state.viewport"
-          :content="editor.content.value"
+          :content="core.previewResolution.content.value"
           :selected-block-id="editor.state.selectedBlockId"
           :dark-mode="editor.state.darkMode"
           :preview-mode="editor.state.previewMode"

@@ -32,7 +32,13 @@ import { looksLikeEmail } from "../utils/validateEmailShape";
 import { Check, LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref, watch } from "vue";
 import { hasMergeTagSamples, type ViewportSize } from "@templatical/types";
-import { EDITOR_KEY, MERGE_TAGS_KEY, MERGE_TAG_SAMPLE_MODE_KEY } from "../keys";
+import {
+  EDITOR_KEY,
+  MERGE_TAGS_KEY,
+  MERGE_TAG_SAMPLE_MODE_KEY,
+  RESOLVE_PREVIEW_KEY,
+} from "../keys";
+import { usePreviewResolution } from "../composables/usePreviewResolution";
 import type { TestEmailError } from "../composables/useTestEmailFeature";
 
 const props = defineProps<{
@@ -58,6 +64,21 @@ const recipient = ref("");
 const previewViewport = ref<ViewportSize>("desktop");
 
 /**
+ * Its own resolution instance rather than the editor's, because this dialog has
+ * a recipient and the editor's preview does not — resolving for "whoever is
+ * selected here" is a different question from resolving for the canvas.
+ * `isActive` is the dialog's own visibility.
+ */
+const resolvePreviewHook = inject(RESOLVE_PREVIEW_KEY, undefined);
+const previewResolution = usePreviewResolution({
+  resolvePreview: resolvePreviewHook ?? undefined,
+  getContent: () =>
+    editor?.content.value ?? { blocks: [], settings: {} as never },
+  isActive: () => props.visible,
+  getRecipient: () => recipient.value || undefined,
+});
+
+/**
  * Shared with the editor's own preview, so switching here and switching there
  * are the same choice — it is a property of how the user wants to read a
  * preview, not of one dialog. Falls back to a local ref for headless mounts.
@@ -69,19 +90,20 @@ const sharedSampleMode = inject(MERGE_TAG_SAMPLE_MODE_KEY, null);
 // it, since the toggle hides itself when nothing has a sample.
 const localSampleMode = ref(hasMergeTagSamples(inject(MERGE_TAGS_KEY, [])));
 const sampleMode = computed({
-  get: () => sharedSampleMode?.value ?? localSampleMode.value,
+  get: () =>
+    // Off entirely while a resolver is configured — same rule as the canvas.
+    previewResolution.isConfigured
+      ? false
+      : (sharedSampleMode?.value ?? localSampleMode.value),
   set: (on: boolean) => {
     if (sharedSampleMode) sharedSampleMode.value = on;
     else localSampleMode.value = on;
   },
 });
 
-/**
- * Read live from the editor rather than passed in, so a preview left open while
- * a Cloud collaborator edits stays current. Empty without an editor (headless
- * mounts), which simply renders an empty frame.
- */
-const previewBlocks = computed(() => editor?.content.value.blocks ?? []);
+const previewBlocks = computed(
+  () => previewResolution.content.value.blocks ?? [],
+);
 
 const hasAllowlist = computed(
   () =>
@@ -253,6 +275,7 @@ function handleKeydown(event: KeyboardEvent): void {
 
           <div class="tpl:flex tpl:items-center tpl:gap-2">
             <MergeTagModeToggle
+              v-if="!previewResolution.supersedesSamples.value"
               :sample-mode="sampleMode"
               @change="sampleMode = $event"
             />
@@ -273,7 +296,11 @@ function handleKeydown(event: KeyboardEvent): void {
           class="tpl:mt-1 tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
         >
           {{
-            sampleMode ? t.testEmail.previewHintSample : t.testEmail.previewHint
+            previewResolution.supersedesSamples.value
+              ? t.previewResolution.hint
+              : sampleMode
+                ? t.testEmail.previewHintSample
+                : t.testEmail.previewHint
           }}
         </p>
       </div>
@@ -285,7 +312,39 @@ function handleKeydown(event: KeyboardEvent): void {
         data-testid="test-email-preview"
         class="tpl:mb-3 tpl:min-h-0 tpl:flex-1 tpl:overflow-y-auto tpl:rounded-[var(--tpl-radius-sm)] tpl:p-3 tpl:bg-[var(--tpl-canvas-bg)]"
       >
+        <!-- Skeleton while a *first* resolve is outstanding, so the dialog never
+             flashes the unresolved template before the resolved one. Sized like
+             the frame it replaces to avoid a layout jump. A re-resolve (recipient
+             change) keeps the previous result instead — `isInitialResolve`. -->
+        <div
+          v-if="previewResolution.isInitialResolve.value"
+          role="status"
+          aria-busy="true"
+          data-testid="preview-resolution-loading"
+          class="tpl:flex tpl:flex-col tpl:gap-3"
+        >
+          <span class="tpl:sr-only">{{ t.previewResolution.resolving }}</span>
+          <div
+            v-for="n in 3"
+            :key="n"
+            aria-hidden="true"
+            class="tpl-pulse tpl:h-16 tpl:rounded-md tpl:bg-[var(--tpl-bg-hover)]"
+          ></div>
+        </div>
+
+        <!-- Resolution failed: the unresolved template renders below, so the
+             dialog degrades rather than showing an empty frame. -->
+        <p
+          v-else-if="previewResolution.hasFailed.value"
+          role="status"
+          data-testid="preview-resolution-failed"
+          class="tpl:mb-2 tpl:rounded-md tpl:px-3 tpl:py-2 tpl:text-xs tpl:text-[var(--tpl-text-muted)] tpl:bg-[var(--tpl-bg-hover)]"
+        >
+          {{ t.previewResolution.failed }}
+        </p>
+
         <BlockPreviewCanvas
+          v-if="!previewResolution.isInitialResolve.value"
           :blocks="previewBlocks"
           :viewport="previewViewport"
         />

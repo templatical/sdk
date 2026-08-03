@@ -662,6 +662,12 @@ const es: typeof en = {
       daysAgo: "hace {days} d",
     },
   },
+  previewResolution: {
+    resolving: "Resolviendo la vista previa…",
+    failed:
+      "No se pudo resolver la vista previa; se muestra la plantilla sin resolver.",
+    hint: "La vista previa usa datos resueltos por tu backend.",
+  },
   mergeTagPreview: {
     label: "Vista de etiquetas de combinación",
     sample: "Ejemplo",

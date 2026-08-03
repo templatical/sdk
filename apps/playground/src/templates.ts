@@ -2023,6 +2023,15 @@ export interface TemplateOption {
    */
   useBuiltInMergeTagPicker?: boolean;
   /**
+   * Wire the SDK's `resolvePreview` hook for this template only.
+   *
+   * Deliberately **not** global. A configured resolver supersedes
+   * `MergeTag.sample` — the Sample/Label switch stops rendering — so a
+   * playground-wide resolver would make it impossible to demo sample values at
+   * all. One template shows resolution; the others show samples.
+   */
+  resolvePreview?: boolean;
+  /**
    * Enable the SDK's `htmlBlockPreview` option — live rendering of HTML blocks
    * in the canvas — for this template only. The playground reads it per
    * template in `chooseTemplate` and passes it to `init()`, so every other
@@ -2146,7 +2155,18 @@ export const templates: TemplateOption[] = [
     preview: "welcome",
     customBlocks: [],
     useBuiltInMergeTagPicker: true,
+    // The one template that wires `resolvePreview`. It has both value tags and
+    // `{% if plan_name == … %}` branches, so a resolved preview visibly differs
+    // from the authored template — and because a resolver supersedes
+    // `MergeTag.sample`, every other template is left to demo Sample/Label.
+    resolvePreview: true,
     features: [
+      {
+        label: "Resolved Preview (resolvePreview)",
+        icon: "merge-tag",
+        description:
+          "This is the only template wired to the SDK\u2019s `resolvePreview` hook \u2014 a callback where your own backend resolves the template for preview. The playground fakes one: it waits ~400ms, then substitutes values and evaluates the {% if %} branches.\nTo try it: click the eye icon (Preview) in the top toolbar. The greeting becomes a real name, and the conditional block below the onboarding steps collapses to just the branch that applies \u2014 the IF/ENDIF badges disappear entirely.\nWhy a callback: sample values can substitute a value client-side, but they cannot take a branch, and Mailchimp/AMPscript logic is a server-side dialect no browser can evaluate. Only your backend can.\nNote the Sample/Label switch is absent here: real resolved data supersedes example data, so the editor hides the choice. Open Order Confirmation to see that switch instead.\nIt is display-only \u2014 export the template and the raw {{tokens}} are still there.",
+      },
       {
         label: "Built-in Merge Tag Picker",
         icon: "merge-tag",
@@ -2174,6 +2194,12 @@ export const templates: TemplateOption[] = [
     preview: "order",
     customBlocks: [shippingTrackerBlock],
     features: [
+      {
+        label: "Sample vs Label Preview",
+        icon: "merge-tag",
+        description:
+          "This template deliberately does NOT wire `resolvePreview`, so it showcases `MergeTag.sample` instead \u2014 example values the preview renders in place of a tag.\nTo try it: click Preview in the top toolbar, then use the Sample / Label switch beside the viewport toggle. Sample view shows realistic values as ordinary text; Label view shows the field names with their usual highlight.\nLook at the shipping address: {{first_name}} has a sample (\u201cAda\u201d) and renders as plain text, while {{last_name}} has none and keeps its highlighted label. The highlight follows the individual tag, not the view \u2014 so the remaining highlights are a list of tags still missing a sample.\nSamples are display-only: they never reach getContent(), a test send, or the MJML export.",
+      },
       {
         label: "Custom Block with Read-Only Fields",
         icon: "custom-block",

@@ -102,6 +102,53 @@ Logic tags (`{% if %}` … `{% endif %}`) are unaffected: substitution replaces 
 `sample` is also shown in the built-in picker, so an author can see what a tag will render before inserting it.
 :::
 
+## Resolving previews with real data
+
+`MergeTag.sample` covers value tags, but it cannot evaluate **logic tags** — `{% if %}` … `{% endif %}` blocks stay visible as keyword badges, because substituting a value is not the same as taking a branch. And for mailchimp or ampscript syntax, branching is a server-side dialect that no browser can evaluate.
+
+Pass `resolvePreview` and your own backend does it:
+
+```ts
+await init({
+  container: '#editor',
+  resolvePreview: async ({ content, recipient }) => {
+    const res = await fetch('/api/resolve-preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, recipient }),
+    });
+    if (!res.ok) throw new Error('Could not resolve');
+    return res.json(); // a TemplateContent
+  },
+});
+```
+
+`initCloud()` takes the **same key with the same type**, so adopting or dropping it is a one-line change either way. It is not plan-gated — resolving a preview is a display concern.
+
+### When it runs
+
+On entering preview mode, and — in the test-email dialog — whenever the recipient changes. Debounced 500ms, and never while editing: the canvas you type into always shows the tag you inserted.
+
+`recipient` is present only where a surface has one, so treat its absence as "no particular recipient" and return something renderable anyway.
+
+### While it runs, and when it fails
+
+A **first** resolve shows a skeleton. A re-resolve keeps the previous result on screen instead of flashing over content that is already correct.
+
+If your resolver rejects — or returns something that isn't a `TemplateContent` — the preview falls back to the **unresolved** template and says so inline. A resolver outage degrades the preview; it never blanks or breaks it. Failures are deliberately not routed to `onError`: a degraded preview is user-visible and non-fatal.
+
+Slow answers are discarded when a newer request supersedes them, so switching recipient twice can't land the first answer last.
+
+### It supersedes sample values entirely
+
+Configuring a resolver turns sample values **off** — the **Sample / Label** switch never renders, and the preview hint names your backend as the data source. Configure both and `resolvePreview` wins, with no way to switch back.
+
+That applies from the first frame, not once the first result lands: gating it on a resolved result made the switch appear for the debounce plus your resolver's latency and then vanish, which reads as a bug. It also keeps the failure note honest — it says the *unresolved* template is showing, which is only true if samples aren't substituting into the fallback.
+
+### It is display-only
+
+Resolved content reaches preview surfaces and nothing else. It is never written to editor state, never returned by `getContent()`, never sent by the test-email feature, and never exported — those always carry the real tokens. The `content` handed to your resolver is a copy, so mutating it cannot affect the editor.
+
 ## Syntax presets
 
 Templatical includes four built-in syntax presets. The `syntax` setting tells the editor how to detect and highlight both data tags and logic tags in content.

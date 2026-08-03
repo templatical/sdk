@@ -595,6 +595,12 @@ const fr: typeof en = {
       daysAgo: "il y a {days} j",
     },
   },
+  previewResolution: {
+    resolving: "Résolution de l’aperçu…",
+    failed:
+      "L’aperçu n’a pas pu être résolu — le modèle non résolu est affiché.",
+    hint: "L’aperçu utilise des données résolues par votre backend.",
+  },
   mergeTagPreview: {
     label: "Affichage des balises de fusion",
     sample: "Exemple",

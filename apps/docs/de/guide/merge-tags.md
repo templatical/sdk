@@ -102,6 +102,53 @@ Logik-Tags (`{% if %}` … `{% endif %}`) sind nicht betroffen: Die Ersetzung ta
 `sample` wird auch im integrierten Picker angezeigt, sodass Autoren vor dem Einfügen sehen, was ein Tag darstellen wird.
 :::
 
+## Vorschauen mit echten Daten auflösen
+
+`MergeTag.sample` deckt Wert-Tags ab, kann aber **Logik-Tags** nicht auswerten — `{% if %}` … `{% endif %}`-Blöcke bleiben als Schlüsselwort-Badges sichtbar, denn einen Wert zu ersetzen ist nicht dasselbe wie eine Verzweigung auszuwerten. Bei Mailchimp- oder AMPscript-Syntax ist Verzweigung zudem ein serverseitiger Dialekt, den kein Browser auswerten kann.
+
+Übergeben Sie `resolvePreview`, und Ihr eigenes Backend übernimmt das:
+
+```ts
+await init({
+  container: '#editor',
+  resolvePreview: async ({ content, recipient }) => {
+    const res = await fetch('/api/resolve-preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, recipient }),
+    });
+    if (!res.ok) throw new Error('Auflösen nicht möglich');
+    return res.json(); // ein TemplateContent
+  },
+});
+```
+
+`initCloud()` akzeptiert **denselben Schlüssel mit demselben Typ** — die Option zu übernehmen oder zu entfernen ist in beide Richtungen eine Ein-Zeilen-Änderung. Sie ist nicht planabhängig: eine Vorschau aufzulösen ist eine Anzeigefrage.
+
+### Wann sie ausgeführt wird
+
+Beim Wechsel in den Vorschaumodus und — im Test-E-Mail-Dialog — bei jedem Empfängerwechsel. Mit 500 ms Verzögerung, und **niemals während der Bearbeitung**: das Canvas, in das Sie schreiben, zeigt immer das eingefügte Tag.
+
+`recipient` ist nur dort vorhanden, wo eine Fläche einen Empfänger hat. Behandeln Sie das Fehlen als „kein bestimmter Empfänger" und geben Sie trotzdem darstellbaren Inhalt zurück.
+
+### Während der Ausführung und bei Fehlern
+
+Beim **ersten** Auflösen erscheint ein Platzhalter. Bei einem erneuten Auflösen bleibt das vorherige Ergebnis stehen, statt über bereits korrekten Inhalt zu blitzen.
+
+Wenn Ihr Resolver abbricht — oder etwas zurückgibt, das kein `TemplateContent` ist — fällt die Vorschau auf die **unaufgelöste** Vorlage zurück und weist darauf hin. Ein Ausfall verschlechtert die Vorschau, macht sie aber nie leer oder kaputt. Fehler werden bewusst **nicht** an `onError` gemeldet: eine verschlechterte Vorschau ist sichtbar und nicht fatal.
+
+Langsame Antworten werden verworfen, wenn eine neuere Anfrage sie überholt — ein zweifacher Empfängerwechsel kann also nicht die erste Antwort zuletzt anzeigen.
+
+### Sie hat vollständig Vorrang vor Beispielwerten
+
+Ein konfigurierter Resolver schaltet Beispielwerte **ab** — der Umschalter **Beispiel / Bezeichnung** erscheint überhaupt nicht, und der Vorschauhinweis nennt Ihr Backend als Datenquelle. Sind beide konfiguriert, gewinnt `resolvePreview`, ohne Möglichkeit zurückzuwechseln.
+
+Das gilt ab dem ersten Frame, nicht erst wenn das erste Ergebnis vorliegt: Hätte man es an ein aufgelöstes Ergebnis gekoppelt, wäre der Umschalter für die Dauer der Verzögerung plus der Resolver-Latenz erschienen und dann verschwunden — das wirkt wie ein Fehler. Außerdem bleibt der Fehlerhinweis so korrekt: er sagt, dass die *unaufgelöste* Vorlage angezeigt wird, was nur zutrifft, wenn keine Beispielwerte in den Rückfall eingesetzt werden.
+
+### Ausschließlich zur Anzeige
+
+Aufgelöster Inhalt erreicht nur Vorschauflächen. Er wird nie in den Editor-Zustand geschrieben, nie von `getContent()` zurückgegeben, nie von der Test-E-Mail-Funktion versendet und nie exportiert — dort stehen immer die echten Tokens. Der an Ihren Resolver übergebene `content` ist eine Kopie; ihn zu verändern hat keine Wirkung auf den Editor.
+
 ## Syntax-Presets
 
 Templatical enthält vier integrierte Syntax-Presets. Die Einstellung `syntax` teilt dem Editor mit, wie sowohl Daten-Tags als auch Logik-Tags im Inhalt erkannt und hervorgehoben werden sollen.

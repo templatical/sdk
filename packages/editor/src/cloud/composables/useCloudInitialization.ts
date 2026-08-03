@@ -282,6 +282,9 @@ export function useCloudInitialization(
       logicTags: config.logicTags,
       displayConditions: config.displayConditions,
       onRequestMedia: null, // cloud handles via mediaLib.handleRequestMedia
+      // Same key as init(), and deliberately not plan-gated: resolving a
+      // preview is a display concern, not a Cloud entitlement.
+      resolvePreview: config.resolvePreview,
       lint: resolveLintOptions(config),
       onSave: () => {
         onSaveHook.value?.().catch((err) => {
