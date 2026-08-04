@@ -142,6 +142,16 @@ Benutzer wählen eine Anzeigebedingung aus dem Einstellungsbereich des Blocks au
 
 Das Klicken auf das Filtersymbol blendet den Block aus und simuliert eine falsche Bedingung. Dies ermöglicht es Benutzern, eine Vorschau anzuzeigen, wie das Template aussieht, wenn bestimmte bedingte Blöcke nicht sichtbar sind. Wenn ein Block auf diese Weise ausgeblendet ist, erscheint eine Wiederherstellungsschaltfläche im Editor, um alle ausgeblendeten Blöcke wiederherzustellen.
 
+### Bedingungen echt auswerten
+
+Das Filtersymbol **simuliert** eine falsche Bedingung — es ist ein manuelles Was-wäre-wenn, und nichts prüft die Bedingung gegen Daten. Damit Bedingungen tatsächlich ausgewertet werden, verdrahten Sie den Hook [`resolvePreview`](/de/guide/preview-rendering): Ihr Backend erhält die Vorlage und kann Blöcke weglassen, deren Bedingung für einen bestimmten Empfänger nicht zutrifft — die Vorschau zeigt dann die echte Variante statt einer von Hand umgeschalteten.
+
+::: warning Block-IDs im Resolver beibehalten
+Der manuelle Filter verfolgt ausgeblendete Blöcke über die **Block-ID**, und dieser Filter wird auf das angewendet, was der Resolver zurückgibt. Ein Resolver, der Blöcke mit neuen IDs neu aufbaut, bringt ihn stillschweigend aus dem Takt, und von Hand ausgeblendete Blöcke erscheinen wieder.
+
+Verändern Sie Blöcke an ihrer Stelle — spreizen und Felder ersetzen — statt neue zu konstruieren.
+:::
+
 <img src="/images/display-condition-restore.png" alt="Schaltfläche zum Wiederherstellen ausgeblendeter Bedingungen" style="max-width: 360px;" />
 
 ::: tip Bedingte Inhalte testen

@@ -96,13 +96,17 @@ Eine gemischte Vorlage liest sich damit natürlich, wo Sie Daten hinterlegt habe
 
 `sample` verlässt die Vorschau nie. Der Wert wird nicht in die Vorlage geschrieben, nicht in `getContent()` aufgenommen, nicht von der Test-E-Mail-Funktion versendet und erscheint nicht in der MJML- oder HTML-Ausgabe — dort steht immer das echte Token. Nichts, was Sie in ein `sample` schreiben, kann einen Empfänger erreichen.
 
-Logik-Tags (`{% if %}` … `{% endif %}`) sind nicht betroffen: Die Ersetzung tauscht einen Wert aus, sie kann keine Verzweigung auswerten. Sie bleiben daher in beiden Ansichten als Schlüsselwort-Badges sichtbar.
+Logik-Tags (`{% if %}` … `{% endif %}`) sind nicht betroffen: Die Ersetzung tauscht einen Wert aus, sie kann keine Verzweigung auswerten. Sie bleiben daher in beiden Ansichten als Schlüsselwort-Badges sichtbar. Um auch diese aufzulösen, siehe [Vorschau-Rendering](/de/guide/preview-rendering).
 
 ::: tip
 `sample` wird auch im integrierten Picker angezeigt, sodass Autoren vor dem Einfügen sehen, was ein Tag darstellen wird.
 :::
 
 ## Vorschauen mit echten Daten auflösen
+
+::: tip Vollständige Anleitung
+Dies ist eine Zusammenfassung. [**Vorschau-Rendering**](/de/guide/preview-rendering) behandelt alle drei Vorschau-Ebenen — Bezeichnungen, Beispielwerte und aufgelöste Daten —, wie sie zusammenspielen, sowie Anwendungsfälle wie die Auswahl einer Beispielzielgruppe durch den Nutzer.
+:::
 
 `MergeTag.sample` deckt Wert-Tags ab, kann aber **Logik-Tags** nicht auswerten — `{% if %}` … `{% endif %}`-Blöcke bleiben als Schlüsselwort-Badges sichtbar, denn einen Wert zu ersetzen ist nicht dasselbe wie eine Verzweigung auszuwerten. Bei Mailchimp- oder AMPscript-Syntax ist Verzweigung zudem ein serverseitiger Dialekt, den kein Browser auswerten kann.
 

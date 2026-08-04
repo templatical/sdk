@@ -7,6 +7,8 @@ description: Control-Flow-Logik-Tags in Templatical-E-Mail-Vorlagen einfügen un
 
 Logik-Tags sind die Control-Flow-Tokens Ihrer Vorlagensyntax — Bedingungen und Schleifen wie <code v-pre>{% if vip %}</code> … <code v-pre>{% endif %}</code> oder <code v-pre>{% for item in items %}</code> … <code v-pre>{% endfor %}</code>. Sie sind **getrennt von [Merge-Tags](/de/guide/merge-tags)**: Merge-Tags sind Daten-Platzhalter, die man aus einer Liste auswählt, Logik-Tags sind Struktur, die Ihre Versandplattform zum Sendezeitpunkt auswertet.
 
+Weil sie erst beim Versand ausgewertet werden, zeigt der Editor sie als Badges an, statt die Verzweigung zu nehmen. Um Verzweigungen **in einer Vorschau aufgelöst** zu sehen, verdrahten Sie den `resolvePreview`-Hook — siehe [Vorschau-Rendering](/de/guide/preview-rendering). Das ist der einzige Weg, Logik aufzulösen: Beispielwerte können einen Wert ersetzen, aber keine Verzweigung auswerten.
+
 Es gibt zwei unabhängige Teile:
 
 - **Hervorhebung** — jedes Logik-Tag, das Sie in einen Titel- oder Absatzblock **tippen oder einfügen**, wird anhand des `logic`-Musters des Syntax-Presets erkannt und als großgeschriebenes Schlüsselwort-Badge dargestellt (**IF**, **ENDIF**, **FOR**…). Das ist immer aktiv und benötigt keine Konfiguration. Siehe [Merge-Tags → Hervorhebung von Logik-Tags](/de/guide/merge-tags#hervorhebung-von-logik-tags) für Details zur Erkennung und zu den Syntax-Presets.

@@ -109,7 +109,7 @@ Beste Treue erreichen Sie, indem Sie Styles vor dem Import inlinen. Produktions-
 
 - **Modernes HTML (Flex/Grid/`<div>`-Layouts)** — niedrige Treue, meist HTML-Fallback. Der Importer ist für tabellenbasiertes E-Mail-HTML optimiert.
 - **Custom Fonts** — `@font-face` wird nicht importiert. Schriften manuell über die [`fonts`-Konfiguration](/de/guide/fonts) einbinden.
-- **Anzeigebedingungen / Merge-Tags** — proprietäre Merge-Tag-Syntax (`{{var}}`, `*|VAR|*`, `<%= var %>`) bleibt als reiner Text erhalten. Mit Templaticals [Merge-Tags](/de/guide/merge-tags) bzw. [Anzeigebedingungen](/de/guide/display-conditions) neu aufbauen.
+- **Anzeigebedingungen / Merge-Tags** — proprietäre Merge-Tag-Syntax (<code v-pre>{{var}}</code>, `*|VAR|*`, `<%= var %>`) bleibt als reiner Text erhalten. Mit Templaticals [Merge-Tags](/de/guide/merge-tags) bzw. [Anzeigebedingungen](/de/guide/display-conditions) neu aufbauen.
 - **Externe Ressourcen** — `<link>`, externe Stylesheets, Web Fonts und Remote-Bilder werden nicht geladen. Bild-`src`-URLs bleiben unverändert.
 - **Outlook-MSO-Conditionals** — bleiben innerhalb des umgebenden Blocks als HTML erhalten (in Nicht-Outlook-Clients ohnehin inert).
 - **Formularelemente (`<form>`/`<input>`/`<button>`)** — bleiben als HTML-Fallback. Die meisten Mail-Clients blockieren Formular-Submits ohnehin; bauen Sie den CTA als Button mit Link auf eine gehostete Seite.

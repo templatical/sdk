@@ -144,6 +144,8 @@ In zwei Punkten ist sie korrekt, die eine naive Vorschau falsch darstellen würd
 - **Anzeigebedingungen werden berücksichtigt.** Ein durch eine Bedingung ausgeschlossener Block fehlt, sodass die Vorschau niemals Inhalte zeigt, die der Empfänger nicht erhält.
 - **Responsive Blöcke folgen dem Umschalter.** Vorlagen mit gerätespezifischen Blöcken zeigen die Variante, die ein Empfänger auf diesem Gerät erhält, statt immer die Desktop-Fassung.
 
-Sie ist bewusst **keine** Vorschau der zugestellten E-Mail. Merge-Tags erscheinen unaufgelöst — Ihr Backend setzt sie ein —, und die eigentliche Nachricht ist kompiliertes HTML, das ein E-Mail-Client darstellt. Der Dialog weist unter dem Umschalter darauf hin. Verstehen Sie sie als „Ist das die richtige Vorlage?", nicht als „Sieht es im Postfach genau so aus?".
+Was die Vorschau für Merge-Tags anzeigt, hängt davon ab, wie viel Sie konfiguriert haben — standardmäßig Bezeichnungen, `MergeTag.sample`-Werte wenn gesetzt, oder **von Ihrem eigenen Backend aufgelöste Daten**, wenn Sie `resolvePreview` verdrahten; dann wird für den *gewählten Empfänger* aufgelöst. Siehe [Vorschau-Rendering](/de/guide/preview-rendering); der Dialog weist unter dem Umschalter darauf hin, welche der drei Ebenen aktiv ist.
+
+Selbst vollständig aufgelöst ist sie keine Byte-für-Byte-Vorschau der zugestellten E-Mail: die eigentliche Nachricht ist kompiliertes HTML, das ein E-Mail-Client darstellt. Verstehen Sie sie als „Ist das die richtige Vorlage, mit den richtigen Daten?", nicht als „Sieht es im Postfach genau so aus?".
 
 Die Vorschau liegt im ohnehin verzögert geladenen Chunk des Dialogs — wer `testEmail` nicht konfiguriert, lädt davon nichts.

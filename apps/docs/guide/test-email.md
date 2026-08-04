@@ -144,6 +144,8 @@ It is accurate about two things that a naive preview would get wrong:
 - **Display conditions are honoured.** A block excluded by a condition is omitted, so the preview never shows content the recipient won't receive.
 - **Responsive blocks follow the switch.** Templates with device-specific blocks render the variant a recipient on that device would get, rather than always the desktop one.
 
-It is deliberately **not** a preview of the delivered email. Merge tags render unresolved — your backend substitutes them — and the real message is compiled HTML rendered by a mail client. The dialog says so beneath the switch. Treat it as "is this the right template?", not "is this exactly what lands in the inbox?".
+What the preview shows for merge tags depends on how much you have configured — labels by default, `MergeTag.sample` values if you set them, or **data resolved by your own backend** if you wire `resolvePreview`, in which case it resolves for the *selected recipient*. See [Preview Rendering](/guide/preview-rendering); the dialog states which of the three is in effect beneath the switch.
+
+Even fully resolved it is not a byte-for-byte preview of the delivered email: the real message is compiled HTML rendered by a mail client. Treat it as "is this the right template, with the right data?", not "is this exactly what lands in the inbox?".
 
 The preview rides the dialog's own lazily-loaded chunk, so a consumer who never configures `testEmail` downloads none of it.

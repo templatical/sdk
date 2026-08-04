@@ -93,6 +93,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Merge Tags", link: "/guide/merge-tags" },
         { text: "Logic Tags", link: "/guide/logic-tags" },
+        { text: "Preview Rendering", link: "/guide/preview-rendering" },
         { text: "Display Conditions", link: "/guide/display-conditions" },
         { text: "Custom Blocks", link: "/guide/custom-blocks" },
         { text: "Saved Blocks", link: "/guide/saved-blocks" },
@@ -254,6 +255,10 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Merge-Tags", link: "/de/guide/merge-tags" },
         { text: "Logik-Tags", link: "/de/guide/logic-tags" },
+        {
+          text: "Vorschau-Rendering",
+          link: "/de/guide/preview-rendering",
+        },
         { text: "Anzeigebedingungen", link: "/de/guide/display-conditions" },
         { text: "Benutzerdefinierte Blöcke", link: "/de/guide/custom-blocks" },
         { text: "Gespeicherte Blöcke", link: "/de/guide/saved-blocks" },

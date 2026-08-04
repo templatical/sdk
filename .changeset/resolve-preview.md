@@ -32,4 +32,6 @@ await init({
 
 **Display-only, structurally.** Resolved content reaches preview surfaces and nothing else: never editor state, never `getContent()`, never a send, never an export. The `content` handed to your resolver is a `safeClone` copy, so mutating it cannot affect the editor.
 
+Documented on a new **Preview Rendering** guide page covering all three preview layers — labels, `MergeTag.sample` and `resolvePreview` — how they compose, and use cases including letting the user pick an example audience from your own UI inside the callback.
+
 New exports from `@templatical/types`: `ResolvePreview`, `PreviewResolveContext`, `isRenderableTemplateContent`.

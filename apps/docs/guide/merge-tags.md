@@ -96,13 +96,17 @@ So a mixed template reads naturally where you've supplied data and stays visibly
 
 `sample` never leaves the preview. It is not written to the template, not included in `getContent()`, not sent by the test-email feature, and not present in MJML or HTML output — those always carry the real token. Nothing you put in a `sample` can reach a recipient.
 
-Logic tags (`{% if %}` … `{% endif %}`) are unaffected: substitution replaces a value, it cannot evaluate a branch, so they stay visible as keyword badges in both views.
+Logic tags (`{% if %}` … `{% endif %}`) are unaffected: substitution replaces a value, it cannot evaluate a branch, so they stay visible as keyword badges in both views. To resolve those too, see [Preview Rendering](/guide/preview-rendering).
 
 ::: tip
 `sample` is also shown in the built-in picker, so an author can see what a tag will render before inserting it.
 :::
 
 ## Resolving previews with real data
+
+::: tip Full guide
+This is a summary. [**Preview Rendering**](/guide/preview-rendering) covers all three preview layers — labels, samples and resolved data — how they compose, and use cases including letting the user pick an example audience.
+:::
 
 `MergeTag.sample` covers value tags, but it cannot evaluate **logic tags** — `{% if %}` … `{% endif %}` blocks stay visible as keyword badges, because substituting a value is not the same as taking a branch. And for mailchimp or ampscript syntax, branching is a server-side dialect that no browser can evaluate.
 
