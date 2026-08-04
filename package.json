@@ -2,7 +2,7 @@
   "name": "templatical",
   "dependencies": {
     "@vueuse/core": "^14.4.0",
-    "liquidjs": "^10.27.2",
+    "liquidjs": "^10.28.0",
     "vue": "^3.5.40",
     "vue-advanced-cropper": "^2.8.9"
   },
