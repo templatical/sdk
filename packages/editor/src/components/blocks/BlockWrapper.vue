@@ -302,6 +302,7 @@ function handleConditionToggle(): void {
       class="tpl:absolute tpl:-left-1 tpl:top-1/2 tpl:z-[5] tpl:-translate-x-full tpl:-translate-y-1/2"
     >
       <button
+        data-testid="condition-toggle"
         class="tpl-condition-toggle tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1 tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:text-[var(--tpl-primary)] tpl:border tpl:border-[var(--tpl-border)]"
         :aria-label="t.blockActions.conditionToggle"
         :title="block.displayCondition?.label"

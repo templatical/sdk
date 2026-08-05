@@ -265,4 +265,97 @@ test.describe("Preview resolution", () => {
     expect(mjml).toContain("{{first_name}}");
     expect(mjml).not.toContain(RESOLVED);
   });
+
+  /**
+   * The hand-toggled display-condition filter versus a resolver that evaluates
+   * conditions for real. Both act on the same canvas, so without a rule the
+   * manual hide silently vetoed the resolver's answer — and the restore button
+   * stayed up claiming blocks were hidden while the preview showed them.
+   *
+   * Anchored on `data-block-id` rather than block text: the resolver rewrites
+   * content, so a text assertion could pass or fail for reasons that have
+   * nothing to do with the filter.
+   */
+  test.describe("a resolver owns display conditions", () => {
+    /**
+     * Puts a display condition on the second block and hides it by hand,
+     * returning a locator for that specific block.
+     */
+    async function hideSecondBlockByCondition(editorPage: {
+      page: import("@playwright/test").Page;
+      selectBlock: (i: number) => Promise<void>;
+    }) {
+      const page = editorPage.page;
+
+      await editorPage.selectBlock(1);
+      const blockId = await page
+        .locator(SELECTORS.block)
+        .nth(1)
+        .getAttribute("data-block-id");
+      expect(blockId).toBeTruthy();
+      const block = page.locator(`[data-block-id="${blockId}"]`);
+
+      await page
+        .locator(SELECTORS.displayConditionSelect)
+        .selectOption({ label: "VIP Partners" });
+
+      // The filter icon only exists once the block carries a condition.
+      const toggle = block.locator(SELECTORS.conditionToggle);
+      await expect(toggle).toBeVisible();
+      await toggle.click();
+
+      await expect(block).toBeHidden();
+      await expect(page.locator(SELECTORS.restoreHiddenBlocks)).toBeVisible();
+
+      return block;
+    }
+
+    test("the filter and its restore button step aside once resolved content shows", async ({
+      editorPage,
+    }) => {
+      const page = editorPage.page;
+      const block = await hideSecondBlockByCondition(editorPage);
+
+      await editorPage.togglePreview();
+      // Wait for the resolver to land, so this cannot pass off the skeleton.
+      await expect(page.locator(SELECTORS.canvasBody)).toContainText(RESOLVED);
+
+      // The resolver decided what this recipient sees; the manual hide must not
+      // override it, and the button that undoes it must not outlive it.
+      await expect(block).toBeVisible();
+      await expect(page.locator(SELECTORS.restoreHiddenBlocks)).toBeHidden();
+    });
+
+    test("leaving the preview restores the hidden block, so nothing was discarded", async ({
+      editorPage,
+    }) => {
+      const page = editorPage.page;
+      const block = await hideSecondBlockByCondition(editorPage);
+
+      await editorPage.togglePreview();
+      await expect(page.locator(SELECTORS.canvasBody)).toContainText(RESOLVED);
+      await expect(block).toBeVisible();
+
+      await editorPage.togglePreview();
+
+      // This is what separates suppressing the filter from resetting it: a view
+      // toggle must not throw away the user's simulation.
+      await expect(block).toBeHidden();
+      await expect(page.locator(SELECTORS.restoreHiddenBlocks)).toBeVisible();
+    });
+
+    test("the restore button still works while editing", async ({
+      editorPage,
+    }) => {
+      // Positive control for the two tests above: if the filter were suppressed
+      // unconditionally rather than only under a resolver, this would fail.
+      const page = editorPage.page;
+      const block = await hideSecondBlockByCondition(editorPage);
+
+      await page.locator(SELECTORS.restoreHiddenBlocks).click();
+
+      await expect(block).toBeVisible();
+      await expect(page.locator(SELECTORS.restoreHiddenBlocks)).toBeHidden();
+    });
+  });
 });

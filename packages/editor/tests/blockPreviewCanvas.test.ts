@@ -108,6 +108,7 @@ describe('BlockPreviewCanvas visibility and viewport', () => {
   function mountWith(opts: {
     hideExcluded?: boolean;
     viewport?: 'desktop' | 'mobile';
+    applyConditionFilter?: boolean;
   }) {
     const kept = createParagraphBlock({ content: '<p>kept</p>' });
     const excluded = createParagraphBlock({ content: '<p>excluded</p>' });
@@ -117,6 +118,9 @@ describe('BlockPreviewCanvas visibility and viewport', () => {
       props: {
         blocks: [kept, excluded],
         ...(opts.viewport ? { viewport: opts.viewport } : {}),
+        ...(opts.applyConditionFilter === undefined
+          ? {}
+          : { applyConditionFilter: opts.applyConditionFilter }),
       },
       provides: {
         [CONDITION_PREVIEW_KEY]: {
@@ -141,6 +145,26 @@ describe('BlockPreviewCanvas visibility and viewport', () => {
     expect(wrapper.text()).toContain('kept');
     // Omitted from the DOM, not merely hidden — the preview must not carry
     // content the recipient will never receive.
+    expect(wrapper.text()).not.toContain('excluded');
+  });
+
+  it('keeps a condition-hidden block when the filter does not apply', () => {
+    // A resolver owns the preview: it already evaluated every condition against
+    // real data, so a hand-toggled hide must not veto its answer.
+    const { wrapper } = mountWith({
+      hideExcluded: true,
+      applyConditionFilter: false,
+    });
+
+    expect(wrapper.text()).toContain('kept');
+    expect(wrapper.text()).toContain('excluded');
+  });
+
+  it('applies the filter by default, so saved-blocks surfaces are unchanged', () => {
+    // The prop's default is the positive control for the case above: if it ever
+    // flipped to false, the assertion above would pass for the wrong reason.
+    const { wrapper } = mountWith({ hideExcluded: true });
+
     expect(wrapper.text()).not.toContain('excluded');
   });
 

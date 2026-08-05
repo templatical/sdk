@@ -119,6 +119,13 @@ export const SELECTORS = {
   // Preview resolution (the consumer `resolvePreview` hook)
   previewResolutionLoading: '[data-testid="preview-resolution-loading"]',
   previewResolutionFailed: '[data-testid="preview-resolution-failed"]',
+
+  // Display conditions. The filter icon simulates a falsy condition; the restore
+  // button undoes every such hide. Both step aside while a resolver owns the
+  // preview — see the "a resolver owns display conditions" e2e group.
+  displayConditionSelect: '[data-testid="display-condition-select"]',
+  conditionToggle: '[data-testid="condition-toggle"]',
+  restoreHiddenBlocks: '[data-testid="restore-hidden-blocks"]',
   /** A merge tag still rendered as a chip — i.e. NOT substituted. */
   mergeTagSpan: "span[data-merge-tag]",
   /** The dotted-underline cue used for tags in plain-string fields. */

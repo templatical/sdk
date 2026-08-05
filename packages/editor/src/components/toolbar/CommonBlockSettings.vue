@@ -189,6 +189,7 @@ function toggleVisibility(key: VisibilityKey): void {
     >
       <div class="tpl:space-y-2">
         <select
+          data-testid="display-condition-select"
           class="tpl:w-full tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:outline-none tpl:transition-all tpl:duration-150 tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
           :class="
             block.displayCondition

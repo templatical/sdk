@@ -317,6 +317,7 @@ defineExpose({
               border-color: var(--tpl-warning);
               backdrop-filter: blur(8px);
             "
+            data-testid="restore-hidden-blocks"
             @click="core.conditionPreview.reset()"
           >
             <RotateCcw :size="13" :stroke-width="2" />

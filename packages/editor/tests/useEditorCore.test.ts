@@ -1,6 +1,13 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { defineComponent, h, ref, type InjectionKey, inject } from 'vue';
+import {
+  defineComponent,
+  h,
+  reactive,
+  ref,
+  type InjectionKey,
+  inject,
+} from 'vue';
 import { mount } from '@vue/test-utils';
 import type { TemplateContent } from '@templatical/types';
 
@@ -295,6 +302,70 @@ describe('useEditorCore', () => {
       const capabilities = { hasComments: true } as any;
       const { captured } = mountCore({ capabilities } as any);
       expect(captured.injected!.capabilities).toBe(capabilities);
+    });
+  });
+
+  /**
+   * The rule that decides whether a hand-toggled display-condition hide still
+   * applies. It has to fold in *both* halves — preview mode and whether a
+   * resolver owns the preview — because getting either wrong is a live bug:
+   * drop the `previewMode` half and editing loses the filter entirely; drop the
+   * `isConfigured` half and a manual hide silently vetoes the resolver's answer
+   * while the restore button sits there claiming blocks are hidden.
+   */
+  describe('appliesConditionFilter', () => {
+    function coreWith(opts: { previewMode: boolean; withResolver: boolean }) {
+      // `reactive` over the mock's plain state, so the computed actually tracks
+      // `previewMode` — a non-reactive mock would let a broken computed pass.
+      const base = makeEditor();
+      const editor = { ...base, state: reactive(base.state) };
+      const { captured } = mountCore({
+        editor: editor as any,
+        config: opts.withResolver
+          ? { resolvePreview: async () => ({ blocks: [], settings: {} }) }
+          : {},
+      } as any);
+      editor.state.previewMode = opts.previewMode;
+      return { core: captured.core!, editor };
+    }
+
+    it('applies while editing without a resolver', () => {
+      const { core } = coreWith({ previewMode: false, withResolver: false });
+      expect(core.appliesConditionFilter.value).toBe(true);
+    });
+
+    it('applies while editing even with a resolver configured', () => {
+      // The editing canvas is never resolved, so the simulation belongs to it.
+      const { core } = coreWith({ previewMode: false, withResolver: true });
+      expect(core.appliesConditionFilter.value).toBe(true);
+    });
+
+    it('applies while previewing without a resolver', () => {
+      // Simulate-then-preview is the whole point of the filter; suppressing it
+      // here would delete the feature for every consumer with no resolver.
+      const { core } = coreWith({ previewMode: true, withResolver: false });
+      expect(core.appliesConditionFilter.value).toBe(true);
+    });
+
+    it('does not apply while previewing with a resolver', () => {
+      const { core } = coreWith({ previewMode: true, withResolver: true });
+      expect(core.appliesConditionFilter.value).toBe(false);
+    });
+
+    it('tracks previewMode so the restore button can disappear on toggle', () => {
+      const { core, editor } = coreWith({
+        previewMode: false,
+        withResolver: true,
+      });
+      expect(core.appliesConditionFilter.value).toBe(true);
+
+      editor.state.previewMode = true;
+      expect(core.appliesConditionFilter.value).toBe(false);
+
+      // And back — the suppression must not be one-way, or leaving the preview
+      // would never restore the user's simulation.
+      editor.state.previewMode = false;
+      expect(core.appliesConditionFilter.value).toBe(true);
     });
   });
 

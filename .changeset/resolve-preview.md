@@ -30,6 +30,8 @@ await init({
 
 **Supersedes sample values entirely.** Configuring a resolver turns `MergeTag.sample` off: the Sample/Label switch never renders and the preview hint names your backend as the data source. This applies from the first frame rather than once a result lands — gating it on resolved content made the switch appear for the debounce plus resolver latency and then vanish. It also keeps the failure note truthful, since that note says the *unresolved* template is showing.
 
+**Supersedes the display-condition filter too**, for the same reason. A block hidden by hand via its filter icon would otherwise stay hidden over resolved content — vetoing the condition your backend just evaluated against real data, while the "Show all hidden blocks" button sat there claiming blocks were hidden that the preview was showing. The filter and that button now step aside whenever a resolver owns the preview. The hides are **suppressed, not discarded**: they return on leaving the preview, so a view toggle never loses work, including when the resolve fails and the unresolved template is what renders. Editing is untouched, and previewing *without* a resolver keeps simulate-then-preview exactly as before.
+
 **Display-only, structurally.** Resolved content reaches preview surfaces and nothing else: never editor state, never `getContent()`, never a send, never an export. The `content` handed to your resolver is a `safeClone` copy, so mutating it cannot affect the editor.
 
 Documented on a new **Preview Rendering** guide page covering all three preview layers — labels, `MergeTag.sample` and `resolvePreview` — how they compose, and use cases including letting the user pick an example audience from your own UI inside the callback.

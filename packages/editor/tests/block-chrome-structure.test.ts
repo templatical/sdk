@@ -578,6 +578,86 @@ describe("preview-mode visibility gate", () => {
   });
 });
 
+describe("a resolver owns the display-condition filter", () => {
+  /**
+   * The hand-toggled condition filter must step aside while a configured
+   * `resolvePreview` owns the preview: the resolver evaluated each condition
+   * against real data, so a manual hide layered on top vetoes the answer that
+   * was asked for — and leaves the restore button asserting blocks are hidden
+   * when the preview shows them.
+   *
+   * The rule lives in `useEditorCore` and is *injected* everywhere else. That
+   * is the invariant with teeth: a component that re-derived it from
+   * `previewMode` + `isConfigured` locally is exactly how the two halves drift
+   * apart, which is the lesson already learned with `USE_MERGE_TAG_SAMPLES_KEY`.
+   */
+  const core = read("composables/useEditorCore.ts");
+  const canvas = read("components/Canvas.vue");
+  const sectionBlock = read("components/blocks/SectionBlock.vue");
+  const editor = read("Editor.vue");
+  const cloudEditor = read("cloud/CloudEditor.vue");
+  const previewCanvas = read("components/BlockPreviewCanvas.vue");
+  const testEmailModal = read("components/TestEmailModal.vue");
+
+  it("useEditorCore owns the rule and folds in both halves", () => {
+    expect(core).toMatch(
+      /const\s+appliesConditionFilter\s*=\s*computed\([\s\S]{0,200}?previewMode[\s\S]{0,120}?previewResolution\.isConfigured/,
+    );
+    expect(core).toMatch(
+      /provide\(APPLIES_CONDITION_FILTER_KEY,\s*appliesConditionFilter\)/,
+    );
+  });
+
+  it("suppresses rather than resetting, so leaving the preview restores the simulation", () => {
+    // `reset()` would discard the user's hand-hides on a mere view toggle, and
+    // would discard them even when the resolve then fails and the *unresolved*
+    // template is what renders. Nothing may clear the set on preview enter.
+    expect(core).not.toMatch(/previewMode[\s\S]{0,200}?conditionPreview\.reset/);
+  });
+
+  it("Canvas and SectionBlock inject the rule instead of re-deriving it", () => {
+    for (const [label, src] of [
+      ["Canvas", canvas],
+      ["SectionBlock", sectionBlock],
+    ] as const) {
+      expect(src, label).toMatch(
+        /inject\(APPLIES_CONDITION_FILTER_KEY,\s*null\)/,
+      );
+      // No local copy of the rule.
+      expect(src, label).not.toMatch(
+        /appliesConditionFilter\s*=\s*computed\(/,
+      );
+      expect(src, label).toMatch(
+        /appliesConditionFilter === false \|\|\s*!conditionPreview\?\.isHidden/,
+      );
+    }
+  });
+
+  it("both editors gate the restore button on the same rule", () => {
+    // Otherwise the button outlives the filter it controls — the reported bug.
+    for (const [label, src] of [
+      ["Editor", editor],
+      ["CloudEditor", cloudEditor],
+    ] as const) {
+      expect(src, label).toMatch(
+        /hasHiddenBlocks\.value &&\s*core\.appliesConditionFilter\.value/,
+      );
+    }
+  });
+
+  it("the test-email preview takes the rule as a prop, not an injection", () => {
+    // That dialog builds its own resolution instance keyed to the selected
+    // recipient, so injecting the shared canvas instance would consult the
+    // wrong one.
+    expect(previewCanvas).toMatch(/applyConditionFilter\?:\s*boolean/);
+    expect(previewCanvas).toMatch(/applyConditionFilter:\s*true/);
+    expect(previewCanvas).not.toMatch(/APPLIES_CONDITION_FILTER_KEY/);
+    expect(testEmailModal).toMatch(
+      /:apply-condition-filter="!previewResolution\.isConfigured"/,
+    );
+  });
+});
+
 describe("countdown resolves only through the block registry", () => {
   /**
    * `countdown` is the one Cloud-only block (its animated GIF is rendered
