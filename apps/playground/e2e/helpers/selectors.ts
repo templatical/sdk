@@ -123,6 +123,8 @@ export const SELECTORS = {
   // Display conditions. The filter icon simulates a falsy condition; the restore
   // button undoes every such hide. Both step aside while a resolver owns the
   // preview — see the "a resolver owns display conditions" e2e group.
+  /** Header of the sidebar's Display condition section — collapsed by default. */
+  displayConditionSection: '[data-testid="display-condition-section"]',
   displayConditionSelect: '[data-testid="display-condition-select"]',
   conditionToggle: '[data-testid="condition-toggle"]',
   restoreHiddenBlocks: '[data-testid="restore-hidden-blocks"]',

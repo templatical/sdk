@@ -183,6 +183,7 @@ function toggleVisibility(key: VisibilityKey): void {
 
     <CollapsibleSection
       v-if="hasDisplayConditions"
+      header-test-id="display-condition-section"
       :title="t.blockSettings.displayCondition"
       :open="openSections.has('condition')"
       @toggle="toggleSection('condition')"

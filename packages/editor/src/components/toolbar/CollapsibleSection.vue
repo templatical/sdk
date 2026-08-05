@@ -5,6 +5,11 @@ defineProps<{
   title: string;
   open: boolean;
   noBorder?: boolean;
+  /**
+   * Optional test hook on the header button. The title is the only other way to
+   * address a section, and it is localized — which the e2e selector rules ban.
+   */
+  headerTestId?: string;
 }>();
 
 defineEmits<{
@@ -19,6 +24,7 @@ defineEmits<{
   >
     <button
       type="button"
+      :data-testid="headerTestId"
       class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:border-none tpl:bg-transparent tpl:p-0 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
       @click="$emit('toggle')"
     >

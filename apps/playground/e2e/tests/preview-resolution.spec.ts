@@ -295,9 +295,14 @@ test.describe("Preview resolution", () => {
       expect(blockId).toBeTruthy();
       const block = page.locator(`[data-block-id="${blockId}"]`);
 
-      await page
-        .locator(SELECTORS.displayConditionSelect)
-        .selectOption({ label: "VIP Partners" });
+      // The section is collapsed by default, and its contents are `v-show`n —
+      // present in the DOM but not actionable until expanded.
+      const select = page.locator(SELECTORS.displayConditionSelect);
+      await expect(select).toBeHidden();
+      await page.locator(SELECTORS.displayConditionSection).click();
+      await expect(select).toBeVisible();
+
+      await select.selectOption({ label: "VIP Partners" });
 
       // The filter icon only exists once the block carries a condition.
       const toggle = block.locator(SELECTORS.conditionToggle);
