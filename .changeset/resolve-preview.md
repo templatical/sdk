@@ -20,7 +20,7 @@ await init({
 });
 ```
 
-**This is what `MergeTag.sample` cannot do.** Samples substitute value tags client-side; they can't evaluate **logic tags** — `{% if %}` … `{% endif %}` blocks stay visible as keyword badges, because substituting a value isn't taking a branch. And mailchimp/ampscript branching is a server-side dialect no browser can evaluate, so only your backend can. `initCloud()` takes the same key with the same type, and it is not plan-gated.
+**This is what `MergeTag.sample` cannot do.** Samples substitute value tags client-side; they can't evaluate **logic tags** — `{% if %}` … `{% endif %}` blocks stay visible as keyword badges, because substituting a value isn't taking a branch. And mailchimp/ampscript branching is a server-side dialect no browser can evaluate, so only your backend can.
 
 **Preview surfaces only, never while editing.** Runs on entering preview mode and — in the test-email dialog — on every recipient change, debounced 500ms. The editing canvas always shows the tag you inserted.
 

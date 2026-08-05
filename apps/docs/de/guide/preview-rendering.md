@@ -25,7 +25,7 @@ Das beantwortet die Frage *„welches Feld steht hier?"*. Es sagt nichts darübe
 
 ## Beispielwerte
 
-Geben Sie einem Tag ein `sample`, und Vorschauen zeigen stattdessen diesen Wert:
+Geben Sie einem Tag ein `sample`, und Vorschauen zeigen es anstelle der Bezeichnung:
 
 ```ts
 mergeTags: {
@@ -36,7 +36,22 @@ mergeTags: {
 }
 ```
 
-Ein Umschalter **Beispiel / Bezeichnung** erscheint neben dem Viewport-Umschalter, sodass Nutzer zwischen der realistischen Ansicht und den Feldnamen wechseln können. Alle Details — einschließlich der Hervorhebungsregel pro Tag und der Verfügbarkeitsbedingung — finden Sie unter [Merge-Tags → Beispielwerte](/de/guide/merge-tags#beispielwerte-in-vorschauen).
+`sample` zu setzen ist die vollständige Aktivierung — es gibt keinen zusätzlichen Schalter. Zum Feld selbst siehe [Merge-Tags](/de/guide/merge-tags#beispielwerte).
+
+### Der Umschalter Beispiel / Bezeichnung
+
+Ein Umschalter **Beispiel / Bezeichnung** erscheint neben dem Viewport-Umschalter, sobald eine Vorschau angezeigt wird, sodass Nutzer zwischen der realistischen Ansicht und den Feldnamen wechseln können. Die Wahl gilt für die Sitzung.
+
+Er erscheint **nur, wenn mindestens ein konfiguriertes Tag ein `sample` deklariert**, und nur dann starten Vorschauen in der Ansicht „Beispiel". Konfigurieren Sie keines, verhält sich der Editor genau wie zuvor — Ansicht „Bezeichnung", kein Umschalter. Die Funktion bleibt also unsichtbar, bis Sie sie aktivieren.
+
+### Die Hervorhebung folgt dem Tag, nicht der Ansicht
+
+| | In der Ansicht „Beispiel" | In der Ansicht „Bezeichnung" |
+| --- | --- | --- |
+| Tag **mit** `sample` | der Beispielwert als gewöhnlicher Text — ohne Hervorhebung | die Bezeichnung, hervorgehoben |
+| Tag **ohne** `sample` | die Bezeichnung, **hervorgehoben** | die Bezeichnung, hervorgehoben |
+
+Eine teilweise konfigurierte Vorlage liest sich damit natürlich, wo Sie Daten hinterlegt haben, und bleibt sichtbar dynamisch, wo nicht — die verbleibenden Hervorhebungen sind gleichzeitig eine Liste der Tags, denen noch ein `sample` fehlt.
 
 **Beispielwerte können keine Logik auswerten.** Einen Wert zu ersetzen ist nicht dasselbe wie eine Verzweigung auszuwerten, daher bleiben `{% if %}` … `{% endif %}`-Blöcke als Badges sichtbar, egal wie viele Beispielwerte Sie setzen. Genau für diese Grenze existiert die nächste Ebene.
 

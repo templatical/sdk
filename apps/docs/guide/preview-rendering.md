@@ -25,7 +25,7 @@ This answers *"which field goes here?"*. It doesn't tell you what the email will
 
 ## Sample values
 
-Give a tag a `sample` and previews render that instead:
+Give a tag a `sample` and previews render that instead of its label:
 
 ```ts
 mergeTags: {
@@ -36,7 +36,22 @@ mergeTags: {
 }
 ```
 
-A **Sample / Label** switch appears beside the viewport toggle so the user can flip between the realistic view and the field names. Full details — including the per-tag highlight rule and the availability gate — are on [Merge Tags → Sample values](/guide/merge-tags#sample-values-in-previews).
+Setting `sample` is the whole opt-in — there is no flag alongside it. See [Merge Tags](/guide/merge-tags#sample-values) for the field itself.
+
+### The Sample / Label switch
+
+A **Sample / Label** switch appears beside the viewport toggle whenever a preview is showing, so a user can flip between the realistic view and the field names. The choice lasts for the session.
+
+It renders **only when at least one configured tag declares a `sample`**, and previews default to Sample view only in that case. Configure none and the editor behaves exactly as before — Label view, no switch — so this is invisible until you opt in.
+
+### The highlight follows the tag, not the view
+
+| | In Sample view | In Label view |
+| --- | --- | --- |
+| Tag **with** a `sample` | the sample, as ordinary text — no highlight | its label, highlighted |
+| Tag **without** one | its label, **highlighted** | its label, highlighted |
+
+So a partly-configured template reads naturally where you've supplied data and stays visibly dynamic where you haven't — the remaining highlights double as a list of tags still missing a sample.
 
 **Samples can't evaluate logic.** Substituting a value is not the same as taking a branch, so `{% if %}` … `{% endif %}` blocks stay visible as badges no matter how many samples you set. That ceiling is what the next layer exists for.
 

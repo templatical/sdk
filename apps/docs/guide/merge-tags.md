@@ -56,9 +56,9 @@ The `value` must include the syntax delimiters. For example, with Liquid syntax:
 
 The `group` and `description` fields are picker-only — they do not appear in the editor canvas, in autocomplete, or in the rendered MJML output. They are ignored if you only use `onRequest` for tag selection.
 
-## Sample values in previews
+## Sample values
 
-By default a preview shows each tag's **label** — `First Name` rather than the real recipient's name — which answers "which field goes here?" but doesn't read like an email anyone receives. Give a tag a `sample` and previews can render that instead:
+A tag can carry a `sample` — an example value that **preview surfaces** render in its place, so a preview reads like a delivered email instead of a list of field names:
 
 ```ts
 mergeTags: {
@@ -69,89 +69,9 @@ mergeTags: {
 }
 ```
 
-Setting `sample` is the whole opt-in — there is no flag to enable alongside it.
+Setting `sample` is the whole opt-in — there is no flag to enable alongside it. The value never leaves the preview: it is not written to the template, not returned by `getContent()`, not sent, and not present in MJML output. It also shows in the built-in picker, so an author can see what a tag will render before inserting it.
 
-### Where it applies
-
-**Preview surfaces only**, never while editing. Substitution happens in preview mode and in the test-email dialog's preview; on the editing canvas a tag always shows its label, so you keep seeing the field you inserted rather than a value you never typed.
-
-A **Sample / Label** switch appears beside the viewport toggle whenever a preview is showing, so you can flip between the realistic view and the field-name view. The choice lasts for the session.
-
-### Nothing appears until you configure a sample
-
-The switch renders **only when at least one configured tag declares a `sample`**, and previews default to Sample view only in that case. Configure none and the editor behaves exactly as it did before — Label view, no switch — so this feature is invisible until you opt in.
-
-### What changes visually
-
-The highlight follows the individual tag, not the view:
-
-| | In Sample view | In Label view |
-| --- | --- | --- |
-| Tag **with** a `sample` | the sample, as ordinary text — no highlight | its label, highlighted |
-| Tag **without** one | its label, **highlighted** | its label, highlighted |
-
-So a mixed template reads naturally where you've supplied data and stays visibly dynamic where you haven't — the remaining highlights double as a list of tags still missing a sample.
-
-### It is display-only
-
-`sample` never leaves the preview. It is not written to the template, not included in `getContent()`, not sent by the test-email feature, and not present in MJML or HTML output — those always carry the real token. Nothing you put in a `sample` can reach a recipient.
-
-Logic tags (`{% if %}` … `{% endif %}`) are unaffected: substitution replaces a value, it cannot evaluate a branch, so they stay visible as keyword badges in both views. To resolve those too, see [Preview Rendering](/guide/preview-rendering).
-
-::: tip
-`sample` is also shown in the built-in picker, so an author can see what a tag will render before inserting it.
-:::
-
-## Resolving previews with real data
-
-::: tip Full guide
-This is a summary. [**Preview Rendering**](/guide/preview-rendering) covers all three preview layers — labels, samples and resolved data — how they compose, and use cases including letting the user pick an example audience.
-:::
-
-`MergeTag.sample` covers value tags, but it cannot evaluate **logic tags** — `{% if %}` … `{% endif %}` blocks stay visible as keyword badges, because substituting a value is not the same as taking a branch. And for mailchimp or ampscript syntax, branching is a server-side dialect that no browser can evaluate.
-
-Pass `resolvePreview` and your own backend does it:
-
-```ts
-await init({
-  container: '#editor',
-  resolvePreview: async ({ content, recipient }) => {
-    const res = await fetch('/api/resolve-preview', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, recipient }),
-    });
-    if (!res.ok) throw new Error('Could not resolve');
-    return res.json(); // a TemplateContent
-  },
-});
-```
-
-`initCloud()` takes the **same key with the same type**, so adopting or dropping it is a one-line change either way. It is not plan-gated — resolving a preview is a display concern.
-
-### When it runs
-
-On entering preview mode, and — in the test-email dialog — whenever the recipient changes. Debounced 500ms, and never while editing: the canvas you type into always shows the tag you inserted.
-
-`recipient` is present only where a surface has one, so treat its absence as "no particular recipient" and return something renderable anyway.
-
-### While it runs, and when it fails
-
-A **first** resolve shows a skeleton. A re-resolve keeps the previous result on screen instead of flashing over content that is already correct.
-
-If your resolver rejects — or returns something that isn't a `TemplateContent` — the preview falls back to the **unresolved** template and says so inline. A resolver outage degrades the preview; it never blanks or breaks it. Failures are deliberately not routed to `onError`: a degraded preview is user-visible and non-fatal.
-
-Slow answers are discarded when a newer request supersedes them, so switching recipient twice can't land the first answer last.
-
-### It supersedes sample values entirely
-
-Configuring a resolver turns sample values **off** — the **Sample / Label** switch never renders, and the preview hint names your backend as the data source. Configure both and `resolvePreview` wins, with no way to switch back.
-
-That applies from the first frame, not once the first result lands: gating it on a resolved result made the switch appear for the debounce plus your resolver's latency and then vanish, which reads as a bug. It also keeps the failure note honest — it says the *unresolved* template is showing, which is only true if samples aren't substituting into the fallback.
-
-### It is display-only
-
-Resolved content reaches preview surfaces and nothing else. It is never written to editor state, never returned by `getContent()`, never sent by the test-email feature, and never exported — those always carry the real tokens. The `content` handed to your resolver is a copy, so mutating it cannot affect the editor.
+**How previews use it — the Sample / Label switch, which tags keep their highlight, and what happens on the editing canvas — is covered in [Preview Rendering](/guide/preview-rendering).** That page also documents `resolvePreview`, the hook for having your own backend resolve a preview, which is the only way to evaluate logic tags.
 
 ## Syntax presets
 

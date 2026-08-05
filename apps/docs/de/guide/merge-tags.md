@@ -56,9 +56,9 @@ Der `value` muss die Syntax-Trennzeichen enthalten. Zum Beispiel mit Liquid-Synt
 
 Die Felder `group` und `description` sind ausschließlich für den Picker — sie erscheinen weder im Editor-Canvas, noch in der Autovervollständigung, noch in der gerenderten MJML-Ausgabe. Sie werden ignoriert, wenn Sie nur `onRequest` für die Tag-Auswahl verwenden.
 
-## Beispielwerte in Vorschauen
+## Beispielwerte
 
-Standardmäßig zeigt eine Vorschau die **Bezeichnung** jedes Tags — `First Name` statt des echten Empfängernamens. Das beantwortet die Frage „welches Feld steht hier?", liest sich aber nicht wie eine E-Mail, die jemand erhält. Geben Sie einem Tag ein `sample`, damit Vorschauen stattdessen diesen Wert anzeigen:
+Ein Tag kann ein `sample` tragen — einen Beispielwert, den **Vorschauflächen** an seiner Stelle anzeigen, sodass eine Vorschau wie eine zugestellte E-Mail liest statt wie eine Liste von Feldnamen:
 
 ```ts
 mergeTags: {
@@ -69,89 +69,9 @@ mergeTags: {
 }
 ```
 
-`sample` zu setzen ist die vollständige Aktivierung — es gibt keinen zusätzlichen Schalter.
+`sample` zu setzen ist die vollständige Aktivierung — es gibt keinen zusätzlichen Schalter. Der Wert verlässt die Vorschau nie: er wird nicht in die Vorlage geschrieben, nicht von `getContent()` zurückgegeben, nicht versendet und erscheint nicht in der MJML-Ausgabe. Er wird außerdem im integrierten Picker angezeigt, sodass Autoren vor dem Einfügen sehen, was ein Tag darstellen wird.
 
-### Wo es greift
-
-**Nur auf Vorschauflächen, niemals während der Bearbeitung.** Die Ersetzung geschieht im Vorschaumodus und in der Vorschau des Test-E-Mail-Dialogs; im Editor-Canvas zeigt ein Tag immer seine Bezeichnung, sodass Sie weiterhin das eingefügte Feld sehen und nicht einen Wert, den Sie nie eingegeben haben.
-
-Ein Umschalter **Beispiel / Bezeichnung** erscheint neben dem Viewport-Umschalter, sobald eine Vorschau angezeigt wird. Die Wahl gilt für die Sitzung.
-
-### Nichts erscheint, bis Sie ein `sample` konfigurieren
-
-Der Umschalter erscheint **nur, wenn mindestens ein konfiguriertes Tag ein `sample` deklariert**, und nur dann starten Vorschauen in der Ansicht „Beispiel". Konfigurieren Sie keines, verhält sich der Editor genau wie zuvor — Ansicht „Bezeichnung", kein Umschalter. Die Funktion bleibt also unsichtbar, bis Sie sie aktivieren.
-
-### Was sich visuell ändert
-
-Die Hervorhebung folgt dem einzelnen Tag, nicht der Ansicht:
-
-| | In der Ansicht „Beispiel" | In der Ansicht „Bezeichnung" |
-| --- | --- | --- |
-| Tag **mit** `sample` | der Beispielwert als gewöhnlicher Text — ohne Hervorhebung | die Bezeichnung, hervorgehoben |
-| Tag **ohne** `sample` | die Bezeichnung, **hervorgehoben** | die Bezeichnung, hervorgehoben |
-
-Eine gemischte Vorlage liest sich damit natürlich, wo Sie Daten hinterlegt haben, und bleibt sichtbar dynamisch, wo nicht — die verbleibenden Hervorhebungen sind gleichzeitig eine Liste der Tags, denen noch ein `sample` fehlt.
-
-### Ausschließlich zur Anzeige
-
-`sample` verlässt die Vorschau nie. Der Wert wird nicht in die Vorlage geschrieben, nicht in `getContent()` aufgenommen, nicht von der Test-E-Mail-Funktion versendet und erscheint nicht in der MJML- oder HTML-Ausgabe — dort steht immer das echte Token. Nichts, was Sie in ein `sample` schreiben, kann einen Empfänger erreichen.
-
-Logik-Tags (`{% if %}` … `{% endif %}`) sind nicht betroffen: Die Ersetzung tauscht einen Wert aus, sie kann keine Verzweigung auswerten. Sie bleiben daher in beiden Ansichten als Schlüsselwort-Badges sichtbar. Um auch diese aufzulösen, siehe [Vorschau-Rendering](/de/guide/preview-rendering).
-
-::: tip
-`sample` wird auch im integrierten Picker angezeigt, sodass Autoren vor dem Einfügen sehen, was ein Tag darstellen wird.
-:::
-
-## Vorschauen mit echten Daten auflösen
-
-::: tip Vollständige Anleitung
-Dies ist eine Zusammenfassung. [**Vorschau-Rendering**](/de/guide/preview-rendering) behandelt alle drei Vorschau-Ebenen — Bezeichnungen, Beispielwerte und aufgelöste Daten —, wie sie zusammenspielen, sowie Anwendungsfälle wie die Auswahl einer Beispielzielgruppe durch den Nutzer.
-:::
-
-`MergeTag.sample` deckt Wert-Tags ab, kann aber **Logik-Tags** nicht auswerten — `{% if %}` … `{% endif %}`-Blöcke bleiben als Schlüsselwort-Badges sichtbar, denn einen Wert zu ersetzen ist nicht dasselbe wie eine Verzweigung auszuwerten. Bei Mailchimp- oder AMPscript-Syntax ist Verzweigung zudem ein serverseitiger Dialekt, den kein Browser auswerten kann.
-
-Übergeben Sie `resolvePreview`, und Ihr eigenes Backend übernimmt das:
-
-```ts
-await init({
-  container: '#editor',
-  resolvePreview: async ({ content, recipient }) => {
-    const res = await fetch('/api/resolve-preview', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content, recipient }),
-    });
-    if (!res.ok) throw new Error('Auflösen nicht möglich');
-    return res.json(); // ein TemplateContent
-  },
-});
-```
-
-`initCloud()` akzeptiert **denselben Schlüssel mit demselben Typ** — die Option zu übernehmen oder zu entfernen ist in beide Richtungen eine Ein-Zeilen-Änderung. Sie ist nicht planabhängig: eine Vorschau aufzulösen ist eine Anzeigefrage.
-
-### Wann sie ausgeführt wird
-
-Beim Wechsel in den Vorschaumodus und — im Test-E-Mail-Dialog — bei jedem Empfängerwechsel. Mit 500 ms Verzögerung, und **niemals während der Bearbeitung**: das Canvas, in das Sie schreiben, zeigt immer das eingefügte Tag.
-
-`recipient` ist nur dort vorhanden, wo eine Fläche einen Empfänger hat. Behandeln Sie das Fehlen als „kein bestimmter Empfänger" und geben Sie trotzdem darstellbaren Inhalt zurück.
-
-### Während der Ausführung und bei Fehlern
-
-Beim **ersten** Auflösen erscheint ein Platzhalter. Bei einem erneuten Auflösen bleibt das vorherige Ergebnis stehen, statt über bereits korrekten Inhalt zu blitzen.
-
-Wenn Ihr Resolver abbricht — oder etwas zurückgibt, das kein `TemplateContent` ist — fällt die Vorschau auf die **unaufgelöste** Vorlage zurück und weist darauf hin. Ein Ausfall verschlechtert die Vorschau, macht sie aber nie leer oder kaputt. Fehler werden bewusst **nicht** an `onError` gemeldet: eine verschlechterte Vorschau ist sichtbar und nicht fatal.
-
-Langsame Antworten werden verworfen, wenn eine neuere Anfrage sie überholt — ein zweifacher Empfängerwechsel kann also nicht die erste Antwort zuletzt anzeigen.
-
-### Sie hat vollständig Vorrang vor Beispielwerten
-
-Ein konfigurierter Resolver schaltet Beispielwerte **ab** — der Umschalter **Beispiel / Bezeichnung** erscheint überhaupt nicht, und der Vorschauhinweis nennt Ihr Backend als Datenquelle. Sind beide konfiguriert, gewinnt `resolvePreview`, ohne Möglichkeit zurückzuwechseln.
-
-Das gilt ab dem ersten Frame, nicht erst wenn das erste Ergebnis vorliegt: Hätte man es an ein aufgelöstes Ergebnis gekoppelt, wäre der Umschalter für die Dauer der Verzögerung plus der Resolver-Latenz erschienen und dann verschwunden — das wirkt wie ein Fehler. Außerdem bleibt der Fehlerhinweis so korrekt: er sagt, dass die *unaufgelöste* Vorlage angezeigt wird, was nur zutrifft, wenn keine Beispielwerte in den Rückfall eingesetzt werden.
-
-### Ausschließlich zur Anzeige
-
-Aufgelöster Inhalt erreicht nur Vorschauflächen. Er wird nie in den Editor-Zustand geschrieben, nie von `getContent()` zurückgegeben, nie von der Test-E-Mail-Funktion versendet und nie exportiert — dort stehen immer die echten Tokens. Der an Ihren Resolver übergebene `content` ist eine Kopie; ihn zu verändern hat keine Wirkung auf den Editor.
+**Wie Vorschauen ihn verwenden — der Umschalter Beispiel / Bezeichnung, welche Tags ihre Hervorhebung behalten und was im Bearbeitungs-Canvas passiert — ist unter [Vorschau-Rendering](/de/guide/preview-rendering) beschrieben.** Diese Seite dokumentiert auch `resolvePreview`, den Hook, mit dem Ihr eigenes Backend eine Vorschau auflöst — der einzige Weg, Logik-Tags auszuwerten.
 
 ## Syntax-Presets
 
