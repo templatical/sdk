@@ -1096,8 +1096,35 @@ const defaultDarkTheme = {
   canvasBg: "oklch(10% 0.003 60)",
 };
 
-let currentTheme: Record<string, string> = { ...defaultTheme };
-let currentDarkTheme: Record<string, string> = { ...defaultDarkTheme };
+/**
+ * `tpl-playground-theme-override` / `…-dark-override` seed a distinctive
+ * `theme` before the first `init()`, as a JSON patch over the defaults above.
+ *
+ * The playground's own defaults deliberately mirror the SDK's stock tokens, so
+ * a themed editor is pixel-identical to an unthemed one — which makes every
+ * "does the theme reach here?" assertion vacuous. e2e needs a value that could
+ * only have come from `theme`. Editing the Config panel would do it, but that
+ * panel is a CodeMirror instance and driving it from Playwright is far more
+ * fragile than the config it is setting. Same shape as the saved-blocks
+ * `…-readonly` / `…-delay` flags: storage-only, no UI, invisible to visitors.
+ */
+function readThemeOverride(key: string): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+let currentTheme: Record<string, string> = {
+  ...defaultTheme,
+  ...readThemeOverride("tpl-playground-theme-override"),
+};
+let currentDarkTheme: Record<string, string> = {
+  ...defaultDarkTheme,
+  ...readThemeOverride("tpl-playground-dark-theme-override"),
+};
 
 function buildSerializableConfig() {
   return {

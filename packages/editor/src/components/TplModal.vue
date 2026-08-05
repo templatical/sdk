@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useFocusTrap } from "../composables";
 import { usePopoverRoot } from "../composables/usePopoverRoot";
-import { UI_THEME_KEY } from "../keys";
+import { THEME_STYLES_KEY, UI_THEME_KEY } from "../keys";
 import { computed, inject, ref } from "vue";
 
 const props = defineProps<{
@@ -18,6 +18,17 @@ const isVisible = computed(() => props.visible);
 useFocusTrap(dialogRef, isVisible);
 
 const tplUiTheme = inject(UI_THEME_KEY);
+
+// The backdrop below carries the bare `tpl` class, which re-declares every
+// `--tpl-*` token from the base `.tpl` rule. A custom property declared on an
+// element beats one inherited from an ancestor, so that re-declaration shadows
+// the consumer's `theme` config — which lives as inline styles on the editor
+// root — for this whole teleported subtree. Re-applying `themeStyles` here is
+// what restores it, and doing it on the backdrop covers every dialog rendered
+// through this wrapper rather than each one remembering to. `data-tpl-theme`
+// does the same job for the dark token block. See the invariant in
+// `tests/theme-token-scope.test.ts` (issue #487).
+const themeStyles = inject(THEME_STYLES_KEY, null);
 const popoverRoot = usePopoverRoot();
 
 function handleKeydown(event: KeyboardEvent): void {
@@ -47,6 +58,7 @@ function handleKeydown(event: KeyboardEvent): void {
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
         "
+        :style="themeStyles"
         @click.self="emit('close')"
         @keydown="handleKeydown"
       >
