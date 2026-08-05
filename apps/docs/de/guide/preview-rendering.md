@@ -76,8 +76,6 @@ await init({
 });
 ```
 
-`initCloud()` akzeptiert **denselben Schlüssel mit demselben Typ** — die Option zu übernehmen oder zu entfernen ist in beide Richtungen eine Ein-Zeilen-Änderung. Sie ist nicht planabhängig: eine Vorschau aufzulösen ist eine Anzeigefrage, keine Berechtigung.
-
 ### Warum ein Callback und keine integrierte Engine
 
 Templatical unterstützt vier Merge-Tag-Syntaxen, und zwei davon — **Mailchimp** und **AMPscript** — drücken Verzweigungen in einem serverseitigen Dialekt aus, der sich im Browser nicht auswerten lässt, weder von uns noch von jemand anderem. Eine eigene Engine würde Logik für Liquid-Nutzer auflösen und für alle anderen nicht — schlechter als konsistentes Verhalten. Ihr Backend kennt Ihre Daten und Ihren Dialekt bereits; dieser Hook übergibt ihm die Vorlage.

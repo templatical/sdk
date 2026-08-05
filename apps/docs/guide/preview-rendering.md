@@ -76,8 +76,6 @@ await init({
 });
 ```
 
-`initCloud()` takes the **same key with the same type**, so adopting or dropping it is a one-line change either way. It is not plan-gated: resolving a preview is a display concern, not an entitlement.
-
 ### Why a callback rather than a built-in engine
 
 Templatical supports four merge-tag syntaxes, and two of them — **Mailchimp** and **AMPscript** — express branching in a server-side dialect that cannot be evaluated in a browser by us or by anyone. A first-party engine would resolve logic for Liquid consumers and nothing for everyone else, which is worse than being consistent. Your backend already knows your data and your dialect; this hook hands the template to it.
