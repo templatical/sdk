@@ -143,6 +143,29 @@ Keep PRs small and focused. One concern per PR — reviewers move faster, and yo
 - Use named exports unless there's a strong reason for a default export.
 - For Vue components, use `<script setup lang="ts">`. The repo conventions in [`CLAUDE.md`](./CLAUDE.md#conventions) cover specifics (i18n via `useI18n()`, `tpl:` Tailwind prefix, lazy-loading heavy deps, `_destroyed` guards on async work).
 
+### The bare `tpl` class re-declares every theme token
+
+`packages/editor/src/styles/index.css` declares the full `--tpl-*` set on `.tpl`. The editor's `theme` config option, by contrast, arrives as **inline styles on the editor root**. Inline specificity beats a class selector on the same element — but a custom property declared on a *descendant* beats one inherited from an ancestor, whatever the specificity. So any nested element that also matches `.tpl` resets every token to its stock default for its entire subtree, and the consumer's `theme` silently disappears from that part of the UI. Dark mode and `--tpl-user-*` variables keep working, which is what makes it easy to miss.
+
+When you add UI, prefer **not** adding the bare `tpl` class. `tpl:`-prefixed Tailwind utilities and `tpl-*` component classes are unaffected — only the bare token re-opens the declaration block — and anything under the editor root inherits the tokens already, including teleports into `.tpl-popover-root`. If an element genuinely must re-establish the block, inject `THEME_STYLES_KEY` and bind it:
+
+```vue
+<script setup lang="ts">
+import { THEME_STYLES_KEY, UI_THEME_KEY } from "../keys";
+
+const themeStyles = inject(THEME_STYLES_KEY, null);
+const tplUiTheme = inject(UI_THEME_KEY);
+</script>
+
+<template>
+  <div class="tpl …" :data-tpl-theme="tplUiTheme" :style="themeStyles">…</div>
+</template>
+```
+
+`data-tpl-theme` is the same problem for the dark token block — the two go together.
+
+`packages/editor/tests/theme-token-scope.test.ts` enforces this and names the offending file, so you'll find out before review.
+
 ## Where to ask questions
 
 - 💬 **[GitHub Discussions](https://github.com/templatical/sdk/discussions)** — design questions, "how do I…?", showcase what you've built.
