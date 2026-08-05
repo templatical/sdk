@@ -12,6 +12,7 @@ import { ImageUp, Sparkles, SquarePlus } from "@lucide/vue";
 import { computed, inject, provide, ref, type Component } from "vue";
 import {
   EDITOR_KEY,
+  APPLIES_CONDITION_FILTER_KEY,
   CONDITION_PREVIEW_KEY,
   BLOCK_REGISTRY_KEY,
   CAPABILITIES_KEY,
@@ -128,6 +129,12 @@ const canUseDesignToTemplate = computed(
     (caps.plan?.hasFeature("ai_generation") ?? false) &&
     (caps.ai?.isFeatureEnabled("designToTemplate") ?? false),
 );
+
+/**
+ * Whether the hand-toggled display-condition filter applies here. Owned by
+ * `useEditorCore` and injected rather than re-derived — see the key's comment.
+ */
+const appliesConditionFilter = inject(APPLIES_CONDITION_FILTER_KEY, null);
 
 const blocks = computed({
   get: () => props.content.blocks,
@@ -427,7 +434,10 @@ function handleFetchData(
             v-for="block in blocks"
             :key="block.id"
             class="tpl-block-item"
-            v-show="!conditionPreview?.isHidden(block.id)"
+            v-show="
+              appliesConditionFilter === false ||
+              !conditionPreview?.isHidden(block.id)
+            "
           >
             <div class="tpl:relative">
               <!-- Collaboration lock overlay -->

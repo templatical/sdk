@@ -41,8 +41,20 @@ const props = withDefaults(
      * the variant a recipient on that device would receive.
      */
     viewport?: ViewportSize;
+    /**
+     * Whether the hand-toggled display-condition filter still applies here.
+     * `false` where a resolver owns the preview: it has already evaluated every
+     * condition against real data, so layering a manual hide on top would veto
+     * the answer that was asked for.
+     *
+     * A prop rather than an injected `PREVIEW_RESOLUTION_KEY` read, because the
+     * test-email dialog builds its *own* resolution instance (keyed to the
+     * selected recipient) — injecting would consult the shared canvas instance
+     * and get the wrong answer.
+     */
+    applyConditionFilter?: boolean;
   }>(),
-  { viewport: "desktop" },
+  { viewport: "desktop", applyConditionFilter: true },
 );
 
 const blockRegistry = inject(BLOCK_REGISTRY_KEY);
@@ -70,9 +82,13 @@ provide(
  * which aren't in the current template, so nothing is tracked as hidden. It
  * bites where it should — the save dialog and the test-email preview, both of
  * which show blocks that are live on the canvas.
+ *
+ * Skipped entirely when `applyConditionFilter` is false — see the prop.
  */
 const visibleBlocks = computed(() =>
-  props.blocks.filter((block) => !conditionPreview?.isHidden(block.id)),
+  props.applyConditionFilter
+    ? props.blocks.filter((block) => !conditionPreview?.isHidden(block.id))
+    : props.blocks,
 );
 
 /**

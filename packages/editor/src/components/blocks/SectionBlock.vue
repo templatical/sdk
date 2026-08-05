@@ -19,6 +19,7 @@ import { computed, inject, type Component } from "vue";
 import { VueDraggable } from "vue-draggable-plus";
 import {
   EDITOR_KEY,
+  APPLIES_CONDITION_FILTER_KEY,
   CONDITION_PREVIEW_KEY,
   BLOCK_REGISTRY_KEY,
   CAPABILITIES_KEY,
@@ -44,6 +45,8 @@ const editor = requireInject(EDITOR_KEY, "SectionBlock");
 const conditionPreview = inject(CONDITION_PREVIEW_KEY, null);
 const blockRegistry = inject(BLOCK_REGISTRY_KEY, null);
 const caps = inject(CAPABILITIES_KEY, {});
+// Provided by the surface, never re-derived here — see the key's comment.
+const appliesConditionFilter = inject(APPLIES_CONDITION_FILTER_KEY, null);
 
 /**
  * A click on a column child either picks the whole section (during a
@@ -175,7 +178,10 @@ function handleFetchData(
           <div
             v-for="childBlock in getColumnBlocks(colIndex)"
             :key="childBlock.id"
-            v-show="!conditionPreview?.isHidden(childBlock.id)"
+            v-show="
+              appliesConditionFilter === false ||
+              !conditionPreview?.isHidden(childBlock.id)
+            "
           >
             <BlockWrapper
               :block="childBlock"

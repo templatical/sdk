@@ -168,8 +168,6 @@ While your dialog is open the preview shows its skeleton, which is what you want
 
 [Display conditions](/guide/display-conditions) let a block be shown only when some rule holds. In the editor a user *simulates* that by clicking the block's filter icon — nothing checks the rule against data. A resolver can do it properly: omit blocks whose condition doesn't hold for the recipient, and the preview shows the real variation.
 
-**Keep the block IDs.** The manual filter tracks hidden blocks by ID and is applied to what your resolver returns, so rebuilding blocks with fresh IDs makes hand-hidden blocks reappear. Transform in place.
-
 ### Run a template engine the browser can't
 
 If your tokens are AMPscript or Mailchimp syntax, this is the only way to see branches resolved at all. Post the template to the service that already renders your sends and return its output.

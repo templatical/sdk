@@ -306,7 +306,10 @@ defineExpose({
       <div class="tpl:sticky tpl:top-0 tpl:z-40 tpl:h-0">
         <Transition name="tpl-restore-btn">
           <button
-            v-if="core.conditionPreview.hasHiddenBlocks.value"
+            v-if="
+              core.conditionPreview.hasHiddenBlocks.value &&
+              core.appliesConditionFilter.value
+            "
             class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:-translate-x-1/2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-full tpl:border tpl:px-3.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:whitespace-nowrap tpl:shadow-md tpl:hover:opacity-80"
             style="
               background-color: var(--tpl-warning-light);

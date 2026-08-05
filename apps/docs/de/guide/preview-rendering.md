@@ -169,8 +169,6 @@ Während Ihr Dialog offen ist, zeigt die Vorschau ihren Platzhalter — genau ri
 
 [Anzeigebedingungen](/de/guide/display-conditions) lassen einen Block nur erscheinen, wenn eine Regel zutrifft. Im Editor *simuliert* ein Nutzer das per Klick auf das Filtersymbol des Blocks — nichts prüft die Regel gegen Daten. Ein Resolver kann es richtig machen: Blöcke weglassen, deren Bedingung für den Empfänger nicht zutrifft, sodass die Vorschau die echte Variante zeigt.
 
-**Behalten Sie die Block-IDs.** Der manuelle Filter verfolgt ausgeblendete Blöcke über die ID und wird auf das angewendet, was Ihr Resolver zurückgibt — Blöcke mit neuen IDs neu aufzubauen lässt von Hand ausgeblendete Blöcke wieder erscheinen. Verändern Sie sie an ihrer Stelle.
-
 ### Eine Template-Engine ausführen, die der Browser nicht kann
 
 Wenn Ihre Tokens AMPscript- oder Mailchimp-Syntax sind, ist dies die einzige Möglichkeit, Verzweigungen überhaupt aufgelöst zu sehen. Senden Sie die Vorlage an den Dienst, der Ihre Aussendungen bereits rendert, und geben Sie dessen Ausgabe zurück.

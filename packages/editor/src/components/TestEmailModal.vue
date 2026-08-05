@@ -347,6 +347,7 @@ function handleKeydown(event: KeyboardEvent): void {
           v-if="!previewResolution.isInitialResolve.value"
           :blocks="previewBlocks"
           :viewport="previewViewport"
+          :apply-condition-filter="!previewResolution.isConfigured"
         />
       </div>
 

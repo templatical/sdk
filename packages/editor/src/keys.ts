@@ -47,6 +47,18 @@ export const BLOCK_ACTIONS_KEY: InjectionKey<UseBlockActionsReturn> =
 export const CONDITION_PREVIEW_KEY: InjectionKey<UseConditionPreviewReturn> =
   Symbol("conditionPreview");
 
+/**
+ * Whether the hand-toggled display-condition filter applies on this surface —
+ * provided per-surface, exactly like `USE_MERGE_TAG_SAMPLES_KEY`, and for the
+ * same reason: the rule folds in both `previewMode` and whether a resolver owns
+ * the preview, so a component that re-derived it from `CONDITION_PREVIEW_KEY`
+ * plus the editor's `previewMode` could get one half wrong on its own.
+ *
+ * Absent means "applies" — a surface with no provider filters as it always has.
+ */
+export const APPLIES_CONDITION_FILTER_KEY: InjectionKey<ComputedRef<boolean>> =
+  Symbol("appliesConditionFilter");
+
 export const FONTS_MANAGER_KEY: InjectionKey<UseFontsReturn> =
   Symbol("fontsManager");
 

@@ -142,17 +142,13 @@ Users select a display condition from the block settings panel. Each block can h
 
 Clicking the filter icon hides the block, simulating a falsy condition. This lets users preview how the template looks when certain conditional blocks are not visible. When any block is hidden this way, a restore button appears in the editor to bring all hidden blocks back.
 
+<img src="/images/display-condition-restore.png" alt="Restore hidden conditions button" style="max-width: 360px;" />
+
 ### Evaluating conditions for real
 
 The filter icon **simulates** a falsy condition — it's a manual what-if, and nothing checks the condition against data. To have conditions actually evaluated, wire the [`resolvePreview`](/guide/preview-rendering) hook: your backend receives the template and can omit blocks whose condition doesn't hold for a given recipient, so the preview shows the real variation rather than one you toggled by hand.
 
-::: warning Preserve block IDs in your resolver
-The manual filter tracks hidden blocks by **block ID**, and that filter is applied to whatever the resolver returns. A resolver that rebuilds blocks with fresh IDs silently desyncs it, and blocks the user hid by hand reappear.
-
-Transform blocks in place — spread and replace fields — rather than constructing new ones.
-:::
-
-<img src="/images/display-condition-restore.png" alt="Restore hidden conditions button" style="max-width: 360px;" />
+While a resolver is showing the preview, the filter icon and the restore button step aside — the resolver has already checked each condition against real data, so a hand-toggled hide would override the answer you asked for. Your hidden blocks come back when you leave the preview.
 
 ::: tip Testing conditional content
 To verify conditions work correctly, send test emails with different recipient profiles through your email platform and confirm each variation renders as expected.

@@ -142,17 +142,13 @@ Benutzer wählen eine Anzeigebedingung aus dem Einstellungsbereich des Blocks au
 
 Das Klicken auf das Filtersymbol blendet den Block aus und simuliert eine falsche Bedingung. Dies ermöglicht es Benutzern, eine Vorschau anzuzeigen, wie das Template aussieht, wenn bestimmte bedingte Blöcke nicht sichtbar sind. Wenn ein Block auf diese Weise ausgeblendet ist, erscheint eine Wiederherstellungsschaltfläche im Editor, um alle ausgeblendeten Blöcke wiederherzustellen.
 
+<img src="/images/display-condition-restore.png" alt="Schaltfläche zum Wiederherstellen ausgeblendeter Bedingungen" style="max-width: 360px;" />
+
 ### Bedingungen echt auswerten
 
 Das Filtersymbol **simuliert** eine falsche Bedingung — es ist ein manuelles Was-wäre-wenn, und nichts prüft die Bedingung gegen Daten. Damit Bedingungen tatsächlich ausgewertet werden, verdrahten Sie den Hook [`resolvePreview`](/de/guide/preview-rendering): Ihr Backend erhält die Vorlage und kann Blöcke weglassen, deren Bedingung für einen bestimmten Empfänger nicht zutrifft — die Vorschau zeigt dann die echte Variante statt einer von Hand umgeschalteten.
 
-::: warning Block-IDs im Resolver beibehalten
-Der manuelle Filter verfolgt ausgeblendete Blöcke über die **Block-ID**, und dieser Filter wird auf das angewendet, was der Resolver zurückgibt. Ein Resolver, der Blöcke mit neuen IDs neu aufbaut, bringt ihn stillschweigend aus dem Takt, und von Hand ausgeblendete Blöcke erscheinen wieder.
-
-Verändern Sie Blöcke an ihrer Stelle — spreizen und Felder ersetzen — statt neue zu konstruieren.
-:::
-
-<img src="/images/display-condition-restore.png" alt="Schaltfläche zum Wiederherstellen ausgeblendeter Bedingungen" style="max-width: 360px;" />
+Solange ein Resolver die Vorschau liefert, treten das Filtersymbol und die Wiederherstellungsschaltfläche zurück — der Resolver hat jede Bedingung bereits gegen echte Daten geprüft, sodass ein von Hand ausgeblendeter Block genau die Antwort überstimmen würde, die Sie angefordert haben. Ihre ausgeblendeten Blöcke sind zurück, sobald Sie die Vorschau verlassen.
 
 ::: tip Bedingte Inhalte testen
 Um zu überprüfen, ob Bedingungen korrekt funktionieren, senden Sie Test-E-Mails mit verschiedenen Empfängerprofilen über Ihre E-Mail-Plattform und bestätigen Sie, dass jede Variante wie erwartet gerendert wird.

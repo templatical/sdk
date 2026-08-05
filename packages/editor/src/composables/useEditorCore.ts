@@ -54,6 +54,7 @@ import {
   EDITOR_KEY,
   HISTORY_KEY,
   BLOCK_ACTIONS_KEY,
+  APPLIES_CONDITION_FILTER_KEY,
   CONDITION_PREVIEW_KEY,
   FONTS_MANAGER_KEY,
   THEME_STYLES_KEY,
@@ -302,6 +303,12 @@ export interface UseEditorCoreReturn {
   mergeTagSampleMode: Ref<boolean>;
   /** The `resolvePreview` seam, shared by every preview surface. */
   previewResolution: UsePreviewResolutionReturn;
+  /**
+   * Whether the hand-toggled display-condition filter applies. False only while
+   * previewing with a configured resolver, which owns what the preview shows.
+   * The editors gate the restore button on it so it can't outlive the filter.
+   */
+  appliesConditionFilter: ComputedRef<boolean>;
   registerCustomBlocks: (definitions: CustomBlockDefinition[]) => void;
   destroy: () => void;
 }
@@ -579,6 +586,27 @@ export function useEditorCore(
   provide(PREVIEW_RESOLUTION_KEY, previewResolution);
   provide(RESOLVE_PREVIEW_KEY, config.resolvePreview);
 
+  // Whether the hand-toggled display-condition filter applies. It always does
+  // while editing — that is the feature — and while previewing *without* a
+  // resolver, which is the simulate-then-preview flow.
+  //
+  // A configured resolver owns the preview, exactly as it does for merge-tag
+  // samples: it has evaluated every condition against real data, so a manual
+  // hide layered on top would veto the answer that was asked for, silently and
+  // with the restore button still sitting there claiming blocks are hidden.
+  //
+  // Suppressed rather than `reset()` so the simulation survives leaving the
+  // preview: clicking a view toggle must not discard work, least of all when
+  // the resolve then fails and the *unresolved* template is what renders.
+  //
+  // Gated on `isConfigured` rather than a landed result, for the same reason
+  // `supersedesSamples` is — keying off `resolved !== null` would flicker the
+  // filter and the restore button back on for the duration of every resolve.
+  const appliesConditionFilter = computed(
+    () => !(editor.state.previewMode && previewResolution.isConfigured),
+  );
+  provide(APPLIES_CONDITION_FILTER_KEY, appliesConditionFilter);
+
   // Built-in merge tag picker singleton. Always instantiated so
   // `useMergeTag.requestMergeTag()` can fall through to it whenever
   // static `tags` are configured without an `onRequest` callback. Cost
@@ -656,6 +684,7 @@ export function useEditorCore(
     popoverRoot,
     mergeTagSampleMode,
     previewResolution,
+    appliesConditionFilter,
     registerCustomBlocks,
     destroy,
   };
