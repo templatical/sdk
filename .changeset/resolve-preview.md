@@ -20,7 +20,7 @@ await init({
 });
 ```
 
-**This is what `MergeTag.sample` cannot do.** Samples substitute value tags client-side; they can't evaluate **logic tags** — `{% if %}` … `{% endif %}` blocks stay visible as keyword badges, because substituting a value isn't taking a branch. And mailchimp/ampscript branching is a server-side dialect no browser can evaluate, so only your backend can.
+**This is what `MergeTag.sample` cannot do.** Samples substitute value tags client-side; they can't evaluate **logic tags** — `{% if %}` … `{% endif %}` blocks stay visible as keyword badges, because substituting a value isn't taking a branch. The editor only ever *recognises* tags — `syntax` is a pair of regexes, and logic tags pass through to the MJML for whatever sends the email to evaluate. Taking a branch needs your data and your template language, so only your backend can.
 
 **Preview surfaces only, never while editing.** Runs on entering preview mode and — in the test-email dialog — on every recipient change, debounced 500ms. The editing canvas always shows the tag you inserted.
 

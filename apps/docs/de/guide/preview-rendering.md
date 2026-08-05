@@ -78,7 +78,11 @@ await init({
 
 ### Warum ein Callback und keine integrierte Engine
 
-Templatical unterstützt vier Merge-Tag-Syntaxen, und zwei davon — **Mailchimp** und **AMPscript** — drücken Verzweigungen in einem serverseitigen Dialekt aus, der sich im Browser nicht auswerten lässt, weder von uns noch von jemand anderem. Eine eigene Engine würde Logik für Liquid-Nutzer auflösen und für alle anderen nicht — schlechter als konsistentes Verhalten. Ihr Backend kennt Ihre Daten und Ihren Dialekt bereits; dieser Hook übergibt ihm die Vorlage.
+Der Editor **erkennt** Tags; er **wertet** sie nie aus. `mergeTags.syntax` besteht aus zwei Regex-Mustern — eines für Wert-Tags, eines für Logik-Tags — und mehr als dieses Erkennen braucht der Editor nicht, um sie hervorzuheben. Mehr tut er auch nicht: Logik-Tags werden unverändert in das gerenderte MJML durchgereicht und dort von dem System ausgewertet, das die E-Mail versendet.
+
+Eine Verzweigung auszuwerten erfordert drei Dinge, die der Editor nicht hat — Ihre Daten, Ihre Template-Sprache und die Regeln, die festlegen, was eine Verzweigung bedeutet. Und `syntax` akzeptiert **Ihre eigenen Regexe**, die Menge der Sprachen, auf die Templatical gerichtet werden kann, ist also nicht begrenzt; es gibt keine Engine, die wir ausliefern könnten, die das abdeckt.
+
+Deshalb übergibt der Hook die Vorlage dem System, das alle drei bereits besitzt. Was Ihre Aussendungen rendert, kann auch Ihre Vorschauen rendern.
 
 ### Was Sie erhalten
 
@@ -134,31 +138,17 @@ resolvePreview: async ({ content, recipient }) => {
 
 Da der Callback `async` ist, können Sie **Ihre eigene UI** darin öffnen und erst nach der Auswahl auflösen. Wenn Sie verschiedene Arten von Abonnenten haben — kostenlos vs. Pro, Testphase vs. abgewandert, EU vs. USA — kann jemand so zwischen ihnen wechseln und jede Version der E-Mail sehen.
 
-**Einmal fragen und die Auswahl zwischenspeichern.** Ein Resolver, der bei jedem Aufruf einen Dialog öffnet, fragt bei jedem erneuten Auflösen erneut — und schlimmer: überholt eine neuere Anfrage diejenige, deren Dialog offen ist, wird die Antwort beim Eintreffen verworfen und die Auswahl scheint wirkungslos.
-
 ```ts
-let persona: Persona | null = null;
-
-async function choosePersona(): Promise<Persona | null> {
-  // Ihr eigener Dialog. Liefert die gewählte Persona oder null bei Abbruch.
-  return openPersonaPicker();
-}
-
-// Ihre eigene Schaltfläche „Vorschau als …" kann den Cache leeren.
-export function resetPersona() {
-  persona = null;
-}
-
-const resolvePreview = async ({ content }) => {
-  persona ??= await choosePersona();
-  if (!persona) {
+resolvePreview: async ({ content }) => {
+  const audience = await openMyAudiencePicker();
+  if (!audience) {
     // Abgebrochen. Ein Fehler zeigt die unaufgelöste Vorlage *mit* Hinweis;
     // `content` unverändert zurückzugeben zeigt sie ohne Hinweis.
     // Entscheiden Sie bewusst.
     return content;
   }
-  return renderWithMyEngine(content, persona.data);
-};
+  return renderWithMyEngine(content, audience.data);
+},
 ```
 
 Während Ihr Dialog offen ist, zeigt die Vorschau ihren Platzhalter — genau richtig, denn sie ist tatsächlich noch nicht fertig.
@@ -169,9 +159,11 @@ Während Ihr Dialog offen ist, zeigt die Vorschau ihren Platzhalter — genau ri
 
 Solange Ihr Resolver die Vorschau liefert, tritt der manuelle Filter samt Wiederherstellungsschaltfläche zurück — Sie haben die Bedingungen gegen echte Daten geprüft, sodass ein von Hand ausgeblendeter Block genau die angeforderte Antwort überstimmen würde. Nichts geht verloren: die ausgeblendeten Blöcke sind zurück, sobald der Nutzer die Vorschau verlässt.
 
-### Eine Template-Engine ausführen, die der Browser nicht kann
+### Die Engine nutzen, die Ihre Aussendungen rendert
 
-Wenn Ihre Tokens AMPscript- oder Mailchimp-Syntax sind, ist dies die einzige Möglichkeit, Verzweigungen überhaupt aufgelöst zu sehen. Senden Sie die Vorlage an den Dienst, der Ihre Aussendungen bereits rendert, und geben Sie dessen Ausgabe zurück.
+Irgendetwas rendert Ihre Aussendungen bereits — Ihre Versandplattform, Ihr eigener Dienst, eine Template-Engine auf Ihrem Server. Sie besitzt die Daten und spricht Ihre Template-Sprache. Die Vorlage dorthin zu senden und deren Ausgabe zurückzugeben lässt die Vorschau also von Grund auf mit der zugestellten E-Mail übereinstimmen, statt sie im Browser anzunähern.
+
+Es ist außerdem der einzige Weg, wenn sich Ihre Template-Sprache im Browser überhaupt nicht auswerten lässt — was jede von Ihnen konfigurierte eigene `syntax` einschließt.
 
 ### Live-Daten einbeziehen
 

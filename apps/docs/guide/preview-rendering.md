@@ -78,7 +78,11 @@ await init({
 
 ### Why a callback rather than a built-in engine
 
-Templatical supports four merge-tag syntaxes, and two of them — **Mailchimp** and **AMPscript** — express branching in a server-side dialect that cannot be evaluated in a browser by us or by anyone. A first-party engine would resolve logic for Liquid consumers and nothing for everyone else, which is worse than being consistent. Your backend already knows your data and your dialect; this hook hands the template to it.
+The editor **recognises** tags; it never **evaluates** them. `mergeTags.syntax` is a pair of regex patterns — one for value tags, one for logic tags — and matching is all the editor needs in order to highlight them. It is also all it does: logic tags pass through to the rendered MJML untouched, and whatever sends the email evaluates them there.
+
+Evaluating a branch needs three things the editor doesn't have — your data, your template language, and the rules that decide what a branch means. And `syntax` accepts **your own regexes**, so the set of languages Templatical can be pointed at isn't bounded; there is no engine we could ship that would cover it.
+
+So the hook hands the template to the system that already holds all three. Whatever renders your sends can render your previews.
 
 ### What you receive
 
@@ -134,30 +138,16 @@ resolvePreview: async ({ content, recipient }) => {
 
 Because the callback is `async`, you can open **your own UI** inside it and resolve once the user has chosen. If you have several kinds of subscriber — free vs pro, trial vs churned, EU vs US — this lets someone flip between them and see each version of the email.
 
-**Ask once and cache the choice.** A resolver that opens a picker on every call will re-prompt whenever the preview re-resolves, and worse: if a newer request supersedes the one whose dialog is open, the answer is discarded when it finally settles and the user's pick appears to do nothing.
-
 ```ts
-let persona: Persona | null = null;
-
-async function choosePersona(): Promise<Persona | null> {
-  // Your own modal. Resolve with the chosen persona, or null if dismissed.
-  return openPersonaPicker();
-}
-
-// Your own "Preview as…" button can clear the cache to re-prompt.
-export function resetPersona() {
-  persona = null;
-}
-
-const resolvePreview = async ({ content }) => {
-  persona ??= await choosePersona();
-  if (!persona) {
+resolvePreview: async ({ content }) => {
+  const audience = await openMyAudiencePicker();
+  if (!audience) {
     // Dismissed. Throwing shows the unresolved template *and* the inline note;
     // returning `content` unchanged shows it with no note. Pick deliberately.
     return content;
   }
-  return renderWithMyEngine(content, persona.data);
-};
+  return renderWithMyEngine(content, audience.data);
+},
 ```
 
 While your dialog is open the preview shows its skeleton, which is what you want — the preview genuinely isn't ready yet.
@@ -168,9 +158,11 @@ While your dialog is open the preview shows its skeleton, which is what you want
 
 The manual filter steps aside while your resolver is showing, along with its restore button — you evaluated the conditions against real data, so a hand-toggled hide would veto the answer that was asked for. Nothing is discarded: the user's hidden blocks are back when they leave the preview.
 
-### Run a template engine the browser can't
+### Reuse the engine that renders your sends
 
-If your tokens are AMPscript or Mailchimp syntax, this is the only way to see branches resolved at all. Post the template to the service that already renders your sends and return its output.
+Something already renders your sends — your sending platform, your own service, a template engine on your server. It holds the data and speaks your template language, so posting the template to it and returning its output makes the preview agree with the delivered email by construction instead of approximating it in the browser.
+
+It is also the only route when your template language can't be evaluated client-side at all, which includes any custom `syntax` you configure.
 
 ### Pull in live data
 
