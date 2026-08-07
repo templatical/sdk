@@ -5,7 +5,7 @@ description: Premium hosted features for teams building email tooling at scale.
 
 # Templatical Cloud
 
-The open-source editor gives you everything you need to build and render email templates. **Templatical Cloud** adds the features teams need when shipping email tooling at scale — AI content generation, real-time collaboration, media management, template scoring, and more.
+The self-hosted editor gives you everything you need to build and render email templates. **Templatical Cloud** adds the features teams need when shipping email tooling at scale — AI content generation, real-time collaboration, media management, template scoring, and more.
 
 ## How It Works
 

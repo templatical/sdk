@@ -3,7 +3,7 @@ layout: home
 hero:
   name: Templatical
   text: Email Editor for Your App
-  tagline: Drop a production-ready drag-and-drop email editor into any web application — host CSS and design systems can't break it. Open-source, framework-agnostic, and packed with features that are typically reserved for paid tiers in other editors.
+  tagline: Drop a production-ready drag-and-drop email editor into any web application — host CSS and design systems can't break it. Source-available, framework-agnostic, and packed with features that are typically reserved for paid tiers in other editors.
   actions:
     - theme: brand
       text: Get Started

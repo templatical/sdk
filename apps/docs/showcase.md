@@ -30,7 +30,7 @@ You're building a Mailchimp-style product, an automation tool, or a creator-news
 - Drop-in editor mounts with one function call — no rewrite of your existing dashboard.
 - Theming via design tokens means your customers' emails feel native to your brand, not Templatical's.
 - Display conditions and merge tags are built in — important for personalization-heavy newsletter use.
-- Cloud features (AI rewrite, comments, snapshots) are available either as managed Cloud or as open-source code you self-host.
+- Cloud features (AI rewrite, comments, snapshots) are available either as managed Cloud or as source-available code you self-host.
 
 **Likely setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) embedded in your customer dashboard, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) for HTML compilation, optional Cloud tier for AI/collab.
 
