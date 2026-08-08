@@ -69,6 +69,7 @@ const fr: typeof en = {
     alignLeft: "Aligner à gauche",
     alignCenter: "Centrer",
     alignRight: "Aligner à droite",
+    alignJustify: "Justifier",
     clearFormatting: "Effacer la mise en forme",
     insertEmoji: "Insérer un émoji",
     fontFamily: "Police",

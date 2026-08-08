@@ -87,6 +87,7 @@ const ca: typeof en = {
     alignLeft: "Alinea a l'esquerra",
     alignCenter: "Alinea al centre",
     alignRight: "Alinea a la dreta",
+    alignJustify: "Justifica",
     clearFormatting: "Neteja el format",
     insertEmoji: "Insereix un emoji",
     fontFamily: "Tipus de lletra",
