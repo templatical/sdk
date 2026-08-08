@@ -5,7 +5,7 @@ import {
   getSectionWrapperStyle,
   getDocumentStyle,
 } from "../src/utils/blockComponentResolver";
-import type { Block, TemplateSettings } from "@templatical/types";
+import type { TemplateSettings } from "@templatical/types";
 import {
   createTitleBlock,
   createImageBlock,

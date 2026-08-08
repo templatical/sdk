@@ -38,9 +38,9 @@ test.describe("Editor cross-container drag-and-drop", () => {
 
     // Find a section column with at least 2 children to swap. Default to (0, 0)
     // if it qualifies; otherwise scan columns of the first section.
-    let sectionIndex = 0;
+    const sectionIndex = 0;
     let colIndex = 0;
-    let children = await editorPage
+    const children = await editorPage
       .getSectionColumnBlocks(sectionIndex, colIndex)
       .count();
     if (children < 2) {
@@ -55,7 +55,6 @@ test.describe("Editor cross-container drag-and-drop", () => {
           .count();
         if (n >= 2) {
           colIndex = c;
-          children = n;
           found = true;
           break;
         }

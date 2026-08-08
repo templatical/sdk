@@ -325,7 +325,7 @@ describe('useRichTextEditor', () => {
 
     it('invokes onClickOutsideSideEffect for every outside mousedown', async () => {
       const onClickOutsideSideEffect = vi.fn();
-      const ctx = mountRichText({ onClickOutsideSideEffect });
+      mountRichText({ onClickOutsideSideEffect });
       await flushAsync();
 
       const outside = document.createElement('div');

@@ -264,7 +264,7 @@ test.describe("Merge tag autocomplete", () => {
     // far from the caret.
     await editorPage.toggleDarkMode();
 
-    const editable = await openParagraphEditor(editorPage);
+    await openParagraphEditor(editorPage);
     await page.keyboard.type(" {{first");
 
     const popup = page.locator(SELECTORS.mergeTagSuggestionPopup);

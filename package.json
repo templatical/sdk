@@ -52,7 +52,7 @@
     "deps:update": "syncpack update",
     "format": "prettier --write \"packages/*/src/**/*.{ts,vue}\" \"apps/*/src/**/*.{ts,vue}\"",
     "format:check": "prettier --check \"packages/*/src/**/*.{ts,vue}\" \"apps/*/src/**/*.{ts,vue}\"",
-    "lint": "eslint packages/*/src apps/*/src --cache --cache-location node_modules/.cache/eslint/",
+    "lint": "eslint packages/*/src apps/*/src packages/*/tests apps/*/tests apps/*/e2e packages/*/scripts skills/*/scripts skills/*/tools skills/*/tests --max-warnings 0 --cache --cache-location node_modules/.cache/eslint/",
     "prepare": "husky",
     "test": "pnpm --filter \"./packages/*\" --filter \"./skills/*\" --filter \"./apps/docs\" run test",
     "test:coverage": "pnpm --filter \"./packages/*\" --filter \"./skills/*\" --filter \"./apps/docs\" run test --coverage",

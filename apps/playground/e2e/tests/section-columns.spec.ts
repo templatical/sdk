@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures/editor.fixture";
-import { SELECTORS, blockByType } from "../helpers/selectors";
+import { blockByType } from "../helpers/selectors";
 
 test.describe("Section columns", () => {
   test("section block renders with columns", async ({

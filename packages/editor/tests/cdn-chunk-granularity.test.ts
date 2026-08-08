@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
-import { join, basename, posix, dirname } from "node:path";
+import { join, basename, posix } from "node:path";
 import { init as initLexer, parse } from "es-module-lexer";
 
 /**

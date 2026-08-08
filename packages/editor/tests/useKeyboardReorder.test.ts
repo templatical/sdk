@@ -168,7 +168,7 @@ describe("useKeyboardReorder", () => {
     });
 
     it("cancel without a lift is a no-op", () => {
-      const { editor, reorder, blocks } = fixture;
+      const { editor, reorder } = fixture;
       const originalOrder = editor.content.value.blocks.map((b) => b.id);
 
       reorder.cancel();

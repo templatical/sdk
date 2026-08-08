@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { computed, ref } from "@vue/reactivity";
+import { computed } from "@vue/reactivity";
 import type { CustomBlock, CustomBlockDefinition } from "@templatical/types";
 import { useDataSourceFetch } from "../src/data-source-fetch";
 

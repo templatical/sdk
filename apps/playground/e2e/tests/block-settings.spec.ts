@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures/editor.fixture";
-import { SELECTORS, blockByType } from "../helpers/selectors";
+import { SELECTORS } from "../helpers/selectors";
 
 test.describe("Block-specific settings", () => {
   test("image block shows URL and alt text inputs", async ({

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ref, nextTick, effectScope } from 'vue';
 import { useCommentListener } from '../../src/cloud/comment-listener';
 import type { UseCommentsReturn } from '../../src/cloud/comments';

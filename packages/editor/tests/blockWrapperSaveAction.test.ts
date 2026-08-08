@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
-import { computed, h, ref } from "vue";
+import { computed, h } from "vue";
 import { createTitleBlock } from "@templatical/types";
 import BlockWrapper from "../src/components/blocks/BlockWrapper.vue";
 import { mountEditor } from "./helpers/mount";

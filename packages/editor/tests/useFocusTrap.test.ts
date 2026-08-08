@@ -451,7 +451,7 @@ describe("useFocusTrap", () => {
   });
 
   it("registers onScopeDispose cleanup when used in effectScope", async () => {
-    const { effectScope, onScopeDispose } = await import("vue");
+    const { effectScope } = await import("vue");
     const container = createMockContainer([createFocusableElement("button")]);
     const active = ref(false);
     const containerRef = ref<HTMLElement | null>(container);

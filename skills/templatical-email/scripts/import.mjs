@@ -15,7 +15,7 @@
 //   node scripts/import.mjs <source-file> [--format unlayer|beefree|html] [--cwd .] [--out <name>]
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
 const FORMATS = {
   unlayer: {

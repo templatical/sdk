@@ -1,9 +1,9 @@
 // DOM stubs must be imported BEFORE Vue (Vue captures `document` at module load time)
 import './dom-stubs';
 
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { createApp, defineComponent, h, ref, nextTick, type InjectionKey } from 'vue';
-import type { MergeTag, SyntaxPreset } from '@templatical/types';
+import { describe, expect, it, vi } from 'vitest';
+import { createApp, defineComponent, h, ref, type InjectionKey } from 'vue';
+import type { MergeTag } from '@templatical/types';
 import { SYNTAX_PRESETS } from '@templatical/types';
 import { useMergeTagField } from '../src/composables/useMergeTagField';
 import { useMergeTagPicker } from '../src/composables/useMergeTagPicker';

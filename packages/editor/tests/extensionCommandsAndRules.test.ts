@@ -30,7 +30,7 @@ function chainMock(runReturn = true) {
   return c;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 function commandsOf(ext: any, options: Record<string, unknown>) {
   return ext.configure({}).config.addCommands.call({ options });
 }
@@ -131,7 +131,7 @@ describe("LineHeight commands", () => {
   });
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 function nodeRules(ext: any, kind: "addInputRules" | "addPasteRules", ctx: any) {
   return ext.configure({}).config[kind].call(ctx);
 }

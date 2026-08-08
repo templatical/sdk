@@ -168,7 +168,6 @@ describe("cloud useEditor", () => {
 
     it("updateSettings merges settings and marks dirty", () => {
       const editor = setup();
-      const originalWidth = editor.content.value.settings.width;
       editor.updateSettings({ width: 700, backgroundColor: "#f0f0f0" });
       expect(editor.content.value.settings.width).toBe(700);
       expect(editor.content.value.settings.backgroundColor).toBe("#f0f0f0");

@@ -1,17 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { useConditionPreview } from "../src/condition-preview";
 
-function createMockEditor(selectedBlockId: string | null = null) {
-  return {
-    state: { selectedBlockId },
-    selectBlock: vi.fn((id: string | null) => {
-      editor.state.selectedBlockId = id;
-    }),
-  } as unknown as Parameters<typeof useConditionPreview>[0];
-
-  var editor: ReturnType<typeof createMockEditor>;
-}
-
 function setup(selectedBlockId: string | null = null) {
   const editor = {
     state: { selectedBlockId },

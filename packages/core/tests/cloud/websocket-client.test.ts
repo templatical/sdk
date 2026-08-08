@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { resolveWebSocketConfig, WebSocketClient } from '../../src/cloud/websocket-client';
 import type { AuthManager } from '../../src/cloud/auth';
 import type { WebSocketServerConfig } from '@templatical/types';

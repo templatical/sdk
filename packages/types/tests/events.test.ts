@@ -211,8 +211,7 @@ describe('EventEmitter', () => {
         const emitter = new EventEmitter<TestEvents>();
         const results: string[] = [];
 
-        let unsub: () => void;
-        unsub = emitter.on('message', (msg) => {
+        const unsub: () => void = emitter.on('message', (msg) => {
             results.push(msg);
             unsub();
         });

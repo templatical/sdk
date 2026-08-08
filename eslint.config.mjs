@@ -20,7 +20,13 @@ const tsRules = {
 export default tseslint.config(
   // ── Global ignores ────────────────────────────────────────────────────
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/*.d.ts"],
+    ignores: [
+      "**/dist/**",
+      "**/node_modules/**",
+      "**/*.d.ts",
+      // esbuild bundles committed by `bundle-vendor`, not hand-written source.
+      "skills/*/vendor/**",
+    ],
   },
 
   // ── TypeScript files ──────────────────────────────────────────────────
@@ -88,6 +94,69 @@ export default tseslint.config(
     rules: {
       "templatical-editor/no-teleport-to-body": "error",
       "templatical-editor/no-unannotated-document-global": "error",
+    },
+  },
+
+  // ── Tests, e2e specs and repo scripts ─────────────────────────────────
+  // Everything outside `src/` that is still hand-written code. Without this
+  // block a dead import in a test is invisible to `pnpm run lint`, which is
+  // what CodeQL's code-quality scan surfaces as `js/unused-local-variable`.
+  {
+    files: [
+      "packages/*/tests/**/*.ts",
+      "apps/*/tests/**/*.ts",
+      "apps/*/e2e/**/*.ts",
+      "packages/*/scripts/**/*.{ts,mjs,js}",
+      "skills/*/scripts/**/*.mjs",
+      "skills/*/tools/**/*.mjs",
+      "skills/*/tests/**/*.ts",
+    ],
+    extends: [tseslint.configs.recommended],
+    rules: {
+      ...tsRules,
+
+      // Dead code is the reason this block exists — a warning CI ignores
+      // would leave the hole open.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          ignoreRestSiblings: true,
+        },
+      ],
+
+      // Test code reaches into third-party internals that have no public
+      // signature: `(MergeTagNode.config.parseHTML as Function).call({})`
+      // invokes a TipTap config callback, `options.onStart as Function` a
+      // Sortable handler. Naming those shapes buys no runtime safety.
+      "@typescript-eslint/no-unsafe-function-type": "off",
+
+      // `const self = this` inside mock classes that stub a fluent API.
+      "@typescript-eslint/no-this-alias": "off",
+
+      // Structural tests shell out via `require("node:child_process")`.
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+
+  // ── Playwright specs ──────────────────────────────────────────────────
+  // A spec requests a fixture *by destructuring it*, and several fixtures
+  // exist purely for their side effect — `editorReady` navigates, picks a
+  // template and dismisses overlays, then the body drives `page` directly.
+  // Such a parameter reads as unused and is load-bearing, so params are not
+  // checked here. Unused imports and locals still are.
+  {
+    files: ["apps/*/e2e/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          args: "none",
+          varsIgnorePattern: "^_",
+          ignoreRestSiblings: true,
+        },
+      ],
     },
   },
 );

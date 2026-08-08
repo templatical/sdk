@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { effectScope, type EffectScope } from "vue";
 import { mount } from "@vue/test-utils";
 import { readFileSync } from "node:fs";
