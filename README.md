@@ -5,7 +5,7 @@
 <h1 align="center">Templatical</h1>
 
 <p align="center">
-  Open-source drag-and-drop email editor for modern apps
+  Drag-and-drop email editor for modern apps — source-available, MIT after two years
 </p>
 
 <p align="center">
@@ -58,7 +58,7 @@ Or copy `skills/templatical-email/` into any agent's skills folder. [Skill guide
 
 ## Power features
 
-Things that are usually paid features in commercial editors — open-source in Templatical:
+Things that are usually paid features in commercial editors — free in Templatical:
 
 - **Custom blocks with API-backed data sources** — register your own block types whose content is rendered from a static template _or_ fetched live from your API at preview time. Typically a paid-tier feature in commercial editors.
 - **Merge tags with pluggable syntax** — `{{handlebars}}`, `{liquid}`, `${js}`, or your own — with automatic human-readable label replacement directly in the editor canvas. Build your CRM-aware tag picker in minutes.

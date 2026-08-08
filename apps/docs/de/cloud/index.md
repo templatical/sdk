@@ -5,7 +5,7 @@ description: Premium-Hosted-Funktionen für Teams, die E-Mail-Tools in großem U
 
 # Templatical Cloud
 
-Der Open-Source-Editor bietet alles, was Sie zum Erstellen und Rendern von E-Mail-Templates benötigen. **Templatical Cloud** ergänzt ihn um die Funktionen, die Teams brauchen, wenn sie E-Mail-Tools in großem Umfang ausliefern – KI-gestützte Inhaltserzeugung, Echtzeit-Zusammenarbeit, Medien-Management, Template-Bewertung und mehr.
+Der selbst gehostete Editor bietet alles, was Sie zum Erstellen und Rendern von E-Mail-Templates benötigen. **Templatical Cloud** ergänzt ihn um die Funktionen, die Teams brauchen, wenn sie E-Mail-Tools in großem Umfang ausliefern – KI-gestützte Inhaltserzeugung, Echtzeit-Zusammenarbeit, Medien-Management, Template-Bewertung und mehr.
 
 ## So funktioniert es
 

@@ -3,7 +3,7 @@
   "dependencies": {
     "@vueuse/core": "^14.4.0",
     "liquidjs": "^10.28.0",
-    "vue": "^3.5.40",
+    "vue": "^3.5.41",
     "vue-advanced-cropper": "^2.8.9"
   },
   "devDependencies": {
@@ -22,7 +22,7 @@
     "@tiptap/extension-text-style": "^3.29.2",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vitest/coverage-v8": "^4.1.10",
-    "@vue/reactivity": "^3.5.40",
+    "@vue/reactivity": "^3.5.41",
     "eslint": "^10.8.0",
     "eslint-plugin-vue": "^10.10.0",
     "husky": "^9.1.7",
@@ -31,14 +31,14 @@
     "syncpack": "^15.3.2",
     "tsdown": "^0.22.14",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.65.0",
+    "typescript-eslint": "^8.66.0",
     "vite": "^8.2.0",
     "vue-eslint-parser": "^10.4.1"
   },
   "engines": {
     "node": ">=24.19.0"
   },
-  "packageManager": "pnpm@11.19.0+sha512.7881f3ed590d472c4a955e2b88b2121791116066dcc88cbca3849ec9b60f1bbaa6d2ccb221fa91da4e1c65bef2bcbe379365aea7ac539c7bf86dedc3a1b22dce",
+  "packageManager": "pnpm@11.20.0+sha512.9a6f330a95b66446ea088faf1521405a8a01f07fde7124cc9958dfed52d4bb436737e65b08f85f37b46fcba375092558ac51262b816844b22f63406ed166bfee",
   "private": true,
   "scripts": {
     "build": "pnpm --filter @templatical/types run build && pnpm --filter @templatical/core --filter @templatical/renderer --filter @templatical/import-beefree --filter @templatical/import-unlayer --filter @templatical/import-html run build && pnpm --filter @templatical/media-library run build:all && pnpm --filter @templatical/quality run build && pnpm --filter @templatical/editor run build:all",

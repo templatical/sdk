@@ -16,12 +16,12 @@ This page answers the questions teams ask most often when evaluating Templatical
 
 ## What is FSL-1.1-MIT?
 
-FSL stands for [**Functional Source License**](https://fsl.software/). It's a modern open-source license designed by Sentry to balance two things teams care about:
+FSL stands for [**Functional Source License**](https://fsl.software/). It's a modern source-available license designed by Sentry to balance two things teams care about:
 
 - **Freedom** — the code is open, you can read it, fork it, modify it, and redistribute it.
 - **Sustainability** — the maintainer can build a viable business around it without an Amazon-sized cloud provider repackaging the project as a managed service.
 
-FSL-1.1-**MIT** is the variant that automatically converts to the MIT License after two years. So Templatical is open-source today with a single narrow restriction, and fully MIT-licensed open-source after the change date.
+FSL-1.1-**MIT** is the variant that automatically converts to the MIT License after two years. So Templatical's source is public today with a single narrow restriction, and becomes fully MIT-licensed open source after the change date.
 
 ## Which packages use which license?
 
@@ -90,11 +90,11 @@ Templatical is built and maintained primarily by one developer. Pure MIT means a
 
 FSL-1.1-MIT keeps the code open and forkable for everyone with legitimate use cases (which is essentially everyone reading this), while preventing exactly the parasitic-managed-service scenario. After two years, that restriction lifts automatically and the code is fully MIT.
 
-The same approach is used by [Sentry](https://sentry.io), [PowerSync](https://www.powersync.com), [GitButler](https://gitbutler.com), and others who want sustainable open source without going proprietary.
+The same approach is used by [Sentry](https://sentry.io), [PowerSync](https://www.powersync.com), [GitButler](https://gitbutler.com), and others who want a sustainable path to open source without going proprietary.
 
 ## Can I contribute to Templatical?
 
-**Yes, please.** Open-source contributions are welcome — bug fixes, features, docs improvements, additional locales, and custom block examples are all appreciated.
+**Yes, please.** Community contributions are welcome — bug fixes, features, docs improvements, additional locales, and custom block examples are all appreciated.
 
 By contributing, you agree your contribution is licensed under the same license as the package you're contributing to (MIT for `types`, `renderer`, `import-beefree`, `import-unlayer`; FSL-1.1-MIT for `editor`, `core`, `media-library`).
 

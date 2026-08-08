@@ -3,7 +3,7 @@ layout: home
 hero:
   name: Templatical
   text: E-Mail-Editor für Ihre Anwendung
-  tagline: Binden Sie einen produktionsreifen Drag-and-Drop-E-Mail-Editor in jede Webanwendung ein — Host-CSS und Design-Systeme können ihn nicht beschädigen. Open Source, Framework-agnostisch und vollgepackt mit Funktionen, die in anderen Editoren typischerweise kostenpflichtigen Tarifen vorbehalten sind.
+  tagline: Binden Sie einen produktionsreifen Drag-and-Drop-E-Mail-Editor in jede Webanwendung ein — Host-CSS und Design-Systeme können ihn nicht beschädigen. Source-Available, Framework-agnostisch und vollgepackt mit Funktionen, die in anderen Editoren typischerweise kostenpflichtigen Tarifen vorbehalten sind.
   actions:
     - theme: brand
       text: Loslegen

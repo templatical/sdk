@@ -326,7 +326,8 @@ const deSidebar: DefaultTheme.SidebarMulti = {
 
 export default defineConfig({
   title: "Templatical",
-  description: "Open-source drag-and-drop email editor for modern apps",
+  description:
+    "Drag-and-drop email editor for modern apps — source-available, MIT after two years",
   cleanUrls: true,
   head: [
     [
@@ -342,7 +343,7 @@ export default defineConfig({
       "meta",
       {
         property: "og:title",
-        content: "Templatical — Open-Source Email Editor",
+        content: "Templatical — Drag-and-Drop Email Editor",
       },
     ],
     [
@@ -367,7 +368,7 @@ export default defineConfig({
       "meta",
       {
         name: "twitter:title",
-        content: "Templatical — Open-Source Email Editor",
+        content: "Templatical — Drag-and-Drop Email Editor",
       },
     ],
     [
@@ -407,7 +408,8 @@ export default defineConfig({
       label: "English",
       lang: "en",
       title: "Templatical",
-      description: "Open-source drag-and-drop email editor for modern apps",
+      description:
+        "Drag-and-drop email editor for modern apps — source-available, MIT after two years",
       themeConfig: {
         nav: enNav,
         sidebar: enSidebar,
@@ -428,7 +430,7 @@ export default defineConfig({
       lang: "de",
       title: "Templatical",
       description:
-        "Open-Source Drag-and-Drop-E-Mail-Editor für moderne Anwendungen",
+        "Drag-and-Drop-E-Mail-Editor für moderne Anwendungen — Source-Available, MIT nach zwei Jahren",
       themeConfig: {
         nav: deNav,
         sidebar: deSidebar,

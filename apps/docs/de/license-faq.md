@@ -16,12 +16,12 @@ Diese Seite beantwortet die Fragen, die Teams bei der Bewertung von Templaticals
 
 ## Was ist FSL-1.1-MIT?
 
-FSL steht für [**Functional Source License**](https://fsl.software/). Eine moderne Open-Source-Lizenz, von Sentry entworfen, um zwei Dinge auszubalancieren, die Teams wichtig sind:
+FSL steht für [**Functional Source License**](https://fsl.software/). Eine moderne Source-Available-Lizenz, von Sentry entworfen, um zwei Dinge auszubalancieren, die Teams wichtig sind:
 
 - **Freiheit** — der Code ist offen, Sie können ihn lesen, forken, modifizieren und weitergeben.
 - **Nachhaltigkeit** — der Maintainer kann ein tragfähiges Geschäft drumherum aufbauen, ohne dass ein Cloud-Riese das Projekt als Managed Service neu verpackt.
 
-FSL-1.1-**MIT** ist die Variante, die nach zwei Jahren automatisch zur MIT-Lizenz wird. Templatical ist also heute Open Source mit einer einzigen schmalen Einschränkung — und nach dem Stichtag vollständig MIT-lizenziertes Open Source.
+FSL-1.1-**MIT** ist die Variante, die nach zwei Jahren automatisch zur MIT-Lizenz wird. Templaticals Quellcode ist also heute öffentlich einsehbar — mit einer einzigen schmalen Einschränkung — und wird nach dem Stichtag zu vollständig MIT-lizenziertem Open Source.
 
 ## Welches Paket nutzt welche Lizenz?
 
@@ -90,11 +90,11 @@ Templatical wird hauptsächlich von einem Entwickler gebaut und gepflegt. Reines
 
 FSL-1.1-MIT hält den Code für alle mit legitimen Anwendungsfällen offen und forkbar (das sind im Prinzip alle, die das hier lesen) und verhindert genau das parasitäre Managed-Service-Szenario. Nach zwei Jahren entfällt diese Einschränkung automatisch und der Code ist vollständig MIT.
 
-Denselben Ansatz nutzen [Sentry](https://sentry.io), [PowerSync](https://www.powersync.com), [GitButler](https://gitbutler.com) und andere, die nachhaltiges Open Source wollen, ohne proprietär zu werden.
+Denselben Ansatz nutzen [Sentry](https://sentry.io), [PowerSync](https://www.powersync.com), [GitButler](https://gitbutler.com) und andere, die einen nachhaltigen Weg zu Open Source wollen, ohne proprietär zu werden.
 
 ## Darf ich zu Templatical beitragen?
 
-**Ja, bitte.** Open-Source-Beiträge sind willkommen — Bugfixes, Features, Doku-Verbesserungen, zusätzliche Locales und Beispiele für eigene Blöcke werden geschätzt.
+**Ja, bitte.** Beiträge aus der Community sind willkommen — Bugfixes, Features, Doku-Verbesserungen, zusätzliche Locales und Beispiele für eigene Blöcke werden geschätzt.
 
 Mit Ihrem Beitrag stimmen Sie zu, dass Ihr Beitrag unter derselben Lizenz steht wie das Paket, zu dem Sie beitragen (MIT für `types`, `renderer`, `import-beefree`, `import-unlayer`; FSL-1.1-MIT für `editor`, `core`, `media-library`).
 
