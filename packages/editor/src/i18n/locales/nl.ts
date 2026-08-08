@@ -69,6 +69,7 @@ const nl: typeof en = {
     alignLeft: "Links uitlijnen",
     alignCenter: "Centreren",
     alignRight: "Rechts uitlijnen",
+    alignJustify: "Uitvullen",
     clearFormatting: "Opmaak wissen",
     insertEmoji: "Emoji invoegen",
     fontFamily: "Lettertype",

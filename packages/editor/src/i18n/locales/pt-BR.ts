@@ -87,6 +87,7 @@ const ptBR: typeof en = {
     alignLeft: "Alinhar à Esquerda",
     alignCenter: "Centralizar",
     alignRight: "Alinhar à Direita",
+    alignJustify: "Justificar",
     clearFormatting: "Limpar Formatação",
     insertEmoji: "Inserir Emoji",
     fontFamily: "Família da Fonte",
