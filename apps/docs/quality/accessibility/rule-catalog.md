@@ -1,6 +1,6 @@
 # Accessibility rule catalog
 
-The 20 rules `lintAccessibility` ships, grouped by what they check. Each rule lives in `packages/quality/src/accessibility/rules/`; severity, message templates, and dictionaries are user-overridable per [Options](../options).
+The 21 rules `lintAccessibility` ships, grouped by what they check. Each rule lives in `packages/quality/src/accessibility/rules/`; severity, message templates, and dictionaries are user-overridable per [Options](../options).
 
 ## Images
 
@@ -35,6 +35,7 @@ The 20 rules `lintAccessibility` ships, grouped by what they check. Each rule li
 | Rule | Default severity | Auto-fix | What it checks |
 |---|---|---|---|
 | `a11y.text-all-caps` | warning | — | All-caps body text — Long stretches of all-caps text are read letter-by-letter by some screen readers and slow visual reading by 10–20%. Use sentence case for body copy; reserve caps for short labels. |
+| `a11y.text-justified` | warning | yes | Justified body text — Stretching word spacing to flush both margins opens uneven "rivers" of white space that are hardest to track for dyslexic and low-vision readers, and email clients justify without hyphenation so the gaps get wider still. Only paragraph blocks are checked; every other block stores alignment as a field whose type excludes `justify`. The fix removes the declaration rather than forcing `left`, so the paragraph inherits the document default — which is also correct for right-to-left content. [1](https://www.w3.org/WAI/WCAG21/Understanding/visual-presentation) |
 | `a11y.text-low-contrast` | error | — | Heading contrast is too low — WCAG AA requires 4.5:1 for body text and 3:1 for large text (18pt / ~24px). Headings ≥24px (H1, H2) get the relaxed 3:1 threshold; H3 (22px) and H4 (18px) require 4.5:1. The bold-text relaxation isn't applied — TipTap stores bold inline in HTML, not as a structured field. Below that, text becomes unreadable for low-vision users and in bright outdoor light. Only Title blocks are checked; paragraph color lives in inline HTML. [1](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum) |
 | `a11y.text-too-small` | warning | — | Text is too small — Email body text below 14px becomes hard to read on mobile. Some clients also auto-zoom or scale up small fonts in unpredictable ways. Stay at 14px or larger. |
 

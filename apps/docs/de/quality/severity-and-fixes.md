@@ -60,7 +60,7 @@ for (const issue of fixable) {
 
 Siehe die **Auto-Fix**-Spalte in den jeweiligen Katalogen. Aktuell mit Auto-Fix:
 
-- Barrierefreiheit — `a11y.img-alt-is-filename`, `a11y.img-decorative-needs-empty-alt`, `a11y.link-target-blank-no-rel`.
+- Barrierefreiheit — `a11y.img-decorative-needs-empty-alt`, `a11y.link-target-blank-no-rel`, `a11y.text-justified`.
 - Struktur — `structure.empty-section`.
 - Links — keine. Jede Link-Regel ist beim Auto-Fix destruktiv (Href entfernen, Protokoll ändern), und die richtige Antwort hängt vom Intent ab.
 

@@ -60,7 +60,7 @@ for (const issue of fixable) {
 
 See the **Auto-fix** column in each catalog. Today's auto-fixable rules:
 
-- Accessibility — `a11y.img-alt-is-filename`, `a11y.img-decorative-needs-empty-alt`, `a11y.link-target-blank-no-rel`.
+- Accessibility — `a11y.img-decorative-needs-empty-alt`, `a11y.link-target-blank-no-rel`, `a11y.text-justified`.
 - Structure — `structure.empty-section`.
 - Links — none. Every link rule is destructive to auto-fix (strip the href, change the protocol) and the right answer depends on intent.
 

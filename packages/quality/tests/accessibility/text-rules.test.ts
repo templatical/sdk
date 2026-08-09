@@ -57,6 +57,136 @@ describe("a11y.text-all-caps", () => {
   });
 });
 
+describe("a11y.text-justified", () => {
+  function build(html: string) {
+    const block = createParagraphBlock({ content: html });
+    const content = createDefaultTemplateContent();
+    content.settings.preheaderText = "x";
+    content.blocks = [block];
+    return { block, content };
+  }
+
+  function lint(html: string) {
+    const { content } = build(html);
+    return lintAccessibility(content).filter(
+      (i) => i.ruleId === "a11y.text-justified",
+    );
+  }
+
+  /** Runs the rule's fix and returns the rewritten paragraph HTML. */
+  function applyFix(html: string): string {
+    const { block, content } = build(html);
+    const issue = lintAccessibility(content).find(
+      (i) => i.ruleId === "a11y.text-justified",
+    );
+    if (issue?.fix === undefined) {
+      throw new Error("expected a fixable a11y.text-justified issue");
+    }
+    let patched = block.content;
+    issue.fix.apply({
+      updateBlock: (_id, patch) => {
+        patched = (patch as { content: string }).content;
+      },
+      updateSettings: () => {},
+      removeBlock: () => {},
+    });
+    return patched;
+  }
+
+  it("fires for a justified paragraph", () => {
+    const issues = lint('<p style="text-align: justify">Body copy.</p>');
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe("warning");
+    expect(issues[0].message).toContain("Justified text");
+  });
+
+  it("does not fire for left, center or right", () => {
+    for (const align of ["left", "center", "right"]) {
+      expect(lint(`<p style="text-align: ${align}">Body copy.</p>`)).toEqual([]);
+    }
+  });
+
+  it("does not fire for an unaligned paragraph", () => {
+    expect(lint("<p>Body copy.</p>")).toEqual([]);
+  });
+
+  // `justify-content` is common in hand-written flexbox markup (three of the
+  // playground's showcase templates carry one). A rule matching the bare
+  // token `justify` would flag every one of them.
+  it("does not fire for justify-content", () => {
+    expect(
+      lint('<p style="display: flex; justify-content: center">Body.</p>'),
+    ).toEqual([]);
+  });
+
+  it("tolerates casing and whitespace variants from imported markup", () => {
+    expect(lint('<p style="TEXT-ALIGN : JUSTIFY">Body.</p>')).toHaveLength(1);
+    expect(lint("<p style='text-align:justify;'>Body.</p>")).toHaveLength(1);
+  });
+
+  it("fires for a paragraph nested in a section column", () => {
+    const paragraph = createParagraphBlock({
+      content: '<p style="text-align: justify">Body.</p>',
+    });
+    const content = createDefaultTemplateContent();
+    content.settings.preheaderText = "x";
+    content.blocks = [createSectionBlock({ children: [[paragraph]] })];
+    const issues = lintAccessibility(content).filter(
+      (i) => i.ruleId === "a11y.text-justified",
+    );
+    expect(issues).toHaveLength(1);
+    expect(issues[0].blockId).toBe(paragraph.id);
+  });
+
+  it("fix removes the style attribute when text-align was its only declaration", () => {
+    expect(applyFix('<p style="text-align: justify">Body copy.</p>')).toBe(
+      "<p>Body copy.</p>",
+    );
+  });
+
+  // TipTap merges every extension's renderHTML into one `style` attribute,
+  // so dropping the attribute wholesale would discard the line height.
+  it("fix preserves sibling declarations", () => {
+    expect(
+      applyFix(
+        '<p style="text-align: justify; line-height: 1.8">Body copy.</p>',
+      ),
+    ).toBe('<p style="line-height: 1.8">Body copy.</p>');
+  });
+
+  it("fix unsets rather than forcing left, so the paragraph inherits", () => {
+    expect(applyFix('<p style="text-align: justify">Body.</p>')).not.toContain(
+      "text-align",
+    );
+  });
+
+  it("fix leaves a non-justified sibling paragraph untouched", () => {
+    expect(
+      applyFix(
+        '<p style="text-align: justify">One.</p><p style="text-align: center">Two.</p>',
+      ),
+    ).toBe('<p>One.</p><p style="text-align: center">Two.</p>');
+  });
+
+  it("respects a severity override", () => {
+    const { content } = build('<p style="text-align: justify">Body.</p>');
+    const issues = lintAccessibility(content, {
+      accessibility: { rules: { "a11y.text-justified": "error" } },
+    }).filter((i) => i.ruleId === "a11y.text-justified");
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe("error");
+  });
+
+  it("can be turned off", () => {
+    const { content } = build('<p style="text-align: justify">Body.</p>');
+    expect(
+      lintAccessibility(content, {
+        accessibility: { rules: { "a11y.text-justified": "off" } },
+      }).filter((i) => i.ruleId === "a11y.text-justified"),
+    ).toEqual([]);
+  });
+});
+
 describe("a11y.text-low-contrast", () => {
   function lintTitle(color: string, bg: string, level: 1 | 2 | 3 | 4 = 2) {
     const block = createTitleBlock({

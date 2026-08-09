@@ -1,6 +1,6 @@
 # Regelkatalog Barrierefreiheit
 
-Die 20 Regeln, die `lintAccessibility` mitliefert, gruppiert nach Prüfbereich. Jede Regel liegt in `packages/quality/src/accessibility/rules/`; Schweregrad, Meldungstexte und Wörterbücher sind pro Regel über die [Optionen](../options) anpassbar.
+Die 21 Regeln, die `lintAccessibility` mitliefert, gruppiert nach Prüfbereich. Jede Regel liegt in `packages/quality/src/accessibility/rules/`; Schweregrad, Meldungstexte und Wörterbücher sind pro Regel über die [Optionen](../options) anpassbar.
 
 ## Bilder
 
@@ -35,6 +35,7 @@ Die 20 Regeln, die `lintAccessibility` mitliefert, gruppiert nach Prüfbereich. 
 | Regel | Standardschweregrad | Auto-Fix | Was geprüft wird |
 |---|---|---|---|
 | `a11y.text-all-caps` | warning | — | Fließtext in Großbuchstaben — Lange Großbuchstabenstrecken werden von manchen Screenreadern Buchstabe für Buchstabe vorgelesen und verlangsamen visuelles Lesen um 10–20 %. Für Fließtext Satzschreibweise verwenden; Großbuchstaben für kurze Labels reservieren. |
+| `a11y.text-justified` | warning | ja | Fließtext im Blocksatz — Wortabstände auf beide Ränder zu dehnen öffnet ungleichmäßige „Flüsse“ aus Leerraum, die für Menschen mit Legasthenie und Sehbeeinträchtigung am schwersten zu verfolgen sind; E-Mail-Clients setzen Blocksatz zudem ohne Silbentrennung, wodurch die Lücken noch größer werden. Nur Paragraph-Blöcke werden geprüft; alle anderen Blöcke speichern die Ausrichtung als Feld, dessen Typ `justify` ausschließt. Der Fix entfernt die Deklaration, statt `left` zu erzwingen — so erbt der Absatz die Dokumentvorgabe, was auch für Rechts-nach-links-Inhalte korrekt ist. [1](https://www.w3.org/WAI/WCAG21/Understanding/visual-presentation) |
 | `a11y.text-low-contrast` | error | — | Überschrift hat zu wenig Kontrast — WCAG AA verlangt 4,5:1 für Fließtext und 3:1 für großen Text (18pt / ~24px). Überschriften ≥24px (H1, H2) bekommen den entspannten 3:1-Schwellwert; H3 (22px) und H4 (18px) benötigen 4,5:1. Die Bold-Text-Entspannung wird nicht angewendet — TipTap speichert Fettdruck inline im HTML, nicht als strukturiertes Feld. Unterhalb dieser Werte wird Text für sehbehinderte Nutzer und bei hellem Außenlicht unleserlich. Nur Title-Blöcke werden geprüft; Paragraph-Farben stehen im inline HTML. [1](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum) |
 | `a11y.text-too-small` | warning | — | Text zu klein — Fließtext unter 14px wird auf Mobilgeräten schwer lesbar. Manche Clients zoomen automatisch oder skalieren kleine Schriften unvorhersehbar. Bei 14px oder größer bleiben. |
 

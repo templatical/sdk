@@ -30,6 +30,8 @@ const en = {
     "A link is nested inside another link. Nested anchors are invalid HTML and clients render them inconsistently — flatten to a single anchor.",
   "a11y.text-all-caps":
     "Long all-caps text is harder to read for everyone. Use sentence case.",
+  "a11y.text-justified":
+    "Justified text stretches word spacing into uneven 'rivers' of white space, which is hardest to track for dyslexic and low-vision readers. Use left-aligned text.",
   "a11y.text-low-contrast":
     "Heading contrast is {ratio}:1; WCAG AA requires at least {required}:1.",
   "a11y.text-too-small": "Text is {size}px; aim for at least {min}px.",

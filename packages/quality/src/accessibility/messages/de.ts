@@ -29,6 +29,8 @@ const de: typeof en = {
     "Ein Link liegt innerhalb eines anderen Links. Verschachtelte Anker sind ungültiges HTML und werden von E-Mail-Clients unterschiedlich gerendert – flache einen einzigen Anker daraus.",
   "a11y.text-all-caps":
     "Längere Texte in Großbuchstaben sind schwerer lesbar. Verwende Groß- und Kleinschreibung.",
+  "a11y.text-justified":
+    "Blocksatz dehnt die Wortabstände zu ungleichmäßigen „Flüssen“ aus Leerraum, die für Menschen mit Legasthenie und Sehbeeinträchtigung am schwersten zu verfolgen sind. Verwende linksbündigen Text.",
   "a11y.text-low-contrast":
     "Überschriftskontrast beträgt {ratio}:1; WCAG AA verlangt mindestens {required}:1.",
   "a11y.text-too-small": "Text ist {size}px; mindestens {min}px verwenden.",
