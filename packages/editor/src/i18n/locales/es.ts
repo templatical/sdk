@@ -88,6 +88,7 @@ const es: typeof en = {
     alignLeft: "Alinear a la izquierda",
     alignCenter: "Alinear al centro",
     alignRight: "Alinear a la derecha",
+    alignJustify: "Justificar",
     clearFormatting: "Borrar formato",
     insertEmoji: "Insertar emoji",
     fontFamily: "Familia tipográfica",

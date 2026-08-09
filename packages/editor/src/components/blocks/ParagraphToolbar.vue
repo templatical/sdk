@@ -9,6 +9,7 @@ import { usePopoverRoot } from "../../composables/usePopoverRoot";
 import type { Editor } from "@tiptap/core";
 import {
   AlignCenter,
+  AlignJustify,
   AlignLeft,
   AlignRight,
   Bold,
@@ -322,6 +323,12 @@ function setHighlight(color: string): void {
             :label="t.paragraphEditor.alignRight"
             :active="editor.isActive({ textAlign: 'right' })"
             @click="editor.chain().focus().setTextAlign('right').run()"
+          />
+          <ToolbarIconButton
+            :icon="AlignJustify"
+            :label="t.paragraphEditor.alignJustify"
+            :active="editor.isActive({ textAlign: 'justify' })"
+            @click="editor.chain().focus().setTextAlign('justify').run()"
           />
           <ToolbarSeparator />
           <ToolbarSelect

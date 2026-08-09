@@ -85,6 +85,7 @@ export default {
     alignLeft: "Align Left",
     alignCenter: "Align Center",
     alignRight: "Align Right",
+    alignJustify: "Justify",
     clearFormatting: "Clear Formatting",
     insertEmoji: "Insert Emoji",
     fontFamily: "Font Family",

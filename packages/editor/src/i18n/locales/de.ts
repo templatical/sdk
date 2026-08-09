@@ -89,6 +89,7 @@ const de: typeof en = {
     alignLeft: "Linksbündig",
     alignCenter: "Zentriert",
     alignRight: "Rechtsbündig",
+    alignJustify: "Blocksatz",
     clearFormatting: "Formatierung entfernen",
     insertEmoji: "Emoji einfügen",
     fontFamily: "Schriftart",
