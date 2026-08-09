@@ -20,6 +20,32 @@ Have a feature request or hit a rough edge? [Open a discussion](https://github.c
 - **No `transform` on an ancestor of the container** -- do not apply `transform`, `filter`, `perspective`, or `will-change` to any element that wraps the mount point. Each establishes a CSS containing block for `position: fixed`, which offsets the editor's floating UI (color pickers, rich-text toolbars) and its drag ghost away from their anchor — even while the transform's computed value is `none` (an active or animated transform still promotes the element). This is a CSS containing-block rule, not a Templatical-specific limitation; it affects any library that positions overlays with `position: fixed`. For a scroll or entrance effect on a wrapper, animate `opacity` instead of `transform`.
 - **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. (`@templatical/renderer`, `@templatical/quality`, `@templatical/media-library`, and `pusher-js` are _optional_ peers — install them only if you use the corresponding feature; see [Optional peers](#optional-peers) below.)
 
+## Network requests
+
+The editor makes **no** requests to Templatical. There is no license key, no client ID, no activation call, no entitlement check, and no telemetry. Nothing about the editor is enabled or disabled remotely, so an installed copy keeps working indefinitely.
+
+It does make exactly one third-party request, and you should know about it before you deploy:
+
+| Request | Made by | When |
+| ------- | ------- | ---- |
+| `https://fonts.bunny.net/css?family=geist:400,500,600` | A CSS `@import` at the top of the editor stylesheet | Whenever the stylesheet is parsed, in both DOM modes |
+
+Geist is the editor's default UI font. If the request to load it is blocked or fails, the editor works normally — text simply falls back to the next family in the stack. Two cases where you might notice:
+
+- **Strict Content Security Policy** — a policy such as `style-src 'self'` blocks the `@import`. Add `https://fonts.bunny.net` to `style-src` and `font-src`, or accept the fallback font.
+- **Air-gapped or offline deployments** — the request fails and the fallback font is used.
+
+To stop the editor depending on Geist, override the font token:
+
+```css
+.tpl,
+#your-editor-container {
+  --tpl-user-font-family: system-ui, sans-serif;
+}
+```
+
+The `@import` is still present in the stylesheet, so the request is still attempted. To remove it outright, self-host Geist and strip the `@import` from your copy of `dist/style.css` as a build step. See [Theming](../guide/theming) for the full font token surface.
+
 ## npm
 
 ::: code-group

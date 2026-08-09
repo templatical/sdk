@@ -20,6 +20,32 @@ Feature-Wunsch oder rauer Kante begegnet? [Diskussion eröffnen](https://github.
 - **Kein `transform` auf einem Vorfahren des Containers** -- Wenden Sie `transform`, `filter`, `perspective` oder `will-change` auf kein Element an, das den Mount-Punkt umschließt. Jede dieser Eigenschaften erzeugt einen CSS-Containing-Block für `position: fixed`, wodurch die schwebenden UI-Elemente des Editors (Farbwähler, Rich-Text-Toolbars) und der Drag-Ghost von ihrem Ankerpunkt weg verschoben werden — selbst wenn der berechnete Wert von `transform` `none` ist (eine aktive oder animierte Transformation erzeugt den Containing-Block dennoch). Das ist eine CSS-Containing-Block-Regel, keine Templatical-spezifische Einschränkung; sie betrifft jede Bibliothek, die Overlays mit `position: fixed` positioniert. Für einen Scroll- oder Einblend-Effekt auf einem Wrapper animieren Sie `opacity` statt `transform`.
 - **Keine erforderlichen Peer-Dependencies** -- Vue, TipTap und alle internen Bibliotheken sind im Editor gebündelt. Sie müssen weder Vue noch eine andere Framework-Runtime installieren, unabhängig davon, welches Framework Ihre App verwendet. (`@templatical/renderer`, `@templatical/quality`, `@templatical/media-library` und `pusher-js` sind _optionale_ Peers — installieren Sie sie nur, wenn Sie das entsprechende Feature nutzen; siehe [Optionale Peers](#optionale-peers) weiter unten.)
 
+## Netzwerk-Anfragen
+
+Der Editor sendet **keine** Anfragen an Templatical. Es gibt keinen Lizenzschlüssel, keine Client-ID, keinen Aktivierungsaufruf, keine Berechtigungsprüfung und keine Telemetrie. Nichts am Editor wird aus der Ferne freigeschaltet oder deaktiviert — eine installierte Kopie funktioniert unbegrenzt weiter.
+
+Genau eine Anfrage an Dritte findet dennoch statt, und Sie sollten sie vor dem Deployment kennen:
+
+| Anfrage | Ausgelöst durch | Wann |
+| ------- | --------------- | ---- |
+| `https://fonts.bunny.net/css?family=geist:400,500,600` | Ein CSS-`@import` am Anfang des Editor-Stylesheets | Bei jedem Parsen des Stylesheets, in beiden DOM-Modi |
+
+Geist ist die Standard-UI-Schrift des Editors. Wird die Anfrage zum Laden blockiert oder schlägt sie fehl, funktioniert der Editor normal weiter — der Text fällt lediglich auf die nächste Schriftart im Stack zurück. In zwei Fällen könnte das auffallen:
+
+- **Strikte Content Security Policy** — eine Richtlinie wie `style-src 'self'` blockiert den `@import`. Ergänzen Sie `https://fonts.bunny.net` in `style-src` und `font-src`, oder nehmen Sie die Fallback-Schrift in Kauf.
+- **Air-Gapped- oder Offline-Deployments** — die Anfrage schlägt fehl und die Fallback-Schrift wird verwendet.
+
+Damit der Editor nicht auf Geist angewiesen ist, überschreiben Sie das Schrift-Token:
+
+```css
+.tpl,
+#ihr-editor-container {
+  --tpl-user-font-family: system-ui, sans-serif;
+}
+```
+
+Der `@import` bleibt dabei im Stylesheet erhalten, die Anfrage wird also weiterhin versucht. Um sie vollständig zu entfernen, hosten Sie Geist selbst und entfernen den `@import` in einem Build-Schritt aus Ihrer Kopie von `dist/style.css`. Die vollständige Schrift-Token-Oberfläche finden Sie unter [Theming](../guide/theming).
+
 ## npm
 
 ::: code-group
