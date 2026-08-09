@@ -1,5 +1,15 @@
 # @templatical/editor
 
+## 0.25.1
+
+### Patch Changes
+
+- 2309a9d: Add **justify** to the paragraph toolbar's alignment group
+- Updated dependencies [dda6373]
+  - @templatical/quality@0.25.1
+  - @templatical/renderer@0.25.1
+  - @templatical/media-library@0.25.1
+
 ## 0.25.0
 
 ### Minor Changes

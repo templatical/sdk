@@ -11,8 +11,32 @@
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.25.0",
+  "latest": "0.25.1",
   "versions": [
+    {
+      "version": "0.25.1",
+      "date": "2026-08-09",
+      "changes": [
+        {
+          "hash": "2309a9d",
+          "level": "patch",
+          "title": "Add **justify** to the paragraph toolbar's alignment group",
+          "body": "",
+          "packages": [
+            "@templatical/editor"
+          ]
+        },
+        {
+          "hash": "dda6373",
+          "level": "patch",
+          "title": "Add `a11y.text-justified` — flags justified body copy in paragraph blocks",
+          "body": "Justified text stretches word spacing to reach both margins, opening uneven \"rivers\" of white space that are hardest to track for dyslexic and low-vision readers; email clients justify without hyphenation, so the gaps get wider still. WCAG 2.1 SC 1.4.8 requires that text not be justified.\n\nCompanion to the paragraph toolbar's new **Justify** button in `@templatical/editor` — the editor offers the alignment, the linter advises against it, and consumers who want it can silence the rule with `accessibility: { rules: { \"a11y.text-justified\": \"off\" } }`.\n\nDefault severity is `warning`, and the rule ships an auto-fix. The fix **removes** the `text-align` declaration rather than forcing `left`, so the paragraph inherits the document default — which is also the correct result for right-to-left content. Sibling declarations in the same `style` attribute (a `line-height` from the editor's line-height control, for example) are preserved.\n\nOnly paragraph blocks are checked. Every other block stores alignment as a typed field whose union excludes `justify`, so no other block can express it.",
+          "packages": [
+            "@templatical/quality"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.25.0",
       "date": "2026-08-05",

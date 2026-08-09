@@ -1,5 +1,11 @@
 # @templatical/import-html
 
+## 0.25.1
+
+### Patch Changes
+
+- @templatical/types@0.25.1
+
 ## 0.25.0
 
 ### Patch Changes
