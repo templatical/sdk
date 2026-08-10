@@ -5,7 +5,7 @@ description: Gestalten Sie eine komplette E-Mail aus einem natürlichsprachliche
 
 # KI-Agent-Skill
 
-Gestalten Sie eine komplette E-Mail, indem Sie sie einfach beschreiben — **kostenlos, quelloffen und vollständig in Ihrem eigenen KI-Coding-Agenten ausgeführt.** Der `templatical-email`-[Agent Skill](https://code.claude.com/docs/en/skills) bringt Ihrem Agenten bei, wie Templatical-Templates aufgebaut sind, sodass er gültige E-Mails erstellt, die Sie **im echten Editor ansehen und von Hand bearbeiten und dann als versandfertiges MJML oder HTML exportieren** können — bereit zum Versand über einen beliebigen Anbieter (Amazon SES, Postmark, Resend, Mailchimp, …) oder zum Laden in Ihre eigene [`@templatical/editor`](/de/getting-started/quick-start)-Integration.
+Gestalten Sie eine komplette E-Mail, indem Sie sie einfach beschreiben — **kostenlos, quelloffen und vollständig in Ihrem eigenen KI-Coding-Agenten ausgeführt.** Der `templatical-email`-[Agent Skill](https://agentskills.io) bringt Ihrem Agenten bei, wie Templatical-Templates aufgebaut sind, sodass er gültige E-Mails erstellt, die Sie **im echten Editor ansehen und von Hand bearbeiten und dann als versandfertiges MJML oder HTML exportieren** können — bereit zum Versand über einen beliebigen Anbieter (Amazon SES, Postmark, Resend, Mailchimp, …) oder zum Laden in Ihre eigene [`@templatical/editor`](/de/getting-started/quick-start)-Integration.
 
 Es gibt kein Backend und keinen API-Schlüssel: Ihr Agent ist die Inferenz. Nichts wird an Templatical gesendet.
 
@@ -24,38 +24,89 @@ Ein paar Dinge müssen auf Ihrem Rechner vorhanden sein, bevor Sie starten.
 
 | | Was | Nötig für |
 |---|---|---|
-| **Ein Coding-Agent** | Einer, der Agent Skills unterstützt und auf Ihrem eigenen Rechner läuft — [Claude Code](https://claude.com/claude-code), [Cursor](https://cursor.com) 2.4+, [OpenAI Codex CLI](https://github.com/openai/codex) oder das [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview). Er muss Befehle ausführen und Dateien schreiben dürfen. | Alles |
+| **Ein Coding-Agent** | Einer, der [Agent Skills](https://agentskills.io) unterstützt und auf Ihrem eigenen Rechner läuft — Claude Code, Codex CLI, Cursor 2.4+, Gemini CLI, GitHub Copilot und weitere lesen alle `SKILL.md`. Er muss Befehle ausführen und Dateien schreiben dürfen. | Alles |
 | **Node.js 20+** | Version 22 (LTS) empfohlen. Prüfen Sie es mit `node -v`; wenn dabei nichts oder eine Version unter 20 erscheint, installieren Sie es von [nodejs.org](https://nodejs.org). | Alles |
 | **Ein moderner Browser** | Chrome/Edge 80+, Firefox 101+, Safari 16.4+ — haben Sie mit hoher Wahrscheinlichkeit bereits. | [Live-Vorschau](#live-vorschau) |
 | **Eine Internetverbindung** | Die Live-Vorschau lädt den Editor und den HTML-Compiler von einem CDN. Das Erzeugen und Validieren von JSON funktioniert vollständig offline. | [Live-Vorschau](#live-vorschau) |
 | **`npm`** | Lädt beim ersten Import den Konverter für Ihr Quellformat. Ist in Node.js enthalten. | [Import](#eine-bestehende-vorlage-importieren) |
-| **`git`** | Nur für die Plugin-Installation unten (der Marketplace ist ein Git-Repository) oder um das Repository für den Ordner-kopieren-Weg zu klonen. | Installation |
+| **`git`** | Um das Repository zu klonen, oder für die Plugin-Installation (der Marketplace ist ein Git-Repository). | Installation |
 
-**Sonst nichts** — kein Templatical-Konto, kein API-Schlüssel, kein Backend und kein `npm install`, um ein Template zu erzeugen oder zu validieren. Gehostete Agenten (claude.ai, Claude Desktop) können JSON erstellen und validieren, die Live-Vorschau benötigt jedoch einen Agenten auf Ihrem eigenen Rechner — sie öffnet einen lokalen Server in Ihrem Browser.
+**Sonst nichts** — kein Templatical-Konto, kein API-Schlüssel, kein Backend und kein `npm install`, um ein Template zu erzeugen oder zu validieren.
+
+Die Live-Vorschau benötigt einen Agenten auf Ihrem eigenen Rechner, da sie einen lokalen Server für Ihren Browser öffnet. Agenten, die entfernt laufen — ein browserbasierter Chat, eine Cloud-IDE, ein CI-Runner — können weiterhin JSON erzeugen und validieren, nur den Editor können sie Ihnen nicht zeigen.
 
 ## Installation
 
-### Claude Code (Plugin)
+`SKILL.md` ist ein [offener Standard](https://agentskills.io) — der Skill ist also schlicht ein Ordner, den Sie in ein Verzeichnis legen, das Ihr Agent liest. Klonen Sie das Repository einmalig:
+
+```bash
+git clone https://github.com/templatical/sdk.git
+```
+
+### Eine Kopie für alle Agenten (empfohlen)
+
+`~/.agents/skills/` ist der herstellerneutrale Ort, den Codex CLI, Gemini CLI und weitere Agenten standardmäßig lesen. Eine Installation dort deckt sie alle ab:
+
+```bash
+mkdir -p ~/.agents/skills
+cp -r sdk/skills/templatical-email ~/.agents/skills/
+```
+
+### Verzeichnisse einzelner Agenten
+
+Für Agenten mit eigenem Verzeichnis, oder wenn Sie Skills getrennt halten möchten:
+
+::: code-group
+
+```bash [Claude Code]
+mkdir -p ~/.claude/skills
+cp -r sdk/skills/templatical-email ~/.claude/skills/
+```
+
+```bash [Codex CLI]
+mkdir -p ~/.agents/skills
+cp -r sdk/skills/templatical-email ~/.agents/skills/
+```
+
+```bash [Cursor]
+mkdir -p ~/.cursor/skills
+cp -r sdk/skills/templatical-email ~/.cursor/skills/
+```
+
+```bash [Gemini CLI]
+mkdir -p ~/.gemini/skills
+cp -r sdk/skills/templatical-email ~/.gemini/skills/
+```
+
+```bash [Projektbezogen]
+# Wird mit dem Repository eingecheckt, Teammitglieder erhalten ihn beim Klonen.
+# .agents/skills/ für alle Agenten, oder .claude/skills/, .cursor/skills/, …
+mkdir -p .agents/skills
+cp -r /pfad/zu/sdk/skills/templatical-email .agents/skills/
+```
+
+:::
+
+Um eine Kopie über mehrere Agenten hinweg aktuell zu halten, verlinken Sie sie statt zu kopieren:
+
+```bash
+ln -s ~/.agents/skills/templatical-email ~/.claude/skills/templatical-email
+```
+
+### Claude-Code-Plugin
+
+Claude Code kann den Skill auch als Plugin installieren; das erspart das Klonen:
 
 ```text
 /plugin marketplace add templatical/sdk
 /plugin install templatical-email@templatical
 ```
 
-Fügen Sie den Marketplace über das Git-Repository hinzu (nicht über eine rohe Datei-URL), damit die Quelle des Plugins aufgelöst wird. Der Skill wird automatisch aktiv, wenn Sie Claude Code bitten, eine Templatical-E-Mail zu erstellen.
+Fügen Sie den Marketplace über das Git-Repository hinzu (nicht über eine rohe Datei-URL), damit die Quelle des Plugins aufgelöst wird.
 
-### Beliebiger Agent (Ordner kopieren)
+### Überprüfen
 
-`SKILL.md` ist ein offener Standard, daher funktioniert der Skill in jedem kompatiblen Agenten. Kopieren Sie `skills/templatical-email` aus einem Klon des Repositorys in das Skills-Verzeichnis Ihres Agenten:
-
-```bash
-# Claude Code
-cp -r skills/templatical-email ~/.claude/skills/
-# Cursor
-cp -r skills/templatical-email ~/.cursor/skills/
-# OpenAI Codex (und andere Agenten, die das neutrale Verzeichnis nutzen)
-cp -r skills/templatical-email ~/.agents/skills/
-```
+Bitten Sie Ihren Agenten, eine E-Mail zu erstellen — „mach mir eine Willkommens-E-Mail für ein Kaffee-Abo". Wurde der Skill geladen, liest er das mitgelieferte Block-Schema und validiert seine Ausgabe, bevor er sie zurückgibt. Passiert nichts, prüfen Sie, ob der Ordner in einem Verzeichnis gelandet ist, das Ihr Agent tatsächlich liest, und ob der Skill in dessen Skill-Liste aktiviert ist.
 
 ## Verwendung
 
@@ -115,5 +166,3 @@ Der Skill deckt zwei sehr unterschiedliche Bedürfnisse ab.
 **Eine Hilfe zur Entwicklungszeit für eine Editor-Integration.** Wenn Sie den Editor in Ihre eigene App einbetten, ist der Skill der schnellste Weg, markenkonforme Start-Templates, Fixtures und Prototypen zu erzeugen. Ihre _Laufzeit_-Integration bleibt [`@templatical/editor`](/de/getting-started/quick-start) (Ihre Nutzer bauen E-Mails, Sie erhalten JSON) + [`@templatical/renderer`](/de/api/renderer-typescript) (JSON → MJML/HTML zum Versand) — den Skill selbst binden Sie nicht ein.
 
 Für eine **„Mit KI erstellen"**-Funktion im Produkt (Ihre Nutzer geben einen Prompt ein und erhalten ein Template) ruft Ihr Backend ein LLM mit dem Block-Schema auf, validiert das Ergebnis mit [`@templatical/quality`](/de/quality/) und rendert es. Wenn Sie das nicht selbst bauen und hosten möchten, bietet [Templatical Cloud](/de/cloud/) verwaltete KI-Generierung und Zusammenarbeit.
-
-Ein hauseigener lokaler MCP-Server (`@templatical/mcp`) ist für **agentenbasierte** Integrationen geplant — er läuft lokal über stdio (kein Konto und kein Schlüssel nötig) und stellt Validieren / Rendern / Linten als aufrufbare Tools bereit. Bis er verfügbar ist, verwenden Sie die obigen Pakete direkt.

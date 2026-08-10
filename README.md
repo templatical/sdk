@@ -42,17 +42,24 @@
 
 Describe the email you want and your AI coding agent builds it — then preview it in the real editor, hand-edit anything, and export send-ready MJML/HTML. **Free, open-source, no backend, no API key** — your agent is the inference, and nothing is sent to us. Ship a one-off campaign, or generate branded starter templates for your [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) integration: if you have a coding agent, you have a complete email tool.
 
-The [`templatical-email` Agent Skill](./skills/templatical-email) runs in Claude Code, Cursor, or any [Agent Skills](https://code.claude.com/docs/en/skills)–compatible agent, and the email it exports sends through any provider — Amazon SES, Postmark, Resend, Mailchimp, anything.
+The [`templatical-email` Agent Skill](./skills/templatical-email) is an [Agent Skills](https://agentskills.io) folder — Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot and others all read `SKILL.md`. The email it exports sends through any provider — Amazon SES, Postmark, Resend, Mailchimp, anything.
+
+Copy it once into the vendor-neutral location most agents read:
+
+```bash
+cp -r skills/templatical-email ~/.agents/skills/
+```
+
+Agents with their own directory (`~/.claude/skills/`, `~/.cursor/skills/`, `~/.gemini/skills/`) take the same folder. Claude Code can also install it as a plugin:
 
 ```text
-# Claude Code
 /plugin marketplace add templatical/sdk
 /plugin install templatical-email@templatical
 ```
 
-In **Claude Code**, you can also **preview it live**: ask to "show it live" and the skill opens your template in the real Templatical editor in a browser, updating it as you prompt and reconciling any edits you make by hand. It's local and adds no dependencies (a tiny Node bridge; the editor loads from the CDN).
+You can also **preview it live**: ask to "show it live" and the skill opens your template in the real Templatical editor in a browser, updating as you prompt and reconciling any edits you make by hand. It's local and adds no dependencies (a tiny Node bridge; the editor loads from the CDN).
 
-Or copy `skills/templatical-email/` into any agent's skills folder. [Skill guide →](https://docs.templatical.com/guide/agent-skill)
+[Skill guide →](https://docs.templatical.com/guide/agent-skill)
 
 > Want a hosted, managed experience instead — AI chat inside the editor, tuned prompts, an MCP server we run? That's the Templatical Cloud tier (below).
 
