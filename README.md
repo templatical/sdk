@@ -44,17 +44,17 @@ Describe the email you want and your AI coding agent builds it — then preview 
 
 The [`templatical-email` Agent Skill](./skills/templatical-email) is an [Agent Skills](https://agentskills.io) folder — Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot and others all read `SKILL.md`. The email it exports sends through any provider — Amazon SES, Postmark, Resend, Mailchimp, anything.
 
-Copy it once into the vendor-neutral location most agents read:
-
-```bash
-cp -r skills/templatical-email ~/.agents/skills/
-```
-
-Agents with their own directory (`~/.claude/skills/`, `~/.cursor/skills/`, `~/.gemini/skills/`) take the same folder. Claude Code can also install it as a plugin:
+In **Claude Code**, two commands and you're done:
 
 ```text
 /plugin marketplace add templatical/sdk
 /plugin install templatical-email@templatical
+```
+
+Every other agent takes the folder. `~/.agents/skills/` is the vendor-neutral location most of them read, so one copy covers Codex CLI, Gemini CLI and friends:
+
+```bash
+cp -r skills/templatical-email ~/.agents/skills/
 ```
 
 You can also **preview it live**: ask to "show it live" and the skill opens your template in the real Templatical editor in a browser, updating as you prompt and reconciling any edits you make by hand. It's local and adds no dependencies (a tiny Node bridge; the editor loads from the CDN).

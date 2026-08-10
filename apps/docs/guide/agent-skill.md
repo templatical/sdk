@@ -37,31 +37,35 @@ The live preview needs an agent running on your own machine, because it opens a 
 
 ## Install
 
-`SKILL.md` is an [open standard](https://agentskills.io), so the skill is just a folder you drop into a directory your agent reads. Clone the repository once:
+The skill is a folder containing `SKILL.md` — an [open standard](https://agentskills.io) that Claude Code, Codex CLI, Cursor, Gemini CLI and others all read. Claude Code is currently the only one with a packaged installer, so it takes two commands; everywhere else you copy the folder in.
+
+### Claude Code
+
+```text
+/plugin marketplace add templatical/sdk
+/plugin install templatical-email@templatical
+```
+
+Add the marketplace from the git repository (not a raw file URL) so the plugin's source resolves. Updates come through the marketplace, so there is nothing to re-copy later.
+
+### Every other agent
+
+Clone the repository once:
 
 ```bash
 git clone https://github.com/templatical/sdk.git
 ```
 
-### One copy for every agent (recommended)
-
-`~/.agents/skills/` is the vendor-neutral location that Codex CLI, Gemini CLI and other agents read by default. Installing there once covers all of them:
+`~/.agents/skills/` is the vendor-neutral location that Codex CLI, Gemini CLI and others read by default — installing there once covers all of them:
 
 ```bash
 mkdir -p ~/.agents/skills
 cp -r sdk/skills/templatical-email ~/.agents/skills/
 ```
 
-### Per-agent directories
-
-For agents that use their own directory, or if you would rather keep skills separate:
+For an agent that uses its own directory, or if you would rather keep skills separate:
 
 ::: code-group
-
-```bash [Claude Code]
-mkdir -p ~/.claude/skills
-cp -r sdk/skills/templatical-email ~/.claude/skills/
-```
 
 ```bash [Codex CLI]
 mkdir -p ~/.agents/skills
@@ -76,6 +80,12 @@ cp -r sdk/skills/templatical-email ~/.cursor/skills/
 ```bash [Gemini CLI]
 mkdir -p ~/.gemini/skills
 cp -r sdk/skills/templatical-email ~/.gemini/skills/
+```
+
+```bash [Claude Code]
+# Only if you skipped the plugin above.
+mkdir -p ~/.claude/skills
+cp -r sdk/skills/templatical-email ~/.claude/skills/
 ```
 
 ```bash [Project-scoped]
@@ -93,20 +103,9 @@ To keep one copy in step across several agents, symlink instead of copying:
 ln -s ~/.agents/skills/templatical-email ~/.claude/skills/templatical-email
 ```
 
-### Claude Code plugin
+Copies do not auto-update — re-copy after pulling the repository.
 
-Claude Code can also install it as a plugin, which skips the clone:
-
-```text
-/plugin marketplace add templatical/sdk
-/plugin install templatical-email@templatical
-```
-
-Add the marketplace from the git repository (not a raw file URL) so the plugin's source resolves.
-
-### Check it worked
-
-Ask your agent to build an email — "make me a welcome email for a coffee subscription". If the skill loaded, it reads the bundled block schema and validates its output before handing it back. If nothing happens, check that the folder landed in a directory your agent actually reads, and that the skill is enabled in your agent's skill list.
+If your agent doesn't pick the skill up, check that the folder landed in a directory it actually reads, and that the skill is enabled in its skill list.
 
 ## Using it
 

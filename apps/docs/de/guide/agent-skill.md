@@ -37,31 +37,35 @@ Die Live-Vorschau benötigt einen Agenten auf Ihrem eigenen Rechner, da sie eine
 
 ## Installation
 
-`SKILL.md` ist ein [offener Standard](https://agentskills.io) — der Skill ist also schlicht ein Ordner, den Sie in ein Verzeichnis legen, das Ihr Agent liest. Klonen Sie das Repository einmalig:
+Der Skill ist ein Ordner mit einer `SKILL.md` — einem [offenen Standard](https://agentskills.io), den Claude Code, Codex CLI, Cursor, Gemini CLI und weitere lesen. Claude Code ist derzeit das einzige Werkzeug mit einem Paket-Installer, dort genügen zwei Befehle; überall sonst kopieren Sie den Ordner hinein.
+
+### Claude Code
+
+```text
+/plugin marketplace add templatical/sdk
+/plugin install templatical-email@templatical
+```
+
+Fügen Sie den Marketplace über das Git-Repository hinzu (nicht über eine rohe Datei-URL), damit die Quelle des Plugins aufgelöst wird. Aktualisierungen kommen über den Marketplace, es muss also später nichts erneut kopiert werden.
+
+### Alle anderen Agenten
+
+Klonen Sie das Repository einmalig:
 
 ```bash
 git clone https://github.com/templatical/sdk.git
 ```
 
-### Eine Kopie für alle Agenten (empfohlen)
-
-`~/.agents/skills/` ist der herstellerneutrale Ort, den Codex CLI, Gemini CLI und weitere Agenten standardmäßig lesen. Eine Installation dort deckt sie alle ab:
+`~/.agents/skills/` ist der herstellerneutrale Ort, den Codex CLI, Gemini CLI und weitere standardmäßig lesen — eine Installation dort deckt sie alle ab:
 
 ```bash
 mkdir -p ~/.agents/skills
 cp -r sdk/skills/templatical-email ~/.agents/skills/
 ```
 
-### Verzeichnisse einzelner Agenten
-
-Für Agenten mit eigenem Verzeichnis, oder wenn Sie Skills getrennt halten möchten:
+Für einen Agenten mit eigenem Verzeichnis, oder wenn Sie Skills getrennt halten möchten:
 
 ::: code-group
-
-```bash [Claude Code]
-mkdir -p ~/.claude/skills
-cp -r sdk/skills/templatical-email ~/.claude/skills/
-```
 
 ```bash [Codex CLI]
 mkdir -p ~/.agents/skills
@@ -76,6 +80,12 @@ cp -r sdk/skills/templatical-email ~/.cursor/skills/
 ```bash [Gemini CLI]
 mkdir -p ~/.gemini/skills
 cp -r sdk/skills/templatical-email ~/.gemini/skills/
+```
+
+```bash [Claude Code]
+# Nur falls Sie das Plugin oben übersprungen haben.
+mkdir -p ~/.claude/skills
+cp -r sdk/skills/templatical-email ~/.claude/skills/
 ```
 
 ```bash [Projektbezogen]
@@ -93,20 +103,9 @@ Um eine Kopie über mehrere Agenten hinweg aktuell zu halten, verlinken Sie sie 
 ln -s ~/.agents/skills/templatical-email ~/.claude/skills/templatical-email
 ```
 
-### Claude-Code-Plugin
+Kopien aktualisieren sich nicht von selbst — kopieren Sie sie nach einem Pull des Repositorys erneut.
 
-Claude Code kann den Skill auch als Plugin installieren; das erspart das Klonen:
-
-```text
-/plugin marketplace add templatical/sdk
-/plugin install templatical-email@templatical
-```
-
-Fügen Sie den Marketplace über das Git-Repository hinzu (nicht über eine rohe Datei-URL), damit die Quelle des Plugins aufgelöst wird.
-
-### Überprüfen
-
-Bitten Sie Ihren Agenten, eine E-Mail zu erstellen — „mach mir eine Willkommens-E-Mail für ein Kaffee-Abo". Wurde der Skill geladen, liest er das mitgelieferte Block-Schema und validiert seine Ausgabe, bevor er sie zurückgibt. Passiert nichts, prüfen Sie, ob der Ordner in einem Verzeichnis gelandet ist, das Ihr Agent tatsächlich liest, und ob der Skill in dessen Skill-Liste aktiviert ist.
+Erkennt Ihr Agent den Skill nicht, prüfen Sie, ob der Ordner in einem Verzeichnis gelandet ist, das er tatsächlich liest, und ob der Skill in seiner Skill-Liste aktiviert ist.
 
 ## Verwendung
 
