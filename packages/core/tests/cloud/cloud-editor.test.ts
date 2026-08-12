@@ -10,6 +10,7 @@ import type { Template, TemplateContent } from "@templatical/types";
 import { ApiClient } from "../../src/cloud/api";
 import type { AuthManager } from "../../src/cloud/auth";
 import { useEditor } from "../../src/cloud/editor";
+import { useAutoSave } from "../../src/auto-save";
 
 vi.mock("../../src/cloud/api");
 
@@ -487,6 +488,42 @@ describe("cloud useEditor", () => {
       await editor.create();
       await expect(editor.createSnapshot()).rejects.toThrow("snapshot failed");
       expect(onError).toHaveBeenCalledWith(error);
+    });
+  });
+
+  // `save` / `load` / `create` clear isDirty, so in Cloud the flag goes back to
+  // false repeatedly — every one of those is a fresh chance to drop the next
+  // edit if auto-save decides dirtiness in its (synchronous) watcher instead of
+  // at debounce time. Issue #522 in its recurring form.
+  describe("auto-save across an isDirty reset", () => {
+    it("fires onChange on the first edit after a save", async () => {
+      const tpl = createMockTemplate();
+      vi.mocked(ApiClient.prototype.createTemplate).mockResolvedValue(tpl);
+      vi.mocked(ApiClient.prototype.updateTemplate).mockResolvedValue(tpl);
+      const editor = setup();
+      const onChange = vi.fn();
+      useAutoSave({
+        content: editor.content,
+        isDirty: () => editor.state.isDirty,
+        onChange,
+        debounce: 100,
+      });
+
+      await editor.create();
+      editor.addBlock(createParagraphBlock());
+      await editor.save();
+      expect(editor.state.isDirty).toBe(false);
+
+      vi.useFakeTimers();
+      try {
+        editor.addBlock(createParagraphBlock());
+        vi.advanceTimersByTime(100);
+      } finally {
+        vi.useRealTimers();
+      }
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0].blocks).toHaveLength(2);
     });
   });
 

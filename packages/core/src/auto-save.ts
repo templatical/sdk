@@ -68,12 +68,17 @@ export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
     }, debounce);
   }
 
+  // `watch` from `@vue/reactivity` has no scheduler, so this callback runs
+  // *synchronously inside the mutation* — before the editor's trailing
+  // `state.isDirty = true`, and `isDirty` sits outside the watched `content`
+  // subtree so setting it never re-triggers. An `isDirty()` guard here would
+  // therefore drop the first edit after every dirty-flag reset (issue #522).
+  // Dirtiness is decided at debounce time instead, where the flag is settled;
+  // `scheduleOnChange` still checks `enabled`/`paused` up front.
   const stopWatch = watch(
     content,
     () => {
-      if (isEnabled() && !paused && isDirty()) {
-        scheduleOnChange();
-      }
+      scheduleOnChange();
     },
     { deep: true },
   );

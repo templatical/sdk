@@ -1,8 +1,13 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { ref } from "@vue/reactivity";
 import type { TemplateContent } from "@templatical/types";
-import { createDefaultTemplateContent } from "@templatical/types";
+import {
+  createDefaultTemplateContent,
+  createParagraphBlock,
+  createTitleBlock,
+} from "@templatical/types";
 import { useAutoSave } from "../src/auto-save";
+import { useEditor } from "../src/editor";
 
 function makeContent(): TemplateContent {
   return createDefaultTemplateContent();
@@ -387,7 +392,7 @@ describe("useAutoSave", () => {
       expect(onChange).toHaveBeenCalledTimes(2);
     });
 
-    it("isDirty throwing propagates from watcher", () => {
+    it("isDirty throwing propagates from the debounce timeout", () => {
       const content = ref(makeContent());
       const onChange = vi.fn();
       useAutoSave({
@@ -399,11 +404,103 @@ describe("useAutoSave", () => {
         debounce: 100,
       });
 
-      // isDirty is called inside the watcher — error propagates synchronously
-      expect(() => {
-        content.value.settings.width = 700;
-      }).toThrow("dirty check failed");
+      // isDirty is consulted at debounce time, not in the watcher — the change
+      // itself is safe, and the error surfaces when the timeout fires.
+      content.value.settings.width = 700;
       expect(onChange).not.toHaveBeenCalled();
+      expect(() => vi.advanceTimersByTime(100)).toThrow("dirty check failed");
+      expect(onChange).not.toHaveBeenCalled();
+    });
+  });
+
+  // The editor sets `state.isDirty = true` *after* mutating content, and the
+  // reactivity watcher runs synchronously inside that mutation — so a dirty
+  // check in the watcher observes the pre-mutation flag and drops the change
+  // (issue #522). These wire the real editor rather than a constant `isDirty`,
+  // which is what let that ship.
+  describe("wired to the real editor", () => {
+    function setup(debounce = 100) {
+      const title = createTitleBlock();
+      const content = makeContent();
+      content.blocks.push(title);
+      const editor = useEditor({ content });
+      const onChange = vi.fn<(content: TemplateContent) => void>();
+      const autoSave = useAutoSave({
+        content: editor.content,
+        isDirty: () => editor.state.isDirty,
+        onChange,
+        debounce,
+      });
+      return { editor, title, onChange, autoSave };
+    }
+
+    it("fires onChange on the first updateBlock", () => {
+      const { editor, title, onChange } = setup();
+
+      editor.updateBlock(title.id, { level: 3 });
+      vi.advanceTimersByTime(100);
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0].blocks[0]).toMatchObject({
+        id: title.id,
+        level: 3,
+      });
+    });
+
+    it("fires onChange on the first updateSettings", () => {
+      const { editor, onChange } = setup();
+
+      editor.updateSettings({ width: 700 });
+      vi.advanceTimersByTime(100);
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0].settings.width).toBe(700);
+    });
+
+    it("fires onChange on the first addBlock", () => {
+      const { editor, onChange } = setup();
+      const block = createParagraphBlock();
+
+      editor.addBlock(block);
+      vi.advanceTimersByTime(100);
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0].blocks).toHaveLength(2);
+      expect(onChange.mock.calls[0][0].blocks[1].id).toBe(block.id);
+    });
+
+    it("fires onChange on the first removeBlock", () => {
+      const { editor, title, onChange } = setup();
+
+      editor.removeBlock(title.id);
+      vi.advanceTimersByTime(100);
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0].blocks).toHaveLength(0);
+    });
+
+    it("still collapses a burst of edits into one call", () => {
+      const { editor, title, onChange } = setup();
+
+      editor.updateBlock(title.id, { level: 3 });
+      vi.advanceTimersByTime(50);
+      editor.updateBlock(title.id, { level: 4 });
+      vi.advanceTimersByTime(50);
+      editor.updateBlock(title.id, { level: 5 });
+      vi.advanceTimersByTime(100);
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0].blocks[0]).toMatchObject({ level: 5 });
+    });
+
+    it("does not fire onChange for a non-dirtying setContent", () => {
+      const { editor, onChange } = setup();
+
+      editor.setContent(makeContent(), false);
+      vi.advanceTimersByTime(100);
+
+      expect(onChange).not.toHaveBeenCalled();
+      expect(editor.state.isDirty).toBe(false);
     });
   });
 
