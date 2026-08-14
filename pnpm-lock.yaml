@@ -12,8 +12,8 @@ importers:
         specifier: ^14.4.0
         version: 14.4.0(vue@3.5.41(typescript@6.0.3))
       liquidjs:
-        specifier: ^10.28.0
-        version: 10.28.0
+        specifier: ^10.29.0
+        version: 10.29.0
       vue:
         specifier: ^3.5.41
         version: 3.5.41(typescript@6.0.3)
@@ -341,8 +341,8 @@ importers:
         specifier: ^20.11.2
         version: 20.11.2
       liquidjs:
-        specifier: ^10.28.0
-        version: 10.28.0
+        specifier: ^10.29.0
+        version: 10.29.0
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
@@ -3215,8 +3215,8 @@ packages:
     engines: {node: '>=22.22.1'}
     hasBin: true
 
-  liquidjs@10.28.0:
-    resolution: {integrity: sha512-b6tmBXYMQTuGPnM5vB0CuZMo5kvmKMtSB/gvUWP6RFn2pIB5s+bJkBfIyJnattkc5bgeAiflrZVptx3iaLLioQ==}
+  liquidjs@10.29.0:
+    resolution: {integrity: sha512-pCVOhs6FLAR8su3ItJ07diN26t6W5dHQRnmTMy8HPyTFuv1+oSCVJIGp5pGjfQyOZfh50KswvKtMTp6p4JEIdw==}
     engines: {node: '>=16'}
     hasBin: true
 
@@ -7365,7 +7365,7 @@ snapshots:
     optionalDependencies:
       yaml: 2.9.0
 
-  liquidjs@10.28.0:
+  liquidjs@10.29.0:
     dependencies:
       commander: 10.0.1
 
