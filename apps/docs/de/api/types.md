@@ -172,6 +172,7 @@ interface ButtonBlock extends BaseBlock {
   fontFamily?: string;
   openInNewTab?: boolean;
   width?: number | 'full';
+  align: 'left' | 'center' | 'right';
 }
 ```
 

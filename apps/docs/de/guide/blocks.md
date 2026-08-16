@@ -79,6 +79,7 @@ Eine Call-to-Action-Schaltfläche mit anpassbarem Erscheinungsbild.
 | `fontFamily` | `string` | Überschreibung der Schriftfamilie |
 | `openInNewTab` | `boolean` | Verhalten des Linkziels |
 | `width` | `number \| 'full'` | Feste Breite in px oder `'full'` für 100%. Weglassen, um an den Inhalt anzupassen. |
+| `align` | `'left' \| 'center' \| 'right'` | Ausrichtung innerhalb der Spalte. Ohne sichtbare Wirkung, wenn `width` auf `'full'` steht. |
 
 ## Divider
 

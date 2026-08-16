@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import ColorPicker from "../ColorPicker.vue";
 import MergeTagInput from "../MergeTagInput.vue";
+import SlidingPillSelect from "../SlidingPillSelect.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
 import { useI18n } from "../../composables/useI18n";
 import {
@@ -190,5 +191,17 @@ function updateCustomWidth(raw: string): void {
       />
       <span :class="inputSuffixClass">px</span>
     </div>
+  </div>
+  <div class="tpl:mb-3.5">
+    <label :class="labelClass">{{ t.title.align }}</label>
+    <SlidingPillSelect
+      :options="[
+        { value: 'left', label: t.title.alignLeft },
+        { value: 'center', label: t.title.alignCenter },
+        { value: 'right', label: t.title.alignRight },
+      ]"
+      :model-value="block.align ?? 'center'"
+      @update:model-value="updateField('align', $event)"
+    />
   </div>
 </template>

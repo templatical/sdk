@@ -79,6 +79,7 @@ A call-to-action button with customizable appearance.
 | `fontFamily` | `string` | Font family override |
 | `openInNewTab` | `boolean` | Link target behavior |
 | `width` | `number \| 'full'` | Fixed width in px, or `'full'` for 100%. Omit to size to content. |
+| `align` | `'left' \| 'center' \| 'right'` | Placement within the column. No visible effect when `width` is `'full'`. |
 
 ## Divider
 

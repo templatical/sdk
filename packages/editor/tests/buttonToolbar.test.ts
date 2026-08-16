@@ -77,6 +77,49 @@ describe("ButtonToolbar width control", () => {
   });
 });
 
+describe("ButtonToolbar align control", () => {
+  function alignRadios(wrapper: ReturnType<typeof mountIt>) {
+    return wrapper.find('[role="radiogroup"]').findAll('[role="radio"]');
+  }
+
+  it("reflects the block's alignment", () => {
+    const wrapper = mountIt(createButtonBlock({ align: "right" }));
+    const checked = alignRadios(wrapper).filter(
+      (r) => r.attributes("aria-checked") === "true",
+    );
+    expect(checked).toHaveLength(1);
+    expect(checked[0].attributes("aria-label")).toBe("title.alignRight");
+  });
+
+  it("emits the picked alignment", async () => {
+    const wrapper = mountIt(createButtonBlock({ align: "center" }));
+
+    await alignRadios(wrapper)[0].trigger("click");
+
+    const [update] = wrapper.emitted("update")![0] as [Partial<ButtonBlock>];
+    expect(update.align).toBe("left");
+  });
+
+  it("shows center for a block stored without align", () => {
+    // Templates predating the field must not render an empty control.
+    const block = createButtonBlock();
+    delete (block as { align?: unknown }).align;
+
+    const checked = alignRadios(mountIt(block)).filter(
+      (r) => r.attributes("aria-checked") === "true",
+    );
+    expect(checked).toHaveLength(1);
+    expect(checked[0].attributes("aria-label")).toBe("title.alignCenter");
+  });
+
+  it("stays available for a full-width button", () => {
+    // No visible effect at full width, but hiding it would make the control
+    // appear and disappear as the width mode changes. Mirrors ImageToolbar.
+    const wrapper = mountIt(createButtonBlock({ width: "full" }));
+    expect(alignRadios(wrapper)).toHaveLength(3);
+  });
+});
+
 describe("ButtonToolbar color layout", () => {
   it("stacks Background and Text Color vertically rather than in a 2-col grid", () => {
     // Each ColorPicker is a 40px swatch + a hex input; half the sidebar width

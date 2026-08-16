@@ -35,6 +35,9 @@ export function renderButton(
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   const widthAttr = renderWidthAttr(block.width);
   const visibilityAttr = getCssClassAttr(block);
+  // Templates stored before `align` existed have no value for it. Fall back to
+  // MJML's own default so they keep rendering exactly as they did.
+  const align = block.align ?? "center";
 
   return `<mj-button${hrefAttr}${targetAttr}
   background-color="${backgroundColor}"
@@ -43,6 +46,7 @@ export function renderButton(
   font-weight="bold"
   border-radius="${borderRadius}px"
   inner-padding="${buttonPadding}"
+  align="${align}"
   padding="${padding}"${bgColor}${fontFamilyAttr}${widthAttr}${visibilityAttr}
 >${text}</mj-button>`;
 }

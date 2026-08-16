@@ -108,6 +108,11 @@ export interface ButtonBlock extends BaseBlock {
   buttonPadding: SpacingValue;
   fontFamily?: string;
   width?: number | "full";
+  /**
+   * Placement of the button within its column. No visible effect when `width`
+   * is `"full"`, since the button then spans the column.
+   */
+  align: "left" | "center" | "right";
 }
 
 export interface DividerBlock extends BaseBlock {

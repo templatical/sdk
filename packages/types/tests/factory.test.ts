@@ -76,6 +76,13 @@ describe("block factory functions", () => {
     expect(block.type).toBe("button");
     expect(block.text).toBe("Click Here");
     expect(block.backgroundColor).toBe("#333333");
+    // Matches MJML's own default, so a new button renders where it always did.
+    expect(block.align).toBe("center");
+  });
+
+  it("creates a button block with an explicit align", () => {
+    const block = createButtonBlock({ align: "left" });
+    expect(block.align).toBe("left");
   });
 
   it("creates a divider block with defaults", () => {

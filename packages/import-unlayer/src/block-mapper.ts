@@ -277,6 +277,7 @@ function convertButton(values: UnlayerContentValues): Block {
     borderRadius: parsePxValue(values.borderRadius),
     fontSize: parsePxValue(values.fontSize) || 16,
     fontFamily: parseFontFamily(values.fontFamily) || undefined,
+    align: toAlign(values.textAlign, "center"),
     buttonPadding: padding,
     styles: makeStyles(values),
   });
