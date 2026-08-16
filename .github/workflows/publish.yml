@@ -36,7 +36,7 @@ jobs:
 
       - name: Create Release Pull Request or Publish
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@v2.1.0
         with:
           # Custom version command: `changeset version` (bumps package.jsons +
           # changelogs) then sync the templatical-email skill, so the Version
