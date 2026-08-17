@@ -20,9 +20,7 @@ export interface UseFontsReturn {
   defaultFont: ComputedRef<string>;
   defaultFallback: ComputedRef<string>;
   customFonts: Ref<CustomFont[]>;
-  customFontsEnabled: Ref<boolean>;
   isLoaded: Ref<boolean>;
-  setCustomFontsEnabled: (enabled: boolean) => void;
   loadCustomFonts: () => Promise<void>;
   cleanupFontLinks: () => void;
   getFontWithFallback: (fontName: string) => string;
@@ -63,8 +61,8 @@ const DEFAULT_FALLBACK = "Arial, sans-serif";
  * watcher).
  *
  * Only the *picker* list is filtered; `BUILT_IN_FONT_STACKS` (fallback stacks)
- * and `isBuiltInFont` stay complete, so content already using an excluded family
- * still renders with its proper stack.
+ * stays complete, so content already using an excluded family still renders with
+ * its proper stack.
  */
 function resolveBuiltInFonts(builtIns: FontsConfig["builtIns"]): FontOption[] {
   if (builtIns === undefined || builtIns === true) {
@@ -101,7 +99,6 @@ function resolveBuiltInFonts(builtIns: FontsConfig["builtIns"]): FontOption[] {
 
 export function useFonts(config?: FontsConfig): UseFontsReturn {
   const customFonts = ref<CustomFont[]>(config?.customFonts ?? []);
-  const customFontsEnabled = ref(true);
   const isLoaded = ref(false);
 
   // Built-in fonts the picker offers, after applying the `builtIns` allowlist.
@@ -113,16 +110,11 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
     () => config?.defaultFallback ?? DEFAULT_FALLBACK,
   );
 
-  function setCustomFontsEnabled(enabled: boolean): void {
-    customFontsEnabled.value = enabled;
-  }
-
+  // Custom faces are always offered, here and in `getDefaultFont` below: gating
+  // them would gate editor capability the free editor grants unconditionally, and
+  // nothing may withdraw them mid-session.
   const fonts = computed<FontOption[]>(() => {
     const builtInFonts = [...enabledBuiltInFonts];
-
-    if (!customFontsEnabled.value) {
-      return builtInFonts.sort((a, b) => a.label.localeCompare(b.label));
-    }
 
     const customFontOptions: FontOption[] = customFonts.value.map((font) => ({
       value: font.name,
@@ -164,20 +156,8 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
     );
   }
 
-  function isBuiltInFont(fontName: string): boolean {
-    return BUILT_IN_FONTS.some(
-      (font) =>
-        font.label.toLowerCase() === fontName.toLowerCase() ||
-        font.value.toLowerCase().startsWith(fontName.toLowerCase()),
-    );
-  }
-
   function getDefaultFont(): string {
     if (config?.defaultFont) {
-      if (!customFontsEnabled.value && !isBuiltInFont(config.defaultFont)) {
-        return DEFAULT_FALLBACK;
-      }
-
       if (isFontAvailable(config.defaultFont)) {
         const matchedFont = fonts.value.find(
           (font) =>
@@ -284,9 +264,7 @@ export function useFonts(config?: FontsConfig): UseFontsReturn {
     defaultFont,
     defaultFallback,
     customFonts,
-    customFontsEnabled,
     isLoaded,
-    setCustomFontsEnabled,
     loadCustomFonts,
     cleanupFontLinks,
     getFontWithFallback,

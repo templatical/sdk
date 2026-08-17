@@ -1,4 +1,5 @@
 import type { CustomBlock, TemplateContent } from "@templatical/types";
+import type { RenderFonts } from "./renderProvider";
 
 /**
  * Minimal slice of the editor surface needed by `toMjmlForInstance`.
@@ -8,6 +9,15 @@ import type { CustomBlock, TemplateContent } from "@templatical/types";
 export interface ToMjmlSource {
   getContent(): TemplateContent;
   renderCustomBlock(block: CustomBlock): Promise<string>;
+  /**
+   * Optional. The fonts the editor is rendering with, forwarded to the renderer's
+   * `customFonts` / `defaultFallbackFont`. Without it a template using a custom
+   * face exports with no `<mj-font>` declaration and no fallback stack — i.e. the
+   * mail client silently substitutes. Provided by both editors, and by anything
+   * that has a fonts manager; sources that omit it produce byte-identical MJML to
+   * before this field existed.
+   */
+  getFonts?: () => RenderFonts;
   /**
    * Optional. Look up the definition-level CSS for a custom block type.
    * Returns `undefined` when the definition is unknown or has no
@@ -66,6 +76,7 @@ export async function toMjmlForInstance(
     );
   }
   const stylesheetResolver = instance.getCustomBlockStylesheet;
+  const fonts = instance.getFonts?.();
   return renderer.renderToMjml(instance.getContent(), {
     renderCustomBlock: instance.renderCustomBlock,
     // Only pass through when the source actually provides a resolver, so
@@ -75,6 +86,12 @@ export async function toMjmlForInstance(
       ? {
           getCustomBlockStylesheet: (customType: string) =>
             stylesheetResolver(customType),
+        }
+      : {}),
+    ...(fonts
+      ? {
+          customFonts: fonts.customFonts,
+          defaultFallbackFont: fonts.defaultFallback,
         }
       : {}),
   });

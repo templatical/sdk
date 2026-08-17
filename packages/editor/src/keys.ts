@@ -18,7 +18,6 @@ import type { Translations, CloudTranslations } from "./i18n";
 import type {
   AuthManager,
   UseAiConfigReturn,
-  UseCommentsReturn,
   UseTemplateScoringReturn,
 } from "@templatical/core/cloud";
 import type { UseSavedBlocksReturn } from "@templatical/core";
@@ -273,7 +272,10 @@ export const AUTH_MANAGER_KEY: InjectionKey<AuthManager> =
 export const AI_CONFIG_KEY: InjectionKey<UseAiConfigReturn> =
   Symbol("aiConfig");
 
-export const COMMENTS_KEY: InjectionKey<UseCommentsReturn> = Symbol("comments");
+// Comments are deliberately not injected: the panel takes `useCommentsFeature`'s
+// return as a **prop** the way `TestEmailPanel` and `SavedBlocksPanels` do, and the
+// per-block indicators read the comments entry on `CAPABILITIES_KEY`. Nothing
+// injects the composable itself.
 
 export const SCORING_KEY: InjectionKey<UseTemplateScoringReturn> =
   Symbol("scoring");

@@ -1,24 +1,29 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference -- ambient-module declaration must be loaded for cross-package typecheck (workspace path alias resolves to source)
 /// <reference path="./virtual-modules.d.ts" />
 import { createApp, h, ref, type App, type Ref } from "vue";
-import { INIT_TIMEOUT_MS } from "./constants/timeouts";
+import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "./constants/timeouts";
 import type {
   BlockDefaults,
   ColorsConfig,
+  CommentEvent,
+  CommentsProvider,
   CustomBlock,
   CustomBlockDefinition,
   DisplayConditionsConfig,
+  EditorUser,
   FontsConfig,
   LogicTagsConfig,
   MediaResult,
   MergeTagsConfig,
+  RenderProvider,
   SavedBlocksProvider,
   TestEmailProvider,
-  SaveResult,
   Template,
   TemplateContent,
   TemplateDefaults,
+  TemplatesProvider,
   ThemeOverrides,
+  VersionHistoryProvider,
   UiTheme,
   ResolvePreview,
 } from "@templatical/types";
@@ -26,10 +31,18 @@ import { createDefaultTemplateContent, safeClone } from "@templatical/types";
 import type { MediaRequestContext } from "@templatical/media-library";
 
 import Editor from "./Editor.vue";
+import type { CloudRuntime } from "./cloud/runtime";
+import type { TemplaticalCloudEditorConfig } from "./cloud/cloudConfig";
+import type { AutoSaveConfig } from "./types/auto-save";
 import type { ResolveImageUrl } from "./composables/useImageUrlResolver";
 import { loadTranslations, loadCloudTranslations } from "./i18n";
 import { useFonts } from "./composables";
 import { toMjmlForInstance } from "./utils/toMjml";
+import {
+  buildRenderPayload,
+  createRenderMethods,
+  resolveRenderFonts,
+} from "./utils/renderProvider";
 import type { HtmlBlockPreviewConfig } from "./utils/resolveHtmlBlockPreview";
 // Compiled-CSS-as-string for shadow root adoption. The `virtual:editor-css`
 // module is owned by `scripts/inline-style-css-plugin.ts` — at build time it
@@ -39,8 +52,8 @@ import type { HtmlBlockPreviewConfig } from "./utils/resolveHtmlBlockPreview";
 // returns `styles/index.css` source as a fallback.
 //
 // Separate concern from the side-effecting `import "./styles/index.css"` in
-// `Editor.vue` / `CloudEditor.vue`, which injects styles into `document.head`
-// for light-DOM mode and survives untouched.
+// `Editor.vue`, which injects styles into `document.head` for light-DOM mode and
+// survives untouched.
 //
 // Ambient declaration for `virtual:editor-css` lives in `virtual-modules.d.ts`
 // referenced at the top of this file via triple-slash so it's visible to any
@@ -89,8 +102,164 @@ export interface TemplaticalEditorConfig {
   shadowDom?: boolean;
 
   onChange?: (content: TemplateContent) => void;
-  onSave?: (content: TemplateContent) => void;
   onError?: (error: Error) => void;
+
+  /**
+   * Called whenever the editor's unsaved-changes state flips — `true` on the
+   * first edit after a save, `false` once a save completes.
+   *
+   * Works with or without a `templates` provider, because the editor's own
+   * `beforeunload` guard cannot cover SPA route changes: an embedded editor's
+   * consumer has to guard their router themselves, and this is what they guard
+   * it with.
+   */
+  onDirtyChange?: (isDirty: boolean) => void;
+
+  /**
+   * Storage backend for **the template itself** — the save/load lifecycle around
+   * whatever is on the canvas.
+   *
+   * The editor owns the header's name field, save button and save-status
+   * indicator, the Cmd+S shortcut, autosave and the unsaved-changes guard; you
+   * own persistence. Three methods:
+   *
+   * ```ts
+   * const editor = await init({
+   *   container,
+   *   templates: {
+   *     load: (id) => fetch(`/api/templates/${id}`).then((r) => r.json()),
+   *     create: (input) =>
+   *       fetch("/api/templates", {
+   *         method: "POST",
+   *         headers: { "Content-Type": "application/json" },
+   *         body: JSON.stringify(input),
+   *       }).then((r) => r.json()),
+   *     save: (id, patch) =>
+   *       fetch(`/api/templates/${id}`, {
+   *         method: "PATCH",
+   *         headers: { "Content-Type": "application/json" },
+   *         body: JSON.stringify(patch),
+   *       }).then((r) => r.json()),
+   *   },
+   * });
+   *
+   * await editor.load("tpl_123");
+   * ```
+   *
+   * **Omitted by default.** With no provider the feature is entirely off — no
+   * name field, no save button, no status indicator — and `create()` / `load()` /
+   * `save()` reject with an explanatory error. Persist the content yourself from
+   * `onChange` instead; Cmd+S then flushes that notification immediately rather
+   * than waiting out the debounce.
+   *
+   * Opening a template is deliberately imperative: there is no `templateId`
+   * config key and no in-editor template browser, because choosing which
+   * template to open belongs to your application.
+   */
+  templates?: TemplatesProvider;
+
+  /**
+   * Rendering backend — how the template becomes MJML, and how MJML becomes the
+   * HTML you send.
+   *
+   * Separate from `templates` on purpose: saving and rendering run at different
+   * frequencies (autosave would compile MJML on every debounce tick) and fail in
+   * different ways. Every method is optional, and `editor.toMjml()` /
+   * `editor.toHtml()` resolve each one independently:
+   *
+   * | Call | Order |
+   * |---|---|
+   * | `toMjml()` | `render.toMjml` → the bundled `@templatical/renderer` → throw |
+   * | `toHtml()` | `render.toHtml` → `toMjml()`'s result + `render.compileMjml` → throw |
+   *
+   * **Omitted by default**, in which case `toMjml()` renders locally and
+   * `toHtml()` rejects — the SDK deliberately bundles no MJML compiler, so there
+   * is no local HTML path. One endpoint is enough to close that gap:
+   *
+   * ```ts
+   * init({
+   *   container,
+   *   render: {
+   *     compileMjml: (mjml) =>
+   *       fetch("/api/mjml", { method: "POST", body: mjml }).then((r) => r.text()),
+   *   },
+   * });
+   * ```
+   *
+   * Provider methods receive a **render-complete** payload: custom blocks already
+   * resolved to `renderedHtml`, and the editor's effective fonts. Both are things
+   * a backend cannot reconstruct from the template JSON alone.
+   */
+  render?: RenderProvider;
+
+  /**
+   * Storage backend for the template's **version history** — the past states a
+   * user can browse, preview and restore.
+   *
+   * The editor owns the header's history control, the preview banner and the
+   * restore flow; you own the storage. `list` and `get` are the operations;
+   * `create` and `restore` can each be turned off by passing `false` instead of
+   * a function.
+   *
+   * ```ts
+   * init({
+   *   container,
+   *   versionHistory: {
+   *     list: (templateId) =>
+   *       fetch(`/api/templates/${templateId}/versions`).then((r) => r.json()),
+   *     get: (templateId, versionId) =>
+   *       fetch(`/api/templates/${templateId}/versions/${versionId}`)
+   *         .then((r) => r.json())
+   *         .then((v) => v.content),
+   *     create: false,
+   *     restore: (templateId, versionId) =>
+   *       fetch(`/api/templates/${templateId}/versions/${versionId}/restore`, {
+   *         method: "POST",
+   *       }).then((r) => r.json()),
+   *   },
+   * });
+   * ```
+   *
+   * **Omitted by default** — the control does not render and none of its UI is
+   * downloaded. It also stays hidden until a template is loaded, since a version
+   * belongs to a template id.
+   *
+   * **The editor never records a version by itself.** Whichever
+   * `TemplatesProvider.save` you supply decides whether a save also records one,
+   * so throttling and retention stay with the side that pays for the storage.
+   */
+  versionHistory?: VersionHistoryProvider;
+
+  /**
+   * Save the template automatically, debounced, after the user stops editing.
+   * Requires a `templates` provider — without one there is nothing to save to,
+   * and the option is ignored with a warning.
+   *
+   * `true` uses the default cadence; `{ debounce }` sets it in the same key. The
+   * debounce governs `onChange` too — both ride one timer so they cannot drift
+   * apart.
+   *
+   * ```ts
+   * autoSave: true                  // default cadence
+   * autoSave: { debounce: 2000 }    // on, slower
+   * ```
+   *
+   * @default false
+   */
+  autoSave?: AutoSaveConfig;
+
+  /**
+   * Warn the user before they close or reload the tab with unsaved changes.
+   * On by default whenever a `templates` provider is configured — without one
+   * the editor cannot know whether you already persisted the change, so it never
+   * warns.
+   *
+   * Set to `false` to own that prompt yourself. Note it can never cover
+   * client-side route changes; use `onDirtyChange` for those.
+   *
+   * @default true
+   */
+  unsavedChangesGuard?: boolean;
 
   onRequestMedia?: OnRequestMedia;
 
@@ -265,6 +434,82 @@ export interface TemplaticalEditorConfig {
    */
   testEmail?: TestEmailProvider;
 
+  /**
+   * Storage backend for **comments** — the review conversation on a template.
+   *
+   * The editor owns the panel, the threading, the resolve flow, the per-block
+   * indicators and the jump-to-block affordance; you own persistence. Five
+   * methods, each mutation turn-off-able by passing `false`:
+   *
+   * ```ts
+   * init({
+   *   container,
+   *   user: { id: "u_7", name: "Ada" },
+   *   comments: {
+   *     list: (templateId) =>
+   *       fetch(`/api/templates/${templateId}/comments`).then((r) => r.json()),
+   *     create: (templateId, input) =>
+   *       fetch(`/api/templates/${templateId}/comments`, {
+   *         method: "POST",
+   *         headers: { "Content-Type": "application/json" },
+   *         body: JSON.stringify(input),
+   *       }).then((r) => r.json()),
+   *     update: (templateId, commentId, patch) =>
+   *       fetch(`/api/templates/${templateId}/comments/${commentId}`, {
+   *         method: "PATCH",
+   *         headers: { "Content-Type": "application/json" },
+   *         body: JSON.stringify(patch),
+   *       }).then((r) => r.json()),
+   *     delete: async (templateId, commentId) => {
+   *       await fetch(`/api/templates/${templateId}/comments/${commentId}`, {
+   *         method: "DELETE",
+   *       });
+   *     },
+   *     setResolved: (templateId, commentId, resolved) =>
+   *       fetch(`/api/templates/${templateId}/comments/${commentId}/resolve`, {
+   *         method: "POST",
+   *         headers: { "Content-Type": "application/json" },
+   *         body: JSON.stringify({ resolved }),
+   *       }).then((r) => r.json()),
+   *   },
+   * });
+   * ```
+   *
+   * **Requires {@link user}** — with no identity the feature reports itself
+   * unavailable and nothing renders, rather than writing anonymous comments.
+   *
+   * **Omitted by default**, and the panel also stays hidden until a template is
+   * loaded, since a comment belongs to a template id.
+   *
+   * Realtime is an optional `subscribe` on the provider, not a prerequisite:
+   * without it comments work identically, you simply see a colleague's on the next
+   * read rather than immediately.
+   */
+  comments?: CommentsProvider;
+
+  /**
+   * Who is using the editor — needed by any feature that attributes work to a
+   * person. Today that is {@link comments}; collaboration presence will want the
+   * same answer, which is why this is a top-level key rather than part of the
+   * comments provider.
+   *
+   * ```ts
+   * init({ container, user: { id: "u_7", name: "Ada Lovelace" } });
+   * ```
+   *
+   * Not a security boundary — it identifies the user to the editor's UI, in the
+   * user's own browser. Attribute writes server-side from the session your backend
+   * already trusts.
+   */
+  user?: EditorUser;
+
+  /**
+   * Called for every comment change the editor applied — including ones that
+   * arrived through a provider's `subscribe`, so this is the hook for a "3 new
+   * comments" badge outside the editor.
+   */
+  onComment?: (event: CommentEvent) => void;
+
   blockDefaults?: BlockDefaults;
   templateDefaults?: TemplateDefaults;
 
@@ -317,15 +562,56 @@ interface TemplaticalEditorBase {
   setContent(content: TemplateContent): void;
   setTheme(theme: UiTheme): void;
   unmount(): void;
+  /**
+   * Render the current template to MJML.
+   *
+   * Resolves `render.toMjml` first when a `render` provider supplies it, then the
+   * bundled `@templatical/renderer` (which resolves custom blocks through the
+   * editor's own registry). Rejects with a clear error when neither is available —
+   * i.e. no provider method *and* the optional `@templatical/renderer` peer isn't
+   * installed.
+   */
+  toMjml(): Promise<string>;
+  /**
+   * Render the current template to sending-ready HTML.
+   *
+   * Resolves `render.toHtml` first, then `toMjml()`'s output through
+   * `render.compileMjml`. **Requires one of the two** — the SDK bundles no MJML
+   * compiler, so with no `render` provider this always rejects, and the error says
+   * which method to add.
+   */
+  toHtml(): Promise<string>;
 }
 
 export interface TemplaticalEditor extends TemplaticalEditorBase {
   /**
-   * Render the current template to an MJML string. Resolves custom blocks
-   * via the editor's internal block registry. Throws if the optional
-   * `@templatical/renderer` package is not installed.
+   * Persist the current content as a new template through the configured
+   * `templates` provider, and make the result the editor's template.
+   *
+   * `input.content`, when given, replaces the editor's content first. Always
+   * present on the type; rejects with an explanatory error when no provider is
+   * configured or when the provider set `create: false` — the same convention as
+   * {@link toMjml}.
    */
-  toMjml(): Promise<string>;
+  create(input?: {
+    name?: string;
+    content?: TemplateContent;
+  }): Promise<Template>;
+  /** Load a template by id and make it the editor's content. */
+  load(templateId: string): Promise<Template>;
+  /**
+   * Persist the loaded template — name and content, as one patch. Rejects when
+   * no provider is configured, when the provider set `save: false`, or when no
+   * template has been created or loaded yet.
+   */
+  save(): Promise<Template>;
+  /**
+   * Whether there are edits the editor knows aren't persisted. Cleared by a
+   * successful `save()` / `create()` / `load()`.
+   *
+   * Read it in a router guard; `onDirtyChange` is the push-based counterpart.
+   */
+  isDirty(): boolean;
   /**
    * Render a single custom block to its HTML representation, using the
    * registered custom block definition's template and the block's current
@@ -345,17 +631,21 @@ export interface TemplaticalEditor extends TemplaticalEditorBase {
 }
 
 /**
- * Cloud editor does not expose `toMjml` or `renderCustomBlock`: the cloud
- * backend performs MJML conversion server-side with additional processing
- * (e.g., signed image URLs, attachment handling) that isn't available client
- * side. Use the cloud `save()` flow to persist content; the backend handles
- * MJML/HTML export from there.
+ * `initCloud()` returns the **same** editor `init()` does.
+ *
+ * That is the point rather than a tidy-up: Cloud is a set of provider
+ * implementations behind the same interfaces a consumer would implement, so if
+ * the two entry points still returned different shapes, the claim would be
+ * false. It also means moving between them is a config change and never a
+ * rewrite of the calling code.
+ *
+ * Three cloud-only members went with the convergence: `setThemeOverrides`
+ * (`config.theme` is applied at init on both entry points, and the entitlement
+ * that gated changing it later is gone), and `sendTestEmail` (the shared dialog
+ * is the supported path). `create()` takes `init()`'s `{ name?, content? }`
+ * input object rather than a bare `TemplateContent`.
  */
-export interface TemplaticalCloudEditor extends TemplaticalEditorBase {
-  create(content?: TemplateContent): Promise<Template>;
-  load(templateId: string): Promise<Template>;
-  save(): Promise<SaveResult>;
-}
+export type TemplaticalCloudEditor = TemplaticalEditor;
 
 // ---------------------------------------------------------------------------
 // Shadow root helpers
@@ -548,6 +838,17 @@ function unmountOssContainer(container: Element): void {
 export async function init(
   config: TemplaticalEditorConfig,
 ): Promise<TemplaticalEditor> {
+  return mountEditor(config);
+}
+
+/**
+ * The one mount path. `init()` calls it with no runtime; `initCloud()` calls it
+ * with Cloud's, having already resolved auth, the plan and every adapter.
+ */
+async function mountEditor(
+  config: TemplaticalEditorConfig,
+  cloud?: CloudRuntime,
+): Promise<TemplaticalEditor> {
   const container =
     typeof config.container === "string"
       ? document.querySelector(config.container)
@@ -582,6 +883,7 @@ export async function init(
           translations,
           fontsManager,
           shadowRoot: mount.shadowRoot ?? undefined,
+          cloud,
           ref: editorRef,
         });
     },
@@ -614,6 +916,29 @@ export async function init(
       }
     },
     unmount: () => unmountOssContainer(container),
+    create(input?: { name?: string; content?: TemplateContent }) {
+      if (!editorRef.value) {
+        return Promise.reject(new Error("[Templatical] Editor not ready"));
+      }
+      return editorRef.value.create(input);
+    },
+    load(templateId: string) {
+      if (!editorRef.value) {
+        return Promise.reject(new Error("[Templatical] Editor not ready"));
+      }
+      return editorRef.value.load(templateId);
+    },
+    save() {
+      if (!editorRef.value) {
+        return Promise.reject(new Error("[Templatical] Editor not ready"));
+      }
+      return editorRef.value.save();
+    },
+    isDirty() {
+      // Pre-mount there is nothing the editor could have changed, so the honest
+      // answer is "no unsaved edits" rather than a throw.
+      return editorRef.value?.isDirty() ?? false;
+    },
     renderCustomBlock(block: CustomBlock) {
       if (!editorRef.value) {
         return Promise.reject(new Error("[Templatical] Editor not ready"));
@@ -629,158 +954,140 @@ export async function init(
       }
       return editorRef.value.getCustomBlockStylesheet(customType);
     },
-    toMjml: () => toMjmlForInstance(instance),
+    toMjml: () => render.toMjml(),
+    toHtml: () => render.toHtml(),
   };
+
+  // Both methods resolve per call, so a provider added later in the config — or a
+  // provider that implements only one method — behaves the same as one that
+  // implements all three. `instance` is captured lazily, which is what lets the
+  // payload builder read the editor's live content.
+  const render = createRenderMethods({
+    provider: config.render,
+    buildPayload: () =>
+      buildRenderPayload({
+        getContent: () => instance.getContent(),
+        renderCustomBlock: (block: CustomBlock) =>
+          instance.renderCustomBlock(block),
+        getFonts: () => resolveRenderFonts(fontsManager),
+      }),
+    renderLocalMjml: () =>
+      toMjmlForInstance({
+        getContent: () => instance.getContent(),
+        renderCustomBlock: (block: CustomBlock) =>
+          instance.renderCustomBlock(block),
+        getCustomBlockStylesheet: (customType: string) =>
+          instance.getCustomBlockStylesheet(customType),
+        getFonts: () => resolveRenderFonts(fontsManager),
+      }),
+  });
 
   return instance;
 }
 
 // ---------------------------------------------------------------------------
-// Cloud init — async, flat config, tree-shaken when not called
+// Cloud init — a thin adapter-wiring wrapper over init()
 // ---------------------------------------------------------------------------
 
-interface CloudEntry {
-  app: App;
-  editorRef: Ref<InstanceType<
-    typeof import("./cloud/CloudEditor.vue").default
-  > | null>;
-  cleanup: () => void;
-}
-
-const cloudEntries = new Map<Element, CloudEntry>();
-let lastCloudContainer: Element | null = null;
-
-function unmountCloudContainer(container: Element): void {
-  const entry = cloudEntries.get(container);
-  if (!entry) return;
-  entry.cleanup();
-  entry.app.unmount();
-  cloudEntries.delete(container);
-  if (lastCloudContainer === container) {
-    lastCloudContainer = null;
-  }
-}
-
+/**
+ * Mount the editor against Templatical Cloud.
+ *
+ * **This is `init()` with Cloud's adapters filled in**, and deliberately nothing
+ * more. Templates, rendering and version history are providers, so Cloud's entry
+ * point is adapter wiring rather than a second editor:
+ *
+ * 1. Build the auth manager and complete the handshake.
+ * 2. Health-check the API, and fetch the plan config.
+ * 3. Build Cloud's adapters over that auth manager.
+ * 4. Delegate to `init()`.
+ *
+ * A failure in steps 1–2 **rejects**, rather than mounting an editor that shows
+ * an error overlay. That is the one place the wrapper is genuinely not `init()`:
+ * `init()` cannot fail after it mounts, and OSS should not grow the ability. A
+ * session that dies *later* — an auth refresh that cannot renew the token — does
+ * still surface as an overlay, because by then there is an editor to cover.
+ *
+ * `templates`, `versionHistory` and `comments` are the three keys `initCloud()`
+ * refuses: all are keyed to a template id Cloud issued, which also anchors
+ * collaboration, AI rewrite, scoring and the server-side export. A store Cloud
+ * never issued ids for would degrade all of them silently. Everything else —
+ * `render`, `savedBlocks`, `testEmail`, `resolvePreview` — is the same key with the
+ * same type on both entry points, so upgrading an OSS integration is a deletion.
+ *
+ * `user` is not a key either: Cloud signs comment writes against the auth token's
+ * `user` claim, so it fills `init({ user })` from there rather than letting a
+ * browser name someone else.
+ */
 export async function initCloud(
-  config: import("./cloud/CloudEditor.vue").TemplaticalCloudEditorConfig,
+  config: TemplaticalCloudEditorConfig,
 ): Promise<TemplaticalCloudEditor> {
-  const container =
-    typeof config.container === "string"
-      ? document.querySelector(config.container)
-      : config.container;
-
-  if (!container) {
-    throw new Error(
-      `[Templatical] Container element not found: ${config.container}`,
-    );
-  }
-
-  // Dynamic import — CloudEditor.vue is tree-shaken from the OSS bundle
-  const { default: CloudEditor } = await import("./cloud/CloudEditor.vue");
-
-  // Load OSS + cloud translations in parallel so child components can use
-  // useI18n / useCloudI18n synchronously
-  const [translations, cloudTranslations] = await Promise.all([
-    loadTranslations(config.locale ?? "en"),
+  // Dynamic imports — every cloud module is tree-shaken from the OSS bundle, and
+  // an OSS consumer who never calls this downloads none of it.
+  const [{ bootstrapCloud }, cloudTranslations] = await Promise.all([
+    import("./cloud/createCloudRuntime"),
     loadCloudTranslations(config.locale ?? "en"),
   ]);
 
-  // Create fonts manager to pass to CloudEditor
-  const fontsManager = useFonts(config.fonts);
-
-  // Auto-unmount any prior instance on the SAME container *after* awaits
-  // — checking before the await would let two concurrent initCloud()
-  // calls both pass the guard and orphan the first-mounted app on this
-  // container.
-  unmountCloudContainer(container);
-
-  const mount = resolveMountTarget(container, config.shadowDom ?? true);
-  const cloudEditorRef: CloudEntry["editorRef"] = ref(null);
-
-  // Promise that resolves when CloudEditor emits 'ready'
-  const readyPromise = new Promise<void>((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      reject(new Error("[Templatical] Cloud editor initialization timed out"));
-    }, INIT_TIMEOUT_MS);
-
-    const app = createApp({
-      setup() {
-        return () =>
-          h(CloudEditor, {
-            config,
-            translations,
-            cloudTranslations,
-            fontsManager,
-            shadowRoot: mount.shadowRoot ?? undefined,
-            ref: cloudEditorRef,
-            onReady: () => {
-              clearTimeout(timeout);
-              resolve();
-            },
-          });
-      },
-    });
-
-    app.mount(mount.target);
-
-    cloudEntries.set(container, {
-      app,
-      editorRef: cloudEditorRef,
-      cleanup: mount.cleanup,
-    });
-    lastCloudContainer = container;
+  const { runtime, providers, user } = await bootstrapCloud({
+    config,
+    cloudTranslations,
   });
 
-  await readyPromise;
+  // Autosave defaults differ, and the difference stays at this call site: Cloud
+  // always has a store to save to, so it is on unless refused, and it uses a
+  // slower cadence than the shared default because every tick is a round-trip.
+  const autoSave: AutoSaveConfig =
+    config.autoSave === false
+      ? false
+      : {
+          debounce:
+            (typeof config.autoSave === "object"
+              ? config.autoSave.debounce
+              : undefined) ?? DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
+        };
 
-  const instance: TemplaticalCloudEditor = {
-    getContent() {
-      // safeClone (not a naked JSON.stringify): a drag inside a section can
-      // leave a Sortable expando cycle reachable from live content, which a
-      // plain stringify chokes on (#203). The clone drops the back-ref.
-      if (cloudEditorRef.value) {
-        return safeClone(cloudEditorRef.value.getContent());
-      }
-      return safeClone(config.content ?? createDefaultTemplateContent());
+  return mountEditor(
+    {
+      container: config.container,
+      content: config.content,
+      shadowDom: config.shadowDom,
+      locale: config.locale,
+      uiTheme: config.uiTheme,
+      theme: config.theme,
+      branding: config.branding,
+      smallScreenNotice: config.smallScreenNotice,
+      blockDefaults: config.blockDefaults,
+      templateDefaults: config.templateDefaults,
+      customBlocks: config.customBlocks,
+      paletteBlocks: config.paletteBlocks,
+      htmlBlockPreview: config.htmlBlockPreview,
+      colors: config.colors,
+      fonts: config.fonts,
+      mergeTags: config.mergeTags,
+      logicTags: config.logicTags,
+      displayConditions: config.displayConditions,
+      resolvePreview: config.resolvePreview,
+      lint: config.lint,
+      onChange: config.onChange,
+      onError: config.onError,
+      onDirtyChange: config.onDirtyChange,
+      onComment: config.onComment,
+      unsavedChangesGuard: config.unsavedChangesGuard,
+      autoSave,
+      // Cloud's adapters, behind the very keys a consumer would fill in
+      // themselves. `savedBlocks` is absent when the consumer passed `false`.
+      templates: providers.templates,
+      render: providers.render,
+      versionHistory: providers.versionHistory,
+      savedBlocks: providers.savedBlocks,
+      testEmail: providers.testEmail,
+      comments: providers.comments,
+      // From the JWT. Undefined when the project's token carries no `user` claim,
+      // which leaves comments unavailable rather than anonymous.
+      user,
     },
-    setContent(content: TemplateContent) {
-      if (cloudEditorRef.value) {
-        cloudEditorRef.value.setContent(content);
-      }
-    },
-    setTheme(theme: UiTheme) {
-      if (cloudEditorRef.value) {
-        cloudEditorRef.value.setTheme(theme);
-      }
-    },
-    unmount: () => unmountCloudContainer(container),
-    create(content?: TemplateContent) {
-      if (!cloudEditorRef.value) {
-        return Promise.reject(
-          new Error("[Templatical] Cloud editor not ready"),
-        );
-      }
-      return cloudEditorRef.value.create(content);
-    },
-    load(templateId: string) {
-      if (!cloudEditorRef.value) {
-        return Promise.reject(
-          new Error("[Templatical] Cloud editor not ready"),
-        );
-      }
-      return cloudEditorRef.value.load(templateId);
-    },
-    save() {
-      if (!cloudEditorRef.value) {
-        return Promise.reject(
-          new Error("[Templatical] Cloud editor not ready"),
-        );
-      }
-      return cloudEditorRef.value.save();
-    },
-  };
-
-  return instance;
+    runtime,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -802,7 +1109,7 @@ export function unmount(): void {
 // Re-exports
 // ---------------------------------------------------------------------------
 
-export type { TemplaticalCloudEditorConfig } from "./cloud/CloudEditor.vue";
+export type { TemplaticalCloudEditorConfig } from "./cloud/cloudConfig";
 export type {
   BlockDefaults,
   TemplateContent,
@@ -819,11 +1126,14 @@ export type {
   ColorsConfig,
   CustomFont,
   FontsConfig,
+  RenderPayload,
+  RenderProvider,
   SavedBlock,
   SavedBlocksListParams,
   SavedBlocksProvider,
-  SaveResult,
   Template,
+  TemplatePatch,
+  TemplatesProvider,
   TestEmailPayload,
   TestEmailProvider,
 } from "@templatical/types";

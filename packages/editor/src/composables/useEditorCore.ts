@@ -161,8 +161,11 @@ const BLOCK_COMPONENT_MAP: Record<string, Component> = {
 };
 
 /**
- * Minimal editor interface shared by both OSS and Cloud UseEditorReturn.
- * Cloud adds extra methods (create, load, save, etc.) that useEditorCore doesn't need.
+ * The slice of the editor core this composable uses.
+ *
+ * It was the shared shape of two `UseEditorReturn`s; there is one now, so this
+ * is simply "what `useEditorCore` reads" — narrower than the whole editor, in
+ * the same spirit as `ConditionPreviewEditor` and `HistoryInterceptorEditor`.
  */
 export interface BaseEditorReturn {
   state: DeepReadonly<{
@@ -179,7 +182,6 @@ export interface BaseEditorReturn {
   }>;
   content: Ref<TemplateContent>;
   selectedBlock: Ref<Block | null>;
-  savedBlockIds?: Ref<Set<string>>;
   setContent: (content: TemplateContent, markDirty?: boolean) => void;
   selectBlock: (blockId: string | null) => void;
   setViewport: (viewport: ViewportSize) => void;
@@ -228,7 +230,6 @@ export interface UseEditorCoreOptions {
     onRequestMedia?: OnRequestMedia | null;
     resolvePreview?: ResolvePreview;
     resolveImageUrl?: ResolveImageUrl | null;
-    onSave?: () => void;
     lint?: LintOptions;
   };
 
@@ -331,7 +332,13 @@ export function useEditorCore(
   const { themeStyles } = useThemeStyles({
     themeOverrides,
     resolvedTheme,
-    extraStyles: options.themeExtraStyles,
+    // The drag ghost's "Drop here" badge reads this, on both entry points.
+    // Without it the badge falls through to the CSS literal and renders English
+    // whatever the locale is.
+    extraStyles: () => ({
+      "--tpl-drop-text": `"${translations.canvas.dropHere}"`,
+      ...options.themeExtraStyles?.(),
+    }),
   });
 
   // --- History ---
@@ -485,6 +492,23 @@ export function useEditorCore(
     );
   }
 
+  // Cmd+S means "persist now", and there are two ways to mean it. A configured
+  // templates provider owns the phrase outright, so it wins — including in Cloud,
+  // whose save routes through the lint save-gate *inside* that capability rather
+  // than through a second `onSave` hook the shortcut had to know about.
+  // Otherwise the closest honest reading is "send the change notification now":
+  // flushing the debounce is what a consumer persisting from `onChange` needs.
+  // Read off the capability rather than a new option, the same way the pick
+  // session is.
+  function handleSaveShortcut(): void {
+    const templates = options.capabilities?.templates;
+    if (templates) {
+      templates.save();
+      return;
+    }
+    autoSave?.flush();
+  }
+
   function handleKeyboard(e: KeyboardEvent): void {
     if (!instanceHandle.isActive()) return;
     handleEditorKeydown(e, {
@@ -492,7 +516,7 @@ export function useEditorCore(
       selectBlock: (id) => editor.selectBlock(id),
       getSelectedBlockId: () => editor.state.selectedBlockId,
       removeBlock: (id) => editor.removeBlock(id),
-      onSave: config.onSave,
+      onSave: handleSaveShortcut,
       onBeforeUndo: options.keyboardOptions?.onBeforeUndo,
       // Read off the capability rather than a new option, so neither editor has
       // to know about the pick session to get Escape/Enter working.

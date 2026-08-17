@@ -1,28 +1,42 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted, onUnmounted, ref } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from "vue";
 import type { TemplaticalEditorConfig } from "./index";
 import { useEditor } from "@templatical/core";
 import type { TemplateContent, UiTheme } from "@templatical/types";
+// Type-only, so no cloud module is statically reachable from the OSS entry —
+// see `cloud/runtime.ts` for why the seam is shaped this way.
+import type { CloudRuntime } from "./cloud/runtime";
 import { useEditorCore } from "./composables/useEditorCore";
+import { useCommentsFeature } from "./composables/useCommentsFeature";
 import { useSavedBlocksFeature } from "./composables/useSavedBlocksFeature";
+import { useTemplatesFeature } from "./composables/useTemplatesFeature";
 import { useTestEmailFeature } from "./composables/useTestEmailFeature";
+import { useVersionHistoryFeature } from "./composables/useVersionHistoryFeature";
 import { useSmallScreenNotice } from "./composables/useSmallScreenNotice";
+import { resolveAutoSave } from "./types/auto-save";
 import { resolveLintOptions } from "./utils/resolveLintOptions";
+import { logger } from "./utils/logger";
 import { toMjmlForInstance } from "./utils/toMjml";
+import { resolveRenderFonts } from "./utils/renderProvider";
 import type { Translations } from "./i18n";
+import type { EditorCapabilities } from "./types/editor-capabilities";
 import type { UseFontsReturn } from "./composables/useFonts";
 
-import { RotateCcw, Send } from "@lucide/vue";
+import { RotateCcw } from "@lucide/vue";
 import Canvas from "./components/Canvas.vue";
 import CustomBlockStylesheets from "./components/CustomBlockStylesheets.vue";
 import Sidebar from "./components/Sidebar.vue";
 import RightSidebar from "./components/RightSidebar.vue";
 import SmallScreenNotice from "./components/SmallScreenNotice.vue";
-import ViewportToggle from "./components/ViewportToggle.vue";
-import MergeTagModeToggle from "./components/MergeTagModeToggle.vue";
-import PreviewToggle from "./components/PreviewToggle.vue";
-import DarkModeToggle from "./components/DarkModeToggle.vue";
 import EditorFooter from "./components/EditorFooter.vue";
+import EditorHeader from "./components/EditorHeader.vue";
 import MergeTagPickerModal from "./components/MergeTagPickerModal.vue";
 import LogicTagPickerModal from "./components/LogicTagPickerModal.vue";
 import "./styles/index.css";
@@ -38,13 +52,67 @@ const props = defineProps<{
    * effective root via `EDITOR_ROOT_KEY`.
    */
   shadowRoot?: ShadowRoot;
+  /**
+   * Cloud's adapter wiring, supplied only by `initCloud()`.
+   *
+   * There is **one** editor component. Cloud is a set of providers on
+   * `config` plus this runtime, which exists purely for the handful of
+   * composables that must run at a specific point inside this `setup()` —
+   * collaboration before the history interceptor, the lint save-gate after
+   * `useEditorCore`. Everything else it contributes arrives through the
+   * ordinary config keys an OSS consumer would fill in themselves.
+   */
+  cloud?: CloudRuntime;
 }>();
 
 // --- Core editor state ---
 const editor = useEditor({
   content: props.config.content!,
+  // Seeds a *new* template's body font when no `content` was supplied. Only the
+  // deleted Cloud core passed this, so `init({ fonts: { defaultFont } })` never
+  // reached a blank template.
+  defaultFontFamily: props.config.fonts?.defaultFont,
   templateDefaults: props.config.templateDefaults,
+  templates: props.config.templates,
+  onError: props.config.onError,
+  // Cloud's collaborators lock the blocks they are editing. The map is
+  // forward-declared by the runtime because `useCollaboration` — which fills
+  // it — can only be built after this call.
+  lockedBlocks: props.cloud?.lockedBlocks,
 });
+
+// Collaboration wraps the editor's mutators so they broadcast; `useEditorCore`'s
+// history interceptor wraps them again below. Reversing that order would push
+// local history entries for remote operations and drift the peers apart, which
+// is the whole reason this runs here rather than alongside the rest.
+const cloudAttachment = props.cloud ? props.cloud.attach({ editor }) : null;
+
+// --- Templates (opt-in: only when a storage provider is configured) ---
+// Built before `useEditorCore` so its capability can be passed in, which is what
+// lights up the header's name field, status indicator and save button — and what
+// makes Cmd+S mean "persist now".
+const templates = props.config.templates
+  ? useTemplatesFeature({
+      provider: props.config.templates,
+      editor,
+      guardUnsavedChanges: props.config.unsavedChangesGuard,
+      // Cloud's lint save-gate, when there is one. Read through a getter
+      // because the gate needs `core.templateLint`, which does not exist yet.
+      // Without this the collapse would have silently dropped the server's
+      // `accessibility.blockOnError` policy.
+      getSaveGate: props.cloud ? () => props.cloud!.getSaveGate() : undefined,
+    })
+  : null;
+
+// Reported to the consumer regardless of whether a provider is configured: a
+// `beforeunload` guard cannot cover SPA route changes, so an embedder needs this
+// to guard their own router — including when they persist via `onChange`.
+if (props.config.onDirtyChange) {
+  watch(
+    () => editor.state.isDirty,
+    (isDirty) => props.config.onDirtyChange!(isDirty),
+  );
+}
 
 // Outer `.tpl` ref — passed to `useEditorCore` so the active-editor
 // tracker can route keyboard shortcuts when two editors share a page.
@@ -58,6 +126,10 @@ const savedBlocks = props.config.savedBlocks
       provider: props.config.savedBlocks,
       editor,
       onError: props.config.onError,
+      // Cloud's store is plan-gated; a consumer's own store never is.
+      isAvailable: props.cloud
+        ? () => props.cloud!.isSavedBlocksAvailable()
+        : undefined,
     })
   : null;
 
@@ -78,6 +150,11 @@ const testEmail = props.config.testEmail
       getContent: () => editor.content.value,
       renderMjml: renderCurrentMjml,
       onError: props.config.onError,
+      // Cloud folds in the plan feature and "the template must be saved", both
+      // constraints of *its* sending path rather than of the contract.
+      isAvailable: props.cloud
+        ? () => props.cloud!.isTestEmailAvailable()
+        : undefined,
     })
   : null;
 
@@ -85,7 +162,105 @@ const TestEmailPanel = defineAsyncComponent(
   () => import("./components/TestEmailPanel.vue"),
 );
 
+// --- Comments (opt-in: only with a storage provider *and* a `user`) ---
+// Built before `useEditorCore` so its capability can be passed in, which is what
+// lights up the header trigger and the per-block comment indicators.
+//
+// No `user` means no provider call at all — an unattributable comment is worse
+// than no comment feature, so `isAvailable` stays false and nothing renders.
+const comments = props.config.comments
+  ? useCommentsFeature({
+      provider: props.config.comments,
+      editor,
+      user: props.config.user,
+      // Cloud keeps comments mutually exclusive with its AI and scoring sidebars:
+      // they share one 360px gutter, and two of them open at once would overlap.
+      isOpen: cloudAttachment?.panelState.commentsOpen,
+      onComment: props.config.onComment,
+      onError: props.config.onError,
+      // Cloud folds in the `commenting` plan feature and "the template must be
+      // saved", both constraints of *its* store rather than of the contract.
+      isAvailable: props.cloud
+        ? () => props.cloud!.isCommentsAvailable()
+        : undefined,
+      // Cloud anchors a comment to a block in the saved template; a consumer's
+      // store accepts whatever anchor it is given.
+      isBlockSaved: props.cloud
+        ? (blockId: string) => props.cloud!.isBlockSaved(blockId)
+        : undefined,
+    })
+  : null;
+
+const CommentsPanel = defineAsyncComponent(
+  () => import("./components/CommentsPanel.vue"),
+);
+
+// --- Cloud chrome (opt-in: only under `initCloud()`) ---
+// One lazy wrapper for every panel, overlay and modal Cloud adds, plus one for
+// its header controls. Same discipline as `SavedBlocksPanels` / `TestEmailPanel`:
+// an OSS consumer never downloads any of it.
+const CloudPanels = defineAsyncComponent(
+  () => import("./cloud/components/CloudPanels.vue"),
+);
+const CloudHeaderExtras = defineAsyncComponent(
+  () => import("./cloud/components/CloudHeaderExtras.vue"),
+);
+
+// --- Version history (opt-in: only when a storage provider is configured) ---
+// The header control lives in `EditorHeader`; this is the preview banner, which
+// renders outside the header. Both are lazy.
+const VersionHistoryPanels = defineAsyncComponent(
+  () => import("./components/VersionHistoryPanels.vue"),
+);
+
+// --- Auto-save ---
+// One debounced tick drives everything a consumer can ask for on a content
+// change: the `onChange` notification, and — when `autoSave` is on with a
+// templates provider — the save itself. Sharing a single `useAutoSave` instance
+// keeps the two in step and inherits the pause-during-undo/redo behaviour
+// `useEditorCore` wires up around it.
+const autoSaveConfig = resolveAutoSave(props.config.autoSave, false);
+const isAutoSaving = autoSaveConfig.enabled && templates !== null;
+if (autoSaveConfig.enabled && templates === null) {
+  logger.warn(
+    "config.autoSave is on but no `templates` provider is configured — " +
+      "there is nothing to save to. Pass `templates` to enable it, or use " +
+      "`onChange` to persist the content yourself.",
+  );
+}
+
+const autoSaveOptions =
+  props.config.onChange || isAutoSaving
+    ? {
+        onChange: () => {
+          props.config.onChange?.(
+            JSON.parse(JSON.stringify(editor.state.content)),
+          );
+          // `requestAutoSave()` already no-ops without a saveable template, so a
+          // read-only provider costs one predicate per tick and nothing else.
+          // It is the *ungated* request only in the sense that it never raises a
+          // prompt: Cloud's lint gate still refuses it, which is what keeps
+          // `accessibility.blockOnError` a policy rather than a manual-save
+          // speed bump.
+          if (isAutoSaving) templates!.requestAutoSave();
+        },
+        ...(autoSaveConfig.debounce !== undefined
+          ? { debounce: autoSaveConfig.debounce }
+          : {}),
+      }
+    : null;
+
 // --- Shared editor core (composables, provides, plugins, keyboard) ---
+// A named object rather than an inline literal: `useVersionHistoryFeature` can
+// only be built after core (it needs history/conditionPreview/autoSave), so its
+// capability is assigned in below, into the very object core provided.
+const capabilities: EditorCapabilities = {
+  ...(savedBlocks ? { savedBlocks: savedBlocks.capability } : {}),
+  ...(templates ? { templates: templates.capability } : {}),
+  ...(testEmail ? { testEmail: testEmail.capability } : {}),
+  ...(comments ? { comments: comments.capability } : {}),
+};
+
 const core = useEditorCore({
   editor,
   containerEl: rootEl,
@@ -101,31 +276,68 @@ const core = useEditorCore({
     mergeTags: props.config.mergeTags,
     logicTags: props.config.logicTags,
     displayConditions: props.config.displayConditions,
-    onRequestMedia: props.config.onRequestMedia,
+    // Cloud swaps in its own media browser. Not plan-gated: an entitlement here
+    // would fire when a consumer is *not* using Cloud storage, i.e. backwards.
+    onRequestMedia: props.cloud?.onRequestMedia ?? props.config.onRequestMedia,
     resolvePreview: props.config.resolvePreview,
     resolveImageUrl: props.config.resolveImageUrl,
     lint: resolveLintOptions(props.config),
-    onSave: props.config.onSave
-      ? () =>
-          props.config.onSave!(JSON.parse(JSON.stringify(editor.state.content)))
-      : undefined,
   },
   translations: props.translations,
   fontsManager: props.fontsManager,
-  autoSaveOptions: props.config.onChange
-    ? {
-        onChange: () =>
-          props.config.onChange!(
-            JSON.parse(JSON.stringify(editor.state.content)),
-          ),
-      }
-    : null,
-  capabilities: {
-    ...(savedBlocks ? { savedBlocks: savedBlocks.capability } : {}),
-    ...(testEmail ? { testEmail: testEmail.capability } : {}),
-  },
+  autoSaveOptions,
+  capabilities,
   editorRoot: props.shadowRoot,
+  historyOptions: props.cloud
+    ? { isRemoteOperation: () => props.cloud!.isRemoteOperation() }
+    : undefined,
+  keyboardOptions: props.cloud
+    ? { onBeforeUndo: () => props.cloud!.onBeforeUndo() }
+    : undefined,
 });
+
+// Cloud's setup-time wiring that needs `core`: the lint save-gate (reads
+// `core.templateLint`), the collab undo warning (reads `core.history.canUndo`),
+// and the capability entries Cloud contributes — mutated into the very object
+// `useEditorCore` provided, so injecting components see them on first render.
+const cloudReady =
+  props.cloud && cloudAttachment
+    ? props.cloud.ready({ core, capabilities })
+    : null;
+
+// --- Version history (opt-in: only when a storage provider is configured) ---
+// Constructed *after* `useEditorCore` because it drives `history` /
+// `conditionPreview` / `autoSave`, which core owns. Its capability is therefore
+// assigned into the object above rather than passed in — same object reference
+// core provided, mutated during setup, so injecting components see it on their
+// first render.
+const versionHistory = props.config.versionHistory
+  ? useVersionHistoryFeature({
+      provider: props.config.versionHistory,
+      editor,
+      history: core.history,
+      conditionPreview: core.conditionPreview,
+      autoSave: core.autoSave,
+      // Lets the restore confirmation offer to persist unsaved work instead of
+      // only warning about it. Without a templates provider — or with one whose
+      // `save` is `false` — there is nowhere to put that work, and the
+      // confirmation says so rather than offering an action that can't happen.
+      // Cloud additionally refuses while the lint gate would block: stacking a
+      // second modal on the confirmation would be worse than saying there is
+      // currently nowhere to put the work.
+      saveBeforeRestore: templates
+        ? {
+            canSave: () =>
+              templates.canSave.value &&
+              !(props.cloud?.getSaveGate()?.shouldBlock.value ?? false),
+            save: () => templates.save(),
+          }
+        : null,
+      onError: props.config.onError,
+    })
+  : null;
+
+if (versionHistory) capabilities.versionHistory = versionHistory.capability;
 
 /**
  * Render the current template to MJML for `testEmail`'s `includeMjml` option.
@@ -141,7 +353,46 @@ function renderCurrentMjml(): Promise<string> {
     renderCustomBlock: core.registry.renderCustomBlock,
     getCustomBlockStylesheet: (customType: string) =>
       core.registry.getDefinition(customType)?.stylesheet,
+    getFonts: () => resolveRenderFonts(props.fontsManager),
   });
+}
+
+/**
+ * Left/right insets for the canvas body and the footer, which must always agree.
+ *
+ * Cloud's sidebars widen the right gutter when one is open; without a cloud
+ * runtime `rightPanelOpen` is simply never true.
+ */
+/**
+ * Whether a 360px feature panel occupies the right-hand gutter.
+ *
+ * The comments panel is the one an OSS session can open, so it counts on its own.
+ * In Cloud it also drives `rightPanelOpen` (they share the panel state, which is
+ * what keeps comments mutually exclusive with the AI and scoring sidebars), so the
+ * `||` is redundant there and load-bearing here.
+ *
+ * Two things read this, and **both must**: the canvas/footer insets below, and
+ * `RightSidebar`'s `shifted-left` — the properties panel sits at `right-0` too, so
+ * a panel opening over it would swallow every click meant for the panel.
+ */
+const rightPanelOpen = computed(
+  () =>
+    comments?.isOpen.value === true ||
+    cloudAttachment?.panelState.rightPanelOpen.value === true,
+);
+
+const bodyInsetClass = computed(() => {
+  if (editor.state.previewMode) return "tpl:left-0 tpl:right-0";
+  return rightPanelOpen.value
+    ? "tpl:left-12 tpl:right-[680px]"
+    : "tpl:left-12 tpl:right-[320px]";
+});
+
+/** Canvas affordances that open a Cloud panel. No-ops without a runtime. */
+function openCloudPanel(panel: "ai-chat" | "design-reference"): void {
+  if (!cloudAttachment) return;
+  if (panel === "ai-chat") cloudAttachment.panelState.aiChatOpen.value = true;
+  else cloudAttachment.panelState.designReferenceOpen.value = true;
 }
 
 // --- Small-screen gate (#235) ---
@@ -158,14 +409,24 @@ onMounted(async () => {
 
 onUnmounted(() => {
   props.fontsManager.cleanupFontLinks();
+  props.cloud?.destroy();
   core.destroy();
 });
 
 // --- Public API (accessed via template ref from init()) ---
+// The lifecycle trio comes from the templates feature when one exists, so a
+// programmatic save also drives the header's status. Without a provider it comes
+// straight from core, whose own methods reject with the actionable error.
+const templateLifecycle = templates ?? editor;
+
 defineExpose({
   getContent: () => editor.content.value,
   setContent: (content: TemplateContent) => editor.setContent(content),
   setTheme: (theme: UiTheme) => editor.setUiTheme(theme),
+  isDirty: () => editor.state.isDirty,
+  create: templateLifecycle.create,
+  load: templateLifecycle.load,
+  save: templateLifecycle.save,
   renderCustomBlock: core.registry.renderCustomBlock,
   getCustomBlockStylesheet: (customType: string) =>
     core.registry.getDefinition(customType)?.stylesheet,
@@ -189,72 +450,27 @@ defineExpose({
     <!-- Reactive `<style>` tags for custom-block definition stylesheets in
          use. Sits at the top so its rules apply to the canvas below. -->
     <CustomBlockStylesheets />
-    <!-- Header — absolute, full width, above everything -->
-    <header
-      class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[1fr_auto_1fr] tpl:items-center tpl:px-4 tpl:shadow-[var(--tpl-shadow-md)] tpl:border-b tpl:border-[var(--tpl-border)]"
-      style="
-        background-color: color-mix(in srgb, var(--tpl-bg) 80%, transparent);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-      "
+    <!-- One header for both entry points. Cloud's own controls arrive through
+         the three slots; everything else here is capability-gated, so the same
+         markup covers "no providers at all" and a fully-wired Cloud session. -->
+    <EditorHeader
+      :editor="editor"
+      :core="core"
+      :templates="templates"
+      :test-email="testEmail"
+      :version-history="versionHistory"
+      :comments="comments"
     >
-      <!-- Left: empty (reserved for embedder customization) -->
-      <div class="tpl:flex tpl:items-center tpl:gap-2.5"></div>
-
-      <!-- Center: viewport + preview + dark mode -->
-      <div class="tpl:flex tpl:items-center tpl:justify-center tpl:gap-10">
-        <ViewportToggle
-          :viewport="editor.state.viewport"
-          @change="editor.setViewport"
-        />
-        <DarkModeToggle
-          :dark-mode="editor.state.darkMode"
-          @change="editor.setDarkMode"
-        />
-        <PreviewToggle
-          :preview-mode="editor.state.previewMode"
-          @change="editor.setPreviewMode"
-        />
-        <!-- Preview mode only. Merge tags are never substituted on the editing
-             canvas, so offering the choice there would be a control with no
-             effect. -->
-        <MergeTagModeToggle
-          v-if="
-            editor.state.previewMode &&
-            !core.previewResolution.supersedesSamples.value
-          "
-          :sample-mode="core.mergeTagSampleMode.value"
-          @change="core.mergeTagSampleMode.value = $event"
-        />
-      </div>
-
-      <!-- Right: the test-email trigger when a sender is configured, else empty.
-           Same slot CloudHeader puts its Test button in, so placement matches
-           between the two editors. -->
-      <div
-        class="tpl:flex tpl:min-w-[200px] tpl:items-center tpl:justify-end tpl:gap-3"
-      >
-        <!-- A real button — border, surface fill and `shadow-xs`, the same subtle
-             elevation `inputClass` uses — but coloured down: muted text rather
-             than full-strength `--tpl-text`, and no primary tint until hover. It
-             reads as a raised control against the header's translucent backdrop
-             while staying clearly secondary; sending a test is not the page's
-             primary action. Recipe follows `removeItemBtnClass` (border + surface
-             + muted text) with elevation added. -->
-        <button
-          v-if="testEmail?.isAvailable.value"
-          type="button"
-          data-testid="test-email-trigger"
-          :aria-label="core.t.testEmail.title"
-          :title="core.t.testEmail.title"
-          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] hover:tpl:bg-[var(--tpl-bg-hover)] hover:tpl:text-[var(--tpl-text)]"
-          @click="testEmail.open()"
-        >
-          <Send :size="14" :stroke-width="1.75" />
-          {{ core.t.testEmail.button }}
-        </button>
-      </div>
-    </header>
+      <template v-if="cloudAttachment" #left-extras>
+        <CloudHeaderExtras part="left" :cloud="cloudAttachment" />
+      </template>
+      <template v-if="cloudAttachment" #center-extras>
+        <CloudHeaderExtras part="center" :cloud="cloudAttachment" />
+      </template>
+      <template v-if="cloudAttachment" #right-extras>
+        <CloudHeaderExtras part="right" :cloud="cloudAttachment" />
+      </template>
+    </EditorHeader>
 
     <!-- Left sidebar — absolute, below header -->
     <Sidebar v-show="!editor.state.previewMode" />
@@ -264,10 +480,8 @@ defineExpose({
       class="tpl-body tpl:absolute tpl:bottom-0 tpl:overflow-auto tpl:bg-[var(--tpl-canvas-bg)]"
       style="transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1)"
       :class="[
-        editor.state.previewMode
-          ? 'tpl:left-0 tpl:right-0'
-          : 'tpl:left-12 tpl:right-[320px]',
-        'tpl:top-14',
+        bodyInsetClass,
+        versionHistory?.isPreviewing.value ? 'tpl:top-[104px]' : 'tpl:top-14',
       ]"
     >
       <!-- Restore hidden blocks button -->
@@ -288,25 +502,24 @@ defineExpose({
           </button>
         </Transition>
       </div>
-      <div class="tpl:flex tpl:justify-center tpl:p-8">
+      <main class="tpl-main tpl:flex tpl:justify-center tpl:p-8">
         <Canvas
           :viewport="editor.state.viewport"
           :content="core.previewResolution.content.value"
           :selected-block-id="editor.state.selectedBlockId"
           :dark-mode="editor.state.darkMode"
           :preview-mode="editor.state.previewMode"
+          :locked-blocks="cloudAttachment?.collaboration?.lockedBlocks.value"
           @select-block="editor.selectBlock"
+          @open-ai-chat="openCloudPanel('ai-chat')"
+          @open-design-reference="openCloudPanel('design-reference')"
         />
-      </div>
+      </main>
     </div>
 
     <EditorFooter
       v-if="config.branding !== false"
-      :position-class="[
-        editor.state.previewMode
-          ? 'tpl:left-0 tpl:right-0'
-          : 'tpl:left-12 tpl:right-[320px]',
-      ]"
+      :position-class="[bodyInsetClass]"
     />
 
     <!-- Keyboard reorder announcement region (visually hidden, screen-reader live) -->
@@ -325,6 +538,7 @@ defineExpose({
       v-show="!editor.state.previewMode"
       :selected-block="editor.selectedBlock.value"
       :settings="editor.content.value.settings"
+      :shifted-left="rightPanelOpen"
       @update-block="
         (updates) => editor.updateBlock(editor.state.selectedBlockId!, updates)
       "
@@ -368,6 +582,29 @@ defineExpose({
     />
 
     <TestEmailPanel v-if="testEmail?.isAvailable.value" :feature="testEmail" />
+
+    <!-- The comments sidebar. Only mounted when a provider and a `user` are
+         configured; the sidebar's own chunk loads the first time it opens. -->
+    <CommentsPanel v-if="comments?.isAvailable.value" :feature="comments" />
+
+    <!-- Version-history chrome outside the header (the preview banner). Only
+         mounted when a provider is configured; the banner's chunk loads the
+         first time a version is previewed. -->
+    <VersionHistoryPanels
+      v-if="versionHistory?.isAvailable.value"
+      :feature="versionHistory"
+    />
+
+    <!-- Cloud sidebars, modals and overlays. One lazy wrapper, mounted only
+         under `initCloud()`; an OSS consumer downloads none of it. -->
+    <CloudPanels
+      v-if="cloud && cloudAttachment && cloudReady"
+      :editor="editor"
+      :core="core"
+      :runtime="cloud"
+      :cloud="cloudAttachment"
+      :ready="cloudReady"
+    />
 
     <!-- Small-screen gate (#235). Last child + a literal z-index above the
          chrome and `.tpl-popover-root`, so the opaque notice covers everything
