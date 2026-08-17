@@ -1,4 +1,3 @@
-import type { UseEditorReturn } from "./editor";
 import { computed, reactive, type ComputedRef } from "@vue/reactivity";
 
 export interface UseConditionPreviewReturn {
@@ -8,8 +7,18 @@ export interface UseConditionPreviewReturn {
   hasHiddenBlocks: ComputedRef<boolean>;
 }
 
+/**
+ * The slice of an editor this needs — deliberately structural, so both the OSS
+ * and the Cloud `useEditor` satisfy it without either having to grow toward the
+ * other.
+ */
+export interface ConditionPreviewEditor {
+  state: { readonly selectedBlockId: string | null };
+  selectBlock: (blockId: string | null) => void;
+}
+
 export function useConditionPreview(
-  editor: UseEditorReturn,
+  editor: ConditionPreviewEditor,
 ): UseConditionPreviewReturn {
   const hiddenBlockIds = reactive(new Set<string>());
 

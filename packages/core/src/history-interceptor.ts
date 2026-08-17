@@ -1,5 +1,29 @@
-import type { UseEditorReturn } from "./editor";
+import type { Block, TemplateSettings } from "@templatical/types";
 import type { UseHistoryReturn } from "./history";
+
+/**
+ * The mutable slice of an editor this wraps — structural, so the OSS and Cloud
+ * `useEditor` returns both satisfy it without either having to grow toward the
+ * other. Not `Readonly`: the whole point is to replace these members in place.
+ */
+export interface HistoryInterceptorEditor {
+  addBlock: (
+    block: Block,
+    targetSectionId?: string,
+    columnIndex?: number,
+    index?: number,
+  ) => void;
+  removeBlock: (blockId: string) => void;
+  moveBlock: (
+    blockId: string,
+    newIndex: number,
+    targetSectionId?: string,
+    columnIndex?: number,
+  ) => void;
+  updateBlock: (blockId: string, updates: Partial<Block>) => void;
+  updateSettings: (updates: Partial<TemplateSettings>) => void;
+  isBlockLocked: (blockId: string) => boolean;
+}
 
 /**
  * Wraps editor mutation methods to record history snapshots before each
@@ -9,7 +33,7 @@ import type { UseHistoryReturn } from "./history";
  * call chain is: history.record() → broadcast → original mutation.
  */
 export function useHistoryInterceptor(
-  editor: UseEditorReturn,
+  editor: HistoryInterceptorEditor,
   history: UseHistoryReturn,
 ): void {
   const originalAddBlock = editor.addBlock;

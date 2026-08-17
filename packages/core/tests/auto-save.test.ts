@@ -504,6 +504,92 @@ describe("useAutoSave", () => {
     });
   });
 
+  describe("driving a templates provider", () => {
+    /**
+     * How the editor package wires autosave: the debounced tick calls
+     * `editor.save()`, which patches the consumer's provider. Covered here
+     * because the interaction that matters — a save clears `isDirty`, and the
+     * *next* edit must still schedule — lives across both modules.
+     */
+    function setup() {
+      const title = createTitleBlock();
+      const content = makeContent();
+      content.blocks.push(title);
+      // The stored copy carries the same block ids, since `load()` replaces the
+      // editor's content with it — a stored template with different blocks would
+      // make every `updateBlock` below a silent no-op.
+      const template = {
+        id: "tpl_1",
+        content: JSON.parse(JSON.stringify(content)) as TemplateContent,
+      };
+      const save = vi.fn().mockResolvedValue(template);
+      const editor = useEditor({
+        content,
+        templates: {
+          load: vi.fn().mockResolvedValue(template),
+          create: vi.fn().mockResolvedValue(template),
+          save,
+        },
+      });
+      const autoSave = useAutoSave({
+        content: editor.content,
+        isDirty: () => editor.state.isDirty,
+        onChange: () => {
+          void editor.save();
+        },
+        debounce: 100,
+      });
+      return { editor, title, save, autoSave, template };
+    }
+
+    it("saves through the provider after the debounce", async () => {
+      const { editor, title, save } = setup();
+      await editor.load("tpl_1");
+
+      editor.updateBlock(title.id, { level: 3 });
+      expect(save).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(100);
+      await Promise.resolve();
+
+      expect(save).toHaveBeenCalledTimes(1);
+      expect(save.mock.calls[0][0]).toBe("tpl_1");
+      expect(save.mock.calls[0][1].content.blocks[0]).toMatchObject({
+        id: title.id,
+        level: 3,
+      });
+    });
+
+    it("saves the first edit after a save cleared isDirty (#522)", async () => {
+      const { editor, title, save } = setup();
+      await editor.load("tpl_1");
+
+      editor.updateBlock(title.id, { level: 3 });
+      vi.advanceTimersByTime(100);
+      await Promise.resolve();
+      expect(editor.state.isDirty).toBe(false);
+
+      editor.updateBlock(title.id, { level: 4 });
+      vi.advanceTimersByTime(100);
+      await Promise.resolve();
+
+      expect(save).toHaveBeenCalledTimes(2);
+      expect(save.mock.calls[1][1].content.blocks[0]).toMatchObject({
+        level: 4,
+      });
+    });
+
+    it("does not save while paused for history navigation", () => {
+      const { editor, title, save, autoSave } = setup();
+
+      autoSave.pause();
+      editor.updateBlock(title.id, { level: 3 });
+      vi.advanceTimersByTime(100);
+
+      expect(save).not.toHaveBeenCalled();
+    });
+  });
+
   describe("scheduleOnChange edge cases", () => {
     it("does not schedule when not enabled", () => {
       const content = ref(makeContent());
