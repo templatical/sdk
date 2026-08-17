@@ -7,6 +7,20 @@ const ca: typeof en = {
     openSource: "Codi obert",
   },
 
+  // Header — nom de la plantilla + estat de desat. Només es mostra quan hi ha un
+  // proveïdor de plantilles configurat.
+  header: {
+    save: "Desa",
+    saving: "S'està desant...",
+    saved: "Desat",
+    unsaved: "Sense desar",
+    saveFailed: "No s'ha pogut desar",
+    saveNoTemplate: "Primer carrega o crea una plantilla",
+    templateName: "Nom de la plantilla",
+    rename: "Canvia el nom de la plantilla",
+    untitled: "Sense títol",
+  },
+
   // History (undo/redo)
   history: {
     undo: "Desfer",
@@ -662,6 +676,69 @@ const ca: typeof en = {
       minutesAgo: "fa {minutes} min",
       hoursAgo: "fa {hours} h",
       daysAgo: "fa {days} d",
+    },
+  },
+  comments: {
+    button: "Comentaris",
+    title: "Comentaris",
+    placeholder: "Escriu un comentari...",
+    replyPlaceholder: "Escriu una resposta...",
+    reply: "Respondre",
+    resolve: "Resoldre",
+    unresolve: "Reobrir",
+    delete: "Eliminar",
+    edit: "Editar",
+    cancel: "Cancel·lar",
+    save: "Desar",
+    noComments: "Encara no hi ha comentaris",
+    noCommentsHint:
+      "Comença una conversa afegint un comentari a la plantilla o a un bloc concret.",
+    deleteConfirm: "Vols eliminar aquest comentari?",
+    filterAll: "Tots",
+    filterUnresolved: "Sense resoldre",
+    filterBlock: "Aquest bloc",
+    jumpToBlock: "Bloc",
+    ownedByYou: "Tu",
+    edited: "editat",
+    resolvedBy: "Resolt per {name}",
+    replyOne: "{count} resposta",
+    replyMany: "{count} respostes",
+    missingBlock: "Bloc no trobat",
+    saveTemplateFirst: "Desa la plantilla abans de comentar en aquest bloc.",
+    time: {
+      justNow: "Ara mateix",
+      minutesAgo: "fa {minutes} min",
+      hoursAgo: "fa {hours} h",
+      daysAgo: "fa {days} d",
+    },
+  },
+  versionHistory: {
+    tooltip: "Historial de versions",
+    dropdownTitle: "Historial de versions",
+    empty: "Encara no hi ha versions",
+    auto: "auto",
+    olderVersion: "Versió anterior",
+    newerVersion: "Versió més recent",
+    time: {
+      justNow: "Ara mateix",
+      minutesAgo: "fa {minutes} min",
+      hoursAgo: "fa {hours} h",
+      daysAgo: "fa {days} d",
+    },
+  },
+  versionPreview: {
+    message: "Estàs veient una versió anterior d’aquesta plantilla.",
+    cancel: "Cancel·la",
+    restore: "Restaura aquesta versió",
+    restoreConfirm: {
+      title: "Vols restaurar aquesta versió?",
+      unsavedWithSave:
+        "Tens canvis sense desar. Desa’ls primer i es mantindran a l’historial; si restaures sense desar, es perdran.",
+      unsavedNoSave:
+        "Tens canvis sense desar i cap lloc on desar-los. Si restaures aquesta versió, es perdran.",
+      saveAndRestore: "Desa i restaura",
+      restoreAnyway: "Restaura igualment",
+      cancel: "Cancel·la",
     },
   },
   previewResolution: {

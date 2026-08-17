@@ -5,6 +5,20 @@ export default {
     openSource: "Open Source",
   },
 
+  // Header — template name + save state. Shown only when a templates provider
+  // is configured.
+  header: {
+    save: "Save",
+    saving: "Saving...",
+    saved: "Saved",
+    unsaved: "Unsaved",
+    saveFailed: "Save failed",
+    saveNoTemplate: "Load or create a template first",
+    templateName: "Template name",
+    rename: "Rename template",
+    untitled: "Untitled",
+  },
+
   // History (undo/redo)
   history: {
     undo: "Undo",
@@ -656,6 +670,69 @@ export default {
       minutesAgo: "{minutes}m ago",
       hoursAgo: "{hours}h ago",
       daysAgo: "{days}d ago",
+    },
+  },
+  comments: {
+    button: "Comments",
+    title: "Comments",
+    placeholder: "Write a comment...",
+    replyPlaceholder: "Write a reply...",
+    reply: "Reply",
+    resolve: "Resolve",
+    unresolve: "Unresolve",
+    delete: "Delete",
+    edit: "Edit",
+    cancel: "Cancel",
+    save: "Save",
+    noComments: "No comments yet",
+    noCommentsHint:
+      "Start a conversation by adding a comment to the template or a specific block.",
+    deleteConfirm: "Delete this comment?",
+    filterAll: "All",
+    filterUnresolved: "Unresolved",
+    filterBlock: "This block",
+    jumpToBlock: "Block",
+    ownedByYou: "You",
+    edited: "edited",
+    resolvedBy: "Resolved by {name}",
+    replyOne: "{count} Reply",
+    replyMany: "{count} Replies",
+    missingBlock: "Missing block",
+    saveTemplateFirst: "Save the template before commenting on this block.",
+    time: {
+      justNow: "Just now",
+      minutesAgo: "{minutes}m ago",
+      hoursAgo: "{hours}h ago",
+      daysAgo: "{days}d ago",
+    },
+  },
+  versionHistory: {
+    tooltip: "Version history",
+    dropdownTitle: "Version history",
+    empty: "No versions yet",
+    auto: "auto",
+    olderVersion: "Older version",
+    newerVersion: "Newer version",
+    time: {
+      justNow: "Just now",
+      minutesAgo: "{minutes}m ago",
+      hoursAgo: "{hours}h ago",
+      daysAgo: "{days}d ago",
+    },
+  },
+  versionPreview: {
+    message: "You are previewing an earlier version of this template.",
+    cancel: "Cancel",
+    restore: "Restore this version",
+    restoreConfirm: {
+      title: "Restore this version?",
+      unsavedWithSave:
+        "You have unsaved changes. Save them first and they stay in your history — restore without saving and they are lost.",
+      unsavedNoSave:
+        "You have unsaved changes and nowhere to save them. Restoring this version will lose them.",
+      saveAndRestore: "Save, then restore",
+      restoreAnyway: "Restore anyway",
+      cancel: "Cancel",
     },
   },
   previewResolution: {
