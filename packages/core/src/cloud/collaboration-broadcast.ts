@@ -13,7 +13,19 @@ interface BroadcastTarget {
  * history.record() → broadcast + original mutation.
  */
 export function useCollaborationBroadcast(
-  editor: UseEditorReturn,
+  // The six members it actually replaces, rather than a whole editor. It is
+  // handed the *cloud* editor while this annotation names the OSS one, so any
+  // member either gains that the other lacks would break this call site for
+  // reasons that have nothing to do with broadcasting.
+  editor: Pick<
+    UseEditorReturn,
+    | "addBlock"
+    | "updateBlock"
+    | "removeBlock"
+    | "moveBlock"
+    | "updateSettings"
+    | "setContent"
+  >,
   collaboration: BroadcastTarget,
 ): void {
   const originalAddBlock = editor.addBlock;

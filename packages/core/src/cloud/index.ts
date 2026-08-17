@@ -1,5 +1,5 @@
 // Auth
-export { AuthManager, createSdkAuthManager } from "./auth";
+export { AuthManager, createSdkAuthManager, isFatalAuthError } from "./auth";
 export type {
   AuthConfig,
   AuthRequestOptions,
@@ -24,10 +24,6 @@ export type {
 // MCP operation handler
 export { handleOperation } from "./mcp-operation-handler";
 
-// Cloud editor
-export { useEditor } from "./editor";
-export type { UseEditorOptions, UseEditorReturn } from "./editor";
-
 // AI
 export { useAiChat } from "./ai-chat";
 export type { UseAiChatOptions, UseAiChatReturn } from "./ai-chat";
@@ -51,15 +47,15 @@ export type {
   UseDesignReferenceReturn,
 } from "./design-reference";
 
-// Comments
-export { useComments } from "./comments";
-export type { UseCommentsOptions, UseCommentsReturn } from "./comments";
-
-export { useCommentListener } from "./comment-listener";
+// Comments — Cloud's adapter for the shared `CommentsProvider` contract, realtime
+// included (its optional `subscribe` binds the presence channel). The reactive
+// state is shared by both tiers from `@templatical/core`; the transport is the
+// provider's business rather than a second composable's.
+export { createCloudCommentsProvider } from "./comments-provider";
 export type {
-  CommentBroadcastPayload,
-  UseCommentListenerOptions,
-} from "./comment-listener";
+  CreateCloudCommentsProviderOptions,
+  RealtimeChannel,
+} from "./comments-provider";
 
 // Collaboration
 export { useCollaboration } from "./collaboration";
@@ -77,12 +73,20 @@ export type { UseWebSocketOptions, UseWebSocketReturn } from "./web-socket";
 // composable in `@templatical/core`.
 export { createCloudSavedBlocksProvider } from "./saved-blocks-provider";
 
-// Snapshots
-export { useSnapshotHistory } from "./snapshots";
-export type {
-  UseSnapshotHistoryOptions,
-  UseSnapshotHistoryReturn,
-} from "./snapshots";
+// Templates — Cloud storage adapter for the save/load lifecycle. Passed as
+// `useEditor({ templates })`, so Cloud persists over the same contract a BYO
+// consumer implements.
+export { createCloudTemplatesProvider } from "./templates-provider";
+
+// Render — Cloud's server-side MJML/HTML renderer, behind the shared
+// `RenderProvider` contract.
+export { createCloudRenderProvider } from "./render-provider";
+export type { CreateCloudRenderProviderOptions } from "./render-provider";
+
+// Version history — Cloud's adapter for the shared `VersionHistoryProvider`
+// contract. The reactive state is `useVersionHistory` in `@templatical/core`,
+// shared by OSS and Cloud.
+export { createCloudVersionHistoryProvider } from "./version-history-provider";
 
 // Test email — the Cloud sending adapter for the shared `useTestEmailFeature`
 // seam in `@templatical/editor`. `useTestEmail` remains for the config/state it
@@ -95,8 +99,12 @@ export { createCloudTestEmailProvider } from "./test-email-provider";
 export type { CreateCloudTestEmailProviderOptions } from "./test-email-provider";
 
 // Export
-export { useExport } from "./export";
-export type { UseExportOptions, UseExportReturn } from "./export";
+export { useExport, resolveExportFonts } from "./export";
+export type {
+  ExportFontsPayload,
+  UseExportOptions,
+  UseExportReturn,
+} from "./export";
 
 // Plan config
 export { usePlanConfig } from "./plan-config";

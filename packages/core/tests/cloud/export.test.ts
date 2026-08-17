@@ -1,9 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { useExport } from '../../src/cloud/export';
+import { resolveExportFonts, useExport } from '../../src/cloud/export';
 import { ApiClient } from '../../src/cloud/api';
 import type { AuthManager } from '../../src/cloud/auth';
 
 vi.mock('../../src/cloud/api');
+
+const NO_FONTS = { customFonts: [], defaultFallback: 'Arial, sans-serif' };
 
 function createMockAuthManager(): AuthManager {
   return {
@@ -26,90 +28,29 @@ describe('useExport', () => {
     it('returns html and mjml', async () => {
       const { exportHtml } = useExport({ authManager: createMockAuthManager() });
 
-      const result = await exportHtml('tmpl-1');
+      const result = await exportHtml('tmpl-1', NO_FONTS);
 
       expect(result.html).toBe('<html>rendered</html>');
       expect(result.mjml).toBe('<mjml>source</mjml>');
     });
 
-    it('passes fonts payload to API', async () => {
-      const { exportHtml } = useExport({
-        authManager: createMockAuthManager(),
-        getFontsConfig: () => ({
-          customFonts: [{ name: 'Custom', url: 'https://fonts.com/custom.css' }],
-          defaultFallback: 'Georgia, serif',
-        }),
-      });
-
-      await exportHtml('tmpl-1');
-
-      expect(ApiClient.prototype.exportTemplate).toHaveBeenCalledWith('tmpl-1', {
+    // The fonts payload is now the caller's to assemble — `useExport` is a plain
+    // API wrapper, so it forwards whatever it's handed and makes no decision of
+    // its own. That is what moved the `custom_fonts` entitlement out of here and
+    // into `createCloudRenderProvider`.
+    it('forwards the fonts payload verbatim', async () => {
+      const { exportHtml } = useExport({ authManager: createMockAuthManager() });
+      const fonts = {
         customFonts: [{ name: 'Custom', url: 'https://fonts.com/custom.css' }],
         defaultFallback: 'Georgia, serif',
-      });
-    });
+      };
 
-    it('uses default fallback when fonts config is undefined', async () => {
-      const { exportHtml } = useExport({
-        authManager: createMockAuthManager(),
-        getFontsConfig: () => undefined,
-      });
+      await exportHtml('tmpl-1', fonts);
 
-      await exportHtml('tmpl-1');
-
-      expect(ApiClient.prototype.exportTemplate).toHaveBeenCalledWith('tmpl-1', {
-        customFonts: [],
-        defaultFallback: 'Arial, sans-serif',
-      });
-    });
-
-    it('excludes custom fonts when not allowed', async () => {
-      const { exportHtml } = useExport({
-        authManager: createMockAuthManager(),
-        getFontsConfig: () => ({
-          customFonts: [{ name: 'Custom', url: 'https://fonts.com/custom.css' }],
-          defaultFallback: 'Georgia',
-        }),
-        canUseCustomFonts: () => false,
-      });
-
-      await exportHtml('tmpl-1');
-
-      expect(ApiClient.prototype.exportTemplate).toHaveBeenCalledWith('tmpl-1', {
-        customFonts: [],
-        defaultFallback: 'Georgia',
-      });
-    });
-
-    it('includes custom fonts when allowed', async () => {
-      const fonts = [{ name: 'Custom', url: 'https://fonts.com/custom.css' }];
-      const { exportHtml } = useExport({
-        authManager: createMockAuthManager(),
-        getFontsConfig: () => ({ customFonts: fonts, defaultFallback: 'Arial' }),
-        canUseCustomFonts: () => true,
-      });
-
-      await exportHtml('tmpl-1');
-
-      expect(ApiClient.prototype.exportTemplate).toHaveBeenCalledWith('tmpl-1', {
-        customFonts: fonts,
-        defaultFallback: 'Arial',
-      });
-    });
-
-    it('defaults canUseCustomFonts to true', async () => {
-      const fonts = [{ name: 'Custom', url: 'https://fonts.com/custom.css' }];
-      const { exportHtml } = useExport({
-        authManager: createMockAuthManager(),
-        getFontsConfig: () => ({ customFonts: fonts, defaultFallback: 'Arial' }),
-      });
-
-      await exportHtml('tmpl-1');
-
-      expect(ApiClient.prototype.exportTemplate).toHaveBeenCalledWith('tmpl-1', {
-        customFonts: fonts,
-        defaultFallback: 'Arial',
-      });
+      expect(ApiClient.prototype.exportTemplate).toHaveBeenCalledWith(
+        'tmpl-1',
+        fonts,
+      );
     });
   });
 
@@ -117,9 +58,21 @@ describe('useExport', () => {
     it('returns only MJML string', async () => {
       const { getMjmlSource } = useExport({ authManager: createMockAuthManager() });
 
-      const result = await getMjmlSource('tmpl-1');
+      const result = await getMjmlSource('tmpl-1', NO_FONTS);
 
       expect(result).toBe('<mjml>source</mjml>');
+    });
+
+    it('forwards the fonts payload verbatim', async () => {
+      const { getMjmlSource } = useExport({ authManager: createMockAuthManager() });
+      const fonts = { customFonts: [], defaultFallback: 'Helvetica, sans-serif' };
+
+      await getMjmlSource('tmpl-1', fonts);
+
+      expect(ApiClient.prototype.exportTemplate).toHaveBeenCalledWith(
+        'tmpl-1',
+        fonts,
+      );
     });
   });
 
@@ -131,27 +84,39 @@ describe('useExport', () => {
 
       const { exportHtml } = useExport({ authManager: createMockAuthManager() });
 
-      const result = await exportHtml('tmpl-1');
+      const result = await exportHtml('tmpl-1', NO_FONTS);
 
       expect(result.html).toBe('<html>rendered</html>');
       expect(result.mjml).toBeUndefined();
     });
+  });
+});
 
-    it('passes empty customFonts array with defaultFallback', async () => {
-      const { exportHtml } = useExport({
-        authManager: createMockAuthManager(),
-        getFontsConfig: () => ({
-          customFonts: [],
-          defaultFallback: 'Helvetica, sans-serif',
-        }),
-      });
+describe('resolveExportFonts', () => {
+  const fonts = [{ name: 'Custom', url: 'https://fonts.com/custom.css' }];
 
-      await exportHtml('tmpl-1');
+  // Unconditional since the `custom_fonts` entitlement was deleted: it gated
+  // editor capability the free editor grants, so it only ever made the paid tier
+  // render fewer fonts than the free one.
+  it('includes custom fonts on every plan', () => {
+    expect(
+      resolveExportFonts({ customFonts: fonts, defaultFallback: 'Arial' }),
+    ).toEqual({ customFonts: fonts, defaultFallback: 'Arial' });
+  });
 
-      expect(ApiClient.prototype.exportTemplate).toHaveBeenCalledWith('tmpl-1', {
+  it('falls back to Arial when no fonts config exists', () => {
+    expect(resolveExportFonts(undefined)).toEqual({
+      customFonts: [],
+      defaultFallback: 'Arial, sans-serif',
+    });
+  });
+
+  it('keeps an explicitly empty custom font list empty', () => {
+    expect(
+      resolveExportFonts({
         customFonts: [],
         defaultFallback: 'Helvetica, sans-serif',
-      });
-    });
+      }),
+    ).toEqual({ customFonts: [], defaultFallback: 'Helvetica, sans-serif' });
   });
 });

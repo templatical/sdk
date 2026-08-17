@@ -1,4 +1,4 @@
-import type { UseEditorReturn } from "./editor";
+import type { UseEditorReturn } from "../editor";
 import type { McpOperationPayload } from "@templatical/types";
 import { handleOperation } from "./mcp-operation-handler";
 import type { PresenceChannel } from "pusher-js";

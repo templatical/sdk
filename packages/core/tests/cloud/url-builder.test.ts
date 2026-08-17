@@ -57,10 +57,11 @@ describe('API_ROUTES', () => {
     expect(API_ROUTES['templates.destroy']).toContain('{template}');
   });
 
-  it('has snapshot routes with correct nesting', () => {
-    expect(API_ROUTES['snapshots.index']).toContain('{template}/snapshots');
-    expect(API_ROUTES['snapshots.restore']).toContain(
-      '{snapshot}/restore',
+  it('has version routes with correct nesting', () => {
+    expect(API_ROUTES['versions.index']).toContain('{template}/versions');
+    expect(API_ROUTES['versions.show']).toContain('{template}/versions/{version}');
+    expect(API_ROUTES['versions.restore']).toContain(
+      '{version}/restore',
     );
   });
 
@@ -102,15 +103,15 @@ describe('API_ROUTES', () => {
     );
   });
 
-  it('builds a complete snapshot restore URL', () => {
-    const url = buildUrl(API_ROUTES['snapshots.restore'], {
+  it('builds a complete version restore URL', () => {
+    const url = buildUrl(API_ROUTES['versions.restore'], {
       project: 'proj-1',
       tenant: 'acme',
       template: 'tmpl-1',
-      snapshot: 'snap-1',
+      version: 'ver-1',
     });
     expect(url).toBe(
-      '/api/v1/projects/proj-1/tenants/acme/templates/tmpl-1/snapshots/snap-1/restore',
+      '/api/v1/projects/proj-1/tenants/acme/templates/tmpl-1/versions/ver-1/restore',
     );
   });
 });

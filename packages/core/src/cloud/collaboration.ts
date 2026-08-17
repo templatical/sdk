@@ -1,4 +1,4 @@
-import type { UseEditorReturn } from "./editor";
+import type { UseEditorReturn } from "../editor";
 import type { AuthManager } from "./auth";
 import type { Collaborator, McpOperationPayload } from "@templatical/types";
 import { handleOperation } from "./mcp-operation-handler";

@@ -97,48 +97,81 @@ describe('ApiClient', () => {
     });
   });
 
-  describe('snapshots', () => {
-    it('gets snapshots for a template', async () => {
-      const snapshots = [{ id: 'snap-1' }];
+  describe('versions', () => {
+    it('gets versions for a template', async () => {
+      const versions = [{ id: 'ver-1' }];
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockResponse(snapshots),
+        mockResponse(versions),
       );
 
-      const result = await api.getSnapshots('tmpl-1');
+      const result = await api.getVersions('tmpl-1');
 
-      expect(result).toEqual(snapshots);
+      expect(result).toEqual(versions);
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/templates/tmpl-1/snapshots'),
+        expect.stringContaining('/templates/tmpl-1/versions'),
         expect.any(Object),
       );
     });
 
-    it('creates a snapshot', async () => {
-      const snapshot = { id: 'snap-1' };
+    it('gets a single version', async () => {
+      const version = { id: 'ver-1', content: { blocks: [], settings: {} } };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockResponse(snapshot),
+        mockResponse(version),
       );
 
-      const result = await api.createSnapshot('tmpl-1', { blocks: [], settings: {} } as any);
+      const result = await api.getVersion('tmpl-1', 'ver-1');
 
-      expect(result).toEqual(snapshot);
+      expect(result).toEqual(version);
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/templates/tmpl-1/snapshots'),
-        expect.objectContaining({ method: 'POST' }),
+        expect.stringContaining('/templates/tmpl-1/versions/ver-1'),
+        expect.any(Object),
       );
     });
 
-    it('restores a snapshot', async () => {
+    it('creates a version', async () => {
+      const version = { id: 'ver-1' };
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockResponse(version),
+      );
+
+      const result = await api.createVersion('tmpl-1', { blocks: [], settings: {} } as any);
+
+      expect(result).toEqual(version);
+      expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/templates/tmpl-1/versions'),
+        expect.objectContaining({ method: 'POST' }),
+      );
+      const [, init] = vi.mocked(authManager.authenticatedFetch).mock.calls.at(-1)!;
+      expect(JSON.parse((init as RequestInit).body as string)).toEqual({
+        content: { blocks: [], settings: {} },
+      });
+    });
+
+    it('sends a label when one is given', async () => {
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockResponse({ id: 'ver-1' }),
+      );
+
+      await api.createVersion('tmpl-1', { blocks: [], settings: {} } as any, 'Before launch');
+
+      const [, init] = vi.mocked(authManager.authenticatedFetch).mock.calls.at(-1)!;
+      expect(JSON.parse((init as RequestInit).body as string)).toEqual({
+        content: { blocks: [], settings: {} },
+        label: 'Before launch',
+      });
+    });
+
+    it('restores a version', async () => {
       const template = { id: 'tmpl-1' };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(template),
       );
 
-      const result = await api.restoreSnapshot('tmpl-1', 'snap-1');
+      const result = await api.restoreVersion('tmpl-1', 'ver-1');
 
       expect(result).toEqual(template);
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/snapshots/snap-1/restore'),
+        expect.stringContaining('/versions/ver-1/restore'),
         expect.objectContaining({ method: 'POST' }),
       );
     });

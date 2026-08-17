@@ -4,7 +4,7 @@ import type {
   TemplateContent,
   TemplateSettings,
 } from "@templatical/types";
-import type { UseEditorReturn } from "./editor";
+import type { UseEditorReturn } from "../editor";
 
 export function handleOperation(
   editor: UseEditorReturn,

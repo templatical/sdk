@@ -16,6 +16,28 @@ export type {
   UserConfig,
 };
 
+/**
+ * Whether a token-refresh failure is worth interrupting the user over.
+ *
+ * **Fatal** means the endpoint actively rejected the credentials — a `4xx`. No
+ * amount of retrying fixes that: every subsequent request will fail the same
+ * way, so the session really is over and the editor should say so.
+ *
+ * **Everything else is transient**: a network blip, a `5xx`, a timeout, a
+ * malformed response. Those resolve on their own, and blanking the editor over
+ * one interrupts someone mid-edit on a template that is very likely unsaved.
+ * `AuthManager` reports every failure to `onError` and re-throws regardless, so
+ * a caller that genuinely cannot proceed still finds out; this only decides
+ * whether the *overlay* goes up.
+ *
+ * `404` is treated as fatal deliberately: a refresh URL that does not exist is a
+ * misconfiguration, and retrying a typo forever is worse than saying so.
+ */
+export function isFatalAuthError(error: unknown): boolean {
+  const status = error instanceof SdkError ? error.statusCode : undefined;
+  return status !== undefined && status >= 400 && status < 500;
+}
+
 export class AuthManager {
   private static readonly DEFAULT_BASE_URL = "https://templatical.com";
 

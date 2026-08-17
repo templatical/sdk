@@ -1,13 +1,14 @@
 import type {
   ApiError,
   ApiResponse,
-  Comment,
+  CommentResponse,
   CustomFont,
   PlanConfig,
   SavedBlock,
   Template,
   TemplateContent,
-  TemplateSnapshot,
+  TemplatePatch,
+  TemplateVersionResponse,
 } from "@templatical/types";
 import { SdkError } from "@templatical/types";
 import type { Block } from "@templatical/types";
@@ -69,12 +70,21 @@ export class ApiClient {
     return error.message;
   }
 
-  async createTemplate(content: TemplateContent): Promise<Template> {
+  async createTemplate(
+    content: TemplateContent,
+    name?: string,
+  ): Promise<Template> {
     return this.request<Template>(
       buildUrl(API_ROUTES["templates.store"], this.baseParams),
       {
         method: "POST",
-        body: JSON.stringify({ content }),
+        // `name` is forwarded only when set. Cloud's backend does not store it
+        // yet; until it does the key is simply ignored, and an absent name reads
+        // as "unnamed" rather than as an explicit null — the same
+        // forward-compatible treatment `category` gets on saved blocks.
+        body: JSON.stringify(
+          name !== undefined ? { content, name } : { content },
+        ),
       },
     );
   }
@@ -88,10 +98,13 @@ export class ApiClient {
     );
   }
 
-  async updateTemplate(
-    id: string,
-    content: TemplateContent,
-  ): Promise<Template> {
+  /**
+   * Apply a partial update. Takes a patch rather than bare content so a rename
+   * can travel without content and vice versa — the shape `TemplatePatch`
+   * defines, which is what `createCloudTemplatesProvider` forwards verbatim. Only
+   * the keys present are sent.
+   */
+  async updateTemplate(id: string, patch: TemplatePatch): Promise<Template> {
     return this.request<Template>(
       buildUrl(API_ROUTES["templates.update"], {
         ...this.baseParams,
@@ -99,23 +112,26 @@ export class ApiClient {
       }),
       {
         method: "PUT",
-        body: JSON.stringify({ content }),
+        body: JSON.stringify(patch),
       },
     );
   }
 
-  async createSnapshot(
+  async createVersion(
     templateId: string,
     content: TemplateContent,
-  ): Promise<TemplateSnapshot> {
-    return this.request<TemplateSnapshot>(
-      buildUrl(API_ROUTES["snapshots.store"], {
+    label?: string,
+  ): Promise<TemplateVersionResponse> {
+    return this.request<TemplateVersionResponse>(
+      buildUrl(API_ROUTES["versions.store"], {
         ...this.baseParams,
         template: templateId,
       }),
       {
         method: "POST",
-        body: JSON.stringify({ content }),
+        body: JSON.stringify(
+          label !== undefined ? { content, label } : { content },
+        ),
       },
     );
   }
@@ -132,24 +148,37 @@ export class ApiClient {
     );
   }
 
-  async getSnapshots(templateId: string): Promise<TemplateSnapshot[]> {
-    return this.request<TemplateSnapshot[]>(
-      buildUrl(API_ROUTES["snapshots.index"], {
+  async getVersions(templateId: string): Promise<TemplateVersionResponse[]> {
+    return this.request<TemplateVersionResponse[]>(
+      buildUrl(API_ROUTES["versions.index"], {
         ...this.baseParams,
         template: templateId,
       }),
     );
   }
 
-  async restoreSnapshot(
+  async getVersion(
     templateId: string,
-    snapshotId: string,
-  ): Promise<Template> {
-    return this.request<Template>(
-      buildUrl(API_ROUTES["snapshots.restore"], {
+    versionId: string,
+  ): Promise<TemplateVersionResponse> {
+    return this.request<TemplateVersionResponse>(
+      buildUrl(API_ROUTES["versions.show"], {
         ...this.baseParams,
         template: templateId,
-        snapshot: snapshotId,
+        version: versionId,
+      }),
+    );
+  }
+
+  async restoreVersion(
+    templateId: string,
+    versionId: string,
+  ): Promise<Template> {
+    return this.request<Template>(
+      buildUrl(API_ROUTES["versions.restore"], {
+        ...this.baseParams,
+        template: templateId,
+        version: versionId,
       }),
       {
         method: "POST",
@@ -218,8 +247,8 @@ export class ApiClient {
     });
   }
 
-  async getComments(templateId: string): Promise<Comment[]> {
-    return this.request<Comment[]>(this.commentsUrl(templateId));
+  async getComments(templateId: string): Promise<CommentResponse[]> {
+    return this.request<CommentResponse[]>(this.commentsUrl(templateId));
   }
 
   async createComment(
@@ -233,8 +262,8 @@ export class ApiClient {
       user_signature: string;
     },
     headers?: Record<string, string>,
-  ): Promise<Comment> {
-    return this.request<Comment>(this.commentsUrl(templateId), {
+  ): Promise<CommentResponse> {
+    return this.request<CommentResponse>(this.commentsUrl(templateId), {
       method: "POST",
       body: JSON.stringify(data),
       headers,
@@ -251,12 +280,15 @@ export class ApiClient {
       user_signature: string;
     },
     headers?: Record<string, string>,
-  ): Promise<Comment> {
-    return this.request<Comment>(this.commentsUrl(templateId, commentId), {
-      method: "PUT",
-      body: JSON.stringify(data),
-      headers,
-    });
+  ): Promise<CommentResponse> {
+    return this.request<CommentResponse>(
+      this.commentsUrl(templateId, commentId),
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+        headers,
+      },
+    );
   }
 
   async deleteComment(
@@ -285,8 +317,8 @@ export class ApiClient {
       user_signature: string;
     },
     headers?: Record<string, string>,
-  ): Promise<Comment> {
-    return this.request<Comment>(
+  ): Promise<CommentResponse> {
+    return this.request<CommentResponse>(
       buildUrl(API_ROUTES["comments.resolve"], {
         ...this.baseParams,
         template: templateId,
