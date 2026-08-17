@@ -1,8 +1,8 @@
 import type {
   SyntaxPreset,
   SyntaxPresetName,
+  Template,
   TemplateContent,
-  UiTheme,
   ViewportSize,
 } from "./index";
 
@@ -17,12 +17,17 @@ export type { SyntaxPreset, SyntaxPresetName, ViewportSize };
 // Template
 // ---------------------------------------------------------------------------
 
-export interface Template {
-  id: string;
-  content: TemplateContent;
-}
+// `Template` describes a stored template rather than a Cloud concept, so the
+// contract lives in `./templates` next to `TemplatesProvider`. Re-exported here
+// so cloud modules can import it from either path.
+export type { Template };
 
-export interface TemplateSnapshot {
+/**
+ * Cloud's wire shape for one version — snake_case, i.e. what the API returns,
+ * not a contract shape. `createCloudVersionHistoryProvider` maps it to the
+ * camelCase `TemplateVersion` a consumer's provider also returns.
+ */
+export interface TemplateVersionResponse {
   id: string;
   template_id: string;
   content: TemplateContent;
@@ -34,7 +39,16 @@ export interface TemplateSnapshot {
 // Comments
 // ---------------------------------------------------------------------------
 
-export interface Comment {
+/**
+ * Cloud's wire shape for one comment — snake_case, i.e. what the API returns,
+ * not a contract shape. `createCloudCommentsProvider` maps it to the camelCase
+ * `Comment` a consumer's provider also returns.
+ *
+ * Same split as `TemplateVersionResponse` → `TemplateVersion`, and for the same
+ * reason: a wire format is one backend's business, and putting it in the contract
+ * would make every BYO implementer speak Cloud's dialect.
+ */
+export interface CommentResponse {
   id: string;
   template_id: string;
   block_id: string | null;
@@ -47,17 +61,7 @@ export interface Comment {
   resolved_by_name: string | null;
   created_at: string;
   updated_at: string;
-  replies: Comment[];
-}
-
-export type CommentThread = Comment;
-
-export type CommentEventType =
-  "created" | "updated" | "deleted" | "resolved" | "unresolved";
-
-export interface CommentEvent {
-  type: CommentEventType;
-  comment: Comment;
+  replies: CommentResponse[];
 }
 
 // ---------------------------------------------------------------------------
@@ -195,13 +199,6 @@ export interface McpOperationPayload {
 // SDK Configuration
 // ---------------------------------------------------------------------------
 
-export interface SaveResult {
-  templateId: string;
-  html: string;
-  mjml: string;
-  content: TemplateContent;
-}
-
 export interface AiConfig {
   chat?: boolean;
   scoring?: boolean;
@@ -234,27 +231,6 @@ export interface WebSocketServerConfig {
   app_key: string;
 }
 
-// `TemplaticalConfig` and `TemplaticalInstance` used to live here. They were
-// duplicates of the cloud editor's real config/instance types and had drifted
-// from them — `modules` was never renamed to `savedBlocks`, and later options
-// were never added. The authoritative types are `TemplaticalCloudEditorConfig`
-// and `TemplaticalCloudEditor`, both exported from `@templatical/editor`, which
-// is where `initCloud()` actually reads its config. Don't reintroduce a copy
-// here: this package can't import from the editor, so any copy drifts again.
-
-export interface EditorState {
-  template: Template | null;
-  content: TemplateContent;
-  selectedBlockId: string | null;
-  viewport: ViewportSize;
-  darkMode: boolean;
-  previewMode: boolean;
-  isDirty: boolean;
-  isSaving: boolean;
-  isLoading: boolean;
-  uiTheme: UiTheme;
-}
-
 export interface ApiResponse<T> {
   data: T;
 }
@@ -268,23 +244,42 @@ export interface ApiError {
 // Plan Configuration
 // ---------------------------------------------------------------------------
 
+/**
+ * Cloud's entitlement flags — the one thing in the SDK that is deliberately
+ * **not** an interface a consumer could implement. Everything else is a
+ * provider; this is Cloud's commercial layer sitting above the provider set,
+ * which is exactly where the OSS/commercial line is drawn.
+ *
+ * **A flag is legitimate only when it meters a resource Cloud itself buys.** A
+ * gate on editor *capability* is either backwards — a paying customer getting
+ * less than a free one — or inert, so eleven of the original sixteen were
+ * deleted rather than carried:
+ *
+ * - `custom_fonts`, `theme_customization`, `custom_blocks`, `auto_save` — editor
+ *   capability OSS gives away free.
+ * - `pluggable_media` — gated *not* using Cloud's storage. Backwards.
+ * - `media_folders`, `import_from_url` — Cloud's media-service UI; the media
+ *   tier is limits-only now.
+ * - `white_label` — inert: `branding: false` already hid the footer on any plan.
+ * - `html_block` — never enforceable client-side; it belongs to the server
+ *   render.
+ * - `export_mjml` — unenforceable: `@templatical/renderer` is MIT, so anyone
+ *   holding the JSON holds the MJML.
+ * - `headless_sdk` — a server-side auth question a browser flag cannot affect.
+ *
+ * Quantity limits are the honest lever and all survive — see {@link PlanLimits}.
+ */
 export interface PlanFeatures {
-  media_folders: boolean;
-  import_from_url: boolean;
-  auto_save: boolean;
-  custom_fonts: boolean;
-  theme_customization: boolean;
-  html_block: boolean;
-  export_mjml: boolean;
-  white_label: boolean;
-  test_email: boolean;
+  /** Inference spend, per call. */
   ai_generation: boolean;
-  custom_blocks: boolean;
-  commenting: boolean;
+  /** Realtime connection capacity. */
   collaboration: boolean;
+  /** Storage plus realtime fan-out. */
+  commenting: boolean;
+  /** Storage for saved blocks. */
   saved_modules: boolean;
-  headless_sdk: boolean;
-  pluggable_media: boolean;
+  /** Sending cost and deliverability reputation. */
+  test_email: boolean;
 }
 
 export interface PlanLimits {

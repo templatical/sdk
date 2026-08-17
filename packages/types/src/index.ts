@@ -49,6 +49,36 @@ export type {
 // Test email (the bring-your-own sending contract)
 export type { TestEmailPayload, TestEmailProvider } from "./test-email";
 
+// Templates (the bring-your-own save/load contract)
+export type { Template, TemplatePatch, TemplatesProvider } from "./templates";
+
+// Render (the bring-your-own MJML/HTML contract)
+export type { RenderPayload, RenderProvider } from "./render";
+
+// Version history (the bring-your-own version contract)
+export type {
+  TemplateVersion,
+  VersionHistoryListParams,
+  VersionHistoryProvider,
+} from "./version-history";
+
+// Comments (the bring-your-own review contract)
+export type {
+  Comment,
+  CommentAuthor,
+  CommentChange,
+  CommentEvent,
+  CommentEventType,
+  CommentInput,
+  CommentPatch,
+  CommentsListParams,
+  CommentsProvider,
+} from "./comments";
+
+// Who is editing — a top-level config key, needed by comments today and by
+// collaboration presence next.
+export type { EditorUser } from "./user";
+
 // Type guards
 export {
   isButton,
@@ -200,13 +230,9 @@ export type {
   CategoryScore,
   Collaborator,
   CollaborationConfig,
-  Comment,
-  CommentEvent,
-  CommentEventType,
-  CommentThread,
+  CommentResponse,
   CreateCommentData,
   DirectAuthConfig,
-  EditorState,
   FindingSeverity,
   SdkAuthConfig,
   HealthCheckResult,
@@ -218,12 +244,10 @@ export type {
   PlanLimits,
   ProxyAuthConfig,
   RewriteData,
-  SaveResult,
   ScoringCategory,
   ScoringFinding,
   ScoringResult,
-  Template,
-  TemplateSnapshot,
+  TemplateVersionResponse,
   TestEmailConfig,
   TokenData,
   UpdateCommentData,
