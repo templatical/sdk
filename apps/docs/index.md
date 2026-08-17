@@ -22,7 +22,7 @@ features:
     linkText: Build a custom block
   - title: Reusable saved blocks
     details: Let users save block groups and re-insert them across templates — backed by your own storage, or a bundled browser-local provider for zero setup.
-    link: /guide/saved-blocks
+    link: /backend/saved-blocks
     linkText: Set up saved blocks
   - title: Merge tags with pluggable syntax
     details: Handlebars, Liquid, JS literals, or your own — with human-readable labels in the canvas.
@@ -42,7 +42,7 @@ features:
     linkText: Set defaults
   - title: Test emails from the editor
     details: Let users mail themselves the template they are editing, sent through your own infrastructure — one callback, no backend of ours involved.
-    link: /guide/test-email
+    link: /backend/test-email
     linkText: Wire up test emails
   - title: JSON in, MJML out
     details: Portable JSON templates, MJML output. Render anywhere, send through any provider.

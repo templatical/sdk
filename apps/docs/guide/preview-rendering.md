@@ -179,5 +179,5 @@ Every other template leaves it off, so they demonstrate the Sample / Label switc
 - [Merge Tags](/guide/merge-tags) — configuring tags, labels and `sample` values
 - [Logic Tags](/guide/logic-tags) — inserting and highlighting control flow
 - [Display Conditions](/guide/display-conditions) — condition simulation, and evaluating conditions for real via this hook
-- [Test Emails](/guide/test-email) — the dialog whose preview resolves per recipient
+- [Test Emails](/backend/test-email) — the dialog whose preview resolves per recipient
 - [Editor API](/api/editor) — the `resolvePreview` and `mergeTags` config reference

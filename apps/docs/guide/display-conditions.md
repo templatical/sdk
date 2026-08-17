@@ -154,5 +154,5 @@ While a resolver is showing the preview, the filter icon and the restore button 
 Two ways, and they answer different questions:
 
 - **[Preview Rendering](/guide/preview-rendering)** — wire `resolvePreview` and each variation renders in the editor, without sending anything. Fastest loop while authoring, and the only one that shows a variation for a recipient you can't mail.
-- **[Test emails](/guide/test-email)** — send to different recipient profiles and confirm each renders in a real inbox. Slower, but it exercises your platform's own evaluation and the mail client, which no preview can.
+- **[Test emails](/backend/test-email)** — send to different recipient profiles and confirm each renders in a real inbox. Slower, but it exercises your platform's own evaluation and the mail client, which no preview can.
   :::
