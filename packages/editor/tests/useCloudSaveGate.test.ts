@@ -1,5 +1,7 @@
 import "./dom-stubs";
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ref } from "vue";
 import type { PlanConfig } from "@templatical/types";
 import { useCloudSaveGate } from "../src/cloud/composables/useCloudSaveGate";
@@ -147,6 +149,79 @@ describe("useCloudSaveGate", () => {
     });
   });
 
+  /**
+   * The autosave path. Routing autosave *around* the gate (the shape this
+   * replaced) avoided a modal on a debounce timer but demoted `blockOnError`
+   * from a server policy to a manual-save-only speed bump — the whole point of
+   * the flag is that it applies to what reaches the server.
+   */
+  describe("runUnlessBlocked", () => {
+    it("runs the save and returns true when the gate would not block", async () => {
+      const { gate } = createGate({
+        issues: [makeIssue("warning")],
+        blockOnError: true,
+      });
+      const run = vi.fn().mockResolvedValue(undefined);
+
+      expect(await gate.runUnlessBlocked(run)).toBe(true);
+      expect(run).toHaveBeenCalledTimes(1);
+      expect(gate.modalOpen.value).toBe(false);
+    });
+
+    it("does not save, and does not open the modal, when the gate would block", async () => {
+      const { gate } = createGate({
+        issues: [makeIssue("error")],
+        blockOnError: true,
+      });
+      const run = vi.fn().mockResolvedValue(undefined);
+
+      expect(await gate.runUnlessBlocked(run)).toBe(false);
+      expect(run).not.toHaveBeenCalled();
+      expect(gate.modalOpen.value).toBe(false);
+    });
+
+    it("leaves nothing pending, so a later confirm cannot flush a skipped save", async () => {
+      const { gate } = createGate({
+        issues: [makeIssue("error")],
+        blockOnError: true,
+      });
+      const run = vi.fn().mockResolvedValue(undefined);
+
+      await gate.runUnlessBlocked(run);
+      await gate.confirmAndSave();
+
+      expect(run).not.toHaveBeenCalled();
+    });
+
+    it("lets the save through again once the blocking issues are fixed", async () => {
+      const { gate, issues } = createGate({
+        issues: [makeIssue("error")],
+        blockOnError: true,
+      });
+      const run = vi.fn().mockResolvedValue(undefined);
+
+      await gate.runUnlessBlocked(run);
+      issues.value = [];
+      expect(await gate.runUnlessBlocked(run)).toBe(true);
+
+      expect(run).toHaveBeenCalledTimes(1);
+    });
+
+    it("awaits the underlying save before resolving", async () => {
+      const { gate } = createGate({ issues: [], blockOnError: true });
+      const order: string[] = [];
+      const run = vi.fn(async () => {
+        await Promise.resolve();
+        order.push("save-settled");
+      });
+
+      await gate.runUnlessBlocked(run);
+      order.push("returned");
+
+      expect(order).toEqual(["save-settled", "returned"]);
+    });
+  });
+
   describe("confirmAndSave", () => {
     it("runs the pending save and closes the modal", async () => {
       const { gate } = createGate({
@@ -184,6 +259,68 @@ describe("useCloudSaveGate", () => {
       await gate.confirmAndSave();
 
       expect(run).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  /**
+   * The composable can only guarantee the *rule*; which save path uses which
+   * method is a wiring decision, and the failure mode — autosave quietly
+   * writing past a server policy — is invisible to a unit test of either piece
+   * on its own.
+   *
+   * There is one header, so the gate is handed to `useTemplatesFeature` and every
+   * save path — the button, Cmd+S, autosave, the restore confirmation — goes
+   * through it. That is the whole reason `SaveGate` exists as a named contract
+   * rather than as Cloud internals: a shared header reaching the provider directly
+   * would silently drop `accessibility.blockOnError`.
+   */
+  describe("wiring into the shared templates feature", () => {
+    const src = (...parts: string[]) =>
+      readFileSync(join(import.meta.dirname, "..", "src", ...parts), "utf8");
+
+    const feature = src("composables", "useTemplatesFeature.ts");
+    const editor = src("Editor.vue");
+    const runtime = src("cloud", "createCloudRuntime.ts");
+
+    function body(source: string, name: string): string {
+      const start = source.indexOf(`function ${name}(`);
+      expect(start).toBeGreaterThan(-1);
+      const open = source.indexOf("{", start);
+      return source.slice(open, source.indexOf("\n  }", open));
+    }
+
+    it("routes the manual save through the gate's modal", () => {
+      expect(body(feature, "requestSave")).toContain("gate.tryRunSave(runSave)");
+    });
+
+    it("routes autosave through runUnlessBlocked, not around the gate", () => {
+      const autoSave = body(feature, "requestAutoSave");
+      expect(autoSave).toContain("gate.runUnlessBlocked(runSave)");
+      expect(autoSave).not.toContain("tryRunSave");
+    });
+
+    it("hands the gate to the feature only when Cloud supplies one", () => {
+      expect(editor).toContain(
+        "getSaveGate: props.cloud ? () => props.cloud!.getSaveGate() : undefined",
+      );
+      // Read through a getter, because the gate needs `core.templateLint` and so
+      // cannot exist when the feature is constructed.
+      expect(runtime).toContain("getSaveGate: () => saveGate");
+    });
+
+    it("drives the modal from the panels wrapper rather than a second header", () => {
+      const panels = src("cloud", "components", "CloudPanels.vue");
+      expect(panels).toContain("ready.saveGate.modalOpen.value");
+      expect(panels).toContain("ready.saveGate.confirmAndSave");
+    });
+
+    it("withdraws the restore confirmation's save offer while the gate blocks", () => {
+      // Same rule as autosave rather than a second modal stacked on the
+      // confirmation: while the gate blocks there is effectively nowhere to put
+      // the work, and the confirmation says so.
+      expect(editor).toContain(
+        "!(props.cloud?.getSaveGate()?.shouldBlock.value ?? false)",
+      );
     });
   });
 

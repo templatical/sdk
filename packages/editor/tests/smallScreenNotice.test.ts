@@ -129,7 +129,6 @@ describe("editor wiring (#235)", () => {
 
   it.each([
     ["Editor.vue", "Editor.vue"],
-    ["cloud/CloudEditor.vue", "CloudEditor.vue"],
   ])("%s gates the chrome behind the small-screen notice", (path) => {
     const code = src(path);
     expect(code).toContain("useSmallScreenNotice(");

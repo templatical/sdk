@@ -3,14 +3,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { ref, computed } from "vue";
 import { useCloudFeatureFlags } from "../src/cloud/composables/useCloudFeatureFlags";
 
-vi.mock("@vueuse/core", () => ({
-  useTimeoutFn: vi.fn(() => ({ start: vi.fn() })),
-}));
-
-function createMockPlanConfig(
-  features: string[] = [],
-  config: any = null,
-) {
+function createMockPlanConfig(features: string[] = [], config: any = null) {
   return {
     hasFeature: vi.fn((f: string) => features.includes(f)),
     config: ref(config),
@@ -23,14 +16,6 @@ function createMockAiConfig(hasAny: boolean) {
   };
 }
 
-function createMockEditor(templateId?: string) {
-  return {
-    state: {
-      template: templateId ? { id: templateId } : null,
-    },
-  };
-}
-
 describe("useCloudFeatureFlags", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -40,7 +25,7 @@ describe("useCloudFeatureFlags", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig(["ai_generation"]) as any,
       aiConfig: createMockAiConfig(true) as any,
-      editor: createMockEditor(),
+      getTemplateId: () => null,
     });
 
     expect(result.canUseAiGeneration.value).toBe(true);
@@ -50,7 +35,7 @@ describe("useCloudFeatureFlags", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig([]) as any,
       aiConfig: createMockAiConfig(true) as any,
-      editor: createMockEditor(),
+      getTemplateId: () => null,
     });
 
     expect(result.canUseAiGeneration.value).toBe(false);
@@ -60,7 +45,7 @@ describe("useCloudFeatureFlags", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig(["ai_generation"]) as any,
       aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
+      getTemplateId: () => null,
     });
 
     expect(result.canUseAiGeneration.value).toBe(false);
@@ -70,7 +55,7 @@ describe("useCloudFeatureFlags", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig([]) as any,
       aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
+      getTemplateId: () => null,
     });
 
     expect(result.canUseAiGeneration.value).toBe(false);
@@ -80,7 +65,7 @@ describe("useCloudFeatureFlags", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig(["test_email"]) as any,
       aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
+      getTemplateId: () => null,
     });
 
     expect(result.canSendTestEmail.value).toBe(true);
@@ -90,17 +75,17 @@ describe("useCloudFeatureFlags", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig([]) as any,
       aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
+      getTemplateId: () => null,
     });
 
     expect(result.canSendTestEmail.value).toBe(false);
   });
 
-  it("hasTemplateSaved is true when editor.state.template?.id exists", () => {
+  it("hasTemplateSaved is true once a template id exists", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig() as any,
       aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor("tmpl-123"),
+      getTemplateId: () => "tmpl-123",
     });
 
     expect(result.hasTemplateSaved.value).toBe(true);
@@ -110,38 +95,10 @@ describe("useCloudFeatureFlags", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig() as any,
       aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
+      getTemplateId: () => null,
     });
 
     expect(result.hasTemplateSaved.value).toBe(false);
-  });
-
-  it("hasTemplateSaved is false when template is undefined", () => {
-    const result = useCloudFeatureFlags({
-      planConfigInstance: createMockPlanConfig() as any,
-      aiConfig: createMockAiConfig(false) as any,
-      editor: { state: {} },
-    });
-
-    expect(result.hasTemplateSaved.value).toBe(false);
-  });
-
-  it("isWhiteLabeled reflects white_label feature", () => {
-    const withWhiteLabel = useCloudFeatureFlags({
-      planConfigInstance: createMockPlanConfig(["white_label"]) as any,
-      aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
-    });
-
-    expect(withWhiteLabel.isWhiteLabeled.value).toBe(true);
-
-    const withoutWhiteLabel = useCloudFeatureFlags({
-      planConfigInstance: createMockPlanConfig([]) as any,
-      aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
-    });
-
-    expect(withoutWhiteLabel.isWhiteLabeled.value).toBe(false);
   });
 
   it("templateLimit returns max_templates from config", () => {
@@ -151,7 +108,7 @@ describe("useCloudFeatureFlags", () => {
         template_count: 10,
       }) as any,
       aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
+      getTemplateId: () => null,
     });
 
     expect(result.templateLimit.value).toBe(50);
@@ -161,7 +118,7 @@ describe("useCloudFeatureFlags", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig([], null) as any,
       aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
+      getTemplateId: () => null,
     });
 
     expect(result.templateLimit.value).toBe(null);
@@ -174,7 +131,7 @@ describe("useCloudFeatureFlags", () => {
         template_count: 7,
       }) as any,
       aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
+      getTemplateId: () => null,
     });
 
     expect(result.templateCount.value).toBe(7);
@@ -184,58 +141,34 @@ describe("useCloudFeatureFlags", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig([], null) as any,
       aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
+      getTemplateId: () => null,
     });
 
     expect(result.templateCount.value).toBe(0);
   });
 
-  it("isSaveExporting starts as false", () => {
+  // Three members must not exist here.
+  //
+  // Footer branding is not an entitlement: `config.branding !== false` decides it
+  // on any plan, so an `isWhiteLabeled` flag would gate nothing.
+  //
+  // `saveStatus` / `saveErrorMessage` / `startSaveStatusClear` belong to
+  // `useTemplatesFeature`, which the one shared header reads. They were never
+  // entitlements, and a second copy here is how two headers come to show
+  // different save states.
+  it("carries only the five members that are still entitlement business", () => {
     const result = useCloudFeatureFlags({
       planConfigInstance: createMockPlanConfig() as any,
       aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
+      getTemplateId: () => null,
     });
 
-    expect(result.isSaveExporting.value).toBe(false);
-  });
-
-  it("saveStatus starts as 'idle'", () => {
-    const result = useCloudFeatureFlags({
-      planConfigInstance: createMockPlanConfig() as any,
-      aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
-    });
-
-    expect(result.saveStatus.value).toBe("idle");
-  });
-
-  it("saveErrorMessage starts as empty string", () => {
-    const result = useCloudFeatureFlags({
-      planConfigInstance: createMockPlanConfig() as any,
-      aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
-    });
-
-    expect(result.saveErrorMessage.value).toBe("");
-  });
-
-  it("startSaveStatusClear calls the timeout start function", async () => {
-    const { useTimeoutFn } = await import("@vueuse/core");
-    const mockStart = vi.fn();
-    vi.mocked(useTimeoutFn).mockReturnValue({
-      start: mockStart,
-      stop: vi.fn(),
-      isPending: ref(false),
-    } as any);
-
-    const result = useCloudFeatureFlags({
-      planConfigInstance: createMockPlanConfig() as any,
-      aiConfig: createMockAiConfig(false) as any,
-      editor: createMockEditor(),
-    });
-
-    result.startSaveStatusClear();
-    expect(mockStart).toHaveBeenCalled();
+    expect(Object.keys(result).sort()).toEqual([
+      "canSendTestEmail",
+      "canUseAiGeneration",
+      "hasTemplateSaved",
+      "templateCount",
+      "templateLimit",
+    ]);
   });
 });

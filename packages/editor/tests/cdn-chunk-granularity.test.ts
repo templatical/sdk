@@ -10,7 +10,8 @@ import { init as initLexer, parse } from "es-module-lexer";
  * nothing checked the CDN build's chunk graph at all — which is how the former
  * `features` manual chunk went unnoticed. That entry forced six
  * `defineAsyncComponent` cloud panels (AiChatSidebar, CommentsSidebar,
- * DesignReferenceSidebar, TemplateScoringPanel, TestEmailModal, SnapshotHistory)
+ * DesignReferenceSidebar, TemplateScoringPanel, TestEmailModal,
+ * VersionHistoryMenu)
  * into one chunk that became statically reachable from the entry. Every Cloud
  * session downloaded all 66.5 KB gzip of it whether or not the user opened a
  * single panel: `defineAsyncComponent` was fully defeated, silently, for years.
@@ -186,7 +187,10 @@ describe("CDN chunk granularity", () => {
       "DesignReferenceSidebar",
       "TemplateScoringPanel",
       "TestEmailModal",
-      "SnapshotHistory",
+      // Was `SnapshotHistory`, a cloud-only component. Version history is a
+      // shared, capability-gated feature now, and its header control lives in
+      // `components/` — the chunk-per-panel invariant is unchanged.
+      "VersionHistoryMenu",
     ];
     const resolved = panels.map((name) => owner.get(name));
     expect(resolved.every((chunk) => typeof chunk === "string")).toBe(true);

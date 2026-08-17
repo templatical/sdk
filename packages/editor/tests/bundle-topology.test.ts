@@ -182,7 +182,7 @@ describe("editor bundle topology", () => {
   });
 
   it("the merge tag picker modal ships somewhere in the bundle", () => {
-    // The modal is statically imported by Editor.vue / CloudEditor.vue.
+    // The modal is statically imported by Editor.vue.
     // Vite is free to place it in the main chunk or split it as it sees
     // fit — we only care that it's present, not where. Search by stable
     // marker (the `data-testid` we render).

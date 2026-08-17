@@ -48,6 +48,7 @@ import {
 import { useEventListener } from '@vueuse/core';
 import { useEditorCore } from '../src/composables/useEditorCore';
 import type { BaseEditorReturn } from '../src/composables/useEditorCore';
+import { _resetActiveEditorTrackerForTests } from '../src/utils/activeEditorTracker';
 import {
   TRANSLATIONS_KEY,
   EDITOR_KEY,
@@ -185,7 +186,17 @@ describe('useEditorCore', () => {
     vi.mocked(useHistory).mockClear();
     vi.mocked(useHistoryInterceptor).mockClear();
     vi.mocked(useBlockActions).mockClear();
-    vi.mocked(useAutoSave).mockClear();
+    // Reset the return value too, not just the calls: the Cmd+S cases below swap
+    // in an instance with a spied `flush`, and `mockClear` alone would leak it
+    // into every test that follows.
+    vi.mocked(useAutoSave).mockReset();
+    vi.mocked(useAutoSave).mockReturnValue({
+      flush: vi.fn(),
+      cancel: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      destroy: vi.fn(),
+    });
     vi.mocked(useConditionPreview).mockClear();
     vi.mocked(useEventListener).mockClear();
   });
@@ -416,12 +427,103 @@ describe('useEditorCore', () => {
   });
 
   describe('keyboard shortcuts', () => {
+    // Earlier tests in this file mount cores they never unmount, so the
+    // page-wide tracker still holds them and would treat a fresh instance as
+    // inactive — shortcuts would silently never fire.
+    beforeEach(_resetActiveEditorTrackerForTests);
+
     it('registers a document keydown listener', () => {
       mountCore();
       expect(useEventListener).toHaveBeenCalled();
       const [target, event] = vi.mocked(useEventListener).mock.calls[0];
       expect(target).toBe(document);
       expect(event).toBe('keydown');
+    });
+
+    /**
+     * Cmd+S means "persist now", and there are two ways to mean it. A configured
+     * templates provider owns the phrase outright — including in Cloud, whose
+     * lint save-gate now sits *inside* that capability rather than behind a
+     * second `config.onSave` hook this handler had to know about. Otherwise it
+     * flushes the autosave debounce, so a consumer persisting from `onChange`
+     * gets the notification at once. Routing is read off the capability, so the
+     * editor needs no new option either way.
+     */
+    function pressCmdS() {
+      const call = vi
+        .mocked(useEventListener)
+        .mock.calls.find((c) => c[1] === 'keydown');
+      const handler = call![2] as (e: KeyboardEvent) => void;
+      const event = new KeyboardEvent('keydown', {
+        key: 's',
+        metaKey: true,
+        cancelable: true,
+      });
+      handler(event);
+      return event;
+    }
+
+    function templatesCapability(save: () => void) {
+      return {
+        templates: {
+          save,
+          rename: vi.fn(),
+          name: ref(undefined),
+          hasTemplate: ref(true),
+          isSaving: ref(false),
+          status: ref('idle'),
+          errorMessage: ref(''),
+          canCreate: ref(true),
+          canSave: ref(true),
+          isAvailable: ref(true),
+        },
+      } as any;
+    }
+
+    it('routes Cmd+S to the templates capability when one is present', () => {
+      const templatesSave = vi.fn();
+      const flush = vi.fn();
+      vi.mocked(useAutoSave).mockReturnValue({
+        flush,
+        pause: vi.fn(),
+        resume: vi.fn(),
+        cancel: vi.fn(),
+        destroy: vi.fn(),
+      } as any);
+      mountCore({
+        autoSaveOptions: { onChange: vi.fn() },
+        capabilities: templatesCapability(templatesSave),
+      } as any);
+
+      const event = pressCmdS();
+
+      expect(templatesSave).toHaveBeenCalledTimes(1);
+      expect(flush).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('flushes the autosave debounce when nothing else claims Cmd+S', () => {
+      const flush = vi.fn();
+      vi.mocked(useAutoSave).mockReturnValue({
+        flush,
+        pause: vi.fn(),
+        resume: vi.fn(),
+        cancel: vi.fn(),
+        destroy: vi.fn(),
+      } as any);
+
+      mountCore({ autoSaveOptions: { onChange: vi.fn() } });
+
+      pressCmdS();
+
+      expect(flush).toHaveBeenCalledTimes(1);
+    });
+
+    it('is inert with neither a capability nor autosave', () => {
+      mountCore({ autoSaveOptions: null });
+
+      expect(() => pressCmdS()).not.toThrow();
+      expect(pressCmdS().defaultPrevented).toBe(true);
     });
   });
 

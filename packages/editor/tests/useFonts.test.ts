@@ -19,11 +19,6 @@ describe('useFonts', () => {
       expect(labels).toEqual(sorted);
     });
 
-    it('starts with customFontsEnabled true', () => {
-      const { customFontsEnabled } = useFonts();
-      expect(customFontsEnabled.value).toBe(true);
-    });
-
     it('starts with isLoaded false', () => {
       const { isLoaded } = useFonts();
       expect(isLoaded.value).toBe(false);
@@ -40,29 +35,6 @@ describe('useFonts', () => {
       expect(roboto).not.toBeUndefined();
       expect(roboto!.isCustom).toBe(true);
       expect(roboto!.value).toBe('Roboto');
-    });
-
-    it('excludes custom fonts when disabled', () => {
-      const { fonts, setCustomFontsEnabled } = useFonts({
-        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
-      });
-
-      setCustomFontsEnabled(false);
-
-      expect(fonts.value.find((f) => f.label === 'Roboto')).toBeUndefined();
-    });
-
-    it('re-includes custom fonts when re-enabled', () => {
-      const { fonts, setCustomFontsEnabled } = useFonts({
-        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
-      });
-
-      setCustomFontsEnabled(false);
-      setCustomFontsEnabled(true);
-
-      const roboto = fonts.value.find((f) => f.label === 'Roboto');
-      expect(roboto).not.toBeUndefined();
-      expect(roboto!.isCustom).toBe(true);
     });
 
     it('custom font with same name as built-in is included as custom', () => {
@@ -271,14 +243,17 @@ describe('useFonts', () => {
       expect(defaultFont.value).toBe('Georgia');
     });
 
-    it('falls back to Arial when default font is custom but custom fonts disabled', () => {
-      const { defaultFont, setCustomFontsEnabled } = useFonts({
+    // A custom family stays the default on every plan. `setCustomFontsEnabled`
+    // is gone with the `custom_fonts` entitlement: it existed only so Cloud
+    // could withdraw custom faces from an unentitled plan, which made the paid
+    // tier offer fewer fonts than the free editor.
+    it('keeps a custom family as the default', () => {
+      const { defaultFont } = useFonts({
         customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
         defaultFont: 'Roboto',
       });
 
-      setCustomFontsEnabled(false);
-      expect(defaultFont.value).toBe('Arial, sans-serif');
+      expect(defaultFont.value).toBe('Roboto');
     });
   });
 
@@ -318,16 +293,6 @@ describe('useFonts', () => {
       expect(getDefaultFont()).toBe('Roboto');
     });
 
-    it('returns fallback when default is custom but custom fonts disabled', () => {
-      const { getDefaultFont, setCustomFontsEnabled } = useFonts({
-        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
-        defaultFont: 'Roboto',
-      });
-
-      setCustomFontsEnabled(false);
-      expect(getDefaultFont()).toBe('Arial, sans-serif');
-    });
-
     it('is case-insensitive for matching', () => {
       const { getDefaultFont } = useFonts({ defaultFont: 'arial' });
       expect(getDefaultFont()).toBe('Arial');
@@ -351,29 +316,6 @@ describe('useFonts', () => {
 
     it('does not recognize unknown fonts', () => {
       const { getDefaultFont } = useFonts({ defaultFont: 'FakeFont' });
-      expect(getDefaultFont()).toBe('Arial, sans-serif');
-    });
-  });
-
-  describe('isBuiltInFont (via custom fonts disabled behavior)', () => {
-    it('allows built-in font as default when custom fonts disabled', () => {
-      const { getDefaultFont, setCustomFontsEnabled } = useFonts({
-        customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
-        defaultFont: 'Georgia',
-      });
-
-      setCustomFontsEnabled(false);
-      // Georgia is built-in so it should still work
-      expect(getDefaultFont()).toBe('Georgia');
-    });
-
-    it('rejects custom font as default when custom fonts disabled', () => {
-      const { getDefaultFont, setCustomFontsEnabled } = useFonts({
-        customFonts: [{ name: 'MyFont', url: 'https://fonts.com/myfont.css' }],
-        defaultFont: 'MyFont',
-      });
-
-      setCustomFontsEnabled(false);
       expect(getDefaultFont()).toBe('Arial, sans-serif');
     });
   });
@@ -465,17 +407,20 @@ describe('useFonts', () => {
     });
   });
 
-  describe('setCustomFontsEnabled', () => {
-    it('toggles custom fonts visibility', () => {
-      const { fonts, setCustomFontsEnabled } = useFonts({
+  describe('no entitlement switch', () => {
+    // `customFontsEnabled` / `setCustomFontsEnabled` are gone with the
+    // `custom_fonts` plan feature. Nothing may reintroduce a way to withdraw
+    // custom faces at runtime: `resolveRenderFonts` reads this list straight,
+    // so a hidden font would still reach a render payload and diverge from the
+    // canvas.
+    it('offers every configured custom font, with no switch to withdraw them', () => {
+      const manager = useFonts({
         customFonts: [{ name: 'Roboto', url: 'https://fonts.com/roboto.css' }],
       });
 
-      expect(fonts.value.length).toBe(8); // 7 built-in + 1 custom
-      setCustomFontsEnabled(false);
-      expect(fonts.value.length).toBe(7); // only built-in
-      setCustomFontsEnabled(true);
-      expect(fonts.value.length).toBe(8); // back to 8
+      expect(manager.fonts.value.length).toBe(8); // 7 built-in + 1 custom
+      expect('setCustomFontsEnabled' in manager).toBe(false);
+      expect('customFontsEnabled' in manager).toBe(false);
     });
   });
 

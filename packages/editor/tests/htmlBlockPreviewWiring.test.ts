@@ -19,8 +19,10 @@ describe("htmlBlockPreview config wiring", () => {
     );
   });
 
-  it("useCloudInitialization forwards config.htmlBlockPreview to useEditorCore", () => {
-    expect(readSrc("cloud/composables/useCloudInitialization.ts")).toContain(
+  // `initCloud()` forwards it by mapping its own config onto `init()`'s — there
+  // is one `useEditorCore` call site now, so this is the only hop left.
+  it("initCloud forwards config.htmlBlockPreview into the init() config", () => {
+    expect(readSrc("index.ts")).toContain(
       "htmlBlockPreview: config.htmlBlockPreview",
     );
   });

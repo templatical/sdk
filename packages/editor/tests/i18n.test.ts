@@ -225,7 +225,7 @@ describe("loadTranslations", () => {
 describe("loadCloudTranslations", () => {
   it("loads English cloud translations", async () => {
     const t = await loadCloudTranslations("en");
-    expect(t.header.title).toBe("Templatical");
+    expect(t.header.templatesUsed).toBe("{used}/{max} templates used");
   });
 
   it("loads German cloud translations", async () => {
@@ -247,19 +247,19 @@ describe("loadCloudTranslations", () => {
 
   it("normalizes locale with region", async () => {
     const t = await loadCloudTranslations("en-US");
-    expect(t.header.title).toBe("Templatical");
+    expect(t.header.templatesUsed).toBe("{used}/{max} templates used");
   });
 
   it("falls back to English for unsupported cloud locale", async () => {
     const t = await loadCloudTranslations("fr");
-    expect(t.header.title).toBe("Templatical");
+    expect(t.header.templatesUsed).toBe("{used}/{max} templates used");
   });
 
   it("falls back to English when only OSS translation exists for the locale", async () => {
     // Simulates an OSS-only contributor: cloud locale not yet translated.
     // The fallback resolves cloud independently of OSS.
     const t = await loadCloudTranslations("xx");
-    expect(t.header.title).toBe("Templatical");
+    expect(t.header.templatesUsed).toBe("{used}/{max} templates used");
   });
 });
 
@@ -458,7 +458,7 @@ describe("useCloudI18n", () => {
     const { t } = withProvide(() => useCloudI18n(), {
       [CLOUD_TRANSLATIONS_KEY as symbol]: cloudEn,
     });
-    expect(t?.header.title).toBe("Templatical");
+    expect(t?.header.templatesUsed).toBe("{used}/{max} templates used");
   });
 
   it("unwraps Ref<CloudTranslations>", () => {
@@ -466,7 +466,7 @@ describe("useCloudI18n", () => {
     const { t } = withProvide(() => useCloudI18n(), {
       [CLOUD_TRANSLATIONS_KEY as symbol]: cloudRef,
     });
-    expect(t?.header.title).toBe("Templatical");
+    expect(t?.header.templatesUsed).toBe("{used}/{max} templates used");
   });
 
   it("uses override over injected", () => {
@@ -482,7 +482,7 @@ describe("useCloudI18nStrict", () => {
     const { t } = withProvide(() => useCloudI18nStrict(), {
       [CLOUD_TRANSLATIONS_KEY as symbol]: cloudEn,
     });
-    expect(t.header.title).toBe("Templatical");
+    expect(t.header.templatesUsed).toBe("{used}/{max} templates used");
   });
 
   it("throws when no cloud translations are provided", () => {

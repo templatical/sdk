@@ -131,10 +131,9 @@ describe("theme token scope", () => {
   it("finds the known token-root elements (sanity check)", () => {
     // Guards against the scanner silently returning [] — a broken walker or a
     // regex that stopped matching would otherwise make every case below pass.
-    // The two editor roots plus the shared modal backdrop are the floor.
+    // The editor root plus the shared modal backdrop are the floor.
     const files = new Set(SITES.map((site) => site.file));
     expect(files.has("Editor.vue")).toBe(true);
-    expect(files.has("cloud/CloudEditor.vue")).toBe(true);
     expect(files.has("components/TplModal.vue")).toBe(true);
     expect(SITES.length).toBeGreaterThanOrEqual(6);
   });

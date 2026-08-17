@@ -1,17 +1,21 @@
 // @vitest-environment happy-dom
 //
 // Exercises the public SDK entry surface that `index-init.test.ts` and
-// `shadow-mount.test.ts` don't: the full `initCloud()` flow (ready
-// resolution, timeout rejection, content-access-before-ready), the
-// top-level `unmount()` export, and the OSS instance methods
+// `shadow-mount.test.ts` don't: the `initCloud()` flow, the top-level
+// `unmount()` export, and the instance methods
 // (getContent/setContent/setTheme/renderCustomBlock/getCustomBlockStylesheet)
 // in both their pre-ready (ref null) and post-ready branches.
 //
-// Vue / Editor.vue / CloudEditor.vue / i18n are mocked the same way as
-// shadow-mount.test.ts so we drive just the entry logic, not the editor's
-// full bootstrap. A `setup()` render is invoked to capture the props passed
-// to `h(...)`, including the `onReady` callback and the template `ref` — we
-// then resolve readiness / set the instance ourselves.
+// `initCloud()` is now a wrapper over `init()`: it bootstraps auth + the plan,
+// builds Cloud's adapters, and mounts the *same* `Editor.vue`. So there is no
+// second component to mock and no `ready` event to resolve — what is asserted
+// instead is that Cloud's providers arrive as ordinary `init()` config keys and
+// that both entry points return the same instance shape.
+//
+// Vue / Editor.vue / i18n are mocked the same way as shadow-mount.test.ts so we
+// drive just the entry logic, not the editor's full bootstrap. A `setup()`
+// render is invoked to capture the props passed to `h(...)`, including the
+// template `ref` — we then set the instance ourselves.
 
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { Ref } from "vue";
@@ -23,6 +27,18 @@ interface Captured {
 const captured: Captured = { props: null };
 const fakeApps: Array<{ mount: ReturnType<typeof vi.fn>; unmount: ReturnType<typeof vi.fn> }> =
   [];
+
+// Stand-ins for what `bootstrapCloud` hands back. The real thing is covered by
+// `createCloudRuntime.test.ts`; here we only care that the wrapper forwards it.
+const bootstrapCalls: boolean[] = [];
+const fakeRuntime = { attach: vi.fn(), ready: vi.fn(), destroy: vi.fn() };
+const fakeProviders = {
+  templates: { load: vi.fn(), create: vi.fn(), save: vi.fn() },
+  render: { toMjml: vi.fn(async () => "<mjml>cloud</mjml>") },
+  versionHistory: { list: vi.fn(), get: vi.fn(), create: false, restore: false },
+  savedBlocks: { list: vi.fn(), create: false, update: false, delete: false },
+  testEmail: { send: vi.fn() },
+};
 
 let initFn: typeof import("../src/index").init;
 let initCloudFn: typeof import("../src/index").initCloud;
@@ -56,6 +72,7 @@ beforeEach(async () => {
   vi.resetModules();
   captured.props = null;
   fakeApps.length = 0;
+  bootstrapCalls.length = 0;
 
   vi.doMock("vue", async () => {
     const actual = await vi.importActual<typeof import("vue")>("vue");
@@ -75,15 +92,24 @@ beforeEach(async () => {
     };
   });
   vi.doMock("../src/Editor.vue", () => ({ default: { name: "Editor" } }));
-  vi.doMock("../src/cloud/CloudEditor.vue", () => ({
-    default: { name: "CloudEditor" },
+  vi.doMock("../src/cloud/createCloudRuntime", () => ({
+    bootstrapCloud: vi.fn(async () => {
+      bootstrapCalls.push(true);
+      return { runtime: fakeRuntime, providers: fakeProviders };
+    }),
   }));
   vi.doMock("../src/i18n", () => ({
     loadTranslations: vi.fn(() => Promise.resolve({})),
     loadCloudTranslations: vi.fn(() => Promise.resolve({})),
   }));
   vi.doMock("../src/composables", () => ({
-    useFonts: vi.fn(() => ({ fonts: { value: [] } })),
+    // `customFonts` / `defaultFallback` are what `resolveRenderFonts` reads to
+    // build the render payload's fonts half.
+    useFonts: vi.fn(() => ({
+      fonts: { value: [] },
+      customFonts: { value: [] },
+      defaultFallback: { value: "Arial, sans-serif" },
+    })),
   }));
   vi.doMock("../src/utils/toMjml", () => ({
     toMjmlForInstance: vi.fn(() => Promise.resolve("<mjml>mock</mjml>")),
@@ -110,48 +136,7 @@ function cloudConfig(container: HTMLElement, extra: Record<string, unknown> = {}
   } as unknown as Parameters<typeof initCloudFn>[0];
 }
 
-describe("initCloud — readiness", () => {
-  it("resolves with an instance once CloudEditor emits ready", async () => {
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-
-    const p = initCloudFn(cloudConfig(container));
-
-    // Wait for createApp/render to run (after the dynamic import + i18n awaits).
-    await vi.waitFor(() => expect(captured.props).not.toBeNull());
-
-    expect(typeof captured.props!.onReady).toBe("function");
-    (captured.props!.onReady as () => void)();
-
-    const instance = await p;
-    expect(typeof instance.save).toBe("function");
-    expect(fakeApps[0].mount).toHaveBeenCalledWith(container);
-  });
-
-  it("rejects with a timeout error when ready never fires", async () => {
-    vi.useFakeTimers();
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-
-    const p = initCloudFn(cloudConfig(container));
-    p.catch(() => {}); // pre-attach so the rejection isn't unhandled
-
-    // Flush the import/i18n microtasks AND fire the pending 30s timeout.
-    await vi.runAllTimersAsync();
-
-    await expect(p).rejects.toThrow(/timed out/i);
-  });
-
-  it("throws when the container selector matches nothing", async () => {
-    await expect(
-      initCloudFn(cloudConfig(document.createElement("div"), {
-        container: "#does-not-exist",
-      })),
-    ).rejects.toThrow(/Container element not found/);
-  });
-});
-
-describe("initCloud — instance methods", () => {
+describe("initCloud — a thin wrapper over init()", () => {
   async function mountCloud(refValue: Record<string, unknown> | null) {
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -160,116 +145,181 @@ describe("initCloud — instance methods", () => {
     if (refValue) {
       (captured.props!.ref as Ref<unknown>).value = refValue;
     }
-    (captured.props!.onReady as () => void)();
-    const instance = await p;
-    return { instance, container };
+    return { instance: await p, container };
   }
 
-  it("delegates create/load/save to the mounted CloudEditor instance", async () => {
+  it("bootstraps Cloud before mounting anything", async () => {
+    const { container } = await mountCloud(null);
+
+    expect(bootstrapCalls.length).toBe(1);
+    expect(fakeApps[0].mount).toHaveBeenCalledWith(container);
+  });
+
+  it("mounts the same Editor.vue, with Cloud's runtime alongside the config", async () => {
+    await mountCloud(null);
+
+    // The proof the collapse worked: one editor component, and the cloud half
+    // arrives as a prop rather than as a second component.
+    expect(captured.props!.cloud).toBe(fakeRuntime);
+    expect(captured.props!.onReady).toBeUndefined();
+  });
+
+  it("passes Cloud's adapters through the ordinary init() config keys", async () => {
+    await mountCloud(null);
+    const config = captured.props!.config as Record<string, unknown>;
+
+    expect(config.templates).toBe(fakeProviders.templates);
+    expect(config.render).toBe(fakeProviders.render);
+    expect(config.versionHistory).toBe(fakeProviders.versionHistory);
+    expect(config.savedBlocks).toBe(fakeProviders.savedBlocks);
+    expect(config.testEmail).toBe(fakeProviders.testEmail);
+  });
+
+  it("defaults autosave on, at Cloud's slower cadence", async () => {
+    // The difference between the two entry points stays at this call site:
+    // Cloud always has a store to save to, and every tick is a round-trip.
+    await mountCloud(null);
+    expect((captured.props!.config as Record<string, unknown>).autoSave).toEqual(
+      { debounce: 5000 },
+    );
+  });
+
+  it("honours an explicit autoSave: false", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const p = initCloudFn(cloudConfig(container, { autoSave: false }));
+    await vi.waitFor(() => expect(captured.props).not.toBeNull());
+    await p;
+
+    expect((captured.props!.config as Record<string, unknown>).autoSave).toBe(
+      false,
+    );
+  });
+
+  it("honours an explicit cadence", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const p = initCloudFn(cloudConfig(container, { autoSave: { debounce: 250 } }));
+    await vi.waitFor(() => expect(captured.props).not.toBeNull());
+    await p;
+
+    expect((captured.props!.config as Record<string, unknown>).autoSave).toEqual(
+      { debounce: 250 },
+    );
+  });
+
+  it("forwards the unsaved-changes keys init() owns", async () => {
+    // One editor, one set of keys — and the guard now fires for Cloud too, which
+    // could previously lose work on tab close.
+    const onDirtyChange = vi.fn();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const p = initCloudFn(
+      cloudConfig(container, { onDirtyChange, unsavedChangesGuard: false }),
+    );
+    await vi.waitFor(() => expect(captured.props).not.toBeNull());
+    await p;
+
+    const config = captured.props!.config as Record<string, unknown>;
+    expect(config.onDirtyChange).toBe(onDirtyChange);
+    expect(config.unsavedChangesGuard).toBe(false);
+  });
+
+  it("throws when the container selector matches nothing", async () => {
+    await expect(
+      initCloudFn(
+        cloudConfig(document.createElement("div"), {
+          container: "#does-not-exist",
+        }),
+      ),
+    ).rejects.toThrow(/Container element not found/);
+  });
+
+  it("rejects when the bootstrap fails, rather than mounting a dead editor", async () => {
+    const { bootstrapCloud } = await import("../src/cloud/createCloudRuntime");
+    vi.mocked(bootstrapCloud).mockRejectedValueOnce(
+      new Error("Health check failed: API is not reachable"),
+    );
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+
+    await expect(initCloudFn(cloudConfig(container))).rejects.toThrow(
+      /API is not reachable/,
+    );
+    expect(fakeApps.length).toBe(0);
+  });
+
+  it("returns the same instance shape init() does", async () => {
+    // `TemplaticalCloudEditor` *is* `TemplaticalEditor` — the convergence is the
+    // proof, so a divergent member would be a regression rather than a feature.
     const fakeEditor = {
-      create: vi.fn(() => Promise.resolve({ id: "t1" })),
-      load: vi.fn(() => Promise.resolve({ id: "t2" })),
-      save: vi.fn(() => Promise.resolve({ ok: true })),
-      getContent: vi.fn(() => ({ blocks: [{ id: "b1" }] })),
+      getContent: vi.fn(() => ({ blocks: [] })),
       setContent: vi.fn(),
       setTheme: vi.fn(),
+      renderCustomBlock: vi.fn(),
+      getCustomBlockStylesheet: vi.fn(),
+      create: vi.fn(async () => ({ id: "t1", content: {} })),
+      load: vi.fn(async () => ({ id: "t2", content: {} })),
+      save: vi.fn(async () => ({ id: "t3", content: {} })),
+      isDirty: vi.fn(() => false),
     };
     const { instance } = await mountCloud(fakeEditor);
 
-    const created = await instance.create({ blocks: [] } as never);
-    expect(created).toEqual({ id: "t1" });
-    expect(fakeEditor.create).toHaveBeenCalledWith({ blocks: [] });
-
-    await instance.load("tmpl-99");
-    expect(fakeEditor.load).toHaveBeenCalledWith("tmpl-99");
-
-    const saved = await instance.save();
-    expect(saved).toEqual({ ok: true });
+    expect(Object.keys(instance).sort()).toEqual([
+      "create",
+      "getContent",
+      "getCustomBlockStylesheet",
+      "isDirty",
+      "load",
+      "renderCustomBlock",
+      "save",
+      "setContent",
+      "setTheme",
+      "toHtml",
+      "toMjml",
+      "unmount",
+    ]);
   });
 
-  it("getContent returns a deep clone of the editor's content (post-ready)", async () => {
-    const live = { blocks: [{ id: "b1" }] };
+  it("resolves toMjml through the render provider the bootstrap supplied", async () => {
     const fakeEditor = {
-      create: vi.fn(),
-      load: vi.fn(),
-      save: vi.fn(),
-      getContent: vi.fn(() => live),
+      getContent: vi.fn(() => ({ blocks: [] })),
       setContent: vi.fn(),
       setTheme: vi.fn(),
+      renderCustomBlock: vi.fn(),
+      getCustomBlockStylesheet: vi.fn(),
     };
     const { instance } = await mountCloud(fakeEditor);
 
-    const content = instance.getContent();
-    expect(content).toEqual(live);
-    // Deep clone — mutating the result must not touch the editor's object.
-    (content.blocks as Array<{ id: string }>)[0].id = "mutated";
-    expect(live.blocks[0].id).toBe("b1");
+    await expect(instance.toMjml()).resolves.toBe("<mjml>cloud</mjml>");
   });
 
-  it("getContent survives a Sortable expando cycle in live content (issue #203)", async () => {
-    // Repro of #203: dragging a block within a section leaks a Sortable
-    // expando back-ref (HTMLDivElement.SortableXXX → instance → el → div)
-    // into the editor's live content. The public getContent() must
-    // serialize without throwing `Converting circular structure to JSON`.
-    const live = makeContentWithSortableCycle();
+  it("takes init()'s create(input) shape, not a bare TemplateContent", async () => {
     const fakeEditor = {
-      create: vi.fn(),
-      load: vi.fn(),
-      save: vi.fn(),
-      getContent: vi.fn(() => live),
-      setContent: vi.fn(),
-      setTheme: vi.fn(),
-    };
-    const { instance } = await mountCloud(fakeEditor);
-
-    let content!: ReturnType<typeof instance.getContent>;
-    expect(() => {
-      content = instance.getContent();
-    }).not.toThrow();
-    // Block data is preserved; only the cyclic DOM back-ref is dropped.
-    const para = (content as any).blocks[0].children[0][0];
-    expect(para.content).toBe("<p>hi</p>");
-    expect(para.leaked.Sortable1781247283888).toEqual({});
-  });
-
-  it("setContent and setTheme forward to the editor instance", async () => {
-    const fakeEditor = {
-      create: vi.fn(),
-      load: vi.fn(),
-      save: vi.fn(),
       getContent: vi.fn(() => ({})),
       setContent: vi.fn(),
       setTheme: vi.fn(),
+      renderCustomBlock: vi.fn(),
+      getCustomBlockStylesheet: vi.fn(),
+      create: vi.fn(async () => ({ id: "t1", content: {} })),
+      load: vi.fn(),
+      save: vi.fn(),
+      isDirty: vi.fn(() => false),
     };
     const { instance } = await mountCloud(fakeEditor);
 
-    const next = { blocks: [{ id: "x" }] } as never;
-    instance.setContent(next);
-    expect(fakeEditor.setContent).toHaveBeenCalledWith(next);
-
-    instance.setTheme("dark" as never);
-    expect(fakeEditor.setTheme).toHaveBeenCalledWith("dark");
+    await instance.create({ name: "Fresh" });
+    expect(fakeEditor.create).toHaveBeenCalledWith({ name: "Fresh" });
   });
 
-  it("rejects create/load/save when the editor ref never populated (not ready)", async () => {
-    // ready fires but the template ref stays null (mount produced no instance).
-    const { instance } = await mountCloud(null);
-
-    await expect(instance.create()).rejects.toThrow(/not ready/i);
-    await expect(instance.load("x")).rejects.toThrow(/not ready/i);
-    await expect(instance.save()).rejects.toThrow(/not ready/i);
-  });
-
-  it("instance.unmount() tears down the cloud app", async () => {
-    const fakeEditor = {
-      create: vi.fn(),
-      load: vi.fn(),
-      save: vi.fn(),
+  it("unmounts through the one editor registry", async () => {
+    const { instance } = await mountCloud({
       getContent: vi.fn(() => ({})),
       setContent: vi.fn(),
       setTheme: vi.fn(),
-    };
-    const { instance } = await mountCloud(fakeEditor);
+      renderCustomBlock: vi.fn(),
+      getCustomBlockStylesheet: vi.fn(),
+    });
 
     instance.unmount();
     expect(fakeApps[0].unmount).toHaveBeenCalledTimes(1);
@@ -365,6 +415,106 @@ describe("OSS init — instance methods", () => {
     const { instance } = await mountOss(null);
     const mjml = await instance.toMjml();
     expect(mjml).toBe("<mjml>mock</mjml>");
+  });
+
+  describe("render provider", () => {
+    async function mountWithRender(render: Record<string, unknown>) {
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const instance = await initFn({
+        container,
+        shadowDom: false,
+        content: { blocks: [] },
+        render,
+      } as unknown as Parameters<typeof initFn>[0]);
+      (captured.props!.ref as Ref<unknown>).value = {
+        getContent: vi.fn(() => ({ blocks: [] })),
+        setContent: vi.fn(),
+        setTheme: vi.fn(),
+        renderCustomBlock: vi.fn(),
+        getCustomBlockStylesheet: vi.fn(),
+      };
+      return instance;
+    }
+
+    it("prefers render.toMjml over the bundled renderer", async () => {
+      const toMjml = vi.fn(() => Promise.resolve("<mjml>provider</mjml>"));
+      const instance = await mountWithRender({ toMjml });
+
+      await expect(instance.toMjml()).resolves.toBe("<mjml>provider</mjml>");
+      expect(toMjml).toHaveBeenCalledTimes(1);
+    });
+
+    it("compiles the locally-rendered MJML through render.compileMjml", async () => {
+      const compileMjml = vi.fn((mjml: string) =>
+        Promise.resolve(`<html>${mjml}</html>`),
+      );
+      const instance = await mountWithRender({ compileMjml });
+
+      // `toMjmlForInstance` is mocked to "<mjml>mock</mjml>", so this also proves
+      // toHtml() reached the bundled renderer rather than inventing its own MJML.
+      await expect(instance.toHtml()).resolves.toBe(
+        "<html><mjml>mock</mjml></html>",
+      );
+    });
+
+    it("rejects toHtml with no render provider — there is no local HTML path", async () => {
+      const { instance } = await mountOss(null);
+      await expect(instance.toHtml()).rejects.toThrow(
+        /no local HTML path|toHtml\(\) requires a `render` provider/,
+      );
+    });
+  });
+
+  describe("templates lifecycle", () => {
+    it("delegates create/load/save/isDirty to the mounted editor", async () => {
+      const fakeEditor = {
+        getContent: vi.fn(() => ({})),
+        setContent: vi.fn(),
+        setTheme: vi.fn(),
+        renderCustomBlock: vi.fn(),
+        getCustomBlockStylesheet: vi.fn(),
+        create: vi.fn(() => Promise.resolve({ id: "t1", content: {} })),
+        load: vi.fn(() => Promise.resolve({ id: "t2", content: {} })),
+        save: vi.fn(() => Promise.resolve({ id: "t3", content: {} })),
+        isDirty: vi.fn(() => true),
+      };
+      const { instance } = await mountOss(fakeEditor);
+
+      await expect(instance.create({ name: "Fresh" })).resolves.toEqual({
+        id: "t1",
+        content: {},
+      });
+      expect(fakeEditor.create).toHaveBeenCalledWith({ name: "Fresh" });
+
+      await expect(instance.load("t2")).resolves.toEqual({
+        id: "t2",
+        content: {},
+      });
+      expect(fakeEditor.load).toHaveBeenCalledWith("t2");
+
+      await expect(instance.save()).resolves.toEqual({
+        id: "t3",
+        content: {},
+      });
+      expect(instance.isDirty()).toBe(true);
+    });
+
+    it("rejects create/load/save before the editor mounts", async () => {
+      const { instance } = await mountOss(null);
+
+      await expect(instance.create()).rejects.toThrow(/not ready/i);
+      await expect(instance.load("x")).rejects.toThrow(/not ready/i);
+      await expect(instance.save()).rejects.toThrow(/not ready/i);
+    });
+
+    it("reports nothing unsaved before the editor mounts", async () => {
+      // Nothing has been edited yet, so "no unsaved changes" is the honest
+      // answer — a throw would make a router guard fail on first navigation.
+      const { instance } = await mountOss(null);
+
+      expect(instance.isDirty()).toBe(false);
+    });
   });
 });
 

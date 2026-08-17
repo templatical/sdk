@@ -19,10 +19,10 @@ describe("logicTags config wiring", () => {
     );
   });
 
-  it("useCloudInitialization forwards config.logicTags to useEditorCore", () => {
-    expect(read("cloud/composables/useCloudInitialization.ts")).toContain(
-      "logicTags: config.logicTags",
-    );
+  // `initCloud()` forwards it by mapping its own config onto `init()`'s — there
+  // is one `useEditorCore` call site now, so this is the only hop left.
+  it("initCloud forwards config.logicTags into the init() config", () => {
+    expect(read("index.ts")).toContain("logicTags: config.logicTags");
   });
 
   it("useEditorCore provides the logic tags, pairs, onRequest, and picker keys", () => {
@@ -48,9 +48,8 @@ describe("logicTags config wiring", () => {
     expect(src).toContain("canInsertLogicTag");
   });
 
-  it("both editors render the LogicTagPickerModal", () => {
+  it("the editor renders the LogicTagPickerModal", () => {
     expect(read("Editor.vue")).toContain("<LogicTagPickerModal");
-    expect(read("cloud/CloudEditor.vue")).toContain("<LogicTagPickerModal");
   });
 
   it("both floating toolbars hide while the logic picker is open", () => {

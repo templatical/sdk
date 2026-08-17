@@ -348,7 +348,6 @@ describe("saved blocks: picked state cannot be hidden by a block's own fill", ()
 describe("saved blocks: pick session stays lazily loaded", () => {
   const panels = read("components/SavedBlocksPanels.vue");
   const ossEditor = read("Editor.vue");
-  const cloudEditor = read("cloud/CloudEditor.vue");
 
   /* Cost has to track usage: a consumer with no `SavedBlocksProvider` must
      download none of this. Both editors lazy-load `SavedBlocksPanels` behind a
@@ -361,9 +360,8 @@ describe("saved blocks: pick session stays lazily loaded", () => {
     );
   });
 
-  it("neither editor references the pick bar directly", () => {
+  it("the editor never references the pick bar directly", () => {
     expect(ossEditor).not.toContain("SavedBlocksPickBar");
-    expect(cloudEditor).not.toContain("SavedBlocksPickBar");
   });
 
   it("every saved-blocks surface is async and gated on its own state", () => {
@@ -390,7 +388,7 @@ describe("saved blocks: pick session stays lazily loaded", () => {
     const saveDialog = read("components/SaveBlockDialog.vue");
     expect(saveDialog).toContain('from "./SavedBlockPreviewRow.vue"');
 
-    for (const src of [ossEditor, cloudEditor, panels]) {
+    for (const src of [ossEditor, panels]) {
       expect(src).not.toContain("SavedBlockPreviewRow");
       expect(src).not.toContain("BlockPreviewCanvas");
     }
@@ -595,7 +593,6 @@ describe("a resolver owns the display-condition filter", () => {
   const canvas = read("components/Canvas.vue");
   const sectionBlock = read("components/blocks/SectionBlock.vue");
   const editor = read("Editor.vue");
-  const cloudEditor = read("cloud/CloudEditor.vue");
   const previewCanvas = read("components/BlockPreviewCanvas.vue");
   const testEmailModal = read("components/TestEmailModal.vue");
 
@@ -633,16 +630,13 @@ describe("a resolver owns the display-condition filter", () => {
     }
   });
 
-  it("both editors gate the restore button on the same rule", () => {
+  it("the editor gates the restore button on the same rule", () => {
     // Otherwise the button outlives the filter it controls — the reported bug.
-    for (const [label, src] of [
-      ["Editor", editor],
-      ["CloudEditor", cloudEditor],
-    ] as const) {
-      expect(src, label).toMatch(
-        /hasHiddenBlocks\.value &&\s*core\.appliesConditionFilter\.value/,
-      );
-    }
+    // One editor renders this markup, and a second copy would be free to drift
+    // from it, so there is deliberately only one site to check.
+    expect(editor).toMatch(
+      /hasHiddenBlocks\.value &&\s*core\.appliesConditionFilter\.value/,
+    );
   });
 
   it("the test-email preview takes the rule as a prop, not an injection", () => {
