@@ -230,11 +230,11 @@ test.describe("comments provider", () => {
     // count-only assertion passes even when the wrong thread is removed. The body
     // is seeded fixture text, not UI copy, so matching on it is locale-safe.
     await expect(page.locator(SELECTORS.commentThread)).toContainText(
-      "seeded c-1",
+      "seeded c-2",
     );
     await expect
       .poll(async () => (await readComments(page)).map((c) => c.id))
-      .toEqual(["c-1"]);
+      .toEqual(["c-2"]);
   });
 
   test.describe("read-only review", () => {
