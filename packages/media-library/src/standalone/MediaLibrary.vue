@@ -26,6 +26,7 @@ import {
   Search,
 } from "@lucide/vue";
 import { computed, onMounted, provide, ref } from "vue";
+import { PLAN_CONFIG_KEY } from "../keys";
 
 const props = defineProps<{
   authManager: AuthManager;
@@ -44,15 +45,15 @@ const t = computed(() => props.translations);
 
 // Provide translations for sub-components that use inject('translations')
 provide("translations", props.translations);
-provide("authManager", props.authManager);
-provide(
-  "projectId",
-  computed(() => props.projectId),
-);
 
-// Provide planConfig in the format that sub-components expect
+// `useMediaCategories` (called by five descendants) needs a `UsePlanConfigReturn`;
+// the standalone SDK is handed a plain `PlanConfig`, so it adapts one here. Under
+// the shared `PLAN_CONFIG_KEY` — the same key `MediaLibraryModal` provides — so
+// the two hosts cannot drift on how it is spelled. `authManager` and `projectId`
+// are deliberately not provided alongside it: the modal takes them as props, and
+// nothing else in this package injects them.
 const planConfigRef = ref<PlanConfig | null>(props.planConfig);
-provide("planConfig", {
+provide(PLAN_CONFIG_KEY, {
   config: planConfigRef,
   isLoading: ref(false),
   hasFeature: (feature: keyof PlanFeatures) =>
@@ -61,13 +62,9 @@ provide("planConfig", {
   fetchConfig: async () => {},
 });
 
-// Feature flags
-const canUseMediaFolders = computed(
-  () => props.planConfig.features.media_folders ?? false,
-);
-const canImportFromUrl = computed(
-  () => props.planConfig.features.import_from_url ?? false,
-);
+// Folders and URL import render on every plan: gating Cloud's media *UI* meters
+// no resource Cloud buys, so the media tier is limits-only and every plan gets
+// the same library.
 
 // Storage info
 const storageUsedBytes = computed(
@@ -87,7 +84,6 @@ const library = useMediaLibrary({
 
 const ui = useMediaLibraryUI({
   library,
-  canUseMediaFolders,
   translations: t,
 });
 
@@ -173,7 +169,7 @@ onMounted(() => {
         leave-to-class="tpl:-ml-48 tpl:opacity-0"
       >
         <div
-          v-if="canUseMediaFolders && ui.showSidebar.value"
+          v-if="ui.showSidebar.value"
           class="tpl:flex tpl:w-48 tpl:shrink-0 tpl:flex-col tpl:border-r"
           style="
             border-color: var(--tpl-border);
@@ -204,7 +200,6 @@ onMounted(() => {
           <div class="tpl:flex tpl:items-center tpl:gap-2">
             <!-- Sidebar toggle (only when media folders feature is enabled) -->
             <button
-              v-if="canUseMediaFolders"
               class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:transition-all tpl:duration-150"
               :style="{
                 color: ui.showSidebar.value
@@ -362,7 +357,6 @@ onMounted(() => {
               @upload="ui.handleUpload"
             />
             <button
-              v-if="canImportFromUrl"
               class="tpl:mt-2 tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:border-dashed tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
               style="
                 border-color: var(--tpl-border);
@@ -570,7 +564,7 @@ onMounted(() => {
               ui.copied.value ? t.mediaLibrary.copied : t.mediaLibrary.copyUrl
             }}
           </button>
-          <div v-if="canUseMediaFolders" class="tpl:relative">
+          <div class="tpl:relative">
             <button
               class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
               style="

@@ -1,4 +1,3 @@
-import type { UsePlanConfigReturn } from "@templatical/core/cloud";
 import type { MediaItem, MediaRequestContext } from "../types";
 import { computed, inject, ref, type ComputedRef, type Ref } from "vue";
 
@@ -12,13 +11,11 @@ export function useMediaPicker(): UseMediaPickerReturn {
   const onRequestMedia = inject<
     ((context: MediaRequestContext) => Promise<MediaItem | null>) | undefined
   >("onRequestMedia");
-  const planConfig = inject<UsePlanConfigReturn>("planConfig")!;
-
   const isRequesting = ref(false);
 
-  const isPluggableMediaEnabled = computed(
-    () => !!onRequestMedia && planConfig.hasFeature("pluggable_media"),
-  );
+  // A configured handler is the whole condition: gating this by entitlement would
+  // charge a consumer for *not* using Cloud's storage, which is backwards.
+  const isPluggableMediaEnabled = computed(() => !!onRequestMedia);
 
   async function requestMedia(
     context?: MediaRequestContext,

@@ -1,4 +1,26 @@
 import type { InjectionKey, Ref } from "vue";
+import type { UsePlanConfigReturn } from "@templatical/core/cloud";
+
+/**
+ * The active plan's config, for the media limits every surface in this package
+ * reads: accepted MIME types, `max_file_size`, the storage gauge.
+ *
+ * **Provided by whichever component roots the tree** — `MediaLibraryModal` from
+ * its `planConfig` prop, `standalone/MediaLibrary.vue` from its own — and
+ * consumed by `useMediaCategories`, which five descendants call. It is a
+ * provide rather than prop-drilling *only* because of that depth; the values
+ * themselves cross the package boundary as props.
+ *
+ * That distinction is the whole point of this key existing. Vue matches injection
+ * keys by identity, so a bare-string `inject("planConfig")` never resolves the
+ * `Symbol` a host provided — it yields `undefined` silently, and the browser is
+ * inert with nothing to debug. Props make the cross-package boundary typed; a
+ * single exported key makes the intra-package hop impossible to spell two
+ * different ways.
+ */
+export const PLAN_CONFIG_KEY: InjectionKey<UsePlanConfigReturn> = Symbol(
+  "templaticalMediaPlanConfig",
+);
 
 /**
  * Mount target for modal/overlay teleports inside `MediaLibraryModal` and

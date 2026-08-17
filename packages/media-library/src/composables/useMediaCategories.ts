@@ -1,6 +1,6 @@
-import type { UsePlanConfigReturn } from "@templatical/core/cloud";
 import type { MediaCategory, MediaCategoryData } from "../types";
 import { computed, inject, type ComputedRef } from "vue";
+import { PLAN_CONFIG_KEY } from "../keys";
 
 export type { MediaCategory };
 
@@ -19,7 +19,17 @@ export interface UseMediaCategoriesReturn {
 }
 
 export function useMediaCategories(): UseMediaCategoriesReturn {
-  const planConfig = inject<UsePlanConfigReturn>("planConfig")!;
+  // Explicit null default + throw rather than a `!` assertion: without a
+  // provider every read below became `undefined.config`, which is a TypeError
+  // several frames away from the missing wiring. Both hosts provide the key —
+  // `MediaLibraryModal` from its prop, `standalone/MediaLibrary.vue` from its
+  // own — so reaching this message means a third host forgot to.
+  const planConfig = inject(PLAN_CONFIG_KEY, null);
+  if (!planConfig) {
+    throw new Error(
+      "[Templatical] useMediaCategories() needs a plan config in scope. Render it under <MediaLibraryModal> (pass its `planConfig` prop) or provide PLAN_CONFIG_KEY yourself.",
+    );
+  }
 
   const mediaConfig = computed(() => planConfig.config.value?.media ?? null);
 

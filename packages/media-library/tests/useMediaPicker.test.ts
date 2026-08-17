@@ -2,7 +2,7 @@
 import './dom-stubs';
 
 import { describe, expect, it, vi } from 'vitest';
-import { computed, createApp, defineComponent, h, ref } from 'vue';
+import { createApp, defineComponent, h } from 'vue';
 import type { MediaItem } from '../src/types';
 import { useMediaPicker } from '../src/composables/useMediaPicker';
 
@@ -27,16 +27,6 @@ function withProvide<T>(
   return result!;
 }
 
-function createMockPlanConfig(hasPluggableMedia = false) {
-  return {
-    config: ref(null),
-    isLoading: ref(false),
-    hasFeature: vi.fn((feature: string) => feature === 'pluggable_media' && hasPluggableMedia),
-    features: computed(() => null),
-    fetchConfig: vi.fn(),
-  };
-}
-
 const mockMediaItem: MediaItem = {
   id: 'media-1',
   filename: 'test.jpg',
@@ -51,30 +41,17 @@ const mockMediaItem: MediaItem = {
 } as MediaItem;
 
 describe('useMediaPicker', () => {
+  // A configured handler is the whole condition: gating this by plan would charge
+  // a consumer for *not* using Cloud's storage, i.e. meter nothing Cloud pays for.
   describe('isPluggableMediaEnabled', () => {
     it('is false when no callback', () => {
-      const planConfig = createMockPlanConfig(true);
-      const { isPluggableMediaEnabled } = withProvide(() => useMediaPicker(), {
-        planConfig,
-      });
+      const { isPluggableMediaEnabled } = withProvide(() => useMediaPicker(), {});
       expect(isPluggableMediaEnabled.value).toBe(false);
     });
 
-    it('is false when callback exists but feature not enabled', () => {
-      const planConfig = createMockPlanConfig(false);
+    it('is true whenever a callback exists, on any plan', () => {
       const callback = vi.fn();
       const { isPluggableMediaEnabled } = withProvide(() => useMediaPicker(), {
-        planConfig,
-        onRequestMedia: callback,
-      });
-      expect(isPluggableMediaEnabled.value).toBe(false);
-    });
-
-    it('is true when callback exists AND feature enabled', () => {
-      const planConfig = createMockPlanConfig(true);
-      const callback = vi.fn();
-      const { isPluggableMediaEnabled } = withProvide(() => useMediaPicker(), {
-        planConfig,
         onRequestMedia: callback,
       });
       expect(isPluggableMediaEnabled.value).toBe(true);
@@ -83,19 +60,15 @@ describe('useMediaPicker', () => {
 
   describe('requestMedia', () => {
     it('returns null when no callback', async () => {
-      const planConfig = createMockPlanConfig();
       const { requestMedia } = withProvide(() => useMediaPicker(), {
-        planConfig,
       });
       const result = await requestMedia();
       expect(result).toBeNull();
     });
 
     it('calls callback with context', async () => {
-      const planConfig = createMockPlanConfig(true);
       const callback = vi.fn().mockResolvedValue(mockMediaItem);
       const { requestMedia } = withProvide(() => useMediaPicker(), {
-        planConfig,
         onRequestMedia: callback,
       });
 
@@ -105,10 +78,8 @@ describe('useMediaPicker', () => {
     });
 
     it('defaults context to empty object', async () => {
-      const planConfig = createMockPlanConfig(true);
       const callback = vi.fn().mockResolvedValue(null);
       const { requestMedia } = withProvide(() => useMediaPicker(), {
-        planConfig,
         onRequestMedia: callback,
       });
 
@@ -117,7 +88,6 @@ describe('useMediaPicker', () => {
     });
 
     it('manages isRequesting state', async () => {
-      const planConfig = createMockPlanConfig(true);
       let resolveCallback: (value: MediaItem | null) => void;
       const callback = vi.fn(
         () => new Promise<MediaItem | null>((resolve) => {
@@ -126,7 +96,6 @@ describe('useMediaPicker', () => {
       );
 
       const { requestMedia, isRequesting } = withProvide(() => useMediaPicker(), {
-        planConfig,
         onRequestMedia: callback,
       });
 

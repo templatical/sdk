@@ -4,10 +4,15 @@ import './dom-stubs';
 import { describe, expect, it, vi } from 'vitest';
 import { computed, createApp, defineComponent, h, ref } from 'vue';
 import { useMediaCategories } from '../src/composables/useMediaCategories';
+import { PLAN_CONFIG_KEY } from '../src/keys';
 
+// Provides under `PLAN_CONFIG_KEY`, not the string `"planConfig"`. The string
+// form was the bug: `@templatical/editor` provided `Symbol("authManager")` and
+// nothing at all for the plan config, and Vue matches injection keys by
+// identity — so Cloud's media browser got `undefined` for everything it read.
 function withProvide<T>(
   setup: () => T,
-  provides: Record<string, unknown> = {},
+  provides: { planConfig?: unknown } = {},
 ): T {
   let result: T;
   const app = createApp(
@@ -18,8 +23,8 @@ function withProvide<T>(
       },
     }),
   );
-  for (const [key, value] of Object.entries(provides)) {
-    app.provide(key, value);
+  if (provides.planConfig !== undefined) {
+    app.provide(PLAN_CONFIG_KEY, provides.planConfig as never);
   }
   app.mount(document.createElement('div'));
   app.unmount();

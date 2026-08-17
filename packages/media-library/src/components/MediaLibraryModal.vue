@@ -27,20 +27,29 @@ import {
   Search,
   X,
 } from "@lucide/vue";
-import {
-  computed,
-  inject,
-  provide,
-  toRef,
-  watch,
-  type ComputedRef,
-  type Ref,
-} from "vue";
-import { POPOVER_TARGET_KEY } from "../keys";
+import { computed, inject, provide, toRef, watch, type Ref } from "vue";
+import { PLAN_CONFIG_KEY, POPOVER_TARGET_KEY } from "../keys";
 
 const props = defineProps<{
   visible: boolean;
   accept?: MediaCategory[];
+  /**
+   * Authenticated Cloud session. **A prop, not an injection.** An injection would
+   * have to agree with the host on key *identity*: a bare string never resolves
+   * the `Symbol` `@templatical/editor` provides, and the miss is silent —
+   * `undefined` here means the library opens and does nothing. A prop is checked
+   * at compile time, which makes that class of miss impossible rather than merely
+   * fixed.
+   */
+  authManager: AuthManager;
+  /** Scopes every request. Same story as {@link authManager}. */
+  projectId: string;
+  /**
+   * The active plan's config — media limits and the storage gauge. Re-provided
+   * under `PLAN_CONFIG_KEY` for the five descendants that call
+   * `useMediaCategories`, which is why this one is a prop *and* a provide.
+   */
+  planConfig: UsePlanConfigReturn;
   /**
    * Mount target for the modal's teleport. When provided, the modal and
    * its sub-modals render inside this element instead of `document.body`
@@ -66,37 +75,38 @@ const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
 // remounts the modal with a different target.
 const popoverTargetRef = toRef(() => props.popoverTarget ?? null);
 provide(POPOVER_TARGET_KEY, popoverTargetRef);
-const authManager = inject<AuthManager>("authManager")!;
-const projectIdRef = inject<ComputedRef<string>>("projectId")!;
-const projectId = computed(() => projectIdRef.value);
-const planConfig = inject<UsePlanConfigReturn>("planConfig")!;
 
-// Feature flags
-const canUseMediaFolders = computed(() =>
-  planConfig.hasFeature("media_folders"),
-);
-const canImportFromUrl = computed(() =>
-  planConfig.hasFeature("import_from_url"),
-);
+// Deep descendants (MediaGrid, MediaUploadZone, MediaPreviewPanel,
+// MediaEditModal) read the media limits through `useMediaCategories`, so the
+// prop is re-provided rather than drilled through four component layers. The
+// value still arrives as a prop, which is what keeps the package boundary typed.
+//
+// The object itself is stable (a host builds it once) and its reactivity lives in
+// the refs inside it, so providing it at setup is enough — no `toRef` dance.
+provide(PLAN_CONFIG_KEY, props.planConfig);
+
+// Folders and URL import render on every plan: gating Cloud's media *UI* meters
+// no resource Cloud buys, so the media tier is limits-only and every plan gets
+// the same library. (URL import's real cost — bandwidth and SSRF exposure — is a
+// backend rate-limit and allow-list concern, not a client-side plan flag.)
 
 // Storage info
 const storageUsedBytes = computed(
-  () => planConfig.config.value?.storage.used_bytes ?? 0,
+  () => props.planConfig.config.value?.storage.used_bytes ?? 0,
 );
 const storageLimitBytes = computed(
-  () => planConfig.config.value?.storage.limit_bytes ?? 0,
+  () => props.planConfig.config.value?.storage.limit_bytes ?? 0,
 );
 
 const { isAcceptedMimeType, availableCategories } = useMediaCategories();
 
 const library = useMediaLibrary({
-  projectId: projectId.value,
-  authManager,
+  projectId: props.projectId,
+  authManager: props.authManager,
 });
 
 const ui = useMediaLibraryUI({
   library,
-  canUseMediaFolders,
   translations: t,
 });
 
@@ -238,7 +248,7 @@ function confirmSelection(): void {
               leave-to-class="tpl:-ml-48 tpl:opacity-0"
             >
               <div
-                v-if="canUseMediaFolders && ui.showSidebar.value"
+                v-if="ui.showSidebar.value"
                 class="tpl:flex tpl:w-48 tpl:shrink-0 tpl:flex-col tpl:border-r"
                 style="
                   border-color: var(--tpl-border);
@@ -269,7 +279,6 @@ function confirmSelection(): void {
                 <div class="tpl:flex tpl:items-center tpl:gap-2">
                   <!-- Sidebar toggle (only when media folders feature is enabled) -->
                   <button
-                    v-if="canUseMediaFolders"
                     class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:transition-all tpl:duration-150"
                     :style="{
                       color: ui.showSidebar.value
@@ -427,7 +436,6 @@ function confirmSelection(): void {
                     @upload="ui.handleUpload"
                   />
                   <button
-                    v-if="canImportFromUrl"
                     class="tpl:mt-2 tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:border-dashed tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
                     style="
                       border-color: var(--tpl-border);
@@ -642,7 +650,7 @@ function confirmSelection(): void {
                       : t.mediaLibrary.copyUrl
                   }}
                 </button>
-                <div v-if="canUseMediaFolders" class="tpl:relative">
+                <div class="tpl:relative">
                   <button
                     class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
                     style="

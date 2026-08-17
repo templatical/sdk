@@ -8,7 +8,6 @@ import { computed, ref, watch, type ComputedRef, type Ref } from "vue";
 
 export interface UseMediaLibraryUIOptions {
   library: UseMediaLibraryReturn;
-  canUseMediaFolders: ComputedRef<boolean>;
   translations:
     | { mediaLibrary: Record<string, string> }
     | Ref<{ mediaLibrary: Record<string, string> }>;
@@ -64,7 +63,7 @@ export interface UseMediaLibraryUIReturn {
 export function useMediaLibraryUI(
   options: UseMediaLibraryUIOptions,
 ): UseMediaLibraryUIReturn {
-  const { library, canUseMediaFolders, translations } = options;
+  const { library, translations } = options;
 
   function getTranslations() {
     if ("value" in translations && typeof translations.value === "object") {
@@ -131,7 +130,7 @@ export function useMediaLibraryUI(
 
   // --- Watchers ---
   watch(showSidebar, (show) => {
-    if (show && canUseMediaFolders.value) {
+    if (show) {
       library.loadFolders();
     }
   });
