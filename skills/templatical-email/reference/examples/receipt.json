@@ -132,7 +132,8 @@
               "right": 24,
               "bottom": 12,
               "left": 24
-            }
+            },
+            "align": "center"
           }
         ]
       ]

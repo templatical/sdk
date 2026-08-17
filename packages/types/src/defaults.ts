@@ -66,6 +66,7 @@ export const BUTTON_BLOCK_DEFAULTS: BlockDefaultsFor<ButtonBlock> = {
   borderRadius: 6,
   fontSize: 15,
   buttonPadding: { top: 12, right: 24, bottom: 12, left: 24 },
+  align: "center",
 };
 
 export const DIVIDER_BLOCK_DEFAULTS: BlockDefaultsFor<DividerBlock> = {

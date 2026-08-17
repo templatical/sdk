@@ -192,6 +192,26 @@ describe("convertContent", () => {
       expect(entry.status).toBe("converted");
     });
 
+    it("carries the button's alignment across", () => {
+      const { block } = convertContent(
+        makeContent("button", { text: "Hi", textAlign: "right" }),
+        [],
+      );
+      if (block.type === "button") {
+        expect(block.align).toBe("right");
+      }
+    });
+
+    it("falls back to center when the button has no alignment", () => {
+      const { block } = convertContent(
+        makeContent("button", { text: "Hi" }),
+        [],
+      );
+      if (block.type === "button") {
+        expect(block.align).toBe("center");
+      }
+    });
+
     it("uses default url '#' when href missing", () => {
       const { block } = convertContent(
         makeContent("button", { text: "Hi" }),

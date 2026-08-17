@@ -304,6 +304,7 @@ function convertButton(descriptor: BeeFreeeModuleDescriptor): Block {
     borderRadius: parsePxValue(style["border-radius"]),
     fontSize: parsePxValue(style["font-size"]) || 16,
     fontFamily: parseFontFamily(style["font-family"]) || undefined,
+    align: toAlign(style["text-align"], "center"),
     buttonPadding: {
       top: parsePxValue(style["padding-top"]) || 12,
       right: parsePxValue(style["padding-right"]) || 24,

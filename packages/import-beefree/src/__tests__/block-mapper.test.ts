@@ -186,6 +186,38 @@ describe("convertModule", () => {
       }
     });
 
+    it("carries the button's alignment across", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-button", {
+        button: {
+          label: "Click Me",
+          href: "https://example.com",
+          style: { "text-align": "left" },
+        },
+      });
+
+      const { block } = convertModule(mod, warnings);
+
+      expect(block.type).toBe("button");
+      if (block.type === "button") {
+        expect(block.align).toBe("left");
+      }
+    });
+
+    it("falls back to center when the button has no alignment", () => {
+      const warnings: string[] = [];
+      const mod = makeModule("mailup-bee-newsletter-modules-button", {
+        button: { label: "Click Me", href: "https://example.com", style: {} },
+      });
+
+      const { block } = convertModule(mod, warnings);
+
+      expect(block.type).toBe("button");
+      if (block.type === "button") {
+        expect(block.align).toBe("center");
+      }
+    });
+
     it("uses default styles when no button descriptor", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-button", {});

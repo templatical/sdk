@@ -36,10 +36,16 @@ const buttonStyle = computed(() => {
   }
   return style;
 });
+
+// Mirrors the renderer's fallback so a template stored before `align` existed
+// previews the same way it renders.
+const wrapperStyle = computed(() => ({
+  textAlign: props.block.align ?? "center",
+}));
 </script>
 
 <template>
-  <div class="tpl:text-center">
+  <div :style="wrapperStyle">
     <a
       :href="block.url || '#'"
       :style="buttonStyle"

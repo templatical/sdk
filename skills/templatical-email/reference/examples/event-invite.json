@@ -90,7 +90,8 @@
               "right": 28,
               "bottom": 14,
               "left": 28
-            }
+            },
+            "align": "center"
           }
         ]
       ]

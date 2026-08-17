@@ -27,17 +27,26 @@ jobs:
       - uses: pnpm/action-setup@v6
         with:
           run_install: false
+      # `registry-url` is what authenticates the npm publish: it writes an
+      # .npmrc reading `NODE_AUTH_TOKEN` and points NPM_CONFIG_USERCONFIG at
+      # it, which pnpm honors. changesets/action v2 removed its own .npmrc
+      # handling, so without this the publish step fails with ENEEDAUTH.
       - uses: actions/setup-node@v7
         with:
           node-version-file: '.nvmrc'
           cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
 
       - name: Create Release Pull Request or Publish
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@v2.1.0
         with:
+          # The PAT reaches the action through this input only. v2 refuses to read
+          # a custom token from the GITHUB_TOKEN environment variable, and throws
+          # outright if that variable is set to something other than this input.
+          github-token: ${{ secrets.CHANGESETS_PAT }}
           # Custom version command: `changeset version` (bumps package.jsons +
           # changelogs) then sync the templatical-email skill, so the Version
           # Packages PR carries everything and no manual bump is needed:
@@ -46,17 +55,27 @@ jobs:
           #      (needs the `pnpm run build` above: quality is bundled from dist)
           #   3. patch-bump .claude-plugin/plugin.json if either moved, since
           #      Claude Code caches the plugin by that version
-          version: pnpm run changeset:version
-          publish: pnpm exec changeset publish
+          version-script: pnpm run changeset:version
+          publish-script: pnpm exec changeset publish
           # One aggregated release is created below instead. The nine packages are a
           # changesets `fixed` group, so the default produced nine near-identical
           # releases per version and whichever published last became "Latest" on the
-          # repo home page (it was `import-beefree`). Per-package git tags are
-          # unaffected — `changeset publish` creates and pushes those, not the action.
-          createGithubReleases: false
+          # repo home page (it was `import-beefree`).
+          create-github-releases: false
+          # v2 decoupled tag pushing from release creation, defaulting it on. Under
+          # v1, `create-github-releases: false` suppressed both, which is why the
+          # per-package tags stop at 0.20.0 — the aggregated `v<version>` tag below
+          # is the only one we want. Leaving this at its default would resume
+          # pushing nine tags per release.
+          push-git-tags: false
+          # Keep pushing release commits with the Git CLI, as v1 did. v2's new
+          # GitHub-API default would change how the Version Packages branch is
+          # written, and the VP PR must reliably trigger ci.yml (see the checkout
+          # comment above) — not something to change in the same step as everything
+          # else.
+          push-with-git-cli: true
         env:
-          GITHUB_TOKEN: ${{ secrets.CHANGESETS_PAT }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # Single `v<version>` release whose body is the aggregated changelog for that
       # version — the same generator that writes the docs page, so the two can't
@@ -66,7 +85,7 @@ jobs:
         if: steps.changesets.outputs.published == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.CHANGESETS_PAT }}
-          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.published-packages }}
         run: |
           set -euo pipefail
           # Every package in the fixed group publishes at the same version, so the

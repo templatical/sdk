@@ -533,9 +533,19 @@
               "const": "full"
             }
           ]
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "description": "Placement of the button within its column. No visible effect when `width` is `\"full\"`, since the button then spans the column."
         }
       },
       "required": [
+        "align",
         "backgroundColor",
         "borderRadius",
         "buttonPadding",

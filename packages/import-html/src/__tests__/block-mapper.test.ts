@@ -188,6 +188,60 @@ describe("convertElement — anchors", () => {
     });
   });
 
+  const BUTTON_STYLE =
+    "background-color:#ff0000;padding:10px 20px;border-radius:6px;color:#ffffff";
+
+  function buttonInCell(cellAttrs: string) {
+    const { $, $el } = firstEl(
+      `<table><tr><td ${cellAttrs}><a href="https://example.com" style="${BUTTON_STYLE}">Click</a></td></tr></table>`,
+      "a",
+    );
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "button") throw new Error("expected button block");
+    return r.block;
+  }
+
+  it("reads button alignment from the wrapping cell's text-align", () => {
+    expect(buttonInCell('style="text-align:left"').align).toBe("left");
+  });
+
+  it("reads button alignment from the wrapping cell's legacy align attribute", () => {
+    expect(buttonInCell('align="right"').align).toBe("right");
+  });
+
+  it("prefers the cell's text-align over its align attribute", () => {
+    // CSS wins in every modern client, so the attribute is the fallback.
+    expect(buttonInCell('align="right" style="text-align:left"').align).toBe(
+      "left",
+    );
+  });
+
+  it("centers a button whose cell says nothing about alignment", () => {
+    expect(buttonInCell("").align).toBe("center");
+  });
+
+  it("centers a button with no wrapping cell at all", () => {
+    const { $, $el } = firstEl(
+      `<a href="https://example.com" style="${BUTTON_STYLE}">Click</a>`,
+      "a",
+    );
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "button") throw new Error("expected button block");
+    expect(r.block.align).toBe("center");
+  });
+
+  it("ignores the anchor's own text-align", () => {
+    // The anchor is sized to its content, so its text-align says nothing
+    // about where the button sits — only the cell does.
+    const { $, $el } = firstEl(
+      `<table><tr><td><a href="https://example.com" style="${BUTTON_STYLE};text-align:right">Click</a></td></tr></table>`,
+      "a",
+    );
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "button") throw new Error("expected button block");
+    expect(r.block.align).toBe("center");
+  });
+
   it("plain anchor falls back to paragraph (approximated)", () => {
     const { $, $el } = firstEl('<a href="https://x.com">link</a>', "a");
     const r = convertElement($el, $)!;

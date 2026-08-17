@@ -121,6 +121,8 @@ underline: bool, color?: hex }`.
 - `backgroundColor` (hex), `textColor` (hex).
 - `borderRadius` (int), `fontSize` (int).
 - `buttonPadding` — `{ top, right, bottom, left }`.
+- `align` — `"left" | "center" | "right"`. Placement within the column; no
+  visible effect when `width` is `"full"`.
 - `openInNewTab` (bool, _optional_), `fontFamily` (_optional_), `width` (int |
   `"full"`, _optional_).
 

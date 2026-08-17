@@ -112,6 +112,20 @@ describe('renderBlock', () => {
     expect(result).toContain('width="240px"');
   });
 
+  it('renders button alignment', () => {
+    for (const align of ['left', 'center', 'right'] as const) {
+      const block = createButtonBlock({ text: 'Click Me', align });
+      expect(renderBlock(block, ctx)).toContain(`align="${align}"`);
+    }
+  });
+
+  it('falls back to center for a button stored without align', () => {
+    const block = createButtonBlock({ text: 'Click Me' });
+    // Templates predating the field carry no `align` at all.
+    delete (block as { align?: unknown }).align;
+    expect(renderBlock(block, ctx)).toContain('align="center"');
+  });
+
   it('renders divider block', () => {
     const block = createDividerBlock({ color: '#ccc', thickness: 2, lineStyle: 'dashed' });
     const result = renderBlock(block, ctx);

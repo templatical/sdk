@@ -197,6 +197,24 @@ export function looksLikeButton(styles: Record<string, string>): boolean {
   return false;
 }
 
+/**
+ * Reads a button's placement from the cell that wraps it. An anchor styled as
+ * a button is sized to its own content, so its `text-align` says nothing about
+ * where it sits — table-based email puts that on the containing `<td>`, as
+ * either a `text-align` style or the legacy `align` attribute. Only the
+ * immediate parent is consulted; walking further up would start reporting the
+ * alignment of the surrounding layout rather than of the button.
+ */
+function readButtonAlign($el: Cheerio<Element>): "left" | "center" | "right" {
+  const parent = $el.parent();
+  if (parent.length === 0) return "center";
+
+  const fromStyle = parseStyleAttribute(parent.attr("style"))["text-align"];
+  if (fromStyle) return parseAlignment(fromStyle, "center");
+
+  return parseAlignment(parent.attr("align"), "center");
+}
+
 function convertButton($el: Cheerio<Element>): Block {
   const styles = getStyles($el);
   const text = ($el.text() ?? "Button").trim() || "Button";
@@ -215,6 +233,7 @@ function convertButton($el: Cheerio<Element>): Block {
     borderRadius: parsePxValue(styles["border-radius"]),
     fontSize: parsePxValue(styles["font-size"]) || 16,
     fontFamily: parseFontFamily(styles["font-family"]) || undefined,
+    align: readButtonAlign($el),
     buttonPadding: readPaddingFromStyles(styles),
     styles: {
       padding: emptyPadding(),
