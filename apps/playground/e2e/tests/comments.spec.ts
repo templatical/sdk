@@ -226,9 +226,15 @@ test.describe("comments provider", () => {
     await page.locator(SELECTORS.commentDeleteConfirm).click();
 
     await expect(page.locator(SELECTORS.commentThread)).toHaveCount(1);
+    // *Which* one survived matters: the trigger above is `.first()`, so a
+    // count-only assertion passes even when the wrong thread is removed. The body
+    // is seeded fixture text, not UI copy, so matching on it is locale-safe.
+    await expect(page.locator(SELECTORS.commentThread)).toContainText(
+      "seeded c-1",
+    );
     await expect
-      .poll(async () => (await readComments(page)).length)
-      .toBe(1);
+      .poll(async () => (await readComments(page)).map((c) => c.id))
+      .toEqual(["c-1"]);
   });
 
   test.describe("read-only review", () => {
