@@ -7,7 +7,7 @@ description: How Templatical Cloud sends test emails, and how to send them from 
 
 Send test emails directly from the editor to verify rendering in a real inbox before going live.
 
-Test email is a **shared feature**: the trigger, the dialog, recipient validation and every sending state are the same components in the OSS and Cloud editors. Only the sender differs. The [Test Emails guide](/guide/test-email) covers the feature itself — this page is what Cloud adds, and how to override it.
+Test email is a **shared feature**: the trigger, the dialog, recipient validation and every sending state are the same components in the OSS and Cloud editors. Only the sender differs. The [Test Emails guide](/backend/test-email) covers the feature itself — this page is what Cloud adds, and how to override it.
 
 ## How Cloud sends
 
@@ -26,7 +26,7 @@ Three conditions gate the button, and none implies another — all must hold for
 
 The list arrives with the auth token and is posted back with a signature the backend verifies. That matters because the SDK runs in the user's browser: without a server-signed list, the endpoint would be an open relay.
 
-This is the one place Cloud and a BYO sender genuinely differ. A provider you supply carries an `allowedRecipients` array that is **unsigned** — it restricts the picker, and your own backend has to enforce it. See [Restricting recipients](/guide/test-email#restricting-recipients).
+This is the one place Cloud and a BYO sender genuinely differ. A provider you supply carries an `allowedRecipients` array that is **unsigned** — it restricts the picker, and your own backend has to enforce it. See [Restricting recipients](/backend/test-email#restricting-recipients).
 
 ## Before-send hook
 

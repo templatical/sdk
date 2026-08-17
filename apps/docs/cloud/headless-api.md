@@ -76,17 +76,20 @@ const { html } = await api.exportTemplate('template-id', {
 });
 ```
 
-## Snapshots
+## Versions
 
 ```js
-// List snapshots
-const snapshots = await api.getSnapshots('template-id');
+// List versions (each carries its content)
+const versions = await api.getVersions('template-id');
 
-// Create a snapshot
-await api.createSnapshot('template-id', content);
+// Fetch one version's content
+const version = await api.getVersion('template-id', 'version-id');
 
-// Restore a snapshot
-const restored = await api.restoreSnapshot('template-id', 'snapshot-id');
+// Record a version
+await api.createVersion('template-id', content);
+
+// Restore a version — append-only, so this adds an entry
+const restored = await api.restoreVersion('template-id', 'version-id');
 ```
 
 ## Comments
@@ -132,7 +135,7 @@ await api.deleteModule('saved-block-id');
 The REST routes and `ApiClient` method names keep their original `module`
 wording for backward compatibility — only the feature's name changed. For the
 editor-side feature and the storage-provider interface, see
-[Saved Blocks](/guide/saved-blocks).
+[Saved Blocks](/backend/saved-blocks).
 :::
 
 ## Test Emails
@@ -169,9 +172,10 @@ All routes are scoped to a project and tenant:
 | `templates/{id}` | DELETE | Delete template |
 | `templates/{id}/export` | POST | Export to HTML/MJML |
 | `templates/{id}/send-test-email` | POST | Send test email |
-| `templates/{id}/snapshots` | GET | List snapshots |
-| `templates/{id}/snapshots` | POST | Create snapshot |
-| `templates/{id}/snapshots/{id}/restore` | POST | Restore snapshot |
+| `templates/{id}/versions` | GET | List versions |
+| `templates/{id}/versions` | POST | Record version |
+| `templates/{id}/versions/{id}` | GET | Get one version |
+| `templates/{id}/versions/{id}/restore` | POST | Restore version |
 | `templates/{id}/comments` | GET | List comments |
 | `templates/{id}/comments` | POST | Create comment |
 | `templates/{id}/comments/{id}` | PUT | Update comment |

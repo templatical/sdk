@@ -51,7 +51,7 @@ Each tenant has completely isolated:
 - **Templates** — CRUD operations only affect the tenant's own templates
 - **Media** — Uploaded images are scoped to the tenant
 - **Saved Blocks** — The saved-block library is per-tenant
-- **Snapshots** — Version history is per-template, per-tenant
+- **Versions** — Version history is per-template, per-tenant
 - **Comments** — Comment threads are per-template, per-tenant
 - **AI History** — Conversation history is per-template, per-tenant
 
