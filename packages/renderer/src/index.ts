@@ -7,6 +7,7 @@ import type {
 } from "@templatical/types";
 import { isSection, isCustomBlock } from "@templatical/types";
 import { RenderContext, DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
+import type { BlockRendererMap } from "./render-context";
 import { renderBlock } from "./renderers";
 import { escapeHtml, escapeAttr, escapeCssValue } from "./escape";
 import { wrapWithDisplayCondition } from "./display-condition";
@@ -32,6 +33,31 @@ export interface RenderOptions {
    * output.
    */
   renderCustomBlock?: (block: CustomBlock) => Promise<string>;
+  /**
+   * Per-block-type renderer overrides, keyed by `block.type`. An entry replaces
+   * the built-in renderer for that type wholesale — including its
+   * hidden-on-all-viewports check, which becomes the override's responsibility.
+   *
+   * ```ts
+   * renderToMjml(content, {
+   *   blockRenderers: {
+   *     countdown: (block) => `<mj-image src="${countdownGifUrl(block)}" />`,
+   *     video: (block, ctx) => renderVideoWithPlayButton(block, ctx),
+   *   },
+   * });
+   * ```
+   *
+   * This generalises {@link renderCustomBlock}, which is the same idea for a
+   * single block type. It exists so a backend whose render output is a *superset*
+   * of the browser's — a server-generated countdown GIF, a composited video
+   * thumbnail — can inject exactly that delta instead of forking the renderer:
+   * parity for every other block type then holds by construction.
+   *
+   * A block type with neither a built-in renderer nor an override emits an
+   * `mj-raw` placeholder comment and warns, rather than vanishing from the
+   * output.
+   */
+  blockRenderers?: BlockRendererMap;
   /**
    * Resolves the definition-level CSS for a custom block type. Called once
    * per unique `customType` present in the content tree (not per instance).
@@ -98,6 +124,7 @@ export async function renderToMjml(
     allowHtmlBlocks,
     customBlockHtml,
     socialIconsBaseUrl,
+    options?.blockRenderers ?? {},
   );
 
   const blocks = filterHtmlBlocks(content.blocks, allowHtmlBlocks);
@@ -378,4 +405,8 @@ export { getWidthPercentages, getWidthPixels } from "./columns";
 export { toPaddingString } from "./padding";
 export { DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
 export { renderBlock } from "./renderers";
-export type { BlockRenderer } from "./renderers/section";
+export {
+  renderUnrenderableBlock,
+  UNRENDERABLE_MARKER_PREFIX,
+} from "./unrenderable";
+export type { BlockRenderer, BlockRendererMap } from "./render-context";

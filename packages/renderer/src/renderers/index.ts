@@ -15,6 +15,8 @@ import {
   isCustomBlock,
 } from "@templatical/types";
 import type { RenderContext } from "../render-context";
+import { isHiddenOnAll } from "../visibility";
+import { renderUnrenderableBlock } from "../unrenderable";
 import { renderTitle } from "./title";
 import { renderParagraph } from "./paragraph";
 import { renderImage } from "./image";
@@ -32,8 +34,20 @@ import { renderVideo } from "./video";
 /**
  * Render a single block to MJML markup.
  * Dispatches to the appropriate block-type renderer.
+ *
+ * A `blockRenderers` override for the block's type wins over the built-in
+ * renderer — see {@link RenderContext.blockRenderers}. A type with neither gets a
+ * placeholder marker plus a warning rather than disappearing.
  */
 export function renderBlock(block: Block, context: RenderContext): string {
+  // Checked first so an override replaces the built-in wholesale rather than
+  // running after it. The override then owns everything the built-in did,
+  // including the hidden-on-all-viewports early return.
+  const override = context.blockRenderers[block.type];
+  if (override) {
+    return override(block, context);
+  }
+
   if (isSection(block)) {
     return renderSection(block, context, renderBlock);
   }
@@ -86,7 +100,15 @@ export function renderBlock(block: Block, context: RenderContext): string {
     return renderCustom(block, context);
   }
 
-  // Countdown blocks are rendered by the Templatical Cloud backend.
-  // In OSS mode they return empty — use initCloud() for full countdown support.
-  return "";
+  // Nothing here knows how to render this type. A block the author hid on every
+  // viewport is meant to produce nothing, so it still does — every built-in
+  // renderer above makes the same call, and warning about a deliberate hide would
+  // be noise. Everything else gets a marker: `countdown` today (Cloud renders it
+  // server-side as an animated GIF, which no browser can do), and any future type
+  // whose renderer hasn't landed yet.
+  if (isHiddenOnAll(block)) {
+    return "";
+  }
+
+  return renderUnrenderableBlock(block);
 }

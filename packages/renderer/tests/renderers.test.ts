@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   createTitleBlock,
   createParagraphBlock,
@@ -292,20 +292,44 @@ describe('renderBlock', () => {
     expect(renderBlock(block, ctx)).toBe('');
   });
 
-  it('returns empty string for countdown block (rendered by Cloud backend)', () => {
+  // Both cases below assert the marker rather than `''`: a block that silently
+  // disappears reaches recipients as a gap in the email with nothing anywhere
+  // explaining why. See `src/unrenderable.ts`.
+  it('emits the unrenderable marker for a countdown block (Cloud renders it server-side)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const block = createCountdownBlock();
     const result = renderBlock(block, ctx);
-    expect(result).toBe('');
+    expect(result).toBe(
+      `<mj-raw><!-- templatical:unrenderable-block type="countdown" id="${block.id}" --></mj-raw>`,
+    );
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain('No renderer for block type "countdown"');
+    warn.mockRestore();
   });
 
-  it('returns empty string for unknown/invalid block type', () => {
+  it('emits the unrenderable marker for an unknown/invalid block type', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const block = {
       id: '1',
       type: 'nonexistent' as never,
       styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
     } as Block;
     const result = renderBlock(block, ctx);
-    expect(result).toBe('');
+    expect(result).toBe(
+      '<mj-raw><!-- templatical:unrenderable-block type="nonexistent" id="1" --></mj-raw>',
+    );
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
+
+  it('renders nothing (and does not warn) for an unrenderable block hidden on every viewport', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const block = createCountdownBlock({
+      visibility: { desktop: false, mobile: false },
+    });
+    expect(renderBlock(block, ctx)).toBe('');
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('renders custom block with renderedHtml', () => {

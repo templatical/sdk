@@ -1,5 +1,25 @@
-import type { CustomFont } from "@templatical/types";
+import type { Block, BlockType, CustomFont } from "@templatical/types";
 import pkg from "../package.json" with { type: "json" };
+
+/**
+ * A function type that renders a single block to MJML markup.
+ */
+export type BlockRenderer = (block: Block, context: RenderContext) => string;
+
+/**
+ * Per-block-type renderer overrides, keyed by `block.type`. An entry replaces the
+ * built-in renderer for that type wholesale — including its hidden-on-all-
+ * viewports check, which becomes the override's responsibility.
+ *
+ * Generalises `renderCustomBlock`, which is the same idea for one block type. Its
+ * reason to exist is that Templatical Cloud's render output is a deliberate
+ * *superset*: countdown blocks resolve to a server-generated animated GIF and
+ * video thumbnails get a composited play button, neither of which a browser can
+ * do at render time. With this hook Cloud's renderer is the published one plus
+ * two injected functions, so parity for every other block type holds by
+ * construction instead of by review.
+ */
+export type BlockRendererMap = Partial<Record<BlockType, BlockRenderer>>;
 
 export const DEFAULT_SOCIAL_ICONS_BASE_URL = `https://cdn.jsdelivr.net/npm/@templatical/renderer@${pkg.version}/assets/social`;
 
@@ -37,6 +57,11 @@ export class RenderContext {
      * package; consumers can override to self-host.
      */
     public readonly socialIconsBaseUrl: string = DEFAULT_SOCIAL_ICONS_BASE_URL,
+    /**
+     * Per-block-type renderer overrides from `RenderOptions.blockRenderers`.
+     * Consulted before every built-in renderer — see {@link BlockRendererMap}.
+     */
+    public readonly blockRenderers: BlockRendererMap = {},
   ) {}
 
   /**
@@ -51,6 +76,7 @@ export class RenderContext {
       this.allowHtmlBlocks,
       this.customBlockHtml,
       this.socialIconsBaseUrl,
+      this.blockRenderers,
     );
   }
 

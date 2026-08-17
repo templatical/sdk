@@ -1,16 +1,17 @@
 import type { Block, SectionBlock } from "@templatical/types";
 import { isSection } from "@templatical/types";
-import type { RenderContext } from "../render-context";
+import type { BlockRenderer, RenderContext } from "../render-context";
 import { getWidthPercentages, getWidthPixels } from "../columns";
 import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 import { wrapWithDisplayCondition } from "../display-condition";
 
-/**
- * A function type that renders a single block to MJML markup.
- */
-export type BlockRenderer = (block: Block, context: RenderContext) => string;
+// `BlockRenderer` is defined in `../render-context`, next to the `blockRenderers`
+// override map it types. Re-exported here so the package's
+// `export type { BlockRenderer } from "./renderers/section"` entry point resolves
+// for consumers.
+export type { BlockRenderer };
 
 /**
  * Render a section block with columns to MJML markup.
