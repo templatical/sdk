@@ -1,5 +1,4 @@
-import { computed, ref, type ComputedRef, type Ref } from "vue";
-import { useTimeoutFn } from "@vueuse/core";
+import { computed, type ComputedRef } from "vue";
 import type {
   UsePlanConfigReturn,
   UseAiConfigReturn,
@@ -8,30 +7,33 @@ import type {
 export interface UseCloudFeatureFlagsOptions {
   planConfigInstance: UsePlanConfigReturn;
   aiConfig: UseAiConfigReturn;
-  editor: {
-    state: {
-      readonly template?: { id: string } | null;
-    };
-  };
+  /** The loaded template's id, or `null` before one exists. */
+  getTemplateId: () => string | null;
 }
 
 export interface UseCloudFeatureFlagsReturn {
   canUseAiGeneration: ComputedRef<boolean>;
   canSendTestEmail: ComputedRef<boolean>;
   hasTemplateSaved: ComputedRef<boolean>;
-  isWhiteLabeled: ComputedRef<boolean>;
   templateLimit: ComputedRef<number | null>;
   templateCount: ComputedRef<number>;
-  isSaveExporting: Ref<boolean>;
-  saveStatus: Ref<"idle" | "saved" | "error">;
-  saveErrorMessage: Ref<string>;
-  startSaveStatusClear: () => void;
 }
 
+/**
+ * Every entitlement check Cloud makes, in one place.
+ *
+ * The containment rule this exists for: entitlement checks go through here,
+ * never inline in a component and never across a package boundary. With five
+ * plan features left there is little excuse to break it.
+ *
+ * Save status is deliberately not here — it lives on `useTemplatesFeature`, which
+ * the one shared header reads, and was never an entitlement. Footer branding is
+ * likewise not gated: `config.branding !== false` decides it on any plan.
+ */
 export function useCloudFeatureFlags(
   options: UseCloudFeatureFlagsOptions,
 ): UseCloudFeatureFlagsReturn {
-  const { planConfigInstance, aiConfig, editor } = options;
+  const { planConfigInstance, aiConfig, getTemplateId } = options;
 
   const canUseAiGeneration = computed(
     () =>
@@ -41,10 +43,7 @@ export function useCloudFeatureFlags(
   const canSendTestEmail = computed(() =>
     planConfigInstance.hasFeature("test_email"),
   );
-  const hasTemplateSaved = computed(() => !!editor.state.template?.id);
-  const isWhiteLabeled = computed(() =>
-    planConfigInstance.hasFeature("white_label"),
-  );
+  const hasTemplateSaved = computed(() => getTemplateId() !== null);
   const templateLimit = computed(
     () => planConfigInstance.config.value?.limits.max_templates ?? null,
   );
@@ -52,28 +51,11 @@ export function useCloudFeatureFlags(
     () => planConfigInstance.config.value?.template_count ?? 0,
   );
 
-  const isSaveExporting = ref(false);
-  const saveStatus = ref<"idle" | "saved" | "error">("idle");
-  const saveErrorMessage = ref("");
-
-  const { start: startSaveStatusClear } = useTimeoutFn(
-    () => {
-      saveStatus.value = "idle";
-    },
-    3000,
-    { immediate: false },
-  );
-
   return {
     canUseAiGeneration,
     canSendTestEmail,
     hasTemplateSaved,
-    isWhiteLabeled,
     templateLimit,
     templateCount,
-    isSaveExporting,
-    saveStatus,
-    saveErrorMessage,
-    startSaveStatusClear,
   };
 }

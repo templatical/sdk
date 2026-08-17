@@ -10,8 +10,8 @@ import type {
   LogicTagsConfig,
   McpConfig,
   MergeTagsConfig,
+  RenderProvider,
   SavedBlocksProvider,
-  SaveResult,
   Template,
   TestEmailProvider,
   TemplateContent,
@@ -25,6 +25,7 @@ import type {
   MediaRequestContext,
 } from "@templatical/media-library";
 import type { HtmlBlockPreviewConfig } from "../utils/resolveHtmlBlockPreview";
+import type { AutoSaveConfig } from "../types/auto-save";
 
 export interface TemplaticalCloudEditorConfig {
   container: string | HTMLElement;
@@ -112,8 +113,13 @@ export interface TemplaticalCloudEditorConfig {
    * leaving it exactly as-is (to keep your own) — never rewriting it.
    */
   savedBlocks?: boolean | SavedBlocksProvider;
-  autoSave?: boolean;
-  autoSaveDebounce?: number;
+  /**
+   * Save automatically, debounced. **The same key and the same type as
+   * `init()`** — `true`/`false`, or `{ debounce }` to set the cadence in one
+   * key. Unlike OSS it defaults to *on*, because a Cloud session always has a
+   * store to save to.
+   */
+  autoSave?: AutoSaveConfig;
 
   mergeTags?: MergeTagsConfig;
   logicTags?: LogicTagsConfig;
@@ -155,7 +161,21 @@ export interface TemplaticalCloudEditorConfig {
    */
   colors?: ColorsConfig;
   onChange?: (content: TemplateContent) => void;
-  onSave?: (result: SaveResult) => void;
+  /**
+   * Called whenever the editor's unsaved-changes state flips. **The same key and
+   * the same type as `init()`'s** — one editor, one set of keys.
+   */
+  onDirtyChange?: (isDirty: boolean) => void;
+  /**
+   * Warn before closing the tab with unsaved changes. On by default, since a
+   * Cloud session always has a store to save to. Set to `false` to own the
+   * prompt yourself; it can never cover client-side route changes either way,
+   * which is what {@link onDirtyChange} is for.
+   *
+   * @default true
+   */
+  unsavedChangesGuard?: boolean;
+
   onCreate?: (template: Template) => void;
   onLoad?: (template: Template) => void;
   onError?: (error: Error) => void;
@@ -186,6 +206,39 @@ export interface TemplaticalCloudEditorConfig {
    * keep your own) — never rewriting it.
    */
   testEmail?: TestEmailProvider;
+
+  /**
+   * Rendering backend for `editor.toMjml()` / `editor.toHtml()`.
+   *
+   * - **omitted** — rendered by Templatical Cloud. Its output is a deliberate
+   *   superset of the browser's: a countdown block resolves to a live
+   *   server-generated GIF and a video block gets a composited play button,
+   *   neither of which a browser can produce. Note Cloud renders the *saved*
+   *   template, so each call saves first.
+   * - **a {@link RenderProvider}** — rendered by *you* instead, and not
+   *   plan-gated, because the `custom_fonts` entitlement licenses Cloud's
+   *   renderer rather than the editor's export methods.
+   *
+   * The same type `init()` takes, so moving an OSS integration to Cloud means
+   * deleting this key (to adopt Cloud's renderer) or leaving it exactly as-is (to
+   * keep your own) — never rewriting it.
+   */
+  render?: RenderProvider;
+
+  // There is deliberately no `templates`, `versionHistory` or `comments` key here,
+  // unlike `init()`. All three are keyed to the Cloud template id, which anchors
+  // collaboration, AI rewrite, scoring, the server-side export — and version
+  // history and comments themselves. A store Cloud never issued ids for would
+  // degrade all of them silently, and a consumer-supplied history would run
+  // alongside the automatic versions Cloud's templates adapter keeps recording:
+  // two stores, one invisible and billable. `bootstrapCloud` warns and ignores if
+  // any arrives from JavaScript. Bring your own with `init()`, where the whole set
+  // is yours.
+  //
+  // Nor is there a `user` key. Cloud's comment writes are signed against the auth
+  // token's `user` claim, so `initCloud()` fills `init({ user })` from there — a
+  // consumer-supplied identity could only disagree with the one the backend
+  // verifies. `commenting: false` is how you switch the feature off.
 
   /**
    * Resolves the template for preview surfaces — typically evaluating logic

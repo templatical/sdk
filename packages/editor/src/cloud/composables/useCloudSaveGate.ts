@@ -23,6 +23,18 @@ export interface UseCloudSaveGateReturn {
    * save settled.
    */
   tryRunSave: (run: () => Promise<unknown> | unknown) => Promise<boolean>;
+  /**
+   * Runs the save only when the gate would not block, and does **nothing** when
+   * it would — no modal, no save, nothing pending. Returns whether it ran.
+   *
+   * This is the autosave path. A modal on a debounce timer would interrupt
+   * typing, but simply saving anyway would demote `blockOnError` from a server
+   * policy to a manual-save-only speed bump. Skipping leaves the template dirty
+   * and the header saying "unsaved", which is true, and the reason stays visible
+   * in the Issues panel. The next edit re-arms the debounce, so fixing the issue
+   * is what lets the save through — no retry timer needed.
+   */
+  runUnlessBlocked: (run: () => Promise<unknown> | unknown) => Promise<boolean>;
   /** Force-run the pending save, bypassing the gate. */
   confirmAndSave: () => Promise<void>;
   /** Dismiss the modal without saving. */
@@ -69,6 +81,14 @@ export function useCloudSaveGate(
     return false;
   }
 
+  async function runUnlessBlocked(
+    run: () => Promise<unknown> | unknown,
+  ): Promise<boolean> {
+    if (shouldBlock.value) return false;
+    await run();
+    return true;
+  }
+
   async function confirmAndSave(): Promise<void> {
     const run = pending;
     pending = null;
@@ -88,6 +108,7 @@ export function useCloudSaveGate(
     blockingIssues,
     modalOpen,
     tryRunSave,
+    runUnlessBlocked,
     confirmAndSave,
     cancel,
   };
