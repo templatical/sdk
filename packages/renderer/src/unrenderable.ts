@@ -22,9 +22,9 @@ function commentSafe(value: string): string {
  *
  * **A marker, not a throw and not silence.** The renderer runs inside send
  * pipelines, so killing an entire render over one block is worse than shipping a
- * marked gap. Silence is worse still: before this existed a countdown block
- * simply vanished, which reaches recipients as a missing section with nothing
- * anywhere explaining why. The rule is general rather than countdown-specific, so
+ * marked gap. Silence is worse still: a block that simply vanishes reaches
+ * recipients as a missing section with nothing anywhere explaining why. The rule
+ * is general rather than countdown-specific, so
  * a block type added to `@templatical/types` before its renderer lands degrades
  * the same way.
  *

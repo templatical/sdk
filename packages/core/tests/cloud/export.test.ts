@@ -34,10 +34,9 @@ describe('useExport', () => {
       expect(result.mjml).toBe('<mjml>source</mjml>');
     });
 
-    // The fonts payload is now the caller's to assemble — `useExport` is a plain
-    // API wrapper, so it forwards whatever it's handed and makes no decision of
-    // its own. That is what moved the `custom_fonts` entitlement out of here and
-    // into `createCloudRenderProvider`.
+    // The fonts payload is the caller's to assemble — `useExport` is a plain API
+    // wrapper, so it forwards whatever it is handed and makes no decision of its
+    // own. Plan gating lives in `createCloudRenderProvider`.
     it('forwards the fonts payload verbatim', async () => {
       const { exportHtml } = useExport({ authManager: createMockAuthManager() });
       const fonts = {
@@ -95,9 +94,8 @@ describe('useExport', () => {
 describe('resolveExportFonts', () => {
   const fonts = [{ name: 'Custom', url: 'https://fonts.com/custom.css' }];
 
-  // Unconditional since the `custom_fonts` entitlement was deleted: it gated
-  // editor capability the free editor grants, so it only ever made the paid tier
-  // render fewer fonts than the free one.
+  // Unconditional: gating fonts by entitlement would gate editor capability the
+  // free editor grants, making the paid tier render fewer fonts than the free one.
   it('includes custom fonts on every plan', () => {
     expect(
       resolveExportFonts({ customFonts: fonts, defaultFallback: 'Arial' }),

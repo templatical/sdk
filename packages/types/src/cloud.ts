@@ -250,24 +250,23 @@ export interface ApiError {
  * provider; this is Cloud's commercial layer sitting above the provider set,
  * which is exactly where the OSS/commercial line is drawn.
  *
- * **A flag is legitimate only when it meters a resource Cloud itself buys.** A
- * gate on editor *capability* is either backwards — a paying customer getting
- * less than a free one — or inert, so eleven of the original sixteen were
- * deleted rather than carried:
+ * **A flag is legitimate only when it meters a resource Cloud itself buys.**
+ * Four kinds of gate do not belong here, however tempting:
  *
- * - `custom_fonts`, `theme_customization`, `custom_blocks`, `auto_save` — editor
- *   capability OSS gives away free.
- * - `pluggable_media` — gated *not* using Cloud's storage. Backwards.
- * - `media_folders`, `import_from_url` — Cloud's media-service UI; the media
- *   tier is limits-only now.
- * - `white_label` — inert: `branding: false` already hid the footer on any plan.
- * - `html_block` — never enforceable client-side; it belongs to the server
- *   render.
- * - `export_mjml` — unenforceable: `@templatical/renderer` is MIT, so anyone
- *   holding the JSON holds the MJML.
- * - `headless_sdk` — a server-side auth question a browser flag cannot affect.
+ * - Editor *capability* the OSS build grants free — fonts, theming, custom
+ *   blocks, autosave. Gating it leaves a paying customer worse off than a free
+ *   one.
+ * - Declining to use a Cloud service — a consumer's own media storage, for
+ *   instance. Charging for the *absence* of a Cloud cost is backwards, which is
+ *   why the media tier is limits-only.
+ * - Anything a browser flag cannot enforce: HTML output belongs to the server
+ *   render, MJML export is unenforceable because `@templatical/renderer` is MIT
+ *   (whoever holds the JSON holds the MJML), and headless access is a
+ *   server-side auth question.
+ * - Anything config already decides — `branding: false` hides the footer on any
+ *   plan without an entitlement's help.
  *
- * Quantity limits are the honest lever and all survive — see {@link PlanLimits}.
+ * Quantity limits are the honest lever — see {@link PlanLimits}.
  */
 export interface PlanFeatures {
   /** Inference spend, per call. */
