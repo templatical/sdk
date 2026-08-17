@@ -56,7 +56,7 @@ export class WebSocketClient {
       ({ default: Pusher } = await import("pusher-js"));
     } catch {
       throw new Error(
-        "Cloud features require the optional peer dependency 'pusher-js'. Install it with: npm install pusher-js",
+        "[Templatical] Cloud features require the optional peer dependency 'pusher-js'. Please install it.",
       );
     }
 

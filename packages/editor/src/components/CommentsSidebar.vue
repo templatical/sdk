@@ -567,6 +567,7 @@ defineExpose({ filterByBlock, focusNewComment });
                 </span>
                 <button
                   class="tpl:rounded tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-medium tpl:bg-[var(--tpl-danger)] tpl:text-[var(--tpl-bg)]"
+                  data-testid="comment-delete-confirm"
                   @click="handleDelete(thread.id)"
                 >
                   {{ t.comments.delete }}
@@ -726,6 +727,7 @@ defineExpose({ filterByBlock, focusNewComment });
                     </span>
                     <button
                       class="tpl:rounded tpl:px-2 tpl:py-0.5 tpl:text-xs tpl:font-medium tpl:bg-[var(--tpl-danger)] tpl:text-[var(--tpl-bg)]"
+                      data-testid="comment-delete-confirm"
                       @click="handleDelete(reply.id)"
                     >
                       {{ t.comments.delete }}

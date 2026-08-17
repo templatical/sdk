@@ -97,6 +97,9 @@ export const SELECTORS = {
   commentResolve: '[data-testid="comment-resolve"]',
   commentEdit: '[data-testid="comment-edit"]',
   commentDelete: '[data-testid="comment-delete"]',
+  // `deletingId` is a single ref, so at most one confirm strip is rendered across
+  // the whole panel — this needs no thread scoping to be unambiguous.
+  commentDeleteConfirm: '[data-testid="comment-delete-confirm"]',
   commentReply: '[data-testid="comment-reply"]',
 
   // Test email (BYO sender; the playground's fake provider is always on)

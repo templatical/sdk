@@ -220,13 +220,10 @@ test.describe("comments provider", () => {
     await expect(page.locator(SELECTORS.commentThread)).toHaveCount(2);
 
     await page.locator(SELECTORS.commentDelete).first().click();
-    // A confirm strip appears in place of the body; its Delete is the only button
-    // inside the danger-tinted row.
-    await page
-      .locator(`${SELECTORS.commentThread} button`)
-      .filter({ hasText: /^Delete$/ })
-      .first()
-      .click();
+    // A confirm strip appears in place of the body. `deletingId` is a single ref,
+    // so exactly one is rendered — assert that, then the click needs no scoping.
+    await expect(page.locator(SELECTORS.commentDeleteConfirm)).toHaveCount(1);
+    await page.locator(SELECTORS.commentDeleteConfirm).click();
 
     await expect(page.locator(SELECTORS.commentThread)).toHaveCount(1);
     await expect
