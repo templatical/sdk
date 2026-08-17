@@ -76,17 +76,20 @@ const { html } = await api.exportTemplate('template-id', {
 });
 ```
 
-## Snapshots
+## Versionen
 
 ```js
-// Snapshots auflisten
-const snapshots = await api.getSnapshots('template-id');
+// Versionen auflisten (jede enthält ihren Inhalt)
+const versions = await api.getVersions('template-id');
 
-// Snapshot erstellen
-await api.createSnapshot('template-id', content);
+// Inhalt einer einzelnen Version holen
+const version = await api.getVersion('template-id', 'version-id');
 
-// Snapshot wiederherstellen
-const restored = await api.restoreSnapshot('template-id', 'snapshot-id');
+// Version aufzeichnen
+await api.createVersion('template-id', content);
+
+// Version wiederherstellen — nur anfügend, fügt also einen Eintrag hinzu
+const restored = await api.restoreVersion('template-id', 'version-id');
 ```
 
 ## Kommentare
@@ -133,7 +136,7 @@ Die REST-Routen und die Methodennamen von `ApiClient` behalten aus
 Kompatibilitätsgründen ihre ursprüngliche `module`-Benennung — geändert hat
 sich nur der Name der Funktion. Zur editorseitigen Funktion und zur
 Speicher-Provider-Schnittstelle siehe
-[Gespeicherte Blöcke](/de/guide/saved-blocks).
+[Gespeicherte Blöcke](/de/backend/saved-blocks).
 :::
 
 ## Test-E-Mails
@@ -170,9 +173,10 @@ Alle Routen sind auf ein Projekt und einen Mandanten bezogen:
 | `templates/{id}` | DELETE | Template löschen |
 | `templates/{id}/export` | POST | Nach HTML/MJML exportieren |
 | `templates/{id}/send-test-email` | POST | Test-E-Mail senden |
-| `templates/{id}/snapshots` | GET | Snapshots auflisten |
-| `templates/{id}/snapshots` | POST | Snapshot erstellen |
-| `templates/{id}/snapshots/{id}/restore` | POST | Snapshot wiederherstellen |
+| `templates/{id}/versions` | GET | Versionen auflisten |
+| `templates/{id}/versions` | POST | Version aufzeichnen |
+| `templates/{id}/versions/{id}` | GET | Eine Version holen |
+| `templates/{id}/versions/{id}/restore` | POST | Version wiederherstellen |
 | `templates/{id}/comments` | GET | Kommentare auflisten |
 | `templates/{id}/comments` | POST | Kommentar erstellen |
 | `templates/{id}/comments/{id}` | PUT | Kommentar aktualisieren |

@@ -44,8 +44,13 @@ unmount();
 | `shadowDom`         | `boolean`                                                         | No       | Mountet innerhalb eines Shadow DOM zur CSS-Isolation von der Host-Seite. Standardwert `true`. Auf `false` setzen, um stattdessen im Light DOM zu mounten (z. B. für `document.querySelector`-Zugriff auf Editor-Interna oder Firefox-<101 / Safari-<16.4-Unterstützung). Siehe [Shadow DOM](/de/guide/shadow-dom) für Kompromisse |
 | `content`           | `TemplateContent`                                                 | No       | Anfänglicher Template-Inhalt. Standardmäßig ein leeres Template                                                                                                                                                                                                                                                                   |
 | `onChange`          | `(content: TemplateContent) => void`                              | No       | Wird aufgerufen, wenn sich der Template-Inhalt ändert (entprellt)                                                                                                                                                                                                                                                                 |
-| `onSave`            | `(content: TemplateContent) => void`                              | No       | Wird aufgerufen, wenn der Benutzer eine Speicheraktion auslöst                                                                                                                                                                                                                                                                    |
 | `onError`           | `(error: Error) => void`                                          | No       | Wird aufgerufen, wenn ein Fehler auftritt                                                                                                                                                                                                                                                                                         |
+| `onDirtyChange`     | `(isDirty: boolean) => void`                                      | No       | Wird aufgerufen, wenn der Zustand „ungespeicherte Änderungen" umschlägt. Funktioniert mit und ohne `templates`-Provider — damit sichern Sie einen clientseitigen Router ab, den `beforeunload` nicht abdecken kann. Siehe [Speichern & Laden](/de/backend/templates#ungespeicherte-anderungen) |
+| `templates`         | `TemplatesProvider`                                               | No       | Speicher-Backend für die Vorlage selbst — der Speicher-/Ladezyklus. Der Editor liefert Namensfeld, Speichern-Schaltfläche, Statusanzeige, Cmd+S, Autosave und die Warnung bei ungespeicherten Änderungen; Sie liefern die Persistenz. Weglassen deaktiviert die Funktion vollständig. Siehe [Speichern & Laden](/de/backend/templates) |
+| `render`            | `RenderProvider`                                                  | No       | Rendering-Backend für `toMjml()` / `toHtml()`. Jede Methode (`toMjml`, `toHtml`, `compileMjml`) ist unabhängig optional und wird separat aufgelöst. Weglassen: `toMjml()` rendert lokal, `toHtml()` lehnt ab — das SDK bündelt keinen MJML-Compiler. Siehe [Rendering & Export](/de/backend/render) |
+| `versionHistory`    | `VersionHistoryProvider`                                          | Nein     | Speicher-Backend für den Versionsverlauf der Vorlage — die früheren Stände, die Nutzende durchsehen, in der Vorschau ansehen und wiederherstellen können. Der Editor liefert das Header-Steuerelement, das Vorschaubanner und den Wiederherstellungsablauf; Sie liefern den Speicher. Er zeichnet nie selbst eine Version auf: Das entscheidet Ihr `templates.save`. Weglassen, um die Funktion vollständig zu deaktivieren. Siehe [Versionsverlauf](/de/backend/version-history) |
+| `autoSave`          | `boolean \| { debounce?: number }`                               | No       | Automatisch speichern, verzögert, nachdem der Nutzer aufhört zu bearbeiten. Erfordert `templates`; ohne diesen wird die Option mit einer Warnung ignoriert. `{ debounce }` setzt die Taktung im selben Schlüssel; die Verzögerung gilt auch für `onChange`, da beide denselben Timer nutzen. Standard `false`. Siehe [Speichern & Laden](/de/backend/templates#autosave) |
+| `unsavedChangesGuard` | `boolean`                                                       | No       | Warnt, bevor der Tab mit ungespeicherten Änderungen geschlossen wird. Standardmäßig aktiv, sobald `templates` konfiguriert ist; ohne diesen nie aktiv. Auf `false` setzen, um die Rückfrage selbst zu übernehmen. Deckt keine clientseitigen Routenwechsel ab — dafür `onDirtyChange` |
 | `onRequestMedia`    | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | Wird aufgerufen, wenn der Benutzer ein Bild auswählen möchte. Gibt `{ url, alt? }` oder `null` zurück                                                                                                                                                                                                                             |
 | `resolveImageUrl`   | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Reiner Anzeige-Resolver für Bild-`src`-Werte: bildet einen kanonischen src auf eine Vorschau-URL für die Leinwand ab. Inhalt und `toMjml()`-Ausgabe behalten den kanonischen Wert. `null` zurückgeben, um den src unverändert zu verwenden. Wird einmal pro bestätigtem src aufgerufen (entprellt), pro src zwischengespeichert. Siehe [Bilder](/de/guide/images#reine-anzeige-aufloesung-von-bild-urls) |
 | `mergeTags`         | `MergeTagsConfig`                                                 | No       | Merge-Tag-Konfiguration. Jedes Tag kann ein optionales `sample` tragen — einen Beispielwert, den Vorschauen an seiner Stelle anzeigen. Siehe [Merge-Tags](/de/guide/merge-tags) |
@@ -53,8 +58,8 @@ unmount();
 | `displayConditions` | `DisplayConditionsConfig`                                         | No       | Konfiguration für Anzeigebedingungen. Siehe [Anzeigebedingungen](/de/guide/display-conditions)                                                                                                                                                                                                                                    |
 | `logicTags`         | `LogicTagsConfig`                                                 | No       | Konfiguration für Logik-Tags — Kontrollfluss Ihrer Template-Sprache (Bedingungen, Schleifen), inline im Rich Text und in Textfeldern eingefügt. Siehe [Logik-Tags](/de/guide/logic-tags)                                                                                                                                            |
 | `customBlocks`      | `CustomBlockDefinition[]`                                         | No       | Definitionen für benutzerdefinierte Blocktypen. Siehe [Benutzerdefinierte Blöcke](/de/guide/custom-blocks)                                                                                                                                                                                                                        |
-| `savedBlocks`       | `SavedBlocksProvider`                                             | No       | Speicher-Backend für gespeicherte Blöcke — wiederverwendbare Blockgruppen, die Nutzer speichern und erneut einfügen. Der Editor stellt die Oberfläche, Sie die Persistenz. Weglassen deaktiviert die Funktion vollständig. `createLocalStorageSavedBlocksProvider()` bietet eine Variante ohne Backend. Siehe [Gespeicherte Blöcke](/de/guide/saved-blocks) |
-| `testEmail`         | `TestEmailProvider`                                               | No       | Versand-Backend für Test-E-Mails — Nutzer senden sich die Vorlage zu, die sie bearbeiten. Der Editor stellt Auslöser, Dialog, Prüfung und Zustände; Sie stellen den Versand. Weglassen deaktiviert die Funktion vollständig. `allowedRecipients` schränkt nur die Auswahl ein und ist **keine** Sicherheitsgrenze — serverseitig prüfen. Siehe [Test-E-Mails](/de/guide/test-email) |
+| `savedBlocks`       | `SavedBlocksProvider`                                             | No       | Speicher-Backend für gespeicherte Blöcke — wiederverwendbare Blockgruppen, die Nutzer speichern und erneut einfügen. Der Editor stellt die Oberfläche, Sie die Persistenz. Weglassen deaktiviert die Funktion vollständig. `createLocalStorageSavedBlocksProvider()` bietet eine Variante ohne Backend. Siehe [Gespeicherte Blöcke](/de/backend/saved-blocks) |
+| `testEmail`         | `TestEmailProvider`                                               | No       | Versand-Backend für Test-E-Mails — Nutzer senden sich die Vorlage zu, die sie bearbeiten. Der Editor stellt Auslöser, Dialog, Prüfung und Zustände; Sie stellen den Versand. Weglassen deaktiviert die Funktion vollständig. `allowedRecipients` schränkt nur die Auswahl ein und ist **keine** Sicherheitsgrenze — serverseitig prüfen. Siehe [Test-E-Mails](/de/backend/test-email) |
 | `paletteBlocks`     | `string[]`                                                        | No       | Allowlist + Reihenfolge für die Block-Palette. Nur die aufgeführten Typen erscheinen, in dieser Reihenfolge; nicht aufgeführte integrierte Blöcke werden ausgeblendet. Integrierte Blöcke über ihren reinen Typ (`'image'`), benutzerdefinierte über den `custom:`-präfixierten Typ (`'custom:qrcode'`). Siehe [Block-Palette anpassen](#block-palette-anpassen) |
 | `htmlBlockPreview`  | `boolean \| { enabled: boolean }`                                 | No       | Rendert den Inhalt jedes HTML-Blocks als Live-Vorschau in der Leinwand — in einem sandboxed `<iframe>` ohne Skriptausführung — statt des statischen Platzhalters. Standardmäßig `false`. Nur Vorschau; der MJML-/HTML-Export rendert HTML-Blöcke unabhängig davon. Siehe [HTML-Blöcke in der Vorschau](#html-bloecke-in-der-vorschau) |
 | `blockDefaults`     | `BlockDefaults`                                                   | No       | Standard-Property-Überschreibungen für neue Blöcke. Siehe [Standardwerte](/de/guide/defaults)                                                                                                                                                                                                                                     |
@@ -175,6 +180,36 @@ editor.setTheme("auto"); // folgt der Systemeinstellung
 
 Zerstört diese Editor-Instanz.
 
+### `create(input?)` / `load(id)` / `save()`
+
+Der Speicher-/Ladezyklus der Vorlage, über den `templates`-Provider.
+
+```ts
+const template = await editor.create({ name: "Willkommens-E-Mail" });
+await editor.load(template.id);
+await editor.save();
+```
+
+- **`create(input?)`** speichert den aktuellen Inhalt als neue Vorlage und übernimmt das Ergebnis. Übergeben Sie `content`, um zuvor den Inhalt des Editors zu ersetzen.
+- **`load(id)`** holt eine Vorlage und macht sie zum Inhalt des Editors; lokale Änderungen werden verworfen.
+- **`save()`** speichert Name und Inhalt der geladenen Vorlage als einen Patch.
+
+Alle drei geben ein `Promise<Template>` zurück und sind stets im Typ vorhanden. Sie werden mit einer erklärenden Fehlermeldung abgelehnt, wenn kein `templates`-Provider konfiguriert ist, wenn der Provider die jeweilige Methode zurückhält (`create: false` / `save: false`) oder — bei `save()` — wenn noch nichts erstellt oder geladen wurde. Siehe [Speichern & Laden](/de/backend/templates).
+
+### `isDirty()`
+
+Ob es Änderungen gibt, von denen der Editor weiß, dass sie nicht gespeichert sind. Wird durch ein erfolgreiches `save()`, `create()` oder `load()` zurückgesetzt.
+
+```ts
+router.beforeEach((to, from, next) => {
+  if (editor.isDirty() && !confirm("Ungespeicherte Änderungen verwerfen?"))
+    return next(false);
+  next();
+});
+```
+
+`onDirtyChange` ist das gegenläufige Push-Pendant.
+
 ### `toMjml()`
 
 Rendert den aktuellen Inhalt in MJML-Markup. Gibt ein `Promise<string>` zurück, da das Auflösen benutzerdefinierter Blöcke asynchrone Arbeit erfordern kann (der Liquid-Renderer des Editors wird bei Bedarf geladen).
@@ -183,12 +218,20 @@ Rendert den aktuellen Inhalt in MJML-Markup. Gibt ein `Promise<string>` zurück,
 const mjml = await editor.toMjml();
 ```
 
-Wirft einen klaren Fehler, wenn `@templatical/renderer` nicht installiert ist. Der Renderer ist eine optionale Peer-Abhängigkeit – installieren Sie ihn nur, wenn Sie MJML-Export aus dem Browser benötigen. Siehe [Installation](/de/getting-started/installation) für Details.
+Löst zuerst `render.toMjml` auf, wenn ein [`render`-Provider](/de/backend/render) es bereitstellt, danach den gebündelten `@templatical/renderer`. Lehnt mit einem klaren Fehler ab, wenn keines von beiden verfügbar ist — der Renderer ist eine optionale Peer-Abhängigkeit, installieren Sie ihn also für lokalen MJML-Export. Siehe [Installation](/de/getting-started/installation).
 
-Um MJML zu HTML zu kompilieren, verwenden Sie eine beliebige MJML-Bibliothek (z. B. [mjml](https://www.npmjs.com/package/mjml) für Node.js).
+### `toHtml()`
+
+Rendert den aktuellen Inhalt in versandfertiges HTML.
+
+```ts
+const html = await editor.toHtml();
+```
+
+Löst zuerst `render.toHtml` auf, danach die Ausgabe von `toMjml()` über `render.compileMjml`. **Eines von beiden ist erforderlich**: Das SDK bündelt keinen MJML-Compiler, ohne `render`-Provider lehnt dieser Aufruf also immer ab, und der Fehler nennt die zu ergänzende Methode. Siehe [Rendering & Export](/de/backend/render).
 
 ::: tip Cloud-Editor
-Der Cloud-Editor stellt `toMjml()` **nicht** zur Verfügung – das Cloud-Backend übernimmt die MJML-Konvertierung serverseitig mit zusätzlicher Verarbeitung (signierte Bild-URLs, Asset-Umschreibung). Verwenden Sie den OSS-Editor (`init`, nicht `initCloud`), wenn Sie clientseitigen MJML-Export wünschen.
+Der Cloud-Editor stellt **beide** Methoden bereit, aufgelöst über Clouds serverseitigen Renderer (oder Ihren eigenen `render`-Provider). Beachten Sie: Cloud rendert das *gespeicherte* Template, jeder Aufruf speichert also zuerst.
 :::
 
 ### `renderCustomBlock(block)`

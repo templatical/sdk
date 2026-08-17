@@ -51,7 +51,7 @@ Jeder Mandant verfügt über vollständig isolierte:
 - **Templates** – CRUD-Operationen betreffen nur die Templates des jeweiligen Mandanten
 - **Medien** – Hochgeladene Bilder sind auf den Mandanten beschränkt
 - **Gespeicherte Blöcke** – Die Bibliothek gespeicherter Blöcke ist pro Mandant
-- **Snapshots** – Der Versionsverlauf ist pro Template und pro Mandant
+- **Versionen** – Der Versionsverlauf ist pro Template und pro Mandant
 - **Kommentare** – Kommentar-Threads sind pro Template und pro Mandant
 - **KI-Verlauf** – Der Gesprächsverlauf ist pro Template und pro Mandant
 

@@ -7,7 +7,7 @@ description: Wie Templatical Cloud Test-E-Mails versendet — und wie Sie sie st
 
 Senden Sie Test-E-Mails direkt aus dem Editor, um die Darstellung in einem echten Postfach vor dem Go-Live zu prüfen.
 
-Test-E-Mail ist eine **gemeinsame Funktion**: Auslöser, Dialog, Empfängerprüfung und alle Versandzustände sind im OSS- und im Cloud-Editor dieselben Komponenten. Nur der Versand unterscheidet sich. Der [Leitfaden Test-E-Mails](/de/guide/test-email) behandelt die Funktion selbst — diese Seite beschreibt, was Cloud ergänzt und wie Sie es überschreiben.
+Test-E-Mail ist eine **gemeinsame Funktion**: Auslöser, Dialog, Empfängerprüfung und alle Versandzustände sind im OSS- und im Cloud-Editor dieselben Komponenten. Nur der Versand unterscheidet sich. Der [Leitfaden Test-E-Mails](/de/backend/test-email) behandelt die Funktion selbst — diese Seite beschreibt, was Cloud ergänzt und wie Sie es überschreiben.
 
 ## Wie Cloud versendet
 
@@ -26,7 +26,7 @@ Drei Bedingungen steuern die Schaltfläche, und keine folgt aus einer anderen �
 
 Die Liste kommt mit dem Auth-Token und wird mit einer Signatur zurückgesendet, die das Backend prüft. Das ist wesentlich, weil das SDK im Browser des Nutzers läuft: ohne eine serverseitig signierte Liste wäre der Endpunkt ein offenes Relay.
 
-Das ist der einzige Punkt, an dem sich Cloud und ein eigener Versand wirklich unterscheiden. Ein von Ihnen bereitgestellter Provider trägt ein `allowedRecipients`-Array, das **nicht signiert** ist — es schränkt die Auswahl ein, und Ihr eigenes Backend muss es durchsetzen. Siehe [Empfänger einschränken](/de/guide/test-email#empfanger-einschranken).
+Das ist der einzige Punkt, an dem sich Cloud und ein eigener Versand wirklich unterscheiden. Ein von Ihnen bereitgestellter Provider trägt ein `allowedRecipients`-Array, das **nicht signiert** ist — es schränkt die Auswahl ein, und Ihr eigenes Backend muss es durchsetzen. Siehe [Empfänger einschränken](/de/backend/test-email#empfanger-einschranken).
 
 ## Before-Send-Hook
 

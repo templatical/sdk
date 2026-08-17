@@ -180,5 +180,5 @@ Alle anderen Vorlagen lassen ihn aus und demonstrieren stattdessen den Umschalte
 - [Merge-Tags](/de/guide/merge-tags) — Tags, Bezeichnungen und `sample`-Werte konfigurieren
 - [Logik-Tags](/de/guide/logic-tags) — Kontrollfluss einfügen und hervorheben
 - [Anzeigebedingungen](/de/guide/display-conditions) — Bedingungen simulieren und über diesen Hook echt auswerten
-- [Test-E-Mails](/de/guide/test-email) — der Dialog, dessen Vorschau pro Empfänger auflöst
+- [Test-E-Mails](/de/backend/test-email) — der Dialog, dessen Vorschau pro Empfänger auflöst
 - [Editor-API](/api/editor) — Referenz für `resolvePreview` und `mergeTags`

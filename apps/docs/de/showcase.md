@@ -30,7 +30,7 @@ Sie bauen ein Mailchimp-ähnliches Produkt, ein Automatisierungs-Tool oder eine 
 - Der Drop-in-Editor wird mit einem Funktionsaufruf gemountet — kein Umbau Ihres bestehenden Dashboards.
 - Theming über Design-Tokens sorgt dafür, dass die E-Mails Ihrer Kunden sich nativ in Ihre Marke einfügen, nicht in Templaticals.
 - Anzeigebedingungen und Merge-Tags sind eingebaut — wichtig für personalisierungslastige Newsletter-Nutzung.
-- Cloud-Funktionen (KI-Umschreibung, Kommentare, Snapshots) sind entweder als gemanagte Cloud oder als selbst hostbarer Source-Available-Code verfügbar.
+- Cloud-Funktionen (KI-Umschreibung, Kommentare, Versionsverlauf) sind entweder als gemanagte Cloud oder als selbst hostbarer Source-Available-Code verfügbar.
 
 **Typisches Setup:** [`@templatical/editor`](https://www.npmjs.com/package/@templatical/editor) im Kunden-Dashboard eingebettet, [`@templatical/renderer`](https://www.npmjs.com/package/@templatical/renderer) für HTML-Kompilierung, optional Cloud-Tarif für KI/Collab.
 

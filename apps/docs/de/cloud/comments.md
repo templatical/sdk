@@ -1,73 +1,88 @@
 ---
 title: Kommentare
-description: Inline-Review-Threads an einzelnen Blöcken.
+description: Templatical Cloud als eine Implementierung des Kommentar-Vertrags.
 ---
 
 # Kommentare
 
-Fügen Sie Inline-Kommentare an einzelnen Blöcken für Review-Workflows hinzu. Teammitglieder können Änderungen diskutieren, Threads auflösen und Feedback verfolgen, ohne den Editor zu verlassen.
+Kommentare sind ein [offener Vertrag](/de/backend/comments). Templatical Cloud implementiert ihn genauso, wie Ihr eigenes Backend es täte.
 
-## Kommentare aktivieren
+```ts
+const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
+```
+
+Nichts zu konfigurieren. Cloud liefert den Provider und die Identität, und die Kommentar-Schaltfläche im Header erscheint, sobald eine Vorlage gespeichert ist.
+
+## Was der Adapter von Cloud tut
+
+| Methode | Cloud |
+|---|---|
+| `list` | Jeder Thread der Vorlage, jeweils mit seinen Antworten |
+| `create` | Speichert einen Kommentar oder eine Antwort, **signiert** mit dem User-Claim des Tokens |
+| `update` | Bearbeitet den Text eines Kommentars |
+| `delete` | Entfernt einen Kommentar und bei einem Wurzelkommentar auch dessen Antworten |
+| `setResolved` | Markiert einen Thread als gelöst oder öffnet ihn wieder |
+| `subscribe` | Bindet den Echtzeit-Kanal von Cloud, sodass der Kommentar einer Kollegin während des Schreibens erscheint |
+
+Alle vier Mutationen sind aktiviert: Kommentar-Speicherung und ihre Echtzeit-Verteilung sind genau das, was die Plan-Funktion `commenting` bezahlt — es gibt also keine Cloud-Stufe, die einen Thread lesen, aber nicht darauf antworten kann.
+
+## Verfügbarkeit
+
+Drei Bedingungen, von denen keine die andere impliziert:
+
+- **`commenting: false`** schaltet die Funktion vollständig ab.
+- **Die Plan-Funktion `commenting`** muss gewährt sein.
+- **Die Vorlage muss gespeichert sein.** Cloud verankert einen Kommentar serverseitig, es muss also eine gespeicherte Vorlage geben, an der er hängt — die Kommentar-Schaltfläche erscheint vor dem ersten Speichern nicht.
 
 ```js
 const editor = await initCloud({
   container: '#editor',
   auth: { url: '/api/templatical/token' },
-  commenting: true,
+  commenting: false, // aus
   onComment: (event) => {
-    // Wird benachrichtigt, wenn Kommentare erstellt, aktualisiert oder gelöscht werden
-    console.log(event);
+    // 'created' | 'updated' | 'deleted' | 'resolved' | 'unresolved'
+    console.log(event.type, event.comment.id);
   },
 });
 ```
 
-## So funktioniert es
+## Die Autorenschaft wird signiert, nicht übergeben
 
-1. **Kommentare hinzufügen** – Nutzer klicken auf einen Block und öffnen das Kommentar-Panel, um Feedback zu hinterlassen
-2. **Antwort-Threads** – Kommentare unterstützen Thread-Antworten für fokussierte Diskussionen
-3. **Auflösen** – Markieren Sie Threads als aufgelöst, wenn das Feedback umgesetzt wurde
-4. **Echtzeit** – Ist die Zusammenarbeit aktiviert, erscheinen Kommentare sofort bei allen verbundenen Nutzern
+Cloud sendet bei jedem Schreibvorgang `user_id` / `user_name` / `user_signature` mit, entnommen aus dem `user`-Claim des Auth-Tokens und von seinem Backend geprüft. Daher nimmt `initCloud()` **keinen `user`-Schlüssel** an: Es füllt `init({ user })` aus genau diesem Claim, und eine vom Browser gelieferte Identität könnte der vom Server geprüften nur widersprechen.
 
-## Composable
+Ein Projekt, dessen Token-Endpunkt den `user`-Claim weglässt, erhält überhaupt keine Kommentar-Funktion — [nicht verfügbar statt anonym](/de/backend/comments#user-ist-erforderlich-und-ein-schlussel-auf-oberster-ebene).
 
-```js
-import { useComments } from '@templatical/core/cloud';
+## Eigenen Provider mitbringen
 
-const {
-  // Zustand
-  comments,             // Ref<CommentThread[]>
-  isLoading,            // Ref<boolean>
-  isSubmitting,         // Ref<boolean>
-  isEnabled,            // ComputedRef<boolean>
-  commentCountByBlock,  // ComputedRef<Map<string, number>>
-  totalCount,           // ComputedRef<number>
-  unresolvedCount,      // ComputedRef<number>
+Innerhalb von `initCloud()` geht das nicht — dieselbe Grenze, die [`templates`](/de/backend/templates) und der [Versionsverlauf](/de/cloud/version-history) ziehen, und aus demselben Grund.
 
-  // Operationen
-  loadComments,         // () => Promise<void>
-  addComment,           // (body, blockId?, parentId?) => Promise<Comment | null>
-  editComment,          // (commentId, body) => Promise<Comment | null>
-  removeComment,        // (commentId) => Promise<boolean>
-  toggleResolve,        // (commentId) => Promise<Comment | null>
-} = useComments({
+Ein Kommentar ist an eine Vorlagen-ID gebunden, die **Cloud ausgestellt** hat, und seine Autorenschaft wird vom Token von Cloud signiert. Ein vom Consumer gelieferter Provider würde die UI steuern, während der eigene Speicher von Cloud derjenige bliebe, in den der Server schreibt und den er abrechnet.
+
+`initCloud({ comments })` steht daher nicht im Konfigurationstyp, und ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert.
+
+Bringen Sie Ihren eigenen mit [`init()`](/de/backend/comments) mit — dort gehört Ihnen der gesamte Satz: Vorlagen, Versionsverlauf, Kommentare, Rendering.
+
+## Kopflose Verwendung
+
+`useComments` und `useCommentListener` sind zu `@templatical/core` gewandert, als Kommentare eine geteilte Funktion wurden; sie nehmen einen Provider statt eines `authManager`. Der Adapter von Cloud ist `createCloudCommentsProvider` aus `@templatical/core/cloud`:
+
+```ts
+import { useComments, useCommentListener } from '@templatical/core';
+import { createCloudCommentsProvider } from '@templatical/core/cloud';
+
+const provider = createCloudCommentsProvider({
   authManager,
+  channel,                                 // Ref<PresenceChannel | null>
+  getSocketId: () => websocket.getSocketId(),
+});
+
+const comments = useComments({
+  provider,
   getTemplateId: () => templateId,
-  getSocketId: () => socketId,             // WebSocket-Socket-ID zur Echo-Vermeidung
-  isAuthReady: () => true,                 // Laden erst freigeben, wenn Auth bereit ist
-  hasCommentingFeature: () => true,        // Auf Basis der Plan-Funktionen freischalten
-  onComment: (event) => { /* Kommentar-Ereignis */ },
-  onError: (error) => { /* Fehler behandeln */ },
+  getUser: () => ({ id: authManager.userConfig.id, name: authManager.userConfig.name }),
 });
+
+useCommentListener({ comments, provider, getTemplateId: () => templateId });
 ```
 
-## Echtzeit-Synchronisation
-
-Wenn der WebSocket verbunden ist, synchronisieren sich Kommentare automatisch zwischen allen Mitarbeitenden. Das Composable bietet Methoden zum Anwenden entfernter Aktualisierungen:
-
-```js
-const { applyRemoteCreate, applyRemoteUpdate, applyRemoteDelete } = useComments({
-  // ...Optionen
-});
-```
-
-Diese werden automatisch vom `useCommentListener`-Composable aufgerufen, wenn WebSocket-Ereignisse eintreffen.
+Die vollständige reaktive Oberfläche steht im [Kommentar-Leitfaden](/de/backend/comments#kopflose-verwendung).

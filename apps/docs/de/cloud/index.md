@@ -33,9 +33,9 @@ Alle Cloud-Funktionen kommunizieren über authentifizierte API-Endpunkte und Web
 | [Kommentare](/de/cloud/comments) | Inline-Review-Threads an einzelnen Blöcken |
 | [Medienbibliothek](/de/cloud/media-library) | Bilder hochladen, organisieren und verwalten – mit Ordnern und Suche |
 | [Template-Bewertung](/de/cloud/template-scoring) | Automatische Qualitätsprüfungen für Zustellbarkeit und Barrierefreiheit |
-| [Gespeicherte Blöcke](/de/guide/saved-blocks) | Wiederverwendbare Blockgruppen — Cloud stellt den Storage-Provider, im Team geteilt, ohne eigenes Backend |
+| [Gespeicherte Blöcke](/de/backend/saved-blocks) | Wiederverwendbare Blockgruppen — Cloud stellt den Storage-Provider, im Team geteilt, ohne eigenes Backend |
 | [Test-E-Mails](/de/cloud/test-emails) | Test-E-Mails direkt aus dem Editor senden |
-| [Snapshots](/de/cloud/snapshots) | Versionsverlauf mit Side-by-Side-Vergleich und Wiederherstellung |
+| [Versionsverlauf](/de/cloud/version-history) | Frühere Versionen durchsehen, in der Vorschau ansehen und wiederherstellen — ein offener Vertrag, den Cloud implementiert |
 | [MCP-Integration](/de/cloud/mcp) | KI-Agenten anbinden, um Templates programmatisch zu erstellen und zu verändern |
 | [Multi-Tenant](/de/cloud/multi-tenant) | Projekt- und Mandanten-Isolation mit API-Schlüsseln |
 | [Headless-API](/de/cloud/headless-api) | Vollständiger programmatischer Zugriff auf Templates, Medien und Rendering |

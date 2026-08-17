@@ -154,5 +154,5 @@ Solange ein Resolver die Vorschau liefert, treten das Filtersymbol und die Wiede
 Zwei Wege, die unterschiedliche Fragen beantworten:
 
 - **[Vorschau-Rendering](/de/guide/preview-rendering)** — verdrahten Sie `resolvePreview`, und jede Variante wird im Editor gerendert, ohne etwas zu versenden. Die schnellste Schleife beim Erstellen und der einzige Weg, eine Variante für einen Empfänger zu sehen, dem Sie nicht schreiben können.
-- **[Test-E-Mails](/de/guide/test-email)** — senden Sie an verschiedene Empfängerprofile und bestätigen Sie, dass jede Variante in einem echten Postfach ankommt. Langsamer, prüft aber die Auswertung Ihrer Plattform und den E-Mail-Client selbst, was keine Vorschau leisten kann.
+- **[Test-E-Mails](/de/backend/test-email)** — senden Sie an verschiedene Empfängerprofile und bestätigen Sie, dass jede Variante in einem echten Postfach ankommt. Langsamer, prüft aber die Auswertung Ihrer Plattform und den E-Mail-Client selbst, was keine Vorschau leisten kann.
   :::

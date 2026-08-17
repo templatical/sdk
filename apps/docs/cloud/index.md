@@ -33,9 +33,9 @@ All Cloud features communicate through authenticated API endpoints and WebSocket
 | [Comments](/cloud/comments) | Inline review threads on specific blocks |
 | [Media Library](/cloud/media-library) | Upload, organize, and manage images with folders and search |
 | [Template Scoring](/cloud/template-scoring) | Automated quality checks for deliverability and accessibility |
-| [Saved Blocks](/guide/saved-blocks) | Reusable block groups — Cloud supplies the storage provider, shared across your team with no backend to implement |
+| [Saved Blocks](/backend/saved-blocks) | Reusable block groups — Cloud supplies the storage provider, shared across your team with no backend to implement |
 | [Test Emails](/cloud/test-emails) | Send test emails directly from the editor |
-| [Snapshots](/cloud/snapshots) | Version history with side-by-side comparison and restore |
+| [Version History](/cloud/version-history) | Browse, preview and restore past versions — an open contract Cloud implements |
 | [MCP Integration](/cloud/mcp) | Connect AI agents to build and modify templates programmatically |
 | [Multi-Tenant](/cloud/multi-tenant) | Project and tenant isolation with API keys |
 | [Headless API](/cloud/headless-api) | Full programmatic access to templates, media, and rendering |

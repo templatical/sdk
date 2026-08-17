@@ -22,7 +22,7 @@ features:
     linkText: Eigenen Block bauen
   - title: Wiederverwendbare gespeicherte Blöcke
     details: Nutzer speichern Blockgruppen und fügen sie in andere Templates ein — mit Ihrem eigenen Speicher oder dem mitgelieferten browserlokalen Provider ohne Einrichtung.
-    link: /de/guide/saved-blocks
+    link: /de/backend/saved-blocks
     linkText: Gespeicherte Blöcke einrichten
   - title: Merge-Tags mit pluggable Syntax
     details: Handlebars, Liquid, JS-Template-Literale oder eigene Syntax — mit lesbaren Labels im Canvas.
@@ -42,7 +42,7 @@ features:
     linkText: Defaults setzen
   - title: Test-E-Mails aus dem Editor
     details: Nutzer senden sich die Vorlage zu, die sie gerade bearbeiten — über Ihre eigene Infrastruktur, mit einem einzigen Callback und ohne Backend von uns.
-    link: /de/guide/test-email
+    link: /de/backend/test-email
     linkText: Test-E-Mails einrichten
   - title: JSON rein, MJML raus
     details: Portables JSON, MJML-Ausgabe. Rendern Sie überall und versenden Sie über jeden Provider.

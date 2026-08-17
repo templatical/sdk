@@ -1,6 +1,6 @@
 ---
 title: Ereignisse
-description: Editor-Event-Callbacks — onChange, onSave, onError sowie Handler für Medien- und Merge-Tag-Anfragen.
+description: Editor-Event-Callbacks — onChange, onDirtyChange, onError sowie Handler für Medien- und Merge-Tag-Anfragen.
 ---
 
 # Ereignisse
@@ -27,16 +27,15 @@ const editor = await init({
 });
 ```
 
-### `onSave`
+### `onDirtyChange`
 
-Wird aufgerufen, wenn der Benutzer explizit einen Speichervorgang auslöst (z. B. über ein Tastenkürzel). Verwenden Sie dies für sofortige Speichervorgänge im Gegensatz zum entprellten `onChange`.
+Wird aufgerufen, sobald der Editor ungespeicherte Änderungen erhält oder verliert. Nutzen Sie es für Ihren eigenen Speichern-Button oder um einen clientseitigen Routenwechsel abzusichern — der eingebaute Schutz deckt das Schließen des Tabs ab, `beforeunload` greift bei SPA-Navigation jedoch nie.
 
 ```ts
 const editor = await init({
   container: '#editor',
-  onSave(content) {
-    saveTemplate(content);
-    showNotification('Template saved');
+  onDirtyChange(isDirty) {
+    setRouteGuard(isDirty);
   },
 });
 ```
@@ -118,35 +117,18 @@ const editor = await init({
       saveToBackend(content);
     }, 2000);
   },
-  onSave(content) {
-    clearTimeout(saveTimeout);
-    saveToBackend(content);
-  },
 });
 ```
 
 ### Dirty-State-Tracking
 
 ```ts
-let isDirty = false;
-
 const editor = await init({
   container: '#editor',
-  onChange() {
-    isDirty = true;
-    updateSaveButton();
+  onDirtyChange(isDirty) {
+    updateSaveButton(isDirty);
   },
-  onSave(content) {
-    saveToBackend(content).then(() => {
-      isDirty = false;
-      updateSaveButton();
-    });
-  },
-});
-
-window.addEventListener('beforeunload', (e) => {
-  if (isDirty) {
-    e.preventDefault();
-  }
 });
 ```
+
+Der Editor warnt bereits beim Schließen des Tabs, sofern ein `templates`-Provider konfiguriert ist — abschaltbar über `unsavedChangesGuard: false`. `onDirtyChange` brauchen Sie für einen clientseitigen Router, den `beforeunload` nicht sieht.

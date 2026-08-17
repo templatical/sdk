@@ -1,0 +1,207 @@
+---
+title: Vorlagen speichern & laden
+description: Verbinden Sie den Speicher-/Ladezyklus des Editors mit Ihrem eigenen Speicher — inklusive Name, Speichern-Schaltfläche, Autosave und Warnung bei ungespeicherten Änderungen.
+---
+
+# Vorlagen speichern & laden
+
+Geben Sie dem Editor einen Ort zum Speichern, und er ergänzt die passende Bedienoberfläche: einen direkt bearbeitbaren Vorlagennamen, eine Speichern-Schaltfläche, eine Statusanzeige, `Cmd`/`Strg`+`S`, optionales Autosave sowie eine Warnung, bevor der Tab mit ungespeicherter Arbeit geschlossen wird.
+
+Das alles übernimmt der Editor. **Die Persistenz liegt bei Ihnen** — drei Methoden gegen Ihre eigene API.
+
+## Schnellstart
+
+```ts
+import { init } from '@templatical/editor';
+
+const editor = await init({
+  container: '#editor',
+  templates: {
+    load: (id) => fetch(`/api/templates/${id}`).then((r) => r.json()),
+
+    create: (input) =>
+      fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      }).then((r) => r.json()),
+
+    save: (id, patch) =>
+      fetch(`/api/templates/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      }).then((r) => r.json()),
+  },
+});
+
+// Das Öffnen einer Vorlage erfolgt imperativ — Ihre Anwendung entscheidet, welche.
+await editor.load('tpl_123');
+```
+
+**Lassen Sie `templates` weg, und die Funktion ist vollständig abwesend** — kein Namensfeld, keine Speichern-Schaltfläche, keine Statusanzeige. `create()` / `load()` / `save()` werden dann mit einer erklärenden Fehlermeldung abgelehnt, und Sie speichern den Inhalt selbst über [`onChange`](#speichern-ohne-provider).
+
+## Der Vertrag
+
+```ts
+interface Template {
+  id: string;
+  name?: string;
+  content: TemplateContent;
+}
+
+type TemplatePatch = Partial<{ name: string; content: TemplateContent }>;
+
+interface TemplatesProvider {
+  load(id: string): Promise<Template>;
+  create: false | ((input: { name?: string; content: TemplateContent }) => Promise<Template>);
+  save:   false | ((id: string, patch: TemplatePatch) => Promise<Template>);
+}
+```
+
+Drei Punkte sind hervorzuheben:
+
+- **Die `id` gehört Ihrem Speicher.** Sie kommt von `create()` zurück, und der Editor erzeugt niemals selbst eine — Identität bleibt damit eine Eigenschaft Ihres Speichers: ein Datenbankschlüssel, ein Slug, eine Dokument-ID.
+- **`save` erhält einen Patch**, nicht den bloßen Inhalt. So kann eine Umbenennung ohne Inhalt übertragen werden, und ein künftiges Feld lässt sich ergänzen, ohne Ihre Implementierung zu brechen. Der Editor sendet `name` (sofern die Vorlage einen hat) und `content` gemeinsam, in einem Aufruf.
+- **`name` ist optional.** Hat Ihr Speicher keine Namensspalte, lassen Sie ihn weg: der Header zeigt „Unbenannt", und eine Umbenennung findet einfach nie statt.
+
+Jede Methode darf ablehnen. Der Editor meldet den Fehler über `onError`, zeigt ihn im Header an und lässt seinen Zustand unberührt — nichts wird als gespeichert markiert, was es nicht ist.
+
+### Bewusst kein CRUD
+
+Es gibt kein `list` und kein `delete`, und der Editor hat keinen Vorlagen-Browser. Die Auswahl, *welche* Vorlage geöffnet wird, gehört in Ihre Anwendung — die Aufgabe des Editors beginnt, sobald Sie ihm eine ID übergeben.
+
+## Erstellen oder Speichern abschalten
+
+`create` und `save` sind `false | fn` und **erforderlich**, nicht optional. Eines davon abzuschalten ist eine Entscheidung, die Sie aussprechen — nie etwas, das durch eine vergessene Methode entsteht:
+
+```ts
+templates: {
+  load: (id) => fetchTemplate(id),
+  create: false,  // keine neuen Vorlagen aus dem Editor heraus
+  save: false,    // nur lesend: lädt und bearbeitet lokal, speichert nichts
+}
+```
+
+`save: false` verbirgt **beide** — die Speichern-Schaltfläche und die Statusanzeige — und macht den Namen schreibgeschützt: eine Änderung hätte nirgendwo hin. Eine Vorlage zu laden und lokal zu bearbeiten funktioniert weiterhin.
+
+::: warning Keine Sicherheitsgrenze
+Diese Schalter leben im Browser des Nutzers. Sie prägen die Oberfläche; sie schützen Ihre API nicht. Erzwingen Sie Berechtigungen serverseitig.
+:::
+
+## Der Header
+
+<!-- prettier-ignore -->
+| Position | Inhalt |
+| --- | --- |
+| links | der Vorlagenname, per Klick bearbeitbar |
+| rechts | der Speicherstatus, dann die Speichern-Schaltfläche |
+
+Der Name wird mit `Enter` oder beim Verlassen des Feldes übernommen, mit `Escape` verworfen; ein leerer Wert wird abgelehnt und der vorherige wiederhergestellt — ein geleertes Feld ist weit eher ein Versehen als eine Absicht. Eine Umbenennung ist eine gewöhnliche ungespeicherte Änderung: sie markiert den Editor als geändert und wird beim nächsten Speichern übertragen, im selben Patch wie der Inhalt.
+
+Die Statusanzeige kennt drei Zustände:
+
+| Zustand | Wird gezeigt, wenn |
+| --- | --- |
+| **Nicht gespeichert** | es Änderungen gibt, von denen der Editor weiß, dass sie nicht gespeichert sind |
+| **Gespeichert** | ein Speichern gerade erfolgreich war (für einige Sekunden) |
+| **Speichern fehlgeschlagen** | der letzte Versuch abgelehnt wurde — Ihre Fehlermeldung steht im Tooltip |
+
+Die Speichern-Schaltfläche ist deaktiviert, solange keine Vorlage existiert, denn `save()` aktualisiert eine ID. Rufen Sie zuerst `create()` oder `load()` auf.
+
+## Autosave
+
+```ts
+await init({
+  container: '#editor',
+  templates: { /* … */ },
+  autoSave: { debounce: 2000 },  // `true` nutzt den Standard 1000
+});
+```
+
+Die Verzögerung beginnt bei jeder Änderung neu, sodass aus einer Tippfolge ein einziges Speichern wird. Sie pausiert, während der Nutzer durch Undo/Redo navigiert, und überspringt das Speichern vollständig, wenn nichts geändert wurde.
+
+`autoSave` benötigt einen `templates`-Provider — ohne ihn gibt es kein Ziel, und die Option wird mit einer Warnung ignoriert.
+
+## Cmd+S
+
+`Cmd`/`Strg`+`S` bedeutet immer „jetzt speichern":
+
+- mit einem `templates`-Provider wird `save()` aufgerufen;
+- ohne ihn wird der `onChange`-Debounce sofort ausgelöst, sodass der Tastendruck auch dann ankommt, wenn Sie über `onChange` speichern.
+
+## Ungespeicherte Änderungen
+
+Zwei Mechanismen, denn keiner deckt den anderen ab:
+
+```ts
+await init({
+  container: '#editor',
+  templates: { /* … */ },
+  onDirtyChange: (isDirty) => { hasUnsavedWork.value = isDirty },
+  unsavedChangesGuard: true,  // der Standard
+});
+```
+
+**`unsavedChangesGuard`** ist eine `beforeunload`-Rückfrage, standardmäßig aktiv, sobald ein Provider konfiguriert ist. Sie deckt das Schließen oder Neuladen des Tabs ab. Setzen Sie sie auf `false`, um die Rückfrage selbst zu übernehmen. Ohne Provider warnt der Editor nie — er kann nicht wissen, ob Sie die Änderung bereits gespeichert haben.
+
+**`onDirtyChange`** (und sein abfragbares Gegenstück `editor.isDirty()`) ist das, womit Sie einen clientseitigen Router absichern, denn `beforeunload` löst bei einer Navigation innerhalb der Anwendung nicht aus:
+
+```ts
+router.beforeEach((to, from, next) => {
+  if (editor.isDirty() && !confirm('Ungespeicherte Änderungen verwerfen?')) return next(false);
+  next();
+});
+```
+
+`onDirtyChange` funktioniert mit und ohne Provider. Beide Schlüssel akzeptiert auch `initCloud()`, zu denselben Bedingungen — Cloud hat immer einen Speicherort, die Rückfrage ist dort also aktiv, sofern Sie sie nicht abschalten.
+
+## Die Instanz-API
+
+```ts
+const template = await editor.create({ name: 'Willkommens-E-Mail' });
+await editor.load(template.id);
+await editor.save();
+editor.isDirty();  // boolean
+```
+
+- **`create(input?)`** speichert den aktuellen Inhalt als neue Vorlage. Übergeben Sie `content`, um zuvor den Inhalt des Editors zu ersetzen — `create({ content })` lädt und speichert damit in einem Schritt.
+- **`load(id)`** holt eine Vorlage und macht sie zum Inhalt des Editors; lokale Änderungen werden verworfen.
+- **`save()`** speichert Name und Inhalt der geladenen Vorlage als einen Patch.
+
+Alle drei sind stets im Typ vorhanden und werden mit einer erklärenden Fehlermeldung abgelehnt, wenn kein Provider konfiguriert ist oder der Provider die jeweilige Methode zurückhält. Sichern Sie sie mit `try` / `catch` ab, wenn Sie sie aus einer eigenen Schaltfläche aufrufen — der Header des Editors verbirgt selbst, was er nicht kann.
+
+## Speichern ohne Provider
+
+Ein Provider ist nicht der einzige Weg, eine Vorlage zu behalten. `onChange` löst verzögert bei jeder Inhaltsänderung aus:
+
+```ts
+await init({
+  container: '#editor',
+  onChange: (content) => myStore.save(content),
+});
+```
+
+`Cmd`/`Strg`+`S` löst diesen Debounce sofort aus, sodass der Tastendruck bei Ihnen ankommt. Dann liegen auch die Speichern-Schaltfläche, der Status und die Rückfrage bei ungespeicherten Änderungen bei Ihnen. Der Provider existiert, damit Sie das nicht bauen müssen; `onChange` existiert für die Fälle, in denen die Oberfläche des Editors nicht das ist, was Sie wollen.
+
+## Templatical Cloud
+
+`initCloud()` bringt seinen eigenen `templates`-Provider mit, sodass der gesamte Lebenszyklus — Namensfeld, Speichern-Schaltfläche, Statusanzeige, `Cmd`/`Strg`+`S`, Autosave und die Warnung bei ungespeicherten Änderungen — ohne einen zu übergebenden Schlüssel und ohne eigenen Speicher funktioniert:
+
+```ts
+const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
+await editor.create({ name: 'Frühjahrskampagne' });
+```
+
+Sein `save` zeichnet außerdem eine automatische Version auf, gedrosselt auf höchstens eine pro Minute — deshalb funktioniert der [Versionsverlauf](/de/backend/version-history) auf Cloud ohne jede weitere Konfiguration.
+
+Einen `templates`-Schlüssel nimmt `initCloud()` **nicht** an. Die ID, die Clouds Speicher ausstellt, verankert Kommentare, Versionsverlauf, Zusammenarbeit, KI und den serverseitigen Export — keines davon lässt sich auf einen Speicher richten, für den Cloud nie IDs ausgestellt hat. Ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert.
+
+Siehe [Mit Templates arbeiten](/de/cloud/getting-started#mit-templates-arbeiten).
+
+## Referenz
+
+- [`init()`-Optionen](/de/api/editor)
+- [Rendering & Export](/de/backend/render) — Bring-your-own-Rendering für MJML/HTML
+- [Gespeicherte Blöcke](/de/backend/saved-blocks) — dieselbe Bring-your-own-Storage-Form, für wiederverwendbare Blockgruppen
+- [Test-E-Mails](/de/backend/test-email) — Bring-your-own-Versand
