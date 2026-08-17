@@ -399,9 +399,6 @@ async function initEditor(templateId?: string): Promise<void> {
         currentTemplateId.value = template.id;
         console.log("[Cloud SDK] Template loaded:", template.id);
       },
-      onSave: (result) => {
-        console.log("[Cloud SDK] Template saved:", result);
-      },
       onError: (error: Error) => {
         console.error("[Cloud SDK]", error);
       },

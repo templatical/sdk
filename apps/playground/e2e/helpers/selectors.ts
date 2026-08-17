@@ -62,6 +62,43 @@ export const SELECTORS = {
   savedBlocksCategoryInput: '[data-testid="saved-blocks-category-input"]',
   savedBlocksCategoryFilter: '[data-testid="saved-blocks-category-filter"]',
   savedBlocksCategoryBadge: '[data-testid="saved-block-category"]',
+  // Templates (BYO save/load; the playground's localStorage provider is always on)
+  templateName: '[data-testid="template-name"]',
+  templateNameInput: '[data-testid="template-name-input"]',
+  templateSave: '[data-testid="template-save"]',
+  saveStatusUnsaved: '[data-testid="save-status-unsaved"]',
+  saveStatusSaved: '[data-testid="save-status-saved"]',
+  saveStatusError: '[data-testid="save-status-error"]',
+
+  // Version history (BYO; the playground's localStorage provider is always on)
+  versionHistory: '[data-testid="version-history"]',
+  versionHistoryToggle: '[data-testid="version-history-toggle"]',
+  versionHistoryDropdown: '[data-testid="version-history-dropdown"]',
+  versionHistoryEntry: '[data-testid="version-history-entry"]',
+  versionHistoryEmpty: '[data-testid="version-history-empty"]',
+  versionHistoryOlder: '[data-testid="version-history-older"]',
+  versionHistoryNewer: '[data-testid="version-history-newer"]',
+  versionPreviewBanner: '[data-testid="version-preview-banner"]',
+  versionPreviewCancel: '[data-testid="version-preview-cancel"]',
+  versionPreviewRestore: '[data-testid="version-preview-restore"]',
+  restoreVersionDialog: '[data-testid="restore-version-dialog"]',
+  restoreVersionCancel: '[data-testid="restore-version-cancel"]',
+  restoreVersionDiscard: '[data-testid="restore-version-discard"]',
+  restoreVersionSaveFirst: '[data-testid="restore-version-save-first"]',
+
+  // Comments (BYO review store; the playground's localStorage provider is always on)
+  commentsTrigger: '[data-testid="comments-trigger"]',
+  commentsSidebar: '[data-testid="comments-sidebar"]',
+  commentsFilterAll: '[data-testid="comments-filter-all"]',
+  commentsFilterUnresolved: '[data-testid="comments-filter-unresolved"]',
+  commentThread: '[data-testid="comment-thread"]',
+  commentsInput: '[data-testid="comments-input"]',
+  commentsSend: '[data-testid="comments-send"]',
+  commentResolve: '[data-testid="comment-resolve"]',
+  commentEdit: '[data-testid="comment-edit"]',
+  commentDelete: '[data-testid="comment-delete"]',
+  commentReply: '[data-testid="comment-reply"]',
+
   // Test email (BYO sender; the playground's fake provider is always on)
   testEmailTrigger: '[data-testid="test-email-trigger"]',
   testEmailRecipient: '[data-testid="test-email-recipient"]',
