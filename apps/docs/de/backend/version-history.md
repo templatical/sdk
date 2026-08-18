@@ -40,9 +40,11 @@ const editor = await init({
 });
 ```
 
-**Standardmäßig weggelassen.** Ohne Provider wird das Steuerelement nicht gerendert und keine seiner UI heruntergeladen. Derselbe Schlüssel und derselbe Typ funktionieren bei `initCloud()`, sodass ein Wechsel zu Cloud bedeutet, den Schlüssel zu löschen (um den Verlauf von Cloud zu übernehmen) oder ihn genau so zu lassen, wie er ist (um Ihren eigenen zu behalten).
+**Standardmäßig weggelassen.** Ohne Provider wird das Steuerelement nicht gerendert, und keiner seiner UI-Teile wird geladen.
 
-Eine Version gehört zu einer Vorlagen-ID, deshalb erscheint das Steuerelement erst, sobald `create()` oder `load()` eine angehängt hat. Siehe [Speichern & Laden](/de/backend/templates).
+Versionen sind an eine Vorlagen-ID gebunden, deshalb erscheint das Steuerelement erst, sobald `create()` oder `load()` eine angehängt hat. Siehe [Speichern & Laden](/de/backend/templates).
+
+`initCloud()` nimmt keinen `versionHistory`-Schlüssel an — siehe [Versionsverlauf auf Cloud](/de/cloud/version-history).
 
 ## Der Vertrag
 
@@ -64,11 +66,11 @@ interface VersionHistoryProvider {
 }
 ```
 
-`list` und `get` sind die Operationen und lassen sich nicht abschalten. `create` und `restore` nehmen jeweils `false` statt einer Funktion entgegen — dieselbe Form, die [gespeicherte Blöcke](/de/backend/saved-blocks) und [Vorlagen](/de/backend/templates) verwenden, und aus demselben Grund: Eine Mutation abzuschalten sollte eine Entscheidung sein, die Sie *aussprechen*, und nie etwas, das entsteht, weil Sie eine Methode vergessen haben.
+`list` und `get` lassen sich nicht abschalten. `create` und `restore` nehmen jeweils `false` statt einer Funktion entgegen — siehe [Eine Mutation deaktivieren](/de/backend/#eine-mutation-deaktivieren).
 
 Der Editor rendert die Reihenfolge von `list()` unverändert und sortiert nie um. Die Reihenfolge bestimmt Ihr Speicher.
 
-## Ihr `save` zeichnet die Versionen auf, nicht der Editor
+## Versionen aufzeichnen
 
 **Der Editor zeichnet nie von sich aus eine Version auf.** Das `TemplatesProvider.save`, das Sie bereitstellen, entscheidet, ob ein Speichern auch eine Version aufzeichnet:
 
@@ -85,11 +87,13 @@ const templates = {
 };
 ```
 
-Das ist das Einzige an diesem Entwurf, das sich nicht aus der Form des Vertrags ergibt, und es ist Absicht: Drosselung, Aufbewahrung und Deduplizierung sind Entscheidungen, die nur die Seite treffen kann, die den Speicher bezahlt. Ein Editor, der pro Autosave-Takt eine Version aufzeichnet, würde den Verlauf auf fremder Festplatte in ein Tastenprotokoll verwandeln.
+`create` existiert für Versionen, die eine *Person* anfordert — ein benannter Prüfpunkt vor einer riskanten Änderung. Der Editor ruft es nie von sich aus auf. Die Regel gilt wörtlich: Nichts, was der Editor tut — auch das Wiederherstellen nicht —, zeichnet hinter Ihrem Rücken eine Version auf.
 
-`create` existiert für Versionen, die eine *Person* anfordert — ein benannter Prüfpunkt vor einer riskanten Änderung. **Der Editor ruft es nie von sich aus auf.** Die Regel gilt wörtlich: Nichts, was der Editor tut — auch das Wiederherstellen nicht —, zeichnet hinter Ihrem Rücken eine Version auf.
+::: tip Warum der Editor sich heraushält
+Drosselung, Aufbewahrung und Deduplizierung sind Entscheidungen, die nur die Seite treffen kann, die den Speicher bezahlt. Ein Editor, der pro Autosave-Takt eine Version aufzeichnet, würde den Verlauf auf fremder Festplatte in ein Tastenprotokoll verwandeln.
+:::
 
-Bleibt eine Gefahr, die der Editor durch Nachfragen löst statt durch Schreiben: Ein bestätigtes Wiederherstellen verwirft alles, was Sie nicht gespeichert haben. Siehe [Wiederherstellen](#wiederherstellen).
+Die eine Gefahr, die bleibt — ein Wiederherstellen verwirft ungespeicherte Arbeit —, löst der Editor durch Nachfragen statt durch Schreiben. Siehe [Wiederherstellen](#wiederherstellen).
 
 ## Wiederherstellen
 
@@ -106,19 +110,19 @@ restore: async (templateId, versionId) => {
 
 Zwei Roundtrips und ein etwas größeres Fehlerfenster — und weil Ihr `save` eine Version aufzeichnet, ist es ganz nebenbei nur anfügend.
 
-Mit `restore: false` ist der Verlauf durchsuch- und vorschaubar, und die Schaltfläche „Wiederherstellen“ wird gar nicht erst gerendert.
+Mit `restore: false` bleibt der Verlauf durchsuch- und vorschaubar, und die Schaltfläche „Wiederherstellen“ wird nicht gerendert.
 
 ### Ungespeicherte Änderungen
 
 Das Abbrechen einer Vorschau stellt Ihre Arbeit wieder her; ein bestätigtes Wiederherstellen nicht — die Sicherung wird verworfen, alles Ungespeicherte existierte danach also nirgends mehr.
 
-Deshalb fragt „Wiederherstellen“ bei ungespeicherten Änderungen zuerst nach und bietet an, sie **vor dem Wiederherstellen zu speichern**. Die Arbeit gelangt dann auf dem gewöhnlichen Weg in den Verlauf, über Ihr `templates.save` — von der Nutzerin oder dem Nutzer ausgelöst, und nur, sofern Ihr `save` überhaupt Versionen aufzeichnet.
+„Wiederherstellen“ fragt daher bei ungespeicherten Änderungen zuerst nach und bietet an, sie **vor dem Wiederherstellen zu speichern**. Die Arbeit gelangt dann auf dem gewöhnlichen Weg in den Verlauf, über Ihr `templates.save` — von der Nutzerin oder dem Nutzer ausgelöst, und nur, sofern Ihr `save` überhaupt Versionen aufzeichnet.
 
 Ohne `templates`-Provider oder mit einem, dessen `save` auf `false` steht, wird das Angebot nicht gemacht: Die Rückfrage sagt dann, dass die Änderungen verloren gehen, weil es keinen Ort für sie gibt. Ohne ungespeicherte Änderungen gibt es nichts zu verlieren, und „Wiederherstellen“ läuft sofort durch.
 
-## Die Vorschau sofort halten
+## Der `content`-Hinweis
 
-Sobald eine Vorschau offen ist, wechselt der Sprung zu einer anderen Version die Arbeitsfläche unmittelbar. Das gilt nur, wenn der Inhalt bereits vorliegt — genau dafür ist das optionale Feld `content` an jedem Eintrag da:
+Sobald eine Vorschau offen ist, wechselt der Sprung zu einer anderen Version die Arbeitsfläche unmittelbar — sofern der Inhalt bereits vorliegt. Genau dafür ist das optionale Feld `content` an jedem Eintrag da:
 
 ```ts
 list: async (templateId) => {
@@ -133,13 +137,13 @@ list: async (templateId) => {
 },
 ```
 
-`content` ist ein **Cache-Hinweis, nie ein Ersatz für `get`**. Es wird pro Eintrag ausgewertet, sodass „die jüngsten Versionen mitliefern und ältere weglassen“ ein unterstützter Mittelweg ist und kein Behelf. Fehlt es, ruft der Editor für diese Version einmal `get` auf und merkt sich das Ergebnis — es wartet also nur der erste Besuch.
+Es ist ein **Cache-Hinweis, nie ein Ersatz für `get`**, und wird pro Eintrag ausgewertet — die jüngsten Versionen mitliefern und ältere weglassen ist ein unterstützter Mittelweg. Fehlt es, ruft der Editor für diese Version einmal `get` auf und merkt sich das Ergebnis, es wartet also nur der erste Besuch.
 
-`get` bleibt erforderlich, weil der Editor den Inhalt einer Version immer beschaffen können muss. Optimierungen dürfen nicht zur Pflicht werden.
+`get` bleibt erforderlich: Der Editor muss den Inhalt einer Version immer beschaffen können, ob der Hinweis da ist oder nicht.
 
 Der Adapter von Templatical Cloud liefert `content` bei jedem Eintrag mit, eine Cloud-Sitzung wartet also nie.
 
-## Was Nutzende sehen
+## Im Editor
 
 - **Das Verlaufs-Steuerelement** sitzt im Header neben den Umschaltern für Ansichtsgröße und Vorschau: Pfeile, um älter und neuer zu blättern, und ein Aufklappmenü mit allen Versionen samt relativem Zeitstempel, ihrer Bezeichnung, falls vorhanden, und einem *auto*-Abzeichen für die beim Speichern aufgezeichneten.
 - **Das Vorschaubanner** erscheint, solange eine frühere Version auf der Arbeitsfläche liegt, mit „Abbrechen“ und „Wiederherstellen“.
