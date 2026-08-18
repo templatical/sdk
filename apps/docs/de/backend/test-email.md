@@ -150,17 +150,4 @@ Selbst vollständig aufgelöst ist sie keine Byte-für-Byte-Vorschau der zugeste
 
 Die Vorschau liegt im ohnehin verzögert geladenen Chunk des Dialogs — wer `testEmail` nicht konfiguriert, lädt davon nichts.
 
-## Templatical Cloud
-
-`initCloud()` nimmt **denselben `testEmail`-Schlüssel mit demselben Typ**, ein Wechsel zwischen beiden ist also eine Löschung und kein Umbau:
-
-```ts
-await initCloud({ container, auth });                    // Cloud versendet
-await initCloud({ container, auth, testEmail: mine });   // Ihr Versand, auf Cloud
-```
-
-Lassen Sie ihn weg, versendet Cloud: Es speichert die Vorlage, rendert das HTML serverseitig und stellt zu — ohne `renderToMjml`-Aufruf und ohne MJML-Compiler auf Ihrer Seite. Zwei Unterschiede sollten Sie kennen. Clouds Liste erlaubter Empfänger kommt mit dem Auth-Token und ist **signiert**, das Backend prüft diese Signatur — genau das kann ein aus dem Browser geliefertes `allowedRecipients` nie sein. Und weil Cloud aus der *gespeicherten* Kopie rendert, erscheint die Test-Schaltfläche erst, wenn die Vorlage gespeichert wurde.
-
-Ein von Ihnen gelieferter Versand ist nicht plangebunden — der Plan lizenziert Clouds Versand, nicht die Oberfläche des Editors.
-
-Siehe [Test-E-Mails auf Cloud](/de/cloud/test-emails).
+**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Test-E-Mails auf Cloud](/de/cloud/test-emails).

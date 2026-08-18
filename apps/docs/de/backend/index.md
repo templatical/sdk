@@ -82,31 +82,29 @@ Jede Provider-Methode darf ablehnen, und der Editor nimmt eine Ablehnung wörtli
 
 Schreiben Sie diese Meldungen für die Person, die sie lesen wird — mehrere landen wortgleich in der Oberfläche.
 
-## Templatical Cloud ist eine dieser Implementierungen
+## Sie möchten das alles nicht selbst bauen?
 
-Templatical Cloud ist kein anderer Editor, kein Fork und keine Codebasis-Obermenge. Es ist eine Erstanbieter-Implementierung genau dieser Schnittstellen: eine Editor-Komponente, ein Kern, ein Header hinter beiden Einstiegspunkten.
-
-**Zwei der sechs nehmen bei `initCloud()` denselben Schlüssel mit demselben Typ**, ein Wechsel zwischen beiden ist also eine Löschung und kein Umbau:
+Templatical Cloud implementiert alle sechs Verträge. Richten Sie `initCloud()` auf einen Auth-Endpunkt, und Speichern, Versionsverlauf, Kommentare, gespeicherte Blöcke, Testversand und Rendering funktionieren — ohne eigenen Speicher, ohne selbst geschriebene Endpunkte, ohne gehosteten MJML-Compiler.
 
 ```ts
-// Clouds Blockbibliothek und Clouds Versand:
-await initCloud({ container, auth });
+import { initCloud } from '@templatical/editor';
 
-// Ihre eigenen, auf Cloud:
-await initCloud({ container, auth, savedBlocks: mine, testEmail: mine });
+const editor = await initCloud({
+  container: '#editor',
+  auth: { url: '/api/templatical/token' },
+});
 ```
 
-Diese beiden lassen sich gefahrlos mischen, weil Cloud sie nie eigenständig nutzt: Gespeicherte Blöcke werden auf die Arbeitsfläche kopiert und sonst nirgends gelesen, und Cloud verschickt von sich aus keine Test-E-Mail.
+Hinzu kommt, wofür der Open-Source-Editor überhaupt keinen Vertrag hat:
 
-Die übrigen vier werden abgelehnt, aus zwei Gründen — ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert:
+- **KI** — Inhalte aus einem Prompt erzeugen, eine Auswahl umformulieren, ein Design in eine Vorlage verwandeln
+- **Echtzeit-Zusammenarbeit** — Live-Cursor, Präsenz und Block-Sperren über einen verwalteten WebSocket
+- **Medienbibliothek** — Uploads, Ordner, Suche und Zuschnitt
+- **Template-Bewertung** — automatische Prüfungen auf Zustellbarkeit und Barrierefreiheit
 
-<!-- prettier-ignore -->
-| Schlüssel | Warum `initCloud()` ihn ablehnt |
-| --- | --- |
-| `templates`, `versionHistory`, `comments`, `user` | **An eine von Cloud ausgestellte Vorlagen-ID gebunden.** Cloud verankert Versionen und Kommentare an eigenen IDs und signiert die Autorenschaft gegen das Auth-Token. Ein Speicher, für den Cloud nie IDs ausgestellt hat, lässt sich deshalb nicht an Funktionen anschließen, die Cloud hostet. |
-| `render` | **Cloud rendert für den Versand eigenständig** — Test-E-Mail, geplante Sendungen und Exporte. Ein Provider würde ändern, was Sie in der Vorschau sehen und exportieren, nie das, was Cloud versendet. |
+Derselbe Editor, dasselbe Blockmodell, dieselben Verträge: Cloud ist eine Erstanbieter-Implementierung der Schnittstellen auf dieser Seite, kein Fork. Sie können weiterhin Ihre eigene Blockbibliothek oder Ihren eigenen Versand mitbringen und den Rest Cloud überlassen.
 
-Jede Seite in diesem Abschnitt endet damit, was Cloud für diese Fähigkeit implementiert — für alle, die zwischen Selbstbauen und Zukaufen abwägen.
+[Templatical Cloud entdecken →](/de/cloud/)
 
 ## Was kein Provider ist
 

@@ -122,6 +122,8 @@ const editor = await initCloud({
 });
 ```
 
+Jede Cloud-gestützte Fähigkeit hat eine eigene Seite: [Templates](/de/cloud/templates), [Rendering](/de/cloud/rendering), [Gespeicherte Blöcke](/de/cloud/saved-blocks), [Kommentare](/de/cloud/comments), [Versionsverlauf](/de/cloud/version-history) und [Test-E-Mails](/de/cloud/test-emails).
+
 ## Mit Templates arbeiten
 
 ### Neues Template anlegen
@@ -150,6 +152,8 @@ const template = await editor.save();
 
 `save()` liefert das gespeicherte `Template`. Rendering ist ein eigener Provider, also separat aufrufbar, und ein Speichervorgang bezahlt nicht bei jedem Autosave-Tick einen serverseitigen Render mit.
 
+Autosave, der Schutz vor ungespeicherten Änderungen und die Version, die jeder Speichervorgang automatisch anlegt, sind unter [Templates](/de/cloud/templates) beschrieben.
+
 ### Export
 
 ```js
@@ -157,11 +161,7 @@ const mjml = await editor.toMjml();
 const html = await editor.toHtml();
 ```
 
-Beide rendern über Templatical Cloud, dessen Ausgabe eine bewusste Obermenge der des Browsers ist: Ein Countdown-Block wird zu einem serverseitig erzeugten animierten GIF, ein Video-Block erhält einen zusammengesetzten Play-Button — beides kann ein Browser zur Renderzeit nicht leisten. Cloud führt den *veröffentlichten* `@templatical/renderer` mit genau diesen zwei eingespeisten Funktionen aus, sodass nichts anderes abweichen kann.
-
-Cloud rendert das **gespeicherte** Template, jeder Aufruf speichert also zuerst — und eine Sitzung, die nie ein Template erzeugt hat, erhält eine klare Ablehnung statt eines Exports von nichts.
-
-Übergeben Sie Ihren eigenen [`render`-Provider](/de/backend/render), um woanders zu rendern; Schlüssel und Typ sind identisch mit denen von `init()`, es ist also in jede Richtung eine einzeilige Änderung.
+Beide rendern serverseitig, aus dem **gespeicherten** Template — jeder Aufruf speichert also zuerst, und eine Sitzung, die nie ein Template erzeugt hat, erhält eine klare Ablehnung statt eines Exports von nichts. `initCloud()` nimmt keinen `render`-Provider an: Siehe [Rendering](/de/cloud/rendering) dazu, was Clouds Ausgabe gegenüber der des Browsers hinzufügt und warum der Schlüssel abgelehnt wird.
 
 ## Aufräumen
 

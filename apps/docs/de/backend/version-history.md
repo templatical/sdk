@@ -170,10 +170,4 @@ await history.resolveContent(v);             // der Hinweis oder get(), zwischen
 await history.restore(v.id);
 ```
 
-## Templatical Cloud
-
-Cloud implementiert denselben Vertrag, ohne dass Sie etwas konfigurieren: Das Verlaufs-Steuerelement erscheint, sobald eine Vorlage angelegt oder geladen wurde. Sein `list` liefert jeden Eintrag **samt Inhalt**, sodass das Durchblättern des Verlaufs nie wartet, und beide Mutationen sind aktiv — es gibt keine Stufe, die den Verlauf auflisten, aber nicht daraus wiederherstellen kann. Die automatischen Versionen stammen aus Clouds eigenem `templates.save`, gedrosselt auf höchstens eine pro Minute, genau wie [der Vertrag es vorsieht](#ihr-save-zeichnet-die-versionen-auf-nicht-der-editor).
-
-`initCloud()` nimmt keinen `versionHistory`-Schlüssel an: Eine Version ist an eine Vorlagen-ID gebunden, die Cloud ausgestellt hat. Ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert.
-
-Siehe [Versionsverlauf auf Cloud](/de/cloud/version-history).
+**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Versionsverlauf auf Cloud](/de/cloud/version-history).

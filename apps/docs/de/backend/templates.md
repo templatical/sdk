@@ -197,24 +197,11 @@ await init({
 
 `Cmd`/`Strg`+`S` löst diesen Debounce sofort aus, sodass der Tastendruck bei Ihnen ankommt. Dann liegen auch die Speichern-Schaltfläche, der Status und die Rückfrage bei ungespeicherten Änderungen bei Ihnen. Der Provider existiert, damit Sie das nicht bauen müssen; `onChange` existiert für die Fälle, in denen die Oberfläche des Editors nicht das ist, was Sie wollen.
 
-## Templatical Cloud
-
-`initCloud()` bringt seinen eigenen `templates`-Provider mit, sodass der gesamte Lebenszyklus — Namensfeld, Speichern-Schaltfläche, Statusanzeige, `Cmd`/`Strg`+`S`, Autosave und die Warnung bei ungespeicherten Änderungen — ohne einen zu übergebenden Schlüssel und ohne eigenen Speicher funktioniert:
-
-```ts
-const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
-await editor.create({ name: 'Frühjahrskampagne' });
-```
-
-Sein `save` zeichnet außerdem eine automatische Version auf, gedrosselt auf höchstens eine pro Minute — deshalb funktioniert der [Versionsverlauf](/de/backend/version-history) auf Cloud ohne jede weitere Konfiguration.
-
-Einen `templates`-Schlüssel nimmt `initCloud()` **nicht** an. Die ID, die Clouds Speicher ausstellt, verankert Kommentare, Versionsverlauf, Zusammenarbeit, KI und den serverseitigen Export — keines davon lässt sich auf einen Speicher richten, für den Cloud nie IDs ausgestellt hat. Ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert.
-
-Siehe [Mit Templates arbeiten](/de/cloud/getting-started#mit-templates-arbeiten).
-
 ## Referenz
 
 - [`init()`-Optionen](/de/api/editor)
 - [Rendering & Export](/de/backend/render) — Bring-your-own-Rendering für MJML/HTML
 - [Gespeicherte Blöcke](/de/backend/saved-blocks) — dieselbe Bring-your-own-Storage-Form, für wiederverwendbare Blockgruppen
 - [Test-E-Mails](/de/backend/test-email) — Bring-your-own-Versand
+
+**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Templates auf Cloud](/de/cloud/templates).

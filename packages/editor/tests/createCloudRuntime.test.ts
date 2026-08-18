@@ -21,9 +21,11 @@ const mockAuthManager = {
   projectId: "proj-42",
   // The `user` claim Cloud signs comment writes against, and derives
   // `init({ user })` from. Nulled in one test to cover a token without it.
-  userConfig: { id: "u-1", name: "Ada", signature: "sig-1" } as
-    | { id: string; name: string; signature: string }
-    | null,
+  userConfig: { id: "u-1", name: "Ada", signature: "sig-1" } as {
+    id: string;
+    name: string;
+    signature: string;
+  } | null,
 };
 
 vi.mock("@templatical/core/cloud", () => {
@@ -339,12 +341,25 @@ describe("bootstrapCloud — providers handed to init()", () => {
     expect(preRenderCustomBlocks).toHaveBeenCalledTimes(1);
   });
 
-  it("prefers a consumer-supplied render provider and never builds Cloud's", async () => {
-    const render = { compileMjml: vi.fn() };
+  it("ignores a consumer-supplied render provider, and says so", async () => {
+    // Rejected for a different reason than the id-keyed three: Cloud renders
+    // server-side for test email, sends and exports, so a consumer's renderer
+    // would have changed only what the editor previews and exports — never what
+    // Cloud delivers.
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const render = { compileMjml: vi.fn(), toMjml: vi.fn(), toHtml: vi.fn() };
+
     const { providers } = await bootstrap({ render });
 
-    expect(createCloudRenderProvider).not.toHaveBeenCalled();
-    expect(providers.render).toBe(render);
+    expect(createCloudRenderProvider).toHaveBeenCalledTimes(1);
+    expect(providers.render).not.toBe(render);
+    expect(render.toMjml).not.toHaveBeenCalled();
+    expect(
+      warn.mock.calls.some((a) =>
+        a.join(" ").includes("does not accept a `render` provider"),
+      ),
+    ).toBe(true);
+    warn.mockRestore();
   });
 });
 
@@ -718,7 +733,11 @@ describe("bootstrapCloud — comments", () => {
       const { user } = await bootstrap();
       expect(user).toBe(undefined);
     } finally {
-      mockAuthManager.userConfig = { id: "u-1", name: "Ada", signature: "sig-1" };
+      mockAuthManager.userConfig = {
+        id: "u-1",
+        name: "Ada",
+        signature: "sig-1",
+      };
     }
   });
 

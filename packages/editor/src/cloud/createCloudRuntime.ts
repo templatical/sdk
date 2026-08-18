@@ -242,6 +242,22 @@ export async function bootstrapCloud(
         "init() to bring your own.",
     );
   }
+  // Rejected for a different reason than the three above: not the join key, but
+  // because Cloud renders on its own for test email, scheduled sends and API
+  // exports (`createCloudTestEmailProvider` calls `exportHtml` directly). A
+  // consumer provider would have changed `toMjml()` / `toHtml()` and nothing
+  // else, so what the user previewed and exported was not what Cloud delivered —
+  // and Cloud's output is a deliberate superset (countdown GIFs, composited video
+  // thumbnails), so the consumer's was also worse for those blocks.
+  if ((config as { render?: unknown }).render) {
+    logger.warn(
+      "initCloud does not accept a `render` provider — Cloud renders " +
+        "server-side for test email, sends and exports, so a supplied renderer " +
+        "would change only what you preview and export, never what Cloud " +
+        "delivers. The supplied provider is ignored. For your own MJML, call " +
+        "renderToMjml(editor.getContent()) from @templatical/renderer.",
+    );
+  }
 
   // --- Providers ------------------------------------------------------------
 
@@ -296,21 +312,17 @@ export async function bootstrapCloud(
         : false,
   };
 
-  // Same key and same type as `init({ render })`, so upgrading an OSS integration
-  // is a deletion. A consumer-supplied provider replaces Cloud's and is
-  // deliberately not entitlement-gated; `??` short-circuits, so Cloud's adapter
-  // isn't constructed at all in that case.
-  const render: RenderProvider =
-    config.render ??
-    createCloudRenderProvider({
-      authManager,
-      getTemplateId,
-      // Plain `editor.save()`: the templates adapter below already pre-renders
-      // custom blocks on every save, which is exactly what the render endpoint
-      // needs, since it exports from the stored copy rather than from
-      // `payload.content`.
-      save: () => requireEditor().save(),
-    });
+  // Always Cloud's — see the rejected-keys block above. Cloud renders
+  // independently for delivery, so a second renderer could only disagree with it.
+  const render: RenderProvider = createCloudRenderProvider({
+    authManager,
+    getTemplateId,
+    // Plain `editor.save()`: the templates adapter below already pre-renders
+    // custom blocks on every save, which is exactly what the render endpoint
+    // needs, since it exports from the stored copy rather than from
+    // `payload.content`.
+    save: () => requireEditor().save(),
+  });
 
   const versionHistory = createCloudVersionHistoryProvider(authManager);
 

@@ -122,6 +122,8 @@ const editor = await initCloud({
 });
 ```
 
+Each Cloud-backed capability has its own page: [Templates](/cloud/templates), [Rendering](/cloud/rendering), [Saved Blocks](/cloud/saved-blocks), [Comments](/cloud/comments), [Version History](/cloud/version-history) and [Test Emails](/cloud/test-emails).
+
 ## Working with Templates
 
 ### Create a New Template
@@ -150,6 +152,8 @@ const template = await editor.save();
 
 `save()` resolves to the stored `Template`. Rendering is its own provider, so it is separately callable and a save does not pay for a server render on every autosave tick.
 
+Autosave, the unsaved-changes guard and the automatic version every save records are covered in [Templates](/cloud/templates).
+
 ### Export
 
 ```js
@@ -157,11 +161,7 @@ const mjml = await editor.toMjml();
 const html = await editor.toHtml();
 ```
 
-Both render through Templatical Cloud, whose output is a deliberate superset of the browser's: a countdown block resolves to a live server-generated animated GIF and a video block gets a composited play button, neither of which a browser can produce at render time. Cloud runs the *published* `@templatical/renderer` with exactly those two functions injected, so nothing else can diverge.
-
-Cloud renders the **saved** template, so each call saves first — and a session that has never created a template gets a clear rejection rather than an export of nothing.
-
-Pass your own [`render` provider](/backend/render) to render somewhere else instead; the key and its type are identical to `init()`'s, so it is a one-line change either way.
+Both render server-side, from the **saved** template — so each call saves first, and a session that has never created a template gets a clear rejection rather than an export of nothing. `initCloud()` does not take a `render` provider: see [Rendering](/cloud/rendering) for what Cloud's output adds over the browser's, and why the key is refused.
 
 ## Cleanup
 

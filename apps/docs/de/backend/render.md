@@ -229,29 +229,10 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 
 `UNRENDERABLE_MARKER_PREFIX` ist der stabile Anfangstext des Markers — prüfen Sie darauf, bevor Sie versenden. `renderUnrenderableBlock(block)` erzeugt einen Marker und protokolliert die Warnung. Eine `blockRenderers`-Überschreibung kann damit für eine Variante, die sie nicht verarbeiten kann, genauso degradieren, anstatt `""` zurückzugeben und das stille Verschwinden wieder einzuführen.
 
-## Templatical Cloud
-
-`initCloud()` nimmt **keinen** `render`-Schlüssel — Cloud rendert immer, und ein aus JavaScript übergebener Provider wird mit einer Konsolen-Warnung ignoriert.
-
-Der Grund: Cloud rendert **auch für den Versand serverseitig** — Test-E-Mails, geplante Sendungen und API-Exporte laufen alle über den eigenen Renderer. Ein Provider hätte hier nur `toMjml()` und `toHtml()` verändert und sonst nichts; was Sie in der Vorschau sehen und exportieren, wäre also nicht das, was Cloud versendet. Wenn Sie auf Cloud Ihr eigenes MJML brauchen, rufen Sie den Renderer direkt auf:
-
-```ts
-import { renderToMjml } from '@templatical/renderer';
-
-const mjml = await renderToMjml(editor.getContent());
-```
-
-Cloud rendert serverseitig. Die Ausgabe ist eine bewusste Obermenge der des Browsers — das Countdown-GIF und der Video-Play-Button von oben — und Cloud führt den *veröffentlichten* Renderer mit genau diesen zwei eingespeisten Funktionen aus, sodass nichts anderes abweichen kann.
-
-Zwei Konsequenzen, die Sie kennen sollten:
-
-- **Cloud rendert das gespeicherte Template**, jeder `toMjml()`- / `toHtml()`-Aufruf speichert also zuerst. Eine Sitzung, die nie ein Template erzeugt hat, erhält eine klare Ablehnung statt eines Exports von nichts.
-- **Das Rendern ist nicht plangebunden.** Jeder Plan rendert die Schriften, die auch auf der Arbeitsfläche verwendet werden.
-
-Damit entfallen der MJML-Compiler und der Render-Host, die Sie sonst betreiben müssten, plus die beiden Dinge, die ein Browser zur Renderzeit nicht erzeugen kann. Siehe [Export](/de/cloud/getting-started#export) für die Aufrufe im Editor und die [Headless-API](/de/cloud/headless-api#export), um ganz ohne Editor zu rendern.
-
 ## Referenz
 
 - [`@templatical/renderer`-API](/de/api/renderer-typescript)
 - [Speichern & Laden](/de/backend/templates) — der Save/Load-Lebenszyklus, von dem dies bewusst getrennt ist
 - [Custom Blocks](/de/guide/custom-blocks) — warum das Vorrendern Teil des Payloads ist
+
+**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Rendering auf Cloud](/de/cloud/rendering).

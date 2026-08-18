@@ -33,12 +33,32 @@ All Cloud features communicate through authenticated API endpoints and WebSocket
 | [Comments](/cloud/comments) | Inline review threads on specific blocks |
 | [Media Library](/cloud/media-library) | Upload, organize, and manage images with folders and search |
 | [Template Scoring](/cloud/template-scoring) | Automated quality checks for deliverability and accessibility |
-| [Saved Blocks](/backend/saved-blocks) | Reusable block groups — Cloud supplies the storage provider, shared across your team with no backend to implement |
+| [Rendering](/cloud/rendering) | `toMjml()` and `toHtml()` server-side, with a countdown GIF and video play button a browser cannot produce |
+| [Saved Blocks](/cloud/saved-blocks) | Reusable block groups — one library per project, shared across your team with no backend to implement |
+| [Templates](/cloud/templates) | Saving, loading, autosave and the unsaved-changes guard, with no storage to run |
 | [Test Emails](/cloud/test-emails) | Send test emails directly from the editor |
 | [Version History](/cloud/version-history) | Browse, preview and restore past versions — an open contract Cloud implements |
 | [MCP Integration](/cloud/mcp) | Connect AI agents to build and modify templates programmatically |
 | [Multi-Tenant](/cloud/multi-tenant) | Project and tenant isolation with API keys |
 | [Headless API](/cloud/headless-api) | Full programmatic access to templates, media, and rendering |
+
+## Bringing your own
+
+Cloud is a first-party implementation of the same [provider contracts](/backend/) the open-source editor exposes — one editor component, one core, one header behind both entry points. Two of the six can still be yours while Cloud handles the rest:
+
+```ts
+await initCloud({ container, auth, savedBlocks: mine, testEmail: mine });
+```
+
+They mix safely because Cloud never independently uses either. The other four are refused, and one passed from JavaScript is ignored with a console warning:
+
+<!-- prettier-ignore -->
+| Key | Why `initCloud()` refuses it |
+| --- | --- |
+| `templates`, `versionHistory`, `comments`, `user` | **Keyed to a template id Cloud issued.** Cloud anchors versions and comments to its own ids and signs authorship against the auth token. |
+| `render` | **Cloud renders independently for delivery** — test email, scheduled sends and exports. A provider would change what you preview and export, never what Cloud sends. |
+
+To own the whole set, use [`init()`](/backend/).
 
 ## Pricing
 

@@ -234,16 +234,4 @@ Die Liste bleibt nach jedem erfolgreichen Aufruf synchron — beim Erstellen vor
 
 Prüfen Sie `canCreate` / `canUpdateBlock` / `canDeleteBlock`, bevor Sie eine Aktion in Ihrer eigenen Oberfläche anbieten. Der Aufruf einer Mutation, die der Provider vorenthält — oder die ein Eintrag verbietet —, wird abgelehnt statt still erfüllt, sodass niemand eine Ablehnung für ein Speichern halten kann.
 
-## Templatical Cloud
-
-Cloud stellt einen eigenen `savedBlocks`-Provider bereit — eine Bibliothek, die alle im Projekt gemeinsam nutzen, ohne eigenen Speicher und ohne eigene Endpunkte. Bei `initCloud()` ist er die Voreinstellung, und der Schlüssel hat denselben Typ wie bei `init()`:
-
-```ts
-await initCloud({ container, auth });                     // Clouds Bibliothek
-await initCloud({ container, auth, savedBlocks: mine });  // Ihre eigene, auf Cloud
-await initCloud({ container, auth, savedBlocks: false }); // abgeschaltet
-```
-
-Clouds Bibliothek hängt an Ihrem Plan; ein von Ihnen gelieferter Provider nicht — der Plan lizenziert Clouds *Speicher*, nicht die Oberfläche des Editors.
-
-Siehe [Konfigurationsoptionen](/de/cloud/getting-started#konfigurationsoptionen) und die [Headless-API](/de/cloud/headless-api#gespeicherte-blocke).
+**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Gespeicherte Blöcke auf Cloud](/de/cloud/saved-blocks).

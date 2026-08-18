@@ -239,14 +239,4 @@ useCommentListener({
 });
 ```
 
-## Templatical Cloud
-
-Cloud implementiert diesen Vertrag und hostet das Gespräch, einschließlich des Teils, der wirklich mühsam zu bauen ist: Der Adapter implementiert `subscribe` über den Echtzeit-Kanal, den Cloud für die Zusammenarbeit ohnehin betreibt, sodass eine Cloud-Sitzung den Kommentar einer Kollegin sieht, während diese ihn schreibt. Die Kommentare von Cloud sind an die Plan-Funktion `commenting` und daran gebunden, dass die Vorlage **gespeichert** ist, denn Cloud verankert einen Kommentar serverseitig; `commenting: false` schaltet sie ab.
-
-`initCloud()` nimmt **keinen** `comments`-Schlüssel an. Ein Kommentar ist an eine Vorlagen-ID gebunden, die Cloud ausgestellt hat, und seine Autorenschaft wird vom Auth-Token signiert — Cloud besitzt also das Gespräch. Dieselbe Behandlung erhalten [Vorlagen](/de/backend/templates) und der [Versionsverlauf](/de/backend/version-history), und aus demselben Grund. Ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert.
-
-Ebenso wird `user` nicht angenommen: Cloud füllt es aus dem `user`-Claim des Auth-Tokens, also demselben Claim, den sein Backend bei jedem Schreibvorgang prüft. Eine vom Consumer gelieferte Identität könnte ihm nur widersprechen.
-
-Um Ihr eigenes Review-Backend mitzubringen, verwenden Sie `init()` — dort gehört Ihnen der gesamte Provider-Satz.
-
-Siehe [Kommentare auf Cloud](/de/cloud/comments).
+**Sie nutzen Templatical Cloud?** Cloud implementiert diesen Vertrag ohne jede Konfiguration — siehe [Kommentare auf Cloud](/de/cloud/comments).
