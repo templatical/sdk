@@ -272,7 +272,8 @@ Für Standardwerte und wie Sie diese anpassen können, siehe [Block- & Template-
 Übergeben Sie zuvor gespeichertes JSON zurück an den Editor:
 
 ```ts
-const saved = await fetch('/api/templates/123').then(r => r.json());
+const res = await fetch('/api/templates/123');
+const saved = await res.json();
 
 const editor = await init({
   container: '#editor',

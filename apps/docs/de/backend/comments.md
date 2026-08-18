@@ -15,31 +15,47 @@ const editor = await init({
   templates: myTemplatesProvider,
   user: { id: 'u_7', name: 'Ada Lovelace' },
   comments: {
-    list: (templateId) =>
-      fetch(`/api/templates/${templateId}/comments`).then((r) => r.json()),
-    create: (templateId, input) =>
-      fetch(`/api/templates/${templateId}/comments`, {
+    list: async (templateId) => {
+      const res = await fetch(`/api/templates/${templateId}/comments`);
+      return res.json();
+    },
+
+    create: async (templateId, input) => {
+      const res = await fetch(`/api/templates/${templateId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input),
-      }).then((r) => r.json()),
-    update: (templateId, commentId, patch) =>
-      fetch(`/api/templates/${templateId}/comments/${commentId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      }).then((r) => r.json()),
+      });
+      return res.json();
+    },
+
+    update: async (templateId, commentId, patch) => {
+      const res = await fetch(
+        `/api/templates/${templateId}/comments/${commentId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patch),
+        },
+      );
+      return res.json();
+    },
     delete: async (templateId, commentId) => {
       await fetch(`/api/templates/${templateId}/comments/${commentId}`, {
         method: 'DELETE',
       });
     },
-    setResolved: (templateId, commentId, resolved) =>
-      fetch(`/api/templates/${templateId}/comments/${commentId}/resolve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resolved }),
-      }).then((r) => r.json()),
+    setResolved: async (templateId, commentId, resolved) => {
+      const res = await fetch(
+        `/api/templates/${templateId}/comments/${commentId}/resolve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resolved }),
+        },
+      );
+      return res.json();
+    },
   },
 });
 ```

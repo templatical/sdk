@@ -34,7 +34,8 @@ Sie können es auch von einem CDN laden:
 import { convertHtmlTemplate } from '@templatical/import-html';
 
 // Den rohen HTML-Quelltext einer E-Mail laden
-const html = await fetch('/path/to/email.html').then((r) => r.text());
+const res = await fetch('/path/to/email.html');
+const html = await res.text();
 
 // In das Templatical-Format konvertieren
 const { content, report } = convertHtmlTemplate(html);
@@ -54,6 +55,8 @@ Die Funktion gibt ein `ImportResult` zurück mit:
 - `report` — ein Konvertierungsbericht mit dem Status jedes Elements (`converted`, `approximated`, `html-fallback` oder `skipped`)
 
 ## Element-Mapping
+
+HTML-Elemente werden auf ihre Templatical-Entsprechungen abgebildet:
 
 | HTML-Element | Templatical-Block | Status |
 |---|---|---|
@@ -100,6 +103,8 @@ Beste Treue erreichen Sie, indem Sie Styles vor dem Import inlinen. Produktions-
 
 ## Template-Einstellungen
 
+Globale Template-Einstellungen werden aus dem Dokument gelesen:
+
 - **Breite** — `width`-Attribut bzw. `style="width:…"` der äußersten `<table>`. Standard: `600`.
 - **Hintergrundfarbe** — `background-color` des `<body>`. Standard: `#ffffff`.
 - **Schriftart** — `font-family` des `<body>`. Standard: `Arial`.
@@ -116,6 +121,8 @@ Beste Treue erreichen Sie, indem Sie Styles vor dem Import inlinen. Produktions-
 - **AMP for Email** — wird in Templatical derzeit nicht unterstützt.
 
 ## Konvertierte Templates prüfen
+
+Prüfen Sie das Ergebnis nach der Konvertierung im Editor auf:
 
 1. **Element-Klassifikation** — `report.entries` auf Einträge mit `status: 'approximated'` oder `status: 'html-fallback'` durchsehen.
 2. **Bild-URLs** — relative Pfade und CID-Referenzen funktionieren in der Vorschau nicht; durch absolute URLs ersetzen.

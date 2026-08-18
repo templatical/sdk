@@ -12,9 +12,31 @@ const mjml = await editor.toMjml();
 const html = await editor.toHtml();
 ```
 
-`toMjml()` benötigt lediglich das optionale Paket [`@templatical/renderer`](/de/api/renderer-typescript). `toHtml()` braucht **eine** Sache von Ihnen, denn das SDK bündelt bewusst keinen MJML-Compiler.
+## Rendern sind zwei Umwandlungen
 
-## Das Einfachste, was funktioniert
+```
+Template-JSON  ──▶  MJML  ──▶  HTML
+```
+
+**Template-JSON → MJML** setzt Kenntnis von Templaticals Blockmodell voraus: Sektionen, Spalten, Merge-Tags, Anzeigebedingungen, eigene Blöcke. Das erledigt [`@templatical/renderer`](/de/api/renderer-typescript), und zwar im Browser.
+
+**MJML → HTML** braucht einen MJML-Compiler. Dieser Schritt ist generisch — jeder Compiler liefert dasselbe Ergebnis, und keiner weiß etwas über Templatical. **Das SDK bündelt keinen**: Das Kompilieren von MJML ist ein eigenständiges, bereits gut abgedecktes Thema und liegt außerhalb von Templaticals Aufgabenbereich. `toHtml()` erfordert daher eine Implementierung von Ihnen.
+
+Jede Umwandlung kann im Browser oder auf Ihrem Backend stattfinden — daraus ergeben sich drei Anordnungen:
+
+<!-- prettier-ignore -->
+| Sie liefern | Das SDK übernimmt | Sie erhalten | Wo `@templatical/renderer` läuft |
+| --- | --- | --- | --- |
+| einen MJML-Compiler-Endpunkt | Template → MJML, im Browser | `toMjml()` und `toHtml()` | **in Ihrem Frontend-Bundle** |
+| `toMjml` + `toHtml` | nichts | `toMjml()` und `toHtml()` | **auf Ihrem Backend**, falls Sie ihn dort einsetzen — nie im Browser |
+| nichts | Template → MJML, im Browser | nur `toMjml()` | **in Ihrem Frontend-Bundle** |
+
+## Ihr Backend macht aus MJML das HTML
+
+**Sie liefern** einen Endpunkt, der MJML entgegennimmt und HTML zurückgibt.
+**Das SDK** rendert das Template im Browser zu MJML und übergibt es.
+**Sie erhalten** `toMjml()` und `toHtml()`.
+**Sie installieren** `@templatical/renderer` **in Ihrer Frontend-Anwendung**, neben dem Editor. Ihr Backend braucht nur einen MJML-Compiler — es sieht Templaticals Blockmodell nie.
 
 Richten Sie einen Konfigurationsschlüssel auf einen beliebigen `mjml2html`-Endpunkt, und `toHtml()` funktioniert:
 
@@ -24,15 +46,59 @@ import { init } from '@templatical/editor';
 const editor = await init({
   container: '#editor',
   render: {
-    compileMjml: (mjml) =>
-      fetch('/api/mjml', { method: 'POST', body: mjml }).then((r) => r.text()),
+    compileMjml: async (mjml) => {
+      const res = await fetch('/api/mjml', { method: 'POST', body: mjml });
+      return res.text();
+    },
   },
 });
 
 const html = await editor.toHtml();
 ```
 
-Das MJML rendert weiterhin das SDK selbst — Ihr Endpunkt kompiliert es nur. Genau das ist der Punkt: **MJML-Kompilierung ist Standardware** (ein gehosteter Dienst, ein Container, ein `mjml`-CLI-Aufruf), das Rendern von Templaticals Blockmodell nicht. Ohne diese Stufe müsste jedes Backend außerhalb von Node erst einen Node-Sidecar aufsetzen, um HTML zu erhalten.
+Ihr Endpunkt führt nur die zweite Umwandlung aus — deshalb ist das die kleinste Aufgabe, mit der ein Backend HTML erzeugen kann. Templatical-Kenntnisse sind dafür nicht nötig: `mjml2html(input)` ist die gesamte Implementierung, und ein gehosteter Compiler, ein Container oder ein `mjml`-CLI-Aufruf erfüllen sie gleichermaßen.
+
+Das zählt vor allem außerhalb von Node. `toMjml` zu implementieren hieße, unseren TypeScript-Renderer irgendwo zu betreiben; `compileMjml` aus Laravel, Rails, Django oder Go sind ein paar Zeilen gegen ein Werkzeug, das es bereits gibt.
+
+## Ihr Backend macht aus dem Template MJML und HTML
+
+**Sie liefern** `toMjml` und `toHtml` — beide nehmen das Template entgegen und geben fertiges Markup zurück.
+**Das SDK** rendert nichts; im Browser entsteht überhaupt kein E-Mail-Markup.
+**Sie erhalten** `toMjml()` und `toHtml()`.
+**Sie installieren** im Frontend nichts. Ihr Backend braucht etwas, das aus dem Blockmodell MJML macht: `@templatical/renderer` **serverseitig**, sofern es Node ausführt (siehe [Headless rendern](#headless-rendern)), oder Ihre eigene Implementierung in einer anderen Sprache.
+
+Implementieren Sie beide, und die Umwandlungen laufen vollständig auf Ihrer Seite:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  render: {
+    toMjml: async (payload) => {
+      const res = await fetch('/api/render/mjml', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return res.text();
+    },
+
+    toHtml: async (payload) => {
+      const res = await fetch('/api/render/html', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return res.text();
+    },
+  },
+});
+```
+
+Das Paket wird nie installiert, nie importiert und nie geladen: Der lokale Pfad liegt hinter einem dynamischen `import()`, den nur der Fallback erreicht — und beantwortet ein Provider beide Aufrufe, wird der Fallback nie genommen.
+
+Wählen Sie das, wenn Ihr Backend E-Mails ohnehin schon rendert. Sie pflegen einen Renderer statt zwei, und das MJML, das Ihre Nutzenden in der Vorschau sehen, ist genau das, was Sie versenden.
+
+Schon `toMjml` allein verlagert die erste Umwandlung weg vom Client. Kombinieren Sie es mit `compileMjml` statt `toHtml`, wenn Ihr Backend MJML erzeugt, das Kompilieren aber einem separaten Werkzeug überlässt.
 
 ## Der Vertrag
 
@@ -58,7 +124,21 @@ Jede Methode ist **unabhängig optional**, und der Editor löst jede für sich a
 | `toMjml()` | `render.toMjml` → der lokale `@templatical/renderer` → Ablehnung |
 | `toHtml()` | `render.toHtml` → Ergebnis von `toMjml()` + `render.compileMjml` → Ablehnung |
 
-Nur `compileMjml` liefert also HTML mit lokal gerendertem MJML; nur `toMjml` verlagert das Rendering auf Ihr Backend und lässt `toHtml()` nicht verfügbar; alle drei überlassen Ihrem Backend die gesamte Pipeline.
+Ob das Paket gebraucht wird, ergibt sich also daraus, **welche Methoden Sie implementieren** — nicht daraus, ob Sie `render` überhaupt konfiguriert haben:
+
+<!-- prettier-ignore -->
+| Ihr Provider | `@templatical/renderer` im Frontend-Bundle? |
+| --- | --- |
+| *(kein `render`-Schlüssel)* | **Ja** — `toMjml()` rendert lokal, `toHtml()` lehnt ab |
+| `{ compileMjml }` | **Ja** — das SDK rendert das MJML, Ihr Endpunkt kompiliert es |
+| `{ toHtml }` | **Ja**, aber nur, wenn Sie auch `toMjml()` aufrufen |
+| `{ toMjml }` | **Nein** — `toHtml()` lehnt allerdings ab |
+| `{ toMjml, compileMjml }` | **Nein** |
+| `{ toMjml, toHtml }` | **Nein** — im Browser wird nichts gerendert |
+
+Diese Tabelle betrifft Ihr **Frontend**-Bundle. Womit Ihr Backend `toMjml` erfüllt, ist eine davon getrennte Entscheidung — oft dasselbe Paket, serverseitig importiert.
+
+`compileMjml` führt ausschließlich die zweite Umwandlung aus. Das MJML muss weiterhin irgendwo entstehen — ohne `render.toMjml` im lokalen Renderer. **`toMjml` ist die Methode, die das Rendering vom Client wegholt.**
 
 **Es gibt keinen lokalen HTML-Pfad, niemals.** Ohne `toHtml` und ohne `compileMjml` lehnt `toHtml()` mit einem Fehler ab, der die zu ergänzende Methode nennt — statt einen Compiler zu erraten, der nicht existiert.
 
@@ -74,9 +154,14 @@ Ein Provider gewinnt gegen den lokalen Renderer — das ist nur dann fair, wenn 
 - **Fonts sind aufgelöst.** `fonts` enthält die Custom-Schriften, mit denen der Editor tatsächlich rendert, plus den Fallback-Stack für alles Übrige — zusammengesetzt aus `init({ fonts })`, was aus dem Template-JSON nicht rekonstruierbar ist.
 - **`content` ist eine Schutzkopie.** Ändern Sie sie beliebig; das Dokument des Nutzers bleibt unberührt.
 
-## Lokal rendern
+## Der Browser macht aus dem Template MJML
 
-Ohne `render`-Provider nutzt `toMjml()` den [`@templatical/renderer`](/de/api/renderer-typescript) — eine optionale Peer-Dependency unter MIT-Lizenz. Installieren Sie ihn dort, wo Sie exportieren:
+**Sie liefern** nichts.
+**Das SDK** rendert das Template im Browser zu MJML.
+**Sie erhalten** `toMjml()`. `toHtml()` lehnt ab, da kein Compiler verfügbar ist.
+**Sie installieren** `@templatical/renderer` **in Ihrer Frontend-Anwendung**.
+
+Ohne `render`-Provider — oder mit einem, der nur `compileMjml` implementiert — nutzt `toMjml()` den [`@templatical/renderer`](/de/api/renderer-typescript), eine optionale Peer-Dependency unter MIT-Lizenz. Installieren Sie ihn dort, wo Sie exportieren:
 
 ```bash
 npm install @templatical/renderer

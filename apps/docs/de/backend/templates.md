@@ -17,21 +17,34 @@ import { init } from '@templatical/editor';
 const editor = await init({
   container: '#editor',
   templates: {
-    load: (id) => fetch(`/api/templates/${id}`).then((r) => r.json()),
+    load: async (id) => {
+      const res = await fetch(`/api/templates/${id}`);
+      return res.json();
+    },
 
-    create: (input) =>
-      fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-      }).then((r) => r.json()),
+    create: async (input) => {
 
-    save: (id, patch) =>
-      fetch(`/api/templates/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      }).then((r) => r.json()),
+      const res = await fetch('/api/templates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(input),
+        });
+
+      return res.json();
+
+    },
+
+    save: async (id, patch) => {
+
+      const res = await fetch(`/api/templates/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patch),
+        });
+
+      return res.json();
+
+    },
   },
 });
 
@@ -63,7 +76,7 @@ Drei Punkte sind hervorzuheben:
 
 - **Die `id` gehört Ihrem Speicher.** Sie kommt von `create()` zurück, und der Editor erzeugt niemals selbst eine — Identität bleibt damit eine Eigenschaft Ihres Speichers: ein Datenbankschlüssel, ein Slug, eine Dokument-ID.
 - **`save` erhält einen Patch**, nicht den bloßen Inhalt. So kann eine Umbenennung ohne Inhalt übertragen werden, und ein künftiges Feld lässt sich ergänzen, ohne Ihre Implementierung zu brechen. Der Editor sendet `name` (sofern die Vorlage einen hat) und `content` gemeinsam, in einem Aufruf.
-- **`name` ist optional.** Hat Ihr Speicher keine Namensspalte, lassen Sie ihn weg: der Header zeigt „Unbenannt", und eine Umbenennung findet einfach nie statt.
+- **`name` ist optional.** Hat Ihr Speicher keine Namensspalte, lassen Sie ihn weg: der Header zeigt „Unbenannt", und eine Umbenennung findet nie statt.
 
 Jede Methode darf ablehnen. Der Editor meldet den Fehler über `onError`, zeigt ihn im Header an und lässt seinen Zustand unberührt — nichts wird als gespeichert markiert, was es nicht ist.
 

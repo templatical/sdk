@@ -50,7 +50,10 @@ Bei den vier Providern, die etwas speichern, ist jede Mutation `false | fn` — 
 
 ```ts
 savedBlocks: {
-  list: () => fetch('/api/saved-blocks').then((r) => r.json()),
+  list: async () => {
+    const res = await fetch('/api/saved-blocks');
+    return res.json();
+  },
   create: (input) => post('/api/saved-blocks', input),
   update: false,  // diese Person darf ergänzen, aber nichts ändern
   delete: false,

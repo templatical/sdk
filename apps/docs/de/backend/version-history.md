@@ -14,17 +14,28 @@ const editor = await init({
   container: '#editor',
   templates: myTemplatesProvider,
   versionHistory: {
-    list: (templateId) =>
-      fetch(`/api/templates/${templateId}/versions`).then((r) => r.json()),
-    get: (templateId, versionId) =>
-      fetch(`/api/templates/${templateId}/versions/${versionId}`)
-        .then((r) => r.json())
-        .then((v) => v.content),
+    list: async (templateId) => {
+      const res = await fetch(`/api/templates/${templateId}/versions`);
+      return res.json();
+    },
+
+    get: async (templateId, versionId) => {
+      const res = await fetch(
+        `/api/templates/${templateId}/versions/${versionId}`,
+      );
+      const version = await res.json();
+      return version.content;
+    },
+
     create: false,
-    restore: (templateId, versionId) =>
-      fetch(`/api/templates/${templateId}/versions/${versionId}/restore`, {
-        method: 'POST',
-      }).then((r) => r.json()),
+
+    restore: async (templateId, versionId) => {
+      const res = await fetch(
+        `/api/templates/${templateId}/versions/${versionId}/restore`,
+        { method: 'POST' },
+      );
+      return res.json();
+    },
   },
 });
 ```

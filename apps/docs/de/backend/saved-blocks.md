@@ -50,7 +50,7 @@ Eine minimale REST-Implementierung:
 import { init } from '@templatical/editor';
 import type { SavedBlocksProvider } from '@templatical/editor';
 
-const json = (res: Response) => {
+const json = async (res: Response) => {
   if (!res.ok) throw new Error(`Anfrage für gespeicherte Blöcke fehlgeschlagen: ${res.status}`);
   return res.json();
 };
@@ -59,26 +59,39 @@ const savedBlocks: SavedBlocksProvider = {
   // Geben Sie alles zurück, was die aktuelle Nutzerin sehen darf — grenzen Sie
   // hier nach Nutzer, Team oder Konto ab. Der Editor ruft diese Methode ohne
   // Argumente auf und filtert im Browser.
-  list: () => fetch('/api/saved-blocks').then(json),
+  list: async () => {
+    const res = await fetch('/api/saved-blocks');
+    return json(res);
+  },
 
-  create: (input) =>
-    fetch('/api/saved-blocks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    }).then(json),
+  create: async (input) => {
 
-  update: (id, patch) =>
-    fetch(`/api/saved-blocks/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(patch),
-    }).then(json),
+    const res = await fetch('/api/saved-blocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
 
-  delete: (id) =>
-    fetch(`/api/saved-blocks/${id}`, { method: 'DELETE' }).then((res) => {
-      if (!res.ok) throw new Error(`Löschen fehlgeschlagen: ${res.status}`);
-    }),
+    return json(res);
+
+  },
+
+  update: async (id, patch) => {
+
+    const res = await fetch(`/api/saved-blocks/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+
+    return json(res);
+
+  },
+
+  delete: async (id) => {
+    const res = await fetch(`/api/saved-blocks/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`Löschen fehlgeschlagen: ${res.status}`);
+  },
 };
 
 await init({ container: '#editor', savedBlocks });
@@ -104,7 +117,7 @@ interface SavedBlock {
 - **Die Reihenfolge kommt vom Provider.** Der Editor stellt die Einträge genau in der Reihenfolge dar, die `list()` zurückgibt, und sortiert nie um. Das Filtern grenzt die Liste ein, ohne sie umzuordnen. Eine Sortierung erfolgt serverseitig, bevor `list()` die Einträge zurückgibt.
 - **Das Filtern geschieht im Editor.** Suchfeld und Kategoriefilter des Browsers arbeiten im Speicher auf dem, was `list()` zurückgegeben hat. `list()` akzeptiert ein `{ search, category }`-Objekt, doch der Editor sendet es nie; es kommt nur an, wenn ein Aufrufer `useSavedBlocks` direkt ansteuert (siehe [Headless-Nutzung](#headless-nutzung)). Welche Einträge jemand überhaupt sehen darf, wird in `list()` entschieden.
 - **Der Provider steuert, wer was ändern darf.** Übergeben Sie `false` für `create`, `update` oder `delete`, um die Aktion vorzuenthalten, und setzen Sie `canUpdate` / `canDelete` an einzelnen Einträgen für Ausnahmen. Siehe [Berechtigungen steuern](#berechtigungen-steuern).
-- **Zeitstempel dienen nur der Anzeige.** Jeder Eintrag zeigt eine relative Angabe wie „vor 5 Min." (aus `updatedAt`, ersatzweise `createdAt`); das absolute Datum erscheint beim Überfahren. Auf die Reihenfolge haben sie keinen Einfluss. Beide Felder sind optional — ohne sie entfällt einfach die Angabe.
+- **Zeitstempel dienen nur der Anzeige.** Jeder Eintrag zeigt eine relative Angabe wie „vor 5 Min." (aus `updatedAt`, ersatzweise `createdAt`); das absolute Datum erscheint beim Überfahren. Auf die Reihenfolge haben sie keinen Einfluss. Beide Felder sind optional — ohne sie entfällt die Angabe.
 
 ## Berechtigungen steuern
 
@@ -112,7 +125,10 @@ interface SavedBlock {
 
 ```ts
 const savedBlocks: SavedBlocksProvider = {
-  list: () => fetch('/api/saved-blocks').then(json),
+  list: async () => {
+    const res = await fetch('/api/saved-blocks');
+    return json(res);
+  },
 
   // Diese Person darf hinzufügen, aber Bestehendes nie ändern oder entfernen.
   create: (input) => post('/api/saved-blocks', input),
@@ -138,7 +154,10 @@ Setzen Sie alle drei auf `false`, erhalten Sie eine kuratierte Bibliothek, die N
 
 ```ts
 const savedBlocks: SavedBlocksProvider = {
-  list: () => fetch('/api/saved-blocks').then(json),
+  list: async () => {
+    const res = await fetch('/api/saved-blocks');
+    return json(res);
+  },
   create: false,
   update: false,
   delete: false,

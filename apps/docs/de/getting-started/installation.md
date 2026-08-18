@@ -124,7 +124,7 @@ Der Editor lädt vier optionale Peers zur Laufzeit per dynamischem `import()`, a
 | `@templatical/media-library` | Erstes Öffnen des Medien-Browsers              | `initCloud()` verwenden                  |
 | `pusher-js`                  | Cloud-Realtime-Verbindung                      | `initCloud()` verwenden                  |
 
-Wenn Sie sie nicht installieren, deaktiviert sich das jeweilige Feature einfach selbst — der Editor mountet und läuft trotzdem.
+Wenn Sie sie nicht installieren, deaktiviert sich das jeweilige Feature selbst — der Editor mountet und läuft trotzdem.
 
 ### Hinweis zur Bundler-Ausgabe
 
@@ -180,14 +180,15 @@ export function EmailEditor() {
     if (!containerRef.current) return;
 
     let cancelled = false;
-    init({
-      container: containerRef.current,
-      onChange(content) {
-        console.log("Content changed", content);
-      },
-    }).then((ed) => {
+    (async () => {
+      const ed = await init({
+        container: containerRef.current,
+        onChange(content) {
+          console.log("Content changed", content);
+        },
+      });
       if (!cancelled) editorRef.current = ed;
-    });
+    })();
 
     return () => {
       cancelled = true;
