@@ -272,7 +272,8 @@ For default values and how to customize them, see [Block & Template Defaults](/g
 Pass previously saved JSON back to the editor:
 
 ```ts
-const saved = await fetch('/api/templates/123').then(r => r.json());
+const res = await fetch('/api/templates/123');
+const saved = await res.json();
 
 const editor = await init({
   container: '#editor',

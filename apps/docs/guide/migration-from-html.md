@@ -34,7 +34,8 @@ You can also load it from a CDN:
 import { convertHtmlTemplate } from '@templatical/import-html';
 
 // Load the raw HTML source of an email
-const html = await fetch('/path/to/email.html').then((r) => r.text());
+const res = await fetch('/path/to/email.html');
+const html = await res.text();
 
 // Convert to Templatical format
 const { content, report } = convertHtmlTemplate(html);

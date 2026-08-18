@@ -34,7 +34,8 @@ You can also load it from a CDN:
 import { convertUnlayerTemplate } from '@templatical/import-unlayer';
 
 // Load your Unlayer design JSON (whatever editor.saveDesign returned)
-const unlayerJson = await fetch('/api/unlayer-templates/123').then(r => r.json());
+const res = await fetch('/api/unlayer-templates/123');
+const unlayerJson = await res.json();
 
 // Convert to Templatical format
 const { content, report } = convertUnlayerTemplate(unlayerJson);

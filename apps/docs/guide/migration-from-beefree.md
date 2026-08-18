@@ -34,7 +34,8 @@ You can also load it from a CDN:
 import { convertBeeFreeTemplate } from '@templatical/import-beefree';
 
 // Load your BeeFree template JSON
-const beefreeJson = await fetch('/api/beefree-templates/123').then(r => r.json());
+const res = await fetch('/api/beefree-templates/123');
+const beefreeJson = await res.json();
 
 // Convert to Templatical format
 const { content, report } = convertBeeFreeTemplate(beefreeJson);
