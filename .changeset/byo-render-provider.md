@@ -7,7 +7,7 @@
 
 Rendering becomes a bring-your-own provider, and the editor grows `toHtml()`.
 
-`init()` and `initCloud()` both take a new `render?: RenderProvider` key with the same type, so moving an integration between the two tiers is a deletion rather than a rewrite. Every method is independently optional, and each is resolved on its own:
+`init()` takes a new `render?: RenderProvider` key. Every method is independently optional, and each is resolved on its own:
 
 | Call | Order |
 | --- | --- |
@@ -104,3 +104,5 @@ Consumers using `initCloud()` are unaffected; these matter only if you import th
 - New exports: `createCloudTemplatesProvider`, `createCloudRenderProvider`.
 
 `editor.toMjml()` / `toHtml()` also now pass the editor's resolved fonts to the bundled renderer. A template using a custom font family previously exported with no `<mj-font>` declaration and no fallback stack, so mail clients silently substituted.
+
+`initCloud()` deliberately does **not** take this key. Cloud renders server-side for delivery as well — test email, scheduled sends and API exports — so a consumer-supplied renderer would have changed `toMjml()` / `toHtml()` and nothing else, leaving what you preview and export out of step with what Cloud sends. One passed from JavaScript is ignored with a console warning. For your own MJML on Cloud, call `renderToMjml(editor.getContent())` directly.

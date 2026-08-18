@@ -231,22 +231,22 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 
 ## Templatical Cloud
 
-`initCloud()` nimmt **denselben `render`-Schlüssel mit demselben Typ**, ein Wechsel zwischen beiden ist also eine Löschung und nie ein Umbau:
+`initCloud()` nimmt **keinen** `render`-Schlüssel — Cloud rendert immer, und ein aus JavaScript übergebener Provider wird mit einer Konsolen-Warnung ignoriert.
+
+Der Grund: Cloud rendert **auch für den Versand serverseitig** — Test-E-Mails, geplante Sendungen und API-Exporte laufen alle über den eigenen Renderer. Ein Provider hätte hier nur `toMjml()` und `toHtml()` verändert und sonst nichts; was Sie in der Vorschau sehen und exportieren, wäre also nicht das, was Cloud versendet. Wenn Sie auf Cloud Ihr eigenes MJML brauchen, rufen Sie den Renderer direkt auf:
 
 ```ts
-// Clouds Renderer:
-await initCloud({ container, auth });
+import { renderToMjml } from '@templatical/renderer';
 
-// Ihr Renderer, auf Cloud:
-await initCloud({ container, auth, render: myProvider });
+const mjml = await renderToMjml(editor.getContent());
 ```
 
-Lassen Sie ihn weg, rendert Cloud serverseitig. Die Ausgabe ist eine bewusste Obermenge der des Browsers — das Countdown-GIF und der Video-Play-Button von oben — und Cloud führt den *veröffentlichten* Renderer mit genau diesen zwei eingespeisten Funktionen aus, sodass nichts anderes abweichen kann.
+Cloud rendert serverseitig. Die Ausgabe ist eine bewusste Obermenge der des Browsers — das Countdown-GIF und der Video-Play-Button von oben — und Cloud führt den *veröffentlichten* Renderer mit genau diesen zwei eingespeisten Funktionen aus, sodass nichts anderes abweichen kann.
 
 Zwei Konsequenzen, die Sie kennen sollten:
 
 - **Cloud rendert das gespeicherte Template**, jeder `toMjml()`- / `toHtml()`-Aufruf speichert also zuerst. Eine Sitzung, die nie ein Template erzeugt hat, erhält eine klare Ablehnung statt eines Exports von nichts.
-- **Keiner der beiden Provider ist plangebunden.** Jeder Plan rendert die Schriften, die auch auf der Arbeitsfläche verwendet werden.
+- **Das Rendern ist nicht plangebunden.** Jeder Plan rendert die Schriften, die auch auf der Arbeitsfläche verwendet werden.
 
 Damit entfallen der MJML-Compiler und der Render-Host, die Sie sonst betreiben müssten, plus die beiden Dinge, die ein Browser zur Renderzeit nicht erzeugen kann. Siehe [Export](/de/cloud/getting-started#export) für die Aufrufe im Editor und die [Headless-API](/de/cloud/headless-api#export), um ganz ohne Editor zu rendern.
 

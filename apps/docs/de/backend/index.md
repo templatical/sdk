@@ -86,17 +86,25 @@ Schreiben Sie diese Meldungen für die Person, die sie lesen wird — mehrere la
 
 Templatical Cloud ist kein anderer Editor, kein Fork und keine Codebasis-Obermenge. Es ist eine Erstanbieter-Implementierung genau dieser Schnittstellen: eine Editor-Komponente, ein Kern, ein Header hinter beiden Einstiegspunkten.
 
-Drei der sechs nehmen bei `initCloud()` denselben Schlüssel mit demselben Typ, ein Wechsel zwischen beiden ist also eine Löschung und kein Umbau:
+**Zwei der sechs nehmen bei `initCloud()` denselben Schlüssel mit demselben Typ**, ein Wechsel zwischen beiden ist also eine Löschung und kein Umbau:
 
 ```ts
-// Clouds Blockbibliothek, Clouds Versand, Clouds Renderer:
+// Clouds Blockbibliothek und Clouds Versand:
 await initCloud({ container, auth });
 
 // Ihre eigenen, auf Cloud:
-await initCloud({ container, auth, savedBlocks: mine, testEmail: mine, render: mine });
+await initCloud({ container, auth, savedBlocks: mine, testEmail: mine });
 ```
 
-`initCloud()` nimmt **kein** `templates`, `versionHistory`, `comments` oder `user`. Das sind die ID-gebundenen: Cloud verankert eine Version und einen Kommentar an einer Vorlagen-ID, die das eigene Backend ausgestellt hat, und signiert die Autorenschaft gegen das Auth-Token. Ein Speicher, für den Cloud nie IDs ausgestellt hat, lässt sich deshalb nicht an Funktionen anschließen, die Cloud hostet. Ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert.
+Diese beiden lassen sich gefahrlos mischen, weil Cloud sie nie eigenständig nutzt: Gespeicherte Blöcke werden auf die Arbeitsfläche kopiert und sonst nirgends gelesen, und Cloud verschickt von sich aus keine Test-E-Mail.
+
+Die übrigen vier werden abgelehnt, aus zwei Gründen — ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert:
+
+<!-- prettier-ignore -->
+| Schlüssel | Warum `initCloud()` ihn ablehnt |
+| --- | --- |
+| `templates`, `versionHistory`, `comments`, `user` | **An eine von Cloud ausgestellte Vorlagen-ID gebunden.** Cloud verankert Versionen und Kommentare an eigenen IDs und signiert die Autorenschaft gegen das Auth-Token. Ein Speicher, für den Cloud nie IDs ausgestellt hat, lässt sich deshalb nicht an Funktionen anschließen, die Cloud hostet. |
+| `render` | **Cloud rendert für den Versand eigenständig** — Test-E-Mail, geplante Sendungen und Exporte. Ein Provider würde ändern, was Sie in der Vorschau sehen und exportieren, nie das, was Cloud versendet. |
 
 Jede Seite in diesem Abschnitt endet damit, was Cloud für diese Fähigkeit implementiert — für alle, die zwischen Selbstbauen und Zukaufen abwägen.
 
