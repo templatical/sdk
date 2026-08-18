@@ -40,6 +40,21 @@ const editor = await init({
 });
 ```
 
+### `onComment`
+
+Wird für jede Kommentaränderung aufgerufen, die der Editor übernommen hat — ein erstellter, bearbeiteter, aufgelöster oder gelöschter Thread. Auch Änderungen, die über das `subscribe` eines Providers eintreffen, lösen es aus; damit eignet es sich für einen Ungelesen-Zähler außerhalb des Editors.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  comments: myProvider,
+  user: { id: 'u_7', name: 'Ada Lovelace' },
+  onComment(event) {
+    if (event.type === 'created') incrementUnread();
+  },
+});
+```
+
 ### `onError`
 
 Wird aufgerufen, wenn innerhalb des Editors ein Fehler auftritt.

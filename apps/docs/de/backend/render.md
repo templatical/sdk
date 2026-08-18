@@ -12,7 +12,7 @@ const mjml = await editor.toMjml();
 const html = await editor.toHtml();
 ```
 
-`toMjml()` funktioniert ohne weitere Konfiguration. `toHtml()` braucht **eine** Sache von Ihnen, denn das SDK bündelt bewusst keinen MJML-Compiler.
+`toMjml()` benötigt lediglich das optionale Paket [`@templatical/renderer`](/de/api/renderer-typescript). `toHtml()` braucht **eine** Sache von Ihnen, denn das SDK bündelt bewusst keinen MJML-Compiler.
 
 ## Das Einfachste, was funktioniert
 
@@ -55,7 +55,7 @@ Jede Methode ist **unabhängig optional**, und der Editor löst jede für sich a
 <!-- prettier-ignore -->
 | Aufruf | Reihenfolge |
 | --- | --- |
-| `toMjml()` | `render.toMjml` → der gebündelte `@templatical/renderer` → Ablehnung |
+| `toMjml()` | `render.toMjml` → der lokale `@templatical/renderer` → Ablehnung |
 | `toHtml()` | `render.toHtml` → Ergebnis von `toMjml()` + `render.compileMjml` → Ablehnung |
 
 Nur `compileMjml` liefert also HTML mit lokal gerendertem MJML; nur `toMjml` verlagert das Rendering auf Ihr Backend und lässt `toHtml()` nicht verfügbar; alle drei überlassen Ihrem Backend die gesamte Pipeline.
@@ -63,12 +63,12 @@ Nur `compileMjml` liefert also HTML mit lokal gerendertem MJML; nur `toMjml` ver
 **Es gibt keinen lokalen HTML-Pfad, niemals.** Ohne `toHtml` und ohne `compileMjml` lehnt `toHtml()` mit einem Fehler ab, der die zu ergänzende Methode nennt — statt einen Compiler zu erraten, der nicht existiert.
 
 ::: tip `toHtml()` läuft über `toMjml()`
-Wenn Ihr Provider `toMjml` *und* `compileMjml`, aber kein `toHtml` bereitstellt, entsteht das HTML aus **Ihrem** MJML, nicht aus dem des gebündelten Renderers. Ein Backend, das rendern kann, ist maßgeblich und sollte auf dem Weg zum HTML nicht übergangen werden.
+Wenn Ihr Provider `toMjml` *und* `compileMjml`, aber kein `toHtml` bereitstellt, entsteht das HTML aus **Ihrem** MJML, nicht aus dem des lokalen Renderers. Ein Backend, das rendern kann, ist maßgeblich und sollte auf dem Weg zum HTML nicht übergangen werden.
 :::
 
 ## Was der Editor garantiert
 
-Ein Provider gewinnt gegen den gebündelten Renderer — das ist nur dann fair, wenn der Editor alles übergibt, was ein Backend nicht selbst ermitteln kann. Genau das tut er: das Payload ist **render-vollständig**.
+Ein Provider gewinnt gegen den lokalen Renderer — das ist nur dann fair, wenn der Editor alles übergibt, was ein Backend nicht selbst ermitteln kann. Genau das tut er: das Payload ist **render-vollständig**.
 
 - **Custom Blocks sind bereits aufgelöst.** `content` kommt mit gefülltem `renderedHtml` für jeden Custom Block an. Das ist wichtig, weil der Fehler sonst stillschweigend passiert: Ein Renderer, der einen Custom Block ohne Resolver und ohne `renderedHtml` erhält, **lässt ihn aus der Ausgabe weg**. Das HTML entsteht aus Ihrem Liquid-Template plus den Feldwerten des Blocks, und die Definition ist im Browser registriert — ein Server könnte damit also nichts anfangen.
 - **Fonts sind aufgelöst.** `fonts` enthält die Custom-Schriften, mit denen der Editor tatsächlich rendert, plus den Fallback-Stack für alles Übrige — zusammengesetzt aus `init({ fonts })`, was aus dem Template-JSON nicht rekonstruierbar ist.
@@ -83,6 +83,10 @@ npm install @templatical/renderer
 ```
 
 `toMjml()` importiert ihn beim ersten Aufruf dynamisch und lehnt mit einem klaren Fehler ab, der das fehlende Paket nennt. Custom Blocks werden über die Registry des Editors aufgelöst, und Ihre konfigurierten Fonts werden automatisch eingebunden.
+
+::: tip Laden Sie über das CDN?
+Dann gibt es nichts zu installieren. Der CDN-Build ist in sich geschlossen, `@templatical/renderer` ist also enthalten — als eigener Code-Split-Chunk, der beim ersten `toMjml()`-Aufruf geladen wird.
+:::
 
 ## Headless rendern
 
