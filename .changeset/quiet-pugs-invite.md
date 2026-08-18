@@ -1,5 +1,5 @@
 ---
-"@templatical/types": minor
+"@templatical/types": patch
 "@templatical/renderer": patch
 ---
 
