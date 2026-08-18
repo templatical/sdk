@@ -44,8 +44,16 @@ unmount();
 | `shadowDom`         | `boolean`                                                         | No       | Mount inside a Shadow DOM for CSS isolation from the host page. Defaults to `true`. Set to `false` to mount in light DOM instead (e.g. for `document.querySelector` access to editor internals or Firefox <101 / Safari <16.4 support). See [Shadow DOM](/guide/shadow-dom) for trade-offs |
 | `content`           | `TemplateContent`                                                 | No       | Initial template content. Defaults to empty template                                                                                                                                                                                                                                       |
 | `onChange`          | `(content: TemplateContent) => void`                              | No       | Called when template content changes (debounced)                                                                                                                                                                                                                                           |
-| `onSave`            | `(content: TemplateContent) => void`                              | No       | Called when the user triggers a save action                                                                                                                                                                                                                                                |
 | `onError`           | `(error: Error) => void`                                          | No       | Called when an error occurs                                                                                                                                                                                                                                                                |
+| `onDirtyChange`     | `(isDirty: boolean) => void`                                      | No       | Called whenever the unsaved-changes state flips. Works with or without a `templates` provider — use it to guard a client-side router, which `beforeunload` cannot cover. See [Saving & Loading](/backend/templates#unsaved-changes) |
+| `onComment`         | `(event: CommentEvent) => void`                                   | No       | Called for every comment change the editor applied, including ones that arrived through a provider's `subscribe` — the hook for an unread badge outside the editor |
+| `templates`         | `TemplatesProvider`                                               | No       | Storage backend for the template itself — the save/load lifecycle. The editor provides the name field, save button, save status, Cmd+S, autosave and the unsaved-changes guard; you provide persistence. Omit to disable the feature entirely. See [Saving & Loading](/backend/templates) |
+| `render`            | `RenderProvider`                                                  | No       | Rendering backend for `toMjml()` / `toHtml()`. Every method (`toMjml`, `toHtml`, `compileMjml`) is independently optional and resolved separately. Omit and `toMjml()` renders locally while `toHtml()` rejects — the SDK bundles no MJML compiler. See [Rendering & Export](/backend/render) |
+| `versionHistory`    | `VersionHistoryProvider`                                          | No       | Storage backend for the template's version history — the past states a user can browse, preview and restore. The editor provides the header control, preview banner and restore flow; you provide the storage. It never records a version itself: your `templates.save` decides that. Omit to disable the feature entirely. See [Version History](/backend/version-history) |
+| `comments`          | `CommentsProvider`                                                | No       | Storage backend for review comments — threads anchored to a block or the template. The editor provides the sidebar, the composer, resolve/reply and the block indicators; you provide persistence. **Requires `user`**: without an identity the feature reports itself unavailable rather than writing anonymous comments. An optional `subscribe` pushes remote changes in. See [Comments](/backend/comments) |
+| `user`              | `EditorUser`                                                      | No       | Who is using the editor — `{ id, name }`. Needed by any feature that attributes work to a person; today that is `comments`. Not a security boundary: it identifies the user to the editor's UI, in the user's own browser. Attribute writes server-side from the session your backend already trusts |
+| `autoSave`          | `boolean \| { debounce?: number }`                               | No       | Save automatically, debounced, after the user stops editing. Requires `templates`; ignored with a warning without it. `{ debounce }` sets the cadence in the same key; the debounce governs `onChange` too, since both ride one timer. Defaults to `false`. See [Saving & Loading](/backend/templates#autosave) |
+| `unsavedChangesGuard` | `boolean`                                                       | No       | Warn before the tab closes with unsaved changes. On by default whenever `templates` is configured; never active without it. Set to `false` to own the prompt yourself. Cannot cover client-side route changes — use `onDirtyChange` for those |
 | `onRequestMedia`    | `(context?: MediaRequestContext) => Promise<MediaResult \| null>` | No       | Called when user wants to pick an image. Return `{ url, alt? }` or `null`                                                                                                                                                                                                                  |
 | `resolveImageUrl`   | `(src: string) => string \| null \| Promise<string \| null>`      | No       | Display-only resolver for image `src` values: maps a canonical src to a preview URL for the canvas. Content and `toMjml()` output keep the canonical value. Return `null` to use the src as-is. Called once per committed src (debounced), cached per src. See [Images](/guide/images#display-only-url-resolution) |
 | `mergeTags`         | `MergeTagsConfig`                                                 | No       | Merge tag configuration. Each tag may carry an optional `sample` — an example value previews render in its place. See [Merge Tags](/guide/merge-tags) |
@@ -53,8 +61,8 @@ unmount();
 | `displayConditions` | `DisplayConditionsConfig`                                         | No       | Display condition configuration. See [Display Conditions](/guide/display-conditions)                                                                                                                                                                                                       |
 | `logicTags`         | `LogicTagsConfig`                                                 | No       | Logic tag configuration — template-language control flow (conditionals, loops) inserted inline in rich text and text inputs. See [Logic Tags](/guide/logic-tags)                                                                                                                            |
 | `customBlocks`      | `CustomBlockDefinition[]`                                         | No       | Custom block type definitions. See [Custom Blocks](/guide/custom-blocks)                                                                                                                                                                                                                   |
-| `savedBlocks`       | `SavedBlocksProvider`                                             | No       | Storage backend for saved blocks — reusable block groups users save and re-insert. The editor provides the UI; you provide persistence. Omit to disable the feature entirely. Use `createLocalStorageSavedBlocksProvider()` for a zero-backend option. See [Saved Blocks](/guide/saved-blocks) |
-| `testEmail`         | `TestEmailProvider`                                               | No       | Sending backend for test emails — lets users mail themselves the template they are editing. The editor provides the trigger, dialog, validation and states; you provide delivery. Omit to disable the feature entirely. `allowedRecipients` restricts the picker but is **not** a security boundary — validate server-side. See [Test Emails](/guide/test-email) |
+| `savedBlocks`       | `SavedBlocksProvider`                                             | No       | Storage backend for saved blocks — reusable block groups users save and re-insert. The editor provides the UI; you provide persistence. Omit to disable the feature entirely. Use `createLocalStorageSavedBlocksProvider()` for a zero-backend option. See [Saved Blocks](/backend/saved-blocks) |
+| `testEmail`         | `TestEmailProvider`                                               | No       | Sending backend for test emails — lets users mail themselves the template they are editing. The editor provides the trigger, dialog, validation and states; you provide delivery. Omit to disable the feature entirely. `allowedRecipients` restricts the picker but is **not** a security boundary — validate server-side. See [Test Emails](/backend/test-email) |
 | `paletteBlocks`     | `string[]`                                                        | No       | Allowlist + order for the block palette. Only the listed types appear, in this order; unlisted built-ins are hidden. Built-ins use their bare type (`'image'`), custom blocks the `custom:`-prefixed type (`'custom:qrcode'`). See [Customizing the block palette](#customizing-the-block-palette) |
 | `htmlBlockPreview`  | `boolean \| { enabled: boolean }`                                 | No       | Render each HTML block's content as a live preview in the canvas — inside a sandboxed `<iframe>` with no script execution — instead of the static placeholder. Defaults to `false`. Preview-only; the MJML/HTML export renders HTML blocks regardless. See [Previewing HTML blocks](#previewing-html-blocks) |
 | `blockDefaults`     | `BlockDefaults`                                                   | No       | Default property overrides for new blocks. See [Defaults](/guide/defaults)                                                                                                                                                                                                                 |
@@ -66,6 +74,7 @@ unmount();
 | `locale`            | `string`                                                          | No       | Locale code (e.g. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`). Defaults to `'en'`                                                                                                                                                                                                                                      |
 | `branding`          | `boolean`                                                         | No       | Show the "Powered by Templatical" footer. Defaults to `true`. Set to `false` to hide it                                                                                                                                                                                                    |
 | `smallScreenNotice` | `boolean`                                                         | No       | Show a "use a larger screen" notice instead of the editor on viewports narrower than ~768px. Defaults to `true`. The drag-and-drop editor is a desktop-class tool and can't lay out usably on a phone. Set to `false` to render the editor at any width if you handle small screens yourself |
+| `lint`              | `LintOptions`                                                     | No       | Template linter configuration, from `@templatical/quality` (an optional peer). Unset, the linter loads on demand when the panel is opened. `disabled: true` skips the import entirely and hides the sidebar tab and inline badges. See [Quality options](/quality/options) |
 
 ### Container element requirements
 
@@ -175,6 +184,35 @@ editor.setTheme("auto"); // follow system preference
 
 Destroys this editor instance.
 
+### `create(input?)` / `load(id)` / `save()`
+
+The template save/load lifecycle, over the `templates` provider.
+
+```ts
+const template = await editor.create({ name: "Welcome email" });
+await editor.load(template.id);
+await editor.save();
+```
+
+- **`create(input?)`** persists the current content as a new template and adopts the result. Pass `content` to replace the editor's content first.
+- **`load(id)`** fetches a template and makes it the editor's content, discarding local edits.
+- **`save()`** persists the loaded template's name and content as one patch.
+
+All three return a `Promise<Template>` and are always present on the type. They reject with an explanatory error when no `templates` provider is configured, when the provider withheld the relevant method (`create: false` / `save: false`), or — for `save()` — when nothing has been created or loaded yet. See [Saving & Loading](/backend/templates).
+
+### `isDirty()`
+
+Whether there are edits the editor knows aren't persisted. Cleared by a successful `save()`, `create()` or `load()`.
+
+```ts
+router.beforeEach((to, from, next) => {
+  if (editor.isDirty() && !confirm("Discard unsaved changes?")) return next(false);
+  next();
+});
+```
+
+`onDirtyChange` is the push-based counterpart.
+
 ### `toMjml()`
 
 Renders the current content to MJML markup. Returns a `Promise<string>` because resolving custom blocks may require asynchronous work (the editor's liquid renderer is loaded on demand).
@@ -183,12 +221,20 @@ Renders the current content to MJML markup. Returns a `Promise<string>` because 
 const mjml = await editor.toMjml();
 ```
 
-Throws a clear error if `@templatical/renderer` is not installed. The renderer is an optional peer dependency — install it only if you need MJML export from the browser. See [Installation](/getting-started/installation) for details.
+Resolves `render.toMjml` first when a [`render` provider](/backend/render) supplies it, then the local `@templatical/renderer`. Rejects with a clear error when neither is available — the renderer is an optional peer dependency, so install it if you need local MJML export. See [Installation](/getting-started/installation).
 
-To compile MJML to HTML, use any MJML library (e.g., [mjml](https://www.npmjs.com/package/mjml) for Node.js).
+### `toHtml()`
+
+Renders the current content to sending-ready HTML.
+
+```ts
+const html = await editor.toHtml();
+```
+
+Resolves `render.toHtml` first, then `toMjml()`'s output through `render.compileMjml`. **Requires one of the two**: the SDK bundles no MJML compiler, so with no `render` provider this always rejects, and the error names the method to add. See [Rendering & Export](/backend/render).
 
 ::: tip Cloud editor
-The Cloud editor does **not** expose `toMjml()` — the cloud backend handles MJML conversion server-side with additional processing (signed image URLs, asset rewriting). Use the OSS editor (`init`, not `initCloud`) if you want client-side MJML export.
+The Cloud editor exposes **both** methods, resolved against Cloud's server-side renderer (or your own `render` provider). Note Cloud renders the *saved* template, so each call saves first.
 :::
 
 ### `renderCustomBlock(block)`
@@ -197,6 +243,14 @@ Renders a single custom block to its HTML representation. Useful for headless ca
 
 ```ts
 const html = await editor.renderCustomBlock(customBlock);
+```
+
+### `getCustomBlockStylesheet(customType)`
+
+Returns the definition-level CSS registered for a custom block type, or `undefined` when the type is unknown or has no stylesheet. The companion to `renderCustomBlock()` for headless callers driving `@templatical/renderer`'s `getCustomBlockStylesheet` option themselves.
+
+```ts
+const css = editor.getCustomBlockStylesheet("qrcode");
 ```
 
 ## Core Composables
@@ -249,7 +303,7 @@ const actions = useBlockActions({
   selectBlock: editor.selectBlock,
 });
 
-const newBlock = actions.createAndAddBlock("text");
+const newBlock = actions.createAndAddBlock("paragraph");
 actions.duplicateBlock(existingBlock);
 actions.deleteBlock(blockId);
 actions.updateBlockProperty(blockId, "content", "<p>Updated</p>");

@@ -30,7 +30,7 @@ It does make exactly one third-party request, and you should know about it befor
 | ------- | ------- | ---- |
 | `https://fonts.bunny.net/css?family=geist:400,500,600` | A CSS `@import` at the top of the editor stylesheet | Whenever the stylesheet is parsed, in both DOM modes |
 
-Geist is the editor's default UI font. If the request to load it is blocked or fails, the editor works normally — text simply falls back to the next family in the stack. Two cases where you might notice:
+Geist is the editor's default UI font. If the request to load it is blocked or fails, the editor works normally — text falls back to the next family in the stack. Two cases where you might notice:
 
 - **Strict Content Security Policy** — a policy such as `style-src 'self'` blocks the `@import`. Add `https://fonts.bunny.net` to `style-src` and `font-src`, or accept the fallback font.
 - **Air-gapped or offline deployments** — the request fails and the fallback font is used.
@@ -124,7 +124,7 @@ The editor lazy-loads four optional peers via dynamic `import()` at runtime, gat
 | `@templatical/media-library` | First open of the media browser | Use `initCloud()`                 |
 | `pusher-js`                  | Cloud realtime connect          | Use `initCloud()`                 |
 
-If you don't install them, the corresponding feature simply disables itself — the editor still mounts and runs.
+If you don't install them, the corresponding feature disables itself — the editor still mounts and runs.
 
 ### A note on bundler output
 
@@ -180,14 +180,15 @@ export function EmailEditor() {
     if (!containerRef.current) return;
 
     let cancelled = false;
-    init({
-      container: containerRef.current,
-      onChange(content) {
-        console.log("Content changed", content);
-      },
-    }).then((ed) => {
+    (async () => {
+      const ed = await init({
+        container: containerRef.current,
+        onChange(content) {
+          console.log("Content changed", content);
+        },
+      });
       if (!cancelled) editorRef.current = ed;
-    });
+    })();
 
     return () => {
       cancelled = true;
