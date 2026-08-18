@@ -117,6 +117,8 @@ const editor = await initCloud({
   onChange: (content) => { /* template changed */ },
   onError: (error) => { /* handle errors */ },
   onComment: (event) => { /* comment created/updated/deleted */ },
+  onCreate: (template) => { /* create() resolved — template.id is new */ },
+  onLoad: (template) => { /* load() resolved */ },
 });
 ```
 

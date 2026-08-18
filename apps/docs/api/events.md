@@ -1,6 +1,6 @@
 ---
 title: Events
-description: Editor event callbacks — onChange, onSave, onError, and media/merge tag request handlers.
+description: Editor event callbacks — onChange, onDirtyChange, onError, and media/merge tag request handlers.
 ---
 
 # Events
@@ -27,16 +27,30 @@ const editor = await init({
 });
 ```
 
-### `onSave`
+### `onDirtyChange`
 
-Called when the user explicitly triggers a save (e.g. via keyboard shortcut). Use this for immediate saves vs. the debounced `onChange`.
+Called whenever the editor gains or loses unsaved changes. Use it to drive your own save button, or to guard a client-side route change — the built-in guard covers tab close, but `beforeunload` never fires on SPA navigation.
 
 ```ts
 const editor = await init({
   container: '#editor',
-  onSave(content) {
-    saveTemplate(content);
-    showNotification('Template saved');
+  onDirtyChange(isDirty) {
+    setRouteGuard(isDirty);
+  },
+});
+```
+
+### `onComment`
+
+Called for every comment change the editor applied — a thread created, edited, resolved or deleted. Changes that arrive through a provider's `subscribe` fire it too, so it is the hook for an unread badge outside the editor.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  comments: myProvider,
+  user: { id: 'u_7', name: 'Ada Lovelace' },
+  onComment(event) {
+    if (event.type === 'created') incrementUnread();
   },
 });
 ```
@@ -118,35 +132,18 @@ const editor = await init({
       saveToBackend(content);
     }, 2000);
   },
-  onSave(content) {
-    clearTimeout(saveTimeout);
-    saveToBackend(content);
-  },
 });
 ```
 
 ### Dirty State Tracking
 
 ```ts
-let isDirty = false;
-
 const editor = await init({
   container: '#editor',
-  onChange() {
-    isDirty = true;
-    updateSaveButton();
+  onDirtyChange(isDirty) {
+    updateSaveButton(isDirty);
   },
-  onSave(content) {
-    saveToBackend(content).then(() => {
-      isDirty = false;
-      updateSaveButton();
-    });
-  },
-});
-
-window.addEventListener('beforeunload', (e) => {
-  if (isDirty) {
-    e.preventDefault();
-  }
 });
 ```
+
+The editor already warns on tab close when a `templates` provider is configured — opt out with `unsavedChangesGuard: false`. `onDirtyChange` is what you need for a client-side router, which `beforeunload` cannot see.
