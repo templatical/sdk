@@ -32,7 +32,7 @@
     "tsx": "^4.23.12",
     "typescript": "^6.0.3",
     "vite": "^8.2.1",
-    "vue-tsc": "^3.3.9"
+    "vue-tsc": "^3.3.10"
   },
   "private": true,
   "scripts": {
