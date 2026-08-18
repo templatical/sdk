@@ -44,7 +44,7 @@ Each key stands alone, and a feature is **absent until you pass its key**: no `v
 
 The editor keeps what is fiddly and the same for everybody: dirty tracking, a debounced autosave that pauses during undo, a preview that honours display conditions, the confirmation before a restore discards unsaved work. You keep where the bytes go, who may read them, and what your API looks like.
 
-On the four storage providers every mutation is `false | fn` and **required**, not optional: passing `false` states that the action is unavailable, and the editor hides it rather than disabling it. Each provider page covers its own — [saved blocks](/backend/saved-blocks#controlling-permissions) has the fullest treatment. `render` and `testEmail` are shaped differently: every `render` method is independently optional, and `testEmail` is a single `send`.
+On the four storage providers every mutation is `false | fn` and **required**, not optional: passing `false` states that the action is unavailable. Calling it rejects, and wherever the editor renders a control for it, that control is hidden rather than disabled. Each provider page covers its own — [saved blocks](/backend/saved-blocks#controlling-permissions) has the fullest treatment. `render` and `testEmail` are shaped differently: every `render` method is independently optional, and `testEmail` is a single `send`.
 
 ::: warning Not a security boundary
 Providers run in the user's browser. These flags shape the UI; they do not protect your API. Who may open a template, who may delete a shared saved block, which address a test may reach — enforce all of it on your server as well.
