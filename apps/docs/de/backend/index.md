@@ -9,7 +9,7 @@ Der Editor bearbeitet eine Vorlage. Wo diese Vorlage gespeichert wird, wie ihre 
 
 Dieses Objekt ist ein **Provider**. Es gibt sechs davon, alle sind optional, und alle funktionieren gleich.
 
-## Die sechs Provider
+## Die Provider
 
 ```ts
 import { init } from '@templatical/editor';
@@ -44,31 +44,7 @@ Jeder Schlüssel steht für sich, und jede Funktion **fehlt, solange Sie ihren S
 
 Der Editor behält, was kleinteilig und für alle gleich ist: Änderungsverfolgung, ein verzögertes Autosave, das während Undo pausiert, eine Vorschau, die Anzeigebedingungen respektiert, die Rückfrage, bevor ein Wiederherstellen ungespeicherte Arbeit verwirft. Ihnen bleibt, wohin die Daten gehen, wer sie lesen darf und wie Ihre API aussieht.
 
-## Eine Mutation deaktivieren
-
-Bei den vier speichernden Providern ist jede Mutation `false | fn` — und **erforderlich**, nicht optional:
-
-```ts
-savedBlocks: {
-  list: async () => {
-    const res = await fetch('/api/saved-blocks');
-    return res.json();
-  },
-  create: (input) => post('/api/saved-blocks', input),
-  update: false,  // darf ergänzen, aber nichts ändern
-  delete: false,
-}
-```
-
-- Eine zurückgehaltene Aktion wird **verborgen**, nicht deaktiviert — für etwas, das nicht stattfinden kann, gibt es kein Bedienelement.
-- Der Aufruf einer zurückgehaltenen Methode **wird abgelehnt**, damit eine Verweigerung nie als Speichern durchgeht.
-- `list` — und das `get` des Versionsverlaufs — lässt sich nicht abschalten. Ohne sie hätte die Funktion nichts anzuzeigen.
-
-`render` und `testEmail` sind anders geformt, wie ihre eigenen Seiten beschreiben: Bei `render` ist jede Methode unabhängig optional, und `testEmail` besteht aus einem einzigen `send`.
-
-::: tip Warum erforderlich und nicht optional
-Eine optionale Methode würde „Ich habe mich gegen delete entschieden" nicht von „Ich habe delete noch nicht geschrieben" unterscheidbar machen. Ein `false` entsteht nicht durch Vergessen.
-:::
+Bei den vier speichernden Providern ist jede Mutation `false | fn` und **erforderlich**, nicht optional: Ein `false` erklärt die Aktion für nicht verfügbar, und der Editor blendet sie aus, statt sie zu deaktivieren. Jede Provider-Seite behandelt ihre eigene — [gespeicherte Blöcke](/de/backend/saved-blocks#berechtigungen-steuern) am ausführlichsten. `render` und `testEmail` sind anders geformt: Bei `render` ist jede Methode unabhängig optional, und `testEmail` besteht aus einem einzigen `send`.
 
 ::: warning Keine Sicherheitsgrenze
 Provider laufen im Browser der Nutzenden. Diese Flags formen die Oberfläche; Ihre API schützen sie nicht. Wer eine Vorlage öffnen darf, wer einen geteilten gespeicherten Block löschen darf, welche Adresse ein Test erreichen darf — setzen Sie all das zusätzlich auf Ihrem Server durch.
@@ -86,11 +62,17 @@ Jede Provider-Methode darf ablehnen. Der Editor meldet den Fehler über `onError
 
 Mehrere dieser Meldungen landen wortgleich in der Oberfläche — schreiben Sie sie für die Person, die sie lesen wird.
 
-## Keine Provider
+## Callbacks
 
-- **Bilder** — `onRequestMedia` ist ein Callback und kein Provider-Objekt: Es öffnet Ihre eigene Auswahl und gibt zurück, was gewählt wurde. Siehe [Bilder](/de/guide/images).
-- **Vorschaudaten** — `resolvePreview` übergibt die Vorlage an Ihr Backend und rendert, was zurückkommt, sodass eine Vorschau echte Empfängerdaten statt Merge-Tag-Labels zeigt. Siehe [Vorschau-Rendering](/de/guide/preview-rendering).
-- **KI und Echtzeit-Zusammenarbeit** — heute [Cloud](/de/cloud/)-Funktionen, für die es noch keinen offenen Vertrag gibt.
+Zwei weitere Schnittstellen erreichen Ihr Backend, allerdings als schlichte Funktionen und nicht als Provider-Objekte — nichts zurückzuhalten, keine IDs, kein `false`:
+
+```ts
+type OnRequestMedia = (context?: MediaRequestContext) => Promise<MediaResult | null>;
+type ResolvePreview = (context: PreviewResolveContext) => Promise<TemplateContent>;
+```
+
+- **`onRequestMedia`** öffnet Ihre eigene Medienauswahl und gibt zurück, was gewählt wurde. Dokumentiert gemeinsam mit der übrigen Bildbehandlung unter [Bilder](/de/guide/images).
+- **`resolvePreview`** übergibt die Vorlage an Ihr Backend und rendert, was zurückkommt, sodass eine Vorschau echte Empfängerdaten statt Merge-Tag-Labels zeigt. Nur zur Anzeige: Das Ergebnis erreicht Vorschauflächen und wird nie gespeichert, versendet oder exportiert. Siehe [Vorschau-Rendering](/de/guide/preview-rendering).
 
 ## Headless-Nutzung
 
@@ -98,7 +80,7 @@ Mehrere dieser Meldungen landen wortgleich in der Oberfläche — schreiben Sie 
 
 ## Templatical Cloud
 
-Sie möchten das alles nicht selbst bauen? Templatical Cloud implementiert alle sechs Verträge. Richten Sie `initCloud()` auf einen Auth-Endpunkt, und Speichern, Versionsverlauf, Kommentare, gespeicherte Blöcke, Testversand und Rendering funktionieren — ohne eigenen Speicher, ohne selbst geschriebene Endpunkte, ohne gehosteten MJML-Compiler.
+Sie möchten das alles nicht selbst bauen? Templatical Cloud implementiert sie alle. Richten Sie `initCloud()` auf einen Auth-Endpunkt, und Speichern, Versionsverlauf, Kommentare, gespeicherte Blöcke, Testversand und Rendering funktionieren — ohne eigenen Speicher, ohne selbst geschriebene Endpunkte, ohne gehosteten MJML-Compiler.
 
 ```ts
 import { initCloud } from '@templatical/editor';
