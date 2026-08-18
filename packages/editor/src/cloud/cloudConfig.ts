@@ -10,7 +10,6 @@ import type {
   LogicTagsConfig,
   McpConfig,
   MergeTagsConfig,
-  RenderProvider,
   SavedBlocksProvider,
   Template,
   TestEmailProvider,
@@ -207,24 +206,16 @@ export interface TemplaticalCloudEditorConfig {
    */
   testEmail?: TestEmailProvider;
 
-  /**
-   * Rendering backend for `editor.toMjml()` / `editor.toHtml()`.
-   *
-   * - **omitted** — rendered by Templatical Cloud. Its output is a deliberate
-   *   superset of the browser's: a countdown block resolves to a live
-   *   server-generated GIF and a video block gets a composited play button,
-   *   neither of which a browser can produce. Note Cloud renders the *saved*
-   *   template, so each call saves first.
-   * - **a {@link RenderProvider}** — rendered by *you* instead, and not
-   *   plan-gated, because the `custom_fonts` entitlement licenses Cloud's
-   *   renderer rather than the editor's export methods.
-   *
-   * The same type `init()` takes, so moving an OSS integration to Cloud means
-   * deleting this key (to adopt Cloud's renderer) or leaving it exactly as-is (to
-   * keep your own) — never rewriting it.
-   */
-  render?: RenderProvider;
-
+  // There is deliberately no `render` key here, unlike `init()`. Cloud renders
+  // server-side for test email, scheduled sends and API exports — its test-email
+  // adapter calls `exportHtml` directly — so a consumer-supplied renderer would
+  // have changed `toMjml()` / `toHtml()` and nothing else: what you previewed and
+  // exported would not be what Cloud delivered. Cloud's output is also a
+  // deliberate superset (a countdown resolves to a live server-generated GIF, a
+  // video gets a composited play button), so the consumer's would be worse for
+  // those blocks too. For your own MJML on Cloud, call
+  // `renderToMjml(editor.getContent())` from `@templatical/renderer` directly.
+  //
   // There is deliberately no `templates`, `versionHistory` or `comments` key here,
   // unlike `init()`. All three are keyed to the Cloud template id, which anchors
   // collaboration, AI rewrite, scoring, the server-side export — and version
