@@ -78,17 +78,19 @@ Der Editor hat keinen Vorlagen-Browser. Die Auswahl, *welche* Vorlage geöffnet 
 
 ## Erstellen oder Speichern deaktivieren
 
-`create` und `save` sind `false | fn` und **erforderlich**, nicht optional. Ein `false` erklärt die Aktion für nicht verfügbar; der Editor blendet sie aus, statt sie zu deaktivieren. `load` lässt sich nicht abschalten — ohne es gäbe es nichts zu öffnen.
+`create` und `save` sind `false | fn` und **erforderlich**, nicht optional. `load` lässt sich nicht abschalten — ohne es gäbe es nichts zu öffnen.
 
 ```ts
 templates: {
   load: (id) => fetchTemplate(id),
-  create: false,  // keine neuen Vorlagen aus dem Editor heraus
+  create: false,  // editor.create() lehnt ab
   save: false,    // nur lesend: lädt und bearbeitet lokal, speichert nichts
 }
 ```
 
-`save: false` verbirgt **beide** — die Speichern-Schaltfläche und die Statusanzeige — und macht den Namen schreibgeschützt: eine Änderung hätte nirgendwo hin. Eine Vorlage zu laden und lokal zu bearbeiten funktioniert weiterhin.
+**`save: false`** verbirgt die Speichern-Schaltfläche und die Statusanzeige und macht den Namen schreibgeschützt: Eine Änderung hätte nirgendwo hin. `Cmd`/`Strg`+`S` und Autosave laufen dann wirkungslos durch, statt einen Fehler zu erzeugen. Eine Vorlage zu laden und lokal zu bearbeiten funktioniert weiterhin.
+
+**`create: false`** bewirkt, dass `editor.create()` ablehnt. Es verbirgt nichts, denn der Editor hat kein eigenes Bedienelement zum Anlegen — erzeugt wird immer über `editor.create()` aus Ihrer Anwendung heraus. Da Sie den Schalter selbst setzen, koppeln Sie ein eigenes Bedienelement für neue Vorlagen an denselben Wert oder fangen den Aufruf mit `try` / `catch` ab.
 
 ::: warning Keine Sicherheitsgrenze
 Diese Schalter leben im Browser des Nutzers. Sie prägen die Oberfläche; sie schützen Ihre API nicht. Erzwingen Sie Berechtigungen serverseitig.
@@ -120,13 +122,15 @@ Die Speichern-Schaltfläche ist deaktiviert, solange keine Vorlage existiert, de
 await init({
   container: '#editor',
   templates: { /* … */ },
-  autoSave: { debounce: 2000 },  // `true` nutzt den Standard 1000
+  autoSave: { debounce: 5000 },  // `true` nutzt den Standard 2000
 });
 ```
 
 Die Verzögerung beginnt bei jeder Änderung neu, sodass aus einer Tippfolge ein einziges Speichern wird. Sie pausiert, während der Nutzer durch Undo/Redo navigiert, und überspringt das Speichern vollständig, wenn nichts geändert wurde.
 
-`autoSave` benötigt einen `templates`-Provider — ohne ihn gibt es kein Ziel, und die Option wird mit einer Warnung ignoriert.
+::: warning `autoSave` benötigt einen `templates`-Provider
+Ohne ihn gibt es kein Ziel zum Speichern — die Option wird ignoriert und der Editor protokolliert eine Warnung.
+:::
 
 ## Cmd+S
 
@@ -174,7 +178,7 @@ editor.isDirty();  // boolean
 - **`load(id)`** holt eine Vorlage und macht sie zum Inhalt des Editors; lokale Änderungen werden verworfen.
 - **`save()`** speichert Name und Inhalt der geladenen Vorlage als einen Patch.
 
-Alle drei sind stets im Typ vorhanden und werden mit einer erklärenden Fehlermeldung abgelehnt, wenn kein Provider konfiguriert ist oder der Provider die jeweilige Methode zurückhält. Sichern Sie sie mit `try` / `catch` ab, wenn Sie sie aus einer eigenen Schaltfläche aufrufen — der Header des Editors verbirgt selbst, was er nicht kann.
+Alle drei sind stets im Typ vorhanden und werden mit einer erklärenden Fehlermeldung abgelehnt, wenn kein Provider konfiguriert ist oder der Provider die jeweilige Methode zurückhält. Sichern Sie sie mit `try` / `catch` ab, wenn Sie sie aus einer eigenen Schaltfläche aufrufen. Der Header blendet seine eigenen Speichern-Bedienelemente aus, wenn `save` zurückgehalten wird; `create()` und `load()` haben dagegen überhaupt keine Editor-Oberfläche — ein Bedienelement dafür koppeln Sie selbst.
 
 ## Speichern ohne Provider
 

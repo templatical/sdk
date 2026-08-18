@@ -157,7 +157,7 @@ describe('useEditor — templates provider', () => {
       });
 
       await expect(editor.create()).rejects.toThrow(
-        /create\(\) is disabled by the provider/,
+        '[Templatical] Templates: create() is disabled by the provider — its `create` is `false`.',
       );
       expect(editor.state.template).toBeNull();
     });
@@ -298,6 +298,26 @@ describe('useEditor — templates provider', () => {
       expect(provider.save).not.toHaveBeenCalled();
     });
 
+    it('names the provider key, never an unreachable capability flag', async () => {
+      // `EditorCapabilities` is exported type-only and CAPABILITIES_KEY is not
+      // exported at all, so neither a core nor an editor consumer can read one.
+      // An earlier message told callers to "Check `capabilities.templates.canCreate`",
+      // which no consumer could act on.
+      const editor = useEditor({
+        content: contentWithOneBlock(),
+        templates: createMockProvider({ create: false, save: false }),
+      });
+
+      const createError = await editor.create().catch((e: Error) => e);
+      const saveError = await editor.save().catch((e: Error) => e);
+
+      for (const error of [createError, saveError]) {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).not.toContain('capabilities');
+      }
+      expect((createError as Error).message).toContain('its `create` is `false`');
+    });
+
     it('rejects when the provider disabled save', async () => {
       const provider = createMockProvider({ save: false });
       const editor = useEditor({
@@ -307,7 +327,7 @@ describe('useEditor — templates provider', () => {
       await editor.load('tpl_1');
 
       await expect(editor.save()).rejects.toThrow(
-        /save\(\) is disabled by the provider/,
+        '[Templatical] Templates: save() is disabled by the provider — its `save` is `false`.',
       );
     });
 

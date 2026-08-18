@@ -320,7 +320,7 @@ const autoSave = useAutoSave({
   content: editor.content,
   isDirty: () => editor.state.isDirty,
   onChange: (content) => saveToServer(content),
-  debounce: 1000,
+  debounce: 2000, // the default
   enabled: true, // boolean or () => boolean
 });
 

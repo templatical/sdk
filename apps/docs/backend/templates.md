@@ -1,0 +1,203 @@
+---
+title: Saving & Loading Templates
+description: Wire the editor's save/load lifecycle to your own storage — name, save button, autosave and unsaved-changes guard included.
+---
+
+# Saving & Loading Templates
+
+Give the editor somewhere to save to and it grows the chrome that goes with it: an inline-editable template name, a save button, a save-status indicator, `Cmd`/`Ctrl`+`S`, optional autosave, and a warning before the tab closes with unsaved work.
+
+The editor owns all of that. **You own persistence** — three methods against your own API.
+
+## Quick start
+
+```ts
+import { init } from '@templatical/editor';
+
+const editor = await init({
+  container: '#editor',
+  templates: {
+    load: async (id) => {
+      const res = await fetch(`/api/templates/${id}`);
+      return res.json();
+    },
+
+    create: async (input) => {
+      const res = await fetch('/api/templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+      return res.json();
+    },
+
+    save: async (id, patch) => {
+      const res = await fetch(`/api/templates/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      return res.json();
+    },
+  },
+});
+
+// Opening a template is imperative — your app decides which one.
+await editor.load('tpl_123');
+```
+
+**Omit `templates` and the feature is absent** — no name field, no save button, no status indicator. `create()` / `load()` / `save()` then reject with an explanatory error, and you persist the content yourself from [`onChange`](#persisting-without-a-provider).
+
+## The contract
+
+```ts
+interface Template {
+  id: string;
+  name?: string;
+  content: TemplateContent;
+}
+
+type TemplatePatch = Partial<{ name: string; content: TemplateContent }>;
+
+interface TemplatesProvider {
+  load(id: string): Promise<Template>;
+  create: false | ((input: { name?: string; content: TemplateContent }) => Promise<Template>);
+  save:   false | ((id: string, patch: TemplatePatch) => Promise<Template>);
+}
+```
+
+- **`id` comes from your store**, returned by `create()`. The editor never generates one — a database key, a slug, a document id, whatever your storage already uses.
+- **`save` receives a patch**, not bare content, so a rename can travel without content and a new field can be added without breaking your implementation. The editor sends `name` (when the template has one) and `content` together, in one round-trip.
+- **`name` is optional.** With no name column, leave it out: the header renders "Untitled" and a rename never happens.
+
+Every method may reject. The editor reports the failure through `onError`, shows it in the header, and leaves its state untouched — nothing is marked saved that wasn't.
+
+### No list, no delete
+
+The editor has no template browser. Choosing *which* template to open belongs to your application; the editor's job starts once you hand it an id.
+
+## Disabling create or save
+
+`create` and `save` are `false | fn` and **required**, not optional. `load` cannot be turned off — without it there is nothing to open.
+
+```ts
+templates: {
+  load: (id) => fetchTemplate(id),
+  create: false,  // editor.create() rejects
+  save: false,    // read-only: loads and edits locally, persists nothing
+}
+```
+
+**`save: false`** hides the save button and the status indicator, and makes the name read-only — there is nowhere for a change to go. `Cmd`/`Ctrl`+`S` and autosave become no-ops rather than errors. Loading a template and editing it locally still works.
+
+**`create: false`** makes `editor.create()` reject. It hides nothing, because the editor has no create affordance of its own — creating is always your app calling `editor.create()`. You set the flag, so gate your own New-template control on the same value, or `try` / `catch` the call.
+
+::: warning Not a security boundary
+These flags live in the user's browser. They shape the UI; they do not protect your API. Enforce permissions server-side.
+:::
+
+## The header
+
+<!-- prettier-ignore -->
+| Where | What |
+| --- | --- |
+| left | the template name, click-to-edit |
+| right | the save status, then the save button |
+
+The name commits on `Enter` or blur, cancels on `Escape`, and reverts an empty value — a cleared field is far likelier a slip than an intent. A rename is an ordinary unsaved change: it marks the editor dirty and persists on the next save, in the same patch as the content.
+
+The status indicator has three states:
+
+| State | Shown when |
+| --- | --- |
+| **Unsaved** | there are edits the editor knows aren't persisted |
+| **Saved** | a save just succeeded (for a few seconds) |
+| **Save failed** | the last attempt rejected — your error message is in the tooltip |
+
+The save button is disabled until a template exists, because `save()` patches an id. Call `create()` or `load()` first.
+
+## Autosave
+
+```ts
+await init({
+  container: '#editor',
+  templates: { /* … */ },
+  autoSave: { debounce: 5000 },  // `true` uses the default 2000
+});
+```
+
+The debounce restarts on every change, so a burst of typing produces one save. It pauses while the user steps through undo/redo, and skips the save entirely when nothing is dirty.
+
+::: warning `autoSave` needs a `templates` provider
+Without one there is nothing to save to, so the option is ignored and the editor logs a warning.
+:::
+
+## Cmd+S
+
+`Cmd`/`Ctrl`+`S` always means "persist now":
+
+- with a `templates` provider it calls `save()`;
+- without one it flushes the `onChange` debounce immediately, so a consumer persisting from `onChange` still gets the keystroke.
+
+## Unsaved changes
+
+Two mechanisms, because neither covers the other:
+
+```ts
+await init({
+  container: '#editor',
+  templates: { /* … */ },
+  onDirtyChange: (isDirty) => { hasUnsavedWork.value = isDirty },
+  unsavedChangesGuard: true,  // the default
+});
+```
+
+**`unsavedChangesGuard`** is a `beforeunload` prompt, on by default whenever a provider is configured. It covers closing or reloading the tab. Set it to `false` to own that prompt yourself. Without a provider the editor never warns — it has no way to know whether you already persisted the change.
+
+**`onDirtyChange`** (and its pull-based twin `editor.isDirty()`) is what you guard a client-side router with, since `beforeunload` does not fire on an in-app navigation:
+
+```ts
+router.beforeEach((to, from, next) => {
+  if (editor.isDirty() && !confirm('Discard unsaved changes?')) return next(false);
+  next();
+});
+```
+
+`onDirtyChange` works with or without a provider. `initCloud()` accepts both keys on the same terms — Cloud always has a store to save to, so the guard is on there unless you refuse it.
+
+## The instance API
+
+```ts
+const template = await editor.create({ name: 'Welcome email' });
+await editor.load(template.id);
+await editor.save();
+editor.isDirty();  // boolean
+```
+
+- **`create(input?)`** persists the current content as a new template. Pass `content` to replace the editor's content first, so `create({ content })` loads and stores in one step.
+- **`load(id)`** fetches a template and makes it the editor's content, discarding local edits.
+- **`save()`** persists the loaded template's name and content as one patch.
+
+All three are always present on the type, and reject with an explanatory error when no provider is configured or the provider withheld the relevant method. Guard with `try` / `catch` if you call them from a button of your own. The header hides its own save controls when `save` is withheld, but `create()` and `load()` have no editor UI at all — a control for either is yours to gate.
+
+## Persisting without a provider
+
+A provider is not the only way to keep a template. `onChange` fires, debounced, whenever the content changes:
+
+```ts
+await init({
+  container: '#editor',
+  onChange: (content) => myStore.save(content),
+});
+```
+
+`Cmd`/`Ctrl`+`S` flushes that debounce immediately, so the keystroke still reaches you. You then own the save button, the status and the dirty prompt as well. Use `onChange` when the editor's chrome isn't what you want; use the provider when it is.
+
+## Reference
+
+- [`init()` options](/api/editor)
+- [Rendering & Export](/backend/render) — bring-your-own MJML/HTML rendering
+- [Saved Blocks](/backend/saved-blocks) — the same bring-your-own-storage shape, for reusable groups of blocks
+- [Test Emails](/backend/test-email) — bring-your-own sending
+
+**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Templates on Cloud](/cloud/templates).

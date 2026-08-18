@@ -354,6 +354,75 @@ describe("useTemplatesFeature", () => {
     });
   });
 
+  describe("requestAutoSave", () => {
+    /**
+     * The tick is dropped while a save is in flight — correct, since two PATCHes
+     * of the whole document must never overlap. But nothing reschedules it:
+     * `useAutoSave`'s timer has already fired and cleared itself, and only a
+     * further content mutation arms a new one. So autosave went silent until the
+     * user typed again. Driven by an explicit deferred rather than timers — with
+     * fake timers the save resolves before the second tick and the race never
+     * happens.
+     */
+    it("re-arms after an in-flight save instead of dropping the tick", async () => {
+      const stored: Template = { id: "tpl_1", name: "Welcome", content: CONTENT };
+      const editor = createEditor({ template: { id: "tpl_1" } });
+      editor.state.isDirty = true;
+
+      let release!: () => void;
+      editor.save = vi.fn(() => {
+        editor.state.isSaving = true;
+        return new Promise<Template>((resolve) => {
+          release = () => {
+            editor.state.isSaving = false;
+            resolve(stored);
+          };
+        });
+      });
+
+      const { feature } = withFeature({ editor });
+
+      feature.requestAutoSave();
+      expect(editor.save).toHaveBeenCalledTimes(1);
+
+      // Lands mid-flight. Must not run concurrently...
+      feature.requestAutoSave();
+      expect(editor.save).toHaveBeenCalledTimes(1);
+
+      // ...but must not be lost either.
+      release();
+      await vi.waitFor(() => expect(editor.save).toHaveBeenCalledTimes(2));
+    });
+
+    it("does not re-arm when the in-flight save left nothing dirty", async () => {
+      const stored: Template = { id: "tpl_1", name: "Welcome", content: CONTENT };
+      const editor = createEditor({ template: { id: "tpl_1" } });
+      editor.state.isDirty = true;
+
+      let release!: () => void;
+      editor.save = vi.fn(() => {
+        editor.state.isSaving = true;
+        return new Promise<Template>((resolve) => {
+          release = () => {
+            editor.state.isSaving = false;
+            editor.state.isDirty = false; // the save covered everything
+            resolve(stored);
+          };
+        });
+      });
+
+      const { feature } = withFeature({ editor });
+
+      feature.requestAutoSave();
+      feature.requestAutoSave();
+      release();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(editor.save).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("rename", () => {
     it("sets the name and persists it", async () => {
       const editor = createEditor({ template: { id: "tpl_1", name: "Old" } });

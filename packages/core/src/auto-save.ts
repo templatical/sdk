@@ -17,12 +17,24 @@ export interface UseAutoSaveReturn {
   destroy: () => void;
 }
 
+/**
+ * Trailing debounce, in ms, measured from the *last* content mutation.
+ *
+ * Typing is not debounced upstream — TipTap's `onUpdate` calls `updateBlock` per
+ * keystroke — so this is the only thing between a keypress and a whole-document
+ * write. 1000 was too eager: ordinary prose pauses for a second constantly
+ * (word choice, re-reading, reaching for the mouse), so a single paragraph could
+ * produce dozens of full-content saves. 2000 roughly halves that while still
+ * landing well before a user wonders whether their work was kept.
+ */
+const DEFAULT_DEBOUNCE_MS = 2000;
+
 export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
   const {
     content,
     isDirty,
     onChange,
-    debounce = 1000,
+    debounce = DEFAULT_DEBOUNCE_MS,
     enabled = true,
   } = options;
 

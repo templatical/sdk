@@ -205,11 +205,30 @@ export function useTemplatesFeature(
     return editor.load(templateId);
   }
 
+  /**
+   * An autosave tick that arrived while a save was in flight. `useAutoSave`'s
+   * timer fires once and clears itself, and only a further content mutation
+   * arms a new one — so dropping such a tick left autosave silent until the
+   * user happened to type again.
+   */
+  let queuedAutoSave = false;
+
   /** Shared by both request paths — the outcome is reported through `status`. */
   function runSave(): Promise<void> {
     return save().then(
-      () => {},
-      () => {},
+      () => {
+        if (!queuedAutoSave) return;
+        queuedAutoSave = false;
+        // Only what the finished save could not have covered.
+        if (editor.state.isDirty) requestAutoSave();
+      },
+      () => {
+        // Deliberately no retry on failure: the status indicator already shows
+        // "Save failed", so autosave has not gone *silent*, and re-firing into a
+        // failing endpoint would only double the traffic. The next content
+        // change arms a fresh tick.
+        queuedAutoSave = false;
+      },
     );
   }
 
@@ -232,7 +251,14 @@ export function useTemplatesFeature(
   }
 
   function requestAutoSave(): void {
-    if (cannotSave()) return;
+    // Split the transient condition out of `cannotSave()`: a save already in
+    // flight is a "later", not a "never". Overlapping PATCHes of the whole
+    // document must still never happen, so the tick is queued rather than run.
+    if (!canSave.value || !hasTemplate.value) return;
+    if (isSaving.value) {
+      queuedAutoSave = true;
+      return;
+    }
     const gate = options.getSaveGate?.();
     if (gate) {
       void gate.runUnlessBlocked(runSave);

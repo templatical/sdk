@@ -417,9 +417,14 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
   // -------------------------------------------------------------------------
 
   /**
-   * A refused call throws rather than resolving: the editor's own UI hides
-   * whatever it cannot do, so reaching one of these means a programmatic caller
-   * went around the capability — and a resolved promise would read as "saved".
+   * A refused call throws rather than resolving, because a resolved promise
+   * would read as "saved" to whoever awaited it.
+   *
+   * The message names the provider key the consumer set, not an internal
+   * capability flag: `EditorCapabilities` is type-only and its injection key is
+   * unexported, so neither a core nor an editor consumer can read one. Note the
+   * editor hides its own save controls when `save` is withheld but has no
+   * create affordance to hide at all, so `create()` is reachable by definition.
    */
   function refuse(action: string, reason: string): never {
     throw new SdkError(`[Templatical] Templates: ${action} ${reason}`);
@@ -451,7 +456,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     if (typeof providerCreate !== "function") {
       refuse(
         "create()",
-        "is disabled by the provider. Check `capabilities.templates.canCreate` before calling.",
+        "is disabled by the provider — its `create` is `false`.",
       );
     }
 
@@ -504,10 +509,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     const provider = requireProvider("save()");
     const { save: providerSave } = provider;
     if (typeof providerSave !== "function") {
-      refuse(
-        "save()",
-        "is disabled by the provider. Check `capabilities.templates.canSave` before calling.",
-      );
+      refuse("save()", "is disabled by the provider — its `save` is `false`.");
     }
     const current = state.template;
     if (!current) {
