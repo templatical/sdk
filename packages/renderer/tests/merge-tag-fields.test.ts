@@ -103,3 +103,39 @@ describe("renderer — group/description fields never leak into MJML", () => {
     expect(mjml).not.toContain("Personalized greeting");
   });
 });
+
+/**
+ * Regression (#543). A consumer-configured custom `mergeTags.syntax` whose tag
+ * values contain `<` / `>` (Smarty-style `<% $email %>`) used to defeat the
+ * span scanner, so the entire `<span data-merge-tag="…">E-Mail</span>` survived
+ * into the rendered MJML: the ESP never saw the token and the recipient got the
+ * literal label text. Silent, and only visible in a delivered email.
+ */
+describe("renderer — angle-bracket merge tag values reach the output as tokens", () => {
+  const smartySpan =
+    '<span data-merge-tag="<% $email %>" data-label="E-Mail">E-Mail</span>';
+
+  it("paragraph block: emits the token, not the span or its label", async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createParagraphBlock({ content: `<p>Hi ${smartySpan},</p>` }),
+    ];
+
+    const mjml = await renderToMjml(content);
+
+    expect(mjml).toContain("<p>Hi <% $email %>,</p>");
+    expect(mjml).not.toContain("data-merge-tag");
+    expect(mjml).not.toContain("E-Mail");
+  });
+
+  it("title block: emits the token, not the span or its label", async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [createTitleBlock({ content: `<h1>${smartySpan}</h1>` })];
+
+    const mjml = await renderToMjml(content);
+
+    expect(mjml).toContain("<% $email %>");
+    expect(mjml).not.toContain("data-merge-tag");
+    expect(mjml).not.toContain(">E-Mail<");
+  });
+});

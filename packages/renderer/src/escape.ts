@@ -1,3 +1,5 @@
+import { findOpenTagEnd, getTagAttrValue } from "@templatical/types";
+
 const HTML_ENTITIES: Record<string, string> = {
   "&": "&amp;",
   "<": "&lt;",
@@ -61,8 +63,8 @@ export function escapeCssValue(text: string): string {
  * Uses a single-pass linear scan instead of an `[^>]*…[^>]*` regex because
  * the latter is polynomial-ReDoS over inputs that contain many `<span`
  * starts but no closing `>` — the engine retries `[^>]*` at every span
- * position. The scan below resolves each `<span>` open tag with a bounded
- * `indexOf('>')`, keeping the work strictly O(n).
+ * position. The scan below resolves each `<span>` open tag with a bounded,
+ * quote-aware `findOpenTagEnd`, keeping the work strictly O(n).
  */
 export function convertMergeTagsToValues(html: string): string {
   if (html === "") {
@@ -109,7 +111,7 @@ function rewriteMergeTagSpans(
       i = open + 5;
       continue;
     }
-    const openEnd = html.indexOf(">", open + 5);
+    const openEnd = findOpenTagEnd(html, open + 5);
     if (openEnd === -1) {
       out += html.substring(i);
       break;
@@ -138,11 +140,15 @@ function rewriteMergeTagSpans(
 
 /**
  * Extract the value of `name="…"` from an HTML attribute string, or `null`
- * if absent. Uses `[^<>"]*` for the value match so a missing closing quote
- * fails fast rather than backtracking across the full input.
+ * if absent.
+ *
+ * Delegates to `@templatical/types` so the editor's preview rewriter and this
+ * export rewriter read markup identically. They were separate regexes once, and
+ * both excluded `<` / `>` from the value — which silently left the whole span
+ * in the rendered MJML whenever a consumer configured a merge-tag syntax whose
+ * values contain those characters (`<% $email %>`), so the ESP never received
+ * the token.
  */
 function findAttr(attrs: string, name: string): string | null {
-  const pattern = new RegExp(`(?:^|\\s)${name}="([^"<>]*)"`);
-  const match = pattern.exec(attrs);
-  return match ? match[1] : null;
+  return getTagAttrValue(attrs, name);
 }
