@@ -7,7 +7,7 @@ description: Lassen Sie Ihre Nutzer sich die Vorlage zusenden, die sie gerade be
 
 Lassen Sie Nutzer sich selbst die Vorlage zusenden, die sie gerade bearbeiten, damit sie sie in einem echten Postfach sehen, bevor sie in eine Kampagne geht.
 
-Der Editor übernimmt den Auslöser, den Dialog, die Empfängerprüfung sowie alle Zustände für Versand, Erfolg und Fehler. **Der Versand liegt bei Ihnen.** Eine einzige Methode genügt.
+Der Editor übernimmt den Auslöser, den Dialog, die Empfängerprüfung sowie alle Zustände für Versand, Erfolg und Fehler. **Der Versand liegt bei Ihnen** — eine Methode.
 
 ## Schnellstart
 
@@ -79,9 +79,9 @@ app.post('/api/test-email', async (req, res) => {
 });
 ```
 
-### Das MJML vom Editor erzeugen lassen
+### `includeMjml`
 
-Wenn Sie `renderToMjml` nicht selbst aufrufen möchten, setzen Sie `includeMjml`, und die Nutzlast enthält es:
+Setzen Sie es, und die Nutzlast enthält das MJML — Sie rufen `renderToMjml` dann nicht selbst auf:
 
 ```ts
 testEmail: {
@@ -90,12 +90,12 @@ testEmail: {
 }
 ```
 
-Dafür muss [`@templatical/renderer`](/de/api/renderer-typescript) installiert sein — ein optionales Peer-Paket. Zwei Verhaltensweisen sind wichtig:
+Dafür muss [`@templatical/renderer`](/de/api/renderer-typescript) installiert sein, ein optionales Peer-Paket. Zwei Verhaltensweisen:
 
-- **Ist es nicht installiert**, findet der Versand dennoch statt, allerdings nur mit JSON: `mjml` fehlt, und der Editor protokolliert eine einmalige Warnung mit dem Paketnamen. Die Aktivierung unterbricht den Versand also nie — **prüfen Sie `mjml` daher stets auf `undefined`**.
-- **Schlägt die Umwandlung fehl** — etwa bei einem fehlerhaften benutzerdefinierten Block — wird der Versand abgebrochen und der Fehler im Dialog angezeigt. Das ist beabsichtigt: ein stiller Versand ohne MJML würde eine defekte Vorlage verbergen.
+- **Nicht installiert** — der Versand findet dennoch statt, nur mit JSON: `mjml` fehlt, und der Editor protokolliert eine einmalige Warnung mit dem Paketnamen. Die Aktivierung unterbricht den Versand nie, **prüfen Sie `mjml` daher stets auf `undefined`**.
+- **Umwandlung schlägt fehl** — etwa bei einem fehlerhaften benutzerdefinierten Block — der Versand wird abgebrochen und der Fehler im Dialog angezeigt. Ein Versand ohne MJML würde eine defekte Vorlage verbergen.
 
-Die Umwandlung von MJML in HTML übernehmen Sie in beiden Fällen selbst. Der Editor bündelt niemals einen MJML-Compiler.
+Die Umwandlung von MJML in HTML übernehmen Sie in beiden Fällen selbst. Der Editor bündelt nie einen MJML-Compiler.
 
 ## Empfänger einschränken
 
@@ -123,9 +123,9 @@ Ein leeres Array wird als Entscheidung gelesen („niemand darf angeschrieben we
 **Prüfen Sie den Empfänger auf Ihrem Server**, und zwar jedes Mal. Ohne diese Prüfung ist Ihr Endpunkt ein offenes Relay: Wer ihn erreicht, kann beliebige Adressen von Ihrer Domain aus anschreiben.
 :::
 
-Die Nutzlast gibt die Liste als `allowedRecipients` zurück, damit eine `send`-Implementierung zwischen Ihrem Backend und Templatical Cloud portabel bleibt. Sie ist **nicht vertrauenswürdig** — ohne Signatur und aus dem Browser gelesen. Über die Portabilität hinaus ist sie für eines nützlich: den Vergleich mit `recipient` auf dem Server. Eine Abweichung bedeutet, dass der Client manipuliert wurde oder fehlerhaft ist — das lohnt sich zu protokollieren.
+Die Nutzlast gibt die Liste als `allowedRecipients` zurück, damit eine `send`-Implementierung zwischen Ihrem Backend und Templatical Cloud portabel bleibt. Sie ist **nicht vertrauenswürdig** — ohne Signatur und aus dem Browser gelesen. Über die Portabilität hinaus taugt sie für eines: den Vergleich mit `recipient` auf dem Server, wo eine Abweichung einen manipulierten oder fehlerhaften Client bedeutet und sich zu protokollieren lohnt.
 
-## Was Nutzer sehen
+## Im Editor
 
 <img src="/images/test-email-modal.png" alt="Der Dialog „Test-E-Mail senden" — ein Empfängerfeld über einer Vorschau der Vorlage ohne Editor-Elemente mit einem Umschalter für Desktop / Mobil sowie „Abbrechen" und „Senden" am unteren Rand" style="max-width: 480px;" />
 
@@ -139,7 +139,7 @@ Die Nutzlast gibt die Liste als `allowedRecipients` zurück, damit eine `send`-I
 
 Der Dialog zeigt die Vorlage ohne Editor-Elemente in E-Mail-Breite, mit einem Umschalter für Desktop und Mobil — so bestätigen Nutzer den Inhalt, ohne den Dialog zu verlassen.
 
-In zwei Punkten ist sie korrekt, die eine naive Vorschau falsch darstellen würde:
+Zwei Dinge, die sie richtig macht und eine naive Vorschau nicht:
 
 - **Anzeigebedingungen werden berücksichtigt.** Ein durch eine Bedingung ausgeschlossener Block fehlt, sodass die Vorschau niemals Inhalte zeigt, die der Empfänger nicht erhält.
 - **Responsive Blöcke folgen dem Umschalter.** Vorlagen mit gerätespezifischen Blöcken zeigen die Variante, die ein Empfänger auf diesem Gerät erhält, statt immer die Desktop-Fassung.

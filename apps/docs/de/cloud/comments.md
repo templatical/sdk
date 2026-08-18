@@ -13,7 +13,7 @@ const editor = await initCloud({ container: '#editor', auth: { url: '/api/token'
 
 Nichts zu konfigurieren. Cloud liefert den Provider und die Identität, und die Kommentar-Schaltfläche im Header erscheint, sobald eine Vorlage gespeichert ist.
 
-## Was der Adapter von Cloud tut
+## Der Adapter
 
 | Methode | Cloud |
 |---|---|
@@ -46,13 +46,13 @@ const editor = await initCloud({
 });
 ```
 
-## Die Autorenschaft wird signiert, nicht übergeben
+## Autoren-Identität
 
 Cloud sendet bei jedem Schreibvorgang `user_id` / `user_name` / `user_signature` mit, entnommen aus dem `user`-Claim des Auth-Tokens und von seinem Backend geprüft. Daher nimmt `initCloud()` **keinen `user`-Schlüssel** an: Es füllt `init({ user })` aus genau diesem Claim, und eine vom Browser gelieferte Identität könnte der vom Server geprüften nur widersprechen.
 
-Ein Projekt, dessen Token-Endpunkt den `user`-Claim weglässt, erhält überhaupt keine Kommentar-Funktion — [nicht verfügbar statt anonym](/de/backend/comments#user-ist-erforderlich-und-ein-schlussel-auf-oberster-ebene).
+Ein Projekt, dessen Token-Endpunkt den `user`-Claim weglässt, erhält überhaupt keine Kommentar-Funktion — [nicht verfügbar, niemals anonym](/de/backend/comments#autoren-identitat).
 
-## Eigenen Provider mitbringen
+## Eigene Implementierung
 
 Innerhalb von `initCloud()` geht das nicht — dieselbe Grenze, die [`templates`](/de/backend/templates) und der [Versionsverlauf](/de/cloud/version-history) ziehen, und aus demselben Grund.
 
@@ -62,9 +62,9 @@ Ein Kommentar ist an eine Vorlagen-ID gebunden, die **Cloud ausgestellt** hat, u
 
 Bringen Sie Ihren eigenen mit [`init()`](/de/backend/comments) mit — dort gehört Ihnen der gesamte Satz: Vorlagen, Versionsverlauf, Kommentare, Rendering.
 
-## Kopflose Verwendung
+## Headless-Nutzung
 
-`useComments` und `useCommentListener` sind zu `@templatical/core` gewandert, als Kommentare eine geteilte Funktion wurden; sie nehmen einen Provider statt eines `authManager`. Der Adapter von Cloud ist `createCloudCommentsProvider` aus `@templatical/core/cloud`:
+`useComments` und `useCommentListener` liegen in `@templatical/core` und nehmen einen Provider entgegen. Der Adapter von Cloud ist `createCloudCommentsProvider` aus `@templatical/core/cloud`:
 
 ```ts
 import { useComments, useCommentListener } from '@templatical/core';
@@ -85,4 +85,4 @@ const comments = useComments({
 useCommentListener({ comments, provider, getTemplateId: () => templateId });
 ```
 
-Die vollständige reaktive Oberfläche steht im [Kommentar-Leitfaden](/de/backend/comments#kopflose-verwendung).
+Die vollständige reaktive Oberfläche steht im [Kommentar-Leitfaden](/de/backend/comments#headless-nutzung).

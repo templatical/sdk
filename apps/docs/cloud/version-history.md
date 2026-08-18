@@ -13,7 +13,7 @@ const editor = await initCloud({ container: '#editor', auth: { url: '/api/token'
 
 Nothing to configure. Cloud supplies the provider, and the header's history control appears as soon as a template is created or loaded.
 
-## What Cloud's adapter does
+## The adapter
 
 | Method | Cloud |
 |---|---|
@@ -26,7 +26,7 @@ Both mutations are enabled: version storage is part of what the plan pays for, s
 
 ## Automatic versions
 
-Cloud's **templates** adapter records them as part of its own `save`, throttled to at most one per minute — which is exactly what [the contract prescribes](/backend/version-history#your-save-records-the-versions-not-the-editor) for every implementation: whoever owns the storage owns the retention policy. A save that only renames the template records nothing.
+Cloud's **templates** adapter records them as part of its own `save`, throttled to at most one per minute. That is the contract's rule for every implementation — [whoever owns the storage owns the retention policy](/backend/version-history#recording-versions). A save that only renames the template records nothing.
 
 ## Bringing your own
 
@@ -38,7 +38,7 @@ A version is keyed to a template id **Cloud issued**. Cloud's templates adapter 
 
 Bring your own with [`init()`](/backend/version-history), where the whole set — templates, version history, rendering — is yours.
 
-## Headless
+## Headless use
 
 ```js
 import { createCloudVersionHistoryProvider } from '@templatical/core/cloud';

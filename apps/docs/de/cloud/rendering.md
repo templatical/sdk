@@ -14,7 +14,7 @@ const html = await editor.toHtml();
 
 Nichts zu konfigurieren und nichts zu installieren: kein `@templatical/renderer` auf Ihrer Seite, kein MJML-Compiler, kein Render-Host.
 
-## Was der Cloud-Adapter tut
+## Der Adapter
 
 | Methode | Cloud |
 | --- | --- |
@@ -22,7 +22,7 @@ Nichts zu konfigurieren und nichts zu installieren: kein `@templatical/renderer`
 | `toHtml` | Rendert und kompiliert sie in einem Aufruf zu versandfertigem HTML |
 | `compileMjml` | Kompiliert MJML, das Sie bereits haben |
 
-## Die Ausgabe ist eine bewusste Obermenge
+## Was Cloud hinzufügt
 
 Zwei Dinge, die ein Browser zur Renderzeit nicht leisten kann:
 
@@ -31,16 +31,18 @@ Zwei Dinge, die ein Browser zur Renderzeit nicht leisten kann:
 
 Alles andere ist identisch, denn Cloud führt den *veröffentlichten* `@templatical/renderer` mit genau diesen zwei eingespeisten Funktionen aus. Nichts anderes kann abweichen.
 
-## Zwei Konsequenzen, die Sie kennen sollten
+## Einschränkungen
 
 - **Cloud rendert die gespeicherte Vorlage**, jeder `toMjml()`- / `toHtml()`-Aufruf speichert also zuerst. Eine Sitzung, die nie eine Vorlage erzeugt hat, erhält eine klare Ablehnung statt eines Exports von nichts.
 - **Rendering ist nicht plangebunden.** Jeder Plan rendert die Schriften, die auch auf der Arbeitsfläche verwendet werden.
 
 ## Eigene Implementierung
 
-Innerhalb von `initCloud()` geht das nicht — und anders als bei [Templates](/de/cloud/templates), [Versionsverlauf](/de/cloud/version-history) und [Kommentaren](/de/cloud/comments) liegt der Grund nicht an der Vorlagen-ID. Rendering ist zustandslos und braucht keine.
+Innerhalb von `initCloud()` geht das nicht.
 
-Der Grund ist, dass Cloud **auch für den Versand serverseitig rendert**: Test-E-Mail, geplante Sendungen und API-Exporte laufen alle über den eigenen Renderer. Ein Provider hätte hier `toMjml()` und `toHtml()` verändert und sonst nichts — was Sie in der Vorschau sehen und exportieren, wäre also nicht mehr das, was Cloud versendet.
+Cloud rendert **auch für den Versand serverseitig**: Test-E-Mail, geplante Sendungen und API-Exporte laufen alle über den eigenen Renderer. Ein Provider würde hier `toMjml()` und `toHtml()` verändern und sonst nichts — was Sie in der Vorschau sehen und exportieren, wäre also nicht mehr das, was Cloud versendet.
+
+Dies ist eine andere Regel als die für [Templates](/de/cloud/templates), [Versionsverlauf](/de/cloud/version-history) und [Kommentare](/de/cloud/comments) — Rendering ist zustandslos und braucht keine Vorlagen-ID.
 
 `initCloud({ render })` steht daher nicht im Konfigurationstyp, und ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert.
 
@@ -54,6 +56,6 @@ const mjml = await renderToMjml(editor.getContent());
 
 Das rendert die *aktuelle* Arbeitsfläche statt der gespeicherten Fassung und erzeugt die Browser-Ausgabe statt Clouds Obermenge. Wenn Ihnen die ganze Pipeline gehören soll, nutzen Sie [`init()`](/de/backend/render).
 
-## Headless
+## Headless-Nutzung
 
 Rendern Sie ganz ohne Editor über die [Headless-API](/de/cloud/headless-api#export).

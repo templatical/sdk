@@ -14,7 +14,7 @@ const html = await editor.toHtml();
 
 Nothing to configure, and nothing to install: no `@templatical/renderer` on your side, no MJML compiler, no render host.
 
-## What Cloud's adapter does
+## The adapter
 
 | Method | Cloud |
 | --- | --- |
@@ -22,7 +22,7 @@ Nothing to configure, and nothing to install: no `@templatical/renderer` on your
 | `toHtml` | Renders and compiles it to sending-ready HTML in one call |
 | `compileMjml` | Compiles MJML you already have |
 
-## Its output is a deliberate superset
+## What Cloud adds
 
 Two things a browser cannot produce at render time:
 
@@ -31,16 +31,18 @@ Two things a browser cannot produce at render time:
 
 Everything else is identical, because Cloud runs the *published* `@templatical/renderer` with exactly those two functions injected. Nothing else can diverge.
 
-## Two consequences worth knowing
+## Constraints
 
 - **Cloud renders the saved template**, so each `toMjml()` / `toHtml()` call saves first. A session that has never created a template gets a clear rejection instead of an export of nothing.
 - **Rendering is not plan-gated.** Every plan renders the fonts the canvas is using.
 
 ## Bringing your own
 
-You can't, inside `initCloud()` — and unlike [templates](/cloud/templates), [version history](/cloud/version-history) and [comments](/cloud/comments), the reason is not the template id. Rendering is stateless and needs none.
+You can't, inside `initCloud()`.
 
-The reason is that Cloud renders **server-side for delivery too**: test email, scheduled sends and API exports all go through its own renderer. A provider here would have changed `toMjml()` and `toHtml()` and nothing else — so what you previewed and exported would not be what Cloud sent.
+Cloud renders **server-side for delivery too**: test email, scheduled sends and API exports all go through its own renderer. A provider here would change `toMjml()` and `toHtml()` and nothing else, so what you preview and export would not be what Cloud sends.
+
+Note this is a different rule from the one covering [templates](/cloud/templates), [version history](/cloud/version-history) and [comments](/cloud/comments) — rendering is stateless and needs no template id.
 
 `initCloud({ render })` is therefore not on the config type, and a provider passed from JavaScript is ignored with a console warning.
 
@@ -54,6 +56,6 @@ const mjml = await renderToMjml(editor.getContent());
 
 That renders the *current* canvas rather than the stored copy, and produces the browser-side output rather than Cloud's superset. To own the whole pipeline, use [`init()`](/backend/render).
 
-## Headless
+## Headless use
 
 Render outside the editor entirely with the [headless API](/cloud/headless-api#export).

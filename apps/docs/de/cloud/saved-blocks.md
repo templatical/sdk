@@ -13,7 +13,7 @@ const editor = await initCloud({ container: '#editor', auth: { url: '/api/token'
 
 Nichts zu konfigurieren — diese Funktion ist standardmäßig an. Cloud stellt den Provider bereit, und die Bibliotheksleiste erscheint in der Seitenleiste.
 
-## Was der Cloud-Adapter tut
+## Der Adapter
 
 | Methode | Cloud |
 | --- | --- |
@@ -40,6 +40,6 @@ Das lässt sich gefahrlos mischen, weil Cloud die Bibliothek nie eigenständig n
 
 Ein Provider, den Sie übergeben, ist **nicht** plangebunden — die Planfunktion lizenziert Clouds *Speicher*, nicht die Oberfläche des Editors.
 
-## Headless
+## Headless-Nutzung
 
 Die REST-Methoden behalten ihre ursprüngliche `module`-Benennung — `listModules`, `createModule`, `updateModule`, `deleteModule`. Siehe [Headless-API](/de/cloud/headless-api#gespeicherte-blocke).

@@ -62,21 +62,23 @@ const editor = await init({
 
 **Standardmäßig weggelassen.** Ohne Provider werden das Panel, sein Auslöser und die Block-Markierungen nicht gerendert, und keiner dieser UI-Teile wird geladen.
 
-Ein Kommentar gehört zu einer Vorlagen-ID, daher erscheint das Panel erst, sobald `create()` oder `load()` eine angehängt hat. Siehe [Speichern & Laden](/de/backend/templates).
+Kommentare sind an eine Vorlagen-ID gebunden, daher erscheint das Panel erst, sobald `create()` oder `load()` eine angehängt hat. Siehe [Speichern & Laden](/de/backend/templates).
 
-`initCloud()` nimmt **keinen** `comments`-Schlüssel an — siehe [Templatical Cloud](#templatical-cloud) unten.
+`initCloud()` nimmt keinen `comments`-Schlüssel an — siehe [Kommentare auf Cloud](/de/cloud/comments).
 
-## `user` ist erforderlich und ein Schlüssel auf oberster Ebene
+## Autoren-Identität
 
-Jeder Kommentar hat eine Autorin oder einen Autor. Ohne diese Angabe gibt es niemanden, dem ein Kommentar zugeordnet werden könnte, daher **meldet sich die Funktion als nicht verfügbar, anstatt einen anonymen Kommentar zu schreiben** — kein Auslöser, kein Panel, keine Markierungen.
+`user` ist ein **Schlüssel auf oberster Ebene**, und Kommentare setzen ihn voraus. Ohne Autorenschaft meldet sich die Funktion als nicht verfügbar, statt einen anonymen Kommentar zu schreiben: kein Auslöser, kein Panel, keine Markierungen.
 
 ```ts
 init({ container, user: { id: 'u_7', name: 'Ada Lovelace' } });
 ```
 
-Bewusst ist dies *kein* Teil des Kommentar-Providers. Kommentare sind die erste Funktion, die „wer sind Sie?" braucht, aber sie werden nicht die letzte sein — die Präsenzanzeige der Zusammenarbeit braucht genau dieselbe Antwort — und eine provider-eigene Kopie wäre das Erste, was auseinanderdriftet, sobald die zweite Funktion dazukommt.
+`user.id` wird mit der `author.id` jedes Kommentars verglichen, um zu entscheiden, was bearbeitet oder gelöscht werden darf. `user.name` erscheint an den Kommentaren, die diese Sitzung schreibt.
 
-`user.id` vergleicht das Panel mit der `author.id` jedes Kommentars, um zu entscheiden, was bearbeitet oder gelöscht werden darf; `user.name` erscheint an den Kommentaren, die diese Sitzung schreibt.
+::: tip Warum außerhalb des Providers
+Die Präsenzanzeige der Zusammenarbeit braucht denselben Wert. Eine Kopie im Kommentar-Provider wäre das Erste, was auseinanderdriftet, sobald eine zweite Funktion ihn ebenfalls braucht.
+:::
 
 ::: warning Keine Sicherheitsgrenze
 `user` identifiziert die Person gegenüber der Editor-UI, im Browser der Person selbst. Ordnen Sie Schreibvorgänge serverseitig zu, aus der Sitzung, der Ihr Backend bereits vertraut. Nichts hier verhindert, dass ein Browser einen anderen Namen behauptet.
@@ -108,27 +110,27 @@ interface CommentsProvider {
 }
 ```
 
-`list` ist die Operation und kann nicht abgeschaltet werden. Die vier Mutationen nehmen jeweils `false` anstelle einer Funktion — dieselbe Form, die [gespeicherte Blöcke](/de/backend/saved-blocks), [Vorlagen](/de/backend/templates) und der [Versionsverlauf](/de/backend/version-history) verwenden, und aus demselben Grund: Eine Mutation abzuschalten sollte eine Entscheidung sein, die Sie *aussprechen*, und nie etwas, das Sie erhalten, weil Sie eine Methode vergessen haben.
+`list` lässt sich nicht abschalten. Jede der vier Mutationen nimmt `false` anstelle einer Funktion — siehe [Eine Mutation deaktivieren](/de/backend/#eine-mutation-deaktivieren).
 
 Der Editor rendert die Reihenfolge von `list()` unverändert und sortiert nie um. Die Reihenfolge entscheidet Ihr Speicher.
 
-### Threads sind eine Ebene tief
+### Thread-Tiefe
 
-Ein Thread-Wurzelkommentar trägt `replies`; eine Antwort nie. Genau das rendert das Panel, daher ist das Flachlegen eines tieferen Baums Aufgabe Ihres Speichers und nicht des Editors.
+Eine Ebene. Ein Thread-Wurzelkommentar trägt `replies`; eine Antwort nie. Tiefere Bäume legen Sie in Ihrem Speicher flach.
 
-### `updatedAt` bedeutet „bearbeitet"
+### `updatedAt`
 
-Das Panel zeigt eine *(bearbeitet)*-Markierung, sobald `updatedAt` vorhanden ist. Setzen Sie es bei einer Bearbeitung, **nicht beim Anlegen** — ein Speicher, der es zusammen mit `createdAt` setzt, markiert jeden Kommentar als bearbeitet.
+Vorhanden bedeutet bearbeitet — das Panel zeigt eine *(bearbeitet)*-Markierung. Setzen Sie es bei einer Bearbeitung, **nicht beim Anlegen**: Ein Speicher, der es zusammen mit `createdAt` setzt, markiert jeden Kommentar als bearbeitet.
 
-### `setResolved` nimmt den Zielzustand
+### `setResolved`
 
-Kein Umschalter. Der Aufruf ist idempotent, sodass zwei gleichzeitige Klicks einen Thread nicht invertiert zurücklassen können und Ihr Endpunkt vor dem Schreiben nie den aktuellen Zustand lesen muss.
+Nimmt den Zielzustand, keinen Umschalter. Der Aufruf ist idempotent, sodass zwei gleichzeitige Klicks einen Thread nicht invertiert zurücklassen und Ihr Endpunkt vor dem Schreiben nie den aktuellen Zustand lesen muss.
 
-Der Editor meldet das Ergebnis, das Ihr Speicher zurückgegeben hat, und nicht den Zustand, den er angefragt hat. Ein Speicher, der sich weigert, einen Thread wieder zu öffnen, antwortet „weiterhin gelöst", und das ist es, was die UI und `onComment` sagen werden.
+Der Editor meldet das Ergebnis, das Ihr Speicher zurückgegeben hat, nicht den angefragten Zustand. Ein Speicher, der sich weigert, einen Thread wieder zu öffnen, antwortet „weiterhin gelöst", und genau das melden UI und `onComment`.
 
 ## Review nur zum Lesen
 
-Halten Sie alle vier Mutationen zurück, und das Panel wird lesbar und navigierbar, ohne dass sich etwas ändern lässt — Threads und Antworten werden gerendert, der Sprung zum Block funktioniert, und Eingabefeld, Lösen, Bearbeiten und Löschen sind **nicht vorhanden** statt deaktiviert:
+Halten Sie alle vier Mutationen zurück, bleibt das Panel lesbar und navigierbar. Threads und Antworten werden gerendert, der Sprung zum Block funktioniert, und Eingabefeld, Lösen, Bearbeiten und Löschen sind **nicht vorhanden** statt deaktiviert:
 
 ```ts
 comments: {
@@ -140,15 +142,15 @@ comments: {
 }
 ```
 
-Jede wirkt eigenständig. `setResolved: false` allein lässt Kommentieren und Bearbeiten unberührt, es gibt nur nichts zu lösen; `update: false` allein entfernt nur den Stift.
+Jede wirkt eigenständig: `setResolved: false` allein lässt Kommentieren und Bearbeiten unberührt, es gibt nur nichts zu lösen; `update: false` allein entfernt nur den Stift.
 
-Der Editor verweigert auch auf der Composable-Ebene, nicht nur in der UI: Ein programmatischer Aufruf einer zurückgehaltenen Mutation **wird abgelehnt**, statt sich aufzulösen — denn ein aufgelöstes Promise liest sich für den Aufrufer als „gespeichert".
+Ein programmatischer Aufruf einer zurückgehaltenen Mutation **wird abgelehnt**, statt sich aufzulösen — ein aufgelöstes Promise liest sich für den Aufrufer als „gespeichert".
 
-Die Zugehörigkeit je Kommentar kommt obendrauf: Bearbeiten und Löschen werden nur an den eigenen Kommentaren der aktuellen Person angeboten, und nur, wenn der Speicher diese Mutationen überhaupt bereitgestellt hat.
+Die Zugehörigkeit je Kommentar kommt obendrauf: Bearbeiten und Löschen werden nur an den eigenen Kommentaren der aktuellen Person angeboten, und nur, wenn der Speicher diese Mutationen bereitgestellt hat.
 
-## Echtzeit ist optional
+## Echtzeit-Aktualisierungen
 
-`subscribe` schiebt entfernte Änderungen in das offene Panel, sodass der Kommentar einer Kollegin ohne Neuladen erscheint. **Es ist wirklich optional**: Ohne diese Methode funktionieren Kommentare genauso, Sie sehen den Kommentar der anderen Person nur beim nächsten Lesen.
+`subscribe` schiebt entfernte Änderungen in das offene Panel, sodass der Kommentar einer Kollegin ohne Neuladen erscheint. **Optional** — ohne diese Methode funktionieren Kommentare genauso, der Kommentar der anderen Person erscheint nur beim nächsten Lesen.
 
 ```ts
 subscribe: (templateId, onChange) => {
@@ -160,8 +162,6 @@ subscribe: (templateId, onChange) => {
 
 Geben Sie eine Abmeldefunktion zurück; der Editor ruft sie auf, wenn die Vorlage wechselt und beim Abbau.
 
-`CommentChange` ist eine kleine Union:
-
 ```ts
 type CommentChange =
   | { type: 'created'; comment: Comment }
@@ -171,24 +171,24 @@ type CommentChange =
 
 Ein Löschvorgang trägt nur die ID und ihren Elternkommentar — es ist kein Kommentar mehr übrig, den man senden könnte, und der Elternkommentar erspart dem Editor eine Suche.
 
-**Ihre eigenen Schreibvorgänge dürfen hier zurückkommen, und das erfordert auf Ihrer Seite keine Entdopplung.** Ein `created` für einen Kommentar, der bereits in der Liste steht, wird ignoriert, und ein `updated` ersetzt ihn an seiner Stelle.
+Ihre eigenen Schreibvorgänge dürfen hier zurückkommen und brauchen **auf Ihrer Seite keine Entdopplung**: Ein `created` für einen Kommentar, der bereits in der Liste steht, wird ignoriert, und ein `updated` ersetzt ihn an seiner Stelle.
 
 ## Filtern
 
-Das Panel filtert **im Speicher** über das, was `list()` zurückgegeben hat: ungelöst (die Voreinstellung), alle oder dieser Block. Der Provider entscheidet also, *was sichtbar ist* — Geltungsbereich, Mandanten, Regeln je Person, alles innerhalb von `list()` — und der Editor entscheidet, wie darin eingegrenzt wird.
+Das Panel filtert **im Speicher** über das, was `list()` zurückgegeben hat — ungelöst (die Voreinstellung), alle oder dieser Block. Ihr Provider entscheidet, was sichtbar ist; der Editor entscheidet, wie darin eingegrenzt wird.
 
-`CommentsListParams` ist reserviert und derzeit leer. Der Editor ruft `list` immer ohne Parameter auf; es existiert, damit Seitenweise Abfrage dort landen kann, ohne jede Implementierung zu brechen — dasselbe Vorbild, das [gespeicherte Blöcke](/de/backend/saved-blocks) mit `SavedBlocksListParams` gesetzt haben.
+`CommentsListParams` ist reserviert und derzeit leer. Der Editor ruft `list` immer ohne Parameter auf; der Parameter existiert, damit seitenweises Laden dort landen kann, ohne jede Implementierung zu brechen.
 
-## Was die Nutzerin sieht
+## Im Editor
 
-- **Eine Kommentar-Schaltfläche** im Header, mit einer Markierung, die ungelöste Threads zählt. Sie erscheint, sobald eine Vorlage geladen ist und die Funktion verfügbar ist.
-- **Eine Kommentar-Markierung an jedem kommentierten Block** im Canvas mit der Anzahl für diesen Block. Ein Klick öffnet das Panel, gefiltert auf diesen Block.
+- **Eine Kommentar-Schaltfläche** im Header, mit einer Markierung, die ungelöste Threads zählt. Sie erscheint, sobald eine Vorlage geladen und die Funktion verfügbar ist.
+- **Eine Kommentar-Markierung an jedem kommentierten Block** mit der Anzahl für diesen Block. Ein Klick öffnet das Panel, gefiltert auf diesen Block.
 - **Das Panel** rechts: Thread-Karten mit Autor, relativer Zeit, einer *(bearbeitet)*-Markierung, dem Lösen-Umschalter und Antworten / Bearbeiten / Löschen, soweit der Speicher es erlaubt.
-- **Eine „Fehlender Block"-Markierung** an einem Kommentar, dessen Ankerblock nicht mehr in der Vorlage existiert, damit ein verwaister Thread sich als verwaist liest und nicht als Rätsel.
+- **Eine „Fehlender Block"-Markierung** an einem Kommentar, dessen Ankerblock nicht mehr existiert, damit ein verwaister Thread sich als verwaist liest und nicht als Rätsel.
 
-## Über Änderungen informiert werden
+## `onComment`
 
-`onComment` wird für jede Änderung ausgelöst, die der Editor angewendet hat — lokale Schreibvorgänge *und* alles, was ein `subscribe` hereingeschoben hat. Damit ist es der Haken für eine „3 neue Kommentare"-Markierung außerhalb des Editors:
+Wird für jede Änderung ausgelöst, die der Editor angewendet hat — lokale Schreibvorgänge und alles, was ein `subscribe` hereingeschoben hat. Das ist der Haken für eine „3 neue Kommentare"-Markierung außerhalb des Editors:
 
 ```ts
 init({
@@ -204,7 +204,7 @@ init({
 
 `resolved` und `unresolved` werden getrennt von einem einfachen `updated` gemeldet, weil für eine Anwendung, die ein Team benachrichtigt, der Unterschied zählt.
 
-## Kopflose Verwendung
+## Headless-Nutzung
 
 `useComments` aus `@templatical/core` ist der reaktive Zustand für sich allein, ohne den Editor:
 

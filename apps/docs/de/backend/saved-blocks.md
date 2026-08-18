@@ -7,7 +7,7 @@ description: Ermöglichen Sie Ihren Nutzern, wiederverwendbare Blockgruppen zu s
 
 Gespeicherte Blöcke ermöglichen es Ihren Nutzern, eine Gruppe von Blöcken festzuhalten — einen Header, einen Footer, ein Produktraster, einen CTA — und sie in jede andere Vorlage einzufügen.
 
-Der Editor übernimmt das gesamte Erlebnis: eine Speicheraktion an jedem Block, einen durchsuchbaren Browser mit Live-Vorschau, Einfügen an beliebiger Position, Umbenennen und Löschen. **Der Speicher liegt bei Ihnen.** Implementieren Sie eine kleine Provider-Schnittstelle für Ihre eigene API, und die Funktion wird aktiv.
+Der Editor übernimmt das Erlebnis: eine Speicheraktion an jedem Block, einen durchsuchbaren Browser mit Live-Vorschau, Einfügen an beliebiger Position, Umbenennen und Löschen. **Der Speicher liegt bei Ihnen.**
 
 ::: tip Nicht dasselbe wie benutzerdefinierte Blöcke
 [Benutzerdefinierte Blöcke](/de/guide/custom-blocks) sind *von Entwicklern definierte Blocktypen* mit eigener Vorlage und eigenen Feldern. Gespeicherte Blöcke sind *Instanzen* gewöhnlicher Blöcke, die Endnutzer speichern und wiederverwenden. Beide sind voneinander unabhängig.
@@ -15,7 +15,7 @@ Der Editor übernimmt das gesamte Erlebnis: eine Speicheraktion an jedem Block, 
 
 ## Schnellstart
 
-Am schnellsten probieren Sie es mit dem mitgelieferten browserlokalen Provider aus — ohne Backend:
+Der mitgelieferte browserlokale Provider braucht kein Backend:
 
 ```js
 import { init, createLocalStorageSavedBlocksProvider } from '@templatical/editor';
@@ -26,7 +26,7 @@ const editor = await init({
 });
 ```
 
-Damit werden Einträge im `localStorage` unter `templatical:saved-blocks` gespeichert. Geeignet für Demos, Prototypen und die Nutzung auf einem einzelnen Gerät — die Einträge liegen in einem Browserprofil, werden nicht zwischen Geräten oder Nutzern synchronisiert und verschwinden, wenn die Websitedaten gelöscht werden. Für den Produktivbetrieb ist ein benutzerdefinierter Provider erforderlich.
+Einträge landen im `localStorage` unter `templatical:saved-blocks`. Geeignet für Demos, Prototypen und ein einzelnes Gerät — sie liegen in einem Browserprofil, synchronisieren nicht und verschwinden, wenn die Websitedaten gelöscht werden. Für alles darüber hinaus liefern Sie einen Provider.
 
 ## Eigenen Speicher anbinden
 
@@ -42,7 +42,7 @@ interface SavedBlocksProvider {
 }
 ```
 
-Mit `false` teilen Sie dem Editor mit, dass die aktuelle Person diese Aktion nicht ausführen darf; er blendet das Bedienelement dann aus.
+`false` bedeutet, dass die aktuelle Person diese Aktion nicht ausführen darf; der Editor blendet das Bedienelement aus.
 
 Eine minimale REST-Implementierung:
 
@@ -65,27 +65,21 @@ const savedBlocks: SavedBlocksProvider = {
   },
 
   create: async (input) => {
-
     const res = await fetch('/api/saved-blocks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
-      });
-
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
     return json(res);
-
   },
 
   update: async (id, patch) => {
-
     const res = await fetch(`/api/saved-blocks/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      });
-
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
     return json(res);
-
   },
 
   delete: async (id) => {
@@ -112,12 +106,11 @@ interface SavedBlock {
 }
 ```
 
-- **Die `id` gehört dem Provider.** Der Editor erzeugt keine eigene, sondern verwendet, was `create()` zurückgibt. Grenzen Sie Einträge pro Nutzer, pro Team oder pro Konto ab, wie Sie möchten.
-- **Umbenennen ist `update(id, { name })`, Umkategorisieren `update(id, { category })`.** Es gibt für beides keine separate Methode; `update` nimmt ein partielles Patch-Objekt.
-- **Die Reihenfolge kommt vom Provider.** Der Editor stellt die Einträge genau in der Reihenfolge dar, die `list()` zurückgibt, und sortiert nie um. Das Filtern grenzt die Liste ein, ohne sie umzuordnen. Eine Sortierung erfolgt serverseitig, bevor `list()` die Einträge zurückgibt.
-- **Das Filtern geschieht im Editor.** Suchfeld und Kategoriefilter des Browsers arbeiten im Speicher auf dem, was `list()` zurückgegeben hat. `list()` akzeptiert ein `{ search, category }`-Objekt, doch der Editor sendet es nie; es kommt nur an, wenn ein Aufrufer `useSavedBlocks` direkt ansteuert (siehe [Headless-Nutzung](#headless-nutzung)). Welche Einträge jemand überhaupt sehen darf, wird in `list()` entschieden.
-- **Der Provider steuert, wer was ändern darf.** Übergeben Sie `false` für `create`, `update` oder `delete`, um die Aktion vorzuenthalten, und setzen Sie `canUpdate` / `canDelete` an einzelnen Einträgen für Ausnahmen. Siehe [Berechtigungen steuern](#berechtigungen-steuern).
-- **Zeitstempel dienen nur der Anzeige.** Jeder Eintrag zeigt eine relative Angabe wie „vor 5 Min." (aus `updatedAt`, ersatzweise `createdAt`); das absolute Datum erscheint beim Überfahren. Auf die Reihenfolge haben sie keinen Einfluss. Beide Felder sind optional — ohne sie entfällt die Angabe.
+- **Die `id` kommt vom Provider.** Der Editor erzeugt nie eine eigene, sondern verwendet, was `create()` zurückgibt.
+- **Umbenennen mit `update(id, { name })`, umkategorisieren mit `update(id, { category })`.** Für beides gibt es keine separate Methode — `update` nimmt ein partielles Patch-Objekt.
+- **Die Reihenfolge kommt vom Provider.** Der Editor stellt die Reihenfolge von `list()` dar und sortiert nie um; Filtern grenzt ein, ohne umzuordnen. Sortieren Sie serverseitig, bevor `list()` zurückgibt.
+- **Das Filtern geschieht im Editor.** Suchfeld und Kategoriefilter arbeiten im Speicher auf dem, was `list()` zurückgegeben hat. `list()` akzeptiert `{ search, category }`, doch der Editor sendet es nie — dieser Weg existiert für Aufrufer, die `useSavedBlocks` direkt ansteuern (siehe [Headless-Nutzung](#headless-nutzung)). Welche Einträge jemand überhaupt sehen darf, wird in `list()` entschieden.
+- **Zeitstempel dienen nur der Anzeige.** Jeder Eintrag zeigt eine relative Angabe wie „vor 5 Min." (aus `updatedAt`, ersatzweise `createdAt`), das absolute Datum beim Überfahren. Lassen Sie beide weg, entfällt die Angabe.
 
 ## Berechtigungen steuern
 
@@ -174,9 +167,7 @@ Ein ausgeblendetes Element verhindert, dass der Editor die Aktion anbietet — e
 
 Jede Methode kann ablehnen. Der Editor meldet den Fehler über den `onError`-Callback des Editors und lässt seine Liste im Speicher unverändert — ein fehlgeschlagenes Löschen lässt einen Block also nicht aus der Oberfläche verschwinden. Der Speicherdialog zeigt die Fehlermeldung zusätzlich direkt an.
 
-## Was Nutzer sehen
-
-Sobald ein Provider konfiguriert ist:
+## Im Editor
 
 - **Speichern** — beim Auswählen eines Blocks der obersten Ebene erscheint in seiner Aktionsleiste eine Lesezeichen-Aktion. Ein Klick darauf startet eine *Auswahl-Sitzung*, in der dieser Block bereits ausgewählt ist.
 
@@ -200,7 +191,7 @@ Sobald ein Provider konfiguriert ist:
 
 ## Standardmäßig deaktiviert
 
-Lassen Sie `savedBlocks` weg, und die Funktion ist vollständig abwesend: keine Speicheraktion, kein Eintrag in der Leiste und **kein zugehöriger Code wird geladen**. Die Oberfläche ist in verzögert geladene Chunks aufgeteilt, die erst beim Öffnen eines Dialogs abgerufen werden.
+Lassen Sie `savedBlocks` weg, fehlt die Funktion: keine Speicheraktion, kein Eintrag in der Leiste und **kein zugehöriger Code wird geladen**. Die Oberfläche ist in verzögert geladene Chunks aufgeteilt, die erst beim Öffnen eines Dialogs abgerufen werden.
 
 ## Headless-Nutzung
 

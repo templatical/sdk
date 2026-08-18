@@ -14,7 +14,7 @@ await editor.create({ name: 'Frühjahrskampagne' });
 
 Nichts zu konfigurieren. Cloud stellt den Provider bereit, sodass der gesamte Lebenszyklus — das Namensfeld im Header, die Speichern-Schaltfläche, der Speicherstatus, `Cmd`/`Strg`+`S`, Autosave und der Schutz vor ungespeicherten Änderungen — ohne einen einzigen Schlüssel und ohne eigenen Speicher funktioniert.
 
-## Was der Cloud-Adapter tut
+## Der Adapter
 
 | Methode | Cloud |
 | --- | --- |
@@ -22,13 +22,13 @@ Nichts zu konfigurieren. Cloud stellt den Provider bereit, sodass der gesamte Le
 | `create` | Speichert eine neue Vorlage und stellt die ID aus, an der alles Weitere hängt |
 | `save` | Persistiert Inhalt und Namen und legt automatisch eine Version an |
 
-Beide Mutationen sind aktiv: Vorlagenspeicherung ist genau das, wofür der Plan bezahlt wird — es gibt also keine Cloud-Stufe, die eine Vorlage öffnen, aber nicht speichern kann. Was ein Plan sehr wohl begrenzt, ist die **Anzahl** der Vorlagen pro Projekt — eine Mengenbegrenzung, keine Funktionsbegrenzung.
+Beide Mutationen sind aktiv — keine Cloud-Stufe kann eine Vorlage öffnen, aber nicht speichern. Pläne begrenzen die **Anzahl** der Vorlagen pro Projekt: eine Mengenbegrenzung, keine Funktionsbegrenzung.
 
-## Jeder Speichervorgang legt eine Version an
+## Automatische Versionen
 
-Clouds `save` schreibt die Version im selben Aufruf, gedrosselt auf höchstens eine pro Minute. Das ist der Grund, warum der [Versionsverlauf](/de/cloud/version-history) auf Cloud ohne weitere Konfiguration funktioniert, und es ist genau das, was [der Vertrag](/de/backend/version-history#ihr-save-zeichnet-die-versionen-auf-nicht-der-editor) für jede Implementierung vorsieht: Wer den Speicher besitzt, bestimmt die Aufbewahrung. Ein Speichervorgang, der nur die Vorlage umbenennt, legt nichts an.
+Clouds `save` schreibt die Version im selben Aufruf, gedrosselt auf höchstens eine pro Minute. Deshalb funktioniert der [Versionsverlauf](/de/cloud/version-history) ohne weitere Konfiguration. Ein Speichervorgang, der nur die Vorlage umbenennt, legt nichts an.
 
-## Autosave ist standardmäßig an
+## Autosave
 
 Anders als bei `init()`, wo Autosave aus bleibt, bis es ein Ziel zum Speichern gibt, hat eine Cloud-Sitzung immer eines — deshalb ist es standardmäßig an. Schlüssel und Typ sind auf beiden Einstiegspunkten identisch:
 
@@ -45,6 +45,6 @@ Die ID, die Clouds Speicher ausstellt, verankert Kommentare, Versionsverlauf, Zu
 
 Bringen Sie Ihren eigenen mit [`init()`](/de/backend/templates) mit — dort gehört Ihnen der ganze Satz: Templates, Versionsverlauf, Kommentare, Rendering.
 
-## Headless
+## Headless-Nutzung
 
 Die REST-Oberfläche besteht aus `getTemplate`, `createTemplate` und `updateTemplate` auf dem `ApiClient` — siehe [Headless-API](/de/cloud/headless-api#templates).

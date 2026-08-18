@@ -23,27 +23,21 @@ const editor = await init({
     },
 
     create: async (input) => {
-
       const res = await fetch('/api/templates', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(input),
-        });
-
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
       return res.json();
-
     },
 
     save: async (id, patch) => {
-
       const res = await fetch(`/api/templates/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patch),
-        });
-
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
       return res.json();
-
     },
   },
 });
@@ -52,7 +46,7 @@ const editor = await init({
 await editor.load('tpl_123');
 ```
 
-**Lassen Sie `templates` weg, und die Funktion ist vollständig abwesend** — kein Namensfeld, keine Speichern-Schaltfläche, keine Statusanzeige. `create()` / `load()` / `save()` werden dann mit einer erklärenden Fehlermeldung abgelehnt, und Sie speichern den Inhalt selbst über [`onChange`](#speichern-ohne-provider).
+**Lassen Sie `templates` weg, fehlt die Funktion** — kein Namensfeld, keine Speichern-Schaltfläche, keine Statusanzeige. `create()` / `load()` / `save()` werden dann mit einer erklärenden Fehlermeldung abgelehnt, und Sie speichern den Inhalt selbst über [`onChange`](#speichern-ohne-provider).
 
 ## Der Vertrag
 
@@ -72,21 +66,19 @@ interface TemplatesProvider {
 }
 ```
 
-Drei Punkte sind hervorzuheben:
-
-- **Die `id` gehört Ihrem Speicher.** Sie kommt von `create()` zurück, und der Editor erzeugt niemals selbst eine — Identität bleibt damit eine Eigenschaft Ihres Speichers: ein Datenbankschlüssel, ein Slug, eine Dokument-ID.
+- **Die `id` kommt aus Ihrem Speicher**, zurückgegeben von `create()`. Der Editor erzeugt nie selbst eine — ein Datenbankschlüssel, ein Slug, eine Dokument-ID, was auch immer Ihr Speicher bereits verwendet.
 - **`save` erhält einen Patch**, nicht den bloßen Inhalt. So kann eine Umbenennung ohne Inhalt übertragen werden, und ein künftiges Feld lässt sich ergänzen, ohne Ihre Implementierung zu brechen. Der Editor sendet `name` (sofern die Vorlage einen hat) und `content` gemeinsam, in einem Aufruf.
-- **`name` ist optional.** Hat Ihr Speicher keine Namensspalte, lassen Sie ihn weg: der Header zeigt „Unbenannt", und eine Umbenennung findet nie statt.
+- **`name` ist optional.** Ohne Namensspalte lassen Sie ihn weg: Der Header zeigt „Unbenannt", und eine Umbenennung findet nie statt.
 
 Jede Methode darf ablehnen. Der Editor meldet den Fehler über `onError`, zeigt ihn im Header an und lässt seinen Zustand unberührt — nichts wird als gespeichert markiert, was es nicht ist.
 
-### Bewusst kein CRUD
+### Kein `list`, kein `delete`
 
-Es gibt kein `list` und kein `delete`, und der Editor hat keinen Vorlagen-Browser. Die Auswahl, *welche* Vorlage geöffnet wird, gehört in Ihre Anwendung — die Aufgabe des Editors beginnt, sobald Sie ihm eine ID übergeben.
+Der Editor hat keinen Vorlagen-Browser. Die Auswahl, *welche* Vorlage geöffnet wird, gehört in Ihre Anwendung; die Aufgabe des Editors beginnt, sobald Sie ihm eine ID übergeben.
 
-## Erstellen oder Speichern abschalten
+## Erstellen oder Speichern deaktivieren
 
-`create` und `save` sind `false | fn` und **erforderlich**, nicht optional. Eines davon abzuschalten ist eine Entscheidung, die Sie aussprechen — nie etwas, das durch eine vergessene Methode entsteht:
+`create` und `save` sind `false | fn` und **erforderlich**, nicht optional — siehe [Eine Mutation deaktivieren](/de/backend/#eine-mutation-deaktivieren).
 
 ```ts
 templates: {

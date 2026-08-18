@@ -13,7 +13,7 @@ const editor = await initCloud({ container: '#editor', auth: { url: '/api/token'
 
 Nothing to configure. Cloud supplies the provider and the identity, and the header's Comments button appears as soon as a template is saved.
 
-## What Cloud's adapter does
+## The adapter
 
 | Method | Cloud |
 |---|---|
@@ -46,11 +46,11 @@ const editor = await initCloud({
 });
 ```
 
-## The author is signed, not supplied
+## Author identity
 
 Cloud sends `user_id` / `user_name` / `user_signature` with every write, taken from the auth token's `user` claim and verified by its backend. So `initCloud()` accepts **no `user` key**: it fills `init({ user })` from that same claim, and a browser-supplied identity could only disagree with the one the server trusts.
 
-A project whose token endpoint omits the `user` claim gets no comments feature at all — [unavailable rather than anonymous](/backend/comments#user-is-required-and-it-is-a-top-level-key).
+A project whose token endpoint omits the `user` claim gets no comments feature at all — [unavailable, never anonymous](/backend/comments#author-identity).
 
 ## Bringing your own
 
@@ -64,7 +64,7 @@ Bring your own with [`init()`](/backend/comments), where the whole set — templ
 
 ## Headless use
 
-`useComments` and `useCommentListener` moved to `@templatical/core` when comments became a shared feature; they take a provider rather than an `authManager`. Cloud's adapter is `createCloudCommentsProvider` from `@templatical/core/cloud`:
+`useComments` and `useCommentListener` live in `@templatical/core` and take a provider. Cloud's adapter is `createCloudCommentsProvider` from `@templatical/core/cloud`:
 
 ```ts
 import { useComments, useCommentListener } from '@templatical/core';
