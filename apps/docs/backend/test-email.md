@@ -7,7 +7,7 @@ description: Let users mail themselves the template they're editing, sent throug
 
 Let a user send themselves the template they're editing, so they can see it land in a real inbox before it goes anywhere near a campaign.
 
-The editor owns the trigger, the dialog, recipient validation, and the sending / success / error states. **You own delivery.** One method is enough.
+The editor owns the trigger, the dialog, recipient validation and the sending / success / error states. **You own delivery** — one method.
 
 ## Quick start
 
@@ -33,7 +33,7 @@ That's the whole integration. A **Test** button appears in the editor header; cl
 
 ![The Test button in the top-right of the editor header](/images/test-email-button.png)
 
-**Omit `testEmail` and the feature is completely absent** — no button, and none of its UI code is downloaded.
+**Omit `testEmail` and the feature is absent** — no button, and none of its UI code is downloaded.
 
 ## The payload
 
@@ -79,9 +79,9 @@ app.post('/api/test-email', async (req, res) => {
 });
 ```
 
-### Letting the editor render the MJML
+### `includeMjml`
 
-If you'd rather not call `renderToMjml` yourself, set `includeMjml` and the payload carries it:
+Set it and the payload carries the MJML, so you don't call `renderToMjml` yourself:
 
 ```ts
 testEmail: {
@@ -90,12 +90,12 @@ testEmail: {
 }
 ```
 
-This requires [`@templatical/renderer`](/api/renderer-typescript) to be installed — it's an optional peer dependency. Two behaviours worth knowing:
+This requires [`@templatical/renderer`](/api/renderer-typescript), an optional peer dependency. Two behaviours to know:
 
-- **If it isn't installed**, the send still happens with JSON only, `mjml` is absent, and the editor logs one warning naming the package. Opting in never breaks sending, so **always guard for `mjml` being undefined**.
-- **If rendering fails** — a malformed custom block, say — the send is aborted and the error shows in the dialog. That's deliberate: silently mailing without the MJML would hide a broken template.
+- **Not installed** — the send still happens with JSON only, `mjml` is absent, and the editor logs one warning naming the package. Opting in never breaks sending, so **always guard for `mjml` being undefined**.
+- **Rendering fails** — a malformed custom block, say — the send is aborted and the error shows in the dialog. Mailing without the MJML would hide a broken template.
 
-You still compile MJML → HTML yourself either way. The editor never bundles an MJML compiler.
+You compile MJML → HTML yourself either way. The editor never bundles an MJML compiler.
 
 ## Restricting recipients
 
@@ -115,17 +115,17 @@ testEmail: {
 | several | a picker of exactly those addresses |
 | `[]` (empty) | nothing — the feature reports itself unavailable and **no button renders** |
 
-An empty array is read as a decision ("nobody may be sent to"), not as "unset". Use `defaultRecipient` to pre-select a specific entry; it's ignored if it isn't on the list.
+An empty array reads as a decision ("nobody may be sent to"), not as "unset". Use `defaultRecipient` to pre-select an entry; it's ignored if it isn't on the list.
 
-::: warning This is not a security boundary
+::: warning Not a security boundary
 `allowedRecipients` lives in the user's browser and is trivially edited there. It restricts the *picker*, nothing more.
 
 **Validate the recipient on your server**, every time. Without that, your endpoint is an open relay — anyone who can reach it can mail arbitrary addresses from your domain.
 :::
 
-The payload echoes the list back as `allowedRecipients` so one `send` implementation stays portable between your backend and Templatical Cloud. It is **untrusted** — unsigned, and read out of the browser. It's useful for one thing beyond portability: comparing it against `recipient` server-side, where a mismatch means the client was tampered with or is buggy, which is worth logging.
+The payload echoes the list back as `allowedRecipients` so one `send` implementation stays portable between your backend and Templatical Cloud. It is **untrusted** — unsigned, and read out of the browser. Beyond portability it is good for one thing: compare it against `recipient` server-side, where a mismatch means a tampered or buggy client and is worth logging.
 
-## What the user sees
+## In the editor
 
 <img src="/images/test-email-modal.png" alt="The Send Test Email dialog — a recipient picker above a chrome-free preview of the template with a Desktop / Mobile switch, and Cancel / Send at the bottom" style="max-width: 480px;" />
 
@@ -139,13 +139,15 @@ The payload echoes the list back as `allowedRecipients` so one `send` implementa
 
 The dialog shows the template chrome-free at email width, with a desktop / mobile switch, so a user confirms what they're sending without leaving the dialog.
 
-It is accurate about two things that a naive preview would get wrong:
+Two things it gets right that a naive preview would not:
 
 - **Display conditions are honoured.** A block excluded by a condition is omitted, so the preview never shows content the recipient won't receive.
 - **Responsive blocks follow the switch.** Templates with device-specific blocks render the variant a recipient on that device would get, rather than always the desktop one.
 
-What the preview shows for merge tags depends on how much you have configured — labels by default, `MergeTag.sample` values if you set them, or **data resolved by your own backend** if you wire `resolvePreview`, in which case it resolves for the *selected recipient*. See [Preview Rendering](/guide/preview-rendering); the dialog states which of the three is in effect beneath the switch.
+What it shows for merge tags depends on how much you configured — labels by default, `MergeTag.sample` values if you set them, or **data resolved by your own backend** if you wire `resolvePreview`, in which case it resolves for the *selected recipient*. See [Preview Rendering](/guide/preview-rendering); the dialog states which of the three is in effect beneath the switch.
 
 Even fully resolved it is not a byte-for-byte preview of the delivered email: the real message is compiled HTML rendered by a mail client. Treat it as "is this the right template, with the right data?", not "is this exactly what lands in the inbox?".
 
 The preview rides the dialog's own lazily-loaded chunk, so a consumer who never configures `testEmail` downloads none of it.
+
+**Using Templatical Cloud?** It implements this contract with nothing to configure — see [Test Emails on Cloud](/cloud/test-emails).
