@@ -78,7 +78,7 @@ Der Editor hat keinen Vorlagen-Browser. Die Auswahl, *welche* Vorlage geöffnet 
 
 ## Erstellen oder Speichern deaktivieren
 
-`create` und `save` sind `false | fn` und **erforderlich**, nicht optional — siehe [Eine Mutation deaktivieren](/de/backend/#eine-mutation-deaktivieren).
+`create` und `save` sind `false | fn` und **erforderlich**, nicht optional. Ein `false` erklärt die Aktion für nicht verfügbar; der Editor blendet sie aus, statt sie zu deaktivieren. `load` lässt sich nicht abschalten — ohne es gäbe es nichts zu öffnen.
 
 ```ts
 templates: {

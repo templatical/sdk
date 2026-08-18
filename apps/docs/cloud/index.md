@@ -44,7 +44,7 @@ All Cloud features communicate through authenticated API endpoints and WebSocket
 
 ## Bringing your own
 
-Cloud is a first-party implementation of the same [provider contracts](/backend/) the open-source editor exposes — one editor component, one core, one header behind both entry points. Two of the six can still be yours while Cloud handles the rest:
+Cloud is a first-party implementation of the same [provider contracts](/backend/) the open-source editor exposes — one editor component, one core, one header behind both entry points. Saved blocks and test emails can still be yours while Cloud handles the rest:
 
 ```ts
 await initCloud({ container, auth, savedBlocks: mine, testEmail: mine });

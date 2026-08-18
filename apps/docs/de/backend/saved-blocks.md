@@ -44,6 +44,10 @@ interface SavedBlocksProvider {
 
 `false` bedeutet, dass die aktuelle Person diese Aktion nicht ausführen darf; der Editor blendet das Bedienelement aus.
 
+::: tip Warum erforderlich und nicht optional
+Eine optionale Methode würde „Ich habe mich gegen delete entschieden" nicht von „Ich habe delete noch nicht geschrieben" unterscheidbar machen. Ein `false` entsteht nicht durch Vergessen. Jeder speichernde Provider in diesem Abschnitt ist gleich geformt.
+:::
+
 Eine minimale REST-Implementierung:
 
 ```ts
