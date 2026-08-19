@@ -69,15 +69,56 @@ function isWhitespace(char: string): boolean {
   );
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+};
+
+/**
+ * Decode the character references an HTML serializer writes into an attribute
+ * value, so callers get the characters the author wrote.
+ *
+ * Deliberately small: the named set a serializer actually emits, plus numeric
+ * references. An unknown or malformed reference is left as literal text, which
+ * is what a browser does. Single-pass — `&amp;lt;` decodes to the text `&lt;`
+ * and stops, never to `<`, so an escaped entity inside a consumer's tag value
+ * survives as itself.
+ */
+function decodeAttrEntities(value: string): string {
+  if (!value.includes("&")) return value;
+  return value.replace(
+    /&(#[0-9]+|#[xX][0-9a-fA-F]+|[a-zA-Z][a-zA-Z0-9]*);/g,
+    (match, ref: string) => {
+      if (ref[0] === "#") {
+        const code =
+          ref[1] === "x" || ref[1] === "X"
+            ? Number.parseInt(ref.slice(2), 16)
+            : Number.parseInt(ref.slice(1), 10);
+        // Surrogates and out-of-range code points would throw; leave them be.
+        if (!Number.isFinite(code) || code < 1 || code > 0x10ffff) return match;
+        if (code >= 0xd800 && code <= 0xdfff) return match;
+        return String.fromCodePoint(code);
+      }
+      return NAMED_ENTITIES[ref.toLowerCase()] ?? match;
+    },
+  );
+}
+
 /**
  * The value of the `name` attribute within an open tag's attribute string (the
  * text between the tag name and its closing `>`), or `null` when the attribute
  * is absent or its quoted value is never closed.
  *
  * Handles double-quoted, single-quoted and unquoted values, and matches the
- * attribute name case-insensitively, as HTML does. Attribute values are not
- * entity-decoded — callers compare them against configured merge-tag tokens,
- * which are stored the same way.
+ * attribute name case-insensitively, as HTML does. The value is
+ * entity-decoded, because that is what the attribute means: the editor
+ * serializes a tag value of `<% $email %>` as
+ * `data-merge-tag="&lt;% $email %&gt;"`, and every caller compares the result
+ * against a configured merge-tag token written in raw characters.
  */
 export function getTagAttrValue(attrs: string, name: string): string | null {
   const target = name.toLowerCase();
@@ -113,14 +154,16 @@ export function getTagAttrValue(attrs: string, name: string): string | null {
       const valueStart = i + 1;
       const valueEnd = attrs.indexOf(quote, valueStart);
       if (valueEnd === -1) return null; // unterminated value — nothing readable follows
-      if (attrName === target) return attrs.substring(valueStart, valueEnd);
+      if (attrName === target)
+        return decodeAttrEntities(attrs.substring(valueStart, valueEnd));
       i = valueEnd + 1;
       continue;
     }
 
     const valueStart = i;
     while (i < attrs.length && !isWhitespace(attrs[i]) && attrs[i] !== ">") i++;
-    if (attrName === target) return attrs.substring(valueStart, i);
+    if (attrName === target)
+      return decodeAttrEntities(attrs.substring(valueStart, i));
   }
 
   return null;

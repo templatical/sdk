@@ -133,4 +133,24 @@ describe('convertMergeTagsToValues', () => {
     expect(result).toBe('<% $email %>'.repeat(5_000));
     expect(elapsed).toBeLessThan(500);
   });
+
+  // Regression (#548). Stored content carries the tag value entity-encoded in
+  // the attribute. Emitting it raw shipped `&lt;% $email %&gt;` to the ESP,
+  // which is not a token any send engine recognises.
+  it('decodes an entity-encoded tag value back to the token', () => {
+    const html =
+      '<p>Hi <span label="E-Mail" value="&lt;% $email %&gt;" data-merge-tag="&lt;% $email %&gt;" data-label="E-Mail">E-Mail</span>,</p>';
+    expect(convertMergeTagsToValues(html)).toBe('<p>Hi <% $email %>,</p>');
+  });
+
+  it('decodes an entity-encoded logic tag value', () => {
+    const html =
+      '<span data-logic-merge-tag="&lt;% if $active %&gt;">IF</span>';
+    expect(convertMergeTagsToValues(html)).toBe('<% if $active %>');
+  });
+
+  it('decodes `&amp;` in a liquid tag value', () => {
+    const html = '<span data-merge-tag="{{a &amp; b}}">A</span>';
+    expect(convertMergeTagsToValues(html)).toBe('{{a & b}}');
+  });
 });

@@ -65,6 +65,46 @@ describe("getTagAttrValue", () => {
     );
   });
 
+  // Attribute values are entity-encoded in serialized HTML, so the raw
+  // characters are what every caller wants back (#548 — the editor stores
+  // `data-merge-tag="&lt;% $email %&gt;"`, which no longer matched the
+  // configured `<% $email %>` and made every lookup miss).
+  describe("entity decoding", () => {
+    it("decodes an angle-bracket tag value (#548)", () => {
+      expect(
+        getTagAttrValue(' data-merge-tag="&lt;% $email %&gt;"', "data-merge-tag"),
+      ).toBe("<% $email %>");
+    });
+
+    it("decodes the named entities an HTML serializer emits", () => {
+      expect(getTagAttrValue(' x="a &amp; b"', "x")).toBe("a & b");
+      expect(getTagAttrValue(' x="say &quot;hi&quot;"', "x")).toBe('say "hi"');
+      expect(getTagAttrValue(" x=\"it&apos;s\"", "x")).toBe("it's");
+      expect(getTagAttrValue(' x="a&nbsp;b"', "x")).toBe("a b");
+    });
+
+    it("decodes decimal and hex numeric references", () => {
+      expect(getTagAttrValue(' x="&#60;%&#62;"', "x")).toBe("<%>");
+      expect(getTagAttrValue(' x="&#x3C;%&#x3e;"', "x")).toBe("<%>");
+    });
+
+    it("decodes `&amp;lt;` to the literal text `&lt;`, not to `<`", () => {
+      // One pass only. A second pass would turn a legitimately-escaped
+      // entity in a consumer's tag value into markup.
+      expect(getTagAttrValue(' x="&amp;lt;"', "x")).toBe("&lt;");
+    });
+
+    it("leaves an unknown or malformed entity untouched", () => {
+      expect(getTagAttrValue(' x="&bogus; &amp"', "x")).toBe("&bogus; &amp");
+    });
+
+    it("leaves a value with no entities byte-identical", () => {
+      expect(getTagAttrValue(' data-merge-tag="{{a}}"', "data-merge-tag")).toBe(
+        "{{a}}",
+      );
+    });
+  });
+
   it("extracts an unquoted value", () => {
     expect(
       getTagAttrValue(" data-merge-tag=abc class=x", "data-merge-tag"),
