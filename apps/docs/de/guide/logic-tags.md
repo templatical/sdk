@@ -128,6 +128,6 @@ Logik ist nicht auf Titel-/Absatzblöcke beschränkt. Eingabefelder und Textarea
 
 Machen Sie z. B. den Button-Text bedingt:
 
-<code v-pre>{% if guest.status == 'vip' %}VIP-Zugang{% else %}Registrieren{% endif %}</code>
+`{% if guest.status == 'vip' %}VIP-Zugang{% else %}Registrieren{% endif %}`
 
 In einem Textfeld wird ein Tag an der Cursorposition eingefügt und ein Paar umschließt den ausgewählten Text (als Zeichenkette) — genau wie im Rich-Text.
