@@ -866,9 +866,9 @@ describe('SavedBlocksBrowserModal', () => {
 
       const label = q('[data-testid="saved-block-updated"]');
       expect(label).not.toBe(null);
-      // Resolves through the savedBlocks.time.* labels (stub translations
-      // return key paths), so wording is never hard-coded in the component.
-      expect(label!.textContent?.trim()).toContain('savedBlocks.time.');
+      // Resolves through the shared time.* labels (stub translations return key
+      // paths), so wording is never hard-coded in the component.
+      expect(label!.textContent?.trim()).toContain('time.');
       expect(label!.getAttribute('title')).not.toBe('');
     });
 

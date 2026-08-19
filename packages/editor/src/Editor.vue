@@ -457,6 +457,7 @@ defineExpose({
       :editor="editor"
       :core="core"
       :templates="templates"
+      :show-template-name="config.templateNameField !== false"
       :test-email="testEmail"
       :version-history="versionHistory"
       :comments="comments"

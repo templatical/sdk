@@ -20,6 +20,7 @@ import DarkModeToggle from "./DarkModeToggle.vue";
 import PreviewToggle from "./PreviewToggle.vue";
 import MergeTagModeToggle from "./MergeTagModeToggle.vue";
 import TemplateNameField from "./TemplateNameField.vue";
+import TemplateTimestamp from "./TemplateTimestamp.vue";
 import TemplateSaveStatus from "./TemplateSaveStatus.vue";
 
 // Lazy: an editor with no `versionHistory` provider never downloads the control.
@@ -43,6 +44,12 @@ defineProps<{
   core: UseEditorCoreReturn;
   /** Null when no `TemplatesProvider` is configured — no name, save or status. */
   templates: UseTemplatesFeatureReturn | null;
+  /**
+   * Whether to render the inline name field, from `config.templateNameField`.
+   * False hides it whether or not the provider can save — a consumer whose
+   * store has no name column, or whose own chrome owns the name.
+   */
+  showTemplateName: boolean;
   testEmail: UseTestEmailFeatureReturn | null;
   versionHistory: UseVersionHistoryFeatureReturn | null;
   /** Null when no `CommentsProvider` (or no `user`) is configured. */
@@ -59,18 +66,35 @@ defineProps<{
   <header
     class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[1fr_auto_1fr] tpl:items-center tpl:px-4 tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-sm)] tpl:border-b tpl:border-[var(--tpl-border)]"
   >
-    <!-- Left: the template's name, inline-editable. `min-w-[200px]` matches the
-         right column so the centre controls are actually centred. Rendered only
-         once a template exists — there is nothing to name before that. -->
+    <!-- Left: the template's identity — the inline-editable name, and under it
+         when the store dates its writes. `min-w-[200px]` matches the right column
+         so the centre controls are actually centred. Nothing renders before a
+         template exists; there is neither a name nor a write time yet. The stack
+         is gated as a whole so an empty one cannot add a `gap-2.5` before the
+         cloud extras. -->
     <div
       class="tpl-header-left tpl:flex tpl:min-w-[200px] tpl:items-center tpl:gap-2.5"
     >
-      <TemplateNameField
-        v-if="templates?.isAvailable.value && templates.hasTemplate.value"
-        :name="templates.name.value"
-        :editable="templates.canSave.value"
-        @commit="templates.rename"
-      />
+      <div
+        v-if="
+          templates?.isAvailable.value &&
+          templates.hasTemplate.value &&
+          (showTemplateName || templates.timestamp.value)
+        "
+        class="tpl:flex tpl:min-w-0 tpl:flex-col tpl:items-start"
+      >
+        <TemplateNameField
+          v-if="showTemplateName"
+          :name="templates.name.value"
+          :editable="templates.canSave.value"
+          @commit="templates.rename"
+        />
+        <TemplateTimestamp
+          v-if="templates.timestamp.value"
+          :iso="templates.timestamp.value.iso"
+          :kind="templates.timestamp.value.kind"
+        />
+      </div>
       <slot name="left-extras" />
     </div>
 

@@ -160,6 +160,62 @@ describe("design system conformance", () => {
     });
   });
 
+  describe("Elevation ramp — floating surfaces sit on paper", () => {
+    /**
+     * `--tpl-bg-elevated` (98%) is one step *below* `--tpl-bg` (99.5%) and only
+     * 0.5% above `--tpl-canvas-bg` (97.5%), so a popover painted with it has no
+     * tonal lift: it reads as the same tone as the header, and its separation
+     * comes entirely from the shadow. Floating surfaces take `--tpl-bg`.
+     *
+     * Anchored surfaces keep `bg-elevated` deliberately — rails, docked panels
+     * and wells are meant to recede so the canvas leads.
+     */
+    const FLOATING = [
+      "components/LogicTagPickerModal.vue",
+      "components/MergeTagPickerModal.vue",
+      "components/VersionHistoryMenu.vue",
+      "components/MergeTagSuggestionList.vue",
+      "components/ColorPicker.vue",
+      "cloud/components/AiFeatureMenu.vue",
+      "cloud/components/CloudSaveGateModal.vue",
+    ];
+
+    it("every floating surface paints --tpl-bg, not --tpl-bg-elevated", () => {
+      const offending: string[] = [];
+      for (const rel of FLOATING) {
+        const src = readFileSync(join(SRC, rel), "utf8");
+        // The floating container is the one carrying the shadow that lifts it.
+        for (const line of src.split("\n")) {
+          if (!/shadow-\[var\(--tpl-shadow-(lg|xl)\)\]/.test(line)) continue;
+          if (line.includes("bg-[var(--tpl-bg-elevated)]")) {
+            offending.push(`${rel}  lifted surface still on bg-elevated`);
+          }
+        }
+      }
+      expect(offending).toEqual([]);
+    });
+
+    it("an opaque surface never carries a backdrop blur", () => {
+      // Blur behind an opaque fill renders nothing and costs a compositing
+      // layer. Translucent surfaces keep theirs — that is the case it is for.
+      const offending: string[] = [];
+      for (const relPath of FILES) {
+        const src = readFileSync(join(SRC, relPath), "utf8");
+        src.split("\n").forEach((line, i) => {
+          if (!/backdrop-filter:\s*blur/.test(line)) return;
+          // Look at the surrounding declaration block for the paired fill.
+          const ctx = src.split("\n").slice(Math.max(0, i - 8), i + 3).join("\n");
+          const translucent = /color-mix\(|rgba?\([^)]*,\s*0?\.\d|--tpl-overlay/.test(ctx);
+          const opaqueToken = /bg-\[var\(--tpl-(bg|bg-elevated|bg-hover|canvas-bg)\)\]|background-color:\s*var\(--tpl-(bg|bg-elevated)\)/.test(ctx);
+          if (opaqueToken && !translucent) {
+            offending.push(`${relPath}:${i + 1}  blur behind an opaque fill`);
+          }
+        });
+      }
+      expect(offending).toEqual([]);
+    });
+  });
+
   describe("Comment composers — one shape for the same job", () => {
     /**
      * The new-comment and reply composers do the same thing and had inverted

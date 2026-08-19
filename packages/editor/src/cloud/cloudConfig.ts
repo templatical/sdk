@@ -90,6 +90,20 @@ export interface TemplaticalCloudEditorConfig {
    */
   smallScreenNotice?: boolean;
 
+  /**
+   * Show the template's name in the header, inline-editable. Defaults to `true`.
+   *
+   * Set to `false` when your store has no name column, or when your own chrome
+   * owns the name. Hides the field only — `create({ name })`, `setName()` and the
+   * `name` in each save patch keep working, so a headless caller or your own UI
+   * can still manage names.
+   *
+   * Without a `templates` provider the header renders no name field either way.
+   *
+   * @default true
+   */
+  templateNameField?: boolean;
+
   ai?: AiConfig | false;
   commenting?: boolean;
   collaboration?: CollaborationConfig;

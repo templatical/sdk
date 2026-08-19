@@ -167,7 +167,7 @@ function getRemainingTypeCount(saved: SavedBlock): number {
 function relativeLabel(saved: SavedBlock): string {
   const raw = saved.updatedAt ?? saved.createdAt;
   if (!raw) return "";
-  return formatRelativeTime(raw, t.savedBlocks.time, format) ?? "";
+  return formatRelativeTime(raw, t.time, format) ?? "";
 }
 
 /** Absolute timestamp for the row's tooltip — locale-formatted, no i18n keys. */

@@ -19,6 +19,19 @@ const ptBR: typeof en = {
     templateName: "Nome do template",
     rename: "Renomear template",
     untitled: "Sem título",
+    updatedAt: "Atualizado {time}",
+    createdAt: "Criado {time}",
+    updatedJustNow: "Atualizado agora mesmo",
+    createdJustNow: "Criado agora mesmo",
+  },
+
+  // Relative timestamps, shared by every surface that shows one: the header's
+  // updated line, saved blocks, comments and version history.
+  time: {
+    justNow: "Agora mesmo",
+    minutesAgo: "há {minutes}min",
+    hoursAgo: "há {hours}h",
+    daysAgo: "há {days}d",
   },
 
   // History (undo/redo)
@@ -668,12 +681,6 @@ const ptBR: typeof en = {
     collapse: "Recolher",
     expandPreview: "Expandir a prévia de {block}",
     collapsePreview: "Recolher a prévia de {block}",
-    time: {
-      justNow: "Agora mesmo",
-      minutesAgo: "há {minutes}min",
-      hoursAgo: "há {hours}h",
-      daysAgo: "há {days}d",
-    },
   },
   comments: {
     button: "Comentários",
@@ -702,12 +709,6 @@ const ptBR: typeof en = {
     replyMany: "{count} Respostas",
     missingBlock: "Bloco ausente",
     saveTemplateFirst: "Salve o template antes de comentar neste bloco.",
-    time: {
-      justNow: "Agora mesmo",
-      minutesAgo: "há {minutes}min",
-      hoursAgo: "há {hours}h",
-      daysAgo: "há {days}d",
-    },
   },
   versionHistory: {
     tooltip: "Histórico de versões",
@@ -716,12 +717,6 @@ const ptBR: typeof en = {
     auto: "auto",
     olderVersion: "Versão anterior",
     newerVersion: "Versão mais recente",
-    time: {
-      justNow: "Agora mesmo",
-      minutesAgo: "há {minutes}min",
-      hoursAgo: "há {hours}h",
-      daysAgo: "há {days}d",
-    },
   },
   versionPreview: {
     message: "Você está visualizando uma versão anterior deste modelo.",

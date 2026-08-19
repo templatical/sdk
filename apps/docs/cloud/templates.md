@@ -22,6 +22,8 @@ Nothing to configure. Cloud supplies the provider, so the whole lifecycle — th
 | `create` | Stores a new template and issues the id everything else keys off |
 | `save` | Persists the content and the name, and records an automatic version |
 
+Cloud does not return `createdAt` / `updatedAt` yet, so the header shows no [write time](/backend/templates#the-write-time) on this tier. The keys are read the moment the API sends them, with no SDK change.
+
 Both mutations are enabled — no Cloud tier can open a template but not save it. Plans cap **how many** templates a project may hold, which is a quantity limit, not a capability one.
 
 ## Automatic versions

@@ -270,7 +270,7 @@ function canDelete(comment: Comment): boolean {
 }
 
 function formatTime(dateString: string): string {
-  return formatRelativeTime(dateString, t.comments.time) ?? dateString;
+  return formatRelativeTime(dateString, t.time) ?? dateString;
 }
 
 function handleNewCommentKeydown(event: KeyboardEvent): void {

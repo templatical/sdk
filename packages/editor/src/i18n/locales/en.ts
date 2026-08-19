@@ -17,6 +17,19 @@ export default {
     templateName: "Template name",
     rename: "Rename template",
     untitled: "Untitled",
+    updatedAt: "Updated {time}",
+    createdAt: "Created {time}",
+    updatedJustNow: "Updated just now",
+    createdJustNow: "Created just now",
+  },
+
+  // Relative timestamps, shared by every surface that shows one: the header's
+  // updated line, saved blocks, comments and version history.
+  time: {
+    justNow: "Just now",
+    minutesAgo: "{minutes}m ago",
+    hoursAgo: "{hours}h ago",
+    daysAgo: "{days}d ago",
   },
 
   // History (undo/redo)
@@ -665,12 +678,6 @@ export default {
     collapse: "Collapse",
     expandPreview: "Expand {block} preview",
     collapsePreview: "Collapse {block} preview",
-    time: {
-      justNow: "Just now",
-      minutesAgo: "{minutes}m ago",
-      hoursAgo: "{hours}h ago",
-      daysAgo: "{days}d ago",
-    },
   },
   comments: {
     button: "Comments",
@@ -699,12 +706,6 @@ export default {
     replyMany: "{count} Replies",
     missingBlock: "Missing block",
     saveTemplateFirst: "Save the template before commenting on this block.",
-    time: {
-      justNow: "Just now",
-      minutesAgo: "{minutes}m ago",
-      hoursAgo: "{hours}h ago",
-      daysAgo: "{days}d ago",
-    },
   },
   versionHistory: {
     tooltip: "Version history",
@@ -713,12 +714,6 @@ export default {
     auto: "auto",
     olderVersion: "Older version",
     newerVersion: "Newer version",
-    time: {
-      justNow: "Just now",
-      minutesAgo: "{minutes}m ago",
-      hoursAgo: "{hours}h ago",
-      daysAgo: "{days}d ago",
-    },
   },
   versionPreview: {
     message: "You are previewing an earlier version of this template.",

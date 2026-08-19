@@ -19,6 +19,19 @@ const es: typeof en = {
     templateName: "Nombre de la plantilla",
     rename: "Cambiar el nombre de la plantilla",
     untitled: "Sin título",
+    updatedAt: "Actualizado {time}",
+    createdAt: "Creado {time}",
+    updatedJustNow: "Actualizado ahora mismo",
+    createdJustNow: "Creado ahora mismo",
+  },
+
+  // Relative timestamps, shared by every surface that shows one: the header's
+  // updated line, saved blocks, comments and version history.
+  time: {
+    justNow: "Ahora mismo",
+    minutesAgo: "hace {minutes} min",
+    hoursAgo: "hace {hours} h",
+    daysAgo: "hace {days} d",
   },
 
   // History (undo/redo)
@@ -670,12 +683,6 @@ const es: typeof en = {
     collapse: "Contraer",
     expandPreview: "Expandir la vista previa de {block}",
     collapsePreview: "Contraer la vista previa de {block}",
-    time: {
-      justNow: "Ahora mismo",
-      minutesAgo: "hace {minutes} min",
-      hoursAgo: "hace {hours} h",
-      daysAgo: "hace {days} d",
-    },
   },
   comments: {
     button: "Comentarios",
@@ -704,12 +711,6 @@ const es: typeof en = {
     replyMany: "{count} respuestas",
     missingBlock: "Bloque no encontrado",
     saveTemplateFirst: "Guarda la plantilla antes de comentar en este bloque.",
-    time: {
-      justNow: "Ahora mismo",
-      minutesAgo: "hace {minutes} min",
-      hoursAgo: "hace {hours} h",
-      daysAgo: "hace {days} d",
-    },
   },
   versionHistory: {
     tooltip: "Historial de versiones",
@@ -718,12 +719,6 @@ const es: typeof en = {
     auto: "auto",
     olderVersion: "Versión anterior",
     newerVersion: "Versión más reciente",
-    time: {
-      justNow: "Ahora mismo",
-      minutesAgo: "hace {minutes} min",
-      hoursAgo: "hace {hours} h",
-      daysAgo: "hace {days} d",
-    },
   },
   versionPreview: {
     message: "Estás viendo una versión anterior de esta plantilla.",

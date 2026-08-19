@@ -16,7 +16,21 @@ const nl: typeof en = {
     templateName: "Templatenaam",
     rename: "Template hernoemen",
     untitled: "Naamloos",
+    updatedAt: "Bijgewerkt {time}",
+    createdAt: "Gemaakt {time}",
+    updatedJustNow: "Zojuist bijgewerkt",
+    createdJustNow: "Zojuist gemaakt",
   },
+
+  // Relative timestamps, shared by every surface that shows one: the header's
+  // updated line, saved blocks, comments and version history.
+  time: {
+    justNow: "Zojuist",
+    minutesAgo: "{minutes} min geleden",
+    hoursAgo: "{hours} u geleden",
+    daysAgo: "{days} d geleden",
+  },
+
   history: {
     undo: "Ongedaan maken",
     redo: "Opnieuw",
@@ -602,12 +616,6 @@ const nl: typeof en = {
     collapse: "Inklappen",
     expandPreview: "Voorbeeld van {block} uitklappen",
     collapsePreview: "Voorbeeld van {block} inklappen",
-    time: {
-      justNow: "Zojuist",
-      minutesAgo: "{minutes} min geleden",
-      hoursAgo: "{hours} u geleden",
-      daysAgo: "{days} d geleden",
-    },
   },
   comments: {
     button: "Opmerkingen",
@@ -637,12 +645,6 @@ const nl: typeof en = {
     missingBlock: "Blok ontbreekt",
     saveTemplateFirst:
       "Sla de template op voordat je een opmerking bij dit blok plaatst.",
-    time: {
-      justNow: "Net nu",
-      minutesAgo: "{minutes} min geleden",
-      hoursAgo: "{hours} u geleden",
-      daysAgo: "{days} d geleden",
-    },
   },
   versionHistory: {
     tooltip: "Versiegeschiedenis",
@@ -651,12 +653,6 @@ const nl: typeof en = {
     auto: "auto",
     olderVersion: "Oudere versie",
     newerVersion: "Nieuwere versie",
-    time: {
-      justNow: "Zojuist",
-      minutesAgo: "{minutes} min geleden",
-      hoursAgo: "{hours} u geleden",
-      daysAgo: "{days} d geleden",
-    },
   },
   versionPreview: {
     message: "U bekijkt een eerdere versie van dit sjabloon.",

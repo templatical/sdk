@@ -323,7 +323,7 @@ const showPillRow = computed(
       :aria-labelledby="`${listId}-title`"
       :data-tpl-theme="tplUiTheme"
       data-testid="merge-tag-picker-modal"
-      class="tpl tpl:flex tpl:max-h-[80vh] tpl:w-[min(420px,92vw)] tpl:flex-col tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:shadow-[var(--tpl-shadow-lg)]"
+      class="tpl tpl:flex tpl:max-h-[80vh] tpl:w-[min(420px,92vw)] tpl:flex-col tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-lg)]"
       :style="themeStyles"
     >
       <!-- Header -->

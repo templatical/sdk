@@ -32,7 +32,7 @@ const { t: cloudT } = useCloudI18nStrict();
       @click.self="emit('cancel')"
     >
       <div
-        class="tpl:flex tpl:max-h-[80vh] tpl:w-full tpl:max-w-md tpl:flex-col tpl:gap-4 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:p-5 tpl:shadow-[var(--tpl-shadow-md)]"
+        class="tpl:flex tpl:max-h-[80vh] tpl:w-full tpl:max-w-md tpl:flex-col tpl:gap-4 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-5 tpl:shadow-[var(--tpl-shadow-md)]"
       >
         <header class="tpl:flex tpl:items-center tpl:gap-2">
           <AlertTriangle

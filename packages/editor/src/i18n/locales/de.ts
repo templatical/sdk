@@ -19,6 +19,19 @@ const de: typeof en = {
     templateName: "Vorlagenname",
     rename: "Vorlage umbenennen",
     untitled: "Unbenannt",
+    updatedAt: "Aktualisiert {time}",
+    createdAt: "Erstellt {time}",
+    updatedJustNow: "Gerade eben aktualisiert",
+    createdJustNow: "Gerade eben erstellt",
+  },
+
+  // Relative timestamps, shared by every surface that shows one: the header's
+  // updated line, saved blocks, comments and version history.
+  time: {
+    justNow: "Gerade eben",
+    minutesAgo: "vor {minutes} Min.",
+    hoursAgo: "vor {hours} Std.",
+    daysAgo: "vor {days} Tagen",
   },
 
   // History (undo/redo)
@@ -675,12 +688,6 @@ const de: typeof en = {
     collapse: "Zuklappen",
     expandPreview: "Vorschau von {block} aufklappen",
     collapsePreview: "Vorschau von {block} zuklappen",
-    time: {
-      justNow: "Gerade eben",
-      minutesAgo: "vor {minutes} Min.",
-      hoursAgo: "vor {hours} Std.",
-      daysAgo: "vor {days} Tagen",
-    },
   },
   comments: {
     button: "Kommentare",
@@ -710,12 +717,6 @@ const de: typeof en = {
     missingBlock: "Fehlender Block",
     saveTemplateFirst:
       "Speichern Sie die Vorlage, bevor Sie diesen Block kommentieren.",
-    time: {
-      justNow: "Gerade eben",
-      minutesAgo: "vor {minutes} Min.",
-      hoursAgo: "vor {hours} Std.",
-      daysAgo: "vor {days} Tagen",
-    },
   },
   versionHistory: {
     tooltip: "Versionsverlauf",
@@ -724,12 +725,6 @@ const de: typeof en = {
     auto: "auto",
     olderVersion: "Ältere Version",
     newerVersion: "Neuere Version",
-    time: {
-      justNow: "Gerade eben",
-      minutesAgo: "vor {minutes} Min.",
-      hoursAgo: "vor {hours} Std.",
-      daysAgo: "vor {days} Tagen",
-    },
   },
   versionPreview: {
     message: "Sie sehen eine frühere Version dieser Vorlage.",

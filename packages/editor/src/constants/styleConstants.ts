@@ -90,6 +90,21 @@ const btnSecondarySkin =
  * Hover deepens into `--tpl-danger-light` rather than fading, matching
  * `removeItemBtnClass`.
  */
+/**
+ * Ghost: no surface of its own, so it belongs to whatever it sits on. Used where
+ * a secondary action shares a tinted band with a primary one — the
+ * version-preview banner's Cancel beside its Restore — and a bordered chip would
+ * read as a foreign object dropped onto the tint.
+ *
+ * The hover wash is translucent rather than `--tpl-bg-active`. An opaque wash
+ * only composes on paper: on the banner's `--tpl-primary-light` it would paint a
+ * warm grey over amber, and in dark mode it would lighten where everything else
+ * darkens. Mixing `--tpl-text` into transparency deepens whatever ground is
+ * actually behind it, in either theme.
+ */
+const btnGhostSkin =
+  "tpl:border-transparent tpl:bg-transparent tpl:text-[var(--tpl-text-muted)] tpl:hover:bg-[color-mix(in_srgb,var(--tpl-text)_8%,transparent)] tpl:hover:text-[var(--tpl-text)]";
+
 const btnDangerSkin =
   "tpl:border-[var(--tpl-danger)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-danger)] tpl:hover:bg-[var(--tpl-danger-light)] tpl:hover:shadow-[var(--tpl-shadow-sm)]";
 
@@ -106,6 +121,8 @@ export const primaryBtnCompactClass = `${btnBase} ${btnPrimarySkin} ${btnSizeCom
 export const secondaryBtnCompactClass = `${btnBase} ${btnSecondarySkin} ${btnSizeCompact}`;
 export const dangerBtnClass = `${btnBase} ${btnDangerSkin} ${btnSizeDefault}`;
 export const dangerBtnCompactClass = `${btnBase} ${btnDangerSkin} ${btnSizeCompact}`;
+export const ghostBtnClass = `${btnBase} ${btnGhostSkin} ${btnSizeDefault}`;
+export const ghostBtnCompactClass = `${btnBase} ${btnGhostSkin} ${btnSizeCompact}`;
 
 // Rich text toolbar presets
 export const FONT_SIZE_OPTIONS = [

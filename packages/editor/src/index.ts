@@ -541,6 +541,20 @@ export interface TemplaticalEditorConfig {
   smallScreenNotice?: boolean;
 
   /**
+   * Show the template's name in the header, inline-editable. Defaults to `true`.
+   *
+   * Set to `false` when your store has no name column, or when your own chrome
+   * owns the name. Hides the field only — `create({ name })`, `setName()` and the
+   * `name` in each save patch keep working, so a headless caller or your own UI
+   * can still manage names.
+   *
+   * Without a `templates` provider the header renders no name field either way.
+   *
+   * @default true
+   */
+  templateNameField?: boolean;
+
+  /**
    * Template linter (`@templatical/quality`) configuration. Runs every
    * linter exported by the package (accessibility + structure).
    *
@@ -1056,6 +1070,7 @@ export async function initCloud(
       theme: config.theme,
       branding: config.branding,
       smallScreenNotice: config.smallScreenNotice,
+      templateNameField: config.templateNameField,
       blockDefaults: config.blockDefaults,
       templateDefaults: config.templateDefaults,
       customBlocks: config.customBlocks,

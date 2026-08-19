@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ghostBtnClass, primaryBtnClass } from "../constants/styleConstants";
 /**
  * Shown while a past version is on the canvas instead of the user's own work.
  * Cancel puts the pre-preview content back; Restore makes the version current.
@@ -45,7 +46,7 @@ const { t } = useI18n();
     </div>
     <div class="tpl:flex tpl:items-center tpl:gap-2">
       <button
-        class="tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:text-[var(--tpl-text-muted)] tpl:border tpl:border-[var(--tpl-border)]"
+        :class="ghostBtnClass"
         style="background-color: transparent"
         data-testid="version-preview-cancel"
         @click="emit('cancel')"
@@ -54,7 +55,7 @@ const { t } = useI18n();
       </button>
       <button
         v-if="canRestore"
-        class="tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:hover:opacity-90 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
+        :class="primaryBtnClass"
         data-testid="version-preview-restore"
         @click="emit('confirm')"
       >

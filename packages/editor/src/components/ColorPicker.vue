@@ -326,7 +326,7 @@ function toggleOpen(): void {
           v-if="open"
           ref="popoverRef"
           :data-tpl-theme="tplUiTheme"
-          class="tpl-color-popover tpl:absolute tpl:z-modal tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:p-3 tpl:shadow-[var(--tpl-shadow-lg)]"
+          class="tpl-color-popover tpl:absolute tpl:z-modal tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-3 tpl:shadow-[var(--tpl-shadow-lg)]"
           :style="{
             top: `${popoverPosition.top}px`,
             left: `${popoverPosition.left}px`,

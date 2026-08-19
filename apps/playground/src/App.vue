@@ -464,6 +464,8 @@ function templatesKeyFor(templateName: string): string {
 interface StoredTemplate {
   id: string;
   name?: string;
+  createdAt?: string;
+  updatedAt?: string;
   content: TemplateContent;
 }
 
@@ -521,10 +523,24 @@ function templatesProviderFor(template?: TemplateOption): TemplatesProvider {
 
   const base: TemplatesProvider = {
     load: async (templateId) => requireStored(templateId),
-    create: async (input) =>
-      write({ id: slugFor(name), name: input.name, content: input.content }),
+    create: async (input) => {
+      // A store stamps its own writes, so the demo does too — that is what the
+      // header's write time reads, and the editor never sends either field.
+      const at = new Date().toISOString();
+      return write({
+        id: slugFor(name),
+        name: input.name,
+        content: input.content,
+        createdAt: at,
+        updatedAt: at,
+      });
+    },
     save: async (templateId, patch) => {
-      const stored = write({ ...requireStored(templateId), ...patch });
+      const stored = write({
+        ...requireStored(templateId),
+        ...patch,
+        updatedAt: new Date().toISOString(),
+      });
       // The contract puts automatic versions on whoever implements `save` — the
       // side that knows what storage costs. Cloud throttles here; the demo
       // records one per save, because a demo you have to wait out demonstrates

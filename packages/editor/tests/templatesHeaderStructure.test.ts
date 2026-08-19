@@ -49,10 +49,31 @@ describe("EditorHeader templates surface", () => {
     });
 
     it("renders only with an available provider and a loaded template", () => {
-      // Nothing to name before `create()` / `load()` resolves, and `save()`
-      // patches an id — so the field would have nowhere to send a rename.
+      // Nothing to name or date before `create()` / `load()` resolves, and
+      // `save()` patches an id — so the field would have nowhere to send a
+      // rename.
+      const header = headerSource();
+      expect(header).toContain("templates?.isAvailable.value &&");
+      expect(header).toContain("templates.hasTemplate.value &&");
+    });
+
+    it("hides the field on templateNameField: false, whatever the provider allows", () => {
+      // A store with no name column, or a consumer whose own chrome owns the
+      // name: the gate is the config, not `canSave`.
+      expect(headerSource()).toContain('v-if="showTemplateName"');
+    });
+
+    it("takes that flag from config, defaulting to shown", () => {
+      expect(editorSource).toContain(
+        ':show-template-name="config.templateNameField !== false"',
+      );
+    });
+
+    it("keeps the identity stack out of the row when nothing in it renders", () => {
+      // The stack is a flex child of a `gap-2.5` row, so an empty one would
+      // indent Cloud's left extras by a gap that has nothing before it.
       expect(headerSource()).toContain(
-        'v-if="templates?.isAvailable.value && templates.hasTemplate.value"',
+        "(showTemplateName || templates.timestamp.value)",
       );
     });
 
@@ -62,6 +83,37 @@ describe("EditorHeader templates surface", () => {
 
     it("commits a rename through the feature rather than the editor directly", () => {
       expect(headerSource()).toContain('@commit="templates.rename"');
+    });
+  });
+
+  describe("left column — the write time", () => {
+    it("stacks under the name rather than beside it", () => {
+      const header = headerSource();
+      const left = header.slice(
+        header.indexOf("tpl-header-left"),
+        header.indexOf('name="left-extras"'),
+      );
+      expect(left).toContain("<TemplateTimestamp");
+      expect(left).toContain("tpl:flex-col");
+      expect(left.indexOf("<TemplateNameField")).toBeLessThan(
+        left.indexOf("<TemplateTimestamp"),
+      );
+    });
+
+    it("gates on the value alone — not on canSave, not on the name flag", () => {
+      // A `save: false` template hides the whole status indicator, so this line
+      // is the only thing left that says how current the stored copy is. And it
+      // has to survive `templateNameField: false`, which is the case where it
+      // becomes the left column's only content.
+      expect(headerSource()).toContain('v-if="templates.timestamp.value"');
+    });
+
+    it("passes the value and which field it came from", () => {
+      // Without `kind` the label would have to guess, and would call a
+      // never-updated template updated.
+      const header = headerSource();
+      expect(header).toContain(':iso="templates.timestamp.value.iso"');
+      expect(header).toContain(':kind="templates.timestamp.value.kind"');
     });
   });
 
@@ -311,6 +363,8 @@ describe("EditorHeader templates surface", () => {
   describe("i18n", () => {
     it("keeps every header string the OSS chunk needs", () => {
       expect(Object.keys(en.header).sort()).toEqual([
+        "createdAt",
+        "createdJustNow",
         "rename",
         "save",
         "saveFailed",
@@ -320,6 +374,8 @@ describe("EditorHeader templates surface", () => {
         "templateName",
         "unsaved",
         "untitled",
+        "updatedAt",
+        "updatedJustNow",
       ]);
     });
 

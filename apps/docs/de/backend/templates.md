@@ -54,6 +54,8 @@ await editor.load('tpl_123');
 interface Template {
   id: string;
   name?: string;
+  createdAt?: string;
+  updatedAt?: string;
   content: TemplateContent;
 }
 
@@ -68,6 +70,7 @@ interface TemplatesProvider {
 
 - **Die `id` kommt aus Ihrem Speicher**, zurückgegeben von `create()`. Der Editor erzeugt nie selbst eine — ein Datenbankschlüssel, ein Slug, eine Dokument-ID, was auch immer Ihr Speicher bereits verwendet.
 - **`save` erhält einen Patch**, nicht den bloßen Inhalt. So kann eine Umbenennung ohne Inhalt übertragen werden, und ein künftiges Feld lässt sich ergänzen, ohne Ihre Implementierung zu brechen. Der Editor sendet `name` (sofern die Vorlage einen hat) und `content` gemeinsam, in einem Aufruf.
+- **`createdAt` / `updatedAt` sind optional, ISO 8601 und dienen nur der Anzeige.** Beide fehlen in `TemplatePatch`, der Editor schreibt sie also nie — angezeigt wird, was `load` oder `save` zurückgegeben hat. Siehe [Der Zeitstempel](#der-zeitstempel).
 - **`name` ist optional.** Ohne Namensspalte lassen Sie ihn weg — der Header zeigt stattdessen ein gedimmtes „Unbenannt". Das Feld bleibt bearbeitbar, solange `save` eine Funktion ist; eine Umbenennung wird also weiterhin als `save(id, { name, content })` gesendet. Ein Store, der sie ignoriert, gibt eine Vorlage ohne Namen zurück, und der Header zeigt wieder „Unbenannt".
 
 Jede Methode darf ablehnen. Der Editor meldet den Fehler über `onError`, zeigt ihn im Header an und lässt seinen Zustand unberührt — nichts wird als gespeichert markiert, was es nicht ist.
@@ -101,7 +104,7 @@ Diese Schalter leben im Browser des Nutzers. Sie prägen die Oberfläche; sie sc
 <!-- prettier-ignore -->
 | Position | Inhalt |
 | --- | --- |
-| links | der Vorlagenname, per Klick bearbeitbar |
+| links | der Vorlagenname, per Klick bearbeitbar, darunter der Zeitstempel |
 | rechts | der Speicherstatus, dann die Speichern-Schaltfläche |
 
 Der Name wird mit `Enter` oder beim Verlassen des Feldes übernommen, mit `Escape` verworfen; ein leerer Wert wird abgelehnt und der vorherige wiederhergestellt — ein geleertes Feld ist weit eher ein Versehen als eine Absicht. Eine Umbenennung ist eine gewöhnliche ungespeicherte Änderung: sie markiert den Editor als geändert und wird beim nächsten Speichern übertragen, im selben Patch wie der Inhalt.
@@ -115,6 +118,31 @@ Die Statusanzeige kennt drei Zustände:
 | **Speichern fehlgeschlagen** | der letzte Versuch abgelehnt wurde — Ihre Fehlermeldung steht im Tooltip |
 
 Die Speichern-Schaltfläche ist deaktiviert, solange keine Vorlage existiert, denn `save()` aktualisiert eine ID. Rufen Sie zuerst `create()` oder `load()` auf.
+
+### Der Zeitstempel
+
+Eine Vorlage mit `updatedAt` zeigt unter dem Namen eine relative Zeitangabe, das vollständige Datum erscheint beim Überfahren:
+
+> Aktualisiert vor 5 Min.
+
+`createdAt` dient als Rückfallwert, wenn `updatedAt` fehlt, und die Formulierung folgt dem verwendeten Feld — eine Vorlage, die Ihr Store nie neu geschrieben hat, zeigt „Erstellt", nie „Aktualisiert". Fehlen beide Felder, oder lässt sich der Wert nicht lesen, erscheint keine Zeile. Die Angabe aktualisiert sich, während der Editor geöffnet bleibt.
+
+::: tip
+Sie erscheint unabhängig davon, ob `save` verfügbar ist — bei einer schreibgeschützten Vorlage tritt sie an die Stelle der Statusanzeige.
+:::
+
+### Das Namensfeld ausblenden
+
+```ts
+init({
+  templateNameField: false,
+  templates: { /* … */ },
+});
+```
+
+Entfernt das Feld aus dem Header, unabhängig davon, ob Ihr Provider speichern kann. `editor.create({ name })`, `setName()` und der `name` in jedem Speicher-Patch funktionieren weiter, Ihre eigene Bedienoberfläche kann den Namen also weiterhin verwalten. `initCloud()` akzeptiert denselben Schlüssel.
+
+Ist das Feld ausgeblendet, bleibt der Zeitstempel der einzige Inhalt der linken Header-Spalte.
 
 ## Autosave
 

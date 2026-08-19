@@ -115,6 +115,16 @@ export interface EditorCapabilities {
     rename(name: string): void;
     /** The loaded template's name, `undefined` when unnamed or not loaded. */
     name: ComputedRef<string | undefined>;
+    /**
+     * When the stored template was last written, for the header's relative
+     * label. `updatedAt` when the store supplies it, otherwise `createdAt`;
+     * `null` when it supplies neither, which renders no line at all. `kind` is
+     * what picks the "Updated"/"Created" wording.
+     */
+    timestamp: ComputedRef<{
+      iso: string;
+      kind: "updatedAt" | "createdAt";
+    } | null>;
     /** Whether `create()` or `load()` has resolved — nothing to save until then. */
     hasTemplate: ComputedRef<boolean>;
     isSaving: ComputedRef<boolean>;

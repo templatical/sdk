@@ -13,7 +13,12 @@ const SAVED_STATUS_MS = 3000;
 /** Minimal slice of the editor this feature needs. */
 interface TemplatesEditor {
   state: {
-    readonly template: { id: string; name?: string } | null;
+    readonly template: {
+      id: string;
+      name?: string;
+      createdAt?: string;
+      updatedAt?: string;
+    } | null;
     readonly isDirty: boolean;
     readonly isSaving: boolean;
   };
@@ -106,6 +111,14 @@ export interface UseTemplatesFeatureReturn {
   rename: (name: string) => void;
   /** The loaded template's name, or `undefined` when unnamed / not loaded. */
   name: ComputedRef<string | undefined>;
+  /**
+   * The stored template's write time and which field it came from, or `null`
+   * when the provider supplies neither timestamp.
+   */
+  timestamp: ComputedRef<{
+    iso: string;
+    kind: "updatedAt" | "createdAt";
+  } | null>;
   hasTemplate: ComputedRef<boolean>;
   isSaving: ComputedRef<boolean>;
   /**
@@ -154,6 +167,20 @@ export function useTemplatesFeature(
   const isAvailable = computed(() => options.isAvailable?.() ?? true);
 
   const name = computed(() => editor.state.template?.name);
+  // Prefers `updatedAt`; `createdAt` is the fallback for a store that records
+  // only creation. Carries which one won, because labelling a never-updated
+  // template "Updated" would be a claim the store never made.
+  const timestamp = computed<{
+    iso: string;
+    kind: "updatedAt" | "createdAt";
+  } | null>(() => {
+    const template = editor.state.template;
+    if (template?.updatedAt)
+      return { iso: template.updatedAt, kind: "updatedAt" };
+    if (template?.createdAt)
+      return { iso: template.createdAt, kind: "createdAt" };
+    return null;
+  });
   const hasTemplate = computed(() => editor.state.template !== null);
   const isSaving = computed(() => editor.state.isSaving);
 
@@ -294,6 +321,7 @@ export function useTemplatesFeature(
     save: requestSave,
     rename,
     name,
+    timestamp,
     hasTemplate,
     isSaving,
     status,
@@ -311,6 +339,7 @@ export function useTemplatesFeature(
     requestAutoSave,
     rename,
     name,
+    timestamp,
     hasTemplate,
     isSaving,
     status,

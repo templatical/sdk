@@ -19,6 +19,19 @@ const ca: typeof en = {
     templateName: "Nom de la plantilla",
     rename: "Canvia el nom de la plantilla",
     untitled: "Sense títol",
+    updatedAt: "Actualitzat {time}",
+    createdAt: "Creat {time}",
+    updatedJustNow: "Actualitzat ara mateix",
+    createdJustNow: "Creat ara mateix",
+  },
+
+  // Relative timestamps, shared by every surface that shows one: the header's
+  // updated line, saved blocks, comments and version history.
+  time: {
+    justNow: "Ara mateix",
+    minutesAgo: "fa {minutes} min",
+    hoursAgo: "fa {hours} h",
+    daysAgo: "fa {days} d",
   },
 
   // History (undo/redo)
@@ -671,12 +684,6 @@ const ca: typeof en = {
     collapse: "Redueix",
     expandPreview: "Amplia la vista prèvia de {block}",
     collapsePreview: "Redueix la vista prèvia de {block}",
-    time: {
-      justNow: "Ara mateix",
-      minutesAgo: "fa {minutes} min",
-      hoursAgo: "fa {hours} h",
-      daysAgo: "fa {days} d",
-    },
   },
   comments: {
     button: "Comentaris",
@@ -705,12 +712,6 @@ const ca: typeof en = {
     replyMany: "{count} respostes",
     missingBlock: "Bloc no trobat",
     saveTemplateFirst: "Desa la plantilla abans de comentar en aquest bloc.",
-    time: {
-      justNow: "Ara mateix",
-      minutesAgo: "fa {minutes} min",
-      hoursAgo: "fa {hours} h",
-      daysAgo: "fa {days} d",
-    },
   },
   versionHistory: {
     tooltip: "Historial de versions",
@@ -719,12 +720,6 @@ const ca: typeof en = {
     auto: "auto",
     olderVersion: "Versió anterior",
     newerVersion: "Versió més recent",
-    time: {
-      justNow: "Ara mateix",
-      minutesAgo: "fa {minutes} min",
-      hoursAgo: "fa {hours} h",
-      daysAgo: "fa {days} d",
-    },
   },
   versionPreview: {
     message: "Estàs veient una versió anterior d’aquesta plantilla.",

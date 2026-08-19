@@ -16,7 +16,21 @@ const fr: typeof en = {
     templateName: "Nom du modèle",
     rename: "Renommer le modèle",
     untitled: "Sans titre",
+    updatedAt: "Modifié {time}",
+    createdAt: "Créé {time}",
+    updatedJustNow: "Modifié à l'instant",
+    createdJustNow: "Créé à l'instant",
   },
+
+  // Relative timestamps, shared by every surface that shows one: the header's
+  // updated line, saved blocks, comments and version history.
+  time: {
+    justNow: "À l'instant",
+    minutesAgo: "il y a {minutes} min",
+    hoursAgo: "il y a {hours} h",
+    daysAgo: "il y a {days} j",
+  },
+
   history: {
     undo: "Annuler",
     redo: "Rétablir",
@@ -601,12 +615,6 @@ const fr: typeof en = {
     collapse: "Réduire",
     expandPreview: "Développer l'aperçu de {block}",
     collapsePreview: "Réduire l'aperçu de {block}",
-    time: {
-      justNow: "À l'instant",
-      minutesAgo: "il y a {minutes} min",
-      hoursAgo: "il y a {hours} h",
-      daysAgo: "il y a {days} j",
-    },
   },
   comments: {
     button: "Commentaires",
@@ -635,12 +643,6 @@ const fr: typeof en = {
     replyMany: "{count} réponses",
     missingBlock: "Bloc introuvable",
     saveTemplateFirst: "Enregistrez le modèle avant de commenter ce bloc.",
-    time: {
-      justNow: "À l'instant",
-      minutesAgo: "il y a {minutes} min",
-      hoursAgo: "il y a {hours} h",
-      daysAgo: "il y a {days} j",
-    },
   },
   versionHistory: {
     tooltip: "Historique des versions",
@@ -649,12 +651,6 @@ const fr: typeof en = {
     auto: "auto",
     olderVersion: "Version précédente",
     newerVersion: "Version plus récente",
-    time: {
-      justNow: "À l'instant",
-      minutesAgo: "il y a {minutes} min",
-      hoursAgo: "il y a {hours} h",
-      daysAgo: "il y a {days} j",
-    },
   },
   versionPreview: {
     message: "Vous consultez une version antérieure de ce modèle.",

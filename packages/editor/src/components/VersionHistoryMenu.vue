@@ -85,12 +85,7 @@ function selectVersion(version: TemplateVersion): void {
 }
 
 function formatDate(dateString: string): string {
-  const result = formatRelativeTime(
-    dateString,
-    t.versionHistory.time,
-    format,
-    7,
-  );
+  const result = formatRelativeTime(dateString, t.time, format, 7);
   if (result !== null) return result;
 
   return new Date(dateString).toLocaleDateString(undefined, {
@@ -145,9 +140,8 @@ onClickOutside(dropdownRef, () => {
     <Transition name="tpl-dropdown">
       <div
         v-if="isOpen"
-        class="tpl-scale-in tpl:absolute tpl:top-full tpl:left-1/2 tpl:z-50 tpl:mt-2 tpl:w-72 tpl:-translate-x-1/2 tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)] tpl:bg-[var(--tpl-bg-elevated)] tpl:border tpl:border-[var(--tpl-border)] tpl:shadow-[var(--tpl-shadow-lg)]"
+        class="tpl-scale-in tpl:absolute tpl:top-full tpl:left-1/2 tpl:z-50 tpl:mt-2 tpl:w-72 tpl:-translate-x-1/2 tpl:overflow-hidden tpl:rounded-[var(--tpl-radius)] tpl:bg-[var(--tpl-bg)] tpl:border tpl:border-[var(--tpl-border)] tpl:shadow-[var(--tpl-shadow-lg)]"
         data-testid="version-history-dropdown"
-        style="backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px)"
       >
         <div
           class="tpl:border-b tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-semibold tpl:text-[var(--tpl-text)] tpl:border-[var(--tpl-border)]"
@@ -180,7 +174,7 @@ onClickOutside(dropdownRef, () => {
           <button
             v-for="version in versions"
             :key="version.id"
-            class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:border-b tpl:border-b-[var(--tpl-border-light)] tpl:border-l-2 tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-all tpl:last:border-b-0 tpl:hover:border-l-[var(--tpl-primary)] tpl:hover:bg-[var(--tpl-bg-hover)]"
+            class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:border-l-2 tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-all tpl:hover:border-l-[var(--tpl-primary)] tpl:hover:bg-[var(--tpl-bg-hover)]"
             :class="
               version.id === previewingId
                 ? 'tpl:border-l-[var(--tpl-primary)] tpl:bg-[var(--tpl-bg-active)]'
@@ -201,7 +195,7 @@ onClickOutside(dropdownRef, () => {
                 }}</span>
                 <span
                   v-if="version.isAutomatic"
-                  class="tpl:rounded tpl:px-1 tpl:py-0.5 tpl:text-[10px] tpl:font-normal tpl:bg-[var(--tpl-bg-active)] tpl:text-[var(--tpl-text-muted)]"
+                  class="tpl:rounded tpl:px-1 tpl:py-0.5 tpl:text-xs tpl:font-normal tpl:bg-[var(--tpl-bg-active)] tpl:text-[var(--tpl-text-muted)]"
                 >
                   {{ t.versionHistory.auto }}
                 </span>
@@ -211,7 +205,7 @@ onClickOutside(dropdownRef, () => {
                    the date, so the line would repeat it. -->
               <div
                 v-if="version.label || version.author?.name"
-                class="tpl:text-[10px] tpl:text-[var(--tpl-text-muted)]"
+                class="tpl:text-xs tpl:text-[var(--tpl-text-muted)]"
               >
                 <template v-if="version.label">{{
                   formatDate(version.createdAt)

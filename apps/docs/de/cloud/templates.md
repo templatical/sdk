@@ -22,6 +22,8 @@ Nichts zu konfigurieren. Cloud stellt den Provider bereit, sodass der gesamte Le
 | `create` | Speichert eine neue Vorlage und stellt die ID aus, an der alles Weitere hängt |
 | `save` | Persistiert Inhalt und Namen und legt automatisch eine Version an |
 
+Cloud liefert `createdAt` / `updatedAt` noch nicht, daher zeigt der Header auf dieser Stufe keinen [Zeitstempel](/de/backend/templates#der-zeitstempel). Die Felder werden gelesen, sobald die API sie sendet — ohne Änderung am SDK.
+
 Beide Mutationen sind aktiv — keine Cloud-Stufe kann eine Vorlage öffnen, aber nicht speichern. Pläne begrenzen die **Anzahl** der Vorlagen pro Projekt: eine Mengenbegrenzung, keine Funktionsbegrenzung.
 
 ## Automatische Versionen

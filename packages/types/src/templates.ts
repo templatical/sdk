@@ -18,6 +18,24 @@ export interface Template {
    * `save(id, { name })` patch — there is no separate rename method.
    */
   name?: string;
+  /**
+   * When your store created the template, ISO 8601.
+   *
+   * A fallback for {@link Template.updatedAt}: the header prefers `updatedAt`
+   * and reads this only in its absence, so a store that records creation but not
+   * modification still shows something.
+   */
+  createdAt?: string;
+  /**
+   * When your store last wrote the template, ISO 8601.
+   *
+   * Display-only — the header renders it as a relative label ("Updated 5m ago")
+   * with the absolute date on hover. Both timestamps are absent from
+   * {@link TemplatePatch}, so the editor never writes them: they are yours to
+   * set, and the value the editor shows is whatever `load` or `save` returned.
+   * Absent, or a value that does not parse, renders nothing.
+   */
+  updatedAt?: string;
   content: TemplateContent;
 }
 

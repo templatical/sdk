@@ -32,7 +32,12 @@ function createProvider(
  */
 function createEditor(
   options: {
-    template?: { id: string; name?: string } | null;
+    template?: {
+      id: string;
+      name?: string;
+      createdAt?: string;
+      updatedAt?: string;
+    } | null;
     save?: () => Promise<Template>;
     create?: () => Promise<Template>;
     load?: () => Promise<Template>;
@@ -99,6 +104,79 @@ function withFeature(options: {
 describe("useTemplatesFeature", () => {
   afterEach(() => {
     while (mounted.length > 0) mounted.pop()!.unmount();
+  });
+
+  describe("the stored write time", () => {
+    const UPDATED = "2026-08-19T11:00:00.000Z";
+    const CREATED = "2026-08-01T09:30:00.000Z";
+
+    it("prefers updatedAt and says so", () => {
+      const { feature } = withFeature({
+        editor: createEditor({
+          template: { id: "tpl_1", createdAt: CREATED, updatedAt: UPDATED },
+        }),
+      });
+
+      expect(feature.timestamp.value).toEqual({
+        iso: UPDATED,
+        kind: "updatedAt",
+      });
+    });
+
+    it("falls back to createdAt, and carries that it did", () => {
+      // A store that records creation but never modification. The header must
+      // not call this "Updated" — it is a claim the store never made.
+      const { feature } = withFeature({
+        editor: createEditor({ template: { id: "tpl_1", createdAt: CREATED } }),
+      });
+
+      expect(feature.timestamp.value).toEqual({
+        iso: CREATED,
+        kind: "createdAt",
+      });
+    });
+
+    it("is null when the provider supplies neither", () => {
+      const { feature } = withFeature({
+        editor: createEditor({ template: { id: "tpl_1", name: "Welcome" } }),
+      });
+
+      expect(feature.timestamp.value).toBe(null);
+    });
+
+    it("is null before a template is loaded", () => {
+      const { feature } = withFeature({
+        editor: createEditor({ template: null }),
+      });
+
+      expect(feature.timestamp.value).toBe(null);
+    });
+
+    it("follows the template the store hands back", () => {
+      // `save()` resolves with the stored record, and core replaces
+      // `state.template` with it — so a fresh write time has to land in the
+      // header without anything re-reading the provider.
+      const editor = createEditor({
+        template: { id: "tpl_1", updatedAt: CREATED },
+      });
+      const { feature } = withFeature({ editor });
+      expect(feature.timestamp.value?.iso).toBe(CREATED);
+
+      editor.state.template = { id: "tpl_1", updatedAt: UPDATED };
+
+      expect(feature.timestamp.value?.iso).toBe(UPDATED);
+    });
+
+    it("is on the capability, so the header reads it without prop drilling", () => {
+      const { feature } = withFeature({
+        editor: createEditor({ template: { id: "tpl_1", updatedAt: UPDATED } }),
+      });
+
+      expect(feature.capability.timestamp.value).toEqual({
+        iso: UPDATED,
+        kind: "updatedAt",
+      });
+    });
   });
 
   describe("capability flags", () => {
