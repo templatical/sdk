@@ -22,10 +22,11 @@ To create blocks programmatically, see [Programmatic Templates](/guide/programma
 | Multi-column layout | [Section](#section) | The only block that holds other blocks |
 | Visual separation | [Divider](#divider) | Horizontal line with style options |
 | Vertical spacing | [Spacer](#spacer) | Empty space between blocks |
-| Social links | [Social Icons](#social-icons) | 16 platforms, 5 icon styles |
+| Social links | [Social Icons](#social-icons) | 17 platforms, 5 icon styles |
 | Navigation links | [Menu](#menu) | Horizontal link list with separators |
 | Tabular data | [Table](#table) | Data table with optional header styling |
 | Video preview | [Video](#video) | Clickable thumbnail (email clients don't support embedded video) |
+| Countdown to a deadline | [Countdown](#countdown) | Animated timer; rendering needs Templatical Cloud |
 | Raw markup | [HTML](#html) | Escape hatch for custom code |
 | Domain-specific content | [Custom](#custom) | Your own block types with fields and Liquid templates |
 
@@ -196,6 +197,31 @@ Email clients do not support embedded video playback. The renderer outputs a cli
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
 | `openInNewTab` | `boolean` | Link target behavior |
 | `placeholderUrl` | `string` | Editor-only placeholder |
+
+## Countdown
+
+A live countdown to a deadline, rendered as an animated GIF.
+
+::: warning Rendering requires Templatical Cloud
+An animated GIF has to be generated per recipient at send time, which a browser cannot do. The open-source renderer has no renderer for this block: it emits a `templatical:unrenderable-block` marker comment and logs a warning, so a send pipeline can detect and refuse it. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer). On Cloud the block renders normally — see [Rendering on Cloud](/cloud/rendering).
+:::
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `targetDate` | `string` | ISO date/time the countdown runs to |
+| `timezone` | `string` | IANA timezone the target is interpreted in |
+| `showDays` / `showHours` / `showMinutes` / `showSeconds` | `boolean` | Which units to display |
+| `labelDays` / `labelHours` / `labelMinutes` / `labelSeconds` | `string` | Caption under each unit |
+| `separator` | `':' \| '-' \| ' '` | Character between units |
+| `digitFontSize` | `number` | Digit size in px |
+| `digitColor` | `string` | Digit colour |
+| `labelFontSize` | `number` | Caption size in px |
+| `labelColor` | `string` | Caption colour |
+| `backgroundColor` | `string` | Block background |
+| `fontFamily` | `string` (optional) | Font family override |
+| `expiredMessage` | `string` | Shown once the target has passed |
+| `expiredImageUrl` | `string` | Image shown instead of the timer once expired |
+| `hideOnExpiry` | `boolean` | Hide the block entirely after the target passes |
 
 ## Section
 
