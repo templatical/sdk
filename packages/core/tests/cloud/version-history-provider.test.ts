@@ -71,7 +71,7 @@ describe('createCloudVersionHistoryProvider', () => {
         record({ id: 'ver-1' }),
       ]);
 
-      const versions = await setup().list('tmpl-1');
+      const { versions } = await setup().list('tmpl-1');
 
       expect(versions).toEqual([
         {
@@ -96,7 +96,7 @@ describe('createCloudVersionHistoryProvider', () => {
         record({ id: 'b', created_at: '2026-09-09T00:00:00Z' }),
       ]);
 
-      const versions = await setup().list('tmpl-1');
+      const { versions } = await setup().list('tmpl-1');
       expect(versions.map((v) => v.id)).toEqual(['a', 'b']);
     });
   });

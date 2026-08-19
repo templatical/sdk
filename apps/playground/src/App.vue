@@ -411,8 +411,10 @@ function versionHistoryProviderFor(
   }
 
   const base: VersionHistoryProvider = {
-    list: async () =>
-      store.read().map((version, index) => {
+    // The demo store holds everything in localStorage, so one page is the
+    // whole history and there is no `nextCursor` to hand back.
+    list: async () => ({
+      versions: store.read().map((version, index) => {
         const entry: TemplateVersion = {
           id: version.id,
           createdAt: version.createdAt,
@@ -422,6 +424,7 @@ function versionHistoryProviderFor(
         if (index < HYDRATED_VERSIONS) entry.content = version.content;
         return entry;
       }),
+    }),
     get: async (_templateId, versionId) => requireVersion(versionId).content,
     create: async (_templateId, content) => {
       const version = store.append(content, false);
@@ -605,7 +608,7 @@ function commentsProviderFor(template?: TemplateOption): CommentsProvider {
   }
 
   const base: CommentsProvider = {
-    list: async () => read(),
+    list: async () => ({ comments: read() }),
 
     create: async (_templateId, input) => {
       const threads = read();

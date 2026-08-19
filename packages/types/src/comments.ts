@@ -64,15 +64,39 @@ export type CommentPatch = Partial<{
 }>;
 
 /**
- * Reserved. Nothing populates this yet — it exists so pagination and filtering
- * can land here without breaking every implementation, the same precedent
- * `SavedBlocksListParams` and `VersionHistoryListParams` set.
+ * Page request for {@link CommentsProvider.list}.
  *
  * The editor always calls `list` bare and filters in memory (unresolved / all /
  * this block), so the provider decides *what is visible* and the editor decides
- * how it is narrowed within that.
+ * how it is narrowed within that. Both fields exist for headless callers and
+ * for providers that page their own storage.
  */
-export interface CommentsListParams {}
+export interface CommentsListParams {
+  /** Maximum threads to return. A provider may return fewer, never more. */
+  limit?: number;
+  /**
+   * Opaque cursor taken from a previous result's
+   * {@link CommentsListResult.nextCursor}.
+   */
+  cursor?: string;
+}
+
+/**
+ * What {@link CommentsProvider.list} resolves to.
+ *
+ * An envelope rather than a bare array **so that adding pagination never breaks
+ * an implementation** — the same reasoning as
+ * {@link VersionHistoryListResult}.
+ */
+export interface CommentsListResult {
+  /** Thread roots, each carrying its own `replies`. Rendered in this order. */
+  comments: Comment[];
+  /**
+   * Cursor for the next page, or absent when this is the last one. Opaque to
+   * the editor: pass it back as {@link CommentsListParams.cursor}.
+   */
+  nextCursor?: string;
+}
 
 /**
  * One remote change, as reported by {@link CommentsProvider.subscribe}.
@@ -160,7 +184,10 @@ export interface CommentsProvider {
    *
    * The one method that cannot be disabled: without it there is nothing to show.
    */
-  list(templateId: string, params?: CommentsListParams): Promise<Comment[]>;
+  list(
+    templateId: string,
+    params?: CommentsListParams,
+  ): Promise<CommentsListResult>;
   /**
    * Store a new comment or reply and return it with its store-assigned `id`, or
    * `false` to make the review read-only.

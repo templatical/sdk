@@ -94,3 +94,5 @@ Two dead translation keys (`comments.addComment`, `comments.resolved`) were drop
 ### Shared rather than cloud-only
 
 `CommentsSidebar` moved out of `cloud/components/`, the Comments trigger moved from `CloudHeaderExtras` into the shared header, and both are lazily loaded behind the capability — so an OSS consumer without a provider pays nothing for them. `capabilities.comments` is now built by the shared feature and gained `isAvailable`, `unresolvedCount` and the four `can*` flags.
+
+`CommentsProvider.list` resolves to `{ comments, nextCursor? }` rather than a bare `Comment[]`, and `CommentsListParams` carries `{ limit?, cursor? }` — same reasoning as version history. `useComments` and `useVersionHistory` both expose `nextCursor` for headless callers that page.

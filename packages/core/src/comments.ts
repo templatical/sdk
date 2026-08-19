@@ -46,6 +46,12 @@ export interface UseCommentsReturn {
   /** Thread roots in the provider's order. Never re-sorted. */
   comments: Ref<Comment[]>;
   isLoading: Ref<boolean>;
+  /**
+   * Cursor for the page after the one currently held, or `undefined` when the
+   * provider signalled there is no more. The editor loads one page and ignores
+   * this; it is here so a headless caller can page.
+   */
+  nextCursor: Ref<string | undefined>;
   isSubmitting: Ref<boolean>;
   /** Whether the provider supplied each mutation at all. */
   canCreate: ComputedRef<boolean>;
@@ -99,6 +105,7 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
 
   const comments = ref<Comment[]>([]);
   const isLoading = ref(false);
+  const nextCursor = ref<string | undefined>(undefined);
   const isSubmitting = ref(false);
 
   const canCreate = computed(() => typeof provider.create === "function");
@@ -250,7 +257,9 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
     const templateId = requireTemplateId("list");
     isLoading.value = true;
     try {
-      comments.value = await provider.list(templateId, params);
+      const page = await provider.list(templateId, params);
+      comments.value = page.comments;
+      nextCursor.value = page.nextCursor;
     } catch (error) {
       report(error);
     } finally {
@@ -371,6 +380,7 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
   }
 
   return {
+    nextCursor,
     comments,
     isLoading,
     isSubmitting,

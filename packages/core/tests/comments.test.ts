@@ -45,7 +45,7 @@ function setup(
   } = {},
 ) {
   const provider: CommentsProvider = {
-    list: vi.fn(async () => [] as Comment[]),
+    list: vi.fn(async () => ({ comments: [] as Comment[] })),
     create: vi.fn(async () => comment("c-new")),
     update: vi.fn(async (_t: string, id: string) =>
       comment(id, { body: "edited", updatedAt: "2026-08-17T11:00:00Z" }),
@@ -69,9 +69,26 @@ function setup(
 
 describe("useComments", () => {
   describe("list", () => {
+    it("surfaces the provider's nextCursor, and forwards params back", async () => {
+      const list = vi.fn(async () => ({
+        comments: [comment("c-1")],
+        nextCursor: "page-2",
+      }));
+      const { comments, provider } = setup({ list });
+
+      await comments.load({ limit: 1 });
+
+      expect(comments.nextCursor.value).toBe("page-2");
+      expect(provider.list).toHaveBeenCalledWith("tpl-1", { limit: 1 });
+
+      list.mockResolvedValueOnce({ comments: [comment("c-2")] } as never);
+      await comments.load({ cursor: "page-2" });
+      expect(comments.nextCursor.value).toBeUndefined();
+    });
+
     it("stores what the provider returned, in the provider's order", async () => {
       const threads = [comment("c-2"), comment("c-1")];
-      const { comments, provider } = setup({ list: vi.fn(async () => threads) });
+      const { comments, provider } = setup({ list: vi.fn(async () => ({ comments: threads })) });
 
       await comments.load();
 
@@ -111,7 +128,7 @@ describe("useComments", () => {
         comment("a", { replies: [comment("a1"), comment("a2")] }),
         comment("b", { resolvedAt: "2026-08-17T09:00:00Z" }),
       ];
-      const { comments } = setup({ list: vi.fn(async () => threads) });
+      const { comments } = setup({ list: vi.fn(async () => ({ comments: threads })) });
       await comments.load();
 
       expect(comments.totalCount.value).toBe(4);
@@ -124,7 +141,7 @@ describe("useComments", () => {
         comment("b", { blockId: "blk-1" }),
         comment("c", { blockId: null }),
       ];
-      const { comments } = setup({ list: vi.fn(async () => threads) });
+      const { comments } = setup({ list: vi.fn(async () => ({ comments: threads })) });
       await comments.load();
 
       expect(comments.commentCountByBlock.value.get("blk-1")).toBe(3);
@@ -155,7 +172,7 @@ describe("useComments", () => {
     it("nests a reply under its parent rather than appending a root", async () => {
       const reply = comment("r-1", { parentId: "c-1" });
       const { comments } = setup({
-        list: vi.fn(async () => [comment("c-1")]),
+        list: vi.fn(async () => ({ comments: [comment("c-1")] })),
         create: vi.fn(async () => reply),
       });
       await comments.load();
@@ -185,7 +202,7 @@ describe("useComments", () => {
   describe("update", () => {
     it("replaces the comment in place and keeps its replies", async () => {
       const { comments } = setup({
-        list: vi.fn(async () => [comment("c-1", { replies: [comment("r-1")] })]),
+        list: vi.fn(async () => ({ comments: [comment("c-1", { replies: [comment("r-1")] })] })),
       });
       await comments.load();
 
@@ -201,9 +218,9 @@ describe("useComments", () => {
 
     it("replaces a reply without touching its siblings", async () => {
       const { comments } = setup({
-        list: vi.fn(async () => [
+        list: vi.fn(async () => ({ comments: [
           comment("c-1", { replies: [comment("r-1"), comment("r-2")] }),
-        ]),
+        ] })),
         update: vi.fn(async () =>
           comment("r-2", { parentId: "c-1", body: "edited" }),
         ),
@@ -221,7 +238,7 @@ describe("useComments", () => {
     it("removes a root and fires a deleted event carrying what was removed", async () => {
       const onComment = vi.fn();
       const { comments, provider } = setup(
-        { list: vi.fn(async () => [comment("c-1"), comment("c-2")]) },
+        { list: vi.fn(async () => ({ comments: [comment("c-1"), comment("c-2")] })) },
         { onComment },
       );
       await comments.load();
@@ -239,14 +256,14 @@ describe("useComments", () => {
 
     it("removes a reply from its parent, leaving the thread standing", async () => {
       const { comments } = setup({
-        list: vi.fn(async () => [
+        list: vi.fn(async () => ({ comments: [
           comment("c-1", {
             replies: [
               comment("r-1", { parentId: "c-1" }),
               comment("r-2", { parentId: "c-1" }),
             ],
           }),
-        ]),
+        ] })),
       });
       await comments.load();
 
@@ -262,7 +279,7 @@ describe("useComments", () => {
   describe("setResolved", () => {
     it("sends the target state, not a toggle", async () => {
       const { comments, provider } = setup({
-        list: vi.fn(async () => [comment("c-1")]),
+        list: vi.fn(async () => ({ comments: [comment("c-1")] })),
       });
       await comments.load();
 
@@ -341,7 +358,7 @@ describe("useComments", () => {
 
     it("still lists — the read-only review", async () => {
       const { comments } = setup({
-        list: vi.fn(async () => [comment("c-1")]),
+        list: vi.fn(async () => ({ comments: [comment("c-1")] })),
         create: false,
         update: false,
         delete: false,
@@ -374,7 +391,7 @@ describe("useComments", () => {
 
     it("still reads, so existing threads stay visible", async () => {
       const { comments } = setup(
-        { list: vi.fn(async () => [comment("c-1")]) },
+        { list: vi.fn(async () => ({ comments: [comment("c-1")] })) },
         { user: null },
       );
       await comments.load();
@@ -391,7 +408,7 @@ describe("useComments", () => {
       // setup would pin the answer forever — the `allowedRecipients` lesson.
       const user = ref<CommentAuthor | null>(null);
       const provider: CommentsProvider = {
-        list: vi.fn(async () => []),
+        list: vi.fn(async () => ({ comments: [] })),
         create: vi.fn(async () => comment("c-1")),
         update: false,
         delete: false,
@@ -425,7 +442,7 @@ describe("useComments", () => {
   describe("find", () => {
     it("locates roots and replies, and answers null for neither", async () => {
       const { comments } = setup({
-        list: vi.fn(async () => [comment("c-1", { replies: [comment("r-1")] })]),
+        list: vi.fn(async () => ({ comments: [comment("c-1", { replies: [comment("r-1")] })] })),
       });
       await comments.load();
 
@@ -451,7 +468,7 @@ describe("useComments", () => {
 
     it("is echo-safe: a create for a comment already present replaces it", async () => {
       const { comments } = setup({
-        list: vi.fn(async () => [comment("c-1", { body: "first" })]),
+        list: vi.fn(async () => ({ comments: [comment("c-1", { body: "first" })] })),
       });
       await comments.load();
 
@@ -464,7 +481,7 @@ describe("useComments", () => {
     it("replaces on update and reports resolved off resolvedAt", async () => {
       const onComment = vi.fn();
       const { comments } = setup(
-        { list: vi.fn(async () => [comment("c-1")]) },
+        { list: vi.fn(async () => ({ comments: [comment("c-1")] })) },
         { onComment },
       );
       await comments.load();
@@ -483,7 +500,7 @@ describe("useComments", () => {
     it("reports a plain body change as updated", async () => {
       const onComment = vi.fn();
       const { comments } = setup(
-        { list: vi.fn(async () => [comment("c-1")]) },
+        { list: vi.fn(async () => ({ comments: [comment("c-1")] })) },
         { onComment },
       );
       await comments.load();
@@ -496,9 +513,9 @@ describe("useComments", () => {
 
     it("removes a remote delete using the parent the transport supplied", async () => {
       const { comments } = setup({
-        list: vi.fn(async () => [
+        list: vi.fn(async () => ({ comments: [
           comment("c-1", { replies: [comment("r-1", { parentId: "c-1" })] }),
-        ]),
+        ] })),
       });
       await comments.load();
 
@@ -525,7 +542,7 @@ describe("useCommentListener", () => {
     templateId = ref<string | null>("tpl-1"),
   ) {
     const provider: CommentsProvider = {
-      list: vi.fn(async () => []),
+      list: vi.fn(async () => ({ comments: [] })),
       create: false,
       update: false,
       delete: false,

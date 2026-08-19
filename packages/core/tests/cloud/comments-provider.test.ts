@@ -121,7 +121,8 @@ describe("createCloudCommentsProvider", () => {
       ]);
       const { provider } = setup();
 
-      const [comment] = await provider.list("tmpl-1");
+      const { comments } = await provider.list("tmpl-1");
+      const [comment] = comments;
 
       expect(comment.author).toEqual({ id: "u-9", name: "Grace" });
       expect(comment.createdAt).toBe("2026-08-17T10:00:00Z");
@@ -141,7 +142,8 @@ describe("createCloudCommentsProvider", () => {
       ]);
       const { provider } = setup();
 
-      const [comment] = await provider.list("tmpl-1");
+      const { comments } = await provider.list("tmpl-1");
+      const [comment] = comments;
 
       expect("updatedAt" in comment).toBe(false);
     });
@@ -152,7 +154,8 @@ describe("createCloudCommentsProvider", () => {
       ]);
       const { provider } = setup();
 
-      const [comment] = await provider.list("tmpl-1");
+      const { comments } = await provider.list("tmpl-1");
+      const [comment] = comments;
 
       expect(comment.updatedAt).toBe("2026-08-17T11:00:00Z");
     });
@@ -168,7 +171,8 @@ describe("createCloudCommentsProvider", () => {
       ]);
       const { provider } = setup();
 
-      const [resolved, open] = await provider.list("tmpl-1");
+      const { comments } = await provider.list("tmpl-1");
+      const [resolved, open] = comments;
 
       expect(resolved.resolvedBy).toEqual({ id: "u-2", name: "Grace" });
       expect("resolvedBy" in open).toBe(false);
@@ -183,7 +187,8 @@ describe("createCloudCommentsProvider", () => {
       ]);
       const { provider } = setup();
 
-      const [thread, bare] = await provider.list("tmpl-1");
+      const { comments } = await provider.list("tmpl-1");
+      const [thread, bare] = comments;
 
       expect(thread.replies).toHaveLength(1);
       expect(thread.replies![0]).toMatchObject({

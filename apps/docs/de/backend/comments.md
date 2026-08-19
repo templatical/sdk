@@ -17,7 +17,7 @@ const editor = await init({
   comments: {
     list: async (templateId) => {
       const res = await fetch(`/api/templates/${templateId}/comments`);
-      return res.json();
+      return { comments: await res.json() };
     },
 
     create: async (templateId, input) => {
@@ -100,7 +100,7 @@ interface Comment {
 }
 
 interface CommentsProvider {
-  list(templateId: string, params?: CommentsListParams): Promise<Comment[]>;
+  list(templateId: string, params?: CommentsListParams): Promise<CommentsListResult>;
   create:      false | ((templateId: string, input: CommentInput) => Promise<Comment>);
   update:      false | ((templateId: string, commentId: string, patch: CommentPatch) => Promise<Comment>);
   delete:      false | ((templateId: string, commentId: string) => Promise<void>);
@@ -176,7 +176,13 @@ Ihre eigenen Schreibvorgänge dürfen hier zurückkommen und brauchen **auf Ihre
 
 Das Panel filtert **im Speicher** über das, was `list()` zurückgegeben hat — ungelöst (die Voreinstellung), alle oder dieser Block. Ihr Provider entscheidet, was sichtbar ist; der Editor entscheidet, wie darin eingegrenzt wird.
 
-`CommentsListParams` ist reserviert und derzeit leer. Der Editor ruft `list` immer ohne Parameter auf; der Parameter existiert, damit seitenweises Laden dort landen kann, ohne jede Implementierung zu brechen.
+`list` nimmt `{ limit?, cursor? }` entgegen und liefert einen Umschlag:
+
+```ts
+{ comments: Comment[]; nextCursor?: string }
+```
+
+Der Editor lädt eine Seite und ruft `list` ohne Parameter auf. Ein Speicher, der alle Threads auf einmal zurückgibt, lässt `nextCursor` weg. Der Umschlag existiert, damit späteres seitenweises Laden keine brechende Änderung ist — dieselbe Begründung wie beim [Versionsverlauf](/de/backend/version-history#seitenweises-laden).
 
 ## Im Editor
 
@@ -220,6 +226,7 @@ const comments = useComments({
 
 await comments.load();
 comments.comments.value;                    // Comment[] — Thread-Wurzeln mit Antworten
+comments.nextCursor.value;                  // string | undefined — als { cursor } zurückgeben
 comments.unresolvedCount.value;             // number
 comments.commentCountByBlock.value;         // Map<string, number>
 await comments.create({ body: 'Sieht gut aus' });

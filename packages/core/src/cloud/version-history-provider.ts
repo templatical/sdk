@@ -4,6 +4,7 @@ import type {
   TemplateVersion,
   TemplateVersionResponse,
   VersionHistoryProvider,
+  VersionHistoryListResult,
 } from "@templatical/types";
 import { ApiClient } from "./api";
 import type { AuthManager } from "./auth";
@@ -47,9 +48,11 @@ export function createCloudVersionHistoryProvider(
   const api = new ApiClient(authManager);
 
   return {
-    async list(templateId: string): Promise<TemplateVersion[]> {
+    async list(templateId: string): Promise<VersionHistoryListResult> {
       const records = await api.getVersions(templateId);
-      return records.map(toVersion);
+      // No `nextCursor`: Cloud returns the template's whole history in one
+      // response — with each entry's content — so there is never a further page.
+      return { versions: records.map(toVersion) };
     },
     async get(templateId: string, versionId: string): Promise<TemplateContent> {
       const record = await api.getVersion(templateId, versionId);

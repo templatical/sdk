@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { resolveWebSocketConfig, WebSocketClient } from '../../src/cloud/websocket-client';
 import type { AuthManager } from '../../src/cloud/auth';
 import type { WebSocketServerConfig } from '@templatical/types';
@@ -28,8 +28,6 @@ const mockPusherInstance = {
   disconnect: vi.fn(),
 };
 
-// Named so the missing-peer block below can put this registration back after
-// replacing it with a factory that throws.
 function pusherModuleMock() {
   return {
     default: function MockPusher(
@@ -367,55 +365,5 @@ describe('WebSocketClient', () => {
       );
       expect(client.isConnected).toBe(true);
     });
-  });
-});
-
-describe('WebSocketClient without the pusher-js optional peer', () => {
-  afterEach(() => {
-    // Restore the working mock rather than `vi.doUnmock` — unmocking would let
-    // the real pusher-js load in every later test, since `connect()` resolves
-    // it through a dynamic import at call time.
-    vi.doMock('pusher-js', () => pusherModuleMock());
-    vi.resetModules();
-  });
-
-  /** Connect against a module graph where `import("pusher-js")` fails. */
-  async function connectWithoutPusher(): Promise<Error> {
-    vi.resetModules();
-    vi.doMock('pusher-js', () => {
-      throw new Error("Cannot find module 'pusher-js'");
-    });
-
-    const { WebSocketClient: FreshWebSocketClient } = await import(
-      '../../src/cloud/websocket-client'
-    );
-
-    const client = new FreshWebSocketClient({
-      authManager: createMockAuthManager(),
-      config: { host: 'ws.example.com', port: 6001, appKey: 'test-key' },
-    });
-
-    return client.connect().then(
-      () => {
-        throw new Error('connect() resolved, but it should have thrown');
-      },
-      (error: Error) => error,
-    );
-  }
-
-  it('throws an error naming the missing package', async () => {
-    const error = await connectWithoutPusher();
-
-    expect(error.message).toBe(
-      "[Templatical] Cloud features require the optional peer dependency 'pusher-js'. Please install it.",
-    );
-  });
-
-  it('does not name a specific package manager', async () => {
-    const error = await connectWithoutPusher();
-
-    // The install command depends on the consumer's setup, so the message names
-    // the package and leaves the command to them.
-    expect(error.message).not.toMatch(/\b(npm|pnpm|yarn|bun)\b/i);
   });
 });

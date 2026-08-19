@@ -36,7 +36,7 @@ function setup(
   options: { templateId?: string | null; onError?: (e: Error) => void } = {},
 ) {
   const provider: VersionHistoryProvider = {
-    list: vi.fn(async () => [] as TemplateVersion[]),
+    list: vi.fn(async () => ({ versions: [] as TemplateVersion[] })),
     get: vi.fn(async () => content("fetched")),
     create: vi.fn(async (_t: string, c: TemplateContent) => ({
       id: "ver-new",
@@ -57,9 +57,34 @@ function setup(
 
 describe("useVersionHistory", () => {
   describe("list", () => {
+    /**
+     * `list` resolves to an envelope rather than a bare array so that pagination
+     * can be added without a breaking change — a cursor has somewhere to live
+     * from day one. These pin that the cursor actually reaches a caller and that
+     * its absence is reported as absent, not as a stale value.
+     */
+    it("surfaces the provider's nextCursor, and forwards params back", async () => {
+      const list = vi.fn(async () => ({
+        versions: [version("ver-1")],
+        nextCursor: "page-2",
+      }));
+      const { history, provider } = setup({ list });
+
+      await history.load({ limit: 1 });
+
+      expect(history.nextCursor.value).toBe("page-2");
+      expect(provider.list).toHaveBeenCalledWith("tpl-1", { limit: 1 });
+
+      // A provider that stops paginating clears it rather than leaving it stale.
+      list.mockResolvedValueOnce({ versions: [version("ver-2")] } as never);
+      await history.load({ cursor: "page-2" });
+      expect(history.nextCursor.value).toBeUndefined();
+      expect(history.versions.value.map((v) => v.id)).toEqual(["ver-2"]);
+    });
+
     it("stores what the provider returned, in the provider's order", async () => {
       const entries = [version("ver-3"), version("ver-2"), version("ver-1")];
-      const { history, provider } = setup({ list: vi.fn(async () => entries) });
+      const { history, provider } = setup({ list: vi.fn(async () => ({ versions: entries })) });
 
       await history.load();
 
@@ -103,7 +128,7 @@ describe("useVersionHistory", () => {
   describe("the content hint and the get fallback", () => {
     it("peeks a hydrated entry synchronously and never calls get", async () => {
       const hinted = version("ver-1", { content: content("hinted") });
-      const { history, provider } = setup({ list: vi.fn(async () => [hinted]) });
+      const { history, provider } = setup({ list: vi.fn(async () => ({ versions: [hinted] })) });
       await history.load();
 
       expect(history.peekContent(hinted)).toEqual(content("hinted"));
@@ -117,7 +142,7 @@ describe("useVersionHistory", () => {
       const hinted = version("ver-2", { content: content("hinted") });
       const bare = version("ver-1");
       const { history, provider } = setup({
-        list: vi.fn(async () => [hinted, bare]),
+        list: vi.fn(async () => ({ versions: [hinted, bare] })),
       });
       await history.load();
 
@@ -133,7 +158,7 @@ describe("useVersionHistory", () => {
 
     it("caches a fetched version, so the second visit is synchronous too", async () => {
       const bare = version("ver-1");
-      const { history, provider } = setup({ list: vi.fn(async () => [bare]) });
+      const { history, provider } = setup({ list: vi.fn(async () => ({ versions: [bare] })) });
       await history.load();
 
       await history.resolveContent(bare);
@@ -164,7 +189,7 @@ describe("useVersionHistory", () => {
   describe("create", () => {
     it("prepends the created version", async () => {
       const { history, provider } = setup({
-        list: vi.fn(async () => [version("ver-1")]),
+        list: vi.fn(async () => ({ versions: [version("ver-1")] })),
       });
       await history.load();
 

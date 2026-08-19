@@ -59,6 +59,7 @@ export type { RenderPayload, RenderProvider } from "./render";
 export type {
   TemplateVersion,
   VersionHistoryListParams,
+  VersionHistoryListResult,
   VersionHistoryProvider,
 } from "./version-history";
 
@@ -72,6 +73,7 @@ export type {
   CommentInput,
   CommentPatch,
   CommentsListParams,
+  CommentsListResult,
   CommentsProvider,
 } from "./comments";
 

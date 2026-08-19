@@ -39,13 +39,43 @@ export interface TemplateVersion {
 }
 
 /**
- * Reserved. Nothing populates this yet — it exists so pagination can land here
- * without breaking every implementation, the same precedent
- * `SavedBlocksListParams` set.
+ * Page request for {@link VersionHistoryProvider.list}.
  *
- * The editor always calls `list` bare; only headless callers populate it.
+ * The editor always calls `list` bare — it loads one page and renders it. Both
+ * fields exist for headless callers and for providers that page their own
+ * storage; a provider free to return everything at once may ignore them.
  */
-export interface VersionHistoryListParams {}
+export interface VersionHistoryListParams {
+  /** Maximum entries to return. A provider may return fewer, never more. */
+  limit?: number;
+  /**
+   * Opaque cursor taken from a previous result's
+   * {@link VersionHistoryListResult.nextCursor}.
+   */
+  cursor?: string;
+}
+
+/**
+ * What {@link VersionHistoryProvider.list} resolves to.
+ *
+ * An envelope rather than a bare array **so that adding pagination never breaks
+ * an implementation**: a cursor has somewhere to live from day one. Reserving
+ * only the params object would have solved the request side and left the
+ * response side needing a breaking change.
+ */
+export interface VersionHistoryListResult {
+  /**
+   * The versions to offer, newest first. The editor renders this order verbatim
+   * and never re-sorts — ordering is your store's call.
+   */
+  versions: TemplateVersion[];
+  /**
+   * Cursor for the next page, or absent when this is the last one. Opaque to
+   * the editor: pass it back as {@link VersionHistoryListParams.cursor}.
+   * A provider that returns its whole history at once omits it.
+   */
+  nextCursor?: string;
+}
 
 /**
  * Storage contract for a template's version history.
@@ -77,14 +107,11 @@ export interface VersionHistoryListParams {}
  * ```
  */
 export interface VersionHistoryProvider {
-  /**
-   * The versions to offer, newest first. The editor renders this order verbatim
-   * and never re-sorts — ordering is your store's call.
-   */
+  /** One page of versions. See {@link VersionHistoryListResult}. */
   list(
     templateId: string,
     params?: VersionHistoryListParams,
-  ): Promise<TemplateVersion[]>;
+  ): Promise<VersionHistoryListResult>;
   /**
    * Fetch one version's content. **The operation, and always required** — the
    * editor must always be able to obtain a version's content.

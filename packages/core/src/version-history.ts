@@ -29,6 +29,13 @@ export interface UseVersionHistoryReturn {
   versions: Ref<TemplateVersion[]>;
   isLoading: Ref<boolean>;
   isRestoring: Ref<boolean>;
+  /**
+   * Cursor for the page after the one currently held, or `undefined` when the
+   * provider signalled there is no more. The editor loads one page and ignores
+   * this; it is here so a headless caller can page without reaching past the
+   * composable.
+   */
+  nextCursor: Ref<string | undefined>;
   /** Whether the provider supplied each mutation at all. */
   canCreate: ComputedRef<boolean>;
   canRestore: ComputedRef<boolean>;
@@ -77,6 +84,7 @@ export function useVersionHistory(
 
   const versions = ref<TemplateVersion[]>([]);
   const isLoading = ref(false);
+  const nextCursor = ref<string | undefined>(undefined);
   const isRestoring = ref(false);
 
   /**
@@ -114,7 +122,9 @@ export function useVersionHistory(
     const templateId = requireTemplateId("list");
     isLoading.value = true;
     try {
-      versions.value = await provider.list(templateId, params);
+      const page = await provider.list(templateId, params);
+      versions.value = page.versions;
+      nextCursor.value = page.nextCursor;
     } catch (error) {
       options.onError?.(error as Error);
       throw error;
@@ -177,6 +187,7 @@ export function useVersionHistory(
   }
 
   return {
+    nextCursor,
     versions,
     isLoading,
     isRestoring,

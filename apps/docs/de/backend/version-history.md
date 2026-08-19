@@ -16,7 +16,7 @@ const editor = await init({
   versionHistory: {
     list: async (templateId) => {
       const res = await fetch(`/api/templates/${templateId}/versions`);
-      return res.json();
+      return { versions: await res.json() };
     },
 
     get: async (templateId, versionId) => {
@@ -57,7 +57,7 @@ interface TemplateVersion {
 }
 
 interface VersionHistoryProvider {
-  list(templateId: string, params?: VersionHistoryListParams): Promise<TemplateVersion[]>;
+  list(templateId: string, params?: VersionHistoryListParams): Promise<VersionHistoryListResult>;
   get(templateId: string, versionId: string): Promise<TemplateContent>;
   create:  false | ((templateId: string, content: TemplateContent, meta?: { label?: string }) => Promise<TemplateVersion>);
   restore: false | ((templateId: string, versionId: string) => Promise<Template>);
@@ -143,8 +143,6 @@ Es ist ein **Cache-Hinweis, nie ein Ersatz für `get`**, und wird pro Eintrag au
 
 `get` bleibt erforderlich: Der Editor muss den Inhalt einer Version immer beschaffen können, ob der Hinweis da ist oder nicht.
 
-Der Adapter von Templatical Cloud liefert `content` bei jedem Eintrag mit, eine Cloud-Sitzung wartet also nie.
-
 ## Im Editor
 
 - **Das Verlaufs-Steuerelement** sitzt im Header neben den Umschaltern für Ansichtsgröße und Vorschau: Pfeile, um älter und neuer zu blättern, und ein Aufklappmenü mit allen Versionen samt relativem Zeitstempel, ihrer Bezeichnung, falls vorhanden, und einem *auto*-Abzeichen für die beim Speichern aufgezeichneten.
@@ -154,7 +152,15 @@ Der Adapter von Templatical Cloud liefert `content` bei jedem Eintrag mit, eine 
 
 ## Seitenweises Laden
 
-`VersionHistoryListParams` ist reserviert und derzeit leer. Der Editor ruft `list` immer ohne Parameter auf; es existiert, damit seitenweises Laden dort landen kann, ohne jede Implementierung zu brechen — derselbe Präzedenzfall, den [gespeicherte Blöcke](/de/backend/saved-blocks) mit `SavedBlocksListParams` geschaffen haben.
+`list` nimmt `{ limit?, cursor? }` entgegen und liefert einen Umschlag:
+
+```ts
+{ versions: TemplateVersion[]; nextCursor?: string }
+```
+
+Der Editor lädt eine Seite und ruft `list` ohne Parameter auf — er sendet weder `limit` noch `cursor` und ignoriert `nextCursor`. Ein Speicher, der den ganzen Verlauf auf einmal zurückgibt, lässt `nextCursor` weg und ist fertig.
+
+Der Umschlag existiert, damit späteres seitenweises Laden keine brechende Änderung ist: Ein Cursor hat von Anfang an einen Platz. Nur das Parameter-Objekt zu reservieren hätte die Anfrage abgedeckt und die Antwort mit einer neuen Form zurückgelassen. `useVersionHistory` stellt `nextCursor` für Headless-Aufrufer bereit, die tatsächlich blättern — siehe [Headless-Nutzung](#headless-nutzung).
 
 ## Headless-Nutzung
 
@@ -170,7 +176,8 @@ const history = useVersionHistory({
 });
 
 await history.load();
-history.versions.value;                      // TemplateVersion[]
+history.versions.value;                      // TemplateVersion[] — diese Seite
+history.nextCursor.value;                    // string | undefined — als { cursor } zurückgeben
 history.peekContent(v);                      // TemplateContent | null — kein Roundtrip
 await history.resolveContent(v);             // der Hinweis oder get(), zwischengespeichert
 await history.restore(v.id);
