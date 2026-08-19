@@ -30,13 +30,20 @@ export const LogicMergeTagNode = Node.create<LogicMergeTagNodeOptions>({
 
   addAttributes() {
     return {
+      // Both attributes are state, not markup, same as `MergeTagNode`:
+      // `renderHTML()` emits the canonical `data-logic-merge-tag` /
+      // `data-keyword` pair and `parseHTML` reads only those. `rendered: false`
+      // keeps TipTap from also serializing each attribute under its own name,
+      // which would put a write-only duplicate of the same data on every tag.
       value: {
         default: "",
+        rendered: false,
         parseHTML: (element) =>
           element.getAttribute("data-logic-merge-tag") || "",
       },
       keyword: {
         default: "",
+        rendered: false,
         parseHTML: (element) =>
           element.getAttribute("data-keyword") || element.textContent || "",
       },

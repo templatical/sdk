@@ -2,27 +2,6 @@ import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS, blockByType } from "../helpers/selectors";
 
 test.describe("Text content editing", () => {
-  // Playwright limitation, not a real bug.
-  //
-  // Manual testing in Chromium (2026-05-12) confirms typing into a
-  // shadow-mounted TipTap contenteditable works correctly — ProseMirror
-  // auto-detects the shadow root via `view.root` and uses Chromium's
-  // native `ShadowRoot.getSelection()`. The original "TipTap selection
-  // can't pierce shadow boundary" diagnosis was wrong.
-  //
-  // The actual gap: `page.keyboard.type()` and `pressSequentially()`
-  // don't reliably deliver synthetic keystrokes to contenteditables
-  // inside a shadow root. The keys go to `document.activeElement`
-  // (the shadow host), not the real focused element inside the shadow.
-  // Tests in this file rely on those keyboard helpers, so they're
-  // skipped in shadow mode. The behaviors themselves work for real
-  // users.
-  test.skip(
-    ({ shadowDom }) => shadowDom,
-    "Playwright keyboard.type doesn't reach shadow-mounted contenteditable; behavior verified manually",
-  );
-
-
   test("typing in paragraph updates content", async ({
     editorReady: { editorPage },
     page,

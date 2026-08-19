@@ -68,6 +68,7 @@ const {
         FontSize,
         LineHeight,
         LetterSpacing,
+        LineBoundaryKeys,
       },
     ] = await Promise.all([
       import("@tiptap/vue-3"),
@@ -122,6 +123,7 @@ const {
         LetterSpacing,
         MergeTagNode.configure({ mergeTags, syntax }),
         LogicMergeTagNode.configure({ syntax }),
+        LineBoundaryKeys,
         ...(autocompleteEnabled && triggerChar && mergeTags.length > 0
           ? [
               MergeTagSuggestion.configure({
