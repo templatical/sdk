@@ -30,6 +30,10 @@ const editor = await initCloud({
   auth: { url: '/api/templatical/token' },
   mcp: {
     enabled: true,
+    // Optional: observe each operation the agent applies.
+    onOperation: (payload) => {
+      console.log(payload.operation, payload.data, payload.timestamp);
+    },
   },
 });
 ```

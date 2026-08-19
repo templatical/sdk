@@ -155,7 +155,7 @@ Es ist ein **Cache-Hinweis, nie ein Ersatz für `get`**, und wird pro Eintrag au
 `list` nimmt `{ limit?, cursor? }` entgegen und liefert einen Umschlag:
 
 ```ts
-{ versions: TemplateVersion[]; nextCursor?: string }
+type VersionHistoryListResult = { versions: TemplateVersion[]; nextCursor?: string };
 ```
 
 Der Editor lädt eine Seite und ruft `list` ohne Parameter auf — er sendet weder `limit` noch `cursor` und ignoriert `nextCursor`. Ein Speicher, der den ganzen Verlauf auf einmal zurückgibt, lässt `nextCursor` weg und ist fertig.

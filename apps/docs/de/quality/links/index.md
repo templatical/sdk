@@ -39,7 +39,7 @@ Die zwei Ebenen ergänzen sich:
 ```ts
 import { lintLinks } from "@templatical/quality";
 
-const issues = lintLinks(content, options?);
+const issues = lintLinks(content); // options ist ein optionales zweites Argument
 // issues: LintIssue[] — jeder Eintrag hat eine ruleId, die mit "link." beginnt
 ```
 

@@ -21,7 +21,7 @@ Probleme beim Schreiben fangen, nicht erst nachdem Empfänger kaputten Alt-Text,
 ```ts
 import { lintAccessibility } from "@templatical/quality";
 
-const issues = lintAccessibility(content, options?);
+const issues = lintAccessibility(content); // options ist ein optionales zweites Argument
 // issues: LintIssue[] — jeder Eintrag hat eine ruleId, die mit "a11y." beginnt
 ```
 

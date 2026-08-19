@@ -21,7 +21,7 @@ Diese Regeln sind deterministisch und sprachunabhängig — sie feuern auf JSON-
 ```ts
 import { lintStructure } from "@templatical/quality";
 
-const issues = lintStructure(content, options?);
+const issues = lintStructure(content); // options ist ein optionales zweites Argument
 // issues: LintIssue[] — jeder Eintrag hat eine ruleId, die mit "structure." beginnt
 ```
 

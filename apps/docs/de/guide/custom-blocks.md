@@ -289,7 +289,7 @@ Mit `defaultStyles` lassen sich die voreingestellten Werte für `padding` und `b
 {
   type: 'pricing-table',
   name: 'Pricing Table',
-  fields: [...],
+  fields: [/* … */],
   template: '<table>…</table>',
   defaultStyles: {
     padding: { top: 0, right: 0, bottom: 0, left: 0 },

@@ -179,7 +179,7 @@ Das Panel filtert **im Speicher** über das, was `list()` zurückgegeben hat —
 `list` nimmt `{ limit?, cursor? }` entgegen und liefert einen Umschlag:
 
 ```ts
-{ comments: Comment[]; nextCursor?: string }
+type CommentsListResult = { comments: Comment[]; nextCursor?: string };
 ```
 
 Der Editor lädt eine Seite und ruft `list` ohne Parameter auf. Ein Speicher, der alle Threads auf einmal zurückgibt, lässt `nextCursor` weg. Der Umschlag existiert, damit späteres seitenweises Laden keine brechende Änderung ist — dieselbe Begründung wie beim [Versionsverlauf](/de/backend/version-history#seitenweises-laden).

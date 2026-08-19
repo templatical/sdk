@@ -65,6 +65,7 @@ Unlayer-Inhaltstypen werden auf Templatical-Entsprechungen abgebildet:
 | Image | `image` | Konvertiert |
 | Button | `button` | Konvertiert |
 | Divider | `divider` | Konvertiert |
+| Spacer | `spacer` | Konvertiert |
 | Html | `html` | Konvertiert |
 | Menu | `menu` | Angenähert (Stile können abweichen) |
 | Social | `social` | Konvertiert (16 Plattformen abgebildet) |

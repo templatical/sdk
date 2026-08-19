@@ -30,14 +30,20 @@ When collaboration is enabled:
 
 ## Callbacks
 
+Four optional callbacks live on the `collaboration` object itself:
+
 ```js
 const editor = await initCloud({
   container: '#editor',
   auth: { url: '/api/templatical/token' },
   collaboration: {
     enabled: true,
+    onCollaboratorJoined: (collaborator) => { /* someone opened the template */ },
+    onCollaboratorLeft: (collaborator) => { /* someone closed it */ },
+    onBlockLocked: ({ blockId, collaborator }) => { /* they selected a block */ },
+    onBlockUnlocked: ({ blockId, collaborator }) => { /* they released it */ },
   },
-  // React to collaboration events
+  // Transport and API failures arrive on the editor's own onError.
   onError: (error) => {
     console.error('Collaboration error:', error);
   },
