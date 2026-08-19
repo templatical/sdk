@@ -1,5 +1,7 @@
 # @templatical/types
 
+## 0.26.3
+
 ## 0.26.2
 
 ### Patch Changes
