@@ -42,6 +42,9 @@ npm install @templatical/editor @templatical/renderer
     });
 
     window.save = async function () {
+      // The JSON is the source of truth. The MJML is an optional cache —
+      // worth keeping only because this example renders in the browser.
+      // See "What to store" in How rendering works.
       const content = editor.getContent();
       const mjml = await editor.toMjml();
 
