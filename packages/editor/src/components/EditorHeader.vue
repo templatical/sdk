@@ -67,7 +67,12 @@ defineProps<{
     class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[1fr_auto_1fr] tpl:items-center tpl:px-4 tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-sm)] tpl:border-b tpl:border-[var(--tpl-border)]"
   >
     <!-- Left: the template's identity — the inline-editable name, and under it
-         when the store dates its writes. `min-w-[200px]` matches the right column
+         when the store dates its writes. Stacking the two needs 6px of bottom
+         padding: the name is a button, so it carries border + `py-1` + half its
+         leading above its text, while the timestamp carries nothing below its
+         own. Centring the boxes therefore puts all of that lead at the top and
+         reads as a misaligned pair. Only when both render — either alone is
+         already centred on its own box. `min-w-[200px]` matches the right column
          so the centre controls are actually centred. Nothing renders before a
          template exists; there is neither a name nor a write time yet. The stack
          is gated as a whole so an empty one cannot add a `gap-2.5` before the
@@ -82,6 +87,9 @@ defineProps<{
           (showTemplateName || templates.timestamp.value)
         "
         class="tpl:flex tpl:min-w-0 tpl:flex-col tpl:items-start"
+        :class="{
+          'tpl:pb-1.5': showTemplateName && templates.timestamp.value !== null,
+        }"
       >
         <TemplateNameField
           v-if="showTemplateName"

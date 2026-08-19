@@ -526,13 +526,22 @@ function templatesProviderFor(template?: TemplateOption): TemplatesProvider {
     create: async (input) => {
       // A store stamps its own writes, so the demo does too — that is what the
       // header's write time reads, and the editor never sends either field.
-      const at = new Date().toISOString();
+      //
+      // `createdAt` only. Stamping `updatedAt` here too would claim an update
+      // that never happened, and the header believes the store: it prefers
+      // `updatedAt` and labels it "Updated", so a brand-new template read
+      // "Updated just now" before anyone had edited anything. Leaving it unset
+      // is what lets the header fall back to "Created", which is the whole point
+      // of the timestamp carrying which field it came from. `save()` below is
+      // the first thing that can honestly set it.
+      //
+      // Worth copying in a real backend: a column default of
+      // `updated_at = created_at` produces the same lie.
       return write({
         id: slugFor(name),
         name: input.name,
         content: input.content,
-        createdAt: at,
-        updatedAt: at,
+        createdAt: new Date().toISOString(),
       });
     },
     save: async (templateId, patch) => {

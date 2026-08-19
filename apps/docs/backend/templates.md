@@ -127,6 +127,12 @@ A template carrying `updatedAt` renders a relative line under the name, with the
 
 `createdAt` is the fallback when `updatedAt` is absent, and the wording follows whichever was used — a template your store has never rewritten reads "Created", never "Updated". Neither field, or a value that does not parse, renders nothing at all. The line refreshes while the editor stays open.
 
+::: warning Do not stamp `updatedAt` in `create`
+Set `createdAt` alone when a template is first written. Stamping both makes a brand-new template read **"Updated just now"** before anyone has edited it — the editor prefers `updatedAt` and labels it accordingly, so it is reporting exactly what your store claimed.
+
+This is easy to hit by accident: a column default of `updated_at = created_at` on insert, or a single `now()` assigned to both, produces it. Let the first `save` be the first thing that sets `updatedAt`.
+:::
+
 ::: tip
 It renders whether or not `save` is available, which is what a read-only template has in place of a status indicator.
 :::

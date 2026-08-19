@@ -108,6 +108,27 @@ describe("EditorHeader templates surface", () => {
       expect(headerSource()).toContain('v-if="templates.timestamp.value"');
     });
 
+    it("offsets the stack for the name button's internal lead", () => {
+      // The name is a button — border + `py-1` + half its leading sit above its
+      // text, and the timestamp has nothing below its own. Centring the boxes
+      // therefore banks all of that lead at the top: measured 11px above the
+      // title against 6px below the timestamp. 6px of bottom padding brings it
+      // to 8/9.
+      expect(headerSource()).toContain("'tpl:pb-1.5':");
+    });
+
+    it("offsets only when both lines render", () => {
+      // Either line alone is already centred on its own box, so an
+      // unconditional offset would push a lone timestamp 3px off centre.
+      const header = headerSource();
+      const binding = header.slice(
+        header.indexOf("'tpl:pb-1.5':"),
+        header.indexOf("}\"\n      >"),
+      );
+      expect(binding).toContain("showTemplateName");
+      expect(binding).toContain("templates.timestamp.value !== null");
+    });
+
     it("passes the value and which field it came from", () => {
       // Without `kind` the label would have to guess, and would call a
       // never-updated template updated.

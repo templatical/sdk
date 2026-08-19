@@ -140,16 +140,12 @@ describe("useCommentsFeature", () => {
     });
   });
 
-  describe("loading is lazy", () => {
-    it("fetches nothing at construction", () => {
-      const { provider } = setup();
-      expect(provider.list).not.toHaveBeenCalled();
-    });
-
-    it("reads the list when the panel opens", async () => {
+  describe("loading follows the template, not the panel", () => {
+    it("reads the list as soon as a template is attached", async () => {
+      // The header badge and the per-block canvas markers both derive from the
+      // whole list, so deferring the fetch to the first panel open left a
+      // template with existing comments showing no sign of them anywhere.
       const { feature, provider } = setup();
-
-      feature.toggle();
       await nextTick();
 
       expect(provider.list).toHaveBeenCalledTimes(1);
@@ -157,8 +153,21 @@ describe("useCommentsFeature", () => {
       expect(feature.headless.comments.value.map((c) => c.id)).toEqual(["c-1"]);
     });
 
-    it("re-reads on every open, because the conversation grows elsewhere", async () => {
+    it("has the unresolved count before the panel is ever opened", async () => {
+      // This is the observable the badge reads. Zero here means the badge is
+      // hidden on a template that does have open threads, then pops when clicked.
+      const { feature } = setup();
+      await nextTick();
+      await Promise.resolve();
+
+      expect(feature.isOpen.value).toBe(false);
+      expect(feature.unresolvedCount.value).toBeGreaterThan(0);
+    });
+
+    it("still re-reads on every open, because the conversation grows elsewhere", async () => {
       const { feature, provider } = setup();
+      await nextTick();
+      const afterAttach = provider.list.mock.calls.length;
 
       feature.toggle();
       await nextTick();
@@ -167,12 +176,21 @@ describe("useCommentsFeature", () => {
       feature.toggle();
       await nextTick();
 
-      expect(provider.list).toHaveBeenCalledTimes(2);
+      expect(provider.list.mock.calls.length).toBe(afterAttach + 2);
     });
 
     it("does not fetch without a template", async () => {
       const { feature, provider } = setup({}, { templateId: null });
+      await nextTick();
       feature.toggle();
+      await nextTick();
+      expect(provider.list).not.toHaveBeenCalled();
+    });
+
+    it("does not fetch while the feature is unavailable", async () => {
+      // No identity means no comments feature at all, so it must not reach the
+      // provider on attach either.
+      const { provider } = setup({}, { user: null });
       await nextTick();
       expect(provider.list).not.toHaveBeenCalled();
     });
@@ -191,16 +209,21 @@ describe("useCommentsFeature", () => {
     });
 
     it("re-reads when the panel is already open, since assigning true fires nothing", async () => {
+      // Counted relative to the attach-time read, which happens before any of
+      // this: what matters here is that opening again adds one, not the total.
       const { feature, provider } = setup();
+      await nextTick();
+      const afterAttach = provider.list.mock.calls.length;
+
       feature.toggle();
       await nextTick();
-      expect(provider.list).toHaveBeenCalledTimes(1);
+      expect(provider.list.mock.calls.length).toBe(afterAttach + 1);
 
       feature.openForBlock("blk-7");
       await nextTick();
 
       expect(feature.filterBlockId.value).toBe("blk-7");
-      expect(provider.list).toHaveBeenCalledTimes(2);
+      expect(provider.list.mock.calls.length).toBe(afterAttach + 2);
     });
 
     it("does nothing while unavailable", () => {

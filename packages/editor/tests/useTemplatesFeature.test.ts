@@ -352,14 +352,73 @@ describe("useTemplatesFeature", () => {
       expect(feature.errorMessage.value).toBe("create refused");
     });
 
-    it("shows saved after a successful create", async () => {
+    it("stays idle after a successful create", async () => {
+      // The badge acknowledges a save the user asked for. Attaching a template is
+      // not one, and `load()` attaches silently — so a create that flashed green
+      // made the same action look different depending on which path reached it.
       const { feature } = withFeature({
         editor: createEditor({ template: null }),
       });
 
       await feature.create({ name: "Fresh" });
 
+      expect(feature.status.value).toBe("idle");
+    });
+
+    it("a create that succeeds clears a failure left by an earlier one", async () => {
+      // Removing the success report must not let "Save failed" outlive the
+      // success that followed it.
+      let attempt = 0;
+      const { feature } = withFeature({
+        editor: createEditor({
+          template: null,
+          create: () => {
+            attempt += 1;
+            return attempt === 1
+              ? Promise.reject(new Error("boom"))
+              : Promise.resolve({ id: "tpl_1", name: "Fresh" });
+          },
+        }),
+      });
+
+      await expect(feature.create({ name: "Fresh" })).rejects.toThrow("boom");
+      expect(feature.status.value).toBe("error");
+      expect(feature.errorMessage.value).toBe("boom");
+
+      await feature.create({ name: "Fresh" });
+
+      expect(feature.status.value).toBe("idle");
+      expect(feature.errorMessage.value).toBe("");
+    });
+
+    it("a load clears the badge left by the previous template", async () => {
+      // The green badge decays after 3s. Loading inside that window would carry
+      // it onto content that was never saved.
+      const editor = createEditor({ template: { id: "tpl_1" } });
+      const { feature } = withFeature({ editor });
+
+      await feature.save();
       expect(feature.status.value).toBe("saved");
+
+      await feature.load("tpl_2");
+
+      expect(feature.status.value).toBe("idle");
+    });
+
+    it("a load clears a failure from the template being left behind", async () => {
+      const editor = createEditor({
+        template: { id: "tpl_1" },
+        save: () => Promise.reject(new Error("boom")),
+      });
+      const { feature } = withFeature({ editor });
+
+      await expect(feature.save()).rejects.toThrow("boom");
+      expect(feature.status.value).toBe("error");
+
+      await feature.load("tpl_2");
+
+      expect(feature.status.value).toBe("idle");
+      expect(feature.errorMessage.value).toBe("");
     });
 
     it("leaves the status alone when a load fails", async () => {

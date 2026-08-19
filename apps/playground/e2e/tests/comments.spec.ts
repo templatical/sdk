@@ -165,8 +165,16 @@ test.describe("comments provider", () => {
       seed: [seededComment("c-1"), seededComment("c-2")],
     });
 
-    // The badge only renders while the panel is closed, so open and close to make
-    // the list load first — the same lazy read a real session does.
+    // Without opening the panel at all. The list loads once a template is
+    // attached, because this badge is computed over the whole of it — a read
+    // deferred to the first open left a template with existing threads looking
+    // identical to one with none, and the badge then popped when clicked.
+    await expect(page.locator(SELECTORS.commentsTrigger)).toHaveAttribute(
+      "aria-label",
+      /\(2\)/,
+    );
+
+    // Still correct after an open/close cycle, which re-reads by design.
     await page.locator(SELECTORS.commentsTrigger).click();
     await expect(page.locator(SELECTORS.commentThread)).toHaveCount(2);
     await page.locator(SELECTORS.commentsTrigger).click();

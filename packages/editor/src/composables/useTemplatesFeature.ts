@@ -217,7 +217,19 @@ export function useTemplatesFeature(
   }): Promise<Template> {
     try {
       const template = await editor.create(input);
-      reportSuccess();
+      // Deliberately no "saved" badge. The badge acknowledges a save the user
+      // asked for — an explicit `save()` or an autosave tick — and attaching a
+      // template is neither. It also matched nothing: `load()` attaches without
+      // announcing, so a new template flashed green where an existing one stayed
+      // silent, for the same action. What a fresh template *has* is a
+      // `createdAt`, which the header renders as its write time.
+      //
+      // The state is still reset, because a failure must not outlive the success
+      // that followed it: a create that fails and is then retried would
+      // otherwise leave "Save failed" on screen for a template that saved fine.
+      stopSavedStatusClear();
+      status.value = "idle";
+      errorMessage.value = "";
       return template;
     } catch (error) {
       reportFailure(error);
@@ -226,9 +238,19 @@ export function useTemplatesFeature(
   }
 
   function load(templateId: string): Promise<Template> {
-    // Deliberately not wrapped: a failed *load* is not a failed save, and
-    // flashing "Save failed" for it would be a lie. Core already routes it to
-    // `onError` and rejects to the caller.
+    // The badge describes one template, so it cannot outlive the switch to
+    // another: a save that failed seconds ago would otherwise show "Save failed"
+    // over freshly loaded content, and a green "Saved" still inside its decay
+    // window would claim the incoming template had just been written. Reset up
+    // front rather than on success — a load that fails still means the old
+    // status no longer describes what the user is looking at, and if the old
+    // template stays attached with edits, `isDirty` puts "Unsaved" back.
+    stopSavedStatusClear();
+    status.value = "idle";
+    errorMessage.value = "";
+    // Deliberately not wrapped beyond that: a failed *load* is not a failed
+    // save, and flashing "Save failed" for it would be a lie. Core already
+    // routes it to `onError` and rejects to the caller.
     return editor.load(templateId);
   }
 

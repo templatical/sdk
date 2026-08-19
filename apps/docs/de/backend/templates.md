@@ -127,6 +127,12 @@ Eine Vorlage mit `updatedAt` zeigt unter dem Namen eine relative Zeitangabe, das
 
 `createdAt` dient als Rückfallwert, wenn `updatedAt` fehlt, und die Formulierung folgt dem verwendeten Feld — eine Vorlage, die Ihr Store nie neu geschrieben hat, zeigt „Erstellt", nie „Aktualisiert". Fehlen beide Felder, oder lässt sich der Wert nicht lesen, erscheint keine Zeile. Die Angabe aktualisiert sich, während der Editor geöffnet bleibt.
 
+::: warning `updatedAt` nicht in `create` setzen
+Setzen Sie beim ersten Schreiben eines Templates ausschließlich `createdAt`. Werden beide Felder gestempelt, zeigt ein brandneues Template **„Gerade aktualisiert“** an, bevor es überhaupt bearbeitet wurde – der Editor bevorzugt `updatedAt` und beschriftet die Zeile entsprechend, gibt also genau das wieder, was Ihr Store behauptet hat.
+
+Das passiert leicht versehentlich: ein Spalten-Default `updated_at = created_at` beim Insert oder ein einzelnes `now()`, das beiden Feldern zugewiesen wird. Lassen Sie das erste `save` das erste sein, was `updatedAt` setzt.
+:::
+
 ::: tip
 Sie erscheint unabhängig davon, ob `save` verfügbar ist — bei einer schreibgeschützten Vorlage tritt sie an die Stelle der Statusanzeige.
 :::

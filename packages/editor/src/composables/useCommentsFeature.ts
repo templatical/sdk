@@ -131,6 +131,30 @@ export function useCommentsFeature(
     if (!available) isOpen.value = false;
   });
 
+  // Load as soon as there is a template, not just when the panel opens. Unlike
+  // saved blocks or version history — whose lists are read only by the surface
+  // that fetches them — two indicators *outside* this panel derive from the whole
+  // list: `unresolvedCount` feeds the header badge, and `commentCountByBlock`
+  // feeds the per-block canvas markers. Deferring the fetch left both at zero, so
+  // a template arriving with existing comments showed no sign of them anywhere
+  // until the user happened to click Comments, and the badge then popped into
+  // existence — the same "reads 0, then pops" failure that cost the saved-blocks
+  // rail its count.
+  //
+  // Loading the lot up front is already the design's assumption: `comments.list`
+  // is deliberately unpaginated precisely because those two aggregates are
+  // computed over every thread.
+  watch(
+    [isAvailable, hasTemplate],
+    ([available, attached]) => {
+      if (!available || !attached) return;
+      void headless.load().catch(() => {
+        /* reported through onError */
+      });
+    },
+    { immediate: true },
+  );
+
   // Every open re-reads. History and comments both grow elsewhere, so a list
   // fetched once goes stale silently; only a *first* open has nothing to show
   // meanwhile, which the panel distinguishes for its skeleton.
