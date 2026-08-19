@@ -22,10 +22,11 @@ Um Blöcke programmatisch zu erstellen, siehe [Programmatische Templates](/de/gu
 | Mehrspaltiges Layout | [Section](#section) | Der einzige Block, der andere Blöcke enthält |
 | Visuelle Trennung | [Divider](#divider) | Horizontale Linie mit Stiloptionen |
 | Vertikaler Abstand | [Spacer](#spacer) | Leerraum zwischen Blöcken |
-| Social Links | [Social Icons](#social-icons) | 16 Plattformen, 5 Icon-Stile |
+| Social Links | [Social Icons](#social-icons) | 17 Plattformen, 5 Icon-Stile |
 | Navigationslinks | [Menu](#menu) | Horizontale Linkliste mit Trennzeichen |
 | Tabellarische Daten | [Table](#table) | Datentabelle mit optionaler Kopfzeilenformatierung |
 | Video-Vorschau | [Video](#video) | Klickbares Thumbnail (E-Mail-Clients unterstützen keine eingebetteten Videos) |
+| Countdown bis zu einem Stichtag | [Countdown](#countdown) | Animierter Timer; das Rendern erfordert Templatical Cloud |
 | Rohes Markup | [HTML](#html) | Notausgang für benutzerdefinierten Code |
 | Domänenspezifische Inhalte | [Custom](#custom) | Ihre eigenen Blocktypen mit Feldern und Liquid-Templates |
 
@@ -120,7 +121,7 @@ Eine Reihe von Social-Media-Icons, die zu Plattformprofilen verlinken.
 | `spacing` | `number` | Abstand zwischen Icons in px |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
 
-16 Plattformen werden unterstützt: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, E-Mail, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble und Behance.
+17 Plattformen werden unterstützt: Facebook, Twitter/X, Instagram, LinkedIn, YouTube, TikTok, Pinterest, E-Mail, Website, WhatsApp, Telegram, Discord, Snapchat, Reddit, GitHub, Dribbble und Behance.
 
 Jedes `SocialIcon` hat:
 
@@ -196,6 +197,31 @@ E-Mail-Clients unterstützen keine eingebettete Videowiedergabe. Der Renderer gi
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
 | `openInNewTab` | `boolean` | Verhalten des Linkziels |
 | `placeholderUrl` | `string` | Nur im Editor sichtbarer Platzhalter |
+
+## Countdown
+
+Ein laufender Countdown bis zu einem Stichtag, gerendert als animiertes GIF.
+
+::: warning Das Rendern erfordert Templatical Cloud
+Ein animiertes GIF muss zum Versandzeitpunkt pro Empfänger erzeugt werden — das kann ein Browser nicht. Der Open-Source-Renderer hat für diesen Block keinen Renderer: Er gibt einen `templatical:unrenderable-block`-Markerkommentar aus und protokolliert eine Warnung, sodass eine Versand-Pipeline das erkennen und ablehnen kann. Siehe [Blöcke ohne Renderer](/de/backend/render#blocke-ohne-renderer). Auf Cloud wird der Block normal gerendert — siehe [Rendering auf Cloud](/de/cloud/rendering).
+:::
+
+| Eigenschaft | Typ | Beschreibung |
+|----------|------|-------------|
+| `targetDate` | `string` | ISO-Datum/-Zeit, auf die der Countdown läuft |
+| `timezone` | `string` | IANA-Zeitzone, in der das Ziel interpretiert wird |
+| `showDays` / `showHours` / `showMinutes` / `showSeconds` | `boolean` | Welche Einheiten angezeigt werden |
+| `labelDays` / `labelHours` / `labelMinutes` / `labelSeconds` | `string` | Beschriftung unter jeder Einheit |
+| `separator` | `':' \| '-' \| ' '` | Zeichen zwischen den Einheiten |
+| `digitFontSize` | `number` | Zifferngröße in px |
+| `digitColor` | `string` | Ziffernfarbe |
+| `labelFontSize` | `number` | Beschriftungsgröße in px |
+| `labelColor` | `string` | Beschriftungsfarbe |
+| `backgroundColor` | `string` | Hintergrund des Blocks |
+| `fontFamily` | `string` (optional) | Überschreibung der Schriftfamilie |
+| `expiredMessage` | `string` | Wird angezeigt, sobald das Ziel verstrichen ist |
+| `expiredImageUrl` | `string` | Bild statt Timer nach Ablauf |
+| `hideOnExpiry` | `boolean` | Block nach Ablauf vollständig ausblenden |
 
 ## Section
 
