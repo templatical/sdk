@@ -54,6 +54,8 @@ await editor.load('tpl_123');
 interface Template {
   id: string;
   name?: string;
+  createdAt?: string;
+  updatedAt?: string;
   content: TemplateContent;
 }
 
@@ -68,7 +70,8 @@ interface TemplatesProvider {
 
 - **`id` comes from your store**, returned by `create()`. The editor never generates one — a database key, a slug, a document id, whatever your storage already uses.
 - **`save` receives a patch**, not bare content, so a rename can travel without content and a new field can be added without breaking your implementation. The editor sends `name` (when the template has one) and `content` together, in one round-trip.
-- **`name` is optional.** With no name column, leave it out — the header renders a dimmed "Untitled" in its place. The field stays editable as long as `save` is a function, so a rename still travels as `save(id, { name, content })`. A store that ignores it returns a template with no name, and the header reverts to "Untitled".
+- **`createdAt` / `updatedAt` are optional, ISO 8601, and display-only.** Both are absent from `TemplatePatch`, so the editor never writes them — what it shows is whatever `load` or `save` returned. See [The write time](#the-write-time).
+- **`name` is optional.** With no name column, leave it out — the header renders a dimmed "Untitled" in its place. The field stays editable as long as `save` is a function, so a rename still travels as `save(id, { name, content })`. A store that ignores it returns a template with no name, and the header reverts to "Untitled". With no use for names at all, [hide the field](#hiding-the-name-field).
 
 Every method may reject. The editor reports the failure through `onError`, shows it in the header, and leaves its state untouched — nothing is marked saved that wasn't.
 
@@ -101,7 +104,7 @@ These flags live in the user's browser. They shape the UI; they do not protect y
 <!-- prettier-ignore -->
 | Where | What |
 | --- | --- |
-| left | the template name, click-to-edit |
+| left | the template name, click-to-edit, and the write time under it |
 | right | the save status, then the save button |
 
 The name commits on `Enter` or blur, cancels on `Escape`, and reverts an empty value — a cleared field is far likelier a slip than an intent. A rename is an ordinary unsaved change: it marks the editor dirty and persists on the next save, in the same patch as the content.
@@ -115,6 +118,33 @@ The status indicator has three states:
 | **Save failed** | the last attempt rejected — your error message is in the tooltip |
 
 The save button is disabled until a template exists, because `save()` patches an id. Call `create()` or `load()` first.
+
+### The write time
+
+A template carrying `updatedAt` renders a relative line under the name, with the full date on hover:
+
+> Updated 5m ago
+
+`createdAt` is the fallback when `updatedAt` is absent, and the wording follows whichever was used — a template your store has never rewritten reads "Created", never "Updated". Neither field, or a value that does not parse, renders nothing at all. The line refreshes while the editor stays open.
+
+::: tip
+It renders whether or not `save` is available, which is what a read-only template has in place of a status indicator.
+:::
+
+### Hiding the name field
+
+```ts
+init({
+  templateNameField: false,
+  templates: { /* … */ },
+});
+```
+
+Removes the field from the header, whether or not your provider can save. `editor.create({ name })`, `setName()` and the `name` in each save patch keep working, so your own chrome can still manage names. `initCloud()` accepts the same key.
+
+With the field hidden, the write time becomes the header's only left-column content.
+
+The key is inert without a provider: no `templates` means no name field to hide, and no write time either.
 
 ## Autosave
 
