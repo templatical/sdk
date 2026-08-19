@@ -73,7 +73,6 @@ export type {
   CommentInput,
   CommentPatch,
   CommentsListParams,
-  CommentsListResult,
   CommentsProvider,
 } from "./comments";
 

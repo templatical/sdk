@@ -17,7 +17,7 @@ const editor = await init({
   comments: {
     list: async (templateId) => {
       const res = await fetch(`/api/templates/${templateId}/comments`);
-      return { comments: await res.json() };
+      return res.json();
     },
 
     create: async (templateId, input) => {
@@ -100,7 +100,7 @@ interface Comment {
 }
 
 interface CommentsProvider {
-  list(templateId: string, params?: CommentsListParams): Promise<CommentsListResult>;
+  list(templateId: string, params?: CommentsListParams): Promise<Comment[]>;
   create:      false | ((templateId: string, input: CommentInput) => Promise<Comment>);
   update:      false | ((templateId: string, commentId: string, patch: CommentPatch) => Promise<Comment>);
   delete:      false | ((templateId: string, commentId: string) => Promise<void>);
@@ -176,13 +176,11 @@ Ihre eigenen Schreibvorgänge dürfen hier zurückkommen und brauchen **auf Ihre
 
 Das Panel filtert **im Speicher** über das, was `list()` zurückgegeben hat — ungelöst (die Voreinstellung), alle oder dieser Block. Ihr Provider entscheidet, was sichtbar ist; der Editor entscheidet, wie darin eingegrenzt wird.
 
-`list` nimmt `{ limit?, cursor? }` entgegen und liefert einen Umschlag:
+`CommentsListParams` ist für künftige *Filter* reserviert und heute leer; der Editor ruft `list` immer ohne Parameter auf.
 
-```ts
-type CommentsListResult = { comments: Comment[]; nextCursor?: string };
-```
-
-Der Editor lädt eine Seite und ruft `list` ohne Parameter auf. Ein Speicher, der alle Threads auf einmal zurückgibt, lässt `nextCursor` weg. Der Umschlag existiert, damit späteres seitenweises Laden keine brechende Änderung ist — dieselbe Begründung wie beim [Versionsverlauf](/de/backend/version-history#seitenweises-laden).
+::: tip Kommentare werden bewusst nicht seitenweise geladen
+`list` gibt alle Threads auf einmal zurück. Das Badge für ungelöste Threads und die Zähler an den Blöcken werden über die gesamte Liste berechnet — eine Teilseite ließe beide stillschweigend zu niedrig ausfallen, also falsch statt langsam. Eine langlebige Vorlage begrenzt ihr Wachstum selbst, indem `list()` gelöste Threads ab einem gewissen Alter nicht mehr zurückgibt; das Panel blendet diese ohnehin standardmäßig aus. Der [Versionsverlauf](/de/backend/version-history#seitenweises-laden) lädt sehr wohl seitenweise, denn seine Liste ist ein flaches Menü, über das nichts aggregiert wird.
+:::
 
 ## Im Editor
 
@@ -226,7 +224,6 @@ const comments = useComments({
 
 await comments.load();
 comments.comments.value;                    // Comment[] — Thread-Wurzeln mit Antworten
-comments.nextCursor.value;                  // string | undefined — als { cursor } zurückgeben
 comments.unresolvedCount.value;             // number
 comments.commentCountByBlock.value;         // Map<string, number>
 await comments.create({ body: 'Sieht gut aus' });

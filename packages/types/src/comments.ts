@@ -64,39 +64,23 @@ export type CommentPatch = Partial<{
 }>;
 
 /**
- * Page request for {@link CommentsProvider.list}.
+ * Reserved filter object for {@link CommentsProvider.list}.
  *
- * The editor always calls `list` bare and filters in memory (unresolved / all /
- * this block), so the provider decides *what is visible* and the editor decides
- * how it is narrowed within that. Both fields exist for headless callers and
- * for providers that page their own storage.
- */
-export interface CommentsListParams {
-  /** Maximum threads to return. A provider may return fewer, never more. */
-  limit?: number;
-  /**
-   * Opaque cursor taken from a previous result's
-   * {@link CommentsListResult.nextCursor}.
-   */
-  cursor?: string;
-}
-
-/**
- * What {@link CommentsProvider.list} resolves to.
+ * Empty today. The editor always calls `list` bare and narrows in memory
+ * (unresolved / all / this block), so the provider decides *what is visible*
+ * and the editor decides how it is filtered within that.
  *
- * An envelope rather than a bare array **so that adding pagination never breaks
- * an implementation** — the same reasoning as
- * {@link VersionHistoryListResult}.
+ * **Not a pagination hook, and comments deliberately has none.** `useComments`
+ * derives `unresolvedCount` (the header badge) and `commentCountByBlock` (the
+ * per-block canvas indicators) over the *whole* loaded list. A partial page
+ * would make both under-report silently — wrong rather than slow. Correct
+ * paging would mean moving counts and filtering server-side, which is a
+ * redesign, not a `loadMore()`. A long-lived template caps its own growth by
+ * having `list()` stop returning resolved threads past some age; the panel
+ * hides those by default anyway. Contrast {@link VersionHistoryListParams},
+ * which does page: its list is a flat menu with nothing aggregating over it.
  */
-export interface CommentsListResult {
-  /** Thread roots, each carrying its own `replies`. Rendered in this order. */
-  comments: Comment[];
-  /**
-   * Cursor for the next page, or absent when this is the last one. Opaque to
-   * the editor: pass it back as {@link CommentsListParams.cursor}.
-   */
-  nextCursor?: string;
-}
+export interface CommentsListParams {}
 
 /**
  * One remote change, as reported by {@link CommentsProvider.subscribe}.
@@ -184,10 +168,7 @@ export interface CommentsProvider {
    *
    * The one method that cannot be disabled: without it there is nothing to show.
    */
-  list(
-    templateId: string,
-    params?: CommentsListParams,
-  ): Promise<CommentsListResult>;
+  list(templateId: string, params?: CommentsListParams): Promise<Comment[]>;
   /**
    * Store a new comment or reply and return it with its store-assigned `id`, or
    * `false` to make the review read-only.

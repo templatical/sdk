@@ -608,7 +608,7 @@ function commentsProviderFor(template?: TemplateOption): CommentsProvider {
   }
 
   const base: CommentsProvider = {
-    list: async () => ({ comments: read() }),
+    list: async () => read(),
 
     create: async (_templateId, input) => {
       const threads = read();

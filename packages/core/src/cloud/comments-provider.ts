@@ -5,7 +5,6 @@ import type {
   CommentPatch,
   CommentResponse,
   CommentsProvider,
-  CommentsListResult,
   UserConfig,
 } from "@templatical/types";
 import { watch, type Ref } from "vue";
@@ -145,11 +144,9 @@ export function createCloudCommentsProvider(
   }
 
   return {
-    async list(templateId: string): Promise<CommentsListResult> {
+    async list(templateId: string): Promise<Comment[]> {
       const records = await api.getComments(templateId);
-      // No `nextCursor`: Cloud returns every thread for the template in one
-      // response, so there is never a further page to ask for.
-      return { comments: records.map(toComment) };
+      return records.map(toComment);
     },
 
     async create(templateId: string, input: CommentInput): Promise<Comment> {
