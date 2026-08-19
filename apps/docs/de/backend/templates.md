@@ -144,6 +144,8 @@ Entfernt das Feld aus dem Header, unabhängig davon, ob Ihr Provider speichern k
 
 Ist das Feld ausgeblendet, bleibt der Zeitstempel der einzige Inhalt der linken Header-Spalte.
 
+Ohne Provider bleibt der Schlüssel wirkungslos: kein `templates` heißt kein Namensfeld zum Ausblenden — und auch kein Zeitstempel.
+
 ## Autosave
 
 ```ts
