@@ -79,7 +79,7 @@ function updateField(key: string, value: unknown): void {
       <button
         v-if="needsFetch && !isFetching"
         type="button"
-        class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-md tpl:px-3 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-bg)] tpl:transition-all tpl:duration-150 tpl:bg-[var(--tpl-primary)]"
+        class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-md tpl:px-3 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-on-primary)] tpl:transition-all tpl:bg-[var(--tpl-primary)]"
         @click="fetchData"
       >
         {{
@@ -98,7 +98,7 @@ function updateField(key: string, value: unknown): void {
         <button
           v-else
           type="button"
-          class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-150 tpl:hover:border-[var(--tpl-primary)] tpl:hover:text-[var(--tpl-primary)]"
+          class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:hover:border-[var(--tpl-primary)] tpl:hover:text-[var(--tpl-primary)]"
           @click="fetchData"
         >
           <RefreshCw :size="12" />

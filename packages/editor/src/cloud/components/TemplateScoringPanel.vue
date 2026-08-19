@@ -151,14 +151,14 @@ function totalFindings(): number {
         <div class="tpl:flex tpl:items-center tpl:gap-1">
           <button
             v-if="scoring.scoringResult.value && !scoring.isScoring.value"
-            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
+            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
             :title="cloudT.scoring.rescore"
             @click="triggerScore()"
           >
             <RefreshCw :size="14" :stroke-width="2" />
           </button>
           <button
-            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
+            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
             @click="emit('close')"
           >
             <X :size="14" :stroke-width="2" />
@@ -195,7 +195,7 @@ function totalFindings(): number {
             {{ cloudT.scoring.error }}
           </p>
           <button
-            class="tpl:mt-2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text-muted)]"
+            class="tpl:mt-2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text-muted)]"
             @click="triggerScore()"
           >
             <RefreshCw :size="12" :stroke-width="2" />
@@ -258,7 +258,7 @@ function totalFindings(): number {
           >
             <!-- Category header -->
             <button
-              class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-2.5 tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-colors tpl:duration-100 tpl:bg-[var(--tpl-bg)]"
+              class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-2.5 tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-colors tpl:bg-[var(--tpl-bg)]"
               @click="toggleCategory(category)"
             >
               <component
@@ -332,7 +332,7 @@ function totalFindings(): number {
                   category
                 ].findings"
                 :key="finding.id"
-                class="tpl:border-t tpl:px-3 tpl:py-2.5 first:tpl:border-t-0 tpl:border-[var(--tpl-border-light)]"
+                class="tpl:border-t tpl:px-3 tpl:py-2.5 tpl:first:border-t-0 tpl:border-[var(--tpl-border-light)]"
               >
                 <div class="tpl:flex tpl:items-start tpl:gap-2">
                   <!-- Severity icon -->
@@ -382,7 +382,7 @@ function totalFindings(): number {
                       class="tpl:mt-2 tpl:flex tpl:justify-center"
                     >
                       <button
-                        class="tpl-scoring-fix-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded tpl:border tpl:px-3 tpl:py-1.5 tpl:text-[11px] tpl:font-medium tpl:transition-all tpl:duration-150 tpl:disabled:opacity-50 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-primary)]"
+                        class="tpl-scoring-fix-btn tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded tpl:border tpl:px-3 tpl:py-1.5 tpl:text-[11px] tpl:font-medium tpl:transition-all tpl:disabled:opacity-50 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-primary)]"
                         style="background-color: transparent"
                         :disabled="scoring.fixingFindingId.value !== null"
                         @click="handleFix(finding)"

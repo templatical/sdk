@@ -71,7 +71,7 @@ function cancel(): void {
     data-testid="template-name"
     :title="t.header.rename"
     :aria-label="t.header.rename"
-    class="tpl:max-w-[260px] tpl:cursor-pointer tpl:truncate tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-transparent tpl:px-2 tpl:py-1 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:border-[var(--tpl-border)] hover:tpl:bg-[var(--tpl-bg-hover)]"
+    class="tpl:max-w-[260px] tpl:cursor-pointer tpl:truncate tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-transparent tpl:px-2 tpl:py-1 tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:hover:border-[var(--tpl-border)] tpl:hover:bg-[var(--tpl-bg-hover)]"
     :class="{ 'tpl:text-[var(--tpl-text-dim)]': !name }"
     @click="startEditing"
   >

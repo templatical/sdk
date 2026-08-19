@@ -331,13 +331,13 @@ defineExpose({ filterByBlock, focusNewComment });
           <span>{{ t.comments.title }}</span>
           <span
             v-if="feature.unresolvedCount.value > 0"
-            class="tpl:ml-1 tpl:inline-flex tpl:size-5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
+            class="tpl:ml-1 tpl:inline-flex tpl:size-5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
           >
             {{ feature.unresolvedCount.value }}
           </span>
         </div>
         <button
-          class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
+          class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
           @click="emit('close')"
         >
           <X :size="14" :stroke-width="2" />
@@ -349,7 +349,7 @@ defineExpose({ filterByBlock, focusNewComment });
         class="tpl:flex tpl:gap-1 tpl:border-b tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-2"
       >
         <button
-          class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:duration-150"
+          class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
           :class="
             filterMode === 'unresolved' ? 'tpl-comment-filter--active' : ''
           "
@@ -359,7 +359,7 @@ defineExpose({ filterByBlock, focusNewComment });
           {{ t.comments.filterUnresolved }}
         </button>
         <button
-          class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:duration-150"
+          class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
           :class="filterMode === 'all' ? 'tpl-comment-filter--active' : ''"
           data-testid="comments-filter-all"
           @click="setFilter('all')"
@@ -368,7 +368,7 @@ defineExpose({ filterByBlock, focusNewComment });
         </button>
         <button
           v-if="editor.state.selectedBlockId"
-          class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:duration-150"
+          class="tpl-comment-filter tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors"
           :class="filterMode === 'block' ? 'tpl-comment-filter--active' : ''"
           @click="setFilter('block', editor.state.selectedBlockId ?? undefined)"
         >
@@ -452,7 +452,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   <button
                     v-if="comments.canResolve.value"
                     data-testid="comment-resolve"
-                    class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
+                    class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors"
                     :title="
                       thread.resolvedAt
                         ? t.comments.unresolve
@@ -475,7 +475,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   <button
                     v-if="canEdit(thread)"
                     data-testid="comment-edit"
-                    class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
+                    class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors"
                     :title="t.comments.edit"
                     @click="startEdit(thread)"
                   >
@@ -485,7 +485,7 @@ defineExpose({ filterByBlock, focusNewComment });
                   <button
                     v-if="canDelete(thread)"
                     data-testid="comment-delete"
-                    class="tpl-comment-action tpl-comment-delete tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
+                    class="tpl-comment-action tpl-comment-delete tpl:rounded tpl:p-1 tpl:transition-colors"
                     :title="t.comments.delete"
                     @click="confirmDelete(thread.id)"
                   >
@@ -520,7 +520,7 @@ defineExpose({ filterByBlock, focusNewComment });
               </span>
               <button
                 v-else-if="thread.blockId"
-                class="tpl:mt-1 tpl:inline-flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
+                class="tpl:mt-1 tpl:inline-flex tpl:items-center tpl:gap-1 tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
                 @click="editor.selectBlock(thread.blockId ?? '')"
               >
                 {{ t.comments.jumpToBlock }}
@@ -536,14 +536,14 @@ defineExpose({ filterByBlock, focusNewComment });
                 />
                 <div class="tpl:mt-1.5 tpl:flex tpl:gap-1.5">
                   <button
-                    class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
+                    class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
                     :disabled="!editBody.trim() || comments.isSubmitting.value"
                     @click="handleEdit(thread.id)"
                   >
                     {{ t.comments.save }}
                   </button>
                   <button
-                    class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
+                    class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
                     @click="cancelEdit()"
                   >
                     {{ t.comments.cancel }}
@@ -588,7 +588,7 @@ defineExpose({ filterByBlock, focusNewComment });
                 <button
                   v-if="comments.canCreate.value"
                   data-testid="comment-reply"
-                  class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
+                  class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors"
                   :title="t.comments.reply"
                   @click="startReply(thread.id)"
                 >
@@ -600,7 +600,7 @@ defineExpose({ filterByBlock, focusNewComment });
                 </button>
                 <button
                   v-if="(thread.replies?.length ?? 0) > 0"
-                  class="tpl:flex tpl:items-center tpl:gap-0.5 tpl:text-[11px] tpl:font-medium tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
+                  class="tpl:flex tpl:items-center tpl:gap-0.5 tpl:text-[11px] tpl:font-medium tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
                   @click="toggleThread(thread.id)"
                 >
                   <template v-if="expandedThreads.has(thread.id)">
@@ -667,7 +667,7 @@ defineExpose({ filterByBlock, focusNewComment });
                     <div class="tpl:flex tpl:items-center tpl:gap-0.5">
                       <button
                         v-if="canEdit(reply)"
-                        class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
+                        class="tpl-comment-action tpl:rounded tpl:p-1 tpl:transition-colors"
                         :title="t.comments.edit"
                         @click="startEdit(reply)"
                       >
@@ -675,7 +675,7 @@ defineExpose({ filterByBlock, focusNewComment });
                       </button>
                       <button
                         v-if="canDelete(reply)"
-                        class="tpl-comment-action tpl-comment-delete tpl:rounded tpl:p-1 tpl:transition-colors tpl:duration-150"
+                        class="tpl-comment-action tpl-comment-delete tpl:rounded tpl:p-1 tpl:transition-colors"
                         :title="t.comments.delete"
                         @click="confirmDelete(reply.id)"
                       >
@@ -694,7 +694,7 @@ defineExpose({ filterByBlock, focusNewComment });
                     />
                     <div class="tpl:mt-1.5 tpl:flex tpl:gap-1.5">
                       <button
-                        class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
+                        class="tpl:rounded-md tpl:px-2.5 tpl:py-1 tpl:text-xs tpl:font-medium tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
                         :disabled="
                           !editBody.trim() || comments.isSubmitting.value
                         "
@@ -749,31 +749,37 @@ defineExpose({ filterByBlock, focusNewComment });
                 v-if="replyingTo === thread.id"
                 class="tpl-comment-replies tpl:ml-5 tpl:pl-3 tpl:pt-2"
               >
-                <div class="tpl:flex tpl:items-end tpl:gap-2">
+                <!-- Same shape as the new-comment composer below: the border and
+                     the focus ring belong to the wrapper, the field is bare
+                     inside it, and the actions sit within the bounds rather than
+                     floating beside them. The two composers do the same job, so a
+                     reader should not have to notice they are different
+                     components. Only the height differs — a reply is nested and
+                     indented, so it starts at two rows without the composer's
+                     `min-h`. -->
+                <div
+                  class="tpl-comments-input-wrapper tpl-focus-ring-host tpl:flex tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
+                >
                   <textarea
                     v-model="replyBody"
-                    class="tpl:flex-1 tpl:resize-none tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:font-sans tpl:text-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+                    class="tpl:max-h-24 tpl:flex-1 tpl:resize-none tpl:border-none tpl:bg-transparent tpl:font-sans tpl:text-xs tpl:outline-none tpl:text-[var(--tpl-text)]"
                     :placeholder="t.comments.replyPlaceholder"
                     rows="2"
                     @keydown="handleReplyKeydown($event, thread.id)"
                   />
-                  <div class="tpl:flex tpl:shrink-0 tpl:flex-col tpl:gap-1">
-                    <button
-                      class="tpl:flex tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-colors tpl:duration-150 tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
-                      :disabled="
-                        !replyBody.trim() || comments.isSubmitting.value
-                      "
-                      @click="handleReply(thread.id)"
-                    >
-                      <Send :size="14" :stroke-width="2" />
-                    </button>
-                    <button
-                      class="tpl:flex tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
-                      @click="cancelReply()"
-                    >
-                      <X :size="14" :stroke-width="2" />
-                    </button>
-                  </div>
+                  <button
+                    class="tpl-comments-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
+                    :disabled="!replyBody.trim() || comments.isSubmitting.value"
+                    @click="handleReply(thread.id)"
+                  >
+                    <Send :size="14" :stroke-width="2" />
+                  </button>
+                  <button
+                    class="tpl-comments-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:text-[var(--tpl-text-muted)]"
+                    @click="cancelReply()"
+                  >
+                    <X :size="14" :stroke-width="2" />
+                  </button>
                 </div>
               </div>
             </Transition>
@@ -796,7 +802,7 @@ defineExpose({ filterByBlock, focusNewComment });
         </div>
         <div
           v-else
-          class="tpl-comments-input-wrapper tpl:flex tpl:min-h-[68px] tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
+          class="tpl-comments-input-wrapper tpl-focus-ring-host tpl:flex tpl:min-h-[68px] tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
         >
           <textarea
             ref="newCommentInput"
@@ -809,7 +815,7 @@ defineExpose({ filterByBlock, focusNewComment });
             @keydown="handleNewCommentKeydown"
           />
           <button
-            class="tpl-comments-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:duration-150 tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
+            class="tpl-comments-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
             data-testid="comments-send"
             :disabled="!newCommentBody.trim() || comments.isSubmitting.value"
             @click="handleAddComment"

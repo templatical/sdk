@@ -38,7 +38,7 @@ function tabClass(tab: Tab): string {
   if (isActive) {
     return "tpl:flex-1 tpl:text-[var(--tpl-primary)]";
   }
-  return "tpl:shrink-0 tpl:text-[var(--tpl-text-muted)] hover:tpl:text-[var(--tpl-text)]";
+  return "tpl:shrink-0 tpl:text-[var(--tpl-text-muted)] tpl:hover:text-[var(--tpl-text)]";
 }
 
 function tabStyle(tab: Tab): Record<string, string> {
@@ -46,7 +46,9 @@ function tabStyle(tab: Tab): Record<string, string> {
   if (isActive) {
     return {
       backgroundColor: "var(--tpl-bg)",
-      boxShadow: "var(--tpl-shadow-md)",
+      // `-sm` is the step the shadow vocabulary assigns to a lifted control;
+      // `-md` is dialog and side-panel depth, which overstates a 32px tab.
+      boxShadow: "var(--tpl-shadow-sm)",
     };
   }
   return { backgroundColor: "transparent" };

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { primaryBtnClass } from "../constants/styleConstants";
 /**
  * Send-a-test dialog, shared by the OSS and Cloud editors.
  *
@@ -216,7 +217,7 @@ function handleKeydown(event: KeyboardEvent): void {
           :value="recipient"
           disabled
           data-testid="test-email-recipient"
-          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:opacity-70 tpl:shadow-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:opacity-70 tpl:shadow-[var(--tpl-shadow-sm)] tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
         />
 
         <!-- Several allowed addresses: pick one. -->
@@ -226,7 +227,7 @@ function handleKeydown(event: KeyboardEvent): void {
           v-model="recipient"
           :disabled="isSending || justSent"
           data-testid="test-email-recipient"
-          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-[var(--tpl-shadow-sm)] tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
         >
           <option
             v-for="email in allowedRecipients"
@@ -248,7 +249,7 @@ function handleKeydown(event: KeyboardEvent): void {
           :placeholder="t.testEmail.recipientPlaceholder"
           :disabled="isSending || justSent"
           data-testid="test-email-recipient"
-          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-[var(--tpl-shadow-sm)] tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
         />
 
         <p
@@ -377,7 +378,7 @@ function handleKeydown(event: KeyboardEvent): void {
         <button
           type="button"
           data-testid="test-email-cancel"
-          class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
+          class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-[var(--tpl-shadow-sm)] tpl:transition-all tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
           :disabled="isSending"
           :class="{ 'tpl:cursor-not-allowed tpl:opacity-50': isSending }"
           @click="handleClose"
@@ -387,7 +388,7 @@ function handleKeydown(event: KeyboardEvent): void {
         <button
           type="button"
           data-testid="test-email-send"
-          class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
+          :class="primaryBtnClass"
           :disabled="!canSend"
           @click="handleSend"
         >

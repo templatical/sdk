@@ -205,7 +205,7 @@ const displayPlaceholderUrl = useResolvedImageSrc(() =>
       <button
         v-if="canBrowseMedia"
         :aria-label="t.image.browseMedia"
-        class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:cursor-pointer tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-primary)] tpl:bg-[var(--tpl-bg)]"
+        class="tpl:flex tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:px-3 tpl:py-2 tpl:text-xs tpl:font-medium tpl:transition-all tpl:cursor-pointer tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-primary)] tpl:bg-[var(--tpl-bg)]"
         @click.stop="browseMedia"
       >
         <Image :size="14" :stroke-width="1.5" />

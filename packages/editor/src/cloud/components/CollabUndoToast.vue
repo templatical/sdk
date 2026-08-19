@@ -13,7 +13,7 @@ const { t } = useI18n();
     v-if="visible"
     role="status"
     aria-live="polite"
-    class="tpl:absolute tpl:top-16 tpl:left-1/2 tpl:z-toast tpl:-translate-x-1/2 tpl:rounded-[var(--tpl-radius)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:shadow-lg"
+    class="tpl:absolute tpl:top-16 tpl:left-1/2 tpl:z-toast tpl:-translate-x-1/2 tpl:rounded-[var(--tpl-radius)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:shadow-[var(--tpl-shadow-lg)]"
     style="
       background-color: var(--tpl-warning-light);
       color: var(--tpl-text);

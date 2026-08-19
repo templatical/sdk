@@ -191,7 +191,7 @@ function toggleVisibility(key: VisibilityKey): void {
       <div class="tpl:space-y-2">
         <select
           data-testid="display-condition-select"
-          class="tpl:w-full tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:outline-none tpl:transition-all tpl:duration-150 tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
+          class="tpl:w-full tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-2 tpl:text-xs tpl:outline-none tpl:transition-all tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
           :class="
             block.displayCondition
               ? 'tpl:border-[var(--tpl-primary)] tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-text)]'
@@ -279,7 +279,7 @@ function toggleVisibility(key: VisibilityKey): void {
             <div class="tpl:flex tpl:justify-end">
               <button
                 type="button"
-                class="tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-[var(--tpl-primary)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-bg)] tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:opacity-50"
+                class="tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-[var(--tpl-primary)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-on-primary)] tpl:transition-all tpl:hover:opacity-90 tpl:disabled:opacity-50"
                 :disabled="!customBefore.trim()"
                 @click="applyCustomCondition"
               >

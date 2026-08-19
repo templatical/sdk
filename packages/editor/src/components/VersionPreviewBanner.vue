@@ -45,7 +45,7 @@ const { t } = useI18n();
     </div>
     <div class="tpl:flex tpl:items-center tpl:gap-2">
       <button
-        class="tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:duration-150 tpl:text-[var(--tpl-text-muted)] tpl:border tpl:border-[var(--tpl-border)]"
+        class="tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:text-[var(--tpl-text-muted)] tpl:border tpl:border-[var(--tpl-border)]"
         style="background-color: transparent"
         data-testid="version-preview-cancel"
         @click="emit('cancel')"
@@ -54,7 +54,7 @@ const { t } = useI18n();
       </button>
       <button
         v-if="canRestore"
-        class="tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
+        class="tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:hover:opacity-90 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
         data-testid="version-preview-restore"
         @click="emit('confirm')"
       >

@@ -117,14 +117,14 @@ function handleUpdate(updates: Partial<Block>): void {
       </div>
       <div class="tpl:flex tpl:gap-1">
         <button
-          class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)] tpl:hover:text-[var(--tpl-text)]"
+          class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)] tpl:hover:text-[var(--tpl-text)]"
           :title="t.toolbar.duplicate"
           @click="emit('duplicate')"
         >
           <Copy :size="14" :stroke-width="2" />
         </button>
         <button
-          class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-150 tpl:hover:border-[var(--tpl-danger)] tpl:hover:bg-[var(--tpl-danger-light)] tpl:hover:text-[var(--tpl-danger)]"
+          class="tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:hover:border-[var(--tpl-danger)] tpl:hover:bg-[var(--tpl-danger-light)] tpl:hover:text-[var(--tpl-danger)]"
           :title="t.toolbar.delete"
           @click="emit('delete')"
         >

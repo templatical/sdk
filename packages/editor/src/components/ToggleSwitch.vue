@@ -40,7 +40,7 @@ const emit = defineEmits<{
       @click="!disabled && emit('update:modelValue', !modelValue)"
     >
       <span
-        class="tpl:pointer-events-none tpl:inline-block tpl:size-4 tpl:rounded-full tpl:bg-[var(--tpl-bg)] tpl:shadow tpl:transition-transform tpl:duration-200"
+        class="tpl:pointer-events-none tpl:inline-block tpl:size-4 tpl:rounded-full tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow)] tpl:transition-transform tpl:duration-200"
         :class="modelValue ? 'tpl:translate-x-4' : 'tpl:translate-x-0'"
       />
     </button>

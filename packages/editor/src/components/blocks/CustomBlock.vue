@@ -164,7 +164,7 @@ watch(
         <button
           v-if="!isFetching"
           type="button"
-          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-2 tpl:text-sm tpl:font-semibold tpl:shadow-sm tpl:transition-all tpl:duration-150 hover:tpl:border-[var(--tpl-primary)] hover:tpl:shadow-md tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
+          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:px-4 tpl:py-2 tpl:text-sm tpl:font-semibold tpl:shadow-[var(--tpl-shadow)] tpl:transition-all tpl:hover:border-[var(--tpl-primary)] tpl:hover:shadow-[var(--tpl-shadow-md)] tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary-hover)]"
           @click.stop="fetchData"
         >
           <CustomBlockIcon

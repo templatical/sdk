@@ -202,7 +202,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
       <button
         type="button"
         :aria-label="t.sidebarNav.browseSavedBlocks"
-        class="tpl:flex tpl:h-10 tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)]"
+        class="tpl:flex tpl:h-10 tpl:w-full tpl:cursor-pointer tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:hover:bg-[var(--tpl-primary-light)] tpl:hover:text-[var(--tpl-primary)]"
         :style="{
           justifyContent: isExpanded ? 'flex-start' : 'center',
         }"
@@ -245,7 +245,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
         :aria-label="
           format(t.sidebarNav.insertBlock, { block: blockType.label })
         "
-        class="tpl:flex tpl:h-10 tpl:w-full tpl:shrink-0 tpl:cursor-grab tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-primary-light)] hover:tpl:text-[var(--tpl-primary)] active:tpl:cursor-grabbing"
+        class="tpl:flex tpl:h-10 tpl:w-full tpl:shrink-0 tpl:cursor-grab tpl:items-center tpl:gap-3 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-3 tpl:text-[var(--tpl-text-muted)] tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:hover:bg-[var(--tpl-primary-light)] tpl:hover:text-[var(--tpl-primary)] tpl:active:cursor-grabbing"
         :style="{
           justifyContent: isExpanded ? 'flex-start' : 'center',
         }"
@@ -253,7 +253,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
         @keydown="handlePaletteKeydown($event, blockType)"
       >
         <div
-          class="tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:transition-transform tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:scale-105"
+          class="tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:transition-transform tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:hover:scale-105"
         >
           <component
             :is="blockTypeIcons[blockType.type]"

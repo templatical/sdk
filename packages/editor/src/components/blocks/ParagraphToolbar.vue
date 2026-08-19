@@ -197,7 +197,7 @@ function setHighlight(color: string): void {
       :data-tpl-theme="tplUiTheme"
       role="toolbar"
       :aria-label="t.paragraphEditor.toolbar"
-      class="tpl tpl-text-toolbar tpl:absolute tpl:z-popover tpl:flex tpl:gap-1 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:shadow-lg"
+      class="tpl tpl-text-toolbar tpl:absolute tpl:z-popover tpl:flex tpl:gap-1 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2 tpl:shadow-[var(--tpl-shadow-lg)]"
       :style="{
         ...themeStyles,
         top: `${toolbarPosition.top}px`,
@@ -359,7 +359,7 @@ function setHighlight(color: string): void {
             <ToolbarSeparator />
             <button
               type="button"
-              class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)]"
               :aria-label="t.mergeTag.insert"
               :title="t.mergeTag.insert"
               @click="emit('add-merge-tag')"
@@ -372,7 +372,7 @@ function setHighlight(color: string): void {
             <ToolbarSeparator />
             <button
               type="button"
-              class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:duration-150 tpl:hover:bg-[var(--tpl-bg-active)]"
+              class="tpl:flex tpl:h-8 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded tpl:border-none tpl:bg-transparent tpl:px-2.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-text)] tpl:transition-all tpl:hover:bg-[var(--tpl-bg-active)]"
               :aria-label="t.logicTag.insert"
               :title="t.logicTag.insert"
               data-testid="insert-logic-button"

@@ -140,6 +140,115 @@ describe("EditorHeader templates surface", () => {
     });
   });
 
+  describe("right column — quiet at rest, amber on news", () => {
+    /**
+     * All three controls share one recipe, so nothing in the header competes with
+     * the canvas and all three sit at one size and one height. Amber enters on a
+     * single condition — Save's fill, while the template is dirty — because
+     * amber announces intent or selection, and a control that wears it
+     * unconditionally announces neither.
+     */
+    it("Save is primary only while dirty, secondary otherwise", () => {
+      // Amber announces intent or selection, so a Save that looks the same dirty
+      // or clean announces nothing. Gated on `hasTemplate` too, or a disabled
+      // button would light up before there is anywhere to save to.
+      const header = headerSource();
+      const save = header.slice(header.indexOf('data-testid="template-save"'));
+      expect(save).toContain(
+        "editor.state.isDirty && templates.hasTemplate.value",
+      );
+      expect(save).toContain("? primaryBtnCompactClass");
+      expect(save).toContain(": secondaryBtnCompactClass");
+      // Never unconditionally primary — that is the version that read as loud.
+      expect(save).not.toContain(':class="primaryBtnCompactClass"');
+    });
+
+    it("Save lifts on the same condition", () => {
+      // Depth answers state: flat at rest, a light lift once there is unsaved
+      // work. Inline rather than in the recipe, because the recipe is shared and
+      // a primary button at rest elsewhere should still be flat.
+      const save = headerSource().slice(
+        headerSource().indexOf('data-testid="template-save"'),
+      );
+      expect(save).toContain("boxShadow: 'var(--tpl-shadow-sm)'");
+    });
+
+    it("Comments and Test are always secondary", () => {
+      const header = headerSource();
+      // Bounded per button: an unbounded slice runs to the end of the header, so
+      // a `secondaryBtnCompactClass` assertion on Comments would be satisfied by Test.
+      const region = (from: string, to: string) => {
+        const start = header.indexOf(from);
+        const end = header.indexOf(to);
+        expect(start).toBeGreaterThan(-1);
+        expect(end).toBeGreaterThan(start);
+        return header.slice(start, end);
+      };
+
+      const comments = region('data-testid="comments-trigger"', 'name="right-extras"');
+      const test = region('data-testid="test-email-trigger"', 'data-testid="template-save"');
+      const save = header.slice(header.indexOf('data-testid="template-save"'));
+
+      expect(comments).toContain(':class="secondaryBtnCompactClass"');
+      expect(test).toContain(':class="secondaryBtnCompactClass"');
+      // Save's resting state is the same recipe; it reaches it through the
+      // ternary rather than a bare binding, which the primary test above covers.
+      expect(save).toContain(": secondaryBtnCompactClass");
+      // Only Comments tints its surface, and only while its panel is open.
+      expect(test).not.toContain(":style");
+    });
+
+    it("no button is unconditionally amber", () => {
+      // The dialect this replaced was a static `style` attribute — transparent
+      // fill, amber border, amber label, on whether or not anything was
+      // happening. Amber now appears only inside a `:style` ternary, so every
+      // control is quiet at rest and the amber means something when it shows.
+      const header = headerSource();
+      expect(header).not.toContain("headerBtnClass");
+      // Negative lookbehind: `:style="` contains `style="`, so an unanchored
+      // pattern flags the very bindings this test means to allow.
+      expect(header).not.toMatch(/(?<!:)style="[^"]*--tpl-primary/);
+
+      const bindings = [...header.matchAll(/:style="([\s\S]*?)"/g)].map((m) => m[1]);
+      const amber = bindings.filter((b) => b.includes("--tpl-primary"));
+      // One: Comments' open tint. Save's amber travels in its class binding,
+      // which the primary/secondary assertions above cover.
+      expect(amber).toHaveLength(1);
+      for (const binding of amber) {
+        expect(binding).toMatch(/isOpen/);
+        expect(binding).toContain("undefined");
+      }
+      // And the class binding is gated too, never a bare primary.
+      expect(header).not.toContain(':class="primaryBtnCompactClass"');
+    });
+
+    it("Comments' open state is not Save's resting paint", () => {
+      // An amber-filled open state is pixel-identical to the primary button, so
+      // an open panel and the save action would read as the same thing.
+      const header = headerSource();
+      const comments = header.slice(
+        header.indexOf('data-testid="comments-trigger"'),
+        header.indexOf('name="right-extras"'),
+      );
+      expect(comments).toContain("backgroundColor: 'var(--tpl-primary-light)'");
+      expect(comments).not.toContain("'var(--tpl-primary)'");
+    });
+
+    it("the header is opaque and carries no backdrop blur", () => {
+      // `.tpl-body` begins at this header's own height, so there is never
+      // anything behind it to blur or to show through.
+      const header = headerSource();
+      expect(header).toContain("tpl:bg-[var(--tpl-bg)]");
+      expect(header).not.toContain("backdrop-filter");
+      expect(header).not.toContain("color-mix");
+    });
+
+    it("sticky chrome uses the shadow step assigned to it", () => {
+      expect(headerSource()).toContain("tpl:shadow-[var(--tpl-shadow-sm)]");
+      expect(headerSource()).not.toContain("tpl:shadow-[var(--tpl-shadow-md)]");
+    });
+  });
+
   describe("wiring", () => {
     it("builds the feature only when a provider is configured", () => {
       expect(editorSource).toMatch(

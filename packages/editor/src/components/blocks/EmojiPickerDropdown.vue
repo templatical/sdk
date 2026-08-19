@@ -61,7 +61,7 @@ function handleInsert(emoji: string): void {
       aria-modal="false"
       :aria-label="t.paragraphEditor.insertEmoji"
       tabindex="-1"
-      class="tpl-emoji-picker tpl:absolute tpl:top-full tpl:left-0 tpl:z-10 tpl:mt-2 tpl:w-72 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-2 tpl:shadow-lg"
+      class="tpl-emoji-picker tpl:absolute tpl:top-full tpl:left-0 tpl:z-10 tpl:mt-2 tpl:w-72 tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:p-2 tpl:shadow-[var(--tpl-shadow-lg)]"
       @keydown.esc.stop.prevent="closeEmojiPicker"
     >
       <div
@@ -80,7 +80,7 @@ function handleInsert(emoji: string): void {
             :key="emoji"
             type="button"
             :aria-label="format(t.paragraphEditor.emojiItemLabel, { emoji })"
-            class="tpl:flex tpl:size-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:text-base tpl:transition-all tpl:duration-100 tpl:hover:scale-125 tpl:hover:bg-[var(--tpl-bg-active)]"
+            class="tpl:flex tpl:size-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded tpl:border-none tpl:bg-transparent tpl:text-base tpl:transition-all tpl:hover:scale-125 tpl:hover:bg-[var(--tpl-bg-active)]"
             @click="handleInsert(emoji)"
           >
             {{ emoji }}

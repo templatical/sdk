@@ -22,7 +22,7 @@ function optionId(index: number): string | undefined {
 <template>
   <div
     :id="listId"
-    class="tpl:min-w-[200px] tpl:max-w-[320px] tpl:max-h-[50vh] tpl:overflow-y-auto tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:py-1 tpl:shadow-lg"
+    class="tpl:min-w-[200px] tpl:max-w-[320px] tpl:max-h-[50vh] tpl:overflow-y-auto tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:py-1 tpl:shadow-[var(--tpl-shadow-lg)]"
     role="listbox"
     data-testid="merge-tag-suggestion-list"
   >
@@ -46,7 +46,7 @@ function optionId(index: number): string | undefined {
       :class="
         index === selectedIndex
           ? 'tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary)]'
-          : 'tpl:text-[var(--tpl-text)] hover:tpl:bg-[var(--tpl-bg-hover)]'
+          : 'tpl:text-[var(--tpl-text)] tpl:hover:bg-[var(--tpl-bg-hover)]'
       "
       @mousedown.prevent.stop="$emit('select', item)"
       @mousemove="index !== selectedIndex && $emit('hover', index)"

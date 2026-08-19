@@ -65,7 +65,7 @@ function getInitials(name: string): string {
       <div
         v-for="collaborator in visibleCollaborators"
         :key="collaborator.id"
-        class="tpl-collaborator-avatar tpl:relative tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-2 tpl:text-[10px] tpl:font-bold tpl:transition-transform tpl:duration-150 tpl:hover:z-10 tpl:hover:scale-110 tpl:border-[var(--tpl-bg)]"
+        class="tpl-collaborator-avatar tpl:relative tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-2 tpl:text-[10px] tpl:font-bold tpl:transition-transform tpl:hover:z-10 tpl:hover:scale-110 tpl:border-[var(--tpl-bg)]"
         :style="{
           backgroundColor: collaborator.color,
           color: readableTextColor(collaborator.color),

@@ -114,7 +114,7 @@ onClickOutside(dropdownRef, () => {
   >
     <!-- Step to an older version -->
     <button
-      class="tpl:flex tpl:size-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:transition-colors tpl:duration-150 hover:tpl:bg-[var(--tpl-bg-hover)] disabled:tpl:cursor-not-allowed disabled:tpl:opacity-30 disabled:hover:tpl:bg-transparent tpl:text-[var(--tpl-text-muted)]"
+      class="tpl:flex tpl:size-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:transition-colors tpl:hover:bg-[var(--tpl-bg-hover)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-30 tpl:disabled:hover:bg-transparent tpl:text-[var(--tpl-text-muted)]"
       data-testid="version-history-older"
       :disabled="!canGoOlder"
       :title="t.versionHistory.olderVersion"
@@ -126,7 +126,7 @@ onClickOutside(dropdownRef, () => {
 
     <!-- History dropdown toggle -->
     <button
-      class="tpl:flex tpl:h-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-1.5 tpl:transition-colors tpl:duration-150 hover:tpl:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
+      class="tpl:flex tpl:h-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:gap-0.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:px-1.5 tpl:transition-colors tpl:hover:bg-[var(--tpl-bg-hover)] tpl:text-[var(--tpl-text-muted)]"
       data-testid="version-history-toggle"
       :aria-expanded="isOpen"
       :title="t.versionHistory.tooltip"
@@ -135,7 +135,7 @@ onClickOutside(dropdownRef, () => {
     >
       <Clock :size="16" :stroke-width="1.5" />
       <ChevronDown
-        class="tpl:transition-transform tpl:duration-150"
+        class="tpl:transition-transform"
         :class="{ 'tpl:rotate-180': isOpen }"
         :size="10"
         :stroke-width="2"
@@ -180,7 +180,7 @@ onClickOutside(dropdownRef, () => {
           <button
             v-for="version in versions"
             :key="version.id"
-            class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:border-b tpl:border-b-[var(--tpl-border-light)] tpl:border-l-2 tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-all tpl:duration-150 last:tpl:border-b-0 hover:tpl:border-l-[var(--tpl-primary)] hover:tpl:bg-[var(--tpl-bg-hover)]"
+            class="tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:border-b tpl:border-b-[var(--tpl-border-light)] tpl:border-l-2 tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-all tpl:last:border-b-0 tpl:hover:border-l-[var(--tpl-primary)] tpl:hover:bg-[var(--tpl-bg-hover)]"
             :class="
               version.id === previewingId
                 ? 'tpl:border-l-[var(--tpl-primary)] tpl:bg-[var(--tpl-bg-active)]'
@@ -231,7 +231,7 @@ onClickOutside(dropdownRef, () => {
 
     <!-- Step to a newer version -->
     <button
-      class="tpl:flex tpl:size-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:transition-colors tpl:duration-150 hover:tpl:bg-[var(--tpl-bg-hover)] disabled:tpl:cursor-not-allowed disabled:tpl:opacity-30 disabled:hover:tpl:bg-transparent tpl:text-[var(--tpl-text-muted)]"
+      class="tpl:flex tpl:size-7 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:bg-transparent tpl:transition-colors tpl:hover:bg-[var(--tpl-bg-hover)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-30 tpl:disabled:hover:bg-transparent tpl:text-[var(--tpl-text-muted)]"
       data-testid="version-history-newer"
       :disabled="!canGoNewer"
       :title="t.versionHistory.newerVersion"

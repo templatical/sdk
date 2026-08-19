@@ -87,9 +87,9 @@ function toggleLock(): void {
 }
 
 const stepperBtnClass =
-  "tpl:flex tpl:items-center tpl:justify-center tpl:w-8 tpl:h-8 tpl:text-[var(--tpl-text-muted)] tpl:bg-[var(--tpl-bg)] tpl:border tpl:border-[var(--tpl-border)] tpl:cursor-pointer tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-bg-hover)] hover:tpl:text-[var(--tpl-text)] active:tpl:bg-[var(--tpl-bg-active)]";
+  "tpl:flex tpl:items-center tpl:justify-center tpl:w-8 tpl:h-8 tpl:text-[var(--tpl-text-muted)] tpl:bg-[var(--tpl-bg)] tpl:border tpl:border-[var(--tpl-border)] tpl:cursor-pointer tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:hover:bg-[var(--tpl-bg-hover)] tpl:hover:text-[var(--tpl-text)] tpl:active:bg-[var(--tpl-bg-active)]";
 const inputClass =
-  "tpl:w-10 tpl:h-8 tpl:text-center tpl:text-xs tpl:font-medium tpl:border-y tpl:border-x-0 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)] tpl:outline-none tpl:transition-all tpl:duration-[120ms] focus:tpl:border-[var(--tpl-primary)] focus:tpl:shadow-[var(--tpl-ring)]";
+  "tpl:w-10 tpl:h-8 tpl:text-center tpl:text-xs tpl:font-medium tpl:border-y tpl:border-x-0 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)] tpl:outline-none tpl:transition-all tpl:duration-[120ms] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[var(--tpl-ring)]";
 </script>
 
 <template>
@@ -171,7 +171,7 @@ const inputClass =
           :class="
             locked
               ? 'tpl:border-[var(--tpl-primary)] tpl:bg-[var(--tpl-primary-light)] tpl:text-[var(--tpl-primary)]'
-              : 'tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] hover:tpl:bg-[var(--tpl-bg-hover)]'
+              : 'tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] tpl:hover:bg-[var(--tpl-bg-hover)]'
           "
           :aria-label="
             locked ? t.spacingControl.unlock : t.spacingControl.lockAll

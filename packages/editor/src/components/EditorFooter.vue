@@ -31,7 +31,7 @@ const { t } = useI18n();
         href="https://templatical.com"
         target="_blank"
         rel="noopener noreferrer"
-        class="tpl:inline-flex tpl:items-center tpl:gap-1 tpl:font-medium tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80 tpl:text-[var(--tpl-text-muted)]"
+        class="tpl:inline-flex tpl:items-center tpl:gap-1 tpl:font-medium tpl:transition-colors tpl:hover:opacity-80 tpl:text-[var(--tpl-text-muted)]"
         style="text-decoration: none"
       >
         <img
@@ -47,7 +47,7 @@ const { t } = useI18n();
         href="https://github.com/templatical/sdk"
         target="_blank"
         rel="noopener noreferrer"
-        class="tpl:transition-colors tpl:duration-150 hover:tpl:opacity-80 tpl:text-[var(--tpl-text-dim)]"
+        class="tpl:transition-colors tpl:hover:opacity-80 tpl:text-[var(--tpl-text-dim)]"
         style="text-decoration: none"
       >
         {{ t.footer.openSource }}

@@ -225,7 +225,7 @@ function handleConditionToggle(): void {
 <template>
   <div
     v-if="!isHiddenInPreview"
-    class="tpl-block tpl:group tpl:relative tpl:cursor-pointer tpl:rounded-sm tpl:transition-shadow tpl:duration-150"
+    class="tpl-block tpl:group tpl:relative tpl:cursor-pointer tpl:rounded-sm tpl:transition-shadow"
     :class="{
       'tpl-block--selected': isSelected,
       'tpl-block--picked': picked,
@@ -247,7 +247,7 @@ function handleConditionToggle(): void {
     >
       <button
         ref="dragButtonRef"
-        class="tpl-block-btn tpl-block-action-btn tpl:flex tpl:size-7 tpl:cursor-grab tpl:items-center tpl:justify-center tpl:rounded-sm tpl:border-none tpl:transition-colors tpl:duration-150 tpl:active:cursor-grabbing"
+        class="tpl-block-btn tpl-block-action-btn tpl:flex tpl:size-7 tpl:cursor-grab tpl:items-center tpl:justify-center tpl:rounded-sm tpl:border-none tpl:transition-colors tpl:active:cursor-grabbing"
         :aria-label="dragAriaLabel"
         :aria-pressed="isLifted"
         aria-keyshortcuts="Space Enter ArrowUp ArrowDown Escape"
@@ -257,7 +257,7 @@ function handleConditionToggle(): void {
         <GripVertical :size="14" :stroke-width="1.5" />
       </button>
       <button
-        class="tpl-block-action-btn tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-sm tpl:border-none tpl:transition-colors tpl:duration-150"
+        class="tpl-block-action-btn tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-sm tpl:border-none tpl:transition-colors"
         :aria-label="t.blockActions.duplicate"
         :title="t.blockActions.duplicate"
         @click.stop="handleDuplicate"
@@ -266,7 +266,7 @@ function handleConditionToggle(): void {
       </button>
       <button
         v-if="canSaveAsBlock"
-        class="tpl-block-action-btn tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-sm tpl:border-none tpl:transition-colors tpl:duration-150"
+        class="tpl-block-action-btn tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-sm tpl:border-none tpl:transition-colors"
         :aria-label="t.blockActions.saveAsBlock"
         :title="t.blockActions.saveAsBlock"
         @click.stop="handleSaveAsBlock"
@@ -274,7 +274,7 @@ function handleConditionToggle(): void {
         <Bookmark :size="14" :stroke-width="1.5" />
       </button>
       <button
-        class="tpl-block-action-btn tpl-block-delete-btn tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-sm tpl:border-none tpl:transition-colors tpl:duration-150"
+        class="tpl-block-action-btn tpl-block-delete-btn tpl:flex tpl:size-7 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-sm tpl:border-none tpl:transition-colors"
         :aria-label="t.blockActions.delete"
         :title="t.blockActions.delete"
         @click.stop="handleDelete"
@@ -303,7 +303,7 @@ function handleConditionToggle(): void {
     >
       <button
         data-testid="condition-toggle"
-        class="tpl-condition-toggle tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1 tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:text-[var(--tpl-primary)] tpl:border tpl:border-[var(--tpl-border)]"
+        class="tpl-condition-toggle tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1 tpl:transition-colors tpl:bg-[var(--tpl-chrome-bg-elevated)] tpl:text-[var(--tpl-primary)] tpl:border tpl:border-[var(--tpl-border)]"
         :aria-label="t.blockActions.conditionToggle"
         :title="block.displayCondition?.label"
         @click.stop="handleConditionToggle"
@@ -317,7 +317,7 @@ function handleConditionToggle(): void {
       class="tpl:absolute tpl:-right-1 tpl:-top-1 tpl:z-[5] tpl:translate-x-full"
     >
       <button
-        class="tpl-comment-indicator tpl:flex tpl:min-h-6 tpl:min-w-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-0.5 tpl:rounded-full tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-semibold tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-chrome-primary-light)] tpl:text-[var(--tpl-primary)]"
+        class="tpl-comment-indicator tpl:flex tpl:min-h-6 tpl:min-w-6 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-0.5 tpl:rounded-full tpl:border-none tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-semibold tpl:transition-colors tpl:bg-[var(--tpl-chrome-primary-light)] tpl:text-[var(--tpl-primary)]"
         :aria-label="
           format(t.blockActions.comments, { count: String(blockCommentCount) })
         "

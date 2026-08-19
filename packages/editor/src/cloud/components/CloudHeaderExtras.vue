@@ -89,7 +89,7 @@ const { t: cloudT, format: cloudFormat } = useCloudI18nStrict();
         {{ cloudT.aiChat.button }}
       </button>
       <Transition
-        enter-active-class="tpl:transition-all tpl:duration-150 tpl:ease-out"
+        enter-active-class="tpl:transition-all tpl:ease-out"
         enter-from-class="tpl:scale-95 tpl:opacity-0"
         enter-to-class="tpl:scale-100 tpl:opacity-100"
         leave-active-class="tpl:transition-all tpl:duration-100 tpl:ease-in"

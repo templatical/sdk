@@ -135,7 +135,7 @@ function handleKeydown(event: KeyboardEvent): void {
       v-if="isValid"
       type="button"
       :aria-label="t.mergeTag.deleteMergeTag"
-      class="tpl-merge-tag-delete tpl:flex tpl:size-5 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-none tpl:bg-transparent tpl:p-0 tpl:opacity-60 tpl:transition-all hover:tpl:opacity-100 tpl:text-[var(--tpl-primary)]"
+      class="tpl-merge-tag-delete tpl:flex tpl:size-5 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-full tpl:border-none tpl:bg-transparent tpl:p-0 tpl:opacity-60 tpl:transition-all tpl:hover:opacity-100 tpl:text-[var(--tpl-primary)]"
       contenteditable="false"
       @click.stop.prevent="deleteNode"
     >

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { primaryBtnClass } from "../constants/styleConstants";
 import TplModal from "./TplModal.vue";
 import { useI18n } from "../composables";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
@@ -304,7 +305,7 @@ function handleKeydown(event: KeyboardEvent): void {
         </h3>
         <button
           :aria-label="t.savedBlocks.close"
-          class="tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-1 tpl:transition-colors tpl:duration-100 tpl:text-[var(--tpl-text-dim)]"
+          class="tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-1 tpl:transition-colors tpl:text-[var(--tpl-text-dim)]"
           @click="handleClose"
         >
           <X :size="16" :stroke-width="2" />
@@ -498,7 +499,7 @@ function handleKeydown(event: KeyboardEvent): void {
                     <button
                       v-if="confirmDeleteId === item.id"
                       :aria-label="t.savedBlocks.deleteConfirm"
-                      class="tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:duration-100 tpl:border-[var(--tpl-danger)] tpl:text-[var(--tpl-danger)]"
+                      class="tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-2 tpl:py-0.5 tpl:text-[10px] tpl:font-medium tpl:transition-colors tpl:border-[var(--tpl-danger)] tpl:text-[var(--tpl-danger)]"
                       style="background-color: transparent"
                       @click.stop="handleDelete(item.id)"
                     >
@@ -510,7 +511,7 @@ function handleKeydown(event: KeyboardEvent): void {
                     <template v-else>
                       <button
                         v-if="savedBlocks.canUpdateBlock(item)"
-                        class="tpl-saved-block-rename-btn tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-0.5 tpl:transition-colors tpl:duration-100 tpl:text-[var(--tpl-text-dim)]"
+                        class="tpl-saved-block-rename-btn tpl:ml-auto tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-dim)]"
                         :aria-label="t.savedBlocks.rename"
                         :title="t.savedBlocks.rename"
                         @click.stop="startRename(item)"
@@ -519,7 +520,7 @@ function handleKeydown(event: KeyboardEvent): void {
                       </button>
                       <button
                         v-if="savedBlocks.canDeleteBlock(item)"
-                        class="tpl-saved-block-delete-btn tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-0.5 tpl:transition-colors tpl:duration-100 tpl:text-[var(--tpl-text-dim)]"
+                        class="tpl-saved-block-delete-btn tpl:cursor-pointer tpl:rounded-md tpl:border-none tpl:bg-transparent tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-dim)]"
                         :class="{
                           'tpl:ml-auto': !savedBlocks.canUpdateBlock(item),
                         }"
@@ -625,14 +626,14 @@ function handleKeydown(event: KeyboardEvent): void {
           <button
             type="button"
             data-testid="saved-blocks-browser-close"
-            class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
+            class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-[var(--tpl-shadow-sm)] tpl:transition-all tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
             @click="handleClose"
           >
             {{ t.savedBlocks.close }}
           </button>
           <button
             type="button"
-            class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
+            :class="primaryBtnClass"
             :disabled="!selected"
             @click="handleInsert"
           >

@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
           <span>{{ cloudT.designReference.title }}</span>
         </div>
         <button
-          class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
+          class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
           @click="emit('close')"
         >
           <X :size="14" :stroke-width="2" />
@@ -240,7 +240,7 @@ onBeforeUnmount(() => {
             class="tpl:flex tpl:gap-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:p-1 tpl:bg-[var(--tpl-bg-hover)]"
           >
             <button
-              class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
+              class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all"
               :style="{
                 backgroundColor:
                   activeTab === 'image' ? 'var(--tpl-bg)' : 'transparent',
@@ -256,7 +256,7 @@ onBeforeUnmount(() => {
               {{ cloudT.designReference.uploadImage }}
             </button>
             <button
-              class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
+              class="tpl:flex tpl:flex-1 tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-2 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all"
               :style="{
                 backgroundColor:
                   activeTab === 'pdf' ? 'var(--tpl-bg)' : 'transparent',
@@ -303,7 +303,7 @@ onBeforeUnmount(() => {
                 </div>
                 <!-- Remove button -->
                 <button
-                  class="tpl:absolute tpl:top-2 tpl:right-2 tpl:rounded-full tpl:p-1 tpl:transition-colors tpl:duration-150 tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] tpl:shadow-[var(--tpl-shadow)]"
+                  class="tpl:absolute tpl:top-2 tpl:right-2 tpl:rounded-full tpl:p-1 tpl:transition-colors tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] tpl:shadow-[var(--tpl-shadow)]"
                   @click="clearFile"
                 >
                   <X :size="12" :stroke-width="2" />
@@ -314,7 +314,7 @@ onBeforeUnmount(() => {
             <!-- Drop zone -->
             <div
               v-else
-              class="tpl-design-dropzone tpl:flex tpl:cursor-pointer tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border-2 tpl:border-dashed tpl:px-4 tpl:py-8 tpl:transition-colors tpl:duration-150"
+              class="tpl-design-dropzone tpl:flex tpl:cursor-pointer tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border-2 tpl:border-dashed tpl:px-4 tpl:py-8 tpl:transition-colors"
               :style="{
                 borderColor: isDragging
                   ? 'var(--tpl-primary)'
@@ -370,7 +370,7 @@ onBeforeUnmount(() => {
             </label>
             <textarea
               v-model="prompt"
-              class="tpl:min-h-[72px] tpl:w-full tpl:resize-none tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:font-sans tpl:text-sm tpl:outline-none tpl:transition-colors tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
+              class="tpl:min-h-[72px] tpl:w-full tpl:resize-none tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-2 tpl:font-sans tpl:text-sm tpl:outline-none tpl:transition-colors tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
               :class="['tpl-design-prompt-input']"
               :placeholder="cloudT.designReference.promptPlaceholder"
               rows="3"
@@ -387,14 +387,14 @@ onBeforeUnmount(() => {
             </p>
             <div class="tpl:flex tpl:gap-2">
               <button
-                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:text-[var(--tpl-text-muted)] tpl:border tpl:border-[var(--tpl-border)]"
+                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:text-[var(--tpl-text-muted)] tpl:border tpl:border-[var(--tpl-border)]"
                 style="background-color: transparent"
                 @click="cancelConfirmation"
               >
                 {{ cloudT.designReference.replaceCancel }}
               </button>
               <button
-                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
+                class="tpl:flex-1 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:hover:opacity-90 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
                 @click="handleGenerate"
               >
                 {{ cloudT.designReference.replaceConfirm }}
@@ -418,7 +418,7 @@ onBeforeUnmount(() => {
           <!-- Generate button -->
           <button
             v-if="!showConfirmation"
-            class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
+            class="tpl:flex tpl:w-full tpl:items-center tpl:justify-center tpl:gap-2 tpl:rounded-[var(--tpl-radius-sm)] tpl:px-4 tpl:py-2.5 tpl:text-sm tpl:font-medium tpl:transition-all tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
             :disabled="!canGenerate"
             @click="handleGenerate"
           >

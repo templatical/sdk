@@ -18,8 +18,8 @@ const { t: cloudT } = useCloudI18nStrict();
 
 <template>
   <Transition
-    enter-active-class="tpl:transition-opacity tpl:duration-150"
-    leave-active-class="tpl:transition-opacity tpl:duration-150"
+    enter-active-class="tpl:transition-opacity"
+    leave-active-class="tpl:transition-opacity"
     enter-from-class="tpl:opacity-0"
     leave-to-class="tpl:opacity-0"
   >
@@ -80,7 +80,7 @@ const { t: cloudT } = useCloudI18nStrict();
           </button>
           <button
             type="button"
-            class="tpl:rounded-md tpl:bg-[var(--tpl-danger)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-white"
+            class="tpl:rounded-md tpl:bg-[var(--tpl-danger)] tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:text-[var(--tpl-bg)]"
             @click="emit('confirm')"
           >
             {{ cloudT.saveGate.confirm }}

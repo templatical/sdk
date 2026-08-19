@@ -42,7 +42,7 @@ function handleKeydown(event: KeyboardEvent): void {
 <template>
   <Teleport v-if="popoverRoot" :to="popoverRoot">
     <Transition
-      enter-active-class="tpl:transition tpl:duration-150"
+      enter-active-class="tpl:transition"
       enter-from-class="tpl:opacity-0"
       enter-to-class="tpl:opacity-100"
       leave-active-class="tpl:transition tpl:duration-100"

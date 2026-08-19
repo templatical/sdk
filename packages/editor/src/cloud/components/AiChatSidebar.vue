@@ -185,14 +185,14 @@ function handleKeydown(event: KeyboardEvent): void {
         <div class="tpl:flex tpl:items-center tpl:gap-1">
           <button
             v-if="(aiChat.messages.value?.length ?? 0) > 0"
-            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
+            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
             :title="cloudTranslations.aiChat.clear"
             @click="aiChat.clearChat()"
           >
             <Trash2 :size="14" :stroke-width="2" />
           </button>
           <button
-            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:duration-150 tpl:text-[var(--tpl-text-muted)]"
+            class="tpl:rounded-md tpl:p-0.5 tpl:transition-colors tpl:text-[var(--tpl-text-muted)]"
             @click="emit('close')"
           >
             <X :size="14" :stroke-width="2" />
@@ -289,7 +289,7 @@ function handleKeydown(event: KeyboardEvent): void {
                     message.id === aiChat.lastApplyMessageId.value &&
                     !aiChat.isGenerating.value
                   "
-                  class="tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:self-start tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
+                  class="tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:self-start tpl:rounded-md tpl:border tpl:px-2.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all"
                   style="
                     border-color: var(--tpl-border);
                     color: var(--tpl-text-muted);
@@ -373,7 +373,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <!-- Input area -->
       <div class="tpl:border-t tpl:p-3 tpl:border-[var(--tpl-border)]">
         <div
-          class="tpl-ai-input-wrapper tpl:flex tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
+          class="tpl-ai-input-wrapper tpl-focus-ring-host tpl:flex tpl:items-end tpl:gap-2 tpl:rounded-[var(--tpl-radius)] tpl:border tpl:px-3 tpl:py-2 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
         >
           <textarea
             v-model="promptInput"
@@ -384,7 +384,7 @@ function handleKeydown(event: KeyboardEvent): void {
             @keydown="handleKeydown"
           />
           <button
-            class="tpl-ai-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:duration-150 tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
+            class="tpl-ai-send-btn tpl:flex tpl:shrink-0 tpl:items-center tpl:justify-center tpl:rounded-md tpl:p-1.5 tpl:transition-all tpl:disabled:opacity-40 tpl:text-[var(--tpl-primary)]"
             :disabled="!promptInput.trim() || aiChat.isGenerating.value"
             @click="handleSend"
           >

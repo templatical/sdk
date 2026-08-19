@@ -86,7 +86,7 @@ function removeTableColumn(colIndex: number): void {
           class="tpl:flex tpl:items-center tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
         >
           <button
-            class="tpl:flex tpl:items-center tpl:justify-center tpl:px-1.5 tpl:py-1 tpl:text-[var(--tpl-text-muted)] tpl:transition-colors tpl:duration-150 tpl:hover:text-[var(--tpl-primary)] tpl:disabled:opacity-30"
+            class="tpl:flex tpl:items-center tpl:justify-center tpl:px-1.5 tpl:py-1 tpl:text-[var(--tpl-text-muted)] tpl:transition-colors tpl:hover:text-[var(--tpl-primary)] tpl:disabled:opacity-30"
             :disabled="block.rows.length <= 1"
             @click="removeTableRow(block.rows[block.rows.length - 1].id)"
           >
@@ -97,7 +97,7 @@ function removeTableColumn(colIndex: number): void {
             >{{ block.rows.length }}</span
           >
           <button
-            class="tpl:flex tpl:items-center tpl:justify-center tpl:px-1.5 tpl:py-1 tpl:text-[var(--tpl-text-muted)] tpl:transition-colors tpl:duration-150 tpl:hover:text-[var(--tpl-primary)]"
+            class="tpl:flex tpl:items-center tpl:justify-center tpl:px-1.5 tpl:py-1 tpl:text-[var(--tpl-text-muted)] tpl:transition-colors tpl:hover:text-[var(--tpl-primary)]"
             @click="addTableRow"
           >
             <Plus :size="12" :stroke-width="2" />
@@ -112,7 +112,7 @@ function removeTableColumn(colIndex: number): void {
           class="tpl:flex tpl:items-center tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)]"
         >
           <button
-            class="tpl:flex tpl:items-center tpl:justify-center tpl:px-1.5 tpl:py-1 tpl:text-[var(--tpl-text-muted)] tpl:transition-colors tpl:duration-150 tpl:hover:text-[var(--tpl-primary)] tpl:disabled:opacity-30"
+            class="tpl:flex tpl:items-center tpl:justify-center tpl:px-1.5 tpl:py-1 tpl:text-[var(--tpl-text-muted)] tpl:transition-colors tpl:hover:text-[var(--tpl-primary)] tpl:disabled:opacity-30"
             :disabled="tableColumnCount <= 1"
             @click="removeTableColumn(tableColumnCount - 1)"
           >
@@ -123,7 +123,7 @@ function removeTableColumn(colIndex: number): void {
             >{{ tableColumnCount }}</span
           >
           <button
-            class="tpl:flex tpl:items-center tpl:justify-center tpl:px-1.5 tpl:py-1 tpl:text-[var(--tpl-text-muted)] tpl:transition-colors tpl:duration-150 tpl:hover:text-[var(--tpl-primary)]"
+            class="tpl:flex tpl:items-center tpl:justify-center tpl:px-1.5 tpl:py-1 tpl:text-[var(--tpl-text-muted)] tpl:transition-colors tpl:hover:text-[var(--tpl-primary)]"
             @click="addTableColumn"
           >
             <Plus :size="12" :stroke-width="2" />

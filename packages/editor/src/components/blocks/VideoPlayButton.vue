@@ -4,7 +4,7 @@
     :class="hoverEffect && 'tpl:transition-opacity tpl:group-hover:bg-black/40'"
   >
     <div
-      class="tpl:flex tpl:size-16 tpl:items-center tpl:justify-center tpl:rounded-full tpl:bg-white/90 tpl:shadow-lg"
+      class="tpl:flex tpl:size-16 tpl:items-center tpl:justify-center tpl:rounded-full tpl:bg-[color-mix(in_srgb,var(--tpl-bg)_90%,transparent)] tpl:shadow-[var(--tpl-shadow-lg)]"
     >
       <svg
         class="tpl:ml-1 tpl:text-[var(--tpl-danger)]"

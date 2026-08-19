@@ -56,7 +56,7 @@ function getDescription(key: AiFeature): string {
     <button
       v-for="feature in features"
       :key="feature.key"
-      class="tpl-ai-feature-menu-item tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-start tpl:gap-3 tpl:border-none tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-colors tpl:duration-100"
+      class="tpl-ai-feature-menu-item tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-start tpl:gap-3 tpl:border-none tpl:px-3 tpl:py-2.5 tpl:text-left tpl:transition-colors"
       :style="{
         backgroundColor:
           activeFeature === feature.key

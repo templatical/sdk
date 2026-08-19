@@ -29,4 +29,12 @@
     background-position: -100% 0;
   }
 }
+/* The bar communicates "working" by its presence and its amber fill; the sweep
+   is decoration, so reduced motion holds it still rather than removing it. */
+@media (prefers-reduced-motion: reduce) {
+  .tpl-loading-track-fill {
+    animation: none;
+    background-position: 50% 0;
+  }
+}
 </style>

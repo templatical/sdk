@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import {
+  dangerBtnClass,
+  primaryBtnClass,
+  secondaryBtnClass,
+} from "../constants/styleConstants";
 /**
  * Confirms a restore that would discard unsaved work.
  *
@@ -77,7 +82,7 @@ const { t } = useI18n();
         <button
           type="button"
           data-testid="restore-version-cancel"
-          class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+          :class="secondaryBtnClass"
           :disabled="isBusy"
           @click="emit('cancel')"
         >
@@ -86,7 +91,7 @@ const { t } = useI18n();
         <button
           type="button"
           data-testid="restore-version-discard"
-          class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:border-[var(--tpl-danger)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-danger)]"
+          :class="dangerBtnClass"
           :disabled="isBusy"
           @click="emit('discard-and-restore')"
         >
@@ -98,7 +103,7 @@ const { t } = useI18n();
           v-if="canSave"
           type="button"
           data-testid="restore-version-save-first"
-          class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
+          :class="primaryBtnClass"
           :disabled="isBusy"
           @click="emit('save-and-restore')"
         >

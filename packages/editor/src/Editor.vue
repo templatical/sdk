@@ -492,7 +492,7 @@ defineExpose({
               core.conditionPreview.hasHiddenBlocks.value &&
               core.appliesConditionFilter.value
             "
-            class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:-translate-x-1/2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-full tpl:border tpl:px-3.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:whitespace-nowrap tpl:shadow-md tpl:hover:opacity-80 tpl:bg-[var(--tpl-warning-light)] tpl:text-[var(--tpl-warning)] tpl:border-[var(--tpl-warning)]"
+            class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:-translate-x-1/2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-full tpl:border tpl:px-3.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:whitespace-nowrap tpl:shadow-[var(--tpl-shadow-md)] tpl:hover:opacity-80 tpl:bg-[var(--tpl-warning-light)] tpl:text-[var(--tpl-warning)] tpl:border-[var(--tpl-warning)]"
             style="backdrop-filter: blur(8px)"
             data-testid="restore-hidden-blocks"
             @click="core.conditionPreview.reset()"

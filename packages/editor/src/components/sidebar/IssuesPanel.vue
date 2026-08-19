@@ -140,7 +140,7 @@ function applyFix(issue: LintIssue): void {
               <button
                 v-if="issue.fix"
                 type="button"
-                class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-md tpl:bg-[var(--tpl-primary)] tpl:px-2 tpl:py-1 tpl:text-[11px] tpl:font-medium tpl:text-white"
+                class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-md tpl:bg-[var(--tpl-primary)] tpl:px-2 tpl:py-1 tpl:text-[11px] tpl:font-medium tpl:text-[var(--tpl-on-primary)]"
                 :title="issue.fix.description"
                 @click="applyFix(issue)"
               >

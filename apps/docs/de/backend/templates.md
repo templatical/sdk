@@ -68,7 +68,7 @@ interface TemplatesProvider {
 
 - **Die `id` kommt aus Ihrem Speicher**, zurückgegeben von `create()`. Der Editor erzeugt nie selbst eine — ein Datenbankschlüssel, ein Slug, eine Dokument-ID, was auch immer Ihr Speicher bereits verwendet.
 - **`save` erhält einen Patch**, nicht den bloßen Inhalt. So kann eine Umbenennung ohne Inhalt übertragen werden, und ein künftiges Feld lässt sich ergänzen, ohne Ihre Implementierung zu brechen. Der Editor sendet `name` (sofern die Vorlage einen hat) und `content` gemeinsam, in einem Aufruf.
-- **`name` ist optional.** Ohne Namensspalte lassen Sie ihn weg: Der Header zeigt „Unbenannt", und eine Umbenennung findet nie statt.
+- **`name` ist optional.** Ohne Namensspalte lassen Sie ihn weg — der Header zeigt stattdessen ein gedimmtes „Unbenannt". Das Feld bleibt bearbeitbar, solange `save` eine Funktion ist; eine Umbenennung wird also weiterhin als `save(id, { name, content })` gesendet. Ein Store, der sie ignoriert, gibt eine Vorlage ohne Namen zurück, und der Header zeigt wieder „Unbenannt".
 
 Jede Methode darf ablehnen. Der Editor meldet den Fehler über `onError`, zeigt ihn im Header an und lässt seinen Zustand unberührt — nichts wird als gespeichert markiert, was es nicht ist.
 

@@ -10,7 +10,10 @@ import type { UseCommentsFeatureReturn } from "../composables/useCommentsFeature
 import type { UseTemplatesFeatureReturn } from "../composables/useTemplatesFeature";
 import type { UseTestEmailFeatureReturn } from "../composables/useTestEmailFeature";
 import type { UseVersionHistoryFeatureReturn } from "../composables/useVersionHistoryFeature";
-import { headerBtnClass } from "../constants/styleConstants";
+import {
+  primaryBtnCompactClass,
+  secondaryBtnCompactClass,
+} from "../constants/styleConstants";
 
 import ViewportToggle from "./ViewportToggle.vue";
 import DarkModeToggle from "./DarkModeToggle.vue";
@@ -48,13 +51,13 @@ defineProps<{
 </script>
 
 <template>
+  <!-- Opaque, and `--tpl-shadow-sm` because that is the step the shadow
+       vocabulary assigns to sticky chrome. `.tpl-body` starts at this header's
+       own height, so nothing ever passes beneath it: a translucent fill has an
+       identical surface behind it and a backdrop blur has nothing to blur,
+       which costs a compositing layer to render exactly `--tpl-bg`. -->
   <header
-    class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[1fr_auto_1fr] tpl:items-center tpl:px-4 tpl:shadow-[var(--tpl-shadow-md)] tpl:border-b tpl:border-[var(--tpl-border)]"
-    style="
-      background-color: color-mix(in srgb, var(--tpl-bg) 80%, transparent);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    "
+    class="tpl-header tpl:absolute tpl:top-0 tpl:right-0 tpl:left-0 tpl:z-50 tpl:grid tpl:h-14 tpl:grid-cols-[1fr_auto_1fr] tpl:items-center tpl:px-4 tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-sm)] tpl:border-b tpl:border-[var(--tpl-border)]"
   >
     <!-- Left: the template's name, inline-editable. `min-w-[200px]` matches the
          right column so the centre controls are actually centred. Rendered only
@@ -144,21 +147,22 @@ defineProps<{
             : core.t.comments.button
         "
         :aria-expanded="comments.isOpen.value"
-        :class="headerBtnClass"
-        :style="{
-          backgroundColor: comments.isOpen.value
-            ? 'var(--tpl-primary)'
-            : 'transparent',
-          color: comments.isOpen.value ? 'var(--tpl-bg)' : 'var(--tpl-primary)',
-          borderColor: 'var(--tpl-primary)',
-        }"
+        :class="secondaryBtnCompactClass"
+        :style="
+          comments.isOpen.value
+            ? {
+                backgroundColor: 'var(--tpl-primary-light)',
+                borderColor: 'var(--tpl-primary-light)',
+              }
+            : undefined
+        "
         @click="comments.toggle()"
       >
         <MessageCircle :size="16" :stroke-width="2" />
         {{ core.t.comments.button }}
         <span
           v-if="comments.unresolvedCount.value > 0 && !comments.isOpen.value"
-          class="tpl:inline-flex tpl:size-4.5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
+          class="tpl:inline-flex tpl:size-4.5 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-[10px] tpl:font-semibold tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-on-primary)]"
         >
           {{ comments.unresolvedCount.value }}
         </span>
@@ -166,13 +170,9 @@ defineProps<{
 
       <slot name="right-extras" />
 
-      <!-- A real button — border, surface fill and `shadow-xs`, the same subtle
-           elevation `inputClass` uses — but coloured down: muted text rather
-           than full-strength `--tpl-text`, and no primary tint until hover. It
-           reads as a raised control against the header's translucent backdrop
-           while staying clearly secondary; sending a test is not the page's
-           primary action. Recipe follows `removeItemBtnClass` (border + surface
-           + muted text) with elevation added. -->
+      <!-- The shared recipe, like every control in this row. Shared rather than
+           hand-rolled so all three keep one height — a bespoke string is how
+           this button came to sit 4px shorter than its neighbours. -->
       <button
         v-if="testEmail?.isAvailable.value"
         type="button"
@@ -180,32 +180,53 @@ defineProps<{
         :aria-label="core.t.testEmail.title"
         :title="core.t.testEmail.title"
         :disabled="testEmail.isSending.value"
-        class="tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-1.5 tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] hover:tpl:bg-[var(--tpl-bg-hover)] hover:tpl:text-[var(--tpl-text)] tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50"
+        :class="secondaryBtnCompactClass"
         @click="testEmail.open()"
       >
-        <Send
-          v-if="!testEmail.isSending.value"
-          :size="14"
-          :stroke-width="1.75"
-        />
-        <LoaderCircle v-else class="tpl-spinner" :size="14" :stroke-width="2" />
+        <Send v-if="!testEmail.isSending.value" :size="16" :stroke-width="2" />
+        <LoaderCircle v-else class="tpl-spinner" :size="16" :stroke-width="2" />
         {{ core.t.testEmail.button }}
       </button>
 
-      <!-- Save. Hidden entirely when the provider withheld `save` — the
-           read-only equivalent of the saved-blocks permission discipline:
-           loading a template and editing it locally still works, there is
-           simply nothing to persist. Disabled (with a reason in the tooltip)
-           until a template exists, since `save()` patches an id. -->
+      <!-- Save is the editor's one primary, and it only takes that treatment
+           while there is something to save. Amber announces intent or selection,
+           so a Save that looks identical dirty or clean announces nothing — and
+           it would be the loudest element in chrome that exists to recede behind
+           the canvas. Gated on `hasTemplate` too, or a disabled button would
+           light up before there is anywhere to save to.
+
+           Amber with the paper colour on it is 2.80:1 in light mode. That is
+           accepted rather than overlooked: every amber surface and accent in the
+           editor shares this pairing, and correcting this one control alone would
+           make it read as a different kind of thing. The Amber-Accent Exception
+           in DESIGN.md records the decision and its limits — chief among them
+           that amber must never be the only carrier of a state, which is why the
+           `TemplateSaveStatus` badge says "Unsaved" in words beside it.
+
+           The light lift is the same condition, and it is Flat-At-Rest applied
+           rather than bent: a surface paints no shadow until something happens to
+           it, and unsaved work is that something. It sits inline rather than in
+           the recipe because the recipe is shared, and a primary button at rest
+           elsewhere should still be flat.
+
+           Hidden entirely when the provider withheld `save` — the read-only
+           equivalent of the saved-blocks permission discipline: loading a
+           template and editing it locally still works, there is simply nothing
+           to persist. Disabled (with a reason in the tooltip) until a template
+           exists, since `save()` patches an id. -->
       <button
         v-if="templates?.isAvailable.value && templates.canSave.value"
         type="button"
         data-testid="template-save"
-        :class="headerBtnClass"
-        style="
-          background-color: transparent;
-          color: var(--tpl-primary);
-          border-color: var(--tpl-primary);
+        :class="
+          editor.state.isDirty && templates.hasTemplate.value
+            ? primaryBtnCompactClass
+            : secondaryBtnCompactClass
+        "
+        :style="
+          editor.state.isDirty && templates.hasTemplate.value
+            ? { boxShadow: 'var(--tpl-shadow-sm)' }
+            : undefined
         "
         :disabled="templates.isSaving.value || !templates.hasTemplate.value"
         :title="

@@ -68,7 +68,7 @@ interface TemplatesProvider {
 
 - **`id` comes from your store**, returned by `create()`. The editor never generates one — a database key, a slug, a document id, whatever your storage already uses.
 - **`save` receives a patch**, not bare content, so a rename can travel without content and a new field can be added without breaking your implementation. The editor sends `name` (when the template has one) and `content` together, in one round-trip.
-- **`name` is optional.** With no name column, leave it out: the header renders "Untitled" and a rename never happens.
+- **`name` is optional.** With no name column, leave it out — the header renders a dimmed "Untitled" in its place. The field stays editable as long as `save` is a function, so a rename still travels as `save(id, { name, content })`. A store that ignores it returns a template with no name, and the header reverts to "Untitled".
 
 Every method may reject. The editor reports the failure through `onError`, shows it in the header, and leaves its state untouched — nothing is marked saved that wasn't.
 

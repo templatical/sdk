@@ -280,7 +280,7 @@ function toggleOpen(): void {
         disabled ? 'tpl:cursor-not-allowed' : 'tpl:cursor-pointer',
         open
           ? 'tpl:border-[var(--tpl-primary)] tpl:shadow-[var(--tpl-ring)]'
-          : !disabled && 'hover:tpl:border-[var(--tpl-text-dim)]',
+          : !disabled && 'tpl:hover:border-[var(--tpl-text-dim)]',
         size === 'sm' ? 'tpl:size-8' : 'tpl:size-10',
       ]"
       @click="toggleOpen"
@@ -307,7 +307,7 @@ function toggleOpen(): void {
         type="button"
         :aria-label="t.colorPicker.clear"
         :title="t.colorPicker.clear"
-        class="tpl:absolute tpl:right-2 tpl:top-1/2 tpl:flex tpl:size-6 tpl:-translate-y-1/2 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:text-[var(--tpl-text-dim)] tpl:transition-colors tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-bg-hover)] hover:tpl:text-[var(--tpl-text)]"
+        class="tpl:absolute tpl:right-2 tpl:top-1/2 tpl:flex tpl:size-6 tpl:-translate-y-1/2 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:text-[var(--tpl-text-dim)] tpl:transition-colors tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:hover:bg-[var(--tpl-bg-hover)] tpl:hover:text-[var(--tpl-text)]"
         @click="clear"
       >
         <X :size="14" :stroke-width="1.5" />
@@ -326,7 +326,7 @@ function toggleOpen(): void {
           v-if="open"
           ref="popoverRef"
           :data-tpl-theme="tplUiTheme"
-          class="tpl-color-popover tpl:absolute tpl:z-modal tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:p-3 tpl:shadow-lg"
+          class="tpl-color-popover tpl:absolute tpl:z-modal tpl:rounded-[var(--tpl-radius)] tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-elevated)] tpl:p-3 tpl:shadow-[var(--tpl-shadow-lg)]"
           :style="{
             top: `${popoverPosition.top}px`,
             left: `${popoverPosition.left}px`,
@@ -366,7 +366,7 @@ function toggleOpen(): void {
                 'tpl-color-swatch-empty tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:outline-none tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:focus-visible:ring-2 tpl:focus-visible:ring-[var(--tpl-primary)] tpl:focus-visible:ring-offset-1 tpl:focus-visible:ring-offset-[var(--tpl-bg-elevated)]',
                 isUnset
                   ? 'tpl:ring-2 tpl:ring-[var(--tpl-primary)] tpl:ring-offset-1 tpl:ring-offset-[var(--tpl-bg-elevated)]'
-                  : 'hover:tpl:border-[var(--tpl-text-dim)]',
+                  : 'tpl:hover:border-[var(--tpl-text-dim)]',
               ]"
               @click="clear"
             />
@@ -384,7 +384,7 @@ function toggleOpen(): void {
                 'tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:rounded-[var(--tpl-radius-sm)] tpl:border tpl:border-[var(--tpl-border)] tpl:outline-none tpl:transition-all tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:focus-visible:ring-2 tpl:focus-visible:ring-[var(--tpl-primary)] tpl:focus-visible:ring-offset-1 tpl:focus-visible:ring-offset-[var(--tpl-bg-elevated)]',
                 isPresetSelected(preset)
                   ? 'tpl:ring-2 tpl:ring-[var(--tpl-primary)] tpl:ring-offset-1 tpl:ring-offset-[var(--tpl-bg-elevated)]'
-                  : 'hover:tpl:border-[var(--tpl-text-dim)]',
+                  : 'tpl:hover:border-[var(--tpl-text-dim)]',
               ]"
               @click="selectPreset(preset)"
             />
@@ -424,7 +424,7 @@ function toggleOpen(): void {
               type="button"
               :aria-label="t.colorPicker.clear"
               :title="t.colorPicker.clear"
-              class="tpl:absolute tpl:right-2 tpl:top-1/2 tpl:flex tpl:size-6 tpl:-translate-y-1/2 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:text-[var(--tpl-text-dim)] tpl:transition-colors tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] hover:tpl:bg-[var(--tpl-bg-hover)] hover:tpl:text-[var(--tpl-text)]"
+              class="tpl:absolute tpl:right-2 tpl:top-1/2 tpl:flex tpl:size-6 tpl:-translate-y-1/2 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:text-[var(--tpl-text-dim)] tpl:transition-colors tpl:duration-[120ms] tpl:ease-[cubic-bezier(0.16,1,0.3,1)] tpl:hover:bg-[var(--tpl-bg-hover)] tpl:hover:text-[var(--tpl-text)]"
               @click="clear"
             >
               <X :size="14" :stroke-width="1.5" />

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { primaryBtnClass } from "../constants/styleConstants";
 import SavedBlockPreviewRow from "./SavedBlockPreviewRow.vue";
 import TplModal from "./TplModal.vue";
 import { useI18n } from "../composables";
@@ -208,7 +209,7 @@ function handleKeydown(event: KeyboardEvent): void {
           type="text"
           data-testid="saved-blocks-name-input"
           :placeholder="t.savedBlocks.namePlaceholder"
-          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-[var(--tpl-shadow-sm)] tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
           :disabled="isSaving"
         />
       </div>
@@ -231,7 +232,7 @@ function handleKeydown(event: KeyboardEvent): void {
           data-testid="saved-blocks-category-input"
           list="tpl-saved-block-categories"
           :placeholder="t.savedBlocks.categoryPlaceholder"
-          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-xs tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
+          class="tpl:h-9 tpl:w-full tpl:rounded-md tpl:border tpl:px-3 tpl:py-1 tpl:text-sm tpl:shadow-[var(--tpl-shadow-sm)] tpl:outline-none tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text)]"
           :disabled="isSaving"
         />
         <datalist id="tpl-saved-block-categories">
@@ -310,7 +311,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <div class="tpl:flex tpl:shrink-0 tpl:justify-end tpl:gap-2">
         <button
           type="button"
-          class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
+          class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-[var(--tpl-shadow-sm)] tpl:transition-all tpl:border-[var(--tpl-border)] tpl:text-[var(--tpl-text)] tpl:bg-[var(--tpl-bg)]"
           :disabled="isSaving"
           :class="{
             'tpl:cursor-not-allowed tpl:opacity-50': isSaving,
@@ -321,7 +322,7 @@ function handleKeydown(event: KeyboardEvent): void {
         </button>
         <button
           type="button"
-          class="tpl:cursor-pointer tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm tpl:font-medium tpl:shadow-xs tpl:transition-all tpl:duration-150 tpl:hover:opacity-90 tpl:disabled:cursor-not-allowed tpl:disabled:opacity-50 tpl:bg-[var(--tpl-primary)] tpl:text-[var(--tpl-bg)]"
+          :class="primaryBtnClass"
           :disabled="!canSave"
           @click="handleSave"
         >

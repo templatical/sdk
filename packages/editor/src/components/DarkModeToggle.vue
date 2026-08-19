@@ -25,7 +25,7 @@ const { t } = useI18n();
 
 <template>
   <button
-    class="tpl-dark-mode-toggle tpl:relative tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:p-2 tpl:transition-all tpl:duration-150"
+    class="tpl-dark-mode-toggle tpl:relative tpl:flex tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded-[var(--tpl-radius-sm)] tpl:border-none tpl:p-2 tpl:transition-all"
     :style="{
       color: darkMode ? 'var(--tpl-primary)' : 'var(--tpl-text-muted)',
       backgroundColor: darkMode ? 'var(--tpl-primary-light)' : 'transparent',
