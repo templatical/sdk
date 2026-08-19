@@ -45,13 +45,21 @@ export const MergeTagNode = Node.create<MergeTagNodeOptions>({
 
   addAttributes() {
     return {
+      // Both attributes are state, not markup: `renderHTML()` below emits the
+      // canonical `data-merge-tag` / `data-label` pair and `parseHTML` reads
+      // only those. `rendered: false` keeps TipTap from also serializing each
+      // attribute under its own name, which would put a write-only duplicate
+      // of the same data on every tag — invalid on a `<span>`, and paid again
+      // through storage, autosave, snapshots and version history.
       label: {
         default: "",
+        rendered: false,
         parseHTML: (element) =>
           element.getAttribute("data-label") || element.textContent || "",
       },
       value: {
         default: "",
+        rendered: false,
         parseHTML: (element) => element.getAttribute("data-merge-tag") || "",
       },
     };

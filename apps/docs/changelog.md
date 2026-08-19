@@ -15,6 +15,75 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.26.2
+
+<time datetime="2026-08-19">2026-08-19</time>
+
+### Fixes and improvements
+
+**Decode entity-encoded merge-tag attribute values**
+
+`@templatical/renderer` · `@templatical/types`
+
+Rich text is serialized with the tag value entity-encoded in the attribute, so
+stored content reads `data-merge-tag="&lt;% $email %&gt;"` for a tag configured
+as `<% $email %>`. Every resolver compared that raw string against the
+configured token, missed, and fell back to echoing the escaped token — which
+overwrote the correct label the moment the block left edit mode.
+
+Only tag values containing characters a serializer escapes (`<`, `>`, `&`) were
+affected, so it showed up on custom `mergeTags.syntax` configs and not on the
+built-in presets.
+
+Three fixes, one cause:
+
+- **Label mode** rendered the raw token over the label instead of `E-Mail`.
+- **Sample mode** double-escaped it (`&amp;lt;% $email %&amp;gt;`), rendering
+  the entity text on screen rather than the configured sample.
+- **Export** emitted `&lt;% $email %&gt;` into the MJML, so the send engine
+  received an escaped string instead of a token it recognises.
+
+`getTagAttrValue` now decodes character references — the named set a serializer
+emits plus decimal and hex numeric ones — which is what the attribute means.
+Decoding is single-pass, so `&amp;lt;` yields the literal text `&lt;` and an
+unknown reference is left alone.
+
+**Stop writing redundant attributes into serialized merge tags**
+
+`@templatical/editor`
+
+`MergeTagNode` and `LogicMergeTagNode` declared their attributes without the
+`rendered: false` flag, so TipTap serialized each one under its own name in
+addition to the canonical `data-*` pair emitted by `renderHTML()`:
+
+```html
+<span
+  label="E-Mail"
+  value="{{email}}"
+  data-merge-tag="{{email}}"
+  data-label="E-Mail"
+  >E-Mail</span
+>
+<span
+  value="{% if vip %}"
+  keyword="IF"
+  data-logic-merge-tag="{% if vip %}"
+  data-keyword="IF"
+  >IF</span
+>
+```
+
+The duplicates were write-only — `parseHTML` reads only the `data-*` attributes,
+nothing in the editor, renderer or quality packages ever read `label` / `value`
+/ `keyword`, and none of them are valid on a `<span>`. They were paid for on
+every tag in every template, through stored content, autosave PATCHes,
+snapshots and version history.
+
+Serialization now emits the `data-*` pair alone. Content already containing the
+old attributes keeps parsing unchanged (it always resolved from `data-*`) and
+sheds them on the next save; MJML export is unaffected, since the renderer
+replaces the whole span.
+
 ## 0.26.1
 
 <time datetime="2026-08-18">2026-08-18</time>

@@ -11,8 +11,33 @@
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.26.1",
+  "latest": "0.26.2",
   "versions": [
+    {
+      "version": "0.26.2",
+      "date": "2026-08-19",
+      "changes": [
+        {
+          "hash": "4b976a8",
+          "level": "patch",
+          "title": "Decode entity-encoded merge-tag attribute values",
+          "body": "Rich text is serialized with the tag value entity-encoded in the attribute, so\nstored content reads `data-merge-tag=\"&lt;% $email %&gt;\"` for a tag configured\nas `<% $email %>`. Every resolver compared that raw string against the\nconfigured token, missed, and fell back to echoing the escaped token — which\noverwrote the correct label the moment the block left edit mode.\n\nOnly tag values containing characters a serializer escapes (`<`, `>`, `&`) were\naffected, so it showed up on custom `mergeTags.syntax` configs and not on the\nbuilt-in presets.\n\nThree fixes, one cause:\n\n- **Label mode** rendered the raw token over the label instead of `E-Mail`.\n- **Sample mode** double-escaped it (`&amp;lt;% $email %&amp;gt;`), rendering\n  the entity text on screen rather than the configured sample.\n- **Export** emitted `&lt;% $email %&gt;` into the MJML, so the send engine\n  received an escaped string instead of a token it recognises.\n\n`getTagAttrValue` now decodes character references — the named set a serializer\nemits plus decimal and hex numeric ones — which is what the attribute means.\nDecoding is single-pass, so `&amp;lt;` yields the literal text `&lt;` and an\nunknown reference is left alone.",
+          "packages": [
+            "@templatical/renderer",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "b872914",
+          "level": "patch",
+          "title": "Stop writing redundant attributes into serialized merge tags",
+          "body": "`MergeTagNode` and `LogicMergeTagNode` declared their attributes without the\n`rendered: false` flag, so TipTap serialized each one under its own name in\naddition to the canonical `data-*` pair emitted by `renderHTML()`:\n\n```html\n<span\n  label=\"E-Mail\"\n  value=\"{{email}}\"\n  data-merge-tag=\"{{email}}\"\n  data-label=\"E-Mail\"\n  >E-Mail</span\n>\n<span\n  value=\"{% if vip %}\"\n  keyword=\"IF\"\n  data-logic-merge-tag=\"{% if vip %}\"\n  data-keyword=\"IF\"\n  >IF</span\n>\n```\n\nThe duplicates were write-only — `parseHTML` reads only the `data-*` attributes,\nnothing in the editor, renderer or quality packages ever read `label` / `value`\n/ `keyword`, and none of them are valid on a `<span>`. They were paid for on\nevery tag in every template, through stored content, autosave PATCHes,\nsnapshots and version history.\n\nSerialization now emits the `data-*` pair alone. Content already containing the\nold attributes keeps parsing unchanged (it always resolved from `data-*`) and\nsheds them on the next save; MJML export is unaffected, since the renderer\nreplaces the whole span.",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.26.1",
       "date": "2026-08-18",
