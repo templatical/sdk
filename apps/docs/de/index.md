@@ -3,7 +3,7 @@ layout: home
 hero:
   name: Templatical
   text: E-Mail-Editor für Ihre Anwendung
-  tagline: Binden Sie einen produktionsreifen Drag-and-Drop-E-Mail-Editor in jede Webanwendung ein — Host-CSS und Design-Systeme können ihn nicht beschädigen. Source-Available, Framework-agnostisch und vollgepackt mit Funktionen, die in anderen Editoren typischerweise kostenpflichtigen Tarifen vorbehalten sind.
+  tagline: Binden Sie einen produktionsreifen Drag-and-Drop-E-Mail-Editor in jede Webanwendung ein — Host-CSS und Design-Systeme können ihn nicht beschädigen. Speichern, Versionsverlauf, Kommentare, Testversand und Rendering laufen über Ihr eigenes Backend — über einfache Konfigurationsobjekte, die Sie implementieren. Source-Available und Framework-agnostisch.
   actions:
     - theme: brand
       text: Loslegen
@@ -20,6 +20,10 @@ features:
     details: Registrieren Sie eigene Blocktypen — statische Templates oder live aus Ihrer API zur Preview-Zeit.
     link: /de/guide/custom-blocks
     linkText: Eigenen Block bauen
+  - title: Eigenes Backend anbinden
+    details: Speichern, Versionsverlauf, Kommentare, gespeicherte Blöcke, Testversand und Rendering sind je ein Konfigurationsschlüssel mit Methoden, die Sie implementieren — gegen Ihren Stack, zu Ihren Bedingungen. Alles optional; der Editor läuft auch ohne.
+    link: /de/backend/
+    linkText: Provider-Verträge ansehen
   - title: Wiederverwendbare gespeicherte Blöcke
     details: Nutzer speichern Blockgruppen und fügen sie in andere Templates ein — mit Ihrem eigenen Speicher oder dem mitgelieferten browserlokalen Provider ohne Einrichtung.
     link: /de/backend/saved-blocks
