@@ -50,7 +50,7 @@ interface MediaRequestContext {
   files?: File[];
 }
 
-onRequestMedia?: (context?: MediaRequestContext) => Promise<MediaResult | null>;
+type OnRequestMedia = (context?: MediaRequestContext) => Promise<MediaResult | null>;
 ```
 
 ## Drag and drop to upload

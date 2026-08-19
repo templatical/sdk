@@ -289,7 +289,7 @@ Use `defaultStyles` to declare the block's default `padding` and `backgroundColo
 {
   type: 'pricing-table',
   name: 'Pricing Table',
-  fields: [...],
+  fields: [/* … */],
   template: '<table>…</table>',
   defaultStyles: {
     padding: { top: 0, right: 0, bottom: 0, left: 0 },

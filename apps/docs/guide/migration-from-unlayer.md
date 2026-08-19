@@ -65,6 +65,7 @@ Unlayer content types map to Templatical equivalents:
 | Image | `image` | Converted |
 | Button | `button` | Converted |
 | Divider | `divider` | Converted |
+| Spacer | `spacer` | Converted |
 | Html | `html` | Converted |
 | Menu | `menu` | Approximated (styles may differ) |
 | Social | `social` | Converted (16 platforms mapped) |

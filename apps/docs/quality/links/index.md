@@ -39,7 +39,7 @@ So `lintLinks` is the **only authoring-time signal** for unsafe URLs in structur
 ```ts
 import { lintLinks } from "@templatical/quality";
 
-const issues = lintLinks(content, options?);
+const issues = lintLinks(content); // options is an optional second argument
 // issues: LintIssue[] — each entry has ruleId starting with "link."
 ```
 

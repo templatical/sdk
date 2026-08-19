@@ -21,7 +21,7 @@ Catch problems while you're authoring, not after recipients see broken alt text,
 ```ts
 import { lintAccessibility } from "@templatical/quality";
 
-const issues = lintAccessibility(content, options?);
+const issues = lintAccessibility(content); // options is an optional second argument
 // issues: LintIssue[] — each entry has ruleId starting with "a11y."
 ```
 

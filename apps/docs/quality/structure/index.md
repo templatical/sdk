@@ -21,7 +21,7 @@ These rules are deterministic and locale-agnostic — they fire on JSON shapes, 
 ```ts
 import { lintStructure } from "@templatical/quality";
 
-const issues = lintStructure(content, options?);
+const issues = lintStructure(content); // options is an optional second argument
 // issues: LintIssue[] — each entry has ruleId starting with "structure."
 ```
 
