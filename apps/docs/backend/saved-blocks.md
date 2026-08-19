@@ -44,6 +44,10 @@ interface SavedBlocksProvider {
 
 `false` means the current user may not perform that action, and the editor hides the affordance.
 
+::: tip Why required, and not optional
+An optional method would make "I decided against delete" indistinguishable from "I haven't written delete yet". A `false` cannot be arrived at by forgetting. Every storage provider in this section is shaped the same way.
+:::
+
 A minimal REST implementation:
 
 ```ts
@@ -159,8 +163,8 @@ const savedBlocks: SavedBlocksProvider = {
 
 Insertion still works — it only touches the canvas, and nothing reaches the provider. `list` is the one member that can't be disabled.
 
-::: tip UI affordances, not security
-Hiding a control stops the editor offering an action; it doesn't stop a determined caller. Provider methods run in the user's browser, so enforce permissions server-side too.
+::: warning Not a security boundary
+Hiding a control stops the editor offering an action; it doesn't stop a determined caller. Provider methods run in the user's browser, so enforce permissions server-side too — including who may read, change or delete a block in a library shared across a team.
 :::
 
 ## Error handling
