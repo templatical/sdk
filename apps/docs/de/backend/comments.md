@@ -64,7 +64,6 @@ const editor = await init({
 
 Kommentare sind an eine Vorlagen-ID gebunden, daher erscheint das Panel erst, sobald `create()` oder `load()` eine angehängt hat. Siehe [Speichern & Laden](/de/backend/templates).
 
-`initCloud()` nimmt keinen `comments`-Schlüssel an — siehe [Kommentare auf Cloud](/de/cloud/comments).
 
 ## Autoren-Identität
 

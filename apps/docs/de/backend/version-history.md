@@ -44,8 +44,6 @@ const editor = await init({
 
 Versionen sind an eine Vorlagen-ID gebunden, deshalb erscheint das Steuerelement erst, sobald `create()` oder `load()` eine angehängt hat. Siehe [Speichern & Laden](/de/backend/templates).
 
-`initCloud()` nimmt keinen `versionHistory`-Schlüssel an — siehe [Versionsverlauf auf Cloud](/de/cloud/version-history).
-
 ## Der Vertrag
 
 ```ts
@@ -69,6 +67,10 @@ interface VersionHistoryProvider {
 `list` und `get` lassen sich nicht abschalten — der Editor muss eine Version immer anzeigen und ihren Inhalt beschaffen können. `create` und `restore` nehmen jeweils `false` statt einer Funktion entgegen und sind **erforderlich**, nicht optional: Ein `false` erklärt die Aktion für nicht verfügbar, und der Editor blendet sie aus, statt sie zu deaktivieren. Mit `restore: false` bleibt der Verlauf durchsuchbar, ohne Schaltfläche; mit `create: false` zeichnet nur Ihr `save` Versionen auf.
 
 Der Editor rendert die Reihenfolge von `list()` unverändert und sortiert nie um. Die Reihenfolge bestimmt Ihr Speicher.
+
+::: warning Keine Sicherheitsgrenze
+Diese Flags leben im Browser der Nutzenden. Sie formen die Oberfläche; Ihre API schützen sie nicht. Ein Wiederherstellen überschreibt die aktuelle Vorlage — setzen Sie serverseitig durch, wer es aufrufen darf, und wer den Inhalt einer Version lesen darf, denn das ist ein früherer Stand eines Dokuments, auf das jemand heute vielleicht keinen Zugriff mehr hat.
+:::
 
 ## Versionen aufzeichnen
 

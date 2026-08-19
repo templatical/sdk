@@ -163,8 +163,8 @@ const savedBlocks: SavedBlocksProvider = {
 
 Das Einfügen funktioniert weiterhin, denn es berührt ausschließlich die Arbeitsfläche — den Provider erreicht dabei nichts. `list` ist das einzige Mitglied, das sich nicht abschalten lässt; ohne es hätte die Funktion nichts zu zeigen.
 
-::: tip Bedienelemente, keine Sicherheitsgrenze
-Ein ausgeblendetes Element verhindert, dass der Editor die Aktion anbietet — es hält niemanden auf, der es darauf anlegt. Berechtigungen müssen zusätzlich serverseitig erzwungen werden: Die Provider-Methoden laufen im Browser der Nutzerin.
+::: warning Keine Sicherheitsgrenze
+Ein ausgeblendetes Element verhindert, dass der Editor die Aktion anbietet — es hält niemanden auf, der es darauf anlegt. Berechtigungen müssen zusätzlich serverseitig erzwungen werden: Die Provider-Methoden laufen im Browser der Nutzenden — auch dafür, wer einen Block in einer im Team geteilten Bibliothek lesen, ändern oder löschen darf.
 :::
 
 ## Fehlerbehandlung
