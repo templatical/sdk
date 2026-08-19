@@ -89,7 +89,6 @@ interface BaseBlock {
 ```ts
 interface BlockStyles {
   padding: SpacingValue;
-  margin: SpacingValue;
   backgroundColor?: string;
 }
 ```

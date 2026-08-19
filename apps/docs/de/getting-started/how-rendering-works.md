@@ -103,7 +103,7 @@ MJML hängt vom JSON *und* von Ihrem Renderer ab: Ihrer Schriften-Konfiguration,
 `@templatical/renderer` nimmt ein `TemplateContent`-JSON-Objekt entgegen und erzeugt ein vollständiges MJML-Dokument. Im Einzelnen:
 
 - Konvertiert jeden Block im JSON-Baum in seine entsprechende MJML-Komponente (text → `<mj-text>`, image → `<mj-image>`, button → `<mj-button>` usw.)
-- Wendet Blockstile (Padding, Margin, Hintergrundfarbe) als MJML-Attribute an
+- Wendet Blockstile (Padding, Hintergrundfarbe) als MJML-Attribute an
 - Fügt benutzerdefinierte Schriftart-Deklarationen als `<mj-font>`-Tags ein
 - Bewahrt Merge-Tags unverändert (sie werden als wörtlicher Text durchgereicht)
 - Berücksichtigt `visibility`-Einstellungen -- auf allen Viewports ausgeblendete Blöcke werden ausgelassen

@@ -103,7 +103,7 @@ MJML depends on the JSON *and* on your renderer — your fonts config, any `bloc
 `@templatical/renderer` takes a `TemplateContent` JSON object and produces a complete MJML document. Specifically, it:
 
 - Converts each block in the JSON tree to its corresponding MJML component (text → `<mj-text>`, image → `<mj-image>`, button → `<mj-button>`, etc.)
-- Applies block styles (padding, margin, background color) as MJML attributes
+- Applies block styles (padding, background color) as MJML attributes
 - Injects custom font declarations as `<mj-font>` tags
 - Preserves merge tags unchanged (they pass through as literal text)
 - Respects `visibility` settings -- blocks hidden on all viewports are omitted
