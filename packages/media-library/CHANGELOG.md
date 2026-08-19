@@ -1,5 +1,74 @@
 # @templatical/media-library
 
+## 0.27.0
+
+### Minor Changes
+
+- d256b41: **The `initCloud()` collapse — heavily breaking.** `initCloud()` is now a thin adapter-wiring wrapper over `init()`: it authenticates, fetches the plan, builds Cloud's providers, and delegates. One `Editor.vue`, one `useEditor`, one header. Read every bullet below — `minor` is the breaking channel on a 0.x line, and it still under-states this.
+
+  **`TemplaticalCloudEditor` is now `TemplaticalEditor`.** The two entry points return the same type, which is the proof the unification worked. Three cloud-only members went with it:
+
+  - `create(content)` → `create({ name?, content? })`, matching `init()`.
+  - `setThemeOverrides(overrides)` — **removed.** `config.theme` is applied at init on both entry points, and the entitlement that gated changing it later is gone.
+  - `sendTestEmail(recipient)` — **removed.** The shared test-email dialog is the supported path.
+
+  **`initCloud()` rejects on a failed bootstrap** instead of mounting an editor that shows an error overlay. Auth, the health check and the plan fetch now run _before_ the mount, so a session that cannot authenticate never produces an editor. Handle it like any other rejected promise. A session that dies _later_ — a token refresh that cannot renew — still surfaces as an overlay. The 30s "initialization timed out" rejection is gone with the post-mount readiness handshake.
+
+  **Eleven of the sixteen `PlanFeatures` are deleted.** An entitlement is legitimate only when it meters a resource Cloud itself buys; a gate on editor capability that OSS gives away free is either backwards or inert. Removed: `custom_fonts`, `theme_customization`, `custom_blocks`, `auto_save`, `pluggable_media`, `media_folders`, `import_from_url`, `white_label`, `html_block`, `export_mjml`, `headless_sdk`. Surviving: `ai_generation`, `collaboration`, `commenting`, `saved_modules`, `test_email`, plus all four limits (`max_templates` + `template_count`, `storage_limit_bytes`, `max_file_size_mb`, `media_categories`), including the header's usage readout. Behavioural consequences: custom fonts, custom blocks and `theme` are applied on every plan; media folders and URL import render on every plan; `onRequestMedia` needs only to be configured; and Cloud's renderer no longer drops custom faces from the export payload.
+
+  **Removed APIs**
+
+  - `@templatical/core/cloud` no longer exports `useEditor` / `UseEditorOptions` / `UseEditorReturn`. There is one editor core, exported from `@templatical/core`. The Cloud core's last member over it, `savedBlockIds`, was always a comments dependency and now reaches `CommentsSidebar` through `capabilities.comments.isBlockSaved`.
+  - `@templatical/types` no longer exports `EditorState`; the surviving definition is exported from `@templatical/core`.
+  - `resolveExportFonts(fonts, allowCustomFonts)` → `resolveExportFonts(fonts)`.
+  - `createCloudRenderProvider({ …, canUseCustomFonts })` → the option is gone.
+  - `useFonts()` no longer returns `customFontsEnabled` / `setCustomFontsEnabled`, and `resolveRenderFonts` no longer reads them.
+  - `useMediaLibraryUI({ …, canUseMediaFolders })` → the option is gone.
+  - The duplicated `header.save` / `saving` / `saved` / `unsaved` / `saveFailed` keys are removed from the cloud i18n chunk; the OSS chunk's copies are the only ones. `header.templatesUsed` stays cloud-only.
+
+  **Internal deletions** (not public API, listed because they were large): `cloud/CloudEditor.vue`, `cloud/components/CloudHeader.vue`, `cloud/composables/useCloudInitialization.ts`, `cloud/composables/useCloudLifecycle.ts` and `core/src/cloud/editor.ts`. Their content is `EditorHeader.vue` (one shared header, with three slots for Cloud's controls), `cloud/createCloudRuntime.ts` (bootstrap + adapters) and Cloud's decorated templates provider, which is where the websocket-connect-on-load choreography belongs.
+
+  **New on `initCloud()`:** `onDirtyChange` and `unsavedChangesGuard`, the two keys `init()` already had. The `beforeunload` guard is on by default, so a Cloud session can no longer lose work on tab close; pass `unsavedChangesGuard: false` to own that prompt yourself.
+
+  **Fixed along the way:** the OSS editor's drag ghost showed an English "Drop here" whatever the locale, and `init({ fonts: { defaultFont } })` never seeded a blank template's body font — both were wired only on the deleted Cloud side.
+
+  **Preserved deliberately:** Cloud's lint save-gate. `TemplatesProvider` saves now route through an optional `SaveGate`, so the shared header's Save, `Cmd`+`S`, autosave and the version-restore confirmation all still honour the server's `accessibility.blockOnError` policy — autosave by skipping silently rather than raising a prompt on a debounce timer.
+
+- d256b41: Fix: Cloud's media library was non-functional inside the editor.
+
+  `MediaLibraryModal` reached for its host's state by injection under bare **string** keys — `inject("authManager")`, `inject("projectId")`, `inject("planConfig")`, all non-null-asserted — while `@templatical/editor` provides `Symbol("authManager")` and had no key at all for the other two. Vue matches injection keys by identity, so a string never resolves a Symbol: opening the media library through `initCloud()` received `undefined` for all three and nothing worked. Only the editor path was affected; the standalone media SDK (`init()` from `@templatical/media-library`) provided them correctly and is unchanged in behaviour.
+
+  The three values now travel as **props**, so `@templatical/editor`'s typecheck fails if a binding is dropped rather than the browser silently breaking again.
+
+  ### Breaking — only if you mount `MediaLibraryModal` yourself
+
+  If you render `MediaLibraryModal` in your own Vue app, pass the three as props instead of providing them:
+
+  ```vue
+  <MediaLibraryModal
+    :visible="open"
+    :auth-manager="authManager"
+    :project-id="authManager.projectId"
+    :plan-config="planConfig"
+    @select="onSelect"
+    @close="open = false"
+  />
+  ```
+
+  `planConfig` is a `UsePlanConfigReturn` (from `usePlanConfig(authManager)` in `@templatical/core/cloud`) — the same shape the modal read before. The modal re-provides it internally for the descendants that call `useMediaCategories`, so nothing below it changes.
+
+  `useMediaCategories()` now throws a named error when no plan config is in scope, instead of failing several frames later on `undefined.config`.
+
+### Patch Changes
+
+- Updated dependencies [d256b41]
+- Updated dependencies [d256b41]
+- Updated dependencies [d256b41]
+- Updated dependencies [d256b41]
+- Updated dependencies [d256b41]
+  - @templatical/types@0.27.0
+  - @templatical/core@0.27.0
+
 ## 0.26.3
 
 ### Patch Changes
