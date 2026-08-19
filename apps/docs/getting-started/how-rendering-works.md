@@ -83,7 +83,20 @@ By producing MJML instead of HTML directly, Templatical stays lightweight and gi
 
 ## What to store
 
-Save both JSON and MJML to your database when the user saves. JSON lets users re-open and edit the template. MJML is what you compile to HTML at send time. The [Quick Start](/getting-started/quick-start) example shows this pattern.
+**JSON — always.** `TemplateContent` is the source of truth: the only thing the editor can re-open, and the only input the renderer needs.
+
+**MJML — never required.** It is an output, re-derivable from the JSON whenever you need it. Store it only as a cache, and only where you would otherwise pay to produce it twice:
+
+<!-- prettier-ignore -->
+| Where you render | Where `@templatical/renderer` is installed | Store the MJML? |
+| --- | --- | --- |
+| **In the browser** — no `render` provider, or `compileMjml` only | your **frontend** app, next to the editor | **Optional.** `toMjml()` is already at hand when the user saves, so keeping the result avoids re-rendering later. The [Quick Start](/getting-started/quick-start) does this. |
+| **On your backend** — you implement `render.toMjml` | your **backend** — or nothing at all, if it renders in another language | **No.** Your backend produces the MJML as it renders. A browser copy is a second source that can disagree with it. See [Rendering & Export](/backend/render). |
+| **Templatical Cloud** | nowhere — Cloud runs the published renderer server-side | **No.** Cloud renders from the *saved* template and re-derives on demand. See [Rendering on Cloud](/cloud/rendering). |
+
+::: warning A stored render is a cache
+MJML depends on the JSON *and* on your renderer — your fonts config, any `blockRenderers` overrides, the package version itself. Change any of those and stored copies are stale while the JSON still renders correctly. Re-derive rather than repair.
+:::
 
 ## What the renderer does
 
