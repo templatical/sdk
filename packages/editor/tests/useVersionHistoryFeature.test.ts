@@ -43,7 +43,7 @@ function setup(
   } = {},
 ) {
   const provider: VersionHistoryProvider = {
-    list: vi.fn(async () => [] as TemplateVersion[]),
+    list: vi.fn(async () => ({ versions: [] as TemplateVersion[] })),
     get: vi.fn(async () => content("fetched")),
     create: vi.fn(async () => version("ver-safety")),
     restore: vi.fn(async () => ({
@@ -138,7 +138,7 @@ describe("useVersionHistoryFeature", () => {
 
     it("refresh reads the list through the provider", async () => {
       const { feature, provider } = setup({
-        list: vi.fn(async () => [version("ver-1")]),
+        list: vi.fn(async () => ({ versions: [version("ver-1")] })),
       });
       feature.refresh();
       await vi.waitFor(() =>
@@ -308,7 +308,7 @@ describe("useVersionHistoryFeature", () => {
     it("applies the restored template, clears undo history and re-reads the list", async () => {
       const listed = [version("ver-1", { content: content("v1") })];
       const { feature, provider, editor, history, conditionPreview, autoSave } =
-        setup({ list: vi.fn(async () => listed) });
+        setup({ list: vi.fn(async () => ({ versions: listed })) });
 
       await feature.navigate(listed[0]);
       await feature.confirmRestore();
@@ -371,7 +371,7 @@ describe("useVersionHistoryFeature", () => {
 
     it("restores straight away when there is nothing unsaved", async () => {
       const ctx = setup(
-        { list: vi.fn(async () => listed) },
+        { list: vi.fn(async () => ({ versions: listed })) },
         { isDirty: false },
       );
       await preview(ctx);
@@ -384,7 +384,7 @@ describe("useVersionHistoryFeature", () => {
     });
 
     it("asks first when there are unsaved changes, restoring nothing yet", async () => {
-      const ctx = setup({ list: vi.fn(async () => listed) }, { isDirty: true });
+      const ctx = setup({ list: vi.fn(async () => ({ versions: listed })) }, { isDirty: true });
       await preview(ctx);
 
       await ctx.feature.requestRestore();
@@ -399,7 +399,7 @@ describe("useVersionHistoryFeature", () => {
       // The confirmation names the version it was raised for, so leaving that
       // version must withdraw it — otherwise confirming would restore one the
       // user is no longer looking at.
-      const ctx = setup({ list: vi.fn(async () => listed) }, { isDirty: true });
+      const ctx = setup({ list: vi.fn(async () => ({ versions: listed })) }, { isDirty: true });
       await preview(ctx);
       await ctx.feature.requestRestore();
       expect(ctx.feature.isConfirmingRestore.value).toBe(true);
@@ -427,7 +427,7 @@ describe("useVersionHistoryFeature", () => {
     });
 
     it("saves the user's work — not the previewed version — then restores", async () => {
-      const ctx = setup({ list: vi.fn(async () => listed) }, { isDirty: true });
+      const ctx = setup({ list: vi.fn(async () => ({ versions: listed })) }, { isDirty: true });
       await preview(ctx);
       await ctx.feature.requestRestore();
 
@@ -448,7 +448,7 @@ describe("useVersionHistoryFeature", () => {
 
     it("restores nothing and keeps the confirmation up when the save fails", async () => {
       const ctx = setup(
-        { list: vi.fn(async () => listed) },
+        { list: vi.fn(async () => ({ versions: listed })) },
         {
           isDirty: true,
           saveBeforeRestore: {
@@ -476,7 +476,7 @@ describe("useVersionHistoryFeature", () => {
 
     it("saves nothing when asked to save with no save available", async () => {
       const ctx = setup(
-        { list: vi.fn(async () => listed) },
+        { list: vi.fn(async () => ({ versions: listed })) },
         { isDirty: true, saveBeforeRestore: false },
       );
       await preview(ctx);
@@ -489,7 +489,7 @@ describe("useVersionHistoryFeature", () => {
     });
 
     it("discards and restores when the user chooses to", async () => {
-      const ctx = setup({ list: vi.fn(async () => listed) }, { isDirty: true });
+      const ctx = setup({ list: vi.fn(async () => ({ versions: listed })) }, { isDirty: true });
       await preview(ctx);
       await ctx.feature.requestRestore();
 
@@ -501,7 +501,7 @@ describe("useVersionHistoryFeature", () => {
     });
 
     it("cancelling the confirmation leaves the preview untouched", async () => {
-      const ctx = setup({ list: vi.fn(async () => listed) }, { isDirty: true });
+      const ctx = setup({ list: vi.fn(async () => ({ versions: listed })) }, { isDirty: true });
       await preview(ctx);
       await ctx.feature.requestRestore();
 
@@ -514,7 +514,7 @@ describe("useVersionHistoryFeature", () => {
     });
 
     it("cancelling the whole preview closes the confirmation too", async () => {
-      const ctx = setup({ list: vi.fn(async () => listed) }, { isDirty: true });
+      const ctx = setup({ list: vi.fn(async () => ({ versions: listed })) }, { isDirty: true });
       await preview(ctx);
       await ctx.feature.requestRestore();
 
@@ -527,7 +527,7 @@ describe("useVersionHistoryFeature", () => {
     it("refuses a second save while the first is in flight", async () => {
       let release!: () => void;
       const ctx = setup(
-        { list: vi.fn(async () => listed) },
+        { list: vi.fn(async () => ({ versions: listed })) },
         {
           isDirty: true,
           saveBeforeRestore: {
