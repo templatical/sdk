@@ -130,6 +130,66 @@ export class EditorPage {
       .first();
   }
 
+  /**
+   * Click the block's text editable and collapse the caret to the end of its
+   * content — programmatically, never via the native End key.
+   *
+   * The dblclick that opened the edit session plus this click form a
+   * triple-click chain in Chromium's input state. A native End pressed on a
+   * triple-click selection puts Blink's selection into a state where the next
+   * typed character natively smooth-scrolls the canvas scroller (.tpl-body)
+   * to its very bottom, dragging the caret — and any caret-anchored popup —
+   * out of the viewport. Verified on Chromium 140–151 including stable
+   * Chrome, with a framework-free contenteditable, so this is a browser bug,
+   * not editor behavior. The taint decays with the multi-click timer
+   * (~500ms), which is exactly why tests that type immediately flaked while
+   * humans rarely hit it. A programmatic range collapse yields the same caret
+   * without arming that state.
+   */
+  async focusTextEditableAtEnd(blockType: string): Promise<Locator> {
+    const editable = this.getEditableFor(blockType);
+    await editable.click();
+    await editable.evaluate((el) => {
+      const doc = el.ownerDocument;
+      const range = doc.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      // Resolve the selection from the element's own root: in shadow mode
+      // Chromium clamps document-level ranges at the shadow boundary, so
+      // the caret must be set through ShadowRoot.getSelection() (a
+      // Chromium-only API — these e2e projects are Chromium-only).
+      const root = el.getRootNode() as Document &
+        (ShadowRoot & { getSelection?: () => Selection | null });
+      const selection =
+        typeof root.getSelection === "function"
+          ? root.getSelection()
+          : doc.defaultView?.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    });
+    // Self-verify: the caret is collapsed inside this editable before the
+    // caller starts typing.
+    await expect
+      .poll(() =>
+        editable.evaluate((el) => {
+          const root = el.getRootNode() as Document &
+            (ShadowRoot & { getSelection?: () => Selection | null });
+          const selection =
+            typeof root.getSelection === "function"
+              ? root.getSelection()
+              : el.ownerDocument.defaultView?.getSelection();
+          return (
+            !!selection &&
+            selection.isCollapsed &&
+            !!selection.anchorNode &&
+            el.contains(selection.anchorNode)
+          );
+        }),
+      )
+      .toBe(true);
+    return editable;
+  }
+
   // --- Sidebar ---
 
   async hoverSidebar(): Promise<void> {

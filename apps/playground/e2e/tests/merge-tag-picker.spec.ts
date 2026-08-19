@@ -275,16 +275,6 @@ test.describe("Welcome Email template — built-in picker is the default", () =>
 });
 
 test.describe("Merge tag picker — autocomplete unchanged", () => {
-  // Same Playwright limitation that merge-tag-autocomplete.spec.ts skips
-  // in shadow mode: synthetic `keyboard.type` doesn't reach
-  // contenteditables inside an open shadow root, so the TipTap input
-  // rule that triggers `{{` autocomplete never fires. Manual testing
-  // confirms the behavior works for real users in shadow mode.
-  test.skip(
-    ({ shadowDom }) => shadowDom,
-    "Playwright keyboard.type doesn't reach shadow-mounted contenteditable",
-  );
-
   test("typing the syntax opener still shows the autocomplete suggestion list (regression)", async ({
     editorReady: { editorPage },
     page,
@@ -292,9 +282,10 @@ test.describe("Merge tag picker — autocomplete unchanged", () => {
     await openConfigAndDisableOnRequest(page);
     await editorPage.waitForReady();
     await editorPage.doubleClickBlock("paragraph");
-    const editable = editorPage.getEditableFor("paragraph");
-    await editable.click();
-    await editable.press("End");
+    // Programmatic caret placement — a native End after the dblclick+click
+    // chain trips the Chromium triple-click scroll bug; see
+    // focusTextEditableAtEnd in editor.page.ts.
+    await editorPage.focusTextEditableAtEnd("paragraph");
     // Liquid trigger char.
     await page.keyboard.type(" {{");
     await expect(page.locator(SELECTORS.mergeTagSuggestionPopup)).toBeVisible();

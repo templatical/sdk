@@ -1,42 +1,31 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
-// Playwright limitation, not a real bug.
-//
-// Merge-tag autocomplete fires on TipTap input rules triggered by
-// the `{{` keystroke. Manual testing in Chromium (2026-05-12) confirms
-// the popup opens and works correctly in shadow mode for real users
-// (typing → suggestion list → click/Enter/Tab inserts the pill).
-//
-// The e2e flow types `{{` via `page.keyboard.type()` / `editable.press()`
-// — Playwright's synthetic keystrokes don't reach contenteditables
-// inside a shadow root, so the input rule never fires in the spec.
-// Skip in shadow mode rather than chase a Playwright-keyboard quirk.
-test.skip(
-  ({ shadowDom }) => shadowDom,
-  "Playwright keyboard.type doesn't reach shadow-mounted contenteditable; behavior verified manually",
-);
-
-
 /**
  * Helpers — keep test bodies focused on assertions.
+ *
+ * Caret placement goes through `focusTextEditableAtEnd`, which collapses the
+ * selection programmatically. Never press the native End key right after the
+ * dblclick + click that open the editor: that completes a triple-click chain,
+ * and a native End on a triple-click selection triggers a Chromium bug
+ * (verified 140–151) where the next typed character scrolls .tpl-body to its
+ * bottom — the caret and the suggestion popup leave the viewport and the
+ * popup freezes at an unclickable position. See focusTextEditableAtEnd.
  */
 async function openParagraphEditor(editorPage: {
   doubleClickBlock(t: string): Promise<void>;
-  getEditableFor(t: string): import("@playwright/test").Locator;
+  focusTextEditableAtEnd(t: string): Promise<import("@playwright/test").Locator>;
 }) {
   await editorPage.doubleClickBlock("paragraph");
-  const editable = editorPage.getEditableFor("paragraph");
-  await editable.click();
-  await editable.press("End");
-  return editable;
+  return editorPage.focusTextEditableAtEnd("paragraph");
 }
 
 test.describe("Merge tag autocomplete", () => {
   // The bug that motivated this suite: clicking a suggestion item used to
   // close the inline text editor right after the merge tag was inserted.
-  // The popup mounts inside .tpl-text-editor-wrapper, mousedown.prevent.stop
-  // on items prevents the document handler in useRichTextEditor from
+  // The popup mounts in the editor's popover root (outside
+  // .tpl-text-editor-wrapper), so mousedown.prevent.stop on items is what
+  // keeps the document-level mousedown handler in useRichTextEditor from
   // tearing down the editor.
   test("clicking a suggestion item inserts the tag and keeps the editor open", async ({
     editorReady: { editorPage },
@@ -278,11 +267,24 @@ test.describe("Merge tag autocomplete", () => {
     // settle the gap.
     const measure = (popupSelector: string) =>
       page.evaluate((sel) => {
-        const selection = window.getSelection();
+        // Resolve caret + popup through the editor's root: in shadow mode
+        // both live inside the shadow tree, where document.querySelector
+        // can't see and the document selection is clamped at the host.
+        const host = document.querySelector(
+          '[data-testid="editor-container"]',
+        );
+        const root = (host?.shadowRoot ?? document) as (
+          | Document
+          | ShadowRoot
+        ) & { getSelection?: () => Selection | null };
+        const selection =
+          typeof root.getSelection === "function"
+            ? root.getSelection()
+            : window.getSelection();
         const range =
           selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
         const caretRect = range?.getBoundingClientRect();
-        const popupEl = document.querySelector(sel) as HTMLElement | null;
+        const popupEl = root.querySelector(sel) as HTMLElement | null;
         const popupRect = popupEl?.getBoundingClientRect();
         if (!caretRect || !popupRect) return null;
         return {
@@ -370,9 +372,18 @@ test.describe("Merge tag autocomplete", () => {
       document.body.appendChild(wrap);
     });
 
-    const editable = await openParagraphEditor(editorPage);
-    await editable.click();
-    await page.keyboard.type(" {{");
+    // No extra click here: the helper already focused the editable and
+    // placed the caret. Another same-point click would be the 4th of the
+    // dblclick+click chain — Chromium treats it as a repeat paragraph-select,
+    // so the typed text would replace the whole paragraph.
+    await openParagraphEditor(editorPage);
+    // Narrow to one item ("first_name"), like the dark-canvas test: the
+    // unfiltered 10-item popup is taller than the space below a caret at the
+    // paragraph's end, so it would flip above the caret and this test's
+    // below-placement gap measure would read the popup's own height. The
+    // transform-offset behavior under test is identical for a 1-item popup;
+    // the flip itself is covered by the short-viewport flip test.
+    await page.keyboard.type(" {{first");
 
     const popup = page.locator(SELECTORS.mergeTagSuggestionPopup);
     await expect(popup).toBeVisible();
@@ -385,11 +396,24 @@ test.describe("Merge tag autocomplete", () => {
     // settle the gap. See merge-tag-popup-fixes changeset.
     const measure = (popupSelector: string) =>
       page.evaluate((sel) => {
-        const selection = window.getSelection();
+        // Resolve caret + popup through the editor's root: in shadow mode
+        // both live inside the shadow tree, where document.querySelector
+        // can't see and the document selection is clamped at the host.
+        const host = document.querySelector(
+          '[data-testid="editor-container"]',
+        );
+        const root = (host?.shadowRoot ?? document) as (
+          | Document
+          | ShadowRoot
+        ) & { getSelection?: () => Selection | null };
+        const selection =
+          typeof root.getSelection === "function"
+            ? root.getSelection()
+            : window.getSelection();
         const range =
           selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
         const caretRect = range?.getBoundingClientRect();
-        const popupEl = document.querySelector(sel) as HTMLElement | null;
+        const popupEl = root.querySelector(sel) as HTMLElement | null;
         const popupRect = popupEl?.getBoundingClientRect();
         if (!caretRect || !popupRect) return null;
         return {
@@ -466,9 +490,7 @@ test.describe("Merge tag autocomplete", () => {
     page,
   }) => {
     await editorPage.doubleClickBlock("title");
-    const editable = editorPage.getEditableFor("title");
-    await editable.click();
-    await editable.press("End");
+    const editable = await editorPage.focusTextEditableAtEnd("title");
 
     await page.keyboard.type(" {{first");
 
@@ -492,9 +514,7 @@ test.describe("Merge tag autocomplete", () => {
     page,
   }) => {
     await editorPage.doubleClickBlock("title");
-    const editable = editorPage.getEditableFor("title");
-    await editable.click();
-    await editable.press("End");
+    const editable = await editorPage.focusTextEditableAtEnd("title");
 
     await page.keyboard.type(" {{ema");
 

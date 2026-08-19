@@ -2,20 +2,6 @@ import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 
 test.describe("Editor text editing", () => {
-  // Playwright limitation, not a real bug.
-  //
-  // Bold/italic/alignment toolbar actions depend on the user having a
-  // selection before clicking the button. The selection is created with
-  // `page.keyboard.press("ControlOrMeta+a")` (or similar) in these
-  // specs, and Playwright's synthetic keystrokes don't reach
-  // shadow-mounted contenteditables — they go to the shadow host
-  // instead. Manual testing in Chromium (2026-05-12) confirms the
-  // same flow works for real users: mouse-select a word → toolbar B
-  // → word becomes bold.
-  test.skip(
-    ({ shadowDom }) => shadowDom,
-    "Playwright keyboard.press doesn't reach shadow-mounted contenteditable; behavior verified manually",
-  );
 
   test("double-click paragraph enters edit mode", async ({
     editorReady: { editorPage },
@@ -145,5 +131,43 @@ test.describe("Editor text editing", () => {
         'input[type="url"], input[placeholder*="http"], input[placeholder*="URL"], input[placeholder*="url"]',
       ),
     ).toBeVisible();
+  });
+
+  test("typing after triple-click + native End keeps the canvas in place", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    // Deliberately performs the gesture the rest of the suite avoids (see
+    // EditorPage.focusTextEditableAtEnd): the dblclick plus a same-point
+    // click complete a triple-click chain, and a NATIVE End on that
+    // selection arms a Chromium bug (verified 140–151) where the next
+    // keystroke smooth-scrolls .tpl-body to its very bottom, dragging the
+    // caret out of view. The editor's LineBoundaryKeys extension intercepts
+    // plain End/Home and moves the caret via Selection.modify instead,
+    // which never arms the bug.
+    await editorPage.doubleClickBlock("paragraph");
+    const editable = editorPage.getEditableFor("paragraph");
+    await editable.click();
+
+    const canvasBody = page.locator(SELECTORS.canvasBody);
+    const scrollTopBefore = await canvasBody.evaluate((el) =>
+      Math.round(el.scrollTop),
+    );
+
+    await editable.press("End");
+    await page.keyboard.type(" guard");
+
+    // The typed text landing is the concrete signal every keystroke was
+    // processed — an armed runaway starts scrolling on the first one and
+    // covers hundreds of pixels within these six.
+    await expect(editable).toContainText("guard");
+    const scrollTopAfter = await canvasBody.evaluate((el) =>
+      Math.round(el.scrollTop),
+    );
+    // Caret was already in view, so healthy typing scrolls nothing; the
+    // bug scrolls to the canvas bottom (~1100px). Small tolerance for a
+    // sub-line caret reveal.
+    expect(Math.abs(scrollTopAfter - scrollTopBefore)).toBeLessThanOrEqual(24);
+    await expect(editable).toBeInViewport();
   });
 });

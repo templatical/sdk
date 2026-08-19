@@ -79,7 +79,7 @@ const {
       { Editor: TiptapEditor, EditorContent: EC },
       { default: StarterKit },
       { default: LinkExt },
-      { MergeTagNode, MergeTagSuggestion, LogicMergeTagNode },
+      { MergeTagNode, MergeTagSuggestion, LogicMergeTagNode, LineBoundaryKeys },
     ] = await Promise.all([
       import("@tiptap/vue-3"),
       import("@tiptap/starter-kit"),
@@ -114,6 +114,7 @@ const {
         }),
         MergeTagNode.configure({ mergeTags, syntax }),
         LogicMergeTagNode.configure({ syntax }),
+        LineBoundaryKeys,
         ...(autocompleteEnabled && triggerChar && mergeTags.length > 0
           ? [
               MergeTagSuggestion.configure({
