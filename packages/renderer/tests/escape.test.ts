@@ -96,4 +96,61 @@ describe('convertMergeTagsToValues', () => {
     expect(result).toBe(adversarial);
     expect(elapsed).toBeLessThan(500);
   });
+
+  // Regression (#543). This is the send path: a tag value the scanner cannot
+  // read leaves the whole span in the rendered output, so the ESP never
+  // receives the token and the recipient sees the label text instead.
+  it('converts a tag value containing `<` and `>` back to the token', () => {
+    const html = '<p>Hi <span data-merge-tag="<% $email %>" data-label="E-Mail">E-Mail</span>,</p>';
+    expect(convertMergeTagsToValues(html)).toBe('<p>Hi <% $email %>,</p>');
+  });
+
+  it('converts a tag value containing `<` only', () => {
+    const html = '<span data-merge-tag="[[a<b]]">Nickname</span>';
+    expect(convertMergeTagsToValues(html)).toBe('[[a<b]]');
+  });
+
+  it('converts a logic tag value containing `<` and `>`', () => {
+    const html = '<span data-logic-merge-tag="<% if $active %>">IF</span>';
+    expect(convertMergeTagsToValues(html)).toBe('<% if $active %>');
+  });
+
+  it('reads a value out of a single-quoted attribute', () => {
+    const html = "<span data-merge-tag='<% $email %>'>E-Mail</span>";
+    expect(convertMergeTagsToValues(html)).toBe('<% $email %>');
+  });
+
+  it('leaves a span whose merge-tag attribute never closes its quote', () => {
+    const html = '<span data-merge-tag="{{name}}>Label</span>';
+    expect(convertMergeTagsToValues(html)).toBe(html);
+  });
+
+  it('runs in linear time when many tag values contain `>` (ReDoS regression)', () => {
+    const adversarial = '<span data-merge-tag="<% $email %>">x</span>'.repeat(5_000);
+    const start = Date.now();
+    const result = convertMergeTagsToValues(adversarial);
+    const elapsed = Date.now() - start;
+    expect(result).toBe('<% $email %>'.repeat(5_000));
+    expect(elapsed).toBeLessThan(500);
+  });
+
+  // Regression (#548). Stored content carries the tag value entity-encoded in
+  // the attribute. Emitting it raw shipped `&lt;% $email %&gt;` to the ESP,
+  // which is not a token any send engine recognises.
+  it('decodes an entity-encoded tag value back to the token', () => {
+    const html =
+      '<p>Hi <span label="E-Mail" value="&lt;% $email %&gt;" data-merge-tag="&lt;% $email %&gt;" data-label="E-Mail">E-Mail</span>,</p>';
+    expect(convertMergeTagsToValues(html)).toBe('<p>Hi <% $email %>,</p>');
+  });
+
+  it('decodes an entity-encoded logic tag value', () => {
+    const html =
+      '<span data-logic-merge-tag="&lt;% if $active %&gt;">IF</span>';
+    expect(convertMergeTagsToValues(html)).toBe('<% if $active %>');
+  });
+
+  it('decodes `&amp;` in a liquid tag value', () => {
+    const html = '<span data-merge-tag="{{a &amp; b}}">A</span>';
+    expect(convertMergeTagsToValues(html)).toBe('{{a & b}}');
+  });
 });

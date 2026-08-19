@@ -169,6 +169,7 @@ export { EventEmitter } from "./events";
 
 // Utilities
 export { safeClone } from "./clone";
+export { findOpenTagEnd, getTagAttrValue } from "./html-scan";
 
 // Merge tags
 export type { SyntaxPreset, SyntaxPresetName } from "./merge-tags";

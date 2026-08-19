@@ -83,7 +83,7 @@ Jedes Preset definiert zwei Muster:
 
 | Preset | Daten-Tag | Logik-Tag | Plattform |
 |--------|----------|-----------|----------|
-| `'liquid'` | <code v-pre>{{first_name}}</code> | <code v-pre>{% if vip %}</code> | Shopify, Jekyll, Django, Jinja2 |
+| `'liquid'` | <code v-pre>{{first_name}}</code> | `{% if vip %}` | Shopify, Jekyll, Django, Jinja2 |
 | `'handlebars'` | <code v-pre>{{first_name}}</code> | <code v-pre>{{#if vip}}</code> | Handlebars.js, Mandrill |
 | `'mailchimp'` | `*\|FIRST_NAME\|*` | `*\|IF:VIP\|*` | Mailchimp |
 | `'ampscript'` | `%%=first_name=%%` | `%%[IF @vip]%%` | Salesforce Marketing Cloud |

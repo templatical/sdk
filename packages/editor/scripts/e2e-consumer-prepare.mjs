@@ -47,30 +47,44 @@ if (!existsSync(FIXTURE_DIR)) {
   throw new Error(`fixture dir not found: ${FIXTURE_DIR}`);
 }
 
-// Build editor and renderer in dependency order so packed tarballs ship the
-// latest local source. The renderer is an optional peer of the editor; the
+// Build types, editor and renderer in dependency order so packed tarballs ship
+// the latest local source. The renderer is an optional peer of the editor; the
 // e2e consumer installs both because we exercise `editor.toMjml()`.
+run(`pnpm --filter @templatical/types run build`, { cwd: REPO_ROOT });
 run(`pnpm --filter @templatical/renderer run build`, { cwd: REPO_ROOT });
 run(`pnpm --filter @templatical/editor run build`, { cwd: REPO_ROOT });
 
 const RENDERER_DIR = resolve(REPO_ROOT, "packages/renderer");
+// The renderer is the one package that leaves `@templatical/types` external
+// (the editor bundles it), so the consumer resolves types itself. Pack the
+// workspace copy: without it npm fetches the last *published* types, and any
+// symbol the renderer started importing this release is missing there. All
+// these packages are one fixed version group, so a released renderer never
+// meets an older types — only this harness could manufacture that pairing.
+const TYPES_DIR = resolve(REPO_ROOT, "packages/types");
 
 const packDir = mkdtempSync(join(tmpdir(), "tpl-e2e-pack-"));
 try {
   run(`pnpm pack --pack-destination "${packDir}"`, { cwd: EDITOR_DIR });
   run(`pnpm pack --pack-destination "${packDir}"`, { cwd: RENDERER_DIR });
+  run(`pnpm pack --pack-destination "${packDir}"`, { cwd: TYPES_DIR });
   const editorTarball = readdirSync(packDir).find(
     (f) => f.startsWith("templatical-editor-") && f.endsWith(".tgz"),
   );
   const rendererTarball = readdirSync(packDir).find(
     (f) => f.startsWith("templatical-renderer-") && f.endsWith(".tgz"),
   );
+  const typesTarball = readdirSync(packDir).find(
+    (f) => f.startsWith("templatical-types-") && f.endsWith(".tgz"),
+  );
   if (!editorTarball)
     throw new Error("pnpm pack did not produce an editor .tgz");
   if (!rendererTarball)
     throw new Error("pnpm pack did not produce a renderer .tgz");
+  if (!typesTarball) throw new Error("pnpm pack did not produce a types .tgz");
   const editorTarballPath = join(packDir, editorTarball);
   const rendererTarballPath = join(packDir, rendererTarball);
+  const typesTarballPath = join(packDir, typesTarball);
 
   rmSync(CONSUMER_DIR, { recursive: true, force: true });
   mkdirSync(CONSUMER_DIR, { recursive: true });
@@ -84,7 +98,8 @@ try {
   renameSync(tplPath, consumerPkgPath);
   const consumerPkgText = readFileSync(consumerPkgPath, "utf8")
     .replace("EDITOR_TARBALL_PLACEHOLDER", `file:${editorTarballPath}`)
-    .replace("RENDERER_TARBALL_PLACEHOLDER", `file:${rendererTarballPath}`);
+    .replace("RENDERER_TARBALL_PLACEHOLDER", `file:${rendererTarballPath}`)
+    .replace("TYPES_TARBALL_PLACEHOLDER", `file:${typesTarballPath}`);
   writeFileSync(consumerPkgPath, consumerPkgText);
 
   run(`npm install --no-fund --no-audit`, { cwd: CONSUMER_DIR });

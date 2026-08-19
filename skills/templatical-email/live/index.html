@@ -756,8 +756,14 @@
             return;
           }
           if (!mjml2html) {
+            // The major must track the mjml that @templatical/renderer's
+            // round-trip tests compile against, or the preview renders through a
+            // different compiler than the renderer's output is verified with.
+            // Guarded by tests/cdn-pin.test.ts; this sat on the 4.x line for a
+            // whole major after the renderer moved to 5.x, because Renovate
+            // cannot see a version inside a CDN URL in an HTML file.
             const mod =
-              await import("https://cdn.jsdelivr.net/npm/mjml-browser@4/+esm");
+              await import("https://cdn.jsdelivr.net/npm/mjml-browser@5/+esm");
             mjml2html = mod.default ?? mod.mjml2html ?? mod;
           }
           body.value = mjml2html(mjml).html;

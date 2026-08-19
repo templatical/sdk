@@ -59,6 +59,30 @@ describe("live-mode CDN pin", () => {
     expect([...hosts]).toEqual(["cdn.jsdelivr.net"]);
   });
 
+  // The harness compiles MJML to HTML in the browser with mjml-browser, while
+  // @templatical/renderer's round-trip tests compile with `mjml`. If the two
+  // drift by a major, the preview renders through a different compiler than the
+  // one the renderer's output is actually verified against. This pin sat a full
+  // major behind for exactly that reason: Renovate cannot see a version inside a
+  // CDN URL in an HTML file, so nothing flagged it. Deriving the expected major
+  // from the renderer's own devDependency means an MJML major bump there fails
+  // here until the harness follows.
+  it("pins mjml-browser to the same major as the renderer's mjml", () => {
+    const rendererPkg = JSON.parse(
+      read("../../../packages/renderer/package.json"),
+    );
+    const declared = rendererPkg.devDependencies?.mjml;
+    expect(declared).toMatch(/^\D*\d+\./);
+    const expected = declared.match(/(\d+)\./)[1];
+
+    const pins = [
+      ...read("../live/index.html").matchAll(/mjml-browser@(\d+)/g),
+    ].map((match) => match[1]);
+    // Exactly one pin, on the renderer's major. An empty array here means the
+    // import was removed or renamed rather than that the pin is fine.
+    expect(pins).toEqual([expected]);
+  });
+
   it("keeps the editor off unpkg", () => {
     // Named explicitly so the reason survives even if the host set above is
     // ever widened for an unrelated asset.

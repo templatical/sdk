@@ -1,4 +1,5 @@
 import type { MergeTag } from "./config";
+import { findOpenTagEnd, getTagAttrValue } from "./html-scan";
 
 // --- Syntax Presets ---
 
@@ -284,6 +285,13 @@ export function resolveHtmlLogicMergeTagLabels(
  * Replaces the original `/<span[^>]*…[^>]*>(.*?)<\/span>/g` pattern, which
  * was polynomial-ReDoS over inputs that contained many `<span` starts with
  * no closing `>`.
+ *
+ * Tag boundaries and attribute values are resolved by `findOpenTagEnd` /
+ * `getTagAttrValue`, which are quote-aware. A merge-tag value may itself
+ * contain `<` / `>` when the consumer configures a custom syntax — Smarty-style
+ * `<% $email %>` — and those characters survive attribute serialization
+ * verbatim, so anything that treats the first `>` as the tag end reads a
+ * truncated attribute and resolves nothing.
  */
 function rewriteSpanByAttr(
   html: string,
@@ -291,9 +299,6 @@ function rewriteSpanByAttr(
   relabel: (value: string) => string,
   options?: { unwrap?: (value: string) => boolean },
 ): string {
-  // Anchored on `>` per match. `[^<>"]*` for the attribute value fails fast
-  // on a missing closing quote instead of backtracking across the input.
-  const attrPattern = new RegExp(`(?:^|\\s)${attrName}="([^"<>]*)"`);
   let out = "";
   let i = 0;
   while (i < html.length) {
@@ -315,7 +320,7 @@ function rewriteSpanByAttr(
       i = open + 5;
       continue;
     }
-    const openEnd = html.indexOf(">", open + 5);
+    const openEnd = findOpenTagEnd(html, open + 5);
     if (openEnd === -1) {
       out += html.substring(i);
       break;
@@ -326,8 +331,8 @@ function rewriteSpanByAttr(
       break;
     }
     const attrs = html.substring(open + 5, openEnd);
-    const attrMatch = attrPattern.exec(attrs);
-    if (!attrMatch) {
+    const value = getTagAttrValue(attrs, attrName);
+    if (value === null) {
       // This `<span>` isn't the one we're looking for — emit up to and
       // including the `<span` literal and let the next iteration scan
       // inward. Skipping straight to the matching `</span>` would swallow
@@ -336,7 +341,6 @@ function rewriteSpanByAttr(
       i = open + 5;
       continue;
     }
-    const value = attrMatch[1];
     const newLabel = relabel(value);
     if (options?.unwrap?.(value)) {
       // Emit the text before the span, then the replacement alone — the open

@@ -11,8 +11,24 @@
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.26.0",
+  "latest": "0.26.1",
   "versions": [
+    {
+      "version": "0.26.1",
+      "date": "2026-08-18",
+      "changes": [
+        {
+          "hash": "a95274c",
+          "level": "patch",
+          "title": "Fix merge tags whose values contain `<` or `>` (custom `mergeTags.syntax`)",
+          "body": "A consumer-configured syntax such as Smarty's `<% $email %>` reaches the stored\nmarkup as literal `<` / `>` — HTML attribute serialization escapes only `&`, `\"`\nand nbsp — and both merge-tag span scanners stopped at the first `>` regardless\nof quoting, so the attribute they parsed was truncated and no tag resolved.\n\nTwo symptoms, one cause:\n\n- **Previews.** Sample mode showed the label instead of the configured `sample`,\n  and Label mode left whatever text the span already carried.\n- **Export (worse).** `renderToMjml` left the entire\n  `<span data-merge-tag=\"…\">Label</span>` in the output, so the ESP never\n  received the token and the recipient saw the label text. Silent — visible only\n  in a delivered email.\n\nTag boundaries and attribute values are now read by two quote-aware primitives\nshared by both packages, `findOpenTagEnd` and `getTagAttrValue` (newly exported\nfrom `@templatical/types`). Both are forward-only character scans, so the\nlinear-time guarantee the previous regexes were written for still holds. Values\nin single-quoted and unquoted attributes now resolve too.",
+          "packages": [
+            "@templatical/renderer",
+            "@templatical/types"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.26.0",
       "date": "2026-08-16",

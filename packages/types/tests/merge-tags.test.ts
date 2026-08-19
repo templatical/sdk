@@ -716,3 +716,132 @@ describe('hasMergeTagSamples', () => {
         ).toBe(true);
     });
 });
+
+// Regression (#543): a consumer-configured custom `mergeTags.syntax` whose tag
+// values contain `<` / `>` — e.g. Smarty-style `<% $email %>` — reaches the
+// attribute as literal characters, because HTML attribute serialization escapes
+// only `&`, `"` and nbsp. The span scanner used to stop at the first `>`
+// regardless of quoting, so neither Label nor Sample mode resolved anything.
+describe('angle-bracket tag values (custom syntax)', () => {
+    const smartyTags: MergeTag[] = [
+        { label: 'E-Mail', value: '<% $email %>', sample: 'foo@example.com' },
+        { label: 'Nickname', value: '[[a<b]]', sample: 'Ada' },
+    ];
+
+    const smartySyntax = {
+        value: /<%\s*\$[^%]*%>/g,
+        logic: /<%\s*(?!\$)(\w+)[^%]*%>/g,
+    };
+
+    it('resolves the label of a value containing `<` and `>`', () => {
+        const html =
+            '<p>Hi <span data-merge-tag="<% $email %>">stale</span>,</p>';
+        expect(resolveHtmlMergeTagLabels(html, smartyTags)).toBe(
+            '<p>Hi <span data-merge-tag="<% $email %>">E-Mail</span>,</p>',
+        );
+    });
+
+    it('resolves the label of a value containing `<` only', () => {
+        const html = '<span data-merge-tag="[[a<b]]">stale</span>';
+        expect(resolveHtmlMergeTagLabels(html, smartyTags)).toBe(
+            '<span data-merge-tag="[[a<b]]">Nickname</span>',
+        );
+    });
+
+    it('substitutes the sample and unwraps the span', () => {
+        const html =
+            '<p>Hi <span data-merge-tag="<% $email %>">E-Mail</span>,</p>';
+        expect(substituteHtmlMergeTagSamples(html, smartyTags)).toBe(
+            '<p>Hi foo@example.com,</p>',
+        );
+    });
+
+    it('keeps the span and shows the label when no sample is configured', () => {
+        const html = '<span data-merge-tag="<% $phone %>">stale</span>';
+        expect(substituteHtmlMergeTagSamples(html, smartyTags)).toBe(
+            // Unknown tag: the label falls back to the raw value (escaped, since
+            // it is being inlined as text), and the span survives.
+            '<span data-merge-tag="<% $phone %>">&lt;% $phone %&gt;</span>',
+        );
+    });
+
+    it('resolves a logic tag whose syntax contains `<` and `>`', () => {
+        const html =
+            '<span data-logic-merge-tag="<% if $active %>">stale</span>';
+        expect(resolveHtmlLogicMergeTagLabels(html, smartySyntax)).toBe(
+            '<span data-logic-merge-tag="<% if $active %>">IF</span>',
+        );
+    });
+
+    it('resolves a tag nested inside a styled span', () => {
+        const html =
+            '<span style="color: red"><span data-merge-tag="<% $email %>">stale</span></span>';
+        expect(resolveHtmlMergeTagLabels(html, smartyTags)).toBe(
+            '<span style="color: red"><span data-merge-tag="<% $email %>">E-Mail</span></span>',
+        );
+    });
+
+    it('runs in linear time when many tag values contain `>` (ReDoS regression)', () => {
+        const adversarial =
+            '<span data-merge-tag="<% $email %>">x</span>'.repeat(5_000);
+        const start = Date.now();
+        const result = resolveHtmlMergeTagLabels(adversarial, smartyTags);
+        const elapsed = Date.now() - start;
+        expect(result).toBe(
+            '<span data-merge-tag="<% $email %>">E-Mail</span>'.repeat(5_000),
+        );
+        expect(elapsed).toBeLessThan(500);
+    });
+});
+
+// Regression (#548). The editor serializes rich text with the tag value
+// entity-encoded in the attribute, so stored content reads
+// `data-merge-tag="&lt;% $email %&gt;"`. Comparing that raw against the
+// configured `<% $email %>` missed, and the label fallback then wrote the
+// escaped token *over* the correct label — the tag appeared to revert to its
+// raw form the moment the block left edit mode.
+describe('entity-encoded tag values in stored content', () => {
+    const smartyTags: MergeTag[] = [
+        { label: 'E-Mail', value: '<% $email %>', sample: 'test@example.com' },
+    ];
+
+    // Verbatim from the issue's `editor.getContent()`, `label`/`value`
+    // attributes included — TipTap renders every node attr, so they are part
+    // of the shape any fix has to cope with.
+    const stored =
+        '<p><span label="E-Mail" value="&lt;% $email %&gt;" data-merge-tag="&lt;% $email %&gt;" data-label="E-Mail">E-Mail</span></p>';
+
+    it('resolves the label instead of echoing the escaped token', () => {
+        expect(resolveHtmlMergeTagLabels(stored, smartyTags)).toBe(
+            '<p><span label="E-Mail" value="&lt;% $email %&gt;" data-merge-tag="&lt;% $email %&gt;" data-label="E-Mail">E-Mail</span></p>',
+        );
+    });
+
+    it('substitutes the sample rather than double-escaping the token', () => {
+        // Previously produced `&amp;lt;% $email %&amp;gt;`, which renders on
+        // screen as the literal text `&lt;% $email %&gt;`.
+        expect(substituteHtmlMergeTagSamples(stored, smartyTags)).toBe(
+            '<p>test@example.com</p>',
+        );
+    });
+
+    it('resolves a logic tag stored with entity-encoded delimiters', () => {
+        const html =
+            '<span data-logic-merge-tag="&lt;% if $active %&gt;">stale</span>';
+        expect(
+            resolveHtmlLogicMergeTagLabels(html, {
+                value: /<%\s*\$[^%]*%>/g,
+                logic: /<%\s*(?!\$)(\w+)[^%]*%>/g,
+            }),
+        ).toBe(
+            '<span data-logic-merge-tag="&lt;% if $active %&gt;">IF</span>',
+        );
+    });
+
+    it('still resolves an unencoded attribute (#543 stays fixed)', () => {
+        const html = '<span data-merge-tag="<% $email %>">stale</span>';
+        expect(resolveHtmlMergeTagLabels(html, smartyTags)).toBe(
+            '<span data-merge-tag="<% $email %>">E-Mail</span>',
+        );
+    });
+});

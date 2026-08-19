@@ -128,6 +128,6 @@ Logic isn't limited to title/paragraph blocks. Inputs and textareas that already
 
 For example, make button text conditional:
 
-<code v-pre>{% if guest.status == 'vip' %}VIP access{% else %}Sign up{% endif %}</code>
+`{% if guest.status == 'vip' %}VIP access{% else %}Sign up{% endif %}`
 
 In a plain field a tag inserts at the cursor and a pair wraps the selected text (string-wise), the same as in rich text.
