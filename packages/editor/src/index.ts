@@ -1,7 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference -- ambient-module declaration must be loaded for cross-package typecheck (workspace path alias resolves to source)
 /// <reference path="./virtual-modules.d.ts" />
 import { createApp, h, ref, type App, type Ref } from "vue";
-import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "./constants/timeouts";
+import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import type {
   BlockDefaults,
   ColorsConfig,

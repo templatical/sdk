@@ -119,6 +119,7 @@ const editor = await initCloud({
   onComment: (event) => { /* comment created/updated/deleted */ },
   onCreate: (template) => { /* create() resolved — template.id is new */ },
   onLoad: (template) => { /* load() resolved */ },
+  onUnmount: () => { /* the editor has been torn down */ },
 });
 ```
 

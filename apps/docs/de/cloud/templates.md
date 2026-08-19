@@ -30,10 +30,10 @@ Clouds `save` schreibt die Version im selben Aufruf, gedrosselt auf höchstens e
 
 ## Autosave
 
-Anders als bei `init()`, wo Autosave aus bleibt, bis es ein Ziel zum Speichern gibt, hat eine Cloud-Sitzung immer eines — deshalb ist es standardmäßig **an, mit 5000 ms Verzögerung**. (`init()` ist standardmäßig aus und nutzt 2000 ms, sobald es aktiviert ist: Clouds Speichervorgänge kosten serverseitigen Speicher, deshalb wartet Cloud länger.) Schlüssel und Typ sind auf beiden Einstiegspunkten identisch:
+Anders als bei `init()`, wo Autosave aus bleibt, bis es ein Ziel zum Speichern gibt, hat eine Cloud-Sitzung immer eines — deshalb ist es standardmäßig **an**. Die Taktung sind dieselben 2000 ms wie bei beiden Einstiegspunkten; nur der An/Aus-Standard unterscheidet sich. Schlüssel und Typ sind identisch:
 
 ```js
-await initCloud({ container, auth, autoSave: { debounce: 2000 } }); // eifriger
+await initCloud({ container, auth, autoSave: { debounce: 5000 } }); // langsamer
 await initCloud({ container, auth, autoSave: false });              // aus
 ```
 

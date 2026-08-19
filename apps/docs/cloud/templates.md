@@ -30,10 +30,10 @@ Cloud's `save` writes a version in the same call, throttled to at most one per m
 
 ## Autosave
 
-Unlike `init()`, where autosave stays off until you have somewhere to save to, a Cloud session always does — so it defaults to **on, with a 5000ms debounce**. (`init()` defaults to off, and to 2000ms once enabled: Cloud's saves cost a server-side store, so it waits longer.) The key and its type are the same on both entry points:
+Unlike `init()`, where autosave stays off until you have somewhere to save to, a Cloud session always does — so it defaults to **on**. The cadence is the same 2000ms both entry points use; only the on/off default differs. The key and its type are identical:
 
 ```js
-await initCloud({ container, auth, autoSave: { debounce: 2000 } }); // more eager
+await initCloud({ container, auth, autoSave: { debounce: 5000 } }); // slower
 await initCloud({ container, auth, autoSave: false });              // off
 ```
 

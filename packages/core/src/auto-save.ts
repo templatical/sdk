@@ -26,15 +26,19 @@ export interface UseAutoSaveReturn {
  * (word choice, re-reading, reaching for the mouse), so a single paragraph could
  * produce dozens of full-content saves. 2000 roughly halves that while still
  * landing well before a user wonders whether their work was kept.
+ *
+ * **The single default for both entry points.** `initCloud()` used to carry its
+ * own copy at 5000 in the editor package; two constants for one setting drifted
+ * silently and nothing linked them. Cloud imports this one now.
  */
-const DEFAULT_DEBOUNCE_MS = 2000;
+export const DEFAULT_AUTO_SAVE_DEBOUNCE_MS = 2000;
 
 export function useAutoSave(options: UseAutoSaveOptions): UseAutoSaveReturn {
   const {
     content,
     isDirty,
     onChange,
-    debounce = DEFAULT_DEBOUNCE_MS,
+    debounce = DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
     enabled = true,
   } = options;
 

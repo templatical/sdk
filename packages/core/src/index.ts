@@ -14,7 +14,7 @@ export type {
 } from "./block-actions";
 
 // Auto-save
-export { useAutoSave } from "./auto-save";
+export { useAutoSave, DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "./auto-save";
 export type { UseAutoSaveOptions, UseAutoSaveReturn } from "./auto-save";
 
 // Display condition preview

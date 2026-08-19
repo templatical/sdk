@@ -17,6 +17,7 @@
 // render is invoked to capture the props passed to `h(...)`, including the
 // template `ref` — we then set the instance ourselves.
 
+import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { Ref } from "vue";
 
@@ -175,12 +176,14 @@ describe("initCloud — a thin wrapper over init()", () => {
     expect(config.testEmail).toBe(fakeProviders.testEmail);
   });
 
-  it("defaults autosave on, at Cloud's slower cadence", async () => {
-    // The difference between the two entry points stays at this call site:
-    // Cloud always has a store to save to, and every tick is a round-trip.
+  it("defaults autosave on, at the shared default cadence", async () => {
+    // Cloud differs from `init()` in *whether* autosave runs, not how often:
+    // it always has a store to save to, so it is on unless refused. The
+    // interval is `DEFAULT_AUTO_SAVE_DEBOUNCE_MS`, the one constant both entry
+    // points read — the editor package used to keep a second copy at 5000.
     await mountCloud(null);
     expect((captured.props!.config as Record<string, unknown>).autoSave).toEqual(
-      { debounce: 5000 },
+      { debounce: DEFAULT_AUTO_SAVE_DEBOUNCE_MS },
     );
   });
 
