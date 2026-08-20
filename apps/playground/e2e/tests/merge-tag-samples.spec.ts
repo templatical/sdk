@@ -90,9 +90,13 @@ test.describe("Merge tag samples", () => {
     expect(remaining).toBeGreaterThan(0);
     expect(remaining).toBeLessThan(chipsWhileEditing);
 
+    // Two, not one: the shipping address carries `{{last_name}}` as an authored
+    // span, and the "Delivery contact" block carries it as a bare token that
+    // merge-tag normalization converted on load. Both are sample-less, so both
+    // keep their chip — which is the point of this assertion either way.
     await expect(
       canvas.locator(`${SELECTORS.mergeTagSpan}[data-merge-tag="{{last_name}}"]`),
-    ).toHaveCount(1);
+    ).toHaveCount(2);
     await expect(
       canvas.locator(
         `${SELECTORS.mergeTagSpan}[data-merge-tag="{{first_name}}"]`,

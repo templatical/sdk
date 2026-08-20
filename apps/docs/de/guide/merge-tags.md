@@ -272,6 +272,45 @@ const editor = await init({
 Wenn Sie sowohl `tags` als auch `onRequest` angeben, hat `onRequest` Vorrang — die Schaltfläche **Merge-Tag** ruft immer Ihren Callback auf. Das statische `tags`-Array versorgt weiterhin die Autovervollständigungs-Vorschläge beim Tippen.
 :::
 
+## Tokens in geladenen Inhalten
+
+Inhalt, der nie die Eingabeverarbeitung des Editors durchlaufen hat — eine Vorlage aus Ihrem eigenen Speicher oder eine von den [`@templatical/import-*`](/de/guide/migration-from-html)-Konvertern erzeugte — trägt Merge-Tags als reine <code v-pre>{{tokens}}</code> statt als Tag-Knoten. Der Editor wandelt sie beim Hereinkommen um, sodass sich ein geladenes Tag exakt wie ein getipptes verhält: lesbares Label, Hervorhebung, `sample` und als eine Einheit auswählbar.
+
+Sie müssen nichts aufrufen und nichts aktivieren. Das geschieht überall dort, wo Inhalt eintrifft:
+
+| Weg | Zeitpunkt |
+|---|---|
+| `init({ content })` / `initCloud({ content })` | vor dem Mounten |
+| `editor.setContent(content)` | bevor der Inhalt die Arbeitsfläche erreicht |
+| `editor.create({ content })` | bevor der Inhalt zum Editor-Status wird |
+| `editor.load(id)` | sobald das Ergebnis des [`templates`](/de/backend/templates)-Providers zurückkommt |
+| Vorschau und Wiederherstellung der [Versionshistorie](/de/backend/version-history) | sobald eine Version die Arbeitsfläche erreicht |
+
+Die Erkennung richtet sich nach Ihrer konfigurierten `syntax`, nicht nach dem `tags`-Array — ein nicht deklariertes Token wird also ebenfalls zu einem Tag, beschriftet mit seinem eigenen Rohwert.
+
+**Nur Text wird umgewandelt.** Ein Token in einem `href`, `src` oder einem beliebigen anderen Attribut bleibt Byte für Byte identisch:
+
+```html
+<!-- vorher -->
+<p>Hallo {{first_name}} — <a href="{{unsubscribe_url}}">abmelden</a></p>
+
+<!-- nachher -->
+<p>Hallo <span data-merge-tag="{{first_name}}">Vorname</span> —
+   <a href="{{unsubscribe_url}}">abmelden</a></p>
+```
+
+**Nur Rich Text wird umgewandelt** — `TitleBlock.content` und `ParagraphBlock.content`. Jedes andere Merge-Tag-Feld wird als Text gerendert und behält seine reinen Tokens: Schaltflächentext und -URLs, `src`/`alt` von Bildern, `HtmlBlock.content`, Feldwerte benutzerdefinierter Blöcke, `settings.preheaderText` und Tabellenzellen.
+
+::: warning `getContent()` ist kein Byte-für-Byte-Roundtrip
+Die reinen Tokens einer geladenen Vorlage kommen als Tag-Knoten zurück. In Ihren Speicher wird nichts geschrieben, solange Sie nicht speichern, und nichts wird als ungespeicherte Änderung markiert — rechnen Sie aber mit einer einmaligen Abweichung, wenn Sie gespeicherte Vorlagen vergleichen oder Prüfsummen bilden.
+
+Die Ausgabe ist nicht betroffen: `toMjml()` / `toHtml()` ersetzen einen Tag-Knoten durch sein Token, sodass eine umgewandelte Vorlage und ihr Original mit reinen Tokens identisch kompilieren.
+:::
+
+::: tip Einen `resolvePreview`-Hook schreiben
+Ihr [`resolvePreview`](/de/guide/preview-rendering)-Callback erhält Tag-Knoten, auch für Inhalt, der als reines Token eintraf. Gleichen Sie gegen das Tag-Markup ab, nicht gegen das rohe Token — ein naives <code v-pre>replaceAll('{{first_name}}', 'Grace')</code> trifft auch das Token innerhalb von <code v-pre>data-merge-tag="{{first_name}}"</code> und erzeugt stillschweigend ein Tag, das sein Label rendert.
+:::
+
 ## Merge-Tags in anderen Eingaben
 
 Merge-Tags sind nicht auf Titel- und Absatzblöcke beschränkt. Der Editor erkennt und hebt Merge-Tags auch in anderen Blockeingaben hervor — Schaltflächentext, Schaltflächen-URL, Bild-URL, Bild-Alternativtext und Link-href-Werte. Das gleiche Label-Ersetzungs- und Tooltip-Verhalten gilt in diesen Feldern.
