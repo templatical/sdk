@@ -274,14 +274,9 @@ Wenn Sie sowohl `tags` als auch `onRequest` angeben, hat `onRequest` Vorrang —
 
 ## Tokens in geladenen Inhalten
 
-Ein Merge-Tag liegt in gespeicherten Inhalten in einer von zwei physischen Formen vor:
+Inhalt, der nie die Eingabeverarbeitung des Editors durchlaufen hat — eine Vorlage aus Ihrem eigenen Speicher oder eine von den [`@templatical/import-*`](/de/guide/migration-from-html)-Konvertern erzeugte — trägt Merge-Tags als reine <code v-pre>{{tokens}}</code> statt als Tag-Knoten. Der Editor wandelt sie beim Hereinkommen um, sodass sich ein geladenes Tag exakt wie ein getipptes verhält: lesbares Label, Hervorhebung, `sample` und als eine Einheit auswählbar.
 
-- **Als Tag-Knoten** — `<span data-merge-tag="{{first_name}}">Vorname</span>`. Alles funktioniert: Er zeigt ein lesbares Label, wird hervorgehoben, löst seinen [Beispielwert](#beispielwerte) auf und lässt sich als eine Einheit auswählen und löschen.
-- **Als reines Token** — der wörtliche Text `{{first_name}}` im HTML. Für sich genommen ist er nur Text: kein Label, keine Hervorhebung, kein Beispielwert, und er lässt sich Zeichen für Zeichen löschen.
-
-Alles, was ein Benutzer tippt oder einfügt, wird automatisch zu einem Knoten. Als reines Token verbleibt nur Inhalt, der nie die Eingabeverarbeitung des Editors durchlaufen hat — eine Vorlage, die Sie aus Ihrem eigenen Speicher laden, oder eine, die von den [`@templatical/import-*`](/de/guide/migration-from-html)-Konvertern erzeugt wurde und typischerweise voller Tokens ist, von denen keines ein Knoten ist.
-
-Der Editor wandelt reine Tokens in Tag-Knoten um, sobald Inhalt hereinkommt, sodass sich beide Formen nach dem Laden identisch verhalten. Das geschieht auf jedem Weg, über den Inhalt eintrifft — Sie müssen nichts aufrufen und nichts aktivieren:
+Sie müssen nichts aufrufen und nichts aktivieren. Das geschieht überall dort, wo Inhalt eintrifft:
 
 | Weg | Zeitpunkt |
 |---|---|
@@ -291,13 +286,9 @@ Der Editor wandelt reine Tokens in Tag-Knoten um, sobald Inhalt hereinkommt, sod
 | `editor.load(id)` | sobald das Ergebnis des [`templates`](/de/backend/templates)-Providers zurückkommt |
 | Vorschau und Wiederherstellung der [Versionshistorie](/de/backend/version-history) | sobald eine Version die Arbeitsfläche erreicht |
 
-Die Versionshistorie ist enthalten, weil eine gespeicherte Version genau das enthält, was in sie geschrieben wurde — auch eine Vorlage, die Ihr Backend direkt aus einem Import versioniert hat. Sie kann also wie jeder andere geladene Inhalt reine Tokens tragen. Das Öffnen einer Vorschau markiert die Vorlage nicht als geändert.
+Die Erkennung richtet sich nach Ihrer konfigurierten `syntax`, nicht nach dem `tags`-Array — ein nicht deklariertes Token wird also ebenfalls zu einem Tag, beschriftet mit seinem eigenen Rohwert.
 
-Die Erkennung richtet sich nach Ihrer konfigurierten `syntax`, nicht nach dem `tags`-Array. Dadurch werden die Tags einer migrierten Vorlage auch dann zu Einheiten, wenn Sie noch nicht alle deklariert haben. Ein nicht deklariertes Token zeigt seinen eigenen Rohwert als Label — ehrlich statt erfunden, und trotzdem als eine Einheit auswählbar. Das entspricht dem Tippen, wo dieselbe syntaxgesteuerte Regel bereits gilt.
-
-### Was bewusst unangetastet bleibt
-
-**Tokens in Attributposition.** Nur Text wird umgewandelt. Ein Token in einem `href`, `src` oder einem beliebigen anderen Attribut bleibt Byte für Byte identisch:
+**Nur Text wird umgewandelt.** Ein Token in einem `href`, `src` oder einem beliebigen anderen Attribut bleibt Byte für Byte identisch:
 
 ```html
 <!-- vorher -->
@@ -308,20 +299,16 @@ Die Erkennung richtet sich nach Ihrer konfigurierten `syntax`, nicht nach dem `t
    <a href="{{unsubscribe_url}}">abmelden</a></p>
 ```
 
-Das `href` zu umschließen würde ein Element in eine URL einfügen. Die Umwandlung parst das Fragment und durchläuft ausschließlich Textknoten, sodass ein Attributwert konstruktionsbedingt unerreichbar ist.
-
-**Felder mit einfachen Zeichenketten.** Nur `TitleBlock.content` und `ParagraphBlock.content` sind Rich Text. Schaltflächentext und -URLs, `src`/`alt` von Bildern, `HtmlBlock.content`, Feldwerte benutzerdefinierter Blöcke und `settings.preheaderText` werden als Text gerendert — ein dort eingefügter Span würde wörtlich angezeigt. Diese Felder behalten ihre reinen Tokens.
-
-**Inhalt von Tabellenzellen.** Bewusst ausgenommen: Der Tabellenblock schreibt beim Verlassen einer Zelle deren `innerText` zurück, sodass eine umgewandelte Zelle ihr Markup beim ersten Fokussieren und Verlassen als wörtlichen Text speichern würde.
+**Nur Rich Text wird umgewandelt** — `TitleBlock.content` und `ParagraphBlock.content`. Jedes andere Merge-Tag-Feld wird als Text gerendert und behält seine reinen Tokens: Schaltflächentext und -URLs, `src`/`alt` von Bildern, `HtmlBlock.content`, Feldwerte benutzerdefinierter Blöcke, `settings.preheaderText` und Tabellenzellen.
 
 ::: warning `getContent()` ist kein Byte-für-Byte-Roundtrip
-Enthält eine geladene Vorlage reine Tokens in Titel- oder Absatzinhalten, gibt `getContent()` stattdessen Tag-Knoten zurück. Die Vorlage wird in Ihrem Speicher nicht verändert, solange Sie sie nicht speichern, und nichts wird als ungespeicherte Änderung markiert — wenn Sie gespeicherte Vorlagen jedoch vergleichen oder Prüfsummen bilden, rechnen Sie bei den betroffenen mit einer einmaligen Abweichung beim ersten Speichern.
+Die reinen Tokens einer geladenen Vorlage kommen als Tag-Knoten zurück. In Ihren Speicher wird nichts geschrieben, solange Sie nicht speichern, und nichts wird als ungespeicherte Änderung markiert — rechnen Sie aber mit einer einmaligen Abweichung, wenn Sie gespeicherte Vorlagen vergleichen oder Prüfsummen bilden.
 
-Zwei Dinge sind ausdrücklich **nicht** betroffen: das gerenderte Ergebnis und der Versand. `toMjml()` / `toHtml()` ersetzen einen Tag-Knoten durch sein Token, sodass eine umgewandelte Vorlage und ihr Original mit reinen Tokens zu identischem Output kompilieren.
+Die Ausgabe ist nicht betroffen: `toMjml()` / `toHtml()` ersetzen einen Tag-Knoten durch sein Token, sodass eine umgewandelte Vorlage und ihr Original mit reinen Tokens identisch kompilieren.
 :::
 
 ::: tip Einen `resolvePreview`-Hook schreiben
-Ihr [`resolvePreview`](/de/guide/preview-rendering)-Callback erhält Tag-Knoten, auch für Inhalt, der als reines Token in den Editor gelangt ist. Ein Resolver, der mit getippten Tags umgeht, braucht keinen Sonderfall. Ein naives `content.replaceAll('{{first_name}}', 'Grace')` trifft jedoch auch das Token innerhalb von `data-merge-tag="{{first_name}}"` und erzeugt stillschweigend ein Tag, das sein Label rendert. Gleichen Sie gegen das Tag-Markup ab, nicht gegen das rohe Token.
+Ihr [`resolvePreview`](/de/guide/preview-rendering)-Callback erhält Tag-Knoten, auch für Inhalt, der als reines Token eintraf. Gleichen Sie gegen das Tag-Markup ab, nicht gegen das rohe Token — ein naives <code v-pre>replaceAll('{{first_name}}', 'Grace')</code> trifft auch das Token innerhalb von <code v-pre>data-merge-tag="{{first_name}}"</code> und erzeugt stillschweigend ein Tag, das sein Label rendert.
 :::
 
 ## Merge-Tags in anderen Eingaben
