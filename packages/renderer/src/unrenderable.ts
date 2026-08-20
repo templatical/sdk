@@ -8,12 +8,17 @@ import type { Block } from "@templatical/types";
 export const UNRENDERABLE_MARKER_PREFIX = "templatical:unrenderable-block";
 
 /**
- * Strip anything that would terminate or nest an HTML comment. `-->` inside the
- * marker would close it early and leak the rest as body text; a lone `--` is
- * enough to make the comment non-conforming, so both collapse.
+ * Strip anything that would terminate or nest an HTML comment. `-->` and `--!>`
+ * inside the marker would close it early and leak the rest as body text; a lone
+ * `--` is enough to make the comment non-conforming, so both collapse.
+ *
+ * Brackets go **before** hyphens collapse, and the order is load-bearing.
+ * Removing `<` from `-<-` brings two hyphens together that a collapse pass has
+ * already walked past, so collapsing first leaves a `--` behind — the sanitizer
+ * reintroducing the sequence it exists to remove.
  */
 function commentSafe(value: string): string {
-  return value.replace(/-{2,}/g, "-").replace(/[<>]/g, "");
+  return value.replace(/[<>]/g, "").replace(/-{2,}/g, "-");
 }
 
 /**

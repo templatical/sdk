@@ -159,6 +159,41 @@ describe('unrenderable blocks', () => {
     );
     // One comment open, one comment close — nothing escaped into body position.
     expect(result.match(/-->/g)).toHaveLength(1);
+    // `--!>` closes a comment too, so counting only `-->` would miss a leak
+    // through the other terminator.
+    expect(result).not.toContain('--!>');
+  });
+
+  /**
+   * Stripping `<` and `>` can bring two hyphens together that the collapse pass
+   * already walked past: `-<-` is neither `--` nor a bracket pair on its own,
+   * but becomes `--` once the bracket goes. Order matters — strip first, then
+   * collapse — or the sanitizer reintroduces the sequence it exists to remove.
+   *
+   * Not exploitable on its own, because every `>` is stripped and a comment
+   * needs one to close. It is emitted markup either way, and a `--` inside a
+   * comment is non-conforming, so the marker should not carry one.
+   */
+  it('does not reintroduce a double hyphen when stripping brackets', () => {
+    const block = {
+      id: '-<-<-',
+      type: 'a-<-b' as never,
+      styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+    } as Block;
+
+    const result = renderUnrenderableBlock(block);
+
+    expect(result).toBe(
+      `<mj-raw><!-- ${UNRENDERABLE_MARKER_PREFIX} type="a-b" id="-" --></mj-raw>`,
+    );
+    // Exactly the marker's own terminator, and no stray `--` between the
+    // comment's own `<!--` and `-->`.
+    expect(result.match(/-->/g)).toHaveLength(1);
+    const body = result.slice(
+      result.indexOf('<!--') + '<!--'.length,
+      result.indexOf('-->'),
+    );
+    expect(body).not.toContain('--');
   });
 
   it('a top-level countdown renders inside a section and survives an mjml compile', async () => {
