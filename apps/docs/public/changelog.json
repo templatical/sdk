@@ -11,8 +11,26 @@
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.27.0",
+  "latest": "0.27.1",
   "versions": [
+    {
+      "version": "0.27.1",
+      "date": "2026-08-20",
+      "changes": [
+        {
+          "hash": "18f6b38",
+          "level": "patch",
+          "title": "Fix: the media library could not mount at all on 0.27.0 — in either mount mode.",
+          "body": "0.27.0 moved `authManager` / `projectId` / `planConfig` to props and had `MediaLibraryModal` re-provide the plan config under `PLAN_CONFIG_KEY` for its descendants, while `useMediaCategories()` was given a named throw for the no-provider case. Both host shells then called `useMediaCategories()` with no argument — and **a component never sees its own `provide`**, because Vue resolves `inject` against the _parent_ chain. So the new throw fired in the very components that supplied the value:\n\n```\n[Templatical] useMediaCategories() needs a plan config in scope.\nRender it under <MediaLibraryModal> (pass its `planConfig` prop) …\n```\n\nThis hit the editor path (`initCloud()`) **and** the standalone SDK, which had worked before 0.27.0 — its `useMediaCategories()` previously injected the bare string `\"planConfig\"` that `standalone/MediaLibrary.vue` provided. `useMediaCategories(planConfigOverride?)` now takes the value explicitly, which both shells pass; descendants inject exactly as before.\n\nTwo further key-identity faults in the same file are fixed with it, both invisible until the modal could mount:\n\n- **Translations.** `useI18n()` injected the bare string `\"translations\"`, which never resolves the `Symbol` `@templatical/editor` provides under the same name — so a host-mounted modal got `undefined` and threw on its first of 28 `t.mediaLibrary.*` reads. Strings now cross the package boundary as a **`locale` prop** on `MediaLibraryModal`, which loads its own translations and provides them under a `Symbol`; `useI18n()` falls back to bundled English rather than asserting non-null.\n- **Dark mode.** Four components injected the bare string `\"tplUiTheme\"`, so `data-tpl-theme` was always `undefined` and the library rendered light inside a dark editor. `MediaLibraryModal` takes a `uiTheme` prop and provides it for the three sub-modals, which teleport out of its DOM.\n\n`initCloud()` consumers get all of this by upgrading — `CloudPanels` forwards `locale` and the resolved UI theme automatically.\n\n### Breaking — only if you mount `MediaLibraryModal` yourself\n\nBoth new props are optional, so nothing is required. Pass them to get the behaviour the editor gets:\n\n```vue\n<MediaLibraryModal\n  :visible=\"open\"\n  :locale=\"locale\"\n  :ui-theme=\"resolvedTheme\"\n  :auth-manager=\"authManager\"\n  :project-id=\"authManager.projectId\"\n  :plan-config=\"planConfig\"\n  @select=\"onSelect\"\n  @close=\"open = false\"\n/>\n```\n\nOmit `locale` and it loads English; omit `uiTheme` and no `data-tpl-theme` is stamped. If you called `useMediaCategories()` from a component that _also_ provides `PLAN_CONFIG_KEY`, pass your value: `useMediaCategories(planConfig)`.\n\nThe regression escaped because no test or e2e had ever mounted either shell — the standalone suite mocks Vue's `createApp` wholesale, and the plan-config audit exercised the composable through an app-level `provide`, the one topology where self-injection works. Both shells are now mounted in tests, and the package's injection audit bans _any_ bare-string `inject` rather than an enumerated list of names.",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/import-html",
+            "@templatical/media-library",
+            "@templatical/types"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.27.0",
       "date": "2026-08-19",

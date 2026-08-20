@@ -1,5 +1,12 @@
 # @templatical/quality
 
+## 0.27.1
+
+### Patch Changes
+
+- Updated dependencies [18f6b38]
+  - @templatical/types@0.27.1
+
 ## 0.27.0
 
 ### Patch Changes
