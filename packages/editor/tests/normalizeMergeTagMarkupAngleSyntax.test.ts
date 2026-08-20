@@ -39,6 +39,73 @@ const SMARTY_TAGS: MergeTag[] = [
   { label: "Email", value: "<% $email %>", sample: "ada@example.com" },
 ];
 
+/**
+ * The `<!doctype html><body>…</body>` wrapper around the parse input is
+ * load-bearing, and these are the cases that prove it. They live here rather
+ * than in the happy-dom suite because happy-dom keeps `<style>` and `<meta>` in
+ * the body regardless, so the assertions would hold there whatever the parser
+ * did.
+ *
+ * Without the wrapper the parser starts in its "before head" insertion mode and
+ * routes leading whitespace, `<style>`, `<meta>` and `<title>` into `<head>`,
+ * where reading `body.innerHTML` back silently discards them. Rich text loaded
+ * from a store can legitimately carry any of these, and this function's contract
+ * is to return its input untouched apart from the tokens it converts.
+ *
+ * Every fixture carries a token on purpose: with none, the zero-replacement
+ * short-circuit returns the input string without ever parsing, and the
+ * assertion would pass whatever the parser did.
+ *
+ * A CodeQL "unsafe HTML constructed from library input" alert suggests dropping
+ * the wrapper. Doing so silently loses all of the below while leaving
+ * `<img onerror>` untouched, so it removes no attack surface and costs
+ * correctness. These tests fail if it is ever applied.
+ */
+describe("the parse wrapper preserves head-ish content", () => {
+  const PLAIN: MergeTag[] = [{ label: "Last Name", value: "{{last_name}}" }];
+  const LIQUID: SyntaxPreset = {
+    value: /\{\{.+?\}\}/g,
+    logic: /\{%-?\s*(\w+).*?-?%\}/g,
+  };
+  const TAG = '<span data-merge-tag="{{last_name}}">Last Name</span>';
+
+  it("keeps leading whitespace", () => {
+    expect(
+      normalizeMergeTagsInHtml("  <p>{{last_name}}</p>", PLAIN, LIQUID),
+    ).toBe(`  <p>${TAG}</p>`);
+  });
+
+  it("keeps a <style> block", () => {
+    expect(
+      normalizeMergeTagsInHtml(
+        "<style>p{color:red}</style><p>{{last_name}}</p>",
+        PLAIN,
+        LIQUID,
+      ),
+    ).toBe(`<style>p{color:red}</style><p>${TAG}</p>`);
+  });
+
+  it("keeps a <meta> element", () => {
+    expect(
+      normalizeMergeTagsInHtml(
+        '<meta charset="utf-8"><p>{{last_name}}</p>',
+        PLAIN,
+        LIQUID,
+      ),
+    ).toBe(`<meta charset="utf-8"><p>${TAG}</p>`);
+  });
+
+  it("keeps a <title> element", () => {
+    expect(
+      normalizeMergeTagsInHtml(
+        "<title>t</title><p>{{last_name}}</p>",
+        PLAIN,
+        LIQUID,
+      ),
+    ).toBe(`<title>t</title><p>${TAG}</p>`);
+  });
+});
+
 describe("normalizeMergeTagsInHtml with an angle-bracket syntax", () => {
   it("wraps a bare token in text and resolves its label", () => {
     const result = normalizeMergeTagsInHtml(

@@ -141,6 +141,39 @@ describe("normalizeMergeTagsInHtml", () => {
     expect(normalizeMergeTagsInHtml("", TAGS, LIQUID)).toBe("");
   });
 
+  /**
+   * The `<!doctype html><body>…</body>` wrapper around the parse input is
+   * load-bearing, and these are the cases that prove it.
+   *
+   * Without it the parser starts in its "before head" insertion mode, which
+   * routes leading whitespace and any head-ish element — `<style>`, `<meta>`,
+   * `<title>` — into `<head>`, where reading `body.innerHTML` back silently
+   * discards them. Rich text loaded from a store can legitimately carry all of
+   * these, and this function's contract is to return its input untouched apart
+   * from the tokens it converts.
+   *
+   * The fixture carries a token on purpose: with none, the zero-replacement
+   * short-circuit returns the input string without ever parsing, and the
+   * assertion would hold whatever the parser did.
+   *
+   * Only leading whitespace is pinned here. happy-dom keeps `<style>` and
+   * `<meta>` in the body either way, so asserting those in this environment
+   * proves nothing — they are pinned against jsdom in
+   * `normalizeMergeTagMarkupAngleSyntax.test.ts`, whose parser follows the
+   * spec.
+   */
+  it("keeps leading whitespace when a token elsewhere converts", () => {
+    const result = normalizeMergeTagsInHtml(
+      "  <p>{{last_name}}</p>",
+      TAGS,
+      LIQUID,
+    );
+
+    expect(result).toBe(
+      '  <p><span data-merge-tag="{{last_name}}">Last Name</span></p>',
+    );
+  });
+
   it("wraps a token in bare text with no surrounding element", () => {
     expect(normalizeMergeTagsInHtml("{{last_name}}", TAGS, LIQUID)).toBe(
       '<span data-merge-tag="{{last_name}}">Last Name</span>',
