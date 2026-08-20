@@ -158,9 +158,11 @@ describe('unrenderable blocks', () => {
       `<mj-raw><!-- ${UNRENDERABLE_MARKER_PREFIX} type="we-ird" id="a-scriptx/script" --></mj-raw>`,
     );
     // One comment open, one comment close — nothing escaped into body position.
-    expect(result.match(/-->/g)).toHaveLength(1);
-    // `--!>` closes a comment too, so counting only `-->` would miss a leak
+    // `--!?>` rather than `-->`: `--!>` closes a comment too (the spec's
+    // "comment end bang state"), so counting only `-->` would miss a leak
     // through the other terminator.
+    expect(result.match(/--!?>/g)).toHaveLength(1);
+    // …and the one terminator present is the marker's own.
     expect(result).not.toContain('--!>');
   });
 
@@ -186,9 +188,9 @@ describe('unrenderable blocks', () => {
     expect(result).toBe(
       `<mj-raw><!-- ${UNRENDERABLE_MARKER_PREFIX} type="a-b" id="-" --></mj-raw>`,
     );
-    // Exactly the marker's own terminator, and no stray `--` between the
-    // comment's own `<!--` and `-->`.
-    expect(result.match(/-->/g)).toHaveLength(1);
+    // Exactly one comment terminator in either spelling, and no stray `--`
+    // between the comment's own `<!--` and `-->`.
+    expect(result.match(/--!?>/g)).toHaveLength(1);
     const body = result.slice(
       result.indexOf('<!--') + '<!--'.length,
       result.indexOf('-->'),
