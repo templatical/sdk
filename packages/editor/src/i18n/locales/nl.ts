@@ -335,9 +335,11 @@ const nl: typeof en = {
     renderError:
       "Dit blok kon niet worden weergegeven. Controleer het bloksjabloon op fouten.",
     fields: {
+      required: "Verplicht",
       addItem: "Item toevoegen",
       removeItem: "Verwijderen",
       maxItemsReached: "Maximaal aantal items bereikt",
+      minItemsRequired: "Minimaal {count} items vereist",
     },
     toolbar: {
       noDefinition:

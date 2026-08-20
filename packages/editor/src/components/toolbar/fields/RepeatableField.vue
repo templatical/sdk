@@ -17,7 +17,7 @@ const emit = defineEmits<{
   (e: "update:modelValue", value: Record<string, unknown>[]): void;
 }>();
 
-const { t } = useI18n();
+const { t, format } = useI18n();
 
 const items = computed(() => props.modelValue || []);
 
@@ -115,6 +115,22 @@ function updateItemField(index: number, key: string, value: unknown): void {
         class="tpl:m-0 tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
       >
         {{ t.customBlocks.fields.maxItemsReached }}
+      </p>
+
+      <!-- The counterpart to the message above: each explains one control that
+           is absent rather than disabled, and a missing control with no
+           explanation reads as a bug. Both can be true at once for a
+           fixed-length list (`minItems === maxItems`), where the two together
+           are what say the length is fixed. -->
+      <p
+        v-if="!canRemove && !readOnly"
+        class="tpl:m-0 tpl:text-center tpl:text-xs tpl:text-[var(--tpl-text-dim)]"
+      >
+        {{
+          format(t.customBlocks.fields.minItemsRequired, {
+            count: field.minItems ?? 0,
+          })
+        }}
       </p>
     </div>
   </FieldWrapper>

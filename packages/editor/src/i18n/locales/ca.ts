@@ -385,9 +385,11 @@ const ca: typeof en = {
     renderError:
       "No s'ha pogut renderitzar aquest bloc. Comproveu si hi ha errors a la plantilla del bloc.",
     fields: {
+      required: "Obligatori",
       addItem: "Afegeix un element",
       removeItem: "Elimina",
       maxItemsReached: "S'ha arribat al límit màxim d'elements",
+      minItemsRequired: "Es requereix un mínim de {count} elements",
     },
     toolbar: {
       noDefinition:

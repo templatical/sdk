@@ -384,9 +384,11 @@ const ptBR: typeof en = {
     renderError:
       "Este bloco não pôde ser renderizado. Verifique se há erros no template do bloco.",
     fields: {
+      required: "Obrigatório",
       addItem: "Adicionar item",
       removeItem: "Remover",
       maxItemsReached: "Número máximo de itens atingido",
+      minItemsRequired: "Mínimo de {count} itens obrigatório",
     },
     toolbar: {
       noDefinition:

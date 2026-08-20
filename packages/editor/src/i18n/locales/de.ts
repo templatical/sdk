@@ -387,9 +387,11 @@ const de: typeof en = {
     renderError:
       "Dieser Block konnte nicht gerendert werden. Überprüfen Sie die Block-Vorlage auf Fehler.",
     fields: {
+      required: "Pflichtfeld",
       addItem: "Element hinzufügen",
       removeItem: "Entfernen",
       maxItemsReached: "Maximale Anzahl erreicht",
+      minItemsRequired: "Mindestens {count} Elemente erforderlich",
     },
     toolbar: {
       noDefinition:

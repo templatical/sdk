@@ -385,9 +385,11 @@ const es: typeof en = {
     renderError:
       "No se pudo renderizar este bloque. Comprueba si hay errores en la plantilla del bloque.",
     fields: {
+      required: "Obligatorio",
       addItem: "Añadir elemento",
       removeItem: "Eliminar",
       maxItemsReached: "Se ha alcanzado el máximo de elementos",
+      minItemsRequired: "Se requiere un mínimo de {count} elementos",
     },
     toolbar: {
       noDefinition:

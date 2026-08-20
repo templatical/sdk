@@ -334,9 +334,11 @@ const fr: typeof en = {
     renderError:
       "Ce bloc n'a pas pu être rendu. Vérifiez les erreurs dans le modèle du bloc.",
     fields: {
+      required: "Obligatoire",
       addItem: "Ajouter un élément",
       removeItem: "Supprimer",
       maxItemsReached: "Nombre maximal d'éléments atteint",
+      minItemsRequired: "Minimum {count} éléments requis",
     },
     toolbar: {
       noDefinition:

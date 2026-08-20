@@ -381,9 +381,11 @@ export default {
     renderError:
       "This block could not be rendered. Check the block template for errors.",
     fields: {
+      required: "Required",
       addItem: "Add item",
       removeItem: "Remove",
       maxItemsReached: "Maximum items reached",
+      minItemsRequired: "Minimum {count} items required",
     },
     toolbar: {
       noDefinition:
