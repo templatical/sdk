@@ -193,8 +193,8 @@ export function useSavedBlocksFeature(
   /**
    * Nothing is fetched at mount — the list loads when the browser or the save
    * dialog opens. So a consumer's `list()` latency can neither delay the editor
-   * nor shift the sidebar: the rail entry is gated purely on availability, and
-   * its presence no longer depends on whether anything happens to be saved.
+   * nor shift the sidebar: the rail entry is gated purely on availability,
+   * never on whether anything happens to be saved.
    *
    * True only while there is *nothing to show*, which is what makes the browser
    * skeleton appear on a first open and stay away on a reopen — the previous

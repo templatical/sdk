@@ -1,6 +1,7 @@
 import type { MediaCategory, MediaCategoryData } from "../types";
 import { computed, inject, type ComputedRef } from "vue";
 import { PLAN_CONFIG_KEY } from "../keys";
+import type { UsePlanConfigReturn } from "@templatical/core/cloud";
 
 export type { MediaCategory };
 
@@ -18,13 +19,24 @@ export interface UseMediaCategoriesReturn {
   getCategoryForMimeType: (mimeType: string) => MediaCategory | null;
 }
 
-export function useMediaCategories(): UseMediaCategoriesReturn {
+export function useMediaCategories(
+  /**
+   * The plan config to read, for callers that cannot inject one.
+   *
+   * A component never sees its own `provide` — Vue resolves `inject` against
+   * the *parent* chain — so the two hosts that provide `PLAN_CONFIG_KEY`
+   * cannot also inject it, and must pass their value here instead. Descendants
+   * (`MediaGrid`, `MediaEditModal`, `MediaUploadZone`, `MediaPreviewPanel`)
+   * omit the argument and inject as before. Mirrors `useI18n(override?)`.
+   */
+  planConfigOverride?: UsePlanConfigReturn,
+): UseMediaCategoriesReturn {
   // Explicit null default + throw rather than a `!` assertion: without a
   // provider every read below became `undefined.config`, which is a TypeError
-  // several frames away from the missing wiring. Both hosts provide the key —
-  // `MediaLibraryModal` from its prop, `standalone/MediaLibrary.vue` from its
-  // own — so reaching this message means a third host forgot to.
-  const planConfig = inject(PLAN_CONFIG_KEY, null);
+  // several frames away from the missing wiring. Reaching this message means a
+  // descendant was rendered outside both hosts, or a host forgot the argument
+  // above.
+  const planConfig = planConfigOverride ?? inject(PLAN_CONFIG_KEY, null);
   if (!planConfig) {
     throw new Error(
       "[Templatical] useMediaCategories() needs a plan config in scope. Render it under <MediaLibraryModal> (pass its `planConfig` prop) or provide PLAN_CONFIG_KEY yourself.",

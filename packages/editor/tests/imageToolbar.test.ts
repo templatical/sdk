@@ -4,6 +4,11 @@ import { createImageBlock } from "@templatical/types";
 import type { ImageBlock } from "@templatical/types";
 import ImageToolbar from "../src/components/toolbar/ImageToolbar.vue";
 import { mountEditor } from "./helpers/mount";
+import en from "../src/i18n/locales/en";
+// French, not German: the German translation of "(optional)" is literally
+// "(optional)", so it cannot distinguish a translated hint from a hardcoded one.
+import fr from "../src/i18n/locales/fr";
+import { TRANSLATIONS_KEY } from "../src/keys";
 
 function mountIt(block: ImageBlock) {
   return mountEditor(ImageToolbar, { props: { block } });
@@ -58,5 +63,71 @@ describe("ImageToolbar width control", () => {
     await input.setValue("-5"); // negative
 
     expect(wrapper.emitted("update")).toBeUndefined();
+  });
+});
+
+/**
+ * The placeholder-image field only renders when `src` carries a merge tag: the
+ * real image comes from the tag at send time, so this is a design-time stand-in
+ * that never ships. That is not inferable from a URL input, which is what the
+ * `title` is for — `VideoToolbar` has carried the same three strings on its own
+ * placeholder field all along, while this one bound only two, leaving
+ * `image.placeholderUrlTooltip` translated in seven locales and rendered nowhere.
+ */
+describe("ImageToolbar placeholder image field", () => {
+  const withTag = () =>
+    createImageBlock({ src: "{{hero_image}}" }) as ImageBlock;
+
+  // Real `en` rather than the helper's stub translations: these cases assert on
+  // the actual shipped strings, which is the whole point when the defect was a
+  // translated string that reached no DOM node.
+  const mountReal = (block: ImageBlock) =>
+    mountEditor(ImageToolbar, {
+      props: { block },
+      provides: { [TRANSLATIONS_KEY]: en },
+    });
+
+  function placeholderInput(wrapper: ReturnType<typeof mountReal>) {
+    return wrapper
+      .findAll('input[type="url"]')
+      .find(
+        (i) =>
+          i.attributes("placeholder") === en.image.placeholderUrlPlaceholder,
+      );
+  }
+
+  it("renders only when src contains a merge tag", () => {
+    expect(placeholderInput(mountReal(withTag()))).toBeDefined();
+    expect(
+      placeholderInput(mountReal(createImageBlock({ src: "https://x/y.png" }))),
+    ).toBeUndefined();
+  });
+
+  it("explains itself through the title attribute", () => {
+    const input = placeholderInput(mountReal(withTag()));
+    expect(input!.attributes("title")).toBe(en.image.placeholderUrlTooltip);
+  });
+
+  /**
+   * The "(optional)" hint was a hardcoded literal here — the last one in the
+   * editor — so it stayed English in all seven locales while `VideoToolbar`'s
+   * identical hint translated. Asserting a non-English locale is the point: an
+   * `en` assertion passes against a hardcoded string.
+   */
+  it("translates the optional hint rather than hardcoding it", () => {
+    const wrapper = mountEditor(ImageToolbar, {
+      props: { block: withTag() },
+      provides: { [TRANSLATIONS_KEY]: fr },
+    });
+    expect(wrapper.text()).toContain(fr.image.optional);
+    expect(wrapper.text()).not.toContain("(optional)");
+  });
+
+  it("commits what is typed", async () => {
+    const wrapper = mountReal(withTag());
+    await placeholderInput(wrapper)!.setValue("https://cdn/fallback.png");
+
+    const [update] = wrapper.emitted("update")![0] as [Partial<ImageBlock>];
+    expect(update.placeholderUrl).toBe("https://cdn/fallback.png");
   });
 });

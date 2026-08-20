@@ -177,15 +177,16 @@ const { isOver } = useImageDrop({
   <div v-if="containsMergeTag(block.src, mergeTagSyntax)" class="tpl:mb-3.5">
     <label :class="labelClass"
       >{{ t.image.placeholderUrl }}
-      <span class="tpl:font-normal tpl:text-[var(--tpl-text-dim)]">{{
-        "(optional)"
-      }}</span>
+      <span class="tpl:font-normal tpl:text-[var(--tpl-text-dim)]">
+        {{ t.image.optional }}
+      </span>
     </label>
     <input
       type="url"
       :class="inputClass"
       :value="block.placeholderUrl || ''"
       :placeholder="t.image.placeholderUrlPlaceholder"
+      :title="t.image.placeholderUrlTooltip"
       @input="
         updateField('placeholderUrl', ($event.target as HTMLInputElement).value)
       "

@@ -122,7 +122,6 @@ export const secondaryBtnCompactClass = `${btnBase} ${btnSecondarySkin} ${btnSiz
 export const dangerBtnClass = `${btnBase} ${btnDangerSkin} ${btnSizeDefault}`;
 export const dangerBtnCompactClass = `${btnBase} ${btnDangerSkin} ${btnSizeCompact}`;
 export const ghostBtnClass = `${btnBase} ${btnGhostSkin} ${btnSizeDefault}`;
-export const ghostBtnCompactClass = `${btnBase} ${btnGhostSkin} ${btnSizeCompact}`;
 
 // Rich text toolbar presets
 export const FONT_SIZE_OPTIONS = [

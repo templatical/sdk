@@ -26,7 +26,7 @@ import {
   Search,
 } from "@lucide/vue";
 import { computed, onMounted, provide, ref } from "vue";
-import { PLAN_CONFIG_KEY } from "../keys";
+import { PLAN_CONFIG_KEY, TRANSLATIONS_KEY } from "../keys";
 
 const props = defineProps<{
   authManager: AuthManager;
@@ -43,8 +43,10 @@ const emit = defineEmits<{
 
 const t = computed(() => props.translations);
 
-// Provide translations for sub-components that use inject('translations')
-provide("translations", props.translations);
+// `TRANSLATIONS_KEY`, not the bare string it used to be: a string never
+// resolves the `Symbol` a host provides under the same name. Wrapped in a ref
+// because the key carries one — this shell always has its strings up front.
+provide(TRANSLATIONS_KEY, ref(props.translations));
 
 // `useMediaCategories` (called by five descendants) needs a `UsePlanConfigReturn`;
 // the standalone SDK is handed a plain `PlanConfig`, so it adapts one here. Under
@@ -53,14 +55,15 @@ provide("translations", props.translations);
 // are deliberately not provided alongside it: the modal takes them as props, and
 // nothing else in this package injects them.
 const planConfigRef = ref<PlanConfig | null>(props.planConfig);
-provide(PLAN_CONFIG_KEY, {
+const planConfig = {
   config: planConfigRef,
   isLoading: ref(false),
   hasFeature: (feature: keyof PlanFeatures) =>
     props.planConfig.features[feature] ?? false,
   features: computed(() => props.planConfig.features),
   fetchConfig: async () => {},
-});
+};
+provide(PLAN_CONFIG_KEY, planConfig);
 
 // Folders and URL import render on every plan: gating Cloud's media *UI* meters
 // no resource Cloud buys, so the media tier is limits-only and every plan gets
@@ -74,7 +77,9 @@ const storageLimitBytes = computed(
   () => props.planConfig.storage.limit_bytes ?? 0,
 );
 
-const { availableCategories } = useMediaCategories();
+// `planConfig` directly, not the provide above: a component never sees its own
+// `provide` (Vue resolves `inject` against the parent chain).
+const { availableCategories } = useMediaCategories(planConfig);
 
 const library = useMediaLibrary({
   projectId: props.projectId,

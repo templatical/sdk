@@ -17,8 +17,9 @@ import type { AuthManager } from "./auth";
  * editor UI never see them. Plan gating is applied by the caller before this
  * provider is constructed.
  *
- * Wraps the existing `ApiClient` saved-module endpoints, so the REST contract
- * is unchanged from before saved blocks became an open-source feature.
+ * Wraps the `ApiClient` saved-module endpoints. The REST contract keeps the
+ * `savedModules.*` route names even though the type is `SavedBlock`, so the
+ * names deliberately differ from the contract's.
  *
  * Rows pass straight through, unmapped: the Cloud endpoints speak the same
  * `SavedBlock` shape the contract defines, so this adapter only supplies auth

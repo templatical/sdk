@@ -14,8 +14,8 @@ export interface ToMjmlSource {
    * `customFonts` / `defaultFallbackFont`. Without it a template using a custom
    * face exports with no `<mj-font>` declaration and no fallback stack — i.e. the
    * mail client silently substitutes. Provided by both editors, and by anything
-   * that has a fonts manager; sources that omit it produce byte-identical MJML to
-   * before this field existed.
+   * that has a fonts manager; a source that omits it produces byte-identical
+   * MJML to one whose template uses no custom face.
    */
   getFonts?: () => RenderFonts;
   /**
@@ -23,8 +23,8 @@ export interface ToMjmlSource {
    * Returns `undefined` when the definition is unknown or has no
    * `stylesheet`. Wired to the renderer's `getCustomBlockStylesheet` option
    * so authored responsive/hover/font CSS lands in `<mj-head>` deduped per
-   * definition. Sources that omit it produce the same MJML as before this
-   * field existed — backward compatible.
+   * definition. Omitting it is optional-by-design: the resolver is simply not
+   * passed through, so no `<mj-head>` stylesheet is emitted.
    */
   getCustomBlockStylesheet?: (customType: string) => string | undefined;
 }
@@ -79,9 +79,9 @@ export async function toMjmlForInstance(
   const fonts = instance.getFonts?.();
   return renderer.renderToMjml(instance.getContent(), {
     renderCustomBlock: instance.renderCustomBlock,
-    // Only pass through when the source actually provides a resolver, so
-    // callers that don't care about stylesheets see the same options shape
-    // (and the same MJML output) as before this field existed.
+    // Only pass through when the source actually provides a resolver, so a
+    // caller that doesn't care about stylesheets sees an options shape (and MJML
+    // output) with no stylesheet key at all rather than an explicit `undefined`.
     ...(stylesheetResolver
       ? {
           getCustomBlockStylesheet: (customType: string) =>

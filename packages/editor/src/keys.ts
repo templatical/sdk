@@ -241,8 +241,8 @@ export const EDITOR_ROOT_KEY: InjectionKey<Document | ShadowRoot> =
   Symbol("editorRoot");
 
 /**
- * Mount target for popovers, toolbars, and modal dialogs that previously
- * teleported to `document.body`. Provided by `useEditorCore` as a ref bound
+ * Mount target for popovers, toolbars, and modal dialogs — never
+ * `document.body`. Provided by `useEditorCore` as a ref bound
  * to a `<div class="tpl-popover-root" />` rendered at the top level of the
  * editor template. Teleports use `:to="popoverRoot"` so popups land inside
  * the editor's effective root — `document` in light-DOM mode, `ShadowRoot`

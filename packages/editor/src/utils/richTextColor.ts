@@ -8,11 +8,12 @@ import { DEFAULT_TEXT_COLOR } from "../constants/styleConstants";
  * the text inherits the document-level `textColor`; if that too is unset (older
  * content predating document text color), fall back to the built-in default.
  *
- * A native `<input type="color">` can't represent "no color", so before this it
- * always painted a hard-coded `#000000` when no inline mark existed — which both
- * looked like an explicit choice and didn't even match the real inherited color
- * (`#1a1a1a`). Resolving the effective color keeps the swatch truthful: it shows
- * the color the text is actually rendered in, whatever level it comes from.
+ * A native `<input type="color">` can't represent "no color", so the control
+ * must be handed a concrete value. Resolving the effective color is what keeps
+ * that value truthful — the swatch shows the color the text actually renders in,
+ * whatever level it comes from. Defaulting to a hard-coded `#000000` instead
+ * would both read as an explicit choice and not even match the real inherited
+ * color (`#1a1a1a`).
  */
 export function resolveEffectiveTextColor(
   explicitColor: string,

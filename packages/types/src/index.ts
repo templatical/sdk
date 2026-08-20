@@ -185,7 +185,6 @@ export {
   resolveHtmlLogicMergeTagLabels,
   resolveHtmlMergeTagLabels,
   resolveSyntax,
-  restoreMergeTagMarkup,
   substituteHtmlMergeTagSamples,
   substituteTextMergeTagSamples,
   SYNTAX_PRESETS,

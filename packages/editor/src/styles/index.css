@@ -51,12 +51,12 @@
     --container-2xl: calc(42 * var(--tpl-base-size));
 
     /* The house tempo, as Tailwind's default rather than as a per-call-site
-     * opt-in. Tailwind ships 150ms on `cubic-bezier(.4, 0, .2, 1)` — Material
-     * easing — so every bare `tpl:transition-*` used to silently leave the
-     * design system, and `--tpl-transition` / `--tpl-user-transition` governed
-     * only the minority of call sites that spelled the curve out by hand.
-     * Overriding both defaults here makes the 120ms spring the floor, so an
-     * explicit duration now means someone chose one.
+     * opt-in. Tailwind's own defaults are 150ms on `cubic-bezier(.4, 0, .2, 1)`
+     * — Material easing — so without these two overrides a bare
+     * `tpl:transition-*` leaves the design system, and `--tpl-transition` /
+     * `--tpl-user-transition` reach only the call sites that spell the curve out
+     * by hand. Overriding both makes the 120ms spring the floor, so an explicit
+     * duration means someone chose one.
      * `tests/design-system-conformance.test.ts` fails if these go missing. */
     --default-transition-duration: 120ms;
     --default-transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
@@ -454,28 +454,6 @@
     }
 }
 
-@keyframes tpl-slide-in-right {
-    from {
-        transform: translateX(16px);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes tpl-slide-in-up {
-    from {
-        transform: translateY(8px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
 @keyframes tpl-shimmer {
     from {
         background-position: -200% 0;
@@ -491,14 +469,6 @@
 
 .tpl-scale-in {
     animation: tpl-scale-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.tpl-slide-in-right {
-    animation: tpl-slide-in-right 250ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.tpl-slide-in-up {
-    animation: tpl-slide-in-up 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tpl-shimmer {
@@ -950,8 +920,6 @@
     .tpl-shimmer,
     .tpl-fade-in,
     .tpl-scale-in,
-    .tpl-slide-in-right,
-    .tpl-slide-in-up,
     .tpl-ai-btn--idle::before {
         animation: none;
     }

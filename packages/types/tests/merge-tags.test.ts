@@ -11,7 +11,6 @@ import {
     getLogicMergeTagKeyword,
     resolveHtmlMergeTagLabels,
     resolveHtmlLogicMergeTagLabels,
-    restoreMergeTagMarkup,
     resolveSyntax,
     SYNTAX_PRESETS,
     getSyntaxTriggerChar,
@@ -138,27 +137,6 @@ describe('MergeTag interface — optional fields', () => {
         ];
         expect(isMergeTagValue(enriched[0]!.value, liquidSyntax)).toBe(true);
     });
-
-    it('restoreMergeTagMarkup is unaffected by group/description fields', () => {
-        const baseline = restoreMergeTagMarkup(
-            'Hello {{first_name}}',
-            [{ label: 'First Name', value: '{{first_name}}' }],
-            liquidSyntax,
-        );
-        const enriched = restoreMergeTagMarkup(
-            'Hello {{first_name}}',
-            [
-                {
-                    label: 'First Name',
-                    value: '{{first_name}}',
-                    group: 'Recipient',
-                    description: 'Recipient first name',
-                },
-            ],
-            liquidSyntax,
-        );
-        expect(enriched).toBe(baseline);
-    });
 });
 
 describe('containsMergeTag', () => {
@@ -258,18 +236,6 @@ describe('resolveHtmlMergeTagLabels', () => {
     });
 });
 
-describe('restoreMergeTagMarkup', () => {
-    it('wraps raw merge tags in editor markup', () => {
-        const result = restoreMergeTagMarkup(
-            'Hello {{first_name}}',
-            tags,
-            liquidSyntax,
-        );
-        expect(result).toContain('data-merge-tag="{{first_name}}"');
-        expect(result).toContain('First Name');
-    });
-});
-
 describe('resolveHtmlLogicMergeTagLabels', () => {
     it('replaces logic tag labels inside spans', () => {
         const html = '<span data-logic-merge-tag="{% if active %}">old_label</span>';
@@ -328,46 +294,6 @@ describe('cross-syntax merge tag detection', () => {
     });
 });
 
-describe('restoreMergeTagMarkup edge cases', () => {
-    it('does not double-wrap already wrapped merge tags', () => {
-        const html = '<span data-merge-tag="{{ name }}">Name</span>';
-        const result = restoreMergeTagMarkup(
-            html,
-            [{ label: 'Name', value: '{{ name }}' }],
-            SYNTAX_PRESETS.liquid,
-        );
-        // Should not double-wrap - lookahead prevents it
-        const count = (result.match(/data-merge-tag/g) || []).length;
-        expect(count).toBe(1);
-    });
-
-    it('wraps unwrapped merge tags while preserving wrapped ones', () => {
-        const html = '<span data-merge-tag="{{ name }}">Name</span> and {{ email }}';
-        const result = restoreMergeTagMarkup(
-            html,
-            [
-                { label: 'Name', value: '{{ name }}' },
-                { label: 'Email', value: '{{ email }}' },
-            ],
-            SYNTAX_PRESETS.liquid,
-        );
-        expect(result).toContain('data-merge-tag="{{ email }}"');
-        expect((result.match(/data-merge-tag/g) || []).length).toBe(2);
-    });
-
-    it('wraps logic tags in addition to value tags', () => {
-        const html = '{{ name }} and {% if active %}show{% endif %}';
-        const result = restoreMergeTagMarkup(
-            html,
-            [{ label: 'Name', value: '{{ name }}' }],
-            SYNTAX_PRESETS.liquid,
-        );
-        expect(result).toContain('data-merge-tag="{{ name }}"');
-        expect(result).toContain('data-logic-merge-tag="{% if active %}"');
-        expect(result).toContain('data-logic-merge-tag="{% endif %}"');
-    });
-});
-
 describe('isMergeTagValue edge cases', () => {
     it('handles whitespace around tags', () => {
         expect(isMergeTagValue('  {{ name }}  ', SYNTAX_PRESETS.liquid)).toBe(true);
@@ -380,27 +306,6 @@ describe('isMergeTagValue edge cases', () => {
     it('returns false for null-ish input', () => {
         expect(isMergeTagValue(null as any, SYNTAX_PRESETS.liquid)).toBe(false);
         expect(isMergeTagValue(undefined as any, SYNTAX_PRESETS.liquid)).toBe(false);
-    });
-});
-
-describe('restoreMergeTagMarkup with regex special chars', () => {
-    it('handles merge tag values containing regex special characters', () => {
-        const specialTags: MergeTag[] = [
-            { label: 'Price', value: '{{price.$total}}' },
-        ];
-        const html = 'Total: {{price.$total}}';
-        const result = restoreMergeTagMarkup(html, specialTags, SYNTAX_PRESETS.liquid);
-        expect(result).toContain('data-merge-tag="{{price.$total}}"');
-        expect(result).toContain('>Price<');
-    });
-
-    it('handles merge tag values with parentheses', () => {
-        const specialTags: MergeTag[] = [
-            { label: 'Calc', value: '{{calc(1+2)}}' },
-        ];
-        const html = 'Result: {{calc(1+2)}}';
-        const result = restoreMergeTagMarkup(html, specialTags, SYNTAX_PRESETS.liquid);
-        expect(result).toContain('data-merge-tag="{{calc(1+2)}}"');
     });
 });
 

@@ -4,10 +4,10 @@ import { POPOVER_ROOT_KEY } from "../keys";
 /**
  * Returns the editor's shared popover mount ref — the `<div
  * class="tpl-popover-root" />` rendered at the top level of `Editor.vue` /
- * `CloudEditor.vue`. Teleport targets that previously hard-coded
- * `to="body"` (RichTextLinkDialog, TitleEditor toolbar, ParagraphToolbar,
- * TplModal) inject this and teleport to `popoverRoot.value` instead, so
- * popups stay inside the editor's effective DOM root (shadow-aware).
+ * `CloudEditor.vue`. Every teleport target (RichTextLinkDialog, TitleEditor
+ * toolbar, ParagraphToolbar, TplModal) injects this and teleports to
+ * `popoverRoot.value` rather than `to="body"`, so popups stay inside the
+ * editor's effective DOM root (shadow-aware).
  *
  * Falls back to a never-resolving `ref(null)` when no provider is in scope.
  * Components must guard with `v-if="popoverRoot"` before teleporting —

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
-import { POPOVER_TARGET_KEY } from "../../keys";
+import { POPOVER_TARGET_KEY, UI_THEME_KEY } from "../../keys";
 import type { MediaItem, MediaUsageInfo } from "../../types";
-import { computed, inject, ref, watch, type Ref } from "vue";
+import { computed, inject, ref, watch } from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -18,7 +18,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
+const tplUiTheme = inject(UI_THEME_KEY, null);
 const popoverTarget = inject(POPOVER_TARGET_KEY, ref<HTMLElement | null>(null));
 
 const fileInputRef = ref<HTMLInputElement | null>(null);

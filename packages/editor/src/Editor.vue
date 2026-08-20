@@ -605,6 +605,7 @@ defineExpose({
       :runtime="cloud"
       :cloud="cloudAttachment"
       :ready="cloudReady"
+      :locale="config.locale"
     />
 
     <!-- Small-screen gate (#235). Last child + a literal z-index above the

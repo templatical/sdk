@@ -292,9 +292,9 @@ export function createMergeTagPopup(
         target.style.setProperty(prop, computed.getPropertyValue(prop));
       }
     }
-    // The popup no longer inherits font from the editor wrapper, so
-    // its content would render in the page's default font and end up
-    // at a different height — which changes the flip-above decision
+    // The popup is teleported out of the editor wrapper, so it inherits no
+    // font from it: without this its content renders in the page's default font
+    // and ends up at a different height — which changes the flip-above decision
     // and shifts the popup off the caret. Copy typography too.
     target.style.fontFamily = computed.fontFamily;
     target.style.fontSize = computed.fontSize;

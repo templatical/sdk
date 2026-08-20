@@ -6,7 +6,6 @@ import {
   createImageBlock,
   createButtonBlock,
   createDividerBlock,
-  createSpacerBlock,
   createHtmlBlock,
 } from "@templatical/types";
 import type { Block, HeadingLevel, SpacingValue } from "@templatical/types";
@@ -264,26 +263,6 @@ function convertDivider($el: Cheerio<Element>): Block {
 }
 
 /**
- * Empty `<td>` with explicit height → Spacer block.
- */
-function convertSpacer($el: Cheerio<Element>): Block {
-  const styles = getStyles($el);
-  const heightAttr = $el.attr("height");
-  const height =
-    parsePxValue(heightAttr) ||
-    parsePxValue(styles.height) ||
-    parsePxValue(styles["line-height"]) ||
-    24;
-
-  return createSpacerBlock({
-    height,
-    styles: {
-      padding: emptyPadding(),
-    },
-  });
-}
-
-/**
  * Wraps the element's outerHTML in an HTML block (the lossless fallback).
  */
 export function convertHtmlFallback(
@@ -444,16 +423,3 @@ export function convertElement(
     },
   };
 }
-
-/**
- * Helpers exported for tests.
- */
-export const _internal = {
-  convertButton,
-  convertDivider,
-  convertHeading,
-  convertImage,
-  convertParagraph,
-  convertSpacer,
-  ensureParagraphWrapped,
-};

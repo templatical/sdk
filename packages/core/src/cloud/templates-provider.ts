@@ -30,9 +30,8 @@ const AUTO_VERSION_INTERVAL_MS = 60_000;
  * records a version, which keeps throttling and retention with the side that
  * pays for the storage. Cloud throttles to one automatic version per
  * {@link AUTO_VERSION_INTERVAL_MS}, so an autosave firing every few seconds does
- * not turn history into a keystroke log. This replaced an editor-side
- * `createSnapshot()` on a timer, which put Cloud's retention policy in the
- * editor.
+ * not turn history into a keystroke log. Keep this on the provider side: an
+ * editor-side timer would put Cloud's retention policy in the editor.
  *
  * Note `initCloud()` **rejects** a consumer-supplied templates provider, unlike
  * `savedBlocks` and `testEmail`. Those are inert — nothing keys off them. The

@@ -52,6 +52,13 @@ const props = defineProps<{
   runtime: CloudRuntime;
   cloud: CloudAttachment;
   ready: CloudReady;
+  /**
+   * The editor's `init({ locale })`, forwarded to `MediaLibraryModal` so
+   * `@templatical/media-library` loads its own strings in the same language.
+   * A locale rather than translations: that package owns its copy, and the
+   * editor's own chunk carries none of it.
+   */
+  locale?: string;
 }>();
 
 function applyContent(content: TemplateContent): void {
@@ -138,6 +145,8 @@ function applyContent(content: TemplateContent): void {
     :visible="cloud.panelState.mediaLibraryOpen.value"
     :accept="cloud.panelState.mediaLibraryAccept.value"
     :popover-target="core.popoverRoot.value"
+    :locale="locale"
+    :ui-theme="core.resolvedTheme.value"
     :auth-manager="cloud.mediaBrowser.authManager"
     :project-id="cloud.mediaBrowser.projectId"
     :plan-config="cloud.mediaBrowser.planConfig"

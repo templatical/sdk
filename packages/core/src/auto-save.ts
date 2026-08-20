@@ -27,9 +27,9 @@ export interface UseAutoSaveReturn {
  * produce dozens of full-content saves. 2000 roughly halves that while still
  * landing well before a user wonders whether their work was kept.
  *
- * **The single default for both entry points.** `initCloud()` used to carry its
- * own copy at 5000 in the editor package; two constants for one setting drifted
- * silently and nothing linked them. Cloud imports this one now.
+ * **The single default for both entry points.** Cloud imports this constant
+ * rather than declaring its own — a second copy for one setting drifts silently,
+ * since nothing links the two.
  */
 export const DEFAULT_AUTO_SAVE_DEBOUNCE_MS = 2000;
 

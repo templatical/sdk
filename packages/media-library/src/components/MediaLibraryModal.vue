@@ -9,7 +9,6 @@ import MediaPreviewPanel from "./media/MediaPreviewPanel.vue";
 import MediaReplaceModal from "./media/MediaReplaceModal.vue";
 import MediaUploadZone from "./media/MediaUploadZone.vue";
 import StorageProgressRing from "./media/StorageProgressRing.vue";
-import { useI18n } from "../composables/useI18n";
 import { useMediaCategories } from "../composables/useMediaCategories";
 import { useMediaLibraryUI } from "../composables/useMediaLibraryUI";
 import type { UsePlanConfigReturn } from "@templatical/core/cloud";
@@ -27,8 +26,14 @@ import {
   Search,
   X,
 } from "@lucide/vue";
-import { computed, inject, provide, toRef, watch, type Ref } from "vue";
-import { PLAN_CONFIG_KEY, POPOVER_TARGET_KEY } from "../keys";
+import { computed, provide, ref, toRef, watch } from "vue";
+import {
+  PLAN_CONFIG_KEY,
+  POPOVER_TARGET_KEY,
+  TRANSLATIONS_KEY,
+  UI_THEME_KEY,
+} from "../keys";
+import { loadMediaTranslations, type MediaTranslations } from "../i18n";
 
 const props = defineProps<{
   visible: boolean;
@@ -59,6 +64,24 @@ const props = defineProps<{
    * standalone-SDK behavior.
    */
   popoverTarget?: HTMLElement | null;
+  /**
+   * BCP-47 locale for this package's own strings, defaulting to English.
+   *
+   * A locale rather than the strings themselves: media-library owns its
+   * translations and loads them here, so a host passes a value it already has
+   * and never handles media copy. That also keeps the load lazy — the host
+   * imports nothing from this package's i18n, so nothing is fetched until this
+   * modal mounts.
+   */
+  locale?: string;
+  /**
+   * Resolved UI theme (`"light"` / `"dark"`) for the overlay chrome.
+   *
+   * A plain string rather than the host's ref: props are reactive, so the
+   * computed below tracks a host theme toggle without this package depending on
+   * how the host stores it.
+   */
+  uiTheme?: string;
 }>();
 
 const emit = defineEmits<{
@@ -66,8 +89,31 @@ const emit = defineEmits<{
   (e: "select", item: MediaItem): void;
 }>();
 
-const { t } = useI18n();
-const tplUiTheme = inject<Ref<"light" | "dark">>("tplUiTheme");
+// Loaded here rather than injected from the host: a bare-string key never
+// resolves the `Symbol` `@templatical/editor` provides under the same name, so
+// a host-mounted modal used to get `undefined` and throw on its first label.
+const translations = ref<MediaTranslations | null>(null);
+watch(
+  () => props.locale,
+  async (locale) => {
+    translations.value = await loadMediaTranslations(locale ?? "en");
+  },
+  { immediate: true },
+);
+
+// Descendants unwrap this at *their* setup, so the `v-if` below is what
+// guarantees they never read a null. See `useI18n`.
+provide(TRANSLATIONS_KEY, translations);
+
+// Not `useI18n()` — a component never sees its own `provide`. The template's
+// 28 reads auto-unwrap this, and `useMediaLibraryUI` accepts a ref.
+// The `v-if` on the root guarantees non-null wherever the template reads it.
+const t = computed(() => translations.value as MediaTranslations);
+// Provided, not injected: the three sub-modals teleport out of this component's
+// DOM, so a prop cannot reach them. Never a bare-string key — that is what left
+// the library light inside a dark editor.
+const tplUiTheme = computed(() => props.uiTheme);
+provide(UI_THEME_KEY, tplUiTheme);
 
 // Sub-modals (MediaReplaceModal, MediaEditModal, MediaImportUrlModal) inject
 // the same target so every nested teleport lands in the same place as this
@@ -98,7 +144,12 @@ const storageLimitBytes = computed(
   () => props.planConfig.config.value?.storage.limit_bytes ?? 0,
 );
 
-const { isAcceptedMimeType, availableCategories } = useMediaCategories();
+// `props.planConfig`, not the provide above: a component never sees its own
+// `provide` (Vue resolves `inject` against the parent chain), so injecting
+// here would throw in every host.
+const { isAcceptedMimeType, availableCategories } = useMediaCategories(
+  props.planConfig,
+);
 
 const library = useMediaLibrary({
   projectId: props.projectId,
@@ -167,8 +218,11 @@ function confirmSelection(): void {
       leave-from-class="tpl:opacity-100"
       leave-to-class="tpl:opacity-0"
     >
+      <!-- `translations` gates the subtree, not just this element's own labels:
+           every descendant unwraps `TRANSLATIONS_KEY` at its own setup, so none
+           may mount before the locale's strings have landed. -->
       <div
-        v-if="visible"
+        v-if="visible && translations"
         :data-tpl-theme="tplUiTheme"
         class="tpl tpl-media-overlay tpl:fixed tpl:inset-0 tpl:z-[9999]"
         @click.self="emit('close')"

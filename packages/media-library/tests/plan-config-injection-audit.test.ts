@@ -79,20 +79,54 @@ describe("cross-package injection audit", () => {
     expect(FILES.length).toBeGreaterThan(15);
   });
 
-  it.each(["authManager", "projectId", "planConfig"])(
-    'no source file injects "%s" as a string key',
-    (name) => {
-      expect(filesMatching(new RegExp(`inject[^\\n]*\\(["']${name}["']`))).toEqual(
-        [],
-      );
-    },
-  );
+  /**
+   * A blanket ban, not a list of names to remember.
+   *
+   * This started as four spellings (`authManager`, `projectId`, `planConfig`,
+   * `translations`) and still missed `tplUiTheme` — the third component of this
+   * package to inject a bare string that never resolves the identically-named
+   * `Symbol` `@templatical/editor` provides. Every legitimate injection here goes
+   * through an exported key from `../keys`, so the correct assertion is that no
+   * string-keyed `inject` exists at all.
+   *
+   * Newlines are matched explicitly: a type argument can push the key onto its
+   * own line (`inject<Ref<T> | null>(\n  "translations",`), which a single-line
+   * `[^\n]*` pattern reports as clean — verified by reintroducing that shape.
+   */
+  it("no source file injects any bare-string key", () => {
+    const stringInject = /inject\s*(?:<[^>]*(?:>[^<>(]*)*>)?\s*\(\s*["'`]/;
+    expect(filesMatching(stringInject)).toEqual([]);
+  });
 
   it("only the two host components provide PLAN_CONFIG_KEY", () => {
     expect(filesMatching(/provide\(\s*PLAN_CONFIG_KEY/)).toEqual([
       "components/MediaLibraryModal.vue",
       "standalone/MediaLibrary.vue",
     ]);
+  });
+
+  it("only the two host components provide TRANSLATIONS_KEY", () => {
+    expect(filesMatching(/provide\(\s*TRANSLATIONS_KEY/)).toEqual([
+      "components/MediaLibraryModal.vue",
+      "standalone/MediaLibrary.vue",
+    ]);
+  });
+
+  /**
+   * A component never sees its own `provide` — Vue resolves `inject` against the
+   * *parent* chain. Both hosts used to provide `PLAN_CONFIG_KEY` and then call
+   * `useMediaCategories()` with no argument, so `useMediaCategories` threw in
+   * every host and the library could not mount in either mode. The composables
+   * that a host both provides for and consumes therefore take an explicit
+   * argument at the host call site.
+   */
+  it.each([
+    ["components/MediaLibraryModal.vue", /useMediaCategories\(\s*props\.planConfig/],
+    ["standalone/MediaLibrary.vue", /useMediaCategories\(\s*planConfig\s*\)/],
+  ])("%s passes its plan config to useMediaCategories rather than injecting it", (file, pattern) => {
+    const source = stripComments(readFileSync(join(SRC, file), "utf8"));
+    expect(source).toMatch(pattern);
+    expect(source).not.toMatch(/useMediaCategories\(\s*\)/);
   });
 
   it("MediaLibraryModal declares the three as required props", () => {
@@ -103,9 +137,11 @@ describe("cross-package injection audit", () => {
     expect(Object.keys(props).sort()).toEqual([
       "accept",
       "authManager",
+      "locale",
       "planConfig",
       "popoverTarget",
       "projectId",
+      "uiTheme",
       "visible",
     ]);
     expect(props.authManager.required).toBe(true);

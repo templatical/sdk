@@ -81,10 +81,6 @@ export function resolveSyntax(
 
 // --- Merge Tag Utilities ---
 
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function anchoredRegex(pattern: RegExp): RegExp {
   const source = pattern.source;
   const flags = pattern.flags.replace("g", "");
@@ -218,34 +214,6 @@ export function containsMergeTag(value: string, syntax: SyntaxPreset): boolean {
   const logicRegex = new RegExp(syntax.logic.source, syntax.logic.flags);
 
   return valueRegex.test(value) || logicRegex.test(value);
-}
-
-export function restoreMergeTagMarkup(
-  html: string,
-  mergeTags: MergeTag[],
-  syntax: SyntaxPreset,
-): string {
-  let result = html;
-
-  for (const tag of mergeTags) {
-    const escaped = escapeRegExp(tag.value);
-    const pattern = new RegExp(`(?<!data-merge-tag=")${escaped}`, "g");
-    result = result.replace(pattern, (match) => {
-      const label = getMergeTagLabel(match, mergeTags);
-      return `<span data-merge-tag="${match}">${label}</span>`;
-    });
-  }
-
-  const logicRegex = new RegExp(
-    `(?<!data-logic-merge-tag=")${syntax.logic.source}`,
-    syntax.logic.flags,
-  );
-  result = result.replace(logicRegex, (match) => {
-    const keyword = getLogicMergeTagKeyword(match, syntax);
-    return `<span data-logic-merge-tag="${match}">${keyword}</span>`;
-  });
-
-  return result;
 }
 
 export function isLogicMergeTagValue(
