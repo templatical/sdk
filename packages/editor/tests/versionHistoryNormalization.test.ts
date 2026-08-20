@@ -16,21 +16,19 @@ import { useVersionHistoryFeature } from "../src/composables/useVersionHistoryFe
 import { withNormalizedContentWrites } from "../src/utils/normalizeMergeTagMarkup";
 
 /**
- * Version history is the fifth content-in path, and the one that carries the
- * *oldest* content in the product.
+ * Version history is the fifth content-in path.
  *
  * Its content does not arrive through the public API or through the `templates`
  * provider — `resolveContent()` reads `version.content` off the hydrated list,
  * a `fetched` cache, or `provider.get()`, and `restore()` returns its own. So
  * neither the entry-point hooks nor the templates-provider wrapper reach it.
  *
- * It would be easy to assume this needs no cover, on the grounds that a version
- * was written by a save from this editor and is therefore already normalized.
- * That is true only of versions written *after* normalization shipped. Every
- * version already in a consumer's store predates it, as does anything a backend
- * versioned from an imported template — and those are exactly the templates
- * this feature exists for. Previewing one would put bare tokens back on a canvas
- * where every other tag is a chip.
+ * A version is not guaranteed to hold normalized content just because a save
+ * produced it: a store carries whatever was written to it, and a backend may
+ * version a template it imported rather than one the editor round-tripped —
+ * which is exactly the population this feature serves. Previewing such a
+ * version without this would put bare tokens on a canvas where every other tag
+ * is a chip.
  */
 
 const MERGE_TAGS: MergeTagsConfig = {

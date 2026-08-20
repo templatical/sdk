@@ -1346,8 +1346,8 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       // Every merge tag above is already a `<span data-merge-tag>`, the shape
       // the editor produces when a user types one. This block is deliberately
       // the other shape — bare tokens sitting in the HTML, which is what an
-      // ESP template migrated through `@templatical/import-*`, or a template
-      // stored before this feature existed, actually looks like. The editor
+      // ESP template migrated through `@templatical/import-*`, or any template
+      // a store hands over unconverted, actually looks like. The editor
       // normalizes them into real tags as the template loads, so on the canvas
       // they are indistinguishable from the ones above: labelled, highlighted,
       // and selectable as a unit.
@@ -1358,13 +1358,13 @@ export function createOrderConfirmationTemplate(): TemplateContent {
       //   - `{{last_name}}` is declared with no sample, so it keeps its chip
       //     and its label in both views.
       //   - `{{customer_tier}}` is undeclared, so it becomes a tag labelled
-      //     with its own raw token — atomic, and no longer half-deletable.
+      //     with its own raw token — atomic, so it cannot be half-deleted.
       //
       // The `href` token is the control, and it is the whole reason this block
       // is authored here rather than reusing a footer: a token in attribute
       // position must survive byte-identical. Wrapping it would inject a
-      // `<span>` into the URL, which is the bug the parse-based normalizer
-      // exists to make impossible.
+      // `<span>` into the URL, which is the failure the parse-based normalizer
+      // makes impossible by construction.
       createParagraphBlock({
         content:
           '<p><span style="font-size: 13px; color: #4b5563"><strong>Delivery contact</strong></span></p>' +

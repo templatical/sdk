@@ -47,8 +47,8 @@ describe("normalizeMergeTagsInHtml", () => {
     );
   });
 
-  // F5 — the decisive finding. The deleted regex-based `restoreMergeTagMarkup`
-  // produced `href="<span data-merge-tag="…">Unsubscribe URL</span>"` here. A
+  // F5 — the decisive property. A regex pass over the markup wraps this token
+  // too, yielding `href="<span data-merge-tag="…">Unsubscribe URL</span>"`. A
   // text-node walk cannot reach an attribute value at all.
   it("leaves a token inside an href byte-identical", () => {
     const input = '<p><a href="{{unsubscribe_url}}">Unsubscribe</a></p>';
@@ -110,7 +110,8 @@ describe("normalizeMergeTagsInHtml", () => {
   });
 
   // F2 — the case a lookbehind guard cannot cover: a tag whose label equals
-  // its value, so the span's inner text is itself a token.
+  // its value, so the span's inner text is itself a token. Pruning the subtree
+  // makes the text unreachable regardless of what it says.
   it("is idempotent when a tag's label equals its value", () => {
     const selfLabelled: MergeTag[] = [
       { label: "{{x}}", value: "{{x}}" },

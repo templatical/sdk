@@ -328,12 +328,12 @@ const cloudReady =
 const versionHistory = props.config.versionHistory
   ? useVersionHistoryFeature({
       provider: props.config.versionHistory,
-      // The fifth content-in path, and the one carrying the oldest content in
-      // the product: a version written before merge-tag normalization shipped
-      // still holds bare tokens, and previewing it would put them back on a
-      // canvas where every other tag is a chip. Wrapped at `setContent` rather
-      // than at the provider, because version content also arrives off the
-      // hydrated list and out of the `fetched` cache without touching `get()`.
+      // The fifth content-in path. A stored version holds whatever was written
+      // to it, so it can carry bare tokens like any other loaded content, and
+      // previewing one would put them on a canvas where every other tag is a
+      // chip. Wrapped at `setContent` rather than at the provider, because
+      // version content also arrives off the hydrated list and out of the
+      // `fetched` cache without touching `get()`.
       editor: withNormalizedContentWrites(editor, props.config.mergeTags),
       history: core.history,
       conditionPreview: core.conditionPreview,

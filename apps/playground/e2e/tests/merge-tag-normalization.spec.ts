@@ -4,12 +4,13 @@ import { SELECTORS } from "../helpers/selectors";
 /**
  * Merge tag normalization — bare tokens in loaded content become real tags.
  *
- * A merge tag exists in stored content in one of two physical shapes, and only
- * one of them works. Anything a user types is already a
- * `<span data-merge-tag>`; content that never passed through the editor's input
- * pipeline — a consumer's stored JSON, an `@templatical/import-*` conversion —
- * still holds bare `{{tokens}}`, which render as literal text, ignore `sample`,
- * and cannot be selected or deleted as a unit.
+ * A merge tag exists in stored content in one of two physical shapes. Anything
+ * a user types is already a `<span data-merge-tag>`; content that never passed
+ * through the editor's input pipeline — a consumer's stored JSON, an
+ * `@templatical/import-*` conversion — holds bare `{{tokens}}`, which on their
+ * own are just text: no label, no highlight, no `sample`, and not selectable as
+ * a unit. The editor converts them as the template loads, and these tests are
+ * what prove it in a real browser.
  *
  * **Order Confirmation**'s "Delivery contact" block is authored in that second
  * shape on purpose (`apps/playground/src/templates.ts`). Every other merge tag
@@ -70,7 +71,7 @@ test.describe("Merge tag normalization", () => {
     await expect(
       line.locator(`${SELECTORS.mergeTagSpan}[data-merge-tag="${SAMPLED_TOKEN}"]`),
     ).toHaveCount(1);
-    // The raw token is gone from the rendered text — that is the bug being fixed.
+    // The raw token is absent from the rendered text: it is markup now, not text.
     await expect(line).not.toContainText(SAMPLED_TOKEN);
   });
 

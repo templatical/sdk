@@ -133,7 +133,7 @@ describe("a normalized token behaves as a tag on preview surfaces", () => {
     );
   });
 
-  it("does neither before normalization — the bug this fixes", () => {
+  it("does neither for a bare token, which is why normalizing is needed", () => {
     expect(resolveHtmlMergeTagLabels(bare, TAGS)).toBe(bare);
     expect(substituteHtmlMergeTagSamples(bare, TAGS)).toBe(bare);
   });

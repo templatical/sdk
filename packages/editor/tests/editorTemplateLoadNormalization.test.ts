@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 //
 // The fourth content-in path: a template fetched from a `TemplatesProvider`.
-// Unlike the three entry-point hooks in `index.ts`, this content never passes
-// through the public API — core assigns it to state itself — so the provider is
-// wrapped in `Editor.vue` on its way to `useEditor`.
+// This content never passes through the public API — core assigns it to state
+// itself — so the provider is wrapped in `Editor.vue` on its way to
+// `useEditor`, rather than at an entry point like the hooks in `index.ts`.
 
 import { describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";

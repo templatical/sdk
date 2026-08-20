@@ -34,13 +34,11 @@ import {
  *    as it is; wrapping it injects an element into an attribute value and
  *    corrupts the document. A `TreeWalker` over text nodes cannot reach an
  *    attribute at all, so this holds by construction rather than by guard.
- *    Do not reach for a regex here. `@templatical/types` once carried a
- *    `restoreMergeTagMarkup` that tried exactly this, guarded only by a
- *    `(?<!data-merge-tag=")` lookbehind, and it turned
- *    `<a href="{{unsubscribe_url}}">` into an anchor whose href contained a
- *    `<span>`. It was never called from anywhere and was deleted in #561.
- *    Telling text position from attribute position needs parsing, not
- *    lookarounds — no amount of lookbehind recovers it.
+ *    A regex cannot do this job. Guarding with a `(?<!data-merge-tag=")`
+ *    lookbehind protects the attribute of an already-converted span and
+ *    nothing else, so `<a href="{{unsubscribe_url}}">` becomes an anchor whose
+ *    href contains a `<span>`. Telling text position from attribute position
+ *    needs parsing; no amount of lookbehind substitutes for it.
  *
  * 2. **It is idempotent structurally.** The walk rejects the whole subtree of
  *    any element already carrying `data-merge-tag` / `data-logic-merge-tag`,
@@ -336,12 +334,11 @@ interface ContentWritingEditor {
  * `provider.get()` — so wrapping the *provider*, the way the `templates` path
  * does, would miss two of them. `setContent` is the one chokepoint they share.
  *
- * The tempting assumption is that a version needs no normalizing, since it was
- * written by a save from an editor that already normalizes. That holds only for
- * versions written after this shipped. Everything already in a consumer's store
- * predates it — as does anything a backend versioned from an imported template —
- * and previewing one of those would put bare tokens back on a canvas where every
- * other tag is a chip.
+ * A version is not guaranteed to hold normalized content just because a save
+ * produced it: a store carries whatever was written to it, and a backend may
+ * version a template it imported rather than one the editor round-tripped.
+ * Previewing such a version without this would put bare tokens back on a canvas
+ * where every other tag is a chip.
  *
  * `markDirty` is forwarded untouched: every version-history write passes
  * `false`, and swallowing that would turn opening a preview into an unsaved
