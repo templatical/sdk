@@ -26,6 +26,7 @@
     "@vueuse/core": "^14.4.0",
     "es-module-lexer": "^2.3.2",
     "happy-dom": "^20.11.2",
+    "jsdom": "28.1.0",
     "liquidjs": "^10.29.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",

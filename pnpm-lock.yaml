@@ -340,6 +340,9 @@ importers:
       happy-dom:
         specifier: ^20.11.2
         version: 20.11.2
+      jsdom:
+        specifier: 28.1.0
+        version: 28.1.0(supports-color@8.1.1)
       liquidjs:
         specifier: ^10.29.0
         version: 10.29.0

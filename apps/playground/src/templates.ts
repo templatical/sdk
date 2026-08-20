@@ -1342,6 +1342,37 @@ export function createOrderConfirmationTemplate(): TemplateContent {
         styles: white(0, 24, 0, 24),
       }),
 
+      // ── Merge tag normalization: tokens authored as raw text ──
+      // Every merge tag above is already a `<span data-merge-tag>`, the shape
+      // the editor produces when a user types one. This block is deliberately
+      // the other shape — bare tokens sitting in the HTML, which is what an
+      // ESP template migrated through `@templatical/import-*`, or any template
+      // a store hands over unconverted, actually looks like. The editor
+      // normalizes them into real tags as the template loads, so on the canvas
+      // they are indistinguishable from the ones above: labelled, highlighted,
+      // and selectable as a unit.
+      //
+      // The three tokens are chosen to cover all three outcomes at once:
+      //   - `{{first_name}}` is declared *and* has a sample, so Sample view
+      //     substitutes it and drops its chip.
+      //   - `{{last_name}}` is declared with no sample, so it keeps its chip
+      //     and its label in both views.
+      //   - `{{customer_tier}}` is undeclared, so it becomes a tag labelled
+      //     with its own raw token — atomic, so it cannot be half-deleted.
+      //
+      // The `href` token is the control, and it is the whole reason this block
+      // is authored here rather than reusing a footer: a token in attribute
+      // position must survive byte-identical. Wrapping it would inject a
+      // `<span>` into the URL, which is the failure the parse-based normalizer
+      // makes impossible by construction.
+      createParagraphBlock({
+        content:
+          '<p><span style="font-size: 13px; color: #4b5563"><strong>Delivery contact</strong></span></p>' +
+          '<p><span style="font-size: 13px; color: #4b5563">{{first_name}} {{last_name}} — {{customer_tier}} member. ' +
+          '<a href="{{unsubscribe_url}}">Manage notifications</a></span></p>',
+        styles: white(0, 24, 0, 24),
+      }),
+
       // ── Logic Merge Tag: free shipping unlocked ──
       createParagraphBlock({
         content:
@@ -2199,6 +2230,12 @@ export const templates: TemplateOption[] = [
         icon: "merge-tag",
         description:
           "This template deliberately does NOT wire `resolvePreview`, so it showcases `MergeTag.sample` instead \u2014 example values the preview renders in place of a tag.\nTo try it: click Preview in the top toolbar, then use the Sample / Label switch beside the viewport toggle. Sample view shows realistic values as ordinary text; Label view shows the field names with their usual highlight.\nLook at the shipping address: {{first_name}} has a sample (\u201cAda\u201d) and renders as plain text, while {{last_name}} has none and keeps its highlighted label. The highlight follows the individual tag, not the view \u2014 so the remaining highlights are a list of tags still missing a sample.\nSamples are display-only: they never reach getContent(), a test send, or the MJML export.",
+      },
+      {
+        label: "Merge Tag Normalization",
+        icon: "merge-tag",
+        description:
+          "The “Delivery contact” line is stored as raw text — {{first_name}} {{last_name}} — not as editor markup. That is what a template migrated from another ESP, or one saved before merge tags existed, actually contains: tokens that would otherwise render as literal text, ignore their sample, and be deletable one character at a time.\nThe editor converts them into real tags while the template loads, so on the canvas they are indistinguishable from the tags above.\nTo try it: click the Delivery contact line. Every tag there is selectable as a single unit, and Preview → Sample substitutes {{first_name}} exactly as it does elsewhere. {{customer_tier}} is not in the configured tag list, so it shows its own raw token as its label — honest rather than invented, and still atomic.\nNote the “Manage notifications” link: its href is also a raw token, and it is deliberately left alone. Wrapping a token in attribute position would inject markup into the URL, so normalization only ever touches text.",
       },
       {
         label: "Custom Block with Read-Only Fields",

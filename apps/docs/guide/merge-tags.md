@@ -272,6 +272,45 @@ const editor = await init({
 If you provide both `tags` and `onRequest`, `onRequest` takes precedence — the **Merge tag** button always calls your callback. The static `tags` array still powers the typing-autocomplete suggestion list.
 :::
 
+## Tokens in loaded content
+
+Content that never passed through the editor — a template from your own store, or one produced by the [`@templatical/import-*`](/guide/migration-from-html) converters — carries merge tags as bare <code v-pre>{{tokens}}</code> rather than as tag nodes. The editor converts them on the way in, so a loaded tag behaves exactly like a typed one: human label, highlight, `sample`, and selectable as a single unit.
+
+There is nothing to call and nothing to enable. It runs wherever content arrives:
+
+| Path | When |
+|---|---|
+| `init({ content })` / `initCloud({ content })` | before mount |
+| `editor.setContent(content)` | before the content reaches the canvas |
+| `editor.create({ content })` | before the content becomes editor state |
+| `editor.load(id)` | as the [`templates`](/backend/templates) provider's result returns |
+| [Version history](/backend/version-history) preview and restore | as each version reaches the canvas |
+
+Matching follows your configured `syntax`, not the `tags` array, so an undeclared token still becomes a tag — labelled with its own raw value.
+
+**Only text is converted.** A token in an `href`, `src` or any other attribute is left byte-identical:
+
+```html
+<!-- in -->
+<p>Hi {{first_name}} — <a href="{{unsubscribe_url}}">unsubscribe</a></p>
+
+<!-- out -->
+<p>Hi <span data-merge-tag="{{first_name}}">First Name</span> —
+   <a href="{{unsubscribe_url}}">unsubscribe</a></p>
+```
+
+**Only rich text is converted** — `TitleBlock.content` and `ParagraphBlock.content`. Every other merge-tag-bearing field is rendered as text and keeps its bare tokens: button text and URLs, image `src`/`alt`, `HtmlBlock.content`, custom-block field values, `settings.preheaderText`, and table cells.
+
+::: warning `getContent()` is not a byte-for-byte round-trip
+A loaded template's bare tokens come back as tag nodes. Nothing is written to your store unless you save, and nothing is marked as an unsaved change — but expect a one-time difference if you diff or checksum stored templates.
+
+Output is unaffected: `toMjml()` / `toHtml()` replace a tag node with its token, so a converted template and its bare-token original compile identically.
+:::
+
+::: tip Writing a `resolvePreview` hook
+Your [`resolvePreview`](/guide/preview-rendering) callback receives tag nodes, including for content that arrived as bare tokens. Match on the tag markup, not the raw token — a naive <code v-pre>replaceAll('{{first_name}}', 'Grace')</code> also hits the token inside <code v-pre>data-merge-tag="{{first_name}}"</code> and silently produces a tag that renders its label.
+:::
+
 ## Merge tags in other inputs
 
 Merge tags aren't limited to title and paragraph blocks. The editor detects and highlights merge tags in other block inputs too — button text, button URL, image URL, image alt text, and link href values. The same label replacement and tooltip behavior applies in these fields.

@@ -88,6 +88,44 @@ describe("template tokens survive markdown rendering", () => {
     expect(lost).toEqual([]);
   });
 
+  /**
+   * `{{ }}` has a second hazard the render check above cannot see. Markdown-it
+   * turns a backtick span into `<code>{{first_name}}</code>` with the token
+   * intact — and then VitePress hands that HTML to Vue, which compiles the
+   * mustache as an interpolation and renders an empty element. The page passes
+   * every markdown assertion and still shows nothing.
+   *
+   * Three constructs opt out of Vue compilation, and a mustache must sit in one
+   * of them: a fenced code block (VitePress adds `v-pre` itself), an explicit
+   * `<code v-pre>`, or a `::: v-pre` container (which is how the generated
+   * changelog carries merge-tag syntax in prose).
+   */
+  const VPRE_CODE = /<code v-pre>[\s\S]*?<\/code>/g;
+  const VPRE_CONTAINER = /^::: v-pre$[\s\S]*?^:::$/gm;
+  const MUSTACHE = /\{\{[^{}]*\}\}/g;
+
+  it.each(markdownFiles)("%s guards every mustache from Vue", (file) => {
+    const raw = readFileSync(path.join(docsRoot, file), "utf8").replace(
+      FRONTMATTER,
+      "",
+    );
+    const unguarded = raw
+      .replace(FENCED_BLOCK, "")
+      .replace(VPRE_CONTAINER, "")
+      .replace(VPRE_CODE, "");
+
+    expect(unguarded.match(MUSTACHE) ?? []).toEqual([]);
+  });
+
+  it("renders a v-pre-guarded mustache into the merge-tags page", () => {
+    const source = readFileSync(path.join(docsRoot, "guide/merge-tags.md"), "utf8");
+    const html = decodeEntities(render(source));
+
+    // The markdown renderer is not the hazard for `{{ }}` — Vue is. Prove the
+    // guarded form still reaches the compiler with its token intact.
+    expect(html).toContain("<code v-pre>{{first_name}}</code>");
+  });
+
   it("renders the liquid preset's logic tag into the syntax-presets table", () => {
     const source = readFileSync(path.join(docsRoot, "guide/merge-tags.md"), "utf8");
     const liquidRow = source.split("\n").find((line) => line.startsWith("| `'liquid'`"));

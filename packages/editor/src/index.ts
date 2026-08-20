@@ -38,6 +38,7 @@ import type { ResolveImageUrl } from "./composables/useImageUrlResolver";
 import { loadTranslations, loadCloudTranslations } from "./i18n";
 import { useFonts } from "./composables";
 import { toMjmlForInstance } from "./utils/toMjml";
+import { normalizeContentForConfig } from "./utils/normalizeMergeTagMarkup";
 import {
   buildRenderPayload,
   createRenderMethods,
@@ -889,6 +890,25 @@ async function mountEditor(
   const mount = resolveMountTarget(container, config.shadowDom ?? true);
   const editorRef: Ref<InstanceType<typeof Editor> | null> = ref(null);
 
+  // Merge tags reach us in one of two shapes, and only one of them behaves like
+  // a tag. Anything typed or pasted is already a `<span data-merge-tag>`, since
+  // `MergeTagNode`'s input rules convert it on the spot; content that arrived
+  // any other way — a consumer's stored JSON, an `@templatical/import-*`
+  // conversion — still holds bare `{{tokens}}` that render as plain text.
+  // Normalizing here, before the seed reaches `Editor.vue`, means core is
+  // handed content that is already correct and never observes a mutation, so
+  // nothing is marked dirty and no autosave tick fires for a load.
+  //
+  // This is one of four places content enters. The other three:
+  // `instance.setContent` and `instance.create` below, and the `templates`
+  // provider's `load`, wrapped in `Editor.vue` where it reaches core.
+  if (config.content) {
+    config.content = normalizeContentForConfig(
+      config.content,
+      config.mergeTags,
+    );
+  }
+
   const app = createApp({
     setup() {
       return () =>
@@ -919,10 +939,14 @@ async function mountEditor(
       return safeClone(config.content ?? createDefaultTemplateContent());
     },
     setContent(content: TemplateContent) {
+      // Normalized once and used for both writes: `getContent()` falls back to
+      // `config.content` before mount, so a raw write-back here would hand back
+      // different content than the mounted editor holds.
+      const normalized = normalizeContentForConfig(content, config.mergeTags);
       if (editorRef.value) {
-        editorRef.value.setContent(content);
+        editorRef.value.setContent(normalized);
       }
-      config.content = content;
+      config.content = normalized;
     },
     setTheme(theme: UiTheme) {
       if (editorRef.value) {
@@ -934,7 +958,21 @@ async function mountEditor(
       if (!editorRef.value) {
         return Promise.reject(new Error("[Templatical] Editor not ready"));
       }
-      return editorRef.value.create(input);
+      // Supplied content becomes editor state before the provider is called,
+      // so it is consumer content arriving in and gets the same treatment as
+      // `setContent`. A contentless create is forwarded as-is — core then
+      // persists the state it already holds, which is normalized already.
+      return editorRef.value.create(
+        input?.content
+          ? {
+              ...input,
+              content: normalizeContentForConfig(
+                input.content,
+                config.mergeTags,
+              ),
+            }
+          : input,
+      );
     },
     load(templateId: string) {
       if (!editorRef.value) {
