@@ -1,5 +1,94 @@
 # @templatical/editor
 
+## 0.27.1
+
+### Patch Changes
+
+- 18f6b38: Fix: the media library could not mount at all on 0.27.0 — in either mount mode.
+
+  0.27.0 moved `authManager` / `projectId` / `planConfig` to props and had `MediaLibraryModal` re-provide the plan config under `PLAN_CONFIG_KEY` for its descendants, while `useMediaCategories()` was given a named throw for the no-provider case. Both host shells then called `useMediaCategories()` with no argument — and **a component never sees its own `provide`**, because Vue resolves `inject` against the _parent_ chain. So the new throw fired in the very components that supplied the value:
+
+  ```
+  [Templatical] useMediaCategories() needs a plan config in scope.
+  Render it under <MediaLibraryModal> (pass its `planConfig` prop) …
+  ```
+
+  This hit the editor path (`initCloud()`) **and** the standalone SDK, which had worked before 0.27.0 — its `useMediaCategories()` previously injected the bare string `"planConfig"` that `standalone/MediaLibrary.vue` provided. `useMediaCategories(planConfigOverride?)` now takes the value explicitly, which both shells pass; descendants inject exactly as before.
+
+  Two further key-identity faults in the same file are fixed with it, both invisible until the modal could mount:
+
+  - **Translations.** `useI18n()` injected the bare string `"translations"`, which never resolves the `Symbol` `@templatical/editor` provides under the same name — so a host-mounted modal got `undefined` and threw on its first of 28 `t.mediaLibrary.*` reads. Strings now cross the package boundary as a **`locale` prop** on `MediaLibraryModal`, which loads its own translations and provides them under a `Symbol`; `useI18n()` falls back to bundled English rather than asserting non-null.
+  - **Dark mode.** Four components injected the bare string `"tplUiTheme"`, so `data-tpl-theme` was always `undefined` and the library rendered light inside a dark editor. `MediaLibraryModal` takes a `uiTheme` prop and provides it for the three sub-modals, which teleport out of its DOM.
+
+  `initCloud()` consumers get all of this by upgrading — `CloudPanels` forwards `locale` and the resolved UI theme automatically.
+
+  ### Breaking — only if you mount `MediaLibraryModal` yourself
+
+  Both new props are optional, so nothing is required. Pass them to get the behaviour the editor gets:
+
+  ```vue
+  <MediaLibraryModal
+    :visible="open"
+    :locale="locale"
+    :ui-theme="resolvedTheme"
+    :auth-manager="authManager"
+    :project-id="authManager.projectId"
+    :plan-config="planConfig"
+    @select="onSelect"
+    @close="open = false"
+  />
+  ```
+
+  Omit `locale` and it loads English; omit `uiTheme` and no `data-tpl-theme` is stamped. If you called `useMediaCategories()` from a component that _also_ provides `PLAN_CONFIG_KEY`, pass your value: `useMediaCategories(planConfig)`.
+
+  The regression escaped because no test or e2e had ever mounted either shell — the standalone suite mocks Vue's `createApp` wholesale, and the plan-config audit exercised the composable through an app-level `provide`, the one topology where self-injection works. Both shells are now mounted in tests, and the package's injection audit bans _any_ bare-string `inject` rather than an enumerated list of names.
+
+- 18f6b38: Four field indicators that were translated but rendered nothing now say what they mean.
+
+  Each had its string sitting in all seven locales, bound nowhere — a control on screen carrying no text:
+
+  - **The required asterisk** (`FieldWrapper`) was a bare `<span>*</span>`. An asterisk announces as "asterisk" or as nothing, so a screen reader user could not tell a field was required. The glyph is now `aria-hidden` with `customBlocks.fields.required` carried alongside it and on `title`.
+  - **The read-only lock** was a bare icon. It reuses `customBlocks.dataSource.readOnlyTooltip` — the string the seven field components already put on the input — rather than a new key, because `readOnly` here is only ever `field.readOnly && block.dataSourceFetched`, so "loaded from your data source" is the actual reason and a generic "Read-only" would say less.
+  - **The minimum-items message** (`RepeatableField`) never appeared: `!canAdd` rendered `maxItemsReached`, while `!canRemove` silently dropped the Remove button. `customBlocks.fields.minItemsRequired` now mirrors it, with its `{count}` filled in. Both render together for a fixed-length list (`minItems === maxItems`) — that pair is what says the length is fixed.
+  - **The image placeholder tooltip** (`ImageToolbar`) bound `placeholderUrl` and `placeholderUrlPlaceholder` but not `placeholderUrlTooltip`, which `VideoToolbar` had carried on its own placeholder field all along. The field explains itself now: the real image comes from the merge tag at send time, so this is a design-time stand-in that never ships.
+
+  `image.optional` is a new key. The hint beside that same field was a hardcoded `"(optional)"` — the last hardcoded UI string in the editor — so every non-English locale showed English there. It copies each locale's existing `video.optional`, so no translation was invented.
+
+  Nothing changes for anyone whose custom blocks set neither `required`, `readOnly`, nor `minItems`.
+
+- 18f6b38: Remove dead code, dead translations, and comments that only recorded history.
+
+  ### Breaking — `restoreMergeTagMarkup` is removed from `@templatical/types`
+
+  It converted raw `{{ tag }}` tokens in stored HTML back into `<span data-merge-tag>` markup, and nothing in the SDK called it. It was also **unsafe**: its only guard was a literal `data-merge-tag="` lookbehind, so a token in any other attribute had an element injected into the attribute value —
+
+  ```html
+  <a href="{{unsubscribe_url}}">
+  <!-- became -->
+  <a href="<span data-merge-tag="{{unsubscribe_url}}">Unsubscribe URL</span>">
+  ```
+
+  — which is worse than the bare token it was meant to fix. Position-awareness needs parsing, not better lookarounds, so the fix is a parse-based replacement rather than a patch to this function. If you were calling it, stop: it corrupts attribute-positioned tokens. Its private `escapeRegExp` helper went with it.
+
+  ### Breaking — `_internal` is removed from `@templatical/import-html`
+
+  A test-support barrel (`export const _internal = { convertButton, … }`) that the tests had stopped using. Removing it revealed `convertSpacer` as reachable only through it — a line-for-line duplicate of the live `buildSpacerFromCell` in `section-builder.ts`, which is what actually converts spacer cells. Both are gone; conversion output is unchanged.
+
+  ### Smaller locale chunks
+
+  **772 unused translation strings** removed across ten locale files. The bulk was an 81-key `mediaLibrary` block in the editor's own OSS locales — a key-for-key duplicate of `@templatical/media-library`'s, read by nothing, which every OSS consumer downloaded for a package they do not install. The rest were strings for UI that was never built: a 23-key `aiRewrite` block (the composable is headless and unaffected), add/remove row and column labels for a table toolbar that uses number inputs, singular `social.platform`/`social.url` beside the live plural `social.platforms[…]`, and video platform names nothing renders.
+
+  Every OSS session fetches exactly one locale chunk, so this is a direct **~1.1 KB gzip (−14%)** off it; cloud locales drop 18–19%.
+
+  Nothing in the public API changes: `init()` accepts only `locale`, with no way to supply or type against these keys.
+
+  A new guard (`i18n-key-usage.test.ts`) now checks locale ↔ source agreement in both directions — no reference to a missing key, no key without a reader — which the existing locale-parity test and `typecheck` both structurally miss, since each compares locales to _each other_ or derives the type from `en.ts`.
+
+- Updated dependencies [18f6b38]
+  - @templatical/media-library@0.27.1
+  - @templatical/quality@0.27.1
+  - @templatical/renderer@0.27.1
+
 ## 0.27.0
 
 ### Minor Changes
