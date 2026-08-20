@@ -80,6 +80,35 @@ describe("FieldWrapper required indicator", () => {
     expect(wrapper.text()).not.toContain(en.customBlocks.fields.required);
   });
 
+  it("names the lock instead of leaving it a bare icon", () => {
+    const wrapper = mountWrapper({ label: "Headline", readOnly: true });
+
+    // The icon is decoration; the reason is the text alternative. Same string
+    // the seven field components already put on the input.
+    expect(wrapper.find("svg").attributes("aria-hidden")).toBe("true");
+    expect(wrapper.find(".tpl-sr-only").text()).toBe(
+      en.customBlocks.dataSource.readOnlyTooltip,
+    );
+    expect(wrapper.find("span[title]").attributes("title")).toBe(
+      en.customBlocks.dataSource.readOnlyTooltip,
+    );
+  });
+
+  it("translates the read-only reason", () => {
+    const wrapper = mountWrapper({ label: "Titre", readOnly: true }, fr);
+    expect(wrapper.find(".tpl-sr-only").text()).toBe(
+      fr.customBlocks.dataSource.readOnlyTooltip,
+    );
+    expect(wrapper.text()).not.toContain(
+      en.customBlocks.dataSource.readOnlyTooltip,
+    );
+  });
+
+  it("renders no lock when the field is editable", () => {
+    const wrapper = mountWrapper({ label: "Headline" });
+    expect(wrapper.find("svg").exists()).toBe(false);
+  });
+
   it("renders no indicator at all when the field is optional", () => {
     const wrapper = mountWrapper({ label: "Subtitle" });
     expect(wrapper.find(".tpl-sr-only").exists()).toBe(false);

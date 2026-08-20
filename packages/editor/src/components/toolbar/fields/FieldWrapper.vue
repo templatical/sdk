@@ -16,11 +16,20 @@ const { t } = useI18n();
   <div class="tpl:mb-3.5">
     <label :class="labelClass">
       {{ label }}
-      <Lock
-        v-if="readOnly"
-        :size="12"
-        class="tpl:inline tpl:text-[var(--tpl-text-dim)]"
-      />
+      <!-- Same treatment as the asterisk below, and the same string the seven
+           field components put on the input itself: `readOnly` here is only ever
+           `field.readOnly && block.dataSourceFetched`, so "loaded from your data
+           source" is the reason, not a generic lock. -->
+      <span v-if="readOnly" :title="t.customBlocks.dataSource.readOnlyTooltip">
+        <Lock
+          :size="12"
+          class="tpl:inline tpl:text-[var(--tpl-text-dim)]"
+          aria-hidden="true"
+        />
+        <span class="tpl-sr-only">{{
+          t.customBlocks.dataSource.readOnlyTooltip
+        }}</span>
+      </span>
       <!-- The asterisk is a sighted convention, not a label: on its own it
            announces as "asterisk" or as nothing at all, so the requirement is
            invisible to a screen reader. The glyph is therefore hidden from the
