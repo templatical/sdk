@@ -25,6 +25,10 @@ import { resolveLintOptions } from "./utils/resolveLintOptions";
 import { logger } from "./utils/logger";
 import { toMjmlForInstance } from "./utils/toMjml";
 import { resolveRenderFonts } from "./utils/renderProvider";
+import {
+  withNormalizedContentWrites,
+  withNormalizedTemplateLoads,
+} from "./utils/normalizeMergeTagMarkup";
 import type { Translations } from "./i18n";
 import type { EditorCapabilities } from "./types/editor-capabilities";
 import type { UseFontsReturn } from "./composables/useFonts";
@@ -65,6 +69,16 @@ const props = defineProps<{
   cloud?: CloudRuntime;
 }>();
 
+// The fourth place consumer content enters (the other three are the entry
+// points in `index.ts`: the mount seed, `setContent` and `create`). A template
+// fetched from the store never passes through the public API — core assigns it
+// to state itself — so the provider is wrapped here, on its way in. Wrapping
+// rather than normalizing after the load resolves is what keeps the load from
+// registering as an edit: core is handed content that is already correct.
+const templatesProvider = props.config.templates
+  ? withNormalizedTemplateLoads(props.config.templates, props.config.mergeTags)
+  : undefined;
+
 // --- Core editor state ---
 const editor = useEditor({
   content: props.config.content!,
@@ -73,7 +87,7 @@ const editor = useEditor({
   // reached a blank template.
   defaultFontFamily: props.config.fonts?.defaultFont,
   templateDefaults: props.config.templateDefaults,
-  templates: props.config.templates,
+  templates: templatesProvider,
   onError: props.config.onError,
   // Cloud's collaborators lock the blocks they are editing. The map is
   // forward-declared by the runtime because `useCollaboration` — which fills
@@ -91,9 +105,9 @@ const cloudAttachment = props.cloud ? props.cloud.attach({ editor }) : null;
 // Built before `useEditorCore` so its capability can be passed in, which is what
 // lights up the header's name field, status indicator and save button — and what
 // makes Cmd+S mean "persist now".
-const templates = props.config.templates
+const templates = templatesProvider
   ? useTemplatesFeature({
-      provider: props.config.templates,
+      provider: templatesProvider,
       editor,
       guardUnsavedChanges: props.config.unsavedChangesGuard,
       // Cloud's lint save-gate, when there is one. Read through a getter
@@ -314,7 +328,13 @@ const cloudReady =
 const versionHistory = props.config.versionHistory
   ? useVersionHistoryFeature({
       provider: props.config.versionHistory,
-      editor,
+      // The fifth content-in path, and the one carrying the oldest content in
+      // the product: a version written before merge-tag normalization shipped
+      // still holds bare tokens, and previewing it would put them back on a
+      // canvas where every other tag is a chip. Wrapped at `setContent` rather
+      // than at the provider, because version content also arrives off the
+      // hydrated list and out of the `fetched` cache without touching `get()`.
+      editor: withNormalizedContentWrites(editor, props.config.mergeTags),
       history: core.history,
       conditionPreview: core.conditionPreview,
       autoSave: core.autoSave,

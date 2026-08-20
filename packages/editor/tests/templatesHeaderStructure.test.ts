@@ -324,10 +324,25 @@ describe("EditorHeader templates surface", () => {
 
   describe("wiring", () => {
     it("builds the feature only when a provider is configured", () => {
+      // Gated on `templatesProvider`, which is defined exactly when
+      // `config.templates` is — see the wrapper assertion below.
       expect(editorSource).toMatch(
-        /const templates =\s*props\.config\.templates\s*\?\s*useTemplatesFeature\(/,
+        /const templates =\s*templatesProvider\s*\?\s*useTemplatesFeature\(/,
       );
       expect(editorSource).toMatch(/useTemplatesFeature\([\s\S]*?\)\s*:\s*null;/);
+    });
+
+    it("normalizes merge tags in whatever the provider loads", () => {
+      // A template fetched from the store is the one content-in path that never
+      // passes through the public API — core assigns it to state itself — so the
+      // provider is wrapped before it gets there. Both consumers must read the
+      // wrapper, or `load()` and the header's capability disagree about which
+      // provider is in play.
+      expect(editorSource).toMatch(
+        /const templatesProvider = props\.config\.templates\s*\?\s*withNormalizedTemplateLoads\(/,
+      );
+      expect(editorSource).toContain("templates: templatesProvider,");
+      expect(editorSource).toContain("provider: templatesProvider,");
     });
 
     it("routes saves through a gate when one is configured", () => {
