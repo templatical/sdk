@@ -46,6 +46,23 @@ const showSavedBlocksSection = computed(
 
 const isExpanded = ref(false);
 const isDragging = ref(false);
+const railEl = ref<HTMLElement | null>(null);
+
+// `:focus-visible`, never `:focus`: a mouse click leaves the clicked palette
+// button focused, so a plain `:focus` test would pin the rail open from the
+// first click-to-insert onward — the very symptom this rail already had for
+// another reason (#568). Keyboard focus does keep it open, because collapsing
+// hides the label of the entry the user has focused.
+function hasKeyboardFocusInRail(): boolean {
+  try {
+    return railEl.value?.querySelector(":focus-visible") != null;
+  } catch {
+    // Firefox <85 / Safari <15.4 — reachable on the `shadowDom: false` tier,
+    // whose browser floor predates the selector — throw on it. Reading that
+    // as "no keyboard focus" keeps the collapse working there.
+    return false;
+  }
+}
 
 function handleSidebarLeave(): void {
   // Don't collapse while a Sortable drag is in progress. If the sidebar
@@ -55,6 +72,7 @@ function handleSidebarLeave(): void {
   // stamped with that wrong rect and ends up visibly offset from the
   // cursor for the rest of the drag. Cleared on drag-end.
   if (isDragging.value) return;
+  if (hasKeyboardFocusInRail()) return;
   isExpanded.value = false;
 }
 
@@ -65,6 +83,18 @@ function handleDragChoose(): void {
   // `_dragStarted`, by which time mouseleave may already have flipped
   // `isExpanded` and the sidebar may be mid-collapse.
   isDragging.value = true;
+}
+
+function handleDragUnchoose(): void {
+  // `end` is not the counterpart of `choose` — Sortable gates it on
+  // `Sortable.active`, which only `_dragStarted` sets, so a click on a palette
+  // entry emits `choose` + `unchoose` and no `end` at all. Clearing the guard
+  // only in `handleDragEnd` therefore latches it true on the first click and
+  // `handleSidebarLeave` bails forever after: the rail stays expanded until
+  // some later drag happens to complete (#568). `unchoose` fires on every
+  // release, at drop time — long after `_appendGhost` captured its rect — so
+  // it cannot re-open the race `handleDragChoose` guards.
+  isDragging.value = false;
 }
 
 function handleDragEnd(): void {
@@ -193,6 +223,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
 
 <template>
   <aside
+    ref="railEl"
     :aria-label="t.sidebarNav.palette"
     class="tpl-sidebar-rail tpl:absolute tpl:top-14 tpl:bottom-0 tpl:left-0 tpl:z-40 tpl:flex tpl:flex-col tpl:overflow-hidden"
     :style="{
@@ -250,6 +281,7 @@ function handlePaletteKeydown(event: KeyboardEvent, item: BlockTypeItem): void {
       :force-fallback="true"
       class="tpl:flex tpl:min-h-0 tpl:flex-1 tpl:flex-col tpl:gap-0.5 tpl:overflow-y-auto tpl:p-1"
       @choose="handleDragChoose"
+      @unchoose="handleDragUnchoose"
       @end="handleDragEnd"
     >
       <button

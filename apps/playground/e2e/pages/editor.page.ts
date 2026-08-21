@@ -253,6 +253,68 @@ export class EditorPage {
 
   // --- Sidebar ---
 
+  /** Current rendered width of the auto-hiding rail: 48px collapsed, 200px expanded. */
+  async getSidebarRailWidth(): Promise<number> {
+    return this.page
+      .locator(SELECTORS.sidebarRail)
+      .evaluate((el) => (el as HTMLElement).getBoundingClientRect().width);
+  }
+
+  /**
+   * The rail's *declared* width. It flips the instant the expanded state
+   * changes, where the rendered width animates over 200ms — so this is what
+   * distinguishes "stayed open" from "is collapsing" without waiting on a
+   * transition.
+   */
+  async getSidebarRailDeclaredWidth(): Promise<string> {
+    return this.page
+      .locator(SELECTORS.sidebarRail)
+      .evaluate((el) => (el as HTMLElement).style.width);
+  }
+
+  async isSidebarHovered(): Promise<boolean> {
+    return this.page
+      .locator(SELECTORS.sidebarRail)
+      .evaluate((el) => el.matches(":hover"));
+  }
+
+  /** Whether some entry in the rail currently has keyboard-visible focus. */
+  async sidebarHasKeyboardFocus(): Promise<boolean> {
+    return this.page
+      .locator(SELECTORS.sidebarRail)
+      .evaluate((el) => el.querySelector(":focus-visible") != null);
+  }
+
+  /**
+   * A canvas point clear of the rail. The expanded rail is 200px and overlays
+   * the canvas (`.tpl-body` starts at the collapsed 48px), so the canvas box's
+   * own top-left is under it whenever the rail is open.
+   */
+  private async canvasCenter(): Promise<{ x: number; y: number }> {
+    const canvas = await this.page.locator(SELECTORS.canvasBody).boundingBox();
+    if (!canvas) throw new Error("Canvas body not found");
+    return {
+      x: canvas.x + canvas.width / 2,
+      y: canvas.y + canvas.height / 2,
+    };
+  }
+
+  /**
+   * Move the pointer off the rail and onto the canvas, which is what fires the
+   * `mouseleave` that collapses it. Deliberately does not click: the point is
+   * the pointer leaving, not a new selection.
+   */
+  async movePointerOffSidebar(): Promise<void> {
+    const { x, y } = await this.canvasCenter();
+    await this.page.mouse.move(x, y);
+  }
+
+  /** Click on the canvas, clear of the rail — moves focus out of the rail too. */
+  async clickCanvasAwayFromSidebar(): Promise<void> {
+    const { x, y } = await this.canvasCenter();
+    await this.page.mouse.click(x, y);
+  }
+
   async hoverSidebar(): Promise<void> {
     await this.dismissOverlays();
     const rail = this.page.locator(SELECTORS.sidebarRail);

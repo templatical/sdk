@@ -521,6 +521,19 @@ describe("sidebar drag-during-collapse rect-capture defense", () => {
     expect(sidebar).toMatch(/@mouseleave="handleSidebarLeave"/);
   });
 
+  it("keeps the rail open for keyboard focus via `:focus-visible`, not `:focus`", () => {
+    // A mouse click leaves the clicked palette button focused, so a `:focus`
+    // test would pin the rail open from the first click-to-insert onward —
+    // the same user-visible symptom as the latched drag guard below, from a
+    // different cause. `:focus-visible` is false for that click and true for
+    // a tabbed entry, which is exactly the split this needs.
+    expect(sidebar).toMatch(/querySelector\(":focus-visible"\)/);
+    expect(sidebar).not.toMatch(/querySelector\(":focus"\)/);
+    expect(sidebar).toMatch(
+      /function\s+handleSidebarLeave\s*\([^)]*\)[^{]*\{[^}]*if\s*\(\s*hasKeyboardFocusInRail\(\)\s*\)\s*return/,
+    );
+  });
+
   it("VueDraggable wires `@choose` (NOT `@start`) to flip the drag guard", () => {
     // `choose` fires synchronously inside Sortable's `_onTapStart` on
     // pointerdown. `start` fires only after the threshold-move
@@ -534,14 +547,31 @@ describe("sidebar drag-during-collapse rect-capture defense", () => {
     );
   });
 
-  it("VueDraggable wires `@end` to clear `isDragging`", () => {
-    // Without `@end`, `isDragging` would latch true after the first
-    // drag and the sidebar would never collapse again. `end` fires
-    // regardless of drop success or cancellation.
+  it("VueDraggable wires `@end` to clear `isDragging` and collapse the rail", () => {
+    // `end` covers the completed-drag release: it fires whether the drop
+    // succeeded or was cancelled back to the source, and the cursor is out in
+    // the canvas by then, so no mouseleave follows to collapse the rail.
     expect(sidebar).toMatch(/@end="handleDragEnd"/);
     expect(sidebar).toMatch(
       /function\s+handleDragEnd\s*\([^)]*\)[^{]*\{[^}]*isDragging\.value\s*=\s*false/,
     );
+  });
+
+  it("VueDraggable also wires `@unchoose` — `end` never fires for a plain click", () => {
+    // `end` is NOT the counterpart of `choose`: Sortable gates its dispatch on
+    // `Sortable.active`, which only `_dragStarted` sets. Clicking a palette
+    // entry emits `choose` + `unchoose` and stops there, so clearing the guard
+    // on `end` alone latched it true on the first click and the rail never
+    // collapsed again (#568 follow-up). `unchoose` fires on every release, at
+    // drop time — after `_appendGhost` captured its rect — so it cannot
+    // re-open the race `@choose` guards, and it must not collapse the rail
+    // either: after a click the cursor is still on the rail.
+    expect(sidebar).toMatch(/@unchoose="handleDragUnchoose"/);
+    const unchoose = sidebar.match(
+      /function\s+handleDragUnchoose\s*\([^)]*\)[^{]*\{([\s\S]*?)\n\}/,
+    );
+    expect(unchoose?.[1]).toMatch(/isDragging\.value\s*=\s*false/);
+    expect(unchoose?.[1]).not.toMatch(/isExpanded\.value\s*=/);
   });
 });
 

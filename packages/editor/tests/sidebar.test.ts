@@ -58,9 +58,16 @@ function makeEditor(
   };
 }
 
-function mountSidebar(overrides: Record<symbol, unknown> = {}) {
+function mountSidebar(
+  overrides: Record<symbol, unknown> = {},
+  // Focus tests need a document-attached tree: `.focus()` is a no-op on a
+  // detached element, so `activeElement` never moves and the rail's
+  // `:focus-visible` lookup can't see anything.
+  options: { attachTo?: HTMLElement } = {},
+) {
   return mountEditor(Sidebar, {
     provides: overrides,
+    ...options,
   });
 }
 
@@ -111,6 +118,72 @@ describe('Sidebar', () => {
     draggable.vm.$emit('end');
     await wrapper.vm.$nextTick();
     expect(rail.attributes('style')).toContain('width: 48px');
+  });
+
+  it('does not latch the drag guard when a click ends with `unchoose` and no `end`', async () => {
+    // Sortable dispatches `end` only once a drag actually started; a plain
+    // click on a palette entry emits `choose` + `unchoose` and nothing else.
+    // Verified against the bundled Sortable in a real browser, where a click
+    // logged ["choose", "unchoose"] and a drag logged
+    // ["choose", "clone", "start", "unchoose", "end"].
+    //
+    // With the guard cleared only on `end`, one click pinned the rail open for
+    // the rest of the session — every later mouseleave bailed out, and only a
+    // completed drag&drop could release it (#568 follow-up).
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+    const rail = wrapper.get('aside.tpl-sidebar-rail');
+    const draggable = wrapper.findComponent(VueDraggable);
+
+    await rail.trigger('mouseenter');
+    expect(rail.attributes('style')).toContain('width: 200px');
+
+    draggable.vm.$emit('choose');
+    draggable.vm.$emit('unchoose');
+    await rail.trigger('mouseleave');
+    expect(rail.attributes('style')).toContain('width: 48px');
+
+    // And the guard is genuinely clear, not merely bypassed once: a second
+    // hover/click/leave cycle behaves the same.
+    await rail.trigger('mouseenter');
+    draggable.vm.$emit('choose');
+    draggable.vm.$emit('unchoose');
+    await rail.trigger('mouseleave');
+    expect(rail.attributes('style')).toContain('width: 48px');
+  });
+
+  it('stays expanded on mouseleave while a palette entry holds keyboard focus', async () => {
+    // Collapsing to the 48px icon strip while the user is tabbing through the
+    // palette hides the label of the entry they have focused. The guard reads
+    // `:focus-visible`, so a mouse click — which also leaves the button
+    // focused — still collapses on leave; that half is covered in Chromium by
+    // `palette-insert-position.spec.ts`, since happy-dom resolves
+    // `:focus-visible` as plain `:focus`.
+    const { editor } = makeEditor();
+    const wrapper = mountSidebar(
+      { [EDITOR_KEY]: editor },
+      { attachTo: document.body },
+    );
+    const rail = wrapper.get('aside.tpl-sidebar-rail');
+
+    await rail.trigger('mouseenter');
+    const entry = wrapper.get<HTMLButtonElement>(
+      '[data-palette-type="divider"]',
+    ).element;
+    entry.focus();
+    await rail.trigger('focusin');
+    expect(document.activeElement).toBe(entry);
+    expect(rail.attributes('style')).toContain('width: 200px');
+
+    await rail.trigger('mouseleave');
+    expect(rail.attributes('style')).toContain('width: 200px');
+
+    // Focus leaving is what collapses it in that case.
+    entry.blur();
+    await rail.trigger('focusout');
+    expect(rail.attributes('style')).toContain('width: 48px');
+
+    wrapper.unmount();
   });
 
   it('palette list is a scroll region so tall block lists stay reachable on short viewports (#231)', () => {

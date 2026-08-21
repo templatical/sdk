@@ -187,3 +187,90 @@ test.describe("palette insert position", () => {
     expect(typesAfter[anchorIndex + 1]).toBe("divider");
   });
 });
+
+/**
+ * Follow-up reported on #568 once click-to-insert became the natural way to add
+ * a block: the rail stayed expanded afterwards, and only a completed drag&drop
+ * would let it collapse again.
+ *
+ * Sortable dispatches `end` only for a drag that actually started, so a click
+ * emitted `choose` + `unchoose` and left the mid-drag collapse guard latched on
+ * for the rest of the session. The rail overlays the canvas (`.tpl-body` starts
+ * at the collapsed 48px), so a pinned rail covers the content the click just
+ * scrolled into view.
+ */
+test.describe("sidebar rail after a palette click", () => {
+  test("collapses once the pointer leaves", async ({ editorReady }) => {
+    const { editorPage } = editorReady;
+    await editorPage.hoverSidebar();
+
+    await editorPage.clickPaletteItem("divider");
+    // Still expanded while the pointer is on it — hovering is what opened it,
+    // and collapsing under a stationary cursor would fight the next insert.
+    expect(await editorPage.getSidebarRailDeclaredWidth()).toBe("200px");
+
+    await editorPage.movePointerOffSidebar();
+
+    await expect
+      .poll(() => editorPage.getSidebarRailDeclaredWidth(), { timeout: 3000 })
+      .toBe("48px");
+    await expect
+      .poll(() => editorPage.getSidebarRailWidth(), { timeout: 3000 })
+      .toBeLessThan(60);
+  });
+
+  test("collapse still works on every later hover cycle", async ({
+    editorReady,
+  }) => {
+    // The latch survived hover-in/hover-out cycles, so one collapse right
+    // after the click is not enough to prove the guard was actually cleared.
+    const { editorPage } = editorReady;
+    for (const blockType of ["spacer", "divider"]) {
+      await editorPage.hoverSidebar();
+      await editorPage.clickPaletteItem(blockType);
+      await editorPage.movePointerOffSidebar();
+      await expect
+        .poll(() => editorPage.getSidebarRailDeclaredWidth(), { timeout: 3000 })
+        .toBe("48px");
+    }
+  });
+
+  test("stays open while a palette entry holds keyboard focus", async ({
+    editorReady,
+  }) => {
+    // The clicked button keeps DOM focus, which is why the collapse guard
+    // reads `:focus-visible` rather than `:focus` — a `:focus` test would
+    // re-pin the rail on the very click the two tests above cover. Tabbing in
+    // is the case that must keep it open: collapsing to the 48px icon strip
+    // hides the label of the entry the user has focused.
+    const { editorPage } = editorReady;
+    const page = editorPage.page;
+    await editorPage.hoverSidebar();
+
+    await page
+      .locator(SELECTORS.sidebarRail)
+      .locator('[data-palette-type="image"]')
+      .focus();
+    // A real Tab is what puts the browser into keyboard modality; `focus()`
+    // alone does not make an entry match `:focus-visible`.
+    await page.keyboard.press("Tab");
+    expect(await editorPage.sidebarHasKeyboardFocus()).toBe(true);
+
+    await editorPage.movePointerOffSidebar();
+
+    // Wait for the pointer to actually be off the rail — that is the same
+    // input event that dispatches `mouseleave`, so once `:hover` is gone the
+    // handler has run and its decision is final. Asserting the *declared*
+    // width then reads that decision directly, instead of racing the 200ms
+    // width transition (a rendered-width poll would pass on its first tick
+    // even if the rail were already collapsing).
+    await expect.poll(() => editorPage.isSidebarHovered()).toBe(false);
+    expect(await editorPage.getSidebarRailDeclaredWidth()).toBe("200px");
+
+    // Focus leaving the rail is what collapses it in that case.
+    await editorPage.clickCanvasAwayFromSidebar();
+    await expect
+      .poll(() => editorPage.getSidebarRailDeclaredWidth(), { timeout: 3000 })
+      .toBe("48px");
+  });
+});
