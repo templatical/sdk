@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VueDraggable } from 'vue-draggable-plus';
 import Sidebar from '../src/components/Sidebar.vue';
 import { mountEditor } from './helpers/mount';
@@ -10,17 +10,51 @@ import {
   CAPABILITIES_KEY,
 } from '../src/keys';
 
-function makeEditor() {
+// The scroll itself needs real layout, so the composable is stubbed here and
+// asserted on; `tests/useScrollToBlock.test.ts` covers what it does, and the
+// e2e covers that the canvas actually moves.
+const scrollToBlock = vi.hoisted(() => vi.fn());
+vi.mock('../src/composables/useScrollToBlock', () => ({
+  useScrollToBlock: () => scrollToBlock,
+}));
+
+beforeEach(() => {
+  scrollToBlock.mockClear();
+});
+
+type Location = {
+  targetSectionId?: string;
+  columnIndex?: number;
+  index: number;
+};
+
+function makeEditor(
+  options: {
+    selectedBlockId?: string | null;
+    locations?: Record<string, Location>;
+    lockedIds?: string[];
+  } = {},
+) {
   const addBlock = vi.fn();
   const selectBlock = vi.fn();
+  const locations = options.locations ?? {};
+  const locked = new Set(options.lockedIds ?? []);
+  const findBlockLocation = vi.fn(
+    (blockId: string) => locations[blockId] ?? null,
+  );
+  const isBlockLocked = vi.fn((blockId: string) => locked.has(blockId));
   return {
     editor: {
       addBlock,
       selectBlock,
-      state: {},
+      findBlockLocation,
+      isBlockLocked,
+      state: { selectedBlockId: options.selectedBlockId ?? null },
     } as any,
     addBlock,
     selectBlock,
+    findBlockLocation,
+    isBlockLocked,
   };
 }
 
@@ -133,6 +167,143 @@ describe('Sidebar', () => {
     expect(inserted.type).toBe('title');
     expect(inserted.id).toBeTruthy();
     expect(selectBlock).toHaveBeenCalledWith(inserted.id);
+  });
+
+  describe('insert position', () => {
+    // Issue #568: a palette click always appended, so on a long template the
+    // new block landed far below the fold and the canvas never moved — the
+    // click read as a no-op. Insertion now follows the selection, the same
+    // rule `duplicateBlock` already uses.
+
+    it('appends when nothing is selected', async () => {
+      const { editor, addBlock } = makeEditor({ selectedBlockId: null });
+      const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+
+      await wrapper.find('button[data-palette-type="title"]').trigger('click');
+
+      expect(addBlock).toHaveBeenCalledOnce();
+      const [, targetSectionId, columnIndex, index] = addBlock.mock.calls[0];
+      expect(targetSectionId).toBeUndefined();
+      expect(columnIndex).toBeUndefined();
+      expect(index).toBeUndefined();
+    });
+
+    it('inserts directly below a selected top-level block', async () => {
+      const { editor, addBlock } = makeEditor({
+        selectedBlockId: 'block-a',
+        locations: { 'block-a': { index: 4 } },
+      });
+      const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+
+      await wrapper
+        .find('button[data-palette-type="divider"]')
+        .trigger('click');
+
+      expect(addBlock).toHaveBeenCalledOnce();
+      const [, targetSectionId, columnIndex, index] = addBlock.mock.calls[0];
+      expect(targetSectionId).toBeUndefined();
+      expect(columnIndex).toBeUndefined();
+      expect(index).toBe(5);
+    });
+
+    it('inserts into the same section column below a nested selection', async () => {
+      const { editor, addBlock } = makeEditor({
+        selectedBlockId: 'child',
+        locations: {
+          child: { targetSectionId: 'sec-1', columnIndex: 1, index: 2 },
+        },
+      });
+      const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+
+      await wrapper
+        .find('button[data-palette-type="paragraph"]')
+        .trigger('click');
+
+      expect(addBlock).toHaveBeenCalledOnce();
+      const [, targetSectionId, columnIndex, index] = addBlock.mock.calls[0];
+      expect(targetSectionId).toBe('sec-1');
+      expect(columnIndex).toBe(1);
+      expect(index).toBe(3);
+    });
+
+    it('places a section beside the parent section when the selection is nested', async () => {
+      // `addBlock` refuses a section inside a column, so targeting the column
+      // would make this click do nothing at all.
+      const { editor, addBlock } = makeEditor({
+        selectedBlockId: 'child',
+        locations: {
+          child: { targetSectionId: 'sec-1', columnIndex: 0, index: 2 },
+          'sec-1': { index: 6 },
+        },
+      });
+      const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+
+      await wrapper
+        .find('button[data-palette-type="section"]')
+        .trigger('click');
+
+      expect(addBlock).toHaveBeenCalledOnce();
+      const [, targetSectionId, columnIndex, index] = addBlock.mock.calls[0];
+      expect(targetSectionId).toBeUndefined();
+      expect(columnIndex).toBeUndefined();
+      expect(index).toBe(7);
+    });
+
+    it('appends when the parent section is locked by a collaborator', async () => {
+      const { editor, addBlock } = makeEditor({
+        selectedBlockId: 'child',
+        locations: {
+          child: { targetSectionId: 'sec-1', columnIndex: 0, index: 2 },
+        },
+        lockedIds: ['sec-1'],
+      });
+      const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+
+      await wrapper.find('button[data-palette-type="image"]').trigger('click');
+
+      expect(addBlock).toHaveBeenCalledOnce();
+      const [, targetSectionId, columnIndex, index] = addBlock.mock.calls[0];
+      expect(targetSectionId).toBeUndefined();
+      expect(columnIndex).toBeUndefined();
+      expect(index).toBeUndefined();
+    });
+
+    it('applies the resolved position to a keyboard-activated insert too', async () => {
+      // The keyboard path is the only way to insert without a pointer, so it
+      // must not quietly keep the old append-at-end behaviour.
+      const { editor, addBlock } = makeEditor({
+        selectedBlockId: 'block-a',
+        locations: { 'block-a': { index: 0 } },
+      });
+      const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+
+      await wrapper
+        .find('button[data-palette-type="title"]')
+        .trigger('keydown', { key: 'Enter' });
+
+      expect(addBlock).toHaveBeenCalledOnce();
+      expect(addBlock.mock.calls[0][3]).toBe(1);
+    });
+
+    it('scrolls the inserted block into view', async () => {
+      // Selecting the block is not enough to be visible: it can land far below
+      // the fold with the canvas unmoved, which is the reported symptom.
+      const { editor, addBlock } = makeEditor({ selectedBlockId: null });
+      const wrapper = mountSidebar({ [EDITOR_KEY]: editor });
+
+      await wrapper.find('button[data-palette-type="title"]').trigger('click');
+
+      expect(scrollToBlock).toHaveBeenCalledOnce();
+      expect(scrollToBlock).toHaveBeenCalledWith(addBlock.mock.calls[0][0].id);
+    });
+
+    it('does not scroll when there is no editor to insert into', async () => {
+      const wrapper = mountSidebar({ [EDITOR_KEY]: null });
+
+      await wrapper.find('button[data-palette-type="title"]').trigger('click');
+
+      expect(scrollToBlock).not.toHaveBeenCalled();
+    });
   });
 
   it('Enter key on a palette item inserts the block (keyboard accessibility)', async () => {

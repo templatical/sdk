@@ -9,12 +9,14 @@ import {
   Wrench,
 } from "@lucide/vue";
 import { useI18n } from "../../composables/useI18n";
+import { useScrollToBlock } from "../../composables/useScrollToBlock";
 import { TEMPLATE_LINT_KEY, EDITOR_KEY } from "../../keys";
 import type { LintIssue } from "../../composables/useTemplateLint";
 
 const { t, format } = useI18n();
 const lint = inject(TEMPLATE_LINT_KEY, null);
 const editor = inject(EDITOR_KEY, null);
+const scrollToBlock = useScrollToBlock();
 
 const errors = computed(() =>
   (lint?.issues.value ?? []).filter((i) => i.severity === "error"),
@@ -32,7 +34,11 @@ const totalCount = computed(
 
 function jumpTo(issue: LintIssue): void {
   if (!editor) return;
-  if (issue.blockId) editor.selectBlock(issue.blockId);
+  if (!issue.blockId) return;
+  editor.selectBlock(issue.blockId);
+  // Selecting is invisible on its own — on a long template the block sits
+  // below the fold and the canvas stays put, so "Jump" appears to do nothing.
+  scrollToBlock(issue.blockId);
 }
 
 function applyFix(issue: LintIssue): void {
@@ -131,6 +137,7 @@ function applyFix(issue: LintIssue): void {
               <button
                 v-if="issue.blockId"
                 type="button"
+                data-testid="issue-jump"
                 class="tpl:flex tpl:items-center tpl:gap-1 tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg-hover)] tpl:px-2 tpl:py-1 tpl:text-[11px] tpl:font-medium tpl:text-[var(--tpl-text)]"
                 @click="jumpTo(issue)"
               >

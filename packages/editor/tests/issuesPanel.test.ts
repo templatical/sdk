@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 import { mount } from "@vue/test-utils";
 import IssuesPanel from "../src/components/sidebar/IssuesPanel.vue";
@@ -9,6 +9,20 @@ import {
   TRANSLATIONS_KEY,
 } from "../src/keys";
 import type { LintIssue } from "../src/composables/useTemplateLint";
+
+// The scroll needs real layout; `tests/useScrollToBlock.test.ts` covers what
+// the composable does, so here it is stubbed and asserted on.
+const scrollToBlock = vi.hoisted(() => vi.fn());
+vi.mock("../src/composables/useScrollToBlock", () => ({
+  useScrollToBlock: () => scrollToBlock,
+}));
+
+const selectBlock = vi.hoisted(() => vi.fn());
+
+beforeEach(() => {
+  scrollToBlock.mockClear();
+  selectBlock.mockClear();
+});
 
 const translationsStub = {
   issues: {
@@ -37,7 +51,7 @@ function mountPanel(issues: LintIssue[], applyFix = vi.fn()) {
           applyFix,
           destroy: () => {},
         },
-        [EDITOR_KEY as symbol]: { selectBlock: vi.fn() },
+        [EDITOR_KEY as symbol]: { selectBlock },
         [TRANSLATIONS_KEY as symbol]: translationsStub,
       },
     },
@@ -45,6 +59,43 @@ function mountPanel(issues: LintIssue[], applyFix = vi.fn()) {
 }
 
 describe("IssuesPanel", () => {
+  it("jumping to an issue selects the block and scrolls it into view", async () => {
+    // Selecting alone leaves the canvas where it was, so on a long template
+    // "Jump" looked like it did nothing (the same defect as issue #568).
+    const issues: LintIssue[] = [
+      {
+        blockId: "b1",
+        ruleId: "a11y.image-missing-alt",
+        severity: "error",
+        message: "Image has no alt text.",
+      },
+    ];
+    const wrapper = mountPanel(issues);
+
+    await wrapper.find("button[data-testid=\"issue-jump\"]").trigger("click");
+
+    expect(selectBlock).toHaveBeenCalledWith("b1");
+    expect(scrollToBlock).toHaveBeenCalledWith("b1");
+  });
+
+  it("offers no jump for a template-level issue with no block", () => {
+    // Nothing to scroll to, so the affordance must not render at all rather
+    // than render and do nothing.
+    const issues: LintIssue[] = [
+      {
+        ruleId: "structure.duplicate-ids",
+        severity: "warning",
+        message: "Duplicate block ids.",
+      },
+    ];
+    const wrapper = mountPanel(issues);
+
+    expect(wrapper.find('button[data-testid="issue-jump"]').exists()).toBe(
+      false,
+    );
+    expect(scrollToBlock).not.toHaveBeenCalled();
+  });
+
   it("renders the empty state when no issues exist", () => {
     const wrapper = mountPanel([]);
     expect(wrapper.text()).toContain("No issues — looking good.");

@@ -82,6 +82,67 @@ export class EditorPage {
     return ids;
   }
 
+  /**
+   * Click a palette entry to insert a block — the keyboard-reachable path that
+   * exists alongside dragging. Self-verifies that a block actually landed.
+   */
+  async clickPaletteItem(blockType: string): Promise<void> {
+    const before = await this.getBlocks().count();
+    await this.page
+      .locator(SELECTORS.sidebarRail)
+      .locator(paletteByType(blockType))
+      .click();
+    await expect
+      .poll(() => this.getBlocks().count(), { timeout: 5000 })
+      .toBe(before + 1);
+  }
+
+  /**
+   * Whether a block's box currently overlaps the scrolling canvas viewport.
+   *
+   * The selector has to pierce the shadow root in `chromium-shadow`, and the
+   * lookup is inlined because `page.evaluate` serializes its callback and
+   * cannot close over a module-level helper.
+   */
+  async isBlockVisibleInCanvas(blockId: string): Promise<boolean> {
+    return this.page.evaluate((id) => {
+      const selector = `[data-block-id="${id}"]`;
+      let el: Element | null = document.querySelector(selector);
+      if (!el) {
+        for (const host of Array.from(document.querySelectorAll("*"))) {
+          const inside = host.shadowRoot?.querySelector(selector);
+          if (inside) {
+            el = inside;
+            break;
+          }
+        }
+      }
+      if (!el) return false;
+      const body = el.closest(".tpl-body");
+      if (!body) return false;
+      const b = el.getBoundingClientRect();
+      const v = body.getBoundingClientRect();
+      return b.bottom > v.top && b.top < v.bottom;
+    }, blockId);
+  }
+
+  /** The canvas scroll offset, or -1 when the scroll container isn't found. */
+  async getCanvasScrollTop(): Promise<number> {
+    return this.page.evaluate(() => {
+      let body: Element | null = document.querySelector(".tpl-body");
+      if (!body) {
+        for (const host of Array.from(document.querySelectorAll("*"))) {
+          const inside = host.shadowRoot?.querySelector(".tpl-body");
+          if (inside) {
+            body = inside;
+            break;
+          }
+        }
+      }
+      return body ? body.scrollTop : -1;
+    });
+  }
+
   async selectBlock(index: number): Promise<void> {
     await this.getBlocks().nth(index).click();
     await this.page.locator(SELECTORS.blockSelected).waitFor();
