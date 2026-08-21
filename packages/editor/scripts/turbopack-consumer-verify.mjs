@@ -9,7 +9,7 @@
  * (Turbopack is the default builder) that imports `@templatical/editor`.
  *
  * Procedure:
- *   1. Build + pack `@templatical/editor`.
+ *   1. Build + pack the fixture's `@templatical/*` closure.
  *   2. Materialize the turbopack-consumer fixture into a clean cache dir.
  *   3. `npm install` the tarball alongside next/react/react-dom.
  *   4. Run `next build --turbopack`.
@@ -17,24 +17,16 @@
  */
 
 import { execSync } from "node:child_process";
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { materializeConsumer, repoRootFrom } from "./consumer-fixture.mjs";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const EDITOR_DIR = resolve(__dirname, "..");
-const REPO_ROOT = resolve(EDITOR_DIR, "../..");
+const REPO_ROOT = repoRootFrom(__dirname);
 const FIXTURE_DIR = join(EDITOR_DIR, "tests/e2e-fixtures/turbopack-consumer");
 const CONSUMER_DIR = join(REPO_ROOT, "node_modules/.cache/turbopack-consumer");
 
@@ -47,42 +39,19 @@ function fail(msg) {
   process.exit(1);
 }
 
-function run(cmd, opts = {}) {
-  process.stdout.write(`[turbopack-verify] $ ${cmd}\n`);
-  execSync(cmd, { stdio: "inherit", ...opts });
-}
-
-if (!existsSync(FIXTURE_DIR)) {
-  fail(`fixture dir not found: ${FIXTURE_DIR}`);
-}
-
-run(`pnpm --filter @templatical/editor run build`, { cwd: REPO_ROOT });
-
 const packDir = mkdtempSync(join(tmpdir(), "tpl-turbopack-pack-"));
 try {
-  run(`pnpm pack --pack-destination "${packDir}"`, { cwd: EDITOR_DIR });
-
-  const editorTarball = readdirSync(packDir).find(
-    (f) => f.startsWith("templatical-editor-") && f.endsWith(".tgz"),
-  );
-  if (!editorTarball) fail("pnpm pack did not produce an editor .tgz");
-
-  const editorTarballPath = join(packDir, editorTarball);
-
-  rmSync(CONSUMER_DIR, { recursive: true, force: true });
-  mkdirSync(CONSUMER_DIR, { recursive: true });
-  cpSync(FIXTURE_DIR, CONSUMER_DIR, { recursive: true });
-
-  const tplPath = join(CONSUMER_DIR, "package.json.tpl");
-  const consumerPkgPath = join(CONSUMER_DIR, "package.json");
-  renameSync(tplPath, consumerPkgPath);
-  const consumerPkgText = readFileSync(consumerPkgPath, "utf8").replace(
-    "EDITOR_TARBALL_PLACEHOLDER",
-    `file:${editorTarballPath}`,
-  );
-  writeFileSync(consumerPkgPath, consumerPkgText);
-
-  run(`npm install --no-fund --no-audit`, { cwd: CONSUMER_DIR });
+  // This fixture installs the editor alone, which bundles types — so the
+  // closure is one package and no overrides are synthesized. Adding an optional
+  // peer here would pull its transitive types in, and the shared materializer
+  // pins it without this script changing.
+  materializeConsumer({
+    repoRoot: REPO_ROOT,
+    fixtureDir: FIXTURE_DIR,
+    consumerDir: CONSUMER_DIR,
+    packDir,
+    log: logStep,
+  });
 
   logStep("running next build with turbopack");
   let buildOutput = "";
