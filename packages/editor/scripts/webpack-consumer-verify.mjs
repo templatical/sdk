@@ -11,35 +11,30 @@
  * dependencies" but Webpack consumers still got a noisy or failing build.
  *
  * Procedure:
- *   1. Build + pack `@templatical/editor` and `@templatical/renderer`.
+ *   1. Build + pack the fixture's `@templatical/*` closure.
  *   2. Materialize the webpack-consumer fixture into a clean cache dir.
  *   3. `npm install` the tarballs alongside webpack into that consumer.
  *   4. Run `webpack` against `entry.js`.
  *   5. Assert: zero errors, zero warnings about unresolved optional peers.
  *
- * Without `webpackIgnore` magic comments at the dynamic-import sites this
- * script fails — exactly mirroring the issue reporter's experience.
+ * The try/catch at each of the four sites is what holds Webpack at a warning;
+ * unwrap any one of them and this script fails exactly as the reporter's build
+ * did. There are no `webpackIgnore` magic comments anywhere in the source — the
+ * warnings a passing run prints ARE the resolution attempts, and the
+ * installation docs show consumers how to silence them.
  */
 
 import { execSync } from "node:child_process";
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  readdirSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { materializeConsumer, repoRootFrom } from "./consumer-fixture.mjs";
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const EDITOR_DIR = resolve(__dirname, "..");
-const REPO_ROOT = resolve(EDITOR_DIR, "../..");
+const REPO_ROOT = repoRootFrom(__dirname);
 const FIXTURE_DIR = join(EDITOR_DIR, "tests/e2e-fixtures/webpack-consumer");
 // Materialize the consumer OUTSIDE the monorepo so webpack resolves modules the
 // way a real installed consumer does — it must NOT walk up into the workspace and
@@ -63,66 +58,15 @@ function fail(msg) {
   process.exit(1);
 }
 
-function run(cmd, opts = {}) {
-  process.stdout.write(`[webpack-verify] $ ${cmd}\n`);
-  execSync(cmd, { stdio: "inherit", ...opts });
-}
-
-if (!existsSync(FIXTURE_DIR)) {
-  fail(`fixture dir not found: ${FIXTURE_DIR}`);
-}
-
-run(`pnpm --filter @templatical/types run build`, { cwd: REPO_ROOT });
-run(`pnpm --filter @templatical/renderer run build`, { cwd: REPO_ROOT });
-run(`pnpm --filter @templatical/editor run build`, { cwd: REPO_ROOT });
-
-const RENDERER_DIR = resolve(REPO_ROOT, "packages/renderer");
-// The renderer is the one package that leaves `@templatical/types` external
-// (the editor bundles it), so the consumer resolves types itself. Pack the
-// workspace copy: without it npm fetches the last *published* types, and any
-// symbol the renderer started importing this release is missing there —
-// webpack reports it as `export '…' was not found`. All these packages are one
-// fixed version group, so a released renderer never meets an older types; only
-// this harness could manufacture that pairing.
-const TYPES_DIR = resolve(REPO_ROOT, "packages/types");
-
 const packDir = mkdtempSync(join(tmpdir(), "tpl-webpack-pack-"));
 try {
-  run(`pnpm pack --pack-destination "${packDir}"`, { cwd: EDITOR_DIR });
-  run(`pnpm pack --pack-destination "${packDir}"`, { cwd: RENDERER_DIR });
-  run(`pnpm pack --pack-destination "${packDir}"`, { cwd: TYPES_DIR });
-
-  const editorTarball = readdirSync(packDir).find(
-    (f) => f.startsWith("templatical-editor-") && f.endsWith(".tgz"),
-  );
-  const rendererTarball = readdirSync(packDir).find(
-    (f) => f.startsWith("templatical-renderer-") && f.endsWith(".tgz"),
-  );
-  const typesTarball = readdirSync(packDir).find(
-    (f) => f.startsWith("templatical-types-") && f.endsWith(".tgz"),
-  );
-  if (!editorTarball) fail("pnpm pack did not produce an editor .tgz");
-  if (!rendererTarball) fail("pnpm pack did not produce a renderer .tgz");
-  if (!typesTarball) fail("pnpm pack did not produce a types .tgz");
-
-  const editorTarballPath = join(packDir, editorTarball);
-  const rendererTarballPath = join(packDir, rendererTarball);
-  const typesTarballPath = join(packDir, typesTarball);
-
-  rmSync(CONSUMER_DIR, { recursive: true, force: true });
-  mkdirSync(CONSUMER_DIR, { recursive: true });
-  cpSync(FIXTURE_DIR, CONSUMER_DIR, { recursive: true });
-
-  const tplPath = join(CONSUMER_DIR, "package.json.tpl");
-  const consumerPkgPath = join(CONSUMER_DIR, "package.json");
-  renameSync(tplPath, consumerPkgPath);
-  const consumerPkgText = readFileSync(consumerPkgPath, "utf8")
-    .replace("EDITOR_TARBALL_PLACEHOLDER", `file:${editorTarballPath}`)
-    .replace("RENDERER_TARBALL_PLACEHOLDER", `file:${rendererTarballPath}`)
-    .replace("TYPES_TARBALL_PLACEHOLDER", `file:${typesTarballPath}`);
-  writeFileSync(consumerPkgPath, consumerPkgText);
-
-  run(`npm install --no-fund --no-audit`, { cwd: CONSUMER_DIR });
+  materializeConsumer({
+    repoRoot: REPO_ROOT,
+    fixtureDir: FIXTURE_DIR,
+    consumerDir: CONSUMER_DIR,
+    packDir,
+    log: logStep,
+  });
 
   logStep("running webpack build");
   // Capture both stdout and stderr — webpack writes "Module not found"

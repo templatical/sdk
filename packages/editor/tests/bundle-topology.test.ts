@@ -193,6 +193,38 @@ describe("editor bundle topology", () => {
     expect(matchingChunks.length).toBeGreaterThan(0);
   });
 
+  it("ships no UMD/AMD wrapper in any npm chunk", () => {
+    // Turbopack rejects a UMD wrapper outright — `error TP1200 unsupported AMD
+    // define() dependency element form` — and refuses to compile the consumer,
+    // so a single UMD-shipping dep in the bundled set breaks every Next.js 15+
+    // app that imports the editor. Vite and Webpack both tolerate the form,
+    // which is why it shipped: issue #67, from `vuedraggable` before the move
+    // to `vue-draggable-plus`. `define.amd` is a property read on a global, so
+    // no minifier can rename it — the marker survives every output mode.
+    //
+    // `turbopack-consumer` covers this too, but only after a full `next build`;
+    // this fails in the `test` job in milliseconds and names the chunk.
+    //
+    // Scope is deliberately the npm `dist/` alone. The CDN build inlines every
+    // optional peer including pusher-js, which ships UMD, so
+    // `dist/cdn/chunks/pusher-*.js` carries the marker legitimately — that
+    // bundle is loaded as an ES module straight by a browser and never passes
+    // through Turbopack. Widening this scan would fail on that and invite
+    // someone to weaken the assertion instead.
+    const UMD_MARKERS = ["define.amd", 'define["amd"]', "define['amd']"];
+    for (const chunk of allFiles) {
+      const code = readFileSync(chunk, "utf8");
+      const marker = UMD_MARKERS.find((m) => code.includes(m));
+      expect(
+        marker,
+        `Chunk ${chunk} contains a UMD/AMD wrapper (${marker}). Turbopack ` +
+          `fails the consumer build with TP1200 (issue #67). Find the dep that ` +
+          `ships it and either swap it for an ESM-only equivalent or import its ` +
+          `ESM source directly so the wrapper isn't bundled.`,
+      ).toBeUndefined();
+    }
+  });
+
   it("does not ship the inline-style-css placeholder in any chunk", () => {
     // Regression: `inline-style-css-plugin` emits a `__TPL_INLINE_EDITOR_CSS__`
     // placeholder at `load()` time and `generateBundle()` swaps it for the
