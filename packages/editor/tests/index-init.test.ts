@@ -12,9 +12,6 @@ vi.mock("vue", async () => {
 });
 
 vi.mock("../src/Editor.vue", () => ({ default: { name: "Editor" } }));
-vi.mock("../src/cloud/CloudEditor.vue", () => ({
-  default: { name: "CloudEditor" },
-}));
 
 vi.mock("../src/i18n", () => ({
   loadTranslations: vi.fn(),
@@ -45,9 +42,6 @@ describe("editor entry — concurrent init does not orphan first app", () => {
       };
     });
     vi.doMock("../src/Editor.vue", () => ({ default: { name: "Editor" } }));
-    vi.doMock("../src/cloud/CloudEditor.vue", () => ({
-      default: { name: "CloudEditor" },
-    }));
     vi.doMock("../src/i18n", () => ({
       loadTranslations: vi.fn(),
       loadCloudTranslations: vi.fn(),
@@ -104,7 +98,8 @@ describe("editor entry — concurrent init does not orphan first app", () => {
   });
 
   // Cloud equivalent: initCloud has the same race shape (guard checked
-  // before awaits). Not unit-tested here because the dynamic CloudEditor.vue
-  // import pulls in vue-draggable-plus/sortablejs which needs a real DOM. Fix
-  // mirrors the OSS one — guard moved after awaits in src/index.ts.
+  // before awaits). Not unit-tested here because the dynamic
+  // `createCloudRuntime` import reaches vue-draggable-plus/sortablejs, which
+  // needs a real DOM. Fix mirrors the OSS one — guard moved after awaits in
+  // src/index.ts.
 });

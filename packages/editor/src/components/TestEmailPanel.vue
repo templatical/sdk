@@ -4,11 +4,12 @@
  *
  * The dialog is `defineAsyncComponent` behind a `v-if` on its open state, so its
  * chunk is fetched only when the user actually opens it — `defineAsyncComponent`
- * triggers its `import()` on first render, not at definition time. The editors in
- * turn lazy-load *this* wrapper and render it only when a `TestEmailProvider` is
- * configured, so a consumer without one downloads none of it.
+ * triggers its `import()` on first render, not at definition time. `Editor.vue`
+ * in turn lazy-loads *this* wrapper and renders it only when a
+ * `TestEmailProvider` is configured, so a consumer without one downloads none
+ * of it.
  *
- * Never static-import `TestEmailModal` into `Editor.vue` / `CloudEditor.vue`:
+ * Never static-import `TestEmailModal` into `Editor.vue`:
  * that collapses it into the main entry for every consumer, including those who
  * never configure a sender. Guarded by `tests/cdn-chunk-granularity.test.ts`.
  */

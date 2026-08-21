@@ -83,7 +83,7 @@ const blockTypeLabel = computed(() => {
   return getBlockTypeLabel(blockType.value, t);
 });
 
-// Font families from shared fontsManager (provided by Editor.vue / CloudEditor.vue)
+// Font families from shared fontsManager (provided by Editor.vue)
 const fontFamilies = fontsManager.fonts;
 
 function handleUpdate(updates: Partial<Block>): void {

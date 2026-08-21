@@ -4,7 +4,9 @@ import { ghostBtnClass, primaryBtnClass } from "../constants/styleConstants";
  * Shown while a past version is on the canvas instead of the user's own work.
  * Cancel puts the pre-preview content back; Restore makes the version current.
  *
- * Shared by both editors — it was `cloud/components/SnapshotPreviewBanner.vue`.
+ * Lives outside `src/cloud/` because version history is a BYO provider, not a
+ * Cloud feature — a consumer's own `versionHistory` provider drives this banner
+ * with no Cloud involved.
  */
 import { Clock } from "@lucide/vue";
 import { useI18n } from "../composables/useI18n";

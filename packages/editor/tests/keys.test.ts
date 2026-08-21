@@ -35,23 +35,33 @@ describe("requireInject", () => {
     expect(result.state.content).toEqual({ foo: 1 });
   });
 
+  // Assert the FULL message, never just the prefix. A prefix assertion leaves
+  // the guidance sentence unguarded, and guidance that names a component or
+  // file goes stale silently — which sends whoever hits this error looking for
+  // something that is no longer in the codebase.
   it("throws with component name when provider missing", () => {
     expect(() => {
       withProvide(() => requireInject(EDITOR_KEY, "TestComponent"), {});
-    }).toThrow("TestComponent requires a provider for editor");
+    }).toThrow(
+      "TestComponent requires a provider for editor. Ensure it renders inside the editor, below Editor.vue.",
+    );
   });
 
   it("includes key description in error message", () => {
     const testKey: InjectionKey<string> = Symbol("testKey");
     expect(() => {
       withProvide(() => requireInject(testKey, "MyComponent"), {});
-    }).toThrow("MyComponent requires a provider for testKey");
+    }).toThrow(
+      "MyComponent requires a provider for testKey. Ensure it renders inside the editor, below Editor.vue.",
+    );
   });
 
   it("handles key without description", () => {
     const testKey: InjectionKey<string> = Symbol();
     expect(() => {
       withProvide(() => requireInject(testKey, "MyComponent"), {});
-    }).toThrow("MyComponent requires a provider for unknown key");
+    }).toThrow(
+      "MyComponent requires a provider for unknown key. Ensure it renders inside the editor, below Editor.vue.",
+    );
   });
 });

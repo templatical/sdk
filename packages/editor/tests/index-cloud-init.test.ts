@@ -126,8 +126,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-// Cast helper — CloudEditor.vue is mocked, so the config is just passed
-// through as a prop and never validated.
+// Cast helper — Editor.vue is mocked, so the config is just passed through as
+// a prop and never validated.
 function cloudConfig(container: HTMLElement, extra: Record<string, unknown> = {}) {
   return {
     container,

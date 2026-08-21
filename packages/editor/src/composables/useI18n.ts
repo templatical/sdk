@@ -22,7 +22,7 @@ export function useI18n(translationsOverride?: Translations): UseI18nReturn {
 
   if (!injected) {
     throw new Error(
-      "useI18n() requires a translations provider. Ensure the component is a descendant of Editor or CloudEditor.",
+      "useI18n() requires a translations provider. Ensure the component renders inside the editor, below Editor.vue.",
     );
   }
 

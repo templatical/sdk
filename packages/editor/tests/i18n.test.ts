@@ -440,10 +440,14 @@ describe("useI18n", () => {
       expect(format("{a} + {b}", { a: "1", b: "2" })).toBe("1 + 2");
     });
 
+    // Full message, not a prefix: the guidance sentence names a file, and a
+    // prefix assertion would let that name go stale unnoticed.
     it("throws when no translations injected and no override", () => {
       expect(() => {
         withProvide(() => useI18n(), {});
-      }).toThrow("useI18n() requires a translations provider");
+      }).toThrow(
+        "useI18n() requires a translations provider. Ensure the component renders inside the editor, below Editor.vue.",
+      );
     });
   });
 });
@@ -488,6 +492,8 @@ describe("useCloudI18nStrict", () => {
   it("throws when no cloud translations are provided", () => {
     expect(() => {
       withProvide(() => useCloudI18nStrict(), {});
-    }).toThrow("useCloudI18nStrict() requires a cloud translations provider");
+    }).toThrow(
+      "useCloudI18nStrict() requires a cloud translations provider. Ensure the component renders inside an editor mounted with initCloud().",
+    );
   });
 });

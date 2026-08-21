@@ -263,7 +263,7 @@ export const SAVED_BLOCKS_KEY: InjectionKey<UseSavedBlocksReturn> =
   Symbol("savedBlocks");
 
 // ---------------------------------------------------------------------------
-// Cloud-only keys (provided by CloudEditor, consumed by cloud components)
+// Cloud-only keys (provided by createCloudRuntime, consumed by cloud components)
 // ---------------------------------------------------------------------------
 
 export const AUTH_MANAGER_KEY: InjectionKey<AuthManager> =
@@ -294,7 +294,7 @@ export function requireInject<T>(
   const value = inject(key, null) as T | null;
   if (value === null || value === undefined) {
     throw new Error(
-      `${componentName} requires a provider for ${key.description ?? "unknown key"}. Ensure it is a descendant of Editor or CloudEditor.`,
+      `${componentName} requires a provider for ${key.description ?? "unknown key"}. Ensure it renders inside the editor, below Editor.vue.`,
     );
   }
   return value;

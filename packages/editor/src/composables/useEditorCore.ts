@@ -662,8 +662,10 @@ export function useEditorCore(
     config.displayConditions?.allowCustom ?? false,
   );
 
-  // Default empty capabilities for OSS mode.
-  // CloudEditor overrides this via provide() after cloud composables are ready.
+  // Default empty capabilities for OSS mode. Cloud contributes its entries by
+  // mutating *this* object in the runtime's `ready` hook rather than providing
+  // a second one — injecting components hold this reference, so a replacement
+  // would never reach them.
   provide(CAPABILITIES_KEY, options.capabilities ?? {});
 
   provide(KEYBOARD_REORDER_KEY, keyboardReorder);

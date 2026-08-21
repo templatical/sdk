@@ -4,9 +4,9 @@ import { CUSTOM_BLOCK_STYLESHEETS_KEY } from "../keys";
 
 /**
  * Renders one `<style>` tag per unique custom-block definition stylesheet
- * currently in use by the editor's content. Mounted near the top of the
- * editor's root template (both OSS `Editor.vue` and `CloudEditor.vue`) so the
- * rules sit early in the document order and apply to the canvas.
+ * currently in use by the editor's content. Mounted near the top of
+ * `Editor.vue`'s root template so the rules sit early in the document order
+ * and apply to the canvas.
  *
  * In shadow-DOM mode (`shadowDom: true`, default) the styles scope to the
  * editor's shadow root. In light-DOM mode they leak globally, matching the

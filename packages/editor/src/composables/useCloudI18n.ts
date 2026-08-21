@@ -59,7 +59,7 @@ export function useCloudI18nStrict(
   const { t, format: f } = useCloudI18n(translationsOverride);
   if (!t) {
     throw new Error(
-      "useCloudI18nStrict() requires a cloud translations provider. Ensure the component is a descendant of CloudEditor.",
+      "useCloudI18nStrict() requires a cloud translations provider. Ensure the component renders inside an editor mounted with initCloud().",
     );
   }
   return { t, format: f };

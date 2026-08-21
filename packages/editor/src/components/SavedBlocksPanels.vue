@@ -5,13 +5,12 @@
  * Everything here is `defineAsyncComponent` rendered behind `v-if` on its own
  * state, so each chunk is fetched only when actually needed —
  * `defineAsyncComponent` triggers its `import()` on first render, not at
- * definition time. The editors in turn lazy-load *this* wrapper and render it
- * only when a `SavedBlocksProvider` is configured, so a consumer without one
+ * definition time. `Editor.vue` in turn lazy-loads *this* wrapper and renders
+ * it only when a `SavedBlocksProvider` is configured, so a consumer without one
  * downloads none of it.
  *
- * The pick bar lives here rather than in `Editor.vue` / `CloudEditor.vue` so
- * neither editor needs to know about saved blocks, and the lazy-load guarantee
- * covers the bar too.
+ * The pick bar lives here rather than in `Editor.vue` so the editor shell needs
+ * no knowledge of saved blocks, and the lazy-load guarantee covers the bar too.
  */
 import { defineAsyncComponent } from "vue";
 import type { SavedBlock } from "@templatical/types";
