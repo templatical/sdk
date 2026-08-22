@@ -108,6 +108,31 @@ const btnGhostSkin =
 const btnDangerSkin =
   "tpl:border-[var(--tpl-danger)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-danger)] tpl:hover:bg-[var(--tpl-danger-light)] tpl:hover:shadow-[var(--tpl-shadow-sm)]";
 
+/**
+ * A state the user should notice and can undo — currently only the canvas's
+ * "Show all hidden blocks" pill, which says the preview is hiding content.
+ *
+ * Outlined like danger, but **the amber sits on the border and the label stays
+ * the house's muted-at-rest**, which is where this parts company with
+ * `btnDangerSkin`. Copying that skin literally does not survive the token math:
+ * `--tpl-danger` is a mid red (63.7% L) and reads at 3.76:1 as a label on
+ * `--tpl-bg`, while `--tpl-warning` is a *light* amber (76.9% L) and manages only
+ * **2.11:1** — under even the 3:1 non-text floor, let alone the 4.5:1 a label
+ * has to clear. The muted label is 5.93:1 light and 5.99:1 dark, AA in both.
+ *
+ * That also retires a real defect: the pill previously painted `--tpl-warning`
+ * on a `--tpl-warning-light` fill, which is **1.85:1** in light mode.
+ *
+ * The border carrying the colour is the editor's own dialect rather than a new
+ * idea — Save signals dirtiness with an amber border and an otherwise ordinary
+ * label. And because the amber fill now arrives only on hover, it is a response
+ * rather than a permanent surface, which is what the One Signal Rule asks: this
+ * pill can share the canvas with the Sample/Label switch's amber active segment
+ * without two amber elements sitting next to each other at rest.
+ */
+const btnWarningSkin =
+  "tpl:border-[var(--tpl-warning)] tpl:bg-[var(--tpl-bg)] tpl:text-[var(--tpl-text-muted)] tpl:hover:bg-[var(--tpl-warning-light)] tpl:hover:text-[var(--tpl-text)] tpl:hover:shadow-[var(--tpl-shadow-sm)]";
+
 /** Dialog and panel scale. */
 const btnSizeDefault = "tpl:rounded-md tpl:px-3 tpl:py-1.5 tpl:text-sm";
 
@@ -121,6 +146,8 @@ export const primaryBtnCompactClass = `${btnBase} ${btnPrimarySkin} ${btnSizeCom
 export const secondaryBtnCompactClass = `${btnBase} ${btnSecondarySkin} ${btnSizeCompact}`;
 export const dangerBtnClass = `${btnBase} ${btnDangerSkin} ${btnSizeDefault}`;
 export const dangerBtnCompactClass = `${btnBase} ${btnDangerSkin} ${btnSizeCompact}`;
+/** Compact only: the one caller is canvas chrome, at the header's 38px. */
+export const warningBtnCompactClass = `${btnBase} ${btnWarningSkin} ${btnSizeCompact}`;
 export const ghostBtnClass = `${btnBase} ${btnGhostSkin} ${btnSizeDefault}`;
 
 // Rich text toolbar presets

@@ -1,6 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const E2E_PORT = 51730;
+/**
+ * Overridable because the port plus `reuseExistingServer` is a trap across git
+ * worktrees: a second worktree running e2e finds 51730 already served by the
+ * first, reuses it, and silently tests **the other branch's app** with this
+ * branch's specs. That failure looks like unrelated specs breaking at once, not
+ * like a port clash. `E2E_PORT=51731 pnpm run test:e2e` keeps runs isolated.
+ */
+const E2E_PORT = Number(process.env.E2E_PORT ?? 51730);
 
 export default defineConfig({
   testDir: "./apps/playground/e2e",

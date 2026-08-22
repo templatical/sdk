@@ -40,7 +40,7 @@ mergeTags: {
 
 ### Der Umschalter Beispiel / Bezeichnung
 
-Ein Umschalter **Beispiel / Bezeichnung** erscheint neben dem Viewport-Umschalter, sobald eine Vorschau angezeigt wird, sodass Nutzer zwischen der realistischen Ansicht und den Feldnamen wechseln können. Die Wahl gilt für die Sitzung.
+Ein Umschalter **Beispiel / Bezeichnung** erscheint oben über der Arbeitsfläche, sobald eine Vorschau angezeigt wird, sodass Nutzer zwischen der realistischen Ansicht und den Feldnamen wechseln können. Die Wahl gilt für die Sitzung.
 
 Er erscheint **nur, wenn mindestens ein konfiguriertes Tag ein `sample` deklariert**, und nur dann starten Vorschauen in der Ansicht „Beispiel". Konfigurieren Sie keines, verhält sich der Editor genau wie zuvor — Ansicht „Bezeichnung", kein Umschalter. Die Funktion bleibt also unsichtbar, bis Sie sie aktivieren.
 

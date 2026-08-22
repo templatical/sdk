@@ -147,10 +147,15 @@ describe("EditorHeader templates surface", () => {
       expect(editorSource).not.toContain("<header");
     });
 
-    it("offers a slot in each of the three columns", () => {
-      for (const name of ["left-extras", "center-extras", "right-extras"]) {
+    it("offers a slot in each anchored column", () => {
+      // Two, not three. The centre track carries no slot: its width must stay
+      // constant or it re-centres and moves the Preview button (#574), and a
+      // slot is the one thing a guard test cannot stop someone filling. See
+      // `headerCenterStability.test.ts`.
+      for (const name of ["left-extras", "right-extras"]) {
         expect(headerSource()).toContain(`<slot name="${name}" />`);
       }
+      expect(headerSource()).not.toContain("center-extras");
     });
 
     it("puts the cloud extras between the status indicator and the test email", () => {
