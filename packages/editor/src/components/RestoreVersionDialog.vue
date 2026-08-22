@@ -47,7 +47,7 @@ const { t } = useI18n();
       aria-labelledby="tpl-restore-version-title"
       aria-describedby="tpl-restore-version-body"
       data-testid="restore-version-dialog"
-      class="tpl-scale-in tpl:mx-4 tpl:flex tpl:w-full tpl:max-w-md tpl:flex-col tpl:gap-4 tpl:rounded-[var(--tpl-radius-lg)] tpl:p-5"
+      class="tpl-scale-in tpl:flex tpl:max-h-[90%] tpl:w-full tpl:max-w-md tpl:flex-col tpl:gap-4 tpl:overflow-y-auto tpl:rounded-[var(--tpl-radius-lg)] tpl:p-5"
       style="
         background-color: var(--tpl-bg-elevated);
         box-shadow: var(--tpl-shadow-xl);

@@ -214,13 +214,13 @@ function handleKeydown(event: KeyboardEvent): void {
       <div
         v-if="visible && item"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center"
+        class="tpl tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
         style="background-color: var(--tpl-overlay)"
         @click.self="emit('close')"
         @keydown="handleKeydown"
       >
         <div
-          class="tpl:mx-4 tpl:flex tpl:max-h-[90vh] tpl:w-full tpl:flex-col tpl:overflow-hidden tpl:rounded-lg tpl:shadow-xl"
+          class="tpl:flex tpl:max-h-[90%] tpl:w-full tpl:flex-col tpl:overflow-hidden tpl:rounded-lg tpl:shadow-xl"
           :class="isCroppableImage ? 'tpl:max-w-2xl' : 'tpl:max-w-sm'"
           style="background-color: var(--tpl-bg-elevated)"
         >

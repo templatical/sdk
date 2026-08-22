@@ -69,13 +69,13 @@ function handleKeydown(event: KeyboardEvent): void {
       <div
         v-if="visible"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center"
+        class="tpl tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
         style="background-color: var(--tpl-overlay)"
         @click.self="handleClose"
         @keydown="handleKeydown"
       >
         <div
-          class="tpl:mx-4 tpl:w-full tpl:max-w-sm tpl:rounded-lg tpl:p-5 tpl:shadow-xl"
+          class="tpl:max-h-[90%] tpl:w-full tpl:max-w-sm tpl:overflow-y-auto tpl:rounded-lg tpl:p-5 tpl:shadow-xl"
           style="background-color: var(--tpl-bg-elevated)"
         >
           <h3

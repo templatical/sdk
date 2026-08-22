@@ -183,11 +183,10 @@ function handleKeydown(event: KeyboardEvent): void {
       aria-modal="true"
       :aria-busy="isSaving"
       aria-labelledby="tpl-save-block-title"
-      class="tpl-scale-in tpl:mx-4 tpl:flex tpl:w-full tpl:max-w-2xl tpl:flex-col tpl:rounded-[var(--tpl-radius-lg)] tpl:p-5"
+      class="tpl-scale-in tpl:flex tpl:max-h-[90%] tpl:w-full tpl:max-w-2xl tpl:flex-col tpl:rounded-[var(--tpl-radius-lg)] tpl:p-5"
       style="
         background-color: var(--tpl-bg-elevated);
         box-shadow: var(--tpl-shadow-xl);
-        max-height: 90vh;
       "
     >
       <h3
@@ -264,10 +263,10 @@ function handleKeydown(event: KeyboardEvent): void {
       >
         {{ t.savedBlocks.reorderHint }}
       </p>
-      <!-- The only growing region: takes whatever the dialog's 90vh cap leaves
-           after the fixed chrome, rather than a hand-tuned vh guess that a row
-           expanding to full height would blow past. `min-h-0` is what lets a
-           flex child actually shrink below its content and scroll. -->
+      <!-- The only growing region: takes whatever the dialog's backdrop cap
+           leaves after the fixed chrome, rather than a hand-tuned vh guess that
+           a row expanding to full height would blow past. `min-h-0` is what
+           lets a flex child actually shrink below its content and scroll. -->
       <VueDraggable
         v-model="orderedBlocks"
         data-testid="saved-blocks-reorder-list"

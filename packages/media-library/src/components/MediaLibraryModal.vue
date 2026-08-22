@@ -224,16 +224,34 @@ function confirmSelection(): void {
       <div
         v-if="visible && translations"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl-media-overlay tpl:fixed tpl:inset-0 tpl:z-[9999]"
+        class="tpl tpl-media-overlay tpl:fixed tpl:inset-0 tpl:z-[9999] tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
         @click.self="emit('close')"
       >
+        <!-- Caps are percentages of the overlay, never `vh`/`vw`. This overlay
+             is `fixed; inset: 0`, which covers the viewport only while nothing
+             traps it — an ancestor with `transform`, `filter`,
+             `backdrop-filter`, `will-change: transform`, `contain: paint` or
+             `container-type` becomes the containing block for fixed
+             descendants, and this modal teleports into the editor's popover
+             root, i.e. inside a consumer's markup. `inset: 0` then resolves to
+             that ancestor's box while a viewport cap does not, and the panel
+             overflows a container that usually also has `overflow: hidden`.
+             That was issue #575 in the editor's dialogs; this modal had the
+             same mismatch. Percentages resolve against whatever the overlay
+             turned out to be, so they are correct either way. Locked by
+             `tests/overlay-height-scope-audit.test.ts`.
+
+             `p-4` is the gutter, and it belongs on this element rather than on
+             the panel: insets size the overlay's border box, so padding here
+             shrinks the content box the panel measures against. `height` stays
+             a fixed preference — `max-height` is what reins it in. -->
         <div
           class="tpl-media-modal tpl-scale-in tpl:flex tpl:flex-col tpl:overflow-hidden tpl:rounded-[var(--tpl-radius-lg)]"
           style="
             width: 900px;
             height: 650px;
-            max-width: 95vw;
-            max-height: 90vh;
+            max-width: 100%;
+            max-height: 90%;
             background-color: var(--tpl-bg-elevated);
             border: 1px solid var(--tpl-border);
             box-shadow: var(--tpl-shadow-xl);

@@ -178,16 +178,17 @@ function handleKeydown(event: KeyboardEvent): void {
   <TplModal :visible="visible" @close="handleClose" @keydown="handleKeydown">
     <!-- Grows to `max-w-2xl` only while the preview is open, so a 600px email
          renders at roughly true size — the same reason SaveBlockDialog picked
-         that width. Collapsed, it stays the compact form it was. `max-h-[90vh]`
+         that width. Collapsed, it stays the compact form it was. `max-h-[90%]`
          with a `min-h-0 overflow-y-auto` preview region is the pattern the
-         saved-blocks dialogs use: `min-h-0` is what lets a flex child shrink
-         below its content and actually scroll. -->
+         saved-blocks dialogs use: the cap bounds the panel to TplModal's
+         backdrop (never to `vh` — see the note there), and `min-h-0` is what
+         lets a flex child shrink below its content and actually scroll. -->
     <div
       role="dialog"
       aria-modal="true"
       :aria-busy="isSending"
       aria-labelledby="tpl-test-email-title"
-      class="tpl-scale-in tpl:mx-4 tpl:flex tpl:max-h-[90vh] tpl:w-full tpl:max-w-2xl tpl:flex-col tpl:rounded-[var(--tpl-radius-lg)] tpl:p-5"
+      class="tpl-scale-in tpl:flex tpl:max-h-[90%] tpl:w-full tpl:max-w-2xl tpl:flex-col tpl:rounded-[var(--tpl-radius-lg)] tpl:p-5"
       style="
         background-color: var(--tpl-bg-elevated);
         box-shadow: var(--tpl-shadow-xl);

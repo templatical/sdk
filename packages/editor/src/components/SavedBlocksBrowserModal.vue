@@ -278,19 +278,19 @@ function handleKeydown(event: KeyboardEvent): void {
          canvas drove the dialog's size — it measured 523px with nothing selected
          and 965px with a block selected, nearly doubling on click. A pinned
          width makes every state identical and stops any future right-pane
-         content from moving it. `max-w` keeps it inside narrow viewports, expressed
-         against `--tpl-base-size` rather than `rem` so the editor stays immune to
-         the host page's root font-size (issue #209); the preview scrolls within. -->
+         content from moving it. `max-w-full` keeps it inside the backdrop on
+         narrow hosts — a percentage, so it neither reintroduces the `rem`
+         sensitivity of issue #209 nor the viewport mismatch of issue #575; the
+         preview scrolls within. -->
     <div
       role="dialog"
       aria-modal="true"
       data-testid="saved-blocks-browser"
       aria-labelledby="tpl-saved-blocks-browser-title"
-      class="tpl-scale-in tpl:mx-4 tpl:flex tpl:w-[1000px] tpl:max-w-[calc(100vw_-_2*var(--tpl-base-size))] tpl:flex-col tpl:rounded-[var(--tpl-radius-lg)]"
+      class="tpl-scale-in tpl:flex tpl:max-h-[90%] tpl:w-[1000px] tpl:max-w-full tpl:flex-col tpl:rounded-[var(--tpl-radius-lg)]"
       style="
         background-color: var(--tpl-bg-elevated);
         box-shadow: var(--tpl-shadow-xl);
-        max-height: 90vh;
       "
     >
       <!-- Header -->
