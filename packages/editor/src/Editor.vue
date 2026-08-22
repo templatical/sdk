@@ -34,6 +34,7 @@ import type { EditorCapabilities } from "./types/editor-capabilities";
 import type { UseFontsReturn } from "./composables/useFonts";
 
 import { RotateCcw } from "@lucide/vue";
+import { warningBtnCompactClass } from "./constants/styleConstants";
 import Canvas from "./components/Canvas.vue";
 import CustomBlockStylesheets from "./components/CustomBlockStylesheets.vue";
 import Sidebar from "./components/Sidebar.vue";
@@ -41,6 +42,7 @@ import RightSidebar from "./components/RightSidebar.vue";
 import SmallScreenNotice from "./components/SmallScreenNotice.vue";
 import EditorFooter from "./components/EditorFooter.vue";
 import EditorHeader from "./components/EditorHeader.vue";
+import MergeTagModeToggle from "./components/MergeTagModeToggle.vue";
 import MergeTagPickerModal from "./components/MergeTagPickerModal.vue";
 import LogicTagPickerModal from "./components/LogicTagPickerModal.vue";
 import "./styles/index.css";
@@ -485,9 +487,6 @@ defineExpose({
       <template v-if="cloudAttachment" #left-extras>
         <CloudHeaderExtras part="left" :cloud="cloudAttachment" />
       </template>
-      <template v-if="cloudAttachment" #center-extras>
-        <CloudHeaderExtras part="center" :cloud="cloudAttachment" />
-      </template>
       <template v-if="cloudAttachment" #right-extras>
         <CloudHeaderExtras part="right" :cloud="cloudAttachment" />
       </template>
@@ -505,23 +504,77 @@ defineExpose({
         versionHistory?.isPreviewing.value ? 'tpl:top-[104px]' : 'tpl:top-14',
       ]"
     >
-      <!-- Restore hidden blocks button -->
-      <div class="tpl:sticky tpl:top-0 tpl:z-40 tpl:h-0">
-        <Transition name="tpl-restore-btn">
-          <button
-            v-if="
-              core.conditionPreview.hasHiddenBlocks.value &&
-              core.appliesConditionFilter.value
-            "
-            class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:-translate-x-1/2 tpl:inline-flex tpl:items-center tpl:gap-1.5 tpl:rounded-full tpl:border tpl:px-3.5 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:whitespace-nowrap tpl:shadow-[var(--tpl-shadow-md)] tpl:hover:opacity-80 tpl:bg-[var(--tpl-warning-light)] tpl:text-[var(--tpl-warning)] tpl:border-[var(--tpl-warning)]"
-            style="backdrop-filter: blur(8px)"
-            data-testid="restore-hidden-blocks"
-            @click="core.conditionPreview.reset()"
-          >
-            <RotateCcw :size="13" :stroke-width="2" />
-            {{ core.t.blockSettings.restoreHiddenBlocks }}
-          </button>
-        </Transition>
+      <!-- Preview chrome, floated over the canvas.
+
+           A zero-height sticky layer holding one absolutely-positioned,
+           canvas-centred **column**. Zero height means the layer contributes no
+           space of its own, so nothing here can push the canvas around — which
+           is what lets the merge-tag toggle live over the preview instead of in
+           the header, whose centre track re-centres on every width change and
+           so dragged the Preview button 114.5px sideways each time the toggle
+           appeared (#574).
+
+           A column rather than two fixed offsets. Both pills are reachable at
+           once — the restore pill needs hidden blocks, the toggle needs preview
+           mode without a `resolvePreview`, and nothing makes those exclusive —
+           so they have to stack. Doing that with a hardcoded second offset put
+           the restore pill 48px down even when it rendered alone, which in
+           editing mode (where the toggle never shows) dropped it onto the first
+           block's content. Flow solves what the offset got wrong: whichever
+           pills render sit tight under the header, in order.
+
+           Locked by `tests/headerCenterStability.test.ts`. -->
+      <div class="tpl-preview-overlay tpl:sticky tpl:top-0 tpl:z-40 tpl:h-0">
+        <div
+          class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:flex tpl:-translate-x-1/2 tpl:flex-col tpl:items-center tpl:gap-2"
+        >
+          <!-- Sample / Label. Preview mode only: merge tags are never
+               substituted on the editing canvas, so the choice would have no
+               effect there. A configured `resolvePreview` supersedes samples
+               entirely.
+
+               The wrapper carries only the shadow that lifts the control off
+               the canvas — no `backdrop-filter`, because the toggle's own
+               `--tpl-bg-hover` fill is opaque and covers this box exactly, so a
+               blur would composite a layer to show nothing. -->
+          <Transition name="tpl-preview-pill">
+            <div
+              v-if="
+                editor.state.previewMode &&
+                !core.previewResolution.supersedesSamples.value
+              "
+              data-testid="merge-tag-mode-toggle-anchor"
+              class="tpl:rounded-[var(--tpl-radius-sm)] tpl:shadow-[var(--tpl-shadow-md)]"
+            >
+              <MergeTagModeToggle
+                :sample-mode="core.mergeTagSampleMode.value"
+                @change="core.mergeTagSampleMode.value = $event"
+              />
+            </div>
+          </Transition>
+          <!-- Show all hidden blocks. The shared warning recipe, not a bespoke
+               string: it has to read as the Sample/Label switch's sibling,
+               since the two stack here, and a hand-rolled pill is how this one
+               came to sit 8px shorter with a different radius and a 1.85:1
+               label. `warningBtnCompactClass` carries why the amber is on the
+               border rather than the text. -->
+          <Transition name="tpl-preview-pill">
+            <button
+              v-if="
+                core.conditionPreview.hasHiddenBlocks.value &&
+                core.appliesConditionFilter.value
+              "
+              type="button"
+              :class="warningBtnCompactClass"
+              class="tpl:shadow-[var(--tpl-shadow-md)]"
+              data-testid="restore-hidden-blocks"
+              @click="core.conditionPreview.reset()"
+            >
+              <RotateCcw :size="16" :stroke-width="2" />
+              {{ core.t.blockSettings.restoreHiddenBlocks }}
+            </button>
+          </Transition>
+        </div>
       </div>
       <main class="tpl-main tpl:flex tpl:justify-center tpl:p-8">
         <Canvas
@@ -636,26 +689,26 @@ defineExpose({
 </template>
 
 <style scoped>
-.tpl-restore-btn-enter-active {
+.tpl-preview-pill-enter-active {
   transition:
     opacity 200ms cubic-bezier(0.16, 1, 0.3, 1),
     transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.tpl-restore-btn-leave-active {
+.tpl-preview-pill-leave-active {
   transition:
     opacity 150ms ease-in,
     transform 150ms ease-in;
 }
 
-.tpl-restore-btn-enter-from,
-.tpl-restore-btn-leave-to {
+.tpl-preview-pill-enter-from,
+.tpl-preview-pill-leave-to {
   opacity: 0;
   transform: translateY(-8px) scale(0.9);
 }
 
-.tpl-restore-btn-enter-to,
-.tpl-restore-btn-leave-from {
+.tpl-preview-pill-enter-to,
+.tpl-preview-pill-leave-from {
   opacity: 1;
   transform: translateY(0) scale(1);
 }

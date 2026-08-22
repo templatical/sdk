@@ -18,7 +18,6 @@ import {
 import ViewportToggle from "./ViewportToggle.vue";
 import DarkModeToggle from "./DarkModeToggle.vue";
 import PreviewToggle from "./PreviewToggle.vue";
-import MergeTagModeToggle from "./MergeTagModeToggle.vue";
 import TemplateNameField from "./TemplateNameField.vue";
 import TemplateTimestamp from "./TemplateTimestamp.vue";
 import TemplateSaveStatus from "./TemplateSaveStatus.vue";
@@ -30,10 +29,15 @@ const VersionHistoryMenu = defineAsyncComponent(
 
 /**
  * The editor's one header. Both entry points render this — `initCloud()` adds its
- * own controls through the three `*-extras` slots rather than through a second
- * header component, which is what keeps the two layouts from drifting apart
- * again (they already had: only Cloud carried `min-w-[200px]`, so the OSS centre
- * column was never actually centred).
+ * own controls through the `left-extras` / `right-extras` slots rather than
+ * through a second header component, which is what keeps the two layouts from
+ * drifting apart again (they already had: only Cloud carried `min-w-[200px]`, so
+ * the OSS centre column was never actually centred).
+ *
+ * The two slots are in the anchored columns on purpose. There is deliberately no
+ * centre slot: that track's width must stay constant, and a slot is the one
+ * thing a guard test cannot stop someone filling. See the centre column's own
+ * comment for why width changes there move the Preview button.
  *
  * Everything here is capability-driven, so the same markup covers "no providers
  * configured at all" and a fully-wired Cloud session. Nothing in this file knows
@@ -103,10 +107,48 @@ defineProps<{
           :kind="templates.timestamp.value.kind"
         />
       </div>
+      <!-- Version history — the third piece of "which template, and which
+           version of it", after the name and the write time. It sits here and
+           not in the right column because that column's content already
+           overflows its track: `justify-end` packs to the right edge, so an
+           extra control there spills *leftward* over the centre track and
+           swallows clicks meant for the Preview button. Measured — it covered
+           it with the menu's own back-arrow. This column packs from the left
+           and has the room.
+
+           Needs a template as well as a provider: a version belongs to a
+           template id, so before one is loaded there is nothing to list. -->
+      <VersionHistoryMenu
+        v-if="
+          versionHistory?.isAvailable.value && versionHistory.hasTemplate.value
+        "
+        :versions="versionHistory.versions.value"
+        :is-loading="versionHistory.isLoading.value"
+        :is-restoring="versionHistory.isRestoring.value"
+        :previewing-id="versionHistory.previewingVersion.value?.id ?? null"
+        @open="versionHistory.refresh()"
+        @navigate="versionHistory.navigate($event)"
+      />
       <slot name="left-extras" />
     </div>
 
-    <!-- Center: viewport + dark mode + preview + merge-tag view + history -->
+    <!-- Center: the three "how am I viewing the canvas" controls, and nothing
+         else — ever.
+
+         The grid is `1fr auto 1fr`, so this track is exactly max-content wide
+         and the equal `fr` columns centre it. Any width change therefore
+         redistributes symmetrically about the header's centre and moves every
+         sibling by half the delta, whichever side of the change it sits on.
+         DOM order buys nothing. So a conditional control here drags the Preview
+         button out from under the cursor — 114.5px when the sample/label toggle
+         used to live here, and repeatedly in Cloud as collaborators came and
+         went (#574).
+
+         Hence the rule: nothing in this track may be conditional. No `v-if`, no
+         `v-show`, no slot. Conditional controls go in the edge-anchored `fr`
+         columns, which grow away from their anchored edge; preview-only ones go
+         on the preview surface, where `Editor.vue` floats them over the canvas.
+         Locked by `tests/headerCenterStability.test.ts`. -->
     <div
       class="tpl-header-center tpl:flex tpl:items-center tpl:justify-center tpl:gap-10"
     >
@@ -122,36 +164,14 @@ defineProps<{
         :preview-mode="editor.state.previewMode"
         @change="editor.setPreviewMode"
       />
-      <!-- Preview mode only. Merge tags are never substituted on the editing
-           canvas, so offering the choice there would be a control with no
-           effect. -->
-      <MergeTagModeToggle
-        v-if="
-          editor.state.previewMode &&
-          !core.previewResolution.supersedesSamples.value
-        "
-        :sample-mode="core.mergeTagSampleMode.value"
-        @change="core.mergeTagSampleMode.value = $event"
-      />
-      <slot name="center-extras" />
-      <!-- Version history. Needs a template as well as a provider: a version
-           belongs to a template id, so before one is loaded there is nothing the
-           control could list. -->
-      <VersionHistoryMenu
-        v-if="
-          versionHistory?.isAvailable.value && versionHistory.hasTemplate.value
-        "
-        :versions="versionHistory.versions.value"
-        :is-loading="versionHistory.isLoading.value"
-        :is-restoring="versionHistory.isRestoring.value"
-        :previewing-id="versionHistory.previewingVersion.value?.id ?? null"
-        @open="versionHistory.refresh()"
-        @navigate="versionHistory.navigate($event)"
-      />
     </div>
 
     <!-- Right: save status → Comments → [cloud extras: AI] → test email → Save.
-         Save is last: it is the primary action. -->
+         Save is last: it is the primary action. `justify-end` anchors the row to
+         the right edge, so a control appearing at its start extends the row
+         leftward and moves nothing already in it — but note the row is already
+         at the edge of its track at common widths, so anything added here
+         overflows onto the centre rather than fitting. -->
     <div
       class="tpl-header-right tpl:flex tpl:min-w-[200px] tpl:items-center tpl:justify-end tpl:gap-3"
     >

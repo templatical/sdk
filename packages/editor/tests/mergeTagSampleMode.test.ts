@@ -238,8 +238,11 @@ describe("availability gates on a sample existing", () => {
 
 /**
  * The mode toggle has to *be* the viewport toggle's twin, not merely resemble
- * it: the two sit side by side in the editor header, so any divergence in icon
- * size, padding or pill geometry reads as a visual bug.
+ * it: the viewport toggle sits in the header and this one floats over the canvas
+ * a single click away, so any divergence in icon size, padding or pill geometry
+ * reads as a visual bug. Keeping the utility sets identical is also what let the
+ * toggle move onto the preview surface without restyling it — the positioning
+ * lives on a wrapper in `Editor.vue`, never on the control.
  *
  * This drifted once already — the mode toggle shipped with 16px icons against
  * the header's 18px, which made its pill 2px shorter than every neighbour

@@ -40,7 +40,7 @@ Setting `sample` is the whole opt-in — there is no flag alongside it. See [Mer
 
 ### The Sample / Label switch
 
-A **Sample / Label** switch appears beside the viewport toggle whenever a preview is showing, so a user can flip between the realistic view and the field names. The choice lasts for the session.
+A **Sample / Label** switch floats at the top of the canvas whenever a preview is showing, so a user can flip between the realistic view and the field names. The choice lasts for the session.
 
 It renders **only when at least one configured tag declares a `sample`**, and previews default to Sample view only in that case. Configure none and the editor behaves exactly as before — Label view, no switch — so this is invisible until you opt in.
 

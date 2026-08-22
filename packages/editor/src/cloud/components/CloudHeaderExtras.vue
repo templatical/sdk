@@ -11,12 +11,16 @@ const CollaboratorBar = defineAsyncComponent(
 const AiFeatureMenu = defineAsyncComponent(() => import("./AiFeatureMenu.vue"));
 
 /**
- * The Cloud-only header controls, filled into `EditorHeader`'s three
- * `*-extras` slots.
+ * The Cloud-only header controls, filled into `EditorHeader`'s `left-extras`
+ * and `right-extras` slots.
  *
- * One component with a `part` prop rather than three: the three regions share
- * this file's lazy chunk, so a Cloud session pays one round-trip for all of them
- * and an OSS session pays none.
+ * One component with a `part` prop rather than two: both regions share this
+ * file's lazy chunk, so a Cloud session pays one round-trip for all of them and
+ * an OSS session pays none.
+ *
+ * There is no `center` part. The header's centre track must hold a constant
+ * width, so only the anchored columns take conditional controls — see
+ * `EditorHeader.vue`'s centre comment.
  *
  * The plan-usage readout and the AI button live here rather than in the shared
  * header because they render **cloud-chunk** strings; OSS translators never see
@@ -25,7 +29,7 @@ const AiFeatureMenu = defineAsyncComponent(() => import("./AiFeatureMenu.vue"));
  * the OSS chunk.
  */
 defineProps<{
-  part: "left" | "center" | "right";
+  part: "left" | "right";
   cloud: CloudAttachment;
 }>();
 
@@ -33,31 +37,33 @@ const { t: cloudT, format: cloudFormat } = useCloudI18nStrict();
 </script>
 
 <template>
-  <!-- Left: templates used / allowed. A plan *limit*, not a templates concern,
-       which is why it sits here and its string stays in the cloud chunk. -->
-  <span
-    v-if="part === 'left' && cloud.featureFlags.templateLimit.value !== null"
-    data-testid="cloud-template-usage"
-    class="tpl:text-xs tpl:opacity-60 tpl:text-[var(--tpl-text-muted)]"
-  >
-    {{
-      cloudFormat(cloudT.header.templatesUsed, {
-        used: cloud.featureFlags.templateCount.value,
-        max: cloud.featureFlags.templateLimit.value,
-      })
-    }}
-  </span>
-
-  <!-- Center: who else is in the template right now. -->
-  <CollaboratorBar
-    v-else-if="
-      part === 'center' &&
-      cloud.collaboration &&
-      cloud.isCollaborationEnabled.value
-    "
-    :collaborators="cloud.collaboration.collaborators.value"
-    :is-connected="cloud.websocket.isConnected.value"
-  />
+  <!-- Left: the plan's template usage, then who else is in the template right
+       now. Presence sits with the template's identity rather than in the
+       header's centre track: that track's width must stay constant, and a
+       collaborator bar changes width every time somebody joins or leaves — which
+       used to slide the Preview button sideways under the cursor (#574). This
+       column packs from the left, so it grows rightward and moves nothing. -->
+  <template v-if="part === 'left'">
+    <!-- A plan *limit*, not a templates concern, which is why it sits here and
+         its string stays in the cloud chunk. -->
+    <span
+      v-if="cloud.featureFlags.templateLimit.value !== null"
+      data-testid="cloud-template-usage"
+      class="tpl:text-xs tpl:opacity-60 tpl:text-[var(--tpl-text-muted)]"
+    >
+      {{
+        cloudFormat(cloudT.header.templatesUsed, {
+          used: cloud.featureFlags.templateCount.value,
+          max: cloud.featureFlags.templateLimit.value,
+        })
+      }}
+    </span>
+    <CollaboratorBar
+      v-if="cloud.collaboration && cloud.isCollaborationEnabled.value"
+      :collaborators="cloud.collaboration.collaborators.value"
+      :is-connected="cloud.websocket.isConnected.value"
+    />
+  </template>
 
   <!-- Right: AI — after the shared header's Comments button and before the
        test-email button, so the shared header is a superset of the OSS one rather

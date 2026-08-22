@@ -152,6 +152,9 @@ export const SELECTORS = {
   viewportMobile: '[role="radio"][aria-label="Mobile"]',
   darkModeToggle: ".tpl-dark-mode-toggle",
   previewToggle: ".tpl-preview-toggle",
+  // The header itself. Its centre track must hold a constant width, so nothing
+  // conditional may render there — see `header-layout-stability.spec.ts`.
+  editorHeader: ".tpl-header",
 
   // Merge tag sample values. The mode toggle renders only when some configured
   // tag declares a `sample`, and only while a preview is showing.
