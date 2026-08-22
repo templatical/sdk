@@ -41,7 +41,7 @@ jobs:
 
       - name: Create Release Pull Request or Publish
         id: changesets
-        uses: changesets/action@v2.1.0
+        uses: changesets/action@v2.1.1
         with:
           # The PAT reaches the action through this input only. v2 refuses to read
           # a custom token from the GITHUB_TOKEN environment variable, and throws
