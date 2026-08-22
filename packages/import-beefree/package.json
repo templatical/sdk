@@ -1,14 +1,14 @@
 {
   "name": "@templatical/import-beefree",
   "description": "Convert BeeFree email templates to Templatical format",
-  "version": "0.27.3",
+  "version": "0.27.4",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "exports": {
     ".": {

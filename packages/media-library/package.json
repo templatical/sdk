@@ -1,10 +1,10 @@
 {
   "name": "@templatical/media-library",
   "description": "Media library management for Templatical email editor",
-  "version": "0.27.3",
+  "version": "0.27.4",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
-    "@lucide/vue": "^1.31.0",
+    "@lucide/vue": "^1.32.0",
     "@templatical/core": "workspace:*",
     "@templatical/types": "workspace:*",
     "@vueuse/core": "^14.4.0",
@@ -15,7 +15,7 @@
     "@vue/test-utils": "^2.4.11",
     "typescript": "^6.0.3",
     "vite": "^8.2.1",
-    "vitest": "^4.1.10",
+    "vitest": "^4.1.11",
     "vue": "^3.5.41",
     "vue-tsc": "^3.3.10"
   },
