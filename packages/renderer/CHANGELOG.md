@@ -1,5 +1,11 @@
 # @templatical/renderer
 
+## 0.27.6
+
+### Patch Changes
+
+- @templatical/types@0.27.6
+
 ## 0.27.5
 
 ### Patch Changes
