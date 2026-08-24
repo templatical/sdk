@@ -1,5 +1,12 @@
 # @templatical/quality
 
+## 0.28.0
+
+### Patch Changes
+
+- Updated dependencies [2cacdbc]
+  - @templatical/types@0.28.0
+
 ## 0.27.6
 
 ### Patch Changes
