@@ -422,6 +422,10 @@
             }
           ]
         },
+        "height": {
+          "type": "number",
+          "description": "Height in pixels. Absent means the height is derived from the width, so the image keeps its aspect ratio — setting both stretches it, since email clients don't support `object-fit`."
+        },
         "align": {
           "type": "string",
           "enum": [
@@ -702,6 +706,10 @@
               "const": "full"
             }
           ]
+        },
+        "height": {
+          "type": "number",
+          "description": "Height in pixels for the thumbnail. Absent means the height is derived from the width, so the thumbnail keeps its aspect ratio — setting both stretches it, since email clients don't support `object-fit`."
         },
         "align": {
           "type": "string",

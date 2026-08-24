@@ -146,3 +146,51 @@ describe("ImageBlock display-only src resolution (#415)", () => {
     );
   });
 });
+
+/**
+ * The canvas has to stretch exactly like the delivered email: MJML writes the
+ * height into the `<img>` inline style *and* attribute, and `object-fit` is
+ * unsupported in Outlook and most clients — so cropping here instead of
+ * stretching would make the preview a promise the email can't keep.
+ */
+describe("ImageBlock height", () => {
+  function mountImage(block: ReturnType<typeof createImageBlock>) {
+    return mount(ImageBlock, {
+      props: { block, viewport: "desktop" },
+      global: { provide: baseProvide() },
+    });
+  }
+
+  it("applies a stored height to the img", () => {
+    const wrapper = mountImage(
+      createImageBlock({
+        src: "https://picsum.photos/600/400",
+        width: 400,
+        height: 180,
+      }),
+    );
+    const style = (wrapper.find("img").element as HTMLElement).style;
+    expect(style.height).toBe("180px");
+    expect(style.width).toBe("400px");
+  });
+
+  it("leaves the img height unset when the block stores none", () => {
+    const wrapper = mountImage(
+      createImageBlock({ src: "https://picsum.photos/600/400", width: 400 }),
+    );
+    expect((wrapper.find("img").element as HTMLElement).style.height).toBe("");
+  });
+
+  it("never crops with object-fit", () => {
+    const wrapper = mountImage(
+      createImageBlock({
+        src: "https://picsum.photos/600/400",
+        width: 400,
+        height: 180,
+      }),
+    );
+    expect((wrapper.find("img").element as HTMLElement).style.objectFit).toBe(
+      "",
+    );
+  });
+});

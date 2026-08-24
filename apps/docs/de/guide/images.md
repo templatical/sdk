@@ -126,10 +126,18 @@ Der Typ `ImageBlock` definiert alle konfigurierbaren Eigenschaften:
 | `src` | `string` | Quell-URL des Bildes |
 | `alt` | `string` | Alternativtext für Barrierefreiheit |
 | `width` | `number \| 'full'` | Bildbreite in Pixeln oder `'full'` für 100% |
+| `height` | `number` (optional) | Bildhöhe in Pixeln. Ohne Angabe wird sie aus der Breite abgeleitet |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
+| `decorative` | `boolean` (optional) | Blendet das Bild für Screenreader aus und sendet ein leeres `alt` |
 | `linkUrl` | `string` (optional) | Umschließt das Bild mit einem Link |
 | `linkOpenInNewTab` | `boolean` (optional) | Öffnet den Link in einem neuen Tab |
 | `placeholderUrl` | `string` (optional) | Vorschaubild zur Entwurfszeit, wenn `src` ein Merge-Tag verwendet |
+
+### Höhe
+
+`height` ist optional, und es weglassen ist meist richtig: Die Höhe wird dann aus der Breite abgeleitet und das Bild behält sein Seitenverhältnis. Setzen Sie sie, wenn das Layout eine feste Box braucht -- einen Banner-Platz mit bekannter Größe oder eine Reihe von Bildern, die auf einer Linie liegen müssen.
+
+Werden `width` und `height` gemeinsam gesetzt, wird das Bild auf diese Box **gestreckt**. Es wird nicht beschnitten, denn `object-fit` wird von Outlook und den meisten E-Mail-Clients nicht unterstützt -- die Editor-Leinwand streckt deshalb genauso, statt einen Beschnitt zu versprechen, den der Posteingang nicht liefert. Passen Sie das Verhältnis an das Quellbild an oder skalieren Sie das Asset vor dem Upload.
 
 ### Placeholder-URL
 
@@ -142,3 +150,4 @@ Wenn das `src`-Feld ein Merge-Tag enthält (z. B. <code v-pre>{{product.image}}<
 - **Halten Sie Dateigrößen angemessen** -- Große Bilder verlangsamen das Laden für die Empfänger.
 - **Legen Sie immer Alternativtext fest** -- Viele E-Mail-Clients (insbesondere Outlook) blockieren Bilder standardmäßig. Empfänger sehen den Alternativtext, bis sie sich entscheiden, Bilder zu laden.
 - **Explizite Breite festlegen** -- E-Mail-Clients rendern Bilder möglicherweise in ihrer Originalgröße, wenn keine Breite angegeben ist, wodurch Ihr Layout auf kleinen Bildschirmen zerstört wird.
+- **Höhe nur setzen, wenn sie gebraucht wird** -- Die Breite allein erhält das Seitenverhältnis. Eine Höhe, die nicht zum Verhältnis der Quelle passt, streckt das Bild in jedem Client.

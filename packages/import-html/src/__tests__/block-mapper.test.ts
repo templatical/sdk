@@ -163,6 +163,53 @@ describe("convertElement — images", () => {
     expect(r1.block.width).toBe(480);
     expect(r2.block.width).toBe(600);
   });
+
+  // A source template that pins a height is expressing a fixed layout box;
+  // dropping it silently reflows the import. There is no default, because
+  // absent means "derive it from the width" all the way down to the renderer.
+  it("carries an explicit height from the attribute or the style", () => {
+    const fromAttr = (() => {
+      const { $, $el } = firstEl(
+        '<img src="x" width="320" height="180" />',
+        "img",
+      );
+      return convertElement($el, $)!;
+    })();
+    const fromStyle = (() => {
+      const { $, $el } = firstEl(
+        '<img src="x" style="width:320px;height:180px" />',
+        "img",
+      );
+      return convertElement($el, $)!;
+    })();
+    if (fromAttr.block.type !== "image") throw new Error();
+    if (fromStyle.block.type !== "image") throw new Error();
+    expect(fromAttr.block.height).toBe(180);
+    expect(fromStyle.block.height).toBe(180);
+  });
+
+  it("leaves the height unset when the source has none, or says auto", () => {
+    const none = (() => {
+      const { $, $el } = firstEl('<img src="x" width="320" />', "img");
+      return convertElement($el, $)!;
+    })();
+    // `height="auto"` and `height:auto` are the common way a responsive email
+    // says "no fixed height" — parsing them as 0 would collapse the image.
+    const autoAttr = (() => {
+      const { $, $el } = firstEl('<img src="x" height="auto" />', "img");
+      return convertElement($el, $)!;
+    })();
+    const autoStyle = (() => {
+      const { $, $el } = firstEl('<img src="x" style="height:auto" />', "img");
+      return convertElement($el, $)!;
+    })();
+    if (none.block.type !== "image") throw new Error();
+    if (autoAttr.block.type !== "image") throw new Error();
+    if (autoStyle.block.type !== "image") throw new Error();
+    expect(none.block.height).toBeUndefined();
+    expect(autoAttr.block.height).toBeUndefined();
+    expect(autoStyle.block.height).toBeUndefined();
+  });
 });
 
 describe("convertElement — anchors", () => {

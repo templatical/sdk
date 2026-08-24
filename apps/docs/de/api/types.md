@@ -56,6 +56,7 @@ type Block =
   | MenuBlock
   | TableBlock
   | HtmlBlock
+  | CountdownBlock
   | CustomBlock;
 ```
 
@@ -65,7 +66,7 @@ type Block =
 type BlockType =
   | 'title' | 'paragraph' | 'image' | 'button' | 'section'
   | 'divider' | 'video' | 'spacer' | 'social'
-  | 'menu' | 'table' | 'html' | 'custom';
+  | 'menu' | 'table' | 'html' | 'countdown' | 'custom';
 ```
 
 ## Basistypen
@@ -149,10 +150,13 @@ interface ImageBlock extends BaseBlock {
   src: string;
   alt: string;
   width: number | 'full';
+  /** Ohne Angabe wird die Höhe aus der Breite abgeleitet, das Seitenverhältnis bleibt erhalten. */
+  height?: number;
   align: 'left' | 'center' | 'right';
   linkUrl?: string;
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;
+  decorative?: boolean;
 }
 ```
 
@@ -200,6 +204,25 @@ interface DividerBlock extends BaseBlock {
   color: string;
   thickness: number;
   width: number | 'full';
+}
+```
+
+### VideoBlock
+
+Wird als verlinktes Thumbnail-Bild gerendert -- E-Mail-Clients unterstützen keine eingebettete Wiedergabe.
+
+```ts
+interface VideoBlock extends BaseBlock {
+  type: 'video';
+  url: string;
+  openInNewTab?: boolean;
+  thumbnailUrl: string;   // Wird aus einer YouTube-/Vimeo-URL abgeleitet, wenn leer
+  alt: string;
+  width: number | 'full';
+  /** Ohne Angabe wird die Höhe aus der Breite abgeleitet, das Seitenverhältnis bleibt erhalten. */
+  height?: number;
+  align: 'left' | 'center' | 'right';
+  placeholderUrl?: string;
 }
 ```
 
@@ -304,6 +327,36 @@ interface TableCellData {
 interface HtmlBlock extends BaseBlock {
   type: 'html';
   content: string;          // Rohes HTML
+}
+```
+
+### CountdownBlock
+
+Wird als animiertes GIF gerendert, was das Templatical-Cloud-Backend erfordert -- `@templatical/renderer` gibt stattdessen einen `templatical:unrenderable-block`-Marker aus. Siehe [Blöcke ohne Renderer](/de/backend/render#blocke-ohne-renderer).
+
+```ts
+interface CountdownBlock extends BaseBlock {
+  type: 'countdown';
+  targetDate: string;       // Lokales Datum/Uhrzeit, 'YYYY-MM-DDTHH:mm'
+  timezone: string;         // IANA-Name, in dem das Ziel gelesen wird, z. B. 'Europe/Berlin'
+  showDays: boolean;
+  showHours: boolean;
+  showMinutes: boolean;
+  showSeconds: boolean;
+  separator: ':' | '-' | ' ';
+  digitFontSize: number;
+  digitColor: string;
+  labelColor: string;
+  labelFontSize: number;
+  backgroundColor: string;
+  fontFamily?: string;
+  labelDays: string;
+  labelHours: string;
+  labelMinutes: string;
+  labelSeconds: string;
+  expiredMessage: string;
+  expiredImageUrl: string;  // Wird nach Ablauf statt des Timers angezeigt
+  hideOnExpiry: boolean;
 }
 ```
 

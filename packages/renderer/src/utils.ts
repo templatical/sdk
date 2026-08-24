@@ -39,3 +39,20 @@ export function bgAttr(
 
   return ` ${name}="${backgroundColor}"`;
 }
+
+/**
+ * Render `mj-image`'s height attribute. Returns an empty string when no height
+ * is set, so MJML applies its own `auto` and the image keeps its aspect ratio.
+ *
+ * The px suffix is not cosmetic: `height` is a Unit attribute accepting only
+ * `px` or `auto`, so a bare number is a validation error and MJML drops it.
+ * Non-finite or non-positive values are treated as unset — a `0` here would
+ * collapse the image rather than express "no opinion".
+ */
+export function heightAttr(height: number | undefined): string {
+  if (typeof height !== "number" || !Number.isFinite(height) || height <= 0) {
+    return "";
+  }
+
+  return ` height="${height}px"`;
+}

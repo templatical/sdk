@@ -112,6 +112,9 @@ underline: bool, color?: hex }`.
 
 - `src` (URL), `alt` (string — write meaningful alt text).
 - `width` (int | `"full"`), `align` — `"left" | "center" | "right"`.
+- `height` (int, _optional_) — px. Omit it: the height is then derived from the
+  width and the image keeps its aspect ratio. Setting both stretches the image,
+  because email clients don't support `object-fit`.
 - `linkUrl` (URL, _optional_), `linkOpenInNewTab` (bool, _optional_).
 - `decorative` (bool, _optional_) — mark purely decorative images.
 
@@ -142,6 +145,7 @@ Renders as a thumbnail with a play button linking to the video.
 
 - `url` (URL), `thumbnailUrl` (URL), `alt` (string).
 - `width` (int | `"full"`), `align`.
+- `height` (int, _optional_) — px, same aspect-ratio caveat as `image`.
 - `openInNewTab` (bool, _optional_).
 
 ### html

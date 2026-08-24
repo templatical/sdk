@@ -59,7 +59,9 @@ Zeigt ein Bild mit optionalem Link-Wrapping an.
 | `src` | `string` | Bild-URL |
 | `alt` | `string` | Alternativtext |
 | `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100% |
+| `height` | `number` | Anzeigehöhe in px. Ohne Angabe wird sie aus der Breite abgeleitet und das Seitenverhältnis bleibt erhalten |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
+| `decorative` | `boolean` | Blendet das Bild für Screenreader aus und sendet ein leeres `alt` |
 | `linkUrl` | `string` | Umschließt das Bild mit einem Link |
 | `linkOpenInNewTab` | `boolean` | Verhalten des Linkziels |
 | `placeholderUrl` | `string` | Platzhalter, der im Editor angezeigt wird, wenn `src` ein Merge-Tag verwendet |
@@ -194,6 +196,7 @@ E-Mail-Clients unterstützen keine eingebettete Videowiedergabe. Der Renderer gi
 | `thumbnailUrl` | `string` | URL des Thumbnail-Bildes |
 | `alt` | `string` | Alternativtext für das Thumbnail |
 | `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100% |
+| `height` | `number` | Anzeigehöhe in px. Ohne Angabe wird sie aus der Breite abgeleitet und das Seitenverhältnis bleibt erhalten |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
 | `openInNewTab` | `boolean` | Verhalten des Linkziels |
 | `placeholderUrl` | `string` | Nur im Editor sichtbarer Platzhalter |

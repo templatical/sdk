@@ -161,11 +161,18 @@ function convertImage($el: Cheerio<Element>): Block {
   const widthAttr = $el.attr("width");
   const widthStyle = styles.width;
   const width = parsePxValue(widthAttr) || parsePxValue(widthStyle) || 600;
+  // No default, unlike width: an absent height is what keeps the aspect ratio,
+  // and `height="auto"` / `height: auto` parse to 0, which reads the same way.
+  const height =
+    parsePxValue($el.attr("height")) ||
+    parsePxValue(styles.height) ||
+    undefined;
 
   return createImageBlock({
     src,
     alt,
     width,
+    height,
     align: parseAlignment(styles["text-align"], "center"),
     styles: {
       padding: readPaddingFromStyles(styles),

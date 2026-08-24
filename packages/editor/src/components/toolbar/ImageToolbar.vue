@@ -46,6 +46,7 @@ const { start: startPulseSrc } = useTimeoutFn(
 
 const WIDTH_PRESETS = [300, 400, 500];
 const DEFAULT_CUSTOM_WIDTH = 350;
+const DEFAULT_CUSTOM_HEIGHT = 200;
 
 const widthMode = computed(() => {
   const w = props.block.width;
@@ -53,6 +54,10 @@ const widthMode = computed(() => {
   if (WIDTH_PRESETS.includes(w)) return String(w);
   return "custom";
 });
+
+const heightMode = computed(() =>
+  typeof props.block.height === "number" ? "custom" : "auto",
+);
 
 function updateField(field: string, value: unknown): void {
   emit("update", { [field]: value } as Partial<ImageBlock>);
@@ -67,6 +72,20 @@ function updateWidthMode(value: string): void {
     return;
   }
   updateField("width", value === "full" ? "full" : Number(value));
+}
+
+function updateHeightMode(value: string): void {
+  updateField("height", value === "custom" ? DEFAULT_CUSTOM_HEIGHT : undefined);
+}
+
+function updateCustomHeight(raw: string): void {
+  // Same guard as the custom width below: an empty number field yields
+  // Number("") === 0, which would collapse the image to nothing. Absent means
+  // "keep the aspect ratio", so an invalid value must not overwrite the last
+  // valid height either.
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return;
+  updateField("height", n);
 }
 
 function updateCustomWidth(raw: string): void {
@@ -241,6 +260,32 @@ const { isOver } = useImageDrop({
         "
         min="20"
         @input="updateCustomWidth(($event.target as HTMLInputElement).value)"
+      />
+      <span :class="inputSuffixClass">px</span>
+    </div>
+  </div>
+  <div class="tpl:mb-3.5">
+    <label :class="labelClass">{{ t.image.height }}</label>
+    <select
+      :class="inputClass"
+      data-testid="image-height-mode"
+      :value="heightMode"
+      @change="updateHeightMode(($event.target as HTMLSelectElement).value)"
+    >
+      <option value="auto">{{ t.image.heightAuto }}</option>
+      <option value="custom">{{ t.image.heightCustom }}</option>
+    </select>
+    <div
+      v-if="heightMode === 'custom'"
+      class="tpl:mt-2 tpl:flex tpl:items-stretch"
+    >
+      <input
+        type="number"
+        data-testid="image-height-input"
+        :class="inputGroupInputClass"
+        :value="block.height"
+        min="20"
+        @input="updateCustomHeight(($event.target as HTMLInputElement).value)"
       />
       <span :class="inputSuffixClass">px</span>
     </div>

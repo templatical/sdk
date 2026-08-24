@@ -2,7 +2,7 @@ import type { ImageBlock } from "@templatical/types";
 import type { RenderContext } from "../render-context";
 import { escapeAttr } from "../escape";
 import { toPaddingString } from "../padding";
-import { bgAttr } from "../utils";
+import { bgAttr, heightAttr } from "../utils";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -23,6 +23,7 @@ export function renderImage(block: ImageBlock, context: RenderContext): string {
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const width =
     block.width === "full" ? context.containerWidth + "px" : block.width + "px";
+  const height = heightAttr(block.height);
 
   const visibilityAttr = getCssClassAttr(block);
 
@@ -43,7 +44,7 @@ export function renderImage(block: ImageBlock, context: RenderContext): string {
   return `<mj-image
   src="${src}"
   alt="${alt}"
-  width="${width}"
+  width="${width}"${height}
   align="${align}"
   padding="${padding}"${bgColor}${linkAttr}${visibilityAttr}${roleAttr}
 />`;

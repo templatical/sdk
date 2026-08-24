@@ -59,7 +59,9 @@ Displays an image with optional link wrapping.
 | `src` | `string` | Image URL |
 | `alt` | `string` | Alt text |
 | `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
+| `height` | `number` | Display height in px. Omit to derive it from the width and keep the aspect ratio |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
+| `decorative` | `boolean` | Hides the image from screen readers and sends an empty `alt` |
 | `linkUrl` | `string` | Wraps image in a link |
 | `linkOpenInNewTab` | `boolean` | Link target behavior |
 | `placeholderUrl` | `string` | Placeholder shown in the editor when `src` uses a merge tag |
@@ -194,6 +196,7 @@ Email clients do not support embedded video playback. The renderer outputs a cli
 | `thumbnailUrl` | `string` | Thumbnail image URL |
 | `alt` | `string` | Alt text for thumbnail |
 | `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
+| `height` | `number` | Display height in px. Omit to derive it from the width and keep the aspect ratio |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
 | `openInNewTab` | `boolean` | Link target behavior |
 | `placeholderUrl` | `string` | Editor-only placeholder |

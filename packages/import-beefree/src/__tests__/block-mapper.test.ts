@@ -144,6 +144,43 @@ describe("convertModule", () => {
       expect(entry.status).toBe("converted");
     });
 
+    // Height has no default, unlike width: absent means "derive it from the
+    // width" all the way down to the renderer, so inventing one would pin a
+    // box the source template never asked for.
+    it("carries an explicit height, and leaves it unset otherwise", () => {
+      const warnings: string[] = [];
+      const withHeight = convertModule(
+        makeModule("mailup-bee-newsletter-modules-image", {
+          image: { src: "https://x/p.jpg", width: "300px", height: "180px" },
+        }),
+        warnings,
+      ).block;
+      const withoutHeight = convertModule(
+        makeModule("mailup-bee-newsletter-modules-image", {
+          image: { src: "https://x/p.jpg", width: "300px" },
+        }),
+        warnings,
+      ).block;
+      // BeeFree writes these as strings, and "auto" is how a responsive
+      // template says "no fixed height" — parsing it as 0 would collapse it.
+      const auto = convertModule(
+        makeModule("mailup-bee-newsletter-modules-image", {
+          image: { src: "https://x/p.jpg", height: "auto" },
+        }),
+        warnings,
+      ).block;
+
+      if (
+        withHeight.type !== "image" ||
+        withoutHeight.type !== "image" ||
+        auto.type !== "image"
+      )
+        throw new Error("expected image blocks");
+      expect(withHeight.height).toBe(180);
+      expect(withoutHeight.height).toBeUndefined();
+      expect(auto.height).toBeUndefined();
+    });
+
     it("creates default block when no image descriptor", () => {
       const warnings: string[] = [];
       const mod = makeModule("mailup-bee-newsletter-modules-image", {});
@@ -458,6 +495,35 @@ describe("convertModule", () => {
         expect(block.align).toBe("center");
       }
       expect(entry.status).toBe("converted");
+    });
+
+    // The video thumbnail ships as an mj-image, so a pinned height in the
+    // source is the same fixed-box intent as on an image block.
+    it("carries the thumbnail height from the style, and leaves it unset otherwise", () => {
+      const warnings: string[] = [];
+      const withHeight = convertModule(
+        makeModule("mailup-bee-newsletter-modules-video", {
+          video: {
+            src: "https://youtube.com/watch?v=abc",
+            style: { width: "500px", height: "280px" },
+          },
+        }),
+        warnings,
+      ).block;
+      const withoutHeight = convertModule(
+        makeModule("mailup-bee-newsletter-modules-video", {
+          video: {
+            src: "https://youtube.com/watch?v=abc",
+            style: { width: "500px" },
+          },
+        }),
+        warnings,
+      ).block;
+
+      if (withHeight.type !== "video" || withoutHeight.type !== "video")
+        throw new Error("expected video blocks");
+      expect(withHeight.height).toBe(280);
+      expect(withoutHeight.height).toBeUndefined();
     });
   });
 

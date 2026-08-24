@@ -125,10 +125,18 @@ The `ImageBlock` type defines all configurable properties:
 | `src` | `string` | Image source URL |
 | `alt` | `string` | Alt text for accessibility |
 | `width` | `number \| 'full'` | Image width in pixels, or `'full'` for 100% |
+| `height` | `number` (optional) | Image height in pixels. Absent derives it from the width |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
+| `decorative` | `boolean` (optional) | Hides the image from screen readers and sends an empty `alt` |
 | `linkUrl` | `string` (optional) | Wraps the image in a link |
 | `linkOpenInNewTab` | `boolean` (optional) | Opens the link in a new tab |
 | `placeholderUrl` | `string` (optional) | Design-time preview image when `src` uses a merge tag |
+
+### Height
+
+`height` is optional, and leaving it out is usually right: the height is then derived from the width and the image keeps its aspect ratio. Set it when the layout needs a fixed box -- a banner slot of a known size, or a row of images that must line up.
+
+Setting both `width` and `height` **stretches** the image to that box. It does not crop, because `object-fit` is unsupported in Outlook and most email clients, so the editor canvas stretches identically rather than promising a crop the inbox won't deliver. Match the ratio of the source image, or resize the asset before uploading it.
 
 ### Placeholder URL
 
@@ -141,3 +149,4 @@ When the `src` field contains a merge tag (e.g., <code v-pre>{{product.image}}</
 - **Keep file sizes reasonable** -- Large images slow down loading for recipients.
 - **Always set alt text** -- Many email clients (especially Outlook) block images by default. Recipients see the alt text until they choose to load images.
 - **Set explicit width** -- Email clients may render images at their native size if no width is specified, breaking your layout on small screens.
+- **Leave the height out unless you need it** -- Width alone keeps the aspect ratio. A height that doesn't match the source ratio stretches the image in every client.

@@ -3,7 +3,12 @@ import MergeTagInput from "../MergeTagInput.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
 import { useI18n } from "../../composables/useI18n";
-import { inputClass, labelClass } from "../../constants/styleConstants";
+import {
+  inputClass,
+  inputGroupInputClass,
+  inputSuffixClass,
+  labelClass,
+} from "../../constants/styleConstants";
 import type { VideoBlock } from "@templatical/types";
 import { containsMergeTag, SYNTAX_PRESETS } from "@templatical/types";
 import { Image } from "@lucide/vue";
@@ -25,9 +30,15 @@ const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
 const mergeTagSyntax = inject(MERGE_TAG_SYNTAX_KEY, SYNTAX_PRESETS.liquid);
 const aliveFlag = useAliveFlag();
 
+const DEFAULT_CUSTOM_HEIGHT = 200;
+
 const canBrowseMedia = computed(() => !!onRequestMedia);
 const urlHasMergeTag = computed(() =>
   containsMergeTag(props.block.url, mergeTagSyntax),
+);
+
+const heightMode = computed(() =>
+  typeof props.block.height === "number" ? "custom" : "auto",
 );
 
 const pulseThumbnail = ref(false);
@@ -41,6 +52,19 @@ const { start: startPulseThumbnail } = useTimeoutFn(
 
 function updateField(field: keyof VideoBlock, value: unknown): void {
   emit("update", { [field]: value } as Partial<VideoBlock>);
+}
+
+function updateHeightMode(value: string): void {
+  updateField("height", value === "custom" ? DEFAULT_CUSTOM_HEIGHT : undefined);
+}
+
+function updateCustomHeight(raw: string): void {
+  // An empty number field yields Number("") === 0, which would collapse the
+  // thumbnail. Absent means "keep the aspect ratio", so an invalid value must
+  // not overwrite the last valid height either.
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return;
+  updateField("height", n);
 }
 
 async function openMediaBrowser(): Promise<void> {
@@ -145,6 +169,32 @@ async function openMediaBrowser(): Promise<void> {
       <option value="400">400px</option>
       <option value="500">500px</option>
     </select>
+  </div>
+  <div class="tpl:mb-3.5">
+    <label :class="labelClass">{{ t.video.height }}</label>
+    <select
+      :class="inputClass"
+      data-testid="video-height-mode"
+      :value="heightMode"
+      @change="updateHeightMode(($event.target as HTMLSelectElement).value)"
+    >
+      <option value="auto">{{ t.video.heightAuto }}</option>
+      <option value="custom">{{ t.video.heightCustom }}</option>
+    </select>
+    <div
+      v-if="heightMode === 'custom'"
+      class="tpl:mt-2 tpl:flex tpl:items-stretch"
+    >
+      <input
+        type="number"
+        data-testid="video-height-input"
+        :class="inputGroupInputClass"
+        :value="block.height"
+        min="20"
+        @input="updateCustomHeight(($event.target as HTMLInputElement).value)"
+      />
+      <span :class="inputSuffixClass">px</span>
+    </div>
   </div>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.title.align }}</label>

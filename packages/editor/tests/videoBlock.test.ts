@@ -187,3 +187,50 @@ describe("VideoBlock display-only thumbnail resolution (#415)", () => {
     expect(resolve).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * The thumbnail is what MJML actually ships (a linked `mj-image`), so a stored
+ * height reaches the canvas the same way it reaches the email — stretched, not
+ * cropped: `object-fit` is unsupported in Outlook and most clients.
+ */
+describe("VideoBlock height", () => {
+  function mountVideo(block: ReturnType<typeof createVideoBlock>) {
+    return mount(VideoBlock, {
+      props: { block, viewport: "desktop" },
+      global: { provide: baseProvide() },
+    });
+  }
+
+  const YOUTUBE_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+
+  // Width sits on the wrapper (the img is `w-full`), but the height has to be
+  // on the img itself — a wrapper height alone leaves the img at its intrinsic
+  // aspect ratio, which is not what the recipient's client will render.
+  it("applies a stored height to the thumbnail img, and the width to its wrapper", () => {
+    const wrapper = mountVideo(
+      createVideoBlock({ url: YOUTUBE_URL, width: 400, height: 220 }),
+    );
+    expect((wrapper.find("img").element as HTMLElement).style.height).toBe(
+      "220px",
+    );
+    expect((wrapper.find("a").element as HTMLElement).style.width).toBe(
+      "400px",
+    );
+  });
+
+  it("leaves the thumbnail height unset when the block stores none", () => {
+    const wrapper = mountVideo(
+      createVideoBlock({ url: YOUTUBE_URL, width: 400 }),
+    );
+    expect((wrapper.find("img").element as HTMLElement).style.height).toBe("");
+  });
+
+  it("never crops with object-fit", () => {
+    const wrapper = mountVideo(
+      createVideoBlock({ url: YOUTUBE_URL, width: 400, height: 220 }),
+    );
+    expect((wrapper.find("img").element as HTMLElement).style.objectFit).toBe(
+      "",
+    );
+  });
+});

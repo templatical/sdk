@@ -141,11 +141,39 @@ describe("convertContent", () => {
         expect(block.src).toBe("https://cdn.test/i.jpg");
         expect(block.alt).toBe("alt");
         expect(block.width).toBe(480);
+        expect(block.height).toBe(200);
         expect(block.align).toBe("left");
         expect(block.linkUrl).toBe("https://x.test");
         expect(block.linkOpenInNewTab).toBe(true);
       }
       expect(entry.status).toBe("converted");
+    });
+
+    // Height has no default, unlike width: absent means "derive it from the
+    // width" all the way down to the renderer, so inventing one would pin a
+    // box the source template never asked for.
+    it("leaves height unset when src.height is missing or not positive", () => {
+      const missing = convertContent(
+        makeContent("image", { src: { url: "u", width: 480 } }),
+        [],
+      ).block;
+      const zero = convertContent(
+        makeContent("image", { src: { url: "u", width: 480, height: 0 } }),
+        [],
+      ).block;
+      if (missing.type !== "image" || zero.type !== "image")
+        throw new Error("expected image blocks");
+      expect(missing.height).toBeUndefined();
+      expect(zero.height).toBeUndefined();
+    });
+
+    it("rounds a fractional src.height", () => {
+      const { block } = convertContent(
+        makeContent("image", { src: { url: "u", width: 480, height: 199.6 } }),
+        [],
+      );
+      if (block.type !== "image") throw new Error("expected image block");
+      expect(block.height).toBe(200);
     });
 
     it("defaults width to 600 when src.width missing", () => {

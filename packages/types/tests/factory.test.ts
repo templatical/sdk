@@ -71,6 +71,19 @@ describe("block factory functions", () => {
     expect(block.width).toBe("full");
   });
 
+  // An absent height is what makes the renderer emit no `height` attribute, so
+  // MJML's own `auto` default applies and the image keeps its aspect ratio.
+  // A numeric default here would silently stretch every new image.
+  it("creates an image block with no height, and keeps an explicit one", () => {
+    expect(createImageBlock().height).toBeUndefined();
+    expect(createImageBlock({ height: 180 }).height).toBe(180);
+  });
+
+  it("creates a video block with no height, and keeps an explicit one", () => {
+    expect(createVideoBlock().height).toBeUndefined();
+    expect(createVideoBlock({ height: 220 }).height).toBe(220);
+  });
+
   it("creates a button block with defaults", () => {
     const block = createButtonBlock();
     expect(block.type).toBe("button");

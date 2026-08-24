@@ -281,6 +281,9 @@ function convertImage(descriptor: BeeFreeeModuleDescriptor): Block {
     src: image.src || "",
     alt: image.alt || "",
     width: parsePxValue(image.width) || 600,
+    // No default, unlike width: an absent height is what keeps the aspect
+    // ratio, and BeeFree's "auto" parses to 0, which reads the same way.
+    height: parsePxValue(image.height) || undefined,
     align: toAlign(image.style?.["text-align"], "center"),
     linkUrl: image.href || undefined,
     styles: makeStyles(descriptor),
@@ -394,6 +397,7 @@ function convertVideo(descriptor: BeeFreeeModuleDescriptor): Block {
     thumbnailUrl: video.thumbnail || "",
     alt: video.alt || "",
     width: parsePxValue(video.style?.width) || 600,
+    height: parsePxValue(video.style?.height) || undefined,
     align: toAlign(video.style?.["text-align"], "center"),
     styles: makeStyles(descriptor),
   });

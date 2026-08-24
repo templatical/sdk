@@ -52,11 +52,22 @@ const thumbnailStyle = computed(() => {
   return {
     maxWidth: "100%",
     width: props.block.width === "full" ? "100%" : `${props.block.width}px`,
+    // No object-fit: email clients don't support it, so a stored height has to
+    // stretch here exactly as it will in the recipient's inbox.
+    height: props.block.height ? `${props.block.height}px` : undefined,
     display: "block",
     marginLeft: align === "center" || align === "right" ? "auto" : undefined,
     marginRight: align === "center" ? "auto" : undefined,
   };
 });
+
+// The thumbnail styles sit on the wrapper (it also positions the play button),
+// so the height has to reach the <img> itself as well — that is where MJML puts
+// it, and the img would otherwise keep its intrinsic aspect ratio inside a
+// wrapper the recipient's client won't have.
+const thumbnailImageStyle = computed(() => ({
+  height: props.block.height ? `${props.block.height}px` : undefined,
+}));
 
 const mergeTagValue = computed(() =>
   containsMergeTag(props.block.url, syntax)
@@ -77,6 +88,7 @@ const mergeTagValue = computed(() =>
         class="tpl:w-full tpl:border-0"
         :src="displayPlaceholderUrl"
         :alt="block.alt"
+        :style="thumbnailImageStyle"
       />
       <VideoPlayButton />
     </div>
@@ -117,6 +129,7 @@ const mergeTagValue = computed(() =>
           class="tpl:w-full tpl:border-0"
           :src="effectiveThumbnail"
           :alt="block.alt"
+          :style="thumbnailImageStyle"
         />
         <VideoPlayButton hover-effect />
       </a>
@@ -125,6 +138,7 @@ const mergeTagValue = computed(() =>
           class="tpl:w-full tpl:border-0"
           :src="effectiveThumbnail"
           :alt="block.alt"
+          :style="thumbnailImageStyle"
         />
         <VideoPlayButton />
       </div>

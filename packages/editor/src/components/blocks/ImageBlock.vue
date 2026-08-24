@@ -79,6 +79,9 @@ const imageStyle = computed(() => {
   return {
     maxWidth: "100%",
     width: props.block.width === "full" ? "100%" : `${props.block.width}px`,
+    // No object-fit: email clients don't support it, so a stored height has to
+    // stretch here exactly as it will in the recipient's inbox.
+    height: props.block.height ? `${props.block.height}px` : undefined,
     display: "block",
     marginLeft: align === "center" || align === "right" ? "auto" : undefined,
     marginRight: align === "center" ? "auto" : undefined,

@@ -89,6 +89,12 @@ export interface ImageBlock extends BaseBlock {
   src: string;
   alt: string;
   width: number | "full";
+  /**
+   * Height in pixels. Absent means the height is derived from the width, so the
+   * image keeps its aspect ratio — setting both stretches it, since email
+   * clients don't support `object-fit`.
+   */
+  height?: number;
   align: "left" | "center" | "right";
   linkUrl?: string;
   linkOpenInNewTab?: boolean;
@@ -130,6 +136,12 @@ export interface VideoBlock extends BaseBlock {
   thumbnailUrl: string;
   alt: string;
   width: number | "full";
+  /**
+   * Height in pixels for the thumbnail. Absent means the height is derived from
+   * the width, so the thumbnail keeps its aspect ratio — setting both stretches
+   * it, since email clients don't support `object-fit`.
+   */
+  height?: number;
   align: "left" | "center" | "right";
   placeholderUrl?: string;
 }

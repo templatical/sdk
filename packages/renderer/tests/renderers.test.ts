@@ -74,6 +74,22 @@ describe('renderBlock', () => {
     expect(result).toContain('width="600px"');
   });
 
+  // MJML's `height` is a Unit attribute accepting only px or `auto`; a bare
+  // number fails validation and the attribute is dropped, so the px suffix is
+  // load-bearing. Omitting the attribute entirely is what selects MJML's own
+  // `auto`, which keeps the image's aspect ratio.
+  it('renders image block with an explicit height in px', () => {
+    const block = createImageBlock({ src: 'https://example.com/img.png', width: 300, height: 180 });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('height="180px"');
+  });
+
+  it('omits the height attribute on an image block with no height', () => {
+    const block = createImageBlock({ src: 'https://example.com/img.png', width: 300 });
+    const result = renderBlock(block, ctx);
+    expect(result).not.toContain('height=');
+  });
+
   it('renders image block with link', () => {
     const block = createImageBlock({
       src: 'https://example.com/img.png',
@@ -474,6 +490,21 @@ describe('renderBlock', () => {
     });
     const result = renderBlock(block, ctx);
     expect(result).toContain('src="https://example.com/thumb.jpg"');
+  });
+
+  it('renders video block with an explicit height in px', () => {
+    const block = createVideoBlock({
+      url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      height: 220,
+    });
+    const result = renderBlock(block, ctx);
+    expect(result).toContain('height="220px"');
+  });
+
+  it('omits the height attribute on a video block with no height', () => {
+    const block = createVideoBlock({ url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' });
+    const result = renderBlock(block, ctx);
+    expect(result).not.toContain('height=');
   });
 
   it('returns empty string for video block with no URL and no thumbnail', () => {

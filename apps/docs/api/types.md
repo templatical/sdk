@@ -56,6 +56,7 @@ type Block =
   | MenuBlock
   | TableBlock
   | HtmlBlock
+  | CountdownBlock
   | CustomBlock;
 ```
 
@@ -65,7 +66,7 @@ type Block =
 type BlockType =
   | 'title' | 'paragraph' | 'image' | 'button' | 'section'
   | 'divider' | 'video' | 'spacer' | 'social'
-  | 'menu' | 'table' | 'html' | 'custom';
+  | 'menu' | 'table' | 'html' | 'countdown' | 'custom';
 ```
 
 ## Base Types
@@ -149,10 +150,13 @@ interface ImageBlock extends BaseBlock {
   src: string;
   alt: string;
   width: number | 'full';
+  /** Absent derives the height from the width, keeping the aspect ratio. */
+  height?: number;
   align: 'left' | 'center' | 'right';
   linkUrl?: string;
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;
+  decorative?: boolean;
 }
 ```
 
@@ -200,6 +204,25 @@ interface DividerBlock extends BaseBlock {
   color: string;
   thickness: number;
   width: number | 'full';
+}
+```
+
+### VideoBlock
+
+Renders as a linked thumbnail image -- email clients do not support embedded playback.
+
+```ts
+interface VideoBlock extends BaseBlock {
+  type: 'video';
+  url: string;
+  openInNewTab?: boolean;
+  thumbnailUrl: string;   // Auto-derived from a YouTube/Vimeo url when empty
+  alt: string;
+  width: number | 'full';
+  /** Absent derives the height from the width, keeping the aspect ratio. */
+  height?: number;
+  align: 'left' | 'center' | 'right';
+  placeholderUrl?: string;
 }
 ```
 
@@ -304,6 +327,36 @@ interface TableCellData {
 interface HtmlBlock extends BaseBlock {
   type: 'html';
   content: string;          // Raw HTML
+}
+```
+
+### CountdownBlock
+
+Renders as an animated GIF, which requires the Templatical Cloud backend -- `@templatical/renderer` emits a `templatical:unrenderable-block` marker instead. See [Blocks with no renderer](/backend/render#blocks-with-no-renderer).
+
+```ts
+interface CountdownBlock extends BaseBlock {
+  type: 'countdown';
+  targetDate: string;       // Local date/time, 'YYYY-MM-DDTHH:mm'
+  timezone: string;         // IANA name the target is read in, e.g. 'Europe/Berlin'
+  showDays: boolean;
+  showHours: boolean;
+  showMinutes: boolean;
+  showSeconds: boolean;
+  separator: ':' | '-' | ' ';
+  digitFontSize: number;
+  digitColor: string;
+  labelColor: string;
+  labelFontSize: number;
+  backgroundColor: string;
+  fontFamily?: string;
+  labelDays: string;
+  labelHours: string;
+  labelMinutes: string;
+  labelSeconds: string;
+  expiredMessage: string;
+  expiredImageUrl: string;  // Shown instead of the timer once expired
+  hideOnExpiry: boolean;
 }
 ```
 

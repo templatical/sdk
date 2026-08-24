@@ -131,3 +131,90 @@ describe("ImageToolbar placeholder image field", () => {
     expect(update.placeholderUrl).toBe("https://cdn/fallback.png");
   });
 });
+
+/**
+ * Height is optional and absent means MJML's `auto`, which is what preserves an
+ * image's aspect ratio. So the control has two modes rather than a bare number
+ * field: a stored `0` and a stored "no opinion" have to stay distinguishable,
+ * and `Number("")` is `0`.
+ */
+describe("ImageToolbar height control", () => {
+  const heightSelect = (w: ReturnType<typeof mountIt>) =>
+    w.find('[data-testid="image-height-mode"]');
+  const heightInput = (w: ReturnType<typeof mountIt>) =>
+    w.find('[data-testid="image-height-input"]');
+
+  it("reads Auto with no px input when the block stores no height", () => {
+    const wrapper = mountIt(createImageBlock());
+    expect((heightSelect(wrapper).element as HTMLSelectElement).value).toBe(
+      "auto",
+    );
+    expect(heightInput(wrapper).exists()).toBe(false);
+  });
+
+  it("reads Custom with the stored value when the block stores a height", () => {
+    const wrapper = mountIt(createImageBlock({ height: 180 }));
+    expect((heightSelect(wrapper).element as HTMLSelectElement).value).toBe(
+      "custom",
+    );
+    expect((heightInput(wrapper).element as HTMLInputElement).value).toBe(
+      "180",
+    );
+  });
+
+  it("switching to Custom seeds a default height", async () => {
+    const wrapper = mountIt(createImageBlock());
+
+    await heightSelect(wrapper).setValue("custom");
+
+    const [update] = wrapper.emitted("update")![0] as [Partial<ImageBlock>];
+    expect(update.height).toBe(200);
+  });
+
+  it("switching back to Auto clears the stored height", async () => {
+    const wrapper = mountIt(createImageBlock({ height: 180 }));
+
+    await heightSelect(wrapper).setValue("auto");
+
+    const [update] = wrapper.emitted("update")![0] as [Partial<ImageBlock>];
+    expect("height" in update).toBe(true);
+    expect(update.height).toBeUndefined();
+  });
+
+  it("typing a valid custom height commits it as a number", async () => {
+    const wrapper = mountIt(createImageBlock({ height: 180 }));
+
+    await heightInput(wrapper).setValue("240");
+
+    const [update] = wrapper.emitted("update")![0] as [Partial<ImageBlock>];
+    expect(update.height).toBe(240);
+  });
+
+  it("clearing or zeroing the custom height never emits height: 0", async () => {
+    // Same guard as the custom width input (#259): an empty number field
+    // yields Number("") === 0, which would collapse the image to nothing.
+    const wrapper = mountIt(createImageBlock({ height: 180 }));
+    const input = heightInput(wrapper);
+
+    await input.setValue("");
+    await input.setValue("0");
+    await input.setValue("-5");
+
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  // French, not English: an `en` assertion passes against a hardcoded label.
+  it("translates the label and both modes", () => {
+    const wrapper = mountEditor(ImageToolbar, {
+      props: { block: createImageBlock({ height: 180 }) },
+      provides: { [TRANSLATIONS_KEY]: fr },
+    });
+    const options = wrapper
+      .find('[data-testid="image-height-mode"]')
+      .findAll("option")
+      .map((o) => o.text());
+
+    expect(wrapper.text()).toContain(fr.image.height);
+    expect(options).toEqual([fr.image.heightAuto, fr.image.heightCustom]);
+  });
+});
