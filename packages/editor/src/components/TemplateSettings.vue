@@ -136,7 +136,7 @@ const widthPresets = [
           <span>{{ t.templateSettings.appearance }}</span>
         </div>
 
-        <div class="tpl:mb-3.5">
+        <div class="tpl:mb-3.5" data-testid="template-settings-background">
           <label :class="labelClass">{{
             t.templateSettings.backgroundColor
           }}</label>

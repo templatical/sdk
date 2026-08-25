@@ -729,3 +729,55 @@ describe("countdown resolves only through the block registry", () => {
     );
   });
 });
+
+describe("the email background band comes from one constant", () => {
+  /**
+   * The canvas and every preview surface draw the same band of
+   * `settings.backgroundColor` beside the content column — that band is the
+   * only place the body colour is visible when a template's sections span the
+   * full width, which is what made a coloured background read as unset in the
+   * test-email dialog (#598).
+   *
+   * Two copies of the gutter width drift into two different answers for how
+   * much of the body background an email is supposed to show, and the drift is
+   * invisible until someone compares the canvas with a preview side by side.
+   */
+  const helper = read("utils/emailFrameWidth.ts");
+  const canvas = read("components/Canvas.vue");
+  const preview = read("components/BlockPreviewCanvas.vue");
+
+  it("declares EMAIL_GUTTER in the shared width helper", () => {
+    expect(helper).toMatch(/export const EMAIL_GUTTER = 96;/);
+  });
+
+  it.each([
+    ["components/Canvas.vue", canvas],
+    ["components/BlockPreviewCanvas.vue", preview],
+  ])("%s imports it rather than declaring its own", (_relPath, source) => {
+    expect(source).toMatch(/EMAIL_GUTTER/);
+    // A local re-declaration is the regression: it compiles, it looks right,
+    // and it silently stops tracking the shared value.
+    expect(source).not.toMatch(/const\s+\w*GUTTER\w*\s*=\s*\d/);
+  });
+
+  it("the preview's stage carries the background and the column does not", () => {
+    // The column stays transparent so a block without its own fill reveals the
+    // body colour — the band behind a bare button block in the report.
+    expect(preview).toMatch(/backgroundColor: emailBackground,/);
+    expect(preview).toMatch(/data-testid="block-preview-stage"/);
+  });
+
+  it("the background is not folded into getDocumentStyle", () => {
+    // `Canvas.vue` applies that helper to `.tpl-canvas`, which has to stay
+    // transparent so the invertible background layer beneath it shows through.
+    // A background there would double-paint and defeat the dark-mode preview.
+    const resolver = read("utils/blockComponentResolver.ts");
+    const body = resolver.slice(
+      resolver.indexOf("export function getDocumentStyle"),
+      resolver.indexOf("export function resolveBlockComponent"),
+    );
+    // Guard the slice itself, so a rename can't empty it and pass vacuously.
+    expect(body).toContain("fontFamily: settings.fontFamily");
+    expect(body).not.toMatch(/backgroundColor/);
+  });
+});

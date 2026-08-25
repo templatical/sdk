@@ -14,6 +14,12 @@ import type { UseBlockRegistryReturn } from "../composables/useBlockRegistry";
  * UI's, so the same paragraph renders differently in a preview than on the
  * canvas. Set only what's configured — an unset value must stay unset so it
  * matches the renderer omitting the attribute.
+ *
+ * `settings.backgroundColor` deliberately does NOT belong here. The canvas
+ * applies this to `.tpl-canvas`, which has to stay transparent so the
+ * invertible `.tpl-canvas-bg` layer beneath it shows through; a background here
+ * would double-paint and defeat the dark-mode preview. Each surface paints the
+ * body colour on its own stage instead.
  */
 export function getDocumentStyle(
   settings: TemplateSettings,

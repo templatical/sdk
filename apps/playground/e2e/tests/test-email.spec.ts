@@ -205,6 +205,87 @@ test.describe("Test email", () => {
     await expect(page.locator(SELECTORS.testEmailRecipient)).toBeHidden();
   });
 
+  /**
+   * The preview shows the template's body background — `mj-body
+   * background-color` when sent, and the band the canvas draws beside its
+   * content column.
+   *
+   * Every showcase template ships `#ffffff`, so this drives the settings panel
+   * rather than picking a template: that is also the exact path in the report
+   * (#598), where the preview painted the editor's neutral surface no matter
+   * what the template said.
+   */
+  test("the preview renders the template's background colour", async ({
+    editorReady,
+  }) => {
+    const { editorPage } = editorReady;
+    const page = editorPage.page;
+    const BACKGROUND = "rgb(28, 37, 255)";
+
+    await page.locator(SELECTORS.rightTabSettings).click();
+    const hex = page
+      .locator(SELECTORS.templateSettingsBackground)
+      .locator('input[type="text"]');
+    await hex.fill("#1c25ff");
+    await hex.press("Enter");
+
+    // The canvas is the reference: whatever it paints, the dialog must match.
+    await expect
+      .poll(async () =>
+        page
+          .locator(".tpl-canvas-bg")
+          .evaluate((el) => getComputedStyle(el).backgroundColor),
+      )
+      .toBe(BACKGROUND);
+
+    await page.locator(SELECTORS.testEmailTrigger).click();
+
+    const stage = page.locator(SELECTORS.blockPreviewStage);
+    await expect(stage).toBeVisible();
+    await expect
+      .poll(async () =>
+        stage.evaluate((el) => getComputedStyle(el).backgroundColor),
+      )
+      .toBe(BACKGROUND);
+
+    // The column stays transparent, which is what lets a block with no fill of
+    // its own reveal the body colour rather than covering it.
+    expect(
+      await page
+        .locator(SELECTORS.blockPreviewCanvas)
+        .evaluate((el) => getComputedStyle(el).backgroundColor),
+    ).toBe("rgba(0, 0, 0, 0)");
+  });
+
+  /**
+   * The band needs somewhere to go. At `max-w-2xl` the preview region's content
+   * box is exactly the 600px email, so the gutters collapse to nothing and the
+   * body colour is invisible for any template whose sections span the full
+   * width — which is every showcase template.
+   */
+  test("leaves room for the background band beside the email", async ({
+    editorReady,
+  }) => {
+    const { editorPage } = editorReady;
+    const page = editorPage.page;
+
+    await page.locator(SELECTORS.testEmailTrigger).click();
+
+    const stage = page.locator(SELECTORS.blockPreviewStage);
+    await expect(stage).toBeVisible();
+
+    // `offset*` rather than `boundingBox()`: the dialog animates in under a
+    // `scale(0.9)`, and a transformed box reads 90% of the truth.
+    const gutter = await stage.evaluate((el) => {
+      const column = el.querySelector<HTMLElement>(
+        '[data-testid="block-preview-canvas"]',
+      )!;
+      return (el.offsetWidth - column.offsetWidth) / 2;
+    });
+
+    expect(gutter).toBeGreaterThan(20);
+  });
+
   test("reopening starts clean rather than showing the last result", async ({
     editorReady,
   }) => {

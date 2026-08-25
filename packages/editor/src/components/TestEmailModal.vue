@@ -176,9 +176,14 @@ function handleKeydown(event: KeyboardEvent): void {
 
 <template>
   <TplModal :visible="visible" @close="handleClose" @keydown="handleKeydown">
-    <!-- Grows to `max-w-2xl` only while the preview is open, so a 600px email
-         renders at roughly true size — the same reason SaveBlockDialog picked
-         that width. Collapsed, it stays the compact form it was. `max-h-[90%]`
+    <!-- Grows to `max-w-3xl` only while the preview is open. A 600px email has
+         to render at true size AND leave slack on both sides for the band of
+         body background the preview draws beside it: at `max-w-2xl` the
+         preview region's content box is exactly 600px, so the band would have
+         nowhere to go and `settings.backgroundColor` would look unset for any
+         template whose sections span the full width. Collapsed, it stays the
+         compact form it was. `w-full` keeps it shrinking on narrow screens.
+         `max-h-[90%]`
          with a `min-h-0 overflow-y-auto` preview region is the pattern the
          saved-blocks dialogs use: the cap bounds the panel to TplModal's
          backdrop (never to `vh` — see the note there), and `min-h-0` is what
@@ -188,7 +193,7 @@ function handleKeydown(event: KeyboardEvent): void {
       aria-modal="true"
       :aria-busy="isSending"
       aria-labelledby="tpl-test-email-title"
-      class="tpl-scale-in tpl:flex tpl:max-h-[90%] tpl:w-full tpl:max-w-2xl tpl:flex-col tpl:rounded-[var(--tpl-radius-lg)] tpl:p-5"
+      class="tpl-scale-in tpl:flex tpl:max-h-[90%] tpl:w-full tpl:max-w-3xl tpl:flex-col tpl:rounded-[var(--tpl-radius-lg)] tpl:p-5"
       style="
         background-color: var(--tpl-bg-elevated);
         box-shadow: var(--tpl-shadow-xl);

@@ -49,6 +49,7 @@
     --container-sm: calc(24 * var(--tpl-base-size));
     --container-md: calc(28 * var(--tpl-base-size));
     --container-2xl: calc(42 * var(--tpl-base-size));
+    --container-3xl: calc(48 * var(--tpl-base-size));
 
     /* The house tempo, as Tailwind's default rather than as a per-call-site
      * opt-in. Tailwind's own defaults are 150ms on `cubic-bezier(.4, 0, .2, 1)`

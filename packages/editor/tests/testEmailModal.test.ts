@@ -283,10 +283,14 @@ describe("TestEmailModal preview", () => {
     expect(text()).toContain("testEmail.preview");
   });
 
-  it("uses the wide dialog so a full-width email fits", () => {
+  it("uses the wide dialog so a full-width email fits with room beside it", () => {
     mountModal();
 
-    expect(get('[role="dialog"]').className).toContain("max-w-2xl");
+    // Not `max-w-2xl`: at that width the preview region's content box is
+    // exactly the 600px email, so the band of body background the preview
+    // draws beside the column has nowhere to go and `backgroundColor` reads as
+    // unset for any template whose sections span the full width (#598).
+    expect(get('[role="dialog"]').className).toContain("max-w-3xl");
   });
 
   it("scrolls the preview while the form and actions stay put", () => {

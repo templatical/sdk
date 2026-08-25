@@ -119,7 +119,10 @@ export const SELECTORS = {
   testEmailPreviewViewport:
     '[role="dialog"][aria-labelledby="tpl-test-email-title"] [role="radiogroup"]',
   // Shared chrome-free block renderer, also used by the saved-blocks previews.
+  // The canvas is the content column at the email's own width; the stage is the
+  // band of body background around it.
   blockPreviewCanvas: '[data-testid="block-preview-canvas"]',
+  blockPreviewStage: '[data-testid="block-preview-stage"]',
   savedBlocksEditCategory: '[data-testid="saved-blocks-edit-category"]',
   savedBlocksLoading: '[data-testid="saved-blocks-loading"]',
   savedBlocksBrowserClose: '[data-testid="saved-blocks-browser-close"]',
@@ -135,6 +138,7 @@ export const SELECTORS = {
   rightTabIssues: "#tpl-tab-issues",
   rightPanelContent: "#tpl-tabpanel-content",
   rightPanelSettings: "#tpl-tabpanel-settings",
+  templateSettingsBackground: '[data-testid="template-settings-background"]',
   rightPanelIssues: "#tpl-tabpanel-issues",
 
   // Text editing

@@ -32,8 +32,29 @@ function mountCanvas(settings?: Partial<TemplateSettings>) {
   } as never);
 }
 
+/**
+ * Style of the content column — the element whose width IS the email width.
+ * Queried by testid rather than `find('div')`, which now reaches the stage
+ * wrapper: the stage carries `min-width: 600px`, so a substring assertion for
+ * `width: 600px` against it passes no matter what the column is doing.
+ */
+function columnStyle(wrapper: { find: (s: string) => { attributes: (a: string) => string | undefined } }): string {
+  return (
+    wrapper.find('[data-testid="block-preview-canvas"]').attributes('style') ??
+    ''
+  );
+}
+
+/** Style of the stage — the band of email background around the column. */
+function stageStyle(wrapper: { find: (s: string) => { attributes: (a: string) => string | undefined } }): string {
+  return (
+    wrapper.find('[data-testid="block-preview-stage"]').attributes('style') ??
+    ''
+  );
+}
+
 function rootStyle(wrapper: ReturnType<typeof mountCanvas>): string {
-  return wrapper.find('div').attributes('style') ?? '';
+  return columnStyle(wrapper);
 }
 
 describe('BlockPreviewCanvas document style', () => {
@@ -59,7 +80,7 @@ describe('BlockPreviewCanvas document style', () => {
     expect(style).not.toContain('--tpl-doc-link-underline');
     // Positive control: the element IS styled, so the negative can't pass on an
     // empty style attribute.
-    expect(style).toContain('background-color');
+    expect(style).toContain('font-family');
   });
 
   it('applies the link colour variable', async () => {
@@ -69,13 +90,12 @@ describe('BlockPreviewCanvas document style', () => {
     expect(rootStyle(wrapper)).toContain('--tpl-doc-link-color: #c0392b');
   });
 
-  it('keeps its own background and shadow alongside the document style', async () => {
+  it('keeps the card shadow on the stage alongside the document style', async () => {
     const wrapper = mountCanvas({ fontFamily: 'Georgia, serif' });
     await nextTick();
 
-    const style = rootStyle(wrapper);
-    expect(style).toContain('var(--tpl-canvas-bg)');
-    expect(style).toContain('var(--tpl-shadow-sm)');
+    expect(stageStyle(wrapper)).toContain('var(--tpl-shadow-sm)');
+    expect(rootStyle(wrapper)).toContain('Georgia, serif');
   });
 
   it('renders without an editor in context', async () => {
@@ -84,9 +104,60 @@ describe('BlockPreviewCanvas document style', () => {
     const wrapper = mountCanvas();
     await nextTick();
 
-    const style = rootStyle(wrapper);
-    expect(style).toContain('var(--tpl-canvas-bg)');
-    expect(style).not.toContain('--tpl-doc-link-color');
+    expect(stageStyle(wrapper)).toContain('var(--tpl-canvas-bg)');
+    expect(rootStyle(wrapper)).not.toContain('--tpl-doc-link-color');
+  });
+});
+
+/**
+ * The email's body background — `mj-body background-color` when sent. It lives
+ * on the stage, not in `getDocumentStyle`: the canvas applies that helper to
+ * `.tpl-canvas`, which has to stay transparent so the invertible background
+ * layer beneath it shows through, and a background there would double-paint and
+ * defeat the dark-mode preview.
+ *
+ * Before this, every preview surface painted the editor's neutral
+ * `--tpl-canvas-bg` regardless of the template, so a coloured body read as
+ * unset in the dialog shown immediately before sending (#598).
+ */
+describe('BlockPreviewCanvas email background', () => {
+  it('paints the stage with the template background', async () => {
+    const wrapper = mountCanvas({ backgroundColor: '#1c25ff' });
+    await nextTick();
+
+    expect(stageStyle(wrapper)).toContain('background-color: #1c25ff');
+  });
+
+  it('leaves the content column transparent so the stage shows through', async () => {
+    // A block without its own background must reveal the body colour, which is
+    // the whole reported symptom: the band behind a bare button block.
+    const wrapper = mountCanvas({ backgroundColor: '#1c25ff' });
+    await nextTick();
+
+    expect(rootStyle(wrapper)).not.toContain('background-color');
+  });
+
+  it('falls back to the neutral surface when the background is cleared', async () => {
+    // The colour pickers clear to an empty string to mean "unset". Emitted as
+    // an inline style that renders the frame transparent, so the fallback has
+    // to be truthiness, not `??`.
+    const wrapper = mountCanvas({ backgroundColor: '' });
+    await nextTick();
+
+    expect(stageStyle(wrapper)).toContain('var(--tpl-canvas-bg)');
+  });
+
+  it('gives the stage a full gutter on each side, capped by its container', async () => {
+    const wrapper = mountCanvas({ backgroundColor: '#1c25ff' });
+    await nextTick();
+
+    const style = stageStyle(wrapper);
+    // 600 + 96 * 2 — the same band Canvas.vue puts around its content column.
+    expect(style).toContain('width: 792px');
+    // `max-width: 100%` is what lets a dialog with less room show a narrower
+    // band instead of overflowing; `min-width` stops it squeezing the column.
+    expect(style).toContain('max-width: 100%');
+    expect(style).toContain('min-width: 600px');
   });
 });
 
@@ -182,14 +253,17 @@ describe('BlockPreviewCanvas visibility and viewport', () => {
   it('frames at the desktop email width by default', () => {
     const { wrapper } = mountWith({});
 
-    expect(wrapper.find('div').attributes('style')).toContain('width: 600px');
+    expect(columnStyle(wrapper)).toContain('width: 600px');
   });
 
   it('narrows to the mobile width when asked', () => {
     const { wrapper } = mountWith({ viewport: 'mobile' });
 
     // Matches Canvas.vue's mobile breakpoint, so the two agree.
-    expect(wrapper.find('div').attributes('style')).toContain('width: 375px');
+    expect(columnStyle(wrapper)).toContain('width: 375px');
+    // The gutter travels with it, so a mobile preview keeps the same band the
+    // canvas shows in mobile rather than losing the body colour on the switch.
+    expect(stageStyle(wrapper)).toContain('width: 567px');
   });
 
   it('eases the width change with the editor’s viewport transition', () => {
@@ -197,8 +271,6 @@ describe('BlockPreviewCanvas visibility and viewport', () => {
     // so the frame animates with the same shared curve rather than snapping.
     const { wrapper } = mountWith({});
 
-    expect(wrapper.find('div').attributes('style')).toContain(
-      EMAIL_FRAME_WIDTH_TRANSITION,
-    );
+    expect(columnStyle(wrapper)).toContain(EMAIL_FRAME_WIDTH_TRANSITION);
   });
 });

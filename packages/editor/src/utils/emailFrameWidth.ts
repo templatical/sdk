@@ -37,6 +37,23 @@ export function getEmailFrameWidth(
 }
 
 /**
+ * Band of email background shown on each side of the content column.
+ *
+ * A surface that renders blocks at exactly the body width has nowhere for
+ * `settings.backgroundColor` to show: a full-width section's own background
+ * covers every pixel of it, so the body colour reads as unset even though the
+ * sent email paints it across the whole client viewport. The gutter is what
+ * makes it visible, mirroring how `mj-body background-color` renders beside the
+ * centred content.
+ *
+ * Fixed rather than "fill the container" so the band never overwhelms the
+ * content on a wide monitor. `Canvas.vue` adds it to both sides of a fixed
+ * stage; `BlockPreviewCanvas` treats it as the cap on a fluid one, because a
+ * fixed 792px stage overflows every dialog it lives in.
+ */
+export const EMAIL_GUTTER = 96;
+
+/**
  * How a viewport switch animates the frame.
  *
  * Lives here rather than being written out per call site so every surface that

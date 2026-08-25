@@ -26,6 +26,7 @@ import {
 } from "../utils/blockComponentResolver";
 import {
   EMAIL_FRAME_WIDTH_TRANSITION,
+  EMAIL_GUTTER,
   getEmailFrameWidth,
 } from "../utils/emailFrameWidth";
 import type { Block, ViewportSize } from "@templatical/types";
@@ -115,6 +116,37 @@ const documentStyle = computed(() =>
   editor ? getDocumentStyle(editor.content.value.settings) : {},
 );
 
+/**
+ * The email's body background — `mj-body background-color` when sent, and the
+ * `.tpl-canvas-bg` layer on the editing canvas.
+ *
+ * Deliberately NOT part of `getDocumentStyle`: the canvas applies that helper
+ * to `.tpl-canvas`, which must stay transparent so the invertible background
+ * layer beneath it shows through. A background there would double-paint and
+ * defeat the dark-mode preview.
+ *
+ * Truthiness, not `??`: the colour pickers clear to an empty string to mean
+ * "unset", which as an inline style renders the frame transparent rather than
+ * falling back to the neutral preview surface.
+ */
+const emailBackground = computed(
+  () =>
+    editor?.content.value.settings.backgroundColor || "var(--tpl-canvas-bg)",
+);
+
+/**
+ * Width the stage asks for: the content column plus a full gutter on each side,
+ * the same stage the canvas builds. It is an ask rather than a fixed size —
+ * paired with `max-width: 100%` below, so a container with less room hands over
+ * what it has and shows a narrower band instead of overflowing.
+ *
+ * It has to be a specified width, not `100%`: `TplModal`'s wrapper is
+ * shrink-to-fit, so a percentage there resolves against a container whose size
+ * the stage is itself supposed to influence, and the stage collapses to its
+ * `min-width` — no gutters, on the one surface this exists for.
+ */
+const stageWidth = computed(() => frameWidth.value + EMAIL_GUTTER * 2);
+
 const previewComponentMap: Record<string, Component> = {
   section: PreviewSectionBlock,
   title: TitleBlock,
@@ -137,27 +169,46 @@ function getBlockComponent(block: Block): Component | null {
 </script>
 
 <template>
+  <!-- STAGE — the email body, holding the background and a gutter of it on
+       each side of the content column, the same shape `Canvas.vue` builds.
+       `max-width: 100%` is what makes it fit anywhere: a roomy surface shows
+       the full band, a dialog shows as much as it has, and a container sized to
+       the content column shows none. `min-width` keeps it from squeezing the
+       column, so a cramped surface clips exactly as it did when the frame
+       carried the width itself. -->
   <div
-    data-testid="block-preview-canvas"
-    class="tpl:pointer-events-none tpl:mx-auto tpl:select-none tpl:rounded-lg"
+    data-testid="block-preview-stage"
+    class="tpl:pointer-events-none tpl:mx-auto tpl:flex tpl:select-none tpl:justify-center tpl:rounded-lg"
     :style="{
-      width: `${frameWidth}px`,
-      transition: EMAIL_FRAME_WIDTH_TRANSITION,
-      backgroundColor: 'var(--tpl-canvas-bg)',
+      width: `${stageWidth}px`,
+      minWidth: `${frameWidth}px`,
+      maxWidth: '100%',
+      backgroundColor: emailBackground,
       boxShadow: 'var(--tpl-shadow-sm)',
-      ...documentStyle,
     }"
   >
+    <!-- CONTENT COLUMN — the blocks at their true email width. Keeps the
+         testid: this is the element whose width *is* the email width, which is
+         what every viewport assertion measures. -->
     <div
-      v-for="block in visibleBlocks"
-      :key="block.id"
-      :style="getBlockWrapperStyle(block)"
+      data-testid="block-preview-canvas"
+      :style="{
+        width: `${frameWidth}px`,
+        transition: EMAIL_FRAME_WIDTH_TRANSITION,
+        ...documentStyle,
+      }"
     >
-      <component
-        :is="getBlockComponent(block)"
-        :block="block"
-        :viewport="viewport"
-      />
+      <div
+        v-for="block in visibleBlocks"
+        :key="block.id"
+        :style="getBlockWrapperStyle(block)"
+      >
+        <component
+          :is="getBlockComponent(block)"
+          :block="block"
+          :viewport="viewport"
+        />
+      </div>
     </div>
   </div>
 </template>

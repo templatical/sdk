@@ -28,6 +28,7 @@ import {
 } from "../utils/blockComponentResolver";
 import {
   EMAIL_FRAME_WIDTH_TRANSITION,
+  EMAIL_GUTTER,
   getEmailFrameWidth,
 } from "../utils/emailFrameWidth";
 import { readableTextColor } from "../utils/readableTextColor";
@@ -152,20 +153,17 @@ const viewportWidth = computed(() =>
   getEmailFrameWidth(props.content.settings, props.viewport),
 );
 
-// Email-background band shown on each side of the content column. The editor
-// canvas is sized to the email's content width, so without this there are no
-// gutters for the global background to occupy — a full-width section's own
-// background hides it entirely (#230). A fixed band (rather than filling the
-// work area) keeps the gutters from overwhelming the content on wide monitors
-// and never collapses below the content width on narrow ones, while the
-// neutral work area beyond the stage is preserved so editor chrome stays
-// legible.
-const CANVAS_GUTTER = 96;
-
 // The "stage" represents the email body: the content column plus a gutter of
-// email background on each side. Mirrors how `mj-body background-color`
-// renders in the gutters around the centered content when the email is sent.
-const stageWidth = computed(() => viewportWidth.value + CANVAS_GUTTER * 2);
+// email background on each side (#230 — without it a full-width section's own
+// background hides the global one entirely). Mirrors how `mj-body
+// background-color` renders in the gutters around the centered content when
+// the email is sent. The neutral work area beyond the stage is preserved so
+// editor chrome stays legible.
+//
+// `EMAIL_GUTTER` comes from the shared helper rather than a local constant: the
+// preview surfaces show the same band, and two copies drift into two different
+// answers for how much of the body background an email is supposed to show.
+const stageWidth = computed(() => viewportWidth.value + EMAIL_GUTTER * 2);
 
 // Canvas dark mode preview: simulates how the email will appear in recipients'
 // dark-themed email clients. Uses CSS filter inversion — independent of the
