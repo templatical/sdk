@@ -25,8 +25,8 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
       '@microsoft/api-extractor':
-        specifier: ^7.58.13
-        version: 7.58.13(@types/node@25.9.5)
+        specifier: ^7.59.0
+        version: 7.59.0(@types/node@25.9.5)
       '@playwright/mcp':
         specifier: ^0.0.79
         version: 0.0.79
@@ -1048,8 +1048,8 @@ packages:
     resolution: {integrity: sha512-iDu1AtuRC2Z8XVs2SieZieVavF1FXPBX1C9pMexJh8Dx/Dd/3ZZ4nRQp/PU2Vk2rUHWuBz1wOyL4DcuhVnBXwg==}
     engines: {node: '>=20.9.0'}
 
-  '@microsoft/api-extractor@7.58.13':
-    resolution: {integrity: sha512-htjkWdR+ovlBiQuBbMutIuiu/dzKYpFrBRRuHGlpo7J81cPzmMTBKxE8j+aWSs5HxvXHCvatVe4vQ9CKqSvZaA==}
+  '@microsoft/api-extractor@7.59.0':
+    resolution: {integrity: sha512-KDYV8kSVjmG8JJWVg1f1aKxteNG1IQ44D07Rjhlcci8wlqrSFNhUfgv7dJhwT0W2h3NDIL5Vz2f+/DfO4OpDHw==}
     engines: {node: '>=20.9.0'}
     hasBin: true
 
@@ -5084,7 +5084,7 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@microsoft/api-extractor@7.58.13(@types/node@25.9.5)':
+  '@microsoft/api-extractor@7.59.0(@types/node@25.9.5)':
     dependencies:
       '@microsoft/api-extractor-model': 7.33.11(@types/node@25.9.5)
       '@microsoft/tsdoc': 0.16.0
