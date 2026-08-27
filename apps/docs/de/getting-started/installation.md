@@ -17,7 +17,7 @@ Feature-Wunsch oder rauer Kante begegnet? [Diskussion eröffnen](https://github.
   - **Standardmodus** (`shadowDom: true`, Shadow DOM) — Chrome 80+, Edge 80+, Firefox 101+, Safari 16.4+. Firefox- und Safari-Mindestversionen sind durch die `adoptedStyleSheets`-API bestimmt, auf die der Shadow-Pfad angewiesen ist.
   - **Opt-out-Modus** (`shadowDom: false`, Light DOM) — Chrome 80+, Edge 80+, Firefox 80+, Safari 14+. Verwenden Sie diesen Modus, wenn Sie ältere Firefox- oder Safari-Versionen unterstützen müssen oder Ihre Integration Light-DOM-Zugriff auf Editor-Interna benötigt. Siehe den [Shadow-DOM-Leitfaden](../guide/shadow-dom) für die Kompromisse.
 - **Container-Element** -- muss eine definierte Höhe haben (der Editor füllt seinen Container aus). Im Standardmodus muss es ein Elementtyp sein, der einen Shadow Root hosten kann (z. B. `<div>`, `<section>`, `<article>`). Siehe [Container-Element-Anforderungen](../api/editor#container-element-requirements).
-- **Kein `transform` auf einem Vorfahren des Containers** -- Wenden Sie `transform`, `filter`, `perspective` oder `will-change` auf kein Element an, das den Mount-Punkt umschließt. Jede dieser Eigenschaften erzeugt einen CSS-Containing-Block für `position: fixed`, wodurch die schwebenden UI-Elemente des Editors (Farbwähler, Rich-Text-Toolbars) und der Drag-Ghost von ihrem Ankerpunkt weg verschoben werden — selbst wenn der berechnete Wert von `transform` `none` ist (eine aktive oder animierte Transformation erzeugt den Containing-Block dennoch). Das ist eine CSS-Containing-Block-Regel, keine Templatical-spezifische Einschränkung; sie betrifft jede Bibliothek, die Overlays mit `position: fixed` positioniert. Für einen Scroll- oder Einblend-Effekt auf einem Wrapper animieren Sie `opacity` statt `transform`.
+- **Kein `transform` und kein Stacking-Kontext auf einem Vorfahren des Containers** -- `transform`, `filter`, `perspective`, `will-change`, `opacity` unter `1`, `isolation`, `contain` und positionierte Elemente mit `z-index` verändern jeweils, wo die Overlays des Editors gezeichnet oder positioniert werden. Das sind reine CSS-Regeln, keine Templatical-spezifischen Einschränkungen; sie betreffen jede Bibliothek, die Overlays mit `position: fixed` positioniert. Was jede Eigenschaft konkret bricht und wie Sie es umgehen, steht unter [Der Container des Editors](#der-container-des-editors).
 - **Keine erforderlichen Peer-Dependencies** -- Vue, TipTap und alle internen Bibliotheken sind im Editor gebündelt. Sie müssen weder Vue noch eine andere Framework-Runtime installieren, unabhängig davon, welches Framework Ihre App verwendet. (`@templatical/renderer`, `@templatical/quality`, `@templatical/media-library` und `pusher-js` sind _optionale_ Peers — installieren Sie sie nur, wenn Sie das entsprechende Feature nutzen; siehe [Optionale Peers](#optionale-peers) weiter unten.)
 
 ## Netzwerk-Anfragen
@@ -79,7 +79,23 @@ Wenn sich eine davon nicht vermeiden lässt — ein Route-Übergang, der `transf
 Ein `fixed` positionierter Nachfahre kann einen Stacking-Kontext mit keinem z-index verlassen — verglichen wird zwischen der Wurzel des Kontexts und Ihrem Chrome, der Wert des Nachfahren geht dabei nie ein. Der Wert muss also auf den Container, nicht auf den Dialog. Den Container höher zu legen ist unbedenklich, weil sich dessen eigene Box nicht mit Ihrem Chrome überschneidet; betroffen sind nur die Dialoge, die `fixed` sind und den Viewport ausfüllen.
 :::
 
-Das verwandte *Größen*-Problem löst der Editor selbst: Ein transformierter Vorfahre wird auch zum umgebenden Block für `fixed` positionierte Nachfahren, und jeder Dialog begrenzt seine Höhe gegen seinen eigenen Backdrop statt gegen den Viewport. So bleibt ein Dialog innerhalb der Box, die er bekommt.
+### Dieselben Eigenschaften verschieben auch
+
+`transform`, `filter`, `perspective`, `will-change` und `contain` erledigen zwei Aufgaben gleichzeitig: Neben dem Stacking-Kontext oben erzeugt jede auch einen **umgebenden Block für `position: fixed`**. Ein `fixed` positionierter Nachfahre bezieht seine Koordinaten dann auf diesen Vorfahren statt auf den Viewport — und zwar auch dann, wenn der berechnete Wert von `transform` `none` lautet, denn eine laufende oder animierte Transformation befördert das Element trotzdem.
+
+Was das für den Editor bedeutet:
+
+| Overlay | Unter einem transformierten Vorfahren |
+| ------- | ------------------------------------- |
+| Farbwähler, Rich-Text-Toolbars, Merge-Tag-Autovervollständigung | Nicht betroffen. Sie verankern sich `absolute` in der Popover-Wurzel und rechnen Viewport-Koordinaten in wurzel-lokale um, wodurch sich der Versatz des Vorfahren aufhebt. |
+| Dialoghöhe | Nicht betroffen. Jeder Dialog begrenzt seine Höhe gegen seinen eigenen Backdrop statt gegen den Viewport und bleibt damit in der Box, die er bekommt. |
+| Drag-and-drop-Ghost | **Versetzt.** Der Ghost ist `position: fixed` und wird aus Viewport-Koordinaten platziert, driftet also um den Versatz des Vorfahren vom Cursor weg. |
+
+Wenn Sie Drag-and-drop nutzen, halten Sie `transform` daher von allen Vorfahren des Containers fern.
+
+::: warning Ersetzen Sie es nicht durch `opacity`
+`opacity` statt `transform` zu animieren vermeidet das Containing-Block-Problem und führt direkt in das Stacking-Problem — `opacity` unter `1` erzeugt einen Stacking-Kontext, sodass Ihr Chrome anfängt, über die Dialoge des Editors zu zeichnen. Es gibt keine Eigenschaft, die beides umgeht. Legen Sie einen Scroll- oder Einblend-Effekt auf ein Element, das den Container des Editors nicht umschließt.
+:::
 
 ## npm
 

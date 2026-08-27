@@ -17,7 +17,7 @@ Have a feature request or hit a rough edge? [Open a discussion](https://github.c
   - **Default mode** (`shadowDom: true`, Shadow DOM) — Chrome 80+, Edge 80+, Firefox 101+, Safari 16.4+. Firefox and Safari minimums are driven by the `adoptedStyleSheets` API the shadow path relies on.
   - **Opt-out mode** (`shadowDom: false`, light DOM) — Chrome 80+, Edge 80+, Firefox 80+, Safari 14+. Use this if you need to support older Firefox or Safari, or if your integration requires light-DOM access to editor internals. See the [Shadow DOM guide](../guide/shadow-dom) for trade-offs.
 - **Container element** -- must have a defined height (the editor fills its container). In default mode, must be an element type that can host a shadow root (e.g. `<div>`, `<section>`, `<article>`). See [container element requirements](../api/editor#container-element-requirements).
-- **No `transform` on an ancestor of the container** -- do not apply `transform`, `filter`, `perspective`, or `will-change` to any element that wraps the mount point. Each establishes a CSS containing block for `position: fixed`, which offsets the editor's floating UI (color pickers, rich-text toolbars) and its drag ghost away from their anchor — even while the transform's computed value is `none` (an active or animated transform still promotes the element). This is a CSS containing-block rule, not a Templatical-specific limitation; it affects any library that positions overlays with `position: fixed`. For a scroll or entrance effect on a wrapper, animate `opacity` instead of `transform`.
+- **No `transform`, and no stacking context, on an ancestor of the container** -- `transform`, `filter`, `perspective`, `will-change`, `opacity` below `1`, `isolation`, `contain`, and positioned elements with a `z-index` each change where the editor's overlays are painted or positioned. These are plain CSS rules, not Templatical-specific limitations, and they affect any library that positions overlays with `position: fixed`. See [The editor's container](#the-editor-s-container) for what each one breaks and how to work around it.
 - **No required peer dependencies** -- Vue, TipTap, and all internal libraries are bundled into the editor. You don't need to install Vue or any framework runtime, regardless of which framework your app uses. (`@templatical/renderer`, `@templatical/quality`, `@templatical/media-library`, and `pusher-js` are _optional_ peers — install them only if you use the corresponding feature; see [Optional peers](#optional-peers) below.)
 
 ## Network requests
@@ -79,7 +79,23 @@ If one of them is unavoidable — a route transition that animates `transform`, 
 A `fixed` descendant cannot escape a stacking context at any z-index — the comparison happens between the context's root and your chrome, and the descendant's own value never enters it. So the value has to go on the container, not on the dialog. Raising the container is safe because its own box does not overlap your chrome; only the dialogs, which are `fixed` and cover the viewport, are affected.
 :::
 
-The editor already handles the related *sizing* problem on its own: a transformed ancestor also becomes the containing block for `fixed` descendants, and every dialog caps its height against its own backdrop rather than the viewport, so a dialog stays inside whatever box it is given.
+### The same properties also move things
+
+`transform`, `filter`, `perspective`, `will-change` and `contain` do two jobs at once: alongside the stacking context above, each establishes a **containing block for `position: fixed`**. A fixed descendant then resolves its coordinates against that ancestor instead of the viewport — and this applies even while the computed `transform` reads `none`, because a running or animated transform still promotes the element.
+
+What that means for the editor:
+
+| Overlay | Under a transformed ancestor |
+| ------- | ---------------------------- |
+| Color pickers, rich-text toolbars, merge-tag autocomplete | Unaffected. They anchor `absolute` inside the popover root and convert viewport coordinates to root-local ones, so the ancestor's offset cancels out. |
+| Dialog height | Unaffected. Every dialog caps against its own backdrop rather than the viewport, so it stays inside whatever box it is given. |
+| Drag-and-drop ghost | **Offset.** The ghost is `position: fixed` and placed from viewport coordinates, so it drifts away from the cursor by the ancestor's offset. |
+
+So if you use drag-and-drop, keep `transform` off every ancestor of the container.
+
+::: warning Do not substitute `opacity`
+Animating `opacity` instead of `transform` avoids the containing-block problem and walks straight into the stacking one — `opacity` below `1` creates a stacking context, so your chrome starts painting over the editor's dialogs. There is no property that dodges both. For a scroll or entrance effect, put it on an element that does not wrap the editor's container.
+:::
 
 ## npm
 
