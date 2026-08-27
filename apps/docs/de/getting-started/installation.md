@@ -46,6 +46,41 @@ Damit der Editor nicht auf Geist angewiesen ist, überschreiben Sie das Schrift-
 
 Der `@import` bleibt dabei im Stylesheet erhalten, die Anfrage wird also weiterhin versucht. Um sie vollständig zu entfernen, hosten Sie Geist selbst und entfernen den `@import` in einem Build-Schritt aus Ihrer Kopie von `dist/style.css`. Die vollständige Schrift-Token-Oberfläche finden Sie unter [Theming](../guide/theming).
 
+## Der Container des Editors
+
+Der Editor mountet seine Dialoge in eine Popover-Wurzel mit `z-index: 10000` innerhalb des Containers, den Sie an `init()` übergeben. Ein z-index wirkt nur innerhalb seines eigenen Stacking-Kontexts. Deshalb **darf der Container keinen eigenen Stacking-Kontext erzeugen** — sonst bleiben alle Dialoge des Editors darin eingeschlossen, und jedes Chrome von Ihnen mit höherem z-index im übergeordneten Kontext überdeckt sie.
+
+Diese Eigenschaften erzeugen einen Stacking-Kontext, wenn sie auf dem Container oder einem Vorfahren zwischen Container und dem Stacking-Kontext Ihres Chromes liegen:
+
+| Eigenschaft | Auslösender Wert |
+| ----------- | ---------------- |
+| `isolation` | `isolate` |
+| `transform` / `translate` / `rotate` / `scale` | alles außer `none` |
+| `filter` / `backdrop-filter` | alles außer `none` |
+| `perspective` | alles außer `none` |
+| `opacity` | kleiner als `1` |
+| `will-change` | `transform`, `filter`, `opacity`, `perspective` |
+| `contain` | `paint`, `layout`, `content`, `strict` |
+| `mix-blend-mode` | alles außer `normal` |
+| `position: fixed` / `sticky` | immer |
+| `position: relative` / `absolute` | mit einem `z-index` außer `auto` |
+
+Wenn sich eine davon nicht vermeiden lässt — ein Route-Übergang, der `transform` animiert, oder ein Wrapper, den Sie nicht kontrollieren — geben Sie diesem Element einen `z-index` oberhalb Ihres eigenen Headers, Ihrer Sidebar oder Ihrer Toast-Ebene:
+
+```css
+#your-editor-container {
+  /* Über Ihrem eigenen Chrome, damit die Dialoge des Editors es auch sind. */
+  z-index: 200;
+  position: relative;
+}
+```
+
+::: tip Warum ein höherer z-index auf dem Dialog nicht hilft
+Ein `fixed` positionierter Nachfahre kann einen Stacking-Kontext mit keinem z-index verlassen — verglichen wird zwischen der Wurzel des Kontexts und Ihrem Chrome, der Wert des Nachfahren geht dabei nie ein. Der Wert muss also auf den Container, nicht auf den Dialog. Den Container höher zu legen ist unbedenklich, weil sich dessen eigene Box nicht mit Ihrem Chrome überschneidet; betroffen sind nur die Dialoge, die `fixed` sind und den Viewport ausfüllen.
+:::
+
+Das verwandte *Größen*-Problem löst der Editor selbst: Ein transformierter Vorfahre wird auch zum umgebenden Block für `fixed` positionierte Nachfahren, und jeder Dialog begrenzt seine Höhe gegen seinen eigenen Backdrop statt gegen den Viewport. So bleibt ein Dialog innerhalb der Box, die er bekommt.
+
 ## npm
 
 ::: code-group

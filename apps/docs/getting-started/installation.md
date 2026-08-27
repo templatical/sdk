@@ -46,6 +46,41 @@ To stop the editor depending on Geist, override the font token:
 
 The `@import` is still present in the stylesheet, so the request is still attempted. To remove it outright, self-host Geist and strip the `@import` from your copy of `dist/style.css` as a build step. See [Theming](../guide/theming) for the full font token surface.
 
+## The editor's container
+
+The editor mounts its dialogs into a popover root at `z-index: 10000`, inside the container you pass to `init()`. A z-index only competes within its own stacking context, so **the container must not establish one** — otherwise every editor dialog is confined to it, and any chrome of yours with a higher z-index in the parent context paints over them.
+
+These properties on the container, or on any ancestor between it and the stacking context your chrome lives in, create one:
+
+| Property | Creating value |
+| -------- | -------------- |
+| `isolation` | `isolate` |
+| `transform` / `translate` / `rotate` / `scale` | anything but `none` |
+| `filter` / `backdrop-filter` | anything but `none` |
+| `perspective` | anything but `none` |
+| `opacity` | less than `1` |
+| `will-change` | `transform`, `filter`, `opacity`, `perspective` |
+| `contain` | `paint`, `layout`, `content`, `strict` |
+| `mix-blend-mode` | anything but `normal` |
+| `position: fixed` / `sticky` | always |
+| `position: relative` / `absolute` | with any `z-index` other than `auto` |
+
+If one of them is unavoidable — a route transition that animates `transform`, a wrapper you do not control — give that element a `z-index` higher than your own header, sidebar, or toast layer:
+
+```css
+#your-editor-container {
+  /* Above your own chrome, so the editor's dialogs are too. */
+  z-index: 200;
+  position: relative;
+}
+```
+
+::: tip Why a higher z-index on the dialog will not help
+A `fixed` descendant cannot escape a stacking context at any z-index — the comparison happens between the context's root and your chrome, and the descendant's own value never enters it. So the value has to go on the container, not on the dialog. Raising the container is safe because its own box does not overlap your chrome; only the dialogs, which are `fixed` and cover the viewport, are affected.
+:::
+
+The editor already handles the related *sizing* problem on its own: a transformed ancestor also becomes the containing block for `fixed` descendants, and every dialog caps its height against its own backdrop rather than the viewport, so a dialog stays inside whatever box it is given.
+
 ## npm
 
 ::: code-group
