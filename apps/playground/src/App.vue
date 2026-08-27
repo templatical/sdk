@@ -2959,13 +2959,26 @@ onUnmounted(() => {
               {{ t.toolbar.retry }}
             </button>
           </div>
+          <!-- No `isolate` here, and don't add one back. `isolation: isolate`
+               creates a stacking context, which confines the editor's popover
+               root (z-index 10000) inside this element — so our own header,
+               at z-index 100 in the parent context, painted OVER every editor
+               modal. A `fixed` descendant cannot escape an isolated ancestor at
+               any z-index, so the modal's top 15px sat behind the toolbar on
+               any viewport under ~672px tall. That is the #575 follow-up.
+
+               Nothing here needs the isolation: no descendant uses
+               `mix-blend-mode`, and `overflow-hidden` already clips every
+               non-fixed descendant geometrically, so paint order against the
+               header only ever mattered for the fixed overlays we want on top.
+               Guarded by `apps/playground/e2e/tests/modal-stacking.spec.ts`. -->
           <div
             v-else
             :key="shadowDomMode"
             ref="editorContainer"
             data-testid="editor-container"
             data-onboarding="canvas"
-            class="flex-1 min-w-0 isolate rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700"
+            class="flex-1 min-w-0 rounded-lg border border-gray-200 shadow-sm overflow-hidden bg-white dark:bg-gray-800 dark:border-gray-700"
           />
         </main>
       </div>
