@@ -50,13 +50,17 @@ Cloud ist eine Erstanbieter-Implementierung genau der [Provider-Verträge](/de/b
 await initCloud({ container, auth, savedBlocks: mine, testEmail: mine });
 ```
 
-Diese beiden lassen sich gefahrlos mischen, weil Cloud sie nie eigenständig nutzt. Die übrigen vier werden abgelehnt; ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert:
+Diese beiden lassen sich gefahrlos mischen, weil Cloud sie nie eigenständig nutzt. Die übrigen werden vollständig abgelehnt — außer `templates`, `comments` und `versionHistory`, die Cloud für ihre Konfiguration und Events annimmt. Ein abgelehnter, aus JavaScript übergebener Wert wird mit einer Konsolenwarnung ignoriert:
 
 <!-- prettier-ignore -->
-| Schlüssel | Warum `initCloud()` ihn ablehnt |
+| Schlüssel | Was `initCloud()` damit macht |
 | --- | --- |
-| `templates`, `versionHistory`, `comments`, `user` | **An eine von Cloud ausgestellte Vorlagen-ID gebunden.** Cloud verankert Versionen und Kommentare an eigenen IDs und signiert die Autorenschaft gegen das Auth-Token. |
+| `templates` | **Speicher bleibt bei Cloud; Konfiguration und Events gehören Ihnen.** Die ID verankert Zusammenarbeit, Kommentare, KI-Umformulierung, Bewertung und den serverseitigen Export, weshalb `initCloud()` `load`/`create`/`save` behält. Der Schlüssel erreicht den Editor weiterhin für [seine Konfiguration und Events](/de/cloud/templates#eigene-implementierung) — `autoSave`, `unsavedChangesGuard`, `nameField`, `onSaved`, `onCreated`, `onLoaded` —, wobei etwaige Speichermethoden benannt und ignoriert werden. |
+| `comments` | **Speicher bleibt bei Cloud; Konfiguration und Events gehören Ihnen.** Ein Kommentar ist an eine von Cloud ausgestellte Vorlagen-ID gebunden, und seine Autorenschaft wird vom Auth-Token signiert, weshalb `initCloud()` sein eigenes `list`/`create`/`update`/`delete`/`setResolved`/`subscribe` behält. Der Schlüssel erreicht den Editor weiterhin für [seine Events](/de/cloud/comments#eigene-implementierung) — `onCreated`, `onUpdated`, `onDeleted`, `onResolved`, `onUnresolved` —, wobei etwaige Speichermethoden benannt und ignoriert werden. |
+| `versionHistory` | **Speicher bleibt bei Cloud; Events gehören Ihnen.** Eine Version ist an eine von Cloud ausgestellte Vorlagen-ID gebunden, und der eigene `templates`-Adapter von Cloud zeichnet automatische Versionen als Teil jedes Speicherns auf, weshalb `initCloud()` sein eigenes `list`/`get`/`create`/`restore` behält. Der Schlüssel erreicht den Editor weiterhin für [seine Events](/de/cloud/version-history#events) — `onCreated`, `onRestored` —, wobei etwaige Speichermethoden benannt und ignoriert werden. Anders als bei `savedBlocks` gibt es hier weder eine Boolean- noch eine vollständige Provider-Form: Der Typ ist ausschließlich `VersionHistoryOptions`. |
 | `render` | **Cloud rendert für den Versand eigenständig** — Test-E-Mail, geplante Sendungen und Exporte. Ein Provider würde ändern, was Sie in der Vorschau sehen und exportieren, nie das, was Cloud versendet. |
+
+Auch einen `user`-Schlüssel gibt es nicht — `initCloud()` befüllt ihn aus dem Claim des Auth-Tokens selbst, sodass eine von Ihnen übergebene Identität nur davon abweichen könnte, was das Backend ohnehin verifiziert.
 
 Wenn Ihnen der ganze Satz gehören soll, nutzen Sie [`init()`](/de/backend/).
 

@@ -68,7 +68,7 @@ export interface CloudRuntime {
   /** Folds the plan feature, the signed allowlist and "a template exists". */
   isTestEmailAvailable: () => boolean;
   /**
-   * Folds the `commenting` plan feature, the consumer's `commenting: false`, and
+   * Folds the `commenting` plan feature, the consumer's `comments: false`, and
    * "the template is saved" — Cloud anchors a comment server-side. Whether a
    * `user` exists is the shared feature's own gate, not this one's.
    */

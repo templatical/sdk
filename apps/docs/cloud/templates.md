@@ -32,20 +32,44 @@ Cloud's `save` writes a version in the same call, throttled to at most one per m
 
 ## Autosave
 
-Unlike `init()`, where autosave stays off until you have somewhere to save to, a Cloud session always does — so it defaults to **on**. The cadence is the same 2000ms both entry points use; only the on/off default differs. The key and its type are identical:
+Unlike `init()`, where autosave stays off until you have somewhere to save to, a Cloud session always does — so `templates.autoSave` defaults to **on**. `changeDebounce` is the same 2000ms default both entry points use; only the on/off default differs. The keys and their types are identical to `init()`'s:
 
 ```js
-await initCloud({ container, auth, autoSave: { debounce: 5000 } }); // slower
-await initCloud({ container, auth, autoSave: false });              // off
+await initCloud({ container, auth, templates: { autoSave: false } }); // off
+await initCloud({ container, auth, changeDebounce: 5000 });           // slower
 ```
+
+::: tip Pace `onChange` alone with `templates.autoSave: false`
+Cloud always injects its own `templates`, so there is no `templates`-less config here the way there is on `init()`. Persist nothing while still pacing `onChange` at `changeDebounce` by setting `templates: { autoSave: false }`, rather than by leaving `templates` out.
+:::
 
 ## Bringing your own
 
-You can't, inside `initCloud()`.
+Configuration and events, inside `initCloud()` — never storage.
 
-The id Cloud's store issues is what anchors comments, version history, collaboration, AI rewrite, scoring and the server-side export. A store Cloud never issued ids for cannot be wired into features Cloud hosts, so `initCloud({ templates })` is not on the config type, and a provider passed from JavaScript is ignored with a console warning.
+The id Cloud's store issues is what anchors comments, version history, collaboration, AI rewrite, scoring and the server-side export. A store Cloud never issued ids for cannot be wired into features Cloud hosts, so `initCloud()`'s `templates` key takes [`TemplatesOptions`](/backend/templates#events) — `autoSave`, `unsavedChangesGuard`, `nameField`, `onSaved`, `onCreated` and `onLoaded` — rather than a full provider:
 
-Bring your own with [`init()`](/backend/templates), where the whole set — templates, version history, comments, rendering — is yours.
+```ts
+await initCloud({
+  container: '#editor',
+  auth: { url: '/api/token' },
+  templates: {
+    unsavedChangesGuard: false,
+    nameField: false,
+    onSaved:   (template, { trigger }) => {},
+    onCreated: (template) => {},
+    onLoaded:  (template) => {},
+  },
+});
+```
+
+::: tip Rendering and test email save too
+`toMjml()`, `toHtml()` and sending a test email each save the template first, so `onSaved` fires with `trigger: "api"` for an action the user did not experience as a save. Gate navigation on `trigger === "manual"` rather than on the absence of `"autosave"`.
+:::
+
+Passing a full provider is fine: `load`, `create` and `save` are ignored with a console warning naming them, while the rest of the object reaches the editor regardless. An OSS `templates` provider moving to Cloud needs no change — leave the key exactly as it is.
+
+Bring your own storage with [`init()`](/backend/templates), where the whole set — templates, version history, comments, rendering — is yours.
 
 ## Headless use
 

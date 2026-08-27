@@ -290,12 +290,16 @@ describe("useCloudSaveGate", () => {
     }
 
     it("routes the manual save through the gate's modal", () => {
-      expect(body(feature, "requestSave")).toContain("gate.tryRunSave(runSave)");
+      expect(body(feature, "requestSave")).toContain(
+        "gate.tryRunSave(() => runSave(trigger))",
+      );
     });
 
     it("routes autosave through runUnlessBlocked, not around the gate", () => {
       const autoSave = body(feature, "requestAutoSave");
-      expect(autoSave).toContain("gate.runUnlessBlocked(runSave)");
+      expect(autoSave).toContain(
+        'gate.runUnlessBlocked(() => runSave("autosave"))',
+      );
       expect(autoSave).not.toContain("tryRunSave");
     });
 

@@ -20,14 +20,17 @@
 import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { Ref } from "vue";
+import { resolveAutoSave } from "../src/types/auto-save";
 
 interface Captured {
   props: Record<string, unknown> | null;
 }
 
 const captured: Captured = { props: null };
-const fakeApps: Array<{ mount: ReturnType<typeof vi.fn>; unmount: ReturnType<typeof vi.fn> }> =
-  [];
+const fakeApps: Array<{
+  mount: ReturnType<typeof vi.fn>;
+  unmount: ReturnType<typeof vi.fn>;
+}> = [];
 
 // Stand-ins for what `bootstrapCloud` hands back. The real thing is covered by
 // `createCloudRuntime.test.ts`; here we only care that the wrapper forwards it.
@@ -36,7 +39,12 @@ const fakeRuntime = { attach: vi.fn(), ready: vi.fn(), destroy: vi.fn() };
 const fakeProviders = {
   templates: { load: vi.fn(), create: vi.fn(), save: vi.fn() },
   render: { toMjml: vi.fn(async () => "<mjml>cloud</mjml>") },
-  versionHistory: { list: vi.fn(), get: vi.fn(), create: false, restore: false },
+  versionHistory: {
+    list: vi.fn(),
+    get: vi.fn(),
+    create: false,
+    restore: false,
+  },
   savedBlocks: { list: vi.fn(), create: false, update: false, delete: false },
   testEmail: { send: vi.fn() },
 };
@@ -61,7 +69,14 @@ function makeContentWithSortableCycle(): Record<string, unknown> {
         id: "sec",
         type: "section",
         children: [
-          [{ id: "para", type: "paragraph", content: "<p>hi</p>", leaked: leakedDiv }],
+          [
+            {
+              id: "para",
+              type: "paragraph",
+              content: "<p>hi</p>",
+              leaked: leakedDiv,
+            },
+          ],
         ],
       },
     ],
@@ -128,7 +143,10 @@ afterEach(() => {
 
 // Cast helper — Editor.vue is mocked, so the config is just passed through as
 // a prop and never validated.
-function cloudConfig(container: HTMLElement, extra: Record<string, unknown> = {}) {
+function cloudConfig(
+  container: HTMLElement,
+  extra: Record<string, unknown> = {},
+) {
   return {
     container,
     shadowDom: false,
@@ -168,8 +186,14 @@ describe("initCloud — a thin wrapper over init()", () => {
   it("passes Cloud's adapters through the ordinary init() config keys", async () => {
     await mountCloud(null);
     const config = captured.props!.config as Record<string, unknown>;
+    const templates = config.templates as Record<string, unknown>;
 
-    expect(config.templates).toBe(fakeProviders.templates);
+    // `templates` is a new merged object (config keys are layered onto it), so
+    // the storage methods are asserted individually rather than by reference
+    // to `fakeProviders.templates` as a whole.
+    expect(templates.load).toBe(fakeProviders.templates.load);
+    expect(templates.create).toBe(fakeProviders.templates.create);
+    expect(templates.save).toBe(fakeProviders.templates.save);
     expect(config.render).toBe(fakeProviders.render);
     expect(config.versionHistory).toBe(fakeProviders.versionHistory);
     expect(config.savedBlocks).toBe(fakeProviders.savedBlocks);
@@ -177,55 +201,65 @@ describe("initCloud — a thin wrapper over init()", () => {
   });
 
   it("defaults autosave on, at the shared default cadence", async () => {
-    // Cloud differs from `init()` in *whether* autosave runs, not how often:
-    // it always has a store to save to, so it is on unless refused. The
-    // interval is `DEFAULT_AUTO_SAVE_DEBOUNCE_MS`, the one constant both entry
-    // points read — the editor package used to keep a second copy at 5000.
+    // Autosave and its cadence are two separate keys: `templates.autoSave`
+    // (Cloud differs from `init()` here — on unless refused, since Cloud
+    // always has a store) and `changeDebounce` (Cloud does NOT differ here —
+    // both entry points land on `DEFAULT_AUTO_SAVE_DEBOUNCE_MS`, the one
+    // constant both read; made explicit for Cloud so a consumer's own
+    // `changeDebounce` reaches it through this same config).
     await mountCloud(null);
-    expect((captured.props!.config as Record<string, unknown>).autoSave).toEqual(
-      { debounce: DEFAULT_AUTO_SAVE_DEBOUNCE_MS },
-    );
+    const config = captured.props!.config as Record<string, unknown>;
+
+    expect((config.templates as Record<string, unknown>).autoSave).toBe(true);
+    expect(config.changeDebounce).toBe(DEFAULT_AUTO_SAVE_DEBOUNCE_MS);
   });
 
-  it("honours an explicit autoSave: false", async () => {
+  it("honours an explicit templates.autoSave: false", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
-    const p = initCloudFn(cloudConfig(container, { autoSave: false }));
+    const p = initCloudFn(
+      cloudConfig(container, { templates: { autoSave: false } }),
+    );
     await vi.waitFor(() => expect(captured.props).not.toBeNull());
     await p;
 
-    expect((captured.props!.config as Record<string, unknown>).autoSave).toBe(
-      false,
-    );
+    const config = captured.props!.config as Record<string, unknown>;
+    expect((config.templates as Record<string, unknown>).autoSave).toBe(false);
   });
 
-  it("honours an explicit cadence", async () => {
+  it("honours an explicit changeDebounce", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
-    const p = initCloudFn(cloudConfig(container, { autoSave: { debounce: 250 } }));
+    const p = initCloudFn(cloudConfig(container, { changeDebounce: 250 }));
     await vi.waitFor(() => expect(captured.props).not.toBeNull());
     await p;
 
-    expect((captured.props!.config as Record<string, unknown>).autoSave).toEqual(
-      { debounce: 250 },
-    );
+    expect(
+      (captured.props!.config as Record<string, unknown>).changeDebounce,
+    ).toBe(250);
   });
 
   it("forwards the unsaved-changes keys init() owns", async () => {
-    // One editor, one set of keys — and the guard now fires for Cloud too, which
-    // could previously lose work on tab close.
+    // `unsavedChangesGuard` sits on `templates`, alongside `autoSave` and
+    // `nameField`; `onDirtyChange` stays at the config root. Both keys reach
+    // Cloud's mounted config the same way `init()`'s do.
     const onDirtyChange = vi.fn();
     const container = document.createElement("div");
     document.body.appendChild(container);
     const p = initCloudFn(
-      cloudConfig(container, { onDirtyChange, unsavedChangesGuard: false }),
+      cloudConfig(container, {
+        onDirtyChange,
+        templates: { unsavedChangesGuard: false },
+      }),
     );
     await vi.waitFor(() => expect(captured.props).not.toBeNull());
     await p;
 
     const config = captured.props!.config as Record<string, unknown>;
     expect(config.onDirtyChange).toBe(onDirtyChange);
-    expect(config.unsavedChangesGuard).toBe(false);
+    expect(
+      (config.templates as Record<string, unknown>).unsavedChangesGuard,
+    ).toBe(false);
   });
 
   it("throws when the container selector matches nothing", async () => {
@@ -386,7 +420,9 @@ describe("OSS init — instance methods", () => {
 
     const html = await instance.renderCustomBlock({ id: "cb1" } as never);
     expect(html).toBe("<div>cb</div>");
-    expect(instance.getCustomBlockStylesheet("custom-x")).toBe(".cb{color:red}");
+    expect(instance.getCustomBlockStylesheet("custom-x")).toBe(
+      ".cb{color:red}",
+    );
   });
 
   it("post-ready: getContent survives a Sortable expando cycle in live content (issue #203)", async () => {
@@ -539,5 +575,19 @@ describe("top-level unmount()", () => {
     // Second call: nothing tracked → no-op (must not throw or double-unmount).
     unmountFn();
     expect(fakeApps[0].unmount).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("templates-scoped config on Cloud", () => {
+  it("resolveAutoSave falls back to defaultEnabled only when value is undefined", () => {
+    // A direct unit test of the helper's `??` semantics, not of `initCloud()`
+    // — `initCloud()` inlines `config.templates?.autoSave ?? true` in
+    // `index.ts` rather than calling this function, and the package's one
+    // real call site is `Editor.vue`'s, which always passes `false`.
+    // "Defaults autosave on" and "lets the provider object turn it off" are
+    // covered behaviourally above, through a real `initCloud()` call.
+    expect(resolveAutoSave(undefined, true)).toBe(true);
+    expect(resolveAutoSave(false, true)).toBe(false);
+    expect(resolveAutoSave(true, false)).toBe(true);
   });
 });

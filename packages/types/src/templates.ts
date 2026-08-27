@@ -53,6 +53,77 @@ export type TemplatePatch = Partial<{
 }>;
 
 /**
+ * Why a save happened, as reported to {@link TemplatesOptions.onSaved}.
+ *
+ * `manual` covers both the header's Save button and Cmd+S: one intent, and
+ * splitting them would invite handling one and silently missing the other.
+ *
+ * The other three are separate because treating them as a Save press is wrong.
+ * A `rename` writes through `save()` but the user only edited the name, and a
+ * `restore` write is the confirmation step of restoring a version — navigating
+ * away on either strands the user mid-task.
+ */
+export type TemplateSaveTrigger =
+  "manual" | "autosave" | "rename" | "restore" | "api";
+
+/**
+ * Configuration and outward notifications for the template lifecycle. Every
+ * member is optional.
+ *
+ * Separate from the storage methods so `initCloud()` can accept this half alone:
+ * Cloud owns template storage, because the id it issues is the join key for
+ * collaboration, version history, comments, AI rewrite, scoring and the
+ * server-side export. {@link TemplatesProvider} extends this, so one object
+ * satisfies both entry points and moving to Cloud edits nothing.
+ */
+export interface TemplatesOptions {
+  /**
+   * Save automatically, debounced, after the user stops editing.
+   *
+   * Lives here because it is meaningless without somewhere to save to. The
+   * cadence is `changeDebounce` at the config root, since one timer drives both
+   * this and the `onChange` notification, and `onChange` works with no provider.
+   *
+   * Defaults to off for `init()` and on for `initCloud()` — a Cloud session
+   * always has a store.
+   */
+  autoSave?: boolean;
+  /**
+   * Warn before the tab closes with unsaved changes. Defaults to on.
+   *
+   * Cannot cover client-side route changes; `onDirtyChange` at the config root
+   * is what guards a router, and it fires with or without a provider.
+   */
+  unsavedChangesGuard?: boolean;
+  /**
+   * Render the inline template-name field in the header. Defaults to on.
+   *
+   * `false` hides the field and nothing else: `create({ name })`, `setName()`
+   * and the `name` in each save patch keep working, so your own chrome can still
+   * manage names.
+   */
+  nameField?: boolean;
+  /**
+   * A save completed, with `isDirty` cleared and `isSaving` false — so a
+   * handler may navigate without tripping the consumer's own unsaved-changes
+   * guard. Never fires for a failed save; that reaches `onError`.
+   *
+   * `template` is the provider's response to `save()` as returned, not
+   * necessarily what got adopted: a rename that lands mid-flight keeps the
+   * local name, and under a concurrent `load()` it may describe a template
+   * that is no longer open.
+   */
+  onSaved?: (
+    template: Template,
+    meta: { trigger: TemplateSaveTrigger },
+  ) => void;
+  /** A template was created and attached to the editor. */
+  onCreated?: (template: Template) => void;
+  /** A template was fetched and its content put on the canvas. */
+  onLoaded?: (template: Template) => void;
+}
+
+/**
  * Storage contract for the template itself — the save/load lifecycle around
  * whatever the editor is editing.
  *
@@ -93,7 +164,7 @@ export type TemplatePatch = Partial<{
  * };
  * ```
  */
-export interface TemplatesProvider {
+export interface TemplatesProvider extends TemplatesOptions {
   /**
    * Fetch a template by id. The one method that cannot be disabled: without it
    * there is nothing to open.

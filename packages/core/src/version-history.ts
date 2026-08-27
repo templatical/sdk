@@ -7,6 +7,7 @@ import type {
 } from "@templatical/types";
 import { SdkError } from "@templatical/types";
 import { computed, ref, type ComputedRef, type Ref } from "vue";
+import { notifyHandler } from "./error-reporting";
 
 export interface UseVersionHistoryOptions {
   /**
@@ -118,6 +119,16 @@ export function useVersionHistory(
     );
   }
 
+  /**
+   * Run a consumer's event handler without letting it fail the operation.
+   *
+   * A handler that throws must not turn a completed write into a rejected one —
+   * the UI would report a failure for a version that was recorded or restored.
+   */
+  function notify(run: () => void): void {
+    notifyHandler(options.onError, run);
+  }
+
   async function load(params?: VersionHistoryListParams): Promise<void> {
     const templateId = requireTemplateId("list");
     isLoading.value = true;
@@ -164,6 +175,7 @@ export function useVersionHistory(
     try {
       const created = await providerCreate(templateId, content, meta);
       versions.value = [created, ...versions.value];
+      notify(() => provider.onCreated?.(created));
       return created;
     } catch (error) {
       options.onError?.(error as Error);
@@ -175,15 +187,22 @@ export function useVersionHistory(
     const { restore: providerRestore } = provider;
     if (typeof providerRestore !== "function") refuse("restore");
     const templateId = requireTemplateId("restore");
+
+    let restored: Template;
     isRestoring.value = true;
     try {
-      return await providerRestore(templateId, versionId);
+      restored = await providerRestore(templateId, versionId);
     } catch (error) {
       options.onError?.(error as Error);
       throw error;
     } finally {
       isRestoring.value = false;
     }
+    // Below the `finally` on purpose: `isRestoring` is cleared there, so a
+    // handler must not observe the composable still reporting itself
+    // mid-restore. Unreachable on failure — the catch rethrows.
+    notify(() => provider.onRestored?.(restored));
+    return restored;
   }
 
   return {

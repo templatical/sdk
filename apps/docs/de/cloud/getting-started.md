@@ -109,16 +109,23 @@ const editor = await initCloud({
   collaboration: {             // Echtzeit-Zusammenarbeit aktivieren
     enabled: true,
   },
-  commenting: true,            // Inline-Kommentare aktivieren
   savedBlocks: true,           // Cloud-gestützt (Standard); false deaktiviert,
                                // oder ein SavedBlocksProvider für Ihren eigenen Speicher
 
   // Callbacks
   onChange: (content) => { /* Template geändert */ },
   onError: (error) => { /* Fehler behandeln */ },
-  onComment: (event) => { /* Kommentar erstellt/aktualisiert/gelöscht */ },
-  onCreate: (template) => { /* create() aufgelöst — template.id ist neu */ },
-  onLoad: (template) => { /* load() aufgelöst */ },
+  templates: {
+    onSaved:   (template, { trigger }) => { /* trigger: manual | autosave | rename | restore | api */ },
+    onCreated: (template) => { /* create() aufgelöst — template.id ist neu */ },
+    onLoaded:  (template) => { /* load() aufgelöst */ },
+  },
+  comments: {                  // weglassen für Clouds Standard; false schaltet vollständig ab
+    onCreated: (comment, { origin }) => { /* origin: local | remote */ },
+  },
+  versionHistory: {            // weglassen für Clouds Standard; keine Boolean-Form zum Abschalten
+    onRestored: (template) => { /* restore() aufgelöst */ },
+  },
   onUnmount: () => { /* der Editor wurde abgebaut */ },
 });
 ```

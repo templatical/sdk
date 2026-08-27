@@ -12,10 +12,10 @@ Das alles übernimmt der Editor. **Die Persistenz liegt bei Ihnen** — drei Met
 ## Schnellstart
 
 ```ts
-import { init } from '@templatical/editor';
+import { init } from "@templatical/editor";
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   templates: {
     load: async (id) => {
       const res = await fetch(`/api/templates/${id}`);
@@ -23,9 +23,9 @@ const editor = await init({
     },
 
     create: async (input) => {
-      const res = await fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       });
       return res.json();
@@ -33,8 +33,8 @@ const editor = await init({
 
     save: async (id, patch) => {
       const res = await fetch(`/api/templates/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),
       });
       return res.json();
@@ -43,7 +43,7 @@ const editor = await init({
 });
 
 // Das Öffnen einer Vorlage erfolgt imperativ — Ihre Anwendung entscheidet, welche.
-await editor.load('tpl_123');
+await editor.load("tpl_123");
 ```
 
 **Lassen Sie `templates` weg, fehlt die Funktion** — kein Namensfeld, keine Speichern-Schaltfläche, keine Statusanzeige. `create()` / `load()` / `save()` werden dann mit einer erklärenden Fehlermeldung abgelehnt, und Sie speichern den Inhalt selbst über [`onChange`](#speichern-ohne-provider).
@@ -63,8 +63,13 @@ type TemplatePatch = Partial<{ name: string; content: TemplateContent }>;
 
 interface TemplatesProvider {
   load(id: string): Promise<Template>;
-  create: false | ((input: { name?: string; content: TemplateContent }) => Promise<Template>);
-  save:   false | ((id: string, patch: TemplatePatch) => Promise<Template>);
+  create:
+    | false
+    | ((input: {
+        name?: string;
+        content: TemplateContent;
+      }) => Promise<Template>);
+  save: false | ((id: string, patch: TemplatePatch) => Promise<Template>);
 }
 ```
 
@@ -72,12 +77,32 @@ interface TemplatesProvider {
 - **`save` erhält einen Patch**, nicht den bloßen Inhalt. So kann eine Umbenennung ohne Inhalt übertragen werden, und ein künftiges Feld lässt sich ergänzen, ohne Ihre Implementierung zu brechen. Der Editor sendet `name` (sofern die Vorlage einen hat) und `content` gemeinsam, in einem Aufruf.
 - **`createdAt` / `updatedAt` sind optional, ISO 8601 und dienen nur der Anzeige.** Beide fehlen in `TemplatePatch`, der Editor schreibt sie also nie — angezeigt wird, was `load` oder `save` zurückgegeben hat. Siehe [Der Zeitstempel](#der-zeitstempel).
 - **`name` ist optional.** Ohne Namensspalte lassen Sie ihn weg — der Header zeigt stattdessen ein gedimmtes „Unbenannt". Das Feld bleibt bearbeitbar, solange `save` eine Funktion ist; eine Umbenennung wird also weiterhin als `save(id, { name, content })` gesendet. Ein Store, der sie ignoriert, gibt eine Vorlage ohne Namen zurück, und der Header zeigt wieder „Unbenannt". Wenn Sie Namen gar nicht nutzen, [blenden Sie das Feld aus](#das-namensfeld-ausblenden).
+- **Persistenzseitige Effekte gehören in den Rumpf von `save()`.** Er läuft bei jedem Schreibvorgang, sodass Logging, Cache-Invalidierung oder ein Webhook-Aufruf dort ihren festen Platz haben. Siehe [Events](#events) für das, was der Editor freigibt, sobald dieser Schreibvorgang abgeschlossen ist.
 
 Jede Methode darf ablehnen. Der Editor meldet den Fehler über `onError`, zeigt ihn im Header an und lässt seinen Zustand unberührt — nichts wird als gespeichert markiert, was es nicht ist.
 
 ### Kein `list`, kein `delete`
 
-Der Editor hat keinen Vorlagen-Browser. Die Auswahl, *welche* Vorlage geöffnet wird, gehört in Ihre Anwendung; die Aufgabe des Editors beginnt, sobald Sie ihm eine ID übergeben.
+Der Editor hat keinen Vorlagen-Browser. Die Auswahl, _welche_ Vorlage geöffnet wird, gehört in Ihre Anwendung; die Aufgabe des Editors beginnt, sobald Sie ihm eine ID übergeben.
+
+## Events
+
+```ts
+templates: {
+  load, create, save,
+  onSaved:   (template, { trigger }) => {},
+  onCreated: (template) => {},
+  onLoaded:  (template) => {},
+}
+```
+
+`trigger` ist eines von `manual`, `autosave`, `rename`, `restore`, `api`. `manual` deckt die Speichern-Schaltfläche im Header sowie `Cmd`/`Strg`+`S` ab.
+
+::: tip Wohin Logik nach dem Speichern gehört
+Persistenz gehört in `save()` — das ist Ihre Funktion, und ihr Rumpf läuft, bevor der Editor die Antwort übernommen hat. `onSaved` ist für die zwei Dinge da, die dieser Rumpf nicht liefern kann: welches Bedienelement das Speichern ausgelöst hat, und ein Zeitpunkt, zu dem sich der Editor stabilisiert hat. Eine Navigation aus `save()` heraus erfolgt, während `isDirty` noch `true` ist, sodass Ihre eigene Router-Sperre sie blockiert.
+:::
+
+Eine Handler-Funktion, die einen Fehler wirft, wird abgefangen und an `onError` gemeldet — sie lässt das auslösende Speichern, Erstellen oder Laden nie fehlschlagen.
 
 ## Erstellen oder Speichern deaktivieren
 
@@ -111,11 +136,11 @@ Der Name wird mit `Enter` oder beim Verlassen des Feldes übernommen, mit `Escap
 
 Die Statusanzeige kennt drei Zustände:
 
-| Zustand | Wird gezeigt, wenn |
-| --- | --- |
-| **Nicht gespeichert** | es Änderungen gibt, von denen der Editor weiß, dass sie nicht gespeichert sind |
-| **Gespeichert** | ein Speichern gerade erfolgreich war (für einige Sekunden) |
-| **Speichern fehlgeschlagen** | der letzte Versuch abgelehnt wurde — Ihre Fehlermeldung steht im Tooltip |
+| Zustand                      | Wird gezeigt, wenn                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------ |
+| **Nicht gespeichert**        | es Änderungen gibt, von denen der Editor weiß, dass sie nicht gespeichert sind |
+| **Gespeichert**              | ein Speichern gerade erfolgreich war (für einige Sekunden)                     |
+| **Speichern fehlgeschlagen** | der letzte Versuch abgelehnt wurde — Ihre Fehlermeldung steht im Tooltip       |
 
 Die Speichern-Schaltfläche ist deaktiviert, solange keine Vorlage existiert, denn `save()` aktualisiert eine ID. Rufen Sie zuerst `create()` oder `load()` auf.
 
@@ -141,31 +166,40 @@ Sie erscheint unabhängig davon, ob `save` verfügbar ist — bei einer schreibg
 
 ```ts
 init({
-  templateNameField: false,
-  templates: { /* … */ },
+  templates: {
+    nameField: false,
+    /* … */
+  },
 });
 ```
 
-Entfernt das Feld aus dem Header, unabhängig davon, ob Ihr Provider speichern kann. `editor.create({ name })`, `setName()` und der `name` in jedem Speicher-Patch funktionieren weiter, Ihre eigene Bedienoberfläche kann den Namen also weiterhin verwalten. `initCloud()` akzeptiert denselben Schlüssel.
+Entfernt das Feld aus dem Header, unabhängig davon, ob Ihr Provider speichern kann. `editor.create({ name })`, `setName()` und der `name` in jedem Speicher-Patch funktionieren weiter, Ihre eigene Bedienoberfläche kann den Namen also weiterhin verwalten. `initCloud()` akzeptiert denselben Schlüssel auf seinem eigenen `templates`-Objekt.
 
 Ist das Feld ausgeblendet, bleibt der Zeitstempel der einzige Inhalt der linken Header-Spalte.
-
-Ohne Provider bleibt der Schlüssel wirkungslos: kein `templates` heißt kein Namensfeld zum Ausblenden — und auch kein Zeitstempel.
 
 ## Autosave
 
 ```ts
 await init({
-  container: '#editor',
-  templates: { /* … */ },
-  autoSave: { debounce: 5000 },  // `true` nutzt den Standard 2000
+  container: "#editor",
+  templates: {
+    autoSave: true,
+    /* … */
+  },
+  changeDebounce: 5000, // Standardwert 2000
 });
 ```
 
+`templates.autoSave` schaltet das Speichern ein. `changeDebounce` legt die Taktung fest — an der Wurzel der Konfiguration statt daneben.
+
+::: tip `changeDebounce` taktet auch `onChange`
+Derselbe Timer treibt beides, und [`onChange`](#speichern-ohne-provider) löst unabhängig davon aus, ob `templates` konfiguriert ist — die Taktung muss also auch aus einer Konfiguration ohne jeden Provider erreichbar bleiben.
+:::
+
 Die Verzögerung beginnt bei jeder Änderung neu, sodass aus einer Tippfolge ein einziges Speichern wird. Sie pausiert, während der Nutzer durch Undo/Redo navigiert, und überspringt das Speichern vollständig, wenn nichts geändert wurde.
 
-::: warning `autoSave` benötigt einen `templates`-Provider
-Ohne ihn gibt es kein Ziel zum Speichern — die Option wird ignoriert und der Editor protokolliert eine Warnung.
+::: warning `autoSave` braucht ein Ziel zum Speichern
+`true` mit einem Provider, dessen `save` `false` ist, protokolliert eine Warnung und speichert nichts. Speichern Sie in diesem Fall über `onChange`.
 :::
 
 ## Cmd+S
@@ -181,33 +215,38 @@ Zwei Mechanismen, denn keiner deckt den anderen ab:
 
 ```ts
 await init({
-  container: '#editor',
-  templates: { /* … */ },
-  onDirtyChange: (isDirty) => { hasUnsavedWork.value = isDirty },
-  unsavedChangesGuard: true,  // der Standard
+  container: "#editor",
+  templates: {
+    unsavedChangesGuard: true, // der Standard
+    /* … */
+  },
+  onDirtyChange: (isDirty) => {
+    hasUnsavedWork.value = isDirty;
+  },
 });
 ```
 
-**`unsavedChangesGuard`** ist eine `beforeunload`-Rückfrage, standardmäßig aktiv, sobald ein Provider konfiguriert ist. Sie deckt das Schließen oder Neuladen des Tabs ab. Setzen Sie sie auf `false`, um die Rückfrage selbst zu übernehmen. Ohne Provider warnt der Editor nie — er kann nicht wissen, ob Sie die Änderung bereits gespeichert haben.
+**`templates.unsavedChangesGuard`** ist eine `beforeunload`-Rückfrage, standardmäßig aktiv, sobald ein Provider konfiguriert ist. Sie deckt das Schließen oder Neuladen des Tabs ab. Setzen Sie sie auf `false`, um die Rückfrage selbst zu übernehmen. Ohne Provider warnt der Editor nie — er kann nicht wissen, ob Sie die Änderung bereits gespeichert haben.
 
 **`onDirtyChange`** (und sein abfragbares Gegenstück `editor.isDirty()`) ist das, womit Sie einen clientseitigen Router absichern, denn `beforeunload` löst bei einer Navigation innerhalb der Anwendung nicht aus:
 
 ```ts
 router.beforeEach((to, from, next) => {
-  if (editor.isDirty() && !confirm('Ungespeicherte Änderungen verwerfen?')) return next(false);
+  if (editor.isDirty() && !confirm("Ungespeicherte Änderungen verwerfen?"))
+    return next(false);
   next();
 });
 ```
 
-`onDirtyChange` funktioniert mit und ohne Provider. Beide Schlüssel akzeptiert auch `initCloud()`, zu denselben Bedingungen — Cloud hat immer einen Speicherort, die Rückfrage ist dort also aktiv, sofern Sie sie nicht abschalten.
+`onDirtyChange` funktioniert mit und ohne Provider, in beiden Fällen an der Wurzel der Konfiguration. `initCloud()` akzeptiert `unsavedChangesGuard` auf seinem eigenen `templates`-Objekt, zu denselben Bedingungen — Cloud hat immer einen Speicherort, die Rückfrage ist dort also aktiv, sofern Sie sie nicht abschalten.
 
 ## Die Instanz-API
 
 ```ts
-const template = await editor.create({ name: 'Willkommens-E-Mail' });
+const template = await editor.create({ name: "Willkommens-E-Mail" });
 await editor.load(template.id);
 await editor.save();
-editor.isDirty();  // boolean
+editor.isDirty(); // boolean
 ```
 
 - **`create(input?)`** speichert den aktuellen Inhalt als neue Vorlage. Übergeben Sie `content`, um zuvor den Inhalt des Editors zu ersetzen — `create({ content })` lädt und speichert damit in einem Schritt.
@@ -222,7 +261,7 @@ Ein Provider ist nicht der einzige Weg, eine Vorlage zu behalten. `onChange` lö
 
 ```ts
 await init({
-  container: '#editor',
+  container: "#editor",
   onChange: (content) => myStore.save(content),
 });
 ```

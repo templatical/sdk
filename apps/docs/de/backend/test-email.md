@@ -125,6 +125,19 @@ Ein leeres Array wird als Entscheidung gelesen („niemand darf angeschrieben we
 
 Die Nutzlast gibt die Liste als `allowedRecipients` zurück, damit eine `send`-Implementierung zwischen Ihrem Backend und Templatical Cloud portabel bleibt. Sie ist **nicht vertrauenswürdig** — ohne Signatur und aus dem Browser gelesen. Über die Portabilität hinaus taugt sie für eines: den Vergleich mit `recipient` auf dem Server, wo eine Abweichung einen manipulierten oder fehlerhaften Client bedeutet und sich zu protokollieren lohnt.
 
+## Events
+
+```ts
+testEmail: {
+  send, // ...includeMjml, allowedRecipients, defaultRecipient
+  onSent: (payload) => {},
+}
+```
+
+Löst aus, sobald `send` auflöst, mit derselben `TestEmailPayload`, die es erhalten hat. Wird bei einem abgelehnten Versand nicht aufgerufen — das zeigt stattdessen die eigene Inline-Fehlermeldung des Dialogs.
+
+Eine Handler-Funktion, die einen Fehler wirft, wird abgefangen und an `onError` gemeldet. Zu diesem Zeitpunkt war `send` bereits erfolgreich, und der Dialog zeigt bereits seine Bestätigung — der Fehler kann eine schon versendete E-Mail nicht mehr in einen Fehlschlag verwandeln.
+
 ## Im Editor
 
 <img src="/images/test-email-modal.png" alt="Der Dialog „Test-E-Mail senden" — ein Empfängerfeld über einer Vorschau der Vorlage ohne Editor-Elemente mit einem Umschalter für Desktop / Mobil sowie „Abbrechen" und „Senden" am unteren Rand" style="max-width: 480px;" />

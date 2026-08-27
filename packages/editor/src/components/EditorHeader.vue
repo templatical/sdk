@@ -49,7 +49,7 @@ defineProps<{
   /** Null when no `TemplatesProvider` is configured — no name, save or status. */
   templates: UseTemplatesFeatureReturn | null;
   /**
-   * Whether to render the inline name field, from `config.templateNameField`.
+   * Whether to render the inline name field, from `config.templates?.nameField`.
    * False hides it whether or not the provider can save — a consumer whose
    * store has no name column, or whose own chrome owns the name.
    */

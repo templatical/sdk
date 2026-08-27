@@ -13,7 +13,7 @@ export interface TestEmailPayload {
   /**
    * The template rendered to MJML.
    *
-   * Present only when {@link TestEmailProvider.includeMjml} is set **and**
+   * Present only when {@link TestEmailOptions.includeMjml} is set **and**
    * `@templatical/renderer` resolved. Always guard for absence: opting in
    * without the renderer installed still sends, just without this field (the
    * editor logs one warning naming the package).
@@ -23,7 +23,7 @@ export interface TestEmailPayload {
    */
   mjml?: string;
   /**
-   * Echo of {@link TestEmailProvider.allowedRecipients}, present only when one
+   * Echo of {@link TestEmailOptions.allowedRecipients}, present only when one
    * was configured.
    *
    * **Untrusted.** It is read out of the browser and carries no signature, so it
@@ -38,36 +38,14 @@ export interface TestEmailPayload {
 }
 
 /**
- * Sending contract for test emails. Implement it to let users send a test of the
- * template they're editing through your own infrastructure — the editor owns the
- * trigger, the dialog, recipient validation and the sending/success/error
- * states; you own delivery.
+ * Configuration and outward notifications for test-email sending. Every
+ * member is optional.
  *
- * Pass an implementation as `testEmail` to `init()`. When omitted the feature
- * stays off entirely and no trigger renders.
- *
- * ```ts
- * const provider: TestEmailProvider = {
- *   send: ({ recipient, content }) =>
- *     fetch("/api/test-email", {
- *       method: "POST",
- *       headers: { "Content-Type": "application/json" },
- *       body: JSON.stringify({ recipient, content }),
- *     }).then((r) => {
- *       if (!r.ok) throw new Error("Could not send the test email");
- *     }),
- * };
- * ```
+ * Separate from `send` so `initCloud()` can accept this half alone: these are
+ * meaningful whichever backend does the sending, Cloud's own or yours.
+ * {@link TestEmailProvider} extends this, adding only `send`.
  */
-export interface TestEmailProvider {
-  /**
-   * Deliver a test of the current template.
-   *
-   * Resolve on success — the dialog confirms, then closes. Reject with a
-   * **user-presentable** message on failure: the dialog renders `error.message`
-   * inline and stays open so the user can retry.
-   */
-  send(payload: TestEmailPayload): Promise<void>;
+export interface TestEmailOptions {
   /**
    * Also render the template to MJML and pass it as
    * {@link TestEmailPayload.mjml}, saving you a `renderToMjml()` call.
@@ -99,4 +77,43 @@ export interface TestEmailProvider {
    * {@link allowedRecipients}.
    */
   defaultRecipient?: string;
+  /**
+   * A test send completed. Fires once `send` resolves, with the same payload
+   * it was given — never for a rejected send, since that surfaces through the
+   * dialog's own inline error instead.
+   */
+  onSent?: (payload: TestEmailPayload) => void;
+}
+
+/**
+ * Sending contract for test emails. Implement it to let users send a test of the
+ * template they're editing through your own infrastructure — the editor owns the
+ * trigger, the dialog, recipient validation and the sending/success/error
+ * states; you own delivery.
+ *
+ * Pass an implementation as `testEmail` to `init()`. When omitted the feature
+ * stays off entirely and no trigger renders.
+ *
+ * ```ts
+ * const provider: TestEmailProvider = {
+ *   send: ({ recipient, content }) =>
+ *     fetch("/api/test-email", {
+ *       method: "POST",
+ *       headers: { "Content-Type": "application/json" },
+ *       body: JSON.stringify({ recipient, content }),
+ *     }).then((r) => {
+ *       if (!r.ok) throw new Error("Could not send the test email");
+ *     }),
+ * };
+ * ```
+ */
+export interface TestEmailProvider extends TestEmailOptions {
+  /**
+   * Deliver a test of the current template.
+   *
+   * Resolve on success — the dialog confirms, then closes. Reject with a
+   * **user-presentable** message on failure: the dialog renders `error.message`
+   * inline and stays open so the user can retry.
+   */
+  send(payload: TestEmailPayload): Promise<void>;
 }

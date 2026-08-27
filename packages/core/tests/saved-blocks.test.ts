@@ -661,3 +661,118 @@ describe('useSavedBlocks permissions', () => {
     });
   });
 });
+
+describe('useSavedBlocks events', () => {
+  it('fires onCreated once with the created block', async () => {
+    const created = createSavedBlock('b2', 'Footer');
+    const onCreated = vi.fn();
+    const provider = createMockProvider({
+      create: vi.fn().mockResolvedValue(created),
+      onCreated,
+    });
+
+    const { create } = useSavedBlocks({ provider });
+    await create('Footer', []);
+
+    expect(onCreated).toHaveBeenCalledTimes(1);
+    expect(onCreated).toHaveBeenCalledWith(created);
+  });
+
+  it('keeps create successful when onCreated throws, and reports through onError', async () => {
+    const onError = vi.fn();
+    const provider = createMockProvider({
+      onCreated: () => {
+        throw new Error('handler blew up');
+      },
+    });
+
+    const { create } = useSavedBlocks({ provider, onError });
+
+    await expect(create('Footer', [])).resolves.toMatchObject({ id: 'new' });
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][0].message).toBe('handler blew up');
+  });
+
+  it('fires onUpdated once with the updated block', async () => {
+    const updated = createSavedBlock('b1', 'Updated Header');
+    const onUpdated = vi.fn();
+    const provider = createMockProvider({
+      update: vi.fn().mockResolvedValue(updated),
+      onUpdated,
+    });
+
+    const { update } = useSavedBlocks({ provider });
+    await update('b1', { name: 'Updated Header' });
+
+    expect(onUpdated).toHaveBeenCalledTimes(1);
+    expect(onUpdated).toHaveBeenCalledWith(updated);
+  });
+
+  it('keeps update successful when onUpdated throws, and reports through onError', async () => {
+    const onError = vi.fn();
+    const provider = createMockProvider({
+      onUpdated: () => {
+        throw new Error('handler blew up');
+      },
+    });
+
+    const { update } = useSavedBlocks({ provider, onError });
+
+    await expect(update('b1', { name: 'x' })).resolves.toMatchObject({
+      id: 'new',
+    });
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][0].message).toBe('handler blew up');
+  });
+
+  it('fires onDeleted with the removed block itself, not just its id', async () => {
+    const b1 = createSavedBlock('b1', 'Header');
+    const onDeleted = vi.fn();
+    const provider = createMockProvider({
+      list: vi.fn().mockResolvedValue([b1]),
+      onDeleted,
+    });
+
+    const { load, remove } = useSavedBlocks({ provider });
+    await load();
+    await remove('b1');
+
+    // An implementation passing just the id would satisfy a bare "was
+    // called" check — asserting a property (and full equality) catches that.
+    expect(onDeleted).toHaveBeenCalledTimes(1);
+    expect(onDeleted.mock.calls[0][0].name).toBe('Header');
+    expect(onDeleted).toHaveBeenCalledWith(b1);
+  });
+
+  it('fires nothing when the deleted id was never loaded locally', async () => {
+    const onDeleted = vi.fn();
+    const provider = createMockProvider({ onDeleted });
+
+    const { remove } = useSavedBlocks({ provider });
+    await remove('never-loaded');
+
+    expect(onDeleted).not.toHaveBeenCalled();
+  });
+
+  it('keeps delete successful when onDeleted throws, and reports through onError', async () => {
+    const b1 = createSavedBlock('b1', 'Header');
+    const onError = vi.fn();
+    const provider = createMockProvider({
+      list: vi.fn().mockResolvedValue([b1]),
+      onDeleted: () => {
+        throw new Error('handler blew up');
+      },
+    });
+
+    const { load, remove, savedBlocks } = useSavedBlocks({
+      provider,
+      onError,
+    });
+    await load();
+    await remove('b1');
+
+    expect(savedBlocks.value).toEqual([]);
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][0].message).toBe('handler blew up');
+  });
+});

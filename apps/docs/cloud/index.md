@@ -50,13 +50,17 @@ Cloud is a first-party implementation of the same [provider contracts](/backend/
 await initCloud({ container, auth, savedBlocks: mine, testEmail: mine });
 ```
 
-They mix safely because Cloud never independently uses either. The other four are refused, and one passed from JavaScript is ignored with a console warning:
+They mix safely because Cloud never independently uses either. The rest are refused outright, except `templates`, `comments` and `versionHistory`, which Cloud accepts for their configuration and events; a refused value passed from JavaScript is ignored with a console warning:
 
 <!-- prettier-ignore -->
-| Key | Why `initCloud()` refuses it |
+| Key | What `initCloud()` does with it |
 | --- | --- |
-| `templates`, `versionHistory`, `comments`, `user` | **Keyed to a template id Cloud issued.** Cloud anchors versions and comments to its own ids and signs authorship against the auth token. |
+| `templates` | **Storage stays Cloud's; configuration and events are yours.** The id anchors collaboration, comments, AI rewrite, scoring and the server-side export, so `initCloud()` keeps `load`/`create`/`save`. The key still reaches the editor for [its configuration and events](/cloud/templates#bringing-your-own) — `autoSave`, `unsavedChangesGuard`, `nameField`, `onSaved`, `onCreated`, `onLoaded` — with any storage methods named and ignored. |
+| `comments` | **Storage stays Cloud's; configuration and events are yours.** A comment is keyed to a template id Cloud issued and its author is signed by the auth token, so `initCloud()` keeps its own `list`/`create`/`update`/`delete`/`setResolved`/`subscribe`. The key still reaches the editor for [its events](/cloud/comments#bringing-your-own) — `onCreated`, `onUpdated`, `onDeleted`, `onResolved`, `onUnresolved` — with any storage methods named and ignored. |
+| `versionHistory` | **Storage stays Cloud's; events are yours.** A version is keyed to a template id Cloud issued, and Cloud's own `templates` adapter records automatic versions as part of every save, so `initCloud()` keeps its own `list`/`get`/`create`/`restore`. The key still reaches the editor for [its events](/cloud/version-history#events) — `onCreated`, `onRestored` — with any storage methods named and ignored. There's no boolean or full-provider form here, unlike `savedBlocks`: the type is `VersionHistoryOptions` alone. |
 | `render` | **Cloud renders independently for delivery** — test email, scheduled sends and exports. A provider would change what you preview and export, never what Cloud sends. |
+
+There's no `user` key either — `initCloud()` fills it from the auth token's own claim, so a consumer-supplied identity could only disagree with the one the backend verifies.
 
 To own the whole set, use [`init()`](/backend/).
 

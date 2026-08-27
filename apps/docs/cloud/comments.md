@@ -30,7 +30,7 @@ All four mutations are enabled: comment storage and its realtime fan-out are wha
 
 Three conditions, and none implies another:
 
-- **`commenting: false`** switches the feature off entirely.
+- **`comments: false`** switches the feature off entirely.
 - **The `commenting` plan feature** must be granted.
 - **The template must be saved.** Cloud anchors a comment server-side, so there has to be a stored template to anchor it to — the Comments button does not render before the first save.
 
@@ -38,11 +38,7 @@ Three conditions, and none implies another:
 const editor = await initCloud({
   container: '#editor',
   auth: { url: '/api/templatical/token' },
-  commenting: false, // off
-  onComment: (event) => {
-    // 'created' | 'updated' | 'deleted' | 'resolved' | 'unresolved'
-    console.log(event.type, event.comment.id);
-  },
+  comments: false, // off, whatever the plan grants
 });
 ```
 
@@ -54,13 +50,25 @@ A project whose token endpoint omits the `user` claim gets no comments feature a
 
 ## Bringing your own
 
-You can't, inside `initCloud()` — the same boundary [`templates`](/backend/templates) and [version history](/cloud/version-history) draw, for the same reason.
+Configuration and events, inside `initCloud()` — never storage.
 
-A comment is keyed to a template id **Cloud issued**, and its author is signed by Cloud's token. A consumer-supplied provider would drive the UI while Cloud's own store stayed the one the server writes to and bills for.
+A comment is keyed to a template id **Cloud issued**, and its author is signed by Cloud's token, so `initCloud()`'s `comments` key takes [`CommentsOptions`](/backend/comments#events) — `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` — rather than a full provider:
 
-`initCloud({ comments })` is therefore not on the config type, and a provider passed from JavaScript is ignored with a console warning.
+```ts
+await initCloud({
+  container: '#editor',
+  auth: { url: '/api/token' },
+  comments: {
+    onCreated: (comment, { origin }) => {},
+    onResolved: (comment) => {},
+    onUnresolved: (comment) => {},
+  },
+});
+```
 
-Bring your own with [`init()`](/backend/comments), where the whole set — templates, version history, comments, rendering — is yours.
+Passing a full provider is fine: `list`, `create`, `update`, `delete`, `setResolved` and `subscribe` are ignored with a console warning naming them, while `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` reach the editor regardless. An OSS `comments` provider moving to Cloud needs no change — leave the key exactly as it is.
+
+Bring your own storage with [`init()`](/backend/comments), where the whole set — templates, version history, comments, rendering — is yours.
 
 ## Headless use
 

@@ -5,7 +5,6 @@ import type {
   Comment,
   CommentAuthor,
   CommentChange,
-  CommentEvent,
   CommentsProvider,
 } from "@templatical/types";
 
@@ -41,7 +40,6 @@ function setup(
     templateId?: string | null;
     user?: CommentAuthor | null;
     onError?: (e: Error) => void;
-    onComment?: (e: CommentEvent) => void;
   } = {},
 ) {
   const provider: CommentsProvider = {
@@ -61,7 +59,6 @@ function setup(
     getTemplateId: () =>
       options.templateId === undefined ? "tpl-1" : options.templateId,
     getUser: () => (options.user === undefined ? USER : options.user),
-    onComment: options.onComment,
     onError: options.onError,
   });
   return { provider, comments };
@@ -71,7 +68,9 @@ describe("useComments", () => {
   describe("list", () => {
     it("stores what the provider returned, in the provider's order", async () => {
       const threads = [comment("c-2"), comment("c-1")];
-      const { comments, provider } = setup({ list: vi.fn(async () => threads) });
+      const { comments, provider } = setup({
+        list: vi.fn(async () => threads),
+      });
 
       await comments.load();
 
@@ -134,22 +133,19 @@ describe("useComments", () => {
 
   describe("create", () => {
     it("appends a root and fires a created event", async () => {
-      const onComment = vi.fn();
+      const onCreated = vi.fn();
       const created = comment("c-9");
-      const { comments, provider } = setup(
-        { create: vi.fn(async () => created) },
-        { onComment },
-      );
+      const { comments, provider } = setup({
+        create: vi.fn(async () => created),
+        onCreated,
+      });
 
       const result = await comments.create({ body: "hello" });
 
       expect(result).toBe(created);
       expect(provider.create).toHaveBeenCalledWith("tpl-1", { body: "hello" });
       expect(comments.comments.value.map((c) => c.id)).toEqual(["c-9"]);
-      expect(onComment).toHaveBeenCalledWith({
-        type: "created",
-        comment: created,
-      });
+      expect(onCreated).toHaveBeenCalledWith(created, { origin: "local" });
     });
 
     it("nests a reply under its parent rather than appending a root", async () => {
@@ -185,7 +181,9 @@ describe("useComments", () => {
   describe("update", () => {
     it("replaces the comment in place and keeps its replies", async () => {
       const { comments } = setup({
-        list: vi.fn(async () => [comment("c-1", { replies: [comment("r-1")] })]),
+        list: vi.fn(async () => [
+          comment("c-1", { replies: [comment("r-1")] }),
+        ]),
       });
       await comments.load();
 
@@ -219,22 +217,22 @@ describe("useComments", () => {
 
   describe("delete", () => {
     it("removes a root and fires a deleted event carrying what was removed", async () => {
-      const onComment = vi.fn();
-      const { comments, provider } = setup(
-        { list: vi.fn(async () => [comment("c-1"), comment("c-2")]) },
-        { onComment },
-      );
+      const onDeleted = vi.fn();
+      const { comments, provider } = setup({
+        list: vi.fn(async () => [comment("c-1"), comment("c-2")]),
+        onDeleted,
+      });
       await comments.load();
-      onComment.mockClear();
+      onDeleted.mockClear();
 
       await comments.remove("c-1");
 
       expect(provider.delete).toHaveBeenCalledWith("tpl-1", "c-1");
       expect(comments.comments.value.map((c) => c.id)).toEqual(["c-2"]);
-      expect(onComment).toHaveBeenCalledWith({
-        type: "deleted",
-        comment: expect.objectContaining({ id: "c-1" }),
-      });
+      expect(onDeleted).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "c-1" }),
+        { origin: "local" },
+      );
     });
 
     it("removes a reply from its parent, leaving the thread standing", async () => {
@@ -275,23 +273,21 @@ describe("useComments", () => {
     });
 
     it("fires the event the stored result implies, not the one requested", async () => {
-      const onComment = vi.fn();
+      const onResolved = vi.fn();
       // A store that refuses to reopen: asked for `false`, answers "still resolved".
-      const { comments } = setup(
-        {
-          setResolved: vi.fn(async () =>
-            comment("c-1", { resolvedAt: "2026-08-17T12:00:00Z" }),
-          ),
-        },
-        { onComment },
-      );
+      const { comments } = setup({
+        setResolved: vi.fn(async () =>
+          comment("c-1", { resolvedAt: "2026-08-17T12:00:00Z" }),
+        ),
+        onResolved,
+      });
 
       await comments.setResolved("c-1", false);
 
-      expect(onComment).toHaveBeenCalledWith({
-        type: "resolved",
-        comment: expect.objectContaining({ resolvedAt: "2026-08-17T12:00:00Z" }),
-      });
+      expect(onResolved).toHaveBeenCalledWith(
+        expect.objectContaining({ resolvedAt: "2026-08-17T12:00:00Z" }),
+        { origin: "local" },
+      );
     });
   });
 
@@ -425,7 +421,9 @@ describe("useComments", () => {
   describe("find", () => {
     it("locates roots and replies, and answers null for neither", async () => {
       const { comments } = setup({
-        list: vi.fn(async () => [comment("c-1", { replies: [comment("r-1")] })]),
+        list: vi.fn(async () => [
+          comment("c-1", { replies: [comment("r-1")] }),
+        ]),
       });
       await comments.load();
 
@@ -437,16 +435,32 @@ describe("useComments", () => {
 
   describe("applyRemote* — what a subscribe feeds", () => {
     it("adds a remote root and fires created", async () => {
-      const onComment = vi.fn();
-      const { comments } = setup({}, { onComment });
+      const onCreated = vi.fn();
+      const { comments } = setup({ onCreated });
 
       comments.applyRemoteCreate(comment("c-9"));
 
       expect(comments.comments.value.map((c) => c.id)).toEqual(["c-9"]);
-      expect(onComment).toHaveBeenCalledWith({
-        type: "created",
-        comment: expect.objectContaining({ id: "c-9" }),
+      expect(onCreated).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "c-9" }),
+        { origin: "remote" },
+      );
+    });
+
+    it("reports nothing for a reply whose parent thread isn't loaded", async () => {
+      const onCreated = vi.fn();
+      const { comments } = setup({
+        list: vi.fn(async () => [comment("c-1")]),
+        onCreated,
       });
+      await comments.load();
+
+      comments.applyRemoteCreate(
+        comment("r-1", { parentId: "missing-parent" }),
+      );
+
+      expect(comments.comments.value.map((c) => c.id)).toEqual(["c-1"]);
+      expect(onCreated).not.toHaveBeenCalled();
     });
 
     it("is echo-safe: a create for a comment already present replaces it", async () => {
@@ -461,14 +475,32 @@ describe("useComments", () => {
       expect(comments.comments.value[0].body).toBe("first");
     });
 
-    it("replaces on update and reports resolved off resolvedAt", async () => {
-      const onComment = vi.fn();
-      const { comments } = setup(
-        { list: vi.fn(async () => [comment("c-1")]) },
-        { onComment },
-      );
+    it("is echo-safe for a reply: does not reassign comments.value's array identity", async () => {
+      const onCreated = vi.fn();
+      const reply = comment("r-1", { parentId: "c-1", body: "reply body" });
+      const { comments } = setup({
+        list: vi.fn(async () => [comment("c-1", { replies: [reply] })]),
+        onCreated,
+      });
       await comments.load();
-      onComment.mockClear();
+      const before = comments.comments.value;
+
+      comments.applyRemoteCreate(
+        comment("r-1", { parentId: "c-1", body: "reply body" }),
+      );
+
+      expect(comments.comments.value).toBe(before);
+      expect(onCreated).not.toHaveBeenCalled();
+    });
+
+    it("replaces on update and reports resolved off resolvedAt", async () => {
+      const onResolved = vi.fn();
+      const { comments } = setup({
+        list: vi.fn(async () => [comment("c-1")]),
+        onResolved,
+      });
+      await comments.load();
+      onResolved.mockClear();
 
       comments.applyRemoteUpdate(
         comment("c-1", { resolvedAt: "2026-08-17T12:00:00Z" }),
@@ -477,21 +509,24 @@ describe("useComments", () => {
       expect(comments.comments.value[0].resolvedAt).toBe(
         "2026-08-17T12:00:00Z",
       );
-      expect(onComment.mock.calls[0][0].type).toBe("resolved");
+      expect(onResolved.mock.calls[0][1]).toEqual({ origin: "remote" });
     });
 
     it("reports a plain body change as updated", async () => {
-      const onComment = vi.fn();
-      const { comments } = setup(
-        { list: vi.fn(async () => [comment("c-1")]) },
-        { onComment },
-      );
+      const onUpdated = vi.fn();
+      const { comments } = setup({
+        list: vi.fn(async () => [comment("c-1")]),
+        onUpdated,
+      });
       await comments.load();
-      onComment.mockClear();
+      onUpdated.mockClear();
 
       comments.applyRemoteUpdate(comment("c-1", { body: "changed" }));
 
-      expect(onComment.mock.calls[0][0].type).toBe("updated");
+      expect(onUpdated).toHaveBeenCalledWith(
+        expect.objectContaining({ body: "changed" }),
+        { origin: "remote" },
+      );
     });
 
     it("removes a remote delete using the parent the transport supplied", async () => {
@@ -508,13 +543,91 @@ describe("useComments", () => {
     });
 
     it("fires no event for a delete of something never loaded", () => {
-      const onComment = vi.fn();
-      const { comments } = setup({}, { onComment });
+      const onEvent = vi.fn();
+      const { comments } = setup({
+        onCreated: onEvent,
+        onUpdated: onEvent,
+        onDeleted: onEvent,
+        onResolved: onEvent,
+        onUnresolved: onEvent,
+      });
 
       comments.applyRemoteDelete("never-seen", null);
 
-      expect(onComment).not.toHaveBeenCalled();
+      expect(onEvent).not.toHaveBeenCalled();
       expect(comments.comments.value).toEqual([]);
+    });
+  });
+
+  describe("outward events", () => {
+    it("fires the named event with local origin for each mutation", async () => {
+      const onCreated = vi.fn();
+      const onResolved = vi.fn();
+      const { comments } = setup({ onCreated, onResolved });
+
+      await comments.create({ body: "hi" });
+      expect(onCreated).toHaveBeenCalledTimes(1);
+      expect(onCreated.mock.calls[0][0].id).toBe("c-new");
+      expect(onCreated.mock.calls[0][1]).toEqual({ origin: "local" });
+
+      await comments.setResolved("c-new", true);
+      expect(onResolved).toHaveBeenCalledTimes(1);
+      expect(onResolved.mock.calls[0][1]).toEqual({ origin: "local" });
+    });
+
+    it("picks resolved vs unresolved from the stored result, not the request", async () => {
+      const onResolved = vi.fn();
+      const onUnresolved = vi.fn();
+      // The store refuses to reopen: asked for false, returns still-resolved.
+      const { comments } = setup({
+        onResolved,
+        onUnresolved,
+        setResolved: vi.fn(async (_t: string, id: string) =>
+          comment(id, { resolvedAt: "2026-08-17T12:00:00Z" }),
+        ),
+      });
+
+      await comments.setResolved("c-1", false);
+
+      expect(onResolved).toHaveBeenCalledTimes(1);
+      expect(onUnresolved).not.toHaveBeenCalled();
+    });
+
+    it("keeps the mutation successful when a handler throws", async () => {
+      const onError = vi.fn();
+      const { comments } = setup(
+        {
+          onCreated: () => {
+            throw new Error("handler blew up");
+          },
+        },
+        { onError },
+      );
+
+      await expect(comments.create({ body: "hi" })).resolves.toMatchObject({
+        id: "c-new",
+      });
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError.mock.calls[0][0].message).toBe("handler blew up");
+    });
+
+    it("wraps a non-Error throw so onError still sees a message", async () => {
+      const onError = vi.fn();
+      const { comments } = setup(
+        {
+          onCreated: () => {
+            throw "boom";
+          },
+        },
+        { onError },
+      );
+
+      await expect(comments.create({ body: "hi" })).resolves.toMatchObject({
+        id: "c-new",
+      });
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError.mock.calls[0][0]).toBeInstanceOf(Error);
+      expect(onError.mock.calls[0][0].message).toBe("boom");
     });
   });
 });
@@ -626,5 +739,85 @@ describe("useCommentListener", () => {
     expect(unsubscribe).not.toHaveBeenCalled();
     scope.stop();
     expect(unsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not fire again when a transport echoes your own write back", async () => {
+    const onCreated = vi.fn();
+    let push: ((c: CommentChange) => void) | null = null;
+    const provider: CommentsProvider = {
+      list: vi.fn(async () => []),
+      create: vi.fn(async () => comment("c-1")),
+      update: false,
+      delete: false,
+      setResolved: false,
+      subscribe: (_t, onChange) => {
+        push = onChange;
+        return () => {};
+      },
+      onCreated,
+    };
+    const comments = useComments({
+      provider,
+      getTemplateId: () => "tpl-1",
+      getUser: () => USER,
+    });
+    const scope = effectScope();
+    scope.run(() => {
+      useCommentListener({
+        comments,
+        provider,
+        getTemplateId: () => "tpl-1",
+      });
+    });
+
+    await comments.create({ body: "hi" });
+    expect(onCreated).toHaveBeenCalledTimes(1);
+
+    // The provider's own broadcast comes back to the originator, which the
+    // `subscribe` contract explicitly permits.
+    push!({ type: "created", comment: comment("c-1") });
+
+    expect(comments.comments.value.map((c) => c.id)).toEqual(["c-1"]);
+    expect(onCreated).toHaveBeenCalledTimes(1);
+    scope.stop();
+  });
+
+  it("still fires for a remote change that alters something", async () => {
+    // The suppression must key on "nothing changed", never on "it came from
+    // subscribe" — a colleague's genuine edit has to get through.
+    const onUpdated = vi.fn();
+    let push: ((c: CommentChange) => void) | null = null;
+    const provider: CommentsProvider = {
+      list: vi.fn(async () => [comment("c-1")]),
+      create: false,
+      update: false,
+      delete: false,
+      setResolved: false,
+      subscribe: (_t, onChange) => {
+        push = onChange;
+        return () => {};
+      },
+      onUpdated,
+    };
+    const comments = useComments({
+      provider,
+      getTemplateId: () => "tpl-1",
+      getUser: () => USER,
+    });
+    const scope = effectScope();
+    scope.run(() => {
+      useCommentListener({
+        comments,
+        provider,
+        getTemplateId: () => "tpl-1",
+      });
+    });
+    await comments.load();
+
+    push!({ type: "updated", comment: comment("c-1", { body: "edited" }) });
+
+    expect(onUpdated).toHaveBeenCalledTimes(1);
+    expect(onUpdated.mock.calls[0][1]).toEqual({ origin: "remote" });
+    scope.stop();
   });
 });

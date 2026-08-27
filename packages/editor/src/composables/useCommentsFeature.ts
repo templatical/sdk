@@ -1,11 +1,7 @@
 import { computed, ref, watch, type ComputedRef, type Ref } from "vue";
 import { useComments, useCommentListener } from "@templatical/core";
 import type { UseCommentsReturn } from "@templatical/core";
-import type {
-  CommentEvent,
-  CommentsProvider,
-  EditorUser,
-} from "@templatical/types";
+import type { CommentsProvider, EditorUser } from "@templatical/types";
 import type { EditorCapabilities } from "../types/editor-capabilities";
 
 /** Minimal slice of the editor this feature needs — OSS and Cloud alike. */
@@ -30,7 +26,6 @@ export interface UseCommentsFeatureOptions {
    * gutter; OSS gets a local ref.
    */
   isOpen?: Ref<boolean>;
-  onComment?: (event: CommentEvent) => void;
   onError?: (error: Error) => void;
   /**
    * Extra gate on top of a provider and a user being present — Cloud adds its
@@ -97,7 +92,6 @@ export function useCommentsFeature(
     // and a consumer may swap it, and the same lesson as `allowedRecipients`
     // applies — a snapshot at setup pins the answer forever.
     getUser: () => options.user ?? null,
-    onComment: options.onComment,
     onError: options.onError,
   });
 

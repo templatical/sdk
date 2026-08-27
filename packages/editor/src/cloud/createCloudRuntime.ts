@@ -24,15 +24,20 @@ import {
 } from "@templatical/core/cloud";
 import type { UseEditorReturn } from "@templatical/core";
 import type {
+  CommentsOptions,
   CommentsProvider,
   EditorUser,
   RenderProvider,
+  SavedBlocksOptions,
   SavedBlocksProvider,
   Template,
   TemplateContent,
   TemplatePatch,
+  TemplatesOptions,
   TemplatesProvider,
+  TestEmailOptions,
   TestEmailProvider,
+  VersionHistoryOptions,
   VersionHistoryProvider,
 } from "@templatical/types";
 
@@ -102,6 +107,264 @@ export interface CloudBootstrap {
    * consumer-supplied identity would only be able to disagree with it.
    */
   user?: EditorUser;
+}
+
+/**
+ * Pick only the event members off a consumer-supplied `templates` value.
+ *
+ * A whitelist, never a spread. The config type says `TemplatesOptions`, but a
+ * JavaScript consumer is unchecked, so the object can carry anything —
+ * `load`/`create`/`save` are already shadowed by the literal defining them
+ * after the spread, and this drops everything else so the guarantee never
+ * depends on that ordering surviving a later edit.
+ *
+ * Each member is also type-checked, not merely truthiness-checked: a value
+ * like `onSaved: "yes"` would otherwise reach core and throw at save time,
+ * inside a call the consumer never made.
+ */
+function eventsOf(value: TemplatesOptions | undefined): TemplatesOptions {
+  if (!value) return {};
+  const { onSaved, onCreated, onLoaded } = value;
+  return {
+    ...(typeof onSaved === "function" ? { onSaved } : {}),
+    ...(typeof onCreated === "function" ? { onCreated } : {}),
+    ...(typeof onLoaded === "function" ? { onLoaded } : {}),
+  };
+}
+
+/**
+ * Fails to compile when `TemplatesOptions` gains a member outside the six
+ * named below. Cloud picks that object apart by name in two places —
+ * `eventsOf` above and `initCloud`'s merge in `index.ts` — so a seventh
+ * member forces a **deliberate decision** about which of the two forwards
+ * it. The check cannot make that decision itself: adding the new name to the
+ * `Exclude` list below satisfies the compiler on its own and forwards
+ * nothing by itself, and it has no way to tell an event (belongs in
+ * `eventsOf`) from config (belongs in the `index.ts` merge).
+ *
+ * The type alone checks nothing: TypeScript never evaluates an alias nothing
+ * reads, so a `never` result would sit there silently. The assignment below
+ * is what forces the check — it fails to compile the moment a member falls
+ * outside the six named here.
+ */
+type _TemplatesOptionsForwarded =
+  Exclude<
+    keyof TemplatesOptions,
+    | "autoSave"
+    | "unsavedChangesGuard"
+    | "nameField"
+    | "onSaved"
+    | "onCreated"
+    | "onLoaded"
+  > extends never
+    ? true
+    : never;
+const _templatesOptionsForwarded: _TemplatesOptionsForwarded = true;
+
+/**
+ * Pick only the event members off a consumer-supplied `comments` value.
+ *
+ * A whitelist, never a spread. The config type says `CommentsOptions`, but a
+ * JavaScript consumer is unchecked, so the object can carry anything —
+ * `list`/`create`/`update`/`delete`/`setResolved` are already shadowed by the
+ * spread of Cloud's own adapter that follows this in the provider literal, and
+ * this drops everything else so the guarantee never depends on that ordering
+ * surviving a later edit.
+ *
+ * Each member is also type-checked, not merely truthiness-checked: a value
+ * like `onCreated: "yes"` would otherwise reach core and throw at
+ * comment-creation time, inside a call the consumer never made.
+ */
+function commentEventsOf(
+  value: false | CommentsOptions | undefined,
+): CommentsOptions {
+  if (!value) return {};
+  const { onCreated, onUpdated, onDeleted, onResolved, onUnresolved } = value;
+  return {
+    ...(typeof onCreated === "function" ? { onCreated } : {}),
+    ...(typeof onUpdated === "function" ? { onUpdated } : {}),
+    ...(typeof onDeleted === "function" ? { onDeleted } : {}),
+    ...(typeof onResolved === "function" ? { onResolved } : {}),
+    ...(typeof onUnresolved === "function" ? { onUnresolved } : {}),
+  };
+}
+
+/**
+ * Fails to compile when `CommentsOptions` gains a member outside the five
+ * named below. Every member of `CommentsOptions` is an event, and
+ * `commentEventsOf` above is the only place that forwards them — unlike
+ * `TemplatesOptions`, there is no second merge in `index.ts`, since comments
+ * carries no config booleans for that merge to combine. A sixth member has
+ * exactly one place to be added: this list and `commentEventsOf`'s destructure,
+ * together.
+ *
+ * The type alone checks nothing: TypeScript never evaluates an alias nothing
+ * reads, so a `never` result would sit there silently. The assignment below is
+ * what forces the check — it fails to compile the moment a member falls
+ * outside the five named here.
+ */
+type _CommentsOptionsForwarded =
+  Exclude<
+    keyof CommentsOptions,
+    "onCreated" | "onUpdated" | "onDeleted" | "onResolved" | "onUnresolved"
+  > extends never
+    ? true
+    : never;
+const _commentsOptionsForwarded: _CommentsOptionsForwarded = true;
+
+/**
+ * Pick only the event members off a consumer-supplied `savedBlocks` value.
+ *
+ * A whitelist, never a spread. `savedBlocks` accepts a boolean, an
+ * events-only `SavedBlocksOptions`, or a full `SavedBlocksProvider` — this is
+ * only ever called on the first two, since a full provider replaces Cloud's
+ * adapter outright and is used as-is (see `consumerSavedBlocks` below). A
+ * non-object value (`true`, `undefined`, `false`) carries no keys to pick, so
+ * it returns `{}` rather than throwing on the destructure.
+ *
+ * Each member is also type-checked, not merely truthiness-checked: a value
+ * like `onCreated: "yes"` would otherwise reach core and throw at
+ * saved-block-creation time, inside a call the consumer never made.
+ */
+function savedBlocksEventsOf(
+  value: TemplaticalCloudEditorConfig["savedBlocks"],
+): SavedBlocksOptions {
+  if (typeof value !== "object" || value === null) return {};
+  const { onCreated, onUpdated, onDeleted } = value;
+  return {
+    ...(typeof onCreated === "function" ? { onCreated } : {}),
+    ...(typeof onUpdated === "function" ? { onUpdated } : {}),
+    ...(typeof onDeleted === "function" ? { onDeleted } : {}),
+  };
+}
+
+/**
+ * Fails to compile when `SavedBlocksOptions` gains a member outside the three
+ * named below. `savedBlocksEventsOf` above is the only place that forwards
+ * them, so a fourth member has exactly one place to be added: this list and
+ * that function's destructure, together.
+ *
+ * The type alone checks nothing: TypeScript never evaluates an alias nothing
+ * reads, so a `never` result would sit there silently. The assignment below
+ * is what forces the check — it fails to compile the moment a member falls
+ * outside the three named here.
+ */
+type _SavedBlocksOptionsForwarded =
+  Exclude<
+    keyof SavedBlocksOptions,
+    "onCreated" | "onUpdated" | "onDeleted"
+  > extends never
+    ? true
+    : never;
+const _savedBlocksOptionsForwarded: _SavedBlocksOptionsForwarded = true;
+
+/**
+ * Pick `onSent` and `defaultRecipient` off a consumer-supplied `testEmail`
+ * value.
+ *
+ * A whitelist, like `savedBlocksEventsOf` — but note what it does NOT pick:
+ * `includeMjml` and `allowedRecipients` stay Cloud's own whenever Cloud's
+ * sender is in play, so they are never read here even though
+ * `TestEmailOptions` declares them (see `_TestEmailOptionsForwarded` below).
+ * `defaultRecipient` has no such conflict — Cloud's provider never defines
+ * it, and `useTestEmailFeature` already discards a value outside
+ * `allowedRecipients`, so a consumer's choice can only ever pre-fill an
+ * address already on Cloud's own signed list, never smuggle in one outside
+ * it. `onSent` is a plain notification with no conflict either, so both
+ * cross over.
+ *
+ * The result is assigned ONTO Cloud's own provider with `Object.assign`
+ * (never spread together with it) at the call site — that provider's
+ * `allowedRecipients` is a live getter over the JWT-derived allowlist, and a
+ * spread reads every own property through `[[Get]]`, freezing the getter's
+ * current value into a plain property on the new object. `Object.assign`
+ * with the cloud provider as the *target* only ever writes the keys this
+ * function returns, so the getter is never read and never disturbed.
+ */
+function testEmailEventsOf(
+  value: TemplaticalCloudEditorConfig["testEmail"],
+): Pick<TestEmailOptions, "onSent" | "defaultRecipient"> {
+  if (typeof value !== "object" || value === null) return {};
+  const { onSent, defaultRecipient } = value;
+  return {
+    ...(typeof onSent === "function" ? { onSent } : {}),
+    ...(typeof defaultRecipient === "string" ? { defaultRecipient } : {}),
+  };
+}
+
+/**
+ * Fails to compile when `TestEmailOptions` gains a member outside the four
+ * named below. `onSent` and `defaultRecipient` are forwarded by
+ * `testEmailEventsOf` above; `includeMjml` and `allowedRecipients` stay
+ * Cloud's own whenever Cloud's sender is in play (Cloud renders server-side
+ * rather than from a client MJML pass, and the allowlist is the signed one
+ * from the project's JWT, not a client-supplied one). A fifth member still
+ * forces a deliberate decision the same way a fourth `SavedBlocksOptions`
+ * member does: whether it joins the forwarded pair or stays excluded for the
+ * same reason as the other two.
+ *
+ * The type alone checks nothing: TypeScript never evaluates an alias nothing
+ * reads, so a `never` result would sit there silently. The assignment below
+ * is what forces the check — it fails to compile the moment a member falls
+ * outside the four named here.
+ */
+type _TestEmailOptionsForwarded =
+  Exclude<
+    keyof TestEmailOptions,
+    "includeMjml" | "allowedRecipients" | "defaultRecipient" | "onSent"
+  > extends never
+    ? true
+    : never;
+const _testEmailOptionsForwarded: _TestEmailOptionsForwarded = true;
+
+/**
+ * Pick only the event members off a consumer-supplied `versionHistory`
+ * value.
+ *
+ * A whitelist, never a spread — the config type says `VersionHistoryOptions`,
+ * but a JavaScript consumer is unchecked, so the object can carry anything.
+ * `versionHistory` never accepts a full provider (see the rejected-keys block
+ * below), so unlike `savedBlocksEventsOf` / `testEmailEventsOf` this is
+ * always called on the whole config value.
+ */
+function versionHistoryEventsOf(
+  value: VersionHistoryOptions | undefined,
+): VersionHistoryOptions {
+  if (!value) return {};
+  const { onCreated, onRestored } = value;
+  return {
+    ...(typeof onCreated === "function" ? { onCreated } : {}),
+    ...(typeof onRestored === "function" ? { onRestored } : {}),
+  };
+}
+
+/**
+ * Fails to compile when `VersionHistoryOptions` gains a member outside the
+ * two named below. `versionHistoryEventsOf` above is the only place that
+ * forwards them, so a third member has exactly one place to be added: this
+ * list and that function's destructure, together.
+ *
+ * The type alone checks nothing: TypeScript never evaluates an alias nothing
+ * reads, so a `never` result would sit there silently. The assignment below
+ * is what forces the check — it fails to compile the moment a member falls
+ * outside the two named here.
+ */
+type _VersionHistoryOptionsForwarded =
+  Exclude<keyof VersionHistoryOptions, "onCreated" | "onRestored"> extends never
+    ? true
+    : never;
+const _versionHistoryOptionsForwarded: _VersionHistoryOptionsForwarded = true;
+
+/**
+ * A comma list with a final "and" — "a"; "a and b"; "a, b and c". The
+ * ignored-methods warnings below each name however many storage methods a
+ * consumer actually passed, and `Array.join(" and ")` only reads correctly
+ * for exactly two.
+ */
+function joinWithAnd(items: string[]): string {
+  if (items.length < 2) return items.join("");
+  if (items.length === 2) return items.join(" and ");
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
 /**
@@ -214,32 +477,75 @@ export async function bootstrapCloud(
 
   // --- Rejected consumer keys ----------------------------------------------
   //
-  // None is declared on `TemplaticalCloudEditorConfig`, so these only fire for
-  // JavaScript consumers — warned rather than silently dropped, because the
-  // symptom (a store that stays empty while Cloud's fills up) reads as a broken
-  // provider rather than a rejected one.
-  if ((config as { templates?: unknown }).templates) {
+  // `render` is not declared on `TemplaticalCloudEditorConfig`, so it only
+  // fires for JavaScript consumers — warned rather than silently dropped,
+  // because the symptom (a store that stays empty while Cloud's fills up)
+  // reads as a broken provider rather than a rejected one. `templates`,
+  // `comments` and `versionHistory` ARE declared, but typed narrowly as
+  // `TemplatesOptions`, `CommentsOptions` and `VersionHistoryOptions` — a
+  // JavaScript consumer can still hand over a full provider, so its storage
+  // methods are named and ignored the same way, while any events they carry
+  // reach `eventsOf` / `commentEventsOf` / `versionHistoryEventsOf` below
+  // regardless of this check.
+  const consumerTemplates = (config as { templates?: Record<string, unknown> })
+    .templates;
+  // Presence, not `typeof === "function"` — see the matching comment on
+  // `ignoredCommentMethods` below: a stated-but-ignored decision like
+  // `save: false` is as much a signal as a stray function override.
+  const ignoredTemplateMethods = ["load", "create", "save"].filter(
+    (key) => typeof consumerTemplates?.[key] !== "undefined",
+  );
+  if (ignoredTemplateMethods.length > 0) {
     logger.warn(
-      "initCloud does not accept a `templates` provider — the template id is " +
-        "the join key for collaboration, version history, comments, AI rewrite, " +
-        "scoring and the server-side export, so an id Cloud never issued would " +
-        "degrade all six. The supplied provider is ignored. Use init() to bring " +
-        "your own.",
+      `initCloud ignores ${joinWithAnd(
+        ignoredTemplateMethods.map((key) => `templates.${key}`),
+      )} — the template id is the join key for collaboration, ` +
+        "version history, comments, AI rewrite, scoring and the server-side " +
+        "export, so an id Cloud never issued would degrade all six. Your " +
+        "event handlers were kept. Use init() to bring your own storage.",
     );
   }
-  if ((config as { versionHistory?: unknown }).versionHistory) {
+  const consumerVersionHistory = (
+    config as { versionHistory?: Record<string, unknown> }
+  ).versionHistory;
+  // Presence, not `typeof === "function"`: a stated-but-ignored decision like
+  // `restore: false` is as much a signal as a stray function override, and
+  // both must be named here or the consumer never learns it was dropped.
+  const ignoredVersionHistoryMethods = [
+    "list",
+    "get",
+    "create",
+    "restore",
+  ].filter((key) => typeof consumerVersionHistory?.[key] !== "undefined");
+  if (ignoredVersionHistoryMethods.length > 0) {
     logger.warn(
-      "initCloud does not accept a `versionHistory` provider — a version is " +
-        "keyed to a template id Cloud issued, so Cloud owns its history. The " +
-        "supplied provider is ignored. Use init() to bring your own.",
+      `initCloud ignores ${joinWithAnd(
+        ignoredVersionHistoryMethods.map((key) => `versionHistory.${key}`),
+      )} — a version is keyed to a template id Cloud issued, so Cloud owns ` +
+        "its history. Your event handlers were kept. Use init() to bring " +
+        "your own storage.",
     );
   }
-  if ((config as { comments?: unknown }).comments) {
+  const consumerComments = (config as { comments?: Record<string, unknown> })
+    .comments;
+  // Presence, not `typeof === "function"`: a stated-but-ignored decision like
+  // `create: false` is as much a signal as a stray function override, and both
+  // must be named here or the consumer never learns it was dropped.
+  const ignoredCommentMethods = [
+    "list",
+    "create",
+    "update",
+    "delete",
+    "setResolved",
+    "subscribe",
+  ].filter((key) => typeof consumerComments?.[key] !== "undefined");
+  if (ignoredCommentMethods.length > 0) {
     logger.warn(
-      "initCloud does not accept a `comments` provider — a comment is keyed to " +
-        "a template id Cloud issued, and its author is signed by the auth token, " +
-        "so Cloud owns the conversation. The supplied provider is ignored. Use " +
-        "init() to bring your own.",
+      `initCloud ignores ${joinWithAnd(
+        ignoredCommentMethods.map((key) => `comments.${key}`),
+      )} — a comment is keyed to a template id Cloud issued, and its ` +
+        "author is signed by the auth token, so Cloud owns the conversation. " +
+        "Your event handlers were kept. Use init() to bring your own storage.",
     );
   }
   // Rejected for a different reason than the three above: not the join key, but
@@ -272,9 +578,10 @@ export async function bootstrapCloud(
   const baseSave = baseTemplates.save;
 
   /**
-   * Cloud's templates adapter plus the choreography the template id anchors: the
-   * websocket joins the template's presence channel, and the consumer's
-   * `onCreate` / `onLoad` fire.
+   * Cloud's templates adapter plus the choreography the template id anchors:
+   * the websocket joins the template's presence channel. The consumer's
+   * `onSaved` / `onCreated` / `onLoaded` ride along via `eventsOf` — core calls
+   * them once the editor has settled, so the adapter itself never invokes them.
    *
    * That choreography belongs in the adapter rather than in an editor-side
    * lifecycle composable, because it *is* adapter business — Cloud is what keys
@@ -283,10 +590,10 @@ export async function bootstrapCloud(
    * `save` pre-renders custom blocks, which is why it is wrapped too.
    */
   const templates: TemplatesProvider = {
+    ...eventsOf(config.templates),
     load: async (id: string) => {
       const template = await baseTemplates.load(id);
       connectRealtime(template);
-      config.onLoad?.(template);
       return template;
     },
     create:
@@ -294,7 +601,6 @@ export async function bootstrapCloud(
         ? async (input: { name?: string; content: TemplateContent }) => {
             const template = await baseCreate(input);
             connectRealtime(template);
-            config.onCreate?.(template);
             return template;
           }
         : false,
@@ -324,16 +630,30 @@ export async function bootstrapCloud(
     save: () => requireEditor().save(),
   });
 
-  const versionHistory = createCloudVersionHistoryProvider(authManager);
+  // The consumer's `onCreated` / `onRestored` ride along via
+  // `versionHistoryEventsOf` — core calls them once the editor has settled, so
+  // the adapter itself never invokes them. `versionHistory` never accepts a
+  // full provider (see the rejected-keys block above), so this always merges
+  // onto Cloud's own adapter, never onto a consumer's.
+  const versionHistory: VersionHistoryProvider = {
+    ...versionHistoryEventsOf(config.versionHistory),
+    ...createCloudVersionHistoryProvider(authManager),
+  };
 
   // Realtime is the adapter's own business: `subscribe` binds the presence channel
   // above, so `useCommentListener` in `@templatical/core` never learns that Pusher
-  // exists and a BYO provider with an SSE stream slots into the same seam.
-  const comments = createCloudCommentsProvider({
-    authManager,
-    channel: commentChannel,
-    getSocketId: () => websocketRef?.getSocketId() ?? null,
-  });
+  // exists and a BYO provider with an SSE stream slots into the same seam. The
+  // consumer's `onCreated` / `onUpdated` / `onDeleted` / `onResolved` /
+  // `onUnresolved` ride along via `commentEventsOf` — core calls them once the
+  // editor has settled, so the adapter itself never invokes them.
+  const comments: CommentsProvider = {
+    ...commentEventsOf(config.comments),
+    ...createCloudCommentsProvider({
+      authManager,
+      channel: commentChannel,
+      getSocketId: () => websocketRef?.getSocketId() ?? null,
+    }),
+  };
 
   // From the JWT, not from config. Cloud signs comment writes against this same
   // claim, so a consumer-supplied identity could only disagree with it — and a
@@ -343,16 +663,59 @@ export async function bootstrapCloud(
     : undefined;
 
   // A consumer may pass their own store instead of a boolean, in which case it
-  // replaces Cloud's. That path is deliberately NOT plan-gated: `saved_modules`
-  // licenses Cloud's *storage*, and someone else's backend isn't Cloud's to sell.
+  // replaces Cloud's outright — discriminated on `list`, the one required
+  // method every full provider carries, never on `typeof === "object"`: an
+  // events-only `SavedBlocksOptions` (`{ onCreated }`) is an object too, and
+  // reading it as the provider would leave `list` undefined and crash the
+  // library on first browse. That path is deliberately NOT plan-gated:
+  // `saved_modules` licenses Cloud's *storage*, and someone else's backend
+  // isn't Cloud's to sell — `isSavedBlocksAvailable` below keys off this same
+  // discriminated value for that reason.
   const consumerSavedBlocks =
-    typeof config.savedBlocks === "object" && config.savedBlocks !== null
-      ? config.savedBlocks
+    typeof (config.savedBlocks as SavedBlocksProvider | undefined)?.list ===
+    "function"
+      ? (config.savedBlocks as SavedBlocksProvider)
       : null;
+  // A malformed provider — e.g. `create` / `update` / `delete` with no
+  // working `list` — fails the discriminator above and falls through to
+  // Cloud's own store, so those methods are silently unused rather than
+  // replacing anything. Named here the same way `templates` / `comments` /
+  // `versionHistory` name their own ignored methods, so the drop isn't a
+  // console-free mystery.
+  if (
+    consumerSavedBlocks === null &&
+    typeof config.savedBlocks === "object" &&
+    config.savedBlocks !== null
+  ) {
+    const suppliedSavedBlocks = config.savedBlocks as Record<string, unknown>;
+    const ignoredSavedBlocksMethods = [
+      "list",
+      "create",
+      "update",
+      "delete",
+    ].filter((key) => typeof suppliedSavedBlocks[key] !== "undefined");
+    if (ignoredSavedBlocksMethods.length > 0) {
+      logger.warn(
+        `initCloud ignores ${joinWithAnd(
+          ignoredSavedBlocksMethods.map((key) => `savedBlocks.${key}`),
+        )} — a provider needs a working list to replace Cloud's store, and ` +
+          "this value has none, so it configures Cloud's own store instead. " +
+          "Your event handlers were kept. Use init() to bring your own storage.",
+      );
+    }
+  }
+  // The consumer's `onCreated` / `onUpdated` / `onDeleted` ride along via
+  // `savedBlocksEventsOf` when Cloud's own adapter is used — core calls them
+  // once the editor has settled, so the adapter itself never invokes them. A
+  // full consumer provider carries its own events already and is used as-is,
+  // so this merge only ever runs on Cloud's side of the `??`.
   const savedBlocks: SavedBlocksProvider | undefined =
     config.savedBlocks === false
       ? undefined
-      : (consumerSavedBlocks ?? createCloudSavedBlocksProvider(authManager));
+      : (consumerSavedBlocks ?? {
+          ...savedBlocksEventsOf(config.savedBlocks),
+          ...createCloudSavedBlocksProvider(authManager),
+        });
 
   // Cloud's test-email *config* — plan enablement plus the signed allowlist, both
   // carried by the JWT `authManager.initialize()` already resolved above. Hence
@@ -367,19 +730,77 @@ export async function bootstrapCloud(
   // `onBeforeTestEmail` to it, which is a narrower job than the render contract.
   const exporter = useExport({ authManager });
 
-  const consumerTestEmail = config.testEmail ?? null;
+  // Discriminated on `send`, the one required method every full provider
+  // carries — never on raw truthiness, which an events-only `TestEmailOptions`
+  // (`{ onSent }`) also satisfies and would leave `send` undefined, crashing
+  // the dialog on send. `isTestEmailAvailable` below keys off this same
+  // discriminated value so an events-only value stays plan-gated rather than
+  // reading as "consumer's own sender".
+  const consumerTestEmail =
+    typeof (config.testEmail as TestEmailProvider | undefined)?.send ===
+    "function"
+      ? (config.testEmail as TestEmailProvider)
+      : null;
+  // `send` reaching here means it failed the discriminator above — e.g.
+  // `send: null` — so it is named the same way a malformed `savedBlocks`
+  // value's storage methods are. `includeMjml` / `allowedRecipients` are
+  // named for a different reason: they are not part of this key's options
+  // arm (see `cloudConfig.ts`), but TypeScript does not actually refuse
+  // them — both are valid members of the sibling `TestEmailProvider` arm, so
+  // the union's excess-property check passes them through regardless of
+  // which arm the caller intended. All three log a warning naming them
+  // rather than dropping with no console trace.
+  if (
+    consumerTestEmail === null &&
+    typeof config.testEmail === "object" &&
+    config.testEmail !== null
+  ) {
+    const suppliedTestEmail = config.testEmail as Record<string, unknown>;
+    const ignoredTestEmailMembers = [
+      "send",
+      "includeMjml",
+      "allowedRecipients",
+    ].filter((key) => typeof suppliedTestEmail[key] !== "undefined");
+    if (ignoredTestEmailMembers.length > 0) {
+      logger.warn(
+        `initCloud ignores ${joinWithAnd(
+          ignoredTestEmailMembers.map((key) => `testEmail.${key}`),
+        )} — a provider needs a working send to replace Cloud's sender ` +
+          "outright, and Cloud renders server-side with the signed " +
+          "allowlist from your project's JWT either way, so none of these " +
+          "apply here. Your event handlers were kept.",
+      );
+    }
+  }
   const testEmail: TestEmailProvider =
     consumerTestEmail ??
-    createCloudTestEmailProvider({
-      authManager,
-      getTemplateId,
-      save: () => requireEditor().save(),
-      exportHtml: (templateId: string) =>
-        exporter.exportHtml(templateId, resolveExportFonts(config.fonts)),
-      allowedEmails: testEmailConfig.allowedEmails,
-      getSignature: testEmailConfig.getSignature,
-      onBeforeTestEmail: config.onBeforeTestEmail,
-    });
+    // `Object.assign`, not a spread: `createCloudTestEmailProvider`'s
+    // `allowedRecipients` is a live getter (see `testEmailEventsOf`'s doc
+    // comment for why a spread would freeze it). The cloud provider is the
+    // assignment *target* here, so its getter is never read — only the keys
+    // `testEmailEventsOf` returns are ever written onto it.
+    //
+    // Asymmetric with `savedBlocks` / `versionHistory` on purpose, not by
+    // drift: those two spread Cloud's provider LAST, so even a whitelist that
+    // let something unexpected through could never displace a Cloud method —
+    // two lines of defence. Here `testEmailEventsOf`'s return type is the
+    // only barrier, because Cloud is the assignment target rather than a
+    // second spread source. Copying the sibling shape (`{ ...events,
+    // ...createCloudTestEmailProvider(...) }`) would reintroduce the exact
+    // getter-freezing bug this construction exists to avoid.
+    Object.assign(
+      createCloudTestEmailProvider({
+        authManager,
+        getTemplateId,
+        save: () => requireEditor().save(),
+        exportHtml: (templateId: string) =>
+          exporter.exportHtml(templateId, resolveExportFonts(config.fonts)),
+        allowedEmails: testEmailConfig.allowedEmails,
+        getSignature: testEmailConfig.getSignature,
+        onBeforeTestEmail: config.onBeforeTestEmail,
+      }),
+      testEmailEventsOf(config.testEmail),
+    );
 
   // --- Setup-time wiring ----------------------------------------------------
 
@@ -566,7 +987,7 @@ export async function bootstrapCloud(
     // anchors a comment to the *saved* template. (Whether a `user` exists is the
     // shared feature's own gate, not Cloud's.)
     isCommentsAvailable: () =>
-      config.commenting !== false &&
+      config.comments !== false &&
       planConfigInstance.hasFeature("commenting") &&
       featureFlags.hasTemplateSaved.value,
     // A comment is anchored server-side, so a block that exists only on the canvas

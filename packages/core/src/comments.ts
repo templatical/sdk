@@ -2,7 +2,6 @@ import type {
   Comment,
   CommentAuthor,
   CommentChange,
-  CommentEvent,
   CommentInput,
   CommentPatch,
   CommentsListParams,
@@ -17,6 +16,7 @@ import {
   type ComputedRef,
   type Ref,
 } from "vue";
+import { notifyHandler, wrapReportedError } from "./error-reporting";
 
 export interface UseCommentsOptions {
   /**
@@ -37,8 +37,6 @@ export interface UseCommentsOptions {
    * than no comment feature.
    */
   getUser: () => CommentAuthor | null;
-  /** Fired for every change this composable applied, local or remote. */
-  onComment?: (event: CommentEvent) => void;
   onError?: (error: Error) => void;
 }
 
@@ -175,54 +173,89 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
     return user !== null && comment.author.id === user.id;
   }
 
-  function emit(type: CommentEvent["type"], comment: Comment): void {
-    options.onComment?.({ type, comment });
-  }
-
   function report(error: unknown): never {
-    const wrapped =
-      error instanceof Error
-        ? error
-        : new Error(String(error), { cause: error });
+    const wrapped = wrapReportedError(error);
     options.onError?.(wrapped);
     throw wrapped;
   }
 
   /**
-   * Insert a comment, replacing an entry with the same id rather than duplicating
-   * it. `create` and a subscribe echo of that same create both land here, which is
-   * why a provider does not have to de-duplicate its own broadcasts.
+   * Run a consumer's event handler without letting it fail the operation.
+   *
+   * A handler that throws must not turn a completed write into a rejected one —
+   * the UI would report a failure for a comment that was created.
    */
+  function notify(run: () => void): void {
+    notifyHandler(options.onError, run);
+  }
+
   function replaceAt<T>(list: T[], index: number, next: T): T[] {
     return [...list.slice(0, index), next, ...list.slice(index + 1)];
   }
 
-  function upsert(comment: Comment): void {
+  /**
+   * Key-order sensitive: identical fields serialized in a different order
+   * compare unequal, so an echo whose transport frame orders keys
+   * differently than the mutation response it echoes would not be
+   * suppressed. Accepted rather than a defect — not worth a deep-equal
+   * dependency for it.
+   */
+  function sameComment(a: Comment | undefined, b: Comment): boolean {
+    return a !== undefined && JSON.stringify(a) === JSON.stringify(b);
+  }
+
+  /**
+   * Insert a comment, replacing an entry with the same id rather than
+   * duplicating it, and report whether the list actually changed.
+   *
+   * The **remote** apply paths (`applyRemoteCreate` / `applyRemoteUpdate`)
+   * emit their event only when this returns `true`. A transport's own
+   * broadcast can come back to the sender — `CommentsProvider.subscribe`'s
+   * contract permits it — and emitting unconditionally fires the handler
+   * twice for one comment. The comparison below runs against the **merged**
+   * result, never the raw payload: the root branch keeps already-loaded
+   * `replies` when an update payload carries none, so comparing the payload
+   * directly would report a change for an echo that altered nothing.
+   * Deleting the `sameComment` check as a redundant no-op reinstates the
+   * double-fire.
+   */
+  function upsert(comment: Comment): boolean {
     if (comment.parentId) {
-      comments.value = comments.value.map((thread) => {
+      let changed = false;
+      const next = comments.value.map((thread) => {
         if (thread.id !== comment.parentId) return thread;
         const replies = thread.replies ?? [];
         const at = replies.findIndex((reply) => reply.id === comment.id);
+        if (at !== -1 && sameComment(replies[at], comment)) return thread;
+        changed = true;
         return {
           ...thread,
           replies:
             at === -1 ? [...replies, comment] : replaceAt(replies, at, comment),
         };
       });
-      return;
+      // Assigned only when something actually changed: `.map()` always returns
+      // a new array, and reassigning `comments.value` for a no-op echo would
+      // still invalidate every computed reading it (`commentCountByBlock`
+      // returns a new `Map` on each recompute) for nothing.
+      if (changed) comments.value = next;
+      return changed;
     }
 
     const at = comments.value.findIndex((thread) => thread.id === comment.id);
     if (at === -1) {
       comments.value = [...comments.value, comment];
-      return;
+      return true;
     }
     // A root arriving again keeps the replies already loaded: the update payload
     // for a body edit carries none, and dropping them would empty the thread.
-    comments.value = replaceAt(comments.value, at, {
+    const next: Comment = {
       ...comment,
       replies: comment.replies ?? comments.value[at].replies,
-    });
+    };
+    if (sameComment(comments.value[at], next)) return false;
+    comments.value = replaceAt(comments.value, at, next);
+    return true;
   }
 
   function drop(commentId: string, parentId?: string | null): Comment | null {
@@ -267,7 +300,7 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
     try {
       const created = await providerCreate(templateId, input);
       upsert(created);
-      emit("created", created);
+      notify(() => provider.onCreated?.(created, { origin: "local" }));
       return created;
     } catch (error) {
       report(error);
@@ -288,7 +321,7 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
     try {
       const updated = await providerUpdate(templateId, commentId, patch);
       upsert(updated);
-      emit("updated", updated);
+      notify(() => provider.onUpdated?.(updated, { origin: "local" }));
       return updated;
     } catch (error) {
       report(error);
@@ -309,7 +342,9 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
     try {
       await providerDelete(templateId, commentId);
       drop(commentId);
-      if (existing) emit("deleted", existing);
+      if (existing) {
+        notify(() => provider.onDeleted?.(existing, { origin: "local" }));
+      }
     } catch (error) {
       report(error);
     } finally {
@@ -335,7 +370,12 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
       upsert(updated);
       // The stored result decides which event fires, not the requested state: a
       // store may refuse to reopen, and the consumer should hear what happened.
-      emit(updated.resolvedAt ? "resolved" : "unresolved", updated);
+      notify(() =>
+        (updated.resolvedAt ? provider.onResolved : provider.onUnresolved)?.(
+          updated,
+          { origin: "local" },
+        ),
+      );
       return updated;
     } catch (error) {
       report(error);
@@ -345,20 +385,22 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
   }
 
   function applyRemoteCreate(comment: Comment): void {
-    upsert(comment);
-    emit("created", comment);
+    // A reply whose parent thread isn't loaded reports nothing: `upsert`
+    // finds no matching thread to attach it to, so the list doesn't change.
+    if (upsert(comment)) {
+      notify(() => provider.onCreated?.(comment, { origin: "remote" }));
+    }
   }
 
   function applyRemoteUpdate(comment: Comment): void {
-    upsert(comment);
-    emit(
-      comment.resolvedAt
-        ? "resolved"
+    if (!upsert(comment)) return;
+    notify(() =>
+      (comment.resolvedAt
+        ? provider.onResolved
         : // An unresolve and a body edit are both "not resolved"; only a payload
           // that used to be resolved is an unresolve, and the transport doesn't
           // say. `updated` is the honest answer for a plain change.
-          "updated",
-      comment,
+          provider.onUpdated)?.(comment, { origin: "remote" }),
     );
   }
 
@@ -367,7 +409,9 @@ export function useComments(options: UseCommentsOptions): UseCommentsReturn {
     parentId?: string | null,
   ): void {
     const existing = drop(commentId, parentId);
-    if (existing) emit("deleted", existing);
+    if (existing) {
+      notify(() => provider.onDeleted?.(existing, { origin: "remote" }));
+    }
   }
 
   return {

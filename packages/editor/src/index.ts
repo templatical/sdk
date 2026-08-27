@@ -5,7 +5,6 @@ import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import type {
   BlockDefaults,
   ColorsConfig,
-  CommentEvent,
   CommentsProvider,
   CustomBlock,
   CustomBlockDefinition,
@@ -33,7 +32,6 @@ import type { MediaRequestContext } from "@templatical/media-library";
 import Editor from "./Editor.vue";
 import type { CloudRuntime } from "./cloud/runtime";
 import type { TemplaticalCloudEditorConfig } from "./cloud/cloudConfig";
-import type { AutoSaveConfig } from "./types/auto-save";
 import type { ResolveImageUrl } from "./composables/useImageUrlResolver";
 import { loadTranslations, loadCloudTranslations } from "./i18n";
 import { useFonts } from "./composables";
@@ -147,6 +145,11 @@ export interface TemplaticalEditorConfig {
    * await editor.load("tpl_123");
    * ```
    *
+   * Autosave (`templates.autoSave`), the unsaved-changes guard
+   * (`templates.unsavedChangesGuard`) and the header's inline name field
+   * (`templates.nameField`) are configured on this same object — grouped here
+   * because none of the three mean anything without somewhere to save to.
+   *
    * **Omitted by default.** With no provider the feature is entirely off — no
    * name field, no save button, no status indicator — and `create()` / `load()` /
    * `save()` reject with an explanatory error. Persist the content yourself from
@@ -232,35 +235,15 @@ export interface TemplaticalEditorConfig {
   versionHistory?: VersionHistoryProvider;
 
   /**
-   * Save the template automatically, debounced, after the user stops editing.
-   * Requires a `templates` provider — without one there is nothing to save to,
-   * and the option is ignored with a warning.
+   * How long the editor waits after the last edit before it fires `onChange`
+   * and, when `templates.autoSave` is on, saves.
    *
-   * `true` uses the default cadence; `{ debounce }` sets it in the same key. The
-   * debounce governs `onChange` too — both ride one timer so they cannot drift
-   * apart.
+   * One timer drives both, so they cannot drift apart. Set it with no templates
+   * provider to pace `onChange` alone.
    *
-   * ```ts
-   * autoSave: true                  // default cadence
-   * autoSave: { debounce: 2000 }    // on, slower
-   * ```
-   *
-   * @default false
+   * @default 2000
    */
-  autoSave?: AutoSaveConfig;
-
-  /**
-   * Warn the user before they close or reload the tab with unsaved changes.
-   * On by default whenever a `templates` provider is configured — without one
-   * the editor cannot know whether you already persisted the change, so it never
-   * warns.
-   *
-   * Set to `false` to own that prompt yourself. Note it can never cover
-   * client-side route changes; use `onDirtyChange` for those.
-   *
-   * @default true
-   */
-  unsavedChangesGuard?: boolean;
+  changeDebounce?: number;
 
   onRequestMedia?: OnRequestMedia;
 
@@ -482,6 +465,11 @@ export interface TemplaticalEditorConfig {
    * **Omitted by default**, and the panel also stays hidden until a template is
    * loaded, since a comment belongs to a template id.
    *
+   * The same object also carries outward events — `onCreated`, `onUpdated`,
+   * `onDeleted`, `onResolved`, `onUnresolved` — each called with the comment and
+   * whether the change was made locally or arrived through `subscribe`. That's
+   * the hook for a "3 new comments" badge outside the editor.
+   *
    * Realtime is an optional `subscribe` on the provider, not a prerequisite:
    * without it comments work identically, you simply see a colleague's on the next
    * read rather than immediately.
@@ -503,13 +491,6 @@ export interface TemplaticalEditorConfig {
    * already trusts.
    */
   user?: EditorUser;
-
-  /**
-   * Called for every comment change the editor applied — including ones that
-   * arrived through a provider's `subscribe`, so this is the hook for a "3 new
-   * comments" badge outside the editor.
-   */
-  onComment?: (event: CommentEvent) => void;
 
   blockDefaults?: BlockDefaults;
   templateDefaults?: TemplateDefaults;
@@ -540,20 +521,6 @@ export interface TemplaticalEditorConfig {
    * @default true
    */
   smallScreenNotice?: boolean;
-
-  /**
-   * Show the template's name in the header, inline-editable. Defaults to `true`.
-   *
-   * Set to `false` when your store has no name column, or when your own chrome
-   * owns the name. Hides the field only — `create({ name })`, `setName()` and the
-   * `name` in each save patch keep working, so a headless caller or your own UI
-   * can still manage names.
-   *
-   * Without a `templates` provider the header renders no name field either way.
-   *
-   * @default true
-   */
-  templateNameField?: boolean;
 
   /**
    * Template linter (`@templatical/quality`) configuration. Runs every
@@ -654,11 +621,12 @@ export interface TemplaticalEditor extends TemplaticalEditorBase {
  * false. It also means moving between them is a config change and never a
  * rewrite of the calling code.
  *
- * Three cloud-only members went with the convergence: `setThemeOverrides`
- * (`config.theme` is applied at init on both entry points, and the entitlement
- * that gated changing it later is gone), and `sendTestEmail` (the shared dialog
- * is the supported path). `create()` takes `init()`'s `{ name?, content? }`
- * input object rather than a bare `TemplateContent`.
+ * Three cloud-only members went with the convergence: `create()` takes
+ * `init()`'s `{ name?, content? }` input object now, rather than a bare
+ * `TemplateContent`; `setThemeOverrides` is gone (`config.theme` is applied
+ * at init on both entry points, and the entitlement that gated changing it
+ * later is gone); and `sendTestEmail` is gone (the shared dialog is the
+ * supported path).
  */
 export type TemplaticalCloudEditor = TemplaticalEditor;
 
@@ -1059,12 +1027,30 @@ async function mountEditor(
  * session that dies *later* — an auth refresh that cannot renew the token — does
  * still surface as an overlay, because by then there is an editor to cover.
  *
- * `templates`, `versionHistory` and `comments` are the three keys `initCloud()`
- * refuses: all are keyed to a template id Cloud issued, which also anchors
- * collaboration, AI rewrite, scoring and the server-side export. A store Cloud
- * never issued ids for would degrade all of them silently. Everything else —
- * `render`, `savedBlocks`, `testEmail`, `resolvePreview` — is the same key with the
- * same type on both entry points, so upgrading an OSS integration is a deletion.
+ * `templates`, `comments` and `versionHistory` are all keyed to a template
+ * id Cloud issued, which also anchors collaboration, AI rewrite, scoring and
+ * the server-side export — a store Cloud never issued ids for would degrade
+ * all of them silently. Cloud therefore keeps each key's storage, but each
+ * key is still accepted, for its configuration and events:
+ * `templates.load`/`create`/`save`,
+ * `comments.list`/`create`/`update`/`delete`/`setResolved`, and
+ * `versionHistory.list`/`get`/`create`/`restore` are ignored with a warning
+ * naming them, while `templates`' `autoSave`, `unsavedChangesGuard`,
+ * `nameField`, `onSaved`, `onCreated`, `onLoaded`, `comments`' `onCreated`,
+ * `onUpdated`, `onDeleted`, `onResolved`, `onUnresolved`, and
+ * `versionHistory`'s `onCreated`, `onRestored` are all honoured.
+ *
+ * `render` is not a key here at all, unlike `init()` — Cloud renders
+ * server-side for test email, sends and exports, so a supplied renderer
+ * would change only what you preview and export, never what Cloud delivers.
+ * `resolvePreview` is the same key with the same type on both entry points,
+ * so upgrading an OSS integration is a deletion. `savedBlocks` and
+ * `testEmail` are the same key on both entry points too, but Cloud widens
+ * each type to also accept an events-only shape — `boolean |
+ * SavedBlocksOptions | SavedBlocksProvider` and `Pick<TestEmailOptions,
+ * "onSent" | "defaultRecipient"> | TestEmailProvider` — so upgrading is
+ * still a deletion: drop the key to adopt Cloud's store or sender, or leave
+ * it exactly as it is to keep your own.
  *
  * `user` is not a key either: Cloud signs comment writes against the auth token's
  * `user` claim, so it fills `init({ user })` from there rather than letting a
@@ -1085,19 +1071,6 @@ export async function initCloud(
     cloudTranslations,
   });
 
-  // Autosave defaults differ, and the difference stays at this call site: Cloud
-  // always has a store to save to, so it is on unless refused, and it uses a
-  // slower cadence than the shared default because every tick is a round-trip.
-  const autoSave: AutoSaveConfig =
-    config.autoSave === false
-      ? false
-      : {
-          debounce:
-            (typeof config.autoSave === "object"
-              ? config.autoSave.debounce
-              : undefined) ?? DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
-        };
-
   return mountEditor(
     {
       container: config.container,
@@ -1108,7 +1081,6 @@ export async function initCloud(
       theme: config.theme,
       branding: config.branding,
       smallScreenNotice: config.smallScreenNotice,
-      templateNameField: config.templateNameField,
       blockDefaults: config.blockDefaults,
       templateDefaults: config.templateDefaults,
       customBlocks: config.customBlocks,
@@ -1124,12 +1096,20 @@ export async function initCloud(
       onChange: config.onChange,
       onError: config.onError,
       onDirtyChange: config.onDirtyChange,
-      onComment: config.onComment,
-      unsavedChangesGuard: config.unsavedChangesGuard,
-      autoSave,
       // Cloud's adapters, behind the very keys a consumer would fill in
       // themselves. `savedBlocks` is absent when the consumer passed `false`.
-      templates: providers.templates,
+      // `templates` spreads Cloud's own provider first so its load/create/save
+      // always win over a consumer's config. Autosave defaults on here, unlike
+      // `init()`, because Cloud always has a store to save to; the debounce
+      // falls back to the same shared constant `useAutoSave` already defaults
+      // to, made explicit so a consumer's own `changeDebounce` reaches it.
+      templates: {
+        ...providers.templates,
+        autoSave: config.templates?.autoSave ?? true,
+        unsavedChangesGuard: config.templates?.unsavedChangesGuard,
+        nameField: config.templates?.nameField,
+      },
+      changeDebounce: config.changeDebounce ?? DEFAULT_AUTO_SAVE_DEBOUNCE_MS,
       render: providers.render,
       versionHistory: providers.versionHistory,
       savedBlocks: providers.savedBlocks,
@@ -1183,12 +1163,19 @@ export type {
   RenderProvider,
   SavedBlock,
   SavedBlocksListParams,
+  SavedBlocksOptions,
   SavedBlocksProvider,
   Template,
   TemplatePatch,
+  TemplatesOptions,
+  TemplateSaveTrigger,
   TemplatesProvider,
+  TestEmailOptions,
   TestEmailPayload,
   TestEmailProvider,
+  VersionHistoryOptions,
+  CommentsOptions,
+  CommentEventMeta,
 } from "@templatical/types";
 
 // Bundled browser-local saved-blocks provider. Re-exported here (rather than

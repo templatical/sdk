@@ -5,12 +5,14 @@ import type {
   TemplateContent,
   TemplateDefaults,
   TemplatePatch,
+  TemplateSaveTrigger,
   TemplateSettings,
   TemplatesProvider,
   UiTheme,
   ViewportSize,
 } from "@templatical/types";
 import { createDefaultTemplateContent, SdkError } from "@templatical/types";
+import { notifyHandler } from "./error-reporting";
 
 function getColumnCount(layout: ColumnLayout): number {
   if (layout === "1") return 1;
@@ -124,8 +126,14 @@ export interface UseEditorReturn {
   }) => Promise<Template>;
   /** Fetch a template and make it the editor's content. */
   load: (templateId: string) => Promise<Template>;
-  /** Persist the loaded template's name + content as a patch. */
-  save: () => Promise<Template>;
+  /**
+   * Persist the loaded template's name + content as a patch.
+   *
+   * `trigger` is passed through to `TemplatesOptions.onSaved`. It defaults to
+   * `"api"`, which is the honest answer for a direct call — the editor package
+   * passes the value matching whichever affordance fired.
+   */
+  save: (trigger?: TemplateSaveTrigger) => Promise<Template>;
   /** Whether a template has been created or loaded. */
   hasTemplate: () => boolean;
 }
@@ -430,6 +438,16 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
     throw new SdkError(`[Templatical] Templates: ${action} ${reason}`);
   }
 
+  /**
+   * Run a consumer's event handler without letting it fail the operation.
+   *
+   * A handler that throws must not turn a completed write into a rejected one —
+   * the UI would report a failure for something that landed.
+   */
+  function notify(run: () => void): void {
+    notifyHandler(options.onError, run);
+  }
+
   function requireProvider(action: string): TemplatesProvider {
     const { templates } = options;
     if (!templates) {
@@ -460,6 +478,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       );
     }
 
+    let created: Template;
     state.isLoading = true;
     try {
       if (input?.content) {
@@ -469,43 +488,52 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       // provider serialising the input to JSON would otherwise receive a key it
       // never asked for.
       const revisionAtRequest = revision;
-      const template = await providerCreate(
+      created = await providerCreate(
         input?.name !== undefined
           ? { name: input.name, content: state.content }
           : { content: state.content },
       );
-      state.template = template;
+      state.template = created;
       if (revision === revisionAtRequest) {
         state.isDirty = false;
       }
-      return template;
     } catch (error) {
       options.onError?.(error as Error);
       throw error;
     } finally {
       state.isLoading = false;
     }
+    // Below the `finally` on purpose: `isLoading` is cleared there, so a handler
+    // must not observe the editor still loading. Unreachable on failure — the
+    // catch rethrows.
+    notify(() => provider.onCreated?.(created));
+    return created;
   }
 
   async function load(templateId: string): Promise<Template> {
     const provider = requireProvider("load()");
 
+    let loaded: Template;
     state.isLoading = true;
     try {
-      const template = await provider.load(templateId);
-      state.template = template;
-      state.content = template.content;
+      loaded = await provider.load(templateId);
+      state.template = loaded;
+      state.content = loaded.content;
       state.isDirty = false;
-      return template;
     } catch (error) {
       options.onError?.(error as Error);
       throw error;
     } finally {
       state.isLoading = false;
     }
+    // Below the `finally` on purpose: `isLoading` is cleared there, so a handler
+    // must not observe the editor still loading. Unreachable on failure — the
+    // catch rethrows.
+    notify(() => provider.onLoaded?.(loaded));
+    return loaded;
   }
 
-  async function save(): Promise<Template> {
+  async function save(trigger: TemplateSaveTrigger = "api"): Promise<Template> {
     const provider = requireProvider("save()");
     const { save: providerSave } = provider;
     if (typeof providerSave !== "function") {
@@ -526,10 +554,11 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
         ? { name: current.name, content: state.content }
         : { content: state.content };
 
+    let saved: Template;
     state.isSaving = true;
     try {
       const revisionAtRequest = revision;
-      const template = await providerSave(current.id, patch);
+      saved = await providerSave(current.id, patch);
       // Adopt the response only while it still describes what is open. A
       // `load()` that landed mid-flight has already replaced the template, so
       // the response is stale.
@@ -541,9 +570,7 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
         // losing the rename outright rather than merely on screen.
         const localName = state.template.name;
         state.template =
-          localName !== current.name
-            ? { ...template, name: localName }
-            : template;
+          localName !== current.name ? { ...saved, name: localName } : saved;
       }
       // Deliberately conditional. An edit landing while the request was in
       // flight is not persisted by it, and clearing the flag would both claim it
@@ -552,13 +579,17 @@ export function useEditor(options: UseEditorOptions): UseEditorReturn {
       if (revision === revisionAtRequest) {
         state.isDirty = false;
       }
-      return template;
     } catch (error) {
       options.onError?.(error as Error);
       throw error;
     } finally {
       state.isSaving = false;
     }
+    // Below the `finally` on purpose: `isSaving` is cleared there, and a handler
+    // that navigates must observe a settled editor or the consumer's own dirty
+    // guard blocks their navigation. Unreachable on failure — the catch rethrows.
+    notify(() => provider.onSaved?.(saved, { trigger }));
+    return saved;
   }
 
   function hasTemplate(): boolean {

@@ -162,6 +162,20 @@ Der Editor lädt eine Seite und ruft `list` ohne Parameter auf — er sendet wed
 
 Der Umschlag existiert, damit späteres seitenweises Laden keine brechende Änderung ist: Ein Cursor hat von Anfang an einen Platz. Nur das Parameter-Objekt zu reservieren hätte die Anfrage abgedeckt und die Antwort mit einer neuen Form zurückgelassen. `useVersionHistory` stellt `nextCursor` für Headless-Aufrufer bereit, die tatsächlich blättern — siehe [Headless-Nutzung](#headless-nutzung).
 
+## Events
+
+```ts
+versionHistory: {
+  list, get, create, restore,
+  onCreated:   (version) => {},
+  onRestored:  (template) => {},
+}
+```
+
+`onCreated` löst aus, sobald `create()` auflöst, mit der aufgezeichneten `TemplateVersion`. `onRestored` löst aus, sobald `restore()` auflöst, mit dem resultierenden `Template` statt der `TemplateVersion`, aus der wiederhergestellt wurde — die aufrufende Seite kennt deren ID bereits, denn genau die wurde `restore(templateId, versionId)` übergeben.
+
+Eine Handler-Funktion, die einen Fehler wirft, wird abgefangen und an `onError` gemeldet — sie lässt das auslösende Erstellen oder Wiederherstellen nie fehlschlagen.
+
 ## Headless-Nutzung
 
 `useVersionHistory` aus `@templatical/core` ist der reaktive Zustand für sich allein, ohne den Editor:

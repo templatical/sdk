@@ -28,17 +28,32 @@ All four are enabled. Cloud's library is gated on the `saved_modules` plan featu
 
 ## Bringing your own
 
-You can, and this is one of only two providers `initCloud()` accepts. The key takes the same type as `init()`'s:
+You can, and this is one of only two providers `initCloud()` accepts as a full swap — `testEmail` is the other. The key takes the same type as `init()`'s, plus a third shape unique to this entry point: keep Cloud's library and add your own event handlers.
 
 ```ts
-await initCloud({ container, auth });                     // Cloud's library
-await initCloud({ container, auth, savedBlocks: mine });  // your own, on Cloud
-await initCloud({ container, auth, savedBlocks: false }); // off
+await initCloud({ container, auth });                             // Cloud's library
+await initCloud({ container, auth, savedBlocks: { onCreated } }); // Cloud's library, plus your events
+await initCloud({ container, auth, savedBlocks: mine });          // your own, on Cloud
+await initCloud({ container, auth, savedBlocks: false });         // off
 ```
+
+Cloud tells them apart by `list`, never by whether the value is an object: something with a working `list` replaces Cloud's store outright, and anything else — `true`, `false`, an events-only object — keeps Cloud's own store and forwards whatever events it carries onto it.
 
 It mixes safely because Cloud never independently uses the library: a saved block is cloned onto the canvas and read nowhere else, so there is no second store to disagree with.
 
-A provider you supply is **not** plan-gated — the plan feature licenses Cloud's *storage*, not the editor's UI.
+A provider you supply is **not** plan-gated — the plan feature licenses Cloud's *storage*, not the editor's UI. An events-only object stays plan-gated, since Cloud's own store is still the one doing the work.
+
+## Events
+
+```ts
+savedBlocks: {
+  onCreated: (block) => {},
+  onUpdated: (block) => {},
+  onDeleted: (block) => {},
+}
+```
+
+The same events as the [open contract](/backend/saved-blocks#events), fired whether the store behind them is Cloud's or your own.
 
 ## Headless use
 

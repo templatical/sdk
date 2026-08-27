@@ -32,20 +32,44 @@ Clouds `save` schreibt die Version im selben Aufruf, gedrosselt auf höchstens e
 
 ## Autosave
 
-Anders als bei `init()`, wo Autosave aus bleibt, bis es ein Ziel zum Speichern gibt, hat eine Cloud-Sitzung immer eines — deshalb ist es standardmäßig **an**. Die Taktung sind dieselben 2000 ms wie bei beiden Einstiegspunkten; nur der An/Aus-Standard unterscheidet sich. Schlüssel und Typ sind identisch:
+Anders als bei `init()`, wo Autosave aus bleibt, bis es ein Ziel zum Speichern gibt, hat eine Cloud-Sitzung immer eines — deshalb ist `templates.autoSave` standardmäßig **an**. `changeDebounce` hat denselben Standard von 2000 ms wie bei beiden Einstiegspunkten; nur der An/Aus-Standard unterscheidet sich. Die Schlüssel und ihr Typ sind identisch zu denen von `init()`:
 
 ```js
-await initCloud({ container, auth, autoSave: { debounce: 5000 } }); // langsamer
-await initCloud({ container, auth, autoSave: false });              // aus
+await initCloud({ container, auth, templates: { autoSave: false } }); // aus
+await initCloud({ container, auth, changeDebounce: 5000 });           // langsamer
 ```
+
+::: tip `onChange` allein mit `templates.autoSave: false` takten
+Cloud stellt immer sein eigenes `templates` bereit, es gibt hier also keine Konfiguration ohne `templates` wie bei `init()`. Speichern Sie nichts, während Sie `onChange` weiterhin mit `changeDebounce` takten, indem Sie `templates: { autoSave: false }` setzen — statt `templates` wegzulassen.
+:::
 
 ## Eigene Implementierung
 
-Innerhalb von `initCloud()` geht das nicht.
+Konfiguration und Events, innerhalb von `initCloud()` — nie der Speicher.
 
-Die ID, die Clouds Speicher ausstellt, verankert Kommentare, Versionsverlauf, Zusammenarbeit, KI-Umformulierung, Bewertung und den serverseitigen Export. Ein Speicher, für den Cloud nie IDs ausgestellt hat, lässt sich deshalb nicht an Funktionen anschließen, die Cloud hostet. `initCloud({ templates })` steht daher nicht im Konfigurationstyp, und ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert.
+Die ID, die Clouds Speicher ausstellt, verankert Kommentare, Versionsverlauf, Zusammenarbeit, KI-Umformulierung, Bewertung und den serverseitigen Export. Ein Speicher, für den Cloud nie IDs ausgestellt hat, lässt sich deshalb nicht an Funktionen anschließen, die Cloud hostet, sodass der Schlüssel `templates` von `initCloud()` [`TemplatesOptions`](/de/backend/templates#events) akzeptiert — `autoSave`, `unsavedChangesGuard`, `nameField`, `onSaved`, `onCreated` und `onLoaded` — statt eines vollständigen Providers:
 
-Bringen Sie Ihren eigenen mit [`init()`](/de/backend/templates) mit — dort gehört Ihnen der ganze Satz: Templates, Versionsverlauf, Kommentare, Rendering.
+```ts
+await initCloud({
+  container: '#editor',
+  auth: { url: '/api/token' },
+  templates: {
+    unsavedChangesGuard: false,
+    nameField: false,
+    onSaved:   (template, { trigger }) => {},
+    onCreated: (template) => {},
+    onLoaded:  (template) => {},
+  },
+});
+```
+
+::: tip Rendering und Test-E-Mails speichern ebenfalls
+`toMjml()`, `toHtml()` und der Versand einer Test-E-Mail speichern die Vorlage jeweils zuerst, sodass `onSaved` mit `trigger: "api"` auch für eine Aktion ausgelöst wird, die der Nutzer nicht als Speichern wahrgenommen hat. Binden Sie die Navigation an `trigger === "manual"`, statt an das Fehlen von `"autosave"`.
+:::
+
+Einen vollständigen Provider zu übergeben ist unproblematisch: `load`, `create` und `save` werden mit einer Konsolenwarnung ignoriert, die sie namentlich nennt, während der Rest des Objekts den Editor trotzdem erreicht. Ein `templates`-Provider aus einer OSS-Integration braucht beim Umzug zu Cloud keine Änderung — lassen Sie den Schlüssel genau so, wie er ist.
+
+Bringen Sie Ihren eigenen Speicher mit [`init()`](/de/backend/templates) mit — dort gehört Ihnen der ganze Satz: Templates, Versionsverlauf, Kommentare, Rendering.
 
 ## Headless-Nutzung
 

@@ -391,20 +391,23 @@ async function initEditor(templateId?: string): Promise<void> {
         onRequest: requestMergeTag,
       },
       customBlocks: customBlockDefinitions,
-      onCreate: (template) => {
-        currentTemplateId.value = template.id;
-        console.log("[Cloud SDK] Template created:", template.id);
-      },
-      onLoad: (template) => {
-        currentTemplateId.value = template.id;
-        console.log("[Cloud SDK] Template loaded:", template.id);
+      templates: {
+        onCreated: (template) => {
+          currentTemplateId.value = template.id;
+          console.log("[Cloud SDK] Template created:", template.id);
+        },
+        onLoaded: (template) => {
+          currentTemplateId.value = template.id;
+          console.log("[Cloud SDK] Template loaded:", template.id);
+        },
       },
       onError: (error: Error) => {
         console.error("[Cloud SDK]", error);
       },
-      commenting: !!(
+      comments:
         settings.value.signingKey.trim() && settings.value.userName.trim()
-      ),
+          ? {}
+          : false,
       ...(settings.value.realtimeMode === "collab"
         ? {
             collaboration: {

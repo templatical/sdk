@@ -43,14 +43,25 @@ export type {
   SavedBlockInput,
   SavedBlockPatch,
   SavedBlocksListParams,
+  SavedBlocksOptions,
   SavedBlocksProvider,
 } from "./saved-blocks";
 
 // Test email (the bring-your-own sending contract)
-export type { TestEmailPayload, TestEmailProvider } from "./test-email";
+export type {
+  TestEmailOptions,
+  TestEmailPayload,
+  TestEmailProvider,
+} from "./test-email";
 
 // Templates (the bring-your-own save/load contract)
-export type { Template, TemplatePatch, TemplatesProvider } from "./templates";
+export type {
+  Template,
+  TemplatePatch,
+  TemplatesOptions,
+  TemplateSaveTrigger,
+  TemplatesProvider,
+} from "./templates";
 
 // Render (the bring-your-own MJML/HTML contract)
 export type { RenderPayload, RenderProvider } from "./render";
@@ -60,6 +71,7 @@ export type {
   TemplateVersion,
   VersionHistoryListParams,
   VersionHistoryListResult,
+  VersionHistoryOptions,
   VersionHistoryProvider,
 } from "./version-history";
 
@@ -68,11 +80,11 @@ export type {
   Comment,
   CommentAuthor,
   CommentChange,
-  CommentEvent,
-  CommentEventType,
+  CommentEventMeta,
   CommentInput,
   CommentPatch,
   CommentsListParams,
+  CommentsOptions,
   CommentsProvider,
 } from "./comments";
 

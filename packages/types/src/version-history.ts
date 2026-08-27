@@ -78,6 +78,30 @@ export interface VersionHistoryListResult {
 }
 
 /**
+ * Outward notifications about a template's version history. Every member is
+ * optional.
+ *
+ * Separate from the storage methods so `initCloud()` can accept this half
+ * alone: a version is keyed to a template id Cloud issued, so Cloud owns
+ * version-history storage. {@link VersionHistoryProvider} extends this, so one
+ * object satisfies both entry points.
+ */
+export interface VersionHistoryOptions {
+  /**
+   * A version was recorded through {@link VersionHistoryProvider.create}. Not
+   * called for a version your `save` implementation records automatically —
+   * that happens inside your own backend, outside anything the editor can see.
+   */
+  onCreated?: (version: TemplateVersion) => void;
+  /**
+   * A past version was made current. Takes the **resulting `Template`** that
+   * {@link VersionHistoryProvider.restore} resolves to, not the
+   * {@link TemplateVersion} that was restored from.
+   */
+  onRestored?: (template: Template) => void;
+}
+
+/**
  * Storage contract for a template's version history.
  *
  * Pass an implementation as `versionHistory` to `init()` or `initCloud()`. With
@@ -106,7 +130,7 @@ export interface VersionHistoryListResult {
  * };
  * ```
  */
-export interface VersionHistoryProvider {
+export interface VersionHistoryProvider extends VersionHistoryOptions {
   /** One page of versions. See {@link VersionHistoryListResult}. */
   list(
     templateId: string,

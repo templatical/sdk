@@ -48,7 +48,7 @@ Cloud-exklusiv, und das mit Absicht: Der Hook existiert, weil *Cloud* das HTML r
 
 ## Selbst versenden
 
-`initCloud()` akzeptiert denselben `testEmail`-Schlüssel wie `init()`. Sie können Cloud also für alles Übrige behalten und E-Mails dennoch über Ihre eigene Infrastruktur versenden — meist aus Compliance- oder Datenresidenz-Gründen:
+`initCloud()` akzeptiert für einen vollständigen Provider denselben `testEmail`-Schlüssel wie `init()`. Sie können Cloud also für alles Übrige behalten und E-Mails dennoch über Ihre eigene Infrastruktur versenden — meist aus Compliance- oder Datenresidenz-Gründen:
 
 ```js
 await initCloud({
@@ -67,9 +67,31 @@ await initCloud({
 });
 ```
 
-Lassen Sie den Schlüssel weg, versendet Cloud. Geben Sie ihn an, versendet Ihre Implementierung — und zwar **ohne Plan-Bindung**, denn das Feature `test_email` lizenziert den Versand durch Cloud, nicht die Oberfläche des Editors. Ihre Nutzer merken in beiden Fällen keinen Unterschied.
+Lassen Sie den Schlüssel weg, versendet Cloud. Geben Sie einen vollständigen Provider an — einen mit `send` —, versendet stattdessen Ihre Implementierung, **ohne Plan-Bindung**, denn das Feature `test_email` lizenziert den Versand durch Cloud, nicht die Oberfläche des Editors. Ihre Nutzer merken so oder so keinen Unterschied.
 
-Da Schlüssel und Typ auf beiden Einstiegspunkten identisch sind, bedeutet der Wechsel einer OSS-Integration zu Cloud: diesen Schlüssel löschen oder unverändert lassen — nie umschreiben.
+Cloud akzeptiert außerdem eine schmalere Form, die den eigenen Versand behält: `{ onSent?, defaultRecipient? }`. `includeMjml` und `allowedRecipients` sind davon ausgeschlossen — Cloud rendert serverseitig statt über einen clientseitigen MJML-Durchlauf, und die Erlaubnisliste ist die signierte aus dem JWT Ihres Projekts, die ein clientseitiger Wert nicht überschreiben kann. `defaultRecipient` wird ignoriert, sofern er nicht bereits auf dieser signierten Liste steht.
+
+```js
+await initCloud({
+  container: '#editor',
+  auth: { url: '/api/templatical/token' },
+  testEmail: { onSent: (payload) => trackEvent('test_email_sent', payload) },
+});
+```
+
+Cloud unterscheidet sie an `send`, nie daran, ob der Wert ein Objekt ist: Alles mit einem funktionierenden `send` ersetzt Clouds Versand, und alles andere — auch diese schmalere Form — behält Clouds eigenen Versand und bleibt plangebunden.
+
+Da die vollständige Provider-Form des Schlüssels auf beiden Einstiegspunkten identisch ist, bedeutet der Wechsel einer OSS-Integration zu Cloud: diesen Schlüssel löschen oder unverändert lassen — nie umschreiben.
+
+## Events
+
+```ts
+testEmail: {
+  onSent: (payload) => {},
+}
+```
+
+Dasselbe Event wie im [offenen Vertrag](/de/backend/test-email#events) — löst aus, sobald ein Versand auflöst, unabhängig davon, ob der dahinterliegende Versand Clouds eigener ist oder Ihr eigener.
 
 ## Composables
 

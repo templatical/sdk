@@ -781,3 +781,28 @@ describe("the email background band comes from one constant", () => {
     expect(body).not.toMatch(/backgroundColor/);
   });
 });
+
+describe("saveBeforeRestore wires the restore trigger to templates.save", () => {
+  /**
+   * Every other save trigger's wiring has coverage elsewhere — this one does
+   * not. `useTemplatesFeature.test.ts` only proves pass-through of an explicit
+   * argument, which says nothing about what `Editor.vue` itself passes.
+   * Deleting the "restore" argument here breaks no other test, and would
+   * silently mistag every version-restore write as a plain "api" save to
+   * `onSaved` consumers who key navigation off the trigger.
+   */
+  const editor = read("Editor.vue");
+
+  it("saveBeforeRestore.save calls templates.save with the restore trigger", () => {
+    const startIdx = editor.indexOf("saveBeforeRestore: templates");
+    const saveBeforeRestore = editor.slice(
+      startIdx,
+      editor.indexOf("onError: props.config.onError,", startIdx),
+    );
+    // Guard the slice itself, so a rename can't empty it and pass vacuously.
+    expect(saveBeforeRestore).toContain("canSave: () =>");
+    expect(saveBeforeRestore).toMatch(
+      /save:\s*\(\)\s*=>\s*templates\.save\("restore"\)/,
+    );
+  });
+});

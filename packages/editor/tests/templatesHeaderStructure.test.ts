@@ -57,15 +57,15 @@ describe("EditorHeader templates surface", () => {
       expect(header).toContain("templates.hasTemplate.value &&");
     });
 
-    it("hides the field on templateNameField: false, whatever the provider allows", () => {
+    it("hides the field on templates.nameField: false, whatever the provider allows", () => {
       // A store with no name column, or a consumer whose own chrome owns the
       // name: the gate is the config, not `canSave`.
       expect(headerSource()).toContain('v-if="showTemplateName"');
     });
 
-    it("takes that flag from config, defaulting to shown", () => {
+    it("takes that flag from the templates provider, defaulting to shown", () => {
       expect(editorSource).toContain(
-        ':show-template-name="config.templateNameField !== false"',
+        ':show-template-name="config.templates?.nameField !== false"',
       );
     });
 
@@ -103,7 +103,7 @@ describe("EditorHeader templates surface", () => {
     it("gates on the value alone — not on canSave, not on the name flag", () => {
       // A `save: false` template hides the whole status indicator, so this line
       // is the only thing left that says how current the stored copy is. And it
-      // has to survive `templateNameField: false`, which is the case where it
+      // has to survive `templates.nameField: false`, which is the case where it
       // becomes the left column's only content.
       expect(headerSource()).toContain('v-if="templates.timestamp.value"');
     });
@@ -123,7 +123,7 @@ describe("EditorHeader templates surface", () => {
       const header = headerSource();
       const binding = header.slice(
         header.indexOf("'tpl:pb-1.5':"),
-        header.indexOf("}\"\n      >"),
+        header.indexOf('}"\n      >'),
       );
       expect(binding).toContain("showTemplateName");
       expect(binding).toContain("templates.timestamp.value !== null");
@@ -263,8 +263,14 @@ describe("EditorHeader templates surface", () => {
         return header.slice(start, end);
       };
 
-      const comments = region('data-testid="comments-trigger"', 'name="right-extras"');
-      const test = region('data-testid="test-email-trigger"', 'data-testid="template-save"');
+      const comments = region(
+        'data-testid="comments-trigger"',
+        'name="right-extras"',
+      );
+      const test = region(
+        'data-testid="test-email-trigger"',
+        'data-testid="template-save"',
+      );
       const save = header.slice(header.indexOf('data-testid="template-save"'));
 
       expect(comments).toContain(':class="secondaryBtnCompactClass"');
@@ -287,7 +293,9 @@ describe("EditorHeader templates surface", () => {
       // pattern flags the very bindings this test means to allow.
       expect(header).not.toMatch(/(?<!:)style="[^"]*--tpl-primary/);
 
-      const bindings = [...header.matchAll(/:style="([\s\S]*?)"/g)].map((m) => m[1]);
+      const bindings = [...header.matchAll(/:style="([\s\S]*?)"/g)].map(
+        (m) => m[1],
+      );
       const amber = bindings.filter((b) => b.includes("--tpl-primary"));
       // One: Comments' open tint. Save's amber travels in its class binding,
       // which the primary/secondary assertions above cover.
@@ -334,7 +342,9 @@ describe("EditorHeader templates surface", () => {
       expect(editorSource).toMatch(
         /const templates =\s*templatesProvider\s*\?\s*useTemplatesFeature\(/,
       );
-      expect(editorSource).toMatch(/useTemplatesFeature\([\s\S]*?\)\s*:\s*null;/);
+      expect(editorSource).toMatch(
+        /useTemplatesFeature\([\s\S]*?\)\s*:\s*null;/,
+      );
     });
 
     it("normalizes merge tags in whatever the provider loads", () => {
@@ -367,20 +377,25 @@ describe("EditorHeader templates surface", () => {
     });
 
     it("only autosaves when a provider exists to save to", () => {
-      // `autoSave` is `boolean | { debounce }`, so the enabled test goes through
-      // `resolveAutoSave` rather than comparing to `true` — an object form would
-      // otherwise read as "off" and silently disable autosave for anyone who set
-      // a cadence.
-      expect(editorSource).toContain(
-        "resolveAutoSave(props.config.autoSave, false)",
+      // `autoSave` lives on `templates`, not the config root, so the enabled
+      // test reads it through the provider — `resolveAutoSave` still supplies
+      // the off-by-default fallback for `init()`.
+      expect(editorSource).toMatch(
+        /resolveAutoSave\(\s*props\.config\.templates\?\.autoSave,\s*false,?\s*\)/,
       );
-      expect(editorSource).toContain(
-        "autoSaveConfig.enabled && templates !== null",
-      );
+      expect(editorSource).toContain("autoSaveEnabled && templates !== null");
     });
 
-    it("warns instead of silently ignoring autoSave without a provider", () => {
-      expect(editorSource).toContain("config.autoSave is on but no `templates`");
+    it("warns when autoSave is on but the provider's save is false", () => {
+      // `autoSaveEnabled` can only be true when `config.templates` is set, so
+      // the one way autosave can still be inert once a provider exists is its
+      // `save` being `false` — a read-only store.
+      expect(editorSource).toContain(
+        "if (autoSaveEnabled && templates !== null && !templates.canSave.value) {",
+      );
+      expect(editorSource).toContain(
+        "config.templates.autoSave is on but this provider's save is false",
+      );
     });
 
     it("exposes the lifecycle trio and isDirty on the instance", () => {
@@ -398,6 +413,23 @@ describe("EditorHeader templates surface", () => {
       );
       expect(block).toContain("() => editor.state.isDirty");
       expect(block.slice(0, 200)).not.toContain("templates");
+    });
+  });
+
+  describe("templates-scoped config", () => {
+    it("reads the name-field gate from the provider, not the config root", () => {
+      expect(editorSource).toContain("config.templates?.nameField !== false");
+      expect(editorSource).not.toContain("config.templateNameField");
+    });
+
+    it("reads autosave and the unsaved guard from the provider", () => {
+      expect(editorSource).toContain("config.templates?.autoSave");
+      expect(editorSource).toContain("config.templates?.unsavedChangesGuard");
+      expect(editorSource).not.toContain("config.unsavedChangesGuard");
+    });
+
+    it("takes the shared timer's cadence from the config root", () => {
+      expect(editorSource).toContain("config.changeDebounce");
     });
   });
 

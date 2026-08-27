@@ -48,7 +48,7 @@ Cloud-only, and deliberately so: it exists because *Cloud* renders the HTML, so 
 
 ## Sending it yourself instead
 
-`initCloud()` accepts the same `testEmail` key as `init()`, so you can keep Cloud for everything else and still send mail from your own infrastructure — usually for compliance or data-residency reasons:
+`initCloud()` accepts the same `testEmail` key as `init()` for a full provider, so you can keep Cloud for everything else and still send mail from your own infrastructure — usually for compliance or data-residency reasons:
 
 ```js
 await initCloud({
@@ -67,9 +67,31 @@ await initCloud({
 });
 ```
 
-Omit the key and Cloud sends. Provide it and yours does — and it is **not** plan-gated, because the `test_email` feature licenses Cloud's sending, not the editor's UI. Your users see no difference either way.
+Omit the key and Cloud sends. Provide a full provider — one with `send` — and yours does instead, **not** plan-gated, because the `test_email` feature licenses Cloud's sending, not the editor's UI. Your users see no difference either way.
 
-Because the key and its type are identical on both entry points, moving an OSS integration to Cloud means deleting this key or leaving it untouched — never rewriting it.
+Cloud also accepts a narrower shape that keeps its own sender: `{ onSent?, defaultRecipient? }`. `includeMjml` and `allowedRecipients` are excluded from it — Cloud renders server-side rather than from a client MJML pass, and its allowlist is the signed one from your project's JWT, not one a client value could override. `defaultRecipient` is ignored unless it's already on that signed allowlist.
+
+```js
+await initCloud({
+  container: '#editor',
+  auth: { url: '/api/templatical/token' },
+  testEmail: { onSent: (payload) => trackEvent('test_email_sent', payload) },
+});
+```
+
+Cloud tells them apart by `send`, never by whether the value is an object: something with a working `send` replaces Cloud's sender, and anything else — including this narrower shape — keeps Cloud's own sender and stays plan-gated.
+
+Because the key's full-provider form is identical on both entry points, moving an OSS integration to Cloud means deleting this key or leaving it untouched — never rewriting it.
+
+## Events
+
+```ts
+testEmail: {
+  onSent: (payload) => {},
+}
+```
+
+The same event as the [open contract](/backend/test-email#events) — fires once a send resolves, whether the sender behind it is Cloud's or your own.
 
 ## Composables
 

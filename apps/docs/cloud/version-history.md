@@ -30,13 +30,32 @@ Cloud's **templates** adapter records them as part of its own `save`, throttled 
 
 ## Bringing your own
 
-You can't, inside `initCloud()` — and this is the same boundary `templates` draws, for the same reason.
+Not the storage. A version is keyed to a template id **Cloud issued**, and Cloud's `templates` adapter records an automatic version as part of every save, and that same id anchors collaboration, comments, AI rewrite, scoring and the server-side export — which is why `initCloud()` accepts a `templates` key for [its configuration and events](/cloud/templates#bringing-your-own), never a full provider. A consumer-supplied history would drive the UI while Cloud carried on writing versions into its own store: two stores, one of them invisible and billable.
 
-A version is keyed to a template id **Cloud issued**. Cloud's templates adapter records an automatic version as part of every save, and `initCloud()` does not accept a `templates` provider either, because that id also anchors collaboration, comments, AI rewrite, scoring and the server-side export. So a consumer-supplied history would drive the UI while Cloud carried on writing versions into its own store: two stores, one of them invisible and billable.
+`versionHistory` follows the same shape. `initCloud({ versionHistory })` takes `VersionHistoryOptions` — `onCreated`, `onRestored` — and nothing else: no boolean to turn it off, no full-provider form. A value carrying `list` / `get` / `create` / `restore` still has those methods ignored, named in a console warning, with only its events kept.
 
-`initCloud({ versionHistory })` is therefore not on the config type, and a provider passed from JavaScript is ignored with a console warning.
+```js
+await initCloud({
+  container: '#editor',
+  auth: { url: '/api/templatical/token' },
+  versionHistory: {
+    onRestored: (template) => navigate(`/templates/${template.id}`),
+  },
+});
+```
 
-Bring your own with [`init()`](/backend/version-history), where the whole set — templates, version history, rendering — is yours.
+Bring your own storage with [`init()`](/backend/version-history), where the whole set — templates, version history, rendering — is yours.
+
+## Events
+
+```ts
+versionHistory: {
+  onCreated: (version) => {},
+  onRestored: (template) => {},
+}
+```
+
+The same events as the [open contract](/backend/version-history#events).
 
 ## Headless use
 

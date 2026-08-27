@@ -43,6 +43,7 @@ import type {
   SavedBlocksProvider,
   TemplateVersion,
   TemplatesProvider,
+  TemplateSaveTrigger,
   TestEmailProvider,
   VersionHistoryProvider,
 } from "@templatical/types";
@@ -556,6 +557,14 @@ function templatesProviderFor(template?: TemplateOption): TemplatesProvider {
       // nothing. A rename patch carries no content and records nothing.
       if (patch.content) versions.append(patch.content, true);
       return stored;
+    },
+    onSaved: (_template, { trigger }) => {
+      // Recorded on `window` rather than rendered: a visible trigger log would be
+      // test-only UI in front of every visitor. e2e reads it with page.evaluate.
+      const w = window as unknown as {
+        __tplPlaygroundSaveTriggers?: TemplateSaveTrigger[];
+      };
+      (w.__tplPlaygroundSaveTriggers ??= []).push(trigger);
     },
   };
 
@@ -1762,7 +1771,11 @@ async function initEditor(): Promise<void> {
       // API, so the header's name field, save button and status indicator are
       // exercised on every run. Autosave is opt-in via a storage flag, because a
       // demo that saves by itself hides what the Save button does.
-      templates: templatesProvider,
+      templates: {
+        ...templatesProvider,
+        autoSave:
+          localStorage.getItem("tpl-playground-templates-autosave") === "true",
+      },
       // Always on too: the templates provider above records a version on every
       // save, so history fills up as you work and the header control is
       // exercised on every run.
@@ -1772,8 +1785,6 @@ async function initEditor(): Promise<void> {
       // feature reports itself unavailable rather than writing anonymous comments.
       comments: commentsProvider,
       user: PLAYGROUND_USER,
-      autoSave:
-        localStorage.getItem("tpl-playground-templates-autosave") === "true",
       // Only `compileMjml`, deliberately: the playground demonstrates the tier a
       // consumer with no Node backend can reach. MJML still comes from the SDK's
       // own renderer, and this one function is what turns it into HTML.

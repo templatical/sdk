@@ -90,11 +90,6 @@ export interface EditorCapabilities {
     canDelete: ComputedRef<boolean>;
   };
   /**
-   * Present only when a `TestEmailProvider` is configured — in OSS via
-   * `init({ testEmail })`, in Cloud whenever cloud mode is active (or when a
-   * consumer supplied their own sender to `initCloud()`).
-   */
-  /**
    * Present only when a `TemplatesProvider` is configured — in OSS via
    * `init({ templates })`.
    *
@@ -146,8 +141,11 @@ export interface EditorCapabilities {
     isAvailable: ComputedRef<boolean>;
   };
   /**
-   * Present only when a `VersionHistoryProvider` is configured — via
-   * `init({ versionHistory })` or `initCloud({ versionHistory })`.
+   * Present when a `VersionHistoryProvider` is configured via
+   * `init({ versionHistory })`. Always present in Cloud — Cloud injects its
+   * own adapter unconditionally, so `initCloud({ versionHistory })` (events
+   * only, no storage) attaches handlers to it rather than gating whether
+   * this capability exists.
    */
   versionHistory?: {
     /** Re-read the list from the provider. A no-op before a template exists. */
@@ -169,6 +167,11 @@ export interface EditorCapabilities {
     canCreate: ComputedRef<boolean>;
     canRestore: ComputedRef<boolean>;
   };
+  /**
+   * Present only when a `TestEmailProvider` is configured — in OSS via
+   * `init({ testEmail })`, in Cloud whenever cloud mode is active (or when a
+   * consumer supplied their own sender to `initCloud()`).
+   */
   testEmail?: {
     /** Open the send dialog. A no-op while {@link isAvailable} is false. */
     open(): void;

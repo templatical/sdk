@@ -94,20 +94,43 @@ export type CommentChange =
   | { type: "updated"; comment: Comment }
   | { type: "deleted"; commentId: string; parentId?: string | null };
 
-export type CommentEventType =
-  "created" | "updated" | "deleted" | "resolved" | "unresolved";
+/**
+ * Where a comment change came from.
+ *
+ * `local` — the mutation ran through your own `create` / `update` / `delete` /
+ * `setResolved`, called by this editor. `remote` — it arrived through
+ * {@link CommentsProvider.subscribe} and this editor never called a mutation
+ * method: someone else, in another browser.
+ *
+ * A "new comments" badge counts `remote` only; counting `local` too makes a
+ * user's own comment increment their own unread count.
+ */
+export interface CommentEventMeta {
+  origin: "local" | "remote";
+}
 
 /**
- * What `onComment` receives — every change the editor applied, local or remote.
+ * Outward notifications about the review conversation. Every member is optional.
  *
- * Distinct from {@link CommentChange}: that is what a *transport* reports inward,
- * this is what the editor reports outward, and it separates `resolved` /
- * `unresolved` from a plain `updated` because a consumer notifying a team cares
- * about the difference.
+ * Separate from the storage methods so `initCloud()` can accept this half alone:
+ * a comment is keyed to a template id Cloud issued and its author is signed by
+ * the auth token, so Cloud owns the conversation. {@link CommentsProvider}
+ * extends this, so one object satisfies both entry points.
+ *
+ * Each fires once per change the editor applied, after the list reflects it. A
+ * handler that throws is reported through `onError` and never fails the write.
  */
-export interface CommentEvent {
-  type: CommentEventType;
-  comment: Comment;
+export interface CommentsOptions {
+  onCreated?: (comment: Comment, meta: CommentEventMeta) => void;
+  onUpdated?: (comment: Comment, meta: CommentEventMeta) => void;
+  onDeleted?: (comment: Comment, meta: CommentEventMeta) => void;
+  /**
+   * Which of `onResolved` / `onUnresolved` fires is decided by the **stored**
+   * result's `resolvedAt`, never by the state that was requested — a store may
+   * refuse to reopen, and the handler should hear what happened.
+   */
+  onResolved?: (comment: Comment, meta: CommentEventMeta) => void;
+  onUnresolved?: (comment: Comment, meta: CommentEventMeta) => void;
 }
 
 /**
@@ -161,7 +184,7 @@ export interface CommentEvent {
  * };
  * ```
  */
-export interface CommentsProvider {
+export interface CommentsProvider extends CommentsOptions {
   /**
    * The thread roots to show, each with its `replies`. The editor renders this
    * order verbatim and never re-sorts — ordering is your store's call.
@@ -222,9 +245,15 @@ export interface CommentsProvider {
    * }
    * ```
    *
-   * Your own writes may echo back through here. That is fine and needs no
-   * de-duplication on your side: a `created` for a comment already in the list is
-   * ignored, and an `updated` replaces it in place.
+   * Your own writes may echo back through here. Neither the list nor
+   * {@link CommentsOptions} needs de-duplication on your side: a `created` or
+   * `updated` for a comment already in the list replaces the existing entry by
+   * id, and the matching handler fires only when that replacement actually
+   * changes the stored comment — a same-content echo replaces silently, with
+   * nothing to notify. The comparison is structural equality over the stored
+   * shape (`sameComment` decides both), so an echo whose transport frame
+   * serializes identical content in a different key order is not recognized
+   * as the same comment.
    */
   subscribe?: (
     templateId: string,

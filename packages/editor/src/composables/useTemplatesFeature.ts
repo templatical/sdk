@@ -3,6 +3,7 @@ import { useEventListener, useTimeoutFn } from "@vueuse/core";
 import type {
   Template,
   TemplateContent,
+  TemplateSaveTrigger,
   TemplatesProvider,
 } from "@templatical/types";
 import type { EditorCapabilities } from "../types/editor-capabilities";
@@ -28,7 +29,7 @@ interface TemplatesEditor {
     content?: TemplateContent;
   }) => Promise<Template>;
   load: (templateId: string) => Promise<Template>;
-  save: () => Promise<Template>;
+  save: (trigger?: TemplateSaveTrigger) => Promise<Template>;
   hasTemplate: () => boolean;
 }
 
@@ -81,7 +82,7 @@ export interface UseTemplatesFeatureOptions {
 
 export interface UseTemplatesFeatureReturn {
   /** Persist the loaded template. Rejects — see {@link requestSave} for UI. */
-  save: () => Promise<Template>;
+  save: (trigger?: TemplateSaveTrigger) => Promise<Template>;
   /** Persist the current content as a new template. Rejects on failure. */
   create: (input?: {
     name?: string;
@@ -95,7 +96,7 @@ export interface UseTemplatesFeatureReturn {
    * A no-op while a save is running, without a template, or when the provider
    * withheld `save`.
    */
-  requestSave: () => void;
+  requestSave: (trigger?: TemplateSaveTrigger) => void;
   /**
    * The autosave path. Identical to {@link requestSave} except that a configured
    * gate is consulted with `runUnlessBlocked` instead of `tryRunSave`, so a
@@ -200,9 +201,9 @@ export function useTemplatesFeature(
       error instanceof Error && error.message ? error.message : "Save failed";
   }
 
-  async function save(): Promise<Template> {
+  async function save(trigger?: TemplateSaveTrigger): Promise<Template> {
     try {
-      const template = await editor.save();
+      const template = await editor.save(trigger);
       reportSuccess();
       return template;
     } catch (error) {
@@ -263,8 +264,8 @@ export function useTemplatesFeature(
   let queuedAutoSave = false;
 
   /** Shared by both request paths — the outcome is reported through `status`. */
-  function runSave(): Promise<void> {
-    return save().then(
+  function runSave(trigger: TemplateSaveTrigger): Promise<void> {
+    return save(trigger).then(
       () => {
         if (!queuedAutoSave) return;
         queuedAutoSave = false;
@@ -289,14 +290,14 @@ export function useTemplatesFeature(
     return !canSave.value || !hasTemplate.value || isSaving.value;
   }
 
-  function requestSave(): void {
+  function requestSave(trigger: TemplateSaveTrigger = "manual"): void {
     if (cannotSave()) return;
     const gate = options.getSaveGate?.();
     if (gate) {
-      void gate.tryRunSave(runSave);
+      void gate.tryRunSave(() => runSave(trigger));
       return;
     }
-    void runSave();
+    void runSave(trigger);
   }
 
   function requestAutoSave(): void {
@@ -310,10 +311,10 @@ export function useTemplatesFeature(
     }
     const gate = options.getSaveGate?.();
     if (gate) {
-      void gate.runUnlessBlocked(runSave);
+      void gate.runUnlessBlocked(() => runSave("autosave"));
       return;
     }
-    void runSave();
+    void runSave("autosave");
   }
 
   function rename(newName: string): void {
@@ -323,7 +324,7 @@ export function useTemplatesFeature(
     if (!trimmed) return;
     if (trimmed === editor.state.template?.name) return;
     editor.setName(trimmed);
-    requestSave();
+    requestSave("rename");
   }
 
   // Tab close with unsaved work. Gated on a provider being configured — the

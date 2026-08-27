@@ -30,7 +30,7 @@ Alle vier Mutationen sind aktiviert: Kommentar-Speicherung und ihre Echtzeit-Ver
 
 Drei Bedingungen, von denen keine die andere impliziert:
 
-- **`commenting: false`** schaltet die Funktion vollständig ab.
+- **`comments: false`** schaltet die Funktion vollständig ab.
 - **Die Plan-Funktion `commenting`** muss gewährt sein.
 - **Die Vorlage muss gespeichert sein.** Cloud verankert einen Kommentar serverseitig, es muss also eine gespeicherte Vorlage geben, an der er hängt — die Kommentar-Schaltfläche erscheint vor dem ersten Speichern nicht.
 
@@ -38,11 +38,7 @@ Drei Bedingungen, von denen keine die andere impliziert:
 const editor = await initCloud({
   container: '#editor',
   auth: { url: '/api/templatical/token' },
-  commenting: false, // aus
-  onComment: (event) => {
-    // 'created' | 'updated' | 'deleted' | 'resolved' | 'unresolved'
-    console.log(event.type, event.comment.id);
-  },
+  comments: false, // aus, unabhängig vom Plan
 });
 ```
 
@@ -54,13 +50,25 @@ Ein Projekt, dessen Token-Endpunkt den `user`-Claim weglässt, erhält überhaup
 
 ## Eigene Implementierung
 
-Innerhalb von `initCloud()` geht das nicht — dieselbe Grenze, die [`templates`](/de/backend/templates) und der [Versionsverlauf](/de/cloud/version-history) ziehen, und aus demselben Grund.
+Konfiguration und Events, innerhalb von `initCloud()` — nie der Speicher.
 
-Ein Kommentar ist an eine Vorlagen-ID gebunden, die **Cloud ausgestellt** hat, und seine Autorenschaft wird vom Token von Cloud signiert. Ein vom Consumer gelieferter Provider würde die UI steuern, während der eigene Speicher von Cloud derjenige bliebe, in den der Server schreibt und den er abrechnet.
+Ein Kommentar ist an eine Vorlagen-ID gebunden, die **Cloud ausgestellt** hat, und seine Autorenschaft wird vom Token von Cloud signiert, sodass der Schlüssel `comments` von `initCloud()` [`CommentsOptions`](/de/backend/comments#events) akzeptiert — `onCreated`, `onUpdated`, `onDeleted`, `onResolved` und `onUnresolved` — statt eines vollständigen Providers:
 
-`initCloud({ comments })` steht daher nicht im Konfigurationstyp, und ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert.
+```ts
+await initCloud({
+  container: '#editor',
+  auth: { url: '/api/token' },
+  comments: {
+    onCreated: (comment, { origin }) => {},
+    onResolved: (comment) => {},
+    onUnresolved: (comment) => {},
+  },
+});
+```
 
-Bringen Sie Ihren eigenen mit [`init()`](/de/backend/comments) mit — dort gehört Ihnen der gesamte Satz: Vorlagen, Versionsverlauf, Kommentare, Rendering.
+Einen vollständigen Provider zu übergeben ist unproblematisch: `list`, `create`, `update`, `delete`, `setResolved` und `subscribe` werden mit einer Konsolenwarnung ignoriert, die sie namentlich nennt, während `onCreated`, `onUpdated`, `onDeleted`, `onResolved` und `onUnresolved` den Editor trotzdem erreichen. Ein `comments`-Provider aus einer OSS-Integration braucht beim Umzug zu Cloud keine Änderung — lassen Sie den Schlüssel genau so, wie er ist.
+
+Bringen Sie Ihren eigenen Speicher mit [`init()`](/de/backend/comments) mit — dort gehört Ihnen der gesamte Satz: Vorlagen, Versionsverlauf, Kommentare, Rendering.
 
 ## Headless-Nutzung
 

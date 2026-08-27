@@ -40,21 +40,6 @@ const editor = await init({
 });
 ```
 
-### `onComment`
-
-Wird für jede Kommentaränderung aufgerufen, die der Editor übernommen hat — ein erstellter, bearbeiteter, aufgelöster oder gelöschter Thread. Auch Änderungen, die über das `subscribe` eines Providers eintreffen, lösen es aus; damit eignet es sich für einen Ungelesen-Zähler außerhalb des Editors.
-
-```ts
-const editor = await init({
-  container: '#editor',
-  comments: myProvider,
-  user: { id: 'u_7', name: 'Ada Lovelace' },
-  onComment(event) {
-    if (event.type === 'created') incrementUnread();
-  },
-});
-```
-
 ### `onError`
 
 Wird aufgerufen, wenn innerhalb des Editors ein Fehler auftritt.
@@ -117,6 +102,97 @@ const editor = await init({
 
 Wenn Sie `mergeTags.tags` ohne `onRequest` bereitstellen, verwendet der Editor ein eingebautes Dropdown, das mit Ihren Tags befüllt wird. Der `onRequest`-Callback ermöglicht es Ihnen, dieses Dropdown durch Ihre eigene UI zu ersetzen.
 
+## Template-Ereignisse
+
+Ein `templates`-Provider trägt Events über `load` / `create` / `save` hinaus — `onSaved`, `onCreated` und `onLoaded` —, die ausgelöst werden, sobald sich der Editor stabilisiert hat: die Vorlage übernommen, `isDirty` zurückgesetzt, `isSaving`/`isLoading` false.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  templates: {
+    load, create, save,
+    onSaved(template, { trigger }) {
+      if (trigger === 'manual') navigate('/templates');
+    },
+  },
+});
+```
+
+Das zweite Argument von `onSaved` benennt, welche Aktion das Speichern ausgelöst hat, sodass ein Handler auf ein vom Nutzer angestoßenes Speichern reagieren kann, ohne bei jedem Autosave-Tick ebenfalls zu reagieren. Die vollständige Referenz finden Sie unter [`TemplatesOptions`](/de/backend/templates#events).
+
+## Kommentar-Ereignisse
+
+Ein `comments`-Provider trägt Events über `list` / `create` / `update` / `delete` / `setResolved` hinaus — `onCreated`, `onUpdated`, `onDeleted`, `onResolved` und `onUnresolved` —, die ausgelöst werden, sobald der Editor die Änderung übernommen hat, gleich ob sie aus einem lokalen Schreibvorgang stammt oder über `subscribe` eingetroffen ist.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  user: { id: 'u_7', name: 'Ada Lovelace' },
+  comments: {
+    ...myCommentsProvider,
+    onCreated(comment, { origin }) {
+      if (origin === 'remote') incrementUnread();
+    },
+  },
+});
+```
+
+Das zweite Argument jedes Handlers trägt `origin` — `'local'` für einen Schreibvorgang, den dieser Editor selbst ausgeführt hat, `'remote'` für einen, der über `subscribe` eingetroffen ist. Die vollständige Referenz, einschließlich welcher der beiden Handler `onResolved` / `onUnresolved` auslöst, finden Sie unter [Events](/de/backend/comments#events).
+
+## Ereignisse für gespeicherte Blöcke
+
+Ein `savedBlocks`-Provider trägt Events über `list` / `create` / `update` / `delete` hinaus — `onCreated`, `onUpdated` und `onDeleted` —, die ausgelöst werden, sobald der Editor die Änderung in seiner eigenen Liste übernommen hat.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  savedBlocks: {
+    ...mySavedBlocksProvider,
+    onDeleted(block) {
+      logRemoval(block.id);
+    },
+  },
+});
+```
+
+`onDeleted` erhält den entfernten `SavedBlock` selbst, keine ID — `delete` löst zu nichts auf, daher übergibt der Editor den Eintrag, den er vor dem Entfernen erfasst hat. Die vollständige Referenz finden Sie unter [Events](/de/backend/saved-blocks#events).
+
+## Versionsverlauf-Ereignisse
+
+Ein `versionHistory`-Provider trägt Events über `list` / `get` / `create` / `restore` hinaus — `onCreated` und `onRestored` —, die ausgelöst werden, sobald `create()` oder `restore()` auflöst.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  versionHistory: {
+    ...myVersionHistoryProvider,
+    onRestored(template) {
+      navigate(`/templates/${template.id}`);
+    },
+  },
+});
+```
+
+`onRestored` erhält das resultierende `Template`, zu dem `restore()` auflöst, nicht die `TemplateVersion`, aus der wiederhergestellt wurde. Die vollständige Referenz finden Sie unter [Events](/de/backend/version-history#events).
+
+## Test-E-Mail-Ereignisse
+
+Ein `testEmail`-Provider trägt ein Event über `send` hinaus — `onSent` —, das ausgelöst wird, sobald ein Versand auflöst, mit derselben Nutzlast, die `send` erhalten hat.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  testEmail: {
+    ...myTestEmailProvider,
+    onSent(payload) {
+      trackEvent('test_email_sent', { recipient: payload.recipient });
+    },
+  },
+});
+```
+
+Wird bei einem abgelehnten Versand nicht aufgerufen — das zeigt stattdessen die eigene Inline-Fehlermeldung des Dialogs. Die vollständige Referenz finden Sie unter [Events](/de/backend/test-email#events).
+
 ## Muster
 
 ### Entprelltes Auto-Save
@@ -146,4 +222,4 @@ const editor = await init({
 });
 ```
 
-Der Editor warnt bereits beim Schließen des Tabs, sofern ein `templates`-Provider konfiguriert ist — abschaltbar über `unsavedChangesGuard: false`. `onDirtyChange` brauchen Sie für einen clientseitigen Router, den `beforeunload` nicht sieht.
+Der Editor warnt bereits beim Schließen des Tabs, sofern ein `templates`-Provider konfiguriert ist — abschaltbar über `templates: { unsavedChangesGuard: false }`. `onDirtyChange` brauchen Sie für einen clientseitigen Router, den `beforeunload` nicht sieht.

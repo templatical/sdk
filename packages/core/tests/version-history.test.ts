@@ -250,6 +250,78 @@ describe("useVersionHistory", () => {
     });
   });
 
+  describe("events", () => {
+    it("fires onCreated once with the created version", async () => {
+      const onCreated = vi.fn();
+      const { history } = setup({ onCreated });
+
+      const created = await history.create(content("current"));
+
+      expect(onCreated).toHaveBeenCalledTimes(1);
+      expect(onCreated).toHaveBeenCalledWith(created);
+    });
+
+    it("keeps create successful when onCreated throws, and reports through onError", async () => {
+      const onError = vi.fn();
+      const { history } = setup(
+        {
+          onCreated: () => {
+            throw new Error("handler blew up");
+          },
+        },
+        { onError },
+      );
+
+      await expect(history.create(content("x"))).resolves.toMatchObject({
+        id: "ver-new",
+      });
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError.mock.calls[0][0].message).toBe("handler blew up");
+    });
+
+    /**
+     * `restore()` clears `isRestoring` in a `finally`, which runs after the
+     * `return` expression evaluates. Capturing the flag from inside the
+     * handler pins that the emit sits below the whole `try/catch/finally` —
+     * an emit placed inside the `try` would fire while the composable still
+     * reports itself mid-restore.
+     */
+    it("fires onRestored once with the resulting template, observing isRestoring already settled", async () => {
+      const onRestored = vi.fn();
+      let observedWhileRestoring: boolean | null = null;
+      const { history } = setup({
+        onRestored: (template) => {
+          observedWhileRestoring = history.isRestoring.value;
+          onRestored(template);
+        },
+      });
+
+      const template = await history.restore("ver-1");
+
+      expect(onRestored).toHaveBeenCalledTimes(1);
+      expect(onRestored).toHaveBeenCalledWith(template);
+      expect(observedWhileRestoring).toBe(false);
+    });
+
+    it("keeps restore successful when onRestored throws, and reports through onError", async () => {
+      const onError = vi.fn();
+      const { history } = setup(
+        {
+          onRestored: () => {
+            throw new Error("handler blew up");
+          },
+        },
+        { onError },
+      );
+
+      await expect(history.restore("ver-1")).resolves.toMatchObject({
+        id: "tpl-1",
+      });
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError.mock.calls[0][0].message).toBe("handler blew up");
+    });
+  });
+
   describe("capability flags", () => {
     it("reads both mutations off the provider", () => {
       const { history } = setup();

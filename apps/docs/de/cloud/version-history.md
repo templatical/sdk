@@ -30,13 +30,32 @@ Der **Vorlagen**-Adapter von Cloud zeichnet sie als Teil seines eigenen `save` a
 
 ## Eigene Implementierung
 
-Innerhalb von `initCloud()` geht das nicht — dieselbe Grenze, die `templates` zieht, und aus demselben Grund.
+Nicht der Speicher. Eine Version ist an eine von **Cloud ausgestellte** Vorlagen-ID gebunden, und der `templates`-Adapter von Cloud zeichnet bei jedem Speichern eine automatische Version auf, und dieselbe ID verankert zugleich Zusammenarbeit, Kommentare, KI-Umformulierung, Bewertung und den serverseitigen Export — deshalb nimmt `initCloud()` den Schlüssel `templates` für [seine Konfiguration und Events](/de/cloud/templates#eigene-implementierung) entgegen, nie für einen vollständigen Provider. Ein selbst bereitgestellter Verlauf würde die Oberfläche steuern, während Cloud weiter Versionen in den eigenen Speicher schreibt: zwei Speicher, einer davon unsichtbar und kostenpflichtig.
 
-Eine Version ist an eine Vorlagen-ID gebunden, die **Cloud ausgegeben hat**. Der Vorlagen-Adapter von Cloud zeichnet bei jedem Speichern eine automatische Version auf, und `initCloud()` nimmt auch keinen `templates`-Provider entgegen, weil diese ID zugleich Zusammenarbeit, Kommentare, KI-Umformulierung, Bewertung und den serverseitigen Export verankert. Ein selbst bereitgestellter Verlauf würde also die Oberfläche steuern, während Cloud weiter Versionen in den eigenen Speicher schreibt: zwei Speicher, einer davon unsichtbar und kostenpflichtig.
+`versionHistory` folgt derselben Form. `initCloud({ versionHistory })` nimmt `VersionHistoryOptions` entgegen — `onCreated`, `onRestored` — und sonst nichts: keine Boolean-Form zum Abschalten, keine vollständige Provider-Form. Ein Wert mit `list` / `get` / `create` / `restore` hat diese Methoden weiterhin ignoriert, benannt in einer Konsolenwarnung, wobei nur seine Events übernommen werden.
 
-`initCloud({ versionHistory })` steht deshalb nicht im Konfigurationstyp, und ein aus JavaScript übergebener Provider wird mit einer Konsolenwarnung ignoriert.
+```js
+await initCloud({
+  container: '#editor',
+  auth: { url: '/api/templatical/token' },
+  versionHistory: {
+    onRestored: (template) => navigate(`/templates/${template.id}`),
+  },
+});
+```
 
-Bringen Sie Ihren eigenen mit [`init()`](/de/backend/version-history) mit — dort gehört Ihnen der gesamte Satz: Vorlagen, Versionsverlauf, Rendering.
+Bringen Sie Ihren eigenen Speicher mit [`init()`](/de/backend/version-history) mit — dort gehört Ihnen der gesamte Satz: Vorlagen, Versionsverlauf, Rendering.
+
+## Events
+
+```ts
+versionHistory: {
+  onCreated: (version) => {},
+  onRestored: (template) => {},
+}
+```
+
+Dieselben Events wie im [offenen Vertrag](/de/backend/version-history#events).
 
 ## Headless-Nutzung
 

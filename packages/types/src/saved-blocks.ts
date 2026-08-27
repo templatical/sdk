@@ -97,6 +97,33 @@ export type SavedBlockPatch = Partial<{
 }>;
 
 /**
+ * Outward notifications for saved-block mutations. Every member is optional.
+ *
+ * Separate from the storage methods so `initCloud()` can accept this half
+ * alone: these fire the same way whichever store holds the entries, Cloud's
+ * own or yours. {@link SavedBlocksProvider} extends this, so one object
+ * satisfies both entry points.
+ */
+export interface SavedBlocksOptions {
+  /** A saved block was created and prepended to the list. */
+  onCreated?: (block: SavedBlock) => void;
+  /** A saved block was updated and its list entry replaced. */
+  onUpdated?: (block: SavedBlock) => void;
+  /**
+   * A saved block was deleted and filtered out of the list. `delete` resolves
+   * to nothing, so this carries the entry the editor captured before removing
+   * it — not an id.
+   *
+   * Fires only when the entry was present in the locally loaded list at the
+   * time of the delete, since that capture is where the entry comes from.
+   * Deleting an id that was never loaded — e.g. a headless caller acting on
+   * an id from elsewhere — still deletes successfully; there is just nothing
+   * to pass, so this does not fire.
+   */
+  onDeleted?: (block: SavedBlock) => void;
+}
+
+/**
  * Storage contract for saved blocks. Implement it to back the editor's saved
  * blocks UI with your own persistence — the editor owns the save dialog, the
  * browser, and insertion; you own the transport.
@@ -135,7 +162,7 @@ export type SavedBlockPatch = Partial<{
  * };
  * ```
  */
-export interface SavedBlocksProvider {
+export interface SavedBlocksProvider extends SavedBlocksOptions {
   /**
    * Fetch saved blocks. The editor calls this with no arguments and expects
    * everything the current user may see — scoping the result per user, tenant

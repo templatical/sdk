@@ -221,6 +221,72 @@ describe("useTestEmailFeature", () => {
     });
   });
 
+  describe("onSent", () => {
+    it("fires once with the payload send was given after a successful send", async () => {
+      const onSent = vi.fn();
+      const provider = createProvider({ onSent });
+      const { feature } = withFeature({ provider });
+
+      await feature.send("a@b.com");
+
+      expect(onSent).toHaveBeenCalledTimes(1);
+      expect(onSent).toHaveBeenCalledWith({
+        recipient: "a@b.com",
+        content: CONTENT,
+      });
+      // The exact object `send` received, not a re-derived copy.
+      expect(vi.mocked(onSent).mock.calls[0][0]).toBe(payloadOf(provider));
+    });
+
+    it("does not fire when send rejects", async () => {
+      const onSent = vi.fn();
+      const provider = createProvider({
+        onSent,
+        send: vi.fn().mockRejectedValue(new Error("mail server said no")),
+      });
+      const { feature } = withFeature({ provider });
+
+      await feature.send("a@b.com");
+
+      expect(onSent).not.toHaveBeenCalled();
+      expect(feature.error.value).toEqual({
+        kind: "provider",
+        message: "mail server said no",
+      });
+    });
+
+    it("a throwing handler does not fail the send — the modal still reaches success", async () => {
+      const onSent = vi.fn(() => {
+        throw new Error("handler exploded");
+      });
+      const onError = vi.fn();
+      const provider = createProvider({ onSent });
+      const { feature } = withFeature({ provider, onError });
+      feature.open();
+
+      await feature.send("a@b.com");
+
+      expect(onSent).toHaveBeenCalledTimes(1);
+      // The state the dialog actually keys off for success — "the awaited
+      // call didn't reject" alone would also be true if onSent were never
+      // wired in at all.
+      expect(feature.justSent.value).toBe(true);
+      expect(feature.isModalOpen.value).toBe(true);
+      expect(feature.error.value).toBeNull();
+      // The throw is reported, not silently dropped — the same channel
+      // `@templatical/core`'s `notifyHandler` reports handler throws through.
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(onError).mock.calls[0][0].message).toBe(
+        "handler exploded",
+      );
+
+      await vi.advanceTimersByTimeAsync(1200);
+
+      expect(feature.isModalOpen.value).toBe(false);
+      expect(feature.justSent.value).toBe(false);
+    });
+  });
+
   /**
    * The four rows of the `includeMjml` ladder. Rows 3 and 4 are the reason
    * `tryLoadRenderer` exists as a separate helper: a missing package degrades,

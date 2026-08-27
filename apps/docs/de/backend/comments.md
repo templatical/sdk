@@ -125,7 +125,7 @@ Vorhanden bedeutet bearbeitet — das Panel zeigt eine *(bearbeitet)*-Markierung
 
 Nimmt den Zielzustand, keinen Umschalter. Der Aufruf ist idempotent, sodass zwei gleichzeitige Klicks einen Thread nicht invertiert zurücklassen und Ihr Endpunkt vor dem Schreiben nie den aktuellen Zustand lesen muss.
 
-Der Editor meldet das Ergebnis, das Ihr Speicher zurückgegeben hat, nicht den angefragten Zustand. Ein Speicher, der sich weigert, einen Thread wieder zu öffnen, antwortet „weiterhin gelöst", und genau das melden UI und `onComment`.
+Der Editor meldet das Ergebnis, das Ihr Speicher zurückgegeben hat, nicht den angefragten Zustand. Ein Speicher, der sich weigert, einen Thread wieder zu öffnen, antwortet „weiterhin gelöst", und genau das melden UI und [`onResolved`](#events).
 
 ## Review nur zum Lesen
 
@@ -189,23 +189,34 @@ Das Panel filtert **im Speicher** über das, was `list()` zurückgegeben hat —
 - **Das Panel** rechts: Thread-Karten mit Autor, relativer Zeit, einer *(bearbeitet)*-Markierung, dem Lösen-Umschalter und Antworten / Bearbeiten / Löschen, soweit der Speicher es erlaubt.
 - **Eine „Fehlender Block"-Markierung** an einem Kommentar, dessen Ankerblock nicht mehr existiert, damit ein verwaister Thread sich als verwaist liest und nicht als Rätsel.
 
-## `onComment`
-
-Wird für jede Änderung ausgelöst, die der Editor angewendet hat — lokale Schreibvorgänge und alles, was ein `subscribe` hereingeschoben hat. Das ist der Haken für eine „3 neue Kommentare"-Markierung außerhalb des Editors:
+## Events
 
 ```ts
-init({
-  container,
-  user,
-  comments: myCommentsProvider,
-  onComment: (event) => {
-    // 'created' | 'updated' | 'deleted' | 'resolved' | 'unresolved'
-    console.log(event.type, event.comment.id);
-  },
-});
+comments: {
+  // ...list, create, update, delete, setResolved
+  onCreated:    (comment, { origin }) => {},
+  onUpdated:    (comment, { origin }) => {},
+  onDeleted:    (comment, { origin }) => {},
+  onResolved:   (comment, { origin }) => {},
+  onUnresolved: (comment, { origin }) => {},
+}
 ```
 
-`resolved` und `unresolved` werden getrennt von einem einfachen `updated` gemeldet, weil für eine Anwendung, die ein Team benachrichtigt, der Unterschied zählt.
+`origin` ist `'local'` für einen Schreibvorgang, den dieser Editor selbst ausgeführt hat — `create`, `update`, `delete` oder `setResolved`, aufgerufen über die eigene UI des Editors oder `useComments`. Es ist `'remote'` für eine Änderung, die über [`subscribe`](#echtzeit-aktualisierungen) eingetroffen ist: jemand anderes, in einem anderen Browser.
+
+Eine „Neue Kommentare"-Markierung außerhalb des Editors sollte nur `remote` zählen. Zählt sie `local` mit, erhöht der eigene Kommentar einer Person ihren eigenen Ungelesen-Zähler.
+
+Welcher der beiden Handler `onResolved` / `onUnresolved` auslöst, entscheidet das `resolvedAt` des **gespeicherten** Ergebnisses, nicht der angefragte Zustand — ein Speicher, der sich weigert, einen Thread wieder zu öffnen, meldet weiterhin `onResolved`.
+
+::: tip Handler lösen meist einmal pro Änderung aus
+Ein Transport, der einen Schreibvorgang an den eigenen Absender zurückspiegelt — der Vertrag von `subscribe` erlaubt das —, wird mit dem gespeicherten Kommentar verglichen: Ein Echo, das nichts verändert, wird still übernommen, ohne Event.
+
+Diese Zusicherung gilt für ein Echo, das **nach** der Antwort des eigenen Schreibvorgangs eintrifft. Trifft es vorher ein, wendet der Editor es zuerst als `origin: 'remote'` an, und der lokale Aufruf löst — sobald seine Antwort eintrifft — trotzdem noch sein eigenes `origin: 'local'`-Event aus: zwei Events für einen Schreibvorgang, das erste davon falsch zugeordnet. Kann Ihr Transport so früh zurückspiegeln, deduplizieren Sie auf Ihrer Seite weiterhin selbst.
+
+**Templatical Cloud ist davon nicht betroffen.** `createCloudCommentsProvider` versieht jeden Schreibvorgang mit einem `X-Socket-ID`-Header, den das Backend von Cloud beim Zurückspiegeln der Änderung ausschließt — ein verfrühtes Echo erreicht diesen Editor also nie.
+:::
+
+Eine Handler-Funktion, die einen Fehler wirft, wird abgefangen und an `onError` gemeldet — sie lässt den auslösenden Schreibvorgang nie fehlschlagen.
 
 ## Headless-Nutzung
 
@@ -218,7 +229,6 @@ const comments = useComments({
   provider: myCommentsProvider,
   getTemplateId: () => currentTemplateId,
   getUser: () => currentUser,
-  onComment: (event) => console.log(event.type),
   onError: (error) => console.error(error),
 });
 
@@ -229,6 +239,8 @@ comments.commentCountByBlock.value;         // Map<string, number>
 await comments.create({ body: 'Sieht gut aus' });
 await comments.setResolved('c_1', true);
 ```
+
+Die Handler aus [Events](#events) sind Teil von `myCommentsProvider` selbst — demselben Objekt, auf dem auch `list` / `create` / `update` / `delete` / `setResolved` liegen —, sodass ein Objekt `init()` und `useComments` gleichermaßen bedient.
 
 `useCommentListener` verbindet das `subscribe` eines Providers mit demselben Zustand und tut bei einem Provider ohne diese Methode nichts:
 

@@ -111,7 +111,7 @@ const templates = templatesProvider
   ? useTemplatesFeature({
       provider: templatesProvider,
       editor,
-      guardUnsavedChanges: props.config.unsavedChangesGuard,
+      guardUnsavedChanges: props.config.templates?.unsavedChangesGuard,
       // Cloud's lint save-gate, when there is one. Read through a getter
       // because the gate needs `core.templateLint`, which does not exist yet.
       // Without this the collapse would have silently dropped the server's
@@ -192,7 +192,6 @@ const comments = props.config.comments
       // Cloud keeps comments mutually exclusive with its AI and scoring sidebars:
       // they share one 360px gutter, and two of them open at once would overlap.
       isOpen: cloudAttachment?.panelState.commentsOpen,
-      onComment: props.config.onComment,
       onError: props.config.onError,
       // Cloud folds in the `commenting` plan feature and "the template must be
       // saved", both constraints of *its* store rather than of the contract.
@@ -231,17 +230,46 @@ const VersionHistoryPanels = defineAsyncComponent(
 
 // --- Auto-save ---
 // One debounced tick drives everything a consumer can ask for on a content
-// change: the `onChange` notification, and — when `autoSave` is on with a
-// templates provider — the save itself. Sharing a single `useAutoSave` instance
-// keeps the two in step and inherits the pause-during-undo/redo behaviour
-// `useEditorCore` wires up around it.
-const autoSaveConfig = resolveAutoSave(props.config.autoSave, false);
-const isAutoSaving = autoSaveConfig.enabled && templates !== null;
-if (autoSaveConfig.enabled && templates === null) {
+// change: the `onChange` notification, and, when `templates.autoSave` is on,
+// the save itself. Sharing a single `useAutoSave` instance keeps the two in
+// step and inherits the pause-during-undo/redo behaviour `useEditorCore` wires
+// up around it. `config.changeDebounce` sets the cadence for both.
+const autoSaveEnabled = resolveAutoSave(
+  props.config.templates?.autoSave,
+  false,
+);
+const isAutoSaving = autoSaveEnabled && templates !== null;
+// The one way autosave can still be inert once a provider exists is its
+// `save` being `false` — a read-only store — which `requestAutoSave()` below
+// already no-ops per tick for; this warning is the only signal the consumer
+// gets. `templates !== null` is redundant with `autoSaveEnabled` at runtime
+// (the provider that enables autosave is the same provider that makes
+// `templates` non-null) but stays as an explicit conjunct so TypeScript can
+// narrow `templates.canSave.value` below without a non-null assertion.
+if (autoSaveEnabled && templates !== null && !templates.canSave.value) {
   logger.warn(
-    "config.autoSave is on but no `templates` provider is configured — " +
-      "there is nothing to save to. Pass `templates` to enable it, or use " +
-      "`onChange` to persist the content yourself.",
+    "config.templates.autoSave is on but this provider's save is false — " +
+      "there is nothing to persist to. Give it a real save function, or " +
+      "use `onChange` to persist the content yourself.",
+  );
+}
+// `changeDebounce` alone does not enable autosave — only `templates.autoSave`
+// does. A config with `changeDebounce` set, a provider present, `autoSave`
+// left unset, and no `onChange` has nothing consuming the timer at all,
+// which reads as intentional `onChange`-only pacing but is easy to reach by
+// mistake. Warn on exactly that combination; `autoSave: false` is a stated
+// decision and must stay silent.
+if (
+  props.config.changeDebounce !== undefined &&
+  templates !== null &&
+  props.config.templates?.autoSave === undefined &&
+  !props.config.onChange
+) {
+  logger.warn(
+    "config.changeDebounce is set but nothing will use it — " +
+      "config.templates.autoSave is unset and there is no onChange either, " +
+      "so the timer has no consumer. Set config.templates.autoSave, or add " +
+      "onChange, so the debounce takes effect.",
   );
 }
 
@@ -260,8 +288,8 @@ const autoSaveOptions =
           // speed bump.
           if (isAutoSaving) templates!.requestAutoSave();
         },
-        ...(autoSaveConfig.debounce !== undefined
-          ? { debounce: autoSaveConfig.debounce }
+        ...(props.config.changeDebounce !== undefined
+          ? { debounce: props.config.changeDebounce }
           : {}),
       }
     : null;
@@ -352,7 +380,7 @@ const versionHistory = props.config.versionHistory
             canSave: () =>
               templates.canSave.value &&
               !(props.cloud?.getSaveGate()?.shouldBlock.value ?? false),
-            save: () => templates.save(),
+            save: () => templates.save("restore"),
           }
         : null,
       onError: props.config.onError,
@@ -479,7 +507,7 @@ defineExpose({
       :editor="editor"
       :core="core"
       :templates="templates"
-      :show-template-name="config.templateNameField !== false"
+      :show-template-name="config.templates?.nameField !== false"
       :test-email="testEmail"
       :version-history="versionHistory"
       :comments="comments"

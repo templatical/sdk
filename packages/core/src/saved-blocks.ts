@@ -7,6 +7,7 @@ import type {
 } from "@templatical/types";
 import { SdkError } from "@templatical/types";
 import { computed, ref, type ComputedRef, type Ref } from "vue";
+import { notifyHandler } from "./error-reporting";
 
 export interface UseSavedBlocksOptions {
   /**
@@ -119,6 +120,16 @@ export function useSavedBlocks(
     );
   }
 
+  /**
+   * Run a consumer's event handler without letting it fail the operation.
+   *
+   * A handler that throws must not turn a completed write into a rejected one —
+   * the UI would report a failure for a saved block that was created.
+   */
+  function notify(run: () => void): void {
+    notifyHandler(options.onError, run);
+  }
+
   async function load(params?: SavedBlocksListParams): Promise<void> {
     isLoading.value = true;
     try {
@@ -148,6 +159,7 @@ export function useSavedBlocks(
         category ? { name, content, category } : { name, content },
       );
       savedBlocks.value = [created, ...savedBlocks.value];
+      notify(() => provider.onCreated?.(created));
       return created;
     } catch (error) {
       options.onError?.(error as Error);
@@ -175,6 +187,7 @@ export function useSavedBlocks(
       savedBlocks.value = savedBlocks.value.map((b) =>
         b.id === id ? updated : b,
       );
+      notify(() => provider.onUpdated?.(updated));
       return updated;
     } catch (error) {
       options.onError?.(error as Error);
@@ -187,13 +200,19 @@ export function useSavedBlocks(
     if (typeof providerDelete !== "function") {
       refuse("delete", "disabled by the provider");
     }
-    const local = savedBlocks.value.find((b) => b.id === id);
-    if (local && local.canDelete === false) {
+    // Captured before the delete resolves: `onDeleted` carries the removed
+    // entry itself, and there is nothing left to read once the list is
+    // filtered.
+    const removed = savedBlocks.value.find((b) => b.id === id) ?? null;
+    if (removed && removed.canDelete === false) {
       refuse("delete", `not permitted for entry "${id}"`);
     }
     try {
       await providerDelete(id);
       savedBlocks.value = savedBlocks.value.filter((b) => b.id !== id);
+      if (removed) {
+        notify(() => provider.onDeleted?.(removed));
+      }
     } catch (error) {
       options.onError?.(error as Error);
       throw error;

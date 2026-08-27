@@ -197,6 +197,29 @@ Jede Methode kann ablehnen. Der Editor meldet den Fehler über den `onError`-Cal
 
 Lassen Sie `savedBlocks` weg, fehlt die Funktion: keine Speicheraktion, kein Eintrag in der Leiste und **kein zugehöriger Code wird geladen**. Die Oberfläche ist in verzögert geladene Chunks aufgeteilt, die erst beim Öffnen eines Dialogs abgerufen werden.
 
+## Events
+
+```ts
+savedBlocks: {
+  // ...list, create, update, delete
+  onCreated: (block) => {},
+  onUpdated: (block) => {},
+  onDeleted: (block) => {},
+}
+```
+
+Jedes löst aus, sobald der Editor die Änderung in seiner eigenen Liste übernommen hat: `onCreated` stellt nach einem Speichern den neuen Eintrag voran, `onUpdated` ersetzt ihn nach einer Änderung, `onDeleted` filtert ihn nach dem Entfernen heraus.
+
+::: tip `onDeleted` trägt den Block, keine ID
+`delete` löst zu nichts auf, daher übergibt der Editor den Eintrag, den er unmittelbar vor dem Entfernen erfasst hat.
+:::
+
+::: tip Ein Löschen außerhalb der geladenen Liste löst kein Event aus
+Der erfasste Eintrag muss bereits in der Liste des Editors vorhanden sein. Das Löschen einer ID, die der Editor nie geladen hat — etwa durch einen Headless-Aufrufer, der mit einer ID von anderswo arbeitet —, löscht weiterhin erfolgreich; es gibt dann aber nichts, das an `onDeleted` übergeben werden könnte, weshalb es nicht auslöst.
+:::
+
+Eine Handler-Funktion, die einen Fehler wirft, wird abgefangen und an `onError` gemeldet — sie lässt das auslösende Erstellen, Aktualisieren oder Löschen nie fehlschlagen.
+
 ## Headless-Nutzung
 
 Die reaktive Zustandsebene wird aus `@templatical/core` exportiert, falls Sie eine eigene Oberfläche über einem Provider bauen möchten:

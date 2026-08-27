@@ -515,4 +515,205 @@ describe('useEditor — templates provider', () => {
       expect(editor.state.template?.name).toBe('Other');
     });
   });
+
+  describe('onSaved', () => {
+    it('fires once with the stored template and the trigger', async () => {
+      const onSaved = vi.fn();
+      // One `stored` object, asserted by identity. `storedTemplate()` mints a
+      // fresh block id per call (`createParagraphBlock` → `generateId()`), so
+      // comparing two independent calls with `toEqual` can never match.
+      const stored = storedTemplate();
+      const provider = createMockProvider({
+        onSaved,
+        save: vi.fn().mockResolvedValue(stored),
+      });
+      const editor = useEditor({ content: contentWithOneBlock(), templates: provider });
+
+      await editor.load('tpl_1');
+      await editor.save('manual');
+
+      expect(onSaved).toHaveBeenCalledTimes(1);
+      expect(onSaved.mock.calls[0][0]).toBe(stored);
+      expect(onSaved.mock.calls[0][1]).toEqual({ trigger: 'manual' });
+    });
+
+    it('defaults the trigger to api for a bare core caller', async () => {
+      const onSaved = vi.fn();
+      const editor = useEditor({
+        content: contentWithOneBlock(),
+        templates: createMockProvider({ onSaved }),
+      });
+
+      await editor.load('tpl_1');
+      await editor.save();
+
+      expect(onSaved.mock.calls[0][1]).toEqual({ trigger: 'api' });
+    });
+
+    it('has settled the editor before the handler runs', async () => {
+      // The whole reason this is an event and not the provider body: a handler
+      // that navigates must not observe the editor mid-save, or the consumer's
+      // own dirty guard blocks their own navigation.
+      const seen: { isDirty: boolean; isSaving: boolean; id?: string }[] = [];
+      const provider = createMockProvider({
+        onSaved: () => {
+          seen.push({
+            isDirty: editor.state.isDirty,
+            isSaving: editor.state.isSaving,
+            id: editor.state.template?.id,
+          });
+        },
+      });
+      const editor = useEditor({ content: contentWithOneBlock(), templates: provider });
+
+      await editor.load('tpl_1');
+      await editor.save('manual');
+
+      expect(seen).toEqual([{ isDirty: false, isSaving: false, id: 'tpl_1' }]);
+    });
+
+    it('does not fire when the provider rejects', async () => {
+      const onSaved = vi.fn();
+      const provider = createMockProvider({
+        onSaved,
+        save: vi.fn().mockRejectedValue(new Error('nope')),
+      });
+      const editor = useEditor({ content: contentWithOneBlock(), templates: provider });
+
+      await editor.load('tpl_1');
+      await expect(editor.save('manual')).rejects.toThrow('nope');
+
+      expect(onSaved).not.toHaveBeenCalled();
+    });
+
+    it('keeps the save successful when the handler throws, and reports to onError', async () => {
+      const onError = vi.fn();
+      const stored = storedTemplate();
+      const provider = createMockProvider({
+        save: vi.fn().mockResolvedValue(stored),
+        onSaved: () => {
+          throw new Error('handler blew up');
+        },
+      });
+      const editor = useEditor({
+        content: contentWithOneBlock(),
+        templates: provider,
+        onError,
+      });
+
+      await editor.load('tpl_1');
+      await expect(editor.save('manual')).resolves.toBe(stored);
+
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError.mock.calls[0][0].message).toBe('handler blew up');
+      expect(editor.state.isDirty).toBe(false);
+    });
+
+    it('wraps a non-Error throw so onError still sees a message', async () => {
+      const onError = vi.fn();
+      const stored = storedTemplate();
+      const provider = createMockProvider({
+        save: vi.fn().mockResolvedValue(stored),
+        onSaved: () => {
+          throw 'boom';
+        },
+      });
+      const editor = useEditor({
+        content: contentWithOneBlock(),
+        templates: provider,
+        onError,
+      });
+
+      await editor.load('tpl_1');
+      await expect(editor.save('manual')).resolves.toBe(stored);
+
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(onError.mock.calls[0][0]).toBeInstanceOf(Error);
+      expect(onError.mock.calls[0][0].message).toBe('boom');
+    });
+  });
+
+  describe('onCreated and onLoaded', () => {
+    it('fires onLoaded once, after the content is on the canvas', async () => {
+      const seen: { id?: string; firstBlockText: string; isLoading: boolean }[] = [];
+      const provider = createMockProvider({
+        onLoaded: () => {
+          seen.push({
+            id: editor.state.template?.id,
+            firstBlockText: JSON.stringify(editor.state.content.blocks[0]),
+            isLoading: editor.state.isLoading,
+          });
+        },
+      });
+      const editor = useEditor({ content: contentWithOneBlock(), templates: provider });
+
+      await editor.load('tpl_1');
+
+      expect(seen).toHaveLength(1);
+      expect(seen[0].id).toBe('tpl_1');
+      expect(seen[0].isLoading).toBe(false);
+      expect(seen[0].firstBlockText).toContain('stored');
+    });
+
+    it('fires onCreated once, after the editor has settled', async () => {
+      // Captures `isLoading` as well as the id. The id alone would pass with the
+      // emit back inside the `try` — `state.template` is assigned there — so it
+      // cannot catch a re-inlined return. `isLoading` is cleared in the
+      // `finally`, so only it pins the emit below the whole construct.
+      const seen: { id?: string; isLoading: boolean }[] = [];
+      const provider = createMockProvider({
+        onCreated: () =>
+          seen.push({
+            id: editor.state.template?.id,
+            isLoading: editor.state.isLoading,
+          }),
+      });
+      const editor = useEditor({ content: contentWithOneBlock(), templates: provider });
+
+      await editor.create({ name: 'Fresh' });
+
+      expect(seen).toEqual([{ id: 'tpl_1', isLoading: false }]);
+      expect(editor.state.isDirty).toBe(false);
+    });
+
+    it('fires neither when the provider rejects', async () => {
+      const onCreated = vi.fn();
+      const onLoaded = vi.fn();
+      const editor = useEditor({
+        content: contentWithOneBlock(),
+        templates: createMockProvider({
+          onCreated,
+          onLoaded,
+          create: vi.fn().mockRejectedValue(new Error('no create')),
+          load: vi.fn().mockRejectedValue(new Error('no load')),
+        }),
+      });
+
+      await expect(editor.create()).rejects.toThrow('no create');
+      await expect(editor.load('tpl_1')).rejects.toThrow('no load');
+
+      expect(onCreated).not.toHaveBeenCalled();
+      expect(onLoaded).not.toHaveBeenCalled();
+    });
+
+    it('keeps load successful when the handler throws', async () => {
+      const onError = vi.fn();
+      // Identity again — see the note in the onSaved group. `storedTemplate()`
+      // is not stable across calls.
+      const stored = storedTemplate();
+      const editor = useEditor({
+        content: contentWithOneBlock(),
+        templates: createMockProvider({
+          load: vi.fn().mockResolvedValue(stored),
+          onLoaded: () => {
+            throw new Error('bad handler');
+          },
+        }),
+        onError,
+      });
+
+      await expect(editor.load('tpl_1')).resolves.toBe(stored);
+      expect(onError.mock.calls[0][0].message).toBe('bad handler');
+    });
+  });
 });

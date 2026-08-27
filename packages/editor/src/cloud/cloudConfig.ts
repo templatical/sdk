@@ -3,20 +3,23 @@ import type {
   BlockDefaults,
   CollaborationConfig,
   ColorsConfig,
-  CommentEvent,
+  CommentsOptions,
   CustomBlockDefinition,
   DisplayConditionsConfig,
   FontsConfig,
   LogicTagsConfig,
   McpConfig,
   MergeTagsConfig,
+  SavedBlocksOptions,
   SavedBlocksProvider,
-  Template,
+  TemplatesOptions,
+  TestEmailOptions,
   TestEmailProvider,
   TemplateContent,
   TemplateDefaults,
   ThemeOverrides,
   UiTheme,
+  VersionHistoryOptions,
   ResolvePreview,
 } from "@templatical/types";
 import type {
@@ -24,7 +27,6 @@ import type {
   MediaRequestContext,
 } from "@templatical/media-library";
 import type { HtmlBlockPreviewConfig } from "../utils/resolveHtmlBlockPreview";
-import type { AutoSaveConfig } from "../types/auto-save";
 
 export interface TemplaticalCloudEditorConfig {
   container: string | HTMLElement;
@@ -90,22 +92,7 @@ export interface TemplaticalCloudEditorConfig {
    */
   smallScreenNotice?: boolean;
 
-  /**
-   * Show the template's name in the header, inline-editable. Defaults to `true`.
-   *
-   * Set to `false` when your store has no name column, or when your own chrome
-   * owns the name. Hides the field only — `create({ name })`, `setName()` and the
-   * `name` in each save patch keep working, so a headless caller or your own UI
-   * can still manage names.
-   *
-   * Without a `templates` provider the header renders no name field either way.
-   *
-   * @default true
-   */
-  templateNameField?: boolean;
-
   ai?: AiConfig | false;
-  commenting?: boolean;
   collaboration?: CollaborationConfig;
   mcp?: McpConfig;
   blockDefaults?: BlockDefaults;
@@ -115,8 +102,10 @@ export interface TemplaticalCloudEditorConfig {
    * Reusable saved blocks.
    *
    * - **omitted / `true`** — backed by Templatical Cloud, gated on the
-   *   `saved_modules` plan feature.
-   * - **`false`** — off entirely; no UI renders.
+   *   `saved_modules` plan feature;
+   * - **`false`** — off entirely; no UI renders;
+   * - **a {@link SavedBlocksOptions}** — still backed by Cloud's store, plus
+   *   your `onCreated`, `onUpdated` and `onDeleted` handlers;
    * - **a {@link SavedBlocksProvider}** — backed by *your* store instead of
    *   Cloud's, and **not plan-gated**, because the plan feature licenses Cloud's
    *   storage rather than the editor's UI.
@@ -125,14 +114,59 @@ export interface TemplaticalCloudEditorConfig {
    * integration to Cloud means deleting this key (to adopt Cloud's store) or
    * leaving it exactly as-is (to keep your own) — never rewriting it.
    */
-  savedBlocks?: boolean | SavedBlocksProvider;
+  savedBlocks?: boolean | SavedBlocksOptions | SavedBlocksProvider;
   /**
-   * Save automatically, debounced. **The same key and the same type as
-   * `init()`** — `true`/`false`, or `{ debounce }` to set the cadence in one
-   * key. Unlike OSS it defaults to *on*, because a Cloud session always has a
-   * store to save to.
+   * Configuration and events for the template lifecycle. **The same key and
+   * the same type as `init()`'s `templates`** — minus the storage methods,
+   * which Cloud owns: the id it issues is the join key for collaboration,
+   * version history, comments, AI rewrite, scoring and the server-side export.
+   *
+   * Passing a full provider is not an error: `load` / `create` / `save` are
+   * ignored with a warning naming them, while `autoSave`, `unsavedChangesGuard`,
+   * `nameField`, `onSaved`, `onCreated` and `onLoaded` are all honoured. So an
+   * OSS integration moving to Cloud leaves this key exactly as it is.
    */
-  autoSave?: AutoSaveConfig;
+  templates?: TemplatesOptions;
+  /**
+   * The review conversation. **The same key `init()` takes**, minus the storage
+   * methods Cloud owns — a comment is keyed to a template id Cloud issued and
+   * its author is signed by the auth token.
+   *
+   * - **omitted** — Cloud's store, subject to the `commenting` plan feature;
+   * - **`false`** — off, whatever the plan grants;
+   * - **an options object** — Cloud's store, plus your `onCreated`,
+   *   `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` handlers.
+   *
+   * Passing a full provider is not an error: its methods are ignored with a
+   * warning naming them, and its events are honoured.
+   */
+  comments?: false | CommentsOptions;
+  /**
+   * Outward notifications for a template's version history. **The same key
+   * `init()` takes**, minus the storage methods Cloud owns — a version is
+   * keyed to a template id Cloud issued, so Cloud owns version-history
+   * storage.
+   *
+   * - **omitted** — Cloud's store, with no extra notifications;
+   * - **a {@link VersionHistoryOptions}** — Cloud's store, plus your
+   *   `onCreated` and `onRestored` handlers.
+   *
+   * Passing a full provider is not an error: its methods are ignored with a
+   * warning naming them, and its events are honoured.
+   */
+  versionHistory?: VersionHistoryOptions;
+  /**
+   * How long the editor waits after the last edit before it fires `onChange`
+   * and, when `templates.autoSave` is on, saves.
+   *
+   * One timer drives both, so they cannot drift apart. Cloud always injects
+   * its own `templates` provider, so pace `onChange` alone with
+   * `templates: { autoSave: false }` rather than by omitting a provider —
+   * the no-provider case `init()` uses for this doesn't exist on this tier.
+   *
+   * @default 2000
+   */
+  changeDebounce?: number;
 
   mergeTags?: MergeTagsConfig;
   logicTags?: LogicTagsConfig;
@@ -179,20 +213,8 @@ export interface TemplaticalCloudEditorConfig {
    * the same type as `init()`'s** — one editor, one set of keys.
    */
   onDirtyChange?: (isDirty: boolean) => void;
-  /**
-   * Warn before closing the tab with unsaved changes. On by default, since a
-   * Cloud session always has a store to save to. Set to `false` to own the
-   * prompt yourself; it can never cover client-side route changes either way,
-   * which is what {@link onDirtyChange} is for.
-   *
-   * @default true
-   */
-  unsavedChangesGuard?: boolean;
 
-  onCreate?: (template: Template) => void;
-  onLoad?: (template: Template) => void;
   onError?: (error: Error) => void;
-  onComment?: (event: CommentEvent) => void;
   onUnmount?: () => void;
 
   onRequestMedia?: (context: MediaRequestContext) => Promise<MediaItem | null>;
@@ -209,16 +231,28 @@ export interface TemplaticalCloudEditorConfig {
    * Sending backend for test emails.
    *
    * - **omitted** — sent by Templatical Cloud, gated on the `test_email` plan
-   *   feature and its signed allowed-recipient list.
+   *   feature and its signed allowed-recipient list;
+   * - **`{ onSent?, defaultRecipient? }`** — still sent by Cloud, plus your
+   *   `onSent` handler and/or a pre-filled recipient (ignored unless it's
+   *   already on Cloud's own allowlist — this can't smuggle in an address
+   *   outside it). `includeMjml` and `allowedRecipients` are not honoured on
+   *   this form — Cloud renders server-side rather than from a client MJML
+   *   pass, and the allowlist is the signed one from your project's JWT, not
+   *   a client-supplied one. TypeScript does not flag passing them here
+   *   (both are valid members of the sibling {@link TestEmailProvider} arm,
+   *   so the union accepts them structurally); passing either logs a
+   *   runtime warning naming it instead;
    * - **a {@link TestEmailProvider}** — sent by *you* instead, which is what to
    *   reach for when mail must leave your own infrastructure for compliance or
-   *   data-residency reasons.
+   *   data-residency reasons. `includeMjml`, `allowedRecipients`,
+   *   `defaultRecipient` and `onSent` are all yours to set here.
    *
    * The same type `init()` takes, so moving an OSS integration to Cloud means
    * deleting this key (to adopt Cloud's sender) or leaving it exactly as-is (to
    * keep your own) — never rewriting it.
    */
-  testEmail?: TestEmailProvider;
+  testEmail?:
+    Pick<TestEmailOptions, "onSent" | "defaultRecipient"> | TestEmailProvider;
 
   // There is deliberately no `render` key here, unlike `init()`. Cloud renders
   // server-side for test email, scheduled sends and API exports — its test-email
@@ -230,20 +264,21 @@ export interface TemplaticalCloudEditorConfig {
   // those blocks too. For your own MJML on Cloud, call
   // `renderToMjml(editor.getContent())` from `@templatical/renderer` directly.
   //
-  // There is deliberately no `templates`, `versionHistory` or `comments` key here,
-  // unlike `init()`. All three are keyed to the Cloud template id, which anchors
-  // collaboration, AI rewrite, scoring, the server-side export — and version
-  // history and comments themselves. A store Cloud never issued ids for would
-  // degrade all of them silently, and a consumer-supplied history would run
-  // alongside the automatic versions Cloud's templates adapter keeps recording:
-  // two stores, one invisible and billable. `bootstrapCloud` warns and ignores if
-  // any arrives from JavaScript. Bring your own with `init()`, where the whole set
-  // is yours.
+  // There is no full `versionHistory` provider here, unlike `init()` — only
+  // its config and events (see `versionHistory` above), the same restriction
+  // `templates` and `comments` carry. All three are keyed to the Cloud
+  // template id, which anchors collaboration, AI rewrite, scoring, the
+  // server-side export — and version history and comments themselves. A store
+  // Cloud never issued ids for would degrade all of them silently, and a
+  // consumer-supplied history would run alongside the automatic versions Cloud's
+  // templates adapter keeps recording: two stores, one invisible and billable.
+  // `bootstrapCloud` warns and ignores a full provider's methods if any arrive
+  // from JavaScript. Bring your own with `init()`, where the whole set is yours.
   //
   // Nor is there a `user` key. Cloud's comment writes are signed against the auth
   // token's `user` claim, so `initCloud()` fills `init({ user })` from there — a
   // consumer-supplied identity could only disagree with the one the backend
-  // verifies. `commenting: false` is how you switch the feature off.
+  // verifies.
 
   /**
    * Resolves the template for preview surfaces — typically evaluating logic

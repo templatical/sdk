@@ -1,5 +1,9 @@
 import { computed, onScopeDispose, ref, type ComputedRef, type Ref } from "vue";
-import type { TemplateContent, TestEmailProvider } from "@templatical/types";
+import type {
+  TemplateContent,
+  TestEmailPayload,
+  TestEmailProvider,
+} from "@templatical/types";
 import { logger } from "../utils/logger";
 import { tryLoadRenderer } from "../utils/toMjml";
 import type { EditorCapabilities } from "../types/editor-capabilities";
@@ -17,6 +21,15 @@ const SUCCESS_DISMISS_MS = 1200;
  */
 export type TestEmailError =
   { kind: "provider"; message: string } | { kind: "recipientNotAllowed" };
+
+/**
+ * Turn a thrown value into an `Error`. A `catch` clause's binding is
+ * `unknown` — a rejected `send` and a throwing `onSent` handler both need a
+ * real `Error` to report, and both paths below share this.
+ */
+function toError(value: unknown): Error {
+  return value instanceof Error ? value : new Error(String(value));
+}
 
 export interface UseTestEmailFeatureOptions {
   /** Sending backend — consumer-supplied in OSS, the Cloud adapter in Cloud. */
@@ -155,6 +168,26 @@ export function useTestEmailFeature(
     }
   }
 
+  /**
+   * Report a completed send to the provider's `onSent`, guarded so a throw
+   * cannot reach `send`'s own try/catch — by the time this runs, `send` has
+   * already succeeded and the dialog is already showing success.
+   *
+   * Mirrors `@templatical/core`'s `notifyHandler`, which this composable
+   * cannot import: `error-reporting.ts` is not part of `@templatical/core`'s
+   * package exports.
+   */
+  function notifySent(payload: TestEmailPayload): void {
+    try {
+      // Read off `provider` at call time, never destructured — the same
+      // discipline `allowedRecipients`/`defaultRecipient` apply above, so a
+      // handler that arrives or changes after setup is never missed.
+      provider.onSent?.(payload);
+    } catch (err) {
+      options.onError?.(toError(err));
+    }
+  }
+
   async function send(recipient: string): Promise<void> {
     if (isSending.value) return;
 
@@ -172,17 +205,19 @@ export function useTestEmailFeature(
 
     try {
       const mjml = await resolveMjml();
-      await provider.send({
+      const payload: TestEmailPayload = {
         recipient,
         content: options.getContent(),
         ...(mjml !== undefined ? { mjml } : {}),
         ...(allowed !== undefined ? { allowedRecipients: allowed } : {}),
-      });
+      };
+      await provider.send(payload);
 
       justSent.value = true;
       dismissTimer = setTimeout(close, SUCCESS_DISMISS_MS);
+      notifySent(payload);
     } catch (err) {
-      const wrapped = err instanceof Error ? err : new Error(String(err));
+      const wrapped = toError(err);
       error.value = { kind: "provider", message: wrapped.message };
       options.onError?.(wrapped);
       // Deliberately not re-thrown: the dialog surfaces `error` and stays open
