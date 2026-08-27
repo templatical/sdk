@@ -162,6 +162,20 @@ The editor loads one page and calls `list` bare — it never sends `limit` or `c
 
 The envelope exists so that adding pagination later is not a breaking change: a cursor has somewhere to live from day one. Reserving only the params object would have covered the request and left the response needing a new shape. `useVersionHistory` exposes `nextCursor` for headless callers that do page — see [Headless use](#headless-use).
 
+## Events
+
+```ts
+versionHistory: {
+  list, get, create, restore,
+  onCreated:   (version) => {},
+  onRestored:  (template) => {},
+}
+```
+
+`onCreated` fires once `create()` resolves, with the recorded `TemplateVersion`. `onRestored` fires once `restore()` resolves, with the resulting `Template` rather than the `TemplateVersion` that was restored from — the caller already has that version's id, since it's what `restore(templateId, versionId)` was given.
+
+A handler that throws is caught and reported to `onError` — it never fails the create or restore that triggered it.
+
 ## Headless use
 
 `useVersionHistory` from `@templatical/core` is the reactive state on its own, without the editor:

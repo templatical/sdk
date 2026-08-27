@@ -125,7 +125,7 @@ Present means edited — the panel shows an *(edited)* marker. Set it on edit, *
 
 Takes the target state, not a toggle. The call is idempotent, so two clicks in flight cannot leave a thread inverted and your endpoint never has to read current state before writing.
 
-The editor reports the result your store returned, not the state it asked for. A store that refuses to reopen a thread answers "still resolved", and that is what the UI and `onComment` report.
+The editor reports the result your store returned, not the state it asked for. A store that refuses to reopen a thread answers "still resolved", and that is what the UI and [`onResolved`](#events) report.
 
 ## Read-only review
 
@@ -189,23 +189,34 @@ The panel filters **in memory** over whatever `list()` returned — unresolved (
 - **The panel** on the right: thread cards with author, relative time, an *(edited)* marker, the resolve toggle, and reply / edit / delete where the store allows them.
 - **A "missing block" badge** on a comment whose anchor block no longer exists, so an orphaned thread reads as orphaned rather than as a mystery.
 
-## `onComment`
-
-Fires for every change the editor applied — local writes and anything `subscribe` pushed in. This is the hook for a "3 new comments" badge outside the editor:
+## Events
 
 ```ts
-init({
-  container,
-  user,
-  comments: myCommentsProvider,
-  onComment: (event) => {
-    // 'created' | 'updated' | 'deleted' | 'resolved' | 'unresolved'
-    console.log(event.type, event.comment.id);
-  },
-});
+comments: {
+  // ...list, create, update, delete, setResolved
+  onCreated:    (comment, { origin }) => {},
+  onUpdated:    (comment, { origin }) => {},
+  onDeleted:    (comment, { origin }) => {},
+  onResolved:   (comment, { origin }) => {},
+  onUnresolved: (comment, { origin }) => {},
+}
 ```
 
-`resolved` and `unresolved` are reported separately from a plain `updated`, because a consumer notifying a team cares about the difference.
+`origin` is `'local'` for a write this editor made — `create`, `update`, `delete` or `setResolved`, called through the editor's own UI or `useComments`. It is `'remote'` for a change that arrived through [`subscribe`](#realtime-updates): someone else, in another browser.
+
+A "new comments" badge outside the editor should count `remote` only. Counting `local` too increments a user's own unread count on their own comment.
+
+Which of `onResolved` / `onUnresolved` fires is decided by the **stored** result's `resolvedAt`, not the state the call requested — a store that refuses to reopen a thread still reports `onResolved`.
+
+::: tip Handlers usually fire once per change
+A transport that echoes a write back to its sender — `subscribe`'s contract permits it — is compared against the stored comment: an echo that changes nothing is applied silently, with no event.
+
+That bound holds for an echo that lands **after** the mutation's own response. One that arrives first applies as `origin: 'remote'`, and the local call still emits its own `origin: 'local'` event once its response settles — two events for one write, the first attributed to the wrong origin. Keep de-duplicating on your side if your transport can echo that early.
+
+**Templatical Cloud is unaffected.** `createCloudCommentsProvider` stamps every write with an `X-Socket-ID` header, and Cloud's backend excludes that connection when it fans the change back out, so no early echo reaches this editor.
+:::
+
+A handler that throws is caught and reported to `onError` — it never fails the write that triggered it.
 
 ## Headless use
 
@@ -218,7 +229,6 @@ const comments = useComments({
   provider: myCommentsProvider,
   getTemplateId: () => currentTemplateId,
   getUser: () => currentUser,
-  onComment: (event) => console.log(event.type),
   onError: (error) => console.error(error),
 });
 
@@ -229,6 +239,8 @@ comments.commentCountByBlock.value;         // Map<string, number>
 await comments.create({ body: 'Looks good' });
 await comments.setResolved('c_1', true);
 ```
+
+The handlers from [Events](#events) are members of `myCommentsProvider` itself — the same object `list` / `create` / `update` / `delete` / `setResolved` live on — so one object satisfies `init()` and `useComments` alike.
 
 `useCommentListener` wires a provider's `subscribe` into the same state, and is a no-op for a provider without one:
 

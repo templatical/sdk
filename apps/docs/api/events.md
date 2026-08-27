@@ -40,21 +40,6 @@ const editor = await init({
 });
 ```
 
-### `onComment`
-
-Called for every comment change the editor applied — a thread created, edited, resolved or deleted. Changes that arrive through a provider's `subscribe` fire it too, so it is the hook for an unread badge outside the editor.
-
-```ts
-const editor = await init({
-  container: '#editor',
-  comments: myProvider,
-  user: { id: 'u_7', name: 'Ada Lovelace' },
-  onComment(event) {
-    if (event.type === 'created') incrementUnread();
-  },
-});
-```
-
 ### `onError`
 
 Called when an error occurs within the editor.
@@ -117,6 +102,97 @@ const editor = await init({
 
 If you provide `mergeTags.tags` without `onRequest`, the editor uses a built-in dropdown populated with your tags. The `onRequest` callback lets you replace that dropdown with your own UI.
 
+## Template Events
+
+A `templates` provider carries events beyond `load` / `create` / `save` — `onSaved`, `onCreated` and `onLoaded` — fired once the editor has settled: the template adopted, `isDirty` cleared, `isSaving`/`isLoading` false.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  templates: {
+    load, create, save,
+    onSaved(template, { trigger }) {
+      if (trigger === 'manual') navigate('/templates');
+    },
+  },
+});
+```
+
+`onSaved`'s second argument names which action triggered the save, so a handler can act on a save the user asked for without also firing on every autosave tick. See [`TemplatesOptions`](/backend/templates#events) for the full reference.
+
+## Comment Events
+
+A `comments` provider carries events beyond `list` / `create` / `update` / `delete` / `setResolved` — `onCreated`, `onUpdated`, `onDeleted`, `onResolved` and `onUnresolved` — fired once the editor has applied the change, whether it came from a local write or arrived through `subscribe`.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  user: { id: 'u_7', name: 'Ada Lovelace' },
+  comments: {
+    ...myCommentsProvider,
+    onCreated(comment, { origin }) {
+      if (origin === 'remote') incrementUnread();
+    },
+  },
+});
+```
+
+Each handler's second argument carries `origin` — `'local'` for a write this editor made, `'remote'` for one that arrived through `subscribe`. See [Events](/backend/comments#events) for the full reference, including which of `onResolved` / `onUnresolved` fires.
+
+## Saved Block Events
+
+A `savedBlocks` provider carries events beyond `list` / `create` / `update` / `delete` — `onCreated`, `onUpdated` and `onDeleted` — fired once the editor has applied the change to its own list.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  savedBlocks: {
+    ...mySavedBlocksProvider,
+    onDeleted(block) {
+      logRemoval(block.id);
+    },
+  },
+});
+```
+
+`onDeleted` receives the removed `SavedBlock` itself, not an id — `delete` resolves to nothing, so the editor passes the entry it captured before removing it. See [Events](/backend/saved-blocks#events) for the full reference.
+
+## Version History Events
+
+A `versionHistory` provider carries events beyond `list` / `get` / `create` / `restore` — `onCreated` and `onRestored` — fired once `create()` or `restore()` resolves.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  versionHistory: {
+    ...myVersionHistoryProvider,
+    onRestored(template) {
+      navigate(`/templates/${template.id}`);
+    },
+  },
+});
+```
+
+`onRestored` takes the resulting `Template` that `restore()` resolves to, not the `TemplateVersion` that was restored from. See [Events](/backend/version-history#events) for the full reference.
+
+## Test Email Events
+
+A `testEmail` provider carries one event beyond `send` — `onSent` — fired once a send resolves, with the same payload `send` was given.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  testEmail: {
+    ...myTestEmailProvider,
+    onSent(payload) {
+      trackEvent('test_email_sent', { recipient: payload.recipient });
+    },
+  },
+});
+```
+
+Not called for a rejected send — that surfaces through the dialog's own inline error instead. See [Events](/backend/test-email#events) for the full reference.
+
 ## Patterns
 
 ### Debounced Auto-Save
@@ -146,4 +222,4 @@ const editor = await init({
 });
 ```
 
-The editor already warns on tab close when a `templates` provider is configured — opt out with `unsavedChangesGuard: false`. `onDirtyChange` is what you need for a client-side router, which `beforeunload` cannot see.
+The editor already warns on tab close when a `templates` provider is configured — opt out with `templates: { unsavedChangesGuard: false }`. `onDirtyChange` is what you need for a client-side router, which `beforeunload` cannot see.

@@ -12,10 +12,10 @@ The editor owns all of that. **You own persistence** — three methods against y
 ## Quick start
 
 ```ts
-import { init } from '@templatical/editor';
+import { init } from "@templatical/editor";
 
 const editor = await init({
-  container: '#editor',
+  container: "#editor",
   templates: {
     load: async (id) => {
       const res = await fetch(`/api/templates/${id}`);
@@ -23,9 +23,9 @@ const editor = await init({
     },
 
     create: async (input) => {
-      const res = await fetch('/api/templates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       });
       return res.json();
@@ -33,8 +33,8 @@ const editor = await init({
 
     save: async (id, patch) => {
       const res = await fetch(`/api/templates/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),
       });
       return res.json();
@@ -43,7 +43,7 @@ const editor = await init({
 });
 
 // Opening a template is imperative — your app decides which one.
-await editor.load('tpl_123');
+await editor.load("tpl_123");
 ```
 
 **Omit `templates` and the feature is absent** — no name field, no save button, no status indicator. `create()` / `load()` / `save()` then reject with an explanatory error, and you persist the content yourself from [`onChange`](#persisting-without-a-provider).
@@ -63,8 +63,13 @@ type TemplatePatch = Partial<{ name: string; content: TemplateContent }>;
 
 interface TemplatesProvider {
   load(id: string): Promise<Template>;
-  create: false | ((input: { name?: string; content: TemplateContent }) => Promise<Template>);
-  save:   false | ((id: string, patch: TemplatePatch) => Promise<Template>);
+  create:
+    | false
+    | ((input: {
+        name?: string;
+        content: TemplateContent;
+      }) => Promise<Template>);
+  save: false | ((id: string, patch: TemplatePatch) => Promise<Template>);
 }
 ```
 
@@ -72,12 +77,32 @@ interface TemplatesProvider {
 - **`save` receives a patch**, not bare content, so a rename can travel without content and a new field can be added without breaking your implementation. The editor sends `name` (when the template has one) and `content` together, in one round-trip.
 - **`createdAt` / `updatedAt` are optional, ISO 8601, and display-only.** Both are absent from `TemplatePatch`, so the editor never writes them — what it shows is whatever `load` or `save` returned. See [The write time](#the-write-time).
 - **`name` is optional.** With no name column, leave it out — the header renders a dimmed "Untitled" in its place. The field stays editable as long as `save` is a function, so a rename still travels as `save(id, { name, content })`. A store that ignores it returns a template with no name, and the header reverts to "Untitled". With no use for names at all, [hide the field](#hiding-the-name-field).
+- **Persistence side effects belong in `save()`'s body.** It runs on every write, so logging, cache invalidation or a webhook call has one home. See [Events](#events) for what the editor exposes once that write has settled.
 
 Every method may reject. The editor reports the failure through `onError`, shows it in the header, and leaves its state untouched — nothing is marked saved that wasn't.
 
 ### No list, no delete
 
-The editor has no template browser. Choosing *which* template to open belongs to your application; the editor's job starts once you hand it an id.
+The editor has no template browser. Choosing _which_ template to open belongs to your application; the editor's job starts once you hand it an id.
+
+## Events
+
+```ts
+templates: {
+  load, create, save,
+  onSaved:   (template, { trigger }) => {},
+  onCreated: (template) => {},
+  onLoaded:  (template) => {},
+}
+```
+
+`trigger` is one of `manual`, `autosave`, `rename`, `restore`, `api`. `manual` covers the header's Save button and `Cmd`/`Ctrl`+`S`.
+
+::: tip Where post-save logic belongs
+Persistence goes in `save()` — it is your function, and its body runs before the editor has adopted the response. `onSaved` is for the two things that body cannot give you: which affordance fired the save, and a point at which the editor has settled. Navigating from `save()` runs while `isDirty` is still `true`, so your own router guard blocks you.
+:::
+
+A handler that throws is caught and reported to `onError` — it never fails the save, create or load that triggered it.
 
 ## Disabling create or save
 
@@ -111,10 +136,10 @@ The name commits on `Enter` or blur, cancels on `Escape`, and reverts an empty v
 
 The status indicator has three states:
 
-| State | Shown when |
-| --- | --- |
-| **Unsaved** | there are edits the editor knows aren't persisted |
-| **Saved** | a save just succeeded (for a few seconds) |
+| State           | Shown when                                                       |
+| --------------- | ---------------------------------------------------------------- |
+| **Unsaved**     | there are edits the editor knows aren't persisted                |
+| **Saved**       | a save just succeeded (for a few seconds)                        |
 | **Save failed** | the last attempt rejected — your error message is in the tooltip |
 
 The save button is disabled until a template exists, because `save()` patches an id. Call `create()` or `load()` first.
@@ -141,31 +166,40 @@ It renders whether or not `save` is available, which is what a read-only templat
 
 ```ts
 init({
-  templateNameField: false,
-  templates: { /* … */ },
+  templates: {
+    nameField: false,
+    /* … */
+  },
 });
 ```
 
-Removes the field from the header, whether or not your provider can save. `editor.create({ name })`, `setName()` and the `name` in each save patch keep working, so your own chrome can still manage names. `initCloud()` accepts the same key.
+Removes the field from the header, whether or not your provider can save. `editor.create({ name })`, `setName()` and the `name` in each save patch keep working, so your own chrome can still manage names. `initCloud()` accepts the same key on its own `templates` object.
 
 With the field hidden, the write time becomes the header's only left-column content.
-
-The key is inert without a provider: no `templates` means no name field to hide, and no write time either.
 
 ## Autosave
 
 ```ts
 await init({
-  container: '#editor',
-  templates: { /* … */ },
-  autoSave: { debounce: 5000 },  // `true` uses the default 2000
+  container: "#editor",
+  templates: {
+    autoSave: true,
+    /* … */
+  },
+  changeDebounce: 5000, // defaults to 2000
 });
 ```
 
+`templates.autoSave` turns saving on. `changeDebounce` sets the cadence, at the config root rather than alongside it.
+
+::: tip `changeDebounce` also paces `onChange`
+The same timer drives both, and [`onChange`](#persisting-without-a-provider) fires whether or not `templates` is configured — so the cadence has to stay reachable from a config with no provider at all.
+:::
+
 The debounce restarts on every change, so a burst of typing produces one save. It pauses while the user steps through undo/redo, and skips the save entirely when nothing is dirty.
 
-::: warning `autoSave` needs a `templates` provider
-Without one there is nothing to save to, so the option is ignored and the editor logs a warning.
+::: warning `autoSave` needs somewhere to save
+`true` with a provider whose `save` is `false` logs a warning and saves nothing. Persist from `onChange` instead.
 :::
 
 ## Cmd+S
@@ -181,33 +215,38 @@ Two mechanisms, because neither covers the other:
 
 ```ts
 await init({
-  container: '#editor',
-  templates: { /* … */ },
-  onDirtyChange: (isDirty) => { hasUnsavedWork.value = isDirty },
-  unsavedChangesGuard: true,  // the default
+  container: "#editor",
+  templates: {
+    unsavedChangesGuard: true, // the default
+    /* … */
+  },
+  onDirtyChange: (isDirty) => {
+    hasUnsavedWork.value = isDirty;
+  },
 });
 ```
 
-**`unsavedChangesGuard`** is a `beforeunload` prompt, on by default whenever a provider is configured. It covers closing or reloading the tab. Set it to `false` to own that prompt yourself. Without a provider the editor never warns — it has no way to know whether you already persisted the change.
+**`templates.unsavedChangesGuard`** is a `beforeunload` prompt, on by default whenever a provider is configured. It covers closing or reloading the tab. Set it to `false` to own that prompt yourself. Without a provider the editor never warns — it has no way to know whether you already persisted the change.
 
 **`onDirtyChange`** (and its pull-based twin `editor.isDirty()`) is what you guard a client-side router with, since `beforeunload` does not fire on an in-app navigation:
 
 ```ts
 router.beforeEach((to, from, next) => {
-  if (editor.isDirty() && !confirm('Discard unsaved changes?')) return next(false);
+  if (editor.isDirty() && !confirm("Discard unsaved changes?"))
+    return next(false);
   next();
 });
 ```
 
-`onDirtyChange` works with or without a provider. `initCloud()` accepts both keys on the same terms — Cloud always has a store to save to, so the guard is on there unless you refuse it.
+`onDirtyChange` works with or without a provider, at the config root either way. `initCloud()` accepts `unsavedChangesGuard` on its own `templates` object, on the same terms — Cloud always has a store to save to, so the guard is on there unless you refuse it.
 
 ## The instance API
 
 ```ts
-const template = await editor.create({ name: 'Welcome email' });
+const template = await editor.create({ name: "Welcome email" });
 await editor.load(template.id);
 await editor.save();
-editor.isDirty();  // boolean
+editor.isDirty(); // boolean
 ```
 
 - **`create(input?)`** persists the current content as a new template. Pass `content` to replace the editor's content first, so `create({ content })` loads and stores in one step.
@@ -222,7 +261,7 @@ A provider is not the only way to keep a template. `onChange` fires, debounced, 
 
 ```ts
 await init({
-  container: '#editor',
+  container: "#editor",
   onChange: (content) => myStore.save(content),
 });
 ```

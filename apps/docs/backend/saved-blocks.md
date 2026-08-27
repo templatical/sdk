@@ -197,6 +197,29 @@ Any method may reject. The editor reports the failure through `onError` and leav
 
 Omit `savedBlocks` and the feature is absent: no save action, no rail entry, and **none of its code is downloaded**. The UI is split into lazily-loaded chunks fetched only when a dialog opens.
 
+## Events
+
+```ts
+savedBlocks: {
+  // ...list, create, update, delete
+  onCreated: (block) => {},
+  onUpdated: (block) => {},
+  onDeleted: (block) => {},
+}
+```
+
+Each fires once the editor has applied the change to its own list: `onCreated` after a save prepends the new entry, `onUpdated` after an edit replaces it, `onDeleted` after a removal filters it out.
+
+::: tip `onDeleted` carries the block, not an id
+`delete` resolves to nothing, so the editor passes the entry it captured immediately before removing it.
+:::
+
+::: tip A delete outside the loaded list fires no event
+The captured entry has to already be in the editor's list. Deleting an id the editor never loaded — a headless caller acting on an id from elsewhere — still deletes successfully; there is nothing to pass to `onDeleted`, so it does not fire.
+:::
+
+A handler that throws is caught and reported to `onError` — it never fails the create, update or delete that triggered it.
+
 ## Headless use
 
 The reactive state layer is exported from `@templatical/core` if you want your own UI over a provider:

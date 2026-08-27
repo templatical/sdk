@@ -125,6 +125,19 @@ An empty array reads as a decision ("nobody may be sent to"), not as "unset". Us
 
 The payload echoes the list back as `allowedRecipients` so one `send` implementation stays portable between your backend and Templatical Cloud. It is **untrusted** — unsigned, and read out of the browser. Beyond portability it is good for one thing: compare it against `recipient` server-side, where a mismatch means a tampered or buggy client and is worth logging.
 
+## Events
+
+```ts
+testEmail: {
+  send, // ...includeMjml, allowedRecipients, defaultRecipient
+  onSent: (payload) => {},
+}
+```
+
+Fires once `send` resolves, with the same `TestEmailPayload` it was given. Not called for a rejected send — that surfaces through the dialog's own inline error instead.
+
+A handler that throws is caught and reported to `onError`. By the time it runs, `send` has already succeeded and the dialog is already showing its confirmation, so the throw can't turn a sent email back into a failure.
+
 ## In the editor
 
 <img src="/images/test-email-modal.png" alt="The Send Test Email dialog — a recipient picker above a chrome-free preview of the template with a Desktop / Mobile switch, and Cancel / Send at the bottom" style="max-width: 480px;" />
