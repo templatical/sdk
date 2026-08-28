@@ -28,10 +28,12 @@
     "@tailwindcss/vite": "^4.3.3",
     "@types/mjml-browser": "^5.0.0",
     "@vitejs/plugin-vue": "^6.0.8",
+    "happy-dom": "^20.11.6",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.12",
     "typescript": "^6.0.3",
     "vite": "^8.2.2",
+    "vitest": "^4.1.11",
     "vue-tsc": "^3.3.11"
   },
   "private": true,
@@ -41,6 +43,7 @@
     "dev:share": "wrangler pages dev --kv SHARES_KV --directory public -- vite",
     "lint:templates": "tsx --tsconfig scripts/tsconfig.json scripts/lint-templates.ts",
     "preview": "vite preview",
+    "test": "vitest run --config vitest.config.ts",
     "typecheck": "vue-tsc --noEmit"
   },
   "type": "module"
