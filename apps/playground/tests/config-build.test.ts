@@ -32,6 +32,22 @@ describe("buildCapabilityConfig", () => {
     const config = buildCapabilityConfig(def, {});
     expect(config).toEqual({ autoSave: false });
   });
+
+  it("passes a key the controls don't name through to build untouched", () => {
+    const passthroughDef: CapabilityDef = {
+      id: "passthrough-demo",
+      group: "backend",
+      title: "Passthrough Demo",
+      blurb: "A demo capability with no controls of its own.",
+      fixture: "product-launch",
+      controls: [],
+      build: (state) => ({ savedBlocks: state["__impl"] }),
+    };
+    const impl = { list: async () => [] };
+
+    const config = buildCapabilityConfig(passthroughDef, { __impl: impl });
+    expect(config).toEqual({ savedBlocks: impl });
+  });
 });
 
 describe("methodOr", () => {

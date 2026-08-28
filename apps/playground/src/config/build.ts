@@ -4,18 +4,22 @@ import { controlDefault, type CapabilityDef, type ControlState } from "./types";
 /**
  * Resolve a capability's config from control state.
  *
- * Missing keys are filled from each control's default first, so `build()` never
- * has to guard for `undefined` and a partially-seeded state (an e2e spec setting
- * one key) behaves the same as a fully-seeded one.
+ * Each control's default fills the corresponding key only when the caller's
+ * state doesn't already set it, so `build()` never has to guard for `undefined`
+ * and a partially-seeded state (an e2e spec setting one key) behaves the same
+ * as a fully-seeded one. Keys the capability's controls don't name — e.g. a
+ * runtime value like `__impl` — pass through untouched, since `build()` may
+ * read state beyond what its controls declare.
  */
 export function buildCapabilityConfig(
   def: CapabilityDef,
   state: ControlState,
 ): Partial<TemplaticalEditorConfig> {
-  const resolved: ControlState = {};
+  const resolved: ControlState = { ...state };
   for (const control of def.controls) {
-    resolved[control.path] =
-      control.path in state ? state[control.path] : controlDefault(control);
+    if (!(control.path in resolved)) {
+      resolved[control.path] = controlDefault(control);
+    }
   }
   return def.build(resolved);
 }
