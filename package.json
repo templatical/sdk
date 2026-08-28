@@ -23,7 +23,7 @@
     "@vitejs/plugin-vue": "^6.0.8",
     "@vitest/coverage-v8": "^4.1.11",
     "@vue/reactivity": "^3.5.41",
-    "eslint": "^10.9.0",
+    "eslint": "^10.9.1",
     "eslint-plugin-vue": "^10.10.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
@@ -31,7 +31,7 @@
     "syncpack": "^15.3.3",
     "tsdown": "^0.22.14",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.67.0",
+    "typescript-eslint": "^8.68.0",
     "vite": "^8.2.2",
     "vue-eslint-parser": "^10.4.1"
   },
