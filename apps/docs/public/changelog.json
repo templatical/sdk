@@ -11,8 +11,25 @@
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.28.1",
+  "latest": "0.29.0",
   "versions": [
+    {
+      "version": "0.29.0",
+      "date": "2026-08-28",
+      "changes": [
+        {
+          "hash": "09f6136",
+          "level": "minor",
+          "title": "Provider objects now carry their own configuration and events",
+          "body": "Every BYO provider takes its outward events on the provider object itself, next\nto the storage methods, instead of as root config callbacks:\n\n```ts\ntemplates:      { load, create, save,               onSaved, onCreated, onLoaded }\ncomments:       { list, create, update, delete, setResolved, subscribe,\n                  onCreated, onUpdated, onDeleted, onResolved, onUnresolved }\nsavedBlocks:    { list, create, update, delete,     onCreated, onUpdated, onDeleted }\nversionHistory: { list, get, create, restore,       onCreated, onRestored }\ntestEmail:      { send,                             onSent }\n```\n\nEach provider's events and configuration are declared on a `<Feature>Options`\ntype that `<Feature>Provider` extends, so a bundle of handlers can be typed and\npassed around on its own.\n\nHandlers fire once the editor has settled — template adopted, `isDirty` cleared,\n`isSaving` false — so a handler may navigate without tripping your own\nunsaved-changes guard, which a side effect inside `save()` cannot. A handler that\nthrows is reported through `onError` and never fails the operation.\n\n**`onSaved` carries the trigger**: `manual` (Save button or Cmd/Ctrl+S),\n`autosave`, `rename`, `restore`, or `api`. Gate navigation on\n`trigger === \"manual\"` rather than `trigger !== \"autosave\"` — a rename commit and\na save-before-restore are both real saves you almost certainly don't want to\nnavigate on.\n\n**Comment handlers carry `{ origin: 'local' | 'remote' }`.** `local` means the\nmutation ran through this editor; `remote` means it arrived via `subscribe` —\nsomeone else, in another browser. A \"new comments\" badge should count `remote`\nonly.\n\nPayloads worth noting: `savedBlocks.onDeleted` receives the removed block, not an\nid, and emits nothing when the id was never loaded locally.\n`versionHistory.onRestored` receives the resulting `Template`, not the version it\nwas restored from.\n\n## Breaking\n\n| Before                             | After                                                                     |\n| ---------------------------------- | ------------------------------------------------------------------------- |\n| `onComment: (e) => …`              | `comments: { onCreated, onUpdated, onDeleted, onResolved, onUnresolved }` |\n| `autoSave: { debounce: 5000 }`     | `templates: { autoSave: true }` + root `changeDebounce: 5000`             |\n| `unsavedChangesGuard: false`       | `templates: { unsavedChangesGuard: false }`                               |\n| `templateNameField: false`         | `templates: { nameField: false }`                                         |\n| `TemplatesEvents`                  | `TemplatesOptions`                                                        |\n| `CommentEvent`, `CommentEventType` | removed — match on the handler name                                       |\n- **`autoSave` is `boolean` only.** Its cadence is the root `changeDebounce?: number`,\n  because one timer paces both the save and the `onChange` notification, and\n  `onChange` fires with no `templates` provider at all. Set `changeDebounce` alone\n  to pace `onChange` by itself.\n- `CommentChange` — the _inward_ shape a `subscribe` implementation reports — is\n  unrelated and unchanged.\n\n### A transport that echoes your own writes no longer double-fires\n\nA store whose `subscribe` reports your own write back (Pusher's default, most SSE\nfan-outs) used to fire `onComment` twice for one comment. A remote change is now\nemitted only when it actually alters the loaded list.\n\n**If you de-duplicated by comment id to work around this, remove it** — unless\nyour transport can echo a write back _before_ your mutation's own response\nresolves. In that ordering the echo is applied first as `origin: 'remote'` and\nyour local call still emits `origin: 'local'`, so keep de-duplicating. Everywhere\nelse the guard now discards real information: a second event on the same comment,\nsuch as an edit after its creation, arrives once.",
+          "packages": [
+            "@templatical/core",
+            "@templatical/editor",
+            "@templatical/types"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.28.1",
       "date": "2026-08-25",
