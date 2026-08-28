@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCapabilityConfig } from "../src/config/build";
+import { buildCapabilityConfig, methodOr } from "../src/config/build";
 import type { CapabilityDef } from "../src/config/types";
 
 const def: CapabilityDef = {
@@ -31,5 +31,21 @@ describe("buildCapabilityConfig", () => {
   it("seeds missing control state from each control's default", () => {
     const config = buildCapabilityConfig(def, {});
     expect(config).toEqual({ autoSave: false });
+  });
+});
+
+describe("methodOr", () => {
+  const impl = async () => "stored";
+
+  it("passes the implementation through when the control is on", () => {
+    expect(methodOr(true, impl)).toBe(impl);
+  });
+
+  it("returns literal false when the control is off", () => {
+    expect(methodOr(false, impl)).toBe(false);
+  });
+
+  it("treats an absent value as off rather than passing undefined into config", () => {
+    expect(methodOr(undefined, impl)).toBe(false);
   });
 });

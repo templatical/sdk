@@ -19,3 +19,14 @@ export function buildCapabilityConfig(
   }
   return def.build(resolved);
 }
+
+/**
+ * A `method` control's value, resolved into what a provider key actually takes.
+ *
+ * `false` is a statement of intent in the provider contracts — the editor hides
+ * the affordance rather than disabling it — so an off control must produce
+ * literal `false`, never `undefined`, which would read as "not implemented".
+ */
+export function methodOr<T>(enabled: unknown, impl: T): T | false {
+  return enabled === true ? impl : false;
+}
