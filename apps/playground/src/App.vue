@@ -98,6 +98,9 @@ import {
   supportedLocales,
   ossSdkLocales as sdkLocales,
 } from "@/i18n";
+import { buildCapabilityConfig } from "@/config/build";
+import { savedBlocksCapability } from "@/config/capabilities/saved-blocks";
+import { readControlState } from "@/config/state";
 const { locale, t } = usePlaygroundI18n();
 const { sdkLocale } = useSdkLocale();
 const { theme: uiTheme, isDark } = usePlaygroundTheme();
@@ -262,11 +265,6 @@ function seedSavedBlocks(
  * harmless in itself — but recreating on template *name* keeps one instance per
  * library, so a locale switch can't reset what the user saved. Switching
  * template switches library.
- *
- * Setting `tpl-playground-saved-blocks-readonly` demonstrates the read-only
- * library: a provider withholds its mutations by passing `false` instead of a
- * function, and the editor then hides every affordance that would need them
- * while browsing, previewing and inserting keep working.
  */
 const savedBlocksProviders = new Map<string, SavedBlocksProvider>();
 
@@ -298,19 +296,8 @@ function savedBlocksProviderFor(
         }
       : base;
 
-  const readOnly =
-    localStorage.getItem("tpl-playground-saved-blocks-readonly") === "true";
-  const provider = readOnly
-    ? {
-        ...withDelay,
-        create: false as const,
-        update: false as const,
-        delete: false as const,
-      }
-    : withDelay;
-
-  savedBlocksProviders.set(name, provider);
-  return provider;
+  savedBlocksProviders.set(name, withDelay);
+  return withDelay;
 }
 
 /**
@@ -1763,7 +1750,10 @@ async function initEditor(): Promise<void> {
       // Always on in the playground: saved blocks are backed by the bundled
       // browser-local provider, so the OSS path is exercised on every run
       // without needing a backend. Entries persist in this browser profile.
-      savedBlocks: savedBlocksProvider,
+      ...buildCapabilityConfig(savedBlocksCapability, {
+        ...readControlState(),
+        __impl: savedBlocksProvider,
+      }),
       // Also always on, and also backend-free — the provider fakes delivery so
       // the send/success/error path is exercisable on every template.
       testEmail: testEmailProvider,

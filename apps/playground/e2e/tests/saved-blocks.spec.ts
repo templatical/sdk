@@ -855,7 +855,14 @@ test.describe("saved blocks — read-only library", () => {
     await page.addInitScript(() => {
       localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
       localStorage.setItem("tpl-playground-features-dismissed", "true");
-      localStorage.setItem("tpl-playground-saved-blocks-readonly", "true");
+      localStorage.setItem(
+        "tpl-playground-config",
+        JSON.stringify({
+          "savedBlocks.create": false,
+          "savedBlocks.update": false,
+          "savedBlocks.delete": false,
+        }),
+      );
     });
   }
 
