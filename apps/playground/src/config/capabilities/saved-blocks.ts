@@ -47,9 +47,20 @@ export const savedBlocksCapability: CapabilityDef = {
   ],
   build: (state) => {
     const impl = state["__impl"] as SavedBlocksProvider;
+    const delayMs = Number(state["savedBlocks.listDelayMs"] ?? 0);
+    // Stands in for a slow backend so the browser's first-open skeleton is
+    // reachable — localStorage answers instantly, which is the one latency
+    // profile that cannot reproduce it.
+    const list: SavedBlocksProvider["list"] =
+      delayMs > 0
+        ? async (params) => {
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+            return impl.list(params);
+          }
+        : impl.list;
     return {
       savedBlocks: {
-        list: impl.list,
+        list,
         create: methodOr(state["savedBlocks.create"], impl.create),
         update: methodOr(state["savedBlocks.update"], impl.update),
         delete: methodOr(state["savedBlocks.delete"], impl.delete),

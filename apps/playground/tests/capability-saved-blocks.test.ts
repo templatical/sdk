@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildCapabilityConfig } from "../src/config/build";
 import { savedBlocksCapability } from "../src/config/capabilities/saved-blocks";
 import { capabilityById } from "../src/config/capabilities";
@@ -75,5 +75,39 @@ describe("savedBlocks list delay", () => {
         delete: impl.delete,
       },
     });
+  });
+});
+
+describe("savedBlocks list delay wrapping", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("passes impl.list through by reference when the delay is 0", () => {
+    const config = buildCapabilityConfig(savedBlocksCapability, {
+      __impl: impl,
+      "savedBlocks.listDelayMs": 0,
+    });
+    expect(config.savedBlocks?.list).toBe(impl.list);
+  });
+
+  it("wraps list in a different function that still resolves to impl.list's value when the delay is above 0", async () => {
+    const config = buildCapabilityConfig(savedBlocksCapability, {
+      __impl: impl,
+      "savedBlocks.listDelayMs": 500,
+    });
+    const wrapped = config.savedBlocks?.list;
+    expect(wrapped).not.toBe(impl.list);
+
+    const callCountBefore = impl.list.mock.calls.length;
+    const pending = wrapped?.();
+    await vi.advanceTimersByTimeAsync(500);
+
+    await expect(pending).resolves.toEqual([]);
+    expect(impl.list.mock.calls.length).toBe(callCountBefore + 1);
   });
 });

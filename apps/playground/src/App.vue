@@ -277,25 +277,10 @@ function savedBlocksProviderFor(
 
   const key = savedBlocksKeyFor(name);
   seedSavedBlocks(key, template?.savedBlocks);
-  const base = createLocalStorageSavedBlocksProvider({ key });
+  const provider = createLocalStorageSavedBlocksProvider({ key });
 
-  // `savedBlocks.listDelayMs` stands in for a sluggish backend, so the
-  // browser's first-open skeleton is exercisable: localStorage answers
-  // instantly, which is the one latency profile that can't reproduce it.
-  const delayMs = Number(readControlState()["savedBlocks.listDelayMs"] ?? 0);
-  const withDelay: SavedBlocksProvider =
-    delayMs > 0
-      ? {
-          ...base,
-          list: async (params) => {
-            await new Promise((resolve) => setTimeout(resolve, delayMs));
-            return base.list(params);
-          },
-        }
-      : base;
-
-  savedBlocksProviders.set(name, withDelay);
-  return withDelay;
+  savedBlocksProviders.set(name, provider);
+  return provider;
 }
 
 /**
