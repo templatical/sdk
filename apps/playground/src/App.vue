@@ -279,12 +279,10 @@ function savedBlocksProviderFor(
   seedSavedBlocks(key, template?.savedBlocks);
   const base = createLocalStorageSavedBlocksProvider({ key });
 
-  // `…-delay` stands in for a sluggish backend, so the browser's first-open
-  // skeleton is exercisable: localStorage answers instantly, which is the one
-  // latency profile that can't reproduce it.
-  const delayMs = Number(
-    localStorage.getItem("tpl-playground-saved-blocks-delay") ?? "0",
-  );
+  // `savedBlocks.listDelayMs` stands in for a sluggish backend, so the
+  // browser's first-open skeleton is exercisable: localStorage answers
+  // instantly, which is the one latency profile that can't reproduce it.
+  const delayMs = Number(readControlState()["savedBlocks.listDelayMs"] ?? 0);
   const withDelay: SavedBlocksProvider =
     delayMs > 0
       ? {

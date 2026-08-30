@@ -42,10 +42,38 @@ describe("savedBlocksCapability", () => {
       "savedBlocks.create",
       "savedBlocks.update",
       "savedBlocks.delete",
+      "savedBlocks.listDelayMs",
     ]);
   });
 
   it("is registered and findable by id", () => {
     expect(capabilityById("saved-blocks")).toBe(savedBlocksCapability);
+  });
+});
+
+describe("savedBlocks list delay", () => {
+  it("exposes a delay control that defaults to no delay", () => {
+    const control = savedBlocksCapability.controls.find(
+      (c) => c.path === "savedBlocks.listDelayMs",
+    );
+    expect(control).toEqual({
+      kind: "number",
+      path: "savedBlocks.listDelayMs",
+      label: "list() latency (ms)",
+      help: "Stands in for a slow backend so the browser's first-open skeleton is reachable. localStorage answers instantly, which is the one latency profile that cannot reproduce it.",
+      min: 0,
+      max: 5000,
+      default: 0,
+    });
+    expect(
+      buildCapabilityConfig(savedBlocksCapability, { __impl: impl }),
+    ).toEqual({
+      savedBlocks: {
+        list: impl.list,
+        create: impl.create,
+        update: impl.update,
+        delete: impl.delete,
+      },
+    });
   });
 });

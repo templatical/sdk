@@ -35,6 +35,15 @@ export const savedBlocksCapability: CapabilityDef = {
       label: "delete",
       help: "Off removes the delete control from every row.",
     },
+    {
+      kind: "number",
+      path: "savedBlocks.listDelayMs",
+      label: "list() latency (ms)",
+      help: "Stands in for a slow backend so the browser's first-open skeleton is reachable. localStorage answers instantly, which is the one latency profile that cannot reproduce it.",
+      min: 0,
+      max: 5000,
+      default: 0,
+    },
   ],
   build: (state) => {
     const impl = state["__impl"] as SavedBlocksProvider;

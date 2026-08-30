@@ -946,12 +946,12 @@ test.describe("saved blocks — slow list()", () => {
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript((delay) => {
+    await page.addInitScript((delay: number) => {
       localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
       localStorage.setItem("tpl-playground-features-dismissed", "true");
       localStorage.setItem(
-        "tpl-playground-saved-blocks-delay",
-        String(delay as number),
+        "tpl-playground-config",
+        JSON.stringify({ "savedBlocks.listDelayMs": delay }),
       );
     }, DELAY_MS);
     await chooserPage.goto();
@@ -987,12 +987,12 @@ test.describe("saved blocks — slow list()", () => {
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript((delay) => {
+    await page.addInitScript((delay: number) => {
       localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
       localStorage.setItem("tpl-playground-features-dismissed", "true");
       localStorage.setItem(
-        "tpl-playground-saved-blocks-delay",
-        String(delay as number),
+        "tpl-playground-config",
+        JSON.stringify({ "savedBlocks.listDelayMs": delay }),
       );
     }, DELAY_MS);
     await chooserPage.goto();
