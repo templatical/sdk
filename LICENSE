@@ -51,6 +51,7 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 
 ---
 
-Note: The @templatical/types, @templatical/renderer, and
-@templatical/import-beefree packages are licensed separately under the MIT
+Note: The @templatical/types, @templatical/renderer, @templatical/quality,
+@templatical/import-beefree, @templatical/import-unlayer, and
+@templatical/import-html packages are licensed separately under the MIT
 License. See LICENSE-MIT for those packages' terms.
