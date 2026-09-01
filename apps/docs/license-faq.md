@@ -10,7 +10,7 @@ This page answers the questions teams ask most often when evaluating Templatical
 ## TL;DR
 
 - **You can use Templatical for free in any commercial product**, including paid SaaS, internal tools, and on-premise installs.
-- **The only thing you can't do** is repackage Templatical itself as a competing email-editor SaaS.
+- **The only thing you can't do** is repackage Templatical itself as a competing email-editor product or service.
 - **After two years**, every release of FSL-licensed code automatically becomes MIT. No action required.
 - **Six of the nine packages are pure MIT today** — types, renderer, quality, and all three importers. Only the editor, core and media library are FSL.
 
@@ -21,7 +21,9 @@ FSL stands for [**Functional Source License**](https://fsl.software/). It's a mo
 - **Freedom** — the code is open, you can read it, fork it, modify it, and redistribute it.
 - **Sustainability** — the maintainer can build a viable business around it without an Amazon-sized cloud provider repackaging the project as a managed service.
 
-FSL-1.1-**MIT** is the variant that automatically converts to the MIT License after two years. So Templatical's source is public today with a single narrow restriction, and becomes fully MIT-licensed open source after the change date.
+FSL-1.1-**MIT** is the variant that automatically converts to the MIT License after two years. So Templatical's source is public today with a single narrow restriction, and becomes fully MIT-licensed open source two years after each release.
+
+**Templatical uses the canonical FSL-1.1-MIT text, unmodified**, plus one clearly-marked **Additional Permission** that grants embedding explicitly. The Additional Permission only adds rights — it cannot reduce anything the base license grants. If your legal team compares [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE) against the [upstream template](https://github.com/getsentry/fsl.software/blob/main/FSL-1.1-MIT.template.md), the base text matches byte for byte, and the only delta is the section below it.
 
 ## Which packages use which license?
 
@@ -43,7 +45,7 @@ The split exists so anything you'd build into your own backend or codegen pipeli
 
 **Yes.** You can embed Templatical in any commercial product — paid SaaS, internal tools, on-premise software, agency builds, anything — without paying us and without asking permission.
 
-The only restriction is the one in the LICENSE: you can't take Templatical, slap a different name on it, and offer *that* as a hosted email-editor service that competes with us.
+The only restriction is the one in the LICENSE: you can't take Templatical, slap a different name on it, and offer *that* as a competing email-editor product — hosted, self-installed, or otherwise.
 
 ## Can I embed Templatical in my SaaS?
 
@@ -58,7 +60,7 @@ Concretely allowed:
 
 Concretely not allowed:
 
-- ❌ Building a product whose primary purpose is "Templatical, hosted by you", competing with our managed Cloud tier.
+- ❌ Building a product whose primary purpose is composing or designing email templates — "Templatical, but yours" — whether you host it or ship it self-installed.
 - ❌ Forking Templatical and offering the fork as a drop-in commercial replacement for Templatical itself.
 
 If you're not sure whether your use case crosses the line, [open a discussion](https://github.com/templatical/sdk/discussions) or email <licensing@templatical.com>. We'd rather give you a clear answer up front than have ambiguity.
@@ -73,8 +75,8 @@ A "competing use" is one where the email editor *is* the product. Some worked ex
 | You add Templatical to a transactional email API so customers design templates before sending via your API | ✅ Yes — email editor is a feature of your sending platform. |
 | You build a newsletter SaaS where Templatical is one of several composition tools | ✅ Yes — email editor is a feature of your newsletter product. |
 | You embed the editor inside your company's internal marketing portal | ✅ Yes — internal use is unrestricted. |
-| You fork Templatical, rebrand it, and sell hosted Templatical-clone subscriptions | ❌ No — that's a competing managed service. |
-| You build "Templatical Cloud, but cheaper" and offer it as a SaaS | ❌ No — that's a competing managed service. |
+| You fork Templatical, rebrand it, and sell hosted Templatical-clone subscriptions | ❌ No — that substitutes for Templatical itself, hosted or not. |
+| You build "Templatical Cloud, but cheaper" and offer it as a SaaS | ❌ No — that substitutes for a product we offer using the editor. |
 
 The rule of thumb: if you remove Templatical from your product, do you still have a product? If yes, you're fine.
 
@@ -85,6 +87,12 @@ The rule of thumb: if you remove Templatical from your product, do you still hav
 That means if a stable version of Templatical 1.0 is released in 2026, that exact version becomes MIT-licensed in 2028 — automatically, with no action required from anyone. Newer releases inherit a fresh two-year clock.
 
 In practice, this means you always have a fully MIT-licensed version of the codebase available, just one that's two years behind the latest release.
+
+## What if the license changes later?
+
+Any version already published stays under the terms it shipped with. A license change applies to releases made after it — it cannot reach backwards and withdraw rights from a version you already have.
+
+The two-year MIT conversion works the same way: [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE) grants it **irrevocably** and in advance, for each release at the moment that release is published. Nothing we do later can take it back.
 
 ## Why not pure MIT from the start?
 

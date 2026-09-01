@@ -10,7 +10,7 @@ Diese Seite beantwortet die Fragen, die Teams bei der Bewertung von Templaticals
 ## Auf einen Blick
 
 - **Sie können Templatical kostenlos in jedem kommerziellen Produkt einsetzen**, einschließlich kostenpflichtigem SaaS, internen Tools und On-Premise-Installationen.
-- **Das Einzige, was Sie nicht dürfen**, ist Templatical selbst als konkurrierendes E-Mail-Editor-SaaS zu vermarkten.
+- **Das Einzige, was Sie nicht dürfen**, ist Templatical selbst als konkurrierendes E-Mail-Editor-Produkt oder als konkurrierenden Dienst zu vermarkten.
 - **Nach zwei Jahren** wird jede unter FSL veröffentlichte Version automatisch zu MIT. Keine Aktion erforderlich.
 - **Sechs der neun Pakete sind heute schon reines MIT** — types, renderer, quality und alle drei Importer. Nur Editor, Core und Media-Library stehen unter FSL.
 
@@ -21,7 +21,9 @@ FSL steht für [**Functional Source License**](https://fsl.software/). Eine mode
 - **Freiheit** — der Code ist offen, Sie können ihn lesen, forken, modifizieren und weitergeben.
 - **Nachhaltigkeit** — der Maintainer kann ein tragfähiges Geschäft drumherum aufbauen, ohne dass ein Cloud-Riese das Projekt als Managed Service neu verpackt.
 
-FSL-1.1-**MIT** ist die Variante, die nach zwei Jahren automatisch zur MIT-Lizenz wird. Templaticals Quellcode ist also heute öffentlich einsehbar — mit einer einzigen schmalen Einschränkung — und wird nach dem Stichtag zu vollständig MIT-lizenziertem Open Source.
+FSL-1.1-**MIT** ist die Variante, die nach zwei Jahren automatisch zur MIT-Lizenz wird. Templaticals Quellcode ist also heute öffentlich einsehbar — mit einer einzigen schmalen Einschränkung — und wird zwei Jahre nach jeder Veröffentlichung zu vollständig MIT-lizenziertem Open Source.
+
+**Templatical verwendet den kanonischen FSL-1.1-MIT-Text unverändert**, ergänzt um eine klar gekennzeichnete **Zusätzliche Erlaubnis** ("Additional Permission"), die das Einbetten ausdrücklich gestattet. Die Zusätzliche Erlaubnis fügt ausschließlich Rechte hinzu — sie kann nichts einschränken, was die Basislizenz gewährt. Wenn Ihre Rechtsabteilung [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE) mit der [Original-Vorlage](https://github.com/getsentry/fsl.software/blob/main/FSL-1.1-MIT.template.md) vergleicht, stimmt der Basistext Byte für Byte überein; der einzige Unterschied ist der Abschnitt darunter.
 
 ## Welches Paket nutzt welche Lizenz?
 
@@ -43,7 +45,7 @@ Die Aufteilung sorgt dafür, dass alles, was Sie in Ihr eigenes Backend oder ein
 
 **Ja.** Sie können Templatical in jedes kommerzielle Produkt einbetten — kostenpflichtiges SaaS, interne Tools, On-Premise-Software, Agentur-Builds, was auch immer — ohne uns zu bezahlen und ohne um Erlaubnis zu fragen.
 
-Die einzige Einschränkung steht in der LICENSE: Sie dürfen Templatical nicht nehmen, einen anderen Namen draufkleben und *das* als gehosteten E-Mail-Editor-Service anbieten, der mit uns konkurriert.
+Die einzige Einschränkung steht in der LICENSE: Sie dürfen Templatical nicht nehmen, einen anderen Namen draufkleben und *das* als konkurrierendes E-Mail-Editor-Produkt anbieten — ob gehostet, zur Selbstinstallation oder anderweitig.
 
 ## Darf ich Templatical in mein SaaS einbetten?
 
@@ -58,7 +60,7 @@ Konkret erlaubt:
 
 Konkret nicht erlaubt:
 
-- ❌ Ein Produkt zu bauen, dessen primärer Zweck "Templatical, von Ihnen gehostet" ist und das mit unserem gemanagten Cloud-Tarif konkurriert.
+- ❌ Ein Produkt zu bauen, dessen primärer Zweck das Verfassen oder Gestalten von E-Mail-Templates ist — "Templatical, aber Ihres" — ganz gleich, ob Sie es hosten oder zur Selbstinstallation ausliefern.
 - ❌ Templatical zu forken und den Fork als Drop-in-Ersatz für Templatical selbst kommerziell anzubieten.
 
 Sind Sie sich nicht sicher, ob Ihr Anwendungsfall die Linie überschreitet, [öffnen Sie eine Diskussion](https://github.com/templatical/sdk/discussions) oder schreiben Sie an <licensing@templatical.com>. Lieber geben wir Ihnen vorher eine klare Antwort, als dass Unklarheit bleibt.
@@ -73,8 +75,8 @@ Eine "konkurrierende Nutzung" ist eine, bei der der E-Mail-Editor *das* Produkt 
 | Sie integrieren Templatical in eine Transactional-E-Mail-API, damit Kunden Templates designen, bevor sie über Ihre API senden | ✅ Ja — der Editor ist eine Funktion Ihrer Sende-Plattform. |
 | Sie bauen ein Newsletter-SaaS, in dem Templatical eines von mehreren Kompositionswerkzeugen ist | ✅ Ja — der Editor ist eine Funktion Ihres Newsletter-Produkts. |
 | Sie betten den Editor in das interne Marketing-Portal Ihres Unternehmens ein | ✅ Ja — interne Nutzung ist uneingeschränkt. |
-| Sie forken Templatical, branden es um und verkaufen Abos eines gehosteten Templatical-Klons | ❌ Nein — das ist ein konkurrierender Managed Service. |
-| Sie bauen "Templatical Cloud, aber günstiger" und bieten es als SaaS an | ❌ Nein — das ist ein konkurrierender Managed Service. |
+| Sie forken Templatical, branden es um und verkaufen Abos eines gehosteten Templatical-Klons | ❌ Nein — das ersetzt Templatical selbst, ob gehostet oder nicht. |
+| Sie bauen "Templatical Cloud, aber günstiger" und bieten es als SaaS an | ❌ Nein — das ersetzt ein Produkt, das wir selbst mit dem Editor anbieten. |
 
 Die Faustregel: Wenn Sie Templatical aus Ihrem Produkt entfernen, haben Sie dann immer noch ein Produkt? Wenn ja, sind Sie auf der sicheren Seite.
 
@@ -85,6 +87,12 @@ Die Faustregel: Wenn Sie Templatical aus Ihrem Produkt entfernen, haben Sie dann
 Das heißt: Erscheint eine stabile Version Templatical 1.0 im Jahr 2026, wird genau diese Version 2028 MIT-lizenziert — automatisch, ohne dass jemand etwas tun muss. Neuere Versionen starten mit einer frischen Zwei-Jahres-Uhr.
 
 In der Praxis bedeutet das: Sie haben immer eine vollständig MIT-lizenzierte Version des Codebase verfügbar — nur eben zwei Jahre hinter der neuesten Version.
+
+## Was, wenn sich die Lizenz später ändert?
+
+Jede bereits veröffentlichte Version bleibt unter den Bedingungen, unter denen sie ausgeliefert wurde. Eine Lizenzänderung gilt für Releases danach — sie kann nicht rückwirkend Rechte an einer Version entziehen, die Sie bereits haben.
+
+Die Umwandlung zu MIT nach zwei Jahren funktioniert genauso: [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE) gewährt sie **unwiderruflich** und im Voraus, für jede Version im Moment ihrer Veröffentlichung. Nichts, was wir später tun, kann das zurücknehmen.
 
 ## Warum nicht von Anfang an reines MIT?
 
