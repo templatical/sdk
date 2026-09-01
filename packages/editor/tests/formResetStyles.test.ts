@@ -5,8 +5,10 @@ import { join } from "node:path";
 /**
  * Form-element reset invariants for `styles/index.css`.
  *
- * Tailwind preflight is intentionally disabled (see CLAUDE.md), so the
- * hand-rolled `:where(.tpl) button, input, select, textarea` block is the
+ * Tailwind preflight is intentionally disabled — Tailwind 4's `prefix()`
+ * does not scope preflight selectors, so enabling it would reset host page
+ * typography. That makes the hand-rolled
+ * `:where(.tpl) button, input, select, textarea` block the
  * only source of cross-cutting form defaults. Any change there has a long
  * blast radius — every input/select/textarea in the editor depends on it.
  *

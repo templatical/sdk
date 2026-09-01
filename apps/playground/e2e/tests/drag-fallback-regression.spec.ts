@@ -5,12 +5,14 @@ import { blockByType } from "../helpers/selectors";
  * Drag-and-drop fallback-mode regression suite.
  *
  * Every test in this file guards a specific bug discovered during a long
- * Chrome-vs-Firefox drag debugging cycle. All three `<VueDraggable>`
- * instances (sidebar palette, canvas top-level, section column inner)
- * run with `:force-fallback="true"` — Sortable uses pointer events
- * instead of native HTML5 drag. That mode is load-bearing for several
- * reasons (see CLAUDE.md "Drag-and-drop architecture") and these tests
- * pin the contract end-to-end.
+ * Chrome-vs-Firefox drag debugging cycle. All four `<VueDraggable>`
+ * instances (sidebar palette, canvas top-level, section column inner,
+ * save-block reorder list) run with `:force-fallback="true"` — Sortable
+ * uses pointer events instead of native HTML5 drag. That mode is
+ * load-bearing for two reasons: Chrome silently refuses to fire
+ * `dragstart` for a nested Sortable, and Sortable binds
+ * `dragover`/`dragenter` only in HTML5 mode, so a mixed config breaks
+ * cross-list drops. These tests pin the contract end-to-end.
  *
  * Why these tests use the page-object helpers (which drive mouse-step
  * pointer events) instead of inlining mouse-drive: the page-object
