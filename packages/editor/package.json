@@ -60,7 +60,7 @@
     "vue",
     "wysiwyg"
   ],
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "FSL-1.1-MIT",
   "module": "./dist/templatical-editor.js",
   "peerDependencies": {
     "@templatical/media-library": "workspace:*",

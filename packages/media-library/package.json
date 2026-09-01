@@ -38,7 +38,7 @@
     "templatical",
     "vue"
   ],
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "FSL-1.1-MIT",
   "module": "./dist/templatical-media-library.js",
   "peerDependencies": {
     "tailwindcss": "^4.3.3",

@@ -35,7 +35,7 @@
     "templatical",
     "vue-reactivity"
   ],
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "FSL-1.1-MIT",
   "module": "./dist/index.js",
   "peerDependencies": {
     "pusher-js": "^8.6.0"
