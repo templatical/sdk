@@ -294,6 +294,40 @@
     background-color: var(--tpl-bg);
     color: var(--tpl-text);
     font-family: var(--tpl-font-family);
+
+    /* Neutralize inheritable typography from the host page. Shadow DOM blocks
+       host *rules* — a consumer selector never matches inside the shadow root
+       — but inheritance follows the flattened tree, so every inheritable
+       property crosses the boundary regardless of mode. This rule is the only
+       defense, and it stops exactly what it declares: the four properties
+       above (font-family, color, plus font-size / line-height via @apply)
+       were already covered, and each one below was measured leaking into the
+       built editor under a host setting ordinary design-system typography.
+
+       The stake is fidelity, not just appearance. These reach `.tpl-canvas`
+       too, so a host `text-transform: uppercase` renders the WYSIWYG preview
+       in uppercase while the delivered email is not — the canvas lies about
+       the output.
+
+       `direction` and `visibility` are deliberately absent: an RTL host should
+       propagate its writing direction, and a hidden host should hide the
+       editor. `text-decoration` propagates rather than inherits and does not
+       cross. Locked by `tests/inherited-property-scope.test.ts` and
+       `apps/playground/e2e/tests/host-style-inheritance.spec.ts`. */
+    letter-spacing: normal;
+    word-spacing: normal;
+    text-transform: none;
+    font-style: normal;
+    font-weight: 400;
+    text-indent: 0;
+    /* `start`, not `left` — `left` would break the RTL host whose `direction`
+       we let inherit. */
+    text-align: start;
+    white-space: normal;
+    list-style-type: disc;
+    cursor: auto;
+    font-variant-numeric: normal;
+    text-shadow: none;
 }
 
 /* Form element reset - Preflight is omitted so form elements use browser

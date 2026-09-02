@@ -490,7 +490,7 @@ defineExpose({
        only neutralizes the default action everywhere else (#229). -->
   <div
     ref="rootEl"
-    class="tpl tpl:relative tpl:h-full tpl:overflow-hidden"
+    class="tpl tpl:relative tpl:h-full"
     :class="{ 'tpl:dark': editor.state.darkMode }"
     :data-tpl-theme="core.resolvedTheme.value"
     :style="core.themeStyles.value"
@@ -500,170 +500,191 @@ defineExpose({
     <!-- Reactive `<style>` tags for custom-block definition stylesheets in
          use. Sits at the top so its rules apply to the canvas below. -->
     <CustomBlockStylesheets />
-    <!-- One header for both entry points. Cloud's own controls arrive through
-         the three slots; everything else here is capability-gated, so the same
-         markup covers "no providers at all" and a fully-wired Cloud session. -->
-    <EditorHeader
-      :editor="editor"
-      :core="core"
-      :templates="templates"
-      :show-template-name="config.templates?.nameField !== false"
-      :test-email="testEmail"
-      :version-history="versionHistory"
-      :comments="comments"
-    >
-      <template v-if="cloudAttachment" #left-extras>
-        <CloudHeaderExtras part="left" :cloud="cloudAttachment" />
-      </template>
-      <template v-if="cloudAttachment" #right-extras>
-        <CloudHeaderExtras part="right" :cloud="cloudAttachment" />
-      </template>
-    </EditorHeader>
+    <!-- Chrome wrapper — the clip belongs here, never on the root and never
+         around `.tpl-popover-root`. Safari paints a `position: fixed`
+         descendant clipped to an ancestor's `overflow: hidden` box while still
+         resolving its layout against the viewport, so a dialog teleported
+         under a clipping ancestor is cut off wherever it extends past the
+         container, and its backdrop dims only the container's own area
+         (#633). Keeping the clip on this element bounds the header, rails,
+         canvas and footer without reaching the popover root, and this box is
+         identical to the root's, so everything anchored `absolute` inside
+         lands exactly where it would against the root. Locked by
+         `tests/popover-root-clip-scope.test.ts`. -->
+    <div class="tpl:absolute tpl:inset-0 tpl:overflow-hidden">
+      <!-- One header for both entry points. Cloud's own controls arrive through
+           the three slots; everything else here is capability-gated, so the same
+           markup covers "no providers at all" and a fully-wired Cloud session. -->
+      <EditorHeader
+        :editor="editor"
+        :core="core"
+        :templates="templates"
+        :show-template-name="config.templates?.nameField !== false"
+        :test-email="testEmail"
+        :version-history="versionHistory"
+        :comments="comments"
+      >
+        <template v-if="cloudAttachment" #left-extras>
+          <CloudHeaderExtras part="left" :cloud="cloudAttachment" />
+        </template>
+        <template v-if="cloudAttachment" #right-extras>
+          <CloudHeaderExtras part="right" :cloud="cloudAttachment" />
+        </template>
+      </EditorHeader>
 
-    <!-- Left sidebar — absolute, below header -->
-    <Sidebar v-show="!editor.state.previewMode" />
+      <!-- Left sidebar — absolute, below header -->
+      <Sidebar v-show="!editor.state.previewMode" />
 
-    <!-- Canvas area — absolute, fills remaining space -->
-    <div
-      class="tpl-body tpl:absolute tpl:bottom-0 tpl:overflow-auto tpl:bg-[var(--tpl-canvas-bg)]"
-      style="transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1)"
-      :class="[
-        bodyInsetClass,
-        versionHistory?.isPreviewing.value ? 'tpl:top-[104px]' : 'tpl:top-14',
-      ]"
-    >
-      <!-- Preview chrome, floated over the canvas.
+      <!-- Canvas area — absolute, fills remaining space -->
+      <div
+        class="tpl-body tpl:absolute tpl:bottom-0 tpl:overflow-auto tpl:bg-[var(--tpl-canvas-bg)]"
+        style="transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1)"
+        :class="[
+          bodyInsetClass,
+          versionHistory?.isPreviewing.value ? 'tpl:top-[104px]' : 'tpl:top-14',
+        ]"
+      >
+        <!-- Preview chrome, floated over the canvas.
 
-           A zero-height sticky layer holding one absolutely-positioned,
-           canvas-centred **column**. Zero height means the layer contributes no
-           space of its own, so nothing here can push the canvas around — which
-           is what lets the merge-tag toggle live over the preview instead of in
-           the header, whose centre track re-centres on every width change and
-           so dragged the Preview button 114.5px sideways each time the toggle
-           appeared (#574).
+             A zero-height sticky layer holding one absolutely-positioned,
+             canvas-centred **column**. Zero height means the layer contributes no
+             space of its own, so nothing here can push the canvas around — which
+             is what lets the merge-tag toggle live over the preview instead of in
+             the header, whose centre track re-centres on every width change and
+             so dragged the Preview button 114.5px sideways each time the toggle
+             appeared (#574).
 
-           A column rather than two fixed offsets. Both pills are reachable at
-           once — the restore pill needs hidden blocks, the toggle needs preview
-           mode without a `resolvePreview`, and nothing makes those exclusive —
-           so they have to stack. Doing that with a hardcoded second offset put
-           the restore pill 48px down even when it rendered alone, which in
-           editing mode (where the toggle never shows) dropped it onto the first
-           block's content. Flow solves what the offset got wrong: whichever
-           pills render sit tight under the header, in order.
+             A column rather than two fixed offsets. Both pills are reachable at
+             once — the restore pill needs hidden blocks, the toggle needs preview
+             mode without a `resolvePreview`, and nothing makes those exclusive —
+             so they have to stack. Doing that with a hardcoded second offset put
+             the restore pill 48px down even when it rendered alone, which in
+             editing mode (where the toggle never shows) dropped it onto the first
+             block's content. Flow solves what the offset got wrong: whichever
+             pills render sit tight under the header, in order.
 
-           Locked by `tests/headerCenterStability.test.ts`. -->
-      <div class="tpl-preview-overlay tpl:sticky tpl:top-0 tpl:z-40 tpl:h-0">
-        <div
-          class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:flex tpl:-translate-x-1/2 tpl:flex-col tpl:items-center tpl:gap-2"
-        >
-          <!-- Sample / Label. Preview mode only: merge tags are never
-               substituted on the editing canvas, so the choice would have no
-               effect there. A configured `resolvePreview` supersedes samples
-               entirely.
+             Locked by `tests/headerCenterStability.test.ts`. -->
+        <div class="tpl-preview-overlay tpl:sticky tpl:top-0 tpl:z-40 tpl:h-0">
+          <div
+            class="tpl:absolute tpl:left-1/2 tpl:top-2 tpl:flex tpl:-translate-x-1/2 tpl:flex-col tpl:items-center tpl:gap-2"
+          >
+            <!-- Sample / Label. Preview mode only: merge tags are never
+                 substituted on the editing canvas, so the choice would have no
+                 effect there. A configured `resolvePreview` supersedes samples
+                 entirely.
 
-               The wrapper carries only the shadow that lifts the control off
-               the canvas — no `backdrop-filter`, because the toggle's own
-               `--tpl-bg-hover` fill is opaque and covers this box exactly, so a
-               blur would composite a layer to show nothing. -->
-          <Transition name="tpl-preview-pill">
-            <div
-              v-if="
-                editor.state.previewMode &&
-                !core.previewResolution.supersedesSamples.value
-              "
-              data-testid="merge-tag-mode-toggle-anchor"
-              class="tpl:rounded-[var(--tpl-radius-sm)] tpl:shadow-[var(--tpl-shadow-md)]"
-            >
-              <MergeTagModeToggle
-                :sample-mode="core.mergeTagSampleMode.value"
-                @change="core.mergeTagSampleMode.value = $event"
-              />
-            </div>
-          </Transition>
-          <!-- Show all hidden blocks. The shared warning recipe, not a bespoke
-               string: it has to read as the Sample/Label switch's sibling,
-               since the two stack here, and a hand-rolled pill is how this one
-               came to sit 8px shorter with a different radius and a 1.85:1
-               label. `warningBtnCompactClass` carries why the amber is on the
-               border rather than the text. -->
-          <Transition name="tpl-preview-pill">
-            <button
-              v-if="
-                core.conditionPreview.hasHiddenBlocks.value &&
-                core.appliesConditionFilter.value
-              "
-              type="button"
-              :class="warningBtnCompactClass"
-              class="tpl:shadow-[var(--tpl-shadow-md)]"
-              data-testid="restore-hidden-blocks"
-              @click="core.conditionPreview.reset()"
-            >
-              <RotateCcw :size="16" :stroke-width="2" />
-              {{ core.t.blockSettings.restoreHiddenBlocks }}
-            </button>
-          </Transition>
+                 The wrapper carries only the shadow that lifts the control off
+                 the canvas — no `backdrop-filter`, because the toggle's own
+                 `--tpl-bg-hover` fill is opaque and covers this box exactly, so a
+                 blur would composite a layer to show nothing. -->
+            <Transition name="tpl-preview-pill">
+              <div
+                v-if="
+                  editor.state.previewMode &&
+                  !core.previewResolution.supersedesSamples.value
+                "
+                data-testid="merge-tag-mode-toggle-anchor"
+                class="tpl:rounded-[var(--tpl-radius-sm)] tpl:shadow-[var(--tpl-shadow-md)]"
+              >
+                <MergeTagModeToggle
+                  :sample-mode="core.mergeTagSampleMode.value"
+                  @change="core.mergeTagSampleMode.value = $event"
+                />
+              </div>
+            </Transition>
+            <!-- Show all hidden blocks. The shared warning recipe, not a bespoke
+                 string: it has to read as the Sample/Label switch's sibling,
+                 since the two stack here, and a hand-rolled pill is how this one
+                 came to sit 8px shorter with a different radius and a 1.85:1
+                 label. `warningBtnCompactClass` carries why the amber is on the
+                 border rather than the text. -->
+            <Transition name="tpl-preview-pill">
+              <button
+                v-if="
+                  core.conditionPreview.hasHiddenBlocks.value &&
+                  core.appliesConditionFilter.value
+                "
+                type="button"
+                :class="warningBtnCompactClass"
+                class="tpl:shadow-[var(--tpl-shadow-md)]"
+                data-testid="restore-hidden-blocks"
+                @click="core.conditionPreview.reset()"
+              >
+                <RotateCcw :size="16" :stroke-width="2" />
+                {{ core.t.blockSettings.restoreHiddenBlocks }}
+              </button>
+            </Transition>
+          </div>
         </div>
+        <main class="tpl-main tpl:flex tpl:justify-center tpl:p-8">
+          <Canvas
+            :viewport="editor.state.viewport"
+            :content="core.previewResolution.content.value"
+            :selected-block-id="editor.state.selectedBlockId"
+            :dark-mode="editor.state.darkMode"
+            :preview-mode="editor.state.previewMode"
+            :locked-blocks="cloudAttachment?.collaboration?.lockedBlocks.value"
+            @select-block="editor.selectBlock"
+            @open-ai-chat="openCloudPanel('ai-chat')"
+            @open-design-reference="openCloudPanel('design-reference')"
+          />
+        </main>
       </div>
-      <main class="tpl-main tpl:flex tpl:justify-center tpl:p-8">
-        <Canvas
-          :viewport="editor.state.viewport"
-          :content="core.previewResolution.content.value"
-          :selected-block-id="editor.state.selectedBlockId"
-          :dark-mode="editor.state.darkMode"
-          :preview-mode="editor.state.previewMode"
-          :locked-blocks="cloudAttachment?.collaboration?.lockedBlocks.value"
-          @select-block="editor.selectBlock"
-          @open-ai-chat="openCloudPanel('ai-chat')"
-          @open-design-reference="openCloudPanel('design-reference')"
-        />
-      </main>
+
+      <EditorFooter
+        v-if="config.branding !== false"
+        :position-class="[bodyInsetClass]"
+      />
+
+      <!-- Keyboard reorder announcement region (visually hidden, screen-reader live) -->
+      <div
+        class="tpl-sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        :aria-label="core.t.landmarks.reorderAnnouncements"
+      >
+        {{ core.keyboardReorder.announcement.value }}
+      </div>
+
+      <!-- Right sidebar — persisted with v-show -->
+      <RightSidebar
+        v-show="!editor.state.previewMode"
+        :selected-block="editor.selectedBlock.value"
+        :settings="editor.content.value.settings"
+        :shifted-left="rightPanelOpen"
+        @update-block="
+          (updates) =>
+            editor.updateBlock(editor.state.selectedBlockId!, updates)
+        "
+        @delete-block="
+          () => {
+            if (editor.state.selectedBlockId) {
+              core.blockActions.deleteBlock(editor.state.selectedBlockId);
+            }
+          }
+        "
+        @duplicate-block="
+          () => {
+            if (editor.selectedBlock.value) {
+              core.blockActions.duplicateBlock(editor.selectedBlock.value);
+            }
+          }
+        "
+        @update-settings="(updates) => editor.updateSettings(updates)"
+      />
     </div>
 
-    <EditorFooter
-      v-if="config.branding !== false"
-      :position-class="[bodyInsetClass]"
-    />
-
-    <!-- Keyboard reorder announcement region (visually hidden, screen-reader live) -->
-    <div
-      class="tpl-sr-only"
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
-      :aria-label="core.t.landmarks.reorderAnnouncements"
-    >
-      {{ core.keyboardReorder.announcement.value }}
-    </div>
-
-    <!-- Right sidebar — persisted with v-show -->
-    <RightSidebar
-      v-show="!editor.state.previewMode"
-      :selected-block="editor.selectedBlock.value"
-      :settings="editor.content.value.settings"
-      :shifted-left="rightPanelOpen"
-      @update-block="
-        (updates) => editor.updateBlock(editor.state.selectedBlockId!, updates)
-      "
-      @delete-block="
-        () => {
-          if (editor.state.selectedBlockId) {
-            core.blockActions.deleteBlock(editor.state.selectedBlockId);
-          }
-        }
-      "
-      @duplicate-block="
-        () => {
-          if (editor.selectedBlock.value) {
-            core.blockActions.duplicateBlock(editor.selectedBlock.value);
-          }
-        }
-      "
-      @update-settings="(updates) => editor.updateSettings(updates)"
-    />
-
-    <!-- Popover mount — Teleport target for toolbars, link dialog, modal.
-         Replaces the historical body-level teleport pattern so popups
-         render inside the editor's effective DOM root (shadow-aware). -->
+    <!-- Popover mount — Teleport target for toolbars, link dialog, modals.
+         Every popup mounts here rather than at the page's `<body>`, so it
+         renders inside the editor's effective DOM root and keeps the shadow
+         root's adopted stylesheet; a body-level teleport leaves the shadow
+         tree and renders unstyled. It also has to stay a child of `.tpl`, which
+         declares `--tpl-base-size` and the colour tokens — `@theme inline`
+         rebases the whole Tailwind length scale onto that variable, so a
+         popup hoisted out would lose the sizing scale as well as the palette.
+         Enforced by the `no-teleport-to-body` ESLint rule and
+         `tests/global-refs-audit.test.ts`. -->
     <div
       :ref="(el) => (core.popoverRoot.value = el as HTMLElement | null)"
       class="tpl-popover-root"
