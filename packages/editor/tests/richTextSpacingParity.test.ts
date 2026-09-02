@@ -90,8 +90,17 @@ describe("arbitrary-variant classes put the tpl prefix first", () => {
     });
   }
 
-  it("has no class where a bracket variant precedes the prefix", () => {
-    const offenders = sourceFiles(join(__dirname, "../src")).flatMap((path) => {
+  // Both packages compile Tailwind with the `tpl` prefix, so both can grow the
+  // same silent dead class. media-library has none today — this keeps it that
+  // way rather than waiting for one to be noticed by its absence.
+  it.each([
+    ["editor", join(__dirname, "../src")],
+    ["media-library", join(__dirname, "../../media-library/src")],
+  ])("has no class in %s where a bracket variant precedes the prefix", (
+    _package,
+    dir,
+  ) => {
+    const offenders = sourceFiles(dir).flatMap((path) => {
       const matches = readFileSync(path, "utf8").match(/\[&[^\]]*\]:tpl:/g);
       return matches ? [`${path.split("/src/")[1]}: ${matches.join(", ")}`] : [];
     });
