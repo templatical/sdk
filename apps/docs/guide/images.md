@@ -127,6 +127,7 @@ The `ImageBlock` type defines all configurable properties:
 | `width` | `number \| 'full'` | Image width in pixels, or `'full'` for 100% |
 | `height` | `number` (optional) | Image height in pixels. Absent derives it from the width |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
+| `borderRadius` | `number` (optional) | Corner radius in pixels. Absent or 0 means square corners |
 | `decorative` | `boolean` (optional) | Hides the image from screen readers and sends an empty `alt` |
 | `linkUrl` | `string` (optional) | Wraps the image in a link |
 | `linkOpenInNewTab` | `boolean` (optional) | Opens the link in a new tab |
@@ -137,6 +138,14 @@ The `ImageBlock` type defines all configurable properties:
 `height` is optional, and leaving it out is usually right: the height is then derived from the width and the image keeps its aspect ratio. Set it when the layout needs a fixed box -- a banner slot of a known size, or a row of images that must line up.
 
 Setting both `width` and `height` **stretches** the image to that box. It does not crop, because `object-fit` is unsupported in Outlook and most email clients, so the editor canvas stretches identically rather than promising a crop the inbox won't deliver. Match the ratio of the source image, or resize the asset before uploading it.
+
+### Corner radius
+
+`borderRadius` rounds the image's corners, in pixels. Omitted or `0` leaves them square, which is what every existing block gets.
+
+To render a **circular** avatar or portrait, give the block a square source image and a radius of at least half its rendered size: a 240px square needs `120`, and any larger value (`999` is the usual shorthand) resolves to the same circle. A non-square image rounds to an ellipse, since there is no cropping step -- see Height above for why.
+
+Support is good but not universal. Apple Mail, iOS Mail, Gmail and Outlook.com honour it; Outlook on Windows ignores it and shows square corners. Treat it as a progressive enhancement rather than something a layout depends on.
 
 ### Placeholder URL
 

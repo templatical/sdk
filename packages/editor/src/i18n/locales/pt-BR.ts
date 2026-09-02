@@ -206,6 +206,7 @@ const ptBR: typeof en = {
     height: "Altura",
     heightAuto: "Automática",
     heightCustom: "Personalizada",
+    borderRadius: "Arredondamento das Bordas",
     linkUrl: "URL do Link",
     openInNewTab: "Abrir em nova aba",
     placeholderUrl: "Imagem de Espaço Reservado",

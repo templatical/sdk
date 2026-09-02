@@ -181,6 +181,7 @@ const nl: typeof en = {
     height: "Hoogte",
     heightAuto: "Automatisch",
     heightCustom: "Aangepast",
+    borderRadius: "Hoekafronding",
     linkUrl: "Link-URL",
     openInNewTab: "Openen in nieuw tabblad",
     placeholderUrl: "Tijdelijke afbeelding",

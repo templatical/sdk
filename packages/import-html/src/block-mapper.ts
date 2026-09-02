@@ -16,6 +16,7 @@ import {
   parseColor,
   parseFontFamily,
   parseFontWeight,
+  parseImageBorderRadius,
   parsePxValue,
   parseStyleAttribute,
   readPaddingFromStyles,
@@ -160,7 +161,11 @@ function convertImage($el: Cheerio<Element>): Block {
   const alt = $el.attr("alt") ?? "";
   const widthAttr = $el.attr("width");
   const widthStyle = styles.width;
-  const width = parsePxValue(widthAttr) || parsePxValue(widthStyle) || 600;
+  // Kept separate from the `?? 600` fallback: a percentage radius has to
+  // resolve against a width the template actually stated.
+  const readWidth =
+    parsePxValue(widthAttr) || parsePxValue(widthStyle) || undefined;
+  const width = readWidth ?? 600;
   // No default, unlike width: an absent height is what keeps the aspect ratio,
   // and `height="auto"` / `height: auto` parse to 0, which reads the same way.
   const height =
@@ -173,6 +178,11 @@ function convertImage($el: Cheerio<Element>): Block {
     alt,
     width,
     height,
+    borderRadius: parseImageBorderRadius(
+      styles["border-radius"],
+      readWidth,
+      height,
+    ),
     align: parseAlignment(styles["text-align"], "center"),
     styles: {
       padding: readPaddingFromStyles(styles),

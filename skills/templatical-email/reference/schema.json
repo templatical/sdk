@@ -438,6 +438,10 @@
             "right"
           ]
         },
+        "borderRadius": {
+          "type": "number",
+          "description": "Corner radius in px. Omitted/0 = square corners. A radius of at least half the rendered size rounds a square image to a circle, which is how avatar and portrait layouts are built."
+        },
         "linkUrl": {
           "type": "string"
         },

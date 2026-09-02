@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { convertModule } from "../block-mapper";
-import type { BeeFreeeModule } from "../types";
+import type { BeeFreeeImageContent, BeeFreeeModule } from "../types";
 
 function makeModule(
   type: string,
@@ -179,6 +179,76 @@ describe("convertModule", () => {
       expect(withHeight.height).toBe(180);
       expect(withoutHeight.height).toBeUndefined();
       expect(auto.height).toBeUndefined();
+    });
+
+    // BeeFree keeps the radius in the image's own `style` map rather than
+    // alongside width/height, so it is read from a different place than every
+    // other image property here.
+    it("carries a px corner radius from the image style", () => {
+      const warnings: string[] = [];
+      const rounded = convertModule(
+        makeModule("mailup-bee-newsletter-modules-image", {
+          image: {
+            src: "https://x/p.jpg",
+            width: "120px",
+            style: { "border-radius": "60px" },
+          },
+        }),
+        warnings,
+      ).block;
+      const square = convertModule(
+        makeModule("mailup-bee-newsletter-modules-image", {
+          image: { src: "https://x/p.jpg", width: "120px" },
+        }),
+        warnings,
+      ).block;
+
+      if (rounded.type !== "image" || square.type !== "image")
+        throw new Error("expected image blocks");
+      expect(rounded.borderRadius).toBe(60);
+      expect(square.borderRadius).toBeUndefined();
+    });
+
+    function imageWith(image: BeeFreeeImageContent) {
+      const block = convertModule(
+        makeModule("mailup-bee-newsletter-modules-image", { image }),
+        [],
+      ).block;
+      if (block.type !== "image") throw new Error("expected an image block");
+      return block;
+    }
+
+    // `border-radius: 50%` is the idiomatic way to write a circular avatar, so
+    // it resolves against the width the template stated — a 120px square lands
+    // on 60, the same block a literal `60px` produces.
+    it("resolves a percentage radius against the stated width", () => {
+      expect(
+        imageWith({
+          src: "https://x/p.jpg",
+          width: "120px",
+          style: { "border-radius": "50%" },
+        }).borderRadius,
+      ).toBe(60);
+    });
+
+    // 600 is `convertImage`'s fallback, not something BeeFree said.
+    it("drops a percentage radius when no width was stated", () => {
+      expect(
+        imageWith({
+          src: "https://x/p.jpg",
+          style: { "border-radius": "50%" },
+        }).borderRadius,
+      ).toBeUndefined();
+    });
+
+    it("drops a negative radius", () => {
+      expect(
+        imageWith({
+          src: "https://x/p.jpg",
+          width: "120px",
+          style: { "border-radius": "-5px" },
+        }).borderRadius,
+      ).toBeUndefined();
     });
 
     it("creates default block when no image descriptor", () => {

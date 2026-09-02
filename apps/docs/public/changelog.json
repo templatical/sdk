@@ -11,8 +11,23 @@
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.29.0",
+  "latest": "0.29.1",
   "versions": [
+    {
+      "version": "0.29.1",
+      "date": "2026-09-02",
+      "changes": [
+        {
+          "hash": "6b0b3bc",
+          "level": "patch",
+          "title": "Fix two ways the host page could break the editor",
+          "body": "**Dialogs were clipped to the container in Safari.** When the container did not\nfill the viewport, every dialog was painted cut off at its edge and the backdrop\ndimmed only the editor's own area. Safari paints a `position: fixed` descendant\nclipped to an ancestor's `overflow: hidden` box while still resolving its layout\nagainst the viewport, and the editor's root carried that `overflow: hidden`. The\nclip now sits on an inner chrome wrapper that does not enclose the popover root,\nso dialogs cover the viewport again — both tag pickers, the link dialog,\ntest-email, save-block, saved-blocks browser, restore-version, and\n`@templatical/media-library`'s modals when opened from the editor.\n\n**Host typography inherited into the editor.** Twelve inheritable properties —\n`letter-spacing`, `text-transform`, `font-style`, `font-weight` and others —\ncrossed into the chrome and the canvas, so a host with\n`text-transform: uppercase` showed a preview of an email the recipient would\nnever receive. Shadow DOM does not prevent this: it blocks host rules, but\ninheritance follows the flattened tree. The editor's root now neutralizes all\ntwelve. `direction` still inherits, so RTL pages keep working.\n\nNo API change, and no CSS reset is needed on your container — an aggressive one\n(`all: initial` / `all: revert`) would wipe the `--tpl-user-*` theming\nproperties. See the new [Embedding the editor](https://docs.templatical.com/getting-started/embedding) guide.",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.29.0",
       "date": "2026-08-28",

@@ -61,6 +61,7 @@ Zeigt ein Bild mit optionalem Link-Wrapping an.
 | `width` | `number \| 'full'` | Anzeigebreite in px oder `'full'` für 100% |
 | `height` | `number` | Anzeigehöhe in px. Ohne Angabe wird sie aus der Breite abgeleitet und das Seitenverhältnis bleibt erhalten |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
+| `borderRadius` | `number` | Eckenradius in px. Ohne Angabe oder 0 bleiben die Ecken eckig |
 | `decorative` | `boolean` | Blendet das Bild für Screenreader aus und sendet ein leeres `alt` |
 | `linkUrl` | `string` | Umschließt das Bild mit einem Link |
 | `linkOpenInNewTab` | `boolean` | Verhalten des Linkziels |
