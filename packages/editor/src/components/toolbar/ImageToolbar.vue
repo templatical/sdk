@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MergeTagInput from "../MergeTagInput.vue";
+import NumberWithSuffix from "./NumberWithSuffix.vue";
 import SlidingPillSelect from "../SlidingPillSelect.vue";
 import ToggleSwitch from "../ToggleSwitch.vue";
 import { useI18n } from "../../composables/useI18n";
@@ -86,6 +87,18 @@ function updateCustomHeight(raw: string): void {
   const n = Number(raw);
   if (!Number.isFinite(n) || n <= 0) return;
   updateField("height", n);
+}
+
+function updateBorderRadius(value: number): void {
+  // Negatives only, where the width and height guards below also reject 0:
+  // here 0 is a real answer (square), so an emptied field clears the radius
+  // rather than keeping the old one. `NumberWithSuffix` withholds the
+  // in-progress "-" that would otherwise arrive here as a 0.
+  if (!Number.isFinite(value) || value < 0) return;
+  // Absent, not 0: both render as square corners, but a stored 0 travels in
+  // every exported template as though the author had chosen it. Matches
+  // `createImageBlock`, and `updateHeightMode` above clears the same way.
+  updateField("borderRadius", value > 0 ? value : undefined);
 }
 
 function updateCustomWidth(raw: string): void {
@@ -289,6 +302,18 @@ const { isOver } = useImageDrop({
       />
       <span :class="inputSuffixClass">px</span>
     </div>
+  </div>
+  <div class="tpl:mb-3.5">
+    <label :class="labelClass">{{ t.image.borderRadius }}</label>
+    <!-- No `max`: a circle needs a radius of at least half the rendered size,
+         which the block cannot know at edit time. -->
+    <NumberWithSuffix
+      :model-value="block.borderRadius ?? 0"
+      :min="0"
+      suffix="px"
+      testid="image-border-radius-input"
+      @update:model-value="updateBorderRadius"
+    />
   </div>
   <div class="tpl:mb-3.5">
     <label :class="labelClass">{{ t.title.align }}</label>

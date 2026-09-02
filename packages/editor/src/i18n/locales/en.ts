@@ -204,6 +204,7 @@ export default {
     height: "Height",
     heightAuto: "Auto",
     heightCustom: "Custom",
+    borderRadius: "Border Radius",
     linkUrl: "Link URL",
     openInNewTab: "Open in new tab",
     placeholderUrl: "Placeholder Image",

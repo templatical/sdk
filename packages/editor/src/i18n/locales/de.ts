@@ -209,6 +209,7 @@ const de: typeof en = {
     height: "Höhe",
     heightAuto: "Automatisch",
     heightCustom: "Benutzerdefiniert",
+    borderRadius: "Eckenradius",
     linkUrl: "Link-URL",
     openInNewTab: "In neuem Tab öffnen",
     placeholderUrl: "Platzhalterbild",

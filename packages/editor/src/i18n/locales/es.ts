@@ -207,6 +207,7 @@ const es: typeof en = {
     height: "Altura",
     heightAuto: "Automática",
     heightCustom: "Personalizada",
+    borderRadius: "Radio del borde",
     linkUrl: "URL del enlace",
     openInNewTab: "Abrir en una nueva pestaña",
     placeholderUrl: "Imagen de muestra",

@@ -167,6 +167,67 @@ describe("convertContent", () => {
       expect(zero.height).toBeUndefined();
     });
 
+    // `values.borderRadius` is shared with the button mapper: Unlayer keeps one
+    // flat values bag per content type, so the same key carries the image's
+    // radius here and the button's there.
+    it("carries a px corner radius, and leaves it unset otherwise", () => {
+      const rounded = convertContent(
+        makeContent("image", {
+          src: { url: "u", width: 120 },
+          borderRadius: "60px",
+        }),
+        [],
+      ).block;
+      const square = convertContent(
+        makeContent("image", { src: { url: "u", width: 120 } }),
+        [],
+      ).block;
+      if (rounded.type !== "image" || square.type !== "image")
+        throw new Error("expected image blocks");
+      expect(rounded.borderRadius).toBe(60);
+      expect(square.borderRadius).toBeUndefined();
+    });
+
+    function imageWith(values: Record<string, unknown>) {
+      const { block } = convertContent(makeContent("image", values), []);
+      if (block.type !== "image") throw new Error("expected an image block");
+      return block;
+    }
+
+    // `border-radius: 50%` is the idiomatic way to write a circular avatar, so
+    // it resolves against the width the template stated.
+    it("resolves a percentage radius against the stated width", () => {
+      expect(
+        imageWith({ src: { url: "u", width: 120 }, borderRadius: "50%" })
+          .borderRadius,
+      ).toBe(60);
+    });
+
+    // The shorter side, so a wide image becomes a pill rather than acquiring a
+    // radius larger than its own height.
+    it("resolves a percentage against the shorter side when both are known", () => {
+      expect(
+        imageWith({
+          src: { url: "u", width: 600, height: 200 },
+          borderRadius: "50%",
+        }).borderRadius,
+      ).toBe(100);
+    });
+
+    // 600 is `convertImage`'s fallback, not something Unlayer said.
+    it("drops a percentage radius when no width was stated", () => {
+      expect(
+        imageWith({ src: { url: "u" }, borderRadius: "50%" }).borderRadius,
+      ).toBeUndefined();
+    });
+
+    it("drops a negative radius", () => {
+      expect(
+        imageWith({ src: { url: "u", width: 120 }, borderRadius: "-5px" })
+          .borderRadius,
+      ).toBeUndefined();
+    });
+
     it("rounds a fractional src.height", () => {
       const { block } = convertContent(
         makeContent("image", { src: { url: "u", width: 480, height: 199.6 } }),

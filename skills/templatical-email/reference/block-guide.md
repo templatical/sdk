@@ -115,6 +115,10 @@ underline: bool, color?: hex }`.
 - `height` (int, _optional_) — px. Omit it: the height is then derived from the
   width and the image keeps its aspect ratio. Setting both stretches the image,
   because email clients don't support `object-fit`.
+- `borderRadius` (int, _optional_) — corner radius in px; omit or `0` for
+  square. For a round avatar or portrait, use a square image and a radius of at
+  least half its width (`999` is the usual shorthand). Outlook on Windows
+  ignores it and shows square corners, so never rely on it for legibility.
 - `linkUrl` (URL, _optional_), `linkOpenInNewTab` (bool, _optional_).
 - `decorative` (bool, _optional_) — mark purely decorative images.
 

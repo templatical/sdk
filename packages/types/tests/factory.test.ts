@@ -84,6 +84,14 @@ describe("block factory functions", () => {
     expect(createVideoBlock({ height: 220 }).height).toBe(220);
   });
 
+  // Absent, not 0: the renderer emits no `border-radius` attribute for either,
+  // but a stored 0 would show up in every exported template's JSON as though
+  // the author had chosen square corners.
+  it("creates an image block with no corner radius, and keeps an explicit one", () => {
+    expect(createImageBlock().borderRadius).toBeUndefined();
+    expect(createImageBlock({ borderRadius: 60 }).borderRadius).toBe(60);
+  });
+
   it("creates a button block with defaults", () => {
     const block = createButtonBlock();
     expect(block.type).toBe("button");

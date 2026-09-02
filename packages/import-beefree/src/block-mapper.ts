@@ -27,6 +27,7 @@ import type {
   ImportReportEntry,
 } from "./types";
 import {
+  parseImageBorderRadius,
   parsePxValue,
   parseColor,
   parseBorderTop,
@@ -277,13 +278,23 @@ function convertImage(descriptor: BeeFreeeModuleDescriptor): Block {
     return createImageBlock({ styles: makeStyles(descriptor) });
   }
 
+  // Kept separate from the `?? 600` fallback below: a percentage radius has to
+  // resolve against a width the template actually stated.
+  const readWidth = parsePxValue(image.width) || undefined;
+  const readHeight = parsePxValue(image.height) || undefined;
+
   return createImageBlock({
     src: image.src || "",
     alt: image.alt || "",
-    width: parsePxValue(image.width) || 600,
+    width: readWidth ?? 600,
     // No default, unlike width: an absent height is what keeps the aspect
     // ratio, and BeeFree's "auto" parses to 0, which reads the same way.
-    height: parsePxValue(image.height) || undefined,
+    height: readHeight,
+    borderRadius: parseImageBorderRadius(
+      image.style?.["border-radius"],
+      readWidth,
+      readHeight,
+    ),
     align: toAlign(image.style?.["text-align"], "center"),
     linkUrl: image.href || undefined,
     styles: makeStyles(descriptor),

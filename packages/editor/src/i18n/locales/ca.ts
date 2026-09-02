@@ -207,6 +207,7 @@ const ca: typeof en = {
     height: "Alçada",
     heightAuto: "Automàtica",
     heightCustom: "Personalitzada",
+    borderRadius: "Radi de la vora",
     linkUrl: "URL de l'enllaç",
     openInNewTab: "Obre en una pestanya nova",
     placeholderUrl: "Imatge de mostra",
