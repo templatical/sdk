@@ -61,7 +61,7 @@ const headingHtml = computed(() => unwrapParagraph(resolvedContent.value));
     <component
       :is="headingTag"
       v-else
-      class="tpl-text-content tpl:m-0 tpl:font-[inherit] tpl:text-[length:inherit] tpl:leading-tight tpl:outline-none [&_a]:tpl:underline [&_p]:tpl:m-0 [&_p]:tpl:mb-2 [&_p:last-child]:tpl:mb-0"
+      class="tpl-text-content tpl:m-0 tpl:font-[inherit] tpl:text-[length:inherit] tpl:leading-tight tpl:outline-none"
       :style="{ color: 'inherit' }"
       v-html="headingHtml"
     />

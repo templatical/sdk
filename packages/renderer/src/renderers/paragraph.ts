@@ -3,6 +3,7 @@ import type { RenderContext } from "../render-context";
 import { convertMergeTagsToValues } from "../escape";
 import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
+import { RICH_TEXT_CSS_CLASS } from "../rich-text";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -35,10 +36,10 @@ export function renderParagraph(
   const padding = toPaddingString(block.styles.padding);
   const bgColor = bgAttr(block.styles.backgroundColor, "container");
   const content = convertMergeTagsToValues(block.content);
-  const visibilityAttr = getCssClassAttr(block);
+  const cssClassAttr = getCssClassAttr(block, [RICH_TEXT_CSS_CLASS]);
 
   return `<mj-text
   line-height="1.5"
-  padding="${padding}"${bgColor}${visibilityAttr}
+  padding="${padding}"${bgColor}${cssClassAttr}
 >${content}</mj-text>`;
 }

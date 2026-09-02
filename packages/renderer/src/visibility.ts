@@ -14,11 +14,20 @@ export function isHiddenOnAll(block: Block): boolean {
 }
 
 /**
- * Get the MJML css-class attribute string for visibility hiding.
+ * Get the MJML css-class attribute string for a block.
  * Returns a string like ` css-class="tpl-hide-desktop"` or empty string.
+ *
+ * `extraClasses` are appended to the visibility classes on the *same*
+ * attribute. MJML keeps only one `css-class` per element, so a caller needing
+ * both must merge here rather than emitting a second attribute.
  */
-export function getCssClassAttr(block: Block): string {
-  const classes = getCssClasses(block);
+export function getCssClassAttr(
+  block: Block,
+  extraClasses: string[] = [],
+): string {
+  const classes = [getCssClasses(block), ...extraClasses]
+    .filter((entry) => entry !== "")
+    .join(" ");
 
   if (classes === "") {
     return "";

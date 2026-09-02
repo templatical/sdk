@@ -683,21 +683,36 @@
     min-height: 1.5em;
 }
 
+/* Rich-text spacing mirrors `RICH_TEXT_SPACING` in `@templatical/types`, which
+   `@templatical/renderer` emits as the exported email's global rule. The two
+   must agree to the pixel or the canvas misreports the delivered spacing —
+   `richTextSpacingParity.test.ts` fails when they drift.
+
+   Literal px, never `@apply tpl:mb-2`: that resolves to
+   `calc(var(--tpl-base-size) / 2)`, and `--tpl-base-size` is consumer-
+   overridable to scale the editor chrome. An email body is a fixed-width
+   document, so its content spacing must not move when the UI is scaled. */
 .tpl-text-content p,
 .tpl-text-editable .tiptap p {
-    @apply tpl:m-0 tpl:mb-2 tpl:last:mb-0;
+    margin: 0 0 8px;
+}
+
+.tpl-text-content p:last-child,
+.tpl-text-editable .tiptap p:last-child {
+    margin-bottom: 0;
 }
 
 .tpl-text-content ul,
 .tpl-text-content ol,
 .tpl-text-editable .tiptap ul,
 .tpl-text-editable .tiptap ol {
-    @apply tpl:my-2 tpl:pl-6;
+    margin: 8px 0;
+    padding-left: 24px;
 }
 
 .tpl-text-content li,
 .tpl-text-editable .tiptap li {
-    @apply tpl:my-1;
+    margin: 4px 0;
 }
 
 .tpl-text-content s,
