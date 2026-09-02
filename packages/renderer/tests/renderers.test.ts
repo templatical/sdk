@@ -248,9 +248,11 @@ describe('renderBlock', () => {
       visibility: { desktop: false, mobile: true },
     });
     const result = renderBlock(block, ctx);
-    // A paragraph always carries `tpl-rich-text` (the spacing scope), and MJML
-    // keeps only one `css-class` per element — so visibility has to share it.
-    expect(result).toContain('css-class="tpl-hide-desktop tpl-rich-text"');
+    // A paragraph always carries `tpl-rich-text` plus its per-gap class, and
+    // MJML keeps only one `css-class` per element — so visibility shares it.
+    expect(result).toContain(
+      'css-class="tpl-hide-desktop tpl-rich-text tpl-rich-text-8"',
+    );
   });
 
   it('renders section with columns', () => {

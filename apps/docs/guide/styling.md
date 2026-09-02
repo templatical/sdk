@@ -52,6 +52,21 @@ block.styles = {
 };
 ```
 
+## Paragraph spacing
+
+A paragraph block holding more than one `<p>` spaces them by `paragraphSpacing`, in px. Omit it for the built-in `8`; `0` butts the paragraphs together.
+
+```ts
+const block = createParagraphBlock({
+  content: '<p>First.</p><p>Second.</p>',
+  paragraphSpacing: 16,
+});
+```
+
+The canvas and the exported email apply this identically, so the gap you see in the editor is the gap that ships. It only affects space *between* paragraphs inside one block — the space around the block is `styles.padding`, and a block with a single paragraph has no internal gap at all.
+
+List spacing is not configurable: MJML resets nothing for `ul`/`ol`/`li`, so those values exist to pin down mail-client defaults rather than to be designed with.
+
 ## Block visibility
 
 The `visibility` property on any block controls whether it renders at each breakpoint.

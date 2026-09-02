@@ -13,6 +13,12 @@ import { RICH_TEXT_SPACING } from "@templatical/types";
  * `@templatical/renderer` reads `RICH_TEXT_SPACING` directly. CSS cannot import
  * a TS constant, so the canvas side is a literal and this file is the lock that
  * keeps the literal honest.
+ *
+ * The paragraph gap is settable per block, so its canvas value arrives at
+ * runtime through `--tpl-doc-paragraph-spacing` (see `getBlockWrapperStyle`).
+ * The literal in the CSS is that variable's *fallback* — the value a surface
+ * gets when nothing set the variable, such as a rich-text preview rendered
+ * outside a block wrapper — so it still has to equal the constant.
  */
 
 const CSS_PATH = join(__dirname, "../src/styles/index.css");
@@ -31,9 +37,9 @@ function ruleBody(selector: string): string {
 }
 
 describe("canvas rich-text spacing matches the exported email", () => {
-  it("spaces paragraphs by the shared gap", () => {
+  it("spaces paragraphs by the block's gap, falling back to the shared one", () => {
     expect(ruleBody(".tpl-text-content p,")).toContain(
-      `margin: 0 0 ${RICH_TEXT_SPACING.paragraphGap}px`,
+      `margin: 0 0 var(--tpl-doc-paragraph-spacing, ${RICH_TEXT_SPACING.paragraphGap}px)`,
     );
   });
 

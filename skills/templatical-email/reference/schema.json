@@ -353,6 +353,10 @@
         },
         "content": {
           "type": "string"
+        },
+        "paragraphSpacing": {
+          "type": "number",
+          "description": "Gap in px between this block's paragraphs — the space below every `<p>` except the last. Absent means `RICH_TEXT_SPACING.paragraphGap`.\n\nOnly affects a block holding more than one paragraph; a single `<p>` has no internal gap, and the space around the block is `styles.padding`.\n\n`0` is a valid choice (paragraphs butted together) and is distinct from the field being absent, so readers must test for `undefined` rather than falsiness."
         }
       },
       "required": [

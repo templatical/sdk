@@ -692,9 +692,12 @@
    `calc(var(--tpl-base-size) / 2)`, and `--tpl-base-size` is consumer-
    overridable to scale the editor chrome. An email body is a fixed-width
    document, so its content spacing must not move when the UI is scaled. */
+/* The gap is a document setting, arriving as `--tpl-doc-paragraph-spacing` from
+   `getDocumentStyle`. The literal is the fallback for a surface that set no
+   variable, so it must stay equal to `RICH_TEXT_SPACING.paragraphGap`. */
 .tpl-text-content p,
 .tpl-text-editable .tiptap p {
-    margin: 0 0 8px;
+    margin: 0 0 var(--tpl-doc-paragraph-spacing, 8px);
 }
 
 .tpl-text-content p:last-child,

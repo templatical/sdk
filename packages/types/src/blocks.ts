@@ -107,6 +107,18 @@ export interface TitleBlock extends BaseBlock {
 export interface ParagraphBlock extends BaseBlock {
   type: "paragraph";
   content: string;
+  /**
+   * Gap in px between this block's paragraphs — the space below every `<p>`
+   * except the last. Absent means `RICH_TEXT_SPACING.paragraphGap`.
+   *
+   * Only affects a block holding more than one paragraph; a single `<p>` has no
+   * internal gap, and the space around the block is `styles.padding`.
+   *
+   * `0` is a valid choice (paragraphs butted together) and is distinct from the
+   * field being absent, so readers must test for `undefined` rather than
+   * falsiness.
+   */
+  paragraphSpacing?: number;
 }
 
 export interface ImageBlock extends BaseBlock {

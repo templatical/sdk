@@ -52,6 +52,21 @@ block.styles = {
 };
 ```
 
+## Absatzabstand
+
+Ein Paragraph-Block mit mehr als einem `<p>` setzt die Abstände dazwischen über `paragraphSpacing` in px. Lassen Sie das Feld weg, um den Standardwert `8` zu verwenden; `0` setzt die Absätze ohne Abstand aneinander.
+
+```ts
+const block = createParagraphBlock({
+  content: '<p>First.</p><p>Second.</p>',
+  paragraphSpacing: 16,
+});
+```
+
+Die Arbeitsfläche und die exportierte E-Mail wenden diesen Wert identisch an – der Abstand, den Sie im Editor sehen, ist der Abstand, der versendet wird. Betroffen ist nur der Raum *zwischen* Absätzen innerhalb eines Blocks; der Raum um den Block herum ist `styles.padding`, und ein Block mit einem einzelnen Absatz hat gar keinen inneren Abstand.
+
+Listenabstände sind nicht konfigurierbar: MJML setzt für `ul`/`ol`/`li` nichts zurück, daher dienen diese Werte dazu, die Standardwerte der E-Mail-Clients festzunageln, und nicht dazu, gestaltet zu werden.
+
 ## Block-Sichtbarkeit
 
 Die Eigenschaft `visibility` auf jedem Block steuert, ob er bei jedem Breakpoint gerendert wird.

@@ -352,6 +352,11 @@ const ptBR: typeof en = {
     empty: "Adicionar uma tabela",
   },
 
+  // Toolbar - Paragraph
+  paragraph: {
+    paragraphSpacing: "Espaçamento de Parágrafo",
+  },
+
   // Toolbar - Spacer
   spacer: {
     height: "Altura",

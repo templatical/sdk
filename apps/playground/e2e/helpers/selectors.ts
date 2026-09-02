@@ -137,6 +137,7 @@ export const SELECTORS = {
   rightTabSettings: "#tpl-tab-settings",
   rightTabIssues: "#tpl-tab-issues",
   rightPanelContent: "#tpl-tabpanel-content",
+  paragraphSpacing: '[data-testid="paragraph-spacing"]',
   rightPanelSettings: "#tpl-tabpanel-settings",
   templateSettingsBackground: '[data-testid="template-settings-background"]',
   rightPanelIssues: "#tpl-tabpanel-issues",

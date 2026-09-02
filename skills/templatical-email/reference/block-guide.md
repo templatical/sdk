@@ -78,6 +78,9 @@ renderer drops it on export.
 
 - `content` (HTML string) — supports `<b>`, `<i>`, `<a href>`, `<br>`, `<ul>`,
   `<ol>`.
+- `paragraphSpacing` (int, _optional_) — px gap between this block's paragraphs;
+  omit for the default `8`. Only affects content with more than one `<p>`; space
+  around the block is `styles.padding`.
 
 ### menu
 

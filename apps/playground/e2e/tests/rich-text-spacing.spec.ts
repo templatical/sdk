@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS, blockByType } from "../helpers/selectors";
 
@@ -75,8 +76,7 @@ test.describe("Rich text spacing on the canvas", () => {
 
       const probe = document.createElement("div");
       probe.className = "tpl-text-content";
-      probe.innerHTML =
-        "<p>one</p><p>two</p><ul><li>a</li><li>b</li></ul>";
+      probe.innerHTML = "<p>one</p><p>two</p><ul><li>a</li><li>b</li></ul>";
       canvas.appendChild(probe);
 
       const [first, second] = [...probe.querySelectorAll("p")];
@@ -109,5 +109,71 @@ test.describe("Rich text spacing on the canvas", () => {
     // margin, so the rendered gap is 8px and not 16px — the same collapsing
     // the exported email relies on.
     expect(computed.gap).toBeCloseTo(8, 0);
+  });
+});
+
+/**
+ * Driving the control itself, which is the gap that let a real bug ship: the
+ * spacing variable was computed by `getBlockWrapperStyle` and then dropped by
+ * `BlockWrapper`, so the field moved the number and the canvas never changed.
+ * A unit test on the helper passed throughout, and the specs above passed too
+ * because they only exercise the default — which renders correctly whether or
+ * not the variable is ever set.
+ *
+ * So this asserts the whole path in the live mount: control → block model →
+ * CSS variable → rendered geometry.
+ */
+test.describe("Paragraph spacing control", () => {
+  /** Gap between the first two paragraphs of the first paragraph block. */
+  async function measureGap(page: Page): Promise<number> {
+    return page
+      .locator(`${blockByType("paragraph")} .tpl-text-content`)
+      .first()
+      .evaluate((el) => {
+        const [first, second] = el.querySelectorAll("p");
+        return (
+          second.getBoundingClientRect().top -
+          first.getBoundingClientRect().bottom
+        );
+      });
+  }
+
+  test("changing the value moves the paragraphs on the canvas", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    await editorPage.selectBlockByType("paragraph");
+
+    const field = page
+      .locator(`${SELECTORS.rightPanelContent} ${SELECTORS.paragraphSpacing}`)
+      .locator("input");
+    await expect(field).toBeVisible();
+    // The block sets no gap of its own, so the field shows the built-in one.
+    await expect(field).toHaveValue("8");
+    expect(await measureGap(page)).toBeCloseTo(8, 0);
+
+    await field.fill("40");
+
+    await expect
+      .poll(() => measureGap(page), {
+        message: "canvas paragraph gap should follow the control",
+      })
+      .toBeCloseTo(40, 0);
+  });
+
+  test("a zero value closes the gap rather than reverting to the default", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    await editorPage.selectBlockByType("paragraph");
+
+    const field = page
+      .locator(`${SELECTORS.rightPanelContent} ${SELECTORS.paragraphSpacing}`)
+      .locator("input");
+    await field.fill("0");
+
+    // `0` is a legitimate choice, so any falsy check on the way through would
+    // silently restore the 8px default here.
+    await expect.poll(() => measureGap(page)).toBeCloseTo(0, 0);
   });
 });

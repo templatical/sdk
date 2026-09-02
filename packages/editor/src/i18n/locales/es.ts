@@ -353,6 +353,11 @@ const es: typeof en = {
     empty: "Añadir una tabla",
   },
 
+  // Toolbar - Paragraph
+  paragraph: {
+    paragraphSpacing: "Espaciado entre párrafos",
+  },
+
   // Toolbar - Spacer
   spacer: {
     height: "Altura",

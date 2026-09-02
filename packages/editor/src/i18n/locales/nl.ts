@@ -31,6 +31,11 @@ const nl: typeof en = {
     daysAgo: "{days} d geleden",
   },
 
+  // Toolbar - Paragraph
+  paragraph: {
+    paragraphSpacing: "Alinea-afstand",
+  },
+
   history: {
     collabWarning:
       "Ongedaan maken kan recente wijzigingen van medewerkers beïnvloeden",

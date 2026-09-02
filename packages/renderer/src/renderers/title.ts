@@ -4,7 +4,11 @@ import type { RenderContext } from "../render-context";
 import { convertMergeTagsToValues, escapeAttr } from "../escape";
 import { toPaddingString } from "../padding";
 import { bgAttr } from "../utils";
-import { RICH_TEXT_CSS_CLASS } from "../rich-text";
+import {
+  RICH_TEXT_CSS_CLASS,
+  richTextGapClass,
+  resolveParagraphGap,
+} from "../rich-text";
 import { isHiddenOnAll, getCssClassAttr } from "../visibility";
 
 /**
@@ -28,8 +32,12 @@ export function renderTitle(block: TitleBlock, context: RenderContext): string {
   const align = block.textAlign;
   const fontFamilyAttr = renderFontFamilyAttr(block.fontFamily, context);
   // `unwrapParagraph` strips only a *single* outer `<p>`, so a title the user
-  // pressed Enter in keeps its paragraphs and needs the same spacing rule.
-  const cssClassAttr = getCssClassAttr(block, [RICH_TEXT_CSS_CLASS]);
+  // pressed Enter in keeps its paragraphs and needs a spacing rule. Titles
+  // carry no gap of their own, so they always take the default.
+  const cssClassAttr = getCssClassAttr(block, [
+    RICH_TEXT_CSS_CLASS,
+    richTextGapClass(resolveParagraphGap(undefined)),
+  ]);
   // Same clamp logic as fontSize so that an out-of-range level still
   // produces a valid heading element.
   const safeLevel = HEADING_LEVEL_FONT_SIZE[block.level] ? block.level : 2;

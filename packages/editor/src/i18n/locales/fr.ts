@@ -31,6 +31,11 @@ const fr: typeof en = {
     daysAgo: "il y a {days} j",
   },
 
+  // Toolbar - Paragraph
+  paragraph: {
+    paragraphSpacing: "Espacement des paragraphes",
+  },
+
   history: {
     collabWarning:
       "Annuler peut affecter les modifications récentes de vos collaborateurs",

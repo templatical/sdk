@@ -143,9 +143,11 @@ describe("rich text spacing in the compiled email", () => {
 
     const mjml = await renderToMjml(contentWith(block));
 
-    // Both classes travel on one `css-class` attribute; emitting a second
+    // Every class travels on one `css-class` attribute; emitting a second
     // attribute would make MJML keep only one of them.
-    expect(mjml).toContain('css-class="tpl-hide-desktop tpl-rich-text"');
+    expect(mjml).toContain(
+      'css-class="tpl-hide-desktop tpl-rich-text tpl-rich-text-8"',
+    );
     expect(mjml).not.toMatch(/css-class="[^"]*"[^>]*css-class=/);
   });
 });

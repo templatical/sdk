@@ -353,6 +353,11 @@ const ca: typeof en = {
     empty: "Afegeix una taula",
   },
 
+  // Toolbar - Paragraph
+  paragraph: {
+    paragraphSpacing: "Espaiat entre paràgrafs",
+  },
+
   // Toolbar - Spacer
   spacer: {
     height: "Alçada",
