@@ -218,6 +218,7 @@ describe("the real workspace and fixtures", () => {
       "@templatical/media-library",
       "@templatical/quality",
       "@templatical/renderer",
+      "@templatical/template-tools",
       "@templatical/types",
     ]);
   });
@@ -241,6 +242,7 @@ describe("the real workspace and fixtures", () => {
       "@templatical/media-library",
       "@templatical/quality",
       "@templatical/renderer",
+      "@templatical/template-tools",
     ]);
   });
 
