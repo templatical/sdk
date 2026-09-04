@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import { seedControlState } from "../helpers/control-state";
 
 /**
  * Proves the distinction `TemplatesOptions.onSaved` exists for: a header-button
@@ -69,15 +70,11 @@ test.describe("save triggers", () => {
     editorPage,
   }) => {
     // Autosave defaults off in the playground (a demo that saves by itself
-    // would hide what the Save button does) — opt in via its storage flag,
-    // set before navigation so `initEditor()` reads it on first mount.
-    await openEditor(
-      page,
-      { chooserPage, editorPage },
-      {
-        "tpl-playground-templates-autosave": "true",
-      },
-    );
+    // would hide what the Save button does) — opt in via the
+    // templates.autoSave control, seeded before navigation so `initEditor()`
+    // reads it on first mount.
+    await seedControlState(page, { "templates.autoSave": true });
+    await openEditor(page, { chooserPage, editorPage });
 
     await editorPage.doubleClickBlock("paragraph");
     const editable = editorPage.getEditableFor("paragraph");

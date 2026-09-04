@@ -24,6 +24,7 @@ describe("templatesCapability", () => {
       create: impl.create,
       save: impl.save,
       onSaved: impl.onSaved,
+      autoSave: false,
     });
   });
 
@@ -39,6 +40,7 @@ describe("templatesCapability", () => {
       create: false,
       save: false,
       onSaved: impl.onSaved,
+      autoSave: false,
     });
   });
 
@@ -52,10 +54,29 @@ describe("templatesCapability", () => {
     expect(templatesCapability.controls.map((c) => c.path)).toEqual([
       "templates.create",
       "templates.save",
+      "templates.autoSave",
     ]);
   });
 
   it("is registered and findable by id", () => {
     expect(capabilityById("templates")).toBe(templatesCapability);
+  });
+});
+
+describe("templates autoSave", () => {
+  it("is off by default, because a demo that saves by itself hides the Save button", () => {
+    const impl = makeImpl();
+    const config = buildCapabilityConfig(templatesCapability, {}, impl);
+    expect(config.templates?.autoSave).toBe(false);
+  });
+
+  it("turns on when the control is set", () => {
+    const impl = makeImpl();
+    const config = buildCapabilityConfig(
+      templatesCapability,
+      { "templates.autoSave": true },
+      impl,
+    );
+    expect(config.templates?.autoSave).toBe(true);
   });
 });

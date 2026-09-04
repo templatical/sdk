@@ -26,12 +26,20 @@ export const templatesCapability: CapabilityDef<TemplatesProvider> = {
       label: "save",
       help: "Off hides the save button and the status indicator, and makes the name read-only.",
     },
+    {
+      kind: "boolean",
+      path: "templates.autoSave",
+      label: "autoSave",
+      help: "The SDK's debounced autosave. Off by default so the Save button is visibly the thing that persists.",
+      default: false,
+    },
   ],
   build: (state, impl) => ({
     templates: {
       ...impl,
       create: methodOr(state["templates.create"], impl.create),
       save: methodOr(state["templates.save"], impl.save),
+      autoSave: state["templates.autoSave"] === true,
     },
   }),
 };

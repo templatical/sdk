@@ -1492,17 +1492,14 @@ async function initEditor(): Promise<void> {
       testEmail: testEmailProvider,
       // Always on too: one localStorage record per template stands in for a real
       // API, so the header's name field, save button and status indicator are
-      // exercised on every run. Autosave is opt-in via a storage flag, because a
-      // demo that saves by itself hides what the Save button does.
-      templates: {
-        ...buildCapabilityConfig(
-          templatesCapability,
-          readControlState(),
-          templatesProvider,
-        ).templates!,
-        autoSave:
-          localStorage.getItem("tpl-playground-templates-autosave") === "true",
-      },
+      // exercised on every run. Autosave is opt-in via the templates.autoSave
+      // control, because a demo that saves by itself hides what the Save
+      // button does.
+      ...buildCapabilityConfig(
+        templatesCapability,
+        readControlState(),
+        templatesProvider,
+      ),
       // Always on too: the templates provider above records a version on every
       // save, so history fills up as you work and the header control is
       // exercised on every run.
