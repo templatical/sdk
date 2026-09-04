@@ -9,8 +9,10 @@
 // over stdio, so the agent never touches the network) and the templatical-email
 // Agent Skill's CLI (which drives it over localhost HTTP). Everything here is
 // side-effect free at import time and writes nothing to stdout — the MCP server
-// reserves stdout for JSON-RPC, so a stray console.log here would corrupt the
-// protocol. Keep all human-facing output in the callers.
+// reserves stdout for JSON-RPC, so a stray write to stdout here would corrupt
+// the protocol. Keep all human-facing output in the callers (cli/output.ts is
+// the CLI's own single writer; tests/cli-output-discipline.test.ts enforces
+// that no other module under src/ touches stdout).
 
 import { createServer, type Server, type ServerResponse } from "node:http";
 import { spawn } from "node:child_process";

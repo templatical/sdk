@@ -1,9 +1,10 @@
 import { defineConfig } from 'tsdown'
 
 export default defineConfig({
-  // Array entry preserves dist/index.js + dist/live/index.js, matching the
-  // package's two subpath exports (same shape as @templatical/core's cloud split).
-  entry: ['src/index.ts', 'src/live/index.ts'],
+  // Three entries: the library, the Node-only live subpath, and the CLI. The
+  // array form preserves dist/index.js + dist/live/index.js + dist/bin.js,
+  // matching package.json's exports and bin fields.
+  entry: ['src/index.ts', 'src/live/index.ts', 'src/bin.ts'],
   format: ['esm'],
   // 'neutral' like every sibling package. The ./live subpath is Node-only in
   // practice (node:http / node:fs), but those are node:-prefixed builtins that
