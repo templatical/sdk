@@ -54,7 +54,13 @@ interface AnchorRule {
 function readAnchorRule(css: string): AnchorRule {
   const rule: AnchorRule = {};
 
-  for (const match of css.matchAll(/(^|[},])\s*a\s*\{([^}]*)\}/g)) {
+  // Strip CSS comments to avoid breaking property matching when comments
+  // precede or separate declarations (e.g. `a { /* note */ color: #0055ff; }`).
+  const cssWithoutComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  for (const match of cssWithoutComments.matchAll(
+    /(^|[},])\s*a\s*\{([^}]*)\}/g,
+  )) {
     const body = match[2];
 
     const color = body.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
@@ -110,6 +116,9 @@ export function extractSettings(
 
   const previewText = findByTag($, "mj-preview").first().text().trim();
 
+  // All mj-style blocks are pooled for anchor-rule extraction. This is safe against
+  // the renderer's own stylesheet because the renderer scopes its selectors to
+  // `p`, `ul`, `ol`, and `li` — there is no bare `a { … }` rule in the renderer output.
   const styleCss = findByTag($, "mj-style")
     .toArray()
     .map((el) => $(el).text())

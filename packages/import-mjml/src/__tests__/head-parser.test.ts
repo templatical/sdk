@@ -165,4 +165,24 @@ describe("extractSettings", () => {
 
     expect(warnings).toEqual([]);
   });
+
+  it("reads linkColor when a CSS comment precedes the color declaration", () => {
+    const { settings } = settingsOf(`
+      <mjml><mj-head><mj-style>
+        a { /* brand blue */ color: #0055ff; text-decoration: underline; }
+      </mj-style></mj-head><mj-body /></mjml>`);
+
+    expect(settings.linkColor).toBe("#0055ff");
+    expect(settings.linkUnderline).toBe(true);
+  });
+
+  it("reads linkUnderline when a CSS comment precedes the text-decoration declaration", () => {
+    const { settings } = settingsOf(`
+      <mjml><mj-head><mj-style>
+        a { color: #0055ff; /* keep underline */ text-decoration: underline; }
+      </mj-style></mj-head><mj-body /></mjml>`);
+
+    expect(settings.linkColor).toBe("#0055ff");
+    expect(settings.linkUnderline).toBe(true);
+  });
 });
