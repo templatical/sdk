@@ -9,8 +9,18 @@ import { resolveOptional } from "../src/cli/resolve-optional";
  * node_modules, at a path with no relationship to this test file — the geometry
  * an npx-cached CLI faces. A cwd-anchored resolver finds it; the CLI's own
  * resolution cannot.
+ *
+ * `manifest` is merged over the package name/version so callers can shape the
+ * package as CJS-resolvable (a `main` field) or ESM-only (an `exports` map
+ * declaring only "import", no `main` at all) — the two package shapes that
+ * matter here, since only one of them worked under the old
+ * createRequire()-based resolution.
  */
-function projectWithPackage(name: string, body: string): string {
+function projectWithPackage(
+  name: string,
+  body: string,
+  manifest: Record<string, unknown>,
+): string {
   const root = mkdtempSync(join(tmpdir(), "tt-consumer-"));
   writeFileSync(
     join(root, "package.json"),
@@ -20,28 +30,46 @@ function projectWithPackage(name: string, body: string): string {
   mkdirSync(pkgDir, { recursive: true });
   writeFileSync(
     join(pkgDir, "package.json"),
-    JSON.stringify({
-      name,
-      version: "1.0.0",
-      type: "module",
-      main: "index.js",
-    }),
+    JSON.stringify({ name, version: "1.0.0", ...manifest }),
   );
   writeFileSync(join(pkgDir, "index.js"), body, "utf8");
   return root;
 }
 
 describe("resolveOptional", () => {
-  it("finds a package installed in the consumer's cwd, not the CLI's location", async () => {
+  it("finds a CJS-shaped package (a bare `main` field) installed in the consumer's cwd", async () => {
     const cwd = projectWithPackage(
-      "fake-optional-dep",
-      "export const marker = 'from-cwd';\n",
+      "fake-optional-dep-cjs",
+      "export const marker = 'from-cwd-cjs';\n",
+      { type: "module", main: "index.js" },
     );
     const mod = await resolveOptional<{ marker: string }>(
-      "fake-optional-dep",
+      "fake-optional-dep-cjs",
       cwd,
     );
-    expect(mod?.marker).toBe("from-cwd");
+    expect(mod?.marker).toBe("from-cwd-cjs");
+  });
+
+  it('finds an ESM-only package — an exports map declaring only "import", no main field', async () => {
+    // This is the shape of every first-party @templatical/* package (this
+    // repo's ESM-only rule): `exports["."]` has an "import" condition and
+    // nothing else, and there is no top-level `main` at all. A
+    // createRequire().resolve() applies CJS resolution conditions
+    // (require/node/default) and throws ERR_PACKAGE_PATH_NOT_EXPORTED against
+    // exactly this shape — which is the defect this case exists to catch.
+    const cwd = projectWithPackage(
+      "fake-optional-dep-esm",
+      "export const marker = 'from-cwd-esm';\n",
+      {
+        type: "module",
+        exports: { ".": { import: "./index.js" } },
+      },
+    );
+    const mod = await resolveOptional<{ marker: string }>(
+      "fake-optional-dep-esm",
+      cwd,
+    );
+    expect(mod?.marker).toBe("from-cwd-esm");
   });
 
   it("returns null when the package is absent anywhere", async () => {
