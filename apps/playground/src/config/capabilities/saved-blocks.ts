@@ -1,13 +1,13 @@
 import type { SavedBlocksProvider } from "@templatical/types";
+import { savedBlocksProviderFor } from "@/providers/saved-blocks";
 import { methodOr } from "../build";
 import type { CapabilityDef } from "../types";
 
 /**
- * The provider arrives as `build`'s second argument rather than being
- * imported: `@/providers/saved-blocks` memoises one per template and depends
- * on runtime state — which template is open — so this module cannot
- * construct it, and staying free of it keeps the capability unit-testable
- * with a stub.
+ * `implFor` reaches `@/providers/saved-blocks` to construct the live backend,
+ * memoised per template; `build` only ever receives it as a parameter, so it
+ * stays a pure function of `(state, impl)` and its own unit tests keep
+ * passing a stub with no localStorage involved.
  */
 export const savedBlocksCapability: CapabilityDef<SavedBlocksProvider> = {
   id: "saved-blocks",
@@ -45,6 +45,7 @@ export const savedBlocksCapability: CapabilityDef<SavedBlocksProvider> = {
       default: 0,
     },
   ],
+  implFor: (template) => savedBlocksProviderFor(template),
   build: (state, impl) => {
     const delayMs = Number(state["savedBlocks.listDelayMs"] ?? 0);
     // Stands in for a slow backend so the browser's first-open skeleton is

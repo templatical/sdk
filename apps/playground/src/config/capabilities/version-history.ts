@@ -1,4 +1,5 @@
 import type { VersionHistoryProvider } from "@templatical/types";
+import { versionHistoryProviderFor } from "@/providers/version-history";
 import { methodOr } from "../build";
 import { TEMPLATES_SAVE_PATH } from "./templates";
 import type { CapabilityDef } from "../types";
@@ -22,6 +23,7 @@ export const versionHistoryCapability: CapabilityDef<VersionHistoryProvider> = {
       help: "Off removes the Restore button. History stays browsable and previewable.",
     },
   ],
+  implFor: (template) => versionHistoryProviderFor(template),
   build: (state, impl) => {
     // The demo's restore() (@/providers/version-history) composes onto the
     // templates store's own save — there is no atomic restore endpoint, so it

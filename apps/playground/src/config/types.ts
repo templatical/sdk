@@ -1,4 +1,5 @@
 import type { TemplaticalEditorConfig } from "@templatical/editor";
+import type { TemplateOption } from "@/templates";
 
 /** Flat map keyed by `Control.path`. Values are whatever that control holds. */
 export type ControlState = Record<string, unknown>;
@@ -58,6 +59,15 @@ export interface CapabilityDef<TImpl = unknown> {
   blurb: string;
   fixture: string;
   controls: Control[];
+  /**
+   * Construct the live demo backend this capability's `build` needs.
+   *
+   * Declared here rather than paired up by the caller so the registry alone is
+   * enough to produce a whole `init()` config: anything iterating `capabilities`
+   * can ask each entry for its own implementation. The factories memoise per
+   * template, so calling this repeatedly is cheap and returns the same instance.
+   */
+  implFor: (template?: TemplateOption) => TImpl;
   /**
    * Produce the editor config this capability contributes.
    *

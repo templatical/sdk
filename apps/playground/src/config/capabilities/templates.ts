@@ -1,4 +1,5 @@
 import type { TemplatesProvider } from "@templatical/types";
+import { templatesProviderFor } from "@/providers/templates";
 import { methodOr } from "../build";
 import type { CapabilityDef } from "../types";
 
@@ -41,6 +42,7 @@ export const templatesCapability: CapabilityDef<TemplatesProvider> = {
       default: false,
     },
   ],
+  implFor: (template) => templatesProviderFor(template),
   build: (state, impl) => ({
     templates: {
       ...impl,

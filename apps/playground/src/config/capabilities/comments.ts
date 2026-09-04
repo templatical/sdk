@@ -1,4 +1,5 @@
 import type { CommentsProvider } from "@templatical/types";
+import { commentsProviderFor } from "@/providers/comments";
 import { methodOr } from "../build";
 import type { CapabilityDef } from "../types";
 
@@ -39,6 +40,7 @@ export const commentsCapability: CapabilityDef<CommentsProvider> = {
       help: "Off removes the resolve toggle, so threads stay as they are.",
     },
   ],
+  implFor: (template) => commentsProviderFor(template),
   build: (state, impl) => ({
     comments: {
       ...impl,

@@ -31,12 +31,8 @@ import type {
   BlockDefaults,
   TemplateDefaults,
   ColorsConfig,
-  CommentsProvider,
   FontsConfig,
-  SavedBlocksProvider,
-  TemplatesProvider,
   TestEmailProvider,
-  VersionHistoryProvider,
 } from "@templatical/types";
 import {
   createDefaultTemplateContent,
@@ -89,16 +85,9 @@ import {
   supportedLocales,
   ossSdkLocales as sdkLocales,
 } from "@/i18n";
-import { buildCapabilityConfig } from "@/config/build";
-import { savedBlocksCapability } from "@/config/capabilities/saved-blocks";
-import { templatesCapability } from "@/config/capabilities/templates";
-import { versionHistoryCapability } from "@/config/capabilities/version-history";
-import { commentsCapability } from "@/config/capabilities/comments";
+import { buildAllCapabilityConfig } from "@/config/capabilities";
 import { readControlState } from "@/config/state";
-import { savedBlocksProviderFor } from "@/providers/saved-blocks";
-import { templatesProviderFor } from "@/providers/templates";
-import { versionHistoryProviderFor } from "@/providers/version-history";
-import { commentsProviderFor, PLAYGROUND_USER } from "@/providers/comments";
+import { PLAYGROUND_USER } from "@/providers/comments";
 import { SCRATCH_TEMPLATE_NAME } from "@/providers/template-name";
 const { locale, t } = usePlaygroundI18n();
 const { sdkLocale } = useSdkLocale();
@@ -378,14 +367,7 @@ const resolvePreviewDemo = async ({
   return { ...content, blocks: walk(content.blocks) };
 };
 
-/** Swapped on each template open; read by `init()` via the config below. */
-let savedBlocksProvider: SavedBlocksProvider = savedBlocksProviderFor();
-let templatesProvider: TemplatesProvider = templatesProviderFor();
-let versionHistoryProvider: VersionHistoryProvider =
-  versionHistoryProviderFor();
-let commentsProvider: CommentsProvider = commentsProviderFor();
-
-/** Which template's store the two providers above are bound to. */
+/** The template name `adoptTemplate` creates a fresh record under. */
 let currentTemplateLabel = SCRATCH_TEMPLATE_NAME;
 
 /**
@@ -808,6 +790,8 @@ let currentColors: ColorsConfig | undefined;
 // template — resolved in `initEditor`, same override idiom as `currentColors`.
 let currentTemplateBlockDefaults: BlockDefaults | undefined;
 let currentTemplateTemplateDefaults: TemplateDefaults | undefined;
+/** The open template, so the capability registry can build its own providers. */
+let currentTemplateOption: TemplateOption | undefined;
 let pendingEditorInit = false;
 
 function chooseTemplate(
@@ -816,18 +800,13 @@ function chooseTemplate(
 ): void {
   selectedContent = content;
   selectedCustomBlocks = template?.customBlocks;
-  // Per-template saved-blocks library, seeded on first open. Memoised by name,
+  // The open template, so each capability's `implFor` builds the right
+  // per-template provider. Every provider factory memoises by template name,
   // so a later locale/config re-init reuses the same instance rather than
   // resetting what the user saved.
-  savedBlocksProvider = savedBlocksProviderFor(template);
-  // Per-template stored document, memoised the same way. `openedTemplateId` is
-  // cleared so the first `init()` after this stores the content just chosen.
+  currentTemplateOption = template;
   currentTemplateLabel = template?.name ?? SCRATCH_TEMPLATE_NAME;
-  templatesProvider = templatesProviderFor(template);
-  // Same store the templates provider appends to, memoised the same way.
-  versionHistoryProvider = versionHistoryProviderFor(template);
-  // Per-template conversation, memoised the same way.
-  commentsProvider = commentsProviderFor(template);
+  // Cleared so the first `init()` after this stores the content just chosen.
   openedTemplateId = null;
   // Per-template opt-in for the SDK's live HTML-block preview; reset on each
   // template open so other templates keep the default static placeholder.
@@ -1258,43 +1237,21 @@ async function initEditor(): Promise<void> {
       uiTheme: uiTheme.value,
       locale: sdkLocale.value,
       onRequestMedia: enableRequestMedia.value ? requestMedia : undefined,
-      // Always on in the playground: saved blocks are backed by the bundled
-      // browser-local provider, so the OSS path is exercised on every run
-      // without needing a backend. Entries persist in this browser profile.
-      ...buildCapabilityConfig(
-        savedBlocksCapability,
-        readControlState(),
-        savedBlocksProvider,
-      ),
+      // Every registered capability is always on in the playground, and every
+      // one is backend-free: saved blocks and templates persist to
+      // localStorage in this browser profile, version history records a
+      // version on every template save, and comments stores one thread array
+      // per template. So the whole OSS surface is exercised on every run with
+      // no real API behind it. Autosave is opt-in via the templates.autoSave
+      // control, because a demo that saves by itself hides what the Save
+      // button does. Each capability builds its own provider via `implFor`.
+      ...buildAllCapabilityConfig(readControlState(), currentTemplateOption),
       // Also always on, and also backend-free — the provider fakes delivery so
       // the send/success/error path is exercisable on every template.
       testEmail: testEmailProvider,
-      // Always on too: one localStorage record per template stands in for a real
-      // API, so the header's name field, save button and status indicator are
-      // exercised on every run. Autosave is opt-in via the templates.autoSave
-      // control, because a demo that saves by itself hides what the Save
-      // button does.
-      ...buildCapabilityConfig(
-        templatesCapability,
-        readControlState(),
-        templatesProvider,
-      ),
-      // Always on too: the templates provider above records a version on every
-      // save, so history fills up as you work and the header control is
-      // exercised on every run.
-      ...buildCapabilityConfig(
-        versionHistoryCapability,
-        readControlState(),
-        versionHistoryProvider,
-      ),
-      // Always on too: one localStorage array per template stands in for a review
-      // backend. `user` is what makes it available at all — without an identity the
-      // feature reports itself unavailable rather than writing anonymous comments.
-      ...buildCapabilityConfig(
-        commentsCapability,
-        readControlState(),
-        commentsProvider,
-      ),
+      // `user` is what makes comments available at all — without an identity
+      // the feature reports itself unavailable rather than writing anonymous
+      // comments.
       user: PLAYGROUND_USER,
       // Only `compileMjml`, deliberately: the playground demonstrates the tier a
       // consumer with no Node backend can reach. MJML still comes from the SDK's
