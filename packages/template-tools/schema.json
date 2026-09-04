@@ -353,6 +353,10 @@
         },
         "content": {
           "type": "string"
+        },
+        "paragraphSpacing": {
+          "type": "number",
+          "description": "Gap in px between this block's paragraphs — the space below every `<p>` except the last. Absent means `RICH_TEXT_SPACING.paragraphGap`.\n\nOnly affects a block holding more than one paragraph; a single `<p>` has no internal gap, and the space around the block is `styles.padding`.\n\n`0` is a valid choice (paragraphs butted together) and is distinct from the field being absent, so readers must test for `undefined` rather than falsiness."
         }
       },
       "required": [
@@ -422,6 +426,10 @@
             }
           ]
         },
+        "height": {
+          "type": "number",
+          "description": "Height in pixels. Absent means the height is derived from the width, so the image keeps its aspect ratio — setting both stretches it, since email clients don't support `object-fit`."
+        },
         "align": {
           "type": "string",
           "enum": [
@@ -429,6 +437,10 @@
             "center",
             "right"
           ]
+        },
+        "borderRadius": {
+          "type": "number",
+          "description": "Corner radius in px. Omitted/0 = square corners. A radius of at least half the rendered size rounds a square image to a circle, which is how avatar and portrait layouts are built."
         },
         "linkUrl": {
           "type": "string"
@@ -533,9 +545,19 @@
               "const": "full"
             }
           ]
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "description": "Placement of the button within its column. No visible effect when `width` is `\"full\"`, since the button then spans the column."
         }
       },
       "required": [
+        "align",
         "backgroundColor",
         "borderRadius",
         "buttonPadding",
@@ -692,6 +714,10 @@
               "const": "full"
             }
           ]
+        },
+        "height": {
+          "type": "number",
+          "description": "Height in pixels for the thumbnail. Absent means the height is derived from the width, so the thumbnail keeps its aspect ratio — setting both stretches it, since email clients don't support `object-fit`."
         },
         "align": {
           "type": "string",
