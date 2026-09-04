@@ -20,7 +20,12 @@ describe("schema command", () => {
       return true;
     });
     expect(runSchema(parseArgs(["schema"]))).toBe(0);
-    expect(JSON.parse(writes.join("")).definitions.TemplateSettings).toBeTruthy();
+    const emitted = JSON.parse(writes.join(""));
+    // Concrete, and proves it is the *right* document rather than merely JSON:
+    // the $id is the generator's fixed schemaId, and TemplateSettings is a
+    // definition the block model cannot lose.
+    expect(emitted.$id).toBe("https://templatical.com/schema/template-content.json");
+    expect(emitted.definitions.TemplateSettings.type).toBe("object");
   });
 
   it("writes to --out and reports the path on stderr, keeping stdout clean", () => {
