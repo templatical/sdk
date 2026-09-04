@@ -153,6 +153,92 @@ describe("buildSection", () => {
     expect(section.children).toHaveLength(2);
   });
 
+  it("keeps every column when a section mixes a direct column with a group", () => {
+    const { blocks } = build(`
+      <mj-section>
+        <mj-column><mj-spacer height="1px" /></mj-column>
+        <mj-group>
+          <mj-column><mj-spacer height="2px" /></mj-column>
+          <mj-column><mj-spacer height="3px" /></mj-column>
+        </mj-group>
+      </mj-section>`);
+    const section = blocks[0] as SectionBlock;
+
+    expect(section.stackOnMobile).toBe(false);
+    expect(section.columns).toBe("3");
+    expect(section.children).toHaveLength(3);
+    expect(section.children[0][0]).toMatchObject({
+      type: "spacer",
+      height: 1,
+    });
+    expect(section.children[1][0]).toMatchObject({
+      type: "spacer",
+      height: 2,
+    });
+    expect(section.children[2][0]).toMatchObject({
+      type: "spacer",
+      height: 3,
+    });
+  });
+
+  it("keeps every column across two groups in the same section", () => {
+    const { blocks } = build(`
+      <mj-section>
+        <mj-group>
+          <mj-column><mj-spacer height="1px" /></mj-column>
+          <mj-column><mj-spacer height="2px" /></mj-column>
+        </mj-group>
+        <mj-group>
+          <mj-column><mj-spacer height="3px" /></mj-column>
+        </mj-group>
+      </mj-section>`);
+    const section = blocks[0] as SectionBlock;
+
+    expect(section.stackOnMobile).toBe(false);
+    expect(section.columns).toBe("3");
+    expect(section.children).toHaveLength(3);
+    expect(section.children[0][0]).toMatchObject({
+      type: "spacer",
+      height: 1,
+    });
+    expect(section.children[1][0]).toMatchObject({
+      type: "spacer",
+      height: 2,
+    });
+    expect(section.children[2][0]).toMatchObject({
+      type: "spacer",
+      height: 3,
+    });
+  });
+
+  it("preserves document order when a group sits between two direct columns", () => {
+    const { blocks } = build(`
+      <mj-section>
+        <mj-column><mj-spacer height="1px" /></mj-column>
+        <mj-group>
+          <mj-column><mj-spacer height="2px" /></mj-column>
+        </mj-group>
+        <mj-column><mj-spacer height="3px" /></mj-column>
+      </mj-section>`);
+    const section = blocks[0] as SectionBlock;
+
+    expect(section.stackOnMobile).toBe(false);
+    expect(section.columns).toBe("3");
+    expect(section.children).toHaveLength(3);
+    expect(section.children[0][0]).toMatchObject({
+      type: "spacer",
+      height: 1,
+    });
+    expect(section.children[1][0]).toMatchObject({
+      type: "spacer",
+      height: 2,
+    });
+    expect(section.children[2][0]).toMatchObject({
+      type: "spacer",
+      height: 3,
+    });
+  });
+
   it("omits stackOnMobile when there is no mj-group", () => {
     const { blocks } = build("<mj-section><mj-column /></mj-section>");
     expect("stackOnMobile" in blocks[0]).toBe(false);
@@ -196,6 +282,22 @@ describe("buildSection", () => {
     expect(entry.note).toBe(
       "MJML forbids <mj-section> inside <mj-column>; the nested section's markup is preserved as an html block.",
     );
+  });
+
+  it("refuses a nested wrapper, falling it back to html and naming the wrapper tag", () => {
+    const { blocks, entries } = build(
+      "<mj-section><mj-column><mj-wrapper><mj-section><mj-column /></mj-section></mj-wrapper></mj-column></mj-section>",
+    );
+    const section = blocks[0] as SectionBlock;
+
+    expect(section.children[0][0].type).toBe("html");
+    const entry = entries.find((e) => e.status === "html-fallback")!;
+    expect(entry).toEqual({
+      sourceTag: "mj-wrapper",
+      templaticalBlockType: "html",
+      status: "html-fallback",
+      note: "MJML forbids <mj-wrapper> inside <mj-column>; the nested wrapper's markup is preserved as an html block.",
+    });
   });
 
   it("passes the column width down as the container width for images", () => {

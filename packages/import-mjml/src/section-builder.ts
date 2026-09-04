@@ -122,27 +122,37 @@ function columnPixels(layout: ColumnLayout, containerWidth: number): number[] {
   }
 }
 
-/** The `mj-column` elements of a section, reaching through an `mj-group`. */
+/**
+ * The `mj-column` elements of a section, in document order: a direct
+ * `mj-column` child contributes itself, and an `mj-group` child contributes
+ * every `mj-column` it holds at the group's own position — so a section
+ * mixing direct columns with one or more groups keeps every column instead
+ * of losing all but the first group's. `grouped` is true whenever any
+ * `mj-group` child is present, which is what drives `stackOnMobile: false`.
+ */
 function readColumns(
   $el: Cheerio<Element>,
   ctx: ConvertContext,
 ): { columns: Cheerio<Element>[]; grouped: boolean } {
   const kids = childElements($el, ctx.$);
-  const group = kids.find(($k) => tagOf($k[0]) === "mj-group");
+  const columns: Cheerio<Element>[] = [];
+  let grouped = false;
 
-  if (group) {
-    return {
-      columns: childElements(group, ctx.$).filter(
-        ($k) => tagOf($k[0]) === "mj-column",
-      ),
-      grouped: true,
-    };
+  for (const $kid of kids) {
+    const tag = tagOf($kid[0]);
+    if (tag === "mj-column") {
+      columns.push($kid);
+    } else if (tag === "mj-group") {
+      grouped = true;
+      columns.push(
+        ...childElements($kid, ctx.$).filter(
+          ($k) => tagOf($k[0]) === "mj-column",
+        ),
+      );
+    }
   }
 
-  return {
-    columns: kids.filter(($k) => tagOf($k[0]) === "mj-column"),
-    grouped: false,
-  };
+  return { columns, grouped };
 }
 
 function convertColumnChildren(
@@ -161,11 +171,12 @@ function convertColumnChildren(
     if (tag === "mj-section" || tag === "mj-wrapper") {
       const attrs = resolveAttributes($child, ctx.cascade);
       blocks.push(convertHtmlFallback($child, ctx, attrs));
+      const noun = tag === "mj-section" ? "section" : "wrapper";
       entries.push({
         sourceTag: tag,
         templaticalBlockType: "html",
         status: "html-fallback",
-        note: "MJML forbids <mj-section> inside <mj-column>; the nested section's markup is preserved as an html block.",
+        note: `MJML forbids <${tag}> inside <mj-column>; the nested ${noun}'s markup is preserved as an html block.`,
       });
       continue;
     }
