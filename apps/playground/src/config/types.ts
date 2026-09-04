@@ -4,12 +4,33 @@ import type { TemplateOption } from "@/templates";
 /** Flat map keyed by `Control.path`. Values are whatever that control holds. */
 export type ControlState = Record<string, unknown>;
 
+/**
+ * A declaration that another control's value forces this one.
+ *
+ * The forcing itself is applied by the owning capability's `build()`; this
+ * describes it so a UI can disable the control and name the reason instead of
+ * rendering a toggle that visibly does nothing. The two must agree — a test
+ * pins every declaration against what `build()` actually produces.
+ */
+export interface ForcedBy {
+  /** The control path whose value does the forcing. */
+  path: string;
+  /** The trigger value. Forcing applies when the state at `path` equals this. */
+  when: unknown;
+  /** The value this control is forced to while the trigger holds. */
+  to: unknown;
+  /** One sentence naming the responsible control and why it matters. */
+  reason: string;
+}
+
 interface ControlBase {
   /** Dotted key into the config this control governs, e.g. `savedBlocks.update`. */
   path: string;
   label: string;
   /** One sentence shown under the control. Not a paragraph. */
   help: string;
+  /** Set when another control's value overrides this one. See {@link ForcedBy}. */
+  forcedBy?: ForcedBy;
 }
 
 /**
@@ -102,4 +123,17 @@ export function controlDefault(control: Control): unknown {
     case "list":
       return control.default ?? [];
   }
+}
+
+/**
+ * Whether `control` is currently overridden by the control it declares in
+ * `forcedBy`. A control with no declaration is never forced.
+ */
+export function isControlForced(
+  control: Control,
+  state: ControlState,
+): boolean {
+  const forcedBy = control.forcedBy;
+  if (!forcedBy) return false;
+  return state[forcedBy.path] === forcedBy.when;
 }

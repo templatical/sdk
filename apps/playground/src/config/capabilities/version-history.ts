@@ -21,6 +21,13 @@ export const versionHistoryCapability: CapabilityDef<VersionHistoryProvider> = {
       path: "versionHistory.restore",
       label: "restore",
       help: "Off removes the Restore button. History stays browsable and previewable.",
+      forcedBy: {
+        path: TEMPLATES_SAVE_PATH,
+        when: false,
+        to: false,
+        reason:
+          "templates.save is off, so restore has nothing to write the old content to.",
+      },
     },
   ],
   implFor: (template) => versionHistoryProviderFor(template),

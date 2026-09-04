@@ -88,4 +88,17 @@ describe("versionHistoryCapability and the templates store", () => {
     );
     expect(config.versionHistory?.restore).toBe(false);
   });
+
+  it("declares templates.save as what forces restore off, so a drawer can say why", () => {
+    const restoreControl = versionHistoryCapability.controls.find(
+      (c) => c.path === "versionHistory.restore",
+    )!;
+    expect(restoreControl.forcedBy).toEqual({
+      path: TEMPLATES_SAVE_PATH,
+      when: false,
+      to: false,
+      reason:
+        "templates.save is off, so restore has nothing to write the old content to.",
+    });
+  });
 });
