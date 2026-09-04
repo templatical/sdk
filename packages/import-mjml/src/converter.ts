@@ -6,17 +6,6 @@ import type { ImportReport, ImportReportEntry, ImportResult } from "./types";
 const EMPTY_DOCUMENT_WARNING =
   "No convertible content was found in the MJML. Check that the document has an <mj-body> with at least one <mj-section>.";
 
-function defaultSettings(): TemplateContent["settings"] {
-  return {
-    width: 600,
-    backgroundColor: "#ffffff",
-    textColor: "#1a1a1a",
-    linkUnderline: true,
-    fontFamily: "Arial",
-    locale: "en",
-  };
-}
-
 /**
  * Convert an MJML document into a Templatical template.
  *
@@ -58,7 +47,6 @@ export function convertMjmlTemplate(mjml: string): ImportResult {
   const content: TemplateContent = {
     ...createDefaultTemplateContent(),
     blocks,
-    settings: defaultSettings(),
   };
 
   const summary = {
