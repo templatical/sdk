@@ -1,6 +1,7 @@
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 import type { Page } from "@playwright/test";
+import { CONTROL_STATE_KEY, seedControlState } from "../helpers/control-state";
 
 /**
  * Saved blocks in the OSS editor, backed by the playground's always-on
@@ -308,6 +309,28 @@ test.describe("saved blocks", () => {
         return stored.map((e: { id: string }) => e.id);
       })
       .toEqual(["seed-footer"]);
+  });
+
+  test("two seedControlState calls merge instead of clobbering", async ({
+    page,
+    chooserPage,
+    editorPage,
+  }) => {
+    await seedControlState(page, { "savedBlocks.update": false });
+    await seedControlState(page, { "savedBlocks.listDelayMs": 0 });
+    await chooserPage.goto();
+    await chooserPage.selectFirstTemplate();
+    await editorPage.waitForReady();
+    await editorPage.dismissOverlays();
+
+    const stored = await page.evaluate(
+      (key) => JSON.parse(localStorage.getItem(key) ?? "{}"),
+      CONTROL_STATE_KEY,
+    );
+    expect(stored).toEqual({
+      "savedBlocks.update": false,
+      "savedBlocks.listDelayMs": 0,
+    });
   });
 });
 
@@ -852,17 +875,14 @@ test.describe("saved blocks — categories", () => {
 test.describe("saved blocks — read-only library", () => {
   async function bootReadOnly(page: Page): Promise<void> {
     await seedSavedBlocks(page, SEEDED);
+    await seedControlState(page, {
+      "savedBlocks.create": false,
+      "savedBlocks.update": false,
+      "savedBlocks.delete": false,
+    });
     await page.addInitScript(() => {
       localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
       localStorage.setItem("tpl-playground-features-dismissed", "true");
-      localStorage.setItem(
-        "tpl-playground-config",
-        JSON.stringify({
-          "savedBlocks.create": false,
-          "savedBlocks.update": false,
-          "savedBlocks.delete": false,
-        }),
-      );
     });
   }
 
@@ -946,14 +966,11 @@ test.describe("saved blocks — slow list()", () => {
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript((delay: number) => {
+    await seedControlState(page, { "savedBlocks.listDelayMs": DELAY_MS });
+    await page.addInitScript(() => {
       localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
       localStorage.setItem("tpl-playground-features-dismissed", "true");
-      localStorage.setItem(
-        "tpl-playground-config",
-        JSON.stringify({ "savedBlocks.listDelayMs": delay }),
-      );
-    }, DELAY_MS);
+    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
@@ -987,14 +1004,11 @@ test.describe("saved blocks — slow list()", () => {
     editorPage,
   }) => {
     await seedSavedBlocks(page, SEEDED);
-    await page.addInitScript((delay: number) => {
+    await seedControlState(page, { "savedBlocks.listDelayMs": DELAY_MS });
+    await page.addInitScript(() => {
       localStorage.setItem("tpl-playground-onboarding-dismissed", "true");
       localStorage.setItem("tpl-playground-features-dismissed", "true");
-      localStorage.setItem(
-        "tpl-playground-config",
-        JSON.stringify({ "savedBlocks.listDelayMs": delay }),
-      );
-    }, DELAY_MS);
+    });
     await chooserPage.goto();
     await chooserPage.selectFirstTemplate();
     await editorPage.waitForReady();
