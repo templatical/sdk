@@ -147,6 +147,38 @@ describe("mj-button", () => {
     expect((result!.block as ButtonBlock).openInNewTab).toBe(true);
   });
 
+  it("keeps the factory borderRadius and buttonPadding when absent from the source", () => {
+    const { result } = convert(
+      '<mj-button href="https://x.test">Go</mj-button>',
+      "mj-button",
+    );
+    const block = result!.block as ButtonBlock;
+
+    expect(block.borderRadius).toBe(6);
+    expect(block.buttonPadding).toEqual({
+      top: 12,
+      right: 24,
+      bottom: 12,
+      left: 24,
+    });
+  });
+
+  it("honours an explicit zero borderRadius and inner-padding rather than falling back", () => {
+    const { result } = convert(
+      '<mj-button href="https://x.test" border-radius="0" inner-padding="0">Go</mj-button>',
+      "mj-button",
+    );
+    const block = result!.block as ButtonBlock;
+
+    expect(block.borderRadius).toBe(0);
+    expect(block.buttonPadding).toEqual({
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    });
+  });
+
   it("returns null for a button with no label", () => {
     const { result } = convert(
       '<mj-button href="https://x.test">   </mj-button>',
@@ -178,6 +210,16 @@ describe("mj-divider", () => {
     );
     expect((result!.block as DividerBlock).lineStyle).toBe("solid");
   });
+
+  it("keeps the factory thickness when border-width is absent", () => {
+    const { result } = convert("<mj-divider />", "mj-divider");
+    expect((result!.block as DividerBlock).thickness).toBe(1);
+  });
+
+  it("honours an explicit zero border-width rather than falling back", () => {
+    const { result } = convert('<mj-divider border-width="0" />', "mj-divider");
+    expect((result!.block as DividerBlock).thickness).toBe(0);
+  });
 });
 
 describe("mj-spacer", () => {
@@ -188,6 +230,16 @@ describe("mj-spacer", () => {
     expect(block.type).toBe("spacer");
     expect(block.height).toBe(32);
     expect(result!.entry.status).toBe("converted");
+  });
+
+  it("keeps the factory height when the attribute is absent", () => {
+    const { result } = convert("<mj-spacer />", "mj-spacer");
+    expect((result!.block as SpacerBlock).height).toBe(24);
+  });
+
+  it("honours an explicit zero height rather than falling back", () => {
+    const { result } = convert('<mj-spacer height="0" />', "mj-spacer");
+    expect((result!.block as SpacerBlock).height).toBe(0);
   });
 });
 
@@ -238,9 +290,12 @@ describe("the fallback ladder", () => {
     );
 
     expect(result!.block!.type).toBe("html");
-    expect((result!.block as { content: string }).content).toContain(
-      "<mj-text>hi</mj-text>",
-    );
+    const content = (result!.block as { content: string }).content;
+    // Outer serialization: the mj-hero element's own attribute must survive
+    // alongside its children. `$el.html()` (inner-only) would drop it, which
+    // is exactly the bug this assertion catches.
+    expect(content).toContain('background-color="#000000"');
+    expect(content).toContain("<mj-text>hi</mj-text>");
     expect(result!.entry).toEqual({
       sourceTag: "mj-hero",
       templaticalBlockType: "html",
@@ -275,10 +330,19 @@ describe("the fallback ladder", () => {
     });
   });
 
-  it("falls back for an unknown mj-* tag", () => {
-    const { result } = convert("<mj-widget />", "mj-widget");
+  it("falls back for an unknown mj-* tag, keeping its own attributes", () => {
+    const { result } = convert(
+      '<mj-widget data-widget-id="42" />',
+      "mj-widget",
+    );
 
     expect(result!.block!.type).toBe("html");
+    // Outer serialization: mj-widget has no children, so this only passes
+    // when the element's own attribute is captured — `$el.html()`
+    // (inner-only) would return an empty string here.
+    expect((result!.block as { content: string }).content).toContain(
+      'data-widget-id="42"',
+    );
     expect(result!.entry.status).toBe("html-fallback");
     expect(result!.entry.note).toBe(
       "<mj-widget> is not a known MJML element (a custom component?); the original markup is preserved.",

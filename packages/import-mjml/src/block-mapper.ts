@@ -96,8 +96,12 @@ function convertButton($el: Cheerio<Element>, attrs: Attrs): Block | null {
     ...(backgroundColor ? { backgroundColor } : {}),
     ...(textColor ? { textColor } : {}),
     ...(fontSize > 0 ? { fontSize } : {}),
-    borderRadius: parsePxValue(attrs["border-radius"]),
-    buttonPadding: parsePaddingShorthand(attrs["inner-padding"]),
+    ...(attrs["border-radius"] !== undefined
+      ? { borderRadius: parsePxValue(attrs["border-radius"]) }
+      : {}),
+    ...(attrs["inner-padding"] !== undefined
+      ? { buttonPadding: parsePaddingShorthand(attrs["inner-padding"]) }
+      : {}),
     align: parseAlignment(attrs.align, "center"),
     ...(isNewTab(attrs) ? { openInNewTab: true } : {}),
     ...baseFields(attrs),
@@ -111,7 +115,7 @@ function convertDivider(attrs: Attrs): Block {
   return createDividerBlock({
     lineStyle: parseBorderStyle(attrs["border-style"]),
     ...(color ? { color } : {}),
-    ...(thickness > 0 ? { thickness } : {}),
+    ...(attrs["border-width"] !== undefined ? { thickness } : {}),
     ...baseFields(attrs),
   });
 }
@@ -120,7 +124,7 @@ function convertSpacer(attrs: Attrs): Block {
   const height = parsePxValue(attrs.height);
 
   return createSpacerBlock({
-    ...(height > 0 ? { height } : {}),
+    ...(attrs.height !== undefined ? { height } : {}),
     ...baseFields(attrs),
   });
 }
