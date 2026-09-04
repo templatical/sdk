@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import { seedControlState } from "../helpers/control-state";
 
 /**
  * The BYO comments provider in the OSS editor, backed by the playground's
@@ -246,18 +247,26 @@ test.describe("comments provider", () => {
   });
 
   test.describe("read-only review", () => {
-    // `tpl-playground-comments-readonly` makes the demo provider withhold all four
-    // mutations by passing `false` — the read-only tier of the contract.
+    /**
+     * `create` / `update` / `delete` / `setResolved`, all `false`: threads stay
+     * readable and jump-to-block keeps working, with no way to add, edit,
+     * delete or resolve — the read-only tier of the contract.
+     */
     test("renders the threads with no way to change them", async ({
       page,
       chooserPage,
       editorPage,
     }) => {
+      await seedControlState(page, {
+        "comments.create": false,
+        "comments.update": false,
+        "comments.delete": false,
+        "comments.setResolved": false,
+      });
       await openEditor({
         page,
         chooserPage,
         editorPage,
-        flags: { "tpl-playground-comments-readonly": "true" },
         seed: [seededComment("c-1", { body: "read me" })],
       });
 
@@ -284,11 +293,16 @@ test.describe("comments provider", () => {
       chooserPage,
       editorPage,
     }) => {
+      await seedControlState(page, {
+        "comments.create": false,
+        "comments.update": false,
+        "comments.delete": false,
+        "comments.setResolved": false,
+      });
       await openEditor({
         page,
         chooserPage,
         editorPage,
-        flags: { "tpl-playground-comments-readonly": "true" },
         seed: [
           seededComment("c-1", { body: "open one" }),
           seededComment("c-2", {

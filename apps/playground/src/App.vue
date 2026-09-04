@@ -31,9 +31,7 @@ import type {
   BlockDefaults,
   TemplateDefaults,
   ColorsConfig,
-  Comment,
   CommentsProvider,
-  EditorUser,
   FontsConfig,
   SavedBlocksProvider,
   TemplatesProvider,
@@ -95,11 +93,13 @@ import { buildCapabilityConfig } from "@/config/build";
 import { savedBlocksCapability } from "@/config/capabilities/saved-blocks";
 import { templatesCapability } from "@/config/capabilities/templates";
 import { versionHistoryCapability } from "@/config/capabilities/version-history";
+import { commentsCapability } from "@/config/capabilities/comments";
 import { readControlState } from "@/config/state";
 import { savedBlocksProviderFor } from "@/providers/saved-blocks";
 import { templatesProviderFor } from "@/providers/templates";
 import { versionHistoryProviderFor } from "@/providers/version-history";
-import { SCRATCH_TEMPLATE_NAME, slugFor } from "@/providers/template-name";
+import { commentsProviderFor, PLAYGROUND_USER } from "@/providers/comments";
+import { SCRATCH_TEMPLATE_NAME } from "@/providers/template-name";
 const { locale, t } = usePlaygroundI18n();
 const { sdkLocale } = useSdkLocale();
 const { theme: uiTheme, isDark } = usePlaygroundTheme();
@@ -222,153 +222,6 @@ function cancelDataSourcePicker(): void {
 
 const editorContainer = ref<HTMLElement | null>(null);
 const editor = ref<TemplaticalEditor | null>(null);
-
-/**
- * Demo comments store: one localStorage array per template, memoised per template
- * name — the rule every provider here follows, because `init()` re-runs on a locale
- * or config change and a fresh provider each time would be churn around one stored
- * conversation.
- *
- * `tpl-playground-comments-readonly` withholds all four mutations by passing
- * `false`, which leaves threads readable and jump-to-block working with no way to
- * add, edit, delete or resolve — the read-only tier of the contract.
- *
- * There is deliberately **no `subscribe`**: the playground is one browser tab with
- * no backend, so a realtime transport would have nothing to carry. Its absence is
- * the point — comments work identically without it, which is exactly what the
- * contract promises.
- */
-const commentsProviders = new Map<string, CommentsProvider>();
-
-/** Who the playground says you are. Drives "You" and the edit/delete affordances. */
-const PLAYGROUND_USER: EditorUser = {
-  id: "playground-user",
-  name: "Playground User",
-};
-
-function commentsProviderFor(template?: TemplateOption): CommentsProvider {
-  const name = template?.name ?? SCRATCH_TEMPLATE_NAME;
-  const cached = commentsProviders.get(name);
-  if (cached) return cached;
-
-  const key = `templatical:comments:${slugFor(name)}`;
-
-  function read(): Comment[] {
-    const raw = localStorage.getItem(key);
-    if (raw === null) return [];
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      return Array.isArray(parsed) ? (parsed as Comment[]) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function write(threads: Comment[]): void {
-    localStorage.setItem(key, JSON.stringify(threads));
-  }
-
-  /** Roots and replies, flat, so an id can be located wherever it lives. */
-  function locate(
-    threads: Comment[],
-    commentId: string,
-  ): { thread: Comment; reply?: Comment } | null {
-    for (const thread of threads) {
-      if (thread.id === commentId) return { thread };
-      for (const reply of thread.replies ?? []) {
-        if (reply.id === commentId) return { thread, reply };
-      }
-    }
-    return null;
-  }
-
-  function nextId(): string {
-    return `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  }
-
-  const base: CommentsProvider = {
-    list: async () => read(),
-
-    create: async (_templateId, input) => {
-      const threads = read();
-      const comment: Comment = {
-        id: nextId(),
-        body: input.body,
-        author: { ...PLAYGROUND_USER },
-        createdAt: new Date().toISOString(),
-        blockId: input.blockId ?? null,
-        parentId: input.parentId ?? null,
-        resolvedAt: null,
-      };
-
-      if (input.parentId) {
-        const found = locate(threads, input.parentId);
-        if (!found)
-          throw new Error(`No thread stored under "${input.parentId}"`);
-        found.thread.replies = [...(found.thread.replies ?? []), comment];
-      } else {
-        threads.push(comment);
-      }
-      write(threads);
-      return comment;
-    },
-
-    update: async (_templateId, commentId, patch) => {
-      const threads = read();
-      const found = locate(threads, commentId);
-      if (!found) throw new Error(`No comment stored under "${commentId}"`);
-      const target = found.reply ?? found.thread;
-      if (patch.body !== undefined) target.body = patch.body;
-      // Stamped only on a real edit, which is what makes the "(edited)" marker
-      // mean something — a store that sets it on creation marks everything edited.
-      target.updatedAt = new Date().toISOString();
-      write(threads);
-      return target;
-    },
-
-    delete: async (_templateId, commentId) => {
-      const threads = read();
-      const found = locate(threads, commentId);
-      if (!found) return;
-      if (found.reply) {
-        found.thread.replies = (found.thread.replies ?? []).filter(
-          (r) => r.id !== commentId,
-        );
-        write(threads);
-        return;
-      }
-      write(threads.filter((t) => t.id !== commentId));
-    },
-
-    setResolved: async (_templateId, commentId, resolved) => {
-      const threads = read();
-      const found = locate(threads, commentId);
-      if (!found) throw new Error(`No comment stored under "${commentId}"`);
-      const target = found.reply ?? found.thread;
-      // The target state is applied, not toggled — the contract's whole reason for
-      // taking a boolean rather than flipping whatever it finds.
-      target.resolvedAt = resolved ? new Date().toISOString() : null;
-      target.resolvedBy = resolved ? { ...PLAYGROUND_USER } : null;
-      write(threads);
-      return target;
-    },
-  };
-
-  const readOnly =
-    localStorage.getItem("tpl-playground-comments-readonly") === "true";
-  const provider: CommentsProvider = readOnly
-    ? {
-        ...base,
-        create: false as const,
-        update: false as const,
-        delete: false as const,
-        setResolved: false as const,
-      }
-    : base;
-
-  commentsProviders.set(name, provider);
-  return provider;
-}
 
 /**
  * Fake test-email sender, on for every template.
@@ -1437,7 +1290,11 @@ async function initEditor(): Promise<void> {
       // Always on too: one localStorage array per template stands in for a review
       // backend. `user` is what makes it available at all — without an identity the
       // feature reports itself unavailable rather than writing anonymous comments.
-      comments: commentsProvider,
+      ...buildCapabilityConfig(
+        commentsCapability,
+        readControlState(),
+        commentsProvider,
+      ),
       user: PLAYGROUND_USER,
       // Only `compileMjml`, deliberately: the playground demonstrates the tier a
       // consumer with no Node backend can reach. MJML still comes from the SDK's
