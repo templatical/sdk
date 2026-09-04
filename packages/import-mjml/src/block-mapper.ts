@@ -24,6 +24,11 @@ import {
   type ConvertContext,
   type Converted,
 } from "./block-base";
+import {
+  convertNativeTable,
+  convertNavbar,
+  convertSocial,
+} from "./composite-mapper";
 import { convertTextElement } from "./text-inference";
 
 /** Tags handled elsewhere but recognised, so they never hit the unknown-tag arm. */
@@ -162,6 +167,18 @@ export function convertElement(
 
   if (tag === "mj-text") {
     return convertTextElement($el, attrs, ctx);
+  }
+
+  if (tag === "mj-social") {
+    return convertSocial($el, attrs, ctx);
+  }
+
+  if (tag === "mj-navbar") {
+    return convertNavbar($el, attrs, ctx);
+  }
+
+  if (tag === "mj-table") {
+    return convertNativeTable($el, attrs, ctx);
   }
 
   if (tag === "mj-image") {
