@@ -33,10 +33,28 @@ export function convertMjmlTemplate(mjml: string): ImportResult {
     );
   }
 
-  // XML mode routes through htmlparser2 rather than parse5: custom `mj-*` tags
-  // survive as generic elements and no implicit <html><head><body> is injected
-  // around them. Switching to HTML mode relocates every MJML tag.
-  const $ = load(mjml, { xml: true });
+  // The `xml` option routes parsing through htmlparser2 rather than parse5, so
+  // custom `mj-*` tags survive as generic elements and no implicit
+  // <html><head><body> is injected around them. Two htmlparser2 options are
+  // then overridden away from what `xml: true` alone would give:
+  //
+  // - `xmlMode: false` puts htmlparser2 in HTML mode, which knows the void
+  //   element list (`br`, `img`, `hr`, …) and closes them immediately. In XML
+  //   mode a bare `<br>` stays open and everything after it — including the
+  //   rest of the paragraph — becomes ITS CHILD rather than its sibling. That
+  //   shape is exactly what TipTap emits for a hard break and what browser DOM
+  //   serialization produces, so it hits `<mj-text>` content routinely; a
+  //   later HTML-mode reparse (e.g. loading the block into the editor) then
+  //   invents a *second* `<br>` from the dangling `</br>`, per the HTML5 rule
+  //   that a stray `<br>` end tag opens a new `<br>` rather than closing one.
+  // - `recognizeSelfClosing: true` restores what HTML mode otherwise gives up:
+  //   without it, a self-closing custom tag like `<mj-image src="…" />` never
+  //   actually closes, and swallows whatever follows as its child instead of
+  //   its sibling — verified against a self-closing `<mj-all />` immediately
+  //   followed by a sibling `<mj-text />` inside `<mj-attributes>`, which
+  //   nested the second tag inside the first and silently dropped a per-tag
+  //   attribute default.
+  const $ = load(mjml, { xml: { xmlMode: false, recognizeSelfClosing: true } });
   const cascade = buildAttributeCascade($);
 
   const entries: ImportReportEntry[] = [];

@@ -18,7 +18,7 @@ import type { ConvertContext } from "../block-base";
 function convert(inner: string, attrsMarkup = "") {
   const $: CheerioAPI = load(
     `<mjml><mj-body><mj-text ${attrsMarkup}>${inner}</mj-text></mj-body></mjml>`,
-    { xml: true },
+    { xml: { xmlMode: false, recognizeSelfClosing: true } },
   );
   const ctx: ConvertContext = {
     $,
@@ -137,6 +137,21 @@ describe("paragraph fallback", () => {
   it("wraps bare text in a paragraph element", () => {
     const { result } = convert("Just words");
     expect((result.block as ParagraphBlock).content).toBe("<p>Just words</p>");
+  });
+
+  it("keeps a bare <br> a void element, so the text after it stays a sibling instead of being swallowed as its child", () => {
+    // This is exactly the markup TipTap emits for a hard break and that
+    // browser DOM serialization produces: a <br> with no trailing slash. A
+    // parser that treats <br> as an ordinary (non-void) element leaves it
+    // open, so "Line two" becomes ITS CHILD rather than the next sibling —
+    // serialized back out, that reads as `<br>Line two</br>`, and reparsing
+    // that anywhere downstream (e.g. loading the block into the editor)
+    // invents a second <br> from the dangling `</br>` end tag.
+    const { result } = convert("<p>Line one<br>Line two</p>");
+    const block = result.block as ParagraphBlock;
+
+    expect(block.content).toBe("<p>Line one<br>Line two</p>");
+    expect(block.content).not.toContain("</br>");
   });
 
   it("never sets colour on a paragraph — colour is document-level", () => {

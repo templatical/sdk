@@ -19,9 +19,12 @@ export interface AttributeCascade {
 /**
  * A node's tag name, lowercased.
  *
- * XML mode preserves source case (htmlparser2 only lowercases when xmlMode is
- * off), so every tag comparison in this package must go through here — a bare
- * `$("mj-body")` misses a document that shouts its tags.
+ * The parser configuration this package uses (`xmlMode: false`, set in
+ * `converter.ts`) already lowercases every tag at parse time, so this call is
+ * a no-op on that parser's output. It remains the one place every tag
+ * comparison in this package goes through, so a comparison stays correct
+ * regardless of the active parser configuration — a bare `$("mj-body")` would
+ * otherwise miss a document that shouts its tags.
  */
 export function tagOf(node: AnyNode | undefined): string {
   if (!node) return "";

@@ -13,7 +13,7 @@ import { convertElement } from "../block-mapper";
 import type { ConvertContext } from "../block-base";
 
 function ctxFor(mjml: string): { ctx: ConvertContext; $: CheerioAPI } {
-  const $ = load(mjml, { xml: true });
+  const $ = load(mjml, { xml: { xmlMode: false, recognizeSelfClosing: true } });
   return {
     $,
     ctx: {

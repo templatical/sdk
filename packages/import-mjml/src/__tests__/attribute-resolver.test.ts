@@ -14,7 +14,7 @@ import {
 } from "../attribute-resolver";
 
 function parse(mjml: string): CheerioAPI {
-  return load(mjml, { xml: true });
+  return load(mjml, { xml: { xmlMode: false, recognizeSelfClosing: true } });
 }
 
 function firstOf($: CheerioAPI, selector: string): Cheerio<Element> {
@@ -22,9 +22,9 @@ function firstOf($: CheerioAPI, selector: string): Cheerio<Element> {
 }
 
 describe("tagOf", () => {
-  it("lowercases a tag name, because XML mode preserves source case", () => {
-    const $ = parse("<mjml><MJ-BODY></MJ-BODY></mjml>");
-    expect(tagOf($("*").toArray()[1])).toBe("mj-body");
+  it("lowercases a tag name on the node itself, independent of what the parser already normalized", () => {
+    const shoutingNode = { tagName: "MJ-BODY" } as unknown as Element;
+    expect(tagOf(shoutingNode)).toBe("mj-body");
   });
 
   it("returns an empty string for a missing node", () => {

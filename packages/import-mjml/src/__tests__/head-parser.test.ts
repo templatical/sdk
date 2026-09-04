@@ -5,7 +5,7 @@ import { buildAttributeCascade } from "../attribute-resolver";
 import { extractSettings } from "../head-parser";
 
 function parse(mjml: string): CheerioAPI {
-  return load(mjml, { xml: true });
+  return load(mjml, { xml: { xmlMode: false, recognizeSelfClosing: true } });
 }
 
 function settingsOf(mjml: string) {

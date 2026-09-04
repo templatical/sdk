@@ -24,13 +24,17 @@ import { readParagraphGap, type Attrs } from "./attribute-resolver";
 import { baseFields, type ConvertContext, type Converted } from "./block-base";
 
 /**
- * Re-parse an `mj-text`'s inner markup in **HTML** mode.
+ * Re-parse an `mj-text`'s inner markup into its own document.
  *
- * The surrounding document is parsed in XML mode so `mj-*` tags survive, but
- * that is the wrong parser for the block's own content: `<br>` and `<img>` are
- * void elements and XML mode leaves them unclosed. Only the shapes that need
- * structure (title / table / menu) go through here; a paragraph's markup is
- * passed through verbatim and never reparsed.
+ * The surrounding document already parses void elements correctly (`br`,
+ * `img`, … stay void under `converter.ts`'s `xmlMode: false`), so this reparse
+ * isn't compensating for a different parser here. It gives each
+ * shape-detection helper (title / table / menu) an isolated, freshly
+ * queryable document scoped to just this block's own markup — so
+ * `$inner("tr")` can only match rows that belong to this table, and
+ * `$inner("body")` has a real root to enumerate top-level nodes from. A
+ * paragraph's markup needs none of that structure-probing, so it is passed
+ * through verbatim and never reparsed.
  */
 function parseInner(html: string) {
   return load(`<body>${html}</body>`);
