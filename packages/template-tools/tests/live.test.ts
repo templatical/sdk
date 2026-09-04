@@ -152,7 +152,11 @@ describe("divergence state machine", () => {
 
   it("starts undivergent with no content", async () => {
     const h = await bridge(project());
-    expect(h.getEditorState()).toEqual({ divergent: false, content: null });
+    expect(h.getEditorState()).toEqual({
+      divergent: false,
+      content: null,
+      annotations: [],
+    });
   });
 
   it("a baseline post records content without flagging divergence", async () => {
@@ -161,6 +165,7 @@ describe("divergence state machine", () => {
     expect(h.getEditorState()).toEqual({
       divergent: false,
       content: TEMPLATE,
+      annotations: [],
     });
   });
 
@@ -232,7 +237,11 @@ describe("in-process reload (the path the MCP server uses)", () => {
 
     const result = h.reload();
     expect(result).toEqual({ ok: true, clients: 0 });
-    expect(h.getEditorState()).toEqual({ divergent: false, content: null });
+    expect(h.getEditorState()).toEqual({
+      divergent: false,
+      content: null,
+      annotations: [],
+    });
     expect((readWorkingFile(h.workingPath) as typeof TEMPLATE).blocks[0].content).toBe(
       "Agent update",
     );

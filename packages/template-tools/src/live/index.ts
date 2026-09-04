@@ -91,9 +91,15 @@ export function listWorkingFiles(cwd: string): string[] {
     .sort();
 }
 
-async function readJsonBody(
-  req: NodeJS.ReadableStream,
-): Promise<{ content?: unknown; baseline?: boolean } | undefined> {
+async function readJsonBody(req: NodeJS.ReadableStream): Promise<
+  | {
+      content?: unknown;
+      baseline?: boolean;
+      blockId?: string;
+      text?: string;
+    }
+  | undefined
+> {
   const chunks: Buffer[] = [];
   for await (const chunk of req) chunks.push(chunk as Buffer);
   const raw = Buffer.concat(chunks).toString("utf8");
@@ -154,6 +160,19 @@ export function processAlive(pid: number): boolean {
   }
 }
 
+/**
+ * A note the user left in the browser, against a block or the template as a
+ * whole. Delivered on GET /content - the call the agent already makes before
+ * every change - so notes need no polling and no separate endpoint to drain.
+ */
+export interface Annotation {
+  id: string;
+  /** null for a note about the template rather than one block. */
+  blockId: string | null;
+  text: string;
+  createdAt: number;
+}
+
 // --------------------------------------------------------------------------
 // Bridge server
 // --------------------------------------------------------------------------
@@ -165,7 +184,11 @@ export interface BridgeHandle {
   /** The absolute path of the working file this bridge is serving. */
   workingPath: string;
   /** The page's latest state, for callers that drive the bridge in-process. */
-  getEditorState: () => { divergent: boolean; content: unknown };
+  getEditorState: () => {
+    divergent: boolean;
+    content: unknown;
+    annotations: Annotation[];
+  };
   /** Re-read the working file and push it to every connected page. */
   reload: () => { ok: boolean; clients: number };
   close: () => Promise<void>;
@@ -204,10 +227,12 @@ export function startBridge({
     baseline: unknown;
     editorCurrent: unknown;
     divergent: boolean;
+    annotations: Annotation[];
   } = {
     baseline: null,
     editorCurrent: null,
     divergent: false,
+    annotations: [],
   };
   const clients = new Set<ServerResponse>();
 
@@ -216,8 +241,16 @@ export function startBridge({
     for (const res of clients) res.write(payload);
   }
 
-  function getEditorState(): { divergent: boolean; content: unknown } {
-    return { divergent: state.divergent, content: state.editorCurrent };
+  function getEditorState(): {
+    divergent: boolean;
+    content: unknown;
+    annotations: Annotation[];
+  } {
+    return {
+      divergent: state.divergent,
+      content: state.editorCurrent,
+      annotations: state.annotations,
+    };
   }
 
   function reload(): { ok: boolean; clients: number } {
@@ -228,6 +261,9 @@ export function startBridge({
     state.baseline = null;
     state.editorCurrent = null;
     state.divergent = false;
+    // The caller has read these by the time it writes and reloads, so reload is
+    // the resolve step: no separate protocol, and a note is never acted on twice.
+    state.annotations = [];
     if (content !== null) broadcastTemplate(content);
     return { ok: true, clients: clients.size };
   }
@@ -298,6 +334,26 @@ export function startBridge({
       if (method === "GET" && pathname === "/content") {
         res.writeHead(200, { "content-type": "application/json" });
         res.end(JSON.stringify(getEditorState()));
+        return;
+      }
+
+      if (method === "POST" && pathname === "/annotations") {
+        const body = await readJsonBody(req);
+        const text = typeof body?.text === "string" ? body.text.trim() : "";
+        if (!text) {
+          res.writeHead(400, { "content-type": "text/plain" });
+          res.end("An annotation needs non-empty `text`.");
+          return;
+        }
+        const annotation: Annotation = {
+          id: `a${state.annotations.length + 1}-${Date.now().toString(36)}`,
+          blockId: typeof body?.blockId === "string" ? body.blockId : null,
+          text,
+          createdAt: Date.now(),
+        };
+        state.annotations.push(annotation);
+        res.writeHead(201, { "content-type": "application/json" });
+        res.end(JSON.stringify(annotation));
         return;
       }
 
