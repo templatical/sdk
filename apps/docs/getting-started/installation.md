@@ -326,6 +326,36 @@ import type {
 } from "@templatical/types";
 ```
 
+## Release tarballs
+
+Every GitHub release carries the same tarballs that go to npm, one per package. Install from those when a build can't reach the registry, or when your dependencies have to come from URLs you vet yourself.
+
+```json
+{
+  "dependencies": {
+    "@templatical/renderer": "https://github.com/templatical/sdk/releases/download/v<version>/templatical-renderer-<version>.tgz"
+  }
+}
+```
+
+`<version>` is the package version and the tag is the same with a `v` in front — every published version has one on the [releases page](https://github.com/templatical/sdk/releases). The file is the one npm would have served you, so nothing about the package behaves differently.
+
+Three things to know:
+
+**Pin the Templatical packages you depend on indirectly, too.** A tarball refers to its siblings by version number, so your package manager still goes looking for that version on the registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` and the three importers all depend on `@templatical/types`; `@templatical/media-library` depends on `@templatical/core` as well. Point each one you pull in at a tarball:
+
+```yaml
+# pnpm-workspace.yaml
+overrides:
+  '@templatical/types': https://github.com/templatical/sdk/releases/download/v<version>/templatical-types-<version>.tgz
+```
+
+npm and Yarn do the same thing with `overrides` and `resolutions` in `package.json`. `@templatical/editor` needs none of this — it bundles everything it uses.
+
+**Third-party dependencies still come from a registry.** `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree` and `@templatical/import-unlayer` install with nothing else at runtime. The rest pull packages that aren't ours: `@templatical/core` needs `@vue/reactivity`, `@templatical/quality` needs `htmlparser2`, `@templatical/import-html` needs `cheerio` and `domhandler`, and `@templatical/media-library` needs `@lucide/vue`, `@vueuse/core` and `vue-advanced-cropper`. Installing those without a registry needs a mirror for them too.
+
+**The source archives on that page are not a substitute.** "Source code (zip)" and "Source code (tar.gz)" are snapshots of the repository, as is a `github:templatical/sdk` dependency. Neither contains a built `dist/`, and both refer to sibling packages as `workspace:*`, which resolves to nothing outside this repo.
+
 ## CDN
 
 If you prefer not to use a package manager, load the editor directly via script tags:

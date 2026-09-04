@@ -326,6 +326,36 @@ import type {
 } from "@templatical/types";
 ```
 
+## Release-Tarballs
+
+Jedes GitHub-Release enthält dieselben Tarballs, die auch an npm gehen — einen pro Paket. Installieren Sie daraus, wenn ein Build die Registry nicht erreichen kann oder wenn Ihre Abhängigkeiten aus URLs stammen müssen, die Sie selbst prüfen.
+
+```json
+{
+  "dependencies": {
+    "@templatical/renderer": "https://github.com/templatical/sdk/releases/download/v<version>/templatical-renderer-<version>.tgz"
+  }
+}
+```
+
+`<version>` ist die Paketversion, das Tag dieselbe mit einem vorangestellten `v`. Jede veröffentlichte Version hat eines auf der [Releases-Seite](https://github.com/templatical/sdk/releases). Es ist dieselbe Datei, die npm ausgeliefert hätte — das Paket verhält sich also identisch.
+
+Drei Dinge sollten Sie wissen:
+
+**Pinnen Sie auch die Templatical-Pakete, die Sie indirekt nutzen.** Ein Tarball verweist auf seine Geschwisterpakete nur über eine Versionsnummer, Ihr Paketmanager sucht diese Version also weiterhin in der Registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` und die drei Importer hängen alle von `@templatical/types` ab; `@templatical/media-library` zusätzlich von `@templatical/core`. Verweisen Sie jedes davon, das Sie einbinden, ebenfalls auf einen Tarball:
+
+```yaml
+# pnpm-workspace.yaml
+overrides:
+  '@templatical/types': https://github.com/templatical/sdk/releases/download/v<version>/templatical-types-<version>.tgz
+```
+
+npm und Yarn erledigen dasselbe über `overrides` bzw. `resolutions` in der `package.json`. `@templatical/editor` benötigt nichts davon — es bündelt alles, was es verwendet.
+
+**Fremdabhängigkeiten stammen weiterhin aus einer Registry.** `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree` und `@templatical/import-unlayer` kommen zur Laufzeit ohne weitere Pakete aus. Die übrigen ziehen Pakete nach, die nicht von uns stammen: `@templatical/core` benötigt `@vue/reactivity`, `@templatical/quality` benötigt `htmlparser2`, `@templatical/import-html` benötigt `cheerio` und `domhandler`, und `@templatical/media-library` benötigt `@lucide/vue`, `@vueuse/core` und `vue-advanced-cropper`. Um diese ohne Registry zu installieren, brauchen Sie auch dafür einen Mirror.
+
+**Die Quellcode-Archive auf derselben Seite sind kein Ersatz.** „Source code (zip)“ und „Source code (tar.gz)“ sind Momentaufnahmen des Repositories, ebenso wie eine `github:templatical/sdk`-Abhängigkeit. Keines von beiden enthält ein gebautes `dist/`, und beide verweisen auf Geschwisterpakete als `workspace:*`, was außerhalb dieses Repositories ins Leere läuft.
+
 ## CDN
 
 Wenn Sie keinen Paketmanager verwenden möchten, können Sie den Editor direkt über Script-Tags laden:
