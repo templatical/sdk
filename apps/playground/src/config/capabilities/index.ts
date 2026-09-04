@@ -4,6 +4,7 @@ import { buildCapabilityConfig } from "../build";
 import {
   controlDefault,
   type AnyCapabilityDef,
+  type CapabilityGroup,
   type ControlState,
 } from "../types";
 import { savedBlocksCapability } from "./saved-blocks";
@@ -77,4 +78,42 @@ export function buildAllCapabilityConfig(
     };
   }
   return merged;
+}
+
+/**
+ * Rail order. Backend and data comes first because it is what motivated the
+ * overhaul; Cloud comes last because it is the upgrade path, not the entry point.
+ */
+export const CAPABILITY_GROUP_ORDER: readonly CapabilityGroup[] = [
+  "backend",
+  "authoring",
+  "appearance",
+  "cloud",
+];
+
+const GROUP_TITLES: Record<CapabilityGroup, string> = {
+  backend: "Backend & data",
+  authoring: "Authoring",
+  appearance: "Appearance",
+  cloud: "Cloud",
+};
+
+/**
+ * The registry arranged for the rail: groups in {@link CAPABILITY_GROUP_ORDER},
+ * each carrying its capabilities in registration order.
+ *
+ * A group with nothing registered is omitted rather than rendered empty — an
+ * empty heading reads as a broken rail, and the groups fill in as later plans
+ * port their capabilities.
+ */
+export function capabilityGroups(): {
+  group: CapabilityGroup;
+  title: string;
+  capabilities: AnyCapabilityDef[];
+}[] {
+  return CAPABILITY_GROUP_ORDER.map((group) => ({
+    group,
+    title: GROUP_TITLES[group],
+    capabilities: capabilities.filter((c) => c.group === group),
+  })).filter((entry) => entry.capabilities.length > 0);
 }
