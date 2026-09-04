@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { McpOperation, TemplateContent } from "@templatical/types";
+import type { TemplateOperation, TemplateContent } from "@templatical/types";
 import { applyOperation, getColumnCount } from "../src/operations";
 import { validateTemplate } from "../src/validate";
 
@@ -38,7 +38,7 @@ function doc(blocks: unknown[]): TemplateContent {
   } as unknown as TemplateContent;
 }
 
-function op(operation: McpOperation, data: Record<string, unknown>) {
+function op(operation: TemplateOperation, data: Record<string, unknown>) {
   return { operation, data, timestamp: 0 };
 }
 
@@ -329,7 +329,7 @@ describe("set_content", () => {
 
 describe("unknown operation", () => {
   it("is rejected by name rather than silently ignored", () => {
-    const r = applyOperation(doc([]), op("frobnicate" as McpOperation, {}));
+    const r = applyOperation(doc([]), op("frobnicate" as TemplateOperation, {}));
     expect(r.ok).toBe(false);
     expect(r.error).toContain('Unknown operation "frobnicate"');
   });
