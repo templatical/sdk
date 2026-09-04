@@ -116,9 +116,11 @@ export function extractSettings(
 
   const previewText = findByTag($, "mj-preview").first().text().trim();
 
-  // All mj-style blocks are pooled for anchor-rule extraction. This is safe against
-  // the renderer's own stylesheet because the renderer scopes its selectors to
-  // `p`, `ul`, `ol`, and `li` — there is no bare `a { … }` rule in the renderer output.
+  // Every <mj-style> block in the document is pooled into one stylesheet before
+  // the anchor rule is read, so a bare `a { … }` rule in any of them contributes.
+  // Against the renderer's own output that is unambiguous: richTextStylesheet()
+  // scopes every rule it emits to `p`, `ul`, `ol` and `li`, so the one bare
+  // `a { … }` rule present is the document-level rule this function reads back.
   const styleCss = findByTag($, "mj-style")
     .toArray()
     .map((el) => $(el).text())

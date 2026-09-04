@@ -179,10 +179,10 @@ describe("extractSettings", () => {
   it("reads linkUnderline when a CSS comment precedes the text-decoration declaration", () => {
     const { settings } = settingsOf(`
       <mjml><mj-head><mj-style>
-        a { color: #0055ff; /* keep underline */ text-decoration: underline; }
+        a { color: #0055ff; /* keep the plain look */ text-decoration: none; }
       </mj-style></mj-head><mj-body /></mjml>`);
 
     expect(settings.linkColor).toBe("#0055ff");
-    expect(settings.linkUnderline).toBe(true);
+    expect(settings.linkUnderline).toBe(false);
   });
 });
