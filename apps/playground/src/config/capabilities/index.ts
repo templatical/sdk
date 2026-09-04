@@ -1,7 +1,11 @@
 import type { TemplaticalEditorConfig } from "@templatical/editor";
 import type { TemplateOption } from "@/templates";
 import { buildCapabilityConfig } from "../build";
-import type { AnyCapabilityDef, ControlState } from "../types";
+import {
+  controlDefault,
+  type AnyCapabilityDef,
+  type ControlState,
+} from "../types";
 import { savedBlocksCapability } from "./saved-blocks";
 import { templatesCapability } from "./templates";
 import { versionHistoryCapability } from "./version-history";
@@ -16,6 +20,33 @@ export const capabilities: AnyCapabilityDef[] = [
 
 export function capabilityById(id: string): AnyCapabilityDef | undefined {
   return capabilities.find((c) => c.id === id);
+}
+
+/**
+ * Fill every registered capability's control with its own default wherever
+ * `state` doesn't already set it, without mutating `state`.
+ *
+ * `buildCapabilityConfig` (`../build`) does the equivalent per capability,
+ * right before that capability's `build()` reads state. This is the
+ * whole-registry version, for a caller that needs to reason about state the
+ * same way `build()` eventually will, before any one capability's `build()`
+ * runs — `isControlForced` (`../types`) is that caller: it compares one
+ * control's state against another's `forcedBy.when`, and that comparison
+ * only agrees with `build()` once both sides see the same resolved
+ * defaults. Lives here for the reason `buildAllCapabilityConfig` below
+ * does — this module already imports every capability, and a value import
+ * of the registry back into `../types` would close a cycle.
+ */
+export function resolveControlState(state: ControlState): ControlState {
+  const resolved: ControlState = { ...state };
+  for (const def of capabilities) {
+    for (const control of def.controls) {
+      if (!(control.path in resolved)) {
+        resolved[control.path] = controlDefault(control);
+      }
+    }
+  }
+  return resolved;
 }
 
 /**

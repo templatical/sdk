@@ -128,6 +128,17 @@ export function controlDefault(control: Control): unknown {
 /**
  * Whether `control` is currently overridden by the control it declares in
  * `forcedBy`. A control with no declaration is never forced.
+ *
+ * Compares `state[forcedBy.path]` against `forcedBy.when` exactly as given —
+ * it does not fill in a missing key with that trigger control's own default.
+ * Pass state whose defaults are already resolved (`resolveControlState` in
+ * `./capabilities`), so a trigger key that is merely absent and one
+ * explicitly set to that control's own default compare the same way here as
+ * they do in `build()`, which always receives resolved state. This function
+ * stays free of the registry on purpose: resolving state is the caller's
+ * job. `./capabilities` already imports this module for `ControlState` and
+ * `controlDefault`; importing the registry back from here would form a
+ * cycle between the two files.
  */
 export function isControlForced(
   control: Control,

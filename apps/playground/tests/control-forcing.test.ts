@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { isControlForced } from "../src/config/types";
+import {
+  controlDefault,
+  isControlForced,
+  type BooleanControl,
+  type ControlState,
+} from "../src/config/types";
 import {
   buildAllCapabilityConfig,
   capabilities,
+  resolveControlState,
 } from "../src/config/capabilities";
 import { versionHistoryCapability } from "../src/config/capabilities/version-history";
 import { TEMPLATES_SAVE_PATH } from "../src/config/capabilities/templates";
@@ -83,6 +89,70 @@ describe("every forcedBy declaration matches what build() actually does", () => 
       expect(readConfigPath(free, path)).not.toEqual(to);
     },
   );
+});
+
+describe("resolveControlState", () => {
+  it("fills every registered control path with its own default when state is empty", () => {
+    const expected: ControlState = {};
+    for (const def of capabilities) {
+      for (const control of def.controls) {
+        expected[control.path] = controlDefault(control);
+      }
+    }
+    expect(resolveControlState({})).toEqual(expected);
+
+    // Spot-check concrete values from the real registry, so the assertion
+    // above isn't only a comparison against the same helper it calls.
+    expect(expected[TEMPLATES_SAVE_PATH]).toBe(true);
+    expect(expected["savedBlocks.listDelayMs"]).toBe(0);
+    expect(expected["templates.autoSave"]).toBe(false);
+  });
+
+  it("keeps an explicitly-set value over the control's default", () => {
+    const resolved = resolveControlState({ [TEMPLATES_SAVE_PATH]: false });
+    expect(resolved[TEMPLATES_SAVE_PATH]).toBe(false);
+  });
+
+  it("does not mutate its argument", () => {
+    const state: ControlState = { [TEMPLATES_SAVE_PATH]: false };
+    const resolved = resolveControlState(state);
+    expect(state).toEqual({ [TEMPLATES_SAVE_PATH]: false });
+    expect(resolved).not.toBe(state);
+  });
+});
+
+/**
+ * The coincidence named in the finding: a `forcedBy.when` that equals the
+ * trigger control's own implicit default. `templates.save` is a `method`
+ * control with no explicit `default`, so `controlDefault` resolves its
+ * default to `true` — the same value this fixture's `forcedBy.when` holds.
+ * A local fixture control stands in for the forced side, since the point
+ * under test is `isControlForced`'s state precondition, not any shipped
+ * capability's own behavior — the trigger side is real (`TEMPLATES_SAVE_PATH`)
+ * so `resolveControlState` resolves it exactly as it would in production.
+ */
+describe("isControlForced against a trigger's own default", () => {
+  const fixtureControl: BooleanControl = {
+    kind: "boolean",
+    path: "fixture.coincidence",
+    label: "fixture",
+    help: "",
+    forcedBy: {
+      path: TEMPLATES_SAVE_PATH,
+      when: true,
+      to: false,
+      reason: "fixture: when equals the trigger's own implicit default.",
+    },
+  };
+
+  it("reports not forced against raw, unresolved sparse state", () => {
+    expect(isControlForced(fixtureControl, {})).toBe(false);
+  });
+
+  it("reports forced once defaults are resolved onto that same sparse state", () => {
+    const resolved = resolveControlState({});
+    expect(isControlForced(fixtureControl, resolved)).toBe(true);
+  });
 });
 
 /** Read a dotted control path out of a built config object. */
