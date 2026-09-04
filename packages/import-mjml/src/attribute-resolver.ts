@@ -157,9 +157,18 @@ const RICH_TEXT_CSS_CLASS = "tpl-rich-text";
 
 /**
  * Matches the per-block paragraph-gap class the same two renderers append,
- * e.g. `tpl-rich-text-8` (`richTextGapClass` in `rich-text.ts`).
+ * e.g. `tpl-rich-text-8` (`richTextGapClass` in `rich-text.ts`). The gap
+ * accepts a decimal (`tpl-rich-text-8.5`) because `ParagraphBlock.paragraphSpacing`
+ * is a plain `number` that a headless caller can set to a fractional value,
+ * even though the editor UI clamps it to an integer. Negative gaps are out of
+ * scope — the renderer never emits one, so there is nothing here that needs to
+ * recognise it.
+ *
+ * Shared by `readForeignCssClasses` (which classes to exclude) and
+ * `readParagraphGap` (which class to decode), so the two can never disagree
+ * about what a gap class looks like.
  */
-const RICH_TEXT_GAP_CLASS = /^tpl-rich-text-\d+$/;
+const RICH_TEXT_GAP_CLASS = /^tpl-rich-text-(\d+(?:\.\d+)?)$/;
 
 function cssClasses(attrs: Attrs): string[] {
   return (attrs["css-class"] ?? "").trim().split(/\s+/).filter(Boolean);
@@ -182,6 +191,22 @@ export function readVisibility(attrs: Attrs): BlockVisibility | undefined {
   if (!hideDesktop && !hideMobile) return undefined;
 
   return { desktop: !hideDesktop, mobile: !hideMobile };
+}
+
+/**
+ * The paragraph gap encoded on a rendered title or paragraph's `css-class` —
+ * reverse of `richTextGapClass` (`packages/renderer/src/rich-text.ts`), e.g.
+ * `8` from `tpl-rich-text-8`.
+ *
+ * Returns `null` when no gap class is present. Callers must not confuse that
+ * with a gap of `0`, which is a legitimate value in its own right.
+ */
+export function readParagraphGap(attrs: Attrs): number | null {
+  for (const name of cssClasses(attrs)) {
+    const match = RICH_TEXT_GAP_CLASS.exec(name);
+    if (match) return parseFloat(match[1]);
+  }
+  return null;
 }
 
 /**

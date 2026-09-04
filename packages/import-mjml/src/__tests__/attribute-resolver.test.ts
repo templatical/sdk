@@ -7,6 +7,7 @@ import {
   childElements,
   findByTag,
   readForeignCssClasses,
+  readParagraphGap,
   readVisibility,
   resolveAttributes,
   tagOf,
@@ -279,5 +280,35 @@ describe("readForeignCssClasses", () => {
     expect(readForeignCssClasses({ "css-class": "tpl-rich-text-24" })).toEqual(
       [],
     );
+  });
+
+  it("excludes a fractional rich-text gap marker too", () => {
+    expect(readForeignCssClasses({ "css-class": "tpl-rich-text-8.5" })).toEqual(
+      [],
+    );
+  });
+});
+
+describe("readParagraphGap", () => {
+  it("returns null when no gap class is present", () => {
+    expect(readParagraphGap({})).toBe(null);
+  });
+
+  it("returns null when css-class carries only foreign classes", () => {
+    expect(readParagraphGap({ "css-class": "promo" })).toBe(null);
+  });
+
+  it("reads an integer gap", () => {
+    expect(readParagraphGap({ "css-class": "tpl-rich-text-8" })).toBe(8);
+  });
+
+  it("reads a fractional gap", () => {
+    expect(readParagraphGap({ "css-class": "tpl-rich-text-8.5" })).toBe(8.5);
+  });
+
+  it("ignores foreign classes sharing the attribute", () => {
+    expect(
+      readParagraphGap({ "css-class": "promo tpl-rich-text-24 wide" }),
+    ).toBe(24);
   });
 });

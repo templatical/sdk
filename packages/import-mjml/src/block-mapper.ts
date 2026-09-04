@@ -24,6 +24,7 @@ import {
   type ConvertContext,
   type Converted,
 } from "./block-base";
+import { convertTextElement } from "./text-inference";
 
 /** Tags handled elsewhere but recognised, so they never hit the unknown-tag arm. */
 const STRUCTURAL_TAGS = new Set([
@@ -157,6 +158,10 @@ export function convertElement(
         note: `Cannot resolve <mj-include path="${path}"> — the importer reads a single string and has no filesystem access. Inline the include before importing.`,
       },
     };
+  }
+
+  if (tag === "mj-text") {
+    return convertTextElement($el, attrs, ctx);
   }
 
   if (tag === "mj-image") {
