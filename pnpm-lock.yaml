@@ -523,13 +523,13 @@ importers:
       ajv:
         specifier: ^8.20.0
         version: 8.20.0
-      mjml:
-        specifier: ^5.4.0
-        version: 5.4.0(relateurl@0.2.7)(svgo@4.1.0)(terser@5.51.2)(typescript@6.0.3)
     devDependencies:
       '@types/node':
         specifier: ^25.9.5
         version: 25.9.5
+      mjml:
+        specifier: ^5.4.0
+        version: 5.4.0(relateurl@0.2.7)(svgo@4.1.0)(terser@5.51.2)(typescript@6.0.3)
       ts-json-schema-generator:
         specifier: ^2.9.0
         version: 2.9.0

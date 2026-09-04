@@ -14,6 +14,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.5",
+    "mjml": "^5.4.0",
     "ts-json-schema-generator": "^2.9.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
