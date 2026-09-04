@@ -1888,7 +1888,7 @@ export function createBlackFridayTemplate(): TemplateContent {
 // ─── Saved-block fixtures ────────────────────────────────────
 //
 // Seeded into the playground's saved-blocks store the first time a template is
-// opened (see `savedBlocksProviderFor` in App.vue), so the feature is never
+// opened (in `apps/playground/src/providers/saved-blocks.ts`), so the feature is never
 // demoed against an empty library.
 //
 // Each set deliberately mixes two kinds of entry:

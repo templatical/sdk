@@ -5,14 +5,15 @@ import { seedControlState } from "../helpers/control-state";
 
 /**
  * The BYO templates provider in the OSS editor, backed by the playground's
- * localStorage store (`templatesProviderFor` in `apps/playground/src/App.vue`).
+ * localStorage store (in `apps/playground/src/providers/templates.ts`).
  *
  * The playground attaches a template right after `init()` — `create()` on a
  * fresh chooser open — so the header's name field, status indicator and Save
  * button are all live on every run. What the playground can express bounds this
- * spec: the read-only branch is reachable through a storage flag, and the
- * remaining branches (no provider at all, a rejected save, autosave timing) stay
- * in `useTemplatesFeature.test.ts` / `editor-templates.test.ts`.
+ * spec: read-only is reachable via `seedControlState` which sets
+ * `"templates.create": false` and `"templates.save": false`, and `templatesCapability.build()`
+ * applies those to the provider. The remaining branches (no provider at all, a rejected save,
+ * autosave timing) stay in `useTemplatesFeature.test.ts` / `editor-templates.test.ts`.
  */
 
 // `selectFirstTemplate()` opens Product Launch, so that's the record under test.

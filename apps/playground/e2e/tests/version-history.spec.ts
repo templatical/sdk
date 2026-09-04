@@ -6,7 +6,7 @@ import { TEMPLATES_SAVE_PATH } from "../../src/config/capabilities/templates";
 
 /**
  * The BYO version-history provider in the OSS editor, backed by the playground's
- * localStorage store (`versionHistoryProviderFor` in `apps/playground/src/App.vue`).
+ * localStorage store (in `apps/playground/src/providers/version-history.ts`).
  *
  * The demo's *templates* provider is what records versions — one per save, the
  * arrangement the contract prescribes — so history fills up by using the editor

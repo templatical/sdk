@@ -5,7 +5,7 @@ import { seedControlState } from "../helpers/control-state";
 
 /**
  * The BYO comments provider in the OSS editor, backed by the playground's
- * localStorage store (`commentsProviderFor` in `apps/playground/src/App.vue`).
+ * localStorage store (in `apps/playground/src/providers/comments.ts`).
  *
  * What the playground can express bounds this spec. Its provider has **no
  * `subscribe`** — one browser tab with no backend has nothing to push — which is
