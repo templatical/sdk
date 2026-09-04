@@ -4,9 +4,10 @@ import type { CapabilityDef } from "../types";
 
 /**
  * The provider arrives as `build`'s second argument rather than being
- * imported: it is memoised per template in `App.vue` and depends on runtime
- * state — which template is open — so this module cannot construct it, and
- * staying free of it keeps the capability unit-testable with a stub.
+ * imported: `@/providers/saved-blocks` memoises one per template and depends
+ * on runtime state — which template is open — so this module cannot
+ * construct it, and staying free of it keeps the capability unit-testable
+ * with a stub.
  */
 export const savedBlocksCapability: CapabilityDef<SavedBlocksProvider> = {
   id: "saved-blocks",

@@ -20,11 +20,7 @@ import {
   useTimeoutFn,
 } from "@vueuse/core";
 import { useFocusTrap } from "@vueuse/integrations/useFocusTrap";
-import {
-  init,
-  unmount,
-  createLocalStorageSavedBlocksProvider,
-} from "@templatical/editor";
+import { init, unmount } from "@templatical/editor";
 import type { TemplaticalEditor } from "@templatical/editor";
 import type {
   PreviewResolveContext,
@@ -39,7 +35,6 @@ import type {
   CommentsProvider,
   EditorUser,
   FontsConfig,
-  SavedBlock,
   SavedBlocksProvider,
   TemplateVersion,
   TemplatesProvider,
@@ -101,6 +96,8 @@ import {
 import { buildCapabilityConfig } from "@/config/build";
 import { savedBlocksCapability } from "@/config/capabilities/saved-blocks";
 import { readControlState } from "@/config/state";
+import { savedBlocksProviderFor } from "@/providers/saved-blocks";
+import { SCRATCH_TEMPLATE_NAME, slugFor } from "@/providers/template-name";
 const { locale, t } = usePlaygroundI18n();
 const { sdkLocale } = useSdkLocale();
 const { theme: uiTheme, isDark } = usePlaygroundTheme();
@@ -223,65 +220,6 @@ function cancelDataSourcePicker(): void {
 
 const editorContainer = ref<HTMLElement | null>(null);
 const editor = ref<TemplaticalEditor | null>(null);
-
-/** Shared slug for every per-template storage key (and the demo template id). */
-function slugFor(templateName: string): string {
-  return templateName
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
-
-/** Stand-in template name for content that came from an import or a share link. */
-const SCRATCH_TEMPLATE_NAME = "Scratch";
-
-/** Storage key per template, so each gets its own library and its own defaults. */
-function savedBlocksKeyFor(templateName: string): string {
-  return `templatical:saved-blocks:${slugFor(templateName)}`;
-}
-
-/**
- * Seed a template's demo saved blocks the first time it is opened.
- *
- * Only when the key is absent — never a merge or a re-seed. Re-seeding would
- * resurrect entries the user deleted and overwrite their renames, which would
- * make delete and rename look broken in the very demo meant to show them off.
- * The fixtures each include one entry the store marks `canUpdate: false` /
- * `canDelete: false`, and that entry is what keeps a library from being emptied,
- * so nothing is lost by seeding exactly once.
- */
-function seedSavedBlocks(
-  key: string,
-  defaults: SavedBlock[] | undefined,
-): void {
-  if (!defaults?.length) return;
-  if (localStorage.getItem(key) !== null) return;
-  localStorage.setItem(key, JSON.stringify(defaults));
-}
-
-/**
- * Providers are memoised per template, NOT per `init()` call. `init()` re-runs
- * whenever config or locale changes, and a fresh provider each time would be
- * harmless in itself — but recreating on template *name* keeps one instance per
- * library, so a locale switch can't reset what the user saved. Switching
- * template switches library.
- */
-const savedBlocksProviders = new Map<string, SavedBlocksProvider>();
-
-function savedBlocksProviderFor(
-  template?: TemplateOption,
-): SavedBlocksProvider {
-  const name = template?.name ?? SCRATCH_TEMPLATE_NAME;
-  const cached = savedBlocksProviders.get(name);
-  if (cached) return cached;
-
-  const key = savedBlocksKeyFor(name);
-  seedSavedBlocks(key, template?.savedBlocks);
-  const provider = createLocalStorageSavedBlocksProvider({ key });
-
-  savedBlocksProviders.set(name, provider);
-  return provider;
-}
 
 /**
  * Demo version store: one localStorage array per template, appended to by the
