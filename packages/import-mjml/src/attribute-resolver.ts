@@ -39,7 +39,11 @@ export function findByTag($: CheerioAPI, tag: string): Cheerio<Element> {
 }
 
 /**
- * An element's element children, with text and comment nodes dropped.
+ * An element's element children.
+ *
+ * `.children()` already excludes text and comment nodes; the tag filter here
+ * guards against a node whose `tagName` is undefined, not against either of
+ * those.
  */
 export function childElements(
   $el: Cheerio<Element>,
@@ -67,7 +71,16 @@ function attrsOf($el: Cheerio<Element>): Attrs {
  * against. Called once per document; `resolveAttributes` is then pure lookup.
  */
 export function buildAttributeCascade($: CheerioAPI): AttributeCascade {
-  const cascade: AttributeCascade = { all: {}, byTag: {}, byClass: {} };
+  // Every bucket is a lookup table keyed by names taken from the imported
+  // document, so a class or tag literally named `__proto__` must not be able
+  // to reach the bucket's own prototype — `Object.create(null)` means a
+  // computed-key write like `cascade.byClass[name] = …` can only ever create
+  // an own property, never reassign what the bucket inherits from.
+  const cascade: AttributeCascade = {
+    all: Object.create(null),
+    byTag: Object.create(null),
+    byClass: Object.create(null),
+  };
 
   const containers = findByTag($, "mj-attributes").toArray();
   for (const container of containers) {
@@ -133,6 +146,21 @@ export function resolveAttributes(
 const HIDE_DESKTOP = "tpl-hide-desktop";
 const HIDE_MOBILE = "tpl-hide-mobile";
 
+/**
+ * Marks a rendered title or paragraph's rich-text spacing — mirrors
+ * `RICH_TEXT_CSS_CLASS` in `packages/renderer/src/rich-text.ts`. `title.ts`
+ * and `paragraph.ts` are the only two renderers that pass a second argument
+ * to `getCssClassAttr`, so every rendered title and paragraph carries this
+ * class on `css-class` alongside any visibility markers.
+ */
+const RICH_TEXT_CSS_CLASS = "tpl-rich-text";
+
+/**
+ * Matches the per-block paragraph-gap class the same two renderers append,
+ * e.g. `tpl-rich-text-8` (`richTextGapClass` in `rich-text.ts`).
+ */
+const RICH_TEXT_GAP_CLASS = /^tpl-rich-text-\d+$/;
+
 function cssClasses(attrs: Attrs): string[] {
   return (attrs["css-class"] ?? "").trim().split(/\s+/).filter(Boolean);
 }
@@ -161,9 +189,18 @@ export function readVisibility(attrs: Attrs): BlockVisibility | undefined {
  * about these rather than dropping them silently: they are consumer CSS with no
  * home in the block model, and a template that relies on them will render
  * differently after import.
+ *
+ * Excludes the renderer's own rich-text markers alongside the two visibility
+ * classes, so importing a template the renderer itself produced does not
+ * report a title or paragraph's own spacing class as foreign. A consumer's
+ * own `tpl-`-prefixed class is not one of these markers and is still reported.
  */
 export function readForeignCssClasses(attrs: Attrs): string[] {
   return cssClasses(attrs).filter(
-    (name) => name !== HIDE_DESKTOP && name !== HIDE_MOBILE,
+    (name) =>
+      name !== HIDE_DESKTOP &&
+      name !== HIDE_MOBILE &&
+      name !== RICH_TEXT_CSS_CLASS &&
+      !RICH_TEXT_GAP_CLASS.test(name),
   );
 }

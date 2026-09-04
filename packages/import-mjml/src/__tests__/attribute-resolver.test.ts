@@ -66,7 +66,7 @@ describe("buildAttributeCascade / resolveAttributes", () => {
           <mj-all font-family="Inter" padding="0" />
           <mj-text color="#333333" padding="10px" />
           <mj-class name="cta" color="#ff6600" />
-          <mj-class name="tight" padding="2px" />
+          <mj-class name="tight" padding="2px" color="#0000ff" />
         </mj-attributes>
       </mj-head>
       <mj-body>
@@ -77,6 +77,7 @@ describe("buildAttributeCascade / resolveAttributes", () => {
             <mj-text id="classed" mj-class="cta">c</mj-text>
             <mj-text id="both" mj-class="cta" color="#111111">d</mj-text>
             <mj-text id="multi" mj-class="tight cta">e</mj-text>
+            <mj-text id="multiReversed" mj-class="cta tight">f</mj-text>
             <mj-image id="img" src="x.png" />
           </mj-column>
         </mj-section>
@@ -157,6 +158,16 @@ describe("buildAttributeCascade / resolveAttributes", () => {
     expect(attrs.color).toBe("#ff6600");
   });
 
+  it("still lets the later name win when the class order is reversed", () => {
+    const $ = parse(doc);
+    const attrs = resolveAttributes(
+      firstOf($, "[id=multiReversed]"),
+      buildAttributeCascade($),
+    );
+    expect(attrs.padding).toBe("2px");
+    expect(attrs.color).toBe("#0000ff");
+  });
+
   it("drops the mj-class attribute itself from the resolved set", () => {
     const $ = parse(doc);
     const attrs = resolveAttributes(
@@ -172,6 +183,32 @@ describe("buildAttributeCascade / resolveAttributes", () => {
     expect(cascade.all).toEqual({});
     expect(cascade.byTag).toEqual({});
     expect(cascade.byClass).toEqual({});
+  });
+
+  it("does not let a class literally named __proto__ poison lookups for other classes", () => {
+    const $ = parse(`
+      <mjml>
+        <mj-head>
+          <mj-attributes>
+            <mj-class name="__proto__" color="red" />
+          </mj-attributes>
+        </mj-head>
+        <mj-body>
+          <mj-section>
+            <mj-column>
+              <mj-text mj-class="color">x</mj-text>
+            </mj-column>
+          </mj-section>
+        </mj-body>
+      </mjml>`);
+    const cascade = buildAttributeCascade($);
+
+    // The lookup a poisoned prototype would otherwise answer for.
+    expect(cascade.byClass.color).toBeUndefined();
+
+    // Through the public API: an undeclared "color" class contributes nothing.
+    const attrs = resolveAttributes(firstOf($, "mj-text"), cascade);
+    expect(attrs).toEqual({});
   });
 });
 
@@ -228,5 +265,19 @@ describe("readForeignCssClasses", () => {
 
   it("returns an empty array when the attribute is absent", () => {
     expect(readForeignCssClasses({})).toEqual([]);
+  });
+
+  it("excludes the renderer's rich-text markers but keeps a consumer's own tpl- prefixed class", () => {
+    expect(
+      readForeignCssClasses({
+        "css-class": "tpl-rich-text tpl-rich-text-8 tpl-custom promo",
+      }),
+    ).toEqual(["tpl-custom", "promo"]);
+  });
+
+  it("excludes a rich-text gap marker at any gap value, not only the default", () => {
+    expect(readForeignCssClasses({ "css-class": "tpl-rich-text-24" })).toEqual(
+      [],
+    );
   });
 });
