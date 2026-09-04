@@ -36,7 +36,6 @@ import type {
   EditorUser,
   FontsConfig,
   SavedBlocksProvider,
-  TemplateVersion,
   TemplatesProvider,
   TestEmailProvider,
   VersionHistoryProvider,
@@ -95,12 +94,12 @@ import {
 import { buildCapabilityConfig } from "@/config/build";
 import { savedBlocksCapability } from "@/config/capabilities/saved-blocks";
 import { templatesCapability } from "@/config/capabilities/templates";
+import { versionHistoryCapability } from "@/config/capabilities/version-history";
 import { readControlState } from "@/config/state";
 import { savedBlocksProviderFor } from "@/providers/saved-blocks";
 import { templatesProviderFor } from "@/providers/templates";
+import { versionHistoryProviderFor } from "@/providers/version-history";
 import { SCRATCH_TEMPLATE_NAME, slugFor } from "@/providers/template-name";
-import { HYDRATED_VERSIONS, versionStoreFor } from "@/providers/version-store";
-import type { StoredVersion } from "@/providers/version-store";
 const { locale, t } = usePlaygroundI18n();
 const { sdkLocale } = useSdkLocale();
 const { theme: uiTheme, isDark } = usePlaygroundTheme();
@@ -223,79 +222,6 @@ function cancelDataSourcePicker(): void {
 
 const editorContainer = ref<HTMLElement | null>(null);
 const editor = ref<TemplaticalEditor | null>(null);
-
-/**
- * Demo version-history provider over that same store, memoised per template
- * name — the rule every provider here follows, because `init()` re-runs on a
- * locale or config change and a fresh provider each time would be churn around
- * one stored document.
- *
- * `tpl-playground-version-history-readonly` withholds `restore` by passing
- * `false`, which leaves history browsable and previewable with no Restore
- * button — the read-only tier of the contract.
- */
-const versionHistoryProviders = new Map<string, VersionHistoryProvider>();
-
-function versionHistoryProviderFor(
-  template?: TemplateOption,
-): VersionHistoryProvider {
-  const name = template?.name ?? SCRATCH_TEMPLATE_NAME;
-  const cached = versionHistoryProviders.get(name);
-  if (cached) return cached;
-
-  const store = versionStoreFor(name);
-  const templates = templatesProviderFor(template);
-
-  function requireVersion(versionId: string): StoredVersion {
-    const version = store.read().find((v) => v.id === versionId);
-    if (!version) throw new Error(`No version stored under "${versionId}"`);
-    return version;
-  }
-
-  const base: VersionHistoryProvider = {
-    // The demo store holds everything in localStorage, so one page is the
-    // whole history and there is no `nextCursor` to hand back.
-    list: async () => ({
-      versions: store.read().map((version, index) => {
-        const entry: TemplateVersion = {
-          id: version.id,
-          createdAt: version.createdAt,
-          isAutomatic: version.isAutomatic,
-        };
-        // The hint, on the recent entries only — see HYDRATED_VERSIONS.
-        if (index < HYDRATED_VERSIONS) entry.content = version.content;
-        return entry;
-      }),
-    }),
-    get: async (_templateId, versionId) => requireVersion(versionId).content,
-    create: async (_templateId, content) => {
-      const version = store.append(content, false);
-      return {
-        id: version.id,
-        createdAt: version.createdAt,
-        isAutomatic: false,
-        content: version.content,
-      };
-    },
-    // The one-line composition the contract documents for a backend with no
-    // atomic restore endpoint: read the old content, then save it. It is
-    // append-only for free, because this demo's `save` records a version.
-    restore: async (templateId, versionId) => {
-      const content = requireVersion(versionId).content;
-      if (typeof templates.save !== "function") {
-        throw new Error("Templates provider is read-only — cannot restore.");
-      }
-      return templates.save(templateId, { content });
-    },
-  };
-
-  const readOnly =
-    localStorage.getItem("tpl-playground-version-history-readonly") === "true";
-  const provider = readOnly ? { ...base, restore: false as const } : base;
-
-  versionHistoryProviders.set(name, provider);
-  return provider;
-}
 
 /**
  * Demo comments store: one localStorage array per template, memoised per template
@@ -1503,7 +1429,11 @@ async function initEditor(): Promise<void> {
       // Always on too: the templates provider above records a version on every
       // save, so history fills up as you work and the header control is
       // exercised on every run.
-      versionHistory: versionHistoryProvider,
+      ...buildCapabilityConfig(
+        versionHistoryCapability,
+        readControlState(),
+        versionHistoryProvider,
+      ),
       // Always on too: one localStorage array per template stands in for a review
       // backend. `user` is what makes it available at all — without an identity the
       // feature reports itself unavailable rather than writing anonymous comments.

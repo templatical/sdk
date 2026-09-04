@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import { seedControlState } from "../helpers/control-state";
 
 /**
  * The BYO version-history provider in the OSS editor, backed by the playground's
@@ -312,9 +313,8 @@ test.describe("version history provider", () => {
       chooserPage,
       editorPage,
     }) => {
-      await openEditor(page, { chooserPage, editorPage }, {
-        "tpl-playground-version-history-readonly": "true",
-      });
+      await seedControlState(page, { "versionHistory.restore": false });
+      await openEditor(page, { chooserPage, editorPage });
 
       const blocksAtStart = await editorPage.getBlockCount();
       await editAndSave(page, editorPage, 1);
