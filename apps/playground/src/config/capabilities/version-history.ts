@@ -21,10 +21,21 @@ export const versionHistoryCapability: CapabilityDef<VersionHistoryProvider> = {
       help: "Off removes the Restore button. History stays browsable and previewable.",
     },
   ],
-  build: (state, impl) => ({
-    versionHistory: {
-      ...impl,
-      restore: methodOr(state["versionHistory.restore"], impl.restore),
-    },
-  }),
+  build: (state, impl) => {
+    // The demo's restore() (@/providers/version-history) composes onto the
+    // templates store's own save — there is no atomic restore endpoint, so it
+    // reads the old content and saves it. A store that refuses save has
+    // nothing for restore to write to, so a withheld templates.save forces
+    // restore off here too, regardless of this capability's own control.
+    const restore =
+      state["templates.save"] === false
+        ? false
+        : methodOr(state["versionHistory.restore"], impl.restore);
+    return {
+      versionHistory: {
+        ...impl,
+        restore,
+      },
+    };
+  },
 };

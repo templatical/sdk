@@ -341,4 +341,49 @@ test.describe("version history provider", () => {
       );
     });
   });
+
+  test.describe("restore and the templates store", () => {
+    /**
+     * The demo's `restore()` composes onto the templates store's own `save`
+     * (see `providers/version-history.ts`), so a store that refuses writes
+     * leaves it nothing to write to. `versionHistoryCapability` withholds
+     * `restore` whenever `templates.save` is off, even though this test never
+     * sets `versionHistory.restore` itself — the two controls live on
+     * different capabilities but compose.
+     */
+    test("hides Restore when templates.save is off, though its own control was never touched", async ({
+      page,
+      chooserPage,
+      editorPage,
+    }) => {
+      const version = {
+        id: "v-fixture",
+        createdAt: new Date().toISOString(),
+        isAutomatic: false,
+        content: {
+          blocks: [] as unknown[],
+          settings: {
+            width: 600,
+            backgroundColor: "#ffffff",
+            textColor: "#1a1a1a",
+          },
+        },
+      };
+      await seedControlState(page, { "templates.save": false });
+      await openEditor(page, { chooserPage, editorPage }, {
+        [VERSIONS_KEY]: JSON.stringify([version]),
+      });
+
+      await page.locator(SELECTORS.versionHistoryToggle).click();
+      await page.locator(`[data-version-id="${version.id}"]`).click();
+
+      await expect(page.locator(SELECTORS.versionPreviewBanner)).toBeVisible();
+      await expect(page.locator(SELECTORS.versionPreviewRestore)).toHaveCount(
+        0,
+      );
+
+      await page.locator(SELECTORS.versionPreviewCancel).click();
+      await expect(page.locator(SELECTORS.versionPreviewBanner)).toBeHidden();
+    });
+  });
 });

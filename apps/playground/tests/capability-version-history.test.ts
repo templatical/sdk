@@ -54,3 +54,37 @@ describe("versionHistoryCapability", () => {
     expect(capabilityById("version-history")).toBe(versionHistoryCapability);
   });
 });
+
+/**
+ * The demo's `restore()` (`@/providers/version-history`) composes onto the
+ * templates store's own `save` — there is no atomic restore endpoint, so it
+ * reads the old content and saves it. A store that refuses `save` therefore
+ * has nothing `restore` can write to, even though `versionHistory.restore` is
+ * its own, separately-gated control on a different capability.
+ */
+describe("versionHistoryCapability and the templates store", () => {
+  it("withholds restore when templates.save is off, though its own control was never touched", () => {
+    const impl = makeImpl();
+    const config = buildCapabilityConfig(
+      versionHistoryCapability,
+      { "templates.save": false },
+      impl,
+    );
+    expect(config.versionHistory).toEqual({
+      list: impl.list,
+      get: impl.get,
+      create: impl.create,
+      restore: false,
+    });
+  });
+
+  it("templates.save being off overrides an explicit versionHistory.restore: true", () => {
+    const impl = makeImpl();
+    const config = buildCapabilityConfig(
+      versionHistoryCapability,
+      { "templates.save": false, "versionHistory.restore": true },
+      impl,
+    );
+    expect(config.versionHistory?.restore).toBe(false);
+  });
+});
