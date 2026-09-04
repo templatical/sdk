@@ -500,6 +500,46 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(happy-dom@20.12.0)(jsdom@30.0.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
 
+  packages/template-tools:
+    dependencies:
+      '@templatical/import-beefree':
+        specifier: workspace:*
+        version: link:../import-beefree
+      '@templatical/import-html':
+        specifier: workspace:*
+        version: link:../import-html
+      '@templatical/import-unlayer':
+        specifier: workspace:*
+        version: link:../import-unlayer
+      '@templatical/quality':
+        specifier: workspace:*
+        version: link:../quality
+      '@templatical/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      '@templatical/types':
+        specifier: workspace:*
+        version: link:../types
+      ajv:
+        specifier: ^8.20.0
+        version: 8.20.0
+      mjml:
+        specifier: ^5.4.0
+        version: 5.4.0(relateurl@0.2.7)(svgo@4.1.0)(terser@5.51.2)(typescript@6.0.3)
+    devDependencies:
+      '@types/node':
+        specifier: ^25.9.5
+        version: 25.9.5
+      ts-json-schema-generator:
+        specifier: ^2.9.0
+        version: 2.9.0
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(happy-dom@20.12.0)(jsdom@30.0.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
+
   packages/types:
     devDependencies:
       '@templatical/media-library':

@@ -1,0 +1,55 @@
+{
+  "name": "@templatical/template-tools",
+  "description": "CLI and library for Templatical email templates — validate, render, edit, import, and live-preview",
+  "version": "0.30.0",
+  "bugs": "https://github.com/templatical/sdk/issues",
+  "bin": { "templatical": "./dist/bin.js" },
+  "dependencies": {
+    "@templatical/quality": "workspace:*",
+    "@templatical/renderer": "workspace:*",
+    "@templatical/types": "workspace:*",
+    "ajv": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.5",
+    "ts-json-schema-generator": "^2.9.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  },
+  "peerDependencies": {
+    "@templatical/import-beefree": "workspace:*",
+    "@templatical/import-html": "workspace:*",
+    "@templatical/import-unlayer": "workspace:*",
+    "mjml": "^5.4.0"
+  },
+  "peerDependenciesMeta": {
+    "@templatical/import-beefree": { "optional": true },
+    "@templatical/import-html": { "optional": true },
+    "@templatical/import-unlayer": { "optional": true },
+    "mjml": { "optional": true }
+  },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./live": { "types": "./dist/live/index.d.ts", "import": "./dist/live/index.js" },
+    "./schema.json": "./schema.json"
+  },
+  "files": ["dist", "live", "schema.json"],
+  "homepage": "https://templatical.com",
+  "keywords": ["cli", "email", "email-template", "json-schema", "templatical", "validation"],
+  "license": "MIT",
+  "module": "./dist/index.js",
+  "publishConfig": { "access": "public" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/template-tools"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "generate-schema": "node scripts/generate-schema.mjs",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts"
+}
