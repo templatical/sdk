@@ -1,12 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { EDITOR_VERSION } from "../src/live/index";
 
 const repoRoot = resolve(import.meta.dirname, "../../..");
+const packageRoot = resolve(import.meta.dirname, "..");
 
 function pkgVersion(relative: string): string {
   return JSON.parse(readFileSync(resolve(repoRoot, relative), "utf8")).version;
+}
+
+// Recursively collects every file under `dir` that contains a declaration
+// matching DECLARATION_RE, built from parts so this file's own source never
+// self-matches when the walk includes the tests/ directory.
+const DECLARATION_RE = new RegExp(
+  ["export const EDITOR_VERSION", "\\s*="].join(""),
+);
+
+function findEditorVersionDeclarations(dir: string): string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === "node_modules" || entry.name === "dist") continue;
+    if (entry.name.startsWith(".")) continue;
+    const full = resolve(dir, entry.name);
+    if (entry.isDirectory()) {
+      found.push(...findEditorVersionDeclarations(full));
+    } else if (entry.isFile() && /\.(ts|mjs|js)$/.test(entry.name)) {
+      if (DECLARATION_RE.test(readFileSync(full, "utf8"))) {
+        found.push(full);
+      }
+    }
+  }
+  return found;
 }
 
 describe("CDN editor pin", () => {
@@ -18,27 +43,27 @@ describe("CDN editor pin", () => {
     expect(EDITOR_VERSION).toBe(pkgVersion("packages/editor/package.json"));
   });
 
-  it("is declared here and nowhere else", () => {
-    // This package is internal and unversioned, so the pin cannot be checked
-    // against its own version — the editor version above is the only anchor.
-    // What must stay true is that no second declaration exists to drift from
-    // it: the skill's CLI re-exports this value through its vendored bundle.
+  it("is published on purpose, and EDITOR_VERSION has exactly one declaration in this package", () => {
+    // This package is published: no `private` field, and `publishConfig.access`
+    // is "public". Asserting that is the point — a stray `private: true` would
+    // silently un-publish it rather than fail loudly here.
     const pkg = JSON.parse(
-      readFileSync(
-        resolve(repoRoot, "packages/template-tools/package.json"),
-        "utf8",
-      ),
+      readFileSync(resolve(packageRoot, "package.json"), "utf8"),
     );
-    expect(pkg.private).toBe(true);
+    expect(pkg.private).toBeFalsy();
+    expect(pkg.publishConfig?.access).toBe("public");
 
-    const skillCli = readFileSync(
-      resolve(
-        repoRoot,
-        "plugins/templatical/skills/templatical-email/scripts/live-server.mjs",
-      ),
-      "utf8",
-    );
-    expect(skillCli).not.toMatch(/export const EDITOR_VERSION\s*=/);
+    // Within this package, EDITOR_VERSION must be declared exactly once, in
+    // src/live/index.ts — a second declaration anywhere else here could drift
+    // from it silently. This does NOT check skills/templatical-email's own
+    // copy in scripts/live-server.mjs: that repo-wide single-declaration
+    // invariant belongs to subsystem C (design-notes/email-skill-refactor.md),
+    // which deletes the skill's vendored live-server.mjs — and the
+    // EDITOR_VERSION it declares — once the skill is migrated onto this
+    // package instead of carrying its own copy.
+    expect(findEditorVersionDeclarations(packageRoot)).toEqual([
+      resolve(packageRoot, "src/live/index.ts"),
+    ]);
   });
 });
 
