@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -37,6 +37,16 @@ function projectWithPackage(
 }
 
 describe("resolveOptional", () => {
+  let originalCwd: string;
+
+  beforeEach(() => {
+    originalCwd = process.cwd();
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+  });
+
   it("finds a CJS-shaped package (a bare `main` field) installed in the consumer's cwd", async () => {
     const cwd = projectWithPackage(
       "fake-optional-dep-cjs",
@@ -85,5 +95,30 @@ describe("resolveOptional", () => {
     // cwd that knows nothing about it.
     const cwd = mkdtempSync(join(tmpdir(), "tt-bare-"));
     expect(await resolveOptional("ajv", cwd)).not.toBeNull();
+  });
+
+  it("finds a package via a relative anchor path that requires climbing", async () => {
+    // Verify that relative paths like ".." are normalized to absolute paths
+    // before walking node_modules. Without normalization, dirname() operates
+    // lexically and never climbs real ancestors, so the walk gets stuck.
+    // This is critical for CLI usage where --cwd might be a relative path
+    // from the user's shell.
+    const cwd = projectWithPackage(
+      "fake-optional-dep-relative",
+      "export const marker = 'from-relative-anchor';\n",
+      { type: "module", main: "index.js" },
+    );
+    // Create a nested subdirectory and chdir into it
+    const subdir = join(cwd, "subdir");
+    mkdirSync(subdir, { recursive: true });
+    process.chdir(subdir);
+    // Now try to resolve the package using a relative path that climbs up
+    // Without normalization, ".." is resolved lexically by dirname, never
+    // reaching the parent's node_modules.
+    const mod = await resolveOptional<{ marker: string }>(
+      "fake-optional-dep-relative",
+      "..",
+    );
+    expect(mod?.marker).toBe("from-relative-anchor");
   });
 });

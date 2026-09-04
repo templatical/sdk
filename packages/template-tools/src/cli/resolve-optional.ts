@@ -33,7 +33,7 @@
 // propagates as a real error rather than a misleading install hint.
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 interface ExportsConditions {
@@ -54,7 +54,7 @@ interface PackageManifest {
  * resolution.
  */
 function findPackageDir(specifier: string, dir: string): string | null {
-  let current = dir;
+  let current = resolve(dir);
   for (;;) {
     const candidate = join(current, "node_modules", specifier);
     if (existsSync(join(candidate, "package.json"))) return candidate;
