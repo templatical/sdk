@@ -18,6 +18,7 @@ import { runValidate } from "./cli/commands/validate";
 import { runRender } from "./cli/commands/render";
 import { runEdit } from "./cli/commands/edit";
 import { runImport } from "./cli/commands/import";
+import { runList, runLive } from "./cli/commands/live";
 
 const USAGE = `templatical <command> [options]
 
@@ -26,6 +27,9 @@ const USAGE = `templatical <command> [options]
   render   <file> [--format mjml|html] [-o <file>]  render to MJML or HTML
   edit     <file> --op '<json>' | --ops <file>  apply operations, write the result
   import   <file> [--format <fmt>] | --list-formats  convert a design to Templatical JSON
+  live     [--file <f>] [--port <n>] [--cwd <d>] [--no-open]
+  live reload | live stop
+  list                                           working files in .templatical/
 
 Options:
   --json                                machine-readable output on stdout
@@ -46,6 +50,10 @@ async function main(argv: string[]): Promise<number> {
       return runEdit(args);
     case "import":
       return await runImport(args);
+    case "live":
+      return await runLive(args);
+    case "list":
+      return runList(args);
     case undefined:
     case "help":
     case "--help":
