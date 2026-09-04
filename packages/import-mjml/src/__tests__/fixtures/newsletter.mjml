@@ -1,0 +1,30 @@
+<mjml lang="en">
+  <mj-head>
+    <mj-preview>This week in email</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Inter, sans-serif" />
+      <mj-text color="#222222" padding="12px 24px" />
+    </mj-attributes>
+    <mj-style>a { color: #0055ff; text-decoration: none; }</mj-style>
+  </mj-head>
+  <mj-body width="600px" background-color="#f4f4f4">
+    <mj-wrapper background-color="#ffffff" padding="24px">
+      <mj-section padding="0">
+        <mj-column>
+          <mj-text><h1 style="margin:0">This week</h1></mj-text>
+          <mj-text><p>Hello <strong>there</strong>.</p></mj-text>
+          <mj-image src="https://cdn.test/hero.png" alt="Hero" width="600px" />
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+    <mj-section>
+      <mj-column width="50%"><mj-button href="https://x.test">Read</mj-button></mj-column>
+      <mj-column width="50%"><mj-spacer height="16px" /></mj-column>
+    </mj-section>
+    <mj-raw>{% if subscriber.pro %}</mj-raw>
+    <mj-section><mj-column><mj-divider border-width="2px" /></mj-column></mj-section>
+    <mj-raw>{% endif %}</mj-raw>
+    <mj-hero background-color="#000000"><mj-text>Hero</mj-text></mj-hero>
+    <mj-text><p>Loose text with no section.</p></mj-text>
+  </mj-body>
+</mjml>

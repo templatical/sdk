@@ -1,12 +1,101 @@
 import { load } from "cheerio";
-import { createDefaultTemplateContent } from "@templatical/types";
+import type { Cheerio } from "cheerio";
+import type { Element } from "domhandler";
+import {
+  createDefaultTemplateContent,
+  createSectionBlock,
+} from "@templatical/types";
 import type { Block, TemplateContent } from "@templatical/types";
-import { buildAttributeCascade } from "./attribute-resolver";
+import {
+  buildAttributeCascade,
+  childElements,
+  findByTag,
+  tagOf,
+} from "./attribute-resolver";
+import { convertElement } from "./block-mapper";
+import type { ConvertContext } from "./block-base";
+import { planSiblings } from "./display-condition";
 import { extractSettings } from "./head-parser";
+import { buildSection, buildWrapper } from "./section-builder";
 import type { ImportReport, ImportReportEntry, ImportResult } from "./types";
 
 const EMPTY_DOCUMENT_WARNING =
   "No convertible content was found in the MJML. Check that the document has an <mj-body> with at least one <mj-section>.";
+
+/**
+ * Wrap blocks that sat directly under `mj-body` in a one-column section.
+ *
+ * Valid MJML puts every block inside an `mj-section`, but hand-written and
+ * machine-mangled documents do not, and the editor canvas has no
+ * representation for a block outside a section.
+ */
+function wrapInSection(blocks: Block[]): Block {
+  return createSectionBlock({
+    columns: "1",
+    children: [blocks],
+    styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+  });
+}
+
+function walkBody(
+  $body: Cheerio<Element>,
+  ctx: ConvertContext,
+  entries: ImportReportEntry[],
+): Block[] {
+  const blocks: Block[] = [];
+  let loose: Block[] = [];
+
+  const flushLoose = () => {
+    if (loose.length > 0) {
+      blocks.push(wrapInSection(loose));
+      loose = [];
+    }
+  };
+
+  for (const unit of planSiblings(childElements($body, ctx.$))) {
+    const tag = tagOf(unit.$el[0]);
+
+    if (tag === "mj-wrapper" || tag === "mj-section") {
+      flushLoose();
+      const produced =
+        tag === "mj-wrapper"
+          ? buildWrapper(unit.$el, ctx, entries)
+          : buildSection(unit.$el, ctx, entries);
+
+      // A condition brackets one element, so it lands on every block that
+      // element produced — which is more than one only for a multi-section
+      // wrapper, where each band carries the same guard.
+      for (const block of produced) {
+        if (unit.displayCondition)
+          block.displayCondition = unit.displayCondition;
+        blocks.push(block);
+      }
+      continue;
+    }
+
+    const converted = convertElement(unit.$el, ctx);
+    if (!converted) continue;
+    entries.push(converted.entry);
+    if (!converted.block) continue;
+
+    if (unit.displayCondition) {
+      converted.block.displayCondition = unit.displayCondition;
+    }
+
+    // An html fallback for a body-level element is already a top-level block;
+    // wrapping it in a section would add nesting the source never had.
+    if (converted.entry.status === "html-fallback") {
+      flushLoose();
+      blocks.push(converted.block);
+      continue;
+    }
+
+    loose.push(converted.block);
+  }
+
+  flushLoose();
+  return blocks;
+}
 
 /**
  * Convert an MJML document into a Templatical template.
@@ -59,7 +148,18 @@ export function convertMjmlTemplate(mjml: string): ImportResult {
 
   const entries: ImportReportEntry[] = [];
   const warnings: string[] = [];
-  const blocks: Block[] = [];
+
+  const settings = extractSettings($, cascade, warnings);
+
+  const $body = findByTag($, "mj-body").first();
+  const ctx: ConvertContext = {
+    $,
+    cascade,
+    containerWidth: settings.width,
+    warnings,
+  };
+
+  const blocks = $body.length > 0 ? walkBody($body, ctx, entries) : [];
 
   if (blocks.length === 0) {
     warnings.push(EMPTY_DOCUMENT_WARNING);
@@ -68,7 +168,7 @@ export function convertMjmlTemplate(mjml: string): ImportResult {
   const content: TemplateContent = {
     ...createDefaultTemplateContent(),
     blocks,
-    settings: extractSettings($, cascade, warnings),
+    settings,
   };
 
   const summary = {
