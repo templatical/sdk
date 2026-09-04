@@ -50,7 +50,7 @@ export type Control =
 
 export type CapabilityGroup = "backend" | "authoring" | "appearance" | "cloud";
 
-export interface CapabilityDef {
+export interface CapabilityDef<TImpl = unknown> {
   id: string;
   group: CapabilityGroup;
   title: string;
@@ -58,8 +58,25 @@ export interface CapabilityDef {
   blurb: string;
   fixture: string;
   controls: Control[];
-  build: (state: ControlState) => Partial<TemplaticalEditorConfig>;
+  /**
+   * Produce the editor config this capability contributes.
+   *
+   * `impl` is the live demo backend — memoised per template, holding
+   * localStorage and closures. It arrives as an argument rather than inside
+   * `state` so `ControlState` stays JSON-serializable: the config drawer
+   * persists control state, and a provider cannot survive that round-trip.
+   */
+  build: (state: ControlState, impl: TImpl) => Partial<TemplaticalEditorConfig>;
 }
+
+/**
+ * A capability of unknown implementation type, for the registry.
+ *
+ * `build`'s `impl` parameter is contravariant, so `CapabilityDef<unknown>`
+ * would reject every concrete capability. The registry only ever passes its
+ * entries to `buildCapabilityConfig`, which re-ties `TImpl` at the call site.
+ */
+export type AnyCapabilityDef = CapabilityDef<any>;
 
 /** The value a control holds when its state key is absent. */
 export function controlDefault(control: Control): unknown {

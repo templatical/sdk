@@ -3,13 +3,10 @@ import { methodOr } from "../build";
 import type { CapabilityDef } from "../types";
 
 /**
- * `build()` reads the real provider off `state.__impl` rather than importing it.
- *
- * The provider is memoised per template inside App.vue and depends on runtime
- * state (which template is open), so the capability cannot construct it. Passing
- * it through state keeps this module pure and unit-testable with a stub.
+ * The provider arrives as `build`'s second argument because it is memoised
+ * per template in `@/providers/saved-blocks` and cannot be constructed here.
  */
-export const savedBlocksCapability: CapabilityDef = {
+export const savedBlocksCapability: CapabilityDef<SavedBlocksProvider> = {
   id: "saved-blocks",
   group: "backend",
   title: "Saved blocks",
@@ -45,8 +42,7 @@ export const savedBlocksCapability: CapabilityDef = {
       default: 0,
     },
   ],
-  build: (state) => {
-    const impl = state["__impl"] as SavedBlocksProvider;
+  build: (state, impl) => {
     const delayMs = Number(state["savedBlocks.listDelayMs"] ?? 0);
     // Stands in for a slow backend so the browser's first-open skeleton is
     // reachable — localStorage answers instantly, which is the one latency
@@ -60,6 +56,7 @@ export const savedBlocksCapability: CapabilityDef = {
         : impl.list;
     return {
       savedBlocks: {
+        ...impl,
         list,
         create: methodOr(state["savedBlocks.create"], impl.create),
         update: methodOr(state["savedBlocks.update"], impl.update),

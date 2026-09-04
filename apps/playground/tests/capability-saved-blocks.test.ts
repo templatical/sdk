@@ -12,7 +12,7 @@ const impl = {
 
 describe("savedBlocksCapability", () => {
   it("supplies every mutation when all controls are on", () => {
-    const config = buildCapabilityConfig(savedBlocksCapability, { __impl: impl });
+    const config = buildCapabilityConfig(savedBlocksCapability, {}, impl);
     expect(config.savedBlocks).toEqual({
       list: impl.list,
       create: impl.create,
@@ -22,11 +22,11 @@ describe("savedBlocksCapability", () => {
   });
 
   it("withholds a mutation as literal false when its control is off", () => {
-    const config = buildCapabilityConfig(savedBlocksCapability, {
-      __impl: impl,
-      "savedBlocks.update": false,
-      "savedBlocks.delete": false,
-    });
+    const config = buildCapabilityConfig(
+      savedBlocksCapability,
+      { "savedBlocks.update": false, "savedBlocks.delete": false },
+      impl,
+    );
     expect(config.savedBlocks).toEqual({
       list: impl.list,
       create: impl.create,
@@ -65,9 +65,7 @@ describe("savedBlocks list delay", () => {
       max: 5000,
       default: 0,
     });
-    expect(
-      buildCapabilityConfig(savedBlocksCapability, { __impl: impl }),
-    ).toEqual({
+    expect(buildCapabilityConfig(savedBlocksCapability, {}, impl)).toEqual({
       savedBlocks: {
         list: impl.list,
         create: impl.create,
@@ -88,18 +86,20 @@ describe("savedBlocks list delay wrapping", () => {
   });
 
   it("passes impl.list through by reference when the delay is 0", () => {
-    const config = buildCapabilityConfig(savedBlocksCapability, {
-      __impl: impl,
-      "savedBlocks.listDelayMs": 0,
-    });
+    const config = buildCapabilityConfig(
+      savedBlocksCapability,
+      { "savedBlocks.listDelayMs": 0 },
+      impl,
+    );
     expect(config.savedBlocks?.list).toBe(impl.list);
   });
 
   it("wraps list in a different function that still resolves to impl.list's value when the delay is above 0", async () => {
-    const config = buildCapabilityConfig(savedBlocksCapability, {
-      __impl: impl,
-      "savedBlocks.listDelayMs": 500,
-    });
+    const config = buildCapabilityConfig(
+      savedBlocksCapability,
+      { "savedBlocks.listDelayMs": 500 },
+      impl,
+    );
     const wrapped = config.savedBlocks?.list;
     expect(wrapped).not.toBe(impl.list);
 

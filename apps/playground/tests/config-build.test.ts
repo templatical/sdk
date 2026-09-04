@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildCapabilityConfig, methodOr } from "../src/config/build";
-import type { CapabilityDef } from "../src/config/types";
+import type { CapabilityDef, ControlState } from "../src/config/types";
 
 const def: CapabilityDef = {
   id: "demo",
@@ -32,21 +32,44 @@ describe("buildCapabilityConfig", () => {
     const config = buildCapabilityConfig(def, {});
     expect(config).toEqual({ autoSave: false });
   });
+});
 
-  it("passes a key the controls don't name through to build untouched", () => {
-    const passthroughDef: CapabilityDef = {
-      id: "passthrough-demo",
+describe("buildCapabilityConfig impl argument", () => {
+  it("hands the implementation to build as its second argument", () => {
+    const impl = { marker: "live-provider" };
+    const def: CapabilityDef<typeof impl> = {
+      id: "impl-demo",
       group: "backend",
-      title: "Passthrough Demo",
-      blurb: "A demo capability with no controls of its own.",
+      title: "Impl demo",
+      blurb: "Takes an implementation.",
       fixture: "product-launch",
       controls: [],
-      build: (state) => ({ savedBlocks: state["__impl"] }),
+      build: (_state, received) => ({ locale: received.marker }),
     };
-    const impl = { list: async () => [] };
+    expect(buildCapabilityConfig(def, {}, impl)).toEqual({
+      locale: "live-provider",
+    });
+  });
 
-    const config = buildCapabilityConfig(passthroughDef, { __impl: impl });
-    expect(config).toEqual({ savedBlocks: impl });
+  it("keeps control state free of the implementation", () => {
+    const seen: ControlState[] = [];
+    const def: CapabilityDef<{ marker: string }> = {
+      id: "state-purity",
+      group: "backend",
+      title: "State purity",
+      blurb: "Records the state it was given.",
+      fixture: "product-launch",
+      controls: [
+        { kind: "boolean", path: "flag", label: "Flag", help: "", default: true },
+      ],
+      build: (state, _impl) => {
+        seen.push(state);
+        return {};
+      },
+    };
+    buildCapabilityConfig(def, {}, { marker: "live-provider" });
+    expect(seen).toEqual([{ flag: true }]);
+    expect(JSON.stringify(seen[0])).toBe('{"flag":true}');
   });
 });
 

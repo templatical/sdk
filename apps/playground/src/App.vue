@@ -1733,10 +1733,11 @@ async function initEditor(): Promise<void> {
       // Always on in the playground: saved blocks are backed by the bundled
       // browser-local provider, so the OSS path is exercised on every run
       // without needing a backend. Entries persist in this browser profile.
-      ...buildCapabilityConfig(savedBlocksCapability, {
-        ...readControlState(),
-        __impl: savedBlocksProvider,
-      }),
+      ...buildCapabilityConfig(
+        savedBlocksCapability,
+        readControlState(),
+        savedBlocksProvider,
+      ),
       // Also always on, and also backend-free — the provider fakes delivery so
       // the send/success/error path is exercisable on every template.
       testEmail: testEmailProvider,

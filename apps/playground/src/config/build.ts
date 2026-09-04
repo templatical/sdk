@@ -2,18 +2,18 @@ import type { TemplaticalEditorConfig } from "@templatical/editor";
 import { controlDefault, type CapabilityDef, type ControlState } from "./types";
 
 /**
- * Resolve a capability's config from control state.
+ * Resolve a capability's config from control state and its live implementation.
  *
  * Each control's default fills the corresponding key only when the caller's
  * state doesn't already set it, so `build()` never has to guard for `undefined`
  * and a partially-seeded state (an e2e spec setting one key) behaves the same
- * as a fully-seeded one. Keys the capability's controls don't name — e.g. a
- * runtime value like `__impl` — pass through untouched, since `build()` may
- * read state beyond what its controls declare.
+ * as a fully-seeded one. The live implementation arrives separately as `impl`,
+ * never folded into `state`.
  */
-export function buildCapabilityConfig(
-  def: CapabilityDef,
+export function buildCapabilityConfig<TImpl>(
+  def: CapabilityDef<TImpl>,
   state: ControlState,
+  impl: TImpl,
 ): Partial<TemplaticalEditorConfig> {
   const resolved: ControlState = { ...state };
   for (const control of def.controls) {
@@ -21,7 +21,7 @@ export function buildCapabilityConfig(
       resolved[control.path] = controlDefault(control);
     }
   }
-  return def.build(resolved);
+  return def.build(resolved, impl);
 }
 
 /**
