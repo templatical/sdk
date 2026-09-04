@@ -9,6 +9,16 @@ export const SELECTORS = {
   templateCard: '[data-testid="template-card"]',
   blankTemplateCard: '[data-testid="blank-template-card"]',
 
+  // Capability shell (#capabilities) — one persistent editor behind a
+  // grouped rail; switching capability re-inits the editor rather than
+  // remounting it.
+  capabilityShell: '[data-testid="capability-shell"]',
+  capabilityRail: '[data-testid="capability-rail"]',
+  capabilityRailGroup: '[data-testid="capability-rail-group"]',
+  capabilityRailItem: '[data-testid="capability-rail-item"]',
+  capabilityEditor: '[data-testid="capability-editor"]',
+  capabilityBlurb: '[data-testid="capability-blurb"]',
+
   // Editor toolbar (playground)
   backButton: '[data-testid="toolbar-back"]',
   configButton: '[data-testid="toolbar-config"]',
