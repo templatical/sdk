@@ -1,6 +1,8 @@
 import { load } from "cheerio";
 import { createDefaultTemplateContent } from "@templatical/types";
 import type { Block, TemplateContent } from "@templatical/types";
+import { buildAttributeCascade } from "./attribute-resolver";
+import { extractSettings } from "./head-parser";
 import type { ImportReport, ImportReportEntry, ImportResult } from "./types";
 
 const EMPTY_DOCUMENT_WARNING =
@@ -34,7 +36,8 @@ export function convertMjmlTemplate(mjml: string): ImportResult {
   // XML mode routes through htmlparser2 rather than parse5: custom `mj-*` tags
   // survive as generic elements and no implicit <html><head><body> is injected
   // around them. Switching to HTML mode relocates every MJML tag.
-  load(mjml, { xml: true });
+  const $ = load(mjml, { xml: true });
+  const cascade = buildAttributeCascade($);
 
   const entries: ImportReportEntry[] = [];
   const warnings: string[] = [];
@@ -47,6 +50,7 @@ export function convertMjmlTemplate(mjml: string): ImportResult {
   const content: TemplateContent = {
     ...createDefaultTemplateContent(),
     blocks,
+    settings: extractSettings($, cascade, warnings),
   };
 
   const summary = {
