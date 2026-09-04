@@ -14,9 +14,11 @@ import {
   UsageError,
 } from "./cli/io";
 import { runSchema } from "./cli/commands/schema";
+import { runValidate } from "./cli/commands/validate";
 
 const USAGE = `templatical <command> [options]
 
+  validate <file>                       structural + quality lint
   schema   [--out <file>]               print the block JSON Schema
 
 Options:
@@ -28,6 +30,8 @@ async function main(argv: string[]): Promise<number> {
   setJsonMode(args.json);
 
   switch (args.command) {
+    case "validate":
+      return runValidate(args);
     case "schema":
       return runSchema(args);
     case undefined:
