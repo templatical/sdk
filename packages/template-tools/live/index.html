@@ -485,6 +485,55 @@
         transform: translate(-50%, 0);
       }
 
+      /* ---- Note panel ------------------------------------------------- */
+      /* Alt-click a block to open this — see the capture script below for
+         why the target id comes from data-block-id rather than an editor
+         API. z-index is well above --z-modal (10000, the editor's own
+         popover/dialog layer) so a note stays reachable over any editor
+         dialog. */
+      #note-panel {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        z-index: 20000;
+        width: 280px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--text);
+        box-shadow: 0 8px 24px oklch(18% 0.01 60 / 0.16);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+      #note-panel .note-target {
+        color: var(--muted);
+      }
+      #note-panel textarea {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 8px 0;
+        padding: 6px 8px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--canvas);
+        color: var(--text);
+        font: inherit;
+        resize: vertical;
+      }
+      #note-panel #note-status {
+        margin: 8px 0 0;
+        min-height: 1.4em;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .note-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
       @media (max-width: 720px) {
         .btn .label,
         .brand .sub,
@@ -565,6 +614,24 @@
         <div class="spinner" aria-hidden="true"></div>
         <div class="msg" id="loading-msg">Loading the editor…</div>
       </div>
+    </div>
+
+    <div id="note-panel" hidden>
+      <div class="note-target">
+        Note on <strong id="note-target-label">the template</strong>
+      </div>
+      <textarea
+        id="note-text"
+        rows="3"
+        placeholder="What should change here?"
+      ></textarea>
+      <div class="note-actions">
+        <button type="button" id="note-cancel" class="btn">Cancel</button>
+        <button type="button" id="note-save" class="btn primary">
+          Leave note
+        </button>
+      </div>
+      <p id="note-status" role="status"></p>
     </div>
 
     <dialog id="export">
@@ -819,6 +886,80 @@
           "The editor couldn't load from the CDN. Check your connection and reload.\n\n" +
           String(err?.message ?? err);
       });
+
+      // ---- Notes ----
+      // Notes are attached by clicking a block. The editor exposes no
+      // selection accessor, so the id comes from data-block-id on the
+      // click's composedPath - an attribute the editor's own e2e suite
+      // locks, and documented in-repo as a hook for consumers. composedPath
+      // (not event.target) is required because the editor mounts in shadow
+      // DOM and clicks retarget at the boundary.
+      const notePanel = $("note-panel");
+      const noteText = $("note-text");
+      const noteLabel = $("note-target-label");
+      const noteStatus = $("note-status");
+      let noteBlockId = null;
+
+      function blockIdFromEvent(event) {
+        for (const el of event.composedPath()) {
+          const id = el instanceof HTMLElement ? el.dataset?.blockId : undefined;
+          if (id) return id;
+        }
+        return null;
+      }
+
+      // Capture phase, not bubble: the editor's own BlockWrapper.handleClick
+      // calls stopPropagation() (so a click inside a section picks the
+      // section, not a stray column child) - a bubble listener on document
+      // never sees a click on a block. Capture runs root-to-target, before
+      // that stopPropagation is reached, so it is unaffected.
+      document.addEventListener(
+        "click",
+        (event) => {
+          if (notePanel.contains(event.target)) return;
+          // Alt-click opens the note panel; a plain click is the editor's own.
+          if (!event.altKey) return;
+          noteBlockId = blockIdFromEvent(event);
+          noteLabel.textContent = noteBlockId ? noteBlockId : "the template";
+          noteStatus.textContent = "";
+          noteText.value = "";
+          notePanel.hidden = false;
+          noteText.focus();
+        },
+        true,
+      );
+
+      $("note-cancel").onclick = () => {
+        notePanel.hidden = true;
+      };
+
+      $("note-save").onclick = async () => {
+        const text = noteText.value.trim();
+        if (!text) {
+          noteStatus.textContent = "Write something first.";
+          return;
+        }
+        try {
+          const res = await fetch("/annotations", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ blockId: noteBlockId, text }),
+          });
+          if (res.ok) {
+            notePanel.hidden = true;
+            // Say plainly when it will be acted on: nothing can wake the
+            // agent from this page, so the note is picked up on its next
+            // turn. Reuses the existing toast() rather than a second
+            // notification affordance.
+            noteStatus.textContent = "";
+            toast("Note saved — your agent will see it on its next change.");
+          } else {
+            noteStatus.textContent = "Could not save that note.";
+          }
+        } catch {
+          noteStatus.textContent = "Could not reach the bridge.";
+        }
+      };
     </script>
   </body>
 </html>
