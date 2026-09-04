@@ -30,10 +30,17 @@ const fixture = computed(
 const editorHost = ref<HTMLElement | null>(null);
 const editor = ref<TemplaticalEditor | null>(null);
 
+// Navigating away from #capabilities while `init()` is in flight must not
+// mount a fresh editor after teardown: `onBeforeUnmount` tears down whatever
+// `editor.value` holds at that moment, and assigning past it would land a new
+// instance in a detached host with nothing left to unmount it. Set on
+// unmount, checked after the one await below.
+let destroyed = false;
+
 async function initEditor(): Promise<void> {
   if (!editorHost.value) return;
   editor.value?.unmount();
-  editor.value = await init({
+  const instance = await init({
     container: editorHost.value,
     content: fixture.value.create(),
     // `App.vue` also passes locale, theme, uiTheme, fonts, merge-tag request
@@ -43,6 +50,11 @@ async function initEditor(): Promise<void> {
     // produces.
     ...buildAllCapabilityConfig(readControlState(), fixture.value),
   });
+  if (destroyed) {
+    instance.unmount();
+    return;
+  }
+  editor.value = instance;
 }
 
 onMounted(async () => {
@@ -57,6 +69,7 @@ watch(activeId, async () => {
 });
 
 onBeforeUnmount(() => {
+  destroyed = true;
   editor.value?.unmount();
 });
 </script>

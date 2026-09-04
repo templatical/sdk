@@ -7,7 +7,6 @@ import {
 } from "vue";
 import { useEventListener } from "@vueuse/core";
 import App from "./App.vue";
-import { CAPABILITY_ROUTE } from "./shell/useCapabilityRoute";
 import "@templatical/editor/src/styles/index.css";
 import "./style.css";
 
@@ -35,7 +34,11 @@ const Cloud = defineAsyncComponent(() => import("./Cloud.vue"));
 const MultiInstance = defineAsyncComponent(() => import("./MultiInstance.vue"));
 // Lazy-load the capability shell — only fetched when the user navigates to
 // #capabilities. The default route stays the template chooser until a later
-// plan flips it.
+// plan flips it. The route is the literal string here, not an import from
+// `./shell/useCapabilityRoute` — that module re-exports from
+// `@/config/capabilities`, and this file importing anything that reaches
+// that barrel would pull every capability's title/blurb/controls into this
+// eager entry chunk, defeating the defineAsyncComponent below.
 const CapabilityShell = defineAsyncComponent(
   () => import("./shell/CapabilityShell.vue"),
 );
@@ -47,7 +50,7 @@ const pages: Record<
   "": App,
   "#cloud": Cloud,
   "#multi": MultiInstance,
-  [CAPABILITY_ROUTE]: CapabilityShell,
+  "#capabilities": CapabilityShell,
 };
 
 /**
@@ -60,7 +63,7 @@ function resolvePage(
   hash: string,
 ): ReturnType<typeof defineAsyncComponent> | typeof App {
   if (hash in pages) return pages[hash];
-  if (hash.startsWith(`${CAPABILITY_ROUTE}/`)) return CapabilityShell;
+  if (hash.startsWith("#capabilities/")) return CapabilityShell;
   return App;
 }
 
