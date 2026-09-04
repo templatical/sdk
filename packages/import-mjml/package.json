@@ -1,0 +1,53 @@
+{
+  "name": "@templatical/import-mjml",
+  "description": "Convert MJML email templates to Templatical format",
+  "version": "0.30.0",
+  "bugs": "https://github.com/templatical/sdk/issues",
+  "dependencies": {
+    "@templatical/types": "workspace:*",
+    "cheerio": "^1.2.0",
+    "domhandler": "^6.0.1"
+  },
+  "devDependencies": {
+    "@templatical/renderer": "workspace:*",
+    "@types/node": "^25.9.5",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "homepage": "https://templatical.com",
+  "keywords": [
+    "email",
+    "email-template",
+    "importer",
+    "migration",
+    "mjml",
+    "mjml-import",
+    "templatical"
+  ],
+  "license": "MIT",
+  "module": "./dist/index.js",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/import-mjml"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts"
+}
