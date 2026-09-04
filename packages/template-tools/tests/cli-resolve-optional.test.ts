@@ -98,26 +98,26 @@ describe("resolveOptional", () => {
   });
 
   it("finds a package via a relative anchor path that requires climbing", async () => {
-    // Verify that relative paths like ".." are normalized to absolute paths
-    // before walking node_modules. Without normalization, dirname() operates
-    // lexically and never climbs real ancestors, so the walk gets stuck.
-    // This is critical for CLI usage where --cwd might be a relative path
-    // from the user's shell.
+    // The anchor must land two levels below a directory whose node_modules
+    // does NOT hold the package, so the walk is forced to climb real
+    // ancestors rather than finding it on the first check. Anchoring on ".."
+    // from a single-level "subdir" would resolve (relative to the chdir'd
+    // cwd) straight onto the project root's node_modules — found on the
+    // first iteration, climbing zero levels either way. Two levels down with
+    // "." as the anchor avoids that: unnormalized, dirname(".") is "."
+    // forever, so the walk gives up after the first miss; normalized via
+    // resolve(), it climbs project/a/b -> project/a -> project and finds it.
     const cwd = projectWithPackage(
       "fake-optional-dep-relative",
       "export const marker = 'from-relative-anchor';\n",
       { type: "module", main: "index.js" },
     );
-    // Create a nested subdirectory and chdir into it
-    const subdir = join(cwd, "subdir");
-    mkdirSync(subdir, { recursive: true });
-    process.chdir(subdir);
-    // Now try to resolve the package using a relative path that climbs up
-    // Without normalization, ".." is resolved lexically by dirname, never
-    // reaching the parent's node_modules.
+    const nested = join(cwd, "a", "b");
+    mkdirSync(nested, { recursive: true });
+    process.chdir(nested);
     const mod = await resolveOptional<{ marker: string }>(
       "fake-optional-dep-relative",
-      "..",
+      ".",
     );
     expect(mod?.marker).toBe("from-relative-anchor");
   });
