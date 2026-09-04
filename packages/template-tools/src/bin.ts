@@ -16,12 +16,14 @@ import {
 import { runSchema } from "./cli/commands/schema";
 import { runValidate } from "./cli/commands/validate";
 import { runRender } from "./cli/commands/render";
+import { runEdit } from "./cli/commands/edit";
 
 const USAGE = `templatical <command> [options]
 
   validate <file>                       structural + quality lint
   schema   [--out <file>]               print the block JSON Schema
   render   <file> [--format mjml|html] [-o <file>]  render to MJML or HTML
+  edit     <file> --op '<json>' | --ops <file>  apply operations, write the result
 
 Options:
   --json                                machine-readable output on stdout
@@ -38,6 +40,8 @@ async function main(argv: string[]): Promise<number> {
       return runSchema(args);
     case "render":
       return await runRender(args);
+    case "edit":
+      return runEdit(args);
     case undefined:
     case "help":
     case "--help":
