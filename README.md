@@ -137,7 +137,7 @@ Editor packages (`@templatical/editor`, `@templatical/core`, `@templatical/media
 - ✅ Self-host, modify, fork for internal use
 - ✅ Use it commercially without paying anything
 
-The only restriction: don't repackage Templatical itself as a directly competing email-editor product. The other six packages — types, renderer, quality and all three importers — are pure MIT.
+The only restriction: don't repackage Templatical itself as a directly competing email-editor product. Embedding is granted explicitly in the license text — the canonical FSL-1.1-MIT template, unmodified, plus an [Additional Permission](./LICENSE) covering products that include the editor as one feature among others. The other six packages — types, renderer, quality and all three importers — are pure MIT.
 
 [Full license FAQ →](https://docs.templatical.com/license-faq)
 

@@ -153,6 +153,8 @@ interface ImageBlock extends BaseBlock {
   /** Absent derives the height from the width, keeping the aspect ratio. */
   height?: number;
   align: 'left' | 'center' | 'right';
+  /** Corner radius in px. Omitted/0 = square corners. */
+  borderRadius?: number;
   linkUrl?: string;
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;

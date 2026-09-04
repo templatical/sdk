@@ -31,6 +31,11 @@ const nl: typeof en = {
     daysAgo: "{days} d geleden",
   },
 
+  // Toolbar - Paragraph
+  paragraph: {
+    paragraphSpacing: "Alinea-afstand",
+  },
+
   history: {
     collabWarning:
       "Ongedaan maken kan recente wijzigingen van medewerkers beïnvloeden",
@@ -176,6 +181,7 @@ const nl: typeof en = {
     height: "Hoogte",
     heightAuto: "Automatisch",
     heightCustom: "Aangepast",
+    borderRadius: "Hoekafronding",
     linkUrl: "Link-URL",
     openInNewTab: "Openen in nieuw tabblad",
     placeholderUrl: "Tijdelijke afbeelding",

@@ -128,6 +128,7 @@ Der Typ `ImageBlock` definiert alle konfigurierbaren Eigenschaften:
 | `width` | `number \| 'full'` | Bildbreite in Pixeln oder `'full'` für 100% |
 | `height` | `number` (optional) | Bildhöhe in Pixeln. Ohne Angabe wird sie aus der Breite abgeleitet |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontale Ausrichtung |
+| `borderRadius` | `number` (optional) | Eckenradius in Pixeln. Ohne Angabe oder 0 bleiben die Ecken eckig |
 | `decorative` | `boolean` (optional) | Blendet das Bild für Screenreader aus und sendet ein leeres `alt` |
 | `linkUrl` | `string` (optional) | Umschließt das Bild mit einem Link |
 | `linkOpenInNewTab` | `boolean` (optional) | Öffnet den Link in einem neuen Tab |
@@ -138,6 +139,14 @@ Der Typ `ImageBlock` definiert alle konfigurierbaren Eigenschaften:
 `height` ist optional, und es weglassen ist meist richtig: Die Höhe wird dann aus der Breite abgeleitet und das Bild behält sein Seitenverhältnis. Setzen Sie sie, wenn das Layout eine feste Box braucht -- einen Banner-Platz mit bekannter Größe oder eine Reihe von Bildern, die auf einer Linie liegen müssen.
 
 Werden `width` und `height` gemeinsam gesetzt, wird das Bild auf diese Box **gestreckt**. Es wird nicht beschnitten, denn `object-fit` wird von Outlook und den meisten E-Mail-Clients nicht unterstützt -- die Editor-Leinwand streckt deshalb genauso, statt einen Beschnitt zu versprechen, den der Posteingang nicht liefert. Passen Sie das Verhältnis an das Quellbild an oder skalieren Sie das Asset vor dem Upload.
+
+### Eckenradius
+
+`borderRadius` rundet die Ecken des Bildes ab, in Pixeln. Ohne Angabe oder bei `0` bleiben die Ecken eckig -- das gilt für jeden bestehenden Block.
+
+Für ein **kreisrundes** Avatar- oder Portraitbild braucht der Block ein quadratisches Quellbild und einen Radius von mindestens der Hälfte seiner gerenderten Größe: Ein 240px-Quadrat benötigt `120`, jeder größere Wert (`999` ist die übliche Kurzform) ergibt denselben Kreis. Ein nicht-quadratisches Bild wird zur Ellipse, da es keinen Beschnitt gibt -- siehe Höhe oben.
+
+Die Unterstützung ist gut, aber nicht vollständig: Apple Mail, iOS Mail, Gmail und Outlook.com setzen es um, Outlook unter Windows ignoriert es und zeigt eckige Ecken. Behandeln Sie es als Progressive Enhancement, nicht als Grundlage eines Layouts.
 
 ### Placeholder-URL
 

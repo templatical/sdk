@@ -14,15 +14,13 @@ Not sure what to pick up?
 
 ## Architecture overview
 
-Before writing non-trivial code, read **[`CLAUDE.md`](./CLAUDE.md)** at the repo root. It documents:
+Nine packages in a pnpm workspace. `@templatical/types` is the root of the dependency graph; `@templatical/editor` is the leaf and declares **no runtime dependencies at all** — it bundles Vue, `core`, `types` and every transitive Vue library inline, so consumers get a single drop-in ESM file. A few things that surprise people:
 
-- The 6-package monorepo layout and dependency graph
-- Build order (matters: media-library before types)
-- The `useEditorCore` composable that both `Editor.vue` and `CloudEditor.vue` share
-- TypeScript path mappings between packages (so you don't need to build before typecheck)
-- The `tpl:` Tailwind prefix and CSS isolation strategy
-- Cloud subpath (`@templatical/core/cloud`) vs OSS core
-- Test conventions and assertion rules
+- **Build order matters** — media-library before types, because `types` devDepends on it for the media type imports in its cloud config interfaces.
+- **`Editor.vue` is the only editor component.** There is no `CloudEditor.vue` — Cloud is an optional attachment on the same component, reached through a type-only import so no cloud code is statically reachable from the OSS entry.
+- **Typecheck needs no build** — each package's tsconfig `paths` map sibling `@templatical/*` imports straight to source, so `pnpm run typecheck` works on a clean checkout.
+- **The editor mounts in shadow DOM by default** (`shadowDom ?? true`); the `tpl:` Tailwind prefix and `.tpl-*` class prefix are collision protection for the `shadowDom: false` opt-out path.
+- **`@templatical/core/cloud` is a separate subpath export** — importing `@templatical/core` never pulls it in.
 
 For block-level concerns, the docs are usually the right reference: [block reference](https://docs.templatical.com/guide/blocks), [theming](https://docs.templatical.com/guide/theming), [renderer API](https://docs.templatical.com/api/renderer-typescript).
 
@@ -82,19 +80,19 @@ The monorepo deliberately uses **two** build tools, split by package shape:
 
 **Do not "finish" the migration by moving the Vue packages to tsdown.** It was prototyped and reverted. The blocker is the editor's `.d.ts`: it bundles its entire third-party type surface in JS (`vue`, `@tiptap/*`, `@vueuse`, prosemirror — all devDeps) but those must stay **external** in the published declarations. tsdown couples JS-bundle and dts-external, so `rolldown-plugin-dts` inlines ~950 kB of third-party types vs api-extractor's ~11 kB externalized output. A second landmine: tsdown doesn't replace `import.meta.env`, so the editor's dev-only shadow-DOM style mirror leaks host CSS into the shadow root (issue #70) when a consumer serves the bundle through their dev server. Vite handles both for free.
 
-`tsdown` is pre-1.0 — it's pinned in the lockfile and buffered by `minimumReleaseAge`. Note that **`attw` (are-the-types-wrong) currently can't analyze our declarations** because its bundled TypeScript predates TS 6 (same constraint as api-extractor, see `CLAUDE.md`); `publint` runs clean. Wire `attw` into CI once it supports TS 6.
+`tsdown` is pre-1.0 — it's pinned in the lockfile and buffered by `minimumReleaseAge`. Note that **`attw` (are-the-types-wrong) currently can't analyze our declarations** because its bundled TypeScript predates TS 6 (same constraint as api-extractor); `publint` runs clean. Wire `attw` into CI once it supports TS 6.
 
 ## Tests
 
 **Every code change must include tests.** Bug fixes need a regression test that fails before your fix and passes after. Features need both happy-path and unhappy-path coverage.
 
-Test conventions are documented in detail in [`CLAUDE.md`](./CLAUDE.md#tests). The short version:
+Test conventions:
 
 - **Location:** `tests/**/*.test.ts` per package (except `import-beefree` and `import-unlayer`, which use `src/__tests__/`).
 - **Framework:** Vitest 3 for unit tests, Playwright for E2E.
 - **Regression sensitivity:** every test must assert on **concrete values or state**. Never use `.toBeDefined()`, `.toBeTruthy()`, or `.not.toThrow()` as the only assertion — pair with a value check or a state check.
 - **Coverage:** test happy path, unhappy path (error branches), and edge cases. Test every `if/else` branch, every `try/catch`, every early `return`.
-- **Mocking:** see `CLAUDE.md` for established patterns (API clients, AuthManager, WebSocket, SSE streaming, inject-dependent composables, fake timers).
+- **Mocking:** follow the patterns already established in the existing suites — API clients, AuthManager, WebSocket, SSE streaming, inject-dependent composables, fake timers.
 
 ## Bilingual docs
 
@@ -141,7 +139,7 @@ Keep PRs small and focused. One concern per PR — reviewers move faster, and yo
 - TypeScript strict mode — no `any` for public APIs (it's allowed in tests and internal helpers, see ESLint config).
 - ESLint + Prettier handle most formatting decisions. Run `pnpm run format` before pushing.
 - Use named exports unless there's a strong reason for a default export.
-- For Vue components, use `<script setup lang="ts">`. The repo conventions in [`CLAUDE.md`](./CLAUDE.md#conventions) cover specifics (i18n via `useI18n()`, `tpl:` Tailwind prefix, lazy-loading heavy deps, `_destroyed` guards on async work).
+- For Vue components, use `<script setup lang="ts">`. Repo specifics: i18n via `useI18n()` (never hardcoded strings), the `tpl:` prefix on every SDK class, lazy-loading for heavy deps, and `_destroyed` guards on async work.
 
 ### The bare `tpl` class re-declares every theme token
 
@@ -178,7 +176,7 @@ Avoid discussing design decisions in inline PR comments before opening the PR �
 
 By contributing, you agree that your contributions will be licensed under the same license as the package you're contributing to:
 
-- **MIT** for `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree`, `@templatical/import-unlayer`
+- **MIT** for `@templatical/types`, `@templatical/renderer`, `@templatical/quality`, `@templatical/import-beefree`, `@templatical/import-unlayer`, `@templatical/import-html`
 - **FSL-1.1-MIT** (auto-converts to MIT after 2 years) for `@templatical/editor`, `@templatical/core`, `@templatical/media-library`
 
 See [`LICENSE`](./LICENSE) and [`LICENSE-MIT`](./LICENSE-MIT) for full terms, and [the license FAQ](https://docs.templatical.com/license-faq) for plain-English answers.

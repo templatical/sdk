@@ -61,6 +61,7 @@ Displays an image with optional link wrapping.
 | `width` | `number \| 'full'` | Display width in px, or `'full'` for 100% |
 | `height` | `number` | Display height in px. Omit to derive it from the width and keep the aspect ratio |
 | `align` | `'left' \| 'center' \| 'right'` | Horizontal alignment |
+| `borderRadius` | `number` | Corner radius in px. Omit or 0 for square corners |
 | `decorative` | `boolean` | Hides the image from screen readers and sends an empty `alt` |
 | `linkUrl` | `string` | Wraps image in a link |
 | `linkOpenInNewTab` | `boolean` | Link target behavior |

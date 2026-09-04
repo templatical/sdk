@@ -10,6 +10,7 @@ import DividerToolbar from "./toolbar/DividerToolbar.vue";
 import HtmlToolbar from "./toolbar/HtmlToolbar.vue";
 import ImageToolbar from "./toolbar/ImageToolbar.vue";
 import MenuToolbar from "./toolbar/MenuToolbar.vue";
+import ParagraphToolbar from "./toolbar/ParagraphToolbar.vue";
 import SectionToolbar from "./toolbar/SectionToolbar.vue";
 import SocialToolbar from "./toolbar/SocialToolbar.vue";
 import SpacerToolbar from "./toolbar/SpacerToolbar.vue";
@@ -26,6 +27,7 @@ import type {
   HtmlBlock,
   ImageBlock,
   MenuBlock,
+  ParagraphBlock,
   SectionBlock,
   SocialIconsBlock,
   SpacerBlock,
@@ -157,8 +159,13 @@ function handleUpdate(updates: Partial<Block>): void {
         @update="handleUpdate"
       />
 
-      <!-- Paragraph block: no text-specific sidebar controls — all formatting is in the TipTap toolbar -->
-      <template v-else-if="blockType === 'paragraph'" />
+      <!-- Inline formatting lives in the TipTap toolbar; this carries only
+           what applies to the block as a whole. -->
+      <ParagraphToolbar
+        v-else-if="blockType === 'paragraph'"
+        :block="block as ParagraphBlock"
+        @update="handleUpdate"
+      />
 
       <ImageToolbar
         v-else-if="blockType === 'image'"

@@ -10,6 +10,41 @@ export function parsePxValue(value: string | undefined): number {
   return match ? Math.round(parseFloat(match[1])) : 0;
 }
 
+/**
+ * An image's corner radius in px, or `undefined` for square corners.
+ *
+ * Accepts a percentage as well as a px length, because `border-radius: 50%` is
+ * the idiomatic way to write a circular avatar and the block stores px only. A
+ * percentage resolves against the shorter rendered side, which is what turns a
+ * square image into a circle and a wide one into a pill.
+ *
+ * `width` and `height` must be the dimensions actually read from the source. A
+ * percentage with neither known is dropped rather than resolved against the
+ * caller's fallback width, which would invent a radius the template never
+ * expressed. A non-positive result is dropped for the same reason a px `0` is:
+ * both mean square, and only absence keeps it out of the exported JSON.
+ */
+export function parseImageBorderRadius(
+  value: string | undefined,
+  width: number | undefined,
+  height: number | undefined,
+): number | undefined {
+  if (!value) return undefined;
+
+  // Deliberately no `-?`: a negative percentage falls through to the px parse,
+  // which rejects it too.
+  const percent = value.trim().match(/^(\d+(?:\.\d+)?)\s*%$/);
+  if (percent) {
+    const side = Math.min(width ?? Infinity, height ?? Infinity);
+    if (!Number.isFinite(side)) return undefined;
+    const radius = Math.round((parseFloat(percent[1]) / 100) * side);
+    return radius > 0 ? radius : undefined;
+  }
+
+  const px = parsePxValue(value);
+  return px > 0 ? px : undefined;
+}
+
 export function parseColor(value: string | undefined): string {
   if (!value || value === "transparent") return "";
 

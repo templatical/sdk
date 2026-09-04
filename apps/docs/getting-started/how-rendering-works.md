@@ -104,6 +104,7 @@ MJML depends on the JSON *and* on your renderer — your fonts config, any `bloc
 
 - Converts each block in the JSON tree to its corresponding MJML component (text → `<mj-text>`, image → `<mj-image>`, button → `<mj-button>`, etc.)
 - Applies block styles (padding, background color) as MJML attributes
+- Spaces rich-text `<p>`, `<ul>`, `<ol>` and `<li>` to match the editor canvas, overriding MJML's own `p { margin: 13px 0 }` default
 - Injects custom font declarations as `<mj-font>` tags
 - Preserves merge tags unchanged (they pass through as literal text)
 - Respects `visibility` settings -- blocks hidden on all viewports are omitted

@@ -11,8 +11,54 @@
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.29.0",
+  "latest": "0.30.0",
   "versions": [
+    {
+      "version": "0.30.0",
+      "date": "2026-09-02",
+      "changes": [
+        {
+          "hash": "39c7c1e",
+          "level": "minor",
+          "title": "Match exported rich-text spacing to the editor canvas, and make the paragraph gap settable per block",
+          "body": "MJML's core skeleton gives every `<p>` a 13px vertical margin, and resets\nnothing at all for `ul` / `ol` / `li` — those fell through to each mail\nclient's own stylesheet. The canvas used different values for both, so a\nthree-paragraph block measured 99px in the editor and 135px in the delivered\nemail: 13px of unwanted space above the first paragraph, 13px below the last,\nand 13px rather than 8px between each. Lists were off by 6px vertically and\n16px of bullet indent, and being client-dependent could not be matched from the\neditor side at all.\n\nThe renderer now emits scoped rules for the elements a rich-text block stores,\nvia `<mj-style inline=\"inline\">` — so the declarations arrive as real inline\nstyles that hold up in clients which strip `<style>` from the head. The scope\n(`tpl-rich-text`, on paragraph and title blocks only) deliberately leaves an\n`html` block's own markup untouched.\n\nBoth sides read one set of values, `RICH_TEXT_SPACING` in `@templatical/types`,\nand a parity test fails if the canvas CSS drifts from it.\n\nAlso fixed on the editor side: canvas content spacing was expressed on the\n`--tpl-base-size` scale, which consumers override to scale the editor chrome —\nso scaling the UI silently moved the spacing the email could not follow. Email\ncontent spacing is now fixed px.\n\n## Per-block paragraph spacing\n\nNew optional `ParagraphBlock.paragraphSpacing`, edited from a field in the\nblock's settings panel: the px gap between the paragraphs of a block holding\nmore than one `<p>`. Omit it and the block uses the built-in 8px it already\nhad, so no existing template changes appearance. `0` is valid and butts the\nparagraphs together.\n\nThe renderer emits one rule per _distinct_ gap in the document and the canvas\nreads the same number from a CSS variable on the block wrapper, so the two\ncannot disagree.\n\nScoped to the space _between_ paragraphs inside one block. Space around a block\nis `styles.padding`, as before, and a block with a single paragraph has no\ninternal gap to set. List spacing stays fixed, for the reason above: those\nvalues exist to pin down mail-client defaults rather than to be designed with.\nTitles take the default gap and cannot set their own — their content is normally\none paragraph the renderer unwraps into the heading.",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/renderer",
+            "@templatical/types"
+          ]
+        },
+        {
+          "hash": "e2790cc",
+          "level": "minor",
+          "title": "Image blocks take a corner radius",
+          "body": "Sections, section wrappers and buttons can round their corners. Images could not, so there was no way to build a round avatar or portrait. The usual workaround — a rounded section behind the image — rounds the section and leaves the image's square corners sitting on top of it.\n\n`ImageBlock.borderRadius` is a new optional number of pixels. Leave it out (or set `0`) for square corners, which is what every existing block already renders, so nothing changes for templates that don't ask for a radius.\n\nFor a circle, use a square image and a radius of at least half its width. `999` is the usual shorthand.\n\nThe three importers now read an image's `border-radius`, so a rounded avatar survives the trip across. Because the block stores pixels only, a percentage — `50%`, the idiomatic way to write a circle — resolves against the dimensions the source template stated, taking the shorter side so a wide image becomes a pill rather than gaining a radius larger than its own height. A percentage on an image whose width the template never stated is dropped rather than resolved against the importer's fallback width.\n\nOne caveat: Outlook on Windows ignores `border-radius` and shows square corners. Treat it as a nice-to-have rather than something a layout depends on.",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/import-beefree",
+            "@templatical/import-html",
+            "@templatical/import-unlayer",
+            "@templatical/renderer",
+            "@templatical/types"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "0.29.1",
+      "date": "2026-09-02",
+      "changes": [
+        {
+          "hash": "6b0b3bc",
+          "level": "patch",
+          "title": "Fix two ways the host page could break the editor",
+          "body": "**Dialogs were clipped to the container in Safari.** When the container did not\nfill the viewport, every dialog was painted cut off at its edge and the backdrop\ndimmed only the editor's own area. Safari paints a `position: fixed` descendant\nclipped to an ancestor's `overflow: hidden` box while still resolving its layout\nagainst the viewport, and the editor's root carried that `overflow: hidden`. The\nclip now sits on an inner chrome wrapper that does not enclose the popover root,\nso dialogs cover the viewport again — both tag pickers, the link dialog,\ntest-email, save-block, saved-blocks browser, restore-version, and\n`@templatical/media-library`'s modals when opened from the editor.\n\n**Host typography inherited into the editor.** Twelve inheritable properties —\n`letter-spacing`, `text-transform`, `font-style`, `font-weight` and others —\ncrossed into the chrome and the canvas, so a host with\n`text-transform: uppercase` showed a preview of an email the recipient would\nnever receive. Shadow DOM does not prevent this: it blocks host rules, but\ninheritance follows the flattened tree. The editor's root now neutralizes all\ntwelve. `direction` still inherits, so RTL pages keep working.\n\nNo API change, and no CSS reset is needed on your container — an aggressive one\n(`all: initial` / `all: revert`) would wipe the `--tpl-user-*` theming\nproperties. See the new [Embedding the editor](https://docs.templatical.com/getting-started/embedding) guide.",
+          "packages": [
+            "@templatical/editor"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.29.0",
       "date": "2026-08-28",
@@ -1136,7 +1182,7 @@
           "hash": "bfa416d",
           "level": "patch",
           "title": "Fix input fields overflowing their container in the template settings panel and other sidebars (issue #115).",
-          "body": "Root cause: Tailwind preflight is disabled (intentional — see CLAUDE.md), so `box-sizing: border-box` was never applied to form elements. The hand-rolled `.tpl` reset block reset `font-family` and button chrome but not `box-sizing`. With `tpl:w-full` (`width: 100%`) plus a horizontal padding utility like `tpl:px-3.5` (28px total), inputs resolved to `content-box` and extended their padding beyond the parent — most visible in the 320px right sidebar.\n\nFix: add `box-sizing: border-box` to the form-element reset in `packages/editor/src/styles/index.css`. Affects every `<input>`, `<select>`, `<textarea>`, and `<button>` under `.tpl`. Also resolves the social-toolbar slider/number-input misalignment reported in the same issue.\n\nRegression locked by `packages/editor/tests/formResetStyles.test.ts`.",
+          "body": "Root cause: Tailwind preflight is disabled (intentional), so `box-sizing: border-box` was never applied to form elements. The hand-rolled `.tpl` reset block reset `font-family` and button chrome but not `box-sizing`. With `tpl:w-full` (`width: 100%`) plus a horizontal padding utility like `tpl:px-3.5` (28px total), inputs resolved to `content-box` and extended their padding beyond the parent — most visible in the 320px right sidebar.\n\nFix: add `box-sizing: border-box` to the form-element reset in `packages/editor/src/styles/index.css`. Affects every `<input>`, `<select>`, `<textarea>`, and `<button>` under `.tpl`. Also resolves the social-toolbar slider/number-input misalignment reported in the same issue.\n\nRegression locked by `packages/editor/tests/formResetStyles.test.ts`.",
           "packages": [
             "@templatical/editor"
           ]

@@ -204,6 +204,7 @@ export default {
     height: "Height",
     heightAuto: "Auto",
     heightCustom: "Custom",
+    borderRadius: "Border Radius",
     linkUrl: "Link URL",
     openInNewTab: "Open in new tab",
     placeholderUrl: "Placeholder Image",
@@ -348,6 +349,11 @@ export default {
     textAlign: "Alignment",
     cellPlaceholder: "Enter text...",
     empty: "Add a table",
+  },
+
+  // Toolbar - Paragraph
+  paragraph: {
+    paragraphSpacing: "Paragraph Spacing",
   },
 
   // Toolbar - Spacer

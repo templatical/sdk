@@ -209,6 +209,7 @@ const de: typeof en = {
     height: "Höhe",
     heightAuto: "Automatisch",
     heightCustom: "Benutzerdefiniert",
+    borderRadius: "Eckenradius",
     linkUrl: "Link-URL",
     openInNewTab: "In neuem Tab öffnen",
     placeholderUrl: "Platzhalterbild",
@@ -353,6 +354,11 @@ const de: typeof en = {
     textAlign: "Ausrichtung",
     cellPlaceholder: "Text eingeben...",
     empty: "Tabelle hinzufügen",
+  },
+
+  // Toolbar - Paragraph
+  paragraph: {
+    paragraphSpacing: "Absatzabstand",
   },
 
   // Toolbar - Spacer

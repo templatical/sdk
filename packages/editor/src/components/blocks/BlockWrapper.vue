@@ -163,22 +163,19 @@ const blockCommentCount = computed(
   () => caps.comments?.getBlockCount(props.block.id) ?? 0,
 );
 
-// padding + backgroundColor live on `.tpl-block-content` (not `.tpl-block`).
-// Filter-based dark-mode preview targets `.tpl-block-content` so the bg
-// inverts together with its content.
-const contentStyle = computed(() => {
-  const full = getBlockWrapperStyle(props.block);
-  const style: Record<string, string> = {
-    padding: full.padding,
-    backgroundColor: full.backgroundColor,
-  };
-  // Section corner radius (when set) rounds the same element that carries the
-  // background, matching the exported MJML.
-  if (full.borderRadius) {
-    style.borderRadius = full.borderRadius;
-  }
-  return style;
-});
+// Everything `getBlockWrapperStyle` computes lives on `.tpl-block-content`
+// (not `.tpl-block`): filter-based dark-mode preview targets
+// `.tpl-block-content` so the bg inverts together with its content, the
+// section corner radius has to round the element carrying that bg to match
+// the exported MJML, and `--tpl-doc-paragraph-spacing` has to sit on an
+// ancestor of the slotted `.tpl-text-content` for the paragraph rule to
+// inherit it.
+//
+// Applied wholesale on purpose. This used to copy a fixed list of properties
+// across, which silently dropped the paragraph-spacing variable — the control
+// moved the number and the canvas never changed, while a unit test on
+// `getBlockWrapperStyle` still passed.
+const contentStyle = computed(() => getBlockWrapperStyle(props.block));
 
 // Section outer frame — the canvas equivalent of the exported `mj-wrapper`:
 // a band with its own background + padding + radius framing the section's box.

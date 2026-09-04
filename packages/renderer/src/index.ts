@@ -12,6 +12,7 @@ import { renderBlock } from "./renderers";
 import { escapeHtml, escapeAttr, escapeCssValue } from "./escape";
 import { wrapWithDisplayCondition } from "./display-condition";
 import { bgAttr } from "./utils";
+import { richTextStylesheet, collectParagraphGaps } from "./rich-text";
 import { toPaddingString } from "./padding";
 
 export interface RenderOptions {
@@ -166,6 +167,9 @@ export async function renderToMjml(
       <mj-column padding="0" />
       <mj-image fluid-on-mobile="true" />
     </mj-attributes>${fontDeclarations}
+    <mj-style inline="inline">
+      ${richTextStylesheet(collectParagraphGaps(blocks))}
+    </mj-style>
     <mj-style>
       a { color: ${linkColor}; text-decoration: ${linkDecoration}; }
       @media only screen and (max-width: 480px) {
@@ -401,6 +405,14 @@ function renderCustomBlockStylesheets(stylesheets: string[]): string {
 export { RenderContext } from "./render-context";
 export { escapeHtml, escapeAttr, convertMergeTagsToValues } from "./escape";
 export { isHiddenOnAll, getCssClassAttr, getCssClasses } from "./visibility";
+// Exported for `blockRenderers` consumers replacing the paragraph or title
+// renderer: without both classes on their `mj-text`, their block silently
+// loses the spacing rules and drifts back to MJML's 13px.
+export {
+  RICH_TEXT_CSS_CLASS,
+  richTextGapClass,
+  resolveParagraphGap,
+} from "./rich-text";
 export { getWidthPercentages, getWidthPixels } from "./columns";
 export { toPaddingString } from "./padding";
 export { DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";

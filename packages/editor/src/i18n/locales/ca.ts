@@ -207,6 +207,7 @@ const ca: typeof en = {
     height: "Alçada",
     heightAuto: "Automàtica",
     heightCustom: "Personalitzada",
+    borderRadius: "Radi de la vora",
     linkUrl: "URL de l'enllaç",
     openInNewTab: "Obre en una pestanya nova",
     placeholderUrl: "Imatge de mostra",
@@ -351,6 +352,11 @@ const ca: typeof en = {
     textAlign: "Alineació",
     cellPlaceholder: "Introdueix el text...",
     empty: "Afegeix una taula",
+  },
+
+  // Toolbar - Paragraph
+  paragraph: {
+    paragraphSpacing: "Espaiat entre paràgrafs",
   },
 
   // Toolbar - Spacer

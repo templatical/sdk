@@ -85,6 +85,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Installation", link: "/getting-started/installation" },
         { text: "Quick Start", link: "/getting-started/quick-start" },
+        { text: "Embedding", link: "/getting-started/embedding" },
         {
           text: "How Rendering Works",
           link: "/getting-started/how-rendering-works",
@@ -260,6 +261,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
       items: [
         { text: "Installation", link: "/de/getting-started/installation" },
         { text: "Schnellstart", link: "/de/getting-started/quick-start" },
+        { text: "Einbetten", link: "/de/getting-started/embedding" },
         {
           text: "So funktioniert das Rendering",
           link: "/de/getting-started/how-rendering-works",

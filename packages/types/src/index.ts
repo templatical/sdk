@@ -31,7 +31,7 @@ export type {
   HeadingLevel,
   VideoBlock,
 } from "./blocks";
-export { HEADING_LEVEL_FONT_SIZE } from "./blocks";
+export { HEADING_LEVEL_FONT_SIZE, RICH_TEXT_SPACING } from "./blocks";
 
 // Social icon glyphs (shared by the editor's inline SVG + the renderer's PNG rasterizer)
 export type { SocialIconGlyph } from "./social";

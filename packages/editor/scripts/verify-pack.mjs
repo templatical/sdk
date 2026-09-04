@@ -43,7 +43,7 @@ const MAX_PACKAGES = 90;
 // These packages MUST NOT appear in a consumer's node_modules — they're either
 // bundled into the editor's published .js (so a consumer copy is redundant
 // bloat) or they would re-introduce the duplicate-Vue-instance bug if present
-// (see CLAUDE.md "Editor is fully self-contained").
+// (see CONTRIBUTING.md "Architecture overview").
 const FORBIDDEN_PACKAGES = [
   "vue",
   "@vue/reactivity",
@@ -133,7 +133,7 @@ try {
   if (installed.length > MAX_PACKAGES) {
     fail(
       `consumer install footprint too large: ${installed.length} packages (max ${MAX_PACKAGES}).\n` +
-        `Inspect editor's package.json — anything in 'dependencies' is a candidate to move to 'devDependencies' (then bundle inline). See CLAUDE.md "Editor's runtime dependencies should be empty".`,
+        `Inspect editor's package.json — anything in 'dependencies' is a candidate to move to 'devDependencies' (then bundle inline). The editor is designed to declare no runtime dependencies at all; see CONTRIBUTING.md "Architecture overview".`,
     );
   }
 

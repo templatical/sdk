@@ -104,6 +104,7 @@ MJML hängt vom JSON *und* von Ihrem Renderer ab: Ihrer Schriften-Konfiguration,
 
 - Konvertiert jeden Block im JSON-Baum in seine entsprechende MJML-Komponente (text → `<mj-text>`, image → `<mj-image>`, button → `<mj-button>` usw.)
 - Wendet Blockstile (Padding, Hintergrundfarbe) als MJML-Attribute an
+- Setzt die Abstände von `<p>`, `<ul>`, `<ol>` und `<li>` in Rich-Text so, dass sie dem Editor-Canvas entsprechen, und überschreibt damit MJMLs eigenen Standard `p { margin: 13px 0 }`
 - Fügt benutzerdefinierte Schriftart-Deklarationen als `<mj-font>`-Tags ein
 - Bewahrt Merge-Tags unverändert (sie werden als wörtlicher Text durchgereicht)
 - Berücksichtigt `visibility`-Einstellungen -- auf allen Viewports ausgeblendete Blöcke werden ausgelassen

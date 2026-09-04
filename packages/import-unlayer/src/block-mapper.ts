@@ -24,6 +24,7 @@ import type {
   ImportReportEntry,
 } from "./types";
 import {
+  parseImageBorderRadius,
   parsePxValue,
   parseColor,
   parseFontFamily,
@@ -249,12 +250,22 @@ function convertImage(values: UnlayerContentValues): Block {
   const src = values.src;
   const action = values.action?.values;
 
+  // Kept separate from the `?? 600` fallback below: a percentage radius has to
+  // resolve against a width the template actually stated.
+  const readWidth = src?.width ? Math.round(src.width) : undefined;
+  const readHeight = src?.height ? Math.round(src.height) : undefined;
+
   return createImageBlock({
     src: src?.url || "",
     alt: values.altText || "",
-    width: src?.width ? Math.round(src.width) : 600,
+    width: readWidth ?? 600,
     // No default, unlike width: an absent height keeps the aspect ratio.
-    height: src?.height ? Math.round(src.height) : undefined,
+    height: readHeight,
+    borderRadius: parseImageBorderRadius(
+      values.borderRadius,
+      readWidth,
+      readHeight,
+    ),
     align: toAlign(values.textAlign, "center"),
     linkUrl: action?.href || undefined,
     linkOpenInNewTab: action?.target === "_blank" || undefined,

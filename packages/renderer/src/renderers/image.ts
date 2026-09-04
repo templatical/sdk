@@ -27,6 +27,13 @@ export function renderImage(block: ImageBlock, context: RenderContext): string {
 
   const visibilityAttr = getCssClassAttr(block);
 
+  // Same shape as section.ts: omitted or 0 emits nothing rather than a
+  // `border-radius="0px"` every existing template would suddenly grow.
+  const borderRadiusAttr =
+    block.borderRadius && block.borderRadius > 0
+      ? ` border-radius="${block.borderRadius}px"`
+      : "";
+
   let linkAttr = "";
   if (block.linkUrl) {
     linkAttr = ` href="${escapeAttr(block.linkUrl)}"`;
@@ -46,6 +53,6 @@ export function renderImage(block: ImageBlock, context: RenderContext): string {
   alt="${alt}"
   width="${width}"${height}
   align="${align}"
-  padding="${padding}"${bgColor}${linkAttr}${visibilityAttr}${roleAttr}
+  padding="${padding}"${bgColor}${borderRadiusAttr}${linkAttr}${visibilityAttr}${roleAttr}
 />`;
 }

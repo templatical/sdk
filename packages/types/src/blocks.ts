@@ -69,6 +69,31 @@ export const HEADING_LEVEL_FONT_SIZE: Record<HeadingLevel, number> = {
   4: 18,
 };
 
+/**
+ * Spacing (px) for the HTML a rich-text block stores — the `<p>`, `<ul>`,
+ * `<ol>` and `<li>` elements TipTap produces.
+ *
+ * The editor canvas and the exported email must agree on these to the pixel,
+ * so this is the one place they are stated. `@templatical/renderer` reads them
+ * to build the global rule it emits; the editor's canvas CSS restates them as
+ * literals (CSS cannot import a constant) and a parity test holds the two
+ * together.
+ *
+ * Fixed px, never a `rem`- or base-size-derived scale: an email body is a
+ * fixed-width document, so content spacing must not move when a consumer
+ * scales the editor chrome.
+ */
+export const RICH_TEXT_SPACING = {
+  /** Gap below every `<p>` except the last — the space between paragraphs. */
+  paragraphGap: 8,
+  /** Vertical margin on `<ul>` / `<ol>`. */
+  listMarginY: 8,
+  /** Left padding on `<ul>` / `<ol>` — the bullet indent. */
+  listPaddingLeft: 24,
+  /** Vertical margin on `<li>`. */
+  listItemMarginY: 4,
+} as const;
+
 export interface TitleBlock extends BaseBlock {
   type: "title";
   content: string;
@@ -82,6 +107,18 @@ export interface TitleBlock extends BaseBlock {
 export interface ParagraphBlock extends BaseBlock {
   type: "paragraph";
   content: string;
+  /**
+   * Gap in px between this block's paragraphs — the space below every `<p>`
+   * except the last. Absent means `RICH_TEXT_SPACING.paragraphGap`.
+   *
+   * Only affects a block holding more than one paragraph; a single `<p>` has no
+   * internal gap, and the space around the block is `styles.padding`.
+   *
+   * `0` is a valid choice (paragraphs butted together) and is distinct from the
+   * field being absent, so readers must test for `undefined` rather than
+   * falsiness.
+   */
+  paragraphSpacing?: number;
 }
 
 export interface ImageBlock extends BaseBlock {
@@ -96,6 +133,12 @@ export interface ImageBlock extends BaseBlock {
    */
   height?: number;
   align: "left" | "center" | "right";
+  /**
+   * Corner radius in px. Omitted/0 = square corners. A radius of at least half
+   * the rendered size rounds a square image to a circle, which is how avatar
+   * and portrait layouts are built.
+   */
+  borderRadius?: number;
   linkUrl?: string;
   linkOpenInNewTab?: boolean;
   placeholderUrl?: string;

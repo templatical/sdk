@@ -1,17 +1,17 @@
 {
   "name": "@templatical/core",
   "description": "Framework-agnostic editor logic for Templatical email editor",
-  "version": "0.29.0",
+  "version": "0.30.0",
   "bugs": "https://github.com/templatical/sdk/issues",
   "dependencies": {
     "@templatical/types": "workspace:*",
-    "@vue/reactivity": "^3.5.41"
+    "@vue/reactivity": "^3.5.42"
   },
   "devDependencies": {
     "pusher-js": "^8.6.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11",
-    "vue": "^3.5.41"
+    "vue": "^3.5.42"
   },
   "exports": {
     ".": {
@@ -35,7 +35,7 @@
     "templatical",
     "vue-reactivity"
   ],
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "FSL-1.1-MIT",
   "module": "./dist/index.js",
   "peerDependencies": {
     "pusher-js": "^8.6.0"

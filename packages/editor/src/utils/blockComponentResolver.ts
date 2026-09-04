@@ -1,4 +1,5 @@
 import type { Block, TemplateSettings } from "@templatical/types";
+import { RICH_TEXT_SPACING } from "@templatical/types";
 import type { Component } from "vue";
 import type { UseBlockRegistryReturn } from "../composables/useBlockRegistry";
 
@@ -72,6 +73,19 @@ export function getBlockWrapperStyle(block: Block): Record<string, string> {
     padding: `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px`,
     backgroundColor: backgroundColor || "transparent",
   };
+  // Consumed by the `.tpl-text-content p` rules, so only rich-text blocks set
+  // it — on an image or a divider the gap would mean nothing. Always set for
+  // those: `0` is a legitimate gap, so a falsy check would turn a chosen 0
+  // into the default, and an absent value still needs a real gap rather than
+  // the browser's own paragraph margin. Titles carry no gap of their own and
+  // take the default, mirroring the renderer.
+  if (block.type === "paragraph" || block.type === "title") {
+    const gap =
+      block.type === "paragraph"
+        ? (block.paragraphSpacing ?? RICH_TEXT_SPACING.paragraphGap)
+        : RICH_TEXT_SPACING.paragraphGap;
+    style["--tpl-doc-paragraph-spacing"] = `${gap}px`;
+  }
   // borderRadius is section-specific (it lives on SectionBlock, not `styles`).
   // Mirror it into the editor box style so the canvas/preview match the
   // exported MJML, which renders it as `border-radius` on the `mj-section`.

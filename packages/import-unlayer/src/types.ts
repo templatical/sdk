@@ -144,9 +144,10 @@ export interface UnlayerContentValues {
   src?: UnlayerImageSrc;
   altText?: string;
   action?: UnlayerLinkAction;
+  // image / button
+  borderRadius?: string;
   // button
   buttonColors?: UnlayerButtonColors;
-  borderRadius?: string;
   padding?: string;
   size?: { autoWidth?: boolean; width?: string };
   href?: UnlayerLinkAction;

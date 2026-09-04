@@ -37,13 +37,23 @@ describe("block chrome structure", () => {
     );
   });
 
-  it("padding + backgroundColor live on `.tpl-block-content`; `.tpl-block` carries no inline spacing", () => {
+  it("`.tpl-block-content` gets every block style; `.tpl-block` carries no inline spacing", () => {
     // Block bg has to sit INSIDE the filter region — moving it back onto
     // `.tpl-block` makes the dark-preview filter invert text-only, leaving
     // inverted (white) text on an un-inverted (white) section bg = invisible.
+    // `getBlockWrapperStyle` is what produces padding + backgroundColor (see
+    // blockComponentResolver.test.ts); this is the binding that delivers them.
     expect(blockWrapper).toMatch(
-      /contentStyle\s*=\s*computed\(\(\)\s*=>\s*\{[\s\S]*padding[\s\S]*backgroundColor/,
+      /contentStyle\s*=\s*computed\(\(\)\s*=>\s*getBlockWrapperStyle\(props\.block\)\)/,
     );
+    expect(blockWrapper).toMatch(
+      /class="tpl-block-content"\s+:style="contentStyle"/,
+    );
+    // Applied wholesale, never property-by-property. Copying a named list
+    // across is how `--tpl-doc-paragraph-spacing` came to be computed and then
+    // dropped: the control moved the number and the canvas never changed,
+    // while the unit test on `getBlockWrapperStyle` still passed.
+    expect(blockWrapper).not.toMatch(/const\s+style:\s*Record<string,\s*string>/);
     // `.tpl-block` carries no inline style; spacing lives only on the content
     // layer. Guards against reintroducing a wrapper-level spacing style.
     expect(blockWrapper).not.toMatch(/wrapperStyle/);

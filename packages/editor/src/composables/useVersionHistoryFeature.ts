@@ -147,8 +147,8 @@ export function useVersionHistoryFeature(
   const isConfirmingRestore = ref(false);
   const isSavingBeforeRestore = ref(false);
 
-  // Per CLAUDE.md, async functions must guard against post-unmount execution
-  // after every `await` so we don't write to dead refs or fire side effects
+  // Async functions must guard against post-unmount execution after every
+  // `await` so we don't write to dead refs or fire side effects
   // (autoSave.pause, setContent) on a torn-down component.
   let destroyed = false;
   onScopeDispose(() => {

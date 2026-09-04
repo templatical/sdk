@@ -218,3 +218,99 @@ describe("ImageToolbar height control", () => {
     expect(options).toEqual([fr.image.heightAuto, fr.image.heightCustom]);
   });
 });
+
+/**
+ * Unlike height, the radius is a bare number field: 0 is a real answer (square
+ * corners), so there is no "no opinion" state to keep distinguishable and an
+ * emptied field committing 0 is what the author meant.
+ */
+describe("ImageToolbar corner radius control", () => {
+  const radiusInput = (w: ReturnType<typeof mountIt>) =>
+    w.find('[data-testid="image-border-radius-input"]');
+
+  it("reads 0 when the block stores no radius", () => {
+    const wrapper = mountIt(createImageBlock());
+    expect((radiusInput(wrapper).element as HTMLInputElement).value).toBe("0");
+  });
+
+  it("reads the stored radius", () => {
+    const wrapper = mountIt(createImageBlock({ borderRadius: 60 }));
+    expect((radiusInput(wrapper).element as HTMLInputElement).value).toBe("60");
+  });
+
+  it("typing a radius commits it as a number", async () => {
+    const wrapper = mountIt(createImageBlock());
+
+    await radiusInput(wrapper).setValue("60");
+
+    const [update] = wrapper.emitted("update")![0] as [Partial<ImageBlock>];
+    expect(update.borderRadius).toBe(60);
+  });
+
+  it("clearing the field clears the radius rather than storing 0", async () => {
+    const wrapper = mountIt(createImageBlock({ borderRadius: 60 }));
+
+    await radiusInput(wrapper).setValue("");
+
+    const [update] = wrapper.emitted("update")![0] as [Partial<ImageBlock>];
+    // Absent, not 0 — both render square, but only absence stays out of the
+    // exported JSON. Asserted via the key so a stored 0 cannot pass.
+    expect(update.borderRadius).toBeUndefined();
+    expect("borderRadius" in update).toBe(true);
+  });
+
+  it("commits 0 typed explicitly as a cleared radius, not as a stored 0", async () => {
+    const wrapper = mountIt(createImageBlock({ borderRadius: 60 }));
+
+    await radiusInput(wrapper).setValue("0");
+
+    const [update] = wrapper.emitted("update")![0] as [Partial<ImageBlock>];
+    expect(update.borderRadius).toBeUndefined();
+  });
+
+  // `min="0"` only drives constraint validation — a number input still reports
+  // "-5" as its value, so the guard is what keeps it out of the block.
+  it("ignores a negative radius", async () => {
+    const wrapper = mountIt(createImageBlock({ borderRadius: 60 }));
+
+    await radiusInput(wrapper).setValue("-5");
+
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  /**
+   * The keystroke that opens a negative number is the trap. A number input
+   * sanitizes an in-progress "-" to an EMPTY string and sets `validity.badInput`
+   * — measured in Chrome, typing "-" fires `input` with value "" + badInput
+   * true, and only the following "5" fires again with "-5". Read as a cleared
+   * field, that first event wipes the stored radius before the guard above ever
+   * sees a negative.
+   *
+   * happy-dom implements neither the sanitization nor `badInput`, so the two
+   * are supplied here: that is what makes `setValue("-5")` above pass while the
+   * real interaction was broken.
+   */
+  it("keeps the stored radius while a negative is mid-typing", async () => {
+    const wrapper = mountIt(createImageBlock({ borderRadius: 60 }));
+    const el = radiusInput(wrapper).element as HTMLInputElement;
+    Object.defineProperty(el, "validity", {
+      value: { badInput: true },
+      configurable: true,
+    });
+
+    el.value = "";
+    await radiusInput(wrapper).trigger("input");
+
+    expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  // French, not English: an `en` assertion passes against a hardcoded label.
+  it("translates the label", () => {
+    const wrapper = mountEditor(ImageToolbar, {
+      props: { block: createImageBlock({ borderRadius: 60 }) },
+      provides: { [TRANSLATIONS_KEY]: fr },
+    });
+
+    expect(wrapper.text()).toContain(fr.image.borderRadius);
+  });
+});
