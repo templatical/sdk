@@ -15,13 +15,38 @@ import {
   WORKING_DIR,
 } from "../../live/index";
 
-/** The first title/heading block's text, as a hint for `list`. */
+/**
+ * The first title block's text in document order, as a hint for `list`.
+ *
+ * It must descend into a section's columns, not scan top-level blocks only:
+ * templates put their content inside sections (that is the documented
+ * structure), so a top-level scan finds nothing for a real template. Measured
+ * across all five of the Agent Skill's own examples — event-invite, newsletter,
+ * product-sale, receipt, welcome — none has a top-level title block, so a
+ * shallow version of this returns null every time and the hint is dead code.
+ */
 function titleHint(content: unknown): string | null {
-  const blocks = (
-    content as { blocks?: Array<{ type?: string; content?: string }> }
-  )?.blocks;
-  const first = blocks?.find((b) => b.type === "title");
-  return typeof first?.content === "string" ? first.content : null;
+  return findTitle((content as { blocks?: unknown })?.blocks);
+}
+
+function findTitle(blocks: unknown): string | null {
+  if (!Array.isArray(blocks)) return null;
+  for (const block of blocks as Array<{
+    type?: string;
+    content?: string;
+    children?: unknown[];
+  }>) {
+    if (block?.type === "title" && typeof block.content === "string") {
+      return block.content;
+    }
+    if (block?.type === "section" && Array.isArray(block.children)) {
+      for (const column of block.children) {
+        const hit = findTitle(column);
+        if (hit) return hit;
+      }
+    }
+  }
+  return null;
 }
 
 export function runList(args: ParsedArgs): number {

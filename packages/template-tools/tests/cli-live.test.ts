@@ -56,6 +56,37 @@ describe("list command", () => {
     expect(runList(parseArgs(["list", "--cwd", empty, "--json"]))).toBe(0);
     expect(JSON.parse(stdout.join("")).templates).toEqual([]);
   });
+
+  it("finds a title nested inside a section's column", () => {
+    writeFileSync(
+      join(dir, ".templatical", "field-notes.json"),
+      JSON.stringify({
+        blocks: [
+          {
+            id: "sec_1",
+            type: "section",
+            columns: "1",
+            styles: { padding: { top: 0, right: 0, bottom: 0, left: 0 } },
+            children: [
+              [
+                {
+                  id: "t",
+                  type: "title",
+                  content: "Field Notes: October",
+                  level: 1,
+                },
+              ],
+            ],
+          },
+        ],
+        settings: {},
+      }),
+    );
+    setJsonMode(true);
+    expect(runList(parseArgs(["list", "--cwd", dir, "--json"]))).toBe(0);
+    const out = JSON.parse(stdout.join(""));
+    expect(out.templates[0].title).toBe("Field Notes: October");
+  });
 });
 
 describe("live reload / stop without a running server", () => {
