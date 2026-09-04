@@ -5,6 +5,7 @@
 // dispatch below owns argument handling, the error→exit-code mapping, and
 // nothing else. Human-facing output goes through cli/output.ts.
 
+import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "./cli/args";
 import { note, setJsonMode } from "./cli/output";
@@ -77,10 +78,28 @@ export async function main(argv: string[]): Promise<number> {
 // Only self-invoke when run as the CLI entry point, not when imported — this
 // package's own tests import `main` directly to exercise the dispatch above
 // without spawning a subprocess.
-if (
-  process.argv[1] &&
-  pathToFileURL(process.argv[1]).href === import.meta.url
-) {
+//
+// import.meta.url is always a realpath, but process.argv[1] is not: npm's
+// `bin` field links a real symlink into the consumer's node_modules/.bin
+// (e.g. node_modules/.bin/templatical -> ../@templatical/template-tools/dist/bin.js),
+// and Node leaves argv[1] as that symlink path instead of resolving it.
+// Comparing them directly is false for every consumer who runs the published
+// binary, so main() would silently never run. realpathSync(argv[1]) resolves
+// the symlink so both sides name the same file.
+export function isEntryPoint(): boolean {
+  const argv1 = process.argv[1];
+  if (!argv1) return false;
+  try {
+    return pathToFileURL(realpathSync(argv1)).href === import.meta.url;
+  } catch {
+    // realpathSync throws (e.g. ENOENT) if argv[1] doesn't exist or can't be
+    // read. This guard runs at module load, so failing open into a crash
+    // would be worse than just not self-invoking.
+    return false;
+  }
+}
+
+if (isEntryPoint()) {
   main(process.argv.slice(2))
     .then((code) => process.exit(code))
     .catch((err: unknown) => {
