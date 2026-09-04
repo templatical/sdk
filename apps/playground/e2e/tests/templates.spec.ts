@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
+import { seedControlState } from "../helpers/control-state";
 
 /**
  * The BYO templates provider in the OSS editor, backed by the playground's
@@ -202,9 +203,11 @@ test.describe("templates provider", () => {
       chooserPage,
       editorPage,
     }) => {
-      await openEditor(page, { chooserPage, editorPage }, {
-        "tpl-playground-templates-readonly": "true",
+      await seedControlState(page, {
+        "templates.create": false,
+        "templates.save": false,
       });
+      await openEditor(page, { chooserPage, editorPage });
 
       await expect(page.locator(SELECTORS.templateSave)).toHaveCount(0);
       await expect(page.locator(SELECTORS.saveStatusUnsaved)).toHaveCount(0);
@@ -222,9 +225,11 @@ test.describe("templates provider", () => {
       chooserPage,
       editorPage,
     }) => {
-      await openEditor(page, { chooserPage, editorPage }, {
-        "tpl-playground-templates-readonly": "true",
+      await seedControlState(page, {
+        "templates.create": false,
+        "templates.save": false,
       });
+      await openEditor(page, { chooserPage, editorPage });
 
       const before = await editorPage.getBlockCount();
       await editorPage.selectBlock(0);

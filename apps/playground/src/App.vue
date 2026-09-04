@@ -38,7 +38,6 @@ import type {
   SavedBlocksProvider,
   TemplateVersion,
   TemplatesProvider,
-  TemplateSaveTrigger,
   TestEmailProvider,
   VersionHistoryProvider,
 } from "@templatical/types";
@@ -95,9 +94,13 @@ import {
 } from "@/i18n";
 import { buildCapabilityConfig } from "@/config/build";
 import { savedBlocksCapability } from "@/config/capabilities/saved-blocks";
+import { templatesCapability } from "@/config/capabilities/templates";
 import { readControlState } from "@/config/state";
 import { savedBlocksProviderFor } from "@/providers/saved-blocks";
+import { templatesProviderFor } from "@/providers/templates";
 import { SCRATCH_TEMPLATE_NAME, slugFor } from "@/providers/template-name";
+import { HYDRATED_VERSIONS, versionStoreFor } from "@/providers/version-store";
+import type { StoredVersion } from "@/providers/version-store";
 const { locale, t } = usePlaygroundI18n();
 const { sdkLocale } = useSdkLocale();
 const { theme: uiTheme, isDark } = usePlaygroundTheme();
@@ -222,76 +225,6 @@ const editorContainer = ref<HTMLElement | null>(null);
 const editor = ref<TemplaticalEditor | null>(null);
 
 /**
- * Demo version store: one localStorage array per template, appended to by the
- * templates provider's `save` and read by the version-history provider.
- *
- * It sits between the two providers on purpose. That is exactly the arrangement
- * the contract describes — the editor never records a version, the thing that
- * *persists* does — and having the demo do it the same way is what makes the
- * playground's history fill up as you work.
- */
-const versionStores = new Map<string, VersionStore>();
-
-interface StoredVersion {
-  id: string;
-  createdAt: string;
-  isAutomatic: boolean;
-  content: TemplateContent;
-}
-
-interface VersionStore {
-  read: () => StoredVersion[];
-  append: (content: TemplateContent, isAutomatic: boolean) => StoredVersion;
-}
-
-/**
- * How many of the newest versions carry their content in `list()`.
- *
- * The hint is evaluated per entry, so a store may hydrate the recent ones and
- * make the rest a round-trip. Doing that here keeps both paths live in the demo:
- * scrubbing the recent versions never awaits, and stepping past the cut-off
- * exercises `get` — and the editor's cache, so the second visit is instant too.
- */
-const HYDRATED_VERSIONS = 5;
-
-function versionStoreFor(templateName: string): VersionStore {
-  const cached = versionStores.get(templateName);
-  if (cached) return cached;
-
-  const key = `templatical:versions:${slugFor(templateName)}`;
-
-  function read(): StoredVersion[] {
-    const raw = localStorage.getItem(key);
-    if (raw === null) return [];
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      return Array.isArray(parsed) ? (parsed as StoredVersion[]) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function append(
-    content: TemplateContent,
-    isAutomatic: boolean,
-  ): StoredVersion {
-    const version: StoredVersion = {
-      id: `v-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      createdAt: new Date().toISOString(),
-      isAutomatic,
-      content: JSON.parse(JSON.stringify(content)) as TemplateContent,
-    };
-    // Newest first, matching the order the editor renders verbatim.
-    localStorage.setItem(key, JSON.stringify([version, ...read()]));
-    return version;
-  }
-
-  const store: VersionStore = { read, append };
-  versionStores.set(templateName, store);
-  return store;
-}
-
-/**
  * Demo version-history provider over that same store, memoised per template
  * name — the rule every provider here follows, because `init()` re-runs on a
  * locale or config change and a fresh provider each time would be churn around
@@ -361,128 +294,6 @@ function versionHistoryProviderFor(
   const provider = readOnly ? { ...base, restore: false as const } : base;
 
   versionHistoryProviders.set(name, provider);
-  return provider;
-}
-
-/** Storage key per template, so each template is its own stored document. */
-function templatesKeyFor(templateName: string): string {
-  return `templatical:template:${slugFor(templateName)}`;
-}
-
-/** What the demo store keeps under that key — exactly the `Template` shape. */
-interface StoredTemplate {
-  id: string;
-  name?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  content: TemplateContent;
-}
-
-/**
- * Demo templates provider: one localStorage record per template, standing in for
- * the API a real consumer would call.
- *
- * Memoised per template **name**, not per `init()` call — same rule as
- * `savedBlocksProviderFor`, and for the same reason: `init()` re-runs whenever
- * the locale or config changes, and a fresh provider each time would be pointless
- * churn around a single stored document. Switching template switches document.
- *
- * Two storage flags mirror the saved-blocks demo:
- *  - `tpl-playground-templates-readonly` withholds `create`/`save` by passing
- *    `false`, which hides the save button, the status indicator, and makes the
- *    name read-only while loading and editing keep working.
- *  - `tpl-playground-templates-autosave` turns on the SDK's debounced autosave,
- *    so the Save button stops being the only way content is persisted.
- */
-const templatesProviders = new Map<string, TemplatesProvider>();
-
-function templatesProviderFor(template?: TemplateOption): TemplatesProvider {
-  const name = template?.name ?? SCRATCH_TEMPLATE_NAME;
-  const cached = templatesProviders.get(name);
-  if (cached) return cached;
-
-  const key = templatesKeyFor(name);
-
-  function read(): StoredTemplate | null {
-    const raw = localStorage.getItem(key);
-    if (raw === null) return null;
-    try {
-      return JSON.parse(raw) as StoredTemplate;
-    } catch {
-      // A corrupt record reads as "nothing stored", so the next create() heals it
-      // rather than wedging the demo.
-      return null;
-    }
-  }
-
-  function write(stored: StoredTemplate): StoredTemplate {
-    localStorage.setItem(key, JSON.stringify(stored));
-    return stored;
-  }
-
-  function requireStored(templateId: string): StoredTemplate {
-    const stored = read();
-    if (!stored || stored.id !== templateId) {
-      throw new Error(`No template stored under "${templateId}"`);
-    }
-    return stored;
-  }
-
-  const versions = versionStoreFor(name);
-
-  const base: TemplatesProvider = {
-    load: async (templateId) => requireStored(templateId),
-    create: async (input) => {
-      // A store stamps its own writes, so the demo does too — that is what the
-      // header's write time reads, and the editor never sends either field.
-      //
-      // `createdAt` only. Stamping `updatedAt` here too would claim an update
-      // that never happened, and the header believes the store: it prefers
-      // `updatedAt` and labels it "Updated", so a brand-new template read
-      // "Updated just now" before anyone had edited anything. Leaving it unset
-      // is what lets the header fall back to "Created", which is the whole point
-      // of the timestamp carrying which field it came from. `save()` below is
-      // the first thing that can honestly set it.
-      //
-      // Worth copying in a real backend: a column default of
-      // `updated_at = created_at` produces the same lie.
-      return write({
-        id: slugFor(name),
-        name: input.name,
-        content: input.content,
-        createdAt: new Date().toISOString(),
-      });
-    },
-    save: async (templateId, patch) => {
-      const stored = write({
-        ...requireStored(templateId),
-        ...patch,
-        updatedAt: new Date().toISOString(),
-      });
-      // The contract puts automatic versions on whoever implements `save` — the
-      // side that knows what storage costs. Cloud throttles here; the demo
-      // records one per save, because a demo you have to wait out demonstrates
-      // nothing. A rename patch carries no content and records nothing.
-      if (patch.content) versions.append(patch.content, true);
-      return stored;
-    },
-    onSaved: (_template, { trigger }) => {
-      // Recorded on `window` rather than rendered: a visible trigger log would be
-      // test-only UI in front of every visitor. e2e reads it with page.evaluate.
-      const w = window as unknown as {
-        __tplPlaygroundSaveTriggers?: TemplateSaveTrigger[];
-      };
-      (w.__tplPlaygroundSaveTriggers ??= []).push(trigger);
-    },
-  };
-
-  const readOnly =
-    localStorage.getItem("tpl-playground-templates-readonly") === "true";
-  const provider = readOnly
-    ? { ...base, create: false as const, save: false as const }
-    : base;
-
-  templatesProviders.set(name, provider);
   return provider;
 }
 
@@ -1684,7 +1495,11 @@ async function initEditor(): Promise<void> {
       // exercised on every run. Autosave is opt-in via a storage flag, because a
       // demo that saves by itself hides what the Save button does.
       templates: {
-        ...templatesProvider,
+        ...buildCapabilityConfig(
+          templatesCapability,
+          readControlState(),
+          templatesProvider,
+        ).templates!,
         autoSave:
           localStorage.getItem("tpl-playground-templates-autosave") === "true",
       },
