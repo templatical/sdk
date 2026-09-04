@@ -5,6 +5,7 @@
 // dispatch below owns argument handling, the error→exit-code mapping, and
 // nothing else. Human-facing output goes through cli/output.ts.
 
+import { pathToFileURL } from "node:url";
 import { parseArgs } from "./cli/args";
 import { note, setJsonMode } from "./cli/output";
 import {
@@ -35,7 +36,7 @@ Options:
   --json                                machine-readable output on stdout
 `;
 
-async function main(argv: string[]): Promise<number> {
+export async function main(argv: string[]): Promise<number> {
   const args = parseArgs(argv);
   setJsonMode(args.json);
 
@@ -54,33 +55,49 @@ async function main(argv: string[]): Promise<number> {
       return await runLive(args);
     case "list":
       return runList(args);
-    case undefined:
     case "help":
-    case "--help":
       note(USAGE);
-      return args.command === undefined ? EXIT.usage : EXIT.ok;
+      return EXIT.ok;
+    case undefined:
+      // parseArgs strips leading dashes into flags, so `--help`/`-h` never
+      // reach args.command — they land here, not on a (dead) case "--help".
+      // Asking for help is not a usage error; a bare invocation still is.
+      if (args.flags.help === true || args.flags.h === true) {
+        note(USAGE);
+        return EXIT.ok;
+      }
+      note(USAGE);
+      return EXIT.usage;
     default:
       note(`Unknown command "${args.command}".\n\n${USAGE}`);
       return EXIT.usage;
   }
 }
 
-main(process.argv.slice(2))
-  .then((code) => process.exit(code))
-  .catch((err: unknown) => {
-    if (err instanceof InvalidTemplateError) {
-      note(err.message);
-      for (const e of err.errors) note(`  - ${e}`);
-      process.exit(EXIT.invalid);
-    }
-    if (err instanceof MissingDependencyError) {
-      note(err.message);
-      process.exit(EXIT.missingDep);
-    }
-    if (err instanceof UsageError) {
-      note(err.message);
+// Only self-invoke when run as the CLI entry point, not when imported — this
+// package's own tests import `main` directly to exercise the dispatch above
+// without spawning a subprocess.
+if (
+  process.argv[1] &&
+  pathToFileURL(process.argv[1]).href === import.meta.url
+) {
+  main(process.argv.slice(2))
+    .then((code) => process.exit(code))
+    .catch((err: unknown) => {
+      if (err instanceof InvalidTemplateError) {
+        note(err.message);
+        for (const e of err.errors) note(`  - ${e}`);
+        process.exit(EXIT.invalid);
+      }
+      if (err instanceof MissingDependencyError) {
+        note(err.message);
+        process.exit(EXIT.missingDep);
+      }
+      if (err instanceof UsageError) {
+        note(err.message);
+        process.exit(EXIT.usage);
+      }
+      note(`Unexpected error: ${(err as Error)?.message ?? String(err)}`);
       process.exit(EXIT.usage);
-    }
-    note(`Unexpected error: ${(err as Error)?.message ?? String(err)}`);
-    process.exit(EXIT.usage);
-  });
+    });
+}

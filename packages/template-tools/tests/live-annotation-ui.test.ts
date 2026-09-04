@@ -27,4 +27,17 @@ describe("annotation capture UI", () => {
     expect(HARNESS).toContain('id="note-panel"');
     expect(HARNESS).toContain('id="note-text"');
   });
+
+  it("registers the click listener on the capture phase", () => {
+    // BlockWrapper.handleClick calls stopPropagation() on every block click,
+    // so a bubble-phase listener on `document` never sees it — capture runs
+    // root-to-target, before that stopPropagation is reached. Flipping this
+    // to false (or dropping the third argument) makes every alt-click on a
+    // block a silent no-op: the note panel simply never opens, with nothing
+    // in the console to explain why.
+    const match = HARNESS.match(
+      /document\.addEventListener\(\s*["']click["'][\s\S]*?\n\s*(true|false),\s*\n\s*\);/,
+    );
+    expect(match?.[1]).toBe("true");
+  });
 });

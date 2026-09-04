@@ -161,4 +161,21 @@ describe("edit command", () => {
       runEdit(parseArgs(["edit", file, "--op", "{}", "--ops", ops])),
     ).toThrow(/not both/);
   });
+
+  it("refuses both --op and --ops together even when --op is empty", () => {
+    // flagValue returns "" (not undefined) for an explicitly-empty flag, so a
+    // truthy check on `inline` would miss this and silently run the batch.
+    const before = readFileSync(file, "utf8");
+    const ops = join(dir, "ops.json");
+    writeFileSync(
+      ops,
+      JSON.stringify([
+        { operation: "update_block", data: { blockId: "title_1", updates: { content: "Should not apply" } } },
+      ]),
+    );
+    expect(() =>
+      runEdit(parseArgs(["edit", file, "--op", "", "--ops", ops])),
+    ).toThrow(/not both/);
+    expect(readFileSync(file, "utf8")).toBe(before);
+  });
 });

@@ -1,4 +1,4 @@
-// A pure reducer over the MCP operation vocabulary.
+// A pure reducer over the template operation vocabulary.
 //
 // `applyOperation(content, payload) -> { ok, content, error }`. The input is
 // never mutated: every operation works on a `safeClone` and returns a new

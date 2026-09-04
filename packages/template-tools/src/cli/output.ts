@@ -1,9 +1,10 @@
 // The ONLY module in this package that writes to stdout.
 //
-// Two consumers depend on that being true: @templatical/mcp imports this
-// library and reserves stdout for JSON-RPC, and `--json` promises callers
-// exactly one parseable document. tests/cli-output-discipline.test.ts asserts
-// no other source file touches process.stdout or console.log.
+// `--json` promises callers exactly one parseable document on stdout, and a
+// future stdio-based caller — an MCP server reserving stdout for JSON-RPC —
+// would need that to hold just as strictly. Either way a second writer
+// breaks the contract. tests/cli-output-discipline.test.ts asserts no other
+// source file touches stdout.
 
 let jsonMode = false;
 

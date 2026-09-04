@@ -117,6 +117,14 @@ describe("validate command", () => {
     expect(runValidate(parseArgs(["validate", f, "--json"]))).toBe(0);
     const out = JSON.parse(stdout.join(""));
     expect(out.valid).toBe(true);
-    expect(out.issues.length).toBeGreaterThan(0);
+    // Not just "some issue exists": a11y.missing-preheader (severity "info")
+    // fires on every minimal template regardless of the button under test, so
+    // asserting length alone would pass even if the vague-label rule never ran.
+    expect(out.issues).toContainEqual(
+      expect.objectContaining({
+        ruleId: "a11y.button-vague-label",
+        severity: "warning",
+      }),
+    );
   });
 });

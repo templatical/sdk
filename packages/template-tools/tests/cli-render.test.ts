@@ -20,7 +20,7 @@ vi.mock("../src/cli/resolve-optional", async (importOriginal) => {
 import { parseArgs } from "../src/cli/args";
 import { setJsonMode } from "../src/cli/output";
 import { runRender } from "../src/cli/commands/render";
-import { MissingDependencyError } from "../src/cli/io";
+import { InvalidTemplateError, MissingDependencyError } from "../src/cli/io";
 
 const VALID = {
   blocks: [
@@ -88,6 +88,14 @@ describe("render command", () => {
     expect(readFileSync(out, "utf8")).toContain('<mjml lang="en">');
   });
 
+  it("creates the parent directory for -o when it does not exist yet", async () => {
+    const out = join(dir, "nested", "sub", "out.mjml");
+    expect(
+      await runRender(parseArgs(["render", file, "--format", "mjml", "-o", out])),
+    ).toBe(0);
+    expect(readFileSync(out, "utf8")).toContain('<mjml lang="en">');
+  });
+
   it("wraps the MJML in a json envelope under --json", async () => {
     setJsonMode(true);
     await runRender(parseArgs(["render", file, "--format", "mjml", "--json"]));
@@ -100,6 +108,31 @@ describe("render command", () => {
     await expect(
       runRender(parseArgs(["render", file, "--format", "pdf"])),
     ).rejects.toThrow(/mjml/);
+  });
+
+  it("validates before rendering and reports the structural error list", async () => {
+    // A button missing its required fields (text, url, ...) — structurally
+    // invalid, so this must fail with the error list rather than crash inside
+    // renderToMjml when it reads a property the block never had.
+    const invalid = join(dir, "invalid.json");
+    writeFileSync(
+      invalid,
+      JSON.stringify({
+        blocks: [{ id: "button_1", type: "button", styles: { padding: {} } }],
+        settings: VALID.settings,
+      }),
+      "utf8",
+    );
+    let caught: unknown;
+    try {
+      await runRender(parseArgs(["render", invalid]));
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeInstanceOf(InvalidTemplateError);
+    expect((caught as InvalidTemplateError).errors.join(" ")).toContain(
+      "blocks[0] (button)",
+    );
   });
 
   it("compiles HTML when mjml resolves", async () => {

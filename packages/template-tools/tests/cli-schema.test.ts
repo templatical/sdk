@@ -42,4 +42,14 @@ describe("schema command", () => {
     expect(stdout.join("")).toBe("");
     expect(JSON.parse(readFileSync(out, "utf8"))).toEqual(schema);
   });
+
+  it("creates the parent directory for --out when it does not exist yet", () => {
+    const dir = mkdtempSync(join(tmpdir(), "tt-schema-"));
+    const out = join(dir, "nested", "sub", "schema.json");
+    vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    expect(runSchema(parseArgs(["schema", "--out", out]))).toBe(0);
+    expect(JSON.parse(readFileSync(out, "utf8"))).toEqual(schema);
+  });
 });

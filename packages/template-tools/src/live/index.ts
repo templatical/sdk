@@ -5,14 +5,14 @@
 // Events, and buffers the page's hand-edits so the caller can detect divergence
 // (a user edit in the browser) before overwriting.
 //
-// Two consumers share this core: the @templatical/mcp server (which drives it
-// over stdio, so the agent never touches the network) and the templatical-email
-// Agent Skill's CLI (which drives it over localhost HTTP). Everything here is
-// side-effect free at import time and writes nothing to stdout — the MCP server
-// reserves stdout for JSON-RPC, so a stray write to stdout here would corrupt
-// the protocol. Keep all human-facing output in the callers (cli/output.ts is
-// the CLI's own single writer; tests/cli-output-discipline.test.ts enforces
-// that no other module under src/ touches stdout).
+// This package's own `live` CLI command drives it today, over localhost HTTP.
+// It stays side-effect free at import time and writes nothing to stdout so
+// that a future stdio-based caller — an MCP server reserving stdout for
+// JSON-RPC — can be added without auditing this module first: a stray write
+// here would corrupt that protocol. Keep all human-facing output in the
+// callers (cli/output.ts is the CLI's own single writer;
+// tests/cli-output-discipline.test.ts enforces that no other module under
+// src/ touches stdout).
 
 import { createServer, type Server, type ServerResponse } from "node:http";
 import { spawn } from "node:child_process";
@@ -128,8 +128,9 @@ export function openBrowser(url: string): void {
 }
 
 // --------------------------------------------------------------------------
-// Pidfile helpers (used by the skill's CLI; the MCP server's host owns its
-// own process lifecycle and does not need them)
+// Pidfile helpers (used by this package's own `live` CLI command; a future
+// stdio-based MCP server would own its process lifecycle directly and would
+// not need them)
 // --------------------------------------------------------------------------
 
 export interface PidfileInfo {

@@ -22,7 +22,10 @@ interface OperationInput {
 function parseOperations(args: ParsedArgs, cwd: string): OperationInput[] {
   const inline = flagValue(args, "op");
   const batchFile = flagValue(args, "ops");
-  if (inline && batchFile) {
+  // !== undefined, not truthy: flagValue returns "" for an explicitly-empty
+  // flag, and a truthy check would let --op "" --ops <file> silently run the
+  // batch instead of reporting that both were passed.
+  if (inline !== undefined && batchFile !== undefined) {
     throw new UsageError("Pass either --op or --ops, not both.");
   }
   if (inline) {

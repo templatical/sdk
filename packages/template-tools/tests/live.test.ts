@@ -209,7 +209,7 @@ describe("divergence state machine", () => {
   });
 });
 
-describe("in-process reload (the path the MCP server uses)", () => {
+describe("in-process reload (the path a future MCP server would call directly)", () => {
   it("re-reads the working file and clears divergence without an HTTP call", async () => {
     const dir = project();
     const h = await bridge(dir);

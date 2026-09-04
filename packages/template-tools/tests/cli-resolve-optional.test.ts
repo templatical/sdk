@@ -82,6 +82,43 @@ describe("resolveOptional", () => {
     expect(mod?.marker).toBe("from-cwd-esm");
   });
 
+  it('finds a package via a root-string "exports" field (no "." key)', async () => {
+    // "exports": "./index.js" — PackageManifest's type already declares this
+    // shape (string | Record<...>); entryFileFor previously only ever read
+    // the Record branch and fell through past module/main to "no entry".
+    const cwd = projectWithPackage(
+      "fake-optional-dep-root-exports",
+      "export const marker = 'from-root-exports';\n",
+      { type: "module", exports: "./index.js" },
+    );
+    const mod = await resolveOptional<{ marker: string }>(
+      "fake-optional-dep-root-exports",
+      cwd,
+    );
+    expect(mod?.marker).toBe("from-root-exports");
+  });
+
+  it('throws a clear error, not a raw TypeError, for a nested exports["."].import conditions object', async () => {
+    // The tsup/tsdown "types-first" shape: exports["."].import is itself a
+    // conditions object ({ types, default }), not a string. Handing that
+    // object straight to node:path's join() throws
+    // `TypeError: The "path" argument must be of type string`; entryFileFor
+    // must catch it first and raise its own actionable error instead.
+    const cwd = projectWithPackage(
+      "fake-optional-dep-nested-conditions",
+      "export const marker = 'unused';\n",
+      {
+        type: "module",
+        exports: {
+          ".": { import: { types: "./index.d.ts", default: "./index.js" } },
+        },
+      },
+    );
+    await expect(
+      resolveOptional("fake-optional-dep-nested-conditions", cwd),
+    ).rejects.toThrow(/has no resolvable entry point/);
+  });
+
   it("returns null when the package is absent anywhere", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "tt-empty-"));
     writeFileSync(join(cwd, "package.json"), JSON.stringify({ name: "empty" }));
@@ -91,10 +128,15 @@ describe("resolveOptional", () => {
   });
 
   it("still resolves a package the CLI itself depends on", async () => {
-    // ajv is a real dependency of this package, so it must resolve even from a
-    // cwd that knows nothing about it.
+    // ajv is a hard `dependencies` entry of this package (unlike mjml and the
+    // importers, which are optional peers), so it is always present next to
+    // the CLI's own install and must resolve even from a cwd that knows
+    // nothing about it — exercising the second (CLI-directory) anchor.
     const cwd = mkdtempSync(join(tmpdir(), "tt-bare-"));
-    expect(await resolveOptional("ajv", cwd)).not.toBeNull();
+    const mod = await resolveOptional<{ default: unknown }>("ajv", cwd);
+    // Ajv's default export is the constructor function itself (`new Ajv(...)`
+    // in src/validate.ts) — a concrete check, not just "something came back".
+    expect(typeof mod?.default).toBe("function");
   });
 
   it("finds a package via a relative anchor path that requires climbing", async () => {
