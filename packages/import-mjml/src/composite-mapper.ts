@@ -260,7 +260,15 @@ export function convertNativeTable(
   ctx: ConvertContext,
 ): Converted | null {
   const $ = ctx.$;
-  const rowEls = $el.find("tr").toArray();
+  // .find("tr") is a descendant search, so a <table> nested inside a cell
+  // would otherwise contribute its own rows here too, interleaved with
+  // $el's own. Keep only rows with no "table" ancestor between themselves
+  // and $el — a nested table's rows stay untouched inside their cell's
+  // content, read verbatim by the .html() call below.
+  const rowEls = $el
+    .find("tr")
+    .toArray()
+    .filter((tr) => $(tr).parentsUntil($el, "table").length === 0);
   if (rowEls.length === 0) return null;
 
   const rows: TableRowData[] = rowEls.map((rowEl) => ({

@@ -111,6 +111,22 @@ describe("mj-social", () => {
     );
   });
 
+  it("reports a non-standard icon size and resolves it to the nearest known size", () => {
+    const { result } = convert(
+      `<mj-social icon-size="40px">
+         <mj-social-element name="facebook" href="https://fb.test/x" />
+       </mj-social>`,
+      "mj-social",
+    );
+    const block = result.block as SocialIconsBlock;
+
+    expect(block.iconSize).toBe("medium");
+    expect(result.entry.status).toBe("approximated");
+    expect(result.entry.note).toBe(
+      'Icon size 40px is not one of 24/32/48; resolved to "medium".',
+    );
+  });
+
   it("returns null for an mj-social with no elements", () => {
     const $: CheerioAPI = load(
       "<mjml><mj-body><mj-social /></mj-body></mjml>",
@@ -198,6 +214,41 @@ describe("mj-table", () => {
       templaticalBlockType: "table",
       status: "converted",
     });
+  });
+
+  it("keeps only the outer table's own rows when a table is nested inside a cell", () => {
+    const { result } = convert(
+      `<mj-table>
+         <tr><td><table><tr><td>inner</td></tr></table></td></tr>
+         <tr><td>outer</td></tr>
+       </mj-table>`,
+      "mj-table",
+    );
+    const block = result.block as TableBlock;
+
+    expect(block.rows).toHaveLength(2);
+    expect(block.rows[0].cells).toHaveLength(1);
+    expect(block.rows[0].cells[0].content).toBe(
+      "<table><tr><td>inner</td></tr></table>",
+    );
+    expect(block.rows[1].cells.map((c) => c.content)).toEqual(["outer"]);
+  });
+
+  it("converts an ordinary flat two-row table with no nesting", () => {
+    const { result } = convert(
+      `<mj-table>
+         <tr><td>A1</td><td>A2</td></tr>
+         <tr><td>B1</td><td>B2</td></tr>
+       </mj-table>`,
+      "mj-table",
+    );
+    const block = result.block as TableBlock;
+
+    expect(block.hasHeaderRow).toBe(false);
+    expect(block.rows.map((r) => r.cells.map((c) => c.content))).toEqual([
+      ["A1", "A2"],
+      ["B1", "B2"],
+    ]);
   });
 
   it("returns null for an mj-table with no rows", () => {
