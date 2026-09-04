@@ -5,7 +5,7 @@ import type {
   UsePlanConfigReturn,
   UseWebSocketReturn,
 } from "@templatical/core/cloud";
-import type { McpOperationPayload } from "@templatical/types";
+import type { TemplateOperationPayload } from "@templatical/types";
 
 import type { UseEditorReturn } from "@templatical/core";
 
@@ -20,7 +20,7 @@ import type { UseCollabUndoWarningReturn } from "./composables/useCollabUndoWarn
 
 /** Collaboration plus the two internals the broadcast wiring reaches for. */
 export type CloudCollaborationInstance = UseCollaborationReturn & {
-  _broadcastOperation: (payload: McpOperationPayload) => void;
+  _broadcastOperation: (payload: TemplateOperationPayload) => void;
   _isProcessingRemoteOperation: () => boolean;
 };
 

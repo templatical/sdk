@@ -30,7 +30,7 @@ import { safeClone } from "@templatical/types";
 import type {
   Block,
   ColumnLayout,
-  McpOperationPayload,
+  TemplateOperationPayload,
   SectionBlock,
   TemplateContent,
   TemplateSettings,
@@ -132,7 +132,7 @@ type Data = Record<string, unknown>;
 /** Apply one operation, returning a new document. Never mutates the input. */
 export function applyOperation(
   content: TemplateContent,
-  payload: McpOperationPayload,
+  payload: TemplateOperationPayload,
 ): OperationResult {
   const data = (payload.data ?? {}) as Data;
 

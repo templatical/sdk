@@ -1,6 +1,9 @@
 import type { UseEditorReturn } from "../editor";
 import type { AuthManager } from "./auth";
-import type { Collaborator, McpOperationPayload } from "@templatical/types";
+import type {
+  Collaborator,
+  TemplateOperationPayload,
+} from "@templatical/types";
 import { handleOperation } from "./mcp-operation-handler";
 import type { PresenceMember } from "./websocket-client";
 import type { PresenceChannel } from "pusher-js";
@@ -59,7 +62,7 @@ export interface UseCollaborationReturn {
 export function useCollaboration(
   options: UseCollaborationOptions,
 ): UseCollaborationReturn & {
-  _broadcastOperation: (payload: McpOperationPayload) => void;
+  _broadcastOperation: (payload: TemplateOperationPayload) => void;
   _isProcessingRemoteOperation: () => boolean;
 } {
   const { authManager, editor, channel } = options;
@@ -152,7 +155,7 @@ export function useCollaboration(
     }
   }
 
-  function handleRemoteOperation(payload: McpOperationPayload): void {
+  function handleRemoteOperation(payload: TemplateOperationPayload): void {
     isProcessingRemoteOperation = true;
     try {
       handleOperation(editor, payload);
@@ -161,7 +164,7 @@ export function useCollaboration(
     }
   }
 
-  function broadcastOperation(payload: McpOperationPayload): void {
+  function broadcastOperation(payload: TemplateOperationPayload): void {
     if (!channel.value || isProcessingRemoteOperation) {
       return;
     }
@@ -282,11 +285,11 @@ export function useCollaboration(
       }
     });
 
-    newChannel.bind("client-operation", (payload: McpOperationPayload) => {
+    newChannel.bind("client-operation", (payload: TemplateOperationPayload) => {
       handleRemoteOperation(payload);
     });
 
-    newChannel.bind("mcp-operation", (payload: McpOperationPayload) => {
+    newChannel.bind("mcp-operation", (payload: TemplateOperationPayload) => {
       handleRemoteOperation(payload);
     });
   });

@@ -1,4 +1,4 @@
-import type { McpOperationPayload } from "@templatical/types";
+import type { TemplateOperationPayload } from "@templatical/types";
 import type {
   Block,
   TemplateContent,
@@ -8,7 +8,7 @@ import type { UseEditorReturn } from "../editor";
 
 export function handleOperation(
   editor: UseEditorReturn,
-  payload: McpOperationPayload,
+  payload: TemplateOperationPayload,
 ): void {
   const { operation, data } = payload;
 

@@ -1,8 +1,8 @@
-import type { McpOperationPayload } from "@templatical/types";
+import type { TemplateOperationPayload } from "@templatical/types";
 import type { UseEditorReturn } from "../editor";
 
 interface BroadcastTarget {
-  _broadcastOperation: (payload: McpOperationPayload) => void;
+  _broadcastOperation: (payload: TemplateOperationPayload) => void;
 }
 
 /**
