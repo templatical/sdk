@@ -1,5 +1,6 @@
 import type { VersionHistoryProvider } from "@templatical/types";
 import { methodOr } from "../build";
+import { TEMPLATES_SAVE_PATH } from "./templates";
 import type { CapabilityDef } from "../types";
 
 /**
@@ -28,7 +29,7 @@ export const versionHistoryCapability: CapabilityDef<VersionHistoryProvider> = {
     // nothing for restore to write to, so a withheld templates.save forces
     // restore off here too, regardless of this capability's own control.
     const restore =
-      state["templates.save"] === false
+      state[TEMPLATES_SAVE_PATH] === false
         ? false
         : methodOr(state["versionHistory.restore"], impl.restore);
     return {

@@ -3,6 +3,13 @@ import { methodOr } from "../build";
 import type { CapabilityDef } from "../types";
 
 /**
+ * `templates.save`'s control path, exported so other capabilities that
+ * compose onto it — `version-history.ts`'s `restore` — read the same string
+ * this control is registered under, rather than a second copy that can drift.
+ */
+export const TEMPLATES_SAVE_PATH = "templates.save" as const;
+
+/**
  * The template's own save/load lifecycle. The provider arrives as `build`'s
  * second argument because it is memoised per template in `@/providers/templates`.
  */
@@ -22,7 +29,7 @@ export const templatesCapability: CapabilityDef<TemplatesProvider> = {
     },
     {
       kind: "method",
-      path: "templates.save",
+      path: TEMPLATES_SAVE_PATH,
       label: "save",
       help: "Off hides the save button and the status indicator, and makes the name read-only.",
     },
@@ -38,7 +45,7 @@ export const templatesCapability: CapabilityDef<TemplatesProvider> = {
     templates: {
       ...impl,
       create: methodOr(state["templates.create"], impl.create),
-      save: methodOr(state["templates.save"], impl.save),
+      save: methodOr(state[TEMPLATES_SAVE_PATH], impl.save),
       autoSave: state["templates.autoSave"] === true,
     },
   }),

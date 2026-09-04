@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { buildCapabilityConfig } from "../src/config/build";
 import { versionHistoryCapability } from "../src/config/capabilities/version-history";
+import { TEMPLATES_SAVE_PATH } from "../src/config/capabilities/templates";
 import { capabilityById } from "../src/config/capabilities";
 import type { VersionHistoryProvider } from "@templatical/types";
 
@@ -67,7 +68,7 @@ describe("versionHistoryCapability and the templates store", () => {
     const impl = makeImpl();
     const config = buildCapabilityConfig(
       versionHistoryCapability,
-      { "templates.save": false },
+      { [TEMPLATES_SAVE_PATH]: false },
       impl,
     );
     expect(config.versionHistory).toEqual({
@@ -82,7 +83,7 @@ describe("versionHistoryCapability and the templates store", () => {
     const impl = makeImpl();
     const config = buildCapabilityConfig(
       versionHistoryCapability,
-      { "templates.save": false, "versionHistory.restore": true },
+      { [TEMPLATES_SAVE_PATH]: false, "versionHistory.restore": true },
       impl,
     );
     expect(config.versionHistory?.restore).toBe(false);

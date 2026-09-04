@@ -62,6 +62,8 @@ export function versionHistoryProviderFor(
     // append-only for free, because this demo's `save` records a version.
     restore: async (templateId, versionId) => {
       const content = requireVersion(versionId).content;
+      // Belt-and-braces: templatesProviderFor always returns a real save, and
+      // a withheld one is enforced in config/capabilities/version-history.ts.
       if (typeof templates.save !== "function") {
         throw new Error("Templates provider is read-only — cannot restore.");
       }

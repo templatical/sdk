@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import { test, expect } from "../fixtures/editor.fixture";
 import { SELECTORS } from "../helpers/selectors";
 import { seedControlState } from "../helpers/control-state";
+import { TEMPLATES_SAVE_PATH } from "../../src/config/capabilities/templates";
 
 /**
  * The BYO version-history provider in the OSS editor, backed by the playground's
@@ -369,7 +370,7 @@ test.describe("version history provider", () => {
           },
         },
       };
-      await seedControlState(page, { "templates.save": false });
+      await seedControlState(page, { [TEMPLATES_SAVE_PATH]: false });
       await openEditor(page, { chooserPage, editorPage }, {
         [VERSIONS_KEY]: JSON.stringify([version]),
       });
