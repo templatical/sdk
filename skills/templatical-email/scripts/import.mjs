@@ -1,4 +1,4 @@
-// Import an existing Unlayer / BeeFree / HTML email template into Templatical
+// Import an existing Unlayer / BeeFree / HTML / MJML email template into Templatical
 // template JSON, using the deterministic `@templatical/import-*` converters.
 // Writes the result to the shared working file (.templatical/<name>.json) so it
 // flows into validation + live mode exactly like a generated template.
@@ -12,7 +12,7 @@
 // skipped — so the printed report tells you what to refine (ideally in live mode).
 //
 // Usage:
-//   node scripts/import.mjs <source-file> [--format unlayer|beefree|html] [--cwd .] [--out <name>]
+//   node scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml] [--cwd .] [--out <name>]
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -33,6 +33,11 @@ const FORMATS = {
     fn: "convertHtmlTemplate",
     input: "text",
   },
+  mjml: {
+    pkg: "@templatical/import-mjml",
+    fn: "convertMjmlTemplate",
+    input: "text",
+  },
 };
 
 /**
@@ -41,8 +46,16 @@ const FORMATS = {
  */
 export function detectFormat(fileName, content) {
   const ext = extname(fileName).toLowerCase();
-  if (ext === ".html" || ext === ".htm") return "html";
   const trimmed = content.trimStart();
+
+  // MJML must be decided before the generic `<` → html branch below, and
+  // before the extension check: an MJML document saved as .html is still MJML,
+  // and reading it as HTML silently produces a table-soup import.
+  if (ext === ".mjml") return "mjml";
+  if (/^<(\?xml[^>]*\?>\s*)?<?\s*mjml[\s>]/i.test(trimmed)) return "mjml";
+  if (/^<\s*mj-body[\s>]/i.test(trimmed)) return "mjml";
+
+  if (ext === ".html" || ext === ".htm") return "html";
   if (trimmed.startsWith("<")) return "html";
   if (trimmed.startsWith("{")) {
     let obj;
@@ -62,7 +75,7 @@ export function detectFormat(fileName, content) {
 
 /**
  * Normalize an import report into status counts. Derived from `report.entries`
- * (each carries a `status`) so it's robust across all three converters rather
+ * (each carries a `status`) so it's robust across every converter rather
  * than depending on each package's `summary` shape.
  */
 export function summarizeReport(report) {
@@ -129,7 +142,7 @@ async function main() {
   const sourceArg = args._[0];
   if (!sourceArg) {
     console.error(
-      "Usage: node scripts/import.mjs <source-file> [--format unlayer|beefree|html] [--out <name>]",
+      "Usage: node scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml] [--out <name>]",
     );
     process.exit(2);
   }
@@ -148,7 +161,7 @@ async function main() {
   const format = args.format ?? detectFormat(basename(sourcePath), source);
   if (!format || !FORMATS[format]) {
     console.error(
-      `Couldn't detect the template format of ${sourceArg}. Pass --format unlayer|beefree|html.`,
+      `Couldn't detect the template format of ${sourceArg}. Pass --format unlayer|beefree|html|mjml.`,
     );
     process.exit(2);
   }
