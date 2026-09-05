@@ -430,7 +430,7 @@ export function renderReleaseNotes(versions, version, allPackages = []) {
   const footer = [
     "---",
     "",
-    `All ${allPackages.length || 9} \`@templatical/*\` packages are published at \`${version}\` — they share one version number.`,
+    `All ${allPackages.length || 10} \`@templatical/*\` packages are published at \`${version}\` — they share one version number.`,
     "",
     "Full changelog: https://docs.templatical.com/changelog",
   ].join("\n");

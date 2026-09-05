@@ -156,6 +156,7 @@ The only restriction: don't repackage Templatical itself as a directly competing
 - [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)
 - [Migrating from Unlayer](https://docs.templatical.com/guide/migration-from-unlayer)
 - [Migrating from HTML](https://docs.templatical.com/guide/migration-from-html)
+- [Migrating from MJML](https://docs.templatical.com/guide/migration-from-mjml)
 - [Changelog](https://docs.templatical.com/changelog) — every release, all packages, one page
 
 Full docs: **[docs.templatical.com](https://docs.templatical.com)** (English + Deutsch).

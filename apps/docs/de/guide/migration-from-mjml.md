@@ -132,7 +132,7 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 
 ## Wo das Mapping verlustbehaftet ist
 
-MJML, das Templaticals eigener Renderer erzeugt hat, durchläuft den Importer ohne jede Approximation — jeder Block, jedes Styling und jede Anzeigebedingung bleibt erhalten. Handgeschriebenes MJML konvertiert für jedes Tag in der Mapping-Tabelle oben sauber; alles, was die Tabelle nicht abdeckt, landet als `HtmlBlock` mit dem ursprünglichen Markup. Innerhalb dessen, was die Tabelle abdeckt, sind einige Konvertierungen Näherungen statt exakter Treffer:
+MJML, das Templaticals eigener Renderer erzeugt hat, durchläuft den Importer ohne Näherungen bei Layout, Styling oder Anzeigebedingungen. Die einzige Lücke betrifft den Blocktyp: Ein `VideoBlock` und ein `HtmlBlock` rendern beide als reines MJML ohne Kennzeichnung ihrer Herkunft, sodass beim erneuten Import jeweils ein anderer Blocktyp entsteht (siehe unten). Handgeschriebenes MJML konvertiert für jedes Tag in der Mapping-Tabelle oben sauber; alles, was die Tabelle nicht abdeckt, landet als `HtmlBlock` mit dem ursprünglichen Markup. Innerhalb dessen, was die Tabelle abdeckt, sind einige Konvertierungen Näherungen statt exakter Treffer:
 
 - **Spalten-Geometrie** — Templatical unterstützt fünf Spalten-Layouts (`1`, `2`, `3`, `2-1`, `1-2`). MJML erlaubt beliebig viele Spalten in beliebigem Verhältnis, daher wird ein Verhältnis außerhalb dieser fünf auf das nächstliegende Layout aufgelöst, und der Inhalt einer vierten oder weiteren Spalte fließt in die letzte Spalte.
 - **Social-Icon-Größen** — `SocialIconsBlock` unterstützt drei Größen (24px, 32px, 48px). Eine `icon-size` an einem `mj-social-element` außerhalb dieser drei wird auf die nächstliegende aufgelöst.

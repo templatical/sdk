@@ -132,7 +132,7 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 
 ## Where the mapping is lossy
 
-MJML produced by Templatical's own renderer round-trips through the importer with no approximations — every block, style, and display condition survives. Hand-written MJML converts cleanly for every tag in the mapping table above; anything the table doesn't cover lands as an `HtmlBlock` holding the original markup. Within what the table does cover, a few conversions are approximations rather than exact matches:
+MJML produced by Templatical's own renderer round-trips through the importer with no approximations to layout, style, or display conditions. The one gap is block type: a `VideoBlock` and an `HtmlBlock` both render as plain MJML with no marker of their origin, so each re-imports as a different kind of block (see below). Hand-written MJML converts cleanly for every tag in the mapping table above; anything the table doesn't cover lands as an `HtmlBlock` holding the original markup. Within what the table does cover, a few conversions are approximations rather than exact matches:
 
 - **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). MJML allows any number of columns at any width, so a ratio outside those five resolves to the nearest layout, and a fourth or later column's content folds into the last column.
 - **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `mj-social-element`'s `icon-size` outside those three resolves to the nearest one.
