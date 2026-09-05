@@ -8,48 +8,27 @@ import { slugFor } from "@/providers/template-name";
 import { templates } from "@/templates";
 import CapabilityDrawer from "./CapabilityDrawer.vue";
 import CapabilityRail from "./CapabilityRail.vue";
-import ConfigPane from "./ConfigPane.vue";
-import ControlsPane from "./ControlsPane.vue";
-import { readDrawerState, writeDrawerState } from "./drawer-chrome";
+import { DRAWER_TABS } from "./drawer-tabs";
 import { useCapabilityEditor } from "./useCapabilityEditor";
 import { useCapabilityRoute } from "./useCapabilityRoute";
 import { useControlState } from "./useControlState";
+import { useDrawerChrome } from "./useDrawerChrome";
 
 const { activeId, select } = useCapabilityRoute();
 const { state: controlState, set: setControl } = useControlState();
 
-// The drawer's chrome — open/collapsed and its height — is stored and
-// clamped by `./drawer-chrome`, under its own key rather than mixed into
-// `controlState`.
-const drawerInitial = readDrawerState();
-const drawerOpen = ref(drawerInitial.open);
-const drawerHeight = ref(drawerInitial.height);
-const drawerActiveTab = ref("controls");
-const drawerTabs = [
-  { id: "controls", label: "Controls" },
-  { id: "config", label: "Config" },
-];
-
-function setDrawerOpen(open: boolean): void {
-  drawerOpen.value = open;
-  writeDrawerState({ open, height: drawerHeight.value });
-}
-
-/**
- * The live height during a resize. Storage is deliberately untouched: a
- * pointer drag emits this on every `pointermove`, and persisting each one
- * would put a `JSON.stringify` + synchronous `localStorage.setItem` on the
- * frame budget of the gesture. `commitDrawerHeight` is the write.
- */
-function setDrawerHeight(height: number): void {
-  drawerHeight.value = height;
-}
-
-/** The end of a resize gesture — one write, with the height it settled on. */
-function commitDrawerHeight(height: number): void {
-  drawerHeight.value = height;
-  writeDrawerState({ open: drawerOpen.value, height });
-}
+// The drawer's chrome — open/collapsed, its height, and the active tab — is
+// held and persisted by `useDrawerChrome`, under its own key rather than
+// mixed into `controlState`.
+const {
+  open: drawerOpen,
+  height: drawerHeight,
+  activeTab: drawerActiveTab,
+  setOpen: setDrawerOpen,
+  setHeight: setDrawerHeight,
+  commitHeight: commitDrawerHeight,
+  setActiveTab: setDrawerActiveTab,
+} = useDrawerChrome();
 
 // `activeId` only ever holds a registered id — `parseCapabilityHash` (inside
 // `useCapabilityRoute`) falls back to the first registered capability for
@@ -100,6 +79,31 @@ const {
   // produces.
   ...buildAllCapabilityConfig(controlState.value, fixture.value),
   content: fixture.value.create(),
+}));
+
+// Off the same table the bar renders, so a tab and its pane cannot diverge:
+// pick a tab, get that tab's component. `DEFAULT_DRAWER_TAB` is registered
+// (pinned in `tests/drawer-tabs.test.ts`) and `readDrawerState` refuses an
+// unregistered id, so the fallback is unreachable rather than load-bearing.
+const activeTabComponent = computed(
+  () =>
+    (
+      DRAWER_TABS.find((tab) => tab.id === drawerActiveTab.value) ??
+      DRAWER_TABS[0]
+    ).component,
+);
+
+// One merged object for whichever pane is active: each pane picks out the
+// props it declares, so `ControlsPane` sees `controls`/`state`/`fixture` and
+// `ConfigPane` sees `config`. That is what keeps the shell from growing a
+// branch per tab, and reads as an oversight otherwise. Every pane sets
+// `inheritAttrs: false`, because the entries a pane does not declare fall
+// through onto its root element rather than being dropped.
+const paneProps = computed(() => ({
+  controls: capability.value.controls,
+  state: controlState.value,
+  fixture: fixtureSlug.value,
+  config: lastInitConfig.value,
 }));
 
 /**
@@ -168,24 +172,21 @@ onBeforeUnmount(destroy);
         />
       </main>
       <CapabilityDrawer
-        :tabs="drawerTabs"
+        :tabs="DRAWER_TABS"
         :active-tab="drawerActiveTab"
         :open="drawerOpen"
         :height="drawerHeight"
-        @update:active-tab="drawerActiveTab = $event"
+        @update:active-tab="setDrawerActiveTab"
         @update:open="setDrawerOpen"
         @update:height="setDrawerHeight"
         @commit:height="commitDrawerHeight"
       >
-        <ControlsPane
-          v-if="drawerActiveTab === 'controls'"
-          :controls="capability.controls"
-          :state="controlState"
-          :fixture="fixtureSlug"
+        <component
+          :is="activeTabComponent"
+          v-bind="paneProps"
           @set="setControl"
           @update:fixture="setFixture"
         />
-        <ConfigPane v-else :config="lastInitConfig" />
       </CapabilityDrawer>
     </div>
   </div>

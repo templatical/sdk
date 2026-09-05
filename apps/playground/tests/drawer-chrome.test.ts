@@ -8,6 +8,7 @@ import {
   readDrawerState,
   writeDrawerState,
 } from "../src/shell/drawer-chrome";
+import { DEFAULT_DRAWER_TAB } from "../src/shell/drawer-tabs";
 
 /**
  * The drawer is `shrink-0` and `<main>` above it is `flex-1 min-h-0`, so a
@@ -52,6 +53,7 @@ describe("readDrawerState", () => {
     expect(readDrawerState()).toEqual({
       open: true,
       height: DRAWER_DEFAULT_HEIGHT,
+      activeTab: DEFAULT_DRAWER_TAB,
     });
   });
 
@@ -60,7 +62,11 @@ describe("readDrawerState", () => {
       DRAWER_STATE_KEY,
       JSON.stringify({ open: false, height: 296 }),
     );
-    expect(readDrawerState()).toEqual({ open: false, height: 296 });
+    expect(readDrawerState()).toEqual({
+      open: false,
+      height: 296,
+      activeTab: DEFAULT_DRAWER_TAB,
+    });
   });
 
   it("clamps a stored height above the maximum", () => {
@@ -71,6 +77,7 @@ describe("readDrawerState", () => {
     expect(readDrawerState()).toEqual({
       open: true,
       height: DRAWER_MAX_HEIGHT,
+      activeTab: DEFAULT_DRAWER_TAB,
     });
   });
 
@@ -82,6 +89,7 @@ describe("readDrawerState", () => {
     expect(readDrawerState()).toEqual({
       open: true,
       height: DRAWER_MIN_HEIGHT,
+      activeTab: DEFAULT_DRAWER_TAB,
     });
   });
 
@@ -101,6 +109,7 @@ describe("readDrawerState", () => {
     expect(readDrawerState()).toEqual({
       open: true,
       height: DRAWER_DEFAULT_HEIGHT,
+      activeTab: DEFAULT_DRAWER_TAB,
     });
   });
 
@@ -109,6 +118,7 @@ describe("readDrawerState", () => {
     expect(readDrawerState()).toEqual({
       open: true,
       height: DRAWER_DEFAULT_HEIGHT,
+      activeTab: DEFAULT_DRAWER_TAB,
     });
   });
 
@@ -117,17 +127,55 @@ describe("readDrawerState", () => {
     expect(readDrawerState()).toEqual({
       open: true,
       height: DRAWER_DEFAULT_HEIGHT,
+      activeTab: DEFAULT_DRAWER_TAB,
     });
+  });
+});
+
+describe("readDrawerState activeTab", () => {
+  it("restores a stored tab", () => {
+    localStorage.setItem(
+      DRAWER_STATE_KEY,
+      JSON.stringify({ open: true, height: 280, activeTab: "config" }),
+    );
+    expect(readDrawerState().activeTab).toBe("config");
+  });
+
+  it("falls back when the stored tab is not registered", () => {
+    // A tab id outlives the tab: the key is written by whatever build last
+    // ran, and a renamed or removed tab must not leave the pane resolving
+    // to nothing.
+    localStorage.setItem(
+      DRAWER_STATE_KEY,
+      JSON.stringify({ open: true, height: 280, activeTab: "gone" }),
+    );
+    expect(readDrawerState().activeTab).toBe(DEFAULT_DRAWER_TAB);
+  });
+
+  it("falls back for a non-string tab", () => {
+    localStorage.setItem(
+      DRAWER_STATE_KEY,
+      JSON.stringify({ open: true, height: 280, activeTab: 3 }),
+    );
+    expect(readDrawerState().activeTab).toBe(DEFAULT_DRAWER_TAB);
+  });
+
+  it("falls back when the key is absent entirely", () => {
+    expect(readDrawerState().activeTab).toBe(DEFAULT_DRAWER_TAB);
   });
 });
 
 describe("writeDrawerState", () => {
   it("round-trips through readDrawerState", () => {
-    writeDrawerState({ open: false, height: 320 });
+    writeDrawerState({ open: false, height: 320, activeTab: "config" });
     expect(localStorage.getItem(DRAWER_STATE_KEY)).toBe(
-      JSON.stringify({ open: false, height: 320 }),
+      JSON.stringify({ open: false, height: 320, activeTab: "config" }),
     );
-    expect(readDrawerState()).toEqual({ open: false, height: 320 });
+    expect(readDrawerState()).toEqual({
+      open: false,
+      height: 320,
+      activeTab: "config",
+    });
   });
 
   it("swallows a storage failure and leaves the read on defaults", () => {
@@ -140,11 +188,12 @@ describe("writeDrawerState", () => {
         throw new DOMException("QuotaExceededError");
       });
     try {
-      writeDrawerState({ open: false, height: 320 });
+      writeDrawerState({ open: false, height: 320, activeTab: "config" });
       expect(setItem).toHaveBeenCalledTimes(1);
       expect(readDrawerState()).toEqual({
         open: true,
         height: DRAWER_DEFAULT_HEIGHT,
+        activeTab: DEFAULT_DRAWER_TAB,
       });
     } finally {
       setItem.mockRestore();
@@ -155,7 +204,7 @@ describe("writeDrawerState", () => {
     // e2e specs seed `tpl-playground-config` before navigation; drawer chrome
     // sharing that key would let a seed clobber the user's drawer size.
     expect(DRAWER_STATE_KEY).toBe("tpl-playground-drawer");
-    writeDrawerState({ open: true, height: 200 });
+    writeDrawerState({ open: true, height: 200, activeTab: "config" });
     expect(localStorage.getItem("tpl-playground-config")).toBeNull();
   });
 });

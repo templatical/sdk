@@ -21,6 +21,11 @@ import { templates } from "@/templates";
  * act on: every control below configures the editor showing that template.
  */
 
+// The shell binds one merged object across every tab rather than a branch per
+// tab, so this pane is handed the other panes' props too. Without this they
+// would land on the root element as `[object Object]` attributes.
+defineOptions({ inheritAttrs: false });
+
 const props = defineProps<{
   controls: Control[];
   state: ControlState;

@@ -13,6 +13,12 @@ import { renderConfig } from "@/config/render";
  * instance alongside the template JSON editor's, which is its own task.
  */
 
+// The shell binds one merged object across every tab rather than a branch per
+// tab, so this pane is handed the other panes' props and handlers too.
+// Without this they would land on the root element as `[object Object]`
+// attributes and as listeners for events nothing dispatches.
+defineOptions({ inheritAttrs: false });
+
 const props = defineProps<{
   config: object | null;
 }>();

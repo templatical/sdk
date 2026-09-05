@@ -9,10 +9,13 @@ import {
 
 /**
  * The drawer's chrome: tab bar, collapse toggle, resize handle, and one
- * pane. Presentational only — the shell owns `activeTab`, `open` and
- * `height`, persisting the latter two under its own storage key; this
- * component renders the current values and asks for changes through its
- * emits. `activeTab` is session state and resets on reload.
+ * pane. Presentational only — `useDrawerChrome` owns `activeTab`, `open` and
+ * `height` and persists all three under its own storage key; this component
+ * renders the current values and asks for changes through its emits.
+ *
+ * The tabs arrive as a prop rather than being listed here, because the shell
+ * renders the pane from the same table: a tab in the bar with no pane behind
+ * it is what a hand-written list makes possible.
  *
  * The tab bar always renders, in both the open and collapsed state — only
  * the pane (and the resize handle, which has nothing to resize while

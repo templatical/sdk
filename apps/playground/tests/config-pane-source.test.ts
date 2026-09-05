@@ -101,6 +101,9 @@ describe("the shell hands init() and the panel the same object", () => {
   });
 
   it("hands lastInitConfig to the pane", () => {
-    expect(SHELL_SOURCE).toContain(':config="lastInitConfig"');
+    // Through `paneProps`, which every tab's component is bound with — the
+    // pane is `<component :is>` off the tab table rather than a `v-if` chain.
+    expect(SHELL_SOURCE).toContain("config: lastInitConfig.value,");
+    expect(SHELL_SOURCE).toContain('v-bind="paneProps"');
   });
 });

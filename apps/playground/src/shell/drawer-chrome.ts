@@ -2,12 +2,14 @@
  * The capability drawer's persisted chrome — where it is stored, what a
  * height is allowed to be, and how it is read back.
  *
- * `CapabilityShell.vue` owns the state and restores it on load;
+ * `useDrawerChrome` holds the state and restores it on load;
  * `CapabilityDrawer.vue` clamps a live drag against the same bounds. They
  * have to be the same bounds: a stored height the drag can never produce is
  * applied verbatim otherwise, and the drawer is `shrink-0`, so an
  * out-of-range value collapses `<main>` and takes the editor with it.
  */
+
+import { DEFAULT_DRAWER_TAB, isDrawerTabId } from "./drawer-tabs";
 
 /**
  * The drawer's own localStorage key — deliberately not `tpl-playground-config`,
@@ -33,6 +35,7 @@ export const DRAWER_DEFAULT_HEIGHT = 280;
 export interface DrawerChromeState {
   open: boolean;
   height: number;
+  activeTab: string;
 }
 
 /** Hold `px` inside {@link DRAWER_MIN_HEIGHT}..{@link DRAWER_MAX_HEIGHT}. */
@@ -45,24 +48,29 @@ export function clampDrawerHeight(px: number): number {
  *
  * Height is clamped rather than trusted: what reaches here is JSON somebody
  * else may have written — a hand-edited key, a build whose bounds differed —
- * and `NaN` is a `number` too, so finiteness is checked before clamping.
+ * and `NaN` is a `number` too, so finiteness is checked before clamping. A
+ * stored tab id is the same class of value: it outlives the build that wrote
+ * it, so an id no longer in {@link DRAWER_TABS} falls back rather than
+ * leaving the drawer pointed at a tab that resolves to nothing.
  */
 export function readDrawerState(): DrawerChromeState {
   const defaults: DrawerChromeState = {
     open: true,
     height: DRAWER_DEFAULT_HEIGHT,
+    activeTab: DEFAULT_DRAWER_TAB,
   };
   try {
     const raw = localStorage.getItem(DRAWER_STATE_KEY);
     if (!raw) return defaults;
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return defaults;
-    const { open, height } = parsed as Partial<DrawerChromeState>;
+    const { open, height, activeTab } = parsed as Partial<DrawerChromeState>;
     return {
       open: typeof open === "boolean" ? open : defaults.open,
       height: Number.isFinite(height)
         ? clampDrawerHeight(height as number)
         : defaults.height,
+      activeTab: isDrawerTabId(activeTab) ? activeTab : defaults.activeTab,
     };
   } catch {
     return defaults;

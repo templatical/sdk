@@ -74,7 +74,9 @@ test.describe("capability drawer", () => {
       await page.evaluate(() =>
         localStorage.getItem("tpl-playground-drawer"),
       ),
-    ).toBe(JSON.stringify({ open: true, height: 296 }));
+    ).toBe(
+      JSON.stringify({ open: true, height: 296, activeTab: "controls" }),
+    );
 
     await page.reload();
     await expect(page.locator(SELECTORS.capabilityDrawerResize)).toHaveAttribute(
@@ -124,7 +126,9 @@ test.describe("capability drawer", () => {
       await page.evaluate(() =>
         localStorage.getItem("tpl-playground-drawer"),
       ),
-    ).toBe(JSON.stringify({ open: true, height: 340 }));
+    ).toBe(
+      JSON.stringify({ open: true, height: 340, activeTab: "controls" }),
+    );
 
     // One write for the whole gesture. Persisting per `pointermove` would put
     // a synchronous `setItem` on every frame of the drag.
@@ -253,6 +257,29 @@ test.describe("capability drawer", () => {
     await configTab.click();
     await expect(configTab).toHaveAttribute("aria-selected", "true");
     await expect(controlsTab).toHaveAttribute("aria-selected", "false");
+  });
+
+  test("the active tab survives a reload", async ({ page }) => {
+    await page.goto("/#capabilities");
+    const configTab = page.locator(SELECTORS.capabilityDrawerTab, {
+      hasText: "Config",
+    });
+
+    await configTab.click();
+    await expect(configTab).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator(SELECTORS.capabilityConfigSource)).toContainText(
+      "savedBlocks:",
+    );
+
+    await page.reload();
+    await expect(
+      page.locator(SELECTORS.capabilityDrawerTab, { hasText: "Config" }),
+    ).toHaveAttribute("aria-selected", "true");
+    // The pane, not just the button: a tab that reports selected while showing
+    // another tab's content is the exact failure the tab table exists to stop.
+    await expect(page.locator(SELECTORS.capabilityConfigSource)).toContainText(
+      "savedBlocks:",
+    );
   });
 
   test("the editor is still there with the drawer open", async ({ page }) => {
