@@ -1,17 +1,5 @@
 <script setup lang="ts">
-import {
-  computed,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  shallowRef,
-  watch,
-} from "vue";
-import {
-  init,
-  type TemplaticalEditor,
-  type TemplaticalEditorConfig,
-} from "@templatical/editor";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
   buildAllCapabilityConfig,
   capabilityById,
@@ -23,6 +11,7 @@ import CapabilityRail from "./CapabilityRail.vue";
 import ConfigPane from "./ConfigPane.vue";
 import ControlsPane from "./ControlsPane.vue";
 import { readDrawerState, writeDrawerState } from "./drawer-chrome";
+import { useCapabilityEditor } from "./useCapabilityEditor";
 import { useCapabilityRoute } from "./useCapabilityRoute";
 import { useControlState } from "./useControlState";
 
@@ -85,65 +74,33 @@ const fixture = computed(() => {
 // showing a slug it has no option for.
 const fixtureSlug = computed(() => slugFor(fixture.value.name));
 
-const editorHost = ref<HTMLElement | null>(null);
-const editor = ref<TemplaticalEditor | null>(null);
-
-// The Config tab renders THIS object — the very one the mounted editor was
-// handed, never a copy rebuilt for display. A second copy is free to drift
-// from the call site (a key added to `init()` and forgotten here), and the
-// tab's only value is that it cannot: what it shows is what booted.
-// `shallowRef` keeps the object raw, so a provider's methods reach
-// `renderConfig` as themselves rather than through a reactive proxy.
-const lastInitConfig = shallowRef<TemplaticalEditorConfig | null>(null);
-
-// Navigating away from #capabilities while `init()` is in flight must not
-// mount a fresh editor after teardown: `onBeforeUnmount` tears down whatever
-// `editor.value` holds at that moment, and assigning past it would land a new
-// instance in a detached host with nothing left to unmount it. Set on
-// unmount, checked after the one await below.
-let destroyed = false;
-
-// Two re-inits can be in flight at once — a rail click and a control toggle —
-// and `init()` is async, so the later request must win regardless of which
-// settles first. The token is captured per call and re-checked after the await;
-// a superseded call unmounts what it built rather than assigning it.
-let initToken = 0;
-
-async function initEditor(): Promise<void> {
-  if (!editorHost.value) return;
-  const token = ++initToken;
-  editor.value?.unmount();
-  // One object, built once and used twice: handed to `init()` below and kept
-  // in `lastInitConfig` for the Config tab. Do not rebuild it for display.
-  //
-  // Key order is the Config tab's reading order — `renderConfig` prints
-  // `Object.entries`. The capability keys come first because they are what
-  // the drawer exists to demonstrate; `content` is a whole template's worth
-  // of blocks and buries anything after it (hundreds of lines against a
-  // ~10-line viewport). The three groups own disjoint keys, so moving the
-  // spread past `content` changes ordering and nothing else — pinned by the
-  // key-set assertion in `tests/config-build-all.test.ts`.
-  const config: TemplaticalEditorConfig = {
-    container: editorHost.value,
-    // `App.vue` also passes locale, theme, uiTheme, fonts, merge-tag request
-    // handlers, test email and a dozen other keys. Those belong to
-    // capabilities plans 5a-5d haven't ported yet — each arrives here as its
-    // capability lands, so this shell only owns what the registry already
-    // produces.
-    ...buildAllCapabilityConfig(controlState.value, fixture.value),
-    content: fixture.value.create(),
-  };
-  const instance = await init(config);
-  if (destroyed || token !== initToken) {
-    instance.unmount();
-    return;
-  }
-  editor.value = instance;
-  // Written under the same staleness guard as `editor.value`, so a fast
-  // capability switch cannot leave the panel describing a config that lost
-  // the race and was never mounted.
-  lastInitConfig.value = config;
-}
+// The editor's host element, the instance in it, and the config it booted
+// with all live in `useCapabilityEditor`, which also serializes re-inits:
+// `unmount()` is keyed to the container, so overlapping `init()` calls tear
+// down each other's app.
+//
+// Key order below is the Config tab's reading order — `renderConfig` prints
+// `Object.entries`. The capability keys come first because they are what the
+// drawer exists to demonstrate; `content` is a whole template's worth of
+// blocks and buries anything after it (hundreds of lines against a ~10-line
+// viewport). The three groups own disjoint keys, so moving the spread past
+// `content` changes ordering and nothing else — pinned by the key-set
+// assertion in `tests/config-build-all.test.ts`.
+const {
+  host: editorHost,
+  lastInitConfig,
+  initEditor,
+  destroy,
+} = useCapabilityEditor((container) => ({
+  container,
+  // `App.vue` also passes locale, theme, uiTheme, fonts, merge-tag request
+  // handlers, test email and a dozen other keys. Those belong to
+  // capabilities plans 5a-5d haven't ported yet — each arrives here as its
+  // capability lands, so this shell only owns what the registry already
+  // produces.
+  ...buildAllCapabilityConfig(controlState.value, fixture.value),
+  content: fixture.value.create(),
+}));
 
 /**
  * Swap the fixture for this visit.
@@ -179,10 +136,7 @@ watch(controlState, async () => {
   await initEditor();
 });
 
-onBeforeUnmount(() => {
-  destroyed = true;
-  editor.value?.unmount();
-});
+onBeforeUnmount(destroy);
 </script>
 
 <template>

@@ -14,6 +14,10 @@ const PANE_SOURCE = readFileSync(
   join(import.meta.dirname, "../src/shell/ConfigPane.vue"),
   "utf8",
 );
+const EDITOR_SOURCE = readFileSync(
+  join(import.meta.dirname, "../src/shell/useCapabilityEditor.ts"),
+  "utf8",
+);
 
 describe("the Config pane's rendered source", () => {
   /**
@@ -67,22 +71,33 @@ describe("ConfigPane renders through renderConfig", () => {
  * editor was handed, not a second one built to look like it. A rebuilt copy
  * is free to drift — a key added at the `init()` call site and forgotten at
  * the display site would leave the panel confidently wrong.
+ *
+ * The `init()` call and the capture live in `useCapabilityEditor.ts`; the
+ * shell supplies the builder and routes the captured object to the pane, so
+ * the guarantee spans both files and is asserted against both.
  */
 describe("the shell hands init() and the panel the same object", () => {
   it("passes the built local to init() rather than an inline literal", () => {
-    expect(SHELL_SOURCE).toContain("await init(config)");
-    expect(SHELL_SOURCE).not.toContain("await init({");
+    expect(EDITOR_SOURCE).toContain("await init(config)");
+    expect(EDITOR_SOURCE).not.toContain("await init({");
   });
 
   it("keeps that same local in lastInitConfig", () => {
-    expect(SHELL_SOURCE).toContain("lastInitConfig.value = config;");
+    expect(EDITOR_SOURCE).toContain("lastInitConfig.value = config;");
   });
 
   it("writes lastInitConfig only after the staleness guard, so a superseded init never reaches the panel", () => {
-    const guard = SHELL_SOURCE.indexOf("token !== initToken");
-    const write = SHELL_SOURCE.indexOf("lastInitConfig.value = config;");
+    const guard = EDITOR_SOURCE.indexOf("token !== requestToken");
+    const write = EDITOR_SOURCE.indexOf("lastInitConfig.value = config;");
     expect(guard).toBeGreaterThan(-1);
     expect(write).toBeGreaterThan(guard);
+  });
+
+  it("builds that object in the shell, from the capability registry", () => {
+    // The builder is a callback so the composable knows nothing about
+    // capabilities; the shell is where the config's keys are decided.
+    expect(SHELL_SOURCE).toContain("useCapabilityEditor((container) => ({");
+    expect(SHELL_SOURCE).toContain("...buildAllCapabilityConfig(");
   });
 
   it("hands lastInitConfig to the pane", () => {
