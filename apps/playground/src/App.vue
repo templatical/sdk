@@ -3528,7 +3528,7 @@ onUnmounted(() => {
       </Transition>
     </Teleport>
 
-    <!-- Import Template Modal (BeeFree / Unlayer) -->
+    <!-- Import Template Modal -->
     <Teleport to="body">
       <Transition name="pg-modal">
         <div

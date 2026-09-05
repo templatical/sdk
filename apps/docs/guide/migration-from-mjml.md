@@ -1,9 +1,9 @@
 ---
-title: Migrating from hand-written MJML
+title: Migrating from MJML
 description: Convert MJML email templates to Templatical format using @templatical/import-mjml.
 ---
 
-# Migrating from hand-written MJML
+# Migrating from MJML
 
 This guide is for teams who've been authoring email templates in raw [MJML](https://mjml.io) (with editors like VS Code, an internal CLI, or a hand-rolled build pipeline) and want to move to Templatical's visual editor. **`@templatical/import-mjml`** converts an MJML document into Templatical's `TemplateContent` format directly — install it, run it, and use the sections below to finish off anything it can't map on its own.
 

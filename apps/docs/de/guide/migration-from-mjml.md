@@ -1,9 +1,9 @@
 ---
-title: Migration von handgeschriebenem MJML
+title: Migration von MJML
 description: MJML-E-Mail-Templates mit @templatical/import-mjml in das Templatical-Format konvertieren.
 ---
 
-# Migration von handgeschriebenem MJML
+# Migration von MJML
 
 Diese Anleitung richtet sich an Teams, die E-Mail-Templates bisher in rohem [MJML](https://mjml.io) erstellt haben (mit Editoren wie VS Code, einem internen CLI oder einer selbstgebauten Build-Pipeline) und auf Templaticals visuellen Editor wechseln möchten. **`@templatical/import-mjml`** konvertiert ein MJML-Dokument direkt in Templaticals `TemplateContent`-Format — installieren Sie es, führen Sie es aus, und nutzen Sie die folgenden Abschnitte, um alles nachzuarbeiten, was es nicht automatisch abbilden kann.
 
