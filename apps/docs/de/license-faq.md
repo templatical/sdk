@@ -12,7 +12,7 @@ Diese Seite beantwortet die Fragen, die Teams bei der Bewertung von Templaticals
 - **Sie können Templatical kostenlos in jedem kommerziellen Produkt einsetzen**, einschließlich kostenpflichtigem SaaS, internen Tools und On-Premise-Installationen.
 - **Das Einzige, was Sie nicht dürfen**, ist Templatical selbst als konkurrierendes E-Mail-Editor-Produkt oder als konkurrierenden Dienst zu vermarkten.
 - **Nach zwei Jahren** wird jede unter FSL veröffentlichte Version automatisch zu MIT. Keine Aktion erforderlich.
-- **Sechs der neun Pakete sind heute schon reines MIT** — types, renderer, quality und alle drei Importer. Nur Editor, Core und Media-Library stehen unter FSL.
+- **Nur Editor, Core und Media-Library stehen unter FSL** — jedes andere Paket ist heute schon reines MIT.
 
 ## Was ist FSL-1.1-MIT?
 
@@ -38,6 +38,7 @@ FSL-1.1-**MIT** ist die Variante, die nach zwei Jahren automatisch zur MIT-Lizen
 | `@templatical/import-beefree` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-unlayer` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 | `@templatical/import-html` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
+| `@templatical/import-mjml` | [MIT](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) |
 
 Die Aufteilung sorgt dafür, dass alles, was Sie in Ihr eigenes Backend oder eine Codegen-Pipeline einbinden würden (Types, Renderer, Linter, Importer), unter permissiver MIT-Lizenz steht und keine Future-License-Überlegungen nötig sind.
 
@@ -106,7 +107,7 @@ Denselben Ansatz nutzen [Sentry](https://sentry.io), [PowerSync](https://www.pow
 
 **Ja, bitte.** Beiträge aus der Community sind willkommen — Bugfixes, Features, Doku-Verbesserungen, zusätzliche Locales und Beispiele für eigene Blöcke werden geschätzt.
 
-Mit Ihrem Beitrag stimmen Sie zu, dass Ihr Beitrag unter derselben Lizenz steht wie das Paket, zu dem Sie beitragen (MIT für `types`, `renderer`, `quality`, `import-beefree`, `import-unlayer`, `import-html`; FSL-1.1-MIT für `editor`, `core`, `media-library`).
+Mit Ihrem Beitrag stimmen Sie zu, dass Ihr Beitrag unter derselben Lizenz steht wie das Paket, zu dem Sie beitragen (MIT für `types`, `renderer`, `quality`, `import-beefree`, `import-unlayer`, `import-html`, `import-mjml`; FSL-1.1-MIT für `editor`, `core`, `media-library`).
 
 Es gibt derzeit **kein separates Contributor License Agreement (CLA)** zu unterschreiben — Ihr PR allein reicht.
 

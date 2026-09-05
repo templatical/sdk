@@ -143,19 +143,20 @@ unrelated sessions.
 ## Importing an existing template
 
 If the user has a template from another editor in their project — **Unlayer**,
-**BeeFree**, or an **HTML email** — convert it to Templatical instead of building
-from scratch. `scripts/import.mjs` runs the matching `@templatical/import-*`
-converter:
+**BeeFree**, an **HTML email**, or an **MJML** template — convert it to
+Templatical instead of building from scratch. `scripts/import.mjs` runs the
+matching `@templatical/import-*` converter:
 
 ```
-node <skill>/scripts/import.mjs <source-file> [--format unlayer|beefree|html]
+node <skill>/scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml]
 ```
 
-It auto-detects the format (Unlayer / BeeFree JSON, or `.html`), writes the
-result to a working file `.templatical/<name>.json` (same as a generated
-template — `--out <name>` overrides the default, which is the source file's
-name), and prints a **conversion report**: how many blocks converted cleanly vs.
-fell back to `html` vs. were skipped, plus warnings.
+It auto-detects the format (Unlayer / BeeFree JSON, `.html`, or MJML by its
+`.mjml` extension or an `<mjml>`/`<mj-body>` root), writes the result to a
+working file `.templatical/<name>.json` (same as a generated template —
+`--out <name>` overrides the default, which is the source file's name), and
+prints a **conversion report**: how many blocks converted cleanly vs. fell back
+to `html` vs. were skipped, plus warnings.
 
 - **Optional, install-on-demand.** Each format needs its converter installed; the
   script prints the exact `npm install @templatical/import-<format>` if it's

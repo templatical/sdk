@@ -232,18 +232,21 @@ export const SELECTORS = {
   // Modals
   modalBackdrop: ".pg-modal-backdrop",
 
-  // Template import (BeeFree / Unlayer)
+  // Template import (BeeFree / Unlayer / HTML / MJML)
   chooserMigrationBand: '[data-testid="chooser-migration-band"]',
   chooserImportBeefree: '[data-testid="chooser-import-beefree"]',
   chooserImportUnlayer: '[data-testid="chooser-import-unlayer"]',
   chooserImportHtml: '[data-testid="chooser-import-html"]',
+  chooserImportMjml: '[data-testid="chooser-import-mjml"]',
   importModal: '[data-testid="import-modal"]',
   importTabBeefree: '[data-testid="import-tab-beefree"]',
   importTabUnlayer: '[data-testid="import-tab-unlayer"]',
   importTabHtml: '[data-testid="import-tab-html"]',
+  importTabMjml: '[data-testid="import-tab-mjml"]',
   importTextareaBeefree: '[data-testid="import-textarea-beefree"]',
   importTextareaUnlayer: '[data-testid="import-textarea-unlayer"]',
   importTextareaHtml: '[data-testid="import-textarea-html"]',
+  importTextareaMjml: '[data-testid="import-textarea-mjml"]',
   importError: '[data-testid="import-error"]',
   importConfirm: '[data-testid="import-confirm"]',
 } as const;
