@@ -1,5 +1,5 @@
 ---
-description: Add a new locale's rule messages and vague-text dictionaries for the accessibility, structure, and link linters, auto-discovered via import.meta.glob.
+description: Add a new locale's rule messages for accessibility, structure, and link rules, plus the vague-text dictionaries the accessibility linter alone uses.
 ---
 
 # Contributing locales
