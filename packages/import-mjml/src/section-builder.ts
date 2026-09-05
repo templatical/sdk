@@ -25,6 +25,7 @@ import {
   convertHtmlFallback,
   type ConvertContext,
 } from "./block-base";
+import { planSiblings } from "./display-condition";
 import type { ImportReportEntry } from "./types";
 
 /** Reverse of `packages/renderer/src/columns.ts`, keyed by column count. */
@@ -155,6 +156,16 @@ function readColumns(
   return { columns, grouped };
 }
 
+/**
+ * A column's children, in document order, one block per unit `planSiblings`
+ * groups them into.
+ *
+ * Routed through `planSiblings` for the same reason `walkBody` is
+ * (`converter.ts`): the renderer wraps a conditional block in bracketing
+ * `mj-raw` guards inside a column exactly as it does at top level
+ * (`renderers/section.ts` calls the same `wrapWithDisplayCondition` helper as
+ * `index.ts`), so recovering the condition here needs the identical fold.
+ */
 function convertColumnChildren(
   $column: Cheerio<Element>,
   ctx: ConvertContext,
@@ -162,15 +173,18 @@ function convertColumnChildren(
 ): Block[] {
   const blocks: Block[] = [];
 
-  for (const $child of childElements($column, ctx.$)) {
-    const tag = tagOf($child[0]);
+  for (const unit of planSiblings(childElements($column, ctx.$))) {
+    const tag = tagOf(unit.$el[0]);
 
     // MJML forbids mj-section inside mj-column, and `addBlock` in
     // @templatical/core refuses a section into a column too, so producing one
     // here would be dropped downstream without a trace.
     if (tag === "mj-section" || tag === "mj-wrapper") {
-      const attrs = resolveAttributes($child, ctx.cascade);
-      blocks.push(convertHtmlFallback($child, ctx, attrs));
+      const attrs = resolveAttributes(unit.$el, ctx.cascade);
+      const fallback = convertHtmlFallback(unit.$el, ctx, attrs);
+      if (unit.displayCondition)
+        fallback.displayCondition = unit.displayCondition;
+      blocks.push(fallback);
       const noun = tag === "mj-section" ? "section" : "wrapper";
       entries.push({
         sourceTag: tag,
@@ -181,10 +195,16 @@ function convertColumnChildren(
       continue;
     }
 
-    const converted = convertElement($child, ctx);
+    const converted = convertElement(unit.$el, ctx);
     if (!converted) continue;
     entries.push(converted.entry);
-    if (converted.block) blocks.push(converted.block);
+    if (!converted.block) continue;
+
+    if (unit.displayCondition) {
+      converted.block.displayCondition = unit.displayCondition;
+    }
+
+    blocks.push(converted.block);
   }
 
   return blocks;

@@ -23,12 +23,14 @@ import { convertMjmlTemplate } from "../converter";
 /**
  * One of every round-trippable block type, across all five column layouts,
  * plus a wrapper, a grouped section, a single-viewport visibility, a display
- * condition, and a paragraph carrying a hard `<br>` line break.
+ * condition on a top-level section, a display condition on a block nested
+ * inside a section column, and a paragraph carrying a hard `<br>` line break.
  *
  * Excluded on purpose (§12): `countdown` (Cloud renders it server-side),
  * `custom` (needs a consumer registry), `html` (indistinguishable from
- * paragraph in the output, §10), any block hidden on all viewports (renders as
- * ""), and any image with an empty src (renders as nothing).
+ * paragraph in the output, §10), `video` (indistinguishable from a linked
+ * image, §8.4c), any block hidden on all viewports (renders as ""), and any
+ * image with an empty src (renders as nothing).
  */
 function buildFixtureTemplate(): TemplateContent {
   const col = (blocks: Block[]) => blocks;
@@ -171,7 +173,22 @@ function buildFixtureTemplate(): TemplateContent {
               visibility: { desktop: true, mobile: false },
             }),
           ]),
-          col([createParagraphBlock({ content: "<p>Right</p>" })]),
+          col([
+            createParagraphBlock({
+              content: "<p>Right</p>",
+              // A column-nested condition, not just the section-level one
+              // below: the renderer wraps a conditional column child in the
+              // same bracketing mj-raw guards as a top-level block
+              // (renderer/src/renderers/section.ts), and recovering it needs
+              // the same fold inside `convertColumnChildren` as `walkBody`
+              // uses at top level (§8.5).
+              displayCondition: {
+                label: "{% if member %}",
+                before: "{% if member %}",
+                after: "{% endif %}",
+              },
+            }),
+          ]),
         ],
       }),
       createSectionBlock({
@@ -247,13 +264,24 @@ describe("round trip: renderToMjml -> convertMjmlTemplate", () => {
     expect(report.warnings).toEqual([]);
   });
 
-  it("preserves the display condition exactly", async () => {
+  it("preserves a top-level section's display condition exactly", async () => {
     const mjml = await renderToMjml(buildFixtureTemplate());
     const { content } = convertMjmlTemplate(mjml);
     const conditional = content.blocks.find((b) => b.displayCondition);
 
     expect(conditional?.displayCondition?.before).toBe("{% if pro %}");
     expect(conditional?.displayCondition?.after).toBe("{% endif %}");
+  });
+
+  it("preserves a display condition nested inside a section column exactly", async () => {
+    const mjml = await renderToMjml(buildFixtureTemplate());
+    const { content } = convertMjmlTemplate(mjml);
+    const nested = content.blocks
+      .flatMap((b) => (b.type === "section" ? b.children.flat() : []))
+      .find((b) => b.displayCondition);
+
+    expect(nested?.displayCondition?.before).toBe("{% if member %}");
+    expect(nested?.displayCondition?.after).toBe("{% endif %}");
   });
 
   it("preserves single-viewport visibility", async () => {

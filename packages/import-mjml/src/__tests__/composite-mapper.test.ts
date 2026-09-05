@@ -29,6 +29,30 @@ function convert(markup: string, selector: string) {
   return { result: convertElement($el, ctx)!, ctx };
 }
 
+/**
+ * Same as {@link convert}, with an `<mj-head>` block to seed the attribute
+ * cascade. Scoped to `mj-body <selector>`: a head carrying its own
+ * `<mj-attributes><mj-navbar .../>` (or `<mj-table>`) declaration means the
+ * bare selector would match that declaration first, not the content element
+ * under test — the same scoping `text-inference.test.ts`'s `convertWithHead`
+ * uses.
+ */
+function convertWithHead(head: string, markup: string, selector: string) {
+  const $: CheerioAPI = load(
+    `<mjml><mj-head>${head}</mj-head><mj-body>${markup}</mj-body></mjml>`,
+    { xml: { xmlMode: false, recognizeSelfClosing: true } },
+  );
+  const ctx: ConvertContext = {
+    $,
+    cascade: buildAttributeCascade($),
+    containerWidth: 600,
+    warnings: [],
+  };
+  const $el = $(`mj-body ${selector}`).first() as unknown as Cheerio<Element>;
+  void resolveAttributes($el, ctx.cascade);
+  return { result: convertElement($el, ctx)!, ctx };
+}
+
 describe("mj-social", () => {
   it("recovers platforms from the name attribute (hand-written MJML)", () => {
     const { result } = convert(
@@ -171,6 +195,28 @@ describe("mj-navbar", () => {
     });
   });
 
+  it("does not read the document's mj-attributes cascade as its own font-family", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-navbar font-family="Georgia" /></mj-attributes>',
+      '<mj-navbar><mj-navbar-link href="/a">Alpha</mj-navbar-link></mj-navbar>',
+      "mj-navbar",
+    );
+    const block = result.block as MenuBlock;
+
+    expect("fontFamily" in block).toBe(false);
+  });
+
+  it("reads its own font-family over the cascade default", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-navbar font-family="Georgia" /></mj-attributes>',
+      '<mj-navbar font-family="Verdana"><mj-navbar-link href="/a">Alpha</mj-navbar-link></mj-navbar>',
+      "mj-navbar",
+    );
+    const block = result.block as MenuBlock;
+
+    expect(block.fontFamily).toBe("Verdana");
+  });
+
   it("returns null for an mj-navbar with no links", () => {
     const $: CheerioAPI = load(
       "<mjml><mj-body><mj-navbar /></mj-body></mjml>",
@@ -249,6 +295,30 @@ describe("mj-table", () => {
       ["A1", "A2"],
       ["B1", "B2"],
     ]);
+  });
+
+  it("does not read the document's mj-attributes cascade as its own color or font-family", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-all font-family="Georgia" /><mj-table color="#123456" /></mj-attributes>',
+      "<mj-table><tr><td>a</td></tr></mj-table>",
+      "mj-table",
+    );
+    const block = result.block as TableBlock;
+
+    expect("color" in block).toBe(false);
+    expect("fontFamily" in block).toBe(false);
+  });
+
+  it("reads its own color and font-family over the cascade default", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-all font-family="Georgia" /><mj-table color="#123456" /></mj-attributes>',
+      '<mj-table color="#abcdef" font-family="Verdana"><tr><td>a</td></tr></mj-table>',
+      "mj-table",
+    );
+    const block = result.block as TableBlock;
+
+    expect(block.color).toBe("#abcdef");
+    expect(block.fontFamily).toBe("Verdana");
   });
 
   it("returns null for an mj-table with no rows", () => {

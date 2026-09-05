@@ -348,6 +348,49 @@ describe("buildSection", () => {
   });
 });
 
+describe("convertColumnChildren display conditions", () => {
+  it("recovers a display condition bracketing a single column child", () => {
+    const { blocks } = build(
+      "<mj-section><mj-column><mj-raw>{% if pro %}</mj-raw><mj-text><p>Only for pro</p></mj-text><mj-raw>{% endif %}</mj-raw></mj-column></mj-section>",
+    );
+    const section = blocks[0] as SectionBlock;
+
+    expect(section.children[0]).toHaveLength(1);
+    expect(section.children[0][0].displayCondition).toEqual({
+      label: "{% if pro %}",
+      before: "{% if pro %}",
+      after: "{% endif %}",
+    });
+  });
+
+  it("emits no entry for the bracketing mj-raw pair inside a column", () => {
+    const { entries } = build(
+      "<mj-section><mj-column><mj-raw>{% if pro %}</mj-raw><mj-text><p>Only for pro</p></mj-text><mj-raw>{% endif %}</mj-raw></mj-column></mj-section>",
+    );
+
+    expect(entries.filter((e) => e.sourceTag === "mj-raw")).toEqual([]);
+  });
+
+  it("still converts an unpaired logic mj-raw inside a column to an html block", () => {
+    const { blocks, entries } = build(
+      '<mj-section><mj-column><mj-raw>{% if pro %}</mj-raw><mj-spacer height="4px" /></mj-column></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+
+    expect(section.children[0].map((b) => b.type)).toEqual(["html", "spacer"]);
+    expect(section.children[0][0]).toMatchObject({
+      type: "html",
+      content: "{% if pro %}",
+    });
+    const rawEntry = entries.find((e) => e.sourceTag === "mj-raw")!;
+    expect(rawEntry).toEqual({
+      sourceTag: "mj-raw",
+      templaticalBlockType: "html",
+      status: "converted",
+    });
+  });
+});
+
 describe("buildWrapper", () => {
   it("folds a single-section wrapper into that section's wrapper field", () => {
     const { blocks, entries } = build(

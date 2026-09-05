@@ -22,6 +22,7 @@ import {
 } from "./attribute-parser";
 import {
   childElements,
+  ownAttr,
   resolveAttributes,
   tagOf,
   type Attrs,
@@ -234,7 +235,14 @@ export function convertNavbar(
   });
 
   const fontSize = parsePxValue(attrs["font-size"]);
-  const fontFamily = parseFontFamily(attrs["font-family"]);
+  // ownAttr, not attrs directly — same cascade-vs-own distinction ownAttr
+  // documents (attribute-resolver.ts): our own renderer never emits
+  // mj-navbar, but a hand-written document's own
+  // <mj-attributes><mj-navbar font-family="…"/></mj-attributes> default must
+  // not be read back as this navbar's own override.
+  const fontFamily = parseFontFamily(
+    ownAttr(attrs, "font-family", "mj-navbar", ctx.cascade),
+  );
 
   const block = createMenuBlock({
     items,
@@ -284,9 +292,15 @@ export function convertNativeTable(
     .toArray()
     .some((cell) => tagOf(cell) === "th");
 
-  const color = parseColor(attrs.color);
+  // ownAttr, not attrs directly — same cascade-vs-own distinction as
+  // convertNavbar above: a hand-written document's own
+  // <mj-attributes><mj-table color="…" font-family="…"/></mj-attributes>
+  // default must not be read back as this table's own override.
+  const color = parseColor(ownAttr(attrs, "color", "mj-table", ctx.cascade));
   const fontSize = parsePxValue(attrs["font-size"]);
-  const fontFamily = parseFontFamily(attrs["font-family"]);
+  const fontFamily = parseFontFamily(
+    ownAttr(attrs, "font-family", "mj-table", ctx.cascade),
+  );
 
   const block = createTableBlock({
     rows,
