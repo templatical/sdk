@@ -9,6 +9,7 @@ import type {
 } from "@templatical/types";
 import {
   parseColor,
+  parseDefinitePx,
   parsePaddingShorthand,
   parsePercent,
   parsePxValue,
@@ -63,7 +64,15 @@ export function matchColumnLayout(percents: Array<number | null>): {
     return { layout: "3", exact: false };
   }
 
-  const resolved = percents.map((p) => p ?? 100 / count);
+  // A partial mix of known and absent widths fills each absent column with
+  // its share of what the known widths leave over, not an equal split of the
+  // whole row — an equal split is only correct when every column is absent,
+  // which the branch above already handles. Clamped at 0 so a document whose
+  // explicit widths already exceed 100% cannot produce a negative fill.
+  const nullCount = percents.filter((p) => p === null).length;
+  const knownSum = percents.reduce((sum: number, p) => sum + (p ?? 0), 0);
+  const remainder = nullCount > 0 ? Math.max(0, 100 - knownSum) / nullCount : 0;
+  const resolved = percents.map((p) => p ?? remainder);
 
   const sameCount = LAYOUT_SHAPES.filter(
     (shape) => shape.percents.length === count,
@@ -211,6 +220,26 @@ function convertColumnChildren(
 }
 
 /**
+ * A column's width as a percentage of the section's container, or `null`
+ * when the column carries no definite width of its own.
+ *
+ * `mj-column` accepts either a percentage or a px length, and a px width is
+ * real geometry — converting it here lets it participate in
+ * `matchColumnLayout` as a known value instead of falling through to "auto"
+ * and losing the author's intended ratio.
+ */
+function columnWidthPercent(
+  value: string | undefined,
+  containerWidth: number,
+): number | null {
+  const percent = parsePercent(value);
+  if (percent !== null) return percent;
+
+  const px = parseDefinitePx(value);
+  return px !== null && containerWidth > 0 ? (px / containerWidth) * 100 : null;
+}
+
+/**
  * Build a `SectionBlock` (always exactly one) from an `mj-section`.
  *
  * Returns an array so the caller can treat sections and wrappers uniformly.
@@ -224,8 +253,11 @@ export function buildSection(
   const attrs = resolveAttributes($el, ctx.cascade);
   const { columns, grouped } = readColumns($el, ctx);
 
-  const percents = columns.map(($c) =>
-    parsePercent(resolveAttributes($c, ctx.cascade).width),
+  const rawWidths = columns.map(
+    ($c) => resolveAttributes($c, ctx.cascade).width,
+  );
+  const percents = rawWidths.map((width) =>
+    columnWidthPercent(width, ctx.containerWidth),
   );
   const { layout, exact } = matchColumnLayout(percents);
   const slots = COLUMN_COUNT[layout];
@@ -238,7 +270,11 @@ export function buildSection(
   // every section's entry at the front of the entire report instead of at the
   // front of its own children, reversing section order in a multi-section
   // document and interleaving children under the wrong parent.
-  const shown = percents.map((p) => (p === null ? "auto" : `${p}%`)).join(", ");
+  //
+  // Built from the raw attribute strings, not the resolved `percents` — a px
+  // width would otherwise show as a repeating-decimal percentage of the
+  // container instead of the value the author actually wrote.
+  const shown = rawWidths.map((w) => w || "auto").join(", ");
   entries.push({
     sourceTag: "mj-section",
     templaticalBlockType: "section",

@@ -3,6 +3,7 @@ import {
   parseAlignment,
   parseBorderStyle,
   parseColor,
+  parseDefinitePx,
   parseFontFamily,
   parsePaddingShorthand,
   parsePercent,
@@ -26,12 +27,42 @@ describe("parsePxValue", () => {
     expect(parsePxValue("33.4px")).toBe(33);
   });
 
+  it("tolerates leading whitespace", () => {
+    expect(parsePxValue(" 24px")).toBe(24);
+  });
+
   it("returns 0 for a missing value", () => {
     expect(parsePxValue(undefined)).toBe(0);
   });
 
   it("returns 0 for a unit it cannot express", () => {
     expect(parsePxValue("2em")).toBe(0);
+  });
+});
+
+describe("parseDefinitePx", () => {
+  it("reads a px length", () => {
+    expect(parseDefinitePx("200px")).toBe(200);
+  });
+
+  it("reads a bare number as px", () => {
+    expect(parseDefinitePx("200")).toBe(200);
+  });
+
+  it("tolerates surrounding whitespace", () => {
+    expect(parseDefinitePx(" 200px ")).toBe(200);
+  });
+
+  it("returns null for a percentage", () => {
+    expect(parseDefinitePx("50%")).toBe(null);
+  });
+
+  it("returns null for a missing value", () => {
+    expect(parseDefinitePx(undefined)).toBe(null);
+  });
+
+  it("returns null for a unit it cannot express", () => {
+    expect(parseDefinitePx("2em")).toBe(null);
   });
 });
 

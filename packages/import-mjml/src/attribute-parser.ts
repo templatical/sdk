@@ -9,7 +9,7 @@ import type { SpacingValue } from "@templatical/types";
 export function parsePxValue(value: string | number | undefined): number {
   if (value === undefined || value === null || value === "") return 0;
   if (typeof value === "number") return Math.round(value);
-  const match = value.match(/^(-?\d+(?:\.\d+)?)\s*(?:px)?\s*$/);
+  const match = value.match(/^\s*(-?\d+(?:\.\d+)?)\s*(?:px)?\s*$/);
   return match ? Math.round(parseFloat(match[1])) : 0;
 }
 
@@ -158,6 +158,21 @@ export function parseAlignment(
 export function parsePercent(value: string | undefined): number | null {
   if (!value) return null;
   const match = value.trim().match(/^(\d+(?:\.\d+)?)\s*%$/);
+  return match ? parseFloat(match[1]) : null;
+}
+
+/**
+ * Reads a definite px length, or `null` when the value is not one.
+ *
+ * Unlike `parsePxValue`, which returns `0` for anything unparseable, this
+ * tells "no length given" apart from "0px" — column-width recovery (§8.1)
+ * needs that distinction for a px `mj-column` width the same way it needs
+ * `parsePercent`'s `null` for a percentage one, so the two compose into a
+ * single known-or-absent value the matcher can fill around.
+ */
+export function parseDefinitePx(value: string | undefined): number | null {
+  if (!value) return null;
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*(?:px)?$/);
   return match ? parseFloat(match[1]) : null;
 }
 

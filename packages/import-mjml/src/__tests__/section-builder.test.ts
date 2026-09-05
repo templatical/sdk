@@ -75,6 +75,30 @@ describe("matchColumnLayout", () => {
     });
   });
 
+  it("fills a single absent column with what the known width leaves over", () => {
+    expect(matchColumnLayout([70, null])).toEqual({
+      layout: "2-1",
+      exact: false,
+    });
+  });
+
+  it("fills a leading absent column the same way, mirrored", () => {
+    expect(matchColumnLayout([null, 70])).toEqual({
+      layout: "1-2",
+      exact: false,
+    });
+  });
+
+  it("splits the remainder across more than one absent column", () => {
+    // 100 − 50 = 50, split two ways = 25 each: [50, 25, 25] is nowhere near
+    // any three-column shape's tolerance band, so this stays approximated —
+    // three columns has only the one shape to fall back to either way.
+    expect(matchColumnLayout([50, null, null])).toEqual({
+      layout: "3",
+      exact: false,
+    });
+  });
+
   it("approximates a two-column ratio outside the tolerance", () => {
     expect(matchColumnLayout([25, 75])).toEqual({
       layout: "1-2",
@@ -253,6 +277,29 @@ describe("buildSection", () => {
     expect(entry.status).toBe("approximated");
     expect(entry.note).toBe(
       'Column widths 25%, 75% have no exact Templatical layout; resolved to "1-2".',
+    );
+  });
+
+  it("recovers a px column width as a known value in the match", () => {
+    const { blocks, entries } = build(
+      '<mj-section><mj-column width="200px" /><mj-column /></mj-section>',
+    );
+    const section = blocks[0] as SectionBlock;
+    const entry = entries.find((e) => e.sourceTag === "mj-section")!;
+
+    expect(section.columns).toBe("1-2");
+    expect(entry.status).toBe("converted");
+  });
+
+  it("shows a px column's original width, not a computed percentage, in the note", () => {
+    const { entries } = build(
+      '<mj-section><mj-column width="100px" /><mj-column /></mj-section>',
+    );
+    const entry = entries.find((e) => e.sourceTag === "mj-section")!;
+
+    expect(entry.status).toBe("approximated");
+    expect(entry.note).toBe(
+      'Column widths 100px, auto have no exact Templatical layout; resolved to "1-2".',
     );
   });
 

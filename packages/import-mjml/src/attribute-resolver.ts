@@ -221,9 +221,10 @@ function cssClasses(attrs: Attrs): string[] {
 }
 
 /**
- * Reverse of the renderer's `getCssClassAttr`
- * (`packages/renderer/src/visibility.ts`), which is the only block-level marker
- * the renderer emits.
+ * Reverse of the renderer's `getCssClassAttr` (`packages/renderer/src/visibility.ts`).
+ * `css-class` also carries the rich-text markers below (`RICH_TEXT_CSS_CLASS`,
+ * `RICH_TEXT_GAP_CLASS`) — this function reads only the two visibility
+ * classes off it and leaves those alone.
  *
  * Returns `undefined` when neither class is present — absence means visible
  * everywhere, and writing `{ desktop: true, mobile: true }` instead would put a
