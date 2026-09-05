@@ -1,3 +1,7 @@
+---
+description: lintAccessibility checks alt text, color contrast, vague link and button copy, heading structure, and touch targets against WCAG and EU accessibility law.
+---
+
 # Accessibility linter
 
 `lintAccessibility(content, options?)` is the accessibility checker inside [`@templatical/quality`](../). It operates on the JSON `TemplateContent` block tree, runs in the browser or in Node.js, and ships with no Vue or DOM dependencies — so the same package validates templates inside the editor and as a CI gate on stored fixtures.

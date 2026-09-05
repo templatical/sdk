@@ -1,3 +1,7 @@
+---
+description: Reference for LintOptions — the disabled, locale, accessibility, structure, and links fields accepted by lintTemplate and the editor's lint config.
+---
+
 # Options
 
 `lintTemplate`, `lintAccessibility`, `lintStructure`, and `lintLinks` all accept the same `LintOptions` shape. Every field is optional.

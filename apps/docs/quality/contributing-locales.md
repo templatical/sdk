@@ -1,3 +1,7 @@
+---
+description: Add a new locale's rule messages and vague-text dictionaries for the accessibility, structure, and link linters, auto-discovered via import.meta.glob.
+---
+
 # Contributing locales
 
 `@templatical/quality` ships locale-aware data sets keyed by language:

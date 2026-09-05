@@ -1,3 +1,7 @@
+---
+description: All 21 lintAccessibility rules — alt text, headings, link and button wording, contrast, touch targets, and preheader text — with default severities.
+---
+
 # Accessibility rule catalog
 
 The 21 rules `lintAccessibility` ships, grouped by what they check. Each rule lives in `packages/quality/src/accessibility/rules/`; severity, message templates, and dictionaries are user-overridable per [Options](../options).

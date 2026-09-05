@@ -1,3 +1,7 @@
+---
+description: Run the quality linters headless in Node.js — CI guards, save-time validation, ruleId filtering, and custom rules built with walkBlocks and walkUrls.
+---
+
 # Headless usage
 
 `@templatical/quality` is JSON-only and has no DOM dependency, so the same linters run in any Node.js context: CI, build pipelines, server-side validation, batch jobs.

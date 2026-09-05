@@ -1,5 +1,6 @@
 ---
 layout: home
+description: Templatical is an embeddable drag-and-drop email editor SDK — saving, versioning, comments, and rendering wired to your own backend.
 hero:
   name: Templatical
   text: Email Editor for Your App
