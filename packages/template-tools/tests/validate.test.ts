@@ -1,5 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { runQualityLint, validateTemplate } from "../src/validate";
+import { readFileSync, readdirSync } from "node:fs";
+import { resolve } from "node:path";
+import { runQualityLint, schema, validateTemplate } from "../src/validate";
+import {
+  createButtonBlock,
+  createCountdownBlock,
+  createCustomBlock,
+  createDefaultTemplateContent,
+  createDividerBlock,
+  createHtmlBlock,
+  createImageBlock,
+  createMenuBlock,
+  createParagraphBlock,
+  createSectionBlock,
+  createSocialIconsBlock,
+  createSpacerBlock,
+  createTableBlock,
+  createTitleBlock,
+  createVideoBlock,
+  type Block,
+  type BlockType,
+} from "@templatical/types";
 
 const padding = { top: 8, right: 8, bottom: 8, left: 8 };
 
@@ -76,6 +97,20 @@ describe("validateTemplate — unhappy path", () => {
     expect(result.valid).toBe(false);
     expect(result.errors).toContain("blocks must be an array");
     expect(result.errors).toContain("settings must be an object");
+  });
+
+  it("reports invalid settings when present but missing a required field", () => {
+    // Distinct from the absent-settings case above: `settings` here IS an
+    // object, so validateTemplate takes the `settingsValidator` branch rather
+    // than the `settings must be an object` shortcut.
+    const result = validateTemplate({
+      blocks: [],
+      settings: { backgroundColor: "#ffffff", textColor: "#111111" },
+    });
+    expect(result.valid).toBe(false);
+    expect(
+      result.errors.some((e) => e.startsWith("settings") && e.includes("width")),
+    ).toBe(true);
   });
 
   it("names the block type in a per-block error", () => {
@@ -186,5 +221,95 @@ describe("runQualityLint", () => {
     const result = runQualityLint(null);
     expect(result.issues).toEqual([]);
     expect(typeof result.error).toBe("string");
+  });
+});
+
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
+const EXAMPLES_DIR = resolve(
+  REPO_ROOT,
+  "skills/templatical-email/reference/examples",
+);
+const exampleFiles = readdirSync(EXAMPLES_DIR)
+  .filter((f) => f.endsWith(".json"))
+  .sort();
+
+describe("validateTemplate — bundled few-shot examples", () => {
+  it("bundles a diverse set of example templates for few-shot coverage", () => {
+    expect(exampleFiles.length).toBeGreaterThanOrEqual(5);
+  });
+
+  // Every committed example must validate — a broken few-shot would teach the
+  // model to emit invalid JSON. Enumerated from the directory (rather than
+  // listed by name) so a newly added example is covered with no edit here.
+  it.each(exampleFiles)("accepts %s with no structural errors", (file) => {
+    const content = JSON.parse(
+      readFileSync(resolve(EXAMPLES_DIR, file), "utf8"),
+    );
+    const { valid, errors } = validateTemplate(content);
+    expect(errors).toEqual([]);
+    expect(valid).toBe(true);
+  });
+});
+
+// One factory call per member of the BlockType union. @templatical/types has
+// no runtime list of block types to enumerate instead — BlockType is a
+// type-only union (`Block["type"]`) — so the Record annotation below gives an
+// editor's type checker a completeness hint, but it is not a CI-enforced one:
+// this package's tsc --noEmit (like every sibling package's) `include`s only
+// "src", never "tests", and vitest transpiles test files without type
+// checking them. The completeness check that actually runs is the first test
+// below, which compares this object's keys against schema.json's own
+// discriminator consts at runtime — schema.json is generated from
+// @templatical/types and tests/schema-freshness.test.ts keeps it in sync, so
+// that comparison is the real derivation.
+const BLOCK_FACTORIES: Record<BlockType, () => Block> = {
+  section: () => createSectionBlock(),
+  title: () => createTitleBlock(),
+  paragraph: () => createParagraphBlock(),
+  image: () => createImageBlock(),
+  button: () => createButtonBlock(),
+  divider: () => createDividerBlock(),
+  video: () => createVideoBlock(),
+  social: () => createSocialIconsBlock(),
+  spacer: () => createSpacerBlock(),
+  html: () => createHtmlBlock(),
+  menu: () => createMenuBlock(),
+  table: () => createTableBlock(),
+  countdown: () => createCountdownBlock(),
+  // Custom blocks are consumer runtime extensions, not prompt-generated — but
+  // they remain a valid schema member, so the drift guard covers them too.
+  custom: () =>
+    createCustomBlock({
+      type: "product-card",
+      name: "Product card",
+      fields: [],
+      template: "<div></div>",
+    }),
+};
+
+/** Every block type's discriminator `const`, read from the generated schema. */
+function schemaBlockTypes(): string[] {
+  return Object.values(schema.definitions)
+    .map((def) => def.properties?.type?.const)
+    .filter((value): value is string => typeof value === "string")
+    .sort();
+}
+
+describe("validateTemplate — schema ↔ types drift guard", () => {
+  it("covers every block type the generated schema declares", () => {
+    // Catches the case the second test below cannot: a block type added to
+    // @templatical/types (and regenerated into schema.json) with no matching
+    // entry added here yet. Re-run `generate-schema` first if this fails
+    // after a types change and schema.json itself looks stale.
+    expect(Object.keys(BLOCK_FACTORIES).sort()).toEqual(schemaBlockTypes());
+  });
+
+  it("accepts a canonical instance of every block type @templatical/types defines", () => {
+    const blocks = Object.values(BLOCK_FACTORIES).map((factory) => factory());
+    const doc = { ...createDefaultTemplateContent(), blocks };
+    const { valid, errors } = validateTemplate(doc);
+    // If this fails after a types change, re-run `generate-schema`.
+    expect(errors).toEqual([]);
+    expect(valid).toBe(true);
   });
 });

@@ -13,7 +13,7 @@
     />
     <!--
       The real Templatical editor, loaded from the CDN. {{EDITOR_VERSION}} is
-      injected by scripts/live-server.mjs (pinned to the skill's schema version).
+      injected by src/live/index.ts (pinned to this package's schema version).
       In shadow-DOM mode the editor adopts its own CSS; the stylesheet link is
       kept for parity with the documented consumer setup.
     -->
@@ -823,8 +823,15 @@
             return;
           }
           if (!mjml2html) {
+            // The major here must track the mjml that @templatical/renderer's
+            // round-trip tests compile against, or this preview renders
+            // through a different compiler than the one the renderer's
+            // output is actually verified with. Guarded by
+            // tests/cdn-pin.test.ts — a version pinned inside a CDN URL in an
+            // HTML file is invisible to Renovate, so nothing else here flags
+            // a drift.
             const mod =
-              await import("https://cdn.jsdelivr.net/npm/mjml-browser@4/+esm");
+              await import("https://cdn.jsdelivr.net/npm/mjml-browser@5/+esm");
             mjml2html = mod.default ?? mod.mjml2html ?? mod;
           }
           body.value = mjml2html(mjml).html;

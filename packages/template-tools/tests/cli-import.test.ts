@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join, resolve } from "node:path";
 
 // Spying on an ES module's export (`vi.spyOn(await import("..."), "resolveOptional")`)
 // is unreliable — depending on how Vite transforms the module the property is
@@ -28,6 +28,8 @@ import {
   summarizeReport,
 } from "../src/cli/commands/import";
 import { UsageError } from "../src/cli/io";
+import { resolveOptional } from "../src/cli/resolve-optional";
+import { validateTemplate } from "../src/validate";
 
 let dir: string;
 let stdout: string[];
@@ -154,4 +156,55 @@ describe("import command", () => {
       runImport(parseArgs(["import", src, "--cwd", dir])),
     ).rejects.toThrow(/npm install @templatical.import-unlayer/);
   });
+});
+
+const REPO_ROOT = resolve(import.meta.dirname, "../../..");
+
+describe("import command — real fixtures convert to valid Templatical JSON", () => {
+  const cases = [
+    {
+      format: "unlayer",
+      fixture: "packages/import-unlayer/src/__tests__/fixtures/example-1.json",
+    },
+    {
+      format: "beefree",
+      fixture: "packages/import-beefree/src/__tests__/fixtures/example-1.json",
+    },
+    {
+      format: "html",
+      fixture: "packages/import-html/src/__tests__/fixtures/multi-column.html",
+    },
+  ] as const;
+
+  // Each converter package is optional (install-on-demand) and resolved from
+  // node_modules at runtime — resolveOptional throws rather than resolving to
+  // null when a package.json is found but its dist hasn't been built, so a
+  // pre-check with .catch(() => null) treats "not installed" and "not built
+  // yet" the same way: skip. CI builds every package before running tests, so
+  // the real assertions run there. Mirrors the graceful skip in the "real
+  // fixtures" fixture-based groups elsewhere in this repo (e.g. the
+  // e2e-consumer suites).
+  it.each(cases)(
+    "imports a $format fixture end-to-end",
+    async ({ format, fixture }) => {
+      const spec = FORMATS[format];
+      const available = await resolveOptional(spec.pkg, dir).catch(() => null);
+      if (!available) return;
+
+      const src = join(dir, basename(fixture));
+      writeFileSync(src, readFileSync(resolve(REPO_ROOT, fixture), "utf8"), "utf8");
+      setJsonMode(true);
+      expect(
+        await runImport(
+          parseArgs(["import", src, "--format", format, "--cwd", dir, "--json"]),
+        ),
+      ).toBe(0);
+      const out = JSON.parse(stdout.join(""));
+      const written = JSON.parse(readFileSync(out.file, "utf8"));
+      const { valid, errors } = validateTemplate(written);
+      expect(errors).toEqual([]);
+      expect(valid).toBe(true);
+      expect(out.report.total).toBeGreaterThan(0);
+    },
+  );
 });

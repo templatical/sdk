@@ -55,12 +55,10 @@ describe("CDN editor pin", () => {
 
     // Within this package, EDITOR_VERSION must be declared exactly once, in
     // src/live/index.ts — a second declaration anywhere else here could drift
-    // from it silently. This does NOT check skills/templatical-email's own
-    // copy in scripts/live-server.mjs: that repo-wide single-declaration
-    // invariant belongs to subsystem C (design-notes/email-skill-refactor.md),
-    // which deletes the skill's vendored live-server.mjs — and the
-    // EDITOR_VERSION it declares — once the skill is migrated onto this
-    // package instead of carrying its own copy.
+    // from it silently. skills/templatical-email holds no copy to check
+    // against: the live-preview harness lives entirely in this package, and
+    // the skill carries only the content that teaches an agent to use it
+    // (SKILL.md, the schema, the block guide, the examples).
     expect(findEditorVersionDeclarations(packageRoot)).toEqual([
       resolve(packageRoot, "src/live/index.ts"),
     ]);
@@ -95,5 +93,33 @@ describe("live harness CDN hosts", () => {
     // booted and only the deferred chunk died, surfacing as toMjml()'s
     // misleading "install @templatical/renderer" error.
     expect(html).not.toMatch(/unpkg\.com\/@templatical\/editor/);
+  });
+
+  it("pins mjml-browser to the same major as the renderer's mjml", () => {
+    // The harness compiles MJML to HTML in the browser with mjml-browser,
+    // while @templatical/renderer's own round-trip tests compile with `mjml`
+    // — the two must share a major, or the preview renders through a
+    // different compiler than the one the renderer's output is verified
+    // against. A version pinned inside a CDN URL in an HTML file is invisible
+    // to Renovate, so nothing else here flags a drift. Deriving the expected
+    // major from the renderer's own devDependency, rather than hardcoding a
+    // number, is what makes an MJML major bump there fail here until the
+    // harness follows.
+    const rendererPkg = JSON.parse(
+      readFileSync(
+        resolve(repoRoot, "packages/renderer/package.json"),
+        "utf8",
+      ),
+    );
+    const declared = rendererPkg.devDependencies?.mjml;
+    expect(declared).toMatch(/^\D*\d+\./);
+    const expected = declared.match(/(\d+)\./)[1];
+
+    const pins = [...html.matchAll(/mjml-browser@(\d+)/g)].map(
+      (match) => match[1],
+    );
+    // Exactly one pin, on the renderer's major. An empty array here means the
+    // import was removed or renamed rather than that the pin is fine.
+    expect(pins).toEqual([expected]);
   });
 });
