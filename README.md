@@ -57,7 +57,7 @@ Every other agent takes the folder. `~/.agents/skills/` is the vendor-neutral lo
 cp -r skills/templatical-email ~/.agents/skills/
 ```
 
-You can also **preview it live**: ask to "show it live" and the skill opens your template in the real Templatical editor in a browser, updating as you prompt and reconciling any edits you make by hand. It's local and adds no dependencies (a tiny Node bridge; the editor loads from the CDN).
+You can also **preview it live**: ask to "show it live" and the skill opens your template in the real Templatical editor in a browser, updating as you prompt and reconciling any edits you make by hand. It's local and installs nothing into your project (a small CLI fetched on demand via `npx`; the editor loads from the CDN).
 
 [Skill guide →](https://docs.templatical.com/guide/agent-skill)
 

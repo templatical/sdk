@@ -26,20 +26,28 @@ Ein paar Dinge müssen auf Ihrem Rechner vorhanden sein, bevor Sie starten.
 |---|---|---|
 | **Ein Coding-Agent** | Einer, der [Agent Skills](https://agentskills.io) unterstützt und auf Ihrem eigenen Rechner läuft — Claude Code, Codex CLI, Cursor 2.4+, Gemini CLI, GitHub Copilot und weitere lesen alle `SKILL.md`. Er muss Befehle ausführen und Dateien schreiben dürfen. | Alles |
 | **Node.js 20+** | Version 22 (LTS) empfohlen. Prüfen Sie es mit `node -v`; wenn dabei nichts oder eine Version unter 20 erscheint, installieren Sie es von [nodejs.org](https://nodejs.org). | Alles |
+| **Eine Internetverbindung** | Jeder Befehl — auch das Erzeugen und Validieren von JSON — läuft über eine kleine CLI, die bei Bedarf per `npx` geladen wird. Der erste Aufruf lädt die gepinnte Version von npm herunter; danach cacht npm sie, und es gibt keinen weiteren Netzwerk-Roundtrip mehr, bis ein künftiges Release den Pin verschiebt. In Ihr Projekt wird dabei nichts installiert: keine Änderung an der `package.json`, keine Änderung an der Lockfile, kein Eintrag in `node_modules`. | Alles |
 | **Ein moderner Browser** | Chrome/Edge 80+, Firefox 101+, Safari 16.4+ — haben Sie mit hoher Wahrscheinlichkeit bereits. | [Live-Vorschau](#live-vorschau) |
-| **Eine Internetverbindung** | Die Live-Vorschau lädt den Editor und den HTML-Compiler von einem CDN. Das Erzeugen und Validieren von JSON funktioniert vollständig offline. | [Live-Vorschau](#live-vorschau) |
 | **`npm`** | Lädt beim ersten Import den Konverter für Ihr Quellformat. Ist in Node.js enthalten. | [Import](#eine-bestehende-vorlage-importieren) |
 | **`git`** | Um das Repository zu klonen, oder für die Plugin-Installation (der Marketplace ist ein Git-Repository). | Installation |
 
-**Sonst nichts** — kein Templatical-Konto, kein API-Schlüssel, kein Backend und kein `npm install`, um ein Template zu erzeugen oder zu validieren.
+**Sonst nichts** — kein Templatical-Konto, kein API-Schlüssel und kein Backend.
 
-Die Live-Vorschau benötigt einen Agenten auf Ihrem eigenen Rechner, da sie einen lokalen Server für Ihren Browser öffnet. Agenten, die entfernt laufen — ein browserbasierter Chat, eine Cloud-IDE, ein CI-Runner — können weiterhin JSON erzeugen und validieren, nur den Editor können sie Ihnen nicht zeigen.
+Zwei unterschiedliche Dinge können das verhindern, daher lohnt sich die Unterscheidung: **Keine Internetverbindung blockiert alles**, da inzwischen selbst das Erzeugen und Validieren von JSON über die CLI läuft. **Kein lokales Dateisystem oder erreichbarer Port** — eine gehostete, serverseitige Sandbox — blockiert nur die Live-Vorschau; das Erzeugen und Validieren von JSON ist davon nicht betroffen.
 
 ## Installation
 
-Der Skill ist ein Ordner mit einer `SKILL.md` — einem [offenen Standard](https://agentskills.io), den Claude Code, Codex CLI, Cursor, Gemini CLI und weitere lesen. Claude Code ist derzeit das einzige Werkzeug mit einem Paket-Installer, dort genügen zwei Befehle; überall sonst kopieren Sie den Ordner hinein.
+Der Skill ist ein Ordner mit einer `SKILL.md` — einem [offenen Standard](https://agentskills.io), den Claude Code, Codex CLI, Cursor, Gemini CLI und weitere lesen.
 
-### Claude Code
+### `npx skills add` (empfohlen)
+
+```bash
+npx skills add templatical/sdk
+```
+
+[`skills`](https://github.com/vercel-labs/skills) erkennt, welche(n) unterstützten Agenten Sie installiert haben, und installiert den Skill direkt in das passende Verzeichnis für jeden — ein Befehl statt einer Kopie pro Agent. Standardmäßig meldet es anonyme Nutzungstelemetrie (welches Repository und welchen Skill Sie installiert haben, bei öffentlichen Repositories); setzen Sie vorher `DISABLE_TELEMETRY=1` oder `DO_NOT_TRACK=1`, falls Sie das nicht möchten.
+
+### Claude-Code-Plugin
 
 ```text
 /plugin marketplace add templatical/sdk
@@ -48,7 +56,7 @@ Der Skill ist ein Ordner mit einer `SKILL.md` — einem [offenen Standard](https
 
 Fügen Sie den Marketplace über das Git-Repository hinzu (nicht über eine rohe Datei-URL), damit die Quelle des Plugins aufgelöst wird. Aktualisierungen kommen über den Marketplace, es muss also später nichts erneut kopiert werden.
 
-### Alle anderen Agenten
+### Ordner manuell kopieren
 
 Klonen Sie das Repository einmalig:
 
@@ -117,7 +125,7 @@ Der Agent wird:
 
 1. das Block-Schema und die mitgelieferten Beispiele des Skills lesen,
 2. ein vollständiges Template als `{ blocks, settings }`-JSON erzeugen,
-3. den mitgelieferten Validator selbst ausführen und die gemeldeten Struktur- oder Barrierefreiheitsprobleme beheben — so lange, bis das Template besteht,
+3. den Validator selbst ausführen und die gemeldeten Struktur- oder Barrierefreiheitsprobleme beheben — so lange, bis das Template besteht,
 4. Ihnen die fertige E-Mail übergeben — sehen Sie sie live an und verfeinern Sie sie (siehe unten), exportieren Sie dann **MJML/HTML zum Versand** oder laden Sie das JSON mit `editor.setContent(json)` in Ihre eigene Editor-Integration.
 
 ## Live-Vorschau
@@ -144,10 +152,10 @@ Benutzerdefinierte Blöcke sind die einzige Ausnahme: Sie sind zur Laufzeit regi
 
 ## Template-JSON direkt validieren
 
-Der Agent führt diesen Validator bereits selbst aus (Schritt 3 oben), Sie müssen es also nicht tun. Es ist aber ein einfaches Node-Skript, das Sie bei Bedarf auch selbst ausführen können — in CI oder um ein Template zu prüfen:
+Der Agent führt diesen Validator bereits selbst aus (Schritt 3 oben), Sie müssen es also nicht tun. Es ist aber nur die veröffentlichte CLI, die Sie bei Bedarf auch selbst ausführen können — in CI oder um ein Template zu prüfen:
 
 ```bash
-node scripts/validate.mjs pfad/zum/template.json
+npx -y @templatical/template-tools@0.30.0 validate pfad/zum/template.json
 ```
 
 Es prüft jeden Block gegen seinen Typ im [Block-Schema](/de/guide/blocks) und meldet präzise Fehler (zum Beispiel `blocks[2] (button) must have required property 'url'`). Anschließend kommen Barrierefreiheits-, Struktur- und Link-Prüfungen hinzu. Exit-Code `0` bei Erfolg, `1` bei Fehler.

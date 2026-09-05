@@ -5204,20 +5204,28 @@ A few things need to be in place on your machine before you start.
 |---|---|---|
 | **A coding agent** | One that supports [Agent Skills](https://agentskills.io) and runs on your own machine — Claude Code, Codex CLI, Cursor 2.4+, Gemini CLI, GitHub Copilot and others all read `SKILL.md`. It must be allowed to run commands and write files. | Everything |
 | **Node.js 20+** | Version 22 (LTS) recommended. Check with `node -v`; if that prints nothing or a version below 20, install it from [nodejs.org](https://nodejs.org). | Everything |
+| **An internet connection** | Every command — including generating and validating JSON — runs through a small CLI fetched on demand via `npx`. The first run downloads the pinned version from npm; after that, npm caches it and there's no further network round trip until a future release moves the pin. Nothing is installed into your project: no `package.json` edit, no lockfile change, no `node_modules` entry. | Everything |
 | **A modern browser** | Chrome/Edge 80+, Firefox 101+, Safari 16.4+ — you almost certainly have this. | [Live preview](#preview-it-live) |
-| **An internet connection** | The live preview loads the editor and the HTML compiler from a CDN. Generating and validating JSON works fully offline. | [Live preview](#preview-it-live) |
 | **`npm`** | Fetches the converter for your source format the first time you import. Comes with Node.js. | [Importing](#import-an-existing-template) |
 | **`git`** | To clone the repository, or for the plugin install (the marketplace is a git repository). | Install |
 
-**Nothing else** — no Templatical account, no API key, no backend, and no `npm install` to generate or validate a template.
+**Nothing else** — no Templatical account, no API key, and no backend.
 
-The live preview needs an agent running on your own machine, because it opens a local server for your browser. Agents that run remotely — a browser-based chat, a cloud IDE, a CI runner — can still generate and validate JSON, they just can't show you the editor.
+Two different things can stop this working, so it helps to tell them apart: **no internet connection blocks everything**, since even generating and validating JSON now goes through the CLI. **No local filesystem or reachable port** — a hosted, server-side sandbox — blocks only the live preview; generating and validating JSON is unaffected there.
 
 ## Install
 
-The skill is a folder containing `SKILL.md` — an [open standard](https://agentskills.io) that Claude Code, Codex CLI, Cursor, Gemini CLI and others all read. Claude Code is currently the only one with a packaged installer, so it takes two commands; everywhere else you copy the folder in.
+The skill is a folder containing `SKILL.md` — an [open standard](https://agentskills.io) that Claude Code, Codex CLI, Cursor, Gemini CLI and others all read.
 
-### Claude Code
+### `npx skills add` (recommended)
+
+```bash
+npx skills add templatical/sdk
+```
+
+[`skills`](https://github.com/vercel-labs/skills) detects which supported agent(s) you have and installs the skill straight into the right directory for each — one command instead of a per-agent copy. It reports anonymous usage telemetry by default (which repo and skill you installed, for public repositories); set `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` first if you'd rather it didn't.
+
+### Claude Code plugin
 
 ```text
 /plugin marketplace add templatical/sdk
@@ -5226,7 +5234,7 @@ The skill is a folder containing `SKILL.md` — an [open standard](https://agent
 
 Add the marketplace from the git repository (not a raw file URL) so the plugin's source resolves. Updates come through the marketplace, so there is nothing to re-copy later.
 
-### Every other agent
+### Copy the folder manually
 
 Clone the repository once:
 
@@ -5295,7 +5303,7 @@ The agent will:
 
 1. Read the block schema and worked examples bundled with the skill.
 2. Generate a complete template as `{ blocks, settings }` JSON.
-3. Run the bundled validator itself and fix any structural or accessibility issues it reports — repeating until the template passes.
+3. Run the validator itself and fix any structural or accessibility issues it reports — repeating until the template passes.
 4. Hand you the finished email — preview and refine it live (below), then **export MJML/HTML to send**, or load the JSON into your own editor integration with `editor.setContent(json)`.
 
 ## Preview it live
@@ -5322,10 +5330,10 @@ Custom blocks are the one exception: they are consumer-registered runtime extens
 
 ## Validating template JSON directly
 
-The agent already runs this validator itself (step 3 above), so you don't have to. But it's a plain Node script, so you can also run it yourself whenever you want — in CI, or to spot-check a template:
+The agent already runs this validator itself (step 3 above), so you don't have to. But it's just the published CLI, so you can also run it yourself whenever you want — in CI, or to spot-check a template:
 
 ```bash
-node scripts/validate.mjs path/to/template.json
+npx -y @templatical/template-tools@0.30.0 validate path/to/template.json
 ```
 
 It checks each block against its type in the [block schema](/guide/blocks) and reports precise errors (for example, `blocks[2] (button) must have required property 'url'`). It then layers accessibility, structure, and link checks on top. Exit code `0` on success, `1` on failure.
