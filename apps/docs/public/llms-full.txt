@@ -8,8 +8,6 @@
 
 Source: https://docs.templatical.com/api/editor
 
-# Editor API
-
 The main entry point is the `init()` function from `@templatical/editor`.
 
 ## `init(config)`
@@ -377,8 +375,6 @@ await dataFetch.fetch(); // Trigger the fetch
 
 Source: https://docs.templatical.com/api/events
 
-# Events
-
 The editor communicates with your application through callback functions passed in the configuration.
 
 ## Content Events
@@ -604,8 +600,6 @@ The editor already warns on tab close when a `templates` provider is configured 
 
 Source: https://docs.templatical.com/api/renderer-typescript
 
-# Renderer
-
 `@templatical/renderer` converts Templatical template JSON to MJML. Works in both browser and Node.js environments.
 
 The renderer produces MJML only. To compile MJML to HTML for email sending, use any MJML library ([mjml](https://www.npmjs.com/package/mjml) for Node.js, [spatie/mjml-php](https://github.com/spatie/mjml-php) for PHP, etc.).
@@ -825,8 +819,6 @@ See [How Rendering Works](/getting-started/how-rendering-works) for more on the 
 # Types Reference
 
 Source: https://docs.templatical.com/api/types
-
-# Types Reference
 
 `@templatical/types` provides all shared TypeScript types, block factory functions, and utilities.
 
@@ -1410,8 +1402,6 @@ unsubscribe(); // Remove listener
 
 Source: https://docs.templatical.com/backend/comments
 
-# Comments
-
 Give the editor a place to read and write comments from and it grows a review panel: threads with replies, per-block anchors, resolve and reopen, and a count badge on every commented block in the canvas.
 
 ```ts
@@ -1669,8 +1659,6 @@ useCommentListener({
 
 Source: https://docs.templatical.com/backend/
 
-# Connect your backend
-
 The editor edits a template. Where that template is stored, what its past looks like, who commented on it, where a test send goes, how it becomes sending-ready HTML — all of that lives in your stack, and the editor reaches it through a plain object you pass to `init()`.
 
 That object is a **provider**. There are six, they are all optional, and they all work the same way.
@@ -1773,8 +1761,6 @@ Same editor, same block model, same contracts: Cloud is a first-party implementa
 # Rendering & Export
 
 Source: https://docs.templatical.com/backend/render
-
-# Rendering & Export
 
 Two methods on every editor instance:
 
@@ -2013,8 +1999,6 @@ if (mjml.includes(UNRENDERABLE_MARKER_PREFIX)) {
 # Saved Blocks
 
 Source: https://docs.templatical.com/backend/saved-blocks
-
-# Saved Blocks
 
 Saved blocks let your users capture a group of blocks — a header, a footer, a product grid, a CTA — and re-insert it into any other template.
 
@@ -2270,8 +2254,6 @@ Check `canCreate` / `canUpdateBlock` / `canDeleteBlock` before offering an actio
 # Saving & Loading Templates
 
 Source: https://docs.templatical.com/backend/templates
-
-# Saving & Loading Templates
 
 Give the editor somewhere to save to and it grows the chrome that goes with it: an inline-editable template name, a save button, a save-status indicator, `Cmd`/`Ctrl`+`S`, optional autosave, and a warning before the tab closes with unsaved work.
 
@@ -2551,8 +2533,6 @@ await init({
 
 Source: https://docs.templatical.com/backend/test-email
 
-# Test Emails
-
 Let a user send themselves the template they're editing, so they can see it land in a real inbox before it goes anywhere near a campaign.
 
 The editor owns the trigger, the dialog, recipient validation and the sending / success / error states. **You own delivery** — one method.
@@ -2718,8 +2698,6 @@ The preview rides the dialog's own lazily-loaded chunk, so a consumer who never 
 # Version History
 
 Source: https://docs.templatical.com/backend/version-history
-
-# Version History
 
 Give the editor a place to read versions from and it grows a history control in the header: step back through past states, preview one on the canvas, and restore it.
 
@@ -2921,8 +2899,6 @@ await history.restore(v.id);
 
 Source: https://docs.templatical.com/cloud/ai
 
-# AI Assistant
-
 Templatical Cloud includes AI-powered features for generating email content, rewriting text, scoring templates, and converting designs into editable templates.
 
 ## Enable AI
@@ -3065,8 +3041,6 @@ await generate({ prompt: 'A product launch email with hero image and pricing tab
 # Authentication
 
 Source: https://docs.templatical.com/cloud/authentication
-
-# Authentication
 
 Templatical Cloud uses JWT-based authentication. The SDK manages tokens automatically — you provide a server-side endpoint that issues tokens, and the `AuthManager` handles refresh, retries, and authenticated requests.
 
@@ -3212,8 +3186,6 @@ const editor = await initCloud({
 
 Source: https://docs.templatical.com/cloud/collaboration
 
-# Collaboration
-
 Multiple team members can edit the same template simultaneously. The collaboration system provides live presence tracking and block-level locking to prevent conflicts.
 
 ## Enable Collaboration
@@ -3301,8 +3273,6 @@ interface Collaborator {
 # Comments
 
 Source: https://docs.templatical.com/cloud/comments
-
-# Comments
 
 Comments are an [open contract](/backend/comments). Templatical Cloud implements it, the same way your own backend would.
 
@@ -3399,8 +3369,6 @@ See the [comments guide](/backend/comments#headless-use) for the full reactive s
 # Getting Started with Cloud
 
 Source: https://docs.templatical.com/cloud/getting-started
-
-# Getting Started
 
 This guide walks you through setting up Templatical Cloud in your application.
 
@@ -3604,8 +3572,6 @@ console.log(result.auth);       // { ok: true }
 # Headless API
 
 Source: https://docs.templatical.com/cloud/headless-api
-
-# Headless API
 
 The Headless API gives you full programmatic access to templates, media, rendering, and all Cloud features — without the visual editor. Build custom workflows, batch operations, CI/CD pipelines, and integrations.
 
@@ -3814,8 +3780,6 @@ All routes are scoped to a project and tenant:
 
 Source: https://docs.templatical.com/cloud/
 
-# Templatical Cloud
-
 The self-hosted editor gives you everything you need to build and render email templates. **Templatical Cloud** adds the features teams need when shipping email tooling at scale — AI content generation, real-time collaboration, media management, template scoring, and more.
 
 ## How It Works
@@ -3887,8 +3851,6 @@ Plans start at $99/month. All plans include the full editor, AI features, and co
 
 Source: https://docs.templatical.com/cloud/mcp
 
-# MCP Integration
-
 The Model Context Protocol (MCP) integration allows AI agents and automation tools to interact with the editor programmatically. Agents can create, read, modify, and manage templates through a standardized protocol.
 
 ## Use Cases
@@ -3936,8 +3898,6 @@ Both are available from `@templatical/core/cloud` for custom integrations.
 # Media Library
 
 Source: https://docs.templatical.com/cloud/media-library
-
-# Media Library
 
 The Cloud media library provides a full image management system built into the editor. Users can upload, organize, browse, and insert images without leaving the editor.
 
@@ -4026,8 +3986,6 @@ const usage = await client.checkMediaUsage(['item-id-1']);
 
 Source: https://docs.templatical.com/cloud/multi-tenant
 
-# Multi-Tenant Architecture
-
 Templatical Cloud is built for multi-tenant SaaS applications. Each of your customers gets their own isolated set of templates, media, saved blocks, and settings — all managed through a single integration.
 
 ## Concepts
@@ -4096,8 +4054,6 @@ The SDK resolves these automatically from the auth token — you never need to c
 
 Source: https://docs.templatical.com/cloud/rendering
 
-# Rendering
-
 Rendering is an [open contract](/backend/render). Templatical Cloud implements it — and it is the one provider `initCloud()` does **not** let you replace.
 
 ```ts
@@ -4159,8 +4115,6 @@ Render outside the editor entirely with the [headless API](/cloud/headless-api#e
 
 Source: https://docs.templatical.com/cloud/saved-blocks
 
-# Saved Blocks
-
 Saved blocks are an [open contract](/backend/saved-blocks). Templatical Cloud implements it, the same way your own backend would.
 
 ```ts
@@ -4221,8 +4175,6 @@ The REST methods keep their original `module` wording — `listModules`, `create
 
 Source: https://docs.templatical.com/cloud/template-scoring
 
-# Template Scoring
-
 Template scoring runs automated quality checks on your email template and provides actionable feedback across deliverability, accessibility, and design best practices.
 
 ## How It Works
@@ -4282,8 +4234,6 @@ const editor = await initCloud({
 # Templates
 
 Source: https://docs.templatical.com/cloud/templates
-
-# Templates
 
 Saving and loading is an [open contract](/backend/templates). Templatical Cloud implements it, the same way your own backend would.
 
@@ -4360,8 +4310,6 @@ The REST surface is `getTemplate`, `createTemplate` and `updateTemplate` on `Api
 # Test Emails
 
 Source: https://docs.templatical.com/cloud/test-emails
-
-# Test Emails
 
 Send test emails directly from the editor to verify rendering in a real inbox before going live.
 
@@ -4487,8 +4435,6 @@ It arrives with the auth token, so it is empty until auth resolves. **Read it re
 
 Source: https://docs.templatical.com/cloud/version-history
 
-# Version History
-
 Version history is an [open contract](/backend/version-history). Templatical Cloud implements it, the same way your own backend would.
 
 ```ts
@@ -4563,8 +4509,6 @@ The `ApiClient` methods underneath are `getVersions`, `getVersion`, `createVersi
 # Embedding the editor
 
 Source: https://docs.templatical.com/getting-started/embedding
-
-# Embedding the editor
 
 The editor is a component you mount into an element of your own page. Almost everything that goes wrong at that seam is a CSS interaction between your page and the editor's overlays, and a small set of properties causes all of it.
 
@@ -4661,8 +4605,6 @@ Resetting the container is not necessary, and an aggressive reset is harmful: `a
 # How Rendering Works
 
 Source: https://docs.templatical.com/getting-started/how-rendering-works
-
-# How Rendering Works
 
 Templatical separates template editing from template rendering. The editor produces JSON; the renderer turns that JSON into MJML. You then compile the MJML to HTML using any MJML library and send it via your email service.
 
@@ -4787,8 +4729,6 @@ MJML depends on the JSON *and* on your renderer — your fonts config, any `bloc
 # Installation
 
 Source: https://docs.templatical.com/getting-started/installation
-
-# Installation
 
 ::: tip Active development
 Templatical is under active development and ships frequently. The public API is stabilizing — we follow [SemVer](https://semver.org), use [changesets](https://github.com/changesets/changesets) for every release, and document breaking changes in the [changelog](https://github.com/templatical/sdk/releases). Pin a version in production and watch [GitHub releases](https://github.com/templatical/sdk/releases) to stay current.
@@ -5169,8 +5109,6 @@ The CDN build is fully self-contained — all dependencies are bundled. Heavy li
 
 Source: https://docs.templatical.com/getting-started/quick-start
 
-# Quick Start
-
 ## 1. Install packages
 
 ```bash
@@ -5244,8 +5182,6 @@ Pass `shadowDom: false` to opt out if you need an unusual container, target edit
 # AI Agent Skill
 
 Source: https://docs.templatical.com/guide/agent-skill
-
-# AI Agent Skill
 
 Design a complete email just by describing it — **free, open-source, and running entirely in your own AI coding agent.** The `templatical-email` [Agent Skill](https://agentskills.io) teaches your agent how Templatical templates are structured, so it builds valid emails you can **preview and hand-edit in the real editor, then export as sendable MJML or HTML** — ready to send through any provider (Amazon SES, Postmark, Resend, Mailchimp, …), or to load into your own [`@templatical/editor`](/getting-started/quick-start) integration.
 
@@ -5413,8 +5349,6 @@ For an in-product **"generate with AI"** feature (your users type a prompt and g
 # Block Types
 
 Source: https://docs.templatical.com/guide/blocks
-
-# Block Types
 
 Blocks are the building units of every Templatical template. Each block represents a distinct piece of content -- a paragraph, an image, a button. Blocks can be placed directly in the template or inside sections for multi-column layouts. The editor renders them top-to-bottom in the order they appear.
 
@@ -5665,8 +5599,6 @@ A user-defined block type powered by field definitions and a Liquid template. Se
 # Custom Blocks
 
 Source: https://docs.templatical.com/guide/custom-blocks
-
-# Custom Blocks
 
 Custom blocks let you extend Templatical with your own block types. Define a set of fields, write a Liquid template for rendering, and optionally connect a data source. Users interact with custom blocks through the same drag-and-drop interface as built-in blocks.
 
@@ -6268,8 +6200,6 @@ dataSource: {
 
 Source: https://docs.templatical.com/guide/defaults
 
-# Block & Template Defaults
-
 Block properties (colors, font sizes, padding, placeholder text, etc.) are hardcoded in factory functions. `blockDefaults` and `templateDefaults` let you override these so every new block and template matches your brand out of the box.
 
 ## Block Defaults
@@ -6478,8 +6408,6 @@ const content = createDefaultTemplateContent('Helvetica, sans-serif', {
 
 Source: https://docs.templatical.com/guide/display-conditions
 
-# Display Conditions
-
 Display conditions allow users to change block visibility based on conditions. When a condition is applied to a block, the renderer wraps its output in the conditional syntax you define (e.g., Liquid `{% if %}` / `{% endif %}`). The conditions pass through unchanged — your sending platform or templating engine should render them before sending.
 
 ## Configuration
@@ -6638,8 +6566,6 @@ Two ways, and they answer different questions:
 
 Source: https://docs.templatical.com/guide/fonts
 
-# Custom Fonts
-
 By default, the editor includes a set of common web-safe fonts (Arial, Georgia, Verdana, etc.) in the font picker. You can extend this list with your own fonts — for example, loading custom typefaces from Google Fonts or your own CDN. When a custom font is used, it's automatically included as an `<mj-font>` declaration in the rendered MJML output.
 
 Configure which fonts are available using the `fonts` option:
@@ -6725,8 +6651,6 @@ If you exclude the family that new templates start on — Arial by default, or w
 # Internationalization
 
 Source: https://docs.templatical.com/guide/i18n
-
-# Internationalization
 
 The editor UI supports locale switching. All labels, tooltips, placeholders, and messages are driven by translation keys — no hardcoded strings.
 
@@ -6872,8 +6796,6 @@ Submit a pull request with your translation file. Contributions for any language
 # Images
 
 Source: https://docs.templatical.com/guide/images
-
-# Images
 
 When a user adds an image block, the editor shows a text field where they can paste an image URL. The image block toolbar exposes fields for `src`, `alt`, `width`, `align`, and an optional `linkUrl`.
 
@@ -7036,8 +6958,6 @@ When the `src` field contains a merge tag (e.g., <code v-pre>{{product.image}}</
 
 Source: https://docs.templatical.com/guide/logic-tags
 
-# Logic Tags
-
 Logic tags are the control-flow tokens of your template syntax — conditionals and loops like <code v-pre>{% if vip %}</code> … <code v-pre>{% endif %}</code> or <code v-pre>{% for item in items %}</code> … <code v-pre>{% endfor %}</code>. They are a **separate concern from [merge tags](/guide/merge-tags)**: merge tags are data placeholders you pick from a list, logic tags are structure your sending platform evaluates at send time.
 
 Because they're evaluated at send time, the editor shows them as badges rather than taking the branch. To see branches **resolved in a preview**, wire the `resolvePreview` hook — see [Preview Rendering](/guide/preview-rendering). It is the only way to resolve logic: sample values can substitute a value, but they cannot take a branch.
@@ -7170,8 +7090,6 @@ In a plain field a tag inserts at the cursor and a pair wraps the selected text 
 # Merge Tags
 
 Source: https://docs.templatical.com/guide/merge-tags
-
-# Merge Tags
 
 Merge tags are tokens for dynamic content -- things like a recipient's name, a product price, or an unsubscribe URL. They appear as highlighted tokens in the editor and pass through unchanged in the rendered MJML. Your email sending platform replaces them with real values at send time.
 
@@ -7551,8 +7469,6 @@ Owning the field means it renders in your framework, styled to your design syste
 
 Source: https://docs.templatical.com/guide/migration-from-beefree
 
-# Migration from BeeFree
-
 The `@templatical/import-beefree` package converts BeeFree (BEE) JSON templates into Templatical's `TemplateContent` format.
 
 ::: warning
@@ -7668,8 +7584,6 @@ After conversion, review the output in the editor to check for:
 # Migration from HTML
 
 Source: https://docs.templatical.com/guide/migration-from-html
-
-# Migration from HTML
 
 The `@templatical/import-html` package converts HTML email templates into Templatical's `TemplateContent` format. It's designed for the table-based HTML that real marketing emails actually ship — output of MJML, Mailchimp/SendGrid/Campaign Monitor exports, hand-coded campaigns.
 
@@ -7824,8 +7738,6 @@ for (const warning of report.warnings) {
 
 Source: https://docs.templatical.com/guide/migration-from-mjml
 
-# Migrating from hand-written MJML
-
 This guide is for teams who've been authoring email templates in raw [MJML](https://mjml.io) (with editors like VS Code, an internal CLI, or a hand-rolled build pipeline) and want to move to Templatical's visual editor.
 
 ::: tip Automated importer in development
@@ -7956,8 +7868,6 @@ A handwritten parser will miss edge cases — nested `mj-wrapper`, custom compon
 
 Source: https://docs.templatical.com/guide/migration-from-unlayer
 
-# Migration from Unlayer
-
 The `@templatical/import-unlayer` package converts Unlayer design JSON (the output of `editor.saveDesign(...)` from `react-email-editor` or the Unlayer hosted editor) into Templatical's `TemplateContent` format.
 
 ::: warning
@@ -8074,8 +7984,6 @@ After conversion, review the output in the editor to check for:
 # Preview Rendering
 
 Source: https://docs.templatical.com/guide/preview-rendering
-
-# Preview Rendering
 
 A template is full of things that aren't content: <code v-pre>{{first_name}}</code>, <code v-pre>{% if plan_name == 'pro' %}</code>. The editor has to show *something* for them, and what it shows depends on how much you've told it.
 
@@ -8259,8 +8167,6 @@ Every other template leaves it off, so they demonstrate the Sample / Label switc
 # Programmatic Templates
 
 Source: https://docs.templatical.com/guide/programmatic-templates
-
-# Programmatic Templates
 
 Most users will design templates visually in the drag-and-drop editor. But sometimes you need to create templates in code -- seeding default content, building templates from API data, or generating emails programmatically on the server.
 
@@ -8556,8 +8462,6 @@ editor.setContent(newContent);
 
 Source: https://docs.templatical.com/guide/sections-and-columns
 
-# Sections and Columns
-
 The `SectionBlock` is the layout primitive in Templatical. Every multi-column layout is built by creating a section and placing blocks inside its columns.
 
 ## Column layouts
@@ -8709,8 +8613,6 @@ The wrapper's padding is what makes the band show around the section. In the edi
 # Shadow DOM
 
 Source: https://docs.templatical.com/guide/shadow-dom
-
-# Shadow DOM
 
 Templatical mounts inside a [Shadow DOM](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM) by default. The shadow boundary isolates the editor's chrome, canvas, and rich-text content from your host page's CSS — even global resets like `* { color: red !important }` cannot cascade past it.
 
@@ -8918,8 +8820,6 @@ Same answer — anything in `document.head` (or `document.body` `<style>` tags) 
 
 Source: https://docs.templatical.com/guide/styling
 
-# Styling
-
 Every block in Templatical carries a `styles` property for layout and appearance, plus `visibility` for per-viewport control.
 
 ## BlockStyles
@@ -9047,8 +8947,6 @@ Links follow the same cascade: set a document `linkColor` to apply one color to 
 # Theming
 
 Source: https://docs.templatical.com/guide/theming
-
-# Theming
 
 Templatical ships with a polished default theme. Two ways to override any color, radius, shadow, or font:
 
@@ -9355,8 +9253,6 @@ Source: https://docs.templatical.com/
 
 Source: https://docs.templatical.com/license-faq
 
-# License FAQ
-
 This page answers the questions teams ask most often when evaluating Templatical's license. It's intentionally plain-English; if you need formal terms, the authoritative documents are [`LICENSE`](https://github.com/templatical/sdk/blob/main/LICENSE) (FSL-1.1-MIT) and [`LICENSE-MIT`](https://github.com/templatical/sdk/blob/main/LICENSE-MIT) (MIT).
 
 ## TL;DR
@@ -9499,8 +9395,6 @@ If you spot something unclear or missing in this FAQ, please tell us — clarity
 
 Source: https://docs.templatical.com/quality/accessibility/
 
-# Accessibility linter
-
 `lintAccessibility(content, options?)` is the accessibility checker inside [`@templatical/quality`](../). It operates on the JSON `TemplateContent` block tree, runs in the browser or in Node.js, and ships with no Vue or DOM dependencies — so the same package validates templates inside the editor and as a CI gate on stored fixtures.
 
 ## Why
@@ -9554,8 +9448,6 @@ In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quali
 # Accessibility rule catalog
 
 Source: https://docs.templatical.com/quality/accessibility/rule-catalog
-
-# Accessibility rule catalog
 
 The 21 rules `lintAccessibility` ships, grouped by what they check. Each rule lives in `packages/quality/src/accessibility/rules/`; severity, message templates, and dictionaries are user-overridable per [Options](../options).
 
@@ -9615,8 +9507,6 @@ The 21 rules `lintAccessibility` ships, grouped by what they check. Each rule li
 # Contributing locales
 
 Source: https://docs.templatical.com/quality/contributing-locales
-
-# Contributing locales
 
 `@templatical/quality` ships locale-aware data sets keyed by language:
 
@@ -9753,8 +9643,6 @@ That's it — `SUPPORTED_MESSAGE_LOCALES`, `SUPPORTED_DICTIONARY_LOCALES`, `SUPP
 
 Source: https://docs.templatical.com/quality/headless-usage
 
-# Headless usage
-
 `@templatical/quality` is JSON-only and has no DOM dependency, so the same linters run in any Node.js context: CI, build pipelines, server-side validation, batch jobs.
 
 `lintTemplate(content, options?)` runs every linter — accessibility, structure, and links — and returns the merged `LintIssue[]`. It's the recommended entry point: one call, and any future linter category is included automatically.
@@ -9887,8 +9775,6 @@ If you'd like your custom rule to participate in the orchestrator alongside the 
 # Quality
 
 Source: https://docs.templatical.com/quality/
-
-# Quality
 
 `@templatical/quality` is the umbrella package for Templatical's template-quality tooling — deterministic, JSON-only linters that catch authoring mistakes inside the editor and in headless / CI checks. MIT-licensed, ESM, no Vue, no DOM.
 
@@ -10029,8 +9915,6 @@ init({ container: "#editor", lint: { links: false } });
 
 Source: https://docs.templatical.com/quality/links/
 
-# Links linter
-
 `lintLinks(content, options?)` is the URL-hygiene checker inside [`@templatical/quality`](../). It walks every URL in the template — anchors inside rich text, `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` — and flags URL-shaped data that's broken, dangerous, or accidentally pointing at the wrong environment.
 
 ## Why
@@ -10143,8 +10027,6 @@ The `DEFAULT_NON_PRODUCTION_HOSTS` constant is exported if you need to reference
 
 Source: https://docs.templatical.com/quality/links/rule-catalog
 
-# Link rule catalog
-
 The 5 rules `lintLinks` ships. Each rule lives in `packages/quality/src/links/rules/`; severity is user-overridable per [Options](../options). All rules scan every URL source returned by `walkUrls` — anchors inside rich text plus `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url`.
 
 ## Dangerous protocols
@@ -10181,8 +10063,6 @@ Each link rule is destructive (strip href / change protocol) and the right answe
 # Options
 
 Source: https://docs.templatical.com/quality/options
-
-# Options
 
 `lintTemplate`, `lintAccessibility`, `lintStructure`, and `lintLinks` all accept the same `LintOptions` shape. Every field is optional.
 
@@ -10396,8 +10276,6 @@ lintLinks(content, { links: { nonProductionHosts: [] } });
 
 Source: https://docs.templatical.com/quality/severity-and-fixes
 
-# Severity & fixes
-
 Every linter shares the same severity model and patch shape, so this page covers `lintTemplate`, `lintAccessibility`, `lintStructure`, and `lintLinks` together.
 
 ## Severity model
@@ -10470,8 +10348,6 @@ Auto-fixes are added conservatively — only when the right answer is unambiguou
 
 Source: https://docs.templatical.com/quality/structure/
 
-# Structure linter
-
 `lintStructure(content, options?)` is the data-integrity checker inside [`@templatical/quality`](../). It walks the `TemplateContent` block tree and flags shapes that indicate corruption — duplicate IDs, sections whose `columns` layout doesn't match their `children` array, nested sections (the renderer rejects them), and empty sections / columns.
 
 ## Why
@@ -10522,8 +10398,6 @@ In the editor, the `useTemplateLint` composable lazy-imports `@templatical/quali
 
 Source: https://docs.templatical.com/quality/structure/rule-catalog
 
-# Structure rule catalog
-
 The 5 rules `lintStructure` ships. Each rule lives in `packages/quality/src/structure/rules/`; severity is user-overridable per [Options](../options).
 
 ## Tree integrity
@@ -10551,8 +10425,6 @@ The 5 rules `lintStructure` ships. Each rule lives in `packages/quality/src/stru
 # Showcase & use cases
 
 Source: https://docs.templatical.com/showcase
-
-# Showcase & use cases
 
 Templatical is purpose-built to be the email-composition layer of a larger product. This page describes the patterns it fits best — and is the place where teams who ship Templatical in production can list themselves.
 

@@ -111,8 +111,8 @@ function parsePage(source) {
 
 /** Derive a title from a path when no frontmatter title or H1 exists. */
 function titleFromPath(relPath) {
-  const basename = relPath.replace(/\.md$/, "");
-  if (basename === "index") return null; // Root index handled separately
+  const basename = relPath.split("/").pop().replace(/\.md$/, "");
+  if (basename === "index") return null; // Directory index; handled by the caller
   return basename
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -194,11 +194,33 @@ export function renderIndex(pages, meta) {
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
+/**
+ * Strip a body's own leading H1. `renderFull()` supplies the entry's heading
+ * itself (from `page.title`, the same fallback chain the index uses) — the
+ * body's leading H1 is redundant at best and, on a page whose frontmatter
+ * title differs from its H1 (e.g. cloud/getting-started.md), a second,
+ * different heading right after the first. Anchored to the very start of the
+ * string, so only a genuinely leading H1 is removed; a heading further down
+ * the body is real content and stays.
+ */
+function stripLeadingH1(body) {
+  return body.replace(/^#\s+.+\n+/, "");
+}
+
 /** The whole English corpus, one page after another. */
 export function renderFull(pages) {
   const parts = [`# ${SITE_TITLE}`, "", `> ${SITE_SUMMARY}`, ""];
   for (const page of pages) {
-    parts.push(`---`, "", `# ${page.title}`, "", `Source: ${page.url}`, "", page.body, "");
+    parts.push(
+      `---`,
+      "",
+      `# ${page.title}`,
+      "",
+      `Source: ${page.url}`,
+      "",
+      stripLeadingH1(page.body),
+      "",
+    );
   }
   return `${parts.join("\n").trimEnd()}\n`;
 }
@@ -246,4 +268,34 @@ function main(argv) {
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   main(process.argv.slice(2));
+}
+
+/**
+ * Copy every source markdown file into the build output beside its rendered
+ * page, so each page is fetchable at its own URL with `.md` appended.
+ *
+ * Called from VitePress's buildEnd hook. Covers every locale, including de/,
+ * because it is a file copy — only the generated index is English-only. Not
+ * routed through public/: that directory is copied to the output root, and
+ * mirroring a route tree inside it invites collisions with real routes.
+ */
+export function copyMarkdownSources(outDir, docsDir = DOCS_DIR) {
+  const copied = [];
+  const walkAll = (dir) => {
+    for (const entry of readdirSync(dir)) {
+      const abs = join(dir, entry);
+      if (statSync(abs).isDirectory()) {
+        if (!SKIP_DIRS.has(entry) || entry === "de") walkAll(abs);
+        continue;
+      }
+      if (!entry.endsWith(".md")) continue;
+      const rel = relative(docsDir, abs).split(sep).join("/");
+      const dest = join(outDir, rel);
+      mkdirSync(dirname(dest), { recursive: true });
+      writeFileSync(dest, readFileSync(abs, "utf8"));
+      copied.push(rel);
+    }
+  };
+  walkAll(docsDir);
+  return copied;
 }

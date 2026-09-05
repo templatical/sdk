@@ -1,4 +1,6 @@
 import { defineConfig, type DefaultTheme } from "vitepress";
+// @ts-expect-error — plain .mjs generator, no types
+import { copyMarkdownSources } from "../scripts/build-agent-surface.mjs";
 
 const enNav: DefaultTheme.NavItem[] = [
   { text: "Guide", link: "/getting-started/installation" },
@@ -357,6 +359,14 @@ export default defineConfig({
   description:
     "Drag-and-drop email editor for modern apps — source-available, MIT after two years",
   cleanUrls: true,
+  // Serve each page's source markdown at its own URL plus `.md`. Agents that
+  // fetch rendered HTML read mangled examples of this product's own merge-tag
+  // and logic-tag syntax; source markdown sidesteps that entirely.
+  // buildEnd receives VitePress's SiteConfig, which carries outDir — verified
+  // against the installed types (`buildEnd?: (siteConfig: SiteConfig) => …`).
+  buildEnd: ({ outDir }) => {
+    copyMarkdownSources(outDir);
+  },
   head: [
     [
       "link",

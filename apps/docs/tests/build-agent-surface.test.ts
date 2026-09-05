@@ -83,6 +83,19 @@ describe("collectPages", () => {
     expect(page?.title).toBe("Some New Page");
     expect(page?.title).not.toBe("some-new-page.md");
   });
+
+  it("does not leak a directory prefix into the title for a nested titleless page", () => {
+    // widgets/index.md with no title and no H1 used to yield "Widgets/index" —
+    // a slash leaking into a machine-readable index. Taking the basename
+    // (the last path segment) before stripping the extension fixes that, and
+    // as a side effect the "is this an index page" check — which previously
+    // only ever matched a literal top-level "index.md" — now also correctly
+    // recognizes a nested directory index, same as the root case.
+    const pages = collectPages(join(import.meta.dirname, "fixtures/nested-titleless"));
+    const page = pages.find((p) => p.path === "widgets/index.md");
+    expect(page?.title).toBe(null);
+    expect(page?.title).not.toBe("Widgets/index");
+  });
 });
 
 describe("renderIndex", () => {
@@ -134,11 +147,37 @@ describe("the committed artifacts", () => {
     expect(full.length).toBeLessThan(600_000);
   });
 
+  it("shows a page's entry with exactly one heading, not the body's own leading H1 too", () => {
+    // cloud/getting-started.md's frontmatter title ("Getting Started with
+    // Cloud") differs from its body's own H1 ("Getting Started") — the exact
+    // case that made the duplicate visible as two different headings back to
+    // back, rather than merely a repeated one.
+    const { full } = buildOutputs();
+    const sourceLine = `Source: ${SITE_URL}/cloud/getting-started`;
+    const sourceIndex = full.indexOf(sourceLine);
+    const entryStart = full.lastIndexOf("\n---\n", sourceIndex) + 1;
+    const entryEnd = full.indexOf("\n---\n", sourceIndex);
+    const entry = full.slice(entryStart, entryEnd === -1 ? full.length : entryEnd);
+    const headingLines = entry.split("\n").filter((line) => line.startsWith("# "));
+    expect(headingLines).toEqual(["# Getting Started with Cloud"]);
+  });
+
   it("reports the SDK version from the editor package, not a literal", () => {
     const { meta } = buildOutputs();
     const editor = JSON.parse(
       readFileSync(join(DOCS, "../../packages/editor/package.json"), "utf8"),
     );
     expect(meta.sdkVersion).toBe(editor.version);
+  });
+});
+
+describe("the buildEnd hook", () => {
+  it("is configured, so pages are fetchable as raw markdown", () => {
+    // Rendered HTML mangles this product's own syntax: {{ tag }} compiles as a
+    // Vue interpolation and markdown-it-attrs eats a trailing {% if %}. Serving
+    // source markdown is the fix, and it is what an agent should fetch.
+    const config = readFileSync(join(DOCS, ".vitepress/config.ts"), "utf8");
+    expect(config).toContain("buildEnd");
+    expect(config).toContain("copyMarkdownSources");
   });
 });
