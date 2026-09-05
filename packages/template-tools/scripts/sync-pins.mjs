@@ -1,6 +1,6 @@
-// Rewrites two release-time pins and bumps the skill's plugin manifest.
+// Rewrites three release-time pins and bumps the skill's plugin manifest.
 //
-// Three independent jobs, run together because all three fire from the same
+// Four independent jobs, run together because all four fire from the same
 // root `changeset:version` step and each keeps something that ships outside
 // this package in sync with it:
 //
@@ -14,17 +14,30 @@
 //    invocation the skill documents. Pinning is what keeps
 //    reference/schema.json from ever disagreeing with the published CLI's
 //    block model, since a release moves both together.
-// 3. A patch bump to skills/templatical-email/.claude-plugin/plugin.json.
+// 3. The same CLI version pin, shown once more in the docs site
+//    (apps/docs/guide/agent-skill.md + its de/ mirror), from the same
+//    version. Governing rule: a *pinned* invocation is synced from here, in
+//    lockstep with every other pin in this file; an invocation shown
+//    deliberately unpinned — skills/templatical-email/README.md's
+//    `npx -y @templatical/template-tools validate …`, with no `@version` at
+//    all — is a "latest is fine" choice for a file nobody expects to track
+//    the schema exactly, and must stay that way. Don't add a pin there.
+// 4. A patch bump to skills/templatical-email/.claude-plugin/plugin.json.
 //    Claude Code caches an installed plugin by that version, so job 2's
 //    rewrite — a change to a file the plugin ships (SKILL.md) that sits
 //    outside .github/workflows/plugin-version.yml's tools/tests/evals/
 //    denylist — needs a bump behind it, or installed copies keep serving a
-//    stale pin forever. Nothing else moves this number: changesets skips the
-//    skill because its package.json is private.
+//    stale pin forever. Job 3's docs pages aren't part of the plugin bundle
+//    at all, so they carry no cache-invalidation need of their own — but
+//    the bump below runs unconditionally on every invocation regardless of
+//    which of jobs 1-3 actually changed something (see the comment at the
+//    call site), so this stays true no matter what. Nothing else moves this
+//    number: changesets skips the skill because its package.json is
+//    private.
 //
 // Runs at release time from the root `changeset:version` script (wired into
 // changesets/action's `version` step), so the Version Packages PR carries all
-// three changes with no manual step. Also runnable by hand:
+// four changes with no manual step. Also runnable by hand:
 // `pnpm --filter @templatical/template-tools run sync-pins`.
 //
 // Each job fails loudly rather than silently matching nothing — a sync that
@@ -80,32 +93,34 @@ export function syncEditorVersion() {
 // ---------------------------------------------------------------------------
 
 const OWN_PKG = resolve(here, "../package.json");
-const SKILL_MD = resolve(
-  here,
-  "../../../skills/templatical-email/SKILL.md",
-);
+const SKILL_MD_LABEL = "skills/templatical-email/SKILL.md";
+const SKILL_MD = resolve(here, "../../../", SKILL_MD_LABEL);
 
 // The fixed invocation prefix SKILL.md's Requirements section declares as
 // canonical: `npx -y @templatical/template-tools@<version>`, identical for
 // every command the skill documents. Global so every occurrence rewrites
 // together — see the post-replace check below for what happens if it didn't.
+// Reused as-is by job 3 below: the docs site quotes the exact same prefix.
 const CLI_PIN_RE = /(npx -y @templatical\/template-tools@)(\S+)/g;
 
 /**
  * Pure: return `src` with every CLI pin rewritten to `version`, plus how many
- * occurrences were found. Throws if none are found (nothing to sync means the
- * pin mechanism itself broke, not that there's no work to do) and, after
- * rewriting, throws again if any occurrence still disagrees with `version` —
- * the second check is what catches a regression to this regex (e.g. losing
- * the `g` flag) that would otherwise rewrite only the first occurrence and
- * leave the rest silently stale.
+ * occurrences were found. `label` names the file in both error messages —
+ * shared by every file this regex is applied to, so the error always points
+ * at the file that actually broke rather than always saying "SKILL.md".
+ * Throws if none are found (nothing to sync means the pin mechanism itself
+ * broke, not that there's no work to do) and, after rewriting, throws again
+ * if any occurrence still disagrees with `version` — the second check is
+ * what catches a regression to this regex (e.g. losing the `g` flag) that
+ * would otherwise rewrite only the first occurrence and leave the rest
+ * silently stale.
  */
-export function applyCliPin(src, version) {
+export function applyCliPin(src, version, label = SKILL_MD_LABEL) {
   const before = [...src.matchAll(CLI_PIN_RE)];
   if (before.length === 0) {
     throw new Error(
       "Could not find any `npx -y @templatical/template-tools@<version>` " +
-        "invocation in skills/templatical-email/SKILL.md",
+        `invocation in ${label}`,
     );
   }
   const next = src.replace(CLI_PIN_RE, `$1${version}`);
@@ -114,7 +129,7 @@ export function applyCliPin(src, version) {
   if (stale.length > 0) {
     throw new Error(
       `Rewrote ${after.length - stale.length} of ${before.length} CLI pin(s) in ` +
-        `SKILL.md, but ${stale.length} still read a different version. This ` +
+        `${label}, but ${stale.length} still read a different version. This ` +
         "means CLI_PIN_RE stopped matching every occurrence (e.g. lost its " +
         "`g` flag) — fix the regex, don't paper over the count.",
     );
@@ -133,7 +148,40 @@ export function syncCliPin() {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Patch-bump skills/templatical-email/.claude-plugin/plugin.json
+// 3. The same CLI pin, shown once more in the docs site
+// ---------------------------------------------------------------------------
+
+// Governing rule: anything showing a *pinned* invocation is synced from this
+// file; an invocation shown deliberately unpinned is a "latest is fine"
+// choice and must never gain a pin. skills/templatical-email/README.md
+// quotes `npx -y @templatical/template-tools validate …` with no `@version`
+// on purpose — it isn't in this list, and adding it here would be wrong.
+const DOCS_CLI_PIN_TARGETS = [
+  "apps/docs/guide/agent-skill.md",
+  "apps/docs/de/guide/agent-skill.md",
+].map((label) => ({ label, file: resolve(here, "../../../", label) }));
+
+/**
+ * Read this package's own version and rewrite the CLI pin in every docs
+ * page that quotes it. Each file is synced independently through the same
+ * applyCliPin used for SKILL.md, so a missing file, a missing pin, or a
+ * partial rewrite in any one locale fails loudly on its own — the English
+ * page rewriting cleanly says nothing about whether the German mirror did.
+ */
+export function syncDocsCliPins() {
+  const version = JSON.parse(readFileSync(OWN_PKG, "utf8")).version;
+  const results = DOCS_CLI_PIN_TARGETS.map(({ label, file }) => {
+    const src = readFileSync(file, "utf8");
+    const { next, count } = applyCliPin(src, version, label);
+    const changed = next !== src;
+    if (changed) writeFileSync(file, next, "utf8");
+    return { label, changed, count };
+  });
+  return { version, results };
+}
+
+// ---------------------------------------------------------------------------
+// 4. Patch-bump skills/templatical-email/.claude-plugin/plugin.json
 // ---------------------------------------------------------------------------
 
 const PLUGIN_MANIFEST = resolve(
@@ -204,14 +252,23 @@ function main() {
       : `${cli.count} CLI pin(s) in SKILL.md already ${cli.version} — no change`,
   );
 
-  // Unlike the two pins above — which are idempotent once they already match
+  const docs = syncDocsCliPins();
+  for (const { label, changed, count } of docs.results) {
+    console.log(
+      changed
+        ? `Synced ${count} CLI pin(s) in ${label} to ${docs.version}`
+        : `${count} CLI pin(s) in ${label} already ${docs.version} — no change`,
+    );
+  }
+
+  // Unlike the pins above — which are idempotent once they already match
   // the workspace version — this always advances, on every run. The pins
   // answer "does this match reality"; the plugin bump answers "did anything
-  // ship", and a release that touches SKILL.md with no version drift at all
-  // (a docs-only or test-only change under this skill) still needs installed
-  // plugins to refetch it. Collapsing this into a no-op-when-unchanged check
-  // would silently reintroduce the exact failure plugin-version.yml exists to
-  // catch. Don't "fix" this into idempotence.
+  // ship", and a release that touches SKILL.md or the docs with no version
+  // drift at all (a docs-only or test-only change under this skill) still
+  // needs installed plugins to refetch it. Collapsing this into a
+  // no-op-when-unchanged check would silently reintroduce the exact failure
+  // plugin-version.yml exists to catch. Don't "fix" this into idempotence.
   const plugin = bumpPluginVersion();
   console.log(
     `Bumped plugin version ${plugin.from} → ${plugin.to} so installed plugins pick up the change`,

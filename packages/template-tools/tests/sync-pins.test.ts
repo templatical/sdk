@@ -69,6 +69,20 @@ describe("applyCliPin", () => {
     );
   });
 
+  it("names SKILL.md in the not-found error by default", () => {
+    expect(() => applyCliPin("no pin here", "1.0.0")).toThrow(
+      /skills\/templatical-email\/SKILL\.md/,
+    );
+  });
+
+  it("names the given label in the not-found error instead, when one is passed", () => {
+    // This is what lets job 3 (the docs pins) reuse applyCliPin verbatim: a
+    // missing pin in the German docs page must not be reported as SKILL.md.
+    expect(() =>
+      applyCliPin("no pin here", "1.0.0", "apps/docs/de/guide/agent-skill.md"),
+    ).toThrow(/apps\/docs\/de\/guide\/agent-skill\.md/);
+  });
+
   it("leaves the rest of the text untouched", () => {
     const src = `before\n${PIN_PREFIX}0.1.0 validate <file>\nafter\n`;
     const out = applyCliPin(src, "2.0.0").next;
