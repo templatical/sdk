@@ -362,6 +362,7 @@ export default defineConfig({
   // VitePress scans the whole project root for *.md, which otherwise renders
   // the vitest fixtures under tests/fixtures/ as real, navigable pages.
   srcExclude: ["tests/**"],
+  sitemap: { hostname: "https://docs.templatical.com" },
   // Serve each page's source markdown at its own URL plus `.md`. Agents that
   // fetch rendered HTML read mangled examples of this product's own merge-tag
   // and logic-tag syntax; source markdown sidesteps that entirely.

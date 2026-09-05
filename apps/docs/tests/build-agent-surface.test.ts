@@ -292,3 +292,26 @@ Hello {{ first_name }}, your order {{ order.id }} shipped.
     expect(dest).toContain("title: Nested");
   });
 });
+
+describe("crawler surface", () => {
+  it("configures a sitemap with the canonical hostname", () => {
+    const config = readFileSync(join(DOCS, ".vitepress/config.ts"), "utf8");
+    expect(config).toContain("sitemap");
+    expect(config).toContain("https://docs.templatical.com");
+  });
+
+  it("ships a robots.txt that points crawlers at the index", () => {
+    const robots = readFileSync(join(DOCS, "public/robots.txt"), "utf8");
+    expect(robots).toContain("Sitemap: https://docs.templatical.com/sitemap.xml");
+    expect(robots).toContain("Allow: /");
+  });
+});
+
+describe("build wiring", () => {
+  it("the docs build regenerates the agent surface first", () => {
+    // Otherwise a plain `vitepress build` can ship a stale index, and the
+    // freshness test only catches it on the next test run.
+    const pkg = JSON.parse(readFileSync(join(DOCS, "package.json"), "utf8"));
+    expect(pkg.scripts.build).toContain("build:agent-surface");
+  });
+});
