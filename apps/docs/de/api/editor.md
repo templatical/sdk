@@ -62,6 +62,7 @@ unmount();
 | `savedBlocks`       | `SavedBlocksProvider`                                             | Nein     | Speicher-Backend für gespeicherte Blöcke — wiederverwendbare Blockgruppen, die Nutzer speichern und erneut einfügen. Der Editor stellt die Oberfläche, Sie die Persistenz. Dasselbe Objekt trägt auch die Events `onCreated`, `onUpdated` und `onDeleted`. Weglassen deaktiviert die Funktion vollständig. `createLocalStorageSavedBlocksProvider()` bietet eine Variante ohne Backend. Siehe [Gespeicherte Blöcke](/de/backend/saved-blocks) |
 | `testEmail`         | `TestEmailProvider`                                               | Nein     | Versand-Backend für Test-E-Mails — Nutzer senden sich die Vorlage zu, die sie bearbeiten. Der Editor stellt Auslöser, Dialog, Prüfung und Zustände; Sie stellen den Versand. Dasselbe Objekt trägt auch das Event `onSent`. Weglassen deaktiviert die Funktion vollständig. `allowedRecipients` schränkt nur die Auswahl ein und ist **keine** Sicherheitsgrenze — serverseitig prüfen. Siehe [Test-E-Mails](/de/backend/test-email) |
 | `paletteBlocks`     | `string[]`                                                        | Nein     | Allowlist + Reihenfolge für die Block-Palette. Nur die aufgeführten Typen erscheinen, in dieser Reihenfolge; nicht aufgeführte integrierte Blöcke werden ausgeblendet. Integrierte Blöcke über ihren reinen Typ (`'image'`), benutzerdefinierte über den `custom:`-präfixierten Typ (`'custom:qrcode'`). Siehe [Block-Palette anpassen](#block-palette-anpassen) |
+| `footerBlocks`      | `Block[]`                                                         | Nein     | Schreibgeschützte Blöcke, die nach den Blöcken der Vorlage gerendert werden. Nur zur Anzeige: nie in `getContent()`, im Versand oder im Export. Siehe [Inhalte anzeigen, die Ihre Anwendung anhängt](#inhalte-anzeigen-die-ihre-anwendung-anhaengt) |
 | `htmlBlockPreview`  | `boolean \| { enabled: boolean }`                                 | Nein     | Rendert den Inhalt jedes HTML-Blocks als Live-Vorschau in der Leinwand — in einem sandboxed `<iframe>` ohne Skriptausführung — statt des statischen Platzhalters. Standardmäßig `false`. Nur Vorschau; der MJML-/HTML-Export rendert HTML-Blöcke unabhängig davon. Siehe [HTML-Blöcke in der Vorschau](#html-bloecke-in-der-vorschau) |
 | `blockDefaults`     | `BlockDefaults`                                                   | Nein     | Standard-Property-Überschreibungen für neue Blöcke. Siehe [Standardwerte](/de/guide/defaults)                                                                                                                                                                                                                                     |
 | `templateDefaults`  | `TemplateDefaults`                                                | Nein     | Standardeinstellungen für leere Templates. Siehe [Standardwerte](/de/guide/defaults)                                                                                                                                                                                                                                              |
@@ -85,6 +86,40 @@ Das Standard-Mount (Shadow DOM) ruft `attachShadow()` auf Ihrem Container auf, u
 Wenn Ihre Integration ein nicht unterstütztes Element verwenden muss (z. B. Mount in eine `<form>`-Zelle eines CMS-Layouts), übergeben Sie `shadowDom: false` — das Light-DOM-Mount akzeptiert jedes Element. Der Kompromiss ist die Host-CSS-Isolation, auf die Sie verzichten.
 
 ### Block-Palette anpassen
+
+### Inhalte anzeigen, die Ihre Anwendung anhängt {#inhalte-anzeigen-die-ihre-anwendung-anhaengt}
+
+Wenn Ihre Plattform jeder E-Mail nach dem Editor etwas hinzufügt — ein
+Tarif-Abzeichen, eine rechtliche Zeile, einen Abmelde-Hinweis —, rendert
+`footerBlocks` diese Inhalte am unteren Rand der Leinwand, damit die
+bearbeitende Person sie sieht. Die Blöcke sind schreibgeschützt: Sie lassen sich
+weder auswählen noch bearbeiten, verschieben oder löschen.
+
+```ts
+footerBlocks: [
+  {
+    id: "platform-footer",
+    type: "html",
+    props: { html: '<p style="text-align:center">Gesendet mit Acme</p>' },
+  },
+]
+```
+
+Sie werden inline im E-Mail-Rahmen gerendert, mit den Schriften und Link-Stilen
+der Vorlage, damit sie wie ein Teil der Nachricht wirken und nicht wie eine
+separate Karte.
+
+Sie dienen **nur zur Anzeige**: nie in `getContent()`, `toMjml()`, im Versand
+oder im Export. Die gespeicherte Vorlage bleibt also genau das, was die
+bearbeitende Person verfasst hat.
+
+Das ist Absicht, und darum ist es nicht dasselbe, wie den Block in die Vorlage
+zu legen und zu sperren. Ein Block in der Vorlage wird gespeichert und friert
+damit den Stand des letzten Speicherns ein — hängt das Abzeichen am Tarif, wird
+es nach einem Upgrade weiterhin mitgesendet. Und eine clientseitige Sperre ist
+keine Garantie, sobald dieselben Inhalte über Ihre API beschreibbar sind. Hängen
+Sie den Footer weiterhin dort an, wo Sie es beim Versand ohnehin tun;
+`footerBlocks` zeigt lediglich, was dieser Schritt ergänzt.
 
 Standardmäßig listet die Seitenleisten-Palette jeden integrierten Blocktyp auf. Übergeben Sie `paletteBlocks`, um die Palette auf eine bestimmte Menge zu beschränken und ihre Reihenfolge zu steuern — nützlich, um nicht verwendete Blocktypen (`video`, `table`, …) auszublenden oder einen häufig genutzten [benutzerdefinierten Block](/de/guide/custom-blocks) über die integrierten Blöcke zu stellen.
 

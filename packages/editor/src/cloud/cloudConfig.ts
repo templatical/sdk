@@ -1,4 +1,5 @@
 import type {
+  Block,
   AiConfig,
   BlockDefaults,
   CollaborationConfig,
@@ -182,6 +183,14 @@ export interface TemplaticalCloudEditorConfig {
    * editor config for details.
    */
   paletteBlocks?: string[];
+
+  /**
+   * Read-only blocks rendered after the template's own, so an author can see
+   * what your platform appends at send time. Display-only: never part of
+   * `getContent()`, a send or an export. See `footerBlocks` on the OSS editor
+   * config for why this is not the same as locking a block in the template.
+   */
+  footerBlocks?: Block[];
 
   /**
    * Render each HTML block's raw content as a live preview in the editor

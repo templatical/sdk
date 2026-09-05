@@ -5,6 +5,7 @@ import type {
   UseConditionPreviewReturn,
 } from "@templatical/core";
 import type {
+  Block,
   BlockDefaults,
   CustomBlockDefinition,
   DisplayCondition,
@@ -84,6 +85,15 @@ export const CUSTOM_BLOCK_DEFINITIONS_KEY: InjectionKey<
  */
 export const PALETTE_BLOCKS_KEY: InjectionKey<string[] | undefined> =
   Symbol("paletteBlocks");
+
+/**
+ * Consumer-supplied blocks rendered after the template's own, read-only
+ * (`config.footerBlocks`). Never part of `getContent()`, so they cannot be
+ * saved, exported or edited — they exist so an author can SEE what the host
+ * application appends at send time. Consumed by `Canvas.vue`.
+ */
+export const FOOTER_BLOCKS_KEY: InjectionKey<Block[] | undefined> =
+  Symbol("footerBlocks");
 
 /**
  * Whether HTML blocks render a live sandboxed-iframe preview in the canvas

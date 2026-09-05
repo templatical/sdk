@@ -16,6 +16,7 @@ import {
   CONDITION_PREVIEW_KEY,
   BLOCK_REGISTRY_KEY,
   CAPABILITIES_KEY,
+  FOOTER_BLOCKS_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
   PREVIEW_RESOLUTION_KEY,
   USE_MERGE_TAG_SAMPLES_KEY,
@@ -33,6 +34,7 @@ import {
 } from "../utils/emailFrameWidth";
 import { readableTextColor } from "../utils/readableTextColor";
 
+import BlockPreviewCanvas from "./BlockPreviewCanvas.vue";
 import BlockWrapper from "./blocks/BlockWrapper.vue";
 import SectionBlock from "./blocks/SectionBlock.vue";
 import TitleBlock from "./blocks/TitleBlock.vue";
@@ -106,6 +108,8 @@ const caps = inject(CAPABILITIES_KEY, {});
 const mergeTagSampleMode = inject(MERGE_TAG_SAMPLE_MODE_KEY, null);
 // Null in headless mounts and when no resolver is configured.
 const previewResolution = inject(PREVIEW_RESOLUTION_KEY, null);
+// Undefined unless the consumer configured `footerBlocks`.
+const footerBlocks = inject(FOOTER_BLOCKS_KEY, undefined);
 provide(
   USE_MERGE_TAG_SAMPLES_KEY,
   computed(
@@ -496,6 +500,18 @@ function handleFetchData(
             </div>
           </div>
         </VueDraggable>
+
+        <!-- Outside VueDraggable on purpose: these are not in `content`, so
+             they cannot be reordered into it, and `getContent()` never sees
+             them. -->
+        <BlockPreviewCanvas
+          v-if="footerBlocks?.length"
+          v-show="!previewResolution?.isInitialResolve.value"
+          data-testid="footer-blocks"
+          embedded
+          :blocks="footerBlocks"
+          :viewport="viewport"
+        />
       </div>
     </div>
   </div>

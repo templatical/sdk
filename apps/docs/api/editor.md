@@ -62,6 +62,7 @@ unmount();
 | `savedBlocks`       | `SavedBlocksProvider`                                             | No       | Storage backend for saved blocks — reusable block groups users save and re-insert. The editor provides the UI; you provide persistence. The same object also carries the `onCreated`, `onUpdated` and `onDeleted` events. Omit to disable the feature entirely. Use `createLocalStorageSavedBlocksProvider()` for a zero-backend option. See [Saved Blocks](/backend/saved-blocks) |
 | `testEmail`         | `TestEmailProvider`                                               | No       | Sending backend for test emails — lets users mail themselves the template they are editing. The editor provides the trigger, dialog, validation and states; you provide delivery. The same object also carries the `onSent` event. Omit to disable the feature entirely. `allowedRecipients` restricts the picker but is **not** a security boundary — validate server-side. See [Test Emails](/backend/test-email) |
 | `paletteBlocks`     | `string[]`                                                        | No       | Allowlist + order for the block palette. Only the listed types appear, in this order; unlisted built-ins are hidden. Built-ins use their bare type (`'image'`), custom blocks the `custom:`-prefixed type (`'custom:qrcode'`). See [Customizing the block palette](#customizing-the-block-palette) |
+| `footerBlocks`      | `Block[]`                                                         | No       | Read-only blocks rendered after the template's own. Display-only: never part of `getContent()`, a send or an export. See [Showing content your application appends](#showing-content-your-application-appends) |
 | `htmlBlockPreview`  | `boolean \| { enabled: boolean }`                                 | No       | Render each HTML block's content as a live preview in the canvas — inside a sandboxed `<iframe>` with no script execution — instead of the static placeholder. Defaults to `false`. Preview-only; the MJML/HTML export renders HTML blocks regardless. See [Previewing HTML blocks](#previewing-html-blocks) |
 | `blockDefaults`     | `BlockDefaults`                                                   | No       | Default property overrides for new blocks. See [Defaults](/guide/defaults)                                                                                                                                                                                                                 |
 | `templateDefaults`  | `TemplateDefaults`                                                | No       | Default template settings for empty templates. See [Defaults](/guide/defaults)                                                                                                                                                                                                             |
@@ -85,6 +86,38 @@ The default (shadow DOM) mount calls `attachShadow()` on your container, and the
 If your integration must use an unsupported element (e.g. mounting into a `<form>` cell of a CMS layout), pass `shadowDom: false` — light-DOM mount accepts any element. The trade-off is the host-CSS isolation you give up.
 
 ### Customizing the block palette
+
+### Showing content your application appends
+
+If your platform adds something to every email after it leaves the editor — a
+plan badge, a legal footer, an unsubscribe line — `footerBlocks` renders it at
+the bottom of the canvas so the author can see it. The blocks are read-only:
+they cannot be selected, edited, dragged or deleted.
+
+```ts
+footerBlocks: [
+  {
+    id: "platform-footer",
+    type: "html",
+    props: { html: '<p style="text-align:center">Sent with Acme</p>' },
+  },
+]
+```
+
+They render inline at the bottom of the email frame, with the template's own
+fonts and link styles, so they look like part of the message rather than a
+separate card.
+
+They are **display-only**. They never reach `getContent()`, `toMjml()`, a send
+or an export, so the template the author saves stays exactly what they authored.
+
+That is deliberate, and it is why this is not the same as putting the block in
+the template and locking it. A block in the template is saved, so it freezes
+whatever was true when the author last hit save — if the badge depends on their
+plan, it keeps sending after they upgrade. And a client-side lock is not a
+guarantee once the same content is writable through your API. Keep appending
+the footer wherever you already do it at send time; `footerBlocks` only shows
+the author what that step will add.
 
 By default the sidebar palette lists every built-in block type. Pass `paletteBlocks` to restrict the palette to a specific set and control their order — useful for hiding block types you don't use (`video`, `table`, …) or promoting a frequently-used [custom block](/guide/custom-blocks) above the built-ins.
 

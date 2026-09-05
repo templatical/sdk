@@ -3,6 +3,7 @@
 import { createApp, h, ref, type App, type Ref } from "vue";
 import { DEFAULT_AUTO_SAVE_DEBOUNCE_MS } from "@templatical/core";
 import type {
+  Block,
   BlockDefaults,
   ColorsConfig,
   CommentsProvider,
@@ -321,6 +322,28 @@ export interface TemplaticalEditorConfig {
    * block type still renders correctly.
    */
   paletteBlocks?: string[];
+
+  /**
+   * Blocks rendered after the template's own, read-only.
+   *
+   * Display-only: they never reach `getContent()`, a send or an export, and
+   * they cannot be selected, edited, dragged or deleted. They exist so an
+   * author can SEE content the host application appends outside the editor —
+   * a platform footer, a plan badge, a legal line — without that content
+   * becoming part of the template.
+   *
+   * Storing such a block in the template instead looks equivalent and is not.
+   * It would be saved, so it freezes at edit time rather than tracking what
+   * your application appends at send time — and a client-side lock is no
+   * guarantee once the same content is writable through your API.
+   *
+   * ```ts
+   * footerBlocks: [
+   *   { id: "platform-footer", type: "html", props: { html: "<p>Sent with Acme</p>" } },
+   * ]
+   * ```
+   */
+  footerBlocks?: Block[];
 
   /**
    * Render each HTML block's raw content as a live preview in the editor
@@ -1085,6 +1108,7 @@ export async function initCloud(
       templateDefaults: config.templateDefaults,
       customBlocks: config.customBlocks,
       paletteBlocks: config.paletteBlocks,
+      footerBlocks: config.footerBlocks,
       htmlBlockPreview: config.htmlBlockPreview,
       colors: config.colors,
       fonts: config.fonts,

@@ -54,8 +54,16 @@ const props = withDefaults(
      * and get the wrong answer.
      */
     applyConditionFilter?: boolean;
+    /**
+     * Drops the stage — its width, email background, rounded corners and shadow —
+     * and lets the content column fill the caller instead of setting its own
+     * width. For callers already inside an email frame: the canvas renders
+     * `footerBlocks` this way, and with the stage the footer reads as a second
+     * card floating inside the email rather than a continuation of it.
+     */
+    embedded?: boolean;
   }>(),
-  { viewport: "desktop", applyConditionFilter: true },
+  { viewport: "desktop", applyConditionFilter: true, embedded: false },
 );
 
 const blockRegistry = inject(BLOCK_REGISTRY_KEY);
@@ -178,25 +186,38 @@ function getBlockComponent(block: Block): Component | null {
        carried the width itself. -->
   <div
     data-testid="block-preview-stage"
-    class="tpl:pointer-events-none tpl:mx-auto tpl:flex tpl:select-none tpl:justify-center tpl:rounded-lg"
-    :style="{
-      width: `${stageWidth}px`,
-      minWidth: `${frameWidth}px`,
-      maxWidth: '100%',
-      backgroundColor: emailBackground,
-      boxShadow: 'var(--tpl-shadow-sm)',
-    }"
+    class="tpl:pointer-events-none tpl:select-none"
+    :class="
+      embedded
+        ? undefined
+        : 'tpl:mx-auto tpl:flex tpl:justify-center tpl:rounded-lg'
+    "
+    :style="
+      embedded
+        ? undefined
+        : {
+            width: `${stageWidth}px`,
+            minWidth: `${frameWidth}px`,
+            maxWidth: '100%',
+            backgroundColor: emailBackground,
+            boxShadow: 'var(--tpl-shadow-sm)',
+          }
+    "
   >
     <!-- CONTENT COLUMN — the blocks at their true email width. Keeps the
          testid: this is the element whose width *is* the email width, which is
          what every viewport assertion measures. -->
     <div
       data-testid="block-preview-canvas"
-      :style="{
-        width: `${frameWidth}px`,
-        transition: EMAIL_FRAME_WIDTH_TRANSITION,
-        ...documentStyle,
-      }"
+      :style="
+        embedded
+          ? documentStyle
+          : {
+              width: `${frameWidth}px`,
+              transition: EMAIL_FRAME_WIDTH_TRANSITION,
+              ...documentStyle,
+            }
+      "
     >
       <div
         v-for="block in visibleBlocks"

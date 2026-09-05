@@ -19,13 +19,16 @@ import type { TemplateSettings } from '@templatical/types';
  * rendered in a saved-block preview lost its underline and serif face while
  * the identical block on the canvas kept both.
  */
-function mountCanvas(settings?: Partial<TemplateSettings>) {
+function mountCanvas(
+  settings?: Partial<TemplateSettings>,
+  props: { embedded?: boolean } = {},
+) {
   const content = createDefaultTemplateContent();
   content.settings = { ...content.settings, ...settings };
   content.blocks = [createParagraphBlock({ content: '<p><a href="#">x</a></p>' })];
 
   return mountEditor(BlockPreviewCanvas, {
-    props: { blocks: content.blocks },
+    props: { blocks: content.blocks, ...props },
     provides: settings
       ? { [EDITOR_KEY]: { content: ref(content), state: {} } }
       : {},
@@ -171,6 +174,36 @@ describe('BlockPreviewCanvas email background', () => {
  * includes condition-excluded content is worse than no preview at all, because
  * the user trusts it.
  */
+/**
+ * `embedded` is for callers that already sit inside an email frame — the canvas
+ * rendering `footerBlocks`. Keeping the standalone frame there draws a second
+ * card inside the email rather than a continuation of it.
+ */
+describe('BlockPreviewCanvas embedded', () => {
+  it('drops the stage but keeps the document style', () => {
+    const wrapper = mountCanvas({ fontFamily: 'Georgia, serif' }, { embedded: true });
+    const stage = wrapper.find('[data-testid="block-preview-stage"]');
+    const column = wrapper.find('[data-testid="block-preview-canvas"]');
+
+    expect(stage.attributes('style')).toBeUndefined();
+    expect(stage.classes()).not.toContain('tpl:rounded-lg');
+    // The column fills the caller rather than setting the email width itself.
+    expect(column.attributes('style') ?? '').not.toContain('width:');
+    // Same font and link rules as the blocks it sits under.
+    expect(column.attributes('style') ?? '').toContain('Georgia, serif');
+  });
+
+  it('keeps the stage by default, so existing callers are untouched', () => {
+    const wrapper = mountCanvas({ fontFamily: 'Georgia, serif' });
+    const stage = wrapper.find('[data-testid="block-preview-stage"]');
+
+    expect(stage.attributes('style') ?? '').toContain('box-shadow');
+    expect(
+      wrapper.find('[data-testid="block-preview-canvas"]').attributes('style') ?? '',
+    ).toContain('width: 600px');
+  });
+});
+
 describe('BlockPreviewCanvas visibility and viewport', () => {
   /**
    * `hideExcluded` rather than an id list: the blocks are created inside, so a
