@@ -91,14 +91,23 @@ function setDrawerHeight(height: number): void {
 // anything else — so this lookup can't miss.
 const capability = computed(() => capabilityById(activeId.value)!);
 
+// The drawer's picker swaps the fixture for the current visit; `null` means
+// "whatever this capability curated". Cleared on a capability change, so
+// each one opens on its own fixture rather than inheriting the last pick.
+const fixtureOverride = ref<string | null>(null);
+
 // Every registered capability names "product-launch" today; a future one
 // naming a fixture no template carries falls back to the first template
 // rather than mounting an editor with no content at all.
-const fixture = computed(
-  () =>
-    templates.find((t) => slugFor(t.name) === capability.value.fixture) ??
-    templates[0],
-);
+const fixture = computed(() => {
+  const wanted = fixtureOverride.value ?? capability.value.fixture;
+  return templates.find((t) => slugFor(t.name) === wanted) ?? templates[0];
+});
+
+// The picker's value. Derived from the template that actually resolved, not
+// from `fixtureOverride`, so the fallback above can never leave the select
+// showing a slug it has no option for.
+const fixtureSlug = computed(() => slugFor(fixture.value.name));
 
 const editorHost = ref<HTMLElement | null>(null);
 const editor = ref<TemplaticalEditor | null>(null);
@@ -152,6 +161,19 @@ async function initEditor(): Promise<void> {
   lastInitConfig.value = config;
 }
 
+/**
+ * Swap the fixture for this visit.
+ *
+ * Re-inits by calling `initEditor` rather than through a `watch(fixture)`:
+ * a capability change clears the override, which moves `fixture` too, so a
+ * watcher there would fire beside the `activeId` one and start a second
+ * `init()` for a single click.
+ */
+function setFixture(slug: string): void {
+  fixtureOverride.value = slug;
+  void initEditor();
+}
+
 onMounted(async () => {
   await initEditor();
 });
@@ -160,6 +182,9 @@ onMounted(async () => {
 // `activeId`. Re-running `initEditor` swaps the fixture and config into the
 // SAME host element rather than remounting the component tree around it.
 watch(activeId, async () => {
+  // The picker's choice belongs to the capability it was made in, so each
+  // capability opens on the fixture it curated (spec decision 9).
+  fixtureOverride.value = null;
   await initEditor();
 });
 
@@ -217,7 +242,9 @@ onBeforeUnmount(() => {
           v-if="drawerActiveTab === 'controls'"
           :controls="capability.controls"
           :state="controlState"
+          :fixture="fixtureSlug"
           @set="setControl"
+          @fixture="setFixture"
         />
         <ConfigPane v-else :config="lastInitConfig" />
       </CapabilityDrawer>

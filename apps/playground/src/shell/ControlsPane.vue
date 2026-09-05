@@ -7,6 +7,8 @@ import {
   type ControlState,
 } from "@/config/types";
 import { resolveControlState } from "@/config/capabilities";
+import { slugFor } from "@/providers/template-name";
+import { templates } from "@/templates";
 
 /**
  * Renders every control for the active capability: a label, a help
@@ -14,16 +16,38 @@ import { resolveControlState } from "@/config/capabilities";
  * input is disabled and shows why — the row is never hidden, since a
  * control vanishing unexplained is worse in a panel whose whole job is to
  * explain the config.
+ *
+ * The fixture picker sits above the controls because it frames what they
+ * act on: every control below configures the editor showing that template.
  */
 
 const props = defineProps<{
   controls: Control[];
   state: ControlState;
+  /** Slug of the template the editor is showing. See `slugFor`. */
+  fixture: string;
 }>();
 
 const emit = defineEmits<{
   set: [path: string, value: unknown];
+  fixture: [slug: string];
 }>();
+
+/**
+ * The picker's options: the name to read, the slug to emit. Slug rather than
+ * index or name because that is what `CapabilityDef.fixture` names and what
+ * every per-template storage key is built from.
+ */
+const fixtureOptions = templates.map((template) => ({
+  slug: slugFor(template.name),
+  name: template.name,
+}));
+
+const FIXTURE_INPUT_ID = "capability-fixture-picker";
+
+function onFixtureChange(event: Event): void {
+  emit("fixture", (event.target as HTMLSelectElement).value);
+}
 
 // Resolved once per state change rather than once per control, so a row's
 // forced check and its own displayed value read the same filled-in defaults.
@@ -150,11 +174,46 @@ function onListChange(control: Control, event: Event): void {
 <template>
   <div class="flex flex-col p-3">
     <div
+      class="flex items-center justify-between gap-4 border-b border-gray-200 pb-3 dark:border-gray-700"
+    >
+      <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+        <label
+          :for="FIXTURE_INPUT_ID"
+          class="text-[13px] font-medium text-gray-900 dark:text-gray-100"
+        >
+          Template
+        </label>
+        <p class="m-0 text-[12px] text-gray-500 dark:text-gray-400">
+          The content the editor opens with. Each capability curates its own;
+          picking another here lasts until you leave this capability.
+        </p>
+      </div>
+
+      <div class="flex w-36 shrink-0 justify-end">
+        <select
+          :id="FIXTURE_INPUT_ID"
+          data-testid="capability-fixture-picker"
+          class="pg-select"
+          :value="fixture"
+          @change="onFixtureChange"
+        >
+          <option
+            v-for="option in fixtureOptions"
+            :key="option.slug"
+            :value="option.slug"
+          >
+            {{ option.name }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div
       v-for="control in controls"
       :key="control.path"
       data-testid="capability-control"
       :data-control-path="control.path"
-      class="flex items-center justify-between gap-4 border-b border-gray-100 py-3 first:pt-0 last:border-b-0 dark:border-gray-700"
+      class="flex items-center justify-between gap-4 border-b border-gray-100 py-3 last:border-b-0 dark:border-gray-700"
     >
       <div class="flex min-w-0 flex-1 flex-col gap-0.5">
         <label

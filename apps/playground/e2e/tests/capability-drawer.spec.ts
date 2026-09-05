@@ -227,4 +227,40 @@ test.describe("capability drawer", () => {
     await expect(source).toContainText("container: /*");
     await expect(source).not.toContainText("container: {}");
   });
+
+  test("switching fixture reloads the editor with that template's content, keeps the capability, and lasts only for this visit", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/saved-blocks");
+    const picker = page.locator(SELECTORS.capabilityFixturePicker);
+    const canvas = page.locator(SELECTORS.canvasBody);
+    const activeRailItem = page.locator(
+      `${SELECTORS.capabilityRailItem}[aria-current="page"]`,
+    );
+
+    // Saved blocks curates Product Launch. Its own heading is the positive
+    // control for every negative assertion below — a block count alone would
+    // be satisfied by any template of the same length.
+    await expect(picker).toHaveValue("product-launch");
+    await expect(canvas).toContainText("Introducing Launchpad v2.0");
+
+    await picker.selectOption("password-reset");
+
+    // Positive first: it waits for the re-inited canvas to hold the new
+    // template, so the negative below cannot pass against a torn-down editor.
+    await expect(canvas).toContainText("Reset Your Password");
+    await expect(canvas).not.toContainText("Introducing Launchpad v2.0");
+    await expect(picker).toHaveValue("password-reset");
+    await expect(activeRailItem).toHaveText("Saved blocks");
+
+    // The pick belongs to the capability it was made in: Comments opens on
+    // the fixture it curated, not on the one left behind next door.
+    await page
+      .locator(SELECTORS.capabilityRailItem, { hasText: "Comments" })
+      .click();
+    await expect(activeRailItem).toHaveText("Comments");
+    await expect(canvas).toContainText("Introducing Launchpad v2.0");
+    await expect(canvas).not.toContainText("Reset Your Password");
+    await expect(picker).toHaveValue("product-launch");
+  });
 });

@@ -32,6 +32,11 @@ export const SELECTORS = {
   capabilityControl: '[data-testid="capability-control"]',
   capabilityControlInput: '[data-testid="capability-control-input"]',
   capabilityControlReason: '[data-testid="capability-control-reason"]',
+  /**
+   * Fixture picker, at the top of the Controls tab. Its value is a template
+   * slug (`slugFor(name)`), and the choice lasts until the capability changes.
+   */
+  capabilityFixturePicker: '[data-testid="capability-fixture-picker"]',
 
   // Config tab (inside the capability drawer) — the exact object the shell
   // handed to `init()`, printed as TypeScript source. See `ConfigPane.vue`.
