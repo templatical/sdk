@@ -33,6 +33,10 @@ export const SELECTORS = {
   capabilityControlInput: '[data-testid="capability-control-input"]',
   capabilityControlReason: '[data-testid="capability-control-reason"]',
 
+  // Config tab (inside the capability drawer) — the exact object the shell
+  // handed to `init()`, printed as TypeScript source. See `ConfigPane.vue`.
+  capabilityConfigSource: '[data-testid="capability-config-source"]',
+
   // Editor toolbar (playground)
   backButton: '[data-testid="toolbar-back"]',
   configButton: '[data-testid="toolbar-config"]',

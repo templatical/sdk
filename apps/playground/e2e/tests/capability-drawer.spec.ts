@@ -108,4 +108,59 @@ test.describe("capability drawer", () => {
       restoreControl.locator(SELECTORS.capabilityControlReason),
     ).toContainText("templates.save");
   });
+
+  test("the Config tab renders the key the active capability owns", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/saved-blocks");
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Config" })
+      .click();
+
+    await expect(page.locator(SELECTORS.capabilityConfigSource)).toContainText(
+      "savedBlocks:",
+    );
+  });
+
+  test("toggling savedBlocks.create off lands as create: false in the Config tab", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/saved-blocks");
+    const configTab = page.locator(SELECTORS.capabilityDrawerTab, {
+      hasText: "Config",
+    });
+    const controlsTab = page.locator(SELECTORS.capabilityDrawerTab, {
+      hasText: "Controls",
+    });
+    const source = page.locator(SELECTORS.capabilityConfigSource);
+
+    // The positive assertion first: it waits for the pane to hold real
+    // source, so the negative below cannot pass against an element that has
+    // not rendered yet.
+    await configTab.click();
+    await expect(source).toContainText("savedBlocks:");
+    await expect(source).not.toContainText("create: false");
+
+    await controlsTab.click();
+    await page
+      .locator(controlByPath("savedBlocks.create"))
+      .locator(SELECTORS.capabilityControlInput)
+      .uncheck();
+
+    await configTab.click();
+    await expect(source).toContainText("create: false");
+  });
+
+  test("container is annotated rather than printed as an empty object", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/saved-blocks");
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Config" })
+      .click();
+
+    const source = page.locator(SELECTORS.capabilityConfigSource);
+    await expect(source).toContainText("container: /*");
+    await expect(source).not.toContainText("container: {}");
+  });
 });

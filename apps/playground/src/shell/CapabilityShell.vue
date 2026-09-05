@@ -1,6 +1,17 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { init, type TemplaticalEditor } from "@templatical/editor";
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+} from "vue";
+import {
+  init,
+  type TemplaticalEditor,
+  type TemplaticalEditorConfig,
+} from "@templatical/editor";
 import {
   buildAllCapabilityConfig,
   capabilityById,
@@ -9,6 +20,7 @@ import { slugFor } from "@/providers/template-name";
 import { templates } from "@/templates";
 import CapabilityDrawer from "./CapabilityDrawer.vue";
 import CapabilityRail from "./CapabilityRail.vue";
+import ConfigPane from "./ConfigPane.vue";
 import ControlsPane from "./ControlsPane.vue";
 import { useCapabilityRoute } from "./useCapabilityRoute";
 import { useControlState } from "./useControlState";
@@ -91,6 +103,14 @@ const fixture = computed(
 const editorHost = ref<HTMLElement | null>(null);
 const editor = ref<TemplaticalEditor | null>(null);
 
+// The Config tab renders THIS object — the very one the mounted editor was
+// handed, never a copy rebuilt for display. A second copy is free to drift
+// from the call site (a key added to `init()` and forgotten here), and the
+// tab's only value is that it cannot: what it shows is what booted.
+// `shallowRef` keeps the object raw, so a provider's methods reach
+// `renderConfig` as themselves rather than through a reactive proxy.
+const lastInitConfig = shallowRef<TemplaticalEditorConfig | null>(null);
+
 // Navigating away from #capabilities while `init()` is in flight must not
 // mount a fresh editor after teardown: `onBeforeUnmount` tears down whatever
 // `editor.value` holds at that moment, and assigning past it would land a new
@@ -108,7 +128,9 @@ async function initEditor(): Promise<void> {
   if (!editorHost.value) return;
   const token = ++initToken;
   editor.value?.unmount();
-  const instance = await init({
+  // One object, built once and used twice: handed to `init()` below and kept
+  // in `lastInitConfig` for the Config tab. Do not rebuild it for display.
+  const config: TemplaticalEditorConfig = {
     container: editorHost.value,
     content: fixture.value.create(),
     // `App.vue` also passes locale, theme, uiTheme, fonts, merge-tag request
@@ -117,12 +139,17 @@ async function initEditor(): Promise<void> {
     // capability lands, so this shell only owns what the registry already
     // produces.
     ...buildAllCapabilityConfig(controlState.value, fixture.value),
-  });
+  };
+  const instance = await init(config);
   if (destroyed || token !== initToken) {
     instance.unmount();
     return;
   }
   editor.value = instance;
+  // Written under the same staleness guard as `editor.value`, so a fast
+  // capability switch cannot leave the panel describing a config that lost
+  // the race and was never mounted.
+  lastInitConfig.value = config;
 }
 
 onMounted(async () => {
@@ -192,7 +219,7 @@ onBeforeUnmount(() => {
           :state="controlState"
           @set="setControl"
         />
-        <div v-else data-testid="config-pane-placeholder" />
+        <ConfigPane v-else :config="lastInitConfig" />
       </CapabilityDrawer>
     </div>
   </div>
