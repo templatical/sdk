@@ -359,6 +359,9 @@ export default defineConfig({
   description:
     "Drag-and-drop email editor for modern apps — source-available, MIT after two years",
   cleanUrls: true,
+  // VitePress scans the whole project root for *.md, which otherwise renders
+  // the vitest fixtures under tests/fixtures/ as real, navigable pages.
+  srcExclude: ["tests/**"],
   // Serve each page's source markdown at its own URL plus `.md`. Agents that
   // fetch rendered HTML read mangled examples of this product's own merge-tag
   // and logic-tag syntax; source markdown sidesteps that entirely.

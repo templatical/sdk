@@ -1,16 +1,47 @@
-import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, relative, sep } from "node:path";
 // @ts-expect-error — plain .mjs generator, no types
 import {
   buildOutputs,
   collectPages,
+  copyMarkdownSources,
   groupOf,
   renderIndex,
   SITE_URL,
 } from "../scripts/build-agent-surface.mjs";
 
 const DOCS = join(import.meta.dirname, "..");
+
+/** Write a fixture file at `root/relPath`, creating any parent dirs it needs. */
+function writeFixtureFile(root: string, relPath: string, content: string) {
+  const abs = join(root, ...relPath.split("/"));
+  mkdirSync(dirname(abs), { recursive: true });
+  writeFileSync(abs, content);
+}
+
+/** Every file under `root`, as paths relative to it, POSIX-separated. */
+function listFilesRecursively(root: string, base = root): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(root)) {
+    const abs = join(root, entry);
+    if (statSync(abs).isDirectory()) {
+      out.push(...listFilesRecursively(abs, base));
+    } else {
+      out.push(relative(base, abs).split(sep).join("/"));
+    }
+  }
+  return out;
+}
 
 describe("groupOf", () => {
   it("groups by top-level directory", () => {
@@ -84,16 +115,15 @@ describe("collectPages", () => {
     expect(page?.title).not.toBe("some-new-page.md");
   });
 
-  it("does not leak a directory prefix into the title for a nested titleless page", () => {
-    // widgets/index.md with no title and no H1 used to yield "Widgets/index" —
-    // a slash leaking into a machine-readable index. Taking the basename
-    // (the last path segment) before stripping the extension fixes that, and
-    // as a side effect the "is this an index page" check — which previously
-    // only ever matched a literal top-level "index.md" — now also correctly
-    // recognizes a nested directory index, same as the root case.
+  it("derives a nested index's title from its directory, not a literal null or a path with a slash", () => {
+    // widgets/index.md carries no title field and no body H1, so the title
+    // falls back to its parent directory segment, title-cased. A directory
+    // index is not the root page, so it does not fall through to SITE_TITLE,
+    // and its "index" basename must not leak into the title as a literal
+    // string or as part of a path fragment like "Widgets/index".
     const pages = collectPages(join(import.meta.dirname, "fixtures/nested-titleless"));
     const page = pages.find((p) => p.path === "widgets/index.md");
-    expect(page?.title).toBe(null);
+    expect(page?.title).toBe("Widgets");
     expect(page?.title).not.toBe("Widgets/index");
   });
 });
@@ -179,5 +209,86 @@ describe("the buildEnd hook", () => {
     const config = readFileSync(join(DOCS, ".vitepress/config.ts"), "utf8");
     expect(config).toContain("buildEnd");
     expect(config).toContain("copyMarkdownSources");
+  });
+});
+
+describe("copyMarkdownSources", () => {
+  // A page with frontmatter and a merge-tag token, used to prove the copy is
+  // byte-for-byte — this function must never transform content.
+  const NESTED_FIXTURE = `---
+title: Nested
+description: A nested fixture page with frontmatter and a merge-tag token.
+---
+
+# Nested
+
+Hello {{ first_name }}, your order {{ order.id }} shipped.
+`;
+
+  let srcDir: string;
+  let destDir: string;
+
+  beforeEach(() => {
+    srcDir = mkdtempSync(join(tmpdir(), "agent-surface-src-"));
+    destDir = mkdtempSync(join(tmpdir(), "agent-surface-dest-"));
+
+    // Root-level page.
+    writeFixtureFile(srcDir, "root.md", "# Root\n\nRoot page content.\n");
+    // Nested page — proves the destination directory is created — and
+    // carries frontmatter plus merge-tag tokens for the byte-identical check.
+    writeFixtureFile(srcDir, "guide/nested.md", NESTED_FIXTURE);
+    // de/ root-level and nested pages — the walker's one inversion of
+    // SKIP_DIRS: German pages are copied, unlike every other skipped dir.
+    writeFixtureFile(srcDir, "de/root.md", "# Root (DE)\n\nGerman root content.\n");
+    writeFixtureFile(srcDir, "de/guide/nested.md", "# Nested (DE)\n\nGerman nested content.\n");
+    // One page under each SKIP_DIRS entry other than "de" — none may reach
+    // the output, and their containing directory is never even walked.
+    writeFixtureFile(srcDir, "node_modules/skip.md", "# Skip\n\nnode_modules.\n");
+    writeFixtureFile(srcDir, ".vitepress/skip.md", "# Skip\n\n.vitepress.\n");
+    writeFixtureFile(srcDir, "public/skip.md", "# Skip\n\npublic.\n");
+    writeFixtureFile(srcDir, "tests/skip.md", "# Skip\n\ntests.\n");
+    writeFixtureFile(srcDir, "scripts/skip.md", "# Skip\n\nscripts.\n");
+    // Non-.md files, at top level and inside a copied directory — prove the
+    // extension filter operates independently of the directory filter.
+    writeFixtureFile(srcDir, "readme.txt", "not markdown\n");
+    writeFixtureFile(srcDir, "guide/notes.txt", "not markdown either\n");
+  });
+
+  afterEach(() => {
+    rmSync(srcDir, { recursive: true, force: true });
+    rmSync(destDir, { recursive: true, force: true });
+  });
+
+  it("returns exactly the markdown pages, excluding every skip-dir except de/", () => {
+    const copied = copyMarkdownSources(destDir, srcDir);
+    expect([...copied].sort()).toEqual(
+      ["root.md", "guide/nested.md", "de/root.md", "de/guide/nested.md"].sort(),
+    );
+  });
+
+  it("returns relative, POSIX-separated paths — never a directory prefix or a backslash", () => {
+    const copied = copyMarkdownSources(destDir, srcDir);
+    for (const path of copied) {
+      expect(path.startsWith("/")).toBe(false);
+      expect(path.includes("\\")).toBe(false);
+    }
+    expect(copied).toContain("de/guide/nested.md");
+  });
+
+  it("writes exactly the copied pages to the output directory, creating nested dirs as needed", () => {
+    copyMarkdownSources(destDir, srcDir);
+    const onDisk = listFilesRecursively(destDir);
+    expect(onDisk.sort()).toEqual(
+      ["root.md", "guide/nested.md", "de/root.md", "de/guide/nested.md"].sort(),
+    );
+  });
+
+  it("copies a page's content byte-for-byte, preserving frontmatter and merge-tag tokens", () => {
+    copyMarkdownSources(destDir, srcDir);
+    const dest = readFileSync(join(destDir, "guide/nested.md"), "utf8");
+    expect(dest).toBe(NESTED_FIXTURE);
+    expect(dest).toContain("{{ first_name }}");
+    expect(dest).toContain("{{ order.id }}");
+    expect(dest).toContain("title: Nested");
   });
 });

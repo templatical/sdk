@@ -109,11 +109,20 @@ function parsePage(source) {
   return { fields, body: source.slice(match[0].length).trim() };
 }
 
-/** Derive a title from a path when no frontmatter title or H1 exists. */
+/**
+ * Derive a title from a path when no frontmatter title or H1 exists. A
+ * directory index derives from its parent directory segment rather than its
+ * own "index" basename, so `guide/widgets/index.md` yields "Widgets" instead
+ * of a literal "index". Returns null only for the root `index.md`, which has
+ * no parent segment to derive from — the caller falls back to SITE_TITLE for
+ * that page.
+ */
 function titleFromPath(relPath) {
-  const basename = relPath.split("/").pop().replace(/\.md$/, "");
-  if (basename === "index") return null; // Directory index; handled by the caller
-  return basename
+  const segments = relPath.replace(/\.md$/, "").split("/");
+  const basename = segments.pop();
+  const source = basename === "index" ? segments.pop() : basename;
+  if (!source) return null;
+  return source
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
@@ -147,15 +156,15 @@ export function collectPages(docsDir = DOCS_DIR) {
         );
       }
       const heading = /^#\s+(.+)$/m.exec(body);
-      // Title fallback chain: frontmatter > first H1 > derived from path.
-      // The path-derived fallback exists for layout: home pages (like index.md)
-      // that carry no title field and no body H1 — a filename alone in a
-      // machine-readable index is a defect. Root index falls back to SITE_TITLE
-      // to keep the home page's title semantic rather than filesystem-literal.
-      let title = fields.title ?? heading?.[1];
-      if (!title) {
-        title = rel === "index.md" ? SITE_TITLE : titleFromPath(rel);
-      }
+      // Title fallback chain: frontmatter > first H1 > derived from path >
+      // SITE_TITLE. The path-derived fallback exists for layout: pages (like
+      // index.md, or a directory index) that carry no title field and no
+      // body H1 — a filename alone in a machine-readable index is a defect.
+      // titleFromPath returns null only for the root index.md, which has no
+      // directory segment to derive from, so SITE_TITLE is the final
+      // fallback there — keeping the home page's title semantic rather than
+      // filesystem-literal.
+      const title = fields.title ?? heading?.[1] ?? titleFromPath(rel) ?? SITE_TITLE;
       return {
         path: rel,
         url: urlFor(rel),
