@@ -19,6 +19,14 @@ export const SELECTORS = {
   capabilityEditor: '[data-testid="capability-editor"]',
   capabilityBlurb: '[data-testid="capability-blurb"]',
 
+  // Capability drawer — bottom panel at #capabilities: a tab bar + one pane,
+  // collapsible and resizable. See `CapabilityDrawer.vue`.
+  capabilityDrawer: '[data-testid="capability-drawer"]',
+  capabilityDrawerTab: '[data-testid="capability-drawer-tab"]',
+  capabilityDrawerToggle: '[data-testid="capability-drawer-toggle"]',
+  capabilityDrawerResize: '[data-testid="capability-drawer-resize"]',
+  capabilityDrawerPane: '[data-testid="capability-drawer-pane"]',
+
   // Editor toolbar (playground)
   backButton: '[data-testid="toolbar-back"]',
   configButton: '[data-testid="toolbar-config"]',

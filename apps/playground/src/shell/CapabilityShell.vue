@@ -7,15 +7,75 @@ import {
 } from "@/config/capabilities";
 import { slugFor } from "@/providers/template-name";
 import { templates } from "@/templates";
+import CapabilityDrawer from "./CapabilityDrawer.vue";
 import CapabilityRail from "./CapabilityRail.vue";
 import { useCapabilityRoute } from "./useCapabilityRoute";
 import { useControlState } from "./useControlState";
 
 const { activeId, select } = useCapabilityRoute();
-// `setControl` has no caller yet — the drawer that calls it is a later task
-// in this plan — so it is bound with a leading underscore, this repo's own
-// convention for a binding the unused-vars lint rule should leave alone.
+// `setControl` has no caller yet — the drawer's Controls tab (Task 4 of this
+// plan) is what calls it — so it is bound with a leading underscore, this
+// repo's own convention for a binding the unused-vars lint rule should leave
+// alone.
 const { state: controlState, set: _setControl } = useControlState();
+
+// The drawer's own chrome — open/collapsed and its height — lives under a
+// separate key from `controlState`. `tpl-playground-config` is capability
+// control state and is seeded by e2e specs before navigation; mixing UI
+// chrome into it would let a spec's seed clobber the user's drawer size.
+const DRAWER_STATE_KEY = "tpl-playground-drawer";
+const DRAWER_DEFAULT_HEIGHT = 280;
+
+interface DrawerChromeState {
+  open: boolean;
+  height: number;
+}
+
+function readDrawerState(): DrawerChromeState {
+  try {
+    const raw = localStorage.getItem(DRAWER_STATE_KEY);
+    if (!raw) return { open: true, height: DRAWER_DEFAULT_HEIGHT };
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") {
+      return { open: true, height: DRAWER_DEFAULT_HEIGHT };
+    }
+    const { open, height } = parsed as Partial<DrawerChromeState>;
+    return {
+      open: typeof open === "boolean" ? open : true,
+      height: typeof height === "number" ? height : DRAWER_DEFAULT_HEIGHT,
+    };
+  } catch {
+    return { open: true, height: DRAWER_DEFAULT_HEIGHT };
+  }
+}
+
+function writeDrawerState(next: DrawerChromeState): void {
+  try {
+    localStorage.setItem(DRAWER_STATE_KEY, JSON.stringify(next));
+  } catch {
+    // A private-mode or quota failure loses the setting for the next reload
+    // only — the drawer keeps working from in-memory state this session.
+  }
+}
+
+const drawerInitial = readDrawerState();
+const drawerOpen = ref(drawerInitial.open);
+const drawerHeight = ref(drawerInitial.height);
+const drawerActiveTab = ref("controls");
+const drawerTabs = [
+  { id: "controls", label: "Controls" },
+  { id: "config", label: "Config" },
+];
+
+function setDrawerOpen(open: boolean): void {
+  drawerOpen.value = open;
+  writeDrawerState({ open, height: drawerHeight.value });
+}
+
+function setDrawerHeight(height: number): void {
+  drawerHeight.value = height;
+  writeDrawerState({ open: drawerOpen.value, height });
+}
 
 // `activeId` only ever holds a registered id — `parseCapabilityHash` (inside
 // `useCapabilityRoute`) falls back to the first registered capability for
@@ -120,6 +180,21 @@ onBeforeUnmount(() => {
           class="min-w-0 flex-1 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
         />
       </main>
+      <CapabilityDrawer
+        :tabs="drawerTabs"
+        :active-tab="drawerActiveTab"
+        :open="drawerOpen"
+        :height="drawerHeight"
+        @update:active-tab="drawerActiveTab = $event"
+        @update:open="setDrawerOpen"
+        @update:height="setDrawerHeight"
+      >
+        <div
+          v-if="drawerActiveTab === 'controls'"
+          data-testid="controls-pane-placeholder"
+        />
+        <div v-else data-testid="config-pane-placeholder" />
+      </CapabilityDrawer>
     </div>
   </div>
 </template>
