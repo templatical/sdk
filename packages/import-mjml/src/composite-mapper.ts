@@ -222,7 +222,13 @@ export function convertNavbar(
 
   const items: MenuItemData[] = links.map(($link) => {
     const linkAttrs = resolveAttributes($link, ctx.cascade);
-    const color = parseColor(linkAttrs.color);
+    // ownAttr, not linkAttrs directly — same cascade-vs-own distinction as
+    // the block-level font-family read below: a hand-written document's own
+    // <mj-attributes><mj-navbar-link color="…"/></mj-attributes> default must
+    // not be read back as this link's own override.
+    const color = parseColor(
+      ownAttr(linkAttrs, "color", "mj-navbar-link", ctx.cascade),
+    );
     return {
       id: generateId(),
       text: ($link.text() ?? "").trim(),

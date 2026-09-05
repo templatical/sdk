@@ -217,6 +217,29 @@ describe("mj-navbar", () => {
     expect(block.fontFamily).toBe("Verdana");
   });
 
+  it("does not read the document's mj-attributes cascade as a link's own color", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-navbar-link color="#ff0000" /></mj-attributes>',
+      '<mj-navbar><mj-navbar-link href="/a">Alpha</mj-navbar-link></mj-navbar>',
+      "mj-navbar",
+    );
+    const block = result.block as MenuBlock;
+    const item = block.items[0];
+
+    expect("color" in item).toBe(false);
+  });
+
+  it("reads a link's own color over the cascade default", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-navbar-link color="#ff0000" /></mj-attributes>',
+      '<mj-navbar><mj-navbar-link href="/a" color="#0000ff">Alpha</mj-navbar-link></mj-navbar>',
+      "mj-navbar",
+    );
+    const block = result.block as MenuBlock;
+
+    expect(block.items[0].color).toBe("#0000ff");
+  });
+
   it("returns null for an mj-navbar with no links", () => {
     const $: CheerioAPI = load(
       "<mjml><mj-body><mj-navbar /></mj-body></mjml>",
