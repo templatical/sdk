@@ -1,17 +1,79 @@
 ---
 title: Migration von handgeschriebenem MJML
-description: So migrieren Sie bestehende MJML-E-Mail-Templates in Templaticals visuellen Editor — Mapping-Tabelle, Vorgehen beim Neuaufbau und was als Nächstes kommt.
+description: MJML-E-Mail-Templates mit @templatical/import-mjml in das Templatical-Format konvertieren.
 ---
 
 # Migration von handgeschriebenem MJML
 
-Diese Anleitung richtet sich an Teams, die E-Mail-Templates bisher in rohem [MJML](https://mjml.io) erstellt haben (mit Editoren wie VS Code, einem internen CLI oder einer selbstgebauten Build-Pipeline) und auf Templaticals visuellen Editor wechseln möchten.
+Diese Anleitung richtet sich an Teams, die E-Mail-Templates bisher in rohem [MJML](https://mjml.io) erstellt haben (mit Editoren wie VS Code, einem internen CLI oder einer selbstgebauten Build-Pipeline) und auf Templaticals visuellen Editor wechseln möchten. **`@templatical/import-mjml`** konvertiert ein MJML-Dokument direkt in Templaticals `TemplateContent`-Format — installieren Sie es, führen Sie es aus, und nutzen Sie die folgenden Abschnitte, um alles nachzuarbeiten, was es nicht automatisch abbilden kann.
 
-::: tip Automatischer Importer in Entwicklung
-Wir entwickeln einen automatischen **`@templatical/import-mjml`**, der ein MJML-Dokument parst und einen Templatical-`TemplateContent`-Baum erzeugt. Aktiv in Entwicklung. Bis er ausgeliefert ist, dokumentiert diese Seite den manuellen Weg.
+## Installation
 
-MJML → Templatical ist schwerer vollständig zu automatisieren als BeeFree → Templatical, weil MJML eine echte Obermenge dessen ist, was Templaticals JSON-Baum ausdrücken kann (es lässt sich gültiges MJML schreiben, das keinen Templatical-Block-Equivalent hat). Der Importer wird die häufigen Muster abdecken und für alles außerhalb des Mappings auf `HtmlBlock` zurückfallen.
-:::
+```bash
+npm install @templatical/import-mjml
+```
+
+### Ohne Build-Schritt (CDN)
+
+Sie können es auch von einem CDN laden:
+
+```html
+<script type="module">
+  import { convertMjmlTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-mjml/+esm';
+  // ...dann konvertieren wie im Abschnitt „Verwendung" unten
+</script>
+```
+
+## Verwendung
+
+```ts
+import { convertMjmlTemplate } from '@templatical/import-mjml';
+
+// Den rohen MJML-Quelltext einer E-Mail laden
+const res = await fetch('/path/to/email.mjml');
+const mjml = await res.text();
+
+// In das Templatical-Format konvertieren
+const { content, report } = convertMjmlTemplate(mjml);
+
+// Im Editor verwenden
+const editor = await init({
+  container: '#editor',
+  content,
+});
+
+// Konvertierungsbericht auf Auffälligkeiten prüfen
+console.log(report);
+```
+
+`convertMjmlTemplate` arbeitet synchron und gibt ein `ImportResult` zurück mit:
+- `content` — das konvertierte `TemplateContent`, bereit für den Editor
+- `report` — ein Konvertierungsbericht mit dem Status jedes Quellelements (`converted`, `approximated`, `html-fallback` oder `skipped`)
+
+## Den Bericht lesen
+
+Jeder Eintrag in `report.entries` beschreibt ein Quellelement:
+
+| Status | Bedeutung |
+|---|---|
+| `converted` | Jedes Attribut mit einer Templatical-Entsprechung wurde übernommen. |
+| `approximated` | Auf den richtigen Block abgebildet, aber ein Wert musste auf einen begrenzten Wertebereich angepasst werden — `note` nennt den ursprünglichen Wert. |
+| `html-fallback` | Keine Block-Entsprechung vorhanden; das ursprüngliche Markup bleibt in einem `HtmlBlock` erhalten. |
+| `skipped` | Es wurde nichts erzeugt (`templaticalBlockType: null`). |
+
+```ts
+console.log(report.summary);
+// { total: 24, converted: 21, approximated: 2, htmlFallback: 1, skipped: 0 }
+
+for (const entry of report.entries) {
+  if (entry.status === 'approximated') {
+    console.warn(`<${entry.sourceTag}> approximiert:`, entry.note);
+  }
+}
+// <mj-section> approximiert: Column widths 40%, 60% have no exact Templatical layout; resolved to "1-2".
+```
+
+Ein `note` bei einem `approximated`-Eintrag nennt immer den ersetzten Wert — ein Diff von `report.entries` zwischen zwei Durchläufen zeigt so genau, was eine Migration verändert hat.
 
 ## Was hier eigentlich passiert
 
@@ -20,11 +82,11 @@ Diese Migration ist etwas kontraintuitiv. Templaticals Renderer erzeugt *MJML al
 - **MJML** ist eine Markup-Sprache. Sie schreiben XML-ähnliche Tags (`<mj-section>`, `<mj-column>`, `<mj-text>`) und der MJML-Compiler verwandelt das in tabellenbasiertes HTML.
 - **Templatical** speichert Templates als JSON-Baum mit typisierten Blöcken (`SectionBlock`, `ParagraphBlock` usw.) und rendert diesen Baum beim Export zu MJML.
 
-Um ein MJML-Template in Templatical zu bringen, müssen Sie das **MJML parsen** und einen **äquivalenten JSON-Baum aufbauen**. Dafür gibt es noch kein integriertes Werkzeug — siehe "Automatischer Importer in Entwicklung" oben.
+Um ein MJML-Template in Templatical zu bringen, parsen Sie das MJML und bauen einen äquivalenten JSON-Baum auf — einschließlich der Auflösung von MJMLs eigenen Attribut-Vererbungsregeln (`mj-all`, Tag-Defaults, `mj-class`), bevor jedes Element abgebildet wird. Genau das leistet `@templatical/import-mjml`; die Mapping-Tabelle unten zeigt, was es umsetzt.
 
-## Pfad 1 — Visuell mit dem MJML als Referenz neu aufbauen (empfohlen)
+## Pfad 1 — Visuell mit dem MJML als Referenz neu aufbauen
 
-Haben Sie **weniger als 20 MJML-Templates**, ist das mit Abstand der schnellste Weg:
+Bei einer Handvoll Templates ist der Neuaufbau von Hand neben Ihrer MJML-Quelle oft schneller, als ein Paket zu installieren:
 
 1. Öffnen Sie Ihre MJML-Quelle im Editor Ihrer Wahl.
 2. Öffnen Sie den Templatical-Editor (oder den [Playground](https://play.templatical.com)) daneben.
@@ -33,11 +95,11 @@ Haben Sie **weniger als 20 MJML-Templates**, ist das mit Abstand der schnellste 
 5. Kopieren Sie Textinhalte direkt. Bilder über Ihre Medienbibliothek neu hosten.
 6. Bilden Sie Styling über Templaticals [Design-Tokens](/de/guide/theming) ab, statt über inline `mj-attributes`.
 
-Die meisten MJML-Templates sind in 10–20 Minuten umgezogen, sobald Sie eines oder zwei gemacht haben.
+Die meisten MJML-Templates sind in 10–20 Minuten umgezogen, sobald Sie eines oder zwei gemacht haben. Bei größeren Mengen führen Sie zuerst `@templatical/import-mjml` aus und nutzen diesen Pfad nur, um nachzuarbeiten, was als HTML-Fallback-Block gelandet ist.
 
 ## Pfad 2 — Templaticals Renderer zur Verifikation nutzen
 
-Sobald Sie ein Template visuell nachgebaut haben:
+Sobald ein Template in Templatical vorliegt — importiert oder von Hand nachgebaut:
 
 ```ts
 import { renderToMjml } from '@templatical/renderer';
@@ -48,83 +110,42 @@ const mjml = await renderToMjml(content);
 
 Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt strukturelle Unterschiede. Eine sinnvolle Sanity-Prüfung vor einer Bulk-Migration.
 
-## Pfad 3 — Ein einmaliges Konvertierungs-Skript schreiben
-
-Haben Sie Hunderte MJML-Templates und wollen automatische Konvertierung versuchen, bevor der offizielle Importer da ist, ist der praktische Ansatz, einen kleinen XML-/HTML-Parser zu nutzen (`htmlparser2`, `node-html-parser`), den MJML-Baum zu durchwandern und für jedes Tag Templaticals [Block-Factories](/de/api/types) aufzurufen.
-
-Hier die grobe Form:
-
-```ts
-import { parse } from 'node-html-parser';
-import {
-  createSectionBlock,
-  createTitleBlock,
-  createParagraphBlock,
-  createImageBlock,
-  createButtonBlock,
-} from '@templatical/types';
-import type { TemplateContent, Block } from '@templatical/types';
-
-function mjmlToTemplate(mjml: string): TemplateContent {
-  const root = parse(mjml);
-  const body = root.querySelector('mj-body');
-
-  const blocks: Block[] = (body?.childNodes ?? [])
-    .map((node) => convertNode(node))
-    .filter((b): b is Block => b !== null);
-
-  return {
-    blocks,
-    settings: {
-      width: parseInt(body?.getAttribute('width') ?? '600'),
-      backgroundColor: body?.getAttribute('background-color') ?? '#ffffff',
-    },
-  };
-}
-
-function convertNode(node: any): Block | null {
-  switch (node.tagName?.toLowerCase()) {
-    case 'mj-section':
-      return convertSection(node);
-    case 'mj-text':
-      return convertText(node);
-    // …weitere Cases — siehe Mapping-Tabelle unten
-    default:
-      return null; // oder Fallback auf HtmlBlock
-  }
-}
-```
-
-::: warning
-Ein selbst geschriebener Parser wird Edge Cases übersehen — verschachtelte `mj-wrapper`, Custom Components, bedingte Tags, Includes (`mj-include`) und Attribut-Vererbung über `mj-attributes`. Lassen Sie die Konvertierung zuerst auf einer kleinen Stichprobe laufen und vergleichen Sie visuell, bevor Sie im Bulk konvertieren.
-:::
-
 ## MJML-Tag-Mapping {#mjml-tag-mapping}
 
 | MJML-Tag | Templatical-Block | Hinweise |
 |---|---|---|
 | `mj-section` (mit `mj-column`s) | `SectionBlock` mit `columns` | Mehrspaltige Layouts funktionieren gleich; Spaltenbreiten kommen aus MJMLs `width`-Attribut oder werden gleichmäßig verteilt. |
 | `mj-column` | Section-Spalte | Eine Spalte hält eine Liste verschachtelter Blöcke. |
-| `mj-text` | `ParagraphBlock` (oder `TitleBlock` bei einer Überschrift) | Anhand inline-styled Heading-Level entscheiden, ob Title oder Paragraph. |
+| `mj-group` | `SectionBlock.stackOnMobile: false` | Kein eigener Block — markiert, dass die Spalten der Section auf Mobilgeräten nebeneinander bleiben, statt zu stapeln. |
+| `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Strukturell aufgelöst: Eine einzelne Überschrift als Wurzelelement wird zu `TitleBlock`, eine einzelne `<table>` zu `TableBlock`, ausschließlich Top-Level-Links ohne Paragraph-Wrapper zu `MenuBlock`, alles andere zu `ParagraphBlock`. |
 | `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, Padding. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, Schrift, Padding. |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, Padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
 | `mj-social` (mit `mj-social-element`) | `SocialIconsBlock` | Jedes `mj-social-element` → ein `SocialIcon`-Eintrag. |
 | `mj-navbar` (mit `mj-navbar-link`) | `MenuBlock` | Jeder Link → `MenuItemData`. |
-| `mj-table` | `TableBlock` | `<tr>`- und `<td>`-Zeilen/Zellen auf Templaticals Tabellen-Daten abbilden. |
-| `mj-raw` | `HtmlBlock` | HTML-Pass-Through. |
-| `mj-wrapper` | `SectionBlock` (oft) | Ein Wrapper ohne Spalten wird zu einer Section mit einer Spalte. |
-| `mj-hero`, `mj-carousel`, `mj-accordion` | `HtmlBlock` (Fallback) | Templatical hat noch keine direkten Entsprechungen — das gerenderte HTML in einen rohen HTML-Block übernehmen oder auf den Importer warten. |
-| `mj-head`-Inhalte | Template-`settings` | `mj-title`, `mj-preview`, `mj-attributes`, `mj-font`, `mj-style` mappen auf `TemplateSettings.preheaderText`, eigene Schriften und Theme-Overrides. |
+| `mj-table` | `TableBlock` | Bildet `<tr>`/`<td>`/`<th>`-Zeilen und -Zellen auf Templaticals Tabellen-Daten ab; eine führende `<th>`-Zeile setzt `hasHeaderRow`. |
+| `mj-raw` | `HtmlBlock` | Inneres Markup bleibt wortgetreu erhalten. |
+| `mj-wrapper` | `SectionBlock.wrapper` | Das äußere Band der Section, **keine eigene Section**. Eine einzelne Section darin fließt in deren `wrapper`; mehrere teilen sich dasselbe Band und werden als `approximated` markiert. |
+| `mj-hero`, `mj-carousel`, `mj-accordion` | `HtmlBlock` | Wird in einen HTML-Block mit erhaltenem Original-Markup konvertiert. |
+| `mj-head`-Inhalte | Template-`settings` | `mj-preview` → `preheaderText`; `mj-attributes`/`mj-font`/`mj-style` setzen Schriftart, Textfarbe und Link-Farbe/-Unterstreichung des Dokuments. `mj-title` hat keine Entsprechung in den Settings und wird mit einer Warnung verworfen. |
 
-## Was sich nicht automatisch übertragen lässt
+## Wo das Mapping verlustbehaftet ist
 
-- **`mj-attributes`-Defaults** — MJML erlaubt globale Defaults für jedes Tag. Übertragen Sie diese in Templaticals [Block-Defaults](/de/guide/defaults) und [Theme-Overrides](/de/guide/theming).
-- **`mj-include`** — MJMLs Include-Direktive hat keine direkte Entsprechung. Inkludierten Inhalt während der Konvertierung inlinen.
-- **Custom MJML-Components** — wenn Sie eigene MJML-Komponenten registriert haben, müssen Sie sie entweder (a) als [Templatical Custom Blocks](/de/guide/custom-blocks) implementieren oder (b) auf `HtmlBlock` mit dem gerenderten HTML zurückfallen.
-- **Bedingte MSO-Tags innerhalb von `mj-raw`** — bewahren Sie sie, indem Sie das ursprüngliche Markup in einen `HtmlBlock` packen.
+MJML, das Templaticals eigener Renderer erzeugt hat, durchläuft den Importer ohne jede Approximation — jeder Block, jedes Styling und jede Anzeigebedingung bleibt erhalten. Handgeschriebenes MJML konvertiert für jedes Tag in der Mapping-Tabelle oben sauber; alles, was die Tabelle nicht abdeckt, landet als `HtmlBlock` mit dem ursprünglichen Markup. Innerhalb dessen, was die Tabelle abdeckt, sind einige Konvertierungen Näherungen statt exakter Treffer:
+
+- **Spalten-Geometrie** — Templatical unterstützt fünf Spalten-Layouts (`1`, `2`, `3`, `2-1`, `1-2`). MJML erlaubt beliebig viele Spalten in beliebigem Verhältnis, daher wird ein Verhältnis außerhalb dieser fünf auf das nächstliegende Layout aufgelöst, und der Inhalt einer vierten oder weiteren Spalte fließt in die letzte Spalte.
+- **Social-Icon-Größen** — `SocialIconsBlock` unterstützt drei Größen (24px, 32px, 48px). Eine `icon-size` an einem `mj-social-element` außerhalb dieser drei wird auf die nächstliegende aufgelöst.
+- **Überschriften-Ebenen** — ein `<h5>` oder `<h6>` innerhalb von `mj-text` wird auf Überschriften-Ebene 4 begrenzt, die höchste, die ein `TitleBlock` unterstützt.
+- **Video-Blöcke** — ein `VideoBlock` wird genauso gerendert wie ein verlinkter `ImageBlock`, sodass nichts im MJML ihn als Video kennzeichnet. Beim Import daraus entsteht ein `ImageBlock` mit demselben Vorschaubild und Link; der Inhalt bleibt erhalten, der Blocktyp nicht.
+- **HTML-Blöcke** — aus demselben Grund rendert der Inhalt eines `HtmlBlock` als reines `mj-text`-Markup ohne jede Kennzeichnung als HTML. Beim Import daraus entsteht ein `ParagraphBlock` mit demselben Markup.
+- **Block-IDs** — jeder importierte Block erhält eine neu generierte ID. IDs erscheinen nirgends im gerenderten MJML, daher überlebt nichts, das an einer ID hängt — zum Beispiel ein Cloud-Kommentarthread — einen Durchlauf durch Export und Re-Import.
+
+## Was sich nicht automatisch überträgt
+
+- **`mj-include`** — der Importer liest einen einzelnen MJML-String ohne Dateisystemzugriff, daher wird ein nicht auflösbares `<mj-include>` übersprungen (`skipped`), mit einer Warnung, die das `path`-Attribut nennt. Inkludierten Inhalt vor dem Import inlinen.
+- **Custom MJML-Components** — ein nicht erkanntes `mj-*`-Tag landet automatisch als `HtmlBlock` mit dem gerenderten Markup. Implementieren Sie es als [Templatical Custom Block](/de/guide/custom-blocks), wenn Sie es stattdessen als nativen Block editierbar haben möchten.
 
 ## Wenn diese Anleitung etwas nicht abdeckt
 
-[Eröffnen Sie eine Diskussion](https://github.com/templatical/sdk/discussions) mit einem geschwärzten Ausschnitt Ihres MJMLs und was Sie erreichen wollen. Wir nutzen diese Rückmeldungen, um zu priorisieren, welche MJML-Muster der automatische Importer zuerst abdeckt.
+[Eröffnen Sie eine Diskussion](https://github.com/templatical/sdk/discussions) mit einem geschwärzten Ausschnitt Ihres MJMLs und was Sie erreichen wollen. Wir nutzen diese Rückmeldungen, um die Abdeckung von `@templatical/import-mjml` zu verbessern.
