@@ -1,34 +1,24 @@
-// Rewrites EDITOR_VERSION in scripts/live-server.mjs to match the repo's
-// @templatical/editor version, so the live-mode CDN pin tracks the editor with
-// no manual bump.
+// Patch-bumps the plugin's own version in .claude-plugin/plugin.json.
 //
 // Runs automatically at release time: the root `changeset:version` script
 // (wired into changesets/action's `version` step) runs `changeset version`
-// then this, so the Version Packages PR carries the bumped pin. Also runnable
-// by hand: `pnpm --filter @templatical/email-skill run sync-editor-version`.
-// tests/cdn-pin.test.ts is the safety net that fails CI if the two ever drift.
-import { bundleVendor } from "./bundle-vendor.mjs";
+// then this, so the Version Packages PR carries the bump. Also runnable by
+// hand: `pnpm --filter @templatical/email-skill run sync-editor-version`.
+//
+// This is the skill's own copy of the bump logic — the CLI-version pin this
+// skill documents lives in SKILL.md and is synced by
+// `packages/template-tools/scripts/sync-pins.mjs`, which is also where this
+// file's bump logic is headed. Until that lands, this script is what keeps
+// `.claude-plugin/plugin.json` moving so `plugin-version.yml` (a required
+// check on any user-facing change here) stays satisfiable.
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const EDITOR_PKG = resolve(here, "../../../packages/editor/package.json");
-const LIVE_SERVER = resolve(here, "../scripts/live-server.mjs");
 const PLUGIN_MANIFEST = resolve(here, "../.claude-plugin/plugin.json");
 
-const EDITOR_VERSION_RE = /(export const EDITOR_VERSION = ")[^"]*(";)/;
 const PLUGIN_VERSION_RE = /("version"\s*:\s*")([^"]*)(")/;
-
-/** Pure: return `src` with its EDITOR_VERSION declaration set to `version`. */
-export function applyEditorVersion(src, version) {
-  if (!EDITOR_VERSION_RE.test(src)) {
-    throw new Error(
-      'Could not find the `export const EDITOR_VERSION = "…";` declaration in live-server.mjs',
-    );
-  }
-  return src.replace(EDITOR_VERSION_RE, `$1${version}$2`);
-}
 
 /** Pure: "0.2.0" -> "0.2.1". Throws on anything that isn't plain x.y.z. */
 export function bumpPatch(version) {
@@ -56,27 +46,15 @@ export function applyPluginPatchBump(src) {
   return { src: src.replace(PLUGIN_VERSION_RE, `$1${next}$3`), from: match[2], to: next };
 }
 
-/** Read the editor version, rewrite live-server.mjs in place if it changed. */
-export function syncEditorVersion() {
-  const version = JSON.parse(readFileSync(EDITOR_PKG, "utf8")).version;
-  const src = readFileSync(LIVE_SERVER, "utf8");
-  const next = applyEditorVersion(src, version);
-  const changed = next !== src;
-  if (changed) writeFileSync(LIVE_SERVER, next, "utf8");
-  return { version, changed };
-}
-
 /**
  * Patch-bump the plugin's own version in .claude-plugin/plugin.json.
  *
- * A new EDITOR_VERSION changes what the live harness loads from the CDN — a
- * real behavior change — but Claude Code caches the plugin by the version in
- * plugin.json, so without a bump every existing install keeps serving the old
- * pin forever. Nothing else moves this number: changesets skips the skill
- * because its package.json is private, and .github/workflows/plugin-version.yml
- * exempts Version Packages PRs (they're generated, so no human is there to bump
- * it). Patch is the deliberate choice — the plugin's own surface didn't change,
- * only the editor it points at.
+ * Claude Code caches an installed plugin by the version in plugin.json, so a
+ * user-facing change to the skill needs this bumped or existing installs keep
+ * serving the old content forever. Nothing else moves this number: changesets
+ * skips the skill because its package.json is private, and
+ * .github/workflows/plugin-version.yml exempts Version Packages PRs (they're
+ * generated, so no human is there to bump it by hand).
  */
 export function bumpPluginVersion() {
   const { src, from, to } = applyPluginPatchBump(
@@ -87,31 +65,9 @@ export function bumpPluginVersion() {
 }
 
 async function main() {
-  const { version, changed } = syncEditorVersion();
-  console.log(
-    changed
-      ? `Synced EDITOR_VERSION → ${version} in scripts/live-server.mjs`
-      : `EDITOR_VERSION already ${version} — no change`,
-  );
-
-  // @templatical/quality is vendored into vendor/quality.mjs, so a release that
-  // bumps it must re-bundle or installed skills keep linting with the old rules.
-  // Same for ajv when a dependency bump lands. Re-bundling here means the
-  // Version Packages PR carries the fresh artifact automatically.
-  let vendorChanged = false;
-  for (const r of await bundleVendor()) {
-    console.log(
-      `${r.changed ? "Re-bundled" : "Unchanged"} vendor/${r.file} — ${r.name} v${r.version}`,
-    );
-    vendorChanged ||= r.changed;
-  }
-
-  if (!changed && !vendorChanged) {
-    return;
-  }
-
-  // One bump covers whatever moved: the plugin is cached by this version, so
-  // without it neither the new pin nor the new lint rules reach existing installs.
+  // The pin this script used to sync (the live-mode CDN editor version) and
+  // the vendor bundles it used to re-stamp are both gone from this skill —
+  // this run's only remaining job is the plugin bump, so it always runs.
   const { from, to } = bumpPluginVersion();
   console.log(
     `Bumped plugin version ${from} → ${to} so installed plugins pick up the change`,

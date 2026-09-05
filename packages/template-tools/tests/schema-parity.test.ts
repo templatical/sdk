@@ -19,9 +19,13 @@ describe("schema parity", () => {
   });
 
   it("the skill's committed schema is byte-identical to this package's", () => {
-    // Two copies of one generated artifact. Subsystem C collapses them into a
-    // single generator with two outputs; until then this is what stops the
-    // validator and the agent disagreeing about what a valid template is.
+    // Two copies of one generated artifact, written by the one generator
+    // imported above (see its header comment in scripts/generate-schema.mjs
+    // for why a package script reaches into skills/). This asserts the two
+    // copies have not been hand-edited apart from each other, on top of the
+    // previous case already asserting this package's copy against a fresh
+    // generation — together the two cases cover both committed files against
+    // the generator.
     expect(readFileSync(SKILL_SCHEMA, "utf8")).toBe(
       readFileSync(OWN_SCHEMA, "utf8"),
     );

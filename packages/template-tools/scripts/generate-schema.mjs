@@ -1,14 +1,25 @@
 // Generates schema.json (JSON Schema for TemplateContent) directly from the
 // canonical types in @templatical/types. This is the single source of truth for
-// every consumer that validates a Templatical template — the MCP server, and
-// (vendored) the templatical-email Agent Skill.
+// every consumer that validates a Templatical template — this package's own
+// `validate`/`schema` CLI commands, and the templatical-email Agent Skill.
+//
+// This script writes TWO copies of the one generated artifact: this package's
+// own schema.json, and skills/templatical-email/reference/schema.json. The
+// skill needs its copy committed in the repo because the agent reads it in
+// context to generate templates — the CLI's `schema` command exists for other
+// callers and does not replace the file. A package script reaching into
+// skills/ looks odd until you consider the alternative: two separate
+// generators producing what is supposed to be one artifact, which is exactly
+// how the validator and the agent end up disagreeing about what a valid
+// template is. One generator writing both outputs makes that impossible.
 //
 // Re-run `pnpm --filter @templatical/template-tools run generate-schema` whenever
-// the block model changes. The committed schema.json must never be hand-edited.
+// the block model changes. Neither committed copy should ever be hand-edited.
 //
 // `buildSchema()` is exported so the test suite can regenerate in-memory and
-// assert the committed schema.json is fresh (tests/schema-freshness.test.ts) —
-// that guard makes a stale schema impossible to merge.
+// assert both committed copies are fresh and identical
+// (tests/schema-freshness.test.ts, tests/schema-parity.test.ts) — that guard
+// makes a stale or diverged schema impossible to merge.
 import { createGenerator } from "ts-json-schema-generator";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -18,6 +29,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../..");
 
 export const SCHEMA_PATH = resolve(here, "../schema.json");
+export const SKILL_SCHEMA_PATH = resolve(
+  repoRoot,
+  "skills/templatical-email/reference/schema.json",
+);
 
 // No `tsconfig`: the repo compiles with TS 6, whose tsconfig carries options
 // (e.g. `ignoreDeprecations: "6.0"`) that the generator's bundled TypeScript
@@ -47,10 +62,14 @@ export function serializeSchema(schema) {
 
 function main() {
   const schema = buildSchema();
-  mkdirSync(dirname(SCHEMA_PATH), { recursive: true });
-  writeFileSync(SCHEMA_PATH, serializeSchema(schema), "utf8");
+  const serialized = serializeSchema(schema);
+  for (const path of [SCHEMA_PATH, SKILL_SCHEMA_PATH]) {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, serialized, "utf8");
+  }
   const defCount = Object.keys(schema.definitions ?? {}).length;
   console.log(`Wrote ${SCHEMA_PATH} (${defCount} definitions)`);
+  console.log(`Wrote ${SKILL_SCHEMA_PATH} (${defCount} definitions)`);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {

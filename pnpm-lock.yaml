@@ -554,15 +554,6 @@ importers:
 
   skills/templatical-email:
     devDependencies:
-      ajv:
-        specifier: ^8.20.0
-        version: 8.20.0
-      esbuild:
-        specifier: ^0.28.2
-        version: 0.28.2
-      ts-json-schema-generator:
-        specifier: ^2.9.0
-        version: 2.9.0
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

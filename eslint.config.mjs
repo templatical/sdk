@@ -24,8 +24,6 @@ export default tseslint.config(
       "**/dist/**",
       "**/node_modules/**",
       "**/*.d.ts",
-      // esbuild bundles committed by `bundle-vendor`, not hand-written source.
-      "skills/*/vendor/**",
     ],
   },
 
@@ -107,7 +105,6 @@ export default tseslint.config(
       "apps/*/tests/**/*.ts",
       "apps/*/e2e/**/*.ts",
       "packages/*/scripts/**/*.{ts,mjs,js}",
-      "skills/*/scripts/**/*.mjs",
       "skills/*/tools/**/*.mjs",
       "skills/*/tests/**/*.ts",
     ],
