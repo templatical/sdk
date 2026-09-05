@@ -30,7 +30,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   set: [path: string, value: unknown];
-  fixture: [slug: string];
+  "update:fixture": [slug: string];
 }>();
 
 /**
@@ -46,7 +46,7 @@ const fixtureOptions = templates.map((template) => ({
 const FIXTURE_INPUT_ID = "capability-fixture-picker";
 
 function onFixtureChange(event: Event): void {
-  emit("fixture", (event.target as HTMLSelectElement).value);
+  emit("update:fixture", (event.target as HTMLSelectElement).value);
 }
 
 // Resolved once per state change rather than once per control, so a row's

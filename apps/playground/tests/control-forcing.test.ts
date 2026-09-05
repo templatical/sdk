@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   controlDefault,
   isControlForced,
   type BooleanControl,
+  type Control,
   type ControlState,
 } from "../src/config/types";
 import {
@@ -166,4 +167,175 @@ function readConfigPath(config: object, path: string): unknown {
           : undefined,
       config,
     );
+}
+
+/**
+ * `buildAllCapabilityConfig` is the only caller that can resolve state the
+ * way `isControlForced` needs it: `buildCapabilityConfig` fills one
+ * capability's own control defaults, and a `build()` that reads ANOTHER
+ * capability's path — `version-history` reads `templates.save` — would see
+ * `undefined` for a key merely absent from storage. Resolution therefore has
+ * to happen once, across the whole registry, before any `build()` runs.
+ */
+describe("buildAllCapabilityConfig hands build() whole-registry resolved state", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("resolves every registered control's default before any build() runs", () => {
+    // Sets one capability's control and nothing else, so the state each
+    // `build()` receives can only carry the others' defaults by resolution.
+    const input: ControlState = { "savedBlocks.create": false };
+    const spies = capabilities.map((cap) => ({
+      id: cap.id,
+      spy: vi.spyOn(cap, "build"),
+    }));
+
+    buildAllCapabilityConfig(input);
+
+    const expected = resolveControlState(input);
+    for (const { id, spy } of spies) {
+      expect(spy, id).toHaveBeenCalledTimes(1);
+      expect(spy.mock.calls[0][0], id).toEqual(expected);
+    }
+  });
+
+  it("gives a cross-capability read the trigger's default, not undefined", () => {
+    // The concrete case the registry already contains: version-history's
+    // `build` reads `templates.save`, which this state never sets.
+    const spy = vi.spyOn(versionHistoryCapability, "build");
+    buildAllCapabilityConfig({});
+
+    const seen = spy.mock.calls[0][0];
+    expect(TEMPLATES_SAVE_PATH in seen).toBe(true);
+    expect(seen[TEMPLATES_SAVE_PATH]).toBe(true);
+  });
+
+  it("still lets an explicitly-set value through untouched", () => {
+    const spy = vi.spyOn(versionHistoryCapability, "build");
+    buildAllCapabilityConfig({ [TEMPLATES_SAVE_PATH]: false });
+    expect(spy.mock.calls[0][0][TEMPLATES_SAVE_PATH]).toBe(false);
+  });
+});
+
+/**
+ * The two readings of one `forcedBy` declaration: the drawer disables a
+ * control from `isControlForced`, and the editor is configured by `build()`.
+ * The table above pins each side against the declaration; this one pins them
+ * against EACH OTHER, across the trigger states that tell resolved state
+ * apart from raw — absent, explicitly set to the trigger's own default, and
+ * explicitly set to the forcing value.
+ *
+ * `it.each` runs over whatever the registry declares, so a future `forcedBy`
+ * is covered without editing this file. That matters most for the shape the
+ * current declaration does not have: a `when` equal to its trigger's own
+ * default, where an unresolved `build()` and a resolved `isControlForced`
+ * disagree outright.
+ */
+describe("isControlForced agrees with buildAllCapabilityConfig", () => {
+  const declared = capabilities.flatMap((cap) =>
+    cap.controls
+      .filter((control) => control.forcedBy !== undefined)
+      .map((control) => ({ capId: cap.id, control })),
+  );
+
+  const registered = new Map(
+    capabilities.flatMap((cap) => cap.controls.map((c) => [c.path, c] as const)),
+  );
+
+  /** The three trigger states, per declaration. */
+  const cases = declared.flatMap(({ capId, control }) => {
+    const { path: triggerPath, when } = control.forcedBy!;
+    const trigger = registered.get(triggerPath)!;
+    return (
+      [
+        ["trigger absent", {}],
+        [
+          "trigger set to its own default",
+          { [triggerPath]: controlDefault(trigger) },
+        ],
+        ["trigger set to the forcing value", { [triggerPath]: when }],
+      ] as [string, ControlState][]
+    ).map(
+      ([label, triggerState]) =>
+        [capId, control.path, label, triggerState] as const,
+    );
+  });
+
+  it("has declarations to compare", () => {
+    expect(declared.length).toBeGreaterThan(0);
+    expect(cases).toHaveLength(declared.length * 3);
+  });
+
+  it.each(declared.map(({ control }) => [control.path] as const))(
+    "%s names a trigger that is itself a registered control",
+    (path) => {
+      const control = registered.get(path)!;
+      // An unregistered trigger has no default for `resolveControlState` to
+      // fill, so it stays absent and the two sides compare `undefined`
+      // against `when` forever — a declaration that can never fire.
+      expect(registered.has(control.forcedBy!.path)).toBe(true);
+    },
+  );
+
+  it("exercises both a forced and an unforced outcome", () => {
+    // Without this, a table whose every row happened to resolve "unforced"
+    // would still pass row by row while proving nothing about forcing.
+    const outcomes = new Set(
+      cases.map(([capId, path, , triggerState]) =>
+        isControlForced(
+          controlAt(capId, path),
+          resolveControlState(stateFor(capId, path, triggerState)),
+        ),
+      ),
+    );
+    expect([...outcomes].sort()).toEqual([false, true]);
+  });
+
+  it.each(cases)("%s / %s — %s", (capId, path, _label, triggerState) => {
+    const control = controlAt(capId, path);
+    const { to } = control.forcedBy!;
+    const state = stateFor(capId, path, triggerState);
+
+    const declaresForced = isControlForced(control, resolveControlState(state));
+    const configIsForced =
+      readConfigPath(buildAllCapabilityConfig(state), path) === to;
+
+    expect(configIsForced).toBe(declaresForced);
+  });
+
+  function controlAt(capId: string, path: string): Control {
+    return capabilities
+      .find((c) => c.id === capId)!
+      .controls.find((c) => c.path === path)!;
+  }
+
+  /**
+   * The trigger state plus this control set AWAY from what it would be forced
+   * to, so "the built value equals `to`" can only be the forcing's doing.
+   */
+  function stateFor(
+    capId: string,
+    path: string,
+    triggerState: ControlState,
+  ): ControlState {
+    return { ...triggerState, [path]: unforcedValue(controlAt(capId, path)) };
+  }
+});
+
+/**
+ * A value for `control` that its own `build()` will not turn into
+ * `forcedBy.to`. Throws rather than guessing for a kind no declaration uses
+ * yet, so a future `forcedBy` on an enum or a list has to extend this
+ * deliberately instead of silently comparing `to` against `to`.
+ */
+function unforcedValue(control: Control): unknown {
+  const to = control.forcedBy!.to;
+  if (control.kind === "method" || control.kind === "boolean") {
+    expect(typeof to).toBe("boolean");
+    return !to;
+  }
+  throw new Error(
+    `no unforced value defined for a ${control.kind} control (${control.path})`,
+  );
 }

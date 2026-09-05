@@ -22,51 +22,16 @@ import CapabilityDrawer from "./CapabilityDrawer.vue";
 import CapabilityRail from "./CapabilityRail.vue";
 import ConfigPane from "./ConfigPane.vue";
 import ControlsPane from "./ControlsPane.vue";
+import { readDrawerState, writeDrawerState } from "./drawer-chrome";
 import { useCapabilityRoute } from "./useCapabilityRoute";
 import { useControlState } from "./useControlState";
 
 const { activeId, select } = useCapabilityRoute();
 const { state: controlState, set: setControl } = useControlState();
 
-// The drawer's own chrome — open/collapsed and its height — lives under a
-// separate key from `controlState`. `tpl-playground-config` is capability
-// control state and is seeded by e2e specs before navigation; mixing UI
-// chrome into it would let a spec's seed clobber the user's drawer size.
-const DRAWER_STATE_KEY = "tpl-playground-drawer";
-const DRAWER_DEFAULT_HEIGHT = 280;
-
-interface DrawerChromeState {
-  open: boolean;
-  height: number;
-}
-
-function readDrawerState(): DrawerChromeState {
-  try {
-    const raw = localStorage.getItem(DRAWER_STATE_KEY);
-    if (!raw) return { open: true, height: DRAWER_DEFAULT_HEIGHT };
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") {
-      return { open: true, height: DRAWER_DEFAULT_HEIGHT };
-    }
-    const { open, height } = parsed as Partial<DrawerChromeState>;
-    return {
-      open: typeof open === "boolean" ? open : true,
-      height: typeof height === "number" ? height : DRAWER_DEFAULT_HEIGHT,
-    };
-  } catch {
-    return { open: true, height: DRAWER_DEFAULT_HEIGHT };
-  }
-}
-
-function writeDrawerState(next: DrawerChromeState): void {
-  try {
-    localStorage.setItem(DRAWER_STATE_KEY, JSON.stringify(next));
-  } catch {
-    // A private-mode or quota failure loses the setting for the next reload
-    // only — the drawer keeps working from in-memory state this session.
-  }
-}
-
+// The drawer's chrome — open/collapsed and its height — is stored and
+// clamped by `./drawer-chrome`, under its own key rather than mixed into
+// `controlState`.
 const drawerInitial = readDrawerState();
 const drawerOpen = ref(drawerInitial.open);
 const drawerHeight = ref(drawerInitial.height);
@@ -81,7 +46,18 @@ function setDrawerOpen(open: boolean): void {
   writeDrawerState({ open, height: drawerHeight.value });
 }
 
+/**
+ * The live height during a resize. Storage is deliberately untouched: a
+ * pointer drag emits this on every `pointermove`, and persisting each one
+ * would put a `JSON.stringify` + synchronous `localStorage.setItem` on the
+ * frame budget of the gesture. `commitDrawerHeight` is the write.
+ */
 function setDrawerHeight(height: number): void {
+  drawerHeight.value = height;
+}
+
+/** The end of a resize gesture — one write, with the height it settled on. */
+function commitDrawerHeight(height: number): void {
   drawerHeight.value = height;
   writeDrawerState({ open: drawerOpen.value, height });
 }
@@ -139,15 +115,23 @@ async function initEditor(): Promise<void> {
   editor.value?.unmount();
   // One object, built once and used twice: handed to `init()` below and kept
   // in `lastInitConfig` for the Config tab. Do not rebuild it for display.
+  //
+  // Key order is the Config tab's reading order — `renderConfig` prints
+  // `Object.entries`. The capability keys come first because they are what
+  // the drawer exists to demonstrate; `content` is a whole template's worth
+  // of blocks and buries anything after it (hundreds of lines against a
+  // ~10-line viewport). The three groups own disjoint keys, so moving the
+  // spread past `content` changes ordering and nothing else — pinned by the
+  // key-set assertion in `tests/config-build-all.test.ts`.
   const config: TemplaticalEditorConfig = {
     container: editorHost.value,
-    content: fixture.value.create(),
     // `App.vue` also passes locale, theme, uiTheme, fonts, merge-tag request
     // handlers, test email and a dozen other keys. Those belong to
     // capabilities plans 5a-5d haven't ported yet — each arrives here as its
     // capability lands, so this shell only owns what the registry already
     // produces.
     ...buildAllCapabilityConfig(controlState.value, fixture.value),
+    content: fixture.value.create(),
   };
   const instance = await init(config);
   if (destroyed || token !== initToken) {
@@ -188,7 +172,7 @@ watch(activeId, async () => {
   await initEditor();
 });
 
-// The drawer (later tasks) writes through `useControlState()`'s `set()`,
+// The drawer's Controls tab writes through `useControlState()`'s `set()`,
 // which replaces `controlState.value` outright rather than mutating it — a
 // plain watch is enough to observe that, no `{ deep: true }` needed.
 watch(controlState, async () => {
@@ -237,6 +221,7 @@ onBeforeUnmount(() => {
         @update:active-tab="drawerActiveTab = $event"
         @update:open="setDrawerOpen"
         @update:height="setDrawerHeight"
+        @commit:height="commitDrawerHeight"
       >
         <ControlsPane
           v-if="drawerActiveTab === 'controls'"
@@ -244,7 +229,7 @@ onBeforeUnmount(() => {
           :state="controlState"
           :fixture="fixtureSlug"
           @set="setControl"
-          @fixture="setFixture"
+          @update:fixture="setFixture"
         />
         <ConfigPane v-else :config="lastInitConfig" />
       </CapabilityDrawer>

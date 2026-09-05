@@ -38,17 +38,21 @@ test.describe("capability drawer", () => {
     await page.goto("/#capabilities");
     const pane = page.locator(SELECTORS.capabilityDrawerPane);
     const toggle = page.locator(SELECTORS.capabilityDrawerToggle);
-    const tabs = page.locator(SELECTORS.capabilityDrawerTab);
+    // Anchored on the tab's own label rather than `.first()`, so the
+    // assertion keeps naming a specific tab if the bar ever gains one.
+    const tabs = page.locator(SELECTORS.capabilityDrawerTab, {
+      hasText: "Controls",
+    });
 
     await expect(pane).toBeVisible();
     await toggle.click();
     await expect(pane).toBeHidden();
-    await expect(tabs.first()).toBeVisible();
+    await expect(tabs).toBeVisible();
 
     // The drawer is always re-openable from the same toggle.
     await toggle.click();
     await expect(pane).toBeVisible();
-    await expect(tabs.first()).toBeVisible();
+    await expect(tabs).toBeVisible();
   });
 
   test("the handle resizes by keyboard, and the height survives a reload", async ({
@@ -79,6 +83,138 @@ test.describe("capability drawer", () => {
     );
   });
 
+  /**
+   * Pointer-drag resize. Light DOM, no Sortable — a plain mouse-stepped drag
+   * reaches the `window` pointermove listeners directly, so none of the
+   * fallback-Sortable choreography in `editor.page.ts` applies here.
+   *
+   * Coordinates are rounded off the handle's own box so the delta is exactly
+   * the number asserted: the handle is 6px tall, so a drag measured from its
+   * top edge rather than its centre lands 3px off and the height with it.
+   */
+  test("the handle resizes by pointer drag, committing once on release", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const w = window as unknown as { __drawerWrites: number };
+      w.__drawerWrites = 0;
+      const store = window.localStorage;
+      const original = store.setItem.bind(store);
+      store.setItem = (key: string, value: string) => {
+        if (key === "tpl-playground-drawer") w.__drawerWrites += 1;
+        original(key, value);
+      };
+    });
+    await page.goto("/#capabilities");
+
+    const handle = page.locator(SELECTORS.capabilityDrawerResize);
+    await expect(handle).toHaveAttribute("aria-valuenow", "280");
+
+    const box = (await handle.boundingBox())!;
+    const x = Math.round(box.x + box.width / 2);
+    const y = Math.round(box.y + box.height / 2);
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    // Up the page grows the drawer: the handle sits on its top edge.
+    await page.mouse.move(x, y - 60, { steps: 10 });
+    await page.mouse.up();
+
+    await expect(handle).toHaveAttribute("aria-valuenow", "340");
+    expect(
+      await page.evaluate(() =>
+        localStorage.getItem("tpl-playground-drawer"),
+      ),
+    ).toBe(JSON.stringify({ open: true, height: 340 }));
+
+    // One write for the whole gesture. Persisting per `pointermove` would put
+    // a synchronous `setItem` on every frame of the drag.
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __drawerWrites: number }).__drawerWrites,
+      ),
+    ).toBe(1);
+  });
+
+  test("a drag past the maximum stops at the bound", async ({ page }) => {
+    await page.goto("/#capabilities");
+    const handle = page.locator(SELECTORS.capabilityDrawerResize);
+    // The bound the drag is about to hit, read off the handle itself — so a
+    // changed maximum shows up here as a failure rather than a silent pass.
+    await expect(handle).toHaveAttribute("aria-valuemax", "480");
+    await expect(handle).toHaveAttribute("aria-valuemin", "160");
+
+    const box = (await handle.boundingBox())!;
+    const x = Math.round(box.x + box.width / 2);
+    const y = Math.round(box.y + box.height / 2);
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    // Far past 480 — unclamped this would be 880.
+    await page.mouse.move(x, y - 600, { steps: 10 });
+    await page.mouse.up();
+
+    await expect(handle).toHaveAttribute("aria-valuenow", "480");
+  });
+
+  test("a cancelled drag releases the body and stops tracking", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities");
+    const handle = page.locator(SELECTORS.capabilityDrawerResize);
+
+    const box = (await handle.boundingBox())!;
+    const x = Math.round(box.x + box.width / 2);
+    const y = Math.round(box.y + box.height / 2);
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x, y - 40, { steps: 5 });
+
+    // Positive control: the drag really is in progress, so the assertions
+    // after the cancel are about teardown rather than about nothing.
+    await expect(handle).toHaveAttribute("aria-valuenow", "320");
+    expect(await page.evaluate(() => document.body.style.cursor)).toBe(
+      "row-resize",
+    );
+
+    // The browser fires this instead of `pointerup` when it takes the pointer
+    // away. A teardown listening only for `pointerup` leaves `<body>` stuck
+    // at `row-resize; user-select: none` for the rest of the session.
+    await page.evaluate(() =>
+      window.dispatchEvent(new PointerEvent("pointercancel")),
+    );
+    expect(await page.evaluate(() => document.body.style.cursor)).toBe("");
+    expect(await page.evaluate(() => document.body.style.userSelect)).toBe("");
+
+    // The window listeners are gone with it: further movement no longer resizes.
+    await page.mouse.move(x, y - 240, { steps: 5 });
+    await page.mouse.up();
+    await expect(handle).toHaveAttribute("aria-valuenow", "320");
+  });
+
+  test("a stored height beyond the maximum is clamped on read", async ({
+    page,
+  }) => {
+    // The drawer is `shrink-0`, so an unclamped 5000 collapses `<main>` and
+    // the editor with it — the whole page becomes a drawer.
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        "tpl-playground-drawer",
+        JSON.stringify({ open: true, height: 5000 }),
+      );
+    });
+    await page.goto("/#capabilities");
+
+    await expect(page.locator(SELECTORS.capabilityDrawerResize)).toHaveAttribute(
+      "aria-valuenow",
+      "480",
+    );
+
+    const editor = page.locator(SELECTORS.capabilityEditor);
+    await expect(editor).toBeVisible();
+    expect(
+      await editor.evaluate((el) => el.getBoundingClientRect().height),
+    ).toBeGreaterThan(100);
+  });
+
   test("a collapsed drawer comes back collapsed after a reload", async ({
     page,
   }) => {
@@ -97,7 +233,9 @@ test.describe("capability drawer", () => {
     await expect(page.locator(SELECTORS.capabilityDrawerPane)).toBeHidden();
     // The tab bar stays reachable while collapsed, so the drawer is always
     // re-openable without hunting for the toggle.
-    await expect(page.locator(SELECTORS.capabilityDrawerTab).first()).toBeVisible();
+    await expect(
+      page.locator(SELECTORS.capabilityDrawerTab, { hasText: "Controls" }),
+    ).toBeVisible();
   });
 
   test("switching tabs swaps the pane", async ({ page }) => {
@@ -262,6 +400,40 @@ test.describe("capability drawer", () => {
 
     await configTab.click();
     await expect(source).toContainText("create: false");
+  });
+
+  test("the capability keys are printed above the template content", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/saved-blocks");
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Config" })
+      .click();
+
+    const source = page.locator(SELECTORS.capabilityConfigSource);
+    // Positive first: the pane holds real source, so the ordering assertions
+    // below cannot pass against an element that has not rendered.
+    await expect(source).toContainText("savedBlocks:");
+
+    // Top-level keys are the lines `renderConfig` indents by exactly two
+    // spaces — anchoring there rather than on a bare substring keeps a
+    // `content:` nested inside some other value out of the comparison.
+    const lines = (await source.evaluate((el) => el.textContent ?? "")).split(
+      "\n",
+    );
+    const capabilityLine = lines.findIndex((line) =>
+      line.startsWith("  savedBlocks:"),
+    );
+    const contentLine = lines.findIndex((line) => line.startsWith("  content:"));
+
+    expect(capabilityLine).toBeGreaterThan(-1);
+    expect(contentLine).toBeGreaterThan(-1);
+    expect(capabilityLine).toBeLessThan(contentLine);
+
+    // The pane is ~10 lines tall at `text-[12px]`, so a capability key that
+    // sits below the content — hundreds of lines of blocks — is unreachable
+    // without scrolling the demo it exists to show.
+    expect(capabilityLine).toBeLessThan(10);
   });
 
   test("container is annotated rather than printed as an empty object", async ({

@@ -1,28 +1,24 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount } from "vue";
 import { ChevronDown, ChevronUp } from "@lucide/vue";
+import {
+  clampDrawerHeight,
+  DRAWER_MAX_HEIGHT,
+  DRAWER_MIN_HEIGHT,
+} from "./drawer-chrome";
 
 /**
  * The drawer's chrome: tab bar, collapse toggle, resize handle, and one
- * pane. Presentational only — the shell owns `activeTab`/`open`/`height`
- * (and persists them); this component renders the current values and asks
- * for changes through its emits.
+ * pane. Presentational only — the shell owns `activeTab`, `open` and
+ * `height`, persisting the latter two under its own storage key; this
+ * component renders the current values and asks for changes through its
+ * emits. `activeTab` is session state and resets on reload.
  *
  * The tab bar always renders, in both the open and collapsed state — only
  * the pane (and the resize handle, which has nothing to resize while
  * collapsed) are conditional — so the drawer can always be reopened from
  * the toggle.
  */
-
-/**
- * Clamp bounds for `height`, in pixels. `min` fits a couple of control rows
- * (label + help line) before the pane needs to scroll, so collapsing isn't
- * the only way to see more than one row. `max` leaves the editor above it a
- * usable slice of a typical viewport (e.g. ~200px at a 720px-tall window)
- * rather than letting the drawer squeeze it away entirely.
- */
-const DRAWER_MIN_HEIGHT = 160;
-const DRAWER_MAX_HEIGHT = 480;
 
 /** Arrow-key resize increment, in pixels. */
 const RESIZE_STEP = 16;
@@ -40,15 +36,19 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update:activeTab": [id: string];
   "update:open": [open: boolean];
+  /** The live height, emitted continuously while a resize is in progress. */
   "update:height": [px: number];
+  /**
+   * The height a resize settled on. Separate from `update:height` so the
+   * shell can persist once per gesture: a pointer drag emits the live value
+   * on every `pointermove`, and writing each one puts a synchronous
+   * `localStorage.setItem` on the gesture's frame budget.
+   */
+  "commit:height": [px: number];
 }>();
 
 function tabButtonId(id: string): string {
   return `capability-drawer-tab-${id}`;
-}
-
-function clampHeight(px: number): number {
-  return Math.min(DRAWER_MAX_HEIGHT, Math.max(DRAWER_MIN_HEIGHT, px));
 }
 
 /**
@@ -81,40 +81,66 @@ function onResizePointerDown(event: PointerEvent): void {
   (event.currentTarget as HTMLElement | null)?.focus();
   const startY = event.clientY;
   const startHeight = props.height;
+  let height = startHeight;
 
   function onMove(moveEvent: PointerEvent): void {
     // The handle sits on the drawer's top edge: moving the pointer up (a
     // smaller clientY) grows the drawer, so the delta is inverted.
-    emit(
-      "update:height",
-      clampHeight(startHeight + (startY - moveEvent.clientY)),
-    );
+    height = clampDrawerHeight(startHeight + (startY - moveEvent.clientY));
+    emit("update:height", height);
   }
-  function onUp(): void {
+
+  /**
+   * One teardown for every way a gesture can end. `pointercancel` has to
+   * route here too: the browser fires it instead of `pointerup` when it
+   * takes the pointer away (a touch turning into a system gesture, a
+   * device disconnect), and a teardown that only listens for `pointerup`
+   * leaves the window listeners attached and `<body>` stuck at
+   * `cursor: row-resize; user-select: none` for the rest of the session.
+   */
+  function endResize(): void {
     window.removeEventListener("pointermove", onMove);
-    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointerup", endResize);
+    window.removeEventListener("pointercancel", endResize);
     document.body.style.removeProperty("cursor");
     document.body.style.removeProperty("user-select");
     stopResize = null;
+    // One write per gesture, with whatever it settled on. A cancelled drag
+    // still commits: the shell has been rendering `height` all along, so
+    // leaving it unpersisted would make the drawer snap back on reload to a
+    // size the user has not seen since the drag began.
+    emit("commit:height", height);
   }
 
   window.addEventListener("pointermove", onMove);
-  window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointerup", endResize);
+  window.addEventListener("pointercancel", endResize);
   // Prevents the drag from selecting page text while the pointer crosses it.
   document.body.style.cursor = "row-resize";
   document.body.style.userSelect = "none";
-  stopResize = onUp;
+  stopResize = endResize;
 }
 
-/** Arrow Up/Down resize the same handle a pointer drag does — a pointer-only handle is unreachable by keyboard. */
+/**
+ * Arrow Up/Down resize the same handle a pointer drag does — a pointer-only
+ * handle is unreachable by keyboard. Each press is a whole gesture, so it
+ * commits immediately; there is no stream of intermediate values to spare
+ * the storage write.
+ */
 function onResizeKeydown(event: KeyboardEvent): void {
   if (event.key === "ArrowUp") {
     event.preventDefault();
-    emit("update:height", clampHeight(props.height + RESIZE_STEP));
+    commitStep(props.height + RESIZE_STEP);
   } else if (event.key === "ArrowDown") {
     event.preventDefault();
-    emit("update:height", clampHeight(props.height - RESIZE_STEP));
+    commitStep(props.height - RESIZE_STEP);
   }
+}
+
+function commitStep(px: number): void {
+  const height = clampDrawerHeight(px);
+  emit("update:height", height);
+  emit("commit:height", height);
 }
 
 onBeforeUnmount(() => {

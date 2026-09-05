@@ -65,16 +65,26 @@ export function resolveControlState(state: ControlState): ControlState {
  * Capabilities own disjoint config keys, so a later entry cannot clobber an
  * earlier one; the key-set assertion in `tests/config-build-all.test.ts` pins
  * that they stay disjoint.
+ *
+ * State is resolved across the WHOLE registry before any `build()` runs, not
+ * per capability. A `build()` that reads another capability's control path —
+ * `version-history` reads `templates.save` — would otherwise see `undefined`
+ * for a key merely absent from storage, while `isControlForced` (which the
+ * drawer feeds `resolveControlState`) sees that control's default. The two
+ * would then disagree for any `forcedBy` whose `when` equals its trigger's
+ * own default: the drawer would disable a control and name a reason for
+ * forcing that `build()` never applied.
  */
 export function buildAllCapabilityConfig(
   state: ControlState,
   template?: TemplateOption,
 ): Partial<TemplaticalEditorConfig> {
+  const resolved = resolveControlState(state);
   let merged: Partial<TemplaticalEditorConfig> = {};
   for (const def of capabilities) {
     merged = {
       ...merged,
-      ...buildCapabilityConfig(def, state, def.implFor(template)),
+      ...buildCapabilityConfig(def, resolved, def.implFor(template)),
     };
   }
   return merged;
