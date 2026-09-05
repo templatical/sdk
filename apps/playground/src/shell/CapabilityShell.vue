@@ -5,13 +5,17 @@ import {
   buildAllCapabilityConfig,
   capabilityById,
 } from "@/config/capabilities";
-import { readControlState } from "@/config/state";
 import { slugFor } from "@/providers/template-name";
 import { templates } from "@/templates";
 import CapabilityRail from "./CapabilityRail.vue";
 import { useCapabilityRoute } from "./useCapabilityRoute";
+import { useControlState } from "./useControlState";
 
 const { activeId, select } = useCapabilityRoute();
+// `setControl` has no caller yet — the drawer that calls it is a later task
+// in this plan — so it is bound with a leading underscore, this repo's own
+// convention for a binding the unused-vars lint rule should leave alone.
+const { state: controlState, set: _setControl } = useControlState();
 
 // `activeId` only ever holds a registered id — `parseCapabilityHash` (inside
 // `useCapabilityRoute`) falls back to the first registered capability for
@@ -37,8 +41,15 @@ const editor = ref<TemplaticalEditor | null>(null);
 // unmount, checked after the one await below.
 let destroyed = false;
 
+// Two re-inits can be in flight at once — a rail click and a control toggle —
+// and `init()` is async, so the later request must win regardless of which
+// settles first. The token is captured per call and re-checked after the await;
+// a superseded call unmounts what it built rather than assigning it.
+let initToken = 0;
+
 async function initEditor(): Promise<void> {
   if (!editorHost.value) return;
+  const token = ++initToken;
   editor.value?.unmount();
   const instance = await init({
     container: editorHost.value,
@@ -48,9 +59,9 @@ async function initEditor(): Promise<void> {
     // capabilities plans 5a-5d haven't ported yet — each arrives here as its
     // capability lands, so this shell only owns what the registry already
     // produces.
-    ...buildAllCapabilityConfig(readControlState(), fixture.value),
+    ...buildAllCapabilityConfig(controlState.value, fixture.value),
   });
-  if (destroyed) {
+  if (destroyed || token !== initToken) {
     instance.unmount();
     return;
   }
@@ -65,6 +76,13 @@ onMounted(async () => {
 // `activeId`. Re-running `initEditor` swaps the fixture and config into the
 // SAME host element rather than remounting the component tree around it.
 watch(activeId, async () => {
+  await initEditor();
+});
+
+// The drawer (later tasks) writes through `useControlState()`'s `set()`,
+// which replaces `controlState.value` outright rather than mutating it — a
+// plain watch is enough to observe that, no `{ deep: true }` needed.
+watch(controlState, async () => {
   await initEditor();
 });
 

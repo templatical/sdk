@@ -21,3 +21,20 @@ export function readControlState(): ControlState {
     return {};
   }
 }
+
+/** Persist control state, replacing whatever was stored. */
+export function writeControlState(state: ControlState): void {
+  try {
+    localStorage.setItem(CONTROL_STATE_KEY, JSON.stringify(state));
+  } catch {
+    // A private-mode or quota failure loses the setting, not the session:
+    // the drawer keeps its in-memory value and the editor still re-inits.
+  }
+}
+
+/** Merge one control path into the stored state and return the result. */
+export function setControlValue(path: string, value: unknown): ControlState {
+  const next = { ...readControlState(), [path]: value };
+  writeControlState(next);
+  return next;
+}
