@@ -11,12 +11,13 @@ export default {
     startFromScratch: "Start from Scratch",
     emptyCanvas: "Empty canvas with default settings",
     migration: {
-      headline: "Already using BeeFree, Unlayer, or hand-coded HTML?",
+      headline: "Already using BeeFree, Unlayer, MJML, or hand-coded HTML?",
       description:
         "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
       importFromBeefree: "Import from BeeFree",
       importFromUnlayer: "Import from Unlayer",
       importFromHtml: "Import from HTML",
+      importFromMjml: "Import from MJML",
     },
   },
   cloudBanner: {
@@ -80,6 +81,7 @@ export default {
       beefree: "From BeeFree",
       unlayer: "From Unlayer",
       html: "From HTML",
+      mjml: "From MJML",
     },
     chooseFile: "Choose file",
     orPaste: "or paste below",
@@ -98,6 +100,11 @@ export default {
       description:
         "Paste the raw HTML source of an email (MJML output, ESP export, or hand-coded). Best results with table-based layouts.",
       emptyError: "Paste your HTML source or upload a file.",
+    },
+    mjml: {
+      description:
+        "Paste an MJML document below. Templatical-generated MJML round-trips exactly; hand-written MJML converts the common tags and falls back to HTML blocks for the rest.",
+      emptyError: "Paste your MJML source or upload a file.",
     },
   },
   mergeTagModal: {
@@ -295,6 +302,7 @@ export default {
     beefreeJsonContent: "BeeFree JSON content",
     unlayerJsonContent: "Unlayer JSON content",
     htmlSourceContent: "HTML source content",
+    mjmlSourceContent: "MJML source content",
     selectLanguage: "Select language",
     selectSdkLanguage: "Select SDK language",
     selectTheme: "Select theme",

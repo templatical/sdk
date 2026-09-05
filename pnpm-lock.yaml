@@ -190,6 +190,9 @@ importers:
       '@templatical/import-html':
         specifier: workspace:*
         version: link:../../packages/import-html
+      '@templatical/import-mjml':
+        specifier: workspace:*
+        version: link:../../packages/import-mjml
       '@templatical/import-unlayer':
         specifier: workspace:*
         version: link:../../packages/import-unlayer
