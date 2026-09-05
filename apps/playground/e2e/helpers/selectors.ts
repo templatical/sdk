@@ -27,6 +27,12 @@ export const SELECTORS = {
   capabilityDrawerResize: '[data-testid="capability-drawer-resize"]',
   capabilityDrawerPane: '[data-testid="capability-drawer-pane"]',
 
+  // Controls tab (inside the capability drawer) — one row per control, keyed
+  // to its `path` via `data-control-path`. See `ControlsPane.vue`.
+  capabilityControl: '[data-testid="capability-control"]',
+  capabilityControlInput: '[data-testid="capability-control-input"]',
+  capabilityControlReason: '[data-testid="capability-control-reason"]',
+
   // Editor toolbar (playground)
   backButton: '[data-testid="toolbar-back"]',
   configButton: '[data-testid="toolbar-config"]',
@@ -274,6 +280,11 @@ export function blockByType(type: string) {
 /** Dynamic selector for sidebar palette entry by block type */
 export function paletteByType(type: string) {
   return `[data-palette-type="${type}"]`;
+}
+
+/** Dynamic selector for a capability control row by its `path` */
+export function controlByPath(path: string) {
+  return `${SELECTORS.capabilityControl}[data-control-path="${path}"]`;
 }
 
 /** Dynamic selector for config tab */

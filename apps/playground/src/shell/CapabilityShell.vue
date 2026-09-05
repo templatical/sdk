@@ -9,15 +9,12 @@ import { slugFor } from "@/providers/template-name";
 import { templates } from "@/templates";
 import CapabilityDrawer from "./CapabilityDrawer.vue";
 import CapabilityRail from "./CapabilityRail.vue";
+import ControlsPane from "./ControlsPane.vue";
 import { useCapabilityRoute } from "./useCapabilityRoute";
 import { useControlState } from "./useControlState";
 
 const { activeId, select } = useCapabilityRoute();
-// `setControl` has no caller yet — the drawer's Controls tab (Task 4 of this
-// plan) is what calls it — so it is bound with a leading underscore, this
-// repo's own convention for a binding the unused-vars lint rule should leave
-// alone.
-const { state: controlState, set: _setControl } = useControlState();
+const { state: controlState, set: setControl } = useControlState();
 
 // The drawer's own chrome — open/collapsed and its height — lives under a
 // separate key from `controlState`. `tpl-playground-config` is capability
@@ -189,9 +186,11 @@ onBeforeUnmount(() => {
         @update:open="setDrawerOpen"
         @update:height="setDrawerHeight"
       >
-        <div
+        <ControlsPane
           v-if="drawerActiveTab === 'controls'"
-          data-testid="controls-pane-placeholder"
+          :controls="capability.controls"
+          :state="controlState"
+          @set="setControl"
         />
         <div v-else data-testid="config-pane-placeholder" />
       </CapabilityDrawer>

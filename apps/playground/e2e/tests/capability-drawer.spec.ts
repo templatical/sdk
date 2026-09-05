@@ -1,12 +1,14 @@
 import { expect, test } from "../fixtures/editor.fixture";
-import { SELECTORS } from "../helpers/selectors";
+import { controlByPath, SELECTORS } from "../helpers/selectors";
+import { seedControlState } from "../helpers/control-state";
 
 /**
  * The drawer chrome hosted inside the capability shell at `#capabilities`:
- * a tab bar, a collapse toggle, and one pane.
+ * a tab bar, a collapse toggle, and one pane — plus the Controls tab's own
+ * rows, one per control, that the Controls-tab tests below drive.
  *
- * Capability ids and titles are written literally, never imported from
- * `@/config/capabilities` — that barrel reaches `@templatical/editor`'s
+ * Capability and control identifiers are written literally, never imported
+ * from `@/config/capabilities` — that barrel reaches `@templatical/editor`'s
  * `.vue` source, which Playwright's Node-side transform cannot parse, and
  * the whole spec file would fail to load. Guarded by
  * `tests/e2e-import-boundary.test.ts`.
@@ -72,5 +74,38 @@ test.describe("capability drawer", () => {
     await expect(editor).toHaveCount(1);
     await expect(editor).toBeVisible();
     await expect(page.locator(SELECTORS.capabilityDrawer)).toBeVisible();
+  });
+
+  test("toggling savedBlocks.create off removes the bookmark action from the canvas", async ({
+    page,
+    editorPage,
+  }) => {
+    await page.goto("/#capabilities/saved-blocks");
+    await editorPage.selectBlock(0);
+    await expect(page.locator(SELECTORS.savedBlocksSaveAction)).toHaveCount(1);
+
+    const createControl = page.locator(controlByPath("savedBlocks.create"));
+    await createControl.locator(SELECTORS.capabilityControlInput).uncheck();
+
+    // The shell re-inits the editor into the same host on a control change,
+    // so the earlier selection is gone — reselecting proves the bookmark's
+    // absence is the toggle's doing, not a stale selection.
+    await editorPage.selectBlock(0);
+    await expect(page.locator(SELECTORS.savedBlocksSaveAction)).toHaveCount(0);
+  });
+
+  test("a forced control is disabled and says why", async ({ page }) => {
+    // templates.save belongs to a different capability, so seeding it is
+    // what reaches it here — the rail would otherwise have to move.
+    await seedControlState(page, { "templates.save": false });
+    await page.goto("/#capabilities/version-history");
+
+    const restoreControl = page.locator(controlByPath("versionHistory.restore"));
+    await expect(
+      restoreControl.locator(SELECTORS.capabilityControlInput),
+    ).toBeDisabled();
+    await expect(
+      restoreControl.locator(SELECTORS.capabilityControlReason),
+    ).toContainText("templates.save");
   });
 });
