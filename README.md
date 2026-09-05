@@ -128,6 +128,7 @@ const mjml = await editor.toMjml();
 | [`@templatical/import-beefree`](https://www.npmjs.com/package/@templatical/import-beefree) | Convert BeeFree templates to Templatical format                  | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-unlayer`](https://www.npmjs.com/package/@templatical/import-unlayer) | Convert Unlayer templates to Templatical format                  | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-html`](https://www.npmjs.com/package/@templatical/import-html)       | Convert HTML email templates (table-based) to Templatical format | [MIT](./LICENSE-MIT)     |
+| [`@templatical/import-mjml`](https://www.npmjs.com/package/@templatical/import-mjml)       | Convert MJML email templates to Templatical format               | [MIT](./LICENSE-MIT)     |
 
 ## Why FSL-1.1-MIT?
 

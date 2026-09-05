@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Aggregates the nine per-package `packages/<name>/CHANGELOG.md` files into one
+ * Aggregates the ten per-package `packages/<name>/CHANGELOG.md` files into one
  * product changelog.
  *
  * The packages sit in a changesets `fixed` group (see `.changeset/config.json`),
  * so they always bump to the same version — there is one release timeline, split
- * nine ways. Each changeset writes its prose into the changelog of every package
+ * ten ways. Each changeset writes its prose into the changelog of every package
  * it names, and writes a dependency-bump stub into the rest of the group:
  *
  *     - Updated dependencies [90f088e]     <- stub, carries no prose
