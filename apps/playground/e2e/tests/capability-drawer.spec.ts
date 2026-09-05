@@ -51,6 +51,55 @@ test.describe("capability drawer", () => {
     await expect(tabs.first()).toBeVisible();
   });
 
+  test("the handle resizes by keyboard, and the height survives a reload", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities");
+    const handle = page.locator(SELECTORS.capabilityDrawerResize);
+
+    // A pointer-only handle is unreachable by keyboard, so the arrow keys are
+    // the accessible path rather than a convenience.
+    await expect(handle).toHaveAttribute("aria-valuenow", "280");
+    await handle.focus();
+    await handle.press("ArrowUp");
+    await expect(handle).toHaveAttribute("aria-valuenow", "296");
+
+    // Drawer chrome persists under its own key, never `tpl-playground-config`
+    // — that one is capability control state, which e2e helpers seed.
+    expect(
+      await page.evaluate(() =>
+        localStorage.getItem("tpl-playground-drawer"),
+      ),
+    ).toBe(JSON.stringify({ open: true, height: 296 }));
+
+    await page.reload();
+    await expect(page.locator(SELECTORS.capabilityDrawerResize)).toHaveAttribute(
+      "aria-valuenow",
+      "296",
+    );
+  });
+
+  test("a collapsed drawer comes back collapsed after a reload", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities");
+    const toggle = page.locator(SELECTORS.capabilityDrawerToggle);
+
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    await page.reload();
+    await expect(page.locator(SELECTORS.capabilityDrawerToggle)).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    await expect(page.locator(SELECTORS.capabilityDrawerPane)).toBeHidden();
+    // The tab bar stays reachable while collapsed, so the drawer is always
+    // re-openable without hunting for the toggle.
+    await expect(page.locator(SELECTORS.capabilityDrawerTab).first()).toBeVisible();
+  });
+
   test("switching tabs swaps the pane", async ({ page }) => {
     await page.goto("/#capabilities");
     const controlsTab = page.locator(SELECTORS.capabilityDrawerTab, {
