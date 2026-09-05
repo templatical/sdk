@@ -12,7 +12,7 @@ Diese Seite beantwortet die Fragen, die Teams bei der Bewertung von Templaticals
 - **Sie können Templatical kostenlos in jedem kommerziellen Produkt einsetzen**, einschließlich kostenpflichtigem SaaS, internen Tools und On-Premise-Installationen.
 - **Das Einzige, was Sie nicht dürfen**, ist Templatical selbst als konkurrierendes E-Mail-Editor-Produkt oder als konkurrierenden Dienst zu vermarkten.
 - **Nach zwei Jahren** wird jede unter FSL veröffentlichte Version automatisch zu MIT. Keine Aktion erforderlich.
-- **Sechs der neun Pakete sind heute schon reines MIT** — types, renderer, quality und alle drei Importer. Nur Editor, Core und Media-Library stehen unter FSL.
+- **Nur Editor, Core und Media-Library stehen unter FSL** — jedes andere Paket ist heute schon reines MIT.
 
 ## Was ist FSL-1.1-MIT?
 

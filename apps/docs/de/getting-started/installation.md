@@ -343,7 +343,7 @@ Jedes GitHub-Release enthält dieselben Tarballs, die auch an npm gehen — eine
 
 Drei Dinge sollten Sie wissen:
 
-**Pinnen Sie auch die Templatical-Pakete, die Sie indirekt nutzen.** Ein Tarball verweist auf seine Geschwisterpakete nur über eine Versionsnummer, Ihr Paketmanager sucht diese Version also weiterhin in der Registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` und die drei Importer hängen alle von `@templatical/types` ab; `@templatical/media-library` zusätzlich von `@templatical/core`. Verweisen Sie jedes davon, das Sie einbinden, ebenfalls auf einen Tarball:
+**Pinnen Sie auch die Templatical-Pakete, die Sie indirekt nutzen.** Ein Tarball verweist auf seine Geschwisterpakete nur über eine Versionsnummer, Ihr Paketmanager sucht diese Version also weiterhin in der Registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` und die Importer hängen alle von `@templatical/types` ab; `@templatical/media-library` zusätzlich von `@templatical/core`. Verweisen Sie jedes davon, das Sie einbinden, ebenfalls auf einen Tarball:
 
 ```yaml
 # pnpm-workspace.yaml

@@ -343,7 +343,7 @@ Every GitHub release carries the same tarballs that go to npm, one per package. 
 
 Three things to know:
 
-**Pin the Templatical packages you depend on indirectly, too.** A tarball refers to its siblings by version number, so your package manager still goes looking for that version on the registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` and the three importers all depend on `@templatical/types`; `@templatical/media-library` depends on `@templatical/core` as well. Point each one you pull in at a tarball:
+**Pin the Templatical packages you depend on indirectly, too.** A tarball refers to its siblings by version number, so your package manager still goes looking for that version on the registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` and the importers all depend on `@templatical/types`; `@templatical/media-library` depends on `@templatical/core` as well. Point each one you pull in at a tarball:
 
 ```yaml
 # pnpm-workspace.yaml

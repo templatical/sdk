@@ -12,7 +12,7 @@ This page answers the questions teams ask most often when evaluating Templatical
 - **You can use Templatical for free in any commercial product**, including paid SaaS, internal tools, and on-premise installs.
 - **The only thing you can't do** is repackage Templatical itself as a competing email-editor product or service.
 - **After two years**, every release of FSL-licensed code automatically becomes MIT. No action required.
-- **Six of the nine packages are pure MIT today** — types, renderer, quality, and all three importers. Only the editor, core and media library are FSL.
+- **Only the editor, core and media library are FSL-licensed** — every other package is pure MIT today.
 
 ## What is FSL-1.1-MIT?
 
