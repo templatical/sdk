@@ -1,6 +1,7 @@
 import type { Component } from "vue";
 import ConfigPane from "./ConfigPane.vue";
 import ControlsPane from "./ControlsPane.vue";
+import EventsPane from "./EventsPane.vue";
 
 export interface DrawerTab {
   id: string;
@@ -19,6 +20,7 @@ export interface DrawerTab {
 export const DRAWER_TABS: DrawerTab[] = [
   { id: "controls", label: "Controls", component: ControlsPane },
   { id: "config", label: "Config", component: ConfigPane },
+  { id: "events", label: "Events", component: EventsPane },
 ];
 
 /** The tab a drawer opens on before anyone has switched. */

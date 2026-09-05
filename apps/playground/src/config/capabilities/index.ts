@@ -6,6 +6,7 @@ import {
   type AnyCapabilityDef,
   type CapabilityGroup,
   type ControlState,
+  type RecordCapabilityEventFor,
 } from "../types";
 import { savedBlocksCapability } from "./saved-blocks";
 import { templatesCapability } from "./templates";
@@ -74,17 +75,22 @@ export function resolveControlState(state: ControlState): ControlState {
  * would then disagree for any `forcedBy` whose `when` equals its trigger's
  * own default: the drawer would disable a control and name a reason for
  * forcing that `build()` never applied.
+ *
+ * `record` is forwarded to every capability, which binds it to that
+ * capability's own id. Omitting it yields the same config with inert
+ * handlers — the shape a caller sees never depends on whether a feed exists.
  */
 export function buildAllCapabilityConfig(
   state: ControlState,
   template?: TemplateOption,
+  record?: RecordCapabilityEventFor,
 ): Partial<TemplaticalEditorConfig> {
   const resolved = resolveControlState(state);
   let merged: Partial<TemplaticalEditorConfig> = {};
   for (const def of capabilities) {
     merged = {
       ...merged,
-      ...buildCapabilityConfig(def, resolved, def.implFor(template)),
+      ...buildCapabilityConfig(def, resolved, def.implFor(template), record),
     };
   }
   return merged;

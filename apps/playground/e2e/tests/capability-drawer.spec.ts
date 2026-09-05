@@ -476,6 +476,66 @@ test.describe("capability drawer", () => {
     await expect(source).not.toContainText("container: {}");
   });
 
+  test("saving a block reports onCreated to the Events tab, and Clear empties it", async ({
+    page,
+    editorPage,
+  }) => {
+    await page.goto("/#capabilities/saved-blocks");
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Events" })
+      .click();
+    await expect(page.locator(SELECTORS.capabilityEvent)).toHaveCount(0);
+
+    // Drive the real feature end to end. Reaching into the provider directly
+    // would prove nothing: the claim is that the EDITOR fired the handler.
+    await editorPage.selectBlock(0);
+    await page.locator(SELECTORS.savedBlocksSaveAction).click();
+    await page.locator(SELECTORS.savedBlocksPickConfirm).click();
+
+    // Scoped to the dialog: text inputs are used widely elsewhere in the
+    // editor, and "Save Block" also labels the pick bar's confirm button.
+    const dialog = page.locator('[role="dialog"]', {
+      has: page.locator(SELECTORS.saveBlockDialogTitle),
+    });
+    await dialog.locator(SELECTORS.savedBlocksNameInput).fill("Header group");
+    await dialog
+      .getByRole("button", { name: "Save Block", exact: true })
+      .click();
+
+    const event = page.locator(SELECTORS.capabilityEvent).first();
+    await expect(event).toHaveAttribute("data-event-handler", "onCreated");
+    await expect(event).toHaveAttribute("data-event-capability", "saved-blocks");
+    // The summary is the block's own name, so this fails if the capability
+    // reports a placeholder or the wrong field.
+    await expect(event).toContainText("Header group");
+    await expect(event).toContainText("local");
+
+    await page.locator(SELECTORS.capabilityEventsClear).click();
+    await expect(page.locator(SELECTORS.capabilityEvent)).toHaveCount(0);
+    await expect(page.locator(SELECTORS.capabilityEventsEmpty)).toBeVisible();
+  });
+
+  test("the Events tab names the remote gap a single-browser demo cannot fill", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/saved-blocks");
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Events" })
+      .click();
+
+    // The feed carries only what this browser caused, and says so rather than
+    // leaving a reader to infer that `remote` is unreachable here. No
+    // synthetic event exists anywhere to fill the gap.
+    const note = page.locator(SELECTORS.capabilityEventsRemoteNote);
+    await expect(note).toBeVisible();
+    await expect(note).toContainText("local");
+    await expect(note).toContainText("remote");
+    await expect(note).toContainText("subscribe");
+
+    await expect(page.locator(SELECTORS.capabilityEventsEmpty)).toBeVisible();
+    await expect(page.locator(SELECTORS.capabilityEvent)).toHaveCount(0);
+  });
+
   test("switching fixture reloads the editor with that template's content, keeps the capability, and lasts only for this visit", async ({
     page,
   }) => {

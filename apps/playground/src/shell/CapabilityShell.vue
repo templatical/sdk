@@ -13,6 +13,7 @@ import { useCapabilityEditor } from "./useCapabilityEditor";
 import { useCapabilityRoute } from "./useCapabilityRoute";
 import { useControlState } from "./useControlState";
 import { useDrawerChrome } from "./useDrawerChrome";
+import { useEventLog } from "./useEventLog";
 
 const { activeId, select } = useCapabilityRoute();
 const { state: controlState, set: setControl } = useControlState();
@@ -29,6 +30,11 @@ const {
   commitHeight: commitDrawerHeight,
   setActiveTab: setDrawerActiveTab,
 } = useDrawerChrome();
+
+// The Events tab's feed. Held here, above the re-init cycle: the config is
+// rebuilt on every control change, so a log living inside it would reset each
+// time and a toggle would wipe the record of what the toggle just did.
+const eventLog = useEventLog();
 
 // `activeId` only ever holds a registered id — `parseCapabilityHash` (inside
 // `useCapabilityRoute`) falls back to the first registered capability for
@@ -77,7 +83,15 @@ const {
   // capabilities plans 5a-5d haven't ported yet — each arrives here as its
   // capability lands, so this shell only owns what the registry already
   // produces.
-  ...buildAllCapabilityConfig(controlState.value, fixture.value),
+  //
+  // `eventLog.record` itself, not an arrow closing over it: each capability
+  // binds it to its own id, and one stable function keeps every rebuilt
+  // config handing the feed the same target.
+  ...buildAllCapabilityConfig(
+    controlState.value,
+    fixture.value,
+    eventLog.record,
+  ),
   content: fixture.value.create(),
 }));
 
@@ -94,16 +108,18 @@ const activeTabComponent = computed(
 );
 
 // One merged object for whichever pane is active: each pane picks out the
-// props it declares, so `ControlsPane` sees `controls`/`state`/`fixture` and
-// `ConfigPane` sees `config`. That is what keeps the shell from growing a
-// branch per tab, and reads as an oversight otherwise. Every pane sets
-// `inheritAttrs: false`, because the entries a pane does not declare fall
-// through onto its root element rather than being dropped.
+// props it declares, so `ControlsPane` sees `controls`/`state`/`fixture`,
+// `ConfigPane` sees `config` and `EventsPane` sees `events`. That is what
+// keeps the shell from growing a branch per tab, and reads as an oversight
+// otherwise. Every pane sets `inheritAttrs: false`, because the entries a
+// pane does not declare fall through onto its root element rather than being
+// dropped.
 const paneProps = computed(() => ({
   controls: capability.value.controls,
   state: controlState.value,
   fixture: fixtureSlug.value,
   config: lastInitConfig.value,
+  events: eventLog.events.value,
 }));
 
 /**
@@ -186,6 +202,7 @@ onBeforeUnmount(destroy);
           v-bind="paneProps"
           @set="setControl"
           @update:fixture="setFixture"
+          @clear="eventLog.clear"
         />
       </CapabilityDrawer>
     </div>

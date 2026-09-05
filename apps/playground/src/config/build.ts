@@ -1,5 +1,10 @@
 import type { TemplaticalEditorConfig } from "@templatical/editor";
-import { controlDefault, type CapabilityDef, type ControlState } from "./types";
+import {
+  controlDefault,
+  type CapabilityDef,
+  type ControlState,
+  type RecordCapabilityEventFor,
+} from "./types";
 
 /**
  * Resolve a capability's config from control state and its live implementation.
@@ -9,11 +14,16 @@ import { controlDefault, type CapabilityDef, type ControlState } from "./types";
  * and a partially-seeded state (an e2e spec setting one key) behaves the same
  * as a fully-seeded one. The live implementation arrives separately as `impl`,
  * never folded into `state`.
+ *
+ * `record` defaults to a no-op so a caller with no feed to write to — a unit
+ * test, a headless build — still gets a config whose lifecycle handlers are
+ * present and inert, rather than one whose shape differs from the shell's.
  */
 export function buildCapabilityConfig<TImpl>(
   def: CapabilityDef<TImpl>,
   state: ControlState,
   impl: TImpl,
+  record: RecordCapabilityEventFor = () => {},
 ): Partial<TemplaticalEditorConfig> {
   const resolved: ControlState = { ...state };
   for (const control of def.controls) {
@@ -21,7 +31,9 @@ export function buildCapabilityConfig<TImpl>(
       resolved[control.path] = controlDefault(control);
     }
   }
-  return def.build(resolved, impl);
+  // Bound here rather than passed through, so a capability cannot report under
+  // another's id and the feed's grouping stays trustworthy.
+  return def.build(resolved, impl, (event) => record(def.id, event));
 }
 
 /**

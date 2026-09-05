@@ -18,6 +18,16 @@ describe("savedBlocksCapability", () => {
       create: impl.create,
       update: impl.update,
       delete: impl.delete,
+      // Attached by the capability itself, not carried in from `impl`: the
+      // drawer's Events tab is fed from inside `build()`, so the provider the
+      // editor is handed reports three lifecycle events the demo backend
+      // never declared. Matched by shape rather than identity — which
+      // function each one is belongs to `config-build-all.test.ts`, while
+      // this exhaustive comparison is what stops a fourth key appearing
+      // unnoticed.
+      onCreated: expect.any(Function),
+      onUpdated: expect.any(Function),
+      onDeleted: expect.any(Function),
     });
   });
 
@@ -32,6 +42,11 @@ describe("savedBlocksCapability", () => {
       create: impl.create,
       update: false,
       delete: false,
+      // Reporting is independent of permission: a store that forbids updates
+      // still tells the feed when one it does allow lands.
+      onCreated: expect.any(Function),
+      onUpdated: expect.any(Function),
+      onDeleted: expect.any(Function),
     });
   });
 
@@ -71,6 +86,9 @@ describe("savedBlocks list delay", () => {
         create: impl.create,
         update: impl.update,
         delete: impl.delete,
+        onCreated: expect.any(Function),
+        onUpdated: expect.any(Function),
+        onDeleted: expect.any(Function),
       },
     });
   });

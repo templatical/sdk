@@ -72,6 +72,45 @@ export type Control =
 
 export type CapabilityGroup = "backend" | "authoring" | "appearance" | "cloud";
 
+/**
+ * One provider lifecycle event, as the capability that owns the provider
+ * describes it.
+ *
+ * The summary is written by the capability rather than derived here: only it
+ * knows which field of its payload names the thing that happened, and a
+ * generic stringifier would print an object where the feed wants one line.
+ */
+export interface CapabilityEventInput {
+  /** The provider handler the SDK called, e.g. `onCreated`. */
+  handler: string;
+  /** One line, already human-readable. Not a serialized payload. */
+  summary: string;
+  /**
+   * Who caused it. `local` means this browser did; `remote` means it arrived
+   * through a provider's `subscribe` carrying another session's change.
+   * Defaults to `local`, and a capability whose contract carries an origin
+   * (comments) passes the SDK's own rather than assuming one.
+   */
+  origin?: "local" | "remote";
+  /** What the handler was handed, kept as-is for inspection. */
+  payload?: unknown;
+}
+
+/**
+ * Report an event to the drawer's feed. Bound to one capability — this is
+ * what a `build()` receives, so a capability cannot report under another's id.
+ */
+export type RecordCapabilityEvent = (event: CapabilityEventInput) => void;
+
+/**
+ * The unbound form the shell owns: the caller supplies the capability id.
+ * `buildCapabilityConfig` is what binds it, from `def.id`.
+ */
+export type RecordCapabilityEventFor = (
+  capabilityId: string,
+  event: CapabilityEventInput,
+) => void;
+
 export interface CapabilityDef<TImpl = unknown> {
   id: string;
   group: CapabilityGroup;
@@ -96,8 +135,17 @@ export interface CapabilityDef<TImpl = unknown> {
    * localStorage and closures. It arrives as an argument rather than inside
    * `state` so `ControlState` stays JSON-serializable: the config drawer
    * persists control state, and a provider cannot survive that round-trip.
+   *
+   * `record` reports a provider lifecycle event to the drawer's feed, already
+   * bound to this capability's id. Attach it inside the handler the provider
+   * contract defines (`onCreated`, `onSaved`, …) and write the summary here —
+   * only this capability knows what its payload means.
    */
-  build: (state: ControlState, impl: TImpl) => Partial<TemplaticalEditorConfig>;
+  build: (
+    state: ControlState,
+    impl: TImpl,
+    record: RecordCapabilityEvent,
+  ) => Partial<TemplaticalEditorConfig>;
 }
 
 /**

@@ -46,7 +46,7 @@ export const savedBlocksCapability: CapabilityDef<SavedBlocksProvider> = {
     },
   ],
   implFor: (template) => savedBlocksProviderFor(template),
-  build: (state, impl) => {
+  build: (state, impl, record) => {
     const delayMs = Number(state["savedBlocks.listDelayMs"] ?? 0);
     // Stands in for a slow backend so the browser's first-open skeleton is
     // reachable — localStorage answers instantly, which is the one latency
@@ -65,6 +65,17 @@ export const savedBlocksCapability: CapabilityDef<SavedBlocksProvider> = {
         create: methodOr(state["savedBlocks.create"], impl.create),
         update: methodOr(state["savedBlocks.update"], impl.update),
         delete: methodOr(state["savedBlocks.delete"], impl.delete),
+        // The provider's own outward notifications, forwarded to the drawer's
+        // Events tab. `name` is the summary because it is what the user typed
+        // and what every row in the browser is labelled with.
+        onCreated: (block) =>
+          record({ handler: "onCreated", summary: block.name, payload: block }),
+        onUpdated: (block) =>
+          record({ handler: "onUpdated", summary: block.name, payload: block }),
+        // The contract hands back the removed entry rather than an id, so the
+        // feed can name what went without holding its own copy of the list.
+        onDeleted: (block) =>
+          record({ handler: "onDeleted", summary: block.name, payload: block }),
       },
     };
   },

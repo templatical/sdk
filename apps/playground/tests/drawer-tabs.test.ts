@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import ConfigPane from "../src/shell/ConfigPane.vue";
 import ControlsPane from "../src/shell/ControlsPane.vue";
+import EventsPane from "../src/shell/EventsPane.vue";
 import {
   DRAWER_TABS,
   DEFAULT_DRAWER_TAB,
@@ -17,7 +18,11 @@ import {
 
 describe("DRAWER_TABS", () => {
   it("is the one source of both the bar and the pane", () => {
-    expect(DRAWER_TABS.map((t) => t.id)).toEqual(["controls", "config"]);
+    expect(DRAWER_TABS.map((t) => t.id)).toEqual([
+      "controls",
+      "config",
+      "events",
+    ]);
   });
 
   it("gives every tab a component, so no tab can fall through to another's pane", () => {
@@ -35,6 +40,7 @@ describe("DRAWER_TABS", () => {
       DRAWER_TABS.find((tab) => tab.id === id)?.component;
     expect(componentFor("controls")).toBe(ControlsPane);
     expect(componentFor("config")).toBe(ConfigPane);
+    expect(componentFor("events")).toBe(EventsPane);
   });
 
   it("gives every pane inheritAttrs: false, since the shell binds one merged prop bag", () => {
@@ -59,7 +65,10 @@ describe("DRAWER_TABS", () => {
 
   it("recognises only registered ids", () => {
     expect(isDrawerTabId("controls")).toBe(true);
-    expect(isDrawerTabId("events")).toBe(false);
+    expect(isDrawerTabId("events")).toBe(true);
+    // A tab id outlives the build that stored it, so one no longer in the
+    // table must be refused rather than left pointing at nothing.
+    expect(isDrawerTabId("gone")).toBe(false);
     expect(isDrawerTabId(null)).toBe(false);
   });
 });

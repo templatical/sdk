@@ -42,6 +42,15 @@ export const SELECTORS = {
   // handed to `init()`, printed as TypeScript source. See `ConfigPane.vue`.
   capabilityConfigSource: '[data-testid="capability-config-source"]',
 
+  // Events tab (inside the capability drawer) — one row per provider
+  // lifecycle event the editor really fired, newest first. Rows carry
+  // `data-event-handler`, `data-event-capability` and `data-event-origin`.
+  // See `EventsPane.vue`.
+  capabilityEvent: '[data-testid="capability-event"]',
+  capabilityEventsRemoteNote: '[data-testid="events-remote-note"]',
+  capabilityEventsEmpty: '[data-testid="events-empty"]',
+  capabilityEventsClear: '[data-testid="events-clear"]',
+
   // Editor toolbar (playground)
   backButton: '[data-testid="toolbar-back"]',
   configButton: '[data-testid="toolbar-config"]',
