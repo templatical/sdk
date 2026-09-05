@@ -21,5 +21,5 @@ Manual loop (without skill-creator):
    guidance over adding rigid rules.
 
 Correctness (valid JSON, schema-in-sync-with-types) is already enforced by
-`tests/` + the schema-freshness guard; these evals are purely about taste and
-completeness.
+this skill's own `tests/` plus `packages/template-tools`'s schema-parity and
+`validate` tests; these evals are purely about taste and completeness.

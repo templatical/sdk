@@ -16,7 +16,7 @@
     {
       "id": 3,
       "prompt": "event invite for a one-day conference 'Trailhead 2026' on Sept 19. i want a countdown to the event, a short blurb, and an RSVP button. a teaser video up top would be nice if that's supported.",
-      "expected_output": "Title + blurb, an optional video block (thumbnail linking out), a countdown block set to the event date/timezone with all required fields and sensible labels/colors, and an RSVP button. Valid JSON.",
+      "expected_output": "Title + blurb, an optional video block (thumbnail linking out), a static stand-in for the countdown — a title or paragraph with the event date and time, or an 'X days to go' line — and an RSVP button. No countdown block: that's a Cloud-only feature the open-source renderer can't produce. Valid JSON.",
       "files": []
     },
     {
