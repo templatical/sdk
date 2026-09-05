@@ -1,0 +1,16 @@
+{
+  "name": "@templatical/sdk-skill",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Agent Skill: integration guidance for the Templatical SDK (@templatical/editor)",
+  "license": "MIT",
+  "scripts": {
+    "generate-reference": "node tools/generate-reference.mjs",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  }
+}

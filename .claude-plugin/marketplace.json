@@ -10,6 +10,12 @@
       "source": "./skills/templatical-email",
       "description": "Generate and validate Templatical email templates as JSON — no backend, no API key.",
       "author": { "name": "Templatical" }
+    },
+    {
+      "name": "templatical-sdk",
+      "source": "./skills/templatical-sdk",
+      "description": "Integration guidance for the Templatical SDK (@templatical/editor). Use when embedding, configuring, theming, extending, or troubleshooting an integration, or answering \"how do I\" / \"is it possible\" questions about the SDK — not for authoring or editing an email template.",
+      "author": { "name": "Templatical" }
     }
   ]
 }

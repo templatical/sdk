@@ -1,0 +1,9 @@
+{
+  "name": "templatical-sdk",
+  "description": "Integration guidance for the Templatical SDK (@templatical/editor). Use when embedding, configuring, theming, extending, or troubleshooting an integration, or answering \"how do I\" / \"is it possible\" questions about the SDK — not for authoring or editing an email template.",
+  "version": "0.1.0",
+  "author": { "name": "Templatical" },
+  "homepage": "https://templatical.com",
+  "repository": "https://github.com/templatical/sdk",
+  "license": "MIT"
+}
