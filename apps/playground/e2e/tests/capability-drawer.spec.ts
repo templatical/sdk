@@ -107,6 +107,70 @@ test.describe("capability drawer", () => {
     await expect(
       restoreControl.locator(SELECTORS.capabilityControlReason),
     ).toContainText("templates.save");
+
+    // Unchecked, not merely disabled: `build()` emits `restore: false`, and the
+    // Config tab prints exactly that. A checked box beside a sentence saying
+    // restore cannot run would make two panes of one drawer disagree.
+    await expect(
+      restoreControl.locator(SELECTORS.capabilityControlInput),
+    ).not.toBeChecked();
+  });
+
+  test("a number control applies on change, reaching the provider it configures", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/saved-blocks");
+    const source = page.locator(SELECTORS.capabilityConfigSource);
+    const configTab = page.locator(SELECTORS.capabilityDrawerTab, {
+      hasText: "Config",
+    });
+
+    // At zero the capability hands the provider's own `list` straight through,
+    // so the delay wrapper's `setTimeout` is absent from the printed source.
+    await configTab.click();
+    await expect(source).toContainText("savedBlocks:");
+    await expect(source).not.toContainText("setTimeout");
+
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Controls" })
+      .click();
+    await page
+      .locator(controlByPath("savedBlocks.listDelayMs"))
+      .locator(SELECTORS.capabilityControlInput)
+      .fill("2000");
+
+    // The wrapper appearing in the real config is the re-init's completion
+    // signal, so opening the browser below cannot race the old instance.
+    await configTab.click();
+    await expect(source).toContainText("setTimeout");
+
+    // The control's stated purpose: localStorage answers instantly, so a
+    // latency stand-in is the only way the browser's first-open skeleton is
+    // reachable at all.
+    await page.locator(SELECTORS.savedBlocksRailBtn).click();
+    await expect(page.locator(SELECTORS.savedBlocksLoading)).toBeVisible();
+  });
+
+  test("a boolean control lands in the Config tab", async ({ page }) => {
+    await page.goto("/#capabilities/templates");
+    const source = page.locator(SELECTORS.capabilityConfigSource);
+    const configTab = page.locator(SELECTORS.capabilityDrawerTab, {
+      hasText: "Config",
+    });
+
+    await configTab.click();
+    await expect(source).toContainText("autoSave: false");
+
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Controls" })
+      .click();
+    await page
+      .locator(controlByPath("templates.autoSave"))
+      .locator(SELECTORS.capabilityControlInput)
+      .check();
+
+    await configTab.click();
+    await expect(source).toContainText("autoSave: true");
   });
 
   test("the Config tab renders the key the active capability owns", async ({
