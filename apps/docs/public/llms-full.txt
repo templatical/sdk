@@ -9343,7 +9343,7 @@ See the [Shadow DOM guide](./shadow-dom) for the mechanics of how variables cros
 
 ---
 
-# index.md
+# Templatical
 
 Source: https://docs.templatical.com/
 

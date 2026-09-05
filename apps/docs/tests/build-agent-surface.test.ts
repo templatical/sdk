@@ -69,6 +69,20 @@ describe("collectPages", () => {
       /missing-description\.md/,
     );
   });
+
+  it("uses the site title for the home page when it has no frontmatter title or H1", () => {
+    const pages = collectPages(DOCS);
+    const homePage = pages.find((p) => p.path === "index.md");
+    expect(homePage?.title).toBe("Templatical");
+    expect(homePage?.title).not.toBe("index.md");
+  });
+
+  it("derives a title from the page path when there is no frontmatter title or H1", () => {
+    const pages = collectPages(join(import.meta.dirname, "fixtures/no-title-no-h1"));
+    const page = pages.find((p) => p.path === "some-new-page.md");
+    expect(page?.title).toBe("Some New Page");
+    expect(page?.title).not.toBe("some-new-page.md");
+  });
 });
 
 describe("renderIndex", () => {

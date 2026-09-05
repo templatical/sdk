@@ -109,6 +109,16 @@ function parsePage(source) {
   return { fields, body: source.slice(match[0].length).trim() };
 }
 
+/** Derive a title from a path when no frontmatter title or H1 exists. */
+function titleFromPath(relPath) {
+  const basename = relPath.replace(/\.md$/, "");
+  if (basename === "index") return null; // Root index handled separately
+  return basename
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 /** cleanUrls is on, so a page's url carries no extension. */
 function urlFor(relPath) {
   if (relPath === "index.md") return `${SITE_URL}/`;
@@ -137,11 +147,20 @@ export function collectPages(docsDir = DOCS_DIR) {
         );
       }
       const heading = /^#\s+(.+)$/m.exec(body);
+      // Title fallback chain: frontmatter > first H1 > derived from path.
+      // The path-derived fallback exists for layout: home pages (like index.md)
+      // that carry no title field and no body H1 — a filename alone in a
+      // machine-readable index is a defect. Root index falls back to SITE_TITLE
+      // to keep the home page's title semantic rather than filesystem-literal.
+      let title = fields.title ?? heading?.[1];
+      if (!title) {
+        title = rel === "index.md" ? SITE_TITLE : titleFromPath(rel);
+      }
       return {
         path: rel,
         url: urlFor(rel),
         group: groupOf(rel),
-        title: fields.title ?? heading?.[1] ?? rel,
+        title,
         description,
         body,
       };

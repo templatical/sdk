@@ -6,7 +6,7 @@ Documentation for SDK version 0.30.0. Every page below is also available as raw 
 
 ## Overview
 
-- [index.md](https://docs.templatical.com/): Templatical is an embeddable drag-and-drop email editor SDK — saving, versioning, comments, and rendering wired to your own backend.
+- [Templatical](https://docs.templatical.com/): Templatical is an embeddable drag-and-drop email editor SDK — saving, versioning, comments, and rendering wired to your own backend.
 - [License FAQ](https://docs.templatical.com/license-faq): Plain-English answers about Templatical's FSL-1.1-MIT and MIT licenses — what's allowed, what isn't, when FSL becomes MIT.
 - [Showcase & use cases](https://docs.templatical.com/showcase): Where Templatical fits — common product patterns, real-world integrations, and how to add yours to the showcase.
 
