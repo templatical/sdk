@@ -154,3 +154,23 @@ describe("renderConfig", () => {
     );
   });
 });
+
+describe("values TypeScript source cannot carry", () => {
+  it("annotates a DOM element rather than printing an empty object", () => {
+    const out = renderConfig({ container: document.createElement("div") });
+    expect(out).toContain("container: /* HTMLDivElement */");
+    expect(out).not.toContain("container: {}");
+  });
+
+  it("prints undefined as itself, not as an empty object", () => {
+    expect(renderConfig({ onRequestMedia: undefined })).toContain(
+      "onRequestMedia: undefined",
+    );
+  });
+
+  it("still renders a plain object normally", () => {
+    expect(renderConfig({ savedBlocks: { update: false } })).toContain(
+      "update: false",
+    );
+  });
+});

@@ -44,6 +44,13 @@ export function renderConfig(value: unknown, indent = 0): string {
   if (typeof value === "string") return JSON.stringify(value);
   if (value === null || typeof value !== "object") return String(value);
 
+  // A DOM node has no source form. Printing it as `{}` would show config that
+  // could not boot an editor, so name the type instead and let the reader
+  // substitute their own element.
+  if (typeof Node !== "undefined" && value instanceof Node) {
+    return `/* ${value.constructor.name} */`;
+  }
+
   if (Array.isArray(value)) {
     if (value.length === 0) return "[]";
     const items = value.map((v) => padInner + renderConfig(v, indent + 1));
