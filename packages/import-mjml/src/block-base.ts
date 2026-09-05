@@ -34,14 +34,30 @@ export interface Converted {
 /**
  * The `styles` and `visibility` every block shares.
  *
+ * `placement` mirrors the renderer's own `BgPlacement` split
+ * (`packages/renderer/src/utils.ts`): `mj-section` is the one "native"
+ * element, whose own `background-color` attribute *is* `styles.backgroundColor`
+ * (`renderers/section.ts:32`). Every other block type emits
+ * `container-background-color` for that same field, because a plain
+ * `background-color` on those tags already means something else of the
+ * element's own — a button's fill (`renderers/button.ts:43`), for one — and
+ * reading it back as the block's container background would invent a fill
+ * the source never had. Defaulting to `"container"` matches every caller but
+ * `buildSection`.
+ *
  * `visibility` is spread conditionally so an unset block carries no key — the
  * block model treats absence as "visible everywhere".
  */
-export function baseFields(attrs: Attrs): {
+export function baseFields(
+  attrs: Attrs,
+  placement: "container" | "native" = "container",
+): {
   styles: BlockStyles;
   visibility?: BlockVisibility;
 } {
-  const backgroundColor = parseColor(attrs["background-color"]);
+  const bgKey =
+    placement === "native" ? "background-color" : "container-background-color";
+  const backgroundColor = parseColor(attrs[bgKey]);
   const visibility = readVisibility(attrs);
 
   return {

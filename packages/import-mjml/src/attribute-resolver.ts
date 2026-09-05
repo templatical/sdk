@@ -112,6 +112,19 @@ export function buildAttributeCascade($: CheerioAPI): AttributeCascade {
 }
 
 /**
+ * The first two cascade layers alone — `mj-all` then the per-tag default —
+ * with neither a named `mj-class` nor the element's own inline attributes on
+ * top. This is the ambient value a tag inherits before the element sets
+ * anything of its own, which is what {@link ownAttr} compares against.
+ */
+function resolveTagDefaults(tag: string, cascade: AttributeCascade): Attrs {
+  return {
+    ...cascade.all,
+    ...(cascade.byTag[tag] ?? {}),
+  };
+}
+
+/**
  * An element's effective attributes, highest precedence last:
  * `mj-all` → per-tag default → each named `mj-class` → the element's own
  * inline attributes.
@@ -127,10 +140,7 @@ export function resolveAttributes(
   const own = attrsOf($el);
   const tag = tagOf($el[0]);
 
-  const resolved: Attrs = {
-    ...cascade.all,
-    ...(cascade.byTag[tag] ?? {}),
-  };
+  const resolved: Attrs = resolveTagDefaults(tag, cascade);
 
   const classNames = (own["mj-class"] ?? "")
     .trim()
@@ -144,6 +154,39 @@ export function resolveAttributes(
   delete resolved["mj-class"];
 
   return resolved;
+}
+
+/**
+ * A resolved attribute value, but only when the element is the reason it has
+ * that value — a named `mj-class` counts as the element opting in, but a bare
+ * `mj-all`/per-tag cascade default does not.
+ *
+ * This reverses the renderer's inherit-by-omission convention for `mj-text`'s
+ * `color` and `font-family`: `renderers/title.ts`, `table.ts` and `menu.ts`
+ * all emit that attribute only when the block sets its own value, otherwise
+ * leaving the element to inherit the document default from
+ * `<mj-attributes>` (`renderers/title.ts:31`). `resolveAttributes` flattens
+ * that default onto every element of the tag regardless, so reading `attrs`
+ * directly cannot tell "the block set this" from "the document default
+ * reached this element too" — and treating the latter as the former invents
+ * a per-block override the source never made.
+ *
+ * `resolved === ambient` also covers an element that repeats the ambient
+ * value on purpose: the two cases render identically, so which one happened
+ * is not observable in the output and dropping it costs nothing (the same
+ * reasoning as §8.3b's image-width and §8.4b's paragraph-gap defaults).
+ */
+export function ownAttr(
+  attrs: Attrs,
+  key: string,
+  tag: string,
+  cascade: AttributeCascade,
+): string | undefined {
+  const resolved = attrs[key];
+  if (resolved === undefined) return undefined;
+  return resolved === resolveTagDefaults(tag, cascade)[key]
+    ? undefined
+    : resolved;
 }
 
 const HIDE_DESKTOP = "tpl-hide-desktop";

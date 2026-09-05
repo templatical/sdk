@@ -147,6 +147,27 @@ describe("mj-button", () => {
     expect((result!.block as ButtonBlock).openInNewTab).toBe(true);
   });
 
+  it("does not read its own background-color (the button's fill) as styles.backgroundColor", () => {
+    const { result } = convert(
+      '<mj-button href="https://x.test" background-color="#ff6600">Buy</mj-button>',
+      "mj-button",
+    );
+    const block = result!.block as ButtonBlock;
+
+    expect(block.backgroundColor).toBe("#ff6600");
+    expect("backgroundColor" in block.styles).toBe(false);
+  });
+
+  it("reads container-background-color as styles.backgroundColor", () => {
+    const { result } = convert(
+      '<mj-button href="https://x.test" container-background-color="#111111">Buy</mj-button>',
+      "mj-button",
+    );
+    const block = result!.block as ButtonBlock;
+
+    expect(block.styles.backgroundColor).toBe("#111111");
+  });
+
   it("keeps the factory borderRadius and buttonPadding when absent from the source", () => {
     const { result } = convert(
       '<mj-button href="https://x.test">Go</mj-button>',

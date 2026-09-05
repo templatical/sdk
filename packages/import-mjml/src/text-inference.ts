@@ -20,7 +20,12 @@ import {
   parseFontFamily,
   parsePxValue,
 } from "./attribute-parser";
-import { readParagraphGap, type Attrs } from "./attribute-resolver";
+import {
+  ownAttr,
+  readParagraphGap,
+  type Attrs,
+  type AttributeCascade,
+} from "./attribute-resolver";
 import { baseFields, type ConvertContext, type Converted } from "./block-base";
 
 /**
@@ -62,12 +67,19 @@ function convertTitle(
   html: string,
   attrs: Attrs,
   sourceLevel: number,
+  cascade: AttributeCascade,
 ): Converted {
   const $inner = parseInner(html);
   const $heading = $inner("body").children().first();
   const level = Math.min(sourceLevel, 4) as HeadingLevel;
-  const color = parseColor(attrs.color);
-  const fontFamily = parseFontFamily(attrs["font-family"]);
+  // Read via ownAttr, not attrs directly: title.ts emits color/font-family
+  // only when the block sets its own, so a value that only reached this
+  // element through the document-wide `<mj-attributes>` cascade (§7) is not
+  // this title's own and must not be read back onto it.
+  const color = parseColor(ownAttr(attrs, "color", "mj-text", cascade));
+  const fontFamily = parseFontFamily(
+    ownAttr(attrs, "font-family", "mj-text", cascade),
+  );
 
   const block = createTitleBlock({
     content: $heading.html() ?? "",
@@ -95,7 +107,11 @@ function convertTitle(
   };
 }
 
-function convertTable(html: string, attrs: Attrs): Converted {
+function convertTable(
+  html: string,
+  attrs: Attrs,
+  cascade: AttributeCascade,
+): Converted {
   const $inner = parseInner(html);
   const $rows = $inner("tr");
 
@@ -113,9 +129,14 @@ function convertTable(html: string, attrs: Attrs): Converted {
   const hasHeaderRow =
     $rows.length > 0 && $inner($rows[0]).children("th").length > 0;
 
-  const color = parseColor(attrs.color);
+  // ownAttr, not attrs directly — same cascade-vs-own distinction as
+  // convertTitle above: table.ts also emits color/font-family only when the
+  // block sets its own (renderers/table.ts:34,29).
+  const color = parseColor(ownAttr(attrs, "color", "mj-text", cascade));
   const fontSize = parsePxValue(attrs["font-size"]);
-  const fontFamily = parseFontFamily(attrs["font-family"]);
+  const fontFamily = parseFontFamily(
+    ownAttr(attrs, "font-family", "mj-text", cascade),
+  );
 
   const block = createTableBlock({
     rows,
@@ -157,7 +178,11 @@ function looksLikeMenu(html: string): boolean {
   return anchors > 0;
 }
 
-function convertMenu(html: string, attrs: Attrs): Converted {
+function convertMenu(
+  html: string,
+  attrs: Attrs,
+  cascade: AttributeCascade,
+): Converted {
   const $inner = parseInner(html);
 
   const items: MenuItemData[] = $inner("body")
@@ -188,9 +213,14 @@ function convertMenu(html: string, attrs: Attrs): Converted {
     $separator.attr("style")?.match(/padding\s*:\s*0\s+([\d.]+px)/i)?.[1],
   );
 
-  const color = parseColor(attrs.color);
+  // ownAttr, not attrs directly — same cascade-vs-own distinction as
+  // convertTitle above: menu.ts also emits color/font-family only when the
+  // block sets its own (renderers/menu.ts:29,24).
+  const color = parseColor(ownAttr(attrs, "color", "mj-text", cascade));
   const fontSize = parsePxValue(attrs["font-size"]);
-  const fontFamily = parseFontFamily(attrs["font-family"]);
+  const fontFamily = parseFontFamily(
+    ownAttr(attrs, "font-family", "mj-text", cascade),
+  );
 
   const block = createMenuBlock({
     items,
@@ -270,21 +300,21 @@ function convertParagraph(html: string, attrs: Attrs): Converted {
 export function convertTextElement(
   $el: Cheerio<Element>,
   attrs: Attrs,
-  _ctx: ConvertContext,
+  ctx: ConvertContext,
 ): Converted {
   const html = $el.html() ?? "";
   const root = rootElements(html);
 
   if (root.count === 1 && HEADING_LEVELS[root.tag]) {
-    return convertTitle(html, attrs, HEADING_LEVELS[root.tag]);
+    return convertTitle(html, attrs, HEADING_LEVELS[root.tag], ctx.cascade);
   }
 
   if (root.count === 1 && root.tag === "table") {
-    return convertTable(html, attrs);
+    return convertTable(html, attrs, ctx.cascade);
   }
 
   if (looksLikeMenu(html)) {
-    return convertMenu(html, attrs);
+    return convertMenu(html, attrs, ctx.cascade);
   }
 
   return convertParagraph(html, attrs);

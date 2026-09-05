@@ -251,7 +251,10 @@ export function buildSection(
     ...(grouped ? { stackOnMobile: false } : {}),
     ...(borderRadius > 0 ? { borderRadius } : {}),
     ...(wrapper ? { wrapper } : {}),
-    ...baseFields(attrs),
+    // "native": mj-section is the one element whose own background-color
+    // attribute is its container fill (renderers/section.ts:32) — every other
+    // baseFields caller reads container-background-color instead.
+    ...baseFields(attrs, "native"),
   });
 
   return [section];

@@ -16,8 +16,13 @@ import { convertTextElement } from "../text-inference";
 import type { ConvertContext } from "../block-base";
 
 function convert(inner: string, attrsMarkup = "") {
+  return convertWithHead("", inner, attrsMarkup);
+}
+
+/** Same as {@link convert}, with an `<mj-head>` block to seed the attribute cascade. */
+function convertWithHead(head: string, inner: string, attrsMarkup = "") {
   const $: CheerioAPI = load(
-    `<mjml><mj-body><mj-text ${attrsMarkup}>${inner}</mj-text></mj-body></mjml>`,
+    `<mjml><mj-head>${head}</mj-head><mj-body><mj-text ${attrsMarkup}>${inner}</mj-text></mj-body></mjml>`,
     { xml: { xmlMode: false, recognizeSelfClosing: true } },
   );
   const ctx: ConvertContext = {
@@ -26,7 +31,10 @@ function convert(inner: string, attrsMarkup = "") {
     containerWidth: 600,
     warnings: [],
   };
-  const $el = $("mj-text").first() as unknown as Cheerio<Element>;
+  // Scoped to mj-body: a head carrying its own <mj-attributes><mj-text .../>
+  // declaration means "mj-text" alone would match that declaration first,
+  // not the content element under test.
+  const $el = $("mj-body mj-text").first() as unknown as Cheerio<Element>;
   return {
     result: convertTextElement($el, resolveAttributes($el, ctx.cascade), ctx),
     ctx,
@@ -69,6 +77,29 @@ describe("title inference", () => {
 
     expect(block.textAlign).toBe("center");
   });
+
+  it("does not read the document's mj-attributes cascade as its own color or font-family", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-all font-family="Georgia" /><mj-text color="#123456" /></mj-attributes>',
+      "<h2>T</h2>",
+    );
+    const block = result.block as TitleBlock;
+
+    expect("color" in block).toBe(false);
+    expect("fontFamily" in block).toBe(false);
+  });
+
+  it("reads its own color and font-family over the cascade default", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-all font-family="Georgia" /><mj-text color="#123456" /></mj-attributes>',
+      "<h2>T</h2>",
+      'color="#abcdef" font-family="Verdana"',
+    );
+    const block = result.block as TitleBlock;
+
+    expect(block.color).toBe("#abcdef");
+    expect(block.fontFamily).toBe("Verdana");
+  });
 });
 
 describe("table inference", () => {
@@ -89,6 +120,29 @@ describe("table inference", () => {
   it("reads hasHeaderRow false when the first row has no th", () => {
     const { result } = convert("<table><tr><td>a</td></tr></table>");
     expect((result.block as TableBlock).hasHeaderRow).toBe(false);
+  });
+
+  it("does not read the document's mj-attributes cascade as its own color or font-family", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-all font-family="Georgia" /><mj-text color="#123456" /></mj-attributes>',
+      "<table><tr><td>a</td></tr></table>",
+    );
+    const block = result.block as TableBlock;
+
+    expect("color" in block).toBe(false);
+    expect("fontFamily" in block).toBe(false);
+  });
+
+  it("reads its own color and font-family over the cascade default", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-all font-family="Georgia" /><mj-text color="#123456" /></mj-attributes>',
+      "<table><tr><td>a</td></tr></table>",
+      'color="#abcdef" font-family="Verdana"',
+    );
+    const block = result.block as TableBlock;
+
+    expect(block.color).toBe("#abcdef");
+    expect(block.fontFamily).toBe("Verdana");
   });
 });
 
@@ -117,6 +171,29 @@ describe("menu inference", () => {
   it("marks an anchor with target=_blank as opening in a new tab", () => {
     const { result } = convert('<a href="/a" target="_blank">Alpha</a>');
     expect((result.block as MenuBlock).items[0].openInNewTab).toBe(true);
+  });
+
+  it("does not read the document's mj-attributes cascade as its own color or font-family", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-all font-family="Georgia" /><mj-text color="#123456" /></mj-attributes>',
+      '<a href="/a">Alpha</a><a href="/b">Beta</a>',
+    );
+    const block = result.block as MenuBlock;
+
+    expect("color" in block).toBe(false);
+    expect("fontFamily" in block).toBe(false);
+  });
+
+  it("reads its own color and font-family over the cascade default", () => {
+    const { result } = convertWithHead(
+      '<mj-attributes><mj-all font-family="Georgia" /><mj-text color="#123456" /></mj-attributes>',
+      '<a href="/a">Alpha</a><a href="/b">Beta</a>',
+      'color="#abcdef" font-family="Verdana"',
+    );
+    const block = result.block as MenuBlock;
+
+    expect(block.color).toBe("#abcdef");
+    expect(block.fontFamily).toBe("Verdana");
   });
 });
 
