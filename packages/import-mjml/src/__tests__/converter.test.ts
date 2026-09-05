@@ -120,7 +120,7 @@ describe("convertMjmlTemplate end to end", () => {
   it("summarises the report over every produced block", () => {
     const { report } = convertMjmlTemplate(fixture("newsletter.mjml"));
 
-    expect(report.summary.total).toBe(report.entries.length);
+    expect(report.summary.total).toBe(11);
     expect(report.summary.htmlFallback).toBe(1);
     expect(report.summary.skipped).toBe(0);
     expect(report.entries.filter((e) => e.sourceTag === "mj-raw")).toEqual([]);

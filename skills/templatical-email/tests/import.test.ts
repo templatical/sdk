@@ -104,6 +104,10 @@ describe("runImport — real fixtures convert to valid Templatical JSON", () => 
       format: "html",
       fixture: "packages/import-html/src/__tests__/fixtures/multi-column.html",
     },
+    {
+      format: "mjml",
+      fixture: "packages/import-mjml/src/__tests__/fixtures/newsletter.mjml",
+    },
   ] as const;
 
   it.each(cases)("imports a $format fixture", async ({ format, fixture }) => {

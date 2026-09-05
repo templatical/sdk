@@ -1490,7 +1490,7 @@ function confirmImport(): void {
       mjmlError.value = t.value.importModal.mjml.emptyError;
       return;
     }
-    void importMjmlFromString(raw);
+    importMjmlFromString(raw);
     return;
   }
 
