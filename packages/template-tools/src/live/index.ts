@@ -27,7 +27,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 // editor bump in lockstep (changesets fixed group), so the editor at this
 // version has the same block model the schema describes.
 //
-// Kept in step automatically by scripts/sync-editor-version.mjs at release time.
+// Kept in step automatically by scripts/sync-pins.mjs at release time.
 // tests/cdn-pin.test.ts is the safety net that fails CI if it ever drifts.
 export const EDITOR_VERSION = "0.30.0";
 

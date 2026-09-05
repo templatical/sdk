@@ -78,7 +78,7 @@
   "scripts": {
     "build": "tsdown",
     "generate-schema": "node scripts/generate-schema.mjs",
-    "sync-editor-version": "node scripts/sync-editor-version.mjs",
+    "sync-pins": "node scripts/sync-pins.mjs",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit"
   },

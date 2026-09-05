@@ -9,8 +9,9 @@ const read = (rel: string) => readFileSync(resolve(here, rel), "utf8");
 describe("SKILL.md block-type coverage", () => {
   // Guards the highest-value piece of hand-written prose against drift: if a new
   // block type is added to the schema but never mentioned in SKILL.md, the model
-  // won't know it exists. (schema.json itself is kept in sync by
-  // schema-freshness.test.ts.)
+  // won't know it exists. (schema.json itself is kept in sync with
+  // @templatical/types by packages/template-tools/tests/schema-parity.test.ts,
+  // which checks this file's committed copy against a fresh generation.)
   it("mentions every block type in the schema (emit list or exclusions note)", () => {
     const schema = JSON.parse(read("../reference/schema.json"));
     const schemaTypes = Object.values(schema.definitions)
