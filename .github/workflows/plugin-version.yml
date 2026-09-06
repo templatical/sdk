@@ -108,7 +108,12 @@ jobs:
             continue
           fi
 
-          head_version="$(jq -r '.version // empty' "$MANIFEST")"
+          # `|| true` on both version reads below. Under `set -euo pipefail` a
+          # bare command substitution that fails aborts the whole script,
+          # skipping every later loop iteration — so one skill's unreadable
+          # manifest would stop the other skill from being checked at all,
+          # defeating the accumulate-then-exit design this loop is built on.
+          head_version="$(jq -r '.version // empty' "$MANIFEST" 2>/dev/null || true)"
           if [ -z "$head_version" ]; then
             echo "::error file=$MANIFEST::No \`version\` field. Either restore it, or drop it deliberately to switch this plugin to commit-SHA versioning (and delete this workflow)."
             failed=1
@@ -121,7 +126,12 @@ jobs:
             continue
           fi
 
-          base_version="$(git show "$BASE_SHA:$MANIFEST" | jq -r '.version // empty')"
+          base_version="$(git show "$BASE_SHA:$MANIFEST" 2>/dev/null | jq -r '.version // empty' 2>/dev/null || true)"
+          if [ -z "$base_version" ]; then
+            echo "::error file=$MANIFEST::Could not read a version from this manifest at $BASE_SHA, though the file exists there. Fix the base manifest, or bump deliberately by hand."
+            failed=1
+            continue
+          fi
 
           # Must INCREASE, not merely differ — a downgrade would re-issue a
           # version some installs already cached, so they'd never see the change.

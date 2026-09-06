@@ -1,4 +1,4 @@
-// Rewrites three release-time pins and bumps the skill's plugin manifest.
+// Rewrites three release-time pins and bumps both skills' plugin manifests.
 //
 // Four independent jobs, run together because all four fire from the same
 // root `changeset:version` step and each keeps something that ships outside
@@ -22,22 +22,25 @@
 //    `npx -y @templatical/template-tools validate …`, with no `@version` at
 //    all — is a "latest is fine" choice for a file nobody expects to track
 //    the schema exactly, and must stay that way. Don't add a pin there.
-// 4. A patch bump to skills/templatical-email/.claude-plugin/plugin.json.
-//    Claude Code caches an installed plugin by that version, so job 2's
-//    rewrite — a change to a file the plugin ships (SKILL.md) that sits
-//    outside .github/workflows/plugin-version.yml's tools/tests/evals/
-//    denylist — needs a bump behind it, or installed copies keep serving a
-//    stale pin forever. Job 3's docs pages aren't part of the plugin bundle
-//    at all, so they carry no cache-invalidation need of their own — but
-//    the bump below runs unconditionally on every invocation regardless of
-//    which of jobs 1-3 actually changed something (see the comment at the
-//    call site), so this stays true no matter what. Nothing else moves this
-//    number: changesets skips the skill because its package.json is
-//    private.
+// 4. A patch bump to EVERY skill's .claude-plugin/plugin.json — both
+//    templatical-email and templatical-sdk. Claude Code caches an installed
+//    plugin by that version, so a release that rewrites a file the plugin
+//    ships needs a bump behind it or installed copies keep serving stale
+//    content forever, and `plugin-version.yml` cannot catch it: that check
+//    exempts Version Packages PRs, which is the only context this script
+//    ever runs in. Both skills qualify. For templatical-email it is job 2's
+//    SKILL.md pin rewrite, which sits outside that workflow's
+//    tools/tests/evals denylist. For templatical-sdk it is the release step
+//    that follows this one — `generate-reference` embeds
+//    @templatical/editor's version in both reference/manifest.json and
+//    SKILL.md's generated index, and editor shares this package's changesets
+//    `fixed` group, so a release ALWAYS rewrites those two files whether or
+//    not a docs page changed. Nothing else moves either number: changesets
+//    skips both skills because their package.json is private.
 //
 // Runs at release time from the root `changeset:version` script (wired into
 // changesets/action's `version` step), so the Version Packages PR carries all
-// four changes with no manual step. Also runnable by hand:
+// changes with no manual step. Also runnable by hand:
 // `pnpm --filter @templatical/template-tools run sync-pins`.
 //
 // Each job fails loudly rather than silently matching nothing — a sync that
@@ -181,12 +184,20 @@ export function syncDocsCliPins() {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Patch-bump skills/templatical-email/.claude-plugin/plugin.json
+// 4. Patch-bump every skill's .claude-plugin/plugin.json
 // ---------------------------------------------------------------------------
 
-const PLUGIN_MANIFEST = resolve(
-  here,
-  "../../../skills/templatical-email/.claude-plugin/plugin.json",
+// Both plugins in the marketplace. templatical-sdk needs this every bit as
+// much as templatical-email does, and for a sharper reason: its reference
+// tree and SKILL.md both embed @templatical/editor's version, and editor is
+// in the same changesets `fixed` group as this package — so a release moves
+// that version, generate-reference rewrites both files, and an install with
+// an unchanged manifest version would never refetch them.
+const PLUGIN_MANIFESTS = ["templatical-email", "templatical-sdk"].map(
+  (skill) => ({
+    skill,
+    path: resolve(here, `../../../skills/${skill}/.claude-plugin/plugin.json`),
+  }),
 );
 
 const PLUGIN_VERSION_RE = /("version"\s*:\s*")([^"]*)(")/;
@@ -228,11 +239,11 @@ export function applyPluginPatchBump(src) {
  * generated, so no human is there to bump it by hand).
  */
 export function bumpPluginVersion() {
-  const { src, from, to } = applyPluginPatchBump(
-    readFileSync(PLUGIN_MANIFEST, "utf8"),
-  );
-  writeFileSync(PLUGIN_MANIFEST, src, "utf8");
-  return { from, to };
+  return PLUGIN_MANIFESTS.map(({ skill, path }) => {
+    const { src, from, to } = applyPluginPatchBump(readFileSync(path, "utf8"));
+    writeFileSync(path, src, "utf8");
+    return { skill, from, to };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -269,10 +280,11 @@ function main() {
   // needs installed plugins to refetch it. Collapsing this into a
   // no-op-when-unchanged check would silently reintroduce the exact failure
   // plugin-version.yml exists to catch. Don't "fix" this into idempotence.
-  const plugin = bumpPluginVersion();
-  console.log(
-    `Bumped plugin version ${plugin.from} → ${plugin.to} so installed plugins pick up the change`,
-  );
+  for (const { skill, from, to } of bumpPluginVersion()) {
+    console.log(
+      `Bumped ${skill} plugin version ${from} → ${to} so installed plugins pick up the change`,
+    );
+  }
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
