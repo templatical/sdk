@@ -48,13 +48,18 @@ jobs:
           # outright if that variable is set to something other than this input.
           github-token: ${{ secrets.CHANGESETS_PAT }}
           # Custom version command: `changeset version` (bumps package.jsons +
-          # changelogs) then sync the templatical-email skill, so the Version
-          # Packages PR carries everything and no manual bump is needed:
-          #   1. live-mode CDN pin (EDITOR_VERSION) -> new @templatical/editor
-          #   2. re-bundle vendor/*.mjs -> new @templatical/quality lint rules
-          #      (needs the `pnpm run build` above: quality is bundled from dist)
-          #   3. patch-bump .claude-plugin/plugin.json if either moved, since
-          #      Claude Code caches the plugin by that version
+          # changelogs) then everything that has to follow a version bump, so the
+          # Version Packages PR carries it all and no manual step is needed:
+          #   1. sync-pins: the live-mode CDN pin (EDITOR_VERSION), the CLI pin in
+          #      templatical-email's SKILL.md and in the docs' agent-skill page,
+          #      and a patch bump of that skill's .claude-plugin/plugin.json —
+          #      Claude Code caches a plugin by the version in its manifest, so a
+          #      release that rewrites a user-facing file must move it
+          #   2. the changelog page + JSON served at docs.templatical.com
+          #   3. the docs' llms.txt agent surface
+          #   4. templatical-sdk's reference tree, which is a verbatim copy of the
+          #      docs and must run AFTER sync-pins: it copies the agent-skill page
+          #      that sync-pins rewrites, so the other order commits a stale pin
           version-script: pnpm run changeset:version
           publish-script: pnpm exec changeset publish
           # One aggregated release is created below instead. The nine packages are a

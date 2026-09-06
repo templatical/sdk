@@ -140,7 +140,10 @@ describe("render command", () => {
     // npx it would not, which is the branch the next case covers.
     expect(await runRender(parseArgs(["render", file, "--format", "html"]))).toBe(0);
     expect(stdout.join("").toLowerCase()).toContain("<!doctype html");
-  });
+    // 30s, not the 5s default: compiling MJML is the slowest thing this
+    // package does, and `pnpm run test` runs 13 packages concurrently — which
+    // is what CI does, so the default flakes under load.
+  }, 30_000);
 
   it("exits 3 and names the install command when mjml is missing", async () => {
     optionalAvailable = false;

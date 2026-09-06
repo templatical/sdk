@@ -21,7 +21,7 @@ import {
  * It must descend into a section's columns, not scan top-level blocks only:
  * templates put their content inside sections (that is the documented
  * structure), so a top-level scan finds nothing for a real template. Measured
- * across all five of the Agent Skill's own examples — event-invite, newsletter,
+ * across all five of the templatical-email skill's examples — event-invite, newsletter,
  * product-sale, receipt, welcome — none has a top-level title block, so a
  * shallow version of this returns null every time and the hint is dead code.
  */

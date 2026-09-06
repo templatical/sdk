@@ -99,9 +99,9 @@ npx skills add templatical/sdk
 ```
 
 Uses the [`skills` CLI](https://github.com/vercel-labs/skills) (unrelated to
-`@templatical/template-tools`), which detects your agent and installs the
-skill into its skills directory — no code change needed on our side for this
-to work. It reports anonymous usage telemetry by default (repo and skill
+`@templatical/template-tools`), which detects your agent and installs
+**both** this skill and `templatical-sdk` into its skills directory — no code
+change needed on our side for this to work. It reports anonymous usage telemetry by default (repo and skill
 identifiers, for GitHub-confirmed-public repos); disable with
 `DISABLE_TELEMETRY=1` or `DO_NOT_TRACK=1` if you'd rather not.
 

@@ -13,10 +13,15 @@ const OWN_SCHEMA = resolve(import.meta.dirname, "../schema.json");
 
 describe("schema parity", () => {
   it("this package's committed schema is what the generator produces", () => {
+    // 30s, not the 5s default: this spawns a TypeScript program over
+    // packages/types via ts-json-schema-generator. It finishes in well under
+    // a second alone, but `pnpm run test` runs 13 packages concurrently and
+    // that is what CI does, so the default timeout flakes under load — a
+    // failure that reads as a stale schema rather than a busy machine.
     expect(readFileSync(OWN_SCHEMA, "utf8")).toBe(
       serializeSchema(buildSchema()),
     );
-  });
+  }, 30_000);
 
   it("the skill's committed schema is byte-identical to this package's", () => {
     // Two copies of one generated artifact, written by the one generator
