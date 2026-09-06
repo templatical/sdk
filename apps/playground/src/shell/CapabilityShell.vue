@@ -39,6 +39,16 @@ const {
 // time and a toggle would wipe the record of what the toggle just did.
 const eventLog = useEventLog();
 
+// The bar's own copy of the tab table, with the Events tab's live unread
+// count attached. Derived rather than mutating `DRAWER_TABS` itself, so the
+// static table stays plain for every other reader of it (the pane's
+// `activeTabComponent` lookup, the unit tests over `DRAWER_TABS` directly).
+const tabsWithBadges = computed(() =>
+  DRAWER_TABS.map((tab) =>
+    tab.id === "events" ? { ...tab, badge: eventLog.unreadCount.value } : tab,
+  ),
+);
+
 // `activeId` only ever holds a registered id — `parseCapabilityHash` (inside
 // `useCapabilityRoute`) falls back to the first registered capability for
 // anything else — so this lookup can't miss.
@@ -214,6 +224,23 @@ watch(controlState, async () => {
   await initEditor();
 });
 
+// Reading the feed means switching to it — `immediate` covers the case where
+// the drawer restored to the Events tab on mount, so an unread count is never
+// left sitting there under the reader's eyes.
+watch(
+  drawerActiveTab,
+  (id) => {
+    if (id === "events") eventLog.markRead();
+  },
+  { immediate: true },
+);
+
+// A new event landing while Events is already the active tab must not badge
+// the tab the reader is currently looking at.
+watch(eventLog.events, () => {
+  if (drawerActiveTab.value === "events") eventLog.markRead();
+});
+
 onBeforeUnmount(destroy);
 </script>
 
@@ -246,7 +273,7 @@ onBeforeUnmount(destroy);
         />
       </main>
       <CapabilityDrawer
-        :tabs="DRAWER_TABS"
+        :tabs="tabsWithBadges"
         :active-tab="drawerActiveTab"
         :open="drawerOpen"
         :height="drawerHeight"

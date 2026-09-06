@@ -7,6 +7,13 @@ export interface DrawerTab {
   id: string;
   label: string;
   component: Component;
+  /**
+   * An unread count for the tab bar to render as a small pill. `DRAWER_TABS`
+   * itself never sets this — the static table has no notion of what is
+   * unread — the shell derives a per-render copy with the Events tab's live
+   * count attached.
+   */
+  badge?: number;
 }
 
 /**

@@ -711,4 +711,46 @@ test.describe("capability drawer", () => {
     await expect(canvas).not.toContainText("Reset Your Password");
     await expect(picker).toHaveValue("product-launch");
   });
+
+  test("an event arriving on another tab badges the Events tab, and reading or staying on it clears the badge", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/templates");
+    const eventsTab = page.locator(SELECTORS.capabilityDrawerTab, {
+      hasText: "Events",
+    });
+    const badge = eventsTab.locator(SELECTORS.capabilityDrawerTabBadge);
+
+    // The shell attaches a template on mount, which already reports one
+    // onCreated event — clear it so every count below is unambiguously the
+    // Save clicks that follow, not the mount-time adoption.
+    await eventsTab.click();
+    await page.locator(SELECTORS.capabilityEventsClear).click();
+    await expect(page.locator(SELECTORS.capabilityEvent)).toHaveCount(0);
+
+    // Switch away: the reader is no longer looking at the feed, so an event
+    // landing now must badge the tab rather than pass silently.
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Controls" })
+      .click();
+    await expect(badge).toHaveCount(0);
+
+    await page.locator(SELECTORS.templateSave).click();
+    await expect(badge).toHaveText("1");
+    // Not a bare number: a screen reader announcing "1" with no subject
+    // cannot say what there is one of.
+    await expect(badge).toHaveAttribute("aria-label", "1 unread event");
+
+    // Switching to the tab is reading it.
+    await eventsTab.click();
+    await expect(badge).toHaveCount(0);
+    await expect(page.locator(SELECTORS.capabilityEvent)).toHaveCount(1);
+
+    // A second event arriving while Events is already the active tab must
+    // not badge the tab the reader is currently looking at — the easy way
+    // to miss this is to only mark read on the tab-switch itself.
+    await page.locator(SELECTORS.templateSave).click();
+    await expect(page.locator(SELECTORS.capabilityEvent)).toHaveCount(2);
+    await expect(badge).toHaveCount(0);
+  });
 });

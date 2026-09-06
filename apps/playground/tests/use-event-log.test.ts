@@ -96,3 +96,48 @@ describe("useEventLog", () => {
     expect(second.events.value).toEqual([]);
   });
 });
+
+/**
+ * The tab bar's unread badge. Counted against the newest read event's id
+ * rather than a counter that decrements on every read — the log is capped at
+ * `EVENT_LOG_LIMIT`, so old entries are dropped, and a decrementing counter
+ * would drift negative the moment the cap starts discarding events nobody
+ * ever marked read. The second case below is that rule.
+ */
+describe("useEventLog unread tracking", () => {
+  it("counts events recorded since the last markRead", () => {
+    const log = useEventLog();
+    log.record("templates", { handler: "onSaved", summary: "a" });
+    log.record("templates", { handler: "onSaved", summary: "b" });
+    expect(log.unreadCount.value).toBe(2);
+
+    log.markRead();
+    expect(log.unreadCount.value).toBe(0);
+
+    log.record("templates", { handler: "onSaved", summary: "c" });
+    expect(log.unreadCount.value).toBe(1);
+  });
+
+  it("does not go negative when the cap drops read events", () => {
+    const log = useEventLog();
+    log.record("templates", { handler: "onSaved", summary: "a" });
+    log.markRead();
+    for (let i = 0; i < EVENT_LOG_LIMIT + 5; i += 1) {
+      log.record("templates", { handler: "onSaved", summary: `s${i}` });
+    }
+    expect(log.unreadCount.value).toBe(EVENT_LOG_LIMIT);
+  });
+
+  it("starts with everything unread when markRead has never been called", () => {
+    const log = useEventLog();
+    log.record("templates", { handler: "onSaved", summary: "a" });
+    expect(log.unreadCount.value).toBe(1);
+  });
+
+  it("clear() leaves nothing unread", () => {
+    const log = useEventLog();
+    log.record("templates", { handler: "onSaved", summary: "a" });
+    log.clear();
+    expect(log.unreadCount.value).toBe(0);
+  });
+});

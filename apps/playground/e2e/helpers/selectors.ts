@@ -23,6 +23,8 @@ export const SELECTORS = {
   // collapsible and resizable. See `CapabilityDrawer.vue`.
   capabilityDrawer: '[data-testid="capability-drawer"]',
   capabilityDrawerTab: '[data-testid="capability-drawer-tab"]',
+  /** The unread-count pill inside a tab button — currently only Events. */
+  capabilityDrawerTabBadge: '[data-testid="capability-drawer-tab-badge"]',
   capabilityDrawerToggle: '[data-testid="capability-drawer-toggle"]',
   capabilityDrawerResize: '[data-testid="capability-drawer-resize"]',
   capabilityDrawerPane: '[data-testid="capability-drawer-pane"]',

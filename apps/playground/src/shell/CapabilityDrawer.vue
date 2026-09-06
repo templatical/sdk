@@ -30,7 +30,7 @@ const RESIZE_STEP = 16;
 const PANE_ID = "capability-drawer-pane";
 
 const props = defineProps<{
-  tabs: { id: string; label: string }[];
+  tabs: { id: string; label: string; badge?: number }[];
   activeTab: string;
   open: boolean;
   height: number;
@@ -52,6 +52,15 @@ const emit = defineEmits<{
 
 function tabButtonId(id: string): string {
   return `capability-drawer-tab-${id}`;
+}
+
+/**
+ * Names the subject for a tab's unread badge. A bare number in an
+ * `aria-label` announces as a number with nothing to attach it to; this is
+ * what a screen reader reports instead.
+ */
+function tabBadgeLabel(count: number): string {
+  return `${count} unread event${count === 1 ? "" : "s"}`;
 }
 
 /**
@@ -191,11 +200,18 @@ onBeforeUnmount(() => {
           :aria-selected="tab.id === activeTab"
           :aria-controls="PANE_ID"
           :tabindex="tab.id === activeTab ? 0 : -1"
-          class="pg-tab"
+          class="pg-tab inline-flex items-center"
           :class="tab.id === activeTab ? 'pg-tab-active' : 'pg-tab-inactive'"
           @click="emit('update:activeTab', tab.id)"
         >
           {{ tab.label }}
+          <span
+            v-if="tab.badge"
+            data-testid="capability-drawer-tab-badge"
+            :aria-label="tabBadgeLabel(tab.badge)"
+            class="ml-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-white dark:bg-primary-dark"
+            >{{ tab.badge }}</span
+          >
         </button>
       </div>
 

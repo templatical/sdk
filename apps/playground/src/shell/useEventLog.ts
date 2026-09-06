@@ -1,4 +1,10 @@
-import { shallowRef, type ShallowRef } from "vue";
+import {
+  computed,
+  ref,
+  shallowRef,
+  type ComputedRef,
+  type ShallowRef,
+} from "vue";
 import type { CapabilityEventInput } from "@/config/types";
 
 /** One recorded event, as the feed renders it. */
@@ -30,7 +36,18 @@ export interface EventLog {
    * handed the handler rather than a reactive copy of it.
    */
   events: ShallowRef<CapabilityEvent[]>;
+  /**
+   * Events recorded since the last {@link markRead} (or since the log was
+   * created, if it never has been). Counted against the newest read event's
+   * id rather than decremented on every read: the log is capped at
+   * {@link EVENT_LOG_LIMIT}, so old entries are dropped from `events`, and a
+   * counter that ticks down per read would go negative the moment the cap
+   * starts discarding events nobody ever marked read.
+   */
+  unreadCount: ComputedRef<number>;
   record: (capabilityId: string, event: CapabilityEventInput) => void;
+  /** Marks every event recorded so far as read. */
+  markRead: () => void;
   clear: () => void;
 }
 
@@ -45,6 +62,15 @@ export interface EventLog {
 export function useEventLog(): EventLog {
   const events = shallowRef<CapabilityEvent[]>([]);
   let nextId = 1;
+
+  // The id of the newest event the reader has seen. `0` is lower than every
+  // real id (`nextId` starts at 1), so a log nobody has ever read counts all
+  // of it as unread.
+  const lastReadId = ref(0);
+
+  const unreadCount = computed(
+    () => events.value.filter((event) => event.id > lastReadId.value).length,
+  );
 
   function record(capabilityId: string, event: CapabilityEventInput): void {
     const entry: CapabilityEvent = {
@@ -64,9 +90,18 @@ export function useEventLog(): EventLog {
     events.value = [entry, ...events.value].slice(0, EVENT_LOG_LIMIT);
   }
 
-  function clear(): void {
-    events.value = [];
+  /** The newest event at the moment of the call becomes the read watermark. */
+  function markRead(): void {
+    lastReadId.value = events.value[0]?.id ?? lastReadId.value;
   }
 
-  return { events, record, clear };
+  function clear(): void {
+    events.value = [];
+    // Nothing left to be unread about. Without this, a watermark set below
+    // `nextId` before the clear would count every future event again from a
+    // log that looks empty to the reader.
+    lastReadId.value = nextId - 1;
+  }
+
+  return { events, unreadCount, record, markRead, clear };
 }
