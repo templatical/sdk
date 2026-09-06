@@ -149,6 +149,9 @@ importers:
       '@templatical/import-mjml':
         specifier: workspace:*
         version: link:packages/import-mjml
+      '@templatical/import-topol':
+        specifier: workspace:*
+        version: link:packages/import-topol
       '@templatical/import-unlayer':
         specifier: workspace:*
         version: link:packages/import-unlayer
@@ -531,6 +534,19 @@ importers:
       '@types/node':
         specifier: ^25.9.5
         version: 25.9.5
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(@types/node@25.9.5)(@vitest/coverage-v8@4.1.11)(happy-dom@20.13.2)(jsdom@30.0.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
+
+  packages/import-topol:
+    dependencies:
+      '@templatical/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

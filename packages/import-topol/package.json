@@ -1,0 +1,48 @@
+{
+  "name": "@templatical/import-topol",
+  "description": "Convert Topol.io email templates to Templatical format",
+  "version": "0.31.0",
+  "bugs": "https://github.com/templatical/sdk/issues",
+  "dependencies": {
+    "@templatical/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "homepage": "https://templatical.com",
+  "keywords": [
+    "email",
+    "email-template",
+    "importer",
+    "migration",
+    "templatical",
+    "topol"
+  ],
+  "license": "MIT",
+  "module": "./dist/index.js",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/templatical/sdk.git",
+    "directory": "packages/import-topol"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts"
+}
