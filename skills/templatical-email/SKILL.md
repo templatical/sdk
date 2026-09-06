@@ -43,6 +43,14 @@ live" picks up the current template seamlessly. Each template gets its own
 uniquely named file and **each new session starts a new template by default** —
 see [Working files](#working-files).
 
+**Wiring the result into an app is a different skill.** This one authors and
+validates template JSON; it doesn't mount the editor, configure providers, or
+touch a consumer's codebase. "How do I load a template into the editor?" or
+any other integration/configuration/troubleshooting question about
+`@templatical/editor` itself belongs to `templatical-sdk`. "Build a welcome
+email and wire it into my app" is both, in that order: build and validate the
+template here first, then hand off.
+
 ## Talking to the user
 
 Communicate about the _email_, not the machinery. The mechanical steps — reading

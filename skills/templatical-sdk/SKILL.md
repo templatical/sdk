@@ -3,7 +3,199 @@ name: templatical-sdk
 description: 'Integration guidance for the Templatical SDK (@templatical/editor). Use when embedding, configuring, theming, extending, or troubleshooting an integration, or answering "how do I" / "is it possible" questions about the SDK — not for authoring or editing an email template.'
 ---
 
-_The content below this line is written by a later task (design-notes/sdk-skill-plan.md, Task 3)._
+# Templatical SDK Integration
+
+Integration guidance for `@templatical/editor` — the embeddable drag-and-drop
+email editor SDK. Answers "how do I" and "is it possible" questions about the
+SDK, and helps install, mount, configure, theme and troubleshoot an
+integration in an existing application.
+
+**A different skill authors the email itself.** This skill wires the editor
+into an app; `templatical-email` writes and validates the template JSON that
+goes inside it. "How do I load a template into the editor?" is this skill.
+"Make me a welcome email" is `templatical-email`. "Build a welcome email and
+wire it into my app" is both, in that order — author and validate in
+`templatical-email` first, then integrate here.
+
+## Install and mount
+
+`@templatical/editor` is self-contained: Vue, TipTap and its other runtime
+dependencies are all bundled inside it.
+
+```bash
+npm install @templatical/editor
+```
+
+`@templatical/renderer`, `@templatical/quality`, `@templatical/media-library`
+and `pusher-js` are optional peers, each gated by a specific feature — install
+only the ones actually used (see Failure modes, below).
+
+### Vanilla
+
+```html
+<div id="editor" style="height: 100vh;"></div>
+
+<script type="module">
+  import { init } from "@templatical/editor";
+  import "@templatical/editor/style.css";
+
+  const editor = await init({ container: "#editor" });
+
+  // Later, when removing the editor:
+  editor.unmount();
+</script>
+```
+
+### Framework
+
+Same shape in any component-based framework: mount on the container ref,
+unmount on cleanup. React shown; Vue, Svelte and Angular equivalents are in
+`reference/getting-started/installation.md`, under "Framework integration".
+
+```tsx
+import { useEffect, useRef } from "react";
+import { init } from "@templatical/editor";
+import "@templatical/editor/style.css";
+import type { TemplaticalEditor } from "@templatical/editor";
+
+export function EmailEditor() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<TemplaticalEditor | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    let cancelled = false;
+    (async () => {
+      const ed = await init({ container: containerRef.current });
+      if (!cancelled) editorRef.current = ed;
+    })();
+    return () => {
+      cancelled = true;
+      editorRef.current?.unmount();
+    };
+  }, []);
+
+  return <div ref={containerRef} style={{ height: "100vh" }} />;
+}
+```
+
+### Cloud
+
+`initCloud()` is the same mount with Cloud's storage, comments, saved blocks,
+test email, rendering and AI wired in behind an auth endpoint the consumer
+hosts — swap the import, add `auth`, nothing else about the mount changes:
+
+```ts
+import { initCloud } from "@templatical/editor";
+
+const editor = await initCloud({
+  container: "#editor",
+  auth: { url: "/api/templatical/token" },
+});
+```
+
+Issuing keys, plan entitlements and the Cloud account itself are Cloud's own
+dashboard — this skill documents `initCloud()`'s shape and the provider
+contracts it fills in, not signup. The auth endpoint the consumer's server
+needs to implement is in `reference/cloud/getting-started.md`.
+
+## Failure modes
+
+A working mount snippet doesn't protect against any of these. Every row is a
+verified fact about this SDK, not a general best practice.
+
+| Trap | The rule |
+| --- | --- |
+| **Duplicate Vue reactivity** | The editor bundles Vue, `@templatical/core` and `@templatical/types` inline, and dedupes `vue`/`@vue/reactivity` to one instance at build time. Add `@templatical/core` — or any other Vue-using `@templatical/*` package — to the consumer's own dependencies and it can resolve to a second, separate reactivity instance with its own dep-tracking `WeakMap`: refs the editor creates are never seen by that second instance's effects, and the editor renders its chrome and then silently ignores every click, drag and keystroke — nothing thrown, nothing logged. Never add a Vue-using `@templatical/*` package to the consumer's own dependencies; the bundled copy is the only one the editor needs. |
+| **Tailwind is never a peer** | `dist/style.css` ships fully compiled. `tailwindcss` is a build-time dev dependency of the editor's own project, never a peer — don't tell a consumer to install it; doing so changes nothing about the editor's styles. |
+| **The stylesheet subpath** | `import "@templatical/editor/style.css"` — the package's `exports` map resolves that subpath to `dist/style.css` specifically so this works. Forgetting it mounts a fully functional, completely unstyled editor — easy to mistake for a broken integration. |
+| **ESM only** | No CJS, no UMD, no `require` export. The `exports` map exposes only an `import` condition plus `types` — there's no `main` field at all. A consumer whose own build is CJS-only needs a bundler that can consume ESM, not a workaround here. |
+| **Host style inheritance** | Shadow DOM blocks the host's *rules*, not *inheritance* — twelve typography properties (letter-spacing, word-spacing, text-transform, font-style, font-weight, text-indent, text-align, white-space, list-style-type, cursor, font-variant-numeric, text-shadow), plus font-family/size/line-height/color, cross the boundary in both DOM modes. The editor neutralizes them at its own root. **Don't advise resetting the container** — `all: initial`/`revert` there wipes the `--tpl-user-*` custom properties that are the theming surface, and can break the height chain below. See `reference/getting-started/embedding.md`. |
+| **A trapped `position: fixed`** | Any ancestor of the container with `transform`, `filter`, `backdrop-filter`, `perspective`, `will-change`, `contain`, `isolation`, `opacity` below `1`, or a positioned element carrying a `z-index`, becomes a stacking context or a containing block the editor's dialogs resolve against instead of the viewport. Symptoms: dialogs clipped or painted under the host's own chrome, or a drag-and-drop ghost that drifts from the cursor. See `reference/getting-started/embedding.md`. |
+| **The height chain** | The container needs a definite height — the editor fills it. Without one, a small anti-collapse floor (~320px) keeps the mount from vanishing outright, but its chrome is positioned assuming real height, so the sidebar's last items, the footer and panel content clip with no way to scroll them into view. Fix the container's height rather than the symptom. |
+| **`toHtml()` needs a provider** | The SDK bundles no MJML compiler. `toHtml()` resolves `render.toHtml`, else `toMjml()`'s result through `render.compileMjml`, else rejects — there's no local HTML path, ever. `toMjml()` alone falls back to the local `@templatical/renderer` only when no `render.toMjml` is configured. See Providers, below. |
+| **Four optional peers, each lazy and feature-gated** | `@templatical/renderer` (first `toMjml()` call), `@templatical/quality` (Issues sidebar, loaded at mount), `@templatical/media-library` (first media-browser open, `initCloud()` only), `pusher-js` (Cloud realtime connect, `initCloud()` only). Installing one that's unused is dead weight; omitting one that's needed is a silent missing feature, not a thrown error. |
+| **The browser floor differs by mount mode** | Default shadow mount: Chrome/Edge 80+, Firefox 101+, Safari 16.4+ (driven by `adoptedStyleSheets`). `shadowDom: false` drops the floor to Firefox 80+ / Safari 14+, at the cost of host-CSS isolation. |
+
+## Providers
+
+Six optional config keys, each a plain object of methods: `templates`,
+`versionHistory`, `comments`, `savedBlocks`, `testEmail`, `render`. Every key
+stands alone — a feature is absent until its key is passed, not merely
+disabled: no half-rendered panel, no dead button.
+
+**On the four storage providers (`templates`, `versionHistory`, `comments`,
+`savedBlocks`) every mutation is `false | fn`, and it's required, never
+optional.** Passing `false` is a typed statement that the action is
+unavailable — calling it rejects, and the editor hides the control for it
+rather than rendering one that does nothing. Leaving a mutation off the
+object is not the same decision as writing `false`, and a provider has to
+make the choice explicit. `render` and `testEmail` are shaped differently:
+every `render` method (`toMjml`, `toHtml`, `compileMjml`) is independently
+optional, and `testEmail` is a single `send`.
+
+Full contracts, headless use (`useSavedBlocks`, `useVersionHistory`,
+`useComments` from `@templatical/core`, for driving a custom UI with no
+editor mounted), and Cloud as one implementation of each: `reference/backend/`.
+
+## Version awareness
+
+Resolve the consumer's installed `@templatical/editor` version — from their
+lockfile or `package.json` — before answering anything version-sensitive.
+
+- **Pin source reads to that version's tag:**
+  `https://raw.githubusercontent.com/templatical/sdk/v<version>/<path>`. No
+  auth needed on the public repo. That's the aggregated `v<version>` tag —
+  per-package tags (like `@templatical/editor@<version>`) exist for old
+  releases but are no longer created; don't construct one. Reading `main`
+  quotes unreleased source.
+- **`reference/` is latest-only.** It describes the release named in
+  `reference/manifest.json`'s `sdkVersion` field — not necessarily the
+  consumer's installed version. When the consumer is behind, say so, and
+  offer to diff via `docs.templatical.com/changelog.json` rather than
+  silently answering from a newer release.
+
+## Scaffolding a new integration
+
+1. **Detect.** Package manager from the lockfile (`pnpm-lock.yaml` /
+   `package-lock.json` / `yarn.lock` / `bun.lockb`). Framework and bundler
+   from `package.json` and its config files. TypeScript from `tsconfig.json`.
+   Whether `@templatical/editor` is already installed, and at what version.
+2. **Propose, then wait.** Name the packages to add, the files to create or
+   edit, and the mount point — then wait for a go-ahead. Don't edit an
+   unfamiliar codebase unannounced.
+3. **Write.** Install with the consumer's own package manager. Create the
+   container with a definite height, the mount call, and the `style.css`
+   import. Add provider or theming config only where it was actually asked for.
+4. **Verify by running the consumer's dev server** and reading its console
+   and network for errors — never by asking the user to check themselves. A
+   blank editor with a 404 on `style.css` looks identical to a working one
+   until something actually looks.
+5. **Report** what changed, what was left alone, and what's still needed — a
+   provider, an optional peer, a Cloud auth endpoint.
+
+### Diagnosing an existing integration
+
+The same table, read backwards. Read the consumer's `init()`/`initCloud()`
+call, bundler config and CSS setup, and check each against the failure modes
+above. "The editor renders but ignores every click" is the
+duplicate-reactivity signature specifically — otherwise close to
+undiagnosable, since nothing throws and nothing logs.
+
+## Out of scope
+
+- **Doesn't carry a copy of the block schema.** Get it fresh from the CLI —
+  `npx -y @templatical/template-tools@<version> schema` — the same one
+  `templatical-email` validates against. A second copy here would drift
+  from it.
+- **Doesn't run the CDN live preview.** That's `templatical-email`'s live
+  mode. This skill verifies the consumer's own app instead — see
+  Scaffolding, above.
+- **Not a Cloud onboarding flow.** It documents `initCloud()` and the
+  provider contracts; signing up, issuing keys, and plan entitlements happen
+  in Cloud's own dashboard.
+- **Never touches git.** Not a commit, not a branch, not a stash — file
+  changes it proposes are the consumer's to review and commit.
 
 <!-- BEGIN GENERATED INDEX -->
 
