@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Aggregates the ten per-package `packages/<name>/CHANGELOG.md` files into one
- * product changelog.
+ * Aggregates the per-package `packages/<name>/CHANGELOG.md` files into one
+ * product changelog. The set is whatever is on disk — never a fixed count.
  *
  * The packages sit in a changesets `fixed` group (see `.changeset/config.json`),
  * so they always bump to the same version — there is one release timeline, split
- * ten ways. Each changeset writes its prose into the changelog of every package
+ * across the group. Each changeset writes its prose into the changelog of every package
  * it names, and writes a dependency-bump stub into the rest of the group:
  *
  *     - Updated dependencies [90f088e]     <- stub, carries no prose
@@ -430,7 +430,7 @@ export function renderReleaseNotes(versions, version, allPackages = []) {
   const footer = [
     "---",
     "",
-    `All ${allPackages.length || 10} \`@templatical/*\` packages are published at \`${version}\` — they share one version number.`,
+    `All ${allPackages.length || readPackageChangelogs().length} \`@templatical/*\` packages are published at \`${version}\` — they share one version number.`,
     "",
     "Full changelog: https://docs.templatical.com/changelog",
   ].join("\n");
