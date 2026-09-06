@@ -4,7 +4,6 @@
   "version": "0.30.0",
   "bugs": "https://github.com/templatical/sdk/issues",
   "devDependencies": {
-    "@templatical/media-library": "workspace:*",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
   },

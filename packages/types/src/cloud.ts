@@ -6,8 +6,11 @@ import type {
   ViewportSize,
 } from "./index";
 
-// Still a type-only import, so the media-library devDependency (and the
-// media-library-before-types build order) stays load-bearing for `PlanConfig`.
+// Resolved by the `paths` entry in tsconfig.json, which points at
+// media-library's source by relative path — never through node_modules. So
+// `types` must NOT declare a media-library dependency of any kind: a workspace
+// edge here closes types -> media-library -> core -> types, and pnpm 12+ aborts
+// any recursive script selecting all three with ERR_PNPM_TASK_CYCLE.
 import type { MediaConfig, StorageInfo } from "@templatical/media-library";
 
 // Re-export OSS types used by Cloud consumers
