@@ -63,6 +63,16 @@ You can also **preview it live**: ask to "show it live" and the skill opens your
 
 > Want a hosted, managed experience instead — AI chat inside the editor, tuned prompts, an MCP server we run? That's the Templatical Cloud tier (below).
 
+### Wiring the editor into your own app
+
+A second skill, [`templatical-sdk`](./skills/templatical-sdk), covers the other half: installing, mounting, configuring, theming and troubleshooting [`@templatical/editor`](https://docs.templatical.com/getting-started/quick-start) in your own app. Most people want only one of the two, which is why they're separate Claude Code plugins — `npx skills add templatical/sdk` still installs both in one command:
+
+```text
+/plugin install templatical-sdk@templatical
+```
+
+The same [skill guide →](https://docs.templatical.com/guide/agent-skill) covers both.
+
 ## Power features
 
 Things that are usually paid features in commercial editors — free in Templatical:
@@ -150,7 +160,7 @@ The only restriction: don't repackage Templatical itself as a directly competing
 - [Saving & Loading](https://docs.templatical.com/backend/templates) — the template lifecycle over your own storage
 - [Saved Blocks](https://docs.templatical.com/backend/saved-blocks) — reusable block groups over your own storage
 - [Version History](https://docs.templatical.com/backend/version-history) — browse, preview and restore past versions over your own storage
-- [AI Agent Skill](https://docs.templatical.com/guide/agent-skill) — generate emails from a prompt in your own agent
+- [AI Agent Skills](https://docs.templatical.com/guide/agent-skill) — generate emails from a prompt, or get integration help, in your own agent
 - [Cloud (AI, Collab, Comments)](https://docs.templatical.com/cloud/) — optional managed tier
 - [Migrating from BeeFree](https://docs.templatical.com/guide/migration-from-beefree)
 - [Migrating from Unlayer](https://docs.templatical.com/guide/migration-from-unlayer)

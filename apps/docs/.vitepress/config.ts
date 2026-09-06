@@ -119,7 +119,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
     },
     {
       text: "AI",
-      items: [{ text: "Agent Skill", link: "/guide/agent-skill" }],
+      items: [{ text: "Agent Skills", link: "/guide/agent-skill" }],
     },
     {
       text: "Customization",
@@ -298,7 +298,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
     },
     {
       text: "KI",
-      items: [{ text: "Agent-Skill", link: "/de/guide/agent-skill" }],
+      items: [{ text: "Agent-Skills", link: "/de/guide/agent-skill" }],
     },
     {
       text: "Anpassung",

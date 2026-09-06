@@ -216,7 +216,7 @@ _Generated from `@templatical/editor@0.30.0` — 65 pages. Regenerate with `pnpm
 
 ## Guide
 
-- [AI Agent Skill](reference/guide/agent-skill.md): Design a complete email from a natural-language prompt, preview it in the real editor, and export sendable MJML/HTML — in your own AI coding agent. Free, open-source, no backend or API key.
+- [AI Agent Skills](reference/guide/agent-skill.md): Two open Agent Skills for Templatical — generate and validate email templates from a prompt, or get integration guidance for embedding @templatical/editor. Free, open-source, no backend or API key.
 - [Block Types](reference/guide/blocks.md): Reference for all 14 built-in block types in Templatical.
 - [Custom Blocks](reference/guide/custom-blocks.md): Define your own block types with custom fields, Liquid templates, and data sources in Templatical.
 - [Block & Template Defaults](reference/guide/defaults.md): Customize default properties for newly created blocks and template settings with blockDefaults and templateDefaults.
