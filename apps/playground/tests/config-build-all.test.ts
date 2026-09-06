@@ -200,3 +200,62 @@ describe("templates and version-history recorder wiring", () => {
     ]);
   });
 });
+
+/**
+ * Comments is the one capability whose contract events carry a real
+ * `origin` — `local` or `remote` — rather than the assumed default
+ * `useEventLog` falls back to for everyone else. Its wiring must forward
+ * what the SDK gave it.
+ */
+describe("comments recorder wiring", () => {
+  const comment = { id: "c1", body: "Looks good" } as never;
+
+  it("passes the comment's own origin through rather than assuming local", () => {
+    const seen: Array<{ handler: string; origin?: string }> = [];
+    const config = buildAllCapabilityConfig({}, undefined, (_id, event) =>
+      seen.push({ handler: event.handler, origin: event.origin }),
+    );
+    config.comments?.onCreated?.(comment, { origin: "remote" } as never);
+    config.comments?.onUpdated?.(comment, { origin: "local" } as never);
+
+    expect(seen).toEqual([
+      { handler: "onCreated", origin: "remote" },
+      { handler: "onUpdated", origin: "local" },
+    ]);
+  });
+
+  it("routes all five handlers under the comments id, each summarizing the comment body", () => {
+    const seen: Array<{ id: string; handler: string; summary: string }> = [];
+    const config = buildAllCapabilityConfig({}, undefined, (id, event) =>
+      seen.push({ id, handler: event.handler, summary: event.summary }),
+    );
+    const meta = { origin: "local" as const };
+    config.comments?.onCreated?.(comment, meta);
+    config.comments?.onUpdated?.(comment, meta);
+    config.comments?.onDeleted?.(comment, meta);
+    config.comments?.onResolved?.(comment, meta);
+    config.comments?.onUnresolved?.(comment, meta);
+
+    expect(seen).toEqual([
+      { id: "comments", handler: "onCreated", summary: "Looks good" },
+      { id: "comments", handler: "onUpdated", summary: "Looks good" },
+      { id: "comments", handler: "onDeleted", summary: "Looks good" },
+      { id: "comments", handler: "onResolved", summary: "Looks good" },
+      { id: "comments", handler: "onUnresolved", summary: "Looks good" },
+    ]);
+  });
+
+  it("summarizes only the first line of a body, capped at 60 characters", () => {
+    const seen: string[] = [];
+    const config = buildAllCapabilityConfig({}, undefined, (_id, event) =>
+      seen.push(event.summary),
+    );
+    const long = "x".repeat(80);
+    config.comments?.onCreated?.(
+      { id: "c2", body: `${long}\nsecond line` } as never,
+      { origin: "local" } as never,
+    );
+
+    expect(seen).toEqual([`${"x".repeat(59)}…`]);
+  });
+});

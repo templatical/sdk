@@ -24,6 +24,18 @@ describe("commentsCapability", () => {
       update: impl.update,
       delete: impl.delete,
       setResolved: impl.setResolved,
+      // Attached by the capability itself, not carried in from `impl`: the
+      // drawer's Events tab is fed from inside `build()`, so the provider the
+      // editor is handed reports five lifecycle events the demo backend never
+      // declared. Matched by shape rather than identity — which function
+      // each one is, and that it forwards the SDK's own `meta.origin`,
+      // belongs to `config-build-all.test.ts`, while this exhaustive
+      // comparison is what stops a sixth key appearing unnoticed.
+      onCreated: expect.any(Function),
+      onUpdated: expect.any(Function),
+      onDeleted: expect.any(Function),
+      onResolved: expect.any(Function),
+      onUnresolved: expect.any(Function),
     });
   });
 
@@ -45,6 +57,14 @@ describe("commentsCapability", () => {
       update: false,
       delete: false,
       setResolved: false,
+      // Reporting is independent of permission: a store that forbids every
+      // mutation still tells the feed when a change reaches it some other
+      // way — a plugin, or a remote peer through `subscribe`.
+      onCreated: expect.any(Function),
+      onUpdated: expect.any(Function),
+      onDeleted: expect.any(Function),
+      onResolved: expect.any(Function),
+      onUnresolved: expect.any(Function),
     });
   });
 

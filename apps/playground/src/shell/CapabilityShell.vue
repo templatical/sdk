@@ -5,6 +5,7 @@ import {
   buildAllCapabilityConfig,
   capabilityById,
 } from "@/config/capabilities";
+import { PLAYGROUND_USER } from "@/providers/comments";
 import { slugFor } from "@/providers/template-name";
 import { templates } from "@/templates";
 import CapabilityDrawer from "./CapabilityDrawer.vue";
@@ -94,6 +95,14 @@ const {
       fixture.value,
       eventLog.record,
     ),
+    // Comments' `isAvailable` requires an identity (CLAUDE.md's "Provider
+    // contracts" section: with no `user` the trigger and panel never render,
+    // since an unattributable comment is worse than no comment feature). Set
+    // unconditionally rather than only on the comments capability's own page,
+    // because every page merges the whole registry's config the same way
+    // `content` below is the whole template regardless of which capability
+    // is active.
+    user: PLAYGROUND_USER,
     content: fixture.value.create(),
   }),
   adoptTemplate,

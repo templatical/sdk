@@ -618,6 +618,64 @@ test.describe("capability drawer", () => {
     );
   });
 
+  test("creating a comment reports onCreated with its own local origin", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/comments");
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Events" })
+      .click();
+
+    // The shell attaches a template on mount, so the feed already carries the
+    // templates capability's own `onCreated`. Clearing first makes what
+    // follows unambiguously the doing of the comment below.
+    await page.locator(SELECTORS.capabilityEventsClear).click();
+    await expect(page.locator(SELECTORS.capabilityEvent)).toHaveCount(0);
+
+    // Drive the real feature end to end, the same flow `comments.spec.ts`
+    // uses — reaching into the provider directly would prove nothing.
+    await page.locator(SELECTORS.commentsTrigger).click();
+    await expect(page.locator(SELECTORS.commentsSidebar)).toBeVisible();
+    await page.locator(SELECTORS.commentsInput).fill("Headline reads long");
+    await page.locator(SELECTORS.commentsSend).click();
+
+    const event = page.locator(SELECTORS.capabilityEvent).first();
+    await expect(event).toHaveAttribute("data-event-handler", "onCreated");
+    await expect(event).toHaveAttribute("data-event-capability", "comments");
+    // The summary is the comment's own body, so this fails if the capability
+    // reports a placeholder or the wrong field. This browser wrote the
+    // comment, so the origin the SDK handed back is `local`.
+    await expect(event).toContainText("Headline reads long");
+    await expect(event).toContainText("local");
+  });
+
+  test("resolving a comment reports onResolved, carrying the same local origin", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/comments");
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Events" })
+      .click();
+    await page.locator(SELECTORS.capabilityEventsClear).click();
+
+    await page.locator(SELECTORS.commentsTrigger).click();
+    await expect(page.locator(SELECTORS.commentsSidebar)).toBeVisible();
+    await page.locator(SELECTORS.commentsInput).fill("Needs another look");
+    await page.locator(SELECTORS.commentsSend).click();
+    await expect(page.locator(SELECTORS.capabilityEvent)).toHaveCount(1);
+
+    await page.locator(SELECTORS.commentResolve).first().click();
+
+    // Newest first: the resolve is now the lead row, distinct from the
+    // onCreated row the send above already produced — proving a second
+    // handler, not just onCreated, forwards a real origin end to end.
+    await expect(page.locator(SELECTORS.capabilityEvent)).toHaveCount(2);
+    const event = page.locator(SELECTORS.capabilityEvent).first();
+    await expect(event).toHaveAttribute("data-event-handler", "onResolved");
+    await expect(event).toHaveAttribute("data-event-capability", "comments");
+    await expect(event).toContainText("local");
+  });
+
   test("switching fixture reloads the editor with that template's content, keeps the capability, and lasts only for this visit", async ({
     page,
   }) => {
