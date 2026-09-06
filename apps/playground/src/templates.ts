@@ -6,6 +6,7 @@ import type {
   FontsConfig,
   BlockDefaults,
   TemplateDefaults,
+  DisplayConditionsConfig,
 } from "@templatical/types";
 import {
   createTitleBlock,
@@ -717,6 +718,61 @@ export const customBlockDefinitions: CustomBlockDefinition[] = [
   featuredArticleBlock,
   productShowcaseBlock,
 ];
+
+/**
+ * The playground-wide audience segments every template's `displayCondition`
+ * blocks are drawn from. One catalog rather than a per-template list because
+ * a `label` is how `CommonBlockSettings.vue` recognizes a block's condition as
+ * one of these versus a hand-typed custom one — a template introducing a new
+ * label without adding it here would show as "custom" regardless of intent.
+ */
+export const displayConditions: DisplayConditionsConfig = {
+  conditions: [
+    {
+      label: "VIP Partners",
+      before: "{% if vip_partner %}",
+      after: "{% endif %}",
+      group: "Audience",
+      description: "Show only to VIP partner accounts",
+    },
+    {
+      label: "Free Users",
+      before: '{% if plan == "free" %}',
+      after: "{% endif %}",
+      group: "Audience",
+      description: "Show only to free plan users",
+    },
+    {
+      label: "Enterprise",
+      before: '{% if plan == "enterprise" %}',
+      after: "{% endif %}",
+      group: "Audience",
+      description: "Show only to enterprise accounts",
+    },
+    {
+      label: "Beta Testers",
+      before: "{% if beta_tester %}",
+      after: "{% endif %}",
+      group: "Audience",
+      description: "Show only to users in the beta program",
+    },
+    {
+      label: "Early Bird",
+      before: "{% if early_bird %}",
+      after: "{% endif %}",
+      group: "Registration",
+      description: "Show early bird pricing for early registrants",
+    },
+    {
+      label: "Speakers",
+      before: "{% if is_speaker %}",
+      after: "{% endif %}",
+      group: "Role",
+      description: "Show only to confirmed speakers",
+    },
+  ],
+  allowCustom: true,
+};
 
 // ─── Product Launch ───────────────────────────────────────────
 // Showcases: Display Conditions (3 audience segments), Merge Tags, Custom Block

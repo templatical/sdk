@@ -11,6 +11,7 @@ import { templates } from "@/templates";
 import CapabilityDrawer from "./CapabilityDrawer.vue";
 import CapabilityRail from "./CapabilityRail.vue";
 import { DRAWER_TABS } from "./drawer-tabs";
+import { fixtureCapabilityConfig } from "./fixture-config";
 import { useCapabilityEditor } from "./useCapabilityEditor";
 import { useCapabilityRoute } from "./useCapabilityRoute";
 import { useControlState } from "./useControlState";
@@ -70,9 +71,9 @@ const fixtureSlug = computed(() => slugFor(fixture.value.name));
 // `Object.entries`. The capability keys come first because they are what the
 // drawer exists to demonstrate; `content` is a whole template's worth of
 // blocks and buries anything after it (hundreds of lines against a ~10-line
-// viewport). The three groups own disjoint keys, so moving the spread past
-// `content` changes ordering and nothing else — pinned by the key-set
-// assertion in `tests/config-build-all.test.ts`.
+// viewport). The groups own disjoint keys, so moving a spread past `content`
+// changes ordering and nothing else — the capability registry's own key set
+// is pinned by the assertion in `tests/config-build-all.test.ts`.
 const {
   host: editorHost,
   lastInitConfig,
@@ -95,6 +96,12 @@ const {
       fixture.value,
       eventLog.record,
     ),
+    // `customBlocks` and `displayConditions`: not a capability's key, but the
+    // fixture's own content needs them regardless — every fixture's custom
+    // block and display-condition blocks render broken without them (see
+    // `fixtureCapabilityConfig`). Placed ahead of `user`/`content` so they
+    // stay above the fold in the Config tab like the capability keys above.
+    ...fixtureCapabilityConfig(fixture.value),
     // Comments' `isAvailable` requires an identity (CLAUDE.md's "Provider
     // contracts" section: with no `user` the trigger and panel never render,
     // since an unattributable comment is worse than no comment feature). Set

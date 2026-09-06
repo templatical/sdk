@@ -42,6 +42,7 @@ import {
 import {
   templates,
   customBlockDefinitions,
+  displayConditions,
   registerDataSourcePicker,
   resolveDataSourcePicker,
 } from "@/templates";
@@ -724,54 +725,6 @@ function cancelMergeTagPicker(): void {
   mergeTagResolve?.(null);
   mergeTagResolve = null;
 }
-
-const displayConditions = {
-  conditions: [
-    {
-      label: "VIP Partners",
-      before: "{% if vip_partner %}",
-      after: "{% endif %}",
-      group: "Audience",
-      description: "Show only to VIP partner accounts",
-    },
-    {
-      label: "Free Users",
-      before: '{% if plan == "free" %}',
-      after: "{% endif %}",
-      group: "Audience",
-      description: "Show only to free plan users",
-    },
-    {
-      label: "Enterprise",
-      before: '{% if plan == "enterprise" %}',
-      after: "{% endif %}",
-      group: "Audience",
-      description: "Show only to enterprise accounts",
-    },
-    {
-      label: "Beta Testers",
-      before: "{% if beta_tester %}",
-      after: "{% endif %}",
-      group: "Audience",
-      description: "Show only to users in the beta program",
-    },
-    {
-      label: "Early Bird",
-      before: "{% if early_bird %}",
-      after: "{% endif %}",
-      group: "Registration",
-      description: "Show early bird pricing for early registrants",
-    },
-    {
-      label: "Speakers",
-      before: "{% if is_speaker %}",
-      after: "{% endif %}",
-      group: "Role",
-      description: "Show only to confirmed speakers",
-    },
-  ],
-  allowCustom: true,
-};
 
 let selectedContent: TemplateContent | null = null;
 let selectedCustomBlocks: CustomBlockDefinition[] | undefined;
