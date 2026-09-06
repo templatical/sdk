@@ -78,4 +78,20 @@ test.describe("capability shell", () => {
     await expect(page.locator(SELECTORS.capabilityShell)).toHaveCount(0);
     await expect(page.locator(SELECTORS.templateCard).first()).toBeVisible();
   });
+
+  test("renders the fixture's custom block instead of the unregistered-type placeholder", async ({
+    page,
+  }) => {
+    // Every registered capability's fixture is "Product Launch", which embeds
+    // a Testimonial custom block. Without `customBlocks` in the shell's
+    // config, the block registry has no definition for it and the canvas
+    // shows the dashed "Unknown block type" placeholder instead — a visible
+    // defect on every capability page, not just this default one.
+    await page.goto("/#capabilities");
+    const editor = page.locator(SELECTORS.capabilityEditor);
+    await expect(editor).toBeVisible();
+
+    await expect(editor).toContainText("Maria Santos");
+    await expect(editor).not.toContainText("Unknown block type");
+  });
 });
