@@ -1,0 +1,65 @@
+{
+  "skill_name": "templatical-sdk",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Brand-new Vite + React + TypeScript app, nothing in it yet. Get the Templatical editor running in it — do whatever's needed.",
+      "expected_output": "Proposes the plan (the package to add, the file to create, the mount point) and waits for a go-ahead before writing anything, rather than scaffolding an unfamiliar app unannounced. Once approved: `npm install @templatical/editor` and nothing else Templatical-related — no `@templatical/core`, no `vue`, no `tailwindcss` added to the app's dependencies. A component that mounts via `useRef` + `useEffect`, calls `init({ container: containerRef.current })`, ignores a late-resolving `init()` if the component already unmounted, and calls `editor.unmount()` in the cleanup function. Imports `@templatical/editor/style.css`. A container with an explicit height (e.g. `height: '100vh'`), never `auto` or unset. Verifies by running the dev server and reading the console/network for errors, rather than telling the user to check themselves. Must not claim Vue or Tailwind need installing, and must not add any `@templatical/*` package beyond the editor itself.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "We already have a Next.js 15 app (App Router). Add the Templatical editor to a page at /templates/[id].",
+      "expected_output": "Recognizes the App Router constraint: the component calling `useRef`/`useEffect` needs a `'use client'` directive, since a Server Component can't use hooks and `init()` only ever runs client-side. Proposes the exact file(s) to touch and waits before editing the existing app. Detects the app's actual package manager from its lockfile rather than assuming npm. Same mount shape as a plain React integration — container with an explicit height, the `@templatical/editor/style.css` import, `unmount()` on cleanup — with no `@templatical/core` or `tailwindcss` added as a dependency. Must not place the `init()` call in a Server Component or attempt it during server rendering, and must not claim Templatical needs a Next.js-specific package or its own SSR configuration step.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Add the editor to our Nuxt 3 app, on the /compose page.",
+      "expected_output": "Mounts inside `onMounted()` and tears down in `onUnmounted()` — Vue's own client-only lifecycle hooks — with a template ref carrying an explicit height and the `@templatical/editor/style.css` import. Proposes the file and mount point before editing. Must not treat 'the host app is already Vue' as license to add `@templatical/core` (or any other Vue-using `@templatical/*` package) as a project dependency to 'share' Vue with the editor — the editor bundles and dedupes its own Vue instance internally regardless of the host framework, and a sibling Vue-using package still risks a second reactivity instance. Must not claim `tailwindcss` needs installing even though most Nuxt apps already have it.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Just a static HTML file, no npm, no build step. Can I still drop Templatical in, and how?",
+      "expected_output": "Yes — a `<script type=\"module\">` importing `init` from the CDN build, plus a `<link>` to the CDN stylesheet, no package manager or bundler involved. Recommends pinning an exact version in the CDN URL for anything beyond a quick test, rather than the unversioned latest. The container is a real element that can host a shadow root — a `<div>` (or `<section>`/`<article>`/etc.), never a `<table>`, `<button>`, or other element type the platform won't let `attachShadow()` target — with an explicit height. Must not say Node, npm, Vue, or a bundler is required to use the CDN build, and must not put the container on a disallowed element type.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "The editor's already mounted in our React app and working, but there's no save button, and typing a name in the header does nothing. We want to save to our own API: GET /api/templates/:id, POST /api/templates, PATCH /api/templates/:id.",
+      "expected_output": "Diagnoses the missing save button and read-only name correctly as the absence of a `templates` config key, not a bug — the feature doesn't exist until the key is passed. Adds a `templates` object with `load`/`create`/`save` wired to the three given endpoints, and proposes the diff before editing the already-working file. States that `create` and `save` are `false | fn` and required, not optional — an action that's genuinely not wanted must be written as `false` (which hides that control), never simply left off the object, since omitting the whole key is a different, all-or-nothing decision. Notes `load` has no `false` option, since without it there's nothing to open, and that the store owns the `id` returned from `create()`, never the editor. Notes the app still has to call `editor.load(id)` (or `.create(...)`) itself — the editor has no built-in template list or browser. Must not claim a separate npm package is needed for this, and must not point at `@templatical/core`'s headless composables (`useSavedBlocks` etc.) as relevant here — those are for driving a custom UI with no editor mounted, not for a `templates` provider on an editor that's already mounted.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "We have a design system: primary purple #6d28d9, our own border-radius scale, and an app-wide light/dark toggle already wired up. Can Templatical match it?",
+      "expected_output": "Yes, via `--tpl-user-*` CSS custom properties set on the container (or any ancestor) — the recommended path, since custom-property inheritance crosses the shadow boundary, so this works identically in both DOM modes with no JS. Names concrete tokens: `--tpl-user-primary` / `-primary-hover` / `-primary-light` for the purple, `--tpl-user-radius` (plus `-radius-sm` / `-radius-lg`) for the radius scale. Treats dark mode as two separate things: the parallel `--tpl-user-dark-*` namespace for the values, AND the `uiTheme` config (`'dark'` or `'auto'`) to actually switch the editor into dark mode — setting only the dark tokens with no `uiTheme` changes nothing, so the app's existing toggle has to feed its state into `uiTheme` itself. Mentions the `theme` config object at `init()` as the alternative for runtime-computed values, and that it wins over the CSS variables since it applies as inline style. Must not suggest `shadowDom: false`, or disabling/resetting the shadow root, as a precondition for theming — theming works in the default shadow-DOM mode through the documented token surface, and turning shadow DOM off is unrelated to it.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "Our app shell is itself a web component — everything renders inside our own shadow root. Can Templatical mount inside that, and can I also put it inside our modal, which is centered with transform: translate(-50%, -50%)?",
+      "expected_output": "Says yes to both, but not with the same confidence. Nesting inside the host's own shadow root is unaffected — the editor attaches its own shadow root on the container it's given regardless of what already contains that container, and the `--tpl-user-*` theming surface still reaches it, since custom-property inheritance follows the flattened DOM tree through any number of nested shadow boundaries, the same mechanism that lets it cross a single one. On the modal, does not answer with a bare yes: flags the `transform` on the modal's centering wrapper explicitly — it makes that ancestor a containing block for the editor's `position: fixed` dialogs (already at `z-index: 10000`) and a stacking context, so the dialogs resolve against the modal's transformed box instead of the viewport, and a drag-and-drop ghost drifts from the cursor by the modal's offset. States the fix as giving the editor's own container a stacking context with a higher `z-index` than the modal's chrome — not raising the z-index on the dialog or on anything inside the editor, which cannot escape an ancestor's stacking context at any z-index of its own. Also flags that a modal using `overflow: hidden` clips the editor's dialogs in Safari specifically (not Chrome/Firefox), independent of the transform issue. Must not answer the modal half with an unqualified 'yes, it just works', and must not suggest raising the z-index on the dialog itself as the fix.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "How do I get sendable HTML out of the editor? I just want editor.toHtml() to hand me something I can send.",
+      "expected_output": "Names the requirement explicitly: `toHtml()` has no local, bundled path at all — with no `render` provider configured it rejects, even with `@templatical/renderer` installed, since that package only gives `toMjml()`. Gives a concrete way to make it work: the smallest is `render: { compileMjml: async (mjml) => ... }` pointing at any MJML→HTML endpoint (a hosted compiler, or a self-hosted `mjml` call), still paired with `@templatical/renderer` in the frontend bundle since the SDK renders template→MJML locally before compiling; the alternative is a full `render: { toMjml, toHtml }` backend-driven provider that needs neither the renderer nor any local rendering. Must not answer with only 'call editor.toHtml()' or otherwise imply it works with no configuration, and must not claim installing `@templatical/renderer` by itself is sufficient to make `toHtml()` succeed.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "Is there a <TemplaticalEditor /> component I can just drop into JSX, the way most editor SDKs ship one? Or am I stuck with some vanilla API?",
+      "expected_output": "States plainly that there is no React component, and no framework-specific component of any kind — the editor is deliberately stack-agnostic, consumed only through the imperative `init()` / `initCloud()` / `unmount()` functions. Gives the reason, not just the fact: Vue (plus TipTap and the rest of its runtime) is bundled and deduped inside the editor as a hidden implementation detail, and exposing a component built on it would force `vue` into a required peer dependency and reopen the exact duplicate-reactivity risk the bundling exists to avoid, breaking the 'works in any stack, including a bare CDN script tag' guarantee. Presents the `useRef` + `useEffect` wrapper as the correct, idiomatic React integration itself, not a workaround for a missing component. Must not hedge ('there might be one', 'let me check') or invent a package or export name such as `@templatical/react` or `TemplaticalEditor`, and must not suggest reaching for a Vue component instead — no Vue component is exported either.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "We're self-hosting the editor (no Cloud). Users should be able to add a countdown-timer block from the sidebar, counting down to our launch. How do I turn that on?",
+      "expected_output": "States that countdown is Cloud-only: it needs Cloud's server-side animated-GIF rendering, so the sidebar palette never offers it under a plain `init()` — the built-in block list only splices countdown in once the editor has an active Cloud plan capability. Says explicitly that `paletteBlocks` (or any other `init()` config) cannot turn it on outside Cloud — countdown isn't in the candidate block list at all without a plan, so listing it there just logs an 'unknown block' warning instead of enabling it. Notes that even a countdown block present in the content some other way still won't render to real output: the open-source `@templatical/renderer` has no built-in renderer for it and emits a placeholder marker plus a console warning in its place, not a working countdown image. Names the real paths — `initCloud()` with an active plan, or a self-hosted `blockRenderers.countdown` / `render.toMjml` override for a consumer generating their own countdown images — and offers a concrete stand-in for the self-hosted case, e.g. a static title or paragraph naming the launch date, or an 'X days to go' line. Must not claim `paletteBlocks`, a config flag, or any other plain `init()` option enables a working countdown block, and must not present a countdown block as something that will render correctly in a Cloud-less integration.",
+      "files": []
+    }
+  ]
+}
