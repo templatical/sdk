@@ -176,7 +176,14 @@ export function collectPages(docsDir = DOCS_DIR) {
     });
 }
 
-function orderedGroups(pages) {
+/**
+ * Group display order: the known groups in reading order, then anything new
+ * alphabetically. Exported because the templatical-sdk skill's reference
+ * generator renders its own router index from the same pages and must order
+ * the groups identically — reading this function is what makes that exact
+ * rather than approximate.
+ */
+export function orderedGroups(pages) {
   const seen = [...new Set(pages.map((p) => p.group))];
   const known = GROUP_ORDER.filter((g) => seen.includes(g));
   const rest = seen.filter((g) => !GROUP_ORDER.includes(g)).sort();

@@ -3,9 +3,10 @@
 //
 // Page collection is NOT reimplemented here. `collectPages` (which pages
 // exist, which are excluded, and enforcement of a frontmatter description on
-// every one) and `renderIndex` (group ordering) are imported from the docs
-// site's own generator, so this skill's router and docs.templatical.com's
-// llms.txt can never disagree about what a page is for — see
+// every one) and `orderedGroups` (group display order) are imported from the
+// docs site's own generator, so this skill's router and
+// docs.templatical.com's llms.txt can never disagree about what a page is
+// for, nor about what order the groups read in — see
 // design-notes/sdk-skill-plan.md §1 ruling 1.
 //
 // Freshness is internal consistency, not a comparison against apps/docs at
@@ -30,7 +31,7 @@ import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   collectPages,
-  renderIndex,
+  orderedGroups,
 } from "../../../apps/docs/scripts/build-agent-surface.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -106,23 +107,8 @@ function removeOrphanedPages(referenceDir, expectedRelPaths) {
   return removed.sort();
 }
 
-/**
- * Group display order, matching the docs' own llms.txt exactly. Derived by
- * calling B's exported `renderIndex` and reading back the `## ` headings it
- * emits, rather than duplicating its private (unexported) GROUP_ORDER —
- * duplicating it would let the two indexes' group ordering drift silently
- * the next time a group is added or reordered upstream. Every group present
- * in `pages` is guaranteed to appear: renderIndex's internal grouping emits
- * every group it sees in `pages`, known ones in GROUP_ORDER's order followed
- * by any unknown ones alphabetically.
- */
-function deriveGroupOrder(pages, sdkVersion) {
-  const rendered = renderIndex(pages, { version: sdkVersion });
-  return [...rendered.matchAll(/^## (.+)$/gm)].map((m) => m[1]);
-}
-
 function renderGeneratedIndexBody(pages, sdkVersion) {
-  const groupOrder = deriveGroupOrder(pages, sdkVersion);
+  const groupOrder = orderedGroups(pages);
   const byGroup = new Map();
   for (const page of pages) {
     if (!byGroup.has(page.group)) byGroup.set(page.group, []);
