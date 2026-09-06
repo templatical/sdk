@@ -28,7 +28,7 @@ The two layers complement each other:
 | Source of a `javascript:` link | `normalizeLinkUrl` | `sanitizeRichTextHtml` | `lintLinks` |
 |---|---|---|---|
 | User typing in the rich-text link dialog | ✅ blocks at insert | n/a (never reaches content) | n/a |
-| Imported BeeFree / Unlayer / HTML JSON | ❌ bypasses dialog | ✅ stripped at render | ✅ surfaces to author |
+| Imported BeeFree / Unlayer / HTML / MJML JSON | ❌ bypasses dialog | ✅ stripped at render | ✅ surfaces to author |
 | Programmatic `setContent()` with bad anchor | ❌ | ✅ stripped at render | ✅ surfaces to author |
 | `button.url`, `image.linkUrl`, `video.url`, `menu.items[].url`, `social.icons[].url` (structured fields, not HTML) | ❌ | ❌ sanitizer only scans rich-text HTML | ✅ surfaces to author |
 

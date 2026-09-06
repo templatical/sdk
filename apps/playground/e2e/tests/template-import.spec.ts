@@ -17,6 +17,10 @@ const htmlSource = readFileSync(
   join(fixturesDir, "sample-html-email.html"),
   "utf8",
 );
+const mjmlSource = readFileSync(
+  join(fixturesDir, "sample-mjml-email.mjml"),
+  "utf8",
+);
 
 test.describe("Template import", () => {
   test.beforeEach(async ({ page }) => {
@@ -75,7 +79,7 @@ test.describe("Template import", () => {
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
-  test("migration band advertises all three sources on the chooser", async ({
+  test("migration band advertises all four sources on the chooser", async ({
     chooserPage,
     page,
   }) => {
@@ -86,9 +90,11 @@ test.describe("Template import", () => {
     await expect(band).toContainText(/BeeFree/);
     await expect(band).toContainText(/Unlayer/);
     await expect(band).toContainText(/HTML/);
+    await expect(band).toContainText(/MJML/);
     await expect(page.locator(SELECTORS.chooserImportBeefree)).toBeVisible();
     await expect(page.locator(SELECTORS.chooserImportUnlayer)).toBeVisible();
     await expect(page.locator(SELECTORS.chooserImportHtml)).toBeVisible();
+    await expect(page.locator(SELECTORS.chooserImportMjml)).toBeVisible();
   });
 
   test("BeeFree CTA opens modal with BeeFree tab selected", async ({
@@ -289,6 +295,97 @@ test.describe("Template import", () => {
     await chooserPage.goto();
     await chooserPage.openImportModal("html");
     await chooserPage.pasteImportJson("html", "    ");
+    await chooserPage.confirmImport();
+
+    await expect(chooserPage.getImportError()).toBeVisible();
+    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+  });
+
+  test("imports an MJML template and renders converted blocks", async ({
+    chooserPage,
+    editorPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.importTemplate("mjml", mjmlSource);
+
+    await expect(page.locator(SELECTORS.importModal)).toHaveCount(0);
+
+    await editorPage.waitForReady();
+    await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
+
+    const titleBlock = page.locator(blockByType("title")).first();
+    await expect(titleBlock).toBeVisible();
+    await expect(titleBlock).toContainText("Hello from MJML");
+
+    const paragraphBlock = page.locator(blockByType("paragraph")).first();
+    await expect(paragraphBlock).toContainText("MJML e2e fixture");
+
+    await expect(page.locator(blockByType("button")).first()).toBeVisible();
+  });
+
+  test("MJML CTA opens modal with MJML tab selected", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal("mjml");
+
+    await expect(page.locator(SELECTORS.importTabMjml)).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(page.locator(SELECTORS.importTabBeefree)).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
+    await expect(page.locator(SELECTORS.importTextareaMjml)).toBeVisible();
+    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
+  });
+
+  test("switching to MJML tab swaps the textarea and preserves BeeFree input", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal();
+
+    const beefreeText = '{"page":{"rows":[]}}';
+    await chooserPage.pasteImportJson("beefree", beefreeText);
+
+    await chooserPage.selectImportSource("mjml");
+    await expect(page.locator(SELECTORS.importTextareaMjml)).toBeVisible();
+    await expect(page.locator(SELECTORS.importTextareaMjml)).toHaveValue("");
+    await expect(
+      page.locator(SELECTORS.importTextareaBeefree),
+    ).toHaveCount(0);
+
+    await chooserPage.selectImportSource("beefree");
+    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveValue(
+      beefreeText,
+    );
+  });
+
+  test("shows an empty-input error on MJML tab when nothing is pasted", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal("mjml");
+    await chooserPage.confirmImport();
+
+    await expect(chooserPage.getImportError()).toBeVisible();
+    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+    await expect(page.locator(SELECTORS.editorScreen)).toHaveCount(0);
+  });
+
+  test("shows an error when the MJML input is whitespace only", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal("mjml");
+    await chooserPage.pasteImportJson("mjml", "    ");
     await chooserPage.confirmImport();
 
     await expect(chooserPage.getImportError()).toBeVisible();
