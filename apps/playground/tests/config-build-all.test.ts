@@ -118,3 +118,85 @@ describe("buildAllCapabilityConfig recorder", () => {
     expect(payloads).toEqual([block]);
   });
 });
+
+/**
+ * Templates and version-history attach their own lifecycle handlers the same
+ * way saved blocks does above: each writes its own summary inside `build()`,
+ * because only it knows what its payload means.
+ */
+describe("templates and version-history recorder wiring", () => {
+  const template = {
+    id: "t1",
+    name: "Launch Email",
+    content: { blocks: [], settings: {} },
+  };
+
+  it("routes templates.onSaved through the recorder, naming the trigger", () => {
+    const seen: Array<{ id: string; handler: string; summary: string }> = [];
+    const config = buildAllCapabilityConfig({}, undefined, (id, event) =>
+      seen.push({ id, handler: event.handler, summary: event.summary }),
+    );
+    config.templates?.onSaved?.(template, { trigger: "manual" });
+
+    // The trigger distinguishes a pressed Save from autosave, which is what a
+    // reader of the feed wants — it rides in the summary, not only the payload.
+    expect(seen).toEqual([
+      {
+        id: "templates",
+        handler: "onSaved",
+        summary: "Launch Email (manual)",
+      },
+    ]);
+  });
+
+  it("routes templates.onCreated and onLoaded, each naming the template", () => {
+    const seen: Array<{ handler: string; summary: string }> = [];
+    const config = buildAllCapabilityConfig({}, undefined, (_id, event) =>
+      seen.push({ handler: event.handler, summary: event.summary }),
+    );
+    config.templates?.onCreated?.(template);
+    config.templates?.onLoaded?.(template);
+
+    expect(seen).toEqual([
+      { handler: "onCreated", summary: "Launch Email" },
+      { handler: "onLoaded", summary: "Launch Email" },
+    ]);
+  });
+
+  it("routes versionHistory.onCreated, falling back to the version's id when it has no label", () => {
+    const seen: Array<{ handler: string; summary: string }> = [];
+    const config = buildAllCapabilityConfig({}, undefined, (_id, event) =>
+      seen.push({ handler: event.handler, summary: event.summary }),
+    );
+    config.versionHistory?.onCreated?.({
+      id: "v1",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+    config.versionHistory?.onCreated?.({
+      id: "v2",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      label: "Before rewrite",
+    });
+
+    expect(seen).toEqual([
+      { handler: "onCreated", summary: "v1" },
+      { handler: "onCreated", summary: "Before rewrite" },
+    ]);
+  });
+
+  it("routes versionHistory.onRestored with its own id, carrying the resulting template", () => {
+    const seen: Array<{ id: string; handler: string; summary: string }> = [];
+    const config = buildAllCapabilityConfig({}, undefined, (id, event) =>
+      seen.push({ id, handler: event.handler, summary: event.summary }),
+    );
+    config.versionHistory?.onRestored?.(template);
+
+    expect(seen).toEqual([
+      {
+        id: "version-history",
+        handler: "onRestored",
+        summary: "Launch Email",
+      },
+    ]);
+  });
+});

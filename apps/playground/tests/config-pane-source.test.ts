@@ -96,7 +96,12 @@ describe("the shell hands init() and the panel the same object", () => {
   it("builds that object in the shell, from the capability registry", () => {
     // The builder is a callback so the composable knows nothing about
     // capabilities; the shell is where the config's keys are decided.
-    expect(SHELL_SOURCE).toContain("useCapabilityEditor((container) => ({");
+    // Matched without the call's punctuation, which Prettier rewraps as the
+    // argument list grows — the claim is that the shell passes a builder
+    // taking the container, not how the formatter laid it out.
+    expect(SHELL_SOURCE).toMatch(
+      /useCapabilityEditor\(\s*\(container\)\s*=>\s*\(\{/,
+    );
     expect(SHELL_SOURCE).toContain("...buildAllCapabilityConfig(");
   });
 

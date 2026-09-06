@@ -27,6 +27,14 @@ describe("versionHistoryCapability", () => {
       get: impl.get,
       create: impl.create,
       restore: impl.restore,
+      // Attached by the capability itself, not carried in from `impl`: the
+      // drawer's Events tab is fed from inside `build()`, so the provider the
+      // editor is handed reports two lifecycle events the demo backend never
+      // declared. Matched by shape rather than identity — which function
+      // each one is belongs to `config-build-all.test.ts`, while this
+      // exhaustive comparison is what stops a third key appearing unnoticed.
+      onCreated: expect.any(Function),
+      onRestored: expect.any(Function),
     });
   });
 
@@ -42,6 +50,10 @@ describe("versionHistoryCapability", () => {
       get: impl.get,
       create: impl.create,
       restore: false,
+      // Reporting is independent of permission: a store that forbids restore
+      // still tells the feed when a version is created.
+      onCreated: expect.any(Function),
+      onRestored: expect.any(Function),
     });
   });
 
@@ -76,6 +88,10 @@ describe("versionHistoryCapability and the templates store", () => {
       get: impl.get,
       create: impl.create,
       restore: false,
+      // Reporting is independent of permission: a store that forbids restore
+      // still tells the feed when a version is created.
+      onCreated: expect.any(Function),
+      onRestored: expect.any(Function),
     });
   });
 

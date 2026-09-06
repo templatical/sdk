@@ -484,6 +484,11 @@ test.describe("capability drawer", () => {
     await page
       .locator(SELECTORS.capabilityDrawerTab, { hasText: "Events" })
       .click();
+
+    // The shell attaches a template on mount, so the feed already carries the
+    // templates capability's own `onCreated`. Clearing first makes what
+    // follows unambiguously the doing of the save below.
+    await page.locator(SELECTORS.capabilityEventsClear).click();
     await expect(page.locator(SELECTORS.capabilityEvent)).toHaveCount(0);
 
     // Drive the real feature end to end. Reaching into the provider directly
@@ -532,8 +537,85 @@ test.describe("capability drawer", () => {
     await expect(note).toContainText("remote");
     await expect(note).toContainText("subscribe");
 
+    // Every row the demo can produce is local, including the ones the shell's
+    // own template adoption fires — there is no synthetic remote anywhere.
+    // Scoped to the rows: the note above them names `remote` by design.
+    const rows = page.locator(SELECTORS.capabilityEvent);
+    await expect(rows.first()).toContainText("local");
+    await expect(rows.filter({ hasText: "remote" })).toHaveCount(0);
+
+    // And the empty state is reachable, so the note is not standing in for it.
+    await page.locator(SELECTORS.capabilityEventsClear).click();
     await expect(page.locator(SELECTORS.capabilityEventsEmpty)).toBeVisible();
     await expect(page.locator(SELECTORS.capabilityEvent)).toHaveCount(0);
+    await expect(note).toBeVisible();
+  });
+
+  test("saving a template reports onSaved with its trigger", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/templates");
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Events" })
+      .click();
+
+    await page.locator(SELECTORS.templateSave).click();
+
+    const event = page.locator(SELECTORS.capabilityEvent).first();
+    await expect(event).toHaveAttribute("data-event-handler", "onSaved");
+    await expect(event).toHaveAttribute("data-event-capability", "templates");
+    // The trigger distinguishes a pressed Save from autosave, and is the
+    // reason this handler's summary carries two fields rather than a name
+    // alone.
+    await expect(event).toContainText("manual");
+  });
+
+  test("restoring a version reports onRestored", async ({
+    page,
+    editorPage,
+  }) => {
+    await page.goto("/#capabilities/version-history");
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Events" })
+      .click();
+
+    // Mirrors `version-history.spec.ts`'s `editAndSave`: the demo's version
+    // store (keyed off this capability's own "product-launch" fixture)
+    // records one version per save, not the editor — so two saves is what
+    // leaves an earlier version to go back to.
+    async function readVersions(): Promise<Array<{ id: string }>> {
+      return page.evaluate(() => {
+        const raw = localStorage.getItem(
+          "templatical:versions:product-launch",
+        );
+        return raw ? (JSON.parse(raw) as Array<{ id: string }>) : [];
+      });
+    }
+
+    await editorPage.selectBlock(0);
+    await editorPage.duplicateSelectedBlock();
+    await page.locator(SELECTORS.templateSave).click();
+    await expect.poll(async () => (await readVersions()).length).toBe(1);
+
+    await editorPage.selectBlock(0);
+    await editorPage.duplicateSelectedBlock();
+    await page.locator(SELECTORS.templateSave).click();
+    await expect.poll(async () => (await readVersions()).length).toBe(2);
+
+    const [, older] = await readVersions();
+    await page.locator(SELECTORS.versionHistoryToggle).click();
+    await page.locator(`[data-version-id="${older.id}"]`).click();
+    await expect(page.locator(SELECTORS.versionPreviewBanner)).toBeVisible();
+
+    await page.locator(SELECTORS.versionPreviewRestore).click();
+    await expect(page.locator(SELECTORS.versionPreviewBanner)).toBeHidden();
+
+    const event = page.locator(SELECTORS.capabilityEvent).first();
+    await expect(event).toHaveAttribute("data-event-handler", "onRestored");
+    await expect(event).toHaveAttribute(
+      "data-event-capability",
+      "version-history",
+    );
   });
 
   test("switching fixture reloads the editor with that template's content, keeps the capability, and lasts only for this visit", async ({

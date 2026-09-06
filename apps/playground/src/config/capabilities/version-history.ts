@@ -31,7 +31,7 @@ export const versionHistoryCapability: CapabilityDef<VersionHistoryProvider> = {
     },
   ],
   implFor: (template) => versionHistoryProviderFor(template),
-  build: (state, impl) => {
+  build: (state, impl, record) => {
     // The demo's restore() (@/providers/version-history) composes onto the
     // templates store's own save — there is no atomic restore endpoint, so it
     // reads the old content and saves it. A store that refuses save has
@@ -45,6 +45,22 @@ export const versionHistoryCapability: CapabilityDef<VersionHistoryProvider> = {
       versionHistory: {
         ...impl,
         restore,
+        // `label` is optional — a store that lets nobody name a version has
+        // none — so the id is the fallback rather than letting the row read
+        // "undefined".
+        onCreated: (version) =>
+          record({
+            handler: "onCreated",
+            summary: version.label ?? version.id,
+            payload: version,
+          }),
+        // Takes the resulting Template, not the TemplateVersion restored from.
+        onRestored: (template) =>
+          record({
+            handler: "onRestored",
+            summary: template.name ?? template.id,
+            payload: template,
+          }),
       },
     };
   },

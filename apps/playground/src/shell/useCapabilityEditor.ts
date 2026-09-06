@@ -20,9 +20,16 @@ export interface CapabilityEditor {
  * `buildConfig` is a callback rather than a config object because the shell
  * rebuilds it per init from control state and the current fixture; this module
  * stays ignorant of capabilities entirely.
+ *
+ * `afterInit` runs on the freshly mounted instance before it is published, for
+ * work that needs a live editor rather than a config key — attaching a
+ * template is the one case today. It is a callback for the same reason
+ * `buildConfig` is: what to do with the instance is the shell's policy, and
+ * putting it here would drag a provider's semantics into the lifecycle.
  */
 export function useCapabilityEditor(
   buildConfig: (container: HTMLElement) => TemplaticalEditorConfig,
+  afterInit?: (editor: TemplaticalEditor) => Promise<void>,
 ): CapabilityEditor {
   const host = ref<HTMLElement | null>(null);
   const editor = ref<TemplaticalEditor | null>(null);
@@ -67,6 +74,15 @@ export function useCapabilityEditor(
     // Written under the same guard as `editor.value`, so the Config tab can
     // never describe a config that lost the race and was never mounted.
     lastInitConfig.value = config;
+
+    await afterInit?.(instance);
+    // Re-checked after that await too: attaching a template is a round-trip
+    // through the consumer's store, and a rail click landing during it would
+    // otherwise leave this instance published after a newer one replaced it.
+    if (destroyed || token !== requestToken) {
+      instance.unmount();
+      if (editor.value === instance) editor.value = null;
+    }
   }
 
   function initEditor(): Promise<void> {

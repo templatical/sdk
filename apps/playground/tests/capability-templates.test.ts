@@ -23,7 +23,15 @@ describe("templatesCapability", () => {
       load: impl.load,
       create: impl.create,
       save: impl.save,
-      onSaved: impl.onSaved,
+      // Attached by the capability itself: onSaved composes with the
+      // provider's own handler rather than being it (see "still calls the
+      // provider's own onSaved" below), and onCreated/onLoaded aren't on
+      // `impl` at all. Matched by shape, not identity — which function each
+      // one is belongs to `config-build-all.test.ts`, while this exhaustive
+      // comparison is what stops a fourth key appearing unnoticed.
+      onSaved: expect.any(Function),
+      onCreated: expect.any(Function),
+      onLoaded: expect.any(Function),
       autoSave: false,
     });
   });
@@ -39,15 +47,25 @@ describe("templatesCapability", () => {
       load: impl.load,
       create: false,
       save: false,
-      onSaved: impl.onSaved,
+      onSaved: expect.any(Function),
+      onCreated: expect.any(Function),
+      onLoaded: expect.any(Function),
       autoSave: false,
     });
   });
 
-  it("forwards the provider's onSaved handler", () => {
+  it("still calls the provider's own onSaved before reporting to the feed", () => {
     const impl = makeImpl();
     const config = buildCapabilityConfig(templatesCapability, {}, impl);
-    expect(config.templates?.onSaved).toBe(impl.onSaved);
+    const meta = { trigger: "manual" as const };
+
+    config.templates?.onSaved?.(stored, meta);
+
+    // The demo store's onSaved records the save trigger onto `window` for
+    // `template-save-triggers.spec.ts` (and `App.vue` builds its config
+    // through this same `buildAllCapabilityConfig` path) — a capability that
+    // reports its own events must not silently drop that call.
+    expect(impl.onSaved).toHaveBeenCalledWith(stored, meta);
   });
 
   it("never withholds load — the editor could not open a template", () => {

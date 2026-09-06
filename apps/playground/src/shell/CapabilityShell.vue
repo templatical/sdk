@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import type { TemplaticalEditor } from "@templatical/editor";
 import {
   buildAllCapabilityConfig,
   capabilityById,
@@ -76,24 +77,65 @@ const {
   lastInitConfig,
   initEditor,
   destroy,
-} = useCapabilityEditor((container) => ({
-  container,
-  // `App.vue` also passes locale, theme, uiTheme, fonts, merge-tag request
-  // handlers, test email and a dozen other keys. Those belong to
-  // capabilities plans 5a-5d haven't ported yet — each arrives here as its
-  // capability lands, so this shell only owns what the registry already
-  // produces.
-  //
-  // `eventLog.record` itself, not an arrow closing over it: each capability
-  // binds it to its own id, and one stable function keeps every rebuilt
-  // config handing the feed the same target.
-  ...buildAllCapabilityConfig(
-    controlState.value,
-    fixture.value,
-    eventLog.record,
-  ),
-  content: fixture.value.create(),
-}));
+} = useCapabilityEditor(
+  (container) => ({
+    container,
+    // `App.vue` also passes locale, theme, uiTheme, fonts, merge-tag request
+    // handlers, test email and a dozen other keys. Those belong to
+    // capabilities plans 5a-5d haven't ported yet — each arrives here as its
+    // capability lands, so this shell only owns what the registry already
+    // produces.
+    //
+    // `eventLog.record` itself, not an arrow closing over it: each capability
+    // binds it to its own id, and one stable function keeps every rebuilt
+    // config handing the feed the same target.
+    ...buildAllCapabilityConfig(
+      controlState.value,
+      fixture.value,
+      eventLog.record,
+    ),
+    content: fixture.value.create(),
+  }),
+  adoptTemplate,
+);
+
+/**
+ * Template ids the shell has already attached, keyed by fixture slug.
+ *
+ * The editor has no create affordance of its own — creation is programmatic —
+ * so without this the Save button sits disabled at "Load or create a template
+ * first" and the whole templates capability is dead UI: no save status, no
+ * autosave to observe, and no saves for version history to record.
+ *
+ * Keyed by fixture because each one is a different template, and remembered
+ * because a re-init fires on every control toggle: creating each time would
+ * spawn a template per click and leave version history reading from a store
+ * that just changed underneath it.
+ */
+const adoptedTemplateIds = new Map<string, string>();
+
+/**
+ * Give the editor a template to save into: load the one this fixture already
+ * has, or create it the first time.
+ *
+ * A read-only store (`templates.create: false`) has nothing to attach to, so
+ * this gives up quietly — the editor still edits, it just cannot persist,
+ * which is exactly what that control is there to demonstrate.
+ */
+async function adoptTemplate(instance: TemplaticalEditor): Promise<void> {
+  const slug = fixtureSlug.value;
+  const known = adoptedTemplateIds.get(slug);
+  try {
+    if (known) {
+      await instance.load(known);
+    } else {
+      const created = await instance.create({ name: fixture.value.name });
+      adoptedTemplateIds.set(slug, created.id);
+    }
+  } catch (err) {
+    console.info("[playground] no template attached:", (err as Error).message);
+  }
+}
 
 // Off the same table the bar renders, so a tab and its pane cannot diverge:
 // pick a tab, get that tab's component. `DEFAULT_DRAWER_TAB` is registered
