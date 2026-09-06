@@ -15,6 +15,7 @@
     "@templatical/editor": "workspace:*",
     "@templatical/import-beefree": "workspace:*",
     "@templatical/import-html": "workspace:*",
+    "@templatical/import-mjml": "workspace:*",
     "@templatical/import-unlayer": "workspace:*",
     "@templatical/quality": "workspace:*",
     "@tiptap/extension-color": "^3.31.0",
@@ -41,7 +42,7 @@
   "packageManager": "pnpm@11.24.0+sha512.bd27e345e976dcb0be0b7a1228217b049a817e21b1f355c90dbe7dc46671895a8bc1e6d06c24554505ea93ea0b45f489a27ec1bfbc8de6a9659fca0f16fa0000",
   "private": true,
   "scripts": {
-    "build": "pnpm --filter @templatical/types run build && pnpm --filter @templatical/core --filter @templatical/renderer --filter @templatical/import-beefree --filter @templatical/import-unlayer --filter @templatical/import-html run build && pnpm --filter @templatical/media-library run build:all && pnpm --filter @templatical/quality run build && pnpm --filter @templatical/editor run build:all",
+    "build": "pnpm --filter @templatical/types run build && pnpm --filter @templatical/core --filter @templatical/renderer --filter @templatical/import-beefree --filter @templatical/import-unlayer --filter @templatical/import-html --filter @templatical/import-mjml run build && pnpm --filter @templatical/media-library run build:all && pnpm --filter @templatical/quality run build && pnpm --filter @templatical/editor run build:all",
     "build:all-sdk": "pnpm run build:email-editor && pnpm run build:media-library",
     "build:email-editor": "pnpm --filter @templatical/editor run build:cdn",
     "build:media-library": "pnpm --filter @templatical/media-library run build:cdn",

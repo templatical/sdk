@@ -34,6 +34,23 @@ describe("detectFormat", () => {
     expect(detectFormat("x.json", JSON.stringify({ foo: 1 }))).toBe(null);
     expect(detectFormat("x.json", "not json at all")).toBe(null);
   });
+  it("detects mjml from the file extension", () => {
+    expect(detectFormat("welcome.mjml", "<mjml><mj-body /></mjml>")).toBe("mjml");
+  });
+  it("detects mjml from an <mjml> root even with an .html extension", () => {
+    expect(detectFormat("weird.html", "<mjml><mj-body /></mjml>")).toBe("mjml");
+  });
+  it("detects mjml from an mj-body when the root tag is missing", () => {
+    expect(detectFormat("frag.txt", "<mj-body><mj-section /></mj-body>")).toBe("mjml");
+  });
+  it("still detects plain html as html", () => {
+    expect(detectFormat("mail.html", "<html><body><table></table></body></html>")).toBe("html");
+  });
+  it("does not mistake html mentioning mjml in prose for mjml", () => {
+    expect(
+      detectFormat("mail.html", "<html><body><p>Built with mjml</p></body></html>"),
+    ).toBe("html");
+  });
 });
 
 describe("summarizeReport", () => {
@@ -86,6 +103,10 @@ describe("runImport — real fixtures convert to valid Templatical JSON", () => 
     {
       format: "html",
       fixture: "packages/import-html/src/__tests__/fixtures/multi-column.html",
+    },
+    {
+      format: "mjml",
+      fixture: "packages/import-mjml/src/__tests__/fixtures/newsletter.mjml",
     },
   ] as const;
 

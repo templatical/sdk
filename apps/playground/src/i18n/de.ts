@@ -13,12 +13,14 @@ export default {
     startFromScratch: "Neu beginnen",
     emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
     migration: {
-      headline: "Schon in BeeFree, Unlayer oder eigenem HTML?",
+      headline:
+        "Nutzen Sie bereits BeeFree, Unlayer, MJML oder handgeschriebenes HTML?",
       description:
         "Bringen Sie Ihre bestehenden Vorlagen in Sekunden mit — Block-Mapping, Layouts und Merge-Tags werden automatisch übernommen.",
       importFromBeefree: "Aus BeeFree importieren",
       importFromUnlayer: "Aus Unlayer importieren",
       importFromHtml: "Aus HTML importieren",
+      importFromMjml: "Aus MJML importieren",
     },
   },
   cloudBanner: {
@@ -82,6 +84,7 @@ export default {
       beefree: "Aus BeeFree",
       unlayer: "Aus Unlayer",
       html: "Aus HTML",
+      mjml: "Aus MJML",
     },
     chooseFile: "Datei w\u00e4hlen",
     orPaste: "oder unten einf\u00fcgen",
@@ -104,6 +107,12 @@ export default {
         "F\u00fcgen Sie den rohen HTML-Quelltext einer E-Mail ein (MJML-Ausgabe, ESP-Export oder handgeschrieben). Beste Ergebnisse mit tabellenbasierten Layouts.",
       emptyError:
         "F\u00fcgen Sie Ihren HTML-Quelltext ein oder laden Sie eine Datei hoch.",
+    },
+    mjml: {
+      description:
+        "F\u00fcgen Sie unten ein MJML-Dokument ein. Von Templatical erzeugtes MJML wird exakt zur\u00fcckgelesen; handgeschriebenes MJML deckt die g\u00e4ngigen Tags ab und f\u00e4llt f\u00fcr den Rest auf HTML-Bl\u00f6cke zur\u00fcck.",
+      emptyError:
+        "F\u00fcgen Sie Ihren MJML-Quelltext ein oder laden Sie eine Datei hoch.",
     },
   },
   mergeTagModal: {
@@ -304,6 +313,7 @@ export default {
     beefreeJsonContent: "BeeFree-JSON-Inhalt",
     unlayerJsonContent: "Unlayer-JSON-Inhalt",
     htmlSourceContent: "HTML-Quelltext-Inhalt",
+    mjmlSourceContent: "MJML-Quelltext-Inhalt",
     selectLanguage: "Sprache auswählen",
     selectSdkLanguage: "SDK-Sprache auswählen",
     selectTheme: "Farbschema auswählen",
