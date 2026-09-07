@@ -6,14 +6,41 @@
     "@templatical/import-beefree",
     "@templatical/import-html",
     "@templatical/import-mjml",
+    "@templatical/import-topol",
     "@templatical/import-unlayer",
     "@templatical/media-library",
     "@templatical/quality",
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.31.0",
+  "latest": "0.32.0",
   "versions": [
+    {
+      "version": "0.32.0",
+      "date": "2026-09-07",
+      "changes": [
+        {
+          "hash": "2ef4f27",
+          "level": "minor",
+          "title": "Localize the text new blocks start with, and stop the editor's locale being",
+          "body": "ignored by everything `Intl` formats.\n\n**New blocks carry localized placeholder text** (#673). A Button dragged into a\nGerman editor read \"Click Here\", a Paragraph \"Enter your text here\", and a Title\n\"Enter your title\". Which locale a default follows depends on who the text is\nfor:\n\n- **Author-facing prompts** — Title, Paragraph and Button text — follow\n  `init({ locale })`. They exist to be overwritten, so they match the interface\n  around them.\n- **Recipient-facing text** — the video `alt`, and the countdown's unit labels\n  and expired message — follows the template's own `settings.locale`, because it\n  ships in the delivered email. A German-speaking author building an English\n  campaign does not get German countdown labels.\n\n`blockDefaults` wins over both, and the merge is deep, so overriding\n`button.backgroundColor` keeps the translated label. With no locale configured\nthe defaults are byte-identical to the factory values, so nothing changes for\nconsumers who never set one.\n\n**A fresh template declares the editor's language.** `init({ locale: 'de' })`\nnow seeds `settings.locale`, so a new template stops rendering\n`<mjml lang=\"en\">` over German copy — an accessibility defect in the delivered\nemail, not just the editor. A consumer's own `templateDefaults.locale` still\nwins, and a malformed tag is ignored rather than emitted into a `lang`\nattribute. Applies only when no `content` is supplied; supplied content owns the\nlanguage it declares.\n\n**Absolute dates follow the editor's locale, not the browser's.** Version\nhistory entries, saved-block tooltips, the template write-time line, and the\nmedia library's date captions were formatted by `toLocaleString()` with no\nlocale, so they read in the browser's language beside fully translated chrome.\nA malformed `locale` falls back instead of throwing.\n\n**The canvas declares the content language.** Every block-rendering surface now\ncarries `settings.locale` as a `lang` attribute, so the browser's spellchecker\nand hyphenation judge the copy by the rules of the language it is written in\nrather than the host page's.\n\n**An unusable `locale` now warns.** `init({ locale: 'gr' })` fell back to\nEnglish in silence, so a typo looked exactly like the option being ignored. It\nwarns once and lists the locales that would have worked, matching what\n`paletteBlocks` and `colors` already do. The cloud chunk still falls back\nquietly — it ships fewer locales on purpose.\n\n`useBlockActions`' `blockDefaults` option also accepts a getter\n(`BlockDefaults | (() => BlockDefaults)`), re-read on each insert so a\nmid-session change to the content language reaches the next block. Passing a\nplain object behaves as before.",
+          "packages": [
+            "@templatical/core",
+            "@templatical/editor",
+            "@templatical/media-library"
+          ]
+        },
+        {
+          "hash": "c18940d",
+          "level": "minor",
+          "title": "Add `@templatical/import-topol`, a converter from Topol.io design JSON to Templatical template JSON.",
+          "body": "`convertTopolTemplate(design)` returns `{ content, report }` with the same shape as the BeeFree, Unlayer, HTML and MJML importers. It resolves Topol's global-style cascade — the per-tag and per-selector defaults on the design root — maps every tag Topol emits, and reports what it approximated: a four-column section folded to three, a GIF block imported as an image, a social platform with no Templatical equivalent.\n\nPass the design object itself, or a JSON string of it. Topol's editor hands it to you directly from its `onSave` callback; its REST APIs wrap it — under `data.definition` on the template endpoint, `json` on the predefined-templates endpoint.",
+          "packages": [
+            "@templatical/import-topol"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.31.0",
       "date": "2026-09-06",
