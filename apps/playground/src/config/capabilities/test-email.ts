@@ -49,18 +49,26 @@ export const testEmailCapability: CapabilityDef<TestEmailProvider> = {
     // only a capability with no `implFor` at all ever receives `undefined`.
     impl = impl!;
     return {
-      testEmail: {
-        ...impl,
-        // Read here rather than closed over at module scope: CLAUDE.md's
-        // "never destructure allowedRecipients" — Cloud's adapter implements
-        // it as a getter that fills in after setup, and a snapshot pins it to
-        // `[]`, which reads as "nobody" and hides the trigger for good. This
-        // demo provider is a plain array rather than a getter, but reading it
-        // the same way keeps the capability correct if that ever changes.
-        allowedRecipients: impl.allowedRecipients,
+      // `Object.assign` onto the provider itself, never `{ ...impl }`.
+      //
+      // A spread reads every own property once and stores the results, so a
+      // getter becomes a static value at the moment `build()` ran. That is
+      // the snapshot CLAUDE.md forbids for `allowedRecipients`: Cloud's
+      // adapter implements it as a getter over a list that arrives with the
+      // JWT, starting `[]` — and `[]` means "nobody", so
+      // `useTestEmailFeature.isAvailable` goes false and no trigger renders
+      // at all. Re-reading `impl.allowedRecipients` into a new object does
+      // not help; that is still one read at build time rather than the live
+      // property the editor's own computed re-reads.
+      //
+      // CLAUDE.md's Cloud seam uses `Object.assign` for exactly this reason.
+      // This demo provider holds a plain array, so a spread would not break
+      // anything visible today — which is why it is worth being deliberate
+      // here rather than copying the idiom the other four capabilities use.
+      testEmail: Object.assign(impl, {
         includeMjml: state["testEmail.includeMjml"] === true,
         defaultRecipient: state["testEmail.defaultRecipient"] as string,
-      },
+      }),
     };
   },
 };

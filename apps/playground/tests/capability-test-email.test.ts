@@ -26,6 +26,39 @@ describe("testEmailCapability", () => {
     ).not.toContain("testEmail.allowedRecipients");
   });
 
+  it("hands through the provider itself, never a spread copy of it", () => {
+    // A spread would read every own property once and store the result, so a
+    // getter-backed `allowedRecipients` would freeze at whatever it held when
+    // `build()` ran. Cloud's adapter fills that list from the JWT after
+    // setup, starting `[]` — which means "nobody", so the trigger would never
+    // render. Identity is the assertion that pins it: a copy fails this,
+    // however carefully each field was re-read into it.
+    const config = buildCapabilityConfig(
+      testEmailCapability,
+      {},
+      testEmailProvider,
+    );
+    expect(config.testEmail).toBe(testEmailProvider);
+  });
+
+  it("still tracks a list that fills in after build() ran", () => {
+    // The behavioural half of the case above, against a getter rather than
+    // the demo's plain array.
+    let filled: string[] = [];
+    const late = {
+      send: async () => {},
+      get allowedRecipients() {
+        return filled;
+      },
+    } as unknown as typeof testEmailProvider;
+
+    const config = buildCapabilityConfig(testEmailCapability, {}, late);
+    expect(config.testEmail?.allowedRecipients).toEqual([]);
+
+    filled = ["late@example.com"];
+    expect(config.testEmail?.allowedRecipients).toEqual(["late@example.com"]);
+  });
+
   it("defaults includeMjml on, so the renderer chain is exercised", () => {
     const config = buildCapabilityConfig(
       testEmailCapability,

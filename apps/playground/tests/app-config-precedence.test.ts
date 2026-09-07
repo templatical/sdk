@@ -65,6 +65,41 @@ describe("App.vue config precedence over the capability registry", () => {
     expect(registryKeys.length).toBeGreaterThan(0);
   });
 
+  it("puts its OTHER spread after the registry's too", () => {
+    // `...currentSerializableConfig` carries `content`, `mergeTags`,
+    // `logicTags`, `displayConditions` and `customBlocks` — keys that reach
+    // `init()` through a spread rather than as named properties, so the
+    // per-key table below cannot see them and returns early instead.
+    //
+    // The registry produces none of those three tag/condition keys today.
+    // The moment a capability does, whether App.vue's own value wins depends
+    // entirely on the order of these two spreads, and nothing else pins it.
+    const spreadAt = INIT_SOURCE.indexOf(SPREAD);
+    const serializableAt = INIT_SOURCE.indexOf("...currentSerializableConfig");
+    expect(serializableAt).toBeGreaterThan(-1);
+    expect(serializableAt).toBeGreaterThan(spreadAt);
+  });
+
+  it("names every key its second spread contributes, so the table can see them", () => {
+    // Read off `buildSerializableConfig`'s own return literal rather than
+    // hand-listed here: a key added there must not become invisible to this
+    // file just because nobody remembered to copy it across.
+    const fn = APP_SOURCE.slice(
+      APP_SOURCE.indexOf("function buildSerializableConfig()"),
+    );
+    const body = fn.slice(0, fn.indexOf("\n}"));
+    // `key:` and the shorthand `key,` both count — `displayConditions` is
+    // passed shorthand, and a colon-only pattern silently drops it.
+    const keys = [...body.matchAll(/^    (\w+)[:,]/gm)].map((m) => m[1]);
+    expect(keys.sort()).toEqual([
+      "content",
+      "customBlocks",
+      "displayConditions",
+      "logicTags",
+      "mergeTags",
+    ]);
+  });
+
   it.each(registryKeys)(
     "sets %s after the registry spread, or not at all",
     (key) => {
