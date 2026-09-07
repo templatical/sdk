@@ -143,16 +143,16 @@ unrelated sessions.
 ## Importing an existing template
 
 If the user has a template from another editor in their project — **Unlayer**,
-**BeeFree**, an **HTML email**, or an **MJML** template — convert it to
-Templatical instead of building from scratch. `scripts/import.mjs` runs the
-matching `@templatical/import-*` converter:
+**BeeFree**, an **HTML email**, an **MJML** template, or a **Topol** design —
+convert it to Templatical instead of building from scratch. `scripts/import.mjs`
+runs the matching `@templatical/import-*` converter:
 
 ```
-node <skill>/scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml]
+node <skill>/scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml|topol]
 ```
 
-It auto-detects the format (Unlayer / BeeFree JSON, `.html`, or MJML by its
-`.mjml` extension or an `<mjml>`/`<mj-body>` root), writes the result to a
+It auto-detects the format (Unlayer / BeeFree / Topol JSON, `.html`, or MJML by
+its `.mjml` extension or an `<mjml>`/`<mj-body>` root), writes the result to a
 working file `.templatical/<name>.json` (same as a generated template —
 `--out <name>` overrides the default, which is the source file's name), and
 prints a **conversion report**: how many blocks converted cleanly vs. fell back

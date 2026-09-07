@@ -51,6 +51,23 @@ describe("detectFormat", () => {
       detectFormat("mail.html", "<html><body><p>Built with mjml</p></body></html>"),
     ).toBe("html");
   });
+  it("detects topol from the design root tagName", () => {
+    expect(detectFormat("design.json", JSON.stringify({ tagName: "mj-global-style", children: [] })))
+      .toBe("topol");
+  });
+  it("detects topol regardless of file name", () => {
+    expect(detectFormat("whatever.txt", JSON.stringify({ tagName: "mj-global-style" })))
+      .toBe("topol");
+  });
+  it("does not mistake an unlayer design for topol", () => {
+    expect(detectFormat("design.json", JSON.stringify({ body: { rows: [] } }))).toBe("unlayer");
+  });
+  it("does not mistake a beefree template for topol", () => {
+    expect(detectFormat("page.json", JSON.stringify({ page: { rows: [] } }))).toBe("beefree");
+  });
+  it("does not mistake MJML markup for topol", () => {
+    expect(detectFormat("welcome.mjml", "<mjml><mj-body /></mjml>")).toBe("mjml");
+  });
 });
 
 describe("summarizeReport", () => {
@@ -115,6 +132,53 @@ describe("runImport — real fixtures convert to valid Templatical JSON", () => 
     let result;
     try {
       result = await runImport(source, format);
+    } catch (err) {
+      if ((err as { missingPackage?: string }).missingPackage) return; // not built/installed → skip
+      throw err;
+    }
+    const { valid, errors } = validateTemplate(result.content);
+    expect(errors).toEqual([]);
+    expect(valid).toBe(true);
+    expect(result.report.entries.length).toBeGreaterThan(0);
+  });
+
+  // Topol has no committed JSON fixture of its own (only a TS-authored module
+  // read directly by its own package's suite), so this case carries a small
+  // hand-authored design inline instead of a fixture file path.
+  it("imports a topol fixture", async () => {
+    const source = JSON.stringify({
+      tagName: "mj-global-style",
+      attributes: { containerWidth: 600, ":font-family": "Arial, sans-serif" },
+      children: [
+        {
+          tagName: "mj-container",
+          children: [
+            {
+              tagName: "mj-section",
+              attributes: { padding: "24px" },
+              children: [
+                {
+                  tagName: "mj-column",
+                  attributes: { width: "100%" },
+                  children: [
+                    { tagName: "mj-text", content: "<h1>Hello from Topol</h1>" },
+                    { tagName: "mj-text", content: "<p>A paragraph of body copy.</p>" },
+                    {
+                      tagName: "mj-button",
+                      attributes: { href: "https://example.test" },
+                      content: "<p>Click me</p>",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    let result;
+    try {
+      result = await runImport(source, "topol");
     } catch (err) {
       if ((err as { missingPackage?: string }).missingPackage) return; // not built/installed → skip
       throw err;
