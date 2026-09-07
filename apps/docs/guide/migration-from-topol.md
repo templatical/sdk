@@ -53,7 +53,7 @@ console.log(report);
 It also accepts the design serialized as a JSON string, for callers that store or transmit it that way.
 
 ::: tip
-Pass the design object itself, not Topol's whole API response — the response wraps it as `{ id, name, html, json }`, so use `.json`. Both guards throw immediately on a mismatch: a non-object input or an unparseable JSON string names the `.json` fix directly, and the response object throws too, since it carries no `tagName` for the converter to recognise. The design is unwrapped explicitly rather than detected automatically, because guessing risks importing the envelope's `html` string — output that belongs to `@templatical/import-html`, not this package.
+Pass the design object itself, not Topol's whole API response — the response wraps it as `{ id, name, html, json }`, so use `.json`. Passing the response object by mistake, as an object or as a JSON string, is recognised: the converter sees its `json` key and names `.json` in the error. A root with a different shape altogether — not an object, unparseable JSON, or an object with neither a recognised `tagName` nor a `json` key — still throws, naming what it expected instead. The design is unwrapped explicitly rather than detected automatically, because guessing which field holds the design risks importing the envelope's `html` string — output that belongs to `@templatical/import-html`, not this package.
 :::
 
 ## Reading the report

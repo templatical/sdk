@@ -45,6 +45,42 @@ describe("convertTopolTemplate input guards", () => {
     );
   });
 
+  it("names the json fix when handed Topol's whole API response envelope", () => {
+    expect(() =>
+      convertTopolTemplate({
+        id: "123",
+        name: "My design",
+        html: "<html></html>",
+        json: EMPTY_DESIGN,
+      } as never),
+    ).toThrow(INVALID_INPUT_MESSAGE);
+  });
+
+  it("names the json fix when the envelope is passed as a JSON string", () => {
+    expect(() =>
+      convertTopolTemplate(
+        JSON.stringify({
+          id: "123",
+          name: "My design",
+          html: "<html></html>",
+          json: EMPTY_DESIGN,
+        }),
+      ),
+    ).toThrow(INVALID_INPUT_MESSAGE);
+  });
+
+  it("keeps the generic tagName message when the root has no json key", () => {
+    expect(() =>
+      convertTopolTemplate({
+        id: "123",
+        name: "My design",
+        html: "<html></html>",
+      } as never),
+    ).toThrow(
+      'Invalid Topol template: expected a root node with tagName "mj-global-style".',
+    );
+  });
+
   it("accepts a JSON string and parses it", () => {
     const { content } = convertTopolTemplate(JSON.stringify(EMPTY_DESIGN));
     expect(content.blocks).toEqual([]);

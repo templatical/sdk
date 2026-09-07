@@ -53,7 +53,7 @@ console.log(report);
 Es akzeptiert das Design auch als serialisierten JSON-String, für Aufrufer, die es auf diese Weise speichern oder übertragen.
 
 ::: tip
-Übergeben Sie das Design-Objekt selbst, nicht Topols gesamte API-Antwort — die Antwort umschließt es als `{ id, name, html, json }`, verwenden Sie also `.json`. Beide Prüfungen werfen bei einer Abweichung sofort einen Fehler: Eine Eingabe, die kein Objekt ist, oder ein nicht parsbarer JSON-String nennt direkt den Fix mit `.json`; auch das Antwortobjekt selbst wirft einen Fehler, da es kein `tagName` trägt, an dem der Konverter es erkennen könnte. Das Design wird explizit ausgepackt statt automatisch erkannt, denn ein Rateversuch riskiert, den `html`-String der Hülle zu importieren — eine Ausgabe, die zu `@templatical/import-html` gehört, nicht zu diesem Paket.
+Übergeben Sie das Design-Objekt selbst, nicht Topols gesamte API-Antwort — die Antwort umschließt es als `{ id, name, html, json }`, verwenden Sie also `.json`. Wird das Antwortobjekt versehentlich übergeben — als Objekt oder als JSON-String —, erkennt der Konverter das: Er sieht den `json`-Schlüssel und nennt `.json` direkt in der Fehlermeldung. Eine Wurzel mit einer anderen Form — kein Objekt, nicht parsbares JSON, oder ein Objekt ohne erkennbaren `tagName` und ohne `json`-Schlüssel — wirft weiterhin einen Fehler und nennt, was erwartet wurde. Das Design wird explizit ausgepackt statt automatisch erkannt, denn ein Rateversuch riskiert, den `html`-String der Hülle zu importieren — eine Ausgabe, die zu `@templatical/import-html` gehört, nicht zu diesem Paket.
 :::
 
 ## Den Bericht lesen

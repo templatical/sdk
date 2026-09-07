@@ -12,6 +12,9 @@ import type {
 
 const ROOT_TAG = "mj-global-style";
 
+const INVALID_DESIGN_MESSAGE =
+  "Invalid Topol template: expected the design JSON object. If you fetched it from Topol's API, pass the response's \"json\" field.";
+
 const EMPTY_DESIGN_WARNING =
   "No convertible content was found in the Topol design. Check that the mj-container holds at least one mj-section.";
 
@@ -37,18 +40,24 @@ export function convertTopolTemplate(
   const root: unknown = typeof design === "string" ? safeParse(design) : design;
 
   if (typeof root !== "object" || root === null || Array.isArray(root)) {
-    throw new Error(
-      "Invalid Topol template: expected the design JSON object. If you fetched it from Topol's API, pass the response's \"json\" field.",
-    );
+    throw new Error(INVALID_DESIGN_MESSAGE);
   }
 
-  if ((root as TopolDesign).tagName !== ROOT_TAG) {
+  const topolDesign = root as TopolDesign;
+
+  if (topolDesign.tagName !== ROOT_TAG) {
+    // Topol's REST API wraps the design as { id, name, html, json }. A
+    // response object passed here by mistake still carries its own "json"
+    // key, so that mistake is named directly instead of falling through to
+    // the generic wrong-tagName message below.
+    if ("json" in topolDesign) {
+      throw new Error(INVALID_DESIGN_MESSAGE);
+    }
     throw new Error(
       `Invalid Topol template: expected a root node with tagName "${ROOT_TAG}".`,
     );
   }
 
-  const topolDesign = root as TopolDesign;
   const container = (topolDesign.children ?? []).find(
     (child) => child.tagName === "mj-container",
   );
@@ -97,8 +106,6 @@ function safeParse(source: string): unknown {
   try {
     return JSON.parse(source);
   } catch {
-    throw new Error(
-      "Invalid Topol template: expected the design JSON object. If you fetched it from Topol's API, pass the response's \"json\" field.",
-    );
+    throw new Error(INVALID_DESIGN_MESSAGE);
   }
 }
