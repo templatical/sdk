@@ -27,13 +27,20 @@ import type {
   ResolvePreview,
 } from "@templatical/types";
 import { createDefaultTemplateContent, safeClone } from "@templatical/types";
+import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
 import type { MediaRequestContext } from "@templatical/media-library";
 
 import Editor from "./Editor.vue";
 import type { CloudRuntime } from "./cloud/runtime";
 import type { TemplaticalCloudEditorConfig } from "./cloud/cloudConfig";
 import type { ResolveImageUrl } from "./composables/useImageUrlResolver";
-import { loadTranslations, loadCloudTranslations } from "./i18n";
+import {
+  getSupportedLocales,
+  isLocaleSupported,
+  loadTranslations,
+  loadCloudTranslations,
+} from "./i18n";
+import { logger } from "./utils/logger";
 import { useFonts } from "./composables";
 import { toMjmlForInstance } from "./utils/toMjml";
 import { normalizeContentForConfig } from "./utils/normalizeMergeTagMarkup";
@@ -843,6 +850,22 @@ async function mountEditor(
     );
   }
 
+  // An unusable `locale` fell back to English in silence, so a typo — "gr" for
+  // Greek (the country code, not the language code "el"), or "english" — was
+  // indistinguishable from the option being ignored. Regions and stray
+  // whitespace are NOT typos: they resolve to a base language by design.
+  // `paletteBlocks` and `colors` both warn on input they cannot use; this makes
+  // the third config option behave the same. Deliberately NOT extended to the
+  // cloud chunk, which ships fewer locales on purpose (`guide/i18n.md` tells
+  // contributors not to translate it) — warning there would fire for every
+  // fr/es/nl/ca consumer, who did nothing wrong.
+  if (config.locale !== undefined && !isLocaleSupported(config.locale)) {
+    logger.warn(
+      `config.locale: "${config.locale}" has no translations — falling back ` +
+        `to English. Supported: ${getSupportedLocales().sort().join(", ")}.`,
+    );
+  }
+
   // Load translations before mounting so child components can use useI18n synchronously
   const translations = await loadTranslations(config.locale ?? "en");
 
@@ -904,7 +927,16 @@ async function mountEditor(
       if (editorRef.value) {
         return safeClone(editorRef.value.getContent());
       }
-      return safeClone(config.content ?? createDefaultTemplateContent());
+      // Same defaults the mounted editor would have used, `locale` included:
+      // a caller reading content before mount must not get a different
+      // template than the one about to render.
+      return safeClone(
+        config.content ??
+          createDefaultTemplateContent(
+            config.fonts?.defaultFont,
+            resolveTemplateDefaults(config),
+          ),
+      );
     },
     setContent(content: TemplateContent) {
       // Normalized once and used for both writes: `getContent()` falls back to

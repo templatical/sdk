@@ -68,7 +68,27 @@ export const THEME_STYLES_KEY: InjectionKey<
 export const UI_THEME_KEY: InjectionKey<ComputedRef<string>> =
   Symbol("tplUiTheme");
 
-export const BLOCK_DEFAULTS_KEY: InjectionKey<BlockDefaults | undefined> =
+/**
+ * The editor's UI locale, exactly as the consumer passed it to
+ * `init({ locale })` — unresolved, so it may be unsupported or malformed.
+ *
+ * For `Intl` formatting only. Translated *strings* come from
+ * `TRANSLATIONS_KEY`, which is already resolved to a supported bundle; this is
+ * for the labels `Intl` builds itself (dates), where the browser's own locale
+ * would otherwise win and disagree with the surrounding chrome. Always format
+ * through `formatAbsoluteDateTime`, which guards the malformed case.
+ *
+ * Not the template's `settings.locale` — that is the *email's* language and
+ * belongs to content, not chrome.
+ */
+export const UI_LOCALE_KEY: InjectionKey<string | undefined> =
+  Symbol("tplUiLocale");
+
+// A ref, not a plain object: the recipient-facing half of these defaults
+// (video alt, countdown labels) tracks the template's own `settings.locale`,
+// which the author can change while the editor is open. Read it at insert
+// time — a value destructured at setup goes stale.
+export const BLOCK_DEFAULTS_KEY: InjectionKey<ComputedRef<BlockDefaults>> =
   Symbol("blockDefaults");
 
 export const BLOCK_REGISTRY_KEY: InjectionKey<UseBlockRegistryReturn> =

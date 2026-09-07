@@ -22,6 +22,7 @@ export const SELECTORS = {
   editorContainer: '[data-testid="editor-container"]',
   canvasWrapper: '[data-testid="canvas-wrapper"]',
   canvasBody: ".tpl-body",
+  canvas: ".tpl-canvas",
   canvasBlocks: ".tpl-canvas-blocks",
   canvasEmpty: ".tpl-canvas-empty",
   canvasEmptyIcon: ".tpl-canvas-empty-icon",
