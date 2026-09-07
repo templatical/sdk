@@ -41,6 +41,14 @@ describe("attr — the null-safe reader", () => {
   it("returns undefined when the node has no attributes object", () => {
     expect(attr({ tagName: "mj-text" } as TopolNode, "href")).toBeUndefined();
   });
+
+  it("returns undefined for a non-scalar attribute value", () => {
+    expect(attr(node({ style: { color: "red" } }), "style")).toBeUndefined();
+  });
+
+  it("returns a boolean attribute stringified", () => {
+    expect(attr(node({ enabled: true }), "enabled")).toBe("true");
+  });
 });
 
 describe("numAttr", () => {
@@ -80,6 +88,9 @@ describe("parsePxValue", () => {
   it("tolerates surrounding whitespace", () => {
     expect(parsePxValue(" 24px ")).toBe(24);
   });
+  it("parses negative numbers", () => {
+    expect(parsePxValue("-24px")).toBe(-24);
+  });
 });
 
 describe("parseColor", () => {
@@ -100,6 +111,9 @@ describe("parseColor", () => {
   });
   it("returns empty for a missing value", () => {
     expect(parseColor(undefined)).toBe("");
+  });
+  it("returns empty for an unrecognized named color", () => {
+    expect(parseColor("chartreuse")).toBe("");
   });
 });
 
@@ -154,6 +168,24 @@ describe("parsePadding — both Topol forms", () => {
       left: 0,
     });
   });
+
+  it("expands a two-value shorthand", () => {
+    expect(parsePadding(node({ padding: "12px 18px" }))).toEqual({
+      top: 12,
+      right: 18,
+      bottom: 12,
+      left: 18,
+    });
+  });
+
+  it("expands a three-value shorthand", () => {
+    expect(parsePadding(node({ padding: "5px 10px 15px" }))).toEqual({
+      top: 5,
+      right: 10,
+      bottom: 15,
+      left: 10,
+    });
+  });
 });
 
 describe("parsePercent", () => {
@@ -168,6 +200,12 @@ describe("parsePercent", () => {
   });
   it("returns null for a missing value", () => {
     expect(parsePercent(undefined)).toBe(null);
+  });
+  it("returns 0 for a zero percent string", () => {
+    expect(parsePercent("0%")).toBe(0);
+  });
+  it("returns 0 for a zero numeric value", () => {
+    expect(parsePercent(0)).toBe(0);
   });
 });
 
@@ -200,5 +238,8 @@ describe("parseBorderStyle", () => {
   });
   it("falls back to solid", () => {
     expect(parseBorderStyle("groove")).toBe("solid");
+  });
+  it("passes dotted style", () => {
+    expect(parseBorderStyle("dotted")).toBe("dotted");
   });
 });
