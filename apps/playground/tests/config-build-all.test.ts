@@ -12,16 +12,21 @@ describe("buildAllCapabilityConfig", () => {
     expect(Object.keys(config).sort()).toEqual([
       "comments",
       "savedBlocks",
+      "shadowDom",
       "templates",
       "versionHistory",
     ]);
   });
 
-  it("gives every registered capability an implFor", () => {
+  it("gives every provider-backed capability an implFor, and names the rest", () => {
+    // A capability that wraps no provider (shadow-dom, and i18n once it
+    // registers) is expected here, not a regression — `missing` names exactly
+    // which ones, so a NEW provider-backed capability that forgets `implFor`
+    // still fails loudly instead of blending into this allowlist.
     const missing = capabilities
       .filter((c) => typeof c.implFor !== "function")
       .map((c) => c.id);
-    expect(missing).toEqual([]);
+    expect(missing).toEqual(["shadow-dom"]);
   });
 
   it("applies control state to the capability it belongs to", () => {
@@ -67,6 +72,7 @@ describe("capabilities with no backend", () => {
     expect(Object.keys(config).sort()).toEqual([
       "comments",
       "savedBlocks",
+      "shadowDom",
       "templates",
       "versionHistory",
     ]);

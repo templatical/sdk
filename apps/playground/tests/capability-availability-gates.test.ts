@@ -74,6 +74,17 @@ const GATED_CAPABILITY_IDS = [
 ];
 
 /**
+ * Capabilities that set a plain `init()` key from a control and wrap no
+ * provider at all: there is no feature composable to construct and so no
+ * `isAvailable`/`hasTemplate` gate to satisfy — the editor always mounts
+ * whatever `shadowDom.mode` resolves to, the same way it always mounts
+ * whatever `theme` or `locale` resolve to. Listed here, beside
+ * `GATED_CAPABILITY_IDS`, so the registry-pairing case below still accounts
+ * for every registered id rather than only the gated ones.
+ */
+const BACKEND_FREE_CAPABILITY_IDS = ["shadow-dom"];
+
+/**
  * Every capability whose editor-side feature composable can be constructed
  * directly (no Vue mount needed) is fed the REAL config the shell would
  * build for its own fixture — `buildAllCapabilityConfig`'s output, exactly
@@ -194,9 +205,14 @@ describe("every capability's editor-side availability gate is satisfied by the s
    * and `_TestEmailOptionsForwarded` compile-time exhaustiveness checks in
    * `createCloudRuntime.ts`.
    */
-  it("has a case for every registered capability", () => {
+  it("has a case for every registered capability, gated or named backend-free", () => {
     expect(capabilities.map((c) => c.id).sort()).toEqual(
-      GATED_CAPABILITY_IDS.sort(),
+      [...GATED_CAPABILITY_IDS, ...BACKEND_FREE_CAPABILITY_IDS].sort(),
     );
+  });
+
+  it("shadow-dom has no editor-side availability gate: it wraps no provider", () => {
+    const def = capabilityById("shadow-dom")!;
+    expect(def.implFor).toBeUndefined();
   });
 });

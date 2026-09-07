@@ -3,7 +3,10 @@ import { computed, onBeforeUnmount, onMounted, watch } from "vue";
 import {
   buildAllCapabilityConfig,
   capabilityById,
+  resolveControlState,
 } from "@/config/capabilities";
+import { SHADOW_DOM_PATH } from "@/config/capabilities/shadow-dom";
+import type { ControlState } from "@/config/types";
 import { PLAYGROUND_USER } from "@/providers/identity";
 import CapabilityDrawer from "./CapabilityDrawer.vue";
 import CapabilityRail from "./CapabilityRail.vue";
@@ -18,6 +21,43 @@ import { useEventLog } from "./useEventLog";
 
 const { activeId, select } = useCapabilityRoute();
 const { state: controlState, set: setControl } = useControlState();
+
+/**
+ * `?shadowDom=1|0|true|false` in the URL, expressed in the control's own
+ * "shadow" | "light" vocabulary rather than a boolean. Mirrors the parsing
+ * `App.vue`'s `readShadowDomFlag` does for its own mount-mode resolution —
+ * this shell has a separate route and a separate control-state key, but
+ * decision 22's resolution order (URL param beats control state beats
+ * default) has to hold here too, since `playwright.config.ts`'s two projects
+ * pin the mode by appending exactly this param.
+ *
+ * Read once at setup: this is a query-string value, and nothing in the shell
+ * mutates `location.search` mid-session — only the hash changes on
+ * navigation, which is a different part of the URL.
+ */
+function readShadowDomUrlOverride(): "shadow" | "light" | undefined {
+  const v = new URLSearchParams(window.location.search).get("shadowDom");
+  if (v === "1" || v === "true") return "shadow";
+  if (v === "0" || v === "false") return "light";
+  return undefined;
+}
+const shadowDomUrlOverride = readShadowDomUrlOverride();
+
+/**
+ * `controlState`, with the URL override folded onto `shadowDom.mode` when one
+ * is present. Every capability's config is built from this rather than the
+ * raw ref, so the override actually reaches `init()` — not just the `:key`
+ * below — and the two can never disagree about which mode is live.
+ *
+ * The Controls tab keeps showing the raw stored value: the URL param exists
+ * for the Playwright project matrix, not as an end-user-facing control-state
+ * tier, so there is no "forced" row to render for it.
+ */
+const effectiveControlState = computed<ControlState>(() =>
+  shadowDomUrlOverride === undefined
+    ? controlState.value
+    : { ...controlState.value, [SHADOW_DOM_PATH]: shadowDomUrlOverride },
+);
 
 // The drawer's chrome — open/collapsed, its height, and the active tab — is
 // held and persisted by `useDrawerChrome`, under its own key rather than
@@ -67,6 +107,19 @@ const { fixture, fixtureSlug, setFixture, adoptTemplate } =
     () => initEditor(),
   );
 
+// `attachShadow()` is irreversible: once it has run on an element, the
+// shadow root is permanent and the now-empty tree suppresses light-DOM
+// children even after unmount. So a mount-mode change needs a NEW element,
+// which is what keying the host on this forces — every other re-init
+// (capability switch, tab switch, any other control) keeps the same node,
+// which is the invariant `capability-shell.spec.ts` asserts. Resolved from
+// `effectiveControlState`, never the raw `controlState`, so a URL-forced mode
+// keys the host the same way it configures `init()` below.
+const shadowMode = computed(
+  () =>
+    resolveControlState(effectiveControlState.value)[SHADOW_DOM_PATH] as string,
+);
+
 // The editor's host element, the instance in it, and the config it booted
 // with all live in `useCapabilityEditor`, which also serializes re-inits:
 // `unmount()` is keyed to the container, so overlapping `init()` calls tear
@@ -97,7 +150,7 @@ const {
     // binds it to its own id, and one stable function keeps every rebuilt
     // config handing the feed the same target.
     ...buildAllCapabilityConfig(
-      controlState.value,
+      effectiveControlState.value,
       fixture.value,
       eventLog.record,
     ),
@@ -212,6 +265,7 @@ onBeforeUnmount(destroy);
       >
         <div
           ref="editorHost"
+          :key="shadowMode"
           data-testid="capability-editor"
           class="min-w-0 flex-1 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
         />

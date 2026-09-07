@@ -75,7 +75,7 @@ describe("ControlsPane control-kind coverage", () => {
     for (const kind of used) {
       expect(source).toContain(`control.kind === '${kind}'`);
     }
-    expect([...used].sort()).toEqual(["boolean", "method", "number"]);
+    expect([...used].sort()).toEqual(["boolean", "enum", "method", "number"]);
   });
 });
 

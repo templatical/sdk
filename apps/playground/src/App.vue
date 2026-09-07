@@ -1201,7 +1201,6 @@ async function initEditor(): Promise<void> {
   try {
     editor.value = await init({
       container: editorContainer.value,
-      shadowDom,
       ...currentSerializableConfig,
       mergeTags: {
         ...currentSerializableConfig.mergeTags,
@@ -1228,6 +1227,15 @@ async function initEditor(): Promise<void> {
       // control, because a demo that saves by itself hides what the Save
       // button does. Each capability builds its own provider via `implFor`.
       ...buildAllCapabilityConfig(readControlState(), currentTemplateOption),
+      // `shadowDom` is placed AFTER the registry spread on purpose: the
+      // shadow-dom capability also contributes a `shadowDom` key (its own
+      // control, defaulting to the SDK's own default), and a later key in the
+      // same object literal wins over an earlier one regardless of which is a
+      // spread. This app resolves its own mount mode from the URL param and
+      // `tpl-playground-shadow-mode` (see `resolveInitialShadowMode` above),
+      // and that resolution must stay authoritative here — the e2e mode
+      // matrix pins the URL param and would otherwise always mount shadow.
+      shadowDom,
       // Also always on, and also backend-free — the provider fakes delivery so
       // the send/success/error path is exercisable on every template.
       testEmail: testEmailProvider,

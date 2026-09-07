@@ -753,4 +753,68 @@ test.describe("capability drawer", () => {
     await expect(page.locator(SELECTORS.capabilityEvent)).toHaveCount(2);
     await expect(badge).toHaveCount(0);
   });
+
+  test("switching to light DOM actually renders the editor outside a shadow root", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/shadow-dom");
+
+    // Both halves matter: a shadow root present AND the editor really inside it.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const host = document.querySelector(
+            '[data-testid="capability-editor"]',
+          );
+          return {
+            shadow: !!host?.shadowRoot,
+            mounted: (host?.shadowRoot ?? host)?.children.length ?? 0,
+          };
+        }),
+      )
+      .toEqual({ shadow: true, mounted: 1 });
+
+    await page
+      .locator(controlByPath("shadowDom.mode"))
+      .locator(SELECTORS.capabilityControlInput)
+      .selectOption("light");
+
+    // The editor must be MOUNTED, not merely present: reusing the old host
+    // leaves an element whose permanent shadow root suppresses light
+    // children, so the page looks blank while every selector still resolves.
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const host = document.querySelector(
+            '[data-testid="capability-editor"]',
+          );
+          return { shadow: !!host?.shadowRoot, light: host?.children.length ?? 0 };
+        }),
+      )
+      .toEqual({ shadow: false, light: 1 });
+  });
+
+  test("the shadowDom URL param still wins over control state", async ({
+    page,
+  }) => {
+    // Seed the OPPOSITE of what the URL is about to force, so a pass can
+    // only mean the URL param actually won the resolution — not that both
+    // happened to agree.
+    await seedControlState(page, { "shadowDom.mode": "light" });
+    await page.goto("/?shadowDom=1#capabilities/shadow-dom");
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const host = document.querySelector(
+            '[data-testid="capability-editor"]',
+          );
+          return {
+            shadow: !!host?.shadowRoot,
+            mounted: (host?.shadowRoot ?? host)?.children.length ?? 0,
+          };
+        }),
+      )
+      .toEqual({ shadow: true, mounted: 1 });
+  });
 });

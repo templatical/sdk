@@ -12,12 +12,14 @@ import { savedBlocksCapability } from "./saved-blocks";
 import { templatesCapability } from "./templates";
 import { versionHistoryCapability } from "./version-history";
 import { commentsCapability } from "./comments";
+import { shadowDomCapability } from "./shadow-dom";
 
 export const capabilities: AnyCapabilityDef[] = [
   savedBlocksCapability,
   templatesCapability,
   versionHistoryCapability,
   commentsCapability,
+  shadowDomCapability,
 ];
 
 export function capabilityById(id: string): AnyCapabilityDef | undefined {

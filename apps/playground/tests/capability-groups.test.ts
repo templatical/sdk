@@ -16,7 +16,12 @@ describe("capabilityGroups", () => {
   });
 
   it("omits a group with no capabilities rather than rendering it empty", () => {
-    expect(capabilityGroups().map((g) => g.group)).toEqual(["backend"]);
+    // "authoring" and "cloud" carry nothing yet, so only the two populated
+    // groups show up — in `CAPABILITY_GROUP_ORDER`'s order.
+    expect(capabilityGroups().map((g) => g.group)).toEqual([
+      "backend",
+      "appearance",
+    ]);
   });
 
   it("carries every registered capability exactly once", () => {
@@ -28,6 +33,9 @@ describe("capabilityGroups", () => {
   });
 
   it("gives every group a human title", () => {
-    expect(capabilityGroups().map((g) => g.title)).toEqual(["Backend & data"]);
+    expect(capabilityGroups().map((g) => g.title)).toEqual([
+      "Backend & data",
+      "Appearance",
+    ]);
   });
 });

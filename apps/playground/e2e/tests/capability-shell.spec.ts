@@ -64,11 +64,17 @@ test.describe("capability shell", () => {
 
   test("the rail groups capabilities under a heading", async ({ page }) => {
     await page.goto("/#capabilities");
-    await expect(page.locator(SELECTORS.capabilityRailGroup)).toHaveCount(1);
-    await expect(page.locator(SELECTORS.capabilityRailGroup)).toContainText(
+    // Two groups now carry a capability: "Backend & data" (four) and
+    // "Appearance" (shadow-dom) — "Authoring" and "Cloud" still have nothing
+    // registered, so they stay omitted rather than rendering empty.
+    await expect(page.locator(SELECTORS.capabilityRailGroup)).toHaveCount(2);
+    await expect(page.locator(SELECTORS.capabilityRailGroup).first()).toContainText(
       "Backend & data",
     );
-    await expect(page.locator(SELECTORS.capabilityRailItem)).toHaveCount(4);
+    await expect(page.locator(SELECTORS.capabilityRailGroup).last()).toContainText(
+      "Appearance",
+    );
+    await expect(page.locator(SELECTORS.capabilityRailItem)).toHaveCount(5);
   });
 
   test("the default route is still the template chooser", async ({
