@@ -22,6 +22,7 @@ import { useCommentsFeature } from "../../../packages/editor/src/composables/use
 import { useTemplatesFeature } from "../../../packages/editor/src/composables/useTemplatesFeature";
 import { useVersionHistoryFeature } from "../../../packages/editor/src/composables/useVersionHistoryFeature";
 import { useSavedBlocksFeature } from "../../../packages/editor/src/composables/useSavedBlocksFeature";
+import { useTestEmailFeature } from "../../../packages/editor/src/composables/useTestEmailFeature";
 
 const CONTENT = { blocks: [], settings: {} } as unknown as TemplateContent;
 const ADOPTED: Template = {
@@ -71,6 +72,7 @@ const GATED_CAPABILITY_IDS = [
   "templates",
   "version-history",
   "saved-blocks",
+  "test-email",
 ];
 
 /**
@@ -184,6 +186,20 @@ describe("every capability's editor-side availability gate is satisfied by the s
         editor: { addBlock: () => {}, state: { previewMode: false } },
       }),
     );
+
+    expect(feature.isAvailable.value).toBe(true);
+  });
+
+  it("testEmail: available with the shell's pinned two-recipient allowlist", () => {
+    // The guard that would have caught the empty-list class: `isAvailable`
+    // reads false the moment `allowedRecipients` is `[]`, and the playground's
+    // provider is fixed at two addresses precisely so this stays true.
+    const fixture = fixtureFor("test-email");
+    const config = buildAllCapabilityConfig({}, fixture);
+    const feature = useTestEmailFeature({
+      provider: config.testEmail!,
+      getContent: () => CONTENT,
+    });
 
     expect(feature.isAvailable.value).toBe(true);
   });

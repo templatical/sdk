@@ -339,11 +339,17 @@ test.describe("capability drawer", () => {
       hasText: "Config",
     });
 
-    // At zero the capability hands the provider's own `list` straight through,
-    // so the delay wrapper's `setTimeout` is absent from the printed source.
+    // At zero the capability hands the provider's own `list` straight
+    // through, so the delay wrapper's own `setTimeout` call is absent from
+    // the printed source. Matched by its exact source fragment rather than
+    // the bare word "setTimeout": the Config tab prints the WHOLE merged
+    // registry, and the test-email capability's own (unrelated) `send`
+    // wraps its fake latency in a `setTimeout` too — a bare-word check would
+    // read that as this wrapper.
+    const listDelayWrapper = "setTimeout(resolve, delayMs)";
     await configTab.click();
     await expect(source).toContainText("savedBlocks:");
-    await expect(source).not.toContainText("setTimeout");
+    await expect(source).not.toContainText(listDelayWrapper);
 
     await page
       .locator(SELECTORS.capabilityDrawerTab, { hasText: "Controls" })
@@ -356,7 +362,7 @@ test.describe("capability drawer", () => {
     // The wrapper appearing in the real config is the re-init's completion
     // signal, so opening the browser below cannot race the old instance.
     await configTab.click();
-    await expect(source).toContainText("setTimeout");
+    await expect(source).toContainText(listDelayWrapper);
 
     // The control's stated purpose: localStorage answers instantly, so a
     // latency stand-in is the only way the browser's first-open skeleton is
@@ -907,5 +913,65 @@ test.describe("capability drawer", () => {
     await expect(page.locator(paletteByType("section"))).toContainText(
       "Abschnitt",
     );
+  });
+
+  /**
+   * Test email: the capability's own page, driven the same way
+   * `test-email.spec.ts` drives the OSS editor's copy of the same dialog —
+   * the picker and the payload are the SDK's, only the host page differs.
+   */
+  test("test-email: sends through the picker, and the payload carries rendered MJML", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/test-email");
+
+    await page.locator(SELECTORS.testEmailTrigger).click();
+    const field = page.locator(SELECTORS.testEmailRecipient);
+    await expect(field).toHaveJSProperty("tagName", "SELECT");
+    await expect(field.locator("option")).toHaveText([
+      "you@example.com",
+      "teammate@example.com",
+    ]);
+
+    await page.locator(SELECTORS.testEmailSend).click();
+    // The fake sender's own latency (800ms), same margin `test-email.spec.ts`
+    // uses for the identical confirmation.
+    await expect(page.locator(SELECTORS.testEmailSuccess)).toBeVisible({
+      timeout: 4800,
+    });
+
+    const payload = await page.evaluate(
+      () =>
+        (window as { __tplPlaygroundLastTestEmail?: { mjml?: string } })
+          .__tplPlaygroundLastTestEmail,
+    );
+    expect(typeof payload?.mjml).toBe("string");
+    expect(payload?.mjml?.startsWith("<mjml")).toBe(true);
+  });
+
+  test("test-email: toggling includeMjml off omits the mjml key from the payload", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/test-email");
+
+    await page
+      .locator(controlByPath("testEmail.includeMjml"))
+      .locator(SELECTORS.capabilityControlInput)
+      .uncheck();
+
+    await page.locator(SELECTORS.testEmailTrigger).click();
+    await page.locator(SELECTORS.testEmailSend).click();
+    await expect(page.locator(SELECTORS.testEmailSuccess)).toBeVisible({
+      timeout: 4800,
+    });
+
+    const payload = await page.evaluate(
+      () =>
+        (window as { __tplPlaygroundLastTestEmail?: object })
+          .__tplPlaygroundLastTestEmail,
+    );
+    // CLAUDE.md: the key is omitted, not sent as `undefined` — `mjml` must be
+    // absent from the payload object entirely.
+    expect(payload).not.toHaveProperty("mjml");
   });
 });

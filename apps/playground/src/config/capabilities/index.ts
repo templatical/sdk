@@ -12,6 +12,7 @@ import { savedBlocksCapability } from "./saved-blocks";
 import { templatesCapability } from "./templates";
 import { versionHistoryCapability } from "./version-history";
 import { commentsCapability } from "./comments";
+import { testEmailCapability } from "./test-email";
 import { shadowDomCapability } from "./shadow-dom";
 import { i18nCapability } from "./i18n";
 
@@ -20,6 +21,7 @@ export const capabilities: AnyCapabilityDef[] = [
   templatesCapability,
   versionHistoryCapability,
   commentsCapability,
+  testEmailCapability,
   shadowDomCapability,
   i18nCapability,
 ];

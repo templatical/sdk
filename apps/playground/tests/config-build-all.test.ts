@@ -15,6 +15,7 @@ describe("buildAllCapabilityConfig", () => {
       "savedBlocks",
       "shadowDom",
       "templates",
+      "testEmail",
       "versionHistory",
     ]);
   });
@@ -76,6 +77,7 @@ describe("capabilities with no backend", () => {
       "savedBlocks",
       "shadowDom",
       "templates",
+      "testEmail",
       "versionHistory",
     ]);
   });
