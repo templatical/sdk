@@ -19,7 +19,7 @@ templatical-email/
     examples/*.json        # complete, valid templates to model output on
   scripts/                 # invoked by the skill — ships and runs on the user's machine
     validate.mjs           # validates a template JSON (ajv + optional quality lint)
-    import.mjs             # import Unlayer/BeeFree/HTML → Templatical JSON (via @templatical/import-*)
+    import.mjs             # import Unlayer/BeeFree/HTML/MJML → Templatical JSON (via @templatical/import-*)
     live-server.mjs        # live mode: zero-dep Node bridge (serves the editor, syncs edits)
   vendor/                  # committed bundles — why the skill needs no install
     ajv.mjs                # ajv, for structural validation
@@ -45,9 +45,9 @@ are exempt — `package.json` declares no runtime dependencies (they are vendore
   Local, single-user, and adds **no** npm dependencies. Runs in a coding agent on
   your own machine. See the "Live mode" section of [`SKILL.md`](./SKILL.md).
 
-You can also **import** an existing Unlayer / BeeFree / HTML template as a starting
-point (via the `@templatical/import-*` converters, install-on-demand) — see
-"Importing an existing template" in [`SKILL.md`](./SKILL.md).
+You can also **import** an existing Unlayer / BeeFree / HTML / MJML template as a
+starting point (via the `@templatical/import-*` converters, install-on-demand) —
+see "Importing an existing template" in [`SKILL.md`](./SKILL.md).
 
 ## Requirements
 

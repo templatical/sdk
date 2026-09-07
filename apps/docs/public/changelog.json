@@ -5,14 +5,30 @@
     "@templatical/editor",
     "@templatical/import-beefree",
     "@templatical/import-html",
+    "@templatical/import-mjml",
     "@templatical/import-unlayer",
     "@templatical/media-library",
     "@templatical/quality",
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.30.0",
+  "latest": "0.31.0",
   "versions": [
+    {
+      "version": "0.31.0",
+      "date": "2026-09-06",
+      "changes": [
+        {
+          "hash": "3ed4888",
+          "level": "minor",
+          "title": "Add `@templatical/import-mjml`, a converter from MJML documents to",
+          "body": "Templatical template JSON — alongside the existing BeeFree, Unlayer and HTML\nimporters.\n\n`convertMjmlTemplate(mjml)` returns `{ content, report }`, the same shape as\nthe other three importers. It resolves MJML's `mj-attributes` / `mj-class` /\n`mj-all` attribute cascade before mapping tags, and recovers block visibility\nand display conditions from the markup `@templatical/renderer` emits for\nthem. Tags with no Templatical equivalent — `mj-hero`, `mj-carousel`,\n`mj-accordion`, and any custom component — fall back to HTML blocks holding\nthe original markup.\n\nMJML produced by `@templatical/renderer` converts back with no\napproximations, which a round-trip test asserts over a fixture covering\nevery round-trippable block type.",
+          "packages": [
+            "@templatical/import-mjml"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.30.0",
       "date": "2026-09-02",

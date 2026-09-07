@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -544,8 +544,25 @@ describe("committed output is up to date", () => {
     expect(onDisk).toBe(built.json);
   });
 
-  it("aggregates all nine packages", () => {
-    expect(built.packages).toHaveLength(9);
+  // Derived from disk, never a hard-coded count. A literal count rots on the
+  // release that first gives a new package a CHANGELOG.md — not on the PR that
+  // adds the package — so it detonates on a Version Packages commit, far from
+  // the change that caused it. That is exactly how `import-mjml` turned main
+  // red. Comparing sets also states the real contract (every changelog is
+  // aggregated, none silently skipped), which a count cannot express.
+  it("aggregates every package that has a changelog", () => {
+    const onDisk = readdirSync(join(REPO_ROOT, "packages"), {
+      withFileTypes: true,
+    })
+      .filter((d) => d.isDirectory())
+      .filter((d) =>
+        existsSync(join(REPO_ROOT, "packages", d.name, "CHANGELOG.md")),
+      )
+      .map((d) => `@templatical/${d.name}`)
+      .sort();
+
+    expect(onDisk.length).toBeGreaterThan(1);
+    expect([...built.packages].sort()).toEqual(onDisk);
     expect(built.packages).toContain("@templatical/editor");
     expect(built.packages).toContain("@templatical/types");
   });

@@ -116,6 +116,7 @@ If you call `editor.toMjml()` without the renderer installed, it throws a clear 
 | `@templatical/import-beefree`  | Converts BeeFree JSON templates to Templatical format.                                                                                   | Optional                                                                                            |
 | `@templatical/import-unlayer`  | Converts Unlayer JSON design templates to Templatical format.                                                                            | Optional                                                                                            |
 | `@templatical/import-html`     | Converts existing HTML email templates (table-based) to Templatical format.                                                              | Optional                                                                                            |
+| `@templatical/import-mjml`     | Converts MJML email templates to Templatical format.                                                                                     | Optional                                                                                            |
 
 `@templatical/editor` ships as a single self-contained ESM bundle: every runtime dependency it needs (Vue, TipTap, vue-draggable-plus, `@templatical/core`, `@templatical/types`, etc.) is inlined. You never install them separately — and you never get duplicate copies in your app's `node_modules`.
 
@@ -342,7 +343,7 @@ Every GitHub release carries the same tarballs that go to npm, one per package. 
 
 Three things to know:
 
-**Pin the Templatical packages you depend on indirectly, too.** A tarball refers to its siblings by version number, so your package manager still goes looking for that version on the registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` and the three importers all depend on `@templatical/types`; `@templatical/media-library` depends on `@templatical/core` as well. Point each one you pull in at a tarball:
+**Pin the Templatical packages you depend on indirectly, too.** A tarball refers to its siblings by version number, so your package manager still goes looking for that version on the registry. `@templatical/core`, `@templatical/quality`, `@templatical/renderer`, `@templatical/media-library` and the importers all depend on `@templatical/types`; `@templatical/media-library` depends on `@templatical/core` as well. Point each one you pull in at a tarball:
 
 ```yaml
 # pnpm-workspace.yaml
@@ -352,7 +353,7 @@ overrides:
 
 npm and Yarn do the same thing with `overrides` and `resolutions` in `package.json`. `@templatical/editor` needs none of this — it bundles everything it uses.
 
-**Third-party dependencies still come from a registry.** `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree` and `@templatical/import-unlayer` install with nothing else at runtime. The rest pull packages that aren't ours: `@templatical/core` needs `@vue/reactivity`, `@templatical/quality` needs `htmlparser2`, `@templatical/import-html` needs `cheerio` and `domhandler`, and `@templatical/media-library` needs `@lucide/vue`, `@vueuse/core` and `vue-advanced-cropper`. Installing those without a registry needs a mirror for them too.
+**Third-party dependencies still come from a registry.** `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree` and `@templatical/import-unlayer` install with nothing else at runtime. The rest pull packages that aren't ours: `@templatical/core` needs `@vue/reactivity`, `@templatical/quality` needs `htmlparser2`, `@templatical/import-html` and `@templatical/import-mjml` need `cheerio` and `domhandler`, and `@templatical/media-library` needs `@lucide/vue`, `@vueuse/core` and `vue-advanced-cropper`. Installing those without a registry needs a mirror for them too.
 
 **The source archives on that page are not a substitute.** "Source code (zip)" and "Source code (tar.gz)" are snapshots of the repository, as is a `github:templatical/sdk` dependency. Neither contains a built `dist/`, and both refer to sibling packages as `workspace:*`, which resolves to nothing outside this repo.
 

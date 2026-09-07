@@ -54,6 +54,10 @@ export default defineConfig({
                 packagesDir,
                 'import-html/src/index.ts',
             ),
+            '@templatical/import-mjml': resolve(
+                packagesDir,
+                'import-mjml/src/index.ts',
+            ),
             '@templatical/media-library': resolve(
                 packagesDir,
                 'media-library/src/index.ts',
