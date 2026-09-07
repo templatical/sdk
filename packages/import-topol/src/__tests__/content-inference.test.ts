@@ -79,6 +79,19 @@ describe("inferTextBlock", () => {
       inner: "Title",
     });
   });
+
+  it("omits clampedFrom entirely when the level is not clamped", () => {
+    expect("clampedFrom" in inferTextBlock("<h1>Title</h1>")).toBe(false);
+  });
+
+  it("includes clampedFrom and clamps h6 to level 4", () => {
+    expect(inferTextBlock("<h6>Small</h6>")).toEqual({
+      kind: "title",
+      level: 4,
+      inner: "Small",
+      clampedFrom: 6,
+    });
+  });
 });
 
 describe("stripTags", () => {
@@ -98,5 +111,9 @@ describe("stripTags", () => {
 
   it("returns an empty string for missing input", () => {
     expect(stripTags(undefined)).toBe("");
+  });
+
+  it("returns an empty string for empty input", () => {
+    expect(stripTags("")).toBe("");
   });
 });
