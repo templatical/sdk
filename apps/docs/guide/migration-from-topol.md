@@ -29,12 +29,14 @@ You can also load it from a CDN:
 ```ts
 import { convertTopolTemplate } from '@templatical/import-topol';
 
-// Topol's REST API wraps the design as { id, name, html, json } —
-// pass the response's "json" field, not the response itself.
-const res = await fetch('https://api.topol.io/v1/designs/123').then((r) => r.json());
+// Topol hands you the design directly from its editor's onSave callback.
+// Fetched from its REST API instead, it sits under "definition" (the
+// template endpoint) or "json" (the predefined-templates endpoint) — not
+// the response object itself.
+const res = await fetch('https://app.topol.io/api/templates/123').then((r) => r.json());
 
 // Convert to Templatical format
-const { content, report } = convertTopolTemplate(res.json);
+const { content, report } = convertTopolTemplate(res.data.definition);
 
 // Use in the editor
 const editor = await init({
@@ -53,7 +55,7 @@ console.log(report);
 It also accepts the design serialized as a JSON string, for callers that store or transmit it that way.
 
 ::: tip
-Pass the design object itself, not Topol's whole API response — the response wraps it as `{ id, name, html, json }`, so use `.json`. Passing the response object by mistake, as an object or as a JSON string, is recognised: the converter sees its `json` key and names `.json` in the error. A root with a different shape altogether — not an object, unparseable JSON, or an object with neither a recognised `tagName` nor a `json` key — still throws, naming what it expected instead. The design is unwrapped explicitly rather than detected automatically, because guessing which field holds the design risks importing the envelope's `html` string — output that belongs to `@templatical/import-html`, not this package.
+Pass the design object itself, not Topol's whole API response. Topol's editor hands it to you directly, as the first of four arguments to `onSave` — no envelope to unwrap there. Its REST APIs do wrap it, and which field holds the design depends on the endpoint: the template-retrieval endpoint returns `{ data: { id, name, screenshot_url, definition, html } }`, so use `.data.definition`; the predefined-templates endpoint returns the design under `json`, alongside `html`. Passing either envelope by mistake, as an object or as a JSON string, is recognised — the converter sees a `json` or `definition` key on a root with the wrong shape and names both fields in the error. A root with a different shape altogether — not an object, unparseable JSON, or an object with neither key — still throws, naming what it expected instead. The design is unwrapped explicitly rather than detected automatically, because guessing which field holds it risks importing an envelope's `html` string — output that belongs to `@templatical/import-html`, not this package.
 :::
 
 ## Reading the report

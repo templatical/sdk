@@ -13,7 +13,7 @@ import type {
 const ROOT_TAG = "mj-global-style";
 
 const INVALID_DESIGN_MESSAGE =
-  "Invalid Topol template: expected the design JSON object. If you fetched it from Topol's API, pass the response's \"json\" field.";
+  'Invalid Topol template: expected the design JSON object — Topol hands you this directly from its editor\'s onSave callback, or under "definition" (template API) or "json" (predefined-templates API) in its API response.';
 
 const EMPTY_DESIGN_WARNING =
   "No convertible content was found in the Topol design. Check that the mj-container holds at least one mj-section.";
@@ -22,10 +22,13 @@ const EMPTY_DESIGN_WARNING =
  * Convert a Topol.io design into a Templatical template.
  *
  * The input is the design object itself — the node whose `tagName` is
- * `mj-global-style`. Topol's REST API wraps it as `{ id, name, html, json }`,
- * so a caller passes `.json`. That is documented rather than sniffed: guessing
- * between an envelope and a design risks importing the envelope's `html`,
- * which belongs to a different package entirely.
+ * `mj-global-style`, not a whole API response. Topol's editor hands it to
+ * you directly as the first argument to `onSave`; its REST APIs wrap it
+ * instead, under `definition` on the template-retrieval endpoint or `json`
+ * (alongside `html`) on the predefined-templates endpoint. That is
+ * documented rather than sniffed: guessing which field holds the design
+ * risks importing an envelope's `html`, which belongs to a different
+ * package entirely.
  *
  * @example
  * ```ts
@@ -46,11 +49,13 @@ export function convertTopolTemplate(
   const topolDesign = root as TopolDesign;
 
   if (topolDesign.tagName !== ROOT_TAG) {
-    // Topol's REST API wraps the design as { id, name, html, json }. A
-    // response object passed here by mistake still carries its own "json"
-    // key, so that mistake is named directly instead of falling through to
-    // the generic wrong-tagName message below.
-    if ("json" in topolDesign) {
+    // Topol's REST APIs wrap the design rather than returning it bare: the
+    // template-retrieval endpoint uses "definition", the predefined/premade
+    // templates endpoint uses "json" (alongside "html"). A response object
+    // passed here by mistake still carries one of those keys, so that
+    // mistake is named directly instead of falling through to the generic
+    // wrong-tagName message below.
+    if ("json" in topolDesign || "definition" in topolDesign) {
       throw new Error(INVALID_DESIGN_MESSAGE);
     }
     throw new Error(

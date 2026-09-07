@@ -10,7 +10,7 @@ const EMPTY_DESIGN = {
 };
 
 const INVALID_INPUT_MESSAGE =
-  "Invalid Topol template: expected the design JSON object. If you fetched it from Topol's API, pass the response's \"json\" field.";
+  'Invalid Topol template: expected the design JSON object — Topol hands you this directly from its editor\'s onSave callback, or under "definition" (template API) or "json" (predefined-templates API) in its API response.';
 
 describe("convertTopolTemplate input guards", () => {
   it("throws a typed message for a non-object input", () => {
@@ -69,12 +69,37 @@ describe("convertTopolTemplate input guards", () => {
     ).toThrow(INVALID_INPUT_MESSAGE);
   });
 
+  it("names the definition fix when handed Topol's template-retrieval envelope", () => {
+    expect(() =>
+      convertTopolTemplate({
+        id: 7,
+        name: "N",
+        screenshot_url: "https://example.com/shot.png",
+        definition: { tagName: "mj-global-style" },
+        html: "<html>",
+      } as never),
+    ).toThrow(INVALID_INPUT_MESSAGE);
+  });
+
   it("keeps the generic tagName message when the root has no json key", () => {
     expect(() =>
       convertTopolTemplate({
         id: "123",
         name: "My design",
         html: "<html></html>",
+      } as never),
+    ).toThrow(
+      'Invalid Topol template: expected a root node with tagName "mj-global-style".',
+    );
+  });
+
+  it("keeps the generic tagName message when a template-shaped envelope has neither json nor definition", () => {
+    expect(() =>
+      convertTopolTemplate({
+        id: 7,
+        name: "N",
+        screenshot_url: "https://example.com/shot.png",
+        html: "<html>",
       } as never),
     ).toThrow(
       'Invalid Topol template: expected a root node with tagName "mj-global-style".',

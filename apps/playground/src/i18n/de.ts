@@ -118,7 +118,7 @@ export default {
     },
     topol: {
       description:
-        'F\u00fcgen Sie unten ein Topol-Design-JSON ein. Wenn Sie es \u00fcber die Topol-API abgerufen haben, f\u00fcgen Sie das Feld "json" der Antwort ein, nicht die gesamte Antwort.',
+        'F\u00fcgen Sie unten ein Topol-Design-JSON ein \u2014 das Design selbst, nicht eine gesamte API-Antwort. Topols Editor \u00fcbergibt es Ihnen direkt; \u00fcber die API liegt es unter "definition" oder "json".',
       emptyError:
         "F\u00fcgen Sie Ihr Topol-Design-JSON ein oder laden Sie eine Datei hoch.",
     },

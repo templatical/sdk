@@ -15,10 +15,12 @@ npm install @templatical/import-topol
 ```ts
 import { convertTopolTemplate } from '@templatical/import-topol';
 
-// Topol's REST API wraps the design as { id, name, html, json } — pass the
-// response's "json" field, not the response itself.
-const res = await fetch('https://api.topol.io/v1/designs/123').then((r) => r.json());
-const { content, report } = convertTopolTemplate(res.json);
+// Topol hands you the design directly from its editor's onSave callback.
+// Fetched from its REST API instead, it sits under "definition" (the
+// template endpoint) or "json" (the predefined-templates endpoint) — not
+// the response object itself.
+const res = await fetch('https://app.topol.io/api/templates/123').then((r) => r.json());
+const { content, report } = convertTopolTemplate(res.definition);
 
 console.log(report.summary);
 console.log(report.warnings);

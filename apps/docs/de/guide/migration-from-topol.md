@@ -29,12 +29,14 @@ Sie können es auch von einem CDN laden:
 ```ts
 import { convertTopolTemplate } from '@templatical/import-topol';
 
-// Topols REST-API umschließt das Design als { id, name, html, json } —
-// verwenden Sie das "json"-Feld der Antwort, nicht die Antwort selbst.
-const res = await fetch('https://api.topol.io/v1/designs/123').then((r) => r.json());
+// Topols Editor übergibt Ihnen das Design direkt in seinem onSave-Callback.
+// Über die REST-API abgerufen liegt es stattdessen unter "definition"
+// (Template-Endpunkt) oder "json" (Endpunkt für vordefinierte Vorlagen) —
+// nicht im Antwortobjekt selbst.
+const res = await fetch('https://app.topol.io/api/templates/123').then((r) => r.json());
 
 // In das Templatical-Format konvertieren
-const { content, report } = convertTopolTemplate(res.json);
+const { content, report } = convertTopolTemplate(res.data.definition);
 
 // Im Editor verwenden
 const editor = await init({
@@ -53,7 +55,7 @@ console.log(report);
 Es akzeptiert das Design auch als serialisierten JSON-String, für Aufrufer, die es auf diese Weise speichern oder übertragen.
 
 ::: tip
-Übergeben Sie das Design-Objekt selbst, nicht Topols gesamte API-Antwort — die Antwort umschließt es als `{ id, name, html, json }`, verwenden Sie also `.json`. Wird das Antwortobjekt versehentlich übergeben — als Objekt oder als JSON-String —, erkennt der Konverter das: Er sieht den `json`-Schlüssel und nennt `.json` direkt in der Fehlermeldung. Eine Wurzel mit einer anderen Form — kein Objekt, nicht parsbares JSON, oder ein Objekt ohne erkennbaren `tagName` und ohne `json`-Schlüssel — wirft weiterhin einen Fehler und nennt, was erwartet wurde. Das Design wird explizit ausgepackt statt automatisch erkannt, denn ein Rateversuch riskiert, den `html`-String der Hülle zu importieren — eine Ausgabe, die zu `@templatical/import-html` gehört, nicht zu diesem Paket.
+Übergeben Sie das Design-Objekt selbst, nicht Topols gesamte API-Antwort. Topols Editor übergibt es Ihnen direkt, als erstes von vier Argumenten an `onSave` — dort gibt es keine Hülle auszupacken. Seine REST-APIs umschließen es hingegen, und welches Feld das Design enthält, hängt vom Endpunkt ab: Der Template-Endpunkt liefert `{ data: { id, name, screenshot_url, definition, html } }`, verwenden Sie also `.data.definition`; der Endpunkt für vordefinierte Vorlagen liefert das Design unter `json`, neben `html`. Wird eine dieser Hüllen versehentlich übergeben — als Objekt oder als JSON-String —, erkennt der Konverter das: Er sieht einen `json`- oder `definition`-Schlüssel auf einer Wurzel mit falscher Form und nennt beide Felder in der Fehlermeldung. Eine Wurzel mit einer anderen Form — kein Objekt, nicht parsbares JSON, oder ein Objekt ohne beide Schlüssel — wirft weiterhin einen Fehler und nennt, was erwartet wurde. Das Design wird explizit ausgepackt statt automatisch erkannt, denn ein Rateversuch riskiert, den `html`-String der Hülle zu importieren — eine Ausgabe, die zu `@templatical/import-html` gehört, nicht zu diesem Paket.
 :::
 
 ## Den Bericht lesen

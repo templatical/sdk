@@ -111,7 +111,7 @@ export default {
     },
     topol: {
       description:
-        "Paste a Topol design JSON below. If you fetched it from Topol's API, paste the response's \"json\" field rather than the whole response.",
+        'Paste a Topol design JSON below — the design itself, not a whole API response. Topol\'s editor hands it to you directly; from its API it sits under "definition" or "json".',
       emptyError: "Paste your Topol design JSON or upload a file.",
     },
   },
