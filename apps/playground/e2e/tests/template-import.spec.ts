@@ -21,6 +21,10 @@ const mjmlSource = readFileSync(
   join(fixturesDir, "sample-mjml-email.mjml"),
   "utf8",
 );
+const topolSource = readFileSync(
+  join(fixturesDir, "sample-topol-design.json"),
+  "utf8",
+);
 
 test.describe("Template import", () => {
   test.beforeEach(async ({ page }) => {
@@ -79,7 +83,7 @@ test.describe("Template import", () => {
     await expect(page.locator(blockByType("button")).first()).toBeVisible();
   });
 
-  test("migration band advertises all four sources on the chooser", async ({
+  test("migration band advertises all five sources on the chooser", async ({
     chooserPage,
     page,
   }) => {
@@ -91,10 +95,12 @@ test.describe("Template import", () => {
     await expect(band).toContainText(/Unlayer/);
     await expect(band).toContainText(/HTML/);
     await expect(band).toContainText(/MJML/);
+    await expect(band).toContainText(/Topol/);
     await expect(page.locator(SELECTORS.chooserImportBeefree)).toBeVisible();
     await expect(page.locator(SELECTORS.chooserImportUnlayer)).toBeVisible();
     await expect(page.locator(SELECTORS.chooserImportHtml)).toBeVisible();
     await expect(page.locator(SELECTORS.chooserImportMjml)).toBeVisible();
+    await expect(page.locator(SELECTORS.chooserImportTopol)).toBeVisible();
   });
 
   test("BeeFree CTA opens modal with BeeFree tab selected", async ({
@@ -386,6 +392,97 @@ test.describe("Template import", () => {
     await chooserPage.goto();
     await chooserPage.openImportModal("mjml");
     await chooserPage.pasteImportJson("mjml", "    ");
+    await chooserPage.confirmImport();
+
+    await expect(chooserPage.getImportError()).toBeVisible();
+    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+  });
+
+  test("imports a Topol design and renders converted blocks", async ({
+    chooserPage,
+    editorPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.importTemplate("topol", topolSource);
+
+    await expect(page.locator(SELECTORS.importModal)).toHaveCount(0);
+
+    await editorPage.waitForReady();
+    await expect(page.locator(SELECTORS.editorScreen)).toBeVisible();
+
+    const titleBlock = page.locator(blockByType("title")).first();
+    await expect(titleBlock).toBeVisible();
+    await expect(titleBlock).toContainText("Hello from Topol");
+
+    const paragraphBlock = page.locator(blockByType("paragraph")).first();
+    await expect(paragraphBlock).toContainText("Topol e2e fixture");
+
+    await expect(page.locator(blockByType("button")).first()).toBeVisible();
+  });
+
+  test("Topol CTA opens modal with Topol tab selected", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal("topol");
+
+    await expect(page.locator(SELECTORS.importTabTopol)).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(page.locator(SELECTORS.importTabBeefree)).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
+    await expect(page.locator(SELECTORS.importTextareaTopol)).toBeVisible();
+    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveCount(0);
+  });
+
+  test("switching to Topol tab swaps the textarea and preserves BeeFree input", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal();
+
+    const beefreeText = '{"page":{"rows":[]}}';
+    await chooserPage.pasteImportJson("beefree", beefreeText);
+
+    await chooserPage.selectImportSource("topol");
+    await expect(page.locator(SELECTORS.importTextareaTopol)).toBeVisible();
+    await expect(page.locator(SELECTORS.importTextareaTopol)).toHaveValue("");
+    await expect(
+      page.locator(SELECTORS.importTextareaBeefree),
+    ).toHaveCount(0);
+
+    await chooserPage.selectImportSource("beefree");
+    await expect(page.locator(SELECTORS.importTextareaBeefree)).toHaveValue(
+      beefreeText,
+    );
+  });
+
+  test("shows an empty-input error on Topol tab when nothing is pasted", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal("topol");
+    await chooserPage.confirmImport();
+
+    await expect(chooserPage.getImportError()).toBeVisible();
+    await expect(page.locator(SELECTORS.importModal)).toBeVisible();
+    await expect(page.locator(SELECTORS.editorScreen)).toHaveCount(0);
+  });
+
+  test("shows an error when the Topol input is whitespace only", async ({
+    chooserPage,
+    page,
+  }) => {
+    await chooserPage.goto();
+    await chooserPage.openImportModal("topol");
+    await chooserPage.pasteImportJson("topol", "    ");
     await chooserPage.confirmImport();
 
     await expect(chooserPage.getImportError()).toBeVisible();

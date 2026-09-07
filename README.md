@@ -129,6 +129,7 @@ const mjml = await editor.toMjml();
 | [`@templatical/import-unlayer`](https://www.npmjs.com/package/@templatical/import-unlayer) | Convert Unlayer templates to Templatical format                  | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-html`](https://www.npmjs.com/package/@templatical/import-html)       | Convert HTML email templates (table-based) to Templatical format | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-mjml`](https://www.npmjs.com/package/@templatical/import-mjml)       | Convert MJML email templates to Templatical format               | [MIT](./LICENSE-MIT)     |
+| [`@templatical/import-topol`](https://www.npmjs.com/package/@templatical/import-topol)     | Convert Topol.io email templates to Templatical format           | [MIT](./LICENSE-MIT)     |
 
 ## Why FSL-1.1-MIT?
 
@@ -138,7 +139,7 @@ Editor packages (`@templatical/editor`, `@templatical/core`, `@templatical/media
 - ✅ Self-host, modify, fork for internal use
 - ✅ Use it commercially without paying anything
 
-The only restriction: don't repackage Templatical itself as a directly competing email-editor product. Embedding is granted explicitly in the license text — the canonical FSL-1.1-MIT template, unmodified, plus an [Additional Permission](./LICENSE) covering products that include the editor as one feature among others. The other six packages — types, renderer, quality and all three importers — are pure MIT.
+The only restriction: don't repackage Templatical itself as a directly competing email-editor product. Embedding is granted explicitly in the license text — the canonical FSL-1.1-MIT template, unmodified, plus an [Additional Permission](./LICENSE) covering products that include the editor as one feature among others. The other packages — types, renderer, quality and the import-* converters — are pure MIT.
 
 [Full license FAQ →](https://docs.templatical.com/license-faq)
 
@@ -157,6 +158,7 @@ The only restriction: don't repackage Templatical itself as a directly competing
 - [Migrating from Unlayer](https://docs.templatical.com/guide/migration-from-unlayer)
 - [Migrating from HTML](https://docs.templatical.com/guide/migration-from-html)
 - [Migrating from MJML](https://docs.templatical.com/guide/migration-from-mjml)
+- [Migrating from Topol](https://docs.templatical.com/guide/migration-from-topol)
 - [Changelog](https://docs.templatical.com/changelog) — every release, all packages, one page
 
 Full docs: **[docs.templatical.com](https://docs.templatical.com)** (English + Deutsch).

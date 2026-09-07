@@ -1,0 +1,61 @@
+{
+  "tagName": "mj-global-style",
+  "attributes": {
+    "containerWidth": 600,
+    ":color": "#333333",
+    ":font-family": "Arial, sans-serif",
+    ":line-height": "1.5",
+    "a:color": "#0066cc"
+  },
+  "children": [
+    {
+      "tagName": "mj-container",
+      "attributes": {
+        "background-color": "#ffffff"
+      },
+      "children": [
+        {
+          "tagName": "mj-section",
+          "attributes": {
+            "padding": "24px"
+          },
+          "children": [
+            {
+              "tagName": "mj-column",
+              "attributes": {
+                "width": "100%"
+              },
+              "children": [
+                {
+                  "tagName": "mj-text",
+                  "attributes": {
+                    "align": "center"
+                  },
+                  "content": "<h1>Welcome to Templatical</h1>"
+                },
+                {
+                  "tagName": "mj-text",
+                  "attributes": {},
+                  "content": "<p>This is a simple email template imported from Topol.</p>"
+                },
+                {
+                  "tagName": "mj-button",
+                  "attributes": {
+                    "href": "https://example.com"
+                  },
+                  "content": "<p>Get Started</p>"
+                },
+                {
+                  "tagName": "mj-spacer",
+                  "attributes": {
+                    "height": 20
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

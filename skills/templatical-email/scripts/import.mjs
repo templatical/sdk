@@ -1,4 +1,4 @@
-// Import an existing Unlayer / BeeFree / HTML / MJML email template into Templatical
+// Import an existing Unlayer / BeeFree / HTML / MJML / Topol email template into Templatical
 // template JSON, using the deterministic `@templatical/import-*` converters.
 // Writes the result to the shared working file (.templatical/<name>.json) so it
 // flows into validation + live mode exactly like a generated template.
@@ -12,7 +12,7 @@
 // skipped — so the printed report tells you what to refine (ideally in live mode).
 //
 // Usage:
-//   node scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml] [--cwd .] [--out <name>]
+//   node scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml|topol] [--cwd .] [--out <name>]
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -37,6 +37,11 @@ const FORMATS = {
     pkg: "@templatical/import-mjml",
     fn: "convertMjmlTemplate",
     input: "text",
+  },
+  topol: {
+    pkg: "@templatical/import-topol",
+    fn: "convertTopolTemplate",
+    input: "json",
   },
 };
 
@@ -68,6 +73,8 @@ export function detectFormat(fileName, content) {
     if (obj?.body?.rows) return "unlayer";
     // BeeFree templates: { page: { rows } }.
     if (obj?.page?.rows) return "beefree";
+    // Topol designs are an MJML-shaped tree whose root is the global style.
+    if (obj?.tagName === "mj-global-style") return "topol";
     return null;
   }
   return null;
@@ -142,7 +149,7 @@ async function main() {
   const sourceArg = args._[0];
   if (!sourceArg) {
     console.error(
-      "Usage: node scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml] [--out <name>]",
+      "Usage: node scripts/import.mjs <source-file> [--format unlayer|beefree|html|mjml|topol] [--out <name>]",
     );
     process.exit(2);
   }
@@ -161,7 +168,7 @@ async function main() {
   const format = args.format ?? detectFormat(basename(sourcePath), source);
   if (!format || !FORMATS[format]) {
     console.error(
-      `Couldn't detect the template format of ${sourceArg}. Pass --format unlayer|beefree|html|mjml.`,
+      `Couldn't detect the template format of ${sourceArg}. Pass --format unlayer|beefree|html|mjml|topol.`,
     );
     process.exit(2);
   }
