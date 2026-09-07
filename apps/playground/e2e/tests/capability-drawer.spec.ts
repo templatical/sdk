@@ -1,5 +1,5 @@
 import { expect, test } from "../fixtures/editor.fixture";
-import { controlByPath, SELECTORS } from "../helpers/selectors";
+import { controlByPath, paletteByType, SELECTORS } from "../helpers/selectors";
 import { seedControlState } from "../helpers/control-state";
 
 /**
@@ -816,5 +816,44 @@ test.describe("capability drawer", () => {
         }),
       )
       .toEqual({ shadow: true, mounted: 1 });
+  });
+
+  test("switching the editor's locale re-renders its chrome", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/i18n");
+
+    // The palette label is real editor chrome, translated through the SDK's
+    // own i18n rather than the playground's. `Sidebar.vue`'s rail starts
+    // collapsed (`isExpanded` defaults `false`) and only renders the label
+    // span once hovered, so the assertion has to hover first or it reads an
+    // empty string rather than "Section".
+    const rail = page.locator(SELECTORS.sidebarRail);
+    await rail.hover();
+    const sectionItem = page.locator(paletteByType("section"));
+    await expect(sectionItem).toContainText("Section");
+
+    await page
+      .locator(controlByPath("locale"))
+      .locator(SELECTORS.capabilityControlInput)
+      .selectOption("de");
+
+    // Re-hover: interacting with the drawer's locale control moved the mouse
+    // off the rail, which collapses it again.
+    await rail.hover();
+    await expect(page.locator(paletteByType("section"))).toContainText(
+      "Abschnitt",
+    );
+
+    // Still mounted: a locale change re-inits, and the init queue is what
+    // keeps that from tearing down the editor it just built.
+    expect(
+      await page.evaluate(() => {
+        const host = document.querySelector(
+          '[data-testid="capability-editor"]',
+        );
+        return (host?.shadowRoot ?? host)?.children.length ?? 0;
+      }),
+    ).toBe(1);
   });
 });

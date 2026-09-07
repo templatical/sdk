@@ -11,6 +11,7 @@ describe("buildAllCapabilityConfig", () => {
     const config = buildAllCapabilityConfig({});
     expect(Object.keys(config).sort()).toEqual([
       "comments",
+      "locale",
       "savedBlocks",
       "shadowDom",
       "templates",
@@ -26,7 +27,7 @@ describe("buildAllCapabilityConfig", () => {
     const missing = capabilities
       .filter((c) => typeof c.implFor !== "function")
       .map((c) => c.id);
-    expect(missing).toEqual(["shadow-dom"]);
+    expect(missing).toEqual(["shadow-dom", "i18n"]);
   });
 
   it("applies control state to the capability it belongs to", () => {
@@ -71,6 +72,7 @@ describe("capabilities with no backend", () => {
     const config = buildAllCapabilityConfig({});
     expect(Object.keys(config).sort()).toEqual([
       "comments",
+      "locale",
       "savedBlocks",
       "shadowDom",
       "templates",

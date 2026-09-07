@@ -13,6 +13,7 @@ import { templatesCapability } from "./templates";
 import { versionHistoryCapability } from "./version-history";
 import { commentsCapability } from "./comments";
 import { shadowDomCapability } from "./shadow-dom";
+import { i18nCapability } from "./i18n";
 
 export const capabilities: AnyCapabilityDef[] = [
   savedBlocksCapability,
@@ -20,6 +21,7 @@ export const capabilities: AnyCapabilityDef[] = [
   versionHistoryCapability,
   commentsCapability,
   shadowDomCapability,
+  i18nCapability,
 ];
 
 export function capabilityById(id: string): AnyCapabilityDef | undefined {

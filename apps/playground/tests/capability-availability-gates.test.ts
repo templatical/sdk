@@ -82,7 +82,7 @@ const GATED_CAPABILITY_IDS = [
  * `GATED_CAPABILITY_IDS`, so the registry-pairing case below still accounts
  * for every registered id rather than only the gated ones.
  */
-const BACKEND_FREE_CAPABILITY_IDS = ["shadow-dom"];
+const BACKEND_FREE_CAPABILITY_IDS = ["shadow-dom", "i18n"];
 
 /**
  * Every capability whose editor-side feature composable can be constructed
@@ -213,6 +213,11 @@ describe("every capability's editor-side availability gate is satisfied by the s
 
   it("shadow-dom has no editor-side availability gate: it wraps no provider", () => {
     const def = capabilityById("shadow-dom")!;
+    expect(def.implFor).toBeUndefined();
+  });
+
+  it("i18n has no editor-side availability gate: it wraps no provider", () => {
+    const def = capabilityById("i18n")!;
     expect(def.implFor).toBeUndefined();
   });
 });
