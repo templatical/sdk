@@ -247,8 +247,8 @@ importers:
         specifier: ^1.1.0
         version: 1.1.0
       vitepress:
-        specifier: 2.0.0-alpha.19
-        version: 2.0.0-alpha.19(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(postcss@8.5.28)(terser@5.51.2)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0)
+        specifier: 2.0.0-alpha.20
+        version: 2.0.0-alpha.20(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(postcss@8.5.28)(terser@5.51.2)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0)
       vitest:
         specifier: ^5.0.0
         version: 5.0.0(@types/node@25.9.5)(@vitest/coverage-v8@5.0.0)(happy-dom@20.14.0)(jsdom@30.0.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
@@ -4398,8 +4398,8 @@ packages:
       yaml:
         optional: true
 
-  vitepress@2.0.0-alpha.19:
-    resolution: {integrity: sha512-WnBsb0Bwr43kXKyiis+lld/7ri3hnMbthS8N3hpFtjjwsdLO4IRmiAE08D7aud4q6oMDf9uwRowxzNqRFe/amw==}
+  vitepress@2.0.0-alpha.20:
+    resolution: {integrity: sha512-uQWKmP9PaBkf9zxHn0iOml/ZPPDaGKqQXVMBHz3yjwyyd9Eg+BKLGxbqmOGlfOMCt6Fj8TLiAnE59qlKZ0A3xw==}
     hasBin: true
     peerDependencies:
       markdown-it-mathjax3: ^4
@@ -8566,15 +8566,13 @@ snapshots:
       tsx: 4.23.13
       yaml: 2.9.0
 
-  vitepress@2.0.0-alpha.19(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(postcss@8.5.28)(terser@5.51.2)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0):
+  vitepress@2.0.0-alpha.20(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(postcss@8.5.28)(terser@5.51.2)(tsx@4.23.13)(typescript@6.0.3)(yaml@2.9.0):
     dependencies:
       '@docsearch/css': 4.7.0
       '@docsearch/js': 4.7.0
       '@docsearch/sidepanel-js': 4.7.0
       '@iconify-json/simple-icons': 1.2.94
-      '@shikijs/core': 4.4.3
       '@shikijs/transformers': 4.4.3
-      '@shikijs/types': 4.4.3
       '@types/markdown-it': 14.2.0
       '@vitejs/plugin-vue': 6.0.8(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
       '@vue/devtools-api': 8.2.1
