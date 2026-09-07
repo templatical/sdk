@@ -7,7 +7,7 @@
  * spoke Cloud's wire shape (`created_at`, `is_autosave`) directly. It now reads
  * the `TemplateVersion` contract, so any provider drives it.
  */
-import { computed, ref } from "vue";
+import { computed, inject, ref } from "vue";
 import { onClickOutside } from "@vueuse/core";
 import {
   ChevronDown,
@@ -18,7 +18,9 @@ import {
 } from "@lucide/vue";
 import type { TemplateVersion } from "@templatical/types";
 import { useI18n } from "../composables/useI18n";
+import { formatAbsoluteDateTime } from "../utils/formatAbsoluteDateTime";
 import { formatRelativeTime } from "../utils/formatRelativeTime";
+import { UI_LOCALE_KEY } from "../keys";
 
 const props = defineProps<{
   versions: TemplateVersion[];
@@ -34,6 +36,7 @@ const emit = defineEmits<{
 }>();
 
 const { t, format } = useI18n();
+const uiLocale = inject(UI_LOCALE_KEY, undefined);
 
 const isOpen = ref(false);
 const dropdownRef = ref<HTMLElement | null>(null);
@@ -88,7 +91,9 @@ function formatDate(dateString: string): string {
   const result = formatRelativeTime(dateString, t.time, format, 7);
   if (result !== null) return result;
 
-  return new Date(dateString).toLocaleDateString(undefined, {
+  // Past the relative window, `Intl` builds the label — in the EDITOR's locale,
+  // not the browser's, which is what put "Mar 4" in a German menu.
+  return formatAbsoluteDateTime(dateString, uiLocale, {
     month: "short",
     day: "numeric",
     hour: "2-digit",

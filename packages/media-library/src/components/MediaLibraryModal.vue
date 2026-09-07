@@ -31,6 +31,7 @@ import {
   PLAN_CONFIG_KEY,
   POPOVER_TARGET_KEY,
   TRANSLATIONS_KEY,
+  UI_LOCALE_KEY,
   UI_THEME_KEY,
 } from "../keys";
 import { loadMediaTranslations, type MediaTranslations } from "../i18n";
@@ -121,6 +122,15 @@ provide(UI_THEME_KEY, tplUiTheme);
 // remounts the modal with a different target.
 const popoverTargetRef = toRef(() => props.popoverTarget ?? null);
 provide(POPOVER_TARGET_KEY, popoverTargetRef);
+
+// The grid and the preview panel build date captions with `Intl`, which would
+// otherwise format in the BROWSER's locale while every string around them came
+// from the prop above. Wrapped in a ref so a host that swaps locales updates
+// them, the same as the strings.
+provide(
+  UI_LOCALE_KEY,
+  toRef(() => props.locale),
+);
 
 // Deep descendants (MediaGrid, MediaUploadZone, MediaPreviewPanel,
 // MediaEditModal) read the media limits through `useMediaCategories`, so the

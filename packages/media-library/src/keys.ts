@@ -80,3 +80,20 @@ export const TRANSLATIONS_KEY: InjectionKey<Ref<MediaTranslations | null>> =
  */
 export const UI_THEME_KEY: InjectionKey<Readonly<Ref<string | undefined>>> =
   Symbol("templaticalMediaUiTheme");
+
+/**
+ * The host's BCP-47 locale, exactly as it arrived on `MediaLibraryModal`'s
+ * `locale` prop — unresolved, so it may be unsupported or malformed.
+ *
+ * For `Intl` formatting only. Translated *strings* come from
+ * `TRANSLATIONS_KEY`, already resolved to a bundle this package ships; this is
+ * for the labels `Intl` builds itself (dates), where the browser's own locale
+ * would otherwise win and disagree with every string beside them.
+ *
+ * Travels by provide for the reason `UI_THEME_KEY` does: the grid and the
+ * preview panel are deep descendants, and the sub-modals teleport away from the
+ * modal's own DOM. Always format through `formatAbsoluteDate`, which guards the
+ * malformed case.
+ */
+export const UI_LOCALE_KEY: InjectionKey<Readonly<Ref<string | undefined>>> =
+  Symbol("templaticalMediaUiLocale");

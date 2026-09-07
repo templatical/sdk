@@ -32,7 +32,15 @@ export interface UseBlockActionsOptions {
     columnIndex?: number;
     index: number;
   } | null;
-  blockDefaults?: BlockDefaults;
+  /**
+   * Defaults merged onto every block `createAndAddBlock` creates.
+   *
+   * A **getter** is re-read on each insert; a plain object is captured once.
+   * The editor passes a getter because half of these defaults track the
+   * template's own `settings.locale`, which the author can change mid-session
+   * — a snapshot would pin every later insert to the value at mount.
+   */
+  blockDefaults?: BlockDefaults | (() => BlockDefaults);
 }
 
 export interface UseBlockActionsReturn {
@@ -65,7 +73,11 @@ export function useBlockActions(
     targetSectionId?: string,
     columnIndex?: number,
   ): Block {
-    const block = createBlock(type, options.blockDefaults);
+    const defaults =
+      typeof options.blockDefaults === "function"
+        ? options.blockDefaults()
+        : options.blockDefaults;
+    const block = createBlock(type, defaults);
     addBlock(block, targetSectionId, columnIndex);
     selectBlock(block.id);
     return block;

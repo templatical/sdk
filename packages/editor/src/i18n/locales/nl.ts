@@ -70,6 +70,16 @@ const nl: typeof en = {
     table: "Tabel",
     countdown: "Aftelklok",
   },
+
+  // Placeholder text a newly inserted block starts with. Author-facing
+  // prompts, meant to be overwritten — so they follow the editor UI locale.
+  // Recipient-facing defaults live in `i18n/contentDefaults.ts` and follow
+  // the template's own `settings.locale` instead.
+  blockDefaults: {
+    title: "Voer uw titel in",
+    paragraph: "Voer hier uw tekst in",
+    button: "Klik hier",
+  },
   sidebar: {
     content: "Inhoud",
     settings: "Instellingen",

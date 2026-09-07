@@ -191,7 +191,10 @@ function createBlockFromItem(item: BlockTypeItem): Block {
     }
   }
 
-  return createBlock(item.type as BlockType, blockDefaults);
+  // `.value` at insert time, never destructured at setup: the recipient-facing
+  // half of these defaults tracks the template's own content language, which
+  // the author can change while the palette is mounted.
+  return createBlock(item.type as BlockType, blockDefaults?.value);
 }
 
 function insertBlockFromItem(item: BlockTypeItem): void {
