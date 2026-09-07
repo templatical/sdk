@@ -117,6 +117,17 @@ describe("stripTags", () => {
     expect(stripTags("")).toBe("");
   });
 
+  it("does not leak an attribute value containing '>' into the text", () => {
+    // The scan resolves each open tag with a quote-aware forward search, so a
+    // `>` inside a quoted attribute does not end the tag. `/<[^>]*>/g` stopped
+    // at that `>` and left the rest of the attribute — `y">` here — in the
+    // label. Pinned because a future "simplify this back to a regex" would
+    // reintroduce the leak silently: the text is a button label, so the only
+    // symptom is stray markup in a rendered email.
+    expect(stripTags('<p title="x>y">Buy now</p>')).toBe("Buy now");
+    expect(stripTags('<span style="a>b">Go</span>')).toBe("Go");
+  });
+
   it("leaves an unterminated tag literally in the output", () => {
     // `/<[^>]*>/g` can never complete a match without a closing `>`, so a
     // dangling `<b` at the end of the string is left untouched. The linear
