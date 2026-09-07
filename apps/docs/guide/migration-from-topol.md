@@ -140,7 +140,7 @@ Every leaf tag in the mapping table above converts — Topol's own editor doesn'
 - **Column geometry** — Templatical supports five column layouts (`1`, `2`, `3`, `2-1`, `1-2`). Topol allows any column count at any width, so a shape outside those five — most often four equal columns — resolves to the nearest layout, and any column past the third folds its content into the last one.
 - **GIFs** — `mj-gif` imports as an `ImageBlock`, the same block `mj-image` produces. Templatical has no dedicated GIF block.
 - **Heading levels** — `TitleBlock` supports levels 1 through 4. An `mj-text` wrapping a sole `<h5>` or `<h6>` clamps to level 4.
-- **The `google` platform** — `SocialPlatform` has no `google` member, so a `google-href` maps to `website` instead. This is the common case, not an edge case: Topol's own social widget still writes `google-href` for a network Google+ retired years ago.
+- **The `google` platform** — `SocialPlatform` has no `google` member, so a `google-href` maps to `website` instead. This is the common case, not an edge case: Topol's own social widget still writes `google-href` for Google+, a network retired years ago.
 - **Social icon sizes** — `SocialIconsBlock` supports three sizes (24px, 32px, 48px). An `icon-size` outside those three resolves to the nearest one — and Topol's own default is 35px, so this is the common case for social blocks, not the exception.
 - **Block IDs** — every imported block gets a freshly generated ID. IDs never appear anywhere in a Topol design, so nothing that keys off one — a Cloud comment thread, for example — survives an import.
 

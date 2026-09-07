@@ -20,7 +20,7 @@ Sie können es auch von einem CDN laden:
 ```html
 <script type="module">
   import { convertTopolTemplate } from 'https://cdn.jsdelivr.net/npm/@templatical/import-topol/+esm';
-  // ...dann konvertieren wie im Abschnitt „Verwendung" unten
+  // ...dann konvertieren wie im Abschnitt „Verwendung“ unten
 </script>
 ```
 
@@ -79,7 +79,7 @@ for (const entry of report.entries) {
 // <mj-social> approximiert: Icon size 35px is not one of 24/32/48px; resolved to "medium".
 ```
 
-Eine `note` bei einem `approximated`-Eintrag nennt immer den ersetzten Wert — ein Diff von `report.entries` zwischen zwei Durchläufen zeigt so genau, was eine Migration verändert hat. `report.warnings` trägt die wenigen Verluste auf Dokumentebene, die an keinem einzelnen Eintrag hängen — eine verworfene Zeilenhöhe des Dokuments zum Beispiel, behandelt weiter unten unter „Was sich nicht automatisch überträgt".
+Eine `note` bei einem `approximated`-Eintrag nennt immer den ersetzten Wert — ein Diff von `report.entries` zwischen zwei Durchläufen zeigt so genau, was eine Migration verändert hat. `report.warnings` trägt die wenigen Verluste auf Dokumentebene, die an keinem einzelnen Eintrag hängen — eine verworfene Zeilenhöhe des Dokuments zum Beispiel, behandelt weiter unten unter „Was sich nicht automatisch überträgt“.
 
 ## Was hier eigentlich passiert
 
@@ -98,7 +98,7 @@ Bei einer Handvoll Templates ist der Neuaufbau von Hand neben Ihrem Topol-Export
 2. Öffnen Sie den Templatical-Editor (oder den [Playground](https://play.templatical.com)) daneben.
 3. Nutzen Sie Topols eigene Vorschau oder das `html`-Feld aus seiner API-Antwort als visuelles Ziel.
 4. Ziehen Sie die entsprechenden Templatical-Blöcke hinein (siehe [Mapping-Tabelle](#topol-tag-mapping) unten).
-5. Kopieren Sie Textinhalte direkt. Bilder über Ihre Medienbibliothek neu hosten.
+5. Kopieren Sie Textinhalte direkt. Hosten Sie Bilder über Ihre Medienbibliothek neu.
 6. Bilden Sie Styling über Templaticals [Design-Tokens](/de/guide/theming) ab, statt über Topols eigene Attribut-Defaults.
 
 Die meisten Topol-Templates sind in 10–20 Minuten umgezogen, sobald Sie eines oder zwei gemacht haben. Bei größeren Mengen führen Sie zuerst `@templatical/import-topol` aus und nutzen diesen Pfad nur, um nachzuarbeiten, was als `approximated` oder als `html-fallback`-Block gelandet ist.
@@ -140,7 +140,7 @@ Jedes Blatt-Tag in der Mapping-Tabelle oben wird konvertiert — Topols eigener 
 - **Spalten-Geometrie** — Templatical unterstützt fünf Spalten-Layouts (`1`, `2`, `3`, `2-1`, `1-2`). Topol erlaubt eine beliebige Spaltenzahl bei beliebiger Breite, daher wird ein Verhältnis außerhalb dieser fünf — am häufigsten vier gleich breite Spalten — auf das nächstliegende Layout aufgelöst, und jede Spalte ab der vierten fließt in die letzte.
 - **GIFs** — `mj-gif` wird als `ImageBlock` importiert, derselbe Block, den `mj-image` erzeugt. Templatical hat keinen eigenen GIF-Block.
 - **Überschriften-Ebenen** — `TitleBlock` unterstützt die Ebenen 1 bis 4. Ein `mj-text`, das ein einzelnes `<h5>` oder `<h6>` umschließt, wird auf Ebene 4 begrenzt.
-- **Die Plattform `google`** — `SocialPlatform` hat kein `google`-Element, daher wird ein `google-href` stattdessen auf `website` abgebildet. Das ist der Normalfall, kein Randfall: Topols eigenes Social-Widget schreibt weiterhin `google-href`, für ein Netzwerk, das Google+ vor Jahren eingestellt hat.
+- **Die Plattform `google`** — `SocialPlatform` hat kein `google`-Element, daher wird ein `google-href` stattdessen auf `website` abgebildet. Das ist der Normalfall, kein Randfall: Topols eigenes Social-Widget schreibt weiterhin `google-href` für Google+, ein vor Jahren eingestelltes Netzwerk.
 - **Social-Icon-Größen** — `SocialIconsBlock` unterstützt drei Größen (24px, 32px, 48px). Eine `icon-size` außerhalb dieser drei wird auf die nächstliegende aufgelöst — und Topols eigener Standardwert ist 35px, also ist das bei Social-Blöcken der Normalfall, nicht die Ausnahme.
 - **Block-IDs** — jeder importierte Block erhält eine neu generierte ID. IDs erscheinen nirgends in einem Topol-Design, daher überlebt nichts, das an einer ID hängt — zum Beispiel ein Cloud-Kommentarthread — einen Import.
 
