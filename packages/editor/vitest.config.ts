@@ -15,18 +15,21 @@ export default defineConfig({
   test: {
     include: ["tests/**/*.test.ts"],
     // Vitest's 5s default is a budget for a unit test, and several suites here
-    // are not that: they scan the whole source tree, spawn processes, or build a
-    // TypeScript program. That work is I/O-bound, so it is cheap on a warm dev
-    // machine and several times dearer on a cold CI runner — the gap is not a
-    // safety margin you can eyeball locally. Measured: `schema-freshness` ran
-    // 1091ms in CI and 4902ms on the very next run, passing by 98ms before it
-    // finally tipped over and turned a PR red.
+    // are not that: they regex the whole source tree once per test. What makes
+    // the remaining margin impossible to judge locally is CI variance, not the
+    // work itself — `schema-freshness` ran 1091ms on one CI run and 4902ms on
+    // the next, passing by 98ms before it tipped over and turned a PR red.
     //
-    // The structural scans here are the exposed ones: the slowest is 2402ms
-    // warm ("no <variant>:tpl: utilities anywhere in source"), already half the
-    // default, with richTextSpacingParity at 1609ms behind it. 20s keeps roughly
-    // 2x headroom over the worst CI factor observed, while still failing a
-    // genuinely hung test in bounded time.
+    // The structural scans here are the exposed ones — they regex the whole
+    // source tree (233 files, 1.3MB) once per test. Slowest is currently 413ms
+    // in a full parallel run (`richTextSpacingParity`), 56ms when its file runs
+    // alone; the gap is worker contention, not I/O. Re-reading the tree is
+    // nearly free after the first pass because the page cache serves it —
+    // measured 80ms for 11 full reads — so there is no memoisation win here.
+    //
+    // 20s is deliberate headroom rather than a fitted value: the failure this
+    // guards against is CI variance, which swung one test 1091ms -> 4902ms on
+    // consecutive runs. A hung test still fails in bounded time.
     testTimeout: 20_000,
     setupFiles: ["./tests/setup.ts"],
     coverage: {
