@@ -1,19 +1,12 @@
 import { createSocialIconsBlock, generateId } from "@templatical/types";
 import type {
-  BlockStyles,
   SocialIcon,
   SocialIconSize,
   SocialIconStyle,
   SocialPlatform,
 } from "@templatical/types";
-import {
-  attr,
-  parseAlignment,
-  parseColor,
-  parsePadding,
-  parsePxValue,
-} from "./attribute-parser";
-import type { Converted, MapContext } from "./block-mapper";
+import { attr, parseAlignment, parsePxValue } from "./attribute-parser";
+import { baseStyles, type Converted, type MapContext } from "./block-mapper";
 import type { TopolNode } from "./types";
 
 /**
@@ -101,22 +94,6 @@ function styleFromBaseUrl(
 }
 
 /**
- * The padding/background-color chrome every leaf block carries, read the same
- * way `block-mapper.ts`'s leaf converters read it: a social block can set its
- * own `padding` and `background-color` on the node like any other leaf, and
- * either one is omitted from `styles` only when the node doesn't set it.
- */
-function socialStyles(node: TopolNode): { styles: BlockStyles } {
-  const backgroundColor = parseColor(attr(node, "background-color"));
-  return {
-    styles: {
-      padding: parsePadding(node),
-      ...(backgroundColor ? { backgroundColor } : {}),
-    },
-  };
-}
-
-/**
  * Convert Topol's MJML v3 social block.
  *
  * `display` decides which icons render and in what order; a platform with
@@ -173,7 +150,7 @@ export function convertSocial(
       align: parseAlignment(attr(node, "align"), "center"),
       ...(iconSize ? { iconSize } : {}),
       ...(iconStyle ? { iconStyle } : {}),
-      ...socialStyles(node),
+      ...baseStyles(node),
     }),
     entry: {
       sourceTag: "mj-social",

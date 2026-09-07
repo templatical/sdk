@@ -54,7 +54,7 @@ function resolved(
   );
 }
 
-function baseStyles(node: TopolNode): { styles: BlockStyles } {
+export function baseStyles(node: TopolNode): { styles: BlockStyles } {
   const backgroundColor = parseColor(attr(node, "background-color"));
   return {
     styles: {
