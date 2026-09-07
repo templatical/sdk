@@ -1,5 +1,6 @@
 import { createDefaultTemplateContent } from "@templatical/types";
 import type { Block, TemplateContent } from "@templatical/types";
+import { readGlobalStyle } from "./global-style";
 import type {
   ImportReport,
   ImportReportEntry,
@@ -45,9 +46,16 @@ export function convertTopolTemplate(
     );
   }
 
+  const topolDesign = root as TopolDesign;
+  const container = (topolDesign.children ?? []).find(
+    (child) => child.tagName === "mj-container",
+  );
+
   const entries: ImportReportEntry[] = [];
   const warnings: string[] = [];
   const blocks: Block[] = [];
+
+  const style = readGlobalStyle(topolDesign, container, warnings);
 
   if (blocks.length === 0) {
     warnings.push(EMPTY_DESIGN_WARNING);
@@ -56,6 +64,7 @@ export function convertTopolTemplate(
   const content: TemplateContent = {
     ...createDefaultTemplateContent(),
     blocks,
+    settings: style.settings,
   };
 
   const summary = {
