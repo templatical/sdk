@@ -125,6 +125,10 @@ describe("runImport — real fixtures convert to valid Templatical JSON", () => 
       format: "mjml",
       fixture: "packages/import-mjml/src/__tests__/fixtures/newsletter.mjml",
     },
+    {
+      format: "topol",
+      fixture: "packages/import-topol/src/__tests__/fixtures/example-1.json",
+    },
   ] as const;
 
   it.each(cases)("imports a $format fixture", async ({ format, fixture }) => {
@@ -132,53 +136,6 @@ describe("runImport — real fixtures convert to valid Templatical JSON", () => 
     let result;
     try {
       result = await runImport(source, format);
-    } catch (err) {
-      if ((err as { missingPackage?: string }).missingPackage) return; // not built/installed → skip
-      throw err;
-    }
-    const { valid, errors } = validateTemplate(result.content);
-    expect(errors).toEqual([]);
-    expect(valid).toBe(true);
-    expect(result.report.entries.length).toBeGreaterThan(0);
-  });
-
-  // Topol has no committed JSON fixture of its own (only a TS-authored module
-  // read directly by its own package's suite), so this case carries a small
-  // hand-authored design inline instead of a fixture file path.
-  it("imports a topol fixture", async () => {
-    const source = JSON.stringify({
-      tagName: "mj-global-style",
-      attributes: { containerWidth: 600, ":font-family": "Arial, sans-serif" },
-      children: [
-        {
-          tagName: "mj-container",
-          children: [
-            {
-              tagName: "mj-section",
-              attributes: { padding: "24px" },
-              children: [
-                {
-                  tagName: "mj-column",
-                  attributes: { width: "100%" },
-                  children: [
-                    { tagName: "mj-text", content: "<h1>Hello from Topol</h1>" },
-                    { tagName: "mj-text", content: "<p>A paragraph of body copy.</p>" },
-                    {
-                      tagName: "mj-button",
-                      attributes: { href: "https://example.test" },
-                      content: "<p>Click me</p>",
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    });
-    let result;
-    try {
-      result = await runImport(source, "topol");
     } catch (err) {
       if ((err as { missingPackage?: string }).missingPackage) return; // not built/installed → skip
       throw err;
