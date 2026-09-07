@@ -32,6 +32,10 @@ export const versionHistoryCapability: CapabilityDef<VersionHistoryProvider> = {
   ],
   implFor: (template) => versionHistoryProviderFor(template),
   build: (state, impl, record) => {
+    // Always defined: this capability declares `implFor`, so
+    // `buildAllCapabilityConfig` never calls `build` without a live instance —
+    // only a capability with no `implFor` at all ever receives `undefined`.
+    impl = impl!;
     // The demo's restore() (@/providers/version-history) composes onto the
     // templates store's own save — there is no atomic restore endpoint, so it
     // reads the old content and saves it. A store that refuses save has

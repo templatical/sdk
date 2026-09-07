@@ -3,6 +3,8 @@ import {
   buildAllCapabilityConfig,
   capabilities,
 } from "../src/config/capabilities";
+import { buildCapabilityConfig } from "../src/config/build";
+import type { AnyCapabilityDef } from "../src/config/types";
 
 describe("buildAllCapabilityConfig", () => {
   it("folds every registered capability into one config object", () => {
@@ -33,6 +35,41 @@ describe("buildAllCapabilityConfig", () => {
     expect(config.templates?.autoSave).toBe(false);
     expect(typeof config.savedBlocks?.list).toBe("function");
     expect(typeof config.comments?.setResolved).toBe("function");
+  });
+});
+
+describe("capabilities with no backend", () => {
+  it("builds a capability that declares no implFor", () => {
+    const def: AnyCapabilityDef = {
+      id: "no-backend",
+      group: "appearance",
+      title: "No backend",
+      blurb: "Sets a config key from a control and wraps no provider.",
+      fixture: "product-launch",
+      controls: [
+        {
+          kind: "enum",
+          path: "noBackend.mode",
+          label: "mode",
+          help: "Picks a mode.",
+          options: ["a", "b"],
+        },
+      ],
+      build: (state) => ({ locale: state["noBackend.mode"] } as never),
+    };
+    expect(buildCapabilityConfig(def, {}, undefined)).toEqual({ locale: "a" });
+  });
+
+  it("folds a backend-free capability alongside provider-backed ones", () => {
+    // The registry's own entries: every id resolves, and nothing throws for
+    // the ones that supply no implementation.
+    const config = buildAllCapabilityConfig({});
+    expect(Object.keys(config).sort()).toEqual([
+      "comments",
+      "savedBlocks",
+      "templates",
+      "versionHistory",
+    ]);
   });
 });
 

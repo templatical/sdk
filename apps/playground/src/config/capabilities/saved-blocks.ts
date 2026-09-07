@@ -47,6 +47,10 @@ export const savedBlocksCapability: CapabilityDef<SavedBlocksProvider> = {
   ],
   implFor: (template) => savedBlocksProviderFor(template),
   build: (state, impl, record) => {
+    // Always defined: this capability declares `implFor`, so
+    // `buildAllCapabilityConfig` never calls `build` without a live instance —
+    // only a capability with no `implFor` at all ever receives `undefined`.
+    impl = impl!;
     const delayMs = Number(state["savedBlocks.listDelayMs"] ?? 0);
     // Stands in for a slow backend so the browser's first-open skeleton is
     // reachable — localStorage answers instantly, which is the one latency

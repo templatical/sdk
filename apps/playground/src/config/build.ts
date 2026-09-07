@@ -18,11 +18,15 @@ import {
  * `record` defaults to a no-op so a caller with no feed to write to — a unit
  * test, a headless build — still gets a config whose lifecycle handlers are
  * present and inert, rather than one whose shape differs from the shell's.
+ *
+ * `impl` is `TImpl | undefined` because a capability with no `implFor` has
+ * nothing to pass — matching `CapabilityDef.build`'s own parameter exactly, so
+ * this function's signature never falls behind the interface it forwards to.
  */
 export function buildCapabilityConfig<TImpl>(
   def: CapabilityDef<TImpl>,
   state: ControlState,
-  impl: TImpl,
+  impl: TImpl | undefined,
   record: RecordCapabilityEventFor = () => {},
 ): Partial<TemplaticalEditorConfig> {
   const resolved: ControlState = { ...state };

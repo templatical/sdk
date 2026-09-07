@@ -90,7 +90,7 @@ export function buildAllCapabilityConfig(
   for (const def of capabilities) {
     merged = {
       ...merged,
-      ...buildCapabilityConfig(def, resolved, def.implFor(template), record),
+      ...buildCapabilityConfig(def, resolved, def.implFor?.(template), record),
     };
   }
   return merged;

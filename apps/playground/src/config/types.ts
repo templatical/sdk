@@ -126,8 +126,13 @@ export interface CapabilityDef<TImpl = unknown> {
    * enough to produce a whole `init()` config: anything iterating `capabilities`
    * can ask each entry for its own implementation. The factories memoise per
    * template, so calling this repeatedly is cheap and returns the same instance.
+   *
+   * Omitted by a capability that wraps no provider — an editor-wide setting
+   * driven from a control has no store, no methods and nothing to memoise, and
+   * a stub returning `undefined` would only be a lie for the next one to copy.
+   * `build` receives `undefined` in that case.
    */
-  implFor: (template?: TemplateOption) => TImpl;
+  implFor?: (template?: TemplateOption) => TImpl;
   /**
    * Produce the editor config this capability contributes.
    *
@@ -135,6 +140,7 @@ export interface CapabilityDef<TImpl = unknown> {
    * localStorage and closures. It arrives as an argument rather than inside
    * `state` so `ControlState` stays JSON-serializable: the config drawer
    * persists control state, and a provider cannot survive that round-trip.
+   * `undefined` when the capability declares no `implFor`.
    *
    * `record` reports a provider lifecycle event to the drawer's feed, already
    * bound to this capability's id. Attach it inside the handler the provider
@@ -143,7 +149,7 @@ export interface CapabilityDef<TImpl = unknown> {
    */
   build: (
     state: ControlState,
-    impl: TImpl,
+    impl: TImpl | undefined,
     record: RecordCapabilityEvent,
   ) => Partial<TemplaticalEditorConfig>;
 }

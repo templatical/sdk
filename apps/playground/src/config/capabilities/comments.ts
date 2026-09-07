@@ -52,6 +52,10 @@ export const commentsCapability: CapabilityDef<CommentsProvider> = {
   ],
   implFor: (template) => commentsProviderFor(template),
   build: (state, impl, record) => {
+    // Always defined: this capability declares `implFor`, so
+    // `buildAllCapabilityConfig` never calls `build` without a live instance —
+    // only a capability with no `implFor` at all ever receives `undefined`.
+    impl = impl!;
     /**
      * One handler shape for all five events.
      *

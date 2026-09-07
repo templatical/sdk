@@ -43,39 +43,45 @@ export const templatesCapability: CapabilityDef<TemplatesProvider> = {
     },
   ],
   implFor: (template) => templatesProviderFor(template),
-  build: (state, impl, record) => ({
-    templates: {
-      ...impl,
-      create: methodOr(state["templates.create"], impl.create),
-      save: methodOr(state[TEMPLATES_SAVE_PATH], impl.save),
-      autoSave: state["templates.autoSave"] === true,
-      // The demo store's own onSaved (`@/providers/templates.ts`) records the
-      // save trigger onto `window` for `template-save-triggers.spec.ts` — this
-      // composes with it rather than replacing it, so that keeps working
-      // alongside reporting to the drawer's feed. The trigger distinguishes a
-      // pressed Save from autosave, which is what a reader of the feed wants
-      // to know, so it rides in the summary rather than sitting only in the
-      // payload.
-      onSaved: (template, meta) => {
-        impl.onSaved?.(template, meta);
-        record({
-          handler: "onSaved",
-          summary: `${template.name ?? template.id} (${meta.trigger})`,
-          payload: { template, meta },
-        });
+  build: (state, impl, record) => {
+    // Always defined: this capability declares `implFor`, so
+    // `buildAllCapabilityConfig` never calls `build` without a live instance —
+    // only a capability with no `implFor` at all ever receives `undefined`.
+    impl = impl!;
+    return {
+      templates: {
+        ...impl,
+        create: methodOr(state["templates.create"], impl.create),
+        save: methodOr(state[TEMPLATES_SAVE_PATH], impl.save),
+        autoSave: state["templates.autoSave"] === true,
+        // The demo store's own onSaved (`@/providers/templates.ts`) records the
+        // save trigger onto `window` for `template-save-triggers.spec.ts` — this
+        // composes with it rather than replacing it, so that keeps working
+        // alongside reporting to the drawer's feed. The trigger distinguishes a
+        // pressed Save from autosave, which is what a reader of the feed wants
+        // to know, so it rides in the summary rather than sitting only in the
+        // payload.
+        onSaved: (template, meta) => {
+          impl.onSaved?.(template, meta);
+          record({
+            handler: "onSaved",
+            summary: `${template.name ?? template.id} (${meta.trigger})`,
+            payload: { template, meta },
+          });
+        },
+        onCreated: (template) =>
+          record({
+            handler: "onCreated",
+            summary: template.name ?? template.id,
+            payload: template,
+          }),
+        onLoaded: (template) =>
+          record({
+            handler: "onLoaded",
+            summary: template.name ?? template.id,
+            payload: template,
+          }),
       },
-      onCreated: (template) =>
-        record({
-          handler: "onCreated",
-          summary: template.name ?? template.id,
-          payload: template,
-        }),
-      onLoaded: (template) =>
-        record({
-          handler: "onLoaded",
-          summary: template.name ?? template.id,
-          payload: template,
-        }),
-    },
-  }),
+    };
+  },
 };
