@@ -4,7 +4,7 @@ import { nextTick } from "vue";
 import type { Translations } from "@templatical/types";
 import TemplateTimestamp from "../src/components/TemplateTimestamp.vue";
 import { mountEditor } from "./helpers/mount";
-import { TRANSLATIONS_KEY } from "../src/keys";
+import { TRANSLATIONS_KEY, UI_LOCALE_KEY } from "../src/keys";
 
 /**
  * The header's write-time line. It exists to answer "is what my store holds
@@ -41,11 +41,14 @@ function ago(ms: number): string {
 }
 
 function mountStamp(
-  props: { iso: string; kind?: "updatedAt" | "createdAt" },
+  props: { iso: string; kind?: "updatedAt" | "createdAt"; locale?: string },
 ) {
   return mountEditor(TemplateTimestamp, {
     props: { iso: props.iso, kind: props.kind ?? "updatedAt" },
-    provides: { [TRANSLATIONS_KEY]: TRANSLATIONS },
+    provides: {
+      [TRANSLATIONS_KEY]: TRANSLATIONS,
+      ...(props.locale === undefined ? {} : { [UI_LOCALE_KEY]: props.locale }),
+    },
   });
 }
 
@@ -126,6 +129,37 @@ describe("TemplateTimestamp", () => {
     it("carries the full date in a tooltip", () => {
       const iso = ago(5 * 60_000);
       const wrapper = mountStamp({ iso });
+
+      expect(label(wrapper).attributes("title")).toBe(
+        new Date(iso).toLocaleString(),
+      );
+    });
+
+    // The tooltip sat directly under translated chrome while formatting in the
+    // browser's language — a German header with an English month name.
+    it("formats in the editor locale, not the runtime's", () => {
+      const iso = "2026-03-04T15:30:00.000Z";
+      const wrapper = mountStamp({ iso, locale: "de" });
+
+      expect(label(wrapper).attributes("title")).toBe(
+        new Date(iso).toLocaleString("de"),
+      );
+    });
+
+    it("falls back to the runtime locale when the editor has none", () => {
+      const iso = ago(5 * 60_000);
+      const wrapper = mountStamp({ iso });
+
+      expect(label(wrapper).attributes("title")).toBe(
+        new Date(iso).toLocaleString(),
+      );
+    });
+
+    // `config.locale` is free-text consumer config, and a RangeError out of
+    // Intl here would take down the whole header for a tooltip.
+    it("survives a malformed editor locale", () => {
+      const iso = ago(5 * 60_000);
+      const wrapper = mountStamp({ iso, locale: "not a locale" });
 
       expect(label(wrapper).attributes("title")).toBe(
         new Date(iso).toLocaleString(),

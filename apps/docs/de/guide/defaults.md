@@ -38,6 +38,34 @@ Standardwerte werden **nicht** angewendet bei:
 - Duplizieren eines vorhandenen Blocks (die Werte des Quellblocks bleiben erhalten)
 - Laden gespeicherter Inhalte aus der API
 
+### Platzhaltertext
+
+Der Text, mit dem ein neuer Block startet, ist lokalisiert. `blockDefaults`
+überschreibt damit einen *lokalisierten* Wert und keinen englischen:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  locale: 'de',
+  blockDefaults: {
+    // Ohne diese Angaben zeigt ein neuer Titel „Geben Sie Ihren Titel ein“
+    // und ein neuer Button „Hier klicken“.
+    title: { content: '<p>Ihre Überschrift</p>' },
+    paragraph: { content: '<p>Ihr Text</p>' },
+    button: { text: 'Jetzt kaufen' },
+    video: { alt: 'Produktvideo' },
+  },
+});
+```
+
+`title.content` und `paragraph.content` sind Rich-Text-HTML — schließen Sie den
+Text in `<p>…</p>` ein. Alle anderen Felder oben sind einfache Zeichenketten.
+
+Welcher Locale ein Standardwert folgt, hängt davon ab, ob der Text für die
+bearbeitende Person oder für die empfangende Person bestimmt ist; die Tabelle
+dazu steht unter [Internationalisierung](/de/guide/i18n). Werte, die Sie hier
+setzen, gewinnen gegen beide.
+
 ### Deep-Merge-Verhalten
 
 Verschachtelte Objekte werden **deep-merged**, nicht flach ersetzt. Das bedeutet, Sie können einen einzelnen Padding-Wert überschreiben, ohne den Rest zu verlieren:
