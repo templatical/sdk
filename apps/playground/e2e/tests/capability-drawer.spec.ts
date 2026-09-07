@@ -857,6 +857,26 @@ test.describe("capability drawer", () => {
     ).toBe(1);
   });
 
+  /**
+   * Switching locale repeatedly leaves exactly one editor mounted, in the
+   * locale last chosen.
+   *
+   * **This does not prove the init queue is load-bearing, and it was measured
+   * rather than assumed.** With `initEditor`'s queue replaced by a
+   * fire-and-forget `void runInit(token)`, this test still passed 5/5 — and
+   * still passed 3/3 when widened to 15 alternating switches. Each
+   * `selectOption()` is a CDP round-trip of tens of milliseconds, so the
+   * previous `runInit` has finished before the next one starts, and
+   * `useCapabilityEditor`'s own `token !== requestToken` recheck discards a
+   * stale result whether or not calls were queued. The overlap the queue
+   * exists for is not reachable by driving this `<select>`.
+   *
+   * The queue's guarantee is pinned where it can actually fail:
+   * `tests/use-capability-editor.test.ts`, with explicit deferreds that hold
+   * one `init()` open while the next is requested. What this test is worth is
+   * the user-visible half — a locale change never strands the editor
+   * unmounted, and never settles on a locale the user has already moved past.
+   */
   test("rapid locale switches settle on the last one, with one editor mounted", async ({
     page,
   }) => {
@@ -865,8 +885,6 @@ test.describe("capability drawer", () => {
       .locator(controlByPath("locale"))
       .locator(SELECTORS.capabilityControlInput);
 
-    // No awaits between: each switch supersedes the last while its own
-    // `loadTranslations` import may still be in flight.
     await select.selectOption("de");
     await select.selectOption("en");
     await select.selectOption("de");
@@ -882,9 +900,9 @@ test.describe("capability drawer", () => {
       )
       .toBe(1);
 
-    // The last selection was "de" — settling on an earlier one would mean an
-    // out-of-order response won the race the init queue exists to prevent.
-    // The rail renders the label only once expanded, so hover first.
+    // The last selection was "de": settling on an earlier one would mean a
+    // superseded response won. The rail renders its labels only once
+    // expanded, so hover before reading one.
     await page.locator(SELECTORS.sidebarRail).hover();
     await expect(page.locator(paletteByType("section"))).toContainText(
       "Abschnitt",
