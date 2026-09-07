@@ -856,4 +856,38 @@ test.describe("capability drawer", () => {
       }),
     ).toBe(1);
   });
+
+  test("rapid locale switches settle on the last one, with one editor mounted", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/i18n");
+    const select = page
+      .locator(controlByPath("locale"))
+      .locator(SELECTORS.capabilityControlInput);
+
+    // No awaits between: each switch supersedes the last while its own
+    // `loadTranslations` import may still be in flight.
+    await select.selectOption("de");
+    await select.selectOption("en");
+    await select.selectOption("de");
+
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const host = document.querySelector(
+            '[data-testid="capability-editor"]',
+          );
+          return (host?.shadowRoot ?? host)?.children.length ?? 0;
+        }),
+      )
+      .toBe(1);
+
+    // The last selection was "de" — settling on an earlier one would mean an
+    // out-of-order response won the race the init queue exists to prevent.
+    // The rail renders the label only once expanded, so hover first.
+    await page.locator(SELECTORS.sidebarRail).hover();
+    await expect(page.locator(paletteByType("section"))).toContainText(
+      "Abschnitt",
+    );
+  });
 });
