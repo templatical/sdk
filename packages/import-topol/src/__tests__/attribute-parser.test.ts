@@ -91,6 +91,26 @@ describe("parsePxValue", () => {
   it("parses negative numbers", () => {
     expect(parsePxValue("-24px")).toBe(-24);
   });
+  it("rejects a space between the number and the unit", () => {
+    // Internal whitespace is not valid CSS and is not something Topol emits;
+    // rejecting it (rather than tolerating it like the surrounding trim)
+    // keeps the match pattern unambiguous — see the ReDoS test below.
+    expect(parsePxValue("24 px")).toBe(0);
+  });
+  it("resolves a value with no trailing unit in linear time", () => {
+    // Adversarial input for the pre-fix pattern `/^\s*(-?\d+(?:\.\d+)?)\s*(?:px)?\s*$/`:
+    // a long run of trailing spaces followed by a non-matching character. The
+    // failing match retried every split of that run between the two `\s*`
+    // groups, which is polynomial in the run's length. At 80 KB the old
+    // pattern took over ten seconds (measured); this asserts the fixed one
+    // resolves in well under a second.
+    const input = "0" + " ".repeat(80_000) + "x";
+    const start = performance.now();
+    const result = parsePxValue(input);
+    const elapsed = performance.now() - start;
+    expect(result).toBe(0);
+    expect(elapsed).toBeLessThan(500);
+  });
 });
 
 describe("parseColor", () => {

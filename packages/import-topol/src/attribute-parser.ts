@@ -28,11 +28,21 @@ export function numAttr(node: TopolNode, key: string): number | undefined {
 /**
  * Parse a px-like value into a rounded integer. Returns 0 for a missing value
  * and for units the block model cannot express (em, rem, %).
+ *
+ * Trims first, then matches with no `\s*` on either side of the optional
+ * `px` unit. A trailing run of spaces can otherwise be claimed by either the
+ * surrounding `\s*` or by backtracking out of the digit/unit match, and a
+ * *failing* match (no `px`, no digits — anything not shaped like a length)
+ * retries every such split before giving up: `"0" + " ".repeat(n) + "x"` is
+ * polynomial in `n` against that pattern. Trimming first removes the only
+ * whitespace the pattern needs to tolerate, so the match itself has nothing
+ * ambiguous left to backtrack over.
  */
 export function parsePxValue(value: string | number | undefined): number {
   if (value === undefined || value === null || value === "") return 0;
   if (typeof value === "number") return Math.round(value);
-  const match = value.match(/^\s*(-?\d+(?:\.\d+)?)\s*(?:px)?\s*$/);
+  const trimmed = value.trim();
+  const match = /^(-?\d+(?:\.\d+)?)(?:px)?$/.exec(trimmed);
   return match ? Math.round(parseFloat(match[1])) : 0;
 }
 

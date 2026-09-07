@@ -116,4 +116,27 @@ describe("stripTags", () => {
   it("returns an empty string for empty input", () => {
     expect(stripTags("")).toBe("");
   });
+
+  it("leaves an unterminated tag literally in the output", () => {
+    // `/<[^>]*>/g` can never complete a match without a closing `>`, so a
+    // dangling `<b` at the end of the string is left untouched. The linear
+    // scan must reproduce that exactly: it emits the remainder verbatim
+    // once it hits a tag that never closes.
+    expect(stripTags("<p>a<b")).toBe("a<b");
+  });
+
+  it("resolves a run of unclosed tags in linear time", () => {
+    // Adversarial input for the pre-fix `/<[^>]*>/g`: many `<` starts and no
+    // `>` anywhere, so `[^>]*` backtracks at every one of them. At 80 KB the
+    // old regex took over nine seconds (measured); this asserts the fixed
+    // scan resolves in well under a second. Nothing here is a complete tag,
+    // so the whole input passes through unchanged (no whitespace or
+    // entities to collapse either).
+    const input = "<".repeat(80_000);
+    const start = performance.now();
+    const result = stripTags(input);
+    const elapsed = performance.now() - start;
+    expect(result).toBe(input);
+    expect(elapsed).toBeLessThan(500);
+  });
 });
