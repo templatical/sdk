@@ -32,7 +32,13 @@ export function useCapabilityEditor(
   afterInit?: (editor: TemplaticalEditor) => Promise<void>,
 ): CapabilityEditor {
   const host = ref<HTMLElement | null>(null);
-  const editor = ref<TemplaticalEditor | null>(null);
+
+  // `shallowRef`, not `ref`: a deep ref wraps the SDK handle in a reactive
+  // proxy, and then `editor.value === instance` compares a proxy against the
+  // raw object and is false for the very instance it holds — so the staleness
+  // recheck below silently stops unpublishing. Nothing tracks the handle's
+  // internals either; only its identity and its `unmount` matter.
+  const editor = shallowRef<TemplaticalEditor | null>(null);
 
   // The Config tab renders THIS object — the one the mounted editor was
   // handed, never a copy rebuilt for display. A second copy is free to drift

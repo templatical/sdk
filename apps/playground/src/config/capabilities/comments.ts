@@ -1,4 +1,8 @@
-import type { CommentsProvider } from "@templatical/types";
+import type {
+  Comment,
+  CommentEventMeta,
+  CommentsProvider,
+} from "@templatical/types";
 import { commentsProviderFor } from "@/providers/comments";
 import { methodOr } from "../build";
 import type { CapabilityDef } from "../types";
@@ -47,52 +51,41 @@ export const commentsCapability: CapabilityDef<CommentsProvider> = {
     },
   ],
   implFor: (template) => commentsProviderFor(template),
-  build: (state, impl, record) => ({
-    comments: {
-      ...impl,
-      create: methodOr(state["comments.create"], impl.create),
-      update: methodOr(state["comments.update"], impl.update),
-      delete: methodOr(state["comments.delete"], impl.delete),
-      setResolved: methodOr(state["comments.setResolved"], impl.setResolved),
-      // The origin is read from `meta`, never assumed — comments is the one
-      // contract in this registry whose events carry a real one. CLAUDE.md
-      // calls it load-bearing: a "new comments" badge that counted `local`
-      // too would increment on the reader's own comment.
-      onCreated: (comment, meta) =>
+  build: (state, impl, record) => {
+    /**
+     * One handler shape for all five events.
+     *
+     * Written as a factory rather than five near-identical blocks because
+     * every one of them differs only in the handler name — and five copies of
+     * `origin: meta.origin` are five places for one of them to quietly become
+     * a hardcoded `"local"`.
+     */
+    const report =
+      (handler: string) => (comment: Comment, meta: CommentEventMeta) =>
         record({
-          handler: "onCreated",
+          handler,
           summary: summarize(comment.body),
           origin: meta.origin,
           payload: { comment, meta },
-        }),
-      onUpdated: (comment, meta) =>
-        record({
-          handler: "onUpdated",
-          summary: summarize(comment.body),
-          origin: meta.origin,
-          payload: { comment, meta },
-        }),
-      onDeleted: (comment, meta) =>
-        record({
-          handler: "onDeleted",
-          summary: summarize(comment.body),
-          origin: meta.origin,
-          payload: { comment, meta },
-        }),
-      onResolved: (comment, meta) =>
-        record({
-          handler: "onResolved",
-          summary: summarize(comment.body),
-          origin: meta.origin,
-          payload: { comment, meta },
-        }),
-      onUnresolved: (comment, meta) =>
-        record({
-          handler: "onUnresolved",
-          summary: summarize(comment.body),
-          origin: meta.origin,
-          payload: { comment, meta },
-        }),
-    },
-  }),
+        });
+
+    return {
+      comments: {
+        ...impl,
+        create: methodOr(state["comments.create"], impl.create),
+        update: methodOr(state["comments.update"], impl.update),
+        delete: methodOr(state["comments.delete"], impl.delete),
+        setResolved: methodOr(state["comments.setResolved"], impl.setResolved),
+        // The origin is read from `meta`, never assumed — comments is the one
+        // contract in this registry whose events carry a real one. CLAUDE.md
+        // calls it load-bearing: a "new comments" badge that counted `local`
+        // too would increment on the reader's own comment.
+        onCreated: report("onCreated"),
+        onUpdated: report("onUpdated"),
+        onDeleted: report("onDeleted"),
+        onResolved: report("onResolved"),
+        onUnresolved: report("onUnresolved"),
+      },
+    };
+  },
 };

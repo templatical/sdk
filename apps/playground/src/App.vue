@@ -88,7 +88,7 @@ import {
 } from "@/i18n";
 import { buildAllCapabilityConfig } from "@/config/capabilities";
 import { readControlState } from "@/config/state";
-import { PLAYGROUND_USER } from "@/providers/comments";
+import { PLAYGROUND_USER } from "@/providers/identity";
 import { SCRATCH_TEMPLATE_NAME } from "@/providers/template-name";
 const { locale, t } = usePlaygroundI18n();
 const { sdkLocale } = useSdkLocale();

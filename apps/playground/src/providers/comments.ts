@@ -1,5 +1,6 @@
-import type { Comment, CommentsProvider, EditorUser } from "@templatical/types";
+import type { Comment, CommentsProvider } from "@templatical/types";
 import type { TemplateOption } from "@/templates";
+import { PLAYGROUND_USER } from "./identity";
 import { SCRATCH_TEMPLATE_NAME, slugFor } from "./template-name";
 
 /**
@@ -14,12 +15,6 @@ import { SCRATCH_TEMPLATE_NAME, slugFor } from "./template-name";
  * contract promises.
  */
 const commentsProviders = new Map<string, CommentsProvider>();
-
-/** Who the playground says you are. Drives "You" and the edit/delete affordances. */
-export const PLAYGROUND_USER: EditorUser = {
-  id: "playground-user",
-  name: "Playground User",
-};
 
 export function commentsProviderFor(
   template?: TemplateOption,

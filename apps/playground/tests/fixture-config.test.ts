@@ -7,8 +7,7 @@ import {
   capabilities,
 } from "../src/config/capabilities";
 import { fixtureCapabilityConfig } from "../src/shell/fixture-config";
-import { slugFor } from "../src/providers/template-name";
-import { templates, type TemplateOption } from "../src/templates";
+import { resolveFixture } from "../src/shell/useCapabilityFixture";
 
 // `import.meta.url` is not a usable `file:` base in this environment, so
 // paths resolve through `import.meta.dirname` instead — the same pattern
@@ -35,12 +34,12 @@ function walkBlocks(blocks: Block[]): Block[] {
   return all;
 }
 
-/** The same fallback `CapabilityShell.vue`'s own `fixture` computed uses. */
-function fixtureFor(fixtureSlug: string): TemplateOption {
-  return (
-    templates.find((t) => slugFor(t.name) === fixtureSlug) ?? templates[0]
-  );
-}
+/**
+ * The shell's own fixture resolution, imported rather than restated — a second
+ * copy of the `?? templates[0]` fallback is free to drift from the one the
+ * shell actually runs.
+ */
+const fixtureFor = resolveFixture;
 
 /**
  * The config keys that bear on whether a fixture's own content renders

@@ -45,6 +45,14 @@ export const versionHistoryCapability: CapabilityDef<VersionHistoryProvider> = {
       versionHistory: {
         ...impl,
         restore,
+        // Fires only for a headless caller. `VersionHistoryProvider.create()`
+        // has no affordance in the shipped editor — versionHistory is the one
+        // provider whose `canCreate` gates nothing, and the demo's own `save()`
+        // appends to the version store directly rather than through `create`,
+        // which `@templatical/types` documents as deliberate ("Not called for
+        // a version your `save` implementation records automatically"). Wired
+        // because the contract has it; do not count it as demonstrated.
+        //
         // `label` is optional — a store that lets nobody name a version has
         // none — so the id is the fallback rather than letting the row read
         // "undefined".

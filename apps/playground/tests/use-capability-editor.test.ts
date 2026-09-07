@@ -198,4 +198,59 @@ describe("useCapabilityEditor", () => {
       "b",
     );
   });
+
+  /**
+   * `afterInit` is where the shell attaches a template — a round trip through
+   * the consumer's store, so a rail click can land during it. The instance is
+   * already published to `editor` by then, so the recheck after that await is
+   * what keeps a superseded instance from staying published.
+   */
+  it("unpublishes an instance superseded while afterInit was still running", async () => {
+    let next = "a";
+    let releaseAdopt: (() => void) | null = null;
+    const adoptCalls: string[] = [];
+
+    const api = useCapabilityEditor(
+      () => ({ name: next }) as never,
+      async () => {
+        adoptCalls.push(next);
+        // Only the first attach parks; later ones resolve straight away.
+        if (releaseAdopt) return;
+        await new Promise<void>((resolve) => {
+          releaseAdopt = resolve;
+        });
+      },
+    );
+    api.host.value = document.createElement("div");
+
+    const first = api.initEditor();
+    await waitForInFlight("a");
+    settle("a");
+    // Drain up to the point where "a" is mounted, published, and parked
+    // inside its own `afterInit`.
+    for (let i = 0; i < 50 && !releaseAdopt; i += 1) await Promise.resolve();
+    expect(adoptCalls).toEqual(["a"]);
+    expect(mounted).toEqual(["a"]);
+
+    // A rail click lands mid-attach. It queues, so nothing runs yet.
+    next = "b";
+    const second = api.initEditor();
+    expect(pending.map((entry) => entry.name)).toEqual([]);
+
+    releaseAdopt!();
+    await first;
+
+    // "a" lost the race: torn down rather than left published.
+    expect(api.editor.value).toBeNull();
+
+    await waitForInFlight("b");
+    settle("b");
+    await second;
+
+    expect(mounted).toEqual(["b"]);
+    expect(unmounts).toEqual(["a"]);
+    expect((api.lastInitConfig.value as unknown as { name: string }).name).toBe(
+      "b",
+    );
+  });
 });

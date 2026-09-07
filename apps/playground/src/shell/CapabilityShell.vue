@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import type { TemplaticalEditor } from "@templatical/editor";
+import { computed, onBeforeUnmount, onMounted, watch } from "vue";
 import {
   buildAllCapabilityConfig,
   capabilityById,
 } from "@/config/capabilities";
-import { PLAYGROUND_USER } from "@/providers/comments";
-import { slugFor } from "@/providers/template-name";
-import { templates } from "@/templates";
+import { PLAYGROUND_USER } from "@/providers/identity";
 import CapabilityDrawer from "./CapabilityDrawer.vue";
 import CapabilityRail from "./CapabilityRail.vue";
 import { DRAWER_TABS } from "./drawer-tabs";
 import { fixtureCapabilityConfig } from "./fixture-config";
 import { useCapabilityEditor } from "./useCapabilityEditor";
+import { useCapabilityFixture } from "./useCapabilityFixture";
 import { useCapabilityRoute } from "./useCapabilityRoute";
 import { useControlState } from "./useControlState";
 import { useDrawerChrome } from "./useDrawerChrome";
@@ -54,23 +52,20 @@ const tabsWithBadges = computed(() =>
 // anything else — so this lookup can't miss.
 const capability = computed(() => capabilityById(activeId.value)!);
 
-// The drawer's picker swaps the fixture for the current visit; `null` means
-// "whatever this capability curated". Cleared on a capability change, so
-// each one opens on its own fixture rather than inheriting the last pick.
-const fixtureOverride = ref<string | null>(null);
-
-// Every registered capability names "product-launch" today; a future one
-// naming a fixture no template carries falls back to the first template
-// rather than mounting an editor with no content at all.
-const fixture = computed(() => {
-  const wanted = fixtureOverride.value ?? capability.value.fixture;
-  return templates.find((t) => slugFor(t.name) === wanted) ?? templates[0];
-});
-
-// The picker's value. Derived from the template that actually resolved, not
-// from `fixtureOverride`, so the fallback above can never leave the select
-// showing a slug it has no option for.
-const fixtureSlug = computed(() => slugFor(fixture.value.name));
+// Which template this capability shows, and the stored template the editor
+// saves into — `useCapabilityFixture` owns both, because the second is keyed
+// by the first.
+//
+// `initEditor` is reached through a thunk rather than passed directly: the
+// editor lifecycle below needs `fixture` to build its config, so the two
+// cannot both be constructed with the other already in hand. Only
+// `setFixture` calls it, and that happens long after setup.
+const { fixture, fixtureSlug, setFixture, adoptTemplate } =
+  useCapabilityFixture(
+    activeId,
+    computed(() => capability.value.fixture),
+    () => initEditor(),
+  );
 
 // The editor's host element, the instance in it, and the config it booted
 // with all live in `useCapabilityEditor`, which also serializes re-inits:
@@ -125,44 +120,6 @@ const {
   adoptTemplate,
 );
 
-/**
- * Template ids the shell has already attached, keyed by fixture slug.
- *
- * The editor has no create affordance of its own — creation is programmatic —
- * so without this the Save button sits disabled at "Load or create a template
- * first" and the whole templates capability is dead UI: no save status, no
- * autosave to observe, and no saves for version history to record.
- *
- * Keyed by fixture because each one is a different template, and remembered
- * because a re-init fires on every control toggle: creating each time would
- * spawn a template per click and leave version history reading from a store
- * that just changed underneath it.
- */
-const adoptedTemplateIds = new Map<string, string>();
-
-/**
- * Give the editor a template to save into: load the one this fixture already
- * has, or create it the first time.
- *
- * A read-only store (`templates.create: false`) has nothing to attach to, so
- * this gives up quietly — the editor still edits, it just cannot persist,
- * which is exactly what that control is there to demonstrate.
- */
-async function adoptTemplate(instance: TemplaticalEditor): Promise<void> {
-  const slug = fixtureSlug.value;
-  const known = adoptedTemplateIds.get(slug);
-  try {
-    if (known) {
-      await instance.load(known);
-    } else {
-      const created = await instance.create({ name: fixture.value.name });
-      adoptedTemplateIds.set(slug, created.id);
-    }
-  } catch (err) {
-    console.info("[playground] no template attached:", (err as Error).message);
-  }
-}
-
 // Off the same table the bar renders, so a tab and its pane cannot diverge:
 // pick a tab, get that tab's component. `DEFAULT_DRAWER_TAB` is registered
 // (pinned in `tests/drawer-tabs.test.ts`) and `readDrawerState` refuses an
@@ -190,19 +147,6 @@ const paneProps = computed(() => ({
   events: eventLog.events.value,
 }));
 
-/**
- * Swap the fixture for this visit.
- *
- * Re-inits by calling `initEditor` rather than through a `watch(fixture)`:
- * a capability change clears the override, which moves `fixture` too, so a
- * watcher there would fire beside the `activeId` one and start a second
- * `init()` for a single click.
- */
-function setFixture(slug: string): void {
-  fixtureOverride.value = slug;
-  void initEditor();
-}
-
 onMounted(async () => {
   await initEditor();
 });
@@ -210,10 +154,10 @@ onMounted(async () => {
 // A rail click or a direct link to a different `#capabilities/<id>` moves
 // `activeId`. Re-running `initEditor` swaps the fixture and config into the
 // SAME host element rather than remounting the component tree around it.
+// `useCapabilityFixture` watches `activeId` too, to clear the picker's
+// override. Its watcher is created first, so the override is already cleared
+// by the time this one re-inits.
 watch(activeId, async () => {
-  // The picker's choice belongs to the capability it was made in, so each
-  // capability opens on the fixture it curated (spec decision 9).
-  fixtureOverride.value = null;
   await initEditor();
 });
 

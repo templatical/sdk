@@ -3,11 +3,12 @@ import { createApp, defineComponent, effectScope, h, ref } from "vue";
 import type { Template, TemplateContent } from "@templatical/types";
 import {
   buildAllCapabilityConfig,
+  capabilities,
   capabilityById,
 } from "../src/config/capabilities";
-import { PLAYGROUND_USER } from "../src/providers/comments";
-import { slugFor } from "../src/providers/template-name";
-import { templates, type TemplateOption } from "../src/templates";
+import { PLAYGROUND_USER } from "../src/providers/identity";
+import { type TemplateOption } from "../src/templates";
+import { resolveFixture } from "../src/shell/useCapabilityFixture";
 // These four composables are `@templatical/editor` internals with no public
 // export — `packages/editor/src/index.ts` exposes only `init`/`initCloud`/
 // `unmount` — so this reaches their source directly rather than through the
@@ -29,12 +30,13 @@ const ADOPTED: Template = {
   content: CONTENT,
 };
 
-/** The same fallback `CapabilityShell.vue`'s own `fixture` computed uses. */
+/**
+ * The shell's own fixture resolution, imported rather than restated — a second
+ * copy of the `?? templates[0]` fallback is free to drift from the one the
+ * shell actually runs.
+ */
 function fixtureFor(capabilityId: string): TemplateOption {
-  const fixtureSlug = capabilityById(capabilityId)!.fixture;
-  return (
-    templates.find((t) => slugFor(t.name) === fixtureSlug) ?? templates[0]
-  );
+  return resolveFixture(capabilityById(capabilityId)!.fixture);
 }
 
 /**
@@ -59,6 +61,17 @@ function withProvide<T>(setup: () => T): T {
   app.unmount();
   return result;
 }
+
+/**
+ * Every capability id with a case below. Kept beside the cases so adding one
+ * without the other is the thing that fails.
+ */
+const GATED_CAPABILITY_IDS = [
+  "comments",
+  "templates",
+  "version-history",
+  "saved-blocks",
+];
 
 /**
  * Every capability whose editor-side feature composable can be constructed
@@ -162,5 +175,28 @@ describe("every capability's editor-side availability gate is satisfied by the s
     );
 
     expect(feature.isAvailable.value).toBe(true);
+  });
+
+  /**
+   * The cases above are hand-written, one per capability, because each feature
+   * composable takes a different structural stub. Nothing about that ties the
+   * case count to the registry — so this asserts the pairing directly.
+   *
+   * It exists because this whole file was written after two capabilities
+   * shipped silently dead in the shell: templates with no template attached
+   * (Save permanently disabled) and comments with no `user` (the trigger
+   * absent, not disabled). Both rendered normally while doing nothing. A new
+   * capability registered without a case here would be the third, and every
+   * assertion above would still pass.
+   *
+   * Failing loudly on registration forces a decision rather than granting
+   * silence by omission — the same job as the `_SavedBlocksOptionsForwarded`
+   * and `_TestEmailOptionsForwarded` compile-time exhaustiveness checks in
+   * `createCloudRuntime.ts`.
+   */
+  it("has a case for every registered capability", () => {
+    expect(capabilities.map((c) => c.id).sort()).toEqual(
+      GATED_CAPABILITY_IDS.sort(),
+    );
   });
 });
