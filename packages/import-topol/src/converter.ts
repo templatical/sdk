@@ -71,7 +71,6 @@ export function convertTopolTemplate(
   const ctx: MapContext = {
     style,
     columnWidth: style.settings.width,
-    warnings,
   };
 
   for (const child of container?.children ?? []) {

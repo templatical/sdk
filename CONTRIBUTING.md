@@ -74,7 +74,7 @@ The monorepo deliberately uses **two** build tools, split by package shape:
 
 | Packages | Tool | Why |
 |----------|------|-----|
-| `types`, `core`, `renderer`, `import-beefree`, `import-unlayer`, `import-html` | **tsdown** (Rolldown + Oxc) | Pure-TS libraries. tsdown bundles JS **and** rolls up `.d.ts` in one ~8-line config. Migrated off tsup → dropped `rollup` / `rollup-plugin-dts` from the build path. |
+| `types`, `core`, `renderer`, `import-beefree`, `import-unlayer`, `import-html`, `import-mjml`, `import-topol` | **tsdown** (Rolldown + Oxc) | Pure-TS libraries. tsdown bundles JS **and** rolls up `.d.ts` in one ~8-line config. Migrated off tsup → dropped `rollup` / `rollup-plugin-dts` from the build path. |
 | `editor`, `media-library`, `quality` | **Vite** (+ `vue-tsc`/`tsc` + `@microsoft/api-extractor` for `.d.ts`) | Need SFC compilation, the Tailwind/CSS pipeline, `import.meta.glob`, `import.meta.env` replacement, and shared dev-server config — all batteries Vite includes and tsdown would require manual wiring for. |
 | `editor` + `media-library` CDN bundles | **Vite** (`vite.cdn.config.ts`) | Self-contained, code-split, `window`-global app-style bundles. |
 
@@ -88,7 +88,7 @@ The monorepo deliberately uses **two** build tools, split by package shape:
 
 Test conventions:
 
-- **Location:** `tests/**/*.test.ts` per package (except `import-beefree` and `import-unlayer`, which use `src/__tests__/`).
+- **Location:** `tests/**/*.test.ts` per package, except the `@templatical/import-*` packages, which use `src/__tests__/`.
 - **Framework:** Vitest 3 for unit tests, Playwright for E2E.
 - **Regression sensitivity:** every test must assert on **concrete values or state**. Never use `.toBeDefined()`, `.toBeTruthy()`, or `.not.toThrow()` as the only assertion — pair with a value check or a state check.
 - **Coverage:** test happy path, unhappy path (error branches), and edge cases. Test every `if/else` branch, every `try/catch`, every early `return`.
@@ -176,7 +176,7 @@ Avoid discussing design decisions in inline PR comments before opening the PR �
 
 By contributing, you agree that your contributions will be licensed under the same license as the package you're contributing to:
 
-- **MIT** for `@templatical/types`, `@templatical/renderer`, `@templatical/quality`, `@templatical/import-beefree`, `@templatical/import-unlayer`, `@templatical/import-html`
-- **FSL-1.1-MIT** (auto-converts to MIT after 2 years) for `@templatical/editor`, `@templatical/core`, `@templatical/media-library`
+- **MIT** for `types`, `renderer`, `quality`, `import-beefree`, `import-unlayer`, `import-html`, `import-mjml`, `import-topol`
+- **FSL-1.1-MIT** (auto-converts to MIT after 2 years) for `editor`, `core`, `media-library`
 
 See [`LICENSE`](./LICENSE) and [`LICENSE-MIT`](./LICENSE-MIT) for full terms, and [the license FAQ](https://docs.templatical.com/license-faq) for plain-English answers.

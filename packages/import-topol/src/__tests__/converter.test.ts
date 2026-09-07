@@ -174,13 +174,13 @@ describe("convertTopolTemplate end to end", () => {
     expect(
       report.entries.filter((e) => e.sourceTag === "mj-global-style"),
     ).toEqual([]);
-    // Three sections + 3 + 2 + 2 leaves. Counted by hand from the fixture —
+    // Three sections + 3 + 3 + 2 leaves. Counted by hand from the fixture —
     // never assert `summary.total === entries.length`, which is how `total` is
     // computed and so can never fail.
     expect(report.summary).toEqual({
-      total: 10,
+      total: 11,
       converted: 9,
-      approximated: 1,
+      approximated: 2,
       htmlFallback: 0,
       skipped: 0,
     });

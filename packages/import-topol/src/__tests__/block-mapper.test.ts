@@ -15,13 +15,12 @@ function ctx(
   rootAttrs: Record<string, unknown> = {},
   columnWidth = 600,
 ): MapContext {
-  const warnings: string[] = [];
   const style = readGlobalStyle(
     { tagName: "mj-global-style", attributes: rootAttrs } as never,
     undefined,
-    warnings,
+    [],
   );
-  return { style, columnWidth, warnings };
+  return { style, columnWidth };
 }
 
 const node = (
@@ -227,6 +226,14 @@ describe("mj-image", () => {
   it('restores width "full" from widthPercent 100', () => {
     const r = convertLeaf(
       node("mj-image", { src: "a.png", width: 600, widthPercent: 100 }),
+      ctx(),
+    )!;
+    expect((r.block as ImageBlock).width).toBe("full");
+  });
+
+  it("honors widthPercent 100 even when the pixel width is below the column width", () => {
+    const r = convertLeaf(
+      node("mj-image", { src: "a.png", width: 300, widthPercent: 100 }),
       ctx(),
     )!;
     expect((r.block as ImageBlock).width).toBe("full");

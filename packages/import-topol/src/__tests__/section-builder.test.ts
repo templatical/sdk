@@ -6,15 +6,13 @@ import type { MapContext } from "../block-mapper";
 import type { ImportReportEntry, TopolNode } from "../types";
 
 function ctx(): MapContext {
-  const warnings: string[] = [];
   return {
     style: readGlobalStyle(
       { tagName: "mj-global-style", attributes: {} } as never,
       undefined,
-      warnings,
+      [],
     ),
     columnWidth: 600,
-    warnings,
   };
 }
 

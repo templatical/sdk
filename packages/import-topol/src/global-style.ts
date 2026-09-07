@@ -54,8 +54,6 @@ export function selectorDefault(
   return style.selectorDefaults[selector]?.[key];
 }
 
-const NON_SELECTOR_KEYS = new Set(["containerWidth", "fonts"]);
-
 /**
  * Split the root's `attributes` into settings, per-tag defaults and
  * per-selector defaults.
@@ -78,8 +76,6 @@ export function readGlobalStyle(
   > = Object.create(null);
 
   for (const [key, value] of Object.entries(root.attributes ?? {})) {
-    if (NON_SELECTOR_KEYS.has(key)) continue;
-
     if (value !== null && typeof value === "object") {
       const bucket = (tagDefaults[key] ??= Object.create(null));
       for (const [k, v] of Object.entries(value)) {
@@ -89,6 +85,9 @@ export function readGlobalStyle(
     }
 
     const colon = key.indexOf(":");
+    // No colon means a root-level setting rather than a selector default —
+    // `containerWidth` and `fonts` are the two real cases, and both are read
+    // directly by name below instead of through the caches built here.
     if (colon === -1) continue;
     const selector = key.slice(0, colon);
     const property = key.slice(colon + 1);
@@ -97,12 +96,11 @@ export function readGlobalStyle(
     bucket[property] = String(value);
   }
 
-  const width =
-    parsePxValue(attr(root, "containerWidth")) || REQUIRED_DEFAULTS.width;
-
   // containerWidth is authored only here, on the root. It is also denormalised
   // onto every leaf as the enclosing column's computed width (600/300/150 in
-  // one template), so no other module may read it. See the Global Constraints.
+  // one template), so no other module may read it.
+  const width =
+    parsePxValue(attr(root, "containerWidth")) || REQUIRED_DEFAULTS.width;
 
   const backgroundColor =
     (container ? parseColor(attr(container, "background-color")) : "") ||

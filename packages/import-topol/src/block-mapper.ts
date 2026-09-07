@@ -26,7 +26,6 @@ export interface MapContext {
   style: GlobalStyle;
   /** The rendered width of the column holding this node, for `width: "full"`. */
   columnWidth: number;
-  warnings: string[];
 }
 
 export interface Converted {

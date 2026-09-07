@@ -1,9 +1,14 @@
 /**
  * Type definitions for the Topol.io importer.
  *
- * The four report types are structurally identical to every other
- * `@templatical/import-*` package's, so a caller can treat all importers
- * uniformly. Changing a shape here without changing the others breaks that.
+ * `ConversionStatus`, `ImportReport`, and `ImportResult` are structurally
+ * identical to the same types in `import-html`, `import-mjml`,
+ * `import-beefree`, and `import-unlayer`, so a caller can treat those three
+ * types uniformly across every `@templatical/import-*` package.
+ * `ImportReportEntry` is not: its first field is `sourceTag` here, the same
+ * name `import-html` and `import-mjml` use, but `import-beefree` calls it
+ * `beeFreeModuleType` and `import-unlayer` calls it `unlayerContentType` — the
+ * one field a caller reading across every importer would have to branch on.
  */
 
 export type ConversionStatus =

@@ -6,15 +6,13 @@ import type { MapContext } from "../block-mapper";
 import type { TopolNode } from "../types";
 
 function ctx(): MapContext {
-  const warnings: string[] = [];
   return {
     style: readGlobalStyle(
       { tagName: "mj-global-style", attributes: {} } as never,
       undefined,
-      warnings,
+      [],
     ),
     columnWidth: 600,
-    warnings,
   };
 }
 
@@ -68,6 +66,24 @@ describe("convertSocial", () => {
     expect(block.icons[0].url).toBe("https://plus.google.com/PROFILE");
     expect(r.entry.status).toBe("approximated");
     expect(r.entry.note).toContain('"google"');
+  });
+
+  it("joins the platform and icon-size notes when both are approximated", () => {
+    // Every one of the five reference exports produces at least one social
+    // entry with both notes at once — google's own widget still writes
+    // google-href, and Topol's default icon-size is 35px — so the joined
+    // string here is what a real import actually reports, not an edge case.
+    const r = convertSocial(
+      social({
+        display: "google:url",
+        "google-href": "https://plus.google.com/PROFILE",
+        "icon-size": "35px",
+      }),
+      ctx(),
+    )!;
+    expect(r.entry.status).toBe("approximated");
+    expect(r.entry.note).toContain('"google"');
+    expect(r.entry.note).toContain("35px");
   });
 
   it("gives every icon a generated id", () => {

@@ -72,7 +72,17 @@ export const NEWSLETTER: TopolDesign = {
             {
               tagName: "mj-column",
               attributes: { width: "50%" },
-              children: [{ tagName: "mj-spacer", attributes: { height: 16 } }],
+              children: [
+                { tagName: "mj-spacer", attributes: { height: 16 } },
+                {
+                  tagName: "mj-gif",
+                  attributes: {
+                    src: "https://cdn.test/announcement.gif",
+                    width: 300,
+                    widthPercent: 50,
+                  },
+                },
+              ],
             },
           ],
         },
