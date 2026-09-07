@@ -109,6 +109,11 @@ describe("mj-text", () => {
     )!;
     expect((r.block as TitleBlock).fontFamily).toBe("Georgia");
   });
+
+  it("omits the title font family when neither the node nor the cascade sets one", () => {
+    const r = convertLeaf(node("mj-text", {}, "<h1>x</h1>"), ctx())!;
+    expect("fontFamily" in r.block!).toBe(false);
+  });
 });
 
 describe("mj-button", () => {
@@ -119,7 +124,7 @@ describe("mj-button", () => {
         {
           href: "https://x.test",
           "background-color": "#ff6600",
-          color: "#ffffff",
+          color: "#222222",
           "font-size": 16,
           "border-radius": "4px",
           align: "right",
@@ -133,7 +138,7 @@ describe("mj-button", () => {
     expect(block.text).toBe("Buy now");
     expect(block.url).toBe("https://x.test");
     expect(block.backgroundColor).toBe("#ff6600");
-    expect(block.textColor).toBe("#ffffff");
+    expect(block.textColor).toBe("#222222");
     expect(block.fontSize).toBe(16);
     expect(block.borderRadius).toBe(4);
     expect(block.align).toBe("right");
@@ -145,12 +150,32 @@ describe("mj-button", () => {
     });
   });
 
+  it("carries a font family onto a button", () => {
+    const r = convertLeaf(
+      node(
+        "mj-button",
+        { href: "https://x.test", "font-family": "Georgia, serif" },
+        "<p>Go</p>",
+      ),
+      ctx(),
+    )!;
+    expect((r.block as ButtonBlock).fontFamily).toBe("Georgia");
+  });
+
   it("keeps the factory borderRadius when the node declares none", () => {
     const r = convertLeaf(
       node("mj-button", { href: "https://x.test" }, "<p>Go</p>"),
       ctx(),
     )!;
     expect((r.block as ButtonBlock).borderRadius).toBe(6);
+  });
+
+  it("keeps the factory fontSize when the node declares none", () => {
+    const r = convertLeaf(
+      node("mj-button", { href: "https://x.test" }, "<p>Go</p>"),
+      ctx(),
+    )!;
+    expect((r.block as ButtonBlock).fontSize).toBe(15);
   });
 
   it("honours an explicit zero border radius", () => {
@@ -179,6 +204,16 @@ describe("mj-button", () => {
       ctx({ "mj-button": { "background-color": "#123456" } }),
     )!;
     expect((r.block as ButtonBlock).backgroundColor).toBe("#123456");
+  });
+
+  it("keeps the factory background and text colours when nothing sets them", () => {
+    const r = convertLeaf(
+      node("mj-button", { href: "https://x.test" }, "<p>Go</p>"),
+      ctx(),
+    )!;
+    const block = r.block as ButtonBlock;
+    expect(block.backgroundColor).toBe("#333333");
+    expect(block.textColor).toBe("#ffffff");
   });
 
   it("returns null for a button with no label", () => {
@@ -213,6 +248,19 @@ describe("mj-image", () => {
     expect((r.block as ImageBlock).width).toBe("full");
   });
 
+  it("falls back to full width when neither width nor widthPercent is set", () => {
+    const r = convertLeaf(node("mj-image", { src: "a.png" }), ctx())!;
+    expect((r.block as ImageBlock).width).toBe("full");
+  });
+
+  it("reads a left alignment", () => {
+    const r = convertLeaf(
+      node("mj-image", { src: "a.png", align: "left" }),
+      ctx(),
+    )!;
+    expect((r.block as ImageBlock).align).toBe("left");
+  });
+
   it("treats an explicit null alt and href as absent", () => {
     const r = convertLeaf(
       node("mj-image", { src: "a.png", alt: null, href: null }),
@@ -229,6 +277,14 @@ describe("mj-image", () => {
       ctx(),
     )!;
     expect((r.block as ImageBlock).linkUrl).toBe("https://x.test");
+  });
+
+  it("reads an alt attribute", () => {
+    const r = convertLeaf(
+      node("mj-image", { src: "a.png", alt: "A hero image" }),
+      ctx(),
+    )!;
+    expect((r.block as ImageBlock).alt).toBe("A hero image");
   });
 
   it("returns null for an image with no src", () => {
@@ -296,6 +352,11 @@ describe("mj-spacer and mj-divider", () => {
     const block = r.block as DividerBlock;
     expect(block.lineStyle).toBe("dashed");
     expect(block.thickness).toBe(3);
+  });
+
+  it("keeps the factory colour when the node sets none", () => {
+    const r = convertLeaf(node("mj-divider", {}), ctx())!;
+    expect((r.block as DividerBlock).color).toBe("#e0e0e0");
   });
 });
 
