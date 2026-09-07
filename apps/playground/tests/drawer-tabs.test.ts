@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import ConfigPane from "../src/shell/ConfigPane.vue";
 import ControlsPane from "../src/shell/ControlsPane.vue";
 import EventsPane from "../src/shell/EventsPane.vue";
+import ExportPane from "../src/shell/ExportPane.vue";
 import {
   DRAWER_TABS,
   DEFAULT_DRAWER_TAB,
@@ -22,6 +23,7 @@ describe("DRAWER_TABS", () => {
       "controls",
       "config",
       "events",
+      "export",
     ]);
   });
 
@@ -41,6 +43,7 @@ describe("DRAWER_TABS", () => {
     expect(componentFor("controls")).toBe(ControlsPane);
     expect(componentFor("config")).toBe(ConfigPane);
     expect(componentFor("events")).toBe(EventsPane);
+    expect(componentFor("export")).toBe(ExportPane);
   });
 
   it("gives every pane inheritAttrs: false, since the shell binds one merged prop bag", () => {

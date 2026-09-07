@@ -53,6 +53,15 @@ export const SELECTORS = {
   capabilityEventsEmpty: '[data-testid="events-empty"]',
   capabilityEventsClear: '[data-testid="events-clear"]',
 
+  // Export tab (inside the capability drawer) — runs the live editor's
+  // toMjml()/toHtml() and shows the result, a rejection rendered verbatim.
+  // See `ExportPane.vue`. Distinct from the "Export modal" selectors below,
+  // which belong to `App.vue`'s own export flow.
+  exportRun: '[data-testid="export-run"]',
+  exportMjml: '[data-testid="export-mjml"]',
+  exportHtml: '[data-testid="export-html"]',
+  exportError: '[data-testid="export-error"]',
+
   // Editor toolbar (playground)
   backButton: '[data-testid="toolbar-back"]',
   configButton: '[data-testid="toolbar-config"]',

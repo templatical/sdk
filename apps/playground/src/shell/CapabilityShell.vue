@@ -134,6 +134,7 @@ const shadowMode = computed(
 // is pinned by the assertion in `tests/config-build-all.test.ts`.
 const {
   host: editorHost,
+  editor,
   lastInitConfig,
   initEditor,
   destroy,
@@ -187,17 +188,18 @@ const activeTabComponent = computed(
 
 // One merged object for whichever pane is active: each pane picks out the
 // props it declares, so `ControlsPane` sees `controls`/`state`/`fixture`,
-// `ConfigPane` sees `config` and `EventsPane` sees `events`. That is what
-// keeps the shell from growing a branch per tab, and reads as an oversight
-// otherwise. Every pane sets `inheritAttrs: false`, because the entries a
-// pane does not declare fall through onto its root element rather than being
-// dropped.
+// `ConfigPane` sees `config`, `EventsPane` sees `events`, and `ExportPane`
+// sees `editor`. That is what keeps the shell from growing a branch per tab,
+// and reads as an oversight otherwise. Every pane sets `inheritAttrs: false`,
+// because the entries a pane does not declare fall through onto its root
+// element rather than being dropped.
 const paneProps = computed(() => ({
   controls: capability.value.controls,
   state: controlState.value,
   fixture: fixtureSlug.value,
   config: lastInitConfig.value,
   events: eventLog.events.value,
+  editor: editor.value,
 }));
 
 onMounted(async () => {
