@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+    createButtonBlock,
     createDefaultTemplateContent,
     createMenuBlock,
     createParagraphBlock,
@@ -424,6 +425,56 @@ describe('useBlockActions with blockDefaults', () => {
         if (block.type === 'paragraph') {
             expect(block.styles.padding.top).toBe(30);
             expect(block.styles.padding.right).toBe(10);
+        }
+    });
+
+    it('accepts a getter and applies what it returns', () => {
+        const opts = {
+            ...createMockOptions(),
+            blockDefaults: (): BlockDefaults => ({
+                button: { text: 'Hier klicken' },
+            }),
+        };
+        const actions = useBlockActions(opts);
+
+        const block = actions.createAndAddBlock('button');
+        if (block.type === 'button') {
+            expect(block.text).toBe('Hier klicken');
+        }
+    });
+
+    // The editor passes a getter precisely so a mid-session change to the
+    // template's content language reaches the next inserted block. Reading it
+    // once at setup would pin every later insert to the value at mount.
+    it('re-reads the getter on every insert', () => {
+        let text = 'Click Here';
+        const opts = {
+            ...createMockOptions(),
+            blockDefaults: (): BlockDefaults => ({ button: { text } }),
+        };
+        const actions = useBlockActions(opts);
+
+        const first = actions.createAndAddBlock('button');
+        text = 'Hier klicken';
+        const second = actions.createAndAddBlock('button');
+
+        if (first.type === 'button') expect(first.text).toBe('Click Here');
+        if (second.type === 'button') expect(second.text).toBe('Hier klicken');
+    });
+
+    it('ignores the getter when duplicating, same as a plain object', () => {
+        const opts = {
+            ...createMockOptions(),
+            blockDefaults: (): BlockDefaults => ({
+                button: { text: 'Hier klicken' },
+            }),
+        };
+        const actions = useBlockActions(opts);
+        const source = createButtonBlock({ text: 'Buy now' });
+
+        const cloned = actions.duplicateBlock(source);
+        if (cloned.type === 'button') {
+            expect(cloned.text).toBe('Buy now');
         }
     });
 });

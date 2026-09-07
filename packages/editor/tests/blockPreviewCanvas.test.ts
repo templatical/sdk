@@ -274,3 +274,37 @@ describe('BlockPreviewCanvas visibility and viewport', () => {
     expect(columnStyle(wrapper)).toContain(EMAIL_FRAME_WIDTH_TRANSITION);
   });
 });
+
+describe('content language', () => {
+  function lang(wrapper: {
+    find: (s: string) => { attributes: (a: string) => string | undefined };
+  }): string | undefined {
+    return wrapper
+      .find('[data-testid="block-preview-canvas"]')
+      .attributes('lang');
+  }
+
+  // The browser spellchecks and hyphenates by the nearest ancestor `lang`. With
+  // none anywhere under the editor, a preview of German copy is checked against
+  // the HOST page's language and every word comes back underlined.
+  it("declares the template's own content language", () => {
+    expect(lang(mountCanvas({ locale: 'de' }))).toBe('de');
+  });
+
+  it('keeps the region, which a language tag cares about', () => {
+    expect(lang(mountCanvas({ locale: 'pt-BR' }))).toBe('pt-BR');
+  });
+
+  // Absent, not `lang=""`: an empty value declares "unknown language", which
+  // suppresses spellcheck rather than letting it fall back to the host's.
+  it.each([{ locale: '' }, { locale: '   ' }])(
+    'omits the attribute entirely for a blank locale: %o',
+    (settings) => {
+      expect(lang(mountCanvas(settings))).toBeUndefined();
+    },
+  );
+
+  it('omits the attribute when there is no editor to read settings from', () => {
+    expect(lang(mountCanvas())).toBeUndefined();
+  });
+});

@@ -47,11 +47,7 @@ import type {
   TestEmailProvider,
   VersionHistoryProvider,
 } from "@templatical/types";
-import {
-  createDefaultTemplateContent,
-  DEFAULT_BLOCK_DEFAULTS,
-  DEFAULT_TEMPLATE_DEFAULTS,
-} from "@templatical/types";
+import { createDefaultTemplateContent } from "@templatical/types";
 import {
   templates,
   customBlockDefinitions,
@@ -100,6 +96,19 @@ import {
 } from "@/i18n";
 const { locale, t } = usePlaygroundI18n();
 const { sdkLocale } = useSdkLocale();
+
+/**
+ * A blank template in the language the editor is about to be initialized with.
+ *
+ * `createDefaultTemplateContent()` bare stamps `locale: "en"` from
+ * `DEFAULT_TEMPLATE_DEFAULTS`, and because this content is handed to
+ * `init({ content })`, the editor's own seeding of the content language is
+ * bypassed — a German editor produced `<mjml lang="en">` over German copy. A
+ * consumer that supplies content owns the language it declares.
+ */
+function createBlankTemplate() {
+  return createDefaultTemplateContent(undefined, { locale: sdkLocale.value });
+}
 const { theme: uiTheme, isDark } = usePlaygroundTheme();
 provide("isDark", isDark);
 
@@ -954,9 +963,16 @@ interface DefaultsPreset {
 
 const defaultsPresets: DefaultsPreset[] = [
   {
+    // "Templatical Default" means *no* overrides — the SDK's own defaults, as a
+    // consumer who passes neither key would get them. It used to restate
+    // DEFAULT_BLOCK_DEFAULTS / DEFAULT_TEMPLATE_DEFAULTS verbatim, which reads
+    // as harmless but is not: a consumer value wins over the SDK's, so pinning
+    // the English placeholder text here overrode the localized defaults and
+    // pinned `settings.locale` to "en" — making this app unable to demonstrate
+    // either, which is exactly what it exists to do.
     key: "templatical",
-    blockDefaults: DEFAULT_BLOCK_DEFAULTS,
-    templateDefaults: DEFAULT_TEMPLATE_DEFAULTS,
+    blockDefaults: {},
+    templateDefaults: {},
   },
   {
     key: "corporate",
@@ -2705,7 +2721,7 @@ onUnmounted(() => {
               :aria-label="t.a11y.startFromScratch"
               class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
               :style="{ animationDelay: `${templates.length * 40}ms` }"
-              @click="chooseTemplate(createDefaultTemplateContent())"
+              @click="chooseTemplate(createBlankTemplate())"
             >
               <div
                 class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200 text-gray-500 dark:bg-gray-700/50 dark:border-gray-700 dark:text-gray-400"

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import MediaFileIcon from "./MediaFileIcon.vue";
 import { useI18n } from "../../composables/useI18n";
+import { UI_LOCALE_KEY } from "../../keys";
+import { formatAbsoluteDate } from "../../utils/formatAbsoluteDate";
 import { useMediaCategories } from "../../composables/useMediaCategories";
 import type { MediaCategory, MediaItem } from "../../types";
 import { useIntersectionObserver } from "@vueuse/core";
 import { Check, File, LoaderCircle, Pencil, RefreshCw } from "@lucide/vue";
-import { ref } from "vue";
+import { inject, ref } from "vue";
 
 const props = defineProps<{
   items: MediaItem[];
@@ -39,6 +41,7 @@ function handleItemClick(item: MediaItem): void {
 }
 
 const { t } = useI18n();
+const uiLocale = inject(UI_LOCALE_KEY, null);
 
 const sentinelRef = ref<HTMLElement | null>(null);
 
@@ -58,8 +61,11 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// `Intl` builds this caption, so it needs the host locale explicitly:
+// `toLocaleDateString(undefined, …)` formats in the BROWSER's language while
+// every string around it is translated from the modal's `locale` prop.
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString(undefined, {
+  return formatAbsoluteDate(dateStr, uiLocale?.value, {
     year: "numeric",
     month: "short",
     day: "numeric",

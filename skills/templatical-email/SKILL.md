@@ -201,6 +201,11 @@ to `html` vs. were skipped, plus warnings.
   meaningful `alt` text.
 - **Settings** must include `width` (usually `600`), `backgroundColor`,
   `textColor`, `fontFamily`, `linkUnderline`, and `locale` (BCP-47, e.g. `"en"`).
+  Set `locale` to **the language of the copy you are writing**, not to `"en"`
+  by default — it becomes `<html lang>` in the delivered email, so a German
+  message labelled `"en"` is mispronounced by every screen reader that opens
+  it. The examples are English, so they all read `"en"`; a German email needs
+  `"de"`, Brazilian Portuguese `"pt-BR"`.
 
 ## Composing with project context
 
