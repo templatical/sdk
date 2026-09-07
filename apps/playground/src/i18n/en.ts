@@ -11,13 +11,15 @@ export default {
     startFromScratch: "Start from Scratch",
     emptyCanvas: "Empty canvas with default settings",
     migration: {
-      headline: "Already using BeeFree, Unlayer, MJML, or hand-coded HTML?",
+      headline:
+        "Already using BeeFree, Unlayer, MJML, Topol, or hand-coded HTML?",
       description:
         "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
       importFromBeefree: "Import from BeeFree",
       importFromUnlayer: "Import from Unlayer",
       importFromHtml: "Import from HTML",
       importFromMjml: "Import from MJML",
+      importFromTopol: "Import from Topol",
     },
   },
   cloudBanner: {
@@ -82,6 +84,7 @@ export default {
       unlayer: "From Unlayer",
       html: "From HTML",
       mjml: "From MJML",
+      topol: "From Topol",
     },
     chooseFile: "Choose file",
     orPaste: "or paste below",
@@ -105,6 +108,11 @@ export default {
       description:
         "Paste an MJML document below. Templatical-generated MJML round-trips exactly; hand-written MJML converts the common tags and falls back to HTML blocks for the rest.",
       emptyError: "Paste your MJML source or upload a file.",
+    },
+    topol: {
+      description:
+        "Paste a Topol design JSON below. If you fetched it from Topol's API, paste the response's \"json\" field rather than the whole response.",
+      emptyError: "Paste your Topol design JSON or upload a file.",
     },
   },
   mergeTagModal: {
@@ -303,6 +311,7 @@ export default {
     unlayerJsonContent: "Unlayer JSON content",
     htmlSourceContent: "HTML source content",
     mjmlSourceContent: "MJML source content",
+    topolSourceContent: "Topol design JSON content",
     selectLanguage: "Select language",
     selectSdkLanguage: "Select SDK language",
     selectTheme: "Select theme",

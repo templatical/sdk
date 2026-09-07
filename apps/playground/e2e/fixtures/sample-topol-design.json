@@ -1,0 +1,42 @@
+{
+  "tagName": "mj-global-style",
+  "attributes": {
+    "containerWidth": 600,
+    ":font-family": "Arial, sans-serif"
+  },
+  "children": [
+    {
+      "tagName": "mj-container",
+      "children": [
+        {
+          "tagName": "mj-section",
+          "attributes": { "padding": "24px" },
+          "children": [
+            {
+              "tagName": "mj-column",
+              "attributes": { "width": "100%" },
+              "children": [
+                {
+                  "tagName": "mj-text",
+                  "content": "<h1>Hello from Topol</h1>"
+                },
+                {
+                  "tagName": "mj-text",
+                  "content": "<p>Imported via the Topol e2e fixture.</p>"
+                },
+                {
+                  "tagName": "mj-button",
+                  "attributes": {
+                    "href": "https://example.test",
+                    "background-color": "#4f46e5"
+                  },
+                  "content": "<p>Click me</p>"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -14,13 +14,14 @@ export default {
     emptyCanvas: "Leere Leinwand mit Standardeinstellungen",
     migration: {
       headline:
-        "Nutzen Sie bereits BeeFree, Unlayer, MJML oder handgeschriebenes HTML?",
+        "Nutzen Sie bereits BeeFree, Unlayer, MJML, Topol oder handgeschriebenes HTML?",
       description:
         "Bringen Sie Ihre bestehenden Vorlagen in Sekunden mit — Block-Mapping, Layouts und Merge-Tags werden automatisch übernommen.",
       importFromBeefree: "Aus BeeFree importieren",
       importFromUnlayer: "Aus Unlayer importieren",
       importFromHtml: "Aus HTML importieren",
       importFromMjml: "Aus MJML importieren",
+      importFromTopol: "Aus Topol importieren",
     },
   },
   cloudBanner: {
@@ -85,6 +86,7 @@ export default {
       unlayer: "Aus Unlayer",
       html: "Aus HTML",
       mjml: "Aus MJML",
+      topol: "Aus Topol",
     },
     chooseFile: "Datei w\u00e4hlen",
     orPaste: "oder unten einf\u00fcgen",
@@ -113,6 +115,12 @@ export default {
         "F\u00fcgen Sie unten ein MJML-Dokument ein. Von Templatical erzeugtes MJML wird exakt zur\u00fcckgelesen; handgeschriebenes MJML deckt die g\u00e4ngigen Tags ab und f\u00e4llt f\u00fcr den Rest auf HTML-Bl\u00f6cke zur\u00fcck.",
       emptyError:
         "F\u00fcgen Sie Ihren MJML-Quelltext ein oder laden Sie eine Datei hoch.",
+    },
+    topol: {
+      description:
+        'F\u00fcgen Sie unten ein Topol-Design-JSON ein. Wenn Sie es \u00fcber die Topol-API abgerufen haben, f\u00fcgen Sie das Feld "json" der Antwort ein, nicht die gesamte Antwort.',
+      emptyError:
+        "F\u00fcgen Sie Ihr Topol-Design-JSON ein oder laden Sie eine Datei hoch.",
     },
   },
   mergeTagModal: {
@@ -314,6 +322,7 @@ export default {
     unlayerJsonContent: "Unlayer-JSON-Inhalt",
     htmlSourceContent: "HTML-Quelltext-Inhalt",
     mjmlSourceContent: "MJML-Quelltext-Inhalt",
+    topolSourceContent: "Topol-Design-JSON-Inhalt",
     selectLanguage: "Sprache auswählen",
     selectSdkLanguage: "SDK-Sprache auswählen",
     selectTheme: "Farbschema auswählen",

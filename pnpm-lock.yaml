@@ -297,6 +297,9 @@ importers:
       '@templatical/import-mjml':
         specifier: workspace:*
         version: link:../../packages/import-mjml
+      '@templatical/import-topol':
+        specifier: workspace:*
+        version: link:../../packages/import-topol
       '@templatical/import-unlayer':
         specifier: workspace:*
         version: link:../../packages/import-unlayer
