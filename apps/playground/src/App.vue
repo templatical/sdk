@@ -1201,6 +1201,21 @@ async function initEditor(): Promise<void> {
   try {
     editor.value = await init({
       container: editorContainer.value,
+      // The capability registry spread comes FIRST, so every key this app sets
+      // explicitly below wins over it. A later key in an object literal beats
+      // an earlier one regardless of which is a spread, and the registry grows
+      // a key each time a capability is ported — so with the spread last, the
+      // act of registering a capability would silently take over whichever
+      // key this app resolves itself. That already happened once: registering
+      // the shadow-dom capability overrode this app's own URL-param mount-mode
+      // resolution, which every `chromium-light` e2e depends on.
+      //
+      // This app is the route being replaced, not the one being built: it must
+      // keep behaving exactly as it did until plan 6 deletes it, and the shell
+      // at `#capabilities` is what demonstrates the registry. Position, not
+      // per-key placement, is what keeps that true as the registry fills up.
+      // Locked by `tests/app-config-precedence.test.ts`.
+      ...buildAllCapabilityConfig(readControlState(), currentTemplateOption),
       ...currentSerializableConfig,
       mergeTags: {
         ...currentSerializableConfig.mergeTags,
@@ -1218,23 +1233,9 @@ async function initEditor(): Promise<void> {
       uiTheme: uiTheme.value,
       locale: sdkLocale.value,
       onRequestMedia: enableRequestMedia.value ? requestMedia : undefined,
-      // Every registered capability is always on in the playground, and every
-      // one is backend-free: saved blocks and templates persist to
-      // localStorage in this browser profile, version history records a
-      // version on every template save, and comments stores one thread array
-      // per template. So the whole OSS surface is exercised on every run with
-      // no real API behind it. Autosave is opt-in via the templates.autoSave
-      // control, because a demo that saves by itself hides what the Save
-      // button does. Each capability builds its own provider via `implFor`.
-      ...buildAllCapabilityConfig(readControlState(), currentTemplateOption),
-      // `shadowDom` is placed AFTER the registry spread on purpose: the
-      // shadow-dom capability also contributes a `shadowDom` key (its own
-      // control, defaulting to the SDK's own default), and a later key in the
-      // same object literal wins over an earlier one regardless of which is a
-      // spread. This app resolves its own mount mode from the URL param and
-      // `tpl-playground-shadow-mode` (see `resolveInitialShadowMode` above),
-      // and that resolution must stay authoritative here — the e2e mode
-      // matrix pins the URL param and would otherwise always mount shadow.
+      // Resolved from the URL param and `tpl-playground-shadow-mode` (see
+      // `resolveInitialShadowMode` above). The e2e mode matrix pins the URL
+      // param, so this resolution has to stay authoritative here.
       shadowDom,
       // Also always on, and also backend-free — the provider fakes delivery so
       // the send/success/error path is exercisable on every template.
