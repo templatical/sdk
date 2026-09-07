@@ -1,6 +1,8 @@
 import { createDefaultTemplateContent } from "@templatical/types";
 import type { Block, TemplateContent } from "@templatical/types";
 import { readGlobalStyle } from "./global-style";
+import { buildSection } from "./section-builder";
+import type { MapContext } from "./block-mapper";
 import type {
   ImportReport,
   ImportReportEntry,
@@ -56,6 +58,17 @@ export function convertTopolTemplate(
   const blocks: Block[] = [];
 
   const style = readGlobalStyle(topolDesign, container, warnings);
+
+  const ctx: MapContext = {
+    style,
+    columnWidth: style.settings.width,
+    warnings,
+  };
+
+  for (const child of container?.children ?? []) {
+    if (child.tagName !== "mj-section") continue;
+    blocks.push(...buildSection(child, ctx, entries));
+  }
 
   if (blocks.length === 0) {
     warnings.push(EMPTY_DESIGN_WARNING);

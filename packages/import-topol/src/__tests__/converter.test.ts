@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { SectionBlock, SocialIconsBlock } from "@templatical/types";
 import { convertTopolTemplate } from "../converter";
+import { NEWSLETTER } from "./fixtures/newsletter";
 
 const EMPTY_DESIGN = {
   tagName: "mj-global-style",
@@ -69,5 +71,89 @@ describe("convertTopolTemplate input guards", () => {
     expect(content.settings.fontFamily).toBe("Arial");
     expect(content.settings.textColor).toBe("#1a1a1a");
     expect("preheaderText" in content.settings).toBe(false);
+  });
+});
+
+describe("convertTopolTemplate end to end", () => {
+  it("reads settings from the global style and the container", () => {
+    const { content } = convertTopolTemplate(NEWSLETTER);
+    expect(content.settings.width).toBe(600);
+    expect(content.settings.backgroundColor).toBe("#f4f4f4");
+    expect(content.settings.textColor).toBe("#222222");
+    expect(content.settings.fontFamily).toBe("Ubuntu");
+    expect(content.settings.linkColor).toBe("#0055ff");
+  });
+
+  it("produces one top-level block per section", () => {
+    const { content } = convertTopolTemplate(NEWSLETTER);
+    expect(content.blocks.map((b) => b.type)).toEqual([
+      "section",
+      "section",
+      "section",
+    ]);
+  });
+
+  it("fills the first section's single column in document order", () => {
+    const { content } = convertTopolTemplate(NEWSLETTER);
+    const first = content.blocks[0] as SectionBlock;
+    expect(first.columns).toBe("1");
+    expect(first.children[0].map((b) => b.type)).toEqual([
+      "title",
+      "paragraph",
+      "image",
+    ]);
+  });
+
+  it("folds the four-column section to three and reports it", () => {
+    const { content, report } = convertTopolTemplate(NEWSLETTER);
+    const third = content.blocks[2] as SectionBlock;
+    expect(third.columns).toBe("3");
+    expect(third.children).toHaveLength(3);
+    const approximated = report.entries.filter(
+      (e) => e.status === "approximated",
+    );
+    expect(approximated.some((e) => e.sourceTag === "mj-section")).toBe(true);
+  });
+
+  it("imports only the social platforms named in display", () => {
+    const { content } = convertTopolTemplate(NEWSLETTER);
+    const third = content.blocks[2] as SectionBlock;
+    const social = third.children[2].find(
+      (b) => b.type === "social",
+    ) as SocialIconsBlock;
+    expect(social.icons.map((i) => i.platform)).toEqual([
+      "facebook",
+      "twitter",
+    ]);
+  });
+
+  it("summarises the report with no entry for containers or columns", () => {
+    const { report } = convertTopolTemplate(NEWSLETTER);
+    expect(report.entries.filter((e) => e.sourceTag === "mj-column")).toEqual(
+      [],
+    );
+    expect(
+      report.entries.filter((e) => e.sourceTag === "mj-container"),
+    ).toEqual([]);
+    expect(
+      report.entries.filter((e) => e.sourceTag === "mj-global-style"),
+    ).toEqual([]);
+    // Three sections + 3 + 2 + 2 leaves. Counted by hand from the fixture —
+    // never assert `summary.total === entries.length`, which is how `total` is
+    // computed and so can never fail.
+    expect(report.summary).toEqual({
+      total: 10,
+      converted: 9,
+      approximated: 1,
+      htmlFallback: 0,
+      skipped: 0,
+    });
+  });
+
+  it("warns once about the dropped document line-height", () => {
+    const { report } = convertTopolTemplate(NEWSLETTER);
+    expect(report.warnings).toEqual([
+      "Dropped the document line-height (1.6) — Templatical has no document-level line-height setting.",
+    ]);
   });
 });
