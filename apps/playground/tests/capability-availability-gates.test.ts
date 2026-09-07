@@ -83,8 +83,13 @@ const GATED_CAPABILITY_IDS = [
  * whatever `theme` or `locale` resolve to. Listed here, beside
  * `GATED_CAPABILITY_IDS`, so the registry-pairing case below still accounts
  * for every registered id rather than only the gated ones.
+ *
+ * `render` belongs here for a related but distinct reason: it is not a
+ * feature with an editor-side affordance at all, gated or otherwise — it is
+ * a capability of `editor.toMjml()`/`toHtml()`, called by whoever holds the
+ * editor instance, not by a trigger the editor renders.
  */
-const BACKEND_FREE_CAPABILITY_IDS = ["shadow-dom", "i18n"];
+const BACKEND_FREE_CAPABILITY_IDS = ["shadow-dom", "i18n", "render"];
 
 /**
  * Every capability whose editor-side feature composable can be constructed
@@ -234,6 +239,11 @@ describe("every capability's editor-side availability gate is satisfied by the s
 
   it("i18n has no editor-side availability gate: it wraps no provider", () => {
     const def = capabilityById("i18n")!;
+    expect(def.implFor).toBeUndefined();
+  });
+
+  it("render has no editor-side availability gate: it is not a feature with an affordance, it is a capability of toMjml()/toHtml()", () => {
+    const def = capabilityById("render")!;
     expect(def.implFor).toBeUndefined();
   });
 });

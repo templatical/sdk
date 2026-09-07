@@ -88,6 +88,7 @@ import {
 import { buildAllCapabilityConfig } from "@/config/capabilities";
 import { readControlState } from "@/config/state";
 import { PLAYGROUND_USER } from "@/providers/identity";
+import { compileMjmlDemo, mjmlWarnings } from "@/providers/render";
 import { SCRATCH_TEMPLATE_NAME } from "@/providers/template-name";
 import { testEmailProvider } from "@/providers/test-email";
 const { locale, t } = usePlaygroundI18n();
@@ -1392,58 +1393,19 @@ const exportFilename: Record<ExportTab, { name: string; mime: string }> = {
   json: { name: "email-template.json", mime: "application/json" },
 };
 
-/**
- * Whatever the last `compileMjml` call reported. Stashed rather than returned
- * because `RenderProvider.compileMjml` resolves to HTML — a real backend would
- * put warnings in its response body; the demo has nowhere else to put them.
- */
-const lastMjmlWarnings = ref<string[]>([]);
-
-/**
- * Demo `render.compileMjml`: MJML in, HTML out.
- *
- * This is the **cheap tier** of the render provider, and the whole reason the
- * contract has three methods. The playground has no backend at all — it compiles
- * in the browser with `mjml-browser` — yet wiring up this one function is enough
- * for `editor.toHtml()` to work, because the SDK still renders the MJML itself.
- * A non-Node backend does the same thing with any mjml2html endpoint instead of
- * standing up a Node sidecar to understand the block model.
- */
-async function compileMjmlDemo(mjml: string): Promise<string> {
-  const mod = (await import("mjml-browser")) as unknown as {
-    default: unknown;
-  };
-  type Mjml2Html = (
-    mjml: string,
-    options?: { validationLevel?: "strict" | "soft" | "skip" },
-  ) => Promise<{
-    html: string;
-    errors: { formattedMessage?: string; message: string }[];
-  }>;
-  const mjml2html: Mjml2Html =
-    typeof mod.default === "function"
-      ? (mod.default as Mjml2Html)
-      : ((mod.default as { default: Mjml2Html }).default as Mjml2Html);
-  const result = await mjml2html(mjml, { validationLevel: "soft" });
-  lastMjmlWarnings.value = (result.errors ?? []).map(
-    (e) => e.formattedMessage ?? e.message,
-  );
-  return result.html ?? "";
-}
-
 async function compileExportHtml(): Promise<void> {
   if (!editor.value || exportHtml.value || exportHtmlLoading.value) return;
   exportHtmlLoading.value = true;
   exportHtmlError.value = "";
   exportHtmlMjmlErrors.value = [];
-  lastMjmlWarnings.value = [];
+  mjmlWarnings.value = [];
   try {
     // `toHtml()` — not a local mjml2html call. It renders MJML through the SDK,
     // then hands it to `render.compileMjml` above. Rejects with an explanatory
     // error if the `render` provider is ever dropped, since there is no local HTML
     // path.
     exportHtml.value = await editor.value.toHtml();
-    exportHtmlMjmlErrors.value = lastMjmlWarnings.value;
+    exportHtmlMjmlErrors.value = mjmlWarnings.value;
   } catch (e) {
     exportHtmlError.value = e instanceof Error ? e.message : String(e);
   } finally {

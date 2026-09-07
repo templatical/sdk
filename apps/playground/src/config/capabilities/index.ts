@@ -13,6 +13,7 @@ import { templatesCapability } from "./templates";
 import { versionHistoryCapability } from "./version-history";
 import { commentsCapability } from "./comments";
 import { testEmailCapability } from "./test-email";
+import { renderCapability } from "./render";
 import { shadowDomCapability } from "./shadow-dom";
 import { i18nCapability } from "./i18n";
 
@@ -22,6 +23,7 @@ export const capabilities: AnyCapabilityDef[] = [
   versionHistoryCapability,
   commentsCapability,
   testEmailCapability,
+  renderCapability,
   shadowDomCapability,
   i18nCapability,
 ];

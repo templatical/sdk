@@ -977,17 +977,12 @@ test.describe("capability drawer", () => {
 
   /**
    * The Export tab is not capability-specific — any page's drawer carries it
-   * — so this drives it from an unrelated capability's page.
-   *
-   * `render` is not yet a registered capability at this point in the plan
-   * (that is the next task), so the shell passes no `render` key at all.
-   * `toMjml()` still succeeds — it renders locally through the bundled
-   * `@templatical/renderer`, with no `render` provider involved — while
-   * `toHtml()` rejects with the SDK's own message, because there is no local
-   * HTML path without one. This asserts exactly that state, not the
-   * HTML-present state a later `render` capability produces.
+   * — so this drives it from an unrelated capability's page. Every page's
+   * config carries the WHOLE registry (`buildAllCapabilityConfig` folds every
+   * registered capability regardless of which one is active), so `render` is
+   * present here too, `compileMjml` defaults on, and `toHtml()` succeeds.
    */
-  test("Export tab renders MJML locally and names the missing render provider for HTML", async ({
+  test("Export tab renders both MJML and HTML from the live editor", async ({
     page,
   }) => {
     await page.goto("/#capabilities/saved-blocks");
@@ -998,15 +993,55 @@ test.describe("capability drawer", () => {
     await page.locator(SELECTORS.exportRun).click();
 
     await expect(page.locator(SELECTORS.exportMjml)).toContainText("<mjml");
+    // Case-insensitive: `mjml-browser`'s doctype casing is its own business,
+    // not this test's.
+    await expect(page.locator(SELECTORS.exportHtml)).toContainText(
+      /<!doctype html/i,
+    );
+    await expect(page.locator(SELECTORS.exportError)).toHaveCount(0);
+  });
+
+  /**
+   * The render capability's own page — the money demo: toggling
+   * `render.compileMjml` off proves the two export paths are independent.
+   * MJML keeps rendering locally through the SDK's own renderer regardless of
+   * the control; HTML alone depends on it, and fails with the SDK's own
+   * message once it is gone.
+   */
+  test("render: toggling compileMjml off fails HTML while MJML keeps rendering", async ({
+    page,
+  }) => {
+    await page.goto("/#capabilities/render");
+    const exportTab = page.locator(SELECTORS.capabilityDrawerTab, {
+      hasText: "Export",
+    });
+
+    await exportTab.click();
+    await page.locator(SELECTORS.exportRun).click();
+    await expect(page.locator(SELECTORS.exportHtml)).toContainText(
+      /<!doctype html/i,
+    );
+
+    await page
+      .locator(SELECTORS.capabilityDrawerTab, { hasText: "Controls" })
+      .click();
+    await page
+      .locator(controlByPath("render.compileMjml"))
+      .locator(SELECTORS.capabilityControlInput)
+      .uncheck();
+
+    // The control change re-inits the editor into a new instance, and
+    // switching tabs remounts `ExportPane` fresh — so Export must be
+    // re-opened and re-run, not merely re-read.
+    await exportTab.click();
+    await page.locator(SELECTORS.exportRun).click();
+
+    await expect(page.locator(SELECTORS.exportMjml)).toContainText("<mjml");
+    await expect(page.locator(SELECTORS.exportHtml)).toHaveText("");
     // Rendered verbatim, not paraphrased — the SDK's own words for what is
     // missing.
     await expect(page.locator(SELECTORS.exportError)).toContainText(
       "does not bundle an MJML compiler",
-    );
-    // A `toHtml()` rejection must not clear the `toMjml()` output that already
-    // succeeded, and must not fabricate HTML of its own.
-    await expect(page.locator(SELECTORS.exportHtml)).not.toContainText(
-      "<!doctype html",
     );
   });
 });
