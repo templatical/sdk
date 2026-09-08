@@ -88,6 +88,51 @@ test.describe("Link dialog merge tags", () => {
     expect(topmost).toBe("popup");
   });
 
+  // A picker opened FROM the dialog is strictly above it in the interaction
+  // stack, but both are `z-index: auto` inside `.tpl-popover-root` (one
+  // stacking context), so paint order is teleport-anchor order. The picker
+  // modals mount with the editor; the dialog's Teleport mounts later, when the
+  // paragraph enters edit mode — so the dialog's anchor comes last and it
+  // covers the very picker it opened.
+  //
+  // The logic picker stands in for both: it and the merge tag picker are the
+  // same `TplModal`, and the playground's default config routes the merge tag
+  // button to its own `onRequest` modal rather than the SDK picker.
+  //
+  // Hit-tested, not z-index-compared: `auto` reads as 0, so any number would
+  // pass for the wrong reason.
+  test("paints a picker modal above the dialog that opened it", async ({
+    editorReady: { editorPage },
+    page,
+  }) => {
+    await openLinkDialog(editorPage, page);
+
+    await page
+      .locator(SELECTORS.linkDialog)
+      .getByRole("button", { name: "Insert logic", exact: true })
+      .click();
+
+    const modal = page.locator(SELECTORS.logicPickerModal);
+    await expect(modal).toBeVisible();
+
+    const box = (await modal.boundingBox())!;
+    const topmost = await page.evaluate(
+      ([x, y]) => {
+        let el = document.elementFromPoint(Number(x), Number(y));
+        while (el?.shadowRoot) {
+          const inner = el.shadowRoot.elementFromPoint(Number(x), Number(y));
+          if (!inner || inner === el) break;
+          el = inner;
+        }
+        if (el?.closest("[data-testid='logic-picker-modal']")) return "picker";
+        if (el?.closest("[data-testid='link-dialog']")) return "link-dialog";
+        return el?.tagName ?? "none";
+      },
+      [box.x + box.width / 2, box.y + box.height / 2],
+    );
+    expect(topmost).toBe("picker");
+  });
+
   test("keeps the paragraph in edit mode while the picker modal is open", async ({
     editorReady: { editorPage },
     page,

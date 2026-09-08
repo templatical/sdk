@@ -226,6 +226,7 @@ export const SELECTORS = {
 
   // Built-in merge tag picker (SDK)
   mergeTagPickerModal: '[data-testid="merge-tag-picker-modal"]',
+  logicPickerModal: '[data-testid="logic-picker-modal"]',
   mergeTagPickerSearch: '[data-testid="merge-tag-picker-search"]',
   mergeTagPickerList: '[data-testid="merge-tag-picker-list"]',
   mergeTagPickerItem: '[data-testid="merge-tag-picker-item"]',

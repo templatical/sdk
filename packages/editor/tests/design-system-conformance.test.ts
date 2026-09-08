@@ -86,10 +86,20 @@ describe("design system conformance", () => {
      * around it with literal z-index values rather than the scale.
      *
      * The rule is to write a number Tailwind emits (`tpl:z-50`, `tpl:z-[100]`)
-     * or nothing at all. Nothing at all is the right answer inside
-     * `.tpl-popover-root`: it is one stacking context, so DOM order decides and
-     * a number there can only create ties — giving the link dialog a real
-     * `10000` puts the merge-tag suggestion popup (inline 9999) behind it.
+     * or nothing at all.
+     *
+     * Inside `.tpl-popover-root` the answer is usually nothing: it is one
+     * stacking context, so DOM order decides and a large number only creates
+     * ties — giving the link dialog a real `10000` puts the merge-tag
+     * suggestion popup (inline 9999) behind it, measured.
+     *
+     * `TplModal` is the exception, and the reason "usually" is not "always":
+     * within that context, paint order is teleport-anchor order, and a modal's
+     * anchor is established when the editor mounts while a link dialog's is
+     * established later, on entering edit mode. So a picker opened FROM the
+     * dialog rendered behind it until `TplModal` took a small real `z-10`.
+     * Ordering that DOM order gets wrong is what earns a number here — never
+     * "raise it until it looks right".
      */
     it("no named z-index utilities — they compile to nothing", () => {
       expect(
