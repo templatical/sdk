@@ -1,5 +1,11 @@
 # @templatical/import-mjml
 
+## 0.34.0
+
+### Patch Changes
+
+- @templatical/types@0.34.0
+
 ## 0.33.0
 
 ### Patch Changes
