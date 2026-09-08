@@ -1,5 +1,6 @@
 import type { CheerioAPI, Cheerio } from "cheerio";
-import type { Element } from "domhandler";
+import { isTag } from "domhandler";
+import type { AnyNode, Element } from "domhandler";
 import {
   createSectionBlock,
   createButtonBlock,
@@ -9,7 +10,9 @@ import type { Block, ColumnLayout } from "@templatical/types";
 import {
   convertElement,
   convertHtmlFallback,
+  convertInlineRun,
   isButtonCell,
+  isInlineContent,
   isSpacerCell,
   looksLikeButton,
 } from "./block-mapper";
@@ -181,9 +184,39 @@ function extractCellBlocks(
     return blocks;
   }
 
-  for (const childEl of childEls) {
-    const $child = $(childEl) as unknown as Cheerio<Element>;
-    const tag = childEl.tagName?.toLowerCase() ?? "";
+  // Walked as child *nodes*, not child elements. A bare text node between two
+  // elements is content, and a walk over `children()` never visits it — so
+  // `Hello<br>World` loses both words while emitting a block holding nothing
+  // but `<br>`. Consecutive inline nodes therefore accumulate into one run and
+  // become a single paragraph, which is what makes a bare line agree with the
+  // same line wrapped in a `<p>`.
+  let inlineRun: AnyNode[] = [];
+
+  const flushInlineRun = () => {
+    if (inlineRun.length === 0) return;
+    const run = inlineRun;
+    inlineRun = [];
+    const r = convertInlineRun(run, $cell, $);
+    if (r) {
+      entries.push(r.entry);
+      blocks.push(r.block);
+    }
+  };
+
+  for (const node of $cell.contents().toArray()) {
+    if (isInlineContent(node)) {
+      inlineRun.push(node);
+      continue;
+    }
+    // Comments and processing instructions carry no content, and must not end
+    // the run either: a merge-tag comment sitting mid-sentence would otherwise
+    // split one line into two paragraphs.
+    if (!isTag(node)) continue;
+
+    flushInlineRun();
+
+    const $child = $(node) as unknown as Cheerio<Element>;
+    const tag = node.tagName.toLowerCase();
 
     if (tag === "table") {
       const inner = processTable($child, $, entries, warnings, true);
@@ -206,6 +239,8 @@ function extractCellBlocks(
       blocks.push(r.block);
     }
   }
+
+  flushInlineRun();
 
   return blocks;
 }

@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   convertElement,
   convertHtmlFallback,
+  convertInlineRun,
   isButtonCell,
+  isInlineContent,
   isSpacerCell,
   looksLikeButton,
 } from "../block-mapper";
@@ -14,6 +16,13 @@ function firstEl(html: string, selector: string) {
   const $ = load(html);
   const $el = $(selector).first() as unknown as Cheerio<Element>;
   return { $, $el };
+}
+
+/** The child nodes of a `<td>`, text nodes and comments included. */
+function cellNodes(inner: string, cellAttrs = "") {
+  const $ = load(`<table><tr><td ${cellAttrs}>${inner}</td></tr></table>`);
+  const $cell = $("td").first() as unknown as Cheerio<Element>;
+  return { $, $cell, nodes: $cell.contents().toArray() };
 }
 
 describe("convertElement — headings", () => {
@@ -566,5 +575,121 @@ describe("isButtonCell", () => {
       "td",
     );
     expect(isButtonCell($el, $).match).toBe(false);
+  });
+});
+
+describe("isInlineContent", () => {
+  it("reads a bare text node as inline content", () => {
+    const { nodes } = cellNodes("just text");
+    expect(nodes.map(isInlineContent)).toEqual([true]);
+  });
+
+  it("reads every inline formatting tag as inline content", () => {
+    const { nodes } = cellNodes(
+      "<br><em>e</em><strong>s</strong><i>i</i><b>b</b><u>u</u>" +
+        "<small>sm</small><sub>sb</sub><sup>sp</sup>",
+    );
+    expect(nodes.map((node) => (node as Element).tagName)).toEqual([
+      "br",
+      "em",
+      "strong",
+      "i",
+      "b",
+      "u",
+      "small",
+      "sub",
+      "sup",
+    ]);
+    expect(nodes.map(isInlineContent)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
+  });
+
+  it("excludes <a>, which maps to a button or a paragraph of its own", () => {
+    const { nodes } = cellNodes('<a href="https://x.test/go">link</a>');
+    expect(nodes.map(isInlineContent)).toEqual([false]);
+  });
+
+  it("excludes block-producing and unknown elements", () => {
+    const { nodes } = cellNodes(
+      "<p>p</p><div>d</div><span>s</span><h2>h</h2>" +
+        '<img src="https://x.test/a.jpg"><hr><table></table><marquee>m</marquee>',
+    );
+    expect(nodes.map(isInlineContent)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it("excludes a comment node", () => {
+    const { nodes } = cellNodes("<!-- *|IF:X|* -->");
+    expect(nodes.map((node) => node.type)).toEqual(["comment"]);
+    expect(nodes.map(isInlineContent)).toEqual([false]);
+  });
+});
+
+describe("convertInlineRun", () => {
+  it("builds one paragraph from a run, styled by the cell that holds it", () => {
+    const { $, $cell, nodes } = cellNodes(
+      "Lead <strong>copy</strong>",
+      'style="padding:8px 12px;color:#ff0000;font-size:22px;text-align:right"',
+    );
+    const r = convertInlineRun(nodes, $cell, $);
+    expect(r).not.toBeNull();
+    expect(r!.entry).toEqual({
+      sourceTag: "td",
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    });
+    if (r!.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    // The run's own markup survives inside the wrapping <p>; the cell's
+    // colour, size and alignment are what style it.
+    expect(r!.block.content).toBe(
+      '<p style="text-align: right">' +
+        '<span style="font-size: 22px; color: #ff0000">' +
+        "Lead <strong>copy</strong>" +
+        "</span></p>",
+    );
+    expect(r!.block.styles.padding).toEqual({
+      top: 8,
+      right: 12,
+      bottom: 8,
+      left: 12,
+    });
+  });
+
+  it("keeps a line break inside the paragraph rather than beside it", () => {
+    const { $, $cell, nodes } = cellNodes("Hello<br>World");
+    const r = convertInlineRun(nodes, $cell, $)!;
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toBe("<p>Hello<br>World</p>");
+  });
+
+  it("reports the cell's own tag, so a <th> is not reported as a <td>", () => {
+    const $ = load("<table><tr><th>Header <em>copy</em></th></tr></table>");
+    const $cell = $("th").first() as unknown as Cheerio<Element>;
+    const r = convertInlineRun($cell.contents().toArray(), $cell, $)!;
+    expect(r.entry.sourceTag).toBe("th");
+  });
+
+  it("returns null for a run carrying no text", () => {
+    const { $, $cell, nodes } = cellNodes("&nbsp;<br><br>");
+    expect(convertInlineRun(nodes, $cell, $)).toBeNull();
   });
 });

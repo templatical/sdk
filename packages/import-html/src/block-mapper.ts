@@ -1,4 +1,5 @@
 import type { CheerioAPI, Cheerio } from "cheerio";
+import { isTag, isText } from "domhandler";
 import type { Element, AnyNode } from "domhandler";
 import {
   createTitleBlock,
@@ -24,6 +25,34 @@ import {
 
 const HEADING_TAGS = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
 const TEXT_TAGS = new Set(["p", "span", "div"]);
+
+/**
+ * Inline formatting tags, which carry no block of their own. One of these
+ * reaching a block position means the parent's text extraction stopped short —
+ * it does not mean the element has no mapping, so it must never fall through
+ * to the html-fallback arm.
+ *
+ * The hazard that keeps them listed here: a cell's inline markup and the bare
+ * text nodes around it are one run of rich text. Dispatching an inline element
+ * on its own emits a block whose entire content is `<br>` AND deletes every
+ * text node beside it, because a walk over element children never visits
+ * those. That is silent content loss — text visible in the source email never
+ * reaches the template.
+ *
+ * `a` is excluded on purpose: it maps to a button or to an approximated
+ * paragraph of its own, so folding it into a run would drop a link.
+ */
+const INLINE_FORMATTING_TAGS = new Set([
+  "br",
+  "em",
+  "strong",
+  "i",
+  "b",
+  "u",
+  "small",
+  "sub",
+  "sup",
+]);
 
 function emptyPadding(): SpacingValue {
   return { top: 0, right: 0, bottom: 0, left: 0 };
@@ -113,11 +142,13 @@ function applyTextAlignToParagraphs(html: string, textAlign: string): string {
 }
 
 /**
- * Paragraph or block-level text container → Paragraph block.
+ * Builds a Paragraph block from a fragment of inline markup, styled by the
+ * element that supplied `styles`.
  */
-function convertParagraph($el: Cheerio<Element>): Block {
-  const styles = getStyles($el);
-  const innerHtml = getInnerHtml($el);
+function buildParagraph(
+  innerHtml: string,
+  styles: Record<string, string>,
+): Block {
   const wrapped = ensureParagraphWrapped(innerHtml);
 
   // Apply container-level styles to the wrapping <p>.
@@ -150,6 +181,55 @@ function convertParagraph($el: Cheerio<Element>): Block {
       padding: readPaddingFromStyles(styles),
     },
   });
+}
+
+/**
+ * Paragraph or block-level text container → Paragraph block.
+ */
+function convertParagraph($el: Cheerio<Element>): Block {
+  return buildParagraph(getInnerHtml($el), getStyles($el));
+}
+
+/**
+ * Decides whether a child node of a table cell belongs to a run of inline
+ * text rather than to a block of its own: a bare text node, or one of the
+ * inline formatting tags.
+ */
+export function isInlineContent(node: AnyNode): boolean {
+  if (isText(node)) return true;
+  return isTag(node) && INLINE_FORMATTING_TAGS.has(node.tagName.toLowerCase());
+}
+
+/**
+ * Converts a run of consecutive inline nodes lifted out of a table cell into
+ * one Paragraph block, keeping their markup inside the paragraph's content.
+ *
+ * `$cell` supplies the styling: a bare run has no element of its own to read
+ * a colour, size or alignment from, and table-based email puts all three on
+ * the cell.
+ *
+ * Returns `null` for a run carrying no text — a cell holding nothing but
+ * `&nbsp;` and `<br>` has no content, the same reading `convertElement`
+ * gives an empty `<p>`.
+ */
+export function convertInlineRun(
+  nodes: AnyNode[],
+  $cell: Cheerio<Element>,
+  $: CheerioAPI,
+): { block: Block; entry: ImportReportEntry } | null {
+  const text = nodes.map((node) => $(node).text()).join("");
+  if (!text.trim()) return null;
+
+  const html = nodes.map((node) => $.html(node)).join("");
+
+  return {
+    block: buildParagraph(html, getStyles($cell)),
+    entry: {
+      sourceTag: tagOf($cell[0]),
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    },
+  };
 }
 
 /**

@@ -36,6 +36,28 @@ function runTable(
   return { blocks, entries, warnings };
 }
 
+/** Content-bearing blocks, with a section replaced by its column children. */
+function leaves(blocks: Block[]): Block[] {
+  return blocks.flatMap((block) =>
+    block.type === "section" ? block.children.flat() : [block],
+  );
+}
+
+/** Wraps `inner` in a single-cell layout table and returns the cell's blocks. */
+function runCell(
+  inner: string,
+  cellAttrs = "",
+): {
+  blocks: Block[];
+  entries: ImportReportEntry[];
+  warnings: string[];
+} {
+  const r = runTable(
+    `<table role="presentation"><tr><td ${cellAttrs}>${inner}</td></tr></table>`,
+  );
+  return { ...r, blocks: leaves(r.blocks) };
+}
+
 describe("processTable — nested layout table flattens into parent column", () => {
   it("a 2-level nested table with an image flattens into the parent cell column", () => {
     const { content } = convertHtmlTemplate(fixture("nested-table.html"));
@@ -169,5 +191,214 @@ describe("processTable — data table preserved as HTML fallback", () => {
     );
     expect(blocks).toEqual([]);
     expect(entries).toEqual([]);
+  });
+});
+
+describe("extractCellBlocks — inline formatting stays in the text around it", () => {
+  it("keeps both words of Hello<br>World in one paragraph, with no html block", () => {
+    const { blocks, entries } = runCell("Hello<br>World");
+
+    expect(blocks.some((b) => b.type === "html")).toBe(false);
+    expect(blocks.map((b) => b.type)).toEqual(["paragraph"]);
+    const para = blocks[0];
+    if (para.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(para.content).toBe("<p>Hello<br>World</p>");
+    expect(entries).toEqual([
+      {
+        sourceTag: "td",
+        templaticalBlockType: "paragraph",
+        status: "converted",
+      },
+    ]);
+  });
+
+  it("keeps <em> markup and the text on both sides of it", () => {
+    const { blocks } = runCell("Plain <em>emph</em> tail");
+
+    expect(blocks.some((b) => b.type === "html")).toBe(false);
+    expect(blocks.map((b) => b.type)).toEqual(["paragraph"]);
+    const para = blocks[0];
+    if (para.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(para.content).toBe("<p>Plain <em>emph</em> tail</p>");
+  });
+
+  it("keeps <strong> markup and the text on both sides of it", () => {
+    const { blocks } = runCell("Plain <strong>bold</strong> tail");
+
+    expect(blocks.some((b) => b.type === "html")).toBe(false);
+    expect(blocks.map((b) => b.type)).toEqual(["paragraph"]);
+    const para = blocks[0];
+    if (para.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(para.content).toBe("<p>Plain <strong>bold</strong> tail</p>");
+  });
+
+  it("gives the same paragraph whether or not the run is wrapped in a <p>", () => {
+    // The wrapped form already worked because `p` is in block-mapper's
+    // TEXT_TAGS, which captures the whole subtree. The bare form has to agree
+    // with it, or a template's fidelity depends on whether its author wrapped
+    // the line.
+    const bare = runCell("Plain <strong>bold</strong> tail");
+    const wrapped = runCell("<p>Plain <strong>bold</strong> tail</p>");
+
+    const bareBlock = bare.blocks[0];
+    const wrappedBlock = wrapped.blocks[0];
+    if (bareBlock.type !== "paragraph" || wrappedBlock.type !== "paragraph")
+      throw new Error("expected paragraph blocks");
+    expect(bareBlock.content).toBe(wrappedBlock.content);
+    expect(bareBlock.content).toBe("<p>Plain <strong>bold</strong> tail</p>");
+  });
+
+  it("keeps the prose that follows a heading and a line break", () => {
+    // The shape that carries most of the loss in real templates: a heading,
+    // a spacer <br>, then a bare paragraph of copy with no wrapper at all.
+    const { blocks, entries } = runCell(
+      "<h3>Kittens</h3><br>A kitten is a juvenile cat.",
+    );
+
+    expect(blocks.some((b) => b.type === "html")).toBe(false);
+    expect(blocks.map((b) => b.type)).toEqual(["title", "paragraph"]);
+    const para = blocks[1];
+    if (para.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(para.content).toBe("<p><br>A kitten is a juvenile cat.</p>");
+    expect(entries.map((e) => [e.sourceTag, e.status])).toEqual([
+      ["h3", "converted"],
+      ["td", "converted"],
+    ]);
+  });
+
+  it("flushes a run before the blocks of a table that interrupts it", () => {
+    const { blocks } = runCell(
+      "Lead copy" +
+        '<table role="presentation"><tr><td>' +
+        '<img src="https://x.test/n.jpg" alt="Nested" width="120">' +
+        "</td></tr></table>" +
+        "Trailing copy",
+    );
+
+    // Order matters: a run flushed late would print the lead copy after the
+    // image it introduces.
+    expect(blocks.map((b) => b.type)).toEqual([
+      "paragraph",
+      "image",
+      "paragraph",
+    ]);
+    const lead = blocks[0];
+    const trailing = blocks[2];
+    if (lead.type !== "paragraph" || trailing.type !== "paragraph")
+      throw new Error("expected paragraph blocks");
+    expect(lead.content).toBe("<p>Lead copy</p>");
+    expect(trailing.content).toBe("<p>Trailing copy</p>");
+  });
+
+  it("emits nothing for the whitespace between two elements", () => {
+    const { blocks, entries } = runCell("\n  <h3>Only</h3>\n  ");
+
+    expect(blocks.map((b) => b.type)).toEqual(["title"]);
+    expect(entries).toHaveLength(1);
+  });
+
+  it("emits nothing for a run of nbsp and line breaks", () => {
+    const { blocks, entries } = runCell("&nbsp;<br><br><h3>Only</h3>");
+
+    expect(blocks.map((b) => b.type)).toEqual(["title"]);
+    expect(entries.map((e) => e.sourceTag)).toEqual(["h3"]);
+  });
+
+  it("does not let a comment split a run", () => {
+    // Merge-tag comments sit mid-sentence all over real templates. The cell
+    // needs one element child so the walk runs at all — a cell with none
+    // takes the text-only path below.
+    const { blocks } = runCell("Before <!-- *|IF:X|* --> after <em>x</em>");
+
+    expect(blocks.map((b) => b.type)).toEqual(["paragraph"]);
+    const para = blocks[0];
+    if (para.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(para.content).toBe("<p>Before  after <em>x</em></p>");
+  });
+
+  it("still falls back to an html block for a genuinely unknown element", () => {
+    // The negative control on the fold: an element with no mapping must stay
+    // an html-fallback. Without this, widening the inline set would quietly
+    // swallow unsupported markup into a paragraph and report success.
+    const { blocks, entries } = runCell(
+      "Before <marquee>scroll</marquee> after",
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual([
+      "paragraph",
+      "html",
+      "paragraph",
+    ]);
+    const fallback = blocks[1];
+    if (fallback.type !== "html") throw new Error("expected html block");
+    expect(fallback.content).toContain("<marquee>scroll</marquee>");
+    expect(entries[1]).toEqual({
+      sourceTag: "marquee",
+      templaticalBlockType: "html",
+      status: "html-fallback",
+      note: 'Unknown element "marquee" preserved as HTML block.',
+    });
+  });
+
+  it("still approximates a plain inline anchor as its own paragraph", () => {
+    // The negative control on `a`: it is excluded from the inline set, so it
+    // keeps its own entry rather than folding into the run beside it.
+    const { blocks, entries } = runCell(
+      'Click <a href="https://x.test/go">here</a> now',
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual([
+      "paragraph",
+      "paragraph",
+      "paragraph",
+    ]);
+    const anchor = blocks[1];
+    if (anchor.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(anchor.content).toBe("<p>here</p>");
+    expect(entries[1]).toEqual({
+      sourceTag: "a",
+      templaticalBlockType: "paragraph",
+      status: "approximated",
+      note: "Inline anchor wrapped in a paragraph block.",
+    });
+  });
+
+  it("still converts a cell holding one styled anchor to a single button", () => {
+    // The other half of the `a` control: `isButtonCell` runs before any cell
+    // walk, so a styled CTA is still one button and the words around it are
+    // still dropped. Folding runs must not reach this path.
+    const { blocks, entries } = runCell(
+      'Click <a style="background:#ff0000;padding:8px 16px" ' +
+        'href="https://x.test/go">here</a> now',
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual(["button"]);
+    const button = blocks[0];
+    if (button.type !== "button") throw new Error("expected button block");
+    expect(button.text).toBe("here");
+    expect(button.url).toBe("https://x.test/go");
+    expect(button.backgroundColor).toBe("#ff0000");
+    expect(entries).toEqual([
+      { sourceTag: "td", templaticalBlockType: "button", status: "converted" },
+    ]);
+  });
+
+  it("still preserves a text-only cell as an html block", () => {
+    // A cell with no element children at all takes the text-only path, which
+    // reports the `<td>` itself. Structural, and owned by the deferred
+    // detection work in spec §7 — not by the inline fold.
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr><td>Just text</td></tr>' +
+        '<tr><td><img src="https://x.test/a.jpg"></td></tr></table>',
+    );
+
+    expect(leaves(blocks).map((b) => b.type)).toEqual(["html", "image"]);
+    expect(entries[0]).toEqual({
+      sourceTag: "td",
+      templaticalBlockType: "html",
+      status: "html-fallback",
+      note: 'Unknown element "td" preserved as HTML block.',
+    });
   });
 });
