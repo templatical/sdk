@@ -576,6 +576,80 @@ describe("isButtonCell", () => {
     );
     expect(isButtonCell($el, $).match).toBe(false);
   });
+
+  it("matches a styled cell whose entire text is the anchor's", () => {
+    const { $, $el } = firstEl(
+      '<table><tr><td style="background:#0b7285;padding:14px">' +
+        '<a href="https://events.test/claim">Claim your seat</a>' +
+        "</td></tr></table>",
+      "td",
+    );
+    const r = isButtonCell($el, $);
+    expect(r.match).toBe(true);
+    expect(r.anchor?.attr("href")).toBe("https://events.test/claim");
+  });
+
+  it("matches a styled cell whose text differs from the anchor's only by whitespace", () => {
+    // Nested tags and source indentation add whitespace that never renders,
+    // so the comparison normalises both sides.
+    const { $, $el } = firstEl(
+      '<table><tr><td style="padding:14px">\n  ' +
+        '<a href="https://events.test/claim">Claim\n  your seat</a>\n' +
+        "</td></tr></table>",
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(true);
+  });
+
+  it("does not classify a styled cell as a button when the anchor is a fragment of its prose", () => {
+    const { $, $el } = firstEl(
+      '<table><tr><td style="background:#0b7285;padding:14px">' +
+        'Read the <a href="https://legal.test/terms">terms</a> before you continue' +
+        "</td></tr></table>",
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(false);
+  });
+
+  it("does not classify an outer cell as a button when it wraps a nested button cell plus prose", () => {
+    // `find("a")` matches at any depth, so a callout cell holding copy and a
+    // nested CTA cell reaches the cell-styling arm too.
+    const { $, $el } = firstEl(
+      '<table><tr><td style="padding:14px">Callout copy about the offer' +
+        '<table><tr><td style="padding:10px">' +
+        '<a href="https://shop.test/buy">Purchase Now</a>' +
+        "</td></tr></table></td></tr></table>",
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(false);
+  });
+
+  it("does not classify a cell as a button when a self-styled anchor sits in its prose", () => {
+    // The anchor-styling arm carries the same whole-cell requirement: its own
+    // background says the link is a button, not that the link is the cell.
+    const { $, $el } = firstEl(
+      "<table><tr><td>Callout copy about the offer " +
+        '<a href="https://shop.test/buy" ' +
+        'style="background:#0b7285;padding:12px 20px">Purchase Now</a>' +
+        "</td></tr></table>",
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(false);
+  });
+
+  it("still matches an anchor carrying its own button styling in a whole-cell position", () => {
+    // Negative control for the anchor-styling arm: the whole-cell requirement
+    // must not stop a self-styled CTA being read as a button.
+    const { $, $el } = firstEl(
+      '<table><tr><td><a href="https://shop.test/buy" ' +
+        'style="background:#0b7285;padding:12px 20px;border-radius:9px">Purchase Now</a>' +
+        "</td></tr></table>",
+      "td",
+    );
+    const r = isButtonCell($el, $);
+    expect(r.match).toBe(true);
+    expect(r.anchor?.attr("href")).toBe("https://shop.test/buy");
+  });
 });
 
 describe("isInlineContent", () => {

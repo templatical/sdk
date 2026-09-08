@@ -364,23 +364,45 @@ describe("extractCellBlocks — inline formatting stays in the text around it", 
     });
   });
 
-  it("still converts a cell holding one styled anchor to a single button", () => {
-    // The other half of the `a` control: `isButtonCell` runs before any cell
-    // walk, so a styled CTA is still one button and the words around it are
-    // still dropped. Folding runs must not reach this path.
+  it("keeps the words around a self-styled anchor and still emits its button", () => {
+    // The other half of the `a` control. `isButtonCell` runs before any cell
+    // walk, and a cell reads as a button only when the link is its entire
+    // content — so this sentence takes the walk, the two bare text nodes
+    // become runs of their own, and the styled anchor is still a button.
     const { blocks, entries } = runCell(
       'Click <a style="background:#ff0000;padding:8px 16px" ' +
         'href="https://x.test/go">here</a> now',
     );
 
-    expect(blocks.map((b) => b.type)).toEqual(["button"]);
-    const button = blocks[0];
+    expect(blocks.map((b) => b.type)).toEqual([
+      "paragraph",
+      "button",
+      "paragraph",
+    ]);
+    const before = blocks[0];
+    if (before.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(before.content).toBe("<p>Click </p>");
+    const after = blocks[2];
+    if (after.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(after.content).toBe("<p> now</p>");
+    const button = blocks[1];
     if (button.type !== "button") throw new Error("expected button block");
     expect(button.text).toBe("here");
     expect(button.url).toBe("https://x.test/go");
     expect(button.backgroundColor).toBe("#ff0000");
     expect(entries).toEqual([
-      { sourceTag: "td", templaticalBlockType: "button", status: "converted" },
+      {
+        sourceTag: "td",
+        templaticalBlockType: "paragraph",
+        status: "converted",
+      },
+      { sourceTag: "a", templaticalBlockType: "button", status: "converted" },
+      {
+        sourceTag: "td",
+        templaticalBlockType: "paragraph",
+        status: "converted",
+      },
     ]);
   });
 
@@ -400,5 +422,81 @@ describe("extractCellBlocks — inline formatting stays in the text around it", 
       status: "html-fallback",
       note: 'Unknown element "td" preserved as HTML block.',
     });
+  });
+});
+
+describe("extractCellBlocks — a button cell is one whose whole content is the link", () => {
+  it("converts a padded cell holding nothing but the anchor to one button", () => {
+    const { blocks, entries } = runCell(
+      '<a href="https://events.test/claim">Claim your seat</a>',
+      'style="background:#0b7285;padding:14px;border-radius:9px;font-size:19px"',
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual(["button"]);
+    const button = blocks[0];
+    if (button.type !== "button") throw new Error("expected button block");
+    expect(button.text).toBe("Claim your seat");
+    expect(button.url).toBe("https://events.test/claim");
+    expect(button.backgroundColor).toBe("#0b7285");
+    expect(button.borderRadius).toBe(9);
+    expect(button.fontSize).toBe(19);
+    expect(entries).toEqual([
+      { sourceTag: "td", templaticalBlockType: "button", status: "converted" },
+    ]);
+  });
+
+  it("keeps the prose around an inline anchor in a padded cell", () => {
+    // The defect this guards: `buildCellButton` labels the button with the
+    // anchor's text and drops every other node in the cell, so reading a
+    // sentence as a button deletes the sentence.
+    const { blocks, entries } = runCell(
+      'Read the <a href="https://legal.test/terms">terms</a> before you continue',
+      'style="background:#0b7285;padding:14px"',
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual([
+      "paragraph",
+      "paragraph",
+      "paragraph",
+    ]);
+    const contents = blocks.map((block) =>
+      block.type === "paragraph" ? block.content : "",
+    );
+    expect(contents[1]).toBe("<p>terms</p>");
+    expect(contents.join(" ")).toContain("Read the");
+    expect(contents.join(" ")).toContain("before you continue");
+    expect(entries.map((e) => e.templaticalBlockType)).toEqual([
+      "paragraph",
+      "paragraph",
+      "paragraph",
+    ]);
+  });
+
+  it("keeps an outer cell's prose while the nested cell stays a button", () => {
+    const { blocks, entries } = runCell(
+      "Callout copy about the offer" +
+        '<table role="presentation"><tr><td style="background:#0b7285;padding:10px">' +
+        '<a href="https://shop.test/buy">Purchase Now</a>' +
+        "</td></tr></table>",
+      'style="padding:14px"',
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual(["paragraph", "button"]);
+    const prose = blocks[0];
+    if (prose.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(prose.content).toBe("<p>Callout copy about the offer</p>");
+    const button = blocks[1];
+    if (button.type !== "button") throw new Error("expected button block");
+    expect(button.text).toBe("Purchase Now");
+    expect(button.url).toBe("https://shop.test/buy");
+    expect(button.backgroundColor).toBe("#0b7285");
+    expect(entries).toEqual([
+      {
+        sourceTag: "td",
+        templaticalBlockType: "paragraph",
+        status: "converted",
+      },
+      { sourceTag: "td", templaticalBlockType: "button", status: "converted" },
+    ]);
   });
 });

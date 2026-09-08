@@ -397,8 +397,43 @@ export function isSpacerCell($el: Cheerio<Element>): boolean {
 }
 
 /**
- * Decides whether a `<td>` is a button container — i.e. has exactly one
- * `<a>` inside that itself looks like a button.
+ * Collapses every run of whitespace — `&nbsp;` included — to one space and
+ * trims. Source indentation and nested tags introduce whitespace that never
+ * renders, so a text comparison has to normalise both sides.
+ */
+function normalizeCellText(value: string): string {
+  return value.replace(/[\s\u00a0]+/g, " ").trim();
+}
+
+/**
+ * Whether the anchor *is* the cell rather than sitting inside its content.
+ *
+ * The hazard this guards: `buildCellButton` labels the button with the
+ * anchor's text and drops every other node in the cell, so classifying a
+ * sentence that merely contains a link as a button deletes the sentence. The
+ * constraint is that a cell only reads as a button when the link is its
+ * entire content — and `find("a")` matches at any depth, so an outer callout
+ * cell wrapping a real CTA reaches the same test.
+ */
+function isWholeCellAnchor(
+  $el: Cheerio<Element>,
+  $anchor: Cheerio<Element>,
+): boolean {
+  return (
+    normalizeCellText($el.text() ?? "") ===
+    normalizeCellText($anchor.text() ?? "")
+  );
+}
+
+/**
+ * Decides whether a `<td>` is a button container — i.e. its entire content is
+ * one `<a>`, styled as a button either on the anchor or on the cell.
+ *
+ * Both arms require the anchor to be the cell's whole content. The anchor's
+ * own styling is the stronger signal that a link is *a button*, but it says
+ * nothing about whether the link is *the cell*, and `find("a")` matches at
+ * any depth — so a callout cell holding a paragraph plus a self-styled CTA
+ * satisfies the anchor arm exactly as it does the cell arm.
  */
 export function isButtonCell(
   $el: Cheerio<Element>,
@@ -407,6 +442,8 @@ export function isButtonCell(
   const anchors = $el.find("a");
   if (anchors.length !== 1) return { match: false };
   const anchor = $(anchors[0]);
+  if (!isWholeCellAnchor($el, anchor)) return { match: false };
+
   if (looksLikeButton(getStyles(anchor))) return { match: true, anchor };
   // Cell-level styling (bg, padding) wrapping a plain anchor reads as a
   // button only when the anchor actually has an href. Without one, the
