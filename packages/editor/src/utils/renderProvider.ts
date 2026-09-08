@@ -81,6 +81,20 @@ export interface RenderMethodsSource {
 export interface RenderMethods {
   toMjml(): Promise<string>;
   toHtml(): Promise<string>;
+  /**
+   * Whether {@link toMjml} would reach the bundled `@templatical/renderer` —
+   * false once the provider implements `toMjml` and owns the render itself.
+   *
+   * Exists so a caller can tell what a rejected render *could* have been caused
+   * by. A missing optional peer is a plausible reading only on the local path;
+   * on the provider path it never is, and acting on it would swallow the
+   * backend's own error. The test-email dialog's `includeMjml` degradation is
+   * the one consumer.
+   *
+   * Resolved per call, like the two render methods, so a provider completed
+   * after construction answers for what would happen now.
+   */
+  usesLocalRenderer(): boolean;
 }
 
 /**
@@ -138,5 +152,9 @@ export function createRenderMethods(
     );
   }
 
-  return { toMjml, toHtml };
+  function usesLocalRenderer(): boolean {
+    return typeof source.provider?.toMjml !== "function";
+  }
+
+  return { toMjml, toHtml, usesLocalRenderer };
 }

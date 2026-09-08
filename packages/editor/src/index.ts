@@ -940,6 +940,12 @@ async function mountEditor(
           fontsManager,
           shadowRoot: mount.shadowRoot ?? undefined,
           cloud,
+          // The test-email dialog's `includeMjml` payload comes off the same
+          // ladder as `editor.toMjml()`, so a consumer's `render.toMjml` is what
+          // a test carries when they configured one. `render` is declared below
+          // and read at send time, never during this render.
+          renderMjml: () => render.toMjml(),
+          usesLocalRenderer: () => render.usesLocalRenderer(),
           ref: editorRef,
         });
     },
