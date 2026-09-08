@@ -1,5 +1,50 @@
 # @templatical/editor
 
+## 0.34.0
+
+### Minor Changes
+
+- 63faafe: Merge tags in rich-text link URLs
+
+  The **Insert Link** dialog in a title or paragraph block now takes merge tags in its URL field, through the same insert button, picker, chip display and type-ahead as every other URL field in the editor. It was the only URL field without them, and a link is often the field most in need of one — a per-recipient or per-event URL.
+
+  Three fixes come with it:
+
+  - A URL that opens with a merge tag is stored verbatim instead of being prefixed with `https://`. A tag supplies its own scheme, so the prefix produced `https://https://…` once the sending system resolved it. The scheme allowlist still runs first, so `javascript:` and friends are rejected as before, and a bare host without a tag is still completed.
+  - The semantic z-index scale compiled to nothing. Tailwind 4 derives z utilities from the `--z-index-*` theme namespace, but the layers were declared as `--z-panel` / `--z-toast` / `--z-overlay` / `--z-popover` / `--z-modal`, so all twelve `tpl:z-*` classes computed `auto` while reading like stacking decisions. The two cloud overlays and the collaboration toast now carry real numbers — they sit beside the `z-50` header, which was painting over them. The other nine need none, with one exception: `TplModal` takes a small real `z-10` so a picker opened from the link dialog paints above it — inside `.tpl-popover-root` order follows teleport-anchor order, and the dialog's anchor is created later than the pickers'.
+  - The in-flight flag behind the merge-tag and logic pickers is now shared per editor rather than per composable instance. The rich-text click-outside guard reads it to keep a block in edit mode while a picker is open; with a private flag it only ever saw requests from one host, so a picker opened anywhere else would close the block mid-insert and drop the tag.
+
+### Patch Changes
+
+- e75ef72: Send test emails through the configured render provider
+
+  `testEmail.includeMjml` rendered with the bundled `@templatical/renderer`
+  even when `render.toMjml` was configured, so a consumer with an authoritative
+  backend renderer received a test built from a different pipeline than the real
+  send — the one thing a test email exists to rule out. Anything the backend adds
+  that the browser cannot (a platform footer, a server-composited block) was
+  absent from the test and present in the delivered message.
+
+  `editor.toMjml()` was always correct; only the test-email payload took the
+  local path. The entry point now hands the editor the same resolution ladder
+  both use, so a test carries byte-identical MJML to an export.
+
+  The `includeMjml` degradation ladder gains two rows for the provider path. A
+  missing `@templatical/renderer` explains a failed render only when the bundled
+  renderer is what ran, so a consumer whose backend renders — and who therefore
+  has no reason to install the package at all — no longer has their backend's own
+  error read as an absent dependency, swallowed into a JSON-only send and answered
+  with advice to install something that would change nothing. A throwing render
+  provider now fails the send, exactly as a broken template already did.
+
+  Unaffected: consumers with no `render` provider, those supplying only
+  `compileMjml`, and Cloud, whose `testEmail` key excludes `includeMjml` at the
+  type level.
+
+- @templatical/media-library@0.34.0
+  - @templatical/quality@0.34.0
+  - @templatical/renderer@0.34.0
+
 ## 0.33.0
 
 ### Minor Changes
