@@ -234,6 +234,12 @@ export const SELECTORS = {
   mergeTagPickerClose: '[data-testid="merge-tag-picker-close"]',
   mergeTagPickerEmpty: '[data-testid="merge-tag-picker-empty"]',
 
+  // Rich-text link dialog (paragraph + title share it)
+  linkDialog: '[data-testid="link-dialog"]',
+  /** The URL field's MergeTagInput wrapper — its `input` is the text box. */
+  linkDialogUrl: '[data-testid="link-dialog-url"]',
+  linkDialogSubmit: '[data-testid="link-dialog-submit"]',
+
   // Playground's consumer-owned onRequest modal (separate from SDK picker)
   playgroundMergeTagModal: '[data-testid="playground-merge-tag-modal"]',
 

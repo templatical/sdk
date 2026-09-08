@@ -178,6 +178,22 @@ export class EditorPage {
   }
 
   /**
+   * Every `href` currently rendered on the canvas, in document order.
+   *
+   * Reads the attribute rather than the `href` property: the property
+   * resolves against the document base, so a merge-tag URL comes back as an
+   * absolute `http://localhost:…/{{tag}}` and the assertion this exists for
+   * — that no scheme was prepended — cannot be made.
+   */
+  async getCanvasLinkHrefs(): Promise<string[]> {
+    return this.page
+      .locator(`${SELECTORS.canvas} a`)
+      .evaluateAll((els) =>
+        els.map((el) => el.getAttribute("href") ?? ""),
+      );
+  }
+
+  /**
    * Return the editable TipTap contenteditable inside a block of the given
    * type. Clicking this element focuses the ProseMirror editor so keyboard
    * input (select-all, typing) lands in the document — clicking the outer

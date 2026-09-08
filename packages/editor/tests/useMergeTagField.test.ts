@@ -887,4 +887,50 @@ describe('useMergeTagField', () => {
       expect(emitFn).toHaveBeenCalledWith('{% if vip %}VIP only{% endif %}');
     });
   });
+
+  // The field is embedded in hosts that own keys of their own — the link
+  // dialog submits on Enter. It reports whether the autocomplete popup
+  // consumed the event so a host can act on the ones it didn't.
+  describe('handleKeydown consumption', () => {
+    function keyEvent(key: string): KeyboardEvent {
+      return { key, preventDefault: vi.fn() } as unknown as KeyboardEvent;
+    }
+
+    it('reports Enter as not consumed when no popup is open', () => {
+      const elementRef = createElementRef();
+
+      const field = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => 'https://example.com',
+            emit: vi.fn(),
+            elementRef,
+          }),
+        defaultProvides(),
+      );
+
+      expect(field.handleKeydown(keyEvent('Enter'))).toBe(false);
+    });
+
+    // Escape is deliberately reported as not consumed: leaving the field's
+    // edit mode and closing the host dialog are both correct, and a host that
+    // waits for a second Escape reads as stuck.
+    it('reports Escape as not consumed while leaving edit mode', () => {
+      const elementRef = createElementRef();
+
+      const field = withProvide(
+        () =>
+          useMergeTagField({
+            modelValue: () => 'hello',
+            emit: vi.fn(),
+            elementRef,
+          }),
+        defaultProvides(),
+      );
+
+      field.startEditing();
+      expect(field.handleKeydown(keyEvent('Escape'))).toBe(false);
+      expect(field.isEditing.value).toBe(false);
+    });
+  });
 });
