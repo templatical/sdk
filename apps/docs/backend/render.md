@@ -171,6 +171,43 @@ npm install @templatical/renderer
 There is nothing to install. The CDN build is self-contained, so `@templatical/renderer` ships with it as a code-split chunk that loads on the first `toMjml()` call.
 :::
 
+### Wrapping the bundled renderer
+
+`toMjml` replaces the local render, and one thing it can replace it with is the local render plus your own additions. Chrome every email must carry — an Impressum, an unsubscribe block, a legal footer — then composes as ordinary blocks instead of string surgery on the output:
+
+```ts
+import { renderToMjml } from '@templatical/renderer';
+
+const editor = await init({
+  container,
+  render: {
+    toMjml: ({ content, fonts }) =>
+      renderToMjml(
+        {
+          settings: { ...content.settings, backgroundColor: '#f3f4f6' },
+          blocks: [...headerBlocks, ...content.blocks, ...footerBlocks],
+        },
+        {
+          customFonts: fonts?.customFonts,
+          defaultFallbackFont: fonts?.defaultFallback,
+        },
+      ),
+  },
+});
+```
+
+`headerBlocks` and `footerBlocks` are plain `Block[]` — author them in the editor and export the JSON. Because they never enter editor state, they cannot be selected, edited, undone or saved, and `getContent()` returns the template without them. `toHtml()` composes through `toMjml()`, so both export paths carry them, as does the test-email dialog's `includeMjml` payload.
+
+What to watch for:
+
+- This is the one arrangement where implementing `toMjml` still puts `@templatical/renderer` in your frontend bundle. The table above describes providers that render elsewhere; here you are calling the local renderer yourself.
+- `getCustomBlockStylesheet` is not part of the payload. Pass your own resolver if your custom blocks carry definition-level CSS — otherwise their `<mj-style>` rules are dropped.
+- `initCloud()` ignores `render`, so this is an `init()` arrangement. See [Rendering on Cloud](/cloud/rendering).
+
+::: tip Showing it in the preview too
+The canvas shows the template, not the chrome around it. [`resolvePreview`](/guide/preview-rendering#show-what-your-platform-appends-at-send-time) is what puts it there — by calling the same composition function as above, or by asking the backend that appends for real.
+:::
+
 ## Headless rendering
 
 Outside the editor, call the renderer directly:
