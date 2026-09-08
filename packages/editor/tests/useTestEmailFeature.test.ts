@@ -35,6 +35,7 @@ function createProvider(
 function withFeature(options: {
   provider?: TestEmailProvider;
   renderMjml?: () => Promise<string>;
+  usesLocalRenderer?: () => boolean;
   isAvailable?: () => boolean;
   onError?: (error: Error) => void;
 }) {
@@ -48,6 +49,7 @@ function withFeature(options: {
           provider,
           getContent: () => CONTENT,
           renderMjml: options.renderMjml,
+          usesLocalRenderer: options.usesLocalRenderer,
           isAvailable: options.isAvailable,
           onError: options.onError,
         });
@@ -288,9 +290,12 @@ describe("useTestEmailFeature", () => {
   });
 
   /**
-   * The four rows of the `includeMjml` ladder. Rows 3 and 4 are the reason
+   * The six rows of the `includeMjml` ladder. Rows 3 and 4 are the reason
    * `tryLoadRenderer` exists as a separate helper: a missing package degrades,
-   * a broken template does not.
+   * a broken template does not. Rows 5 and 6 are why the probe is gated on
+   * `usesLocalRenderer`: once a `render.toMjml` provider owns the render, a
+   * missing `@templatical/renderer` cannot be what failed, so degrading on that
+   * reading would swallow a real backend error and advise an irrelevant install.
    */
   describe("includeMjml degradation ladder", () => {
     it("row 1: flag unset — never renders, and omits the key", async () => {
@@ -355,6 +360,46 @@ describe("useTestEmailFeature", () => {
         kind: "provider",
         message: "bad custom block",
       });
+    });
+
+    it("row 5: MJML from a render provider — the bundled renderer is never probed", async () => {
+      const provider = createProvider({ includeMjml: true });
+      const { feature } = withFeature({
+        provider,
+        renderMjml: vi.fn().mockResolvedValue("<mjml>provider</mjml>"),
+        usesLocalRenderer: () => false,
+      });
+
+      await feature.send("a@b.com");
+
+      expect(payloadOf(provider).mjml).toBe("<mjml>provider</mjml>");
+      expect(tryLoadRenderer).not.toHaveBeenCalled();
+    });
+
+    it("row 6: a throwing render provider fails the send even with no local renderer installed", async () => {
+      const warn = vi.spyOn(logger, "warn").mockImplementation(() => {});
+      // The profile this row exists for: a consumer whose backend renders, so
+      // `@templatical/renderer` is legitimately absent from their app.
+      vi.mocked(tryLoadRenderer).mockResolvedValue(null);
+      const provider = createProvider({ includeMjml: true });
+      const { feature } = withFeature({
+        provider,
+        renderMjml: vi.fn().mockRejectedValue(new Error("backend exploded")),
+        usesLocalRenderer: () => false,
+      });
+
+      await feature.send("a@b.com");
+
+      // A broken backend renderer must not silently ship as JSON, for the same
+      // reason row 4's broken template must not.
+      expect(provider.send).not.toHaveBeenCalled();
+      expect(feature.error.value).toEqual({
+        kind: "provider",
+        message: "backend exploded",
+      });
+      // And it must not advise installing a package that would change nothing.
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
     });
   });
 

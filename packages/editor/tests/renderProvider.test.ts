@@ -122,6 +122,32 @@ describe('toMjml resolution', () => {
   });
 });
 
+describe('usesLocalRenderer', () => {
+  it('is false when the provider implements toMjml', () => {
+    expect(methods({ toMjml: vi.fn() }).usesLocalRenderer()).toBe(false);
+  });
+
+  it('is true when the provider implements only compileMjml', () => {
+    expect(methods({ compileMjml: vi.fn() }).usesLocalRenderer()).toBe(true);
+  });
+
+  it('is true with no provider at all', () => {
+    expect(methods(null).usesLocalRenderer()).toBe(true);
+  });
+
+  // Same "resolves per call" contract `toMjml()` itself honours, so a caller
+  // that asks before the provider is complete gets the answer that will apply.
+  it('tracks a toMjml added to the provider after construction', () => {
+    const provider: RenderProvider = {};
+    const m = methods(provider);
+
+    expect(m.usesLocalRenderer()).toBe(true);
+
+    provider.toMjml = vi.fn().mockResolvedValue('<mjml>provider</mjml>');
+    expect(m.usesLocalRenderer()).toBe(false);
+  });
+});
+
 describe('toHtml resolution', () => {
   it('uses the provider when it implements toHtml', async () => {
     const toHtml = vi.fn().mockResolvedValue('<html>provider</html>');
