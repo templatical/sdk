@@ -2,7 +2,7 @@
 import './dom-stubs';
 
 import { describe, expect, it, vi } from 'vitest';
-import { createApp, defineComponent, h, type InjectionKey } from 'vue';
+import { createApp, defineComponent, h, ref, type InjectionKey } from 'vue';
 import type { MergeTag } from '@templatical/types';
 import { SYNTAX_PRESETS } from '@templatical/types';
 import { useMergeTag } from '../src/composables/useMergeTag';
@@ -12,6 +12,7 @@ import {
   MERGE_TAG_SYNTAX_KEY,
   MERGE_TAG_AUTOCOMPLETE_KEY,
   MERGE_TAG_PICKER_KEY,
+  MERGE_TAG_REQUESTING_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
 } from '../src/keys';
 
@@ -46,6 +47,57 @@ const sampleTags: MergeTag[] = [
 ];
 
 describe('useMergeTag', () => {
+  // Every host that opens the picker has to be visible to the one guard that
+  // keeps a rich-text block from being torn out of edit mode mid-insert
+  // (useRichTextEditor's handleClickOutside). A per-call ref makes that guard
+  // blind to any host but the one that happens to own it.
+  describe('isRequesting sharing', () => {
+    it('shares one ref across instances under the same editor', async () => {
+      const shared = ref(false);
+      const [a, b] = withProvide(
+        () => [useMergeTag(), useMergeTag()] as const,
+        {
+          [MERGE_TAGS_KEY]: sampleTags,
+          [MERGE_TAG_REQUESTING_KEY]: shared,
+          [MERGE_TAG_PICKER_KEY]: useMergeTagPicker(),
+        },
+      );
+
+      expect(a.isRequesting).toBe(b.isRequesting);
+      expect(a.isRequesting).toBe(shared);
+    });
+
+    it('flags the shared ref while one instance awaits the picker', async () => {
+      const shared = ref(false);
+      const picker = useMergeTagPicker();
+      const [a, b] = withProvide(
+        () => [useMergeTag(), useMergeTag()] as const,
+        {
+          [MERGE_TAGS_KEY]: sampleTags,
+          [MERGE_TAG_REQUESTING_KEY]: shared,
+          [MERGE_TAG_PICKER_KEY]: picker,
+        },
+      );
+
+      const pending = a.requestMergeTag();
+      expect(b.isRequesting.value).toBe(true);
+
+      picker.resolve(sampleTags[0]);
+      await pending;
+      expect(b.isRequesting.value).toBe(false);
+    });
+
+    it('falls back to a private ref when nothing is provided', () => {
+      const [a, b] = withProvide(
+        () => [useMergeTag(), useMergeTag()] as const,
+        { [MERGE_TAGS_KEY]: sampleTags },
+      );
+
+      expect(a.isRequesting).not.toBe(b.isRequesting);
+      expect(a.isRequesting.value).toBe(false);
+    });
+  });
+
   describe('canRequestMergeTag', () => {
     it('is false when neither tags nor onRequest is provided', () => {
       const { canRequestMergeTag } = withProvide(() => useMergeTag());

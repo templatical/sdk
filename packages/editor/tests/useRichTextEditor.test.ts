@@ -2,7 +2,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { defineComponent, h, ref } from 'vue';
 import { mount } from '@vue/test-utils';
-import { EDITOR_KEY, MERGE_TAGS_KEY, MERGE_TAG_SYNTAX_KEY, ON_REQUEST_MERGE_TAG_KEY } from '../src/keys';
+import { EDITOR_KEY, MERGE_TAGS_KEY, MERGE_TAG_REQUESTING_KEY, MERGE_TAG_SYNTAX_KEY, ON_REQUEST_MERGE_TAG_KEY } from '../src/keys';
 import { SYNTAX_PRESETS } from '@templatical/types';
 import { useRichTextEditor } from '../src/composables/useRichTextEditor';
 import { makeStubTranslations } from './helpers/translations';
@@ -169,6 +169,41 @@ describe('useRichTextEditor', () => {
   // The link dialog is constructed inside this composable, so the configured
   // merge-tag syntax has to be forwarded to it. Passing the syntax straight to
   // useRichTextLinkDialog in its own unit test proves nothing about that hop.
+  // The picker modal mounts in the popover root, outside
+  // .tpl-text-editor-wrapper, so a click on one of its rows reads as a click
+  // outside the editor. The guard has to see a request opened by ANY host in
+  // the tree — the link dialog's URL field owns its own useMergeTag instance.
+  describe('click-outside guard while a picker is open', () => {
+    it('does not finish the block while the shared flag is set', async () => {
+      const requesting = ref(false);
+      const ctx = mountRichText({}, {
+        [MERGE_TAG_REQUESTING_KEY]: requesting,
+      });
+      await flushAsync();
+
+      requesting.value = true;
+      document.body.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true }),
+      );
+
+      expect(ctx.onDone).not.toHaveBeenCalled();
+    });
+
+    it('finishes the block on an outside click when no request is in flight', async () => {
+      const requesting = ref(false);
+      const ctx = mountRichText({}, {
+        [MERGE_TAG_REQUESTING_KEY]: requesting,
+      });
+      await flushAsync();
+
+      document.body.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true }),
+      );
+
+      expect(ctx.onDone).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('link dialog syntax wiring', () => {
     it('forwards the configured syntax so a bare tag is not prefixed', async () => {
       const ctx = mountRichText({}, {
