@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   convertElement,
   convertHtmlFallback,
+  convertInlineRun,
   isButtonCell,
+  isInlineContent,
+  isProseAnchor,
   isSpacerCell,
   looksLikeButton,
 } from "../block-mapper";
@@ -14,6 +17,13 @@ function firstEl(html: string, selector: string) {
   const $ = load(html);
   const $el = $(selector).first() as unknown as Cheerio<Element>;
   return { $, $el };
+}
+
+/** The child nodes of a `<td>`, text nodes and comments included. */
+function cellNodes(inner: string, cellAttrs = "") {
+  const $ = load(`<table><tr><td ${cellAttrs}>${inner}</td></tr></table>`);
+  const $cell = $("td").first() as unknown as Cheerio<Element>;
+  return { $, $cell, nodes: $cell.contents().toArray() };
 }
 
 describe("convertElement — headings", () => {
@@ -482,6 +492,75 @@ describe("looksLikeButton", () => {
   });
 });
 
+describe("isProseAnchor", () => {
+  function anchor(html: string) {
+    return firstEl(`<table><tr><td>${html}</td></tr></table>`, "a").$el;
+  }
+
+  it("reads an unstyled link with text as prose", () => {
+    expect(
+      isProseAnchor(anchor('<a href="https://x.test/go">read on</a>')),
+    ).toBe(true);
+  });
+
+  it("reads a link styled only for colour as prose", () => {
+    expect(
+      isProseAnchor(
+        anchor('<a style="color:#2b8a3e" href="https://x.test/go">read on</a>'),
+      ),
+    ).toBe(true);
+  });
+
+  it("reads an in-page anchor with text as prose", () => {
+    // No href at all. Folding still keeps more than the per-element path,
+    // which reads the anchor's inner HTML and drops the element.
+    expect(isProseAnchor(anchor('<a name="top">Back to top</a>'))).toBe(true);
+  });
+
+  it("refuses a link the source styled as a button", () => {
+    // Every arm of `looksLikeButton`, so the fold cannot swallow a call to
+    // action however the source declared one.
+    expect(
+      isProseAnchor(
+        anchor('<a style="background:#ff0000" href="https://x.test">Buy</a>'),
+      ),
+    ).toBe(false);
+    expect(
+      isProseAnchor(
+        anchor('<a style="padding:8px 16px" href="https://x.test">Buy</a>'),
+      ),
+    ).toBe(false);
+    expect(
+      isProseAnchor(
+        anchor('<a style="border-radius:6px" href="https://x.test">Buy</a>'),
+      ),
+    ).toBe(false);
+    expect(
+      isProseAnchor(
+        anchor('<a style="display:inline-block" href="https://x.test">Buy</a>'),
+      ),
+    ).toBe(false);
+  });
+
+  it("refuses a link carrying no text of its own", () => {
+    // `convertInlineRun` emits nothing for a run with no text, so an
+    // image-only link must stay a block rather than folding into one.
+    expect(
+      isProseAnchor(
+        anchor(
+          '<a href="https://x.test/go"><img src="https://x.test/p.png"></a>',
+        ),
+      ),
+    ).toBe(false);
+  });
+
+  it("refuses a link whose text is only whitespace", () => {
+    expect(isProseAnchor(anchor('<a href="https://x.test/go">  </a>'))).toBe(
+      false,
+    );
+  });
+});
+
 describe("isSpacerCell", () => {
   it("matches empty td with explicit height", () => {
     const { $el } = firstEl(
@@ -566,5 +645,482 @@ describe("isButtonCell", () => {
       "td",
     );
     expect(isButtonCell($el, $).match).toBe(false);
+  });
+
+  it("matches a styled cell whose entire text is the anchor's", () => {
+    const { $, $el } = firstEl(
+      '<table><tr><td style="background:#0b7285;padding:14px">' +
+        '<a href="https://events.test/claim">Claim your seat</a>' +
+        "</td></tr></table>",
+      "td",
+    );
+    const r = isButtonCell($el, $);
+    expect(r.match).toBe(true);
+    expect(r.anchor?.attr("href")).toBe("https://events.test/claim");
+  });
+
+  it("matches a styled cell whose text differs from the anchor's only by whitespace", () => {
+    // Nested tags and source indentation add whitespace that never renders,
+    // so the comparison normalises both sides.
+    const { $, $el } = firstEl(
+      '<table><tr><td style="padding:14px">\n  ' +
+        '<a href="https://events.test/claim">Claim\n  your seat</a>\n' +
+        "</td></tr></table>",
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(true);
+  });
+
+  it("does not classify a styled cell as a button when the anchor is a fragment of its prose", () => {
+    const { $, $el } = firstEl(
+      '<table><tr><td style="background:#0b7285;padding:14px">' +
+        'Read the <a href="https://legal.test/terms">terms</a> before you continue' +
+        "</td></tr></table>",
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(false);
+  });
+
+  it("does not classify an outer cell as a button when it wraps a nested button cell plus prose", () => {
+    // `find("a")` matches at any depth, so a callout cell holding copy and a
+    // nested CTA cell reaches the cell-styling arm too.
+    const { $, $el } = firstEl(
+      '<table><tr><td style="padding:14px">Callout copy about the offer' +
+        '<table><tr><td style="padding:10px">' +
+        '<a href="https://shop.test/buy">Purchase Now</a>' +
+        "</td></tr></table></td></tr></table>",
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(false);
+  });
+
+  it("does not classify a cell as a button when a self-styled anchor sits in its prose", () => {
+    // The anchor-styling arm carries the same whole-cell requirement: its own
+    // background says the link is a button, not that the link is the cell.
+    const { $, $el } = firstEl(
+      "<table><tr><td>Callout copy about the offer " +
+        '<a href="https://shop.test/buy" ' +
+        'style="background:#0b7285;padding:12px 20px">Purchase Now</a>' +
+        "</td></tr></table>",
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(false);
+  });
+
+  it("still matches an anchor carrying its own button styling in a whole-cell position", () => {
+    // Negative control for the anchor-styling arm: the whole-cell requirement
+    // must not stop a self-styled CTA being read as a button.
+    const { $, $el } = firstEl(
+      '<table><tr><td><a href="https://shop.test/buy" ' +
+        'style="background:#0b7285;padding:12px 20px;border-radius:9px">Purchase Now</a>' +
+        "</td></tr></table>",
+      "td",
+    );
+    const r = isButtonCell($el, $);
+    expect(r.match).toBe(true);
+    expect(r.anchor?.attr("href")).toBe("https://shop.test/buy");
+  });
+});
+
+describe("isInlineContent", () => {
+  it("reads a bare text node as inline content", () => {
+    const { nodes } = cellNodes("just text");
+    expect(nodes.map(isInlineContent)).toEqual([true]);
+  });
+
+  it("reads every inline formatting tag as inline content", () => {
+    const { nodes } = cellNodes(
+      "<br><em>e</em><strong>s</strong><i>i</i><b>b</b><u>u</u>" +
+        "<small>sm</small><sub>sb</sub><sup>sp</sup>",
+    );
+    expect(nodes.map((node) => (node as Element).tagName)).toEqual([
+      "br",
+      "em",
+      "strong",
+      "i",
+      "b",
+      "u",
+      "small",
+      "sub",
+      "sup",
+    ]);
+    expect(nodes.map(isInlineContent)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
+  });
+
+  it("excludes <a>, which is classified by isProseAnchor instead", () => {
+    // An anchor is not unconditionally inline: a styled one is a button. So
+    // the cell walk asks `isProseAnchor` per anchor, and this predicate keeps
+    // reading `<a>` as a block — which is also what `packagingTablesOf`
+    // needs, since a cell holding a link has content that must not be
+    // discarded as packaging.
+    const { nodes } = cellNodes('<a href="https://x.test/go">link</a>');
+    expect(nodes.map(isInlineContent)).toEqual([false]);
+  });
+
+  it("excludes block-producing and unknown elements", () => {
+    const { nodes } = cellNodes(
+      "<p>p</p><div>d</div><span>s</span><h2>h</h2>" +
+        '<img src="https://x.test/a.jpg"><hr><table></table><marquee>m</marquee>',
+    );
+    expect(nodes.map(isInlineContent)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it("excludes a comment node", () => {
+    const { nodes } = cellNodes("<!-- *|IF:X|* -->");
+    expect(nodes.map((node) => node.type)).toEqual(["comment"]);
+    expect(nodes.map(isInlineContent)).toEqual([false]);
+  });
+});
+
+describe("convertInlineRun", () => {
+  it("builds one paragraph from a run, styled by the cell that holds it", () => {
+    const { $, $cell, nodes } = cellNodes(
+      "Lead <strong>copy</strong>",
+      'style="padding:8px 12px;color:#ff0000;font-size:22px;text-align:right"',
+    );
+    const r = convertInlineRun(nodes, $cell, $);
+    expect(r).not.toBeNull();
+    expect(r!.entry).toEqual({
+      sourceTag: "td",
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    });
+    if (r!.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    // The run's own markup survives inside the wrapping <p>; the cell's
+    // colour, size and alignment are what style it.
+    expect(r!.block.content).toBe(
+      '<p style="text-align: right">' +
+        '<span style="font-size: 22px; color: #ff0000">' +
+        "Lead <strong>copy</strong>" +
+        "</span></p>",
+    );
+    expect(r!.block.styles.padding).toEqual({
+      top: 8,
+      right: 12,
+      bottom: 8,
+      left: 12,
+    });
+  });
+
+  it("keeps a line break inside the paragraph rather than beside it", () => {
+    const { $, $cell, nodes } = cellNodes("Hello<br>World");
+    const r = convertInlineRun(nodes, $cell, $)!;
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toBe("<p>Hello<br>World</p>");
+  });
+
+  it("reports the cell's own tag, so a <th> is not reported as a <td>", () => {
+    const $ = load("<table><tr><th>Header <em>copy</em></th></tr></table>");
+    const $cell = $("th").first() as unknown as Cheerio<Element>;
+    const r = convertInlineRun($cell.contents().toArray(), $cell, $)!;
+    expect(r.entry.sourceTag).toBe("th");
+  });
+
+  it("returns null for a run carrying no text", () => {
+    const { $, $cell, nodes } = cellNodes("&nbsp;<br><br>");
+    expect(convertInlineRun(nodes, $cell, $)).toBeNull();
+  });
+});
+
+describe("convertElement — a container wrapping one block-level element", () => {
+  it("types a heading the container wraps, rather than burying it in a paragraph", () => {
+    const { $, $el } = firstEl("<div><h3>Wrapped heading</h3></div>", "div");
+    const r = convertElement($el, $)!;
+    expect(r.entry).toEqual({
+      sourceTag: "h3",
+      templaticalBlockType: "title",
+      status: "converted",
+    });
+    if (r.block.type !== "title") throw new Error("expected title block");
+    // `level: 3` is off the factory default (2), so this cannot pass on a
+    // default that merely survived.
+    expect(r.block.level).toBe(3);
+    expect(r.block.content).toBe("<p>Wrapped heading</p>");
+  });
+
+  it("reads <center> and <main> as containers too, from the one container list", () => {
+    const center = firstEl("<center><h4>Centered</h4></center>", "center");
+    const rc = convertElement(center.$el, center.$)!;
+    expect(rc.entry.sourceTag).toBe("h4");
+    if (rc.block.type !== "title") throw new Error("expected title block");
+    expect(rc.block.level).toBe(4);
+
+    const main = firstEl("<main><h3>Main</h3></main>", "main");
+    const rm = convertElement(main.$el, main.$)!;
+    expect(rm.entry.sourceTag).toBe("h3");
+    if (rm.block.type !== "title") throw new Error("expected title block");
+    expect(rm.block.level).toBe(3);
+  });
+
+  it("carries the container's styling onto the element that takes its place", () => {
+    const { $, $el } = firstEl(
+      '<div style="color:#ff0000;text-align:center;font-family:Georgia, serif;padding:7px">' +
+        '<h3 style="margin:0">Styled heading</h3>' +
+        "</div>",
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "title") throw new Error("expected title block");
+    expect(r.block.color).toBe("#ff0000");
+    expect(r.block.textAlign).toBe("center");
+    expect(r.block.fontFamily).toBe("Georgia");
+    expect(r.block.styles.padding).toEqual({
+      top: 7,
+      right: 7,
+      bottom: 7,
+      left: 7,
+    });
+  });
+
+  it("lets the element's own declarations win over the container's", () => {
+    const { $, $el } = firstEl(
+      '<div style="color:#ff0000;text-align:center">' +
+        '<h3 style="color:#0000ff;text-align:right">Own styling</h3>' +
+        "</div>",
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "title") throw new Error("expected title block");
+    expect(r.block.color).toBe("#0000ff");
+    expect(r.block.textAlign).toBe("right");
+  });
+
+  it("treats `inherit` as stating nothing, so the container's value survives", () => {
+    // mjml@5 emits exactly this shape: every visual property on the wrapper,
+    // and `inherit` on the heading. Letting `inherit` shadow the wrapper drops
+    // the colour and reads the alignment off nothing.
+    const { $, $el } = firstEl(
+      '<div style="font-family:Arial, sans-serif;font-size:22px;text-align:center;color:#ff0000">' +
+        '<h3 style="margin:0;font-size:inherit;color:inherit;line-height:inherit">Inheriting heading</h3>' +
+        "</div>",
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "title") throw new Error("expected title block");
+    expect(r.block.color).toBe("#ff0000");
+    expect(r.block.textAlign).toBe("center");
+    expect(r.block.fontFamily).toBe("Arial");
+  });
+
+  it("unwraps through nested containers, accumulating their styling", () => {
+    const { $, $el } = firstEl(
+      '<div style="color:#ff0000">' +
+        '<div style="text-align:right"><h4>Deeply wrapped</h4></div>' +
+        "</div>",
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    expect(r.entry.sourceTag).toBe("h4");
+    if (r.block.type !== "title") throw new Error("expected title block");
+    expect(r.block.level).toBe(4);
+    expect(r.block.content).toBe("<p>Deeply wrapped</p>");
+    expect(r.block.color).toBe("#ff0000");
+    expect(r.block.textAlign).toBe("right");
+  });
+
+  it("tolerates whitespace and comments around the element", () => {
+    const { $, $el } = firstEl(
+      "<div>\n  <!-- merge tag -->\n  <h3>Spaced heading</h3>\n</div>",
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    expect(r.entry.sourceTag).toBe("h3");
+    if (r.block.type !== "title") throw new Error("expected title block");
+    expect(r.block.content).toBe("<p>Spaced heading</p>");
+  });
+
+  it("reads a bare &nbsp; as whitespace, as the rest of the package does", () => {
+    const { $, $el } = firstEl(
+      "<div>&nbsp;<h3>Padded heading</h3></div>",
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    expect(r.entry.sourceTag).toBe("h3");
+    if (r.block.type !== "title") throw new Error("expected title block");
+    expect(r.block.content).toBe("<p>Padded heading</p>");
+  });
+
+  it("skips a container wrapping an empty heading, as it skips an empty container", () => {
+    const wrapped = firstEl("<div><h3></h3></div>", "div");
+    expect(convertElement(wrapped.$el, wrapped.$)).toBeNull();
+
+    const bare = firstEl("<div></div>", "div");
+    expect(convertElement(bare.$el, bare.$)).toBeNull();
+  });
+});
+
+describe("convertElement — a container it must not unwrap", () => {
+  it("leaves two block-level children alone", () => {
+    const { $, $el } = firstEl("<div><h3>Title</h3><p>Prose</p></div>", "div");
+    const r = convertElement($el, $)!;
+    expect(r.entry.sourceTag).toBe("div");
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toContain("<h3>Title</h3>");
+    expect(r.block.content).toContain("<p>Prose</p>");
+  });
+
+  it("leaves lead text beside the element alone", () => {
+    const { $, $el } = firstEl("<div>Lead text<h3>Title</h3></div>", "div");
+    const r = convertElement($el, $)!;
+    expect(r.entry.sourceTag).toBe("div");
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toContain("Lead text");
+    expect(r.block.content).toContain("<h3>Title</h3>");
+  });
+
+  it("leaves a rendering inline sibling alone", () => {
+    const { $, $el } = firstEl("<div><br><h3>Title</h3></div>", "div");
+    const r = convertElement($el, $)!;
+    expect(r.entry.sourceTag).toBe("div");
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toContain("<br>");
+    expect(r.block.content).toContain("<h3>Title</h3>");
+  });
+
+  it("leaves a container holding a table alone", () => {
+    const { $, $el } = firstEl(
+      "<div><table><tr><td><h3>In a cell</h3></td></tr></table></div>",
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    expect(r.entry.sourceTag).toBe("div");
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toContain("<table>");
+  });
+
+  it("leaves a container alone when the table sits inside the heading", () => {
+    // The one shape where refusing a table-holding container decides the
+    // outcome on its own: the sole child *is* an unwrappable heading, and the
+    // table is below it. Both traversals descend a container holding a table,
+    // so this subtree belongs to them — typing it as a title here would claim
+    // a mapping for markup `convertElement` never owns, and put a whole table
+    // inside a title block.
+    const { $, $el } = firstEl(
+      '<div><h3>Heading <table role="presentation"><tr><td>cell</td></tr></table></h3></div>',
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    expect(r.entry).toEqual({
+      sourceTag: "div",
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    });
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toContain("<h3>Heading ");
+  });
+
+  it("leaves an mjml column container alone", () => {
+    // A `div.mj-column-per-*` holds a whole table, which is what keeps it out
+    // of this rule: unwrapping it would hand `convertElement` a <table> it has
+    // no mapping for, and the traversals reach its rows through the container
+    // descent instead.
+    const { $, $el } = firstEl(
+      '<div class="mj-column-per-50 mj-outlook-group-fix" style="width:100%">' +
+        "<table><tbody><tr><td><div><h3>Column copy</h3></div></td></tr></tbody></table>" +
+        "</div>",
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    expect(r.entry.sourceTag).toBe("div");
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toContain("<table>");
+  });
+
+  it("leaves a wrapped <p> alone, keeping the attributes it carries", () => {
+    // `p` is deliberately outside the unwrap set. `convertParagraph` reads an
+    // element's inner HTML, so unwrapping the <p> would drop it and every
+    // attribute on it, where mapping the container keeps that markup inside
+    // the paragraph's content — and a wrapped <p> is already a paragraph, so
+    // there is no typing defect to trade it for.
+    const { $, $el } = firstEl(
+      '<div style="text-align:center"><p class="lead" dir="ltr">Wrapped copy</p></div>',
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    expect(r.entry).toEqual({
+      sourceTag: "div",
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    });
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toBe(
+      '<p class="lead" dir="ltr" style="text-align: center">Wrapped copy</p>',
+    );
+  });
+
+  it("leaves a wrapped image alone", () => {
+    // `img` is outside the unwrap set for the same reason: a wrapped image
+    // already keeps its markup inside the paragraph, and admitting it would
+    // widen a heading-typing rule into image mapping.
+    const { $, $el } = firstEl(
+      '<div><img src="hero.png" alt="Hero" width="600"></div>',
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    expect(r.entry.sourceTag).toBe("div");
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toBe(
+      '<p><img src="hero.png" alt="Hero" width="600"></p>',
+    );
+  });
+
+  it("leaves a container of prose alone", () => {
+    const { $, $el } = firstEl(
+      '<div><span style="font-weight:bold">inline only</span></div>',
+      "div",
+    );
+    const r = convertElement($el, $)!;
+    expect(r.entry).toEqual({
+      sourceTag: "div",
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    });
+    if (r.block.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(r.block.content).toBe(
+      '<p><span style="font-weight:bold">inline only</span></p>',
+    );
+  });
+
+  it("leaves an unknown element wrapping one block-level element alone", () => {
+    const { $, $el } = firstEl("<article><h3>Title</h3></article>", "article");
+    const r = convertElement($el, $)!;
+    expect(r.entry).toEqual({
+      sourceTag: "article",
+      templaticalBlockType: "html",
+      status: "html-fallback",
+      note: 'Unknown element "article" preserved as HTML block.',
+    });
+    if (r.block.type !== "html") throw new Error("expected html block");
+    expect(r.block.content).toContain("<h3>Title</h3>");
   });
 });

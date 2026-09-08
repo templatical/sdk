@@ -1,4 +1,5 @@
 import type { CheerioAPI, Cheerio } from "cheerio";
+import { isTag, isText } from "domhandler";
 import type { Element, AnyNode } from "domhandler";
 import {
   createTitleBlock,
@@ -25,6 +26,159 @@ import {
 const HEADING_TAGS = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
 const TEXT_TAGS = new Set(["p", "span", "div"]);
 
+/**
+ * Wrapper tags that carry layout rather than content. One of these is worth
+ * descending into when it holds a table somewhere below it.
+ */
+const CONTAINER_TAGS = new Set(["div", "center", "main"]);
+
+/**
+ * Decides whether an element is a layout container worth descending into: a
+ * wrapper tag that holds a table somewhere below it.
+ *
+ * The table test is what keeps the descent from widening into "descend every
+ * div". `div` is in `TEXT_TAGS` above, so a container holding only copy must
+ * keep that mapping and become one paragraph rather than being split into a
+ * block per child.
+ *
+ * Lives here, with the other predicates both traversal modules consult,
+ * because the body walk and the cell walk have to agree on what a container
+ * is. A second copy answers the question differently the moment either is
+ * edited, and the divergence shows up as a table swallowed into a paragraph
+ * on whichever surface was missed.
+ */
+export function isTableContainer($el: Cheerio<Element>, tag: string): boolean {
+  return CONTAINER_TAGS.has(tag) && $el.find("table").length > 0;
+}
+
+/**
+ * Whether an element is laid out beside its siblings rather than stacked above
+ * them: `display: inline-block`.
+ *
+ * This is the property that *makes* a set of divs a set of columns — an email
+ * that wants side-by-side divs has no other way to say so, since a block-level
+ * div stacks — so requiring it is the definition of the shape and not a
+ * heuristic about it. Two plain divs stack vertically, and reading those as
+ * columns would invent a layout the source never stated.
+ */
+function isSideBySide($el: Cheerio<Element>): boolean {
+  return (getStyles($el).display ?? "").trim().toLowerCase() === "inline-block";
+}
+
+/**
+ * The sibling containers that make up a cell's column set, or `null` when the
+ * cell is not one.
+ *
+ * This is the one column shape with no cell count to read: a single `<td>`
+ * holding one inline-block `<div>` per column. Cerberus's hybrid template
+ * states four layouts this way and compiled MJML states every one of them —
+ * mjml puts a whole section's columns into one cell as sibling
+ * `div.mj-column-per-*` — so a row's cell count reports one column for a
+ * layout that has two or three. Counting the divs is still *counting*: the
+ * number of columns comes from the number of elements, and a width is only
+ * ever consulted afterwards to choose between layouts of that same count.
+ *
+ * Four conditions, each of them a hazard a relaxed version would reintroduce:
+ *
+ * - Every element child must be a container. A cell mixing a column set with
+ *   anything else has no column any other element belongs to.
+ * - Every one must be laid out side by side (`isSideBySide`), which is what
+ *   distinguishes columns from stacked content.
+ * - None may be blank. A multi-column section with an empty slot is worse
+ *   than the single column a cell count already gives, and the source's own
+ *   spacer chrome is exactly what would fill one.
+ * - No text of the cell's own may survive, for the same reason as the first
+ *   condition — a bare sentence beside the columns belongs to none of them.
+ *
+ * Deliberately structural: it reads no width, so a column set with no declared
+ * width still becomes one, and a `width:100%` — which every real column div
+ * carries — can never make or break the decision.
+ */
+export function columnDivsOf(
+  $cell: Cheerio<Element>,
+  $: CheerioAPI,
+): Cheerio<Element>[] | null {
+  const columns: Cheerio<Element>[] = [];
+  let inlineText = "";
+
+  for (const node of $cell.contents().toArray()) {
+    if (isInlineContent(node)) {
+      inlineText += $(node).text();
+      continue;
+    }
+    // Comments carry no content, and MSO conditional comments sit between
+    // every pair of column divs in both real sources — skipping them is what
+    // keeps the siblings adjacent.
+    if (!isTag(node)) continue;
+
+    const tag = node.tagName.toLowerCase();
+    if (!CONTAINER_TAGS.has(tag)) return null;
+
+    const $child = $(node) as unknown as Cheerio<Element>;
+    if (!isSideBySide($child)) return null;
+    if (isBlankCell($child)) return null;
+    columns.push($child);
+  }
+
+  if (columns.length < 2) return null;
+  if (inlineText.trim() !== "") return null;
+  return columns;
+}
+
+/**
+ * Block-level elements a container may be unwrapped down to. Only a heading:
+ * a container wrapping one is the single case where mapping the container
+ * gets the block's *type* wrong.
+ *
+ * A tag qualifies only if unwrapping it loses nothing, and `p` is the one that
+ * looks like it belongs and does not. `convertParagraph` reads an element's
+ * inner HTML, so unwrapping `<div><p class="lead">…</p></div>` drops the `<p>`
+ * and every attribute on it, where mapping the container keeps that markup
+ * inside the paragraph's content. Nothing is bought in exchange: a wrapped
+ * `<p>` already maps to a paragraph, which is the right type. A heading has no
+ * such cost, because `convertHeading` stores the level and the inner HTML —
+ * so unwrapping routes it to the same converter a bare `<h3>` already reaches.
+ *
+ * `img`, `hr` and `table` stay out for the same "nothing to fix" reason: a
+ * table belongs to the container descent the two traversals run, and the other
+ * two would widen a heading-typing rule into image and divider mapping.
+ *
+ * The set is also what keeps the styling below correct — `convertHeading` is
+ * the only converter reached with a container's styles, so admitting a tag it
+ * does not handle would silently drop them.
+ */
+const UNWRAPPABLE_BLOCK_TAGS: ReadonlySet<string> = HEADING_TAGS;
+
+/**
+ * Inline formatting tags, which carry no block of their own. One of these
+ * reaching a block position means the parent's text extraction stopped short —
+ * it does not mean the element has no mapping, so it must never fall through
+ * to the html-fallback arm.
+ *
+ * The hazard that keeps them listed here: a cell's inline markup and the bare
+ * text nodes around it are one run of rich text. Dispatching an inline element
+ * on its own emits a block whose entire content is `<br>` AND deletes every
+ * text node beside it, because a walk over element children never visits
+ * those. That is silent content loss — text visible in the source email never
+ * reaches the template.
+ *
+ * `a` is excluded on purpose: whether an anchor belongs to a run depends on
+ * how the source styled it, so the cell walk asks `isProseAnchor` per anchor
+ * instead. Reading every `<a>` as inline here would fold a styled call to
+ * action into the sentence beside it and lose the button.
+ */
+const INLINE_FORMATTING_TAGS = new Set([
+  "br",
+  "em",
+  "strong",
+  "i",
+  "b",
+  "u",
+  "small",
+  "sub",
+  "sup",
+]);
+
 function emptyPadding(): SpacingValue {
   return { top: 0, right: 0, bottom: 0, left: 0 };
 }
@@ -37,6 +191,140 @@ function tagOf(el: Element | AnyNode): string {
 
 function getStyles($el: Cheerio<Element>): Record<string, string> {
   return parseStyleAttribute($el.attr("style"));
+}
+
+/**
+ * Whether an element carries anything a reader would see: text, or an element
+ * that renders without text of its own.
+ *
+ * One rule with two readers, which is the point: it decides both whether a
+ * text container is worth a block at all and whether a wrapper is worth
+ * unwrapping. Two copies would let `<div><h3></h3></div>` be skipped by one
+ * and turned into an empty title by the other.
+ */
+function hasRenderedContent($el: Cheerio<Element>): boolean {
+  if (($el.text() ?? "").trim() !== "") return true;
+  return $el.find("img, a").length > 0;
+}
+
+/**
+ * The single element a container's whole content consists of, or `null` when
+ * the container holds anything else.
+ *
+ * Whitespace and comments are incidental — the same reading `extractContentBlocks`
+ * gives them — and `trim` counts `&nbsp;` among them, which is how the rest of
+ * this module reads it (`normalizeCellText`, and through it `isBlankCell`).
+ * Everything else is content: a second element, a bare word, or a rendering
+ * `<br>` all mean the container holds more than one thing, and unwrapping it
+ * would drop whatever was not unwrapped.
+ */
+function soleElementChild($el: Cheerio<Element>): Element | null {
+  let found: Element | null = null;
+
+  for (const node of $el.contents().toArray()) {
+    if (isText(node)) {
+      if (node.data.trim() !== "") return null;
+      continue;
+    }
+    if (!isTag(node)) continue;
+    if (found) return null;
+    found = node;
+  }
+
+  return found;
+}
+
+/**
+ * The styles the innermost element of a wrapper chain renders with: each
+ * container's own declarations, overridden by those of the element inside it.
+ *
+ * The container's styles have to travel, because the wrapper is where
+ * table-based email puts the colour, size, font and alignment — a plain
+ * `getStyles` on the unwrapped element trades a typing defect for a styling
+ * loss.
+ *
+ * A declaration of `inherit` states nothing of its own, so it must not shadow
+ * the container's value. That is load-bearing rather than pedantic: mjml@5
+ * puts every visual property on the wrapper div and writes `color: inherit` on
+ * the heading inside it, so honouring the keyword literally drops the colour
+ * the email actually renders with.
+ */
+function inheritedStyles(chain: Cheerio<Element>[]): Record<string, string> {
+  const merged: Record<string, string> = { ...getStyles(chain[0]) };
+
+  for (const $node of chain.slice(1)) {
+    for (const [property, value] of Object.entries(getStyles($node))) {
+      if (value.trim().toLowerCase() === "inherit") continue;
+      merged[property] = value;
+    }
+  }
+
+  return merged;
+}
+
+/**
+ * The element that takes a container's place when the container's entire
+ * meaningful content is one block-level element, together with the styles that
+ * element renders with. Returns the element handed in when there is nothing to
+ * unwrap.
+ *
+ * Generator-produced email wraps each text block in a plain `<div>` holding a
+ * single block-level element — compiled MJML puts one `<h3>` inside an
+ * `mj-text` body that rendered a heading. That `<div>` holds no table, so it
+ * is correctly not a container to descend, and `div` is a text tag here:
+ * mapping it emits a paragraph with the heading buried in its content, which
+ * loses the heading's semantics, its own styling and any downstream treatment
+ * of titles.
+ *
+ * Three constraints, each a hazard a relaxed version would reintroduce:
+ *
+ * - The chain must *end* on an `UNWRAPPABLE_BLOCK_TAGS` element. That is what
+ *   keeps a `div.mj-column-per-*` out: its sole child is a `<table>`, and
+ *   handing that to the dispatch below would html-fallback the whole column.
+ *   It also leaves a chain of containers bottoming out in bare text alone, so
+ *   `<div><div>copy</div></div>` keeps mapping as it did.
+ * - A container holding a table is refused outright, through the same
+ *   `isTableContainer` predicate the two traversals use. This decides the one
+ *   case the tag test cannot — a sole child that *is* a heading, with the
+ *   table below it — and both traversals descend such a container, so the
+ *   subtree is theirs rather than this dispatch's.
+ * - An empty wrapper is refused, so a container whose sole child renders
+ *   nothing stays skipped rather than becoming an empty title.
+ *
+ * Bounded by DOM depth: each step moves to a child.
+ */
+function resolveWrappedBlock(
+  $el: Cheerio<Element>,
+  $: CheerioAPI,
+): { $el: Cheerio<Element>; styles: Record<string, string> } {
+  const unwrapped = { $el, styles: getStyles($el) };
+
+  const chain: Cheerio<Element>[] = [$el];
+  let $current = $el;
+
+  for (;;) {
+    const tag = tagOf($current[0]);
+    if (!CONTAINER_TAGS.has(tag)) break;
+    if (isTableContainer($current, tag)) break;
+
+    const child = soleElementChild($current);
+    if (!child) break;
+
+    const childTag = tagOf(child);
+    if (!CONTAINER_TAGS.has(childTag) && !UNWRAPPABLE_BLOCK_TAGS.has(childTag))
+      break;
+
+    $current = $(child) as unknown as Cheerio<Element>;
+    chain.push($current);
+  }
+
+  if (chain.length === 1) return unwrapped;
+
+  const $target = chain[chain.length - 1];
+  if (!UNWRAPPABLE_BLOCK_TAGS.has(tagOf($target[0]))) return unwrapped;
+  if (!hasRenderedContent($target)) return unwrapped;
+
+  return { $el: $target, styles: inheritedStyles(chain) };
 }
 
 /**
@@ -62,10 +350,15 @@ function safeHtmlComment(message: string, raw: string): string {
 
 /**
  * Heading element (h1-h6) → Title block.
+ *
+ * `styles` is the element's own by default and the wrapper chain's when the
+ * heading was unwrapped out of a container — see `resolveWrappedBlock`.
  */
-function convertHeading($el: Cheerio<Element>): Block {
+function convertHeading(
+  $el: Cheerio<Element>,
+  styles: Record<string, string> = getStyles($el),
+): Block {
   const tag = tagOf($el[0]);
-  const styles = getStyles($el);
   const levelMatch = tag.match(/^h(\d)$/);
   const rawLevel = levelMatch ? Number(levelMatch[1]) : 2;
   const level: HeadingLevel = (
@@ -113,11 +406,13 @@ function applyTextAlignToParagraphs(html: string, textAlign: string): string {
 }
 
 /**
- * Paragraph or block-level text container → Paragraph block.
+ * Builds a Paragraph block from a fragment of inline markup, styled by the
+ * element that supplied `styles`.
  */
-function convertParagraph($el: Cheerio<Element>): Block {
-  const styles = getStyles($el);
-  const innerHtml = getInnerHtml($el);
+function buildParagraph(
+  innerHtml: string,
+  styles: Record<string, string>,
+): Block {
   const wrapped = ensureParagraphWrapped(innerHtml);
 
   // Apply container-level styles to the wrapping <p>.
@@ -150,6 +445,55 @@ function convertParagraph($el: Cheerio<Element>): Block {
       padding: readPaddingFromStyles(styles),
     },
   });
+}
+
+/**
+ * Paragraph or block-level text container → Paragraph block.
+ */
+function convertParagraph($el: Cheerio<Element>): Block {
+  return buildParagraph(getInnerHtml($el), getStyles($el));
+}
+
+/**
+ * Decides whether a child node of a table cell belongs to a run of inline
+ * text rather than to a block of its own: a bare text node, or one of the
+ * inline formatting tags.
+ */
+export function isInlineContent(node: AnyNode): boolean {
+  if (isText(node)) return true;
+  return isTag(node) && INLINE_FORMATTING_TAGS.has(node.tagName.toLowerCase());
+}
+
+/**
+ * Converts a run of consecutive inline nodes lifted out of a table cell into
+ * one Paragraph block, keeping their markup inside the paragraph's content.
+ *
+ * `$cell` supplies the styling: a bare run has no element of its own to read
+ * a colour, size or alignment from, and table-based email puts all three on
+ * the cell.
+ *
+ * Returns `null` for a run carrying no text — a cell holding nothing but
+ * `&nbsp;` and `<br>` has no content, the same reading `convertElement`
+ * gives an empty `<p>`.
+ */
+export function convertInlineRun(
+  nodes: AnyNode[],
+  $cell: Cheerio<Element>,
+  $: CheerioAPI,
+): { block: Block; entry: ImportReportEntry } | null {
+  const text = nodes.map((node) => $(node).text()).join("");
+  if (!text.trim()) return null;
+
+  const html = nodes.map((node) => $.html(node)).join("");
+
+  return {
+    block: buildParagraph(html, getStyles($cell)),
+    entry: {
+      sourceTag: tagOf($cell[0]),
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    },
+  };
 }
 
 /**
@@ -211,6 +555,106 @@ export function looksLikeButton(styles: Record<string, string>): boolean {
   const display = (styles.display ?? "").toLowerCase();
   if (display === "inline-block" || display === "block") return true;
   return false;
+}
+
+/**
+ * Decides whether an `<a>` belongs to the run of prose around it rather than
+ * to a block of its own: a link the source did not style as a button, whose
+ * own text is what the reader sees.
+ *
+ * A link inside a sentence is prose, so folding it keeps the sentence in one
+ * editable block — and keeps the anchor's markup, `href` included, which the
+ * per-element path drops (`convertParagraph` reads inner HTML, so the element
+ * itself never reaches the block).
+ *
+ * Two constraints, both hazards a relaxed version would reintroduce:
+ *
+ * - `looksLikeButton` is the same predicate `convertElement` and
+ *   `isButtonCell` use to tell a call to action from a link, so a styled
+ *   anchor is never absorbed into a sentence and keeps becoming a button.
+ * - The anchor must carry text. `convertInlineRun` reads a run with no text
+ *   as empty and emits nothing, so an anchor whose content is an image has to
+ *   keep the block it already gets; folding it would delete the image.
+ */
+export function isProseAnchor($el: Cheerio<Element>): boolean {
+  if (looksLikeButton(getStyles($el))) return false;
+  return ($el.text() ?? "").trim() !== "";
+}
+
+/**
+ * Walks an element's child *nodes*, grouping consecutive inline content into
+ * runs and handing every other element to the caller.
+ *
+ * A bare text node between two elements is content, and a walk over
+ * `children()` never visits it — so `Hello<br>World` loses both words while
+ * emitting a block holding nothing but `<br>`. Consecutive inline nodes
+ * therefore accumulate into one run and become a single paragraph, which is
+ * what makes a bare line agree with the same line wrapped in a `<p>`.
+ *
+ * One walker for all three content traversals — the body walk, the layout
+ * container walk and the cell walk — because a bare text node is content
+ * wherever it sits and the three have to read it identically. A second copy
+ * of this classification is the hazard: fixing it on one surface leaves the
+ * others silently dropping copy the source email displays, and nothing fails
+ * to say so. What differs between the three is only what a *block-level*
+ * element becomes, which is why that half is the caller's.
+ *
+ * `$host` is what a run reads its styling and source tag from: a bare run has
+ * no element of its own, and the nearest enclosing element is the one carrying
+ * the colour, size and alignment it renders with.
+ *
+ * A run never reaches across `$host`'s own children into a descendant's:
+ * `onElement` is called with the run already flushed, so a caller that
+ * recurses keeps the text before a block-level child ahead of it.
+ */
+export function walkContentNodes(
+  $host: Cheerio<Element>,
+  $: CheerioAPI,
+  onRun: (converted: { block: Block; entry: ImportReportEntry }) => void,
+  onElement: ($child: Cheerio<Element>, tag: string) => void,
+): void {
+  let inlineRun: AnyNode[] = [];
+
+  const flushInlineRun = () => {
+    if (inlineRun.length === 0) return;
+    const run = inlineRun;
+    inlineRun = [];
+    const converted = convertInlineRun(run, $host, $);
+    if (converted) onRun(converted);
+  };
+
+  for (const node of $host.contents().toArray()) {
+    if (isInlineContent(node)) {
+      inlineRun.push(node);
+      continue;
+    }
+    // Comments and processing instructions carry no content, and must not end
+    // the run either: a merge-tag comment sitting mid-sentence would otherwise
+    // split one line into two paragraphs.
+    if (!isTag(node)) continue;
+
+    const $child = $(node) as unknown as Cheerio<Element>;
+    const tag = node.tagName.toLowerCase();
+
+    // A link inside a sentence is part of that sentence, so it joins the run
+    // rather than ending it: one rich-text block carries the whole line, with
+    // the anchor's own markup inside it. The per-element path builds its
+    // paragraph from inner HTML, so the `<a>` never reaches the block and the
+    // `href` is lost.
+    //
+    // Asked before the run is flushed and before the caller sees the element,
+    // which is what keeps a call to action out of a sentence — a styled anchor
+    // is not a prose anchor, so it reaches `onElement` and becomes its button.
+    if (tag === "a" && isProseAnchor($child)) {
+      inlineRun.push(node);
+      continue;
+    }
+
+    flushInlineRun();
+    onElement($child, tag);
+  }
+
+  flushInlineRun();
 }
 
 /**
@@ -300,13 +744,32 @@ export function convertHtmlFallback(
 }
 
 /**
- * Decides whether a `<td>` looks like a vertical spacer:
- * empty (or only `&nbsp;`) AND has an explicit height.
+ * Decides whether a `<td>` / `<th>` carries nothing a reader would see: no
+ * text once source whitespace and `&nbsp;` are collapsed, and no element that
+ * renders on its own.
+ *
+ * Text alone is not the test. An image or a link carries no text and is
+ * content all the same, so a cell holding one is never blank — reading it as
+ * blank would make a picture-only column disappear.
+ *
+ * Lives here, with the other predicates both traversal modules consult,
+ * because a spacer cell and a row's gutter cells are one fact read for two
+ * purposes: `isSpacerCell` adds a stated height to it, and the section
+ * builder reads a row's blank cells as chrome rather than as columns. A
+ * second copy would let one cell be a spacer in one traversal and a column
+ * in the other.
+ */
+export function isBlankCell($el: Cheerio<Element>): boolean {
+  if (normalizeCellText($el.text() ?? "") !== "") return false;
+  return $el.find("img, a, hr").length === 0;
+}
+
+/**
+ * Decides whether a `<td>` looks like a vertical spacer: blank, and carrying
+ * an explicit height.
  */
 export function isSpacerCell($el: Cheerio<Element>): boolean {
-  const text = ($el.text() ?? "").replace(/\s| /g, "");
-  if (text !== "") return false;
-  if ($el.find("img, a, hr").length > 0) return false;
+  if (!isBlankCell($el)) return false;
 
   const styles = getStyles($el);
   const hasHeight =
@@ -317,8 +780,43 @@ export function isSpacerCell($el: Cheerio<Element>): boolean {
 }
 
 /**
- * Decides whether a `<td>` is a button container — i.e. has exactly one
- * `<a>` inside that itself looks like a button.
+ * Collapses every run of whitespace — `&nbsp;` included — to one space and
+ * trims. Source indentation and nested tags introduce whitespace that never
+ * renders, so a text comparison has to normalise both sides.
+ */
+function normalizeCellText(value: string): string {
+  return value.replace(/[\s\u00a0]+/g, " ").trim();
+}
+
+/**
+ * Whether the anchor *is* the cell rather than sitting inside its content.
+ *
+ * The hazard this guards: `buildCellButton` labels the button with the
+ * anchor's text and drops every other node in the cell, so classifying a
+ * sentence that merely contains a link as a button deletes the sentence. The
+ * constraint is that a cell only reads as a button when the link is its
+ * entire content — and `find("a")` matches at any depth, so an outer callout
+ * cell wrapping a real CTA reaches the same test.
+ */
+function isWholeCellAnchor(
+  $el: Cheerio<Element>,
+  $anchor: Cheerio<Element>,
+): boolean {
+  return (
+    normalizeCellText($el.text() ?? "") ===
+    normalizeCellText($anchor.text() ?? "")
+  );
+}
+
+/**
+ * Decides whether a `<td>` is a button container — i.e. its entire content is
+ * one `<a>`, styled as a button either on the anchor or on the cell.
+ *
+ * Both arms require the anchor to be the cell's whole content. The anchor's
+ * own styling is the stronger signal that a link is *a button*, but it says
+ * nothing about whether the link is *the cell*, and `find("a")` matches at
+ * any depth — so a callout cell holding a paragraph plus a self-styled CTA
+ * satisfies the anchor arm exactly as it does the cell arm.
  */
 export function isButtonCell(
   $el: Cheerio<Element>,
@@ -327,6 +825,8 @@ export function isButtonCell(
   const anchors = $el.find("a");
   if (anchors.length !== 1) return { match: false };
   const anchor = $(anchors[0]);
+  if (!isWholeCellAnchor($el, anchor)) return { match: false };
+
   if (looksLikeButton(getStyles(anchor))) return { match: true, anchor };
   // Cell-level styling (bg, padding) wrapping a plain anchor reads as a
   // button only when the anchor actually has an href. Without one, the
@@ -346,6 +846,13 @@ export function isButtonCell(
  * Converts a single content-bearing element (heading / paragraph / image /
  * anchor-as-button / divider) to a Templatical block.
  *
+ * A container whose entire meaningful content is one block-level element is
+ * unwrapped first, so the element inside is what gets mapped and named in the
+ * report — see `resolveWrappedBlock`. Only a heading can come back from that,
+ * which is why the heading branch is the only one taking the resolved styles:
+ * for every other branch the resolved element is the one handed in, so its own
+ * styles are what `styles` already holds.
+ *
  * Returns `null` for elements that do not contain any meaningful content
  * (the caller should skip them).
  */
@@ -353,12 +860,13 @@ export function convertElement(
   $el: Cheerio<Element>,
   $: CheerioAPI,
 ): { block: Block; entry: ImportReportEntry } | null {
-  const tag = tagOf($el[0]);
+  const { $el: $target, styles } = resolveWrappedBlock($el, $);
+  const tag = tagOf($target[0]);
   if (!tag) return null;
 
   if (HEADING_TAGS.has(tag)) {
     return {
-      block: convertHeading($el),
+      block: convertHeading($target, styles),
       entry: {
         sourceTag: tag,
         templaticalBlockType: "title",
@@ -369,7 +877,7 @@ export function convertElement(
 
   if (tag === "img") {
     return {
-      block: convertImage($el),
+      block: convertImage($target),
       entry: {
         sourceTag: tag,
         templaticalBlockType: "image",
@@ -379,9 +887,9 @@ export function convertElement(
   }
 
   if (tag === "a") {
-    if (looksLikeButton(getStyles($el))) {
+    if (looksLikeButton(styles)) {
       return {
-        block: convertButton($el),
+        block: convertButton($target),
         entry: {
           sourceTag: tag,
           templaticalBlockType: "button",
@@ -391,7 +899,7 @@ export function convertElement(
     }
     // Plain anchor — wrap as paragraph.
     return {
-      block: convertParagraph($el),
+      block: convertParagraph($target),
       entry: {
         sourceTag: tag,
         templaticalBlockType: "paragraph",
@@ -403,7 +911,7 @@ export function convertElement(
 
   if (tag === "hr") {
     return {
-      block: convertDivider($el),
+      block: convertDivider($target),
       entry: {
         sourceTag: tag,
         templaticalBlockType: "divider",
@@ -413,10 +921,9 @@ export function convertElement(
   }
 
   if (TEXT_TAGS.has(tag)) {
-    const text = ($el.text() ?? "").trim();
-    if (!text && $el.find("img, a").length === 0) return null;
+    if (!hasRenderedContent($target)) return null;
     return {
-      block: convertParagraph($el),
+      block: convertParagraph($target),
       entry: {
         sourceTag: tag,
         templaticalBlockType: "paragraph",
@@ -428,7 +935,7 @@ export function convertElement(
   // Unknown element — preserve as HTML.
   return {
     block: convertHtmlFallback(
-      $el,
+      $target,
       $,
       `Unsupported element <${tag}>: preserved as raw HTML`,
     ),

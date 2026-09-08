@@ -509,9 +509,15 @@ importers:
         specifier: ^6.0.1
         version: 6.0.1
     devDependencies:
+      '@templatical/renderer':
+        specifier: workspace:*
+        version: link:../renderer
       '@types/node':
         specifier: ^25.9.5
         version: 25.9.5
+      mjml:
+        specifier: ^5.4.0
+        version: 5.4.0(relateurl@0.2.7)(svgo@4.1.0)(terser@5.51.2)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

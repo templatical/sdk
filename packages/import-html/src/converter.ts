@@ -7,7 +7,11 @@ import {
 } from "@templatical/types";
 import type { Block, TemplateContent } from "@templatical/types";
 import { resolveCssStyles } from "./css-resolver";
-import { convertElement } from "./block-mapper";
+import {
+  convertElement,
+  isTableContainer,
+  walkContentNodes,
+} from "./block-mapper";
 import { processTable } from "./section-builder";
 import {
   parseColor,
@@ -68,9 +72,21 @@ function extractSettings($: CheerioAPI): TemplateContent["settings"] {
 
 /**
  * Wrap a list of free-floating blocks (those produced by top-level non-table
- * elements) in a single one-column section.
+ * elements) in a single one-column section, and report the section.
+ *
+ * The section corresponds to no source element, so the report names `body` and
+ * says the section is synthetic — otherwise a caller counting sections against
+ * the rows it can see in the source finds one it cannot account for. Nothing is
+ * lost on this path: every loose block keeps its order inside the one column,
+ * which is why the status is `converted` rather than an approximation.
  */
-function wrapInSection(blocks: Block[]): Block {
+function wrapInSection(blocks: Block[], entries: ImportReportEntry[]): Block {
+  entries.push({
+    sourceTag: "body",
+    templaticalBlockType: "section",
+    status: "converted",
+    note: "Loose top-level content was grouped into a synthetic single-column section.",
+  });
   return createSectionBlock({
     columns: "1",
     children: [blocks],
@@ -81,8 +97,14 @@ function wrapInSection(blocks: Block[]): Block {
 }
 
 /**
- * Walk top-level body children. Tables become sections; loose content
- * elements are accumulated and wrapped in a single one-column section.
+ * Walk the body's child nodes. Tables become sections; loose content is
+ * accumulated and wrapped in a single one-column section.
+ *
+ * Both walks below go through `walkContentNodes`, the same node
+ * classification the cell walk uses, so bare text and inline markup at body
+ * level and inside a layout container reach a rich-text block. A walk over
+ * `children()` visits neither, which drops copy the source email displays —
+ * `Lead<h2>H</h2>Trailing` imported as the heading alone.
  */
 function processBody(
   $: CheerioAPI,
@@ -91,57 +113,85 @@ function processBody(
 ): Block[] {
   const blocks: Block[] = [];
   const $body = $("body");
-  const children = $body.children().toArray();
 
   let pendingLoose: Block[] = [];
 
   const flushLoose = () => {
     if (pendingLoose.length > 0) {
-      blocks.push(wrapInSection(pendingLoose));
+      blocks.push(wrapInSection(pendingLoose, entries));
       pendingLoose = [];
     }
   };
 
-  for (const childEl of children) {
-    const tag = childEl.tagName?.toLowerCase() ?? "";
-    const $child = $(childEl) as unknown as Cheerio<Element>;
+  const collectLoose = ({
+    block,
+    entry,
+  }: {
+    block: Block;
+    entry: ImportReportEntry;
+  }) => {
+    entries.push(entry);
+    pendingLoose.push(block);
+  };
 
+  /**
+   * Descend a layout container, taking its tables as sections and everything
+   * else as loose content. A container holding another container descends
+   * again, so a table reaches `processTable` at whatever depth the wrapper
+   * markup buries it — MJML nests an outer body div around one div per
+   * section around the section's table, and a single-level walk sees only the
+   * middle div, which the block mapper turns into one paragraph swallowing
+   * the entire table subtree.
+   *
+   * Bounded by DOM depth: a container is descended only when it holds a
+   * table, and each step moves to a child.
+   *
+   * Declared here so every depth shares `pendingLoose` and `flushLoose`. A
+   * per-level accumulator flushes at the wrong point and reorders the
+   * document: content sitting before a nested table lands after it.
+   */
+  const walkContainer = ($container: Cheerio<Element>): void => {
+    walkContentNodes($container, $, collectLoose, ($inner, innerTag) => {
+      if (innerTag === "table") {
+        // Flush loose content accumulated BEFORE this table so it keeps its
+        // source position, mirroring the top-level walk. Without this, the
+        // table is appended immediately while leading siblings are flushed
+        // only after the walk — reordering the document.
+        flushLoose();
+        blocks.push(...processTable($inner, $, entries, warnings, false));
+        return;
+      }
+
+      if (isTableContainer($inner, innerTag)) {
+        walkContainer($inner);
+        return;
+      }
+
+      const r = convertElement($inner, $);
+      if (r) {
+        entries.push(r.entry);
+        pendingLoose.push(r.block);
+      }
+    });
+  };
+
+  walkContentNodes($body, $, collectLoose, ($child, tag) => {
     if (tag === "table") {
       flushLoose();
       blocks.push(...processTable($child, $, entries, warnings, false));
-      continue;
+      return;
     }
 
     // Skip hidden preheader divs — already captured in settings.
     const childStyles = parseStyleAttribute($child.attr("style"));
-    if ((childStyles.display ?? "").toLowerCase() === "none") continue;
+    if ((childStyles.display ?? "").toLowerCase() === "none") return;
 
-    // Containers like a wrapping <div> with table children: recurse.
-    if (
-      (tag === "div" || tag === "center" || tag === "main") &&
-      $child.find("table").length > 0
-    ) {
+    // Containers like a wrapping <div> with table children: descend.
+    if (isTableContainer($child, tag)) {
       flushLoose();
-      $child.children().each((_, innerEl) => {
-        const innerTag = innerEl.tagName?.toLowerCase() ?? "";
-        const $inner = $(innerEl) as unknown as Cheerio<Element>;
-        if (innerTag === "table") {
-          // Flush loose content accumulated BEFORE this table so it keeps its
-          // source position, mirroring the top-level loop. Without this, the
-          // table is appended immediately while leading siblings are flushed
-          // only after the loop — reordering the document.
-          flushLoose();
-          blocks.push(...processTable($inner, $, entries, warnings, false));
-        } else {
-          const r = convertElement($inner, $);
-          if (r) {
-            entries.push(r.entry);
-            pendingLoose.push(r.block);
-          }
-        }
-      });
+      walkContainer($child);
       flushLoose();
-      continue;
+      return;
     }
 
     const r = convertElement($child, $);
@@ -149,7 +199,7 @@ function processBody(
       entries.push(r.entry);
       pendingLoose.push(r.block);
     }
-  }
+  });
 
   flushLoose();
   return blocks;
