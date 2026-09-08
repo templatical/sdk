@@ -1,4 +1,6 @@
 import type { Editor } from "@tiptap/core";
+import type { SyntaxPreset } from "@templatical/types";
+import { SYNTAX_PRESETS } from "@templatical/types";
 import { ref, type Ref, type ShallowRef } from "vue";
 import { useFocusTrap } from "./useFocusTrap";
 import { sanitizeLinkColor } from "../utils/linkColorExtension";
@@ -18,6 +20,7 @@ export interface UseRichTextLinkDialogReturn {
 
 export function useRichTextLinkDialog(
   editor: ShallowRef<Editor | null>,
+  syntax: SyntaxPreset = SYNTAX_PRESETS.liquid,
 ): UseRichTextLinkDialogReturn {
   const showLinkDialog = ref(false);
   const linkUrl = ref("");
@@ -77,6 +80,13 @@ export function useRichTextLinkDialog(
     "cid",
   ]);
 
+  // Anchored, non-global copy of the configured value syntax. A fresh RegExp
+  // per call is required: `syntax.value` carries the `g` flag, and `.test()`
+  // on a global regex advances `lastIndex` between calls.
+  function startsWithMergeTag(value: string): boolean {
+    return new RegExp(`^(?:${syntax.value.source})`).test(value);
+  }
+
   function normalizeLinkUrl(raw: string): string | null {
     const trimmed = raw.trim();
     if (!trimmed) return null;
@@ -85,6 +95,12 @@ export function useRichTextLinkDialog(
     if (schemeMatch) {
       return SAFE_SCHEMES.has(schemeMatch[1].toLowerCase()) ? trimmed : null;
     }
+    // A URL that opens with a merge tag is completed by the sending system,
+    // not by us: the tag can already carry its own scheme, so prefixing
+    // `https://` would ship `https://https://…`. Checked after the scheme
+    // allowlist so a tag can never smuggle a rejected scheme past it, and
+    // only for a *leading* tag — `example.com/{{id}}` is still a bare host.
+    if (startsWithMergeTag(trimmed)) return trimmed;
     return `https://${trimmed}`;
   }
 

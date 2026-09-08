@@ -2,7 +2,8 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { defineComponent, h, ref } from 'vue';
 import { mount } from '@vue/test-utils';
-import { EDITOR_KEY, MERGE_TAGS_KEY, ON_REQUEST_MERGE_TAG_KEY } from '../src/keys';
+import { EDITOR_KEY, MERGE_TAGS_KEY, MERGE_TAG_SYNTAX_KEY, ON_REQUEST_MERGE_TAG_KEY } from '../src/keys';
+import { SYNTAX_PRESETS } from '@templatical/types';
 import { useRichTextEditor } from '../src/composables/useRichTextEditor';
 import { makeStubTranslations } from './helpers/translations';
 
@@ -21,6 +22,7 @@ class StubEditor {
   onUpdate: StubEditorOpts['onUpdate'];
   destroyed = false;
   focusCalls: string[] = [];
+  linkHrefs: string[] = [];
   commands = {
     focus: (pos?: string) => {
       this.focusCalls.push(pos ?? '');
@@ -42,6 +44,10 @@ class StubEditor {
     return this.html;
   }
 
+  getAttributes(_mark: string): Record<string, unknown> {
+    return {};
+  }
+
   setHTMLExternally(html: string): void {
     this.html = html;
     this.onUpdate?.({ editor: this });
@@ -55,6 +61,14 @@ class StubEditor {
         self.html += `<merge-tag data-label="${tag.label}" data-value="${tag.value}"/>`;
         return chainObj;
       },
+      extendMarkRange: () => chainObj,
+      setLink: (attrs: { href: string }) => {
+        self.linkHrefs.push(attrs.href);
+        return chainObj;
+      },
+      updateAttributes: () => chainObj,
+      unsetLink: () => chainObj,
+      unsetColor: () => chainObj,
       run: () => true,
     };
     return chainObj;
@@ -150,6 +164,39 @@ async function flushAsync() {
 describe('useRichTextEditor', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
+  });
+
+  // The link dialog is constructed inside this composable, so the configured
+  // merge-tag syntax has to be forwarded to it. Passing the syntax straight to
+  // useRichTextLinkDialog in its own unit test proves nothing about that hop.
+  describe('link dialog syntax wiring', () => {
+    it('forwards the configured syntax so a bare tag is not prefixed', async () => {
+      const ctx = mountRichText({}, {
+        [MERGE_TAG_SYNTAX_KEY]: SYNTAX_PRESETS.mailchimp,
+      });
+      await flushAsync();
+
+      ctx.api().linkUrl.value = '*|EVENT_LINK|*';
+      ctx.api().insertLink();
+
+      expect((ctx.api().editor.value as any).linkHrefs).toEqual([
+        '*|EVENT_LINK|*',
+      ]);
+    });
+
+    it('still completes a bare host under a non-liquid syntax', async () => {
+      const ctx = mountRichText({}, {
+        [MERGE_TAG_SYNTAX_KEY]: SYNTAX_PRESETS.mailchimp,
+      });
+      await flushAsync();
+
+      ctx.api().linkUrl.value = 'example.com';
+      ctx.api().insertLink();
+
+      expect((ctx.api().editor.value as any).linkHrefs).toEqual([
+        'https://example.com',
+      ]);
+    });
   });
 
   describe('initialization', () => {
