@@ -223,6 +223,7 @@ export type {
   MediaResult,
   MergeTag,
   MergeTagsConfig,
+  TemplateSettingsConfig,
   ThemeOverrides,
   UiTheme,
   ViewportSize,

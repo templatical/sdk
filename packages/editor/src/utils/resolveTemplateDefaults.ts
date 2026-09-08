@@ -17,9 +17,11 @@ const LANGUAGE_TAG = /^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i;
  *
  * Without this a fresh template rendered `<mjml lang="en">` regardless of the
  * editor's language, so German copy announced itself as English to every screen
- * reader that opened the delivered email. The author can still change it
- * afterwards — Template Settings exposes it as "Content language" — so this
- * only decides the *starting* value.
+ * reader that opened the delivered email. This only decides the *starting*
+ * value: the author can change it afterwards, since Template Settings exposes
+ * it as "Content language" — **unless** the consumer excluded `locale` from
+ * `templateSettings.fields`, in which case that card is gone and this seed is
+ * the only thing that sets a blank template's content language.
  *
  * Three details are load-bearing:
  *

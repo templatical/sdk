@@ -67,6 +67,7 @@ unmount();
 | `templateDefaults`  | `TemplateDefaults`                                                | Nein     | Standardeinstellungen für leere Templates. Siehe [Standardwerte](/de/guide/defaults)                                                                                                                                                                                                                                              |
 | `fonts`             | `FontsConfig`                                                     | Nein     | Schriftart-Konfiguration. Siehe [Benutzerdefinierte Schriftarten](/de/guide/fonts)                                                                                                                                                                                                                                                |
 | `colors`            | `ColorsConfig`                                                    | Nein     | Farbwähler-Palette. `presets` werden als anklickbares Raster in jedem Farbwähler gerendert; `allowCustom: false` beschränkt Autoren darauf. Siehe [Vordefinierte Farben](#vordefinierte-farben)                                                                                                                                   |
+| `templateSettings`  | `TemplateSettingsConfig`                                          | Nein     | Welche Template-Einstellungen das Einstellungs-Panel anbietet. `fields` ist eine Positivliste über die Mitglieder von `TemplateSettings` oder `false` für keine (dann entfällt der Tab). Ohne Angabe sind alle Einstellungen bearbeitbar. Siehe [Einstellungs-Panel einschränken](#einstellungs-panel-einschraenken) |
 | `theme`             | `ThemeOverrides`                                                  | Nein     | Überschreibungen für Farb-Tokens. Unterstützt einen `dark`-Schlüssel für Dark-Mode-Überschreibungen. Siehe [Theming](/de/guide/theming)                                                                                                                                                                                           |
 | `uiTheme`           | `'light' \| 'dark' \| 'auto'`                                     | Nein     | UI-Farbschema. `'auto'` folgt den Systemeinstellungen. Standardwert ist `'auto'`                                                                                                                                                                                                                                                  |
 | `locale`            | `string`                                                          | Nein     | Locale-Code (z. B. `'en'`, `'de'`, `'pt-BR'`, `'es'`, `'ca'`, `'fr'`, `'nl'`). Standardwert ist `'en'`                                                                                                                                                                                                                                                                       |
@@ -142,6 +143,46 @@ const editor = await init({
 - **`presets`** — Hex-Zeichenketten, die als anklickbares Raster gerendert werden. Ein Klick übernimmt die Farbe; die vordefinierte Farbe, die dem aktuellen Wert entspricht, wird als ausgewählt markiert. Ergänzt das Farbrad und das Hex-Eingabefeld. Jeder Eintrag muss eine `#rgb`- oder `#rrggbb`-Hex-Zeichenkette sein — 4-/8-stellige Alpha-Hex-Werte und andere Formate werden übersprungen und mit einer Konsolenwarnung protokolliert, die die betreffenden Einträge auflistet.
 - **`allowCustom`** — standardmäßig `true`. Auf `false` gesetzt (zusammen mit `presets`) werden das Farbrad und das Hex-Eingabefeld ausgeblendet, sodass Autoren nur aus der Palette wählen können — nützlich beim Einbetten des Editors als White-Label- / Brand-Kit-Werkzeug. In diesem gesperrten Modus beginnt die Palette mit einem „Keine Farbe“-Feld, das den nicht gesetzten (geerbten) Zustand wiederherstellt, da die Schaltfläche zum Löschen des Hex-Eingabefelds ausgeblendet ist. Ebenfalls im gesperrten Modus protokolliert der Editor eine Entwicklungswarnung, wenn eine Farbe aus `blockDefaults` / `templateDefaults` außerhalb von `presets` liegt — neue Blöcke würden sonst mit einer Farbe beginnen, die kein Farbwähler erneut auswählen kann; setzen Sie diese Standardwerte daher aus derselben Palette. Wird mit einer Warnung ignoriert, wenn keine `presets` konfiguriert sind, da der Farbwähler sonst keine Möglichkeit hätte, eine Farbe festzulegen.
 - **Einschränkung auf Feldebene.** Das `color`-Feld eines benutzerdefinierten Blocks kann eigene `presets` / `allowCustom` mitbringen — siehe [vordefinierte Farben pro Feld](/de/guide/custom-blocks#color). Ein Feld darf eine eigene Palette vorgeben oder einzeln gesperrt werden, während der übrige Editor freie Eingaben zulässt; seine `presets` ersetzen dieses Raster für dieses Feld, statt eine Schnittmenge damit zu bilden, sodass ein gesperrtes Feld Farben anbieten kann, die in diesen `presets` überhaupt nicht vorkommen. Was ein Feld nie kann, ist den Editor entsperren — `allowCustom: false` sperrt hier weiterhin jeden Farbwähler.
+
+### Einstellungs-Panel einschränken {#einstellungs-panel-einschraenken}
+
+Der Tab „Einstellungen“ in der rechten Seitenleiste bietet die acht Mitglieder von `TemplateSettings` an. Übergeben Sie `templateSettings.fields`, um daraus eine Positivliste zu machen — für Einstellungen, die Ihre Anwendung besitzt und nicht der Autor:
+
+```ts
+const editor = await init({
+  container: "#editor",
+  templateSettings: {
+    fields: [
+      "width",
+      "backgroundColor",
+      "textColor",
+      "linkColor",
+      "linkUnderline",
+      "fontFamily",
+    ],
+  },
+});
+```
+
+| Wert | Ergebnis |
+|---|---|
+| ohne Angabe oder `fields: true` | alle Einstellungen sind bearbeitbar |
+| `fields: [...]` | nur die aufgeführten Einstellungen |
+| `fields: false` oder `fields: []` | keine — der Tab „Einstellungen“ wird nicht gerendert |
+
+Die Felder sind `width`, `backgroundColor`, `textColor`, `linkColor`, `linkUnderline`, `fontFamily`, `locale` und `preheaderText`.
+
+- **Karten folgen ihren Feldern.** Eine Karte wird gerendert, solange mindestens eine ihrer Einstellungen übrig bleibt. Ohne `locale` entfällt die Sprach-Karte, ohne `preheaderText` die Preheader-Karte. `width` bildet die Layout-Karte, die fünf Farb- und Schrift-Einstellungen die Darstellungs-Karte.
+- **Die Liste schränkt ein, sie sortiert nicht um.** Einstellungen sitzen in festen Karten — anders als bei [`paletteBlocks`](#block-palette-anpassen) gibt es keine Reihenfolge auszudrücken.
+- **Ein unbekannter Eintrag wird mit einer Konsolenwarnung übersprungen.** TypeScript lehnt ihn bereits beim Kompilieren ab; bei einem JavaScript-Aufruf schränkt ein Tippfehler das Panel weiter ein, statt stillschweigend alle Einstellungen wiederherzustellen.
+- **Eine Einstellung auszublenden ändert ihren Wert nicht.** Was der geladene Inhalt mitbringt, wird weiterhin gerendert und bleibt über `getContent()` und den Export erhalten. Setzen Sie die ausgeblendeten Werte über den Inhalt, den Sie dem Editor übergeben — `init({ content })` oder das `load` Ihres eigenen `templates`-Providers, die Nahtstelle für „die Sprache dieses Templates kommt aus meiner Anwendung“. Für ein Template, das Sie **laden**, genügt [`templateDefaults`](/de/guide/defaults) dafür nicht: es greift nur, wenn kein Inhalt übergeben wird. Bei einem *leeren* Template greift es, und für `locale` gibt es dort eine Abkürzung — `init({ locale })` setzt die Inhaltssprache, solange Sie kein `templateDefaults.locale` angeben, sodass auch bei ausgeblendetem Feld das richtige `<html lang>` entsteht.
+- **Keine Sicherheitsgrenze.** Die Positivliste liegt im Browser des Nutzers, wie jede andere clientseitige Einschränkung. Prüfen Sie serverseitig, was Sie speichern.
+- **Ohne `locale` ist auch die Sprache neuer Blöcke festgelegt.** Die `locale` eines Templates bestimmt die empfängerseitigen Standardwerte, mit denen ein neu eingefügter Block startet — das `alt` eines Videos, die Beschriftungen und die Ablaufmeldung eines Countdowns. Ohne das Feld folgen diese der Sprache, die der geladene Inhalt mitbringt, und der Autor kann sie nicht mehr ändern. Das ist meist genau die Absicht, bedeutet aber: der Wert, den Sie setzen, wirkt über `<html lang>` hinaus.
+- **Ohne `preheaderText` bleibt eine Linter-Regel ohne Handlungsoption.** `a11y.missing-preheader` (Schweregrad `info`) meldet ein Template ohne Preheader, und ohne das Feld kann der Autor darauf nicht reagieren. Setzen Sie entweder einen Preheader im geladenen Inhalt oder schalten Sie die Regel ab: `lint: { accessibility: { rules: { 'a11y.missing-preheader': 'off' } } }`. Keine andere Regel liest eine Template-Einstellung.
+
+::: tip Verwandte Einschränkungen
+Andere Teile der Editor-Oberfläche haben eigene Schlüssel: [`paletteBlocks`](#block-palette-anpassen) für die Block-Palette, [`fonts.builtIns`](/de/guide/fonts) für die Schriftauswahl, [`colors.allowCustom`](#vordefinierte-farben) für freie Farbeingaben und `templates.nameField` für das Namensfeld in der Kopfzeile.
+:::
 
 ## TemplaticalEditor
 

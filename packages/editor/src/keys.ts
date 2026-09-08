@@ -125,6 +125,21 @@ export const COLORS_KEY: InjectionKey<
   import("./utils/resolveColorsConfig").ResolvedColors
 > = Symbol("colors");
 
+/**
+ * The template settings the panel may render (`config.templateSettings.fields`),
+ * resolved to a set of `TemplateSettings` member names by
+ * `resolveTemplateSettingsFields`. Provided by `useEditorCore`, consumed by
+ * `TemplateSettings.vue` for its cards and by `RightSidebar.vue` for the
+ * Settings tab.
+ *
+ * Consumers inject with `ALL_TEMPLATE_SETTINGS_FIELDS` as the default, never an
+ * empty set: the key is absent for anyone who configured nothing, and this
+ * config only ever narrows.
+ */
+export const TEMPLATE_SETTINGS_FIELDS_KEY: InjectionKey<
+  ReadonlySet<import("./utils/templateSettingsFields").TemplateSettingsField>
+> = Symbol("templateSettingsFields");
+
 export const CUSTOM_BLOCK_STYLESHEETS_KEY: InjectionKey<ComputedRef<string[]>> =
   Symbol("customBlockStylesheets");
 
