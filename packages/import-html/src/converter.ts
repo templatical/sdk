@@ -7,7 +7,7 @@ import {
 } from "@templatical/types";
 import type { Block, TemplateContent } from "@templatical/types";
 import { resolveCssStyles } from "./css-resolver";
-import { convertElement } from "./block-mapper";
+import { convertElement, isTableContainer } from "./block-mapper";
 import { processTable } from "./section-builder";
 import {
   parseColor,
@@ -90,21 +90,6 @@ function wrapInSection(blocks: Block[], entries: ImportReportEntry[]): Block {
       padding: emptyPadding(),
     },
   });
-}
-
-const CONTAINER_TAGS = new Set(["div", "center", "main"]);
-
-/**
- * Decides whether an element is a layout container worth descending into: a
- * wrapper tag that holds a table somewhere below it.
- *
- * The table test is what keeps the descent from widening into "descend every
- * div". `div` is a text tag in the block mapper, so a container holding only
- * copy must keep that mapping and become one paragraph rather than being
- * split into a block per child.
- */
-function isTableContainer($el: Cheerio<Element>, tag: string): boolean {
-  return CONTAINER_TAGS.has(tag) && $el.find("table").length > 0;
 }
 
 /**

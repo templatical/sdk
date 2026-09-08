@@ -27,6 +27,31 @@ const HEADING_TAGS = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
 const TEXT_TAGS = new Set(["p", "span", "div"]);
 
 /**
+ * Wrapper tags that carry layout rather than content. One of these is worth
+ * descending into when it holds a table somewhere below it.
+ */
+const CONTAINER_TAGS = new Set(["div", "center", "main"]);
+
+/**
+ * Decides whether an element is a layout container worth descending into: a
+ * wrapper tag that holds a table somewhere below it.
+ *
+ * The table test is what keeps the descent from widening into "descend every
+ * div". `div` is in `TEXT_TAGS` above, so a container holding only copy must
+ * keep that mapping and become one paragraph rather than being split into a
+ * block per child.
+ *
+ * Lives here, with the other predicates both traversal modules consult,
+ * because the body walk and the cell walk have to agree on what a container
+ * is. A second copy answers the question differently the moment either is
+ * edited, and the divergence shows up as a table swallowed into a paragraph
+ * on whichever surface was missed.
+ */
+export function isTableContainer($el: Cheerio<Element>, tag: string): boolean {
+  return CONTAINER_TAGS.has(tag) && $el.find("table").length > 0;
+}
+
+/**
  * Inline formatting tags, which carry no block of their own. One of these
  * reaching a block position means the parent's text extraction stopped short —
  * it does not mean the element has no mapping, so it must never fall through

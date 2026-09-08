@@ -911,3 +911,155 @@ describe("processTable — the section a row produces is in the report", () => {
     ).toEqual([]);
   });
 });
+
+describe("extractCellBlocks — a container in a cell is descended to its table", () => {
+  /** A one-cell-per-row layout table, the shape a column wrapper holds. */
+  const columnTable =
+    '<table role="presentation">' +
+    "<tr><td><h2>Column heading</h2></td></tr>" +
+    "<tr><td><p>Column copy.</p></td></tr>" +
+    "</table>";
+
+  it("descends a <div> wrapping a layout table instead of reading it as text", () => {
+    const { blocks, entries } = runCell(`<div>${columnTable}</div>`);
+
+    // The container carries no block of its own, so the cell's blocks are the
+    // table's leaves. The hazard: `div` is a text tag in the block mapper, so
+    // handing the container to `convertElement` emits one paragraph whose
+    // content is the entire table subtree as raw markup.
+    expect(blocks.map((b) => b.type)).toEqual(["title", "paragraph"]);
+
+    const heading = blocks[0];
+    const copy = blocks[1];
+    if (heading.type !== "title" || copy.type !== "paragraph")
+      throw new Error("expected a title and a paragraph");
+    expect(heading.content).toBe("<p>Column heading</p>");
+    expect(copy.content).toBe("<p>Column copy.</p>");
+
+    // A descended container contributes no entry of its own, matching a
+    // descended wrapper row: nothing is created and nothing is lost. The
+    // trailing `tr` is the section the outer wrapper row emits.
+    expect(
+      entries.map((entry) => [entry.sourceTag, entry.templaticalBlockType]),
+    ).toEqual([
+      ["h2", "title"],
+      ["p", "paragraph"],
+      ["tr", "section"],
+    ]);
+  });
+
+  it("flattens a multi-column table a container hides", () => {
+    const { blocks, entries } = runCell(
+      '<div><table role="presentation"><tr>' +
+        "<td><h2>Left heading</h2></td>" +
+        "<td><p>Right copy.</p></td>" +
+        "</tr></table></div>",
+    );
+
+    // Templatical forbids a section inside a column, so a table reached from
+    // a cell flattens however many containers deep it sits.
+    expect(blocks.map((b) => b.type)).toEqual(["title", "paragraph"]);
+    expect(blocks.some((b) => b.type === "section")).toBe(false);
+
+    const flattened = entries.filter(
+      (entry) => entry.templaticalBlockType === null,
+    );
+    expect(flattened).toHaveLength(1);
+    expect(flattened[0].sourceTag).toBe("tr");
+    expect(flattened[0].status).toBe("approximated");
+    expect(flattened[0].note).toBe(
+      "Nested row of 2 cells lost its columns. A Templatical section cannot nest inside a column, so its cells were merged into the surrounding column.",
+    );
+  });
+
+  it("descends every container a cell holds, in source order", () => {
+    // The compiled-MJML shape: one wrapper div per column, siblings in a
+    // single cell. Each becomes a paragraph of raw markup without the descent.
+    const { blocks } = runCell(
+      '<div><table role="presentation"><tr><td><h2>First</h2></td></tr></table></div>' +
+        '<div><table role="presentation"><tr><td><h2>Second</h2></td></tr></table></div>',
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual(["title", "title"]);
+    expect(blocks.map((b) => (b.type === "title" ? b.content : null))).toEqual([
+      "<p>First</p>",
+      "<p>Second</p>",
+    ]);
+  });
+
+  it("descends a container nested inside another container", () => {
+    const { blocks } = runCell(`<div><div>${columnTable}</div></div>`);
+
+    expect(blocks.map((b) => b.type)).toEqual(["title", "paragraph"]);
+  });
+
+  it("descends <center> and <main> the same way as <div>", () => {
+    for (const tag of ["center", "main"]) {
+      const { blocks } = runCell(`<${tag}>${columnTable}</${tag}>`);
+      expect(blocks.map((b) => b.type)).toEqual(["title", "paragraph"]);
+    }
+  });
+
+  it("keeps an element sitting beside the table inside a container", () => {
+    const { blocks } = runCell(
+      `<div><h2>Beside the table</h2>${columnTable}</div>`,
+    );
+
+    // Descending a container discards nothing: its non-table children are
+    // converted in place, so a heading beside the table survives in order.
+    expect(blocks.map((b) => b.type)).toEqual(["title", "title", "paragraph"]);
+    const aside = blocks[0];
+    if (aside.type !== "title") throw new Error("expected title block");
+    expect(aside.content).toBe("<p>Beside the table</p>");
+  });
+
+  it("keeps bare text sitting beside the table inside a container", () => {
+    const { blocks, entries } = runCell(
+      `<div>Lead-in text.${columnTable}</div>`,
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual([
+      "paragraph",
+      "title",
+      "paragraph",
+    ]);
+    const lead = blocks[0];
+    if (lead.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(lead.content).toBe("<p>Lead-in text.</p>");
+
+    // The run is styled by, and reported against, the container it sits in —
+    // the nearest element that could carry a colour, size or alignment.
+    expect(entries[0].sourceTag).toBe("div");
+    expect(entries[0].templaticalBlockType).toBe("paragraph");
+  });
+
+  it("keeps a container holding no table as one paragraph", () => {
+    const { blocks, entries } = runCell(
+      '<div style="color:#334455">Just prose, no table.</div>',
+    );
+
+    // The negative control for the descent. `div` is a text tag, so a
+    // container of copy must keep that mapping rather than being split into a
+    // block per child.
+    expect(blocks.map((b) => b.type)).toEqual(["paragraph"]);
+    const copy = blocks[0];
+    if (copy.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(copy.content).toBe(
+      '<p><span style="color: #334455">Just prose, no table.</span></p>',
+    );
+    expect(entries[0].sourceTag).toBe("div");
+    expect(entries[0].templaticalBlockType).toBe("paragraph");
+    expect(entries[0].status).toBe("converted");
+  });
+
+  it("keeps an unknown element holding a table as an html fallback", () => {
+    const { blocks, entries } = runCell(`<section>${columnTable}</section>`);
+
+    // The descent is gated on the container tag set, not on holding a table:
+    // widening it to every element would turn a tag with no mapping into a
+    // silent traversal step and lose its markup.
+    expect(blocks.map((b) => b.type)).toEqual(["html"]);
+    expect(entries[0].sourceTag).toBe("section");
+    expect(entries[0].status).toBe("html-fallback");
+  });
+});

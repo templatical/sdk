@@ -143,29 +143,46 @@ describe("round trip: renderToMjml -> mjml2html -> convertHtmlTemplate", () => {
     expect(occurrences(imported, "<h3")).toBe(sourceTitles);
   });
 
-  it("flattens every typed leaf into a paragraph holding raw table markup", async () => {
+  it("recovers one block per source leaf, all still typed as paragraphs", async () => {
     const original = buildGroundTruth();
     const { content } = await roundTrip(original);
     const leaves = leafBlocks(content.blocks);
+    const sourceLeaves = leafBlocks(original.blocks);
     const paragraphs = leaves.filter(isParagraph);
 
-    // Recorded defect, deferred with the column work in spec §7. The source
-    // declares titles and paragraphs; the import yields one paragraph per
-    // source *column*, each holding that column's whole <table> subtree as
-    // its `content`.
-    //
-    // The cause is a cell-level container: mjml@5 puts every column of a
-    // section into one <td> as a sibling `div.mj-column-per-*`, and
-    // `extractCellBlocks` hands a container inside a cell straight to
-    // `convertElement`, where `div` is in block-mapper's TEXT_TAGS. So the
-    // column's own table is never examined.
+    // Desired, and the half the cell-level container descent owns: one block
+    // per source leaf, not one per source *column*. mjml@5 puts every column
+    // of a section into one <td> as a sibling `div.mj-column-per-*`, so a
+    // container inside a cell has to be descended to reach the column's own
+    // table. Handing it to `convertElement` instead maps `div` through
+    // block-mapper's TEXT_TAGS and emits a single paragraph carrying that
+    // whole table subtree as raw markup, which is what the second assertion
+    // below rules out.
+    expect(sourceLeaves).toHaveLength(13);
     expect(columnSlotCount(original.blocks)).toBe(10);
-    expect(leaves).toHaveLength(columnSlotCount(original.blocks));
+    expect(leaves).toHaveLength(sourceLeaves.length);
+    expect(
+      paragraphs.filter((block) => block.content.includes("<table")),
+    ).toEqual([]);
+
+    // Recorded defect, and a different one from the container descent — it is
+    // a mapping question, not a traversal one, so it is deferred with the rest
+    // of the block-mapper work in spec §7. The source declares 10 titles and 3
+    // paragraphs; every leaf arrives as a paragraph, the titles carrying their
+    // `<h3>` inside the paragraph's own content.
+    //
+    // mjml@5 wraps each `mj-text` body in a plain <div> that holds no table,
+    // so it is correctly not a container to descend into; `convertElement`
+    // maps it through TEXT_TAGS and `ensureParagraphWrapped` leaves the
+    // heading markup untouched inside. Typing that block as a title means
+    // unwrapping a container whose whole content is one block-level element.
     expect([...new Set(leaves.map((block) => block.type))]).toEqual([
       "paragraph",
     ]);
-    expect(paragraphs[0].content).toContain("<table");
-    expect(paragraphs[0].content).toContain("<h3");
+    expect(paragraphs).toHaveLength(sourceLeaves.length);
+    expect(
+      paragraphs.filter((block) => block.content.includes("<h3")),
+    ).toHaveLength(10);
   });
 
   it("recovers every section but none of their column layouts", async () => {
@@ -198,21 +215,29 @@ describe("round trip: renderToMjml -> mjml2html -> convertHtmlTemplate", () => {
     // Recorded defect, deferred to spec §7 (the generic column-detection
     // heuristic and the MJML-compiled column tier). The five layouts above
     // are the known correct answer; every imported section reports one
-    // column, and its single slot holds one paragraph per source column.
+    // column.
     //
     // No traversal fix reaches this: mjml@5 gives a section's row exactly one
-    // <td> holding a `div.mj-column-per-50` per column, so there is no cell
-    // count to resolve a layout from — and the one-cell wrapper descent finds
-    // no table in that cell either, only those divs. Recovering the count
-    // means reading the width out of that class, which is the deferred tier.
+    // <td> holding a `div.mj-column-per-50` per column, so the row has one
+    // cell and there is no count to resolve a layout from. Descending those
+    // containers reaches each column's table, which is where the blocks come
+    // from — but it says nothing about how many columns there were.
+    // Recovering that means reading the width out of the class name, which is
+    // the deferred tier.
     expect(columnLayouts(content.blocks)).toEqual(["1", "1", "1", "1", "1"]);
     expect(sections.map((section) => section.children.length)).toEqual([
       1, 1, 1, 1, 1,
     ]);
+
+    // Desired: the columns merge, but nothing inside them does. Each
+    // section's single slot holds every leaf of the source section it came
+    // from, in source order, so the collapse above is a layout loss and not a
+    // content loss. Compared against the source's leaf count per section —
+    // its column count is what a paragraph-per-column import matched.
     expect(sections.map((section) => section.children[0].length)).toEqual(
       original.blocks
         .filter(isSection)
-        .map((section) => section.children.length),
+        .map((section) => section.children.flat().length),
     );
   });
 
@@ -224,27 +249,41 @@ describe("round trip: renderToMjml -> mjml2html -> convertHtmlTemplate", () => {
     );
 
     // Desired. The report accounts for the sections as well as the leaves:
-    // one entry per imported section on top of one per column slot, so a
+    // one entry per imported section on top of one per source leaf, so a
     // caller can reconcile `report.entries` against `content.blocks` instead
     // of finding sections that appear nowhere in the report.
+    //
+    // The leaf term is the source's leaf count, not its column count: a
+    // container descended inside a cell contributes no entry of its own —
+    // nothing is created and nothing lost — so the entries are the blocks the
+    // columns' own tables produced.
+    const sourceLeafCount = leafBlocks(original.blocks).length;
     expect(report.summary).toEqual({
-      total: columnSlotCount(original.blocks) + content.blocks.length,
-      converted: columnSlotCount(original.blocks) + content.blocks.length,
+      total: sourceLeafCount + content.blocks.length,
+      converted: sourceLeafCount + content.blocks.length,
       approximated: 0,
       htmlFallback: 0,
       skipped: 0,
     });
-    expect(report.summary.total).toBe(15);
+    expect(report.summary.total).toBe(18);
     expect(sectionEntries).toHaveLength(content.blocks.length);
+
+    // `div` here is mjml@5's `mj-text` wrapper, one per source leaf — the
+    // block-mapper defect case 3 records, not the per-column container the
+    // descent now walks through. The count is asserted alongside the tag set
+    // so the two cannot drift apart.
     expect([
       ...new Set(report.entries.map((entry) => entry.sourceTag)),
     ]).toEqual(["div", "tr"]);
+    expect(
+      report.entries.filter((entry) => entry.sourceTag === "div"),
+    ).toHaveLength(sourceLeafCount);
 
     // Recorded defect, deferred to spec §7, and the shape of it matters: the
     // entries are honest, not merely optimistic. Each section came from a row
     // holding exactly one `<td>`, so `converted` with no note is the truthful
-    // report of that row — the columns were already gone by the time the row
-    // was read, lost in the per-column container inside that single cell.
+    // report of that row — mjml@5 expresses the columns as sibling divs
+    // inside that single cell, so the row never carried a count to lose.
     //
     // So per-row reporting cannot surface this collapse, and a detection fix
     // is what has to move this case. When one lands, these two assertions

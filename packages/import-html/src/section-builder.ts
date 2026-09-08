@@ -14,6 +14,7 @@ import {
   isButtonCell,
   isInlineContent,
   isSpacerCell,
+  isTableContainer,
   looksLikeButton,
 } from "./block-mapper";
 import {
@@ -296,40 +297,55 @@ function extractCellBlocks(
     return [buildCellButton($cell, btn.anchor)];
   }
 
-  const blocks: Block[] = [];
-  const childEls = $cell.children().toArray();
-
-  if (childEls.length === 0) {
+  if ($cell.children().length === 0) {
     const text = ($cell.text() ?? "").trim();
     if (!text) return [];
     const r = convertElement($cell, $);
-    if (r) {
-      entries.push(r.entry);
-      blocks.push(r.block);
-    }
-    return blocks;
+    if (!r) return [];
+    entries.push(r.entry);
+    return [r.block];
   }
 
-  // Walked as child *nodes*, not child elements. A bare text node between two
-  // elements is content, and a walk over `children()` never visits it — so
-  // `Hello<br>World` loses both words while emitting a block holding nothing
-  // but `<br>`. Consecutive inline nodes therefore accumulate into one run and
-  // become a single paragraph, which is what makes a bare line agree with the
-  // same line wrapped in a `<p>`.
+  return extractContentBlocks($cell, $, entries, warnings);
+}
+
+/**
+ * The blocks an element's child nodes produce, for an element that holds
+ * content rather than being content itself: a table cell, or a layout
+ * container descended from one.
+ *
+ * Walked as child *nodes*, not child elements. A bare text node between two
+ * elements is content, and a walk over `children()` never visits it — so
+ * `Hello<br>World` loses both words while emitting a block holding nothing
+ * but `<br>`. Consecutive inline nodes therefore accumulate into one run and
+ * become a single paragraph, which is what makes a bare line agree with the
+ * same line wrapped in a `<p>`.
+ *
+ * `$host` is what an inline run reads its styling and source tag from: a bare
+ * run has no element of its own, and the nearest enclosing element is the one
+ * carrying the colour, size and alignment it renders with.
+ */
+function extractContentBlocks(
+  $host: Cheerio<Element>,
+  $: CheerioAPI,
+  entries: ImportReportEntry[],
+  warnings: string[],
+): Block[] {
+  const blocks: Block[] = [];
   let inlineRun: AnyNode[] = [];
 
   const flushInlineRun = () => {
     if (inlineRun.length === 0) return;
     const run = inlineRun;
     inlineRun = [];
-    const r = convertInlineRun(run, $cell, $);
+    const r = convertInlineRun(run, $host, $);
     if (r) {
       entries.push(r.entry);
       blocks.push(r.block);
     }
   };
 
-  for (const node of $cell.contents().toArray()) {
+  for (const node of $host.contents().toArray()) {
     if (isInlineContent(node)) {
       inlineRun.push(node);
       continue;
@@ -347,6 +363,22 @@ function extractCellBlocks(
     if (tag === "table") {
       const inner = processTable($child, $, entries, warnings, true);
       blocks.push(...inner);
+      continue;
+    }
+
+    // A container contributes no block of its own; the content below it takes
+    // its place. `div` is a text tag in the block mapper, so handing a
+    // container to `convertElement` emits one paragraph whose content is the
+    // entire table subtree as raw markup — the table's blocks never exist.
+    //
+    // Recursing here rather than passing a flag is what keeps the descent
+    // consistent with the cell's own walk: a table found below a container
+    // reaches the `table` branch above and flattens, which it must, because
+    // Templatical forbids a section inside a column however many wrappers
+    // deep the table sits. Bounded by DOM depth — a container is descended
+    // only when it holds a table, and each step moves to a child.
+    if (isTableContainer($child, tag)) {
+      blocks.push(...extractContentBlocks($child, $, entries, warnings));
       continue;
     }
 
