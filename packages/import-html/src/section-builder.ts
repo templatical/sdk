@@ -18,6 +18,8 @@ import {
   looksLikeButton,
   walkContentNodes,
 } from "./block-mapper";
+import { readColumnWidth, resolveColumnRatio } from "./column-ratio";
+import type { ColumnWidth } from "./column-ratio";
 import {
   parseColor,
   parsePxValue,
@@ -338,19 +340,31 @@ function packagingRowTables(
  * centring row's gutters were never columns, so counting them would report a
  * three-into-one merge for a row that always stated one column.
  */
-function sectionEntry(cellCount: number, slotCount: number): ImportReportEntry {
-  if (slotCount === cellCount) {
+function sectionEntry(
+  cellCount: number,
+  slotCount: number,
+  ratioNote: string | undefined,
+): ImportReportEntry {
+  if (slotCount !== cellCount) {
     return {
       sourceTag: "tr",
       templaticalBlockType: "section",
-      status: "converted",
+      status: "approximated",
+      note: `Row of ${cellCount} cells was merged into a single column. Templatical sections hold at most 3 columns.`,
+    };
+  }
+  if (ratioNote) {
+    return {
+      sourceTag: "tr",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: ratioNote,
     };
   }
   return {
     sourceTag: "tr",
     templaticalBlockType: "section",
-    status: "approximated",
-    note: `Row of ${cellCount} cells was merged into a single column. Templatical sections hold at most 3 columns.`,
+    status: "converted",
   };
 }
 
@@ -376,6 +390,11 @@ function flattenedRowEntry(cellCount: number): ImportReportEntry | null {
     status: "approximated",
     note: `Nested row of ${cellCount} cells lost its columns. A Templatical section cannot nest inside a column, so its cells were merged into the surrounding column.`,
   };
+}
+
+/** The width an element declares, from the strongest signal it carries. */
+function readDeclaredWidth($el: Cheerio<Element>): ColumnWidth | null {
+  return readColumnWidth($el.attr("class"), getStyles($el), $el.attr("width"));
 }
 
 function extractCellBlocks(
@@ -534,10 +553,10 @@ export function processTable(
     // report entries. Reading `cells.length` for the report instead would
     // claim a three-into-one merge for a row that always had one column.
     const layoutCells = centringCells(cells) ?? cells;
-    const layout = resolveColumnLayout(layoutCells.length, warnings);
+    const countedLayout = resolveColumnLayout(layoutCells.length, warnings);
 
     let columnsBlocks: Block[][];
-    if (layout === "1") {
+    if (countedLayout === "1") {
       const merged: Block[] = [];
       for (const $cell of layoutCells) {
         merged.push(...extractCellBlocks($cell, $, entries, warnings));
@@ -556,16 +575,31 @@ export function processTable(
       continue;
     }
 
+    // The count is settled; the declared widths only choose which layout of
+    // that count. `"1"` is skipped because a single column holds the whole
+    // row by definition, so there is no ratio to choose and none to report —
+    // and because that is also the layout a merged row lands on, whose own
+    // note is the loss worth naming.
+    const ratio =
+      countedLayout === "1"
+        ? { layout: countedLayout, note: undefined }
+        : resolveColumnRatio(
+            layoutCells.map(($cell) => readDeclaredWidth($cell)),
+            countedLayout,
+          );
+
     const rowStyles = getStyles($row);
     const bgColor =
       parseColor(rowStyles["background-color"]) ||
       parseColor(rowStyles.background);
     const padding = readPaddingFromStyles(rowStyles);
 
-    entries.push(sectionEntry(layoutCells.length, columnsBlocks.length));
+    entries.push(
+      sectionEntry(layoutCells.length, columnsBlocks.length, ratio.note),
+    );
     sections.push(
       createSectionBlock({
-        columns: layout,
+        columns: ratio.layout,
         children: columnsBlocks,
         styles: {
           padding,

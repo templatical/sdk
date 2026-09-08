@@ -1811,3 +1811,247 @@ describe("processTable — the container descent and the centring rule together"
     ).toEqual(["title", "paragraph", "paragraph"]);
   });
 });
+
+describe("processTable — declared widths choose between same-count layouts", () => {
+  function onlySection(blocks: Block[]): SectionBlock {
+    expect(blocks).toHaveLength(1);
+    const section = blocks[0];
+    if (section.type !== "section") throw new Error("expected section block");
+    return section;
+  }
+
+  /** A two-cell layout row, each cell carrying one heading. */
+  function twoCellRow(first: string, second: string): string {
+    return (
+      '<table role="presentation"><tr>' +
+      `<td ${first}><h2>Left</h2></td>` +
+      `<td ${second}><h2>Right</h2></td>` +
+      "</tr></table>"
+    );
+  }
+
+  /** A three-cell layout row, each cell carrying one heading. */
+  function threeCellRow(attrs: string[]): string {
+    return (
+      '<table role="presentation"><tr>' +
+      attrs.map((a, i) => `<td ${a}><h2>Cell ${i}</h2></td>`).join("") +
+      "</tr></table>"
+    );
+  }
+
+  function sectionEntriesOf(entries: ImportReportEntry[]): ImportReportEntry[] {
+    return entries.filter((entry) => entry.templaticalBlockType === "section");
+  }
+
+  it("reads a mailchimp 350/190 sidebar row as 2-1", () => {
+    const { blocks, entries, warnings } = runTable(
+      twoCellRow('width="350"', 'width="190"'),
+    );
+    const section = onlySection(blocks);
+
+    // 64.8 / 35.2 is 1.9pp from 2-1 and 14.8pp from an equal split, so the
+    // asymmetry is unambiguous. The count still comes from the two cells.
+    expect(section.columns).toBe("2-1");
+    expect(section.children).toHaveLength(2);
+    expect(section.children.map((column) => column.length)).toEqual([1, 1]);
+    expect(section.children[0].map((b) => b.type)).toEqual(["title"]);
+    expect(section.children[1].map((b) => b.type)).toEqual(["title"]);
+
+    // Recovering the ratio loses nothing, so the row reports no downgrade.
+    const sectionEntries = sectionEntriesOf(entries);
+    expect(sectionEntries).toHaveLength(1);
+    expect(sectionEntries[0].status).toBe("converted");
+    expect("note" in sectionEntries[0]).toBe(false);
+    expect(warnings).toEqual([]);
+  });
+
+  it("reads the mirrored 190/350 row as 1-2", () => {
+    const { blocks } = runTable(twoCellRow('width="190"', 'width="350"'));
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("1-2");
+    expect(section.children.map((column) => column.length)).toEqual([1, 1]);
+  });
+
+  it("reads Cerberus's 33.33% / 66.66% percentages as 1-2", () => {
+    const { blocks } = runTable(
+      twoCellRow('style="width:33.33%"', 'style="width:66.66%"'),
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("1-2");
+    expect(section.children.map((column) => column.length)).toEqual([1, 1]);
+  });
+
+  it("keeps an equal declared split as 2 with no downgrade reported", () => {
+    const { blocks, entries } = runTable(
+      twoCellRow('width="280"', 'width="280"'),
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("2");
+    expect(section.children.map((column) => column.length)).toEqual([1, 1]);
+    expect(sectionEntriesOf(entries)[0].status).toBe("converted");
+    expect("note" in sectionEntriesOf(entries)[0]).toBe(false);
+  });
+
+  it("keeps equal declared thirds as 3", () => {
+    const { blocks, entries } = runTable(
+      threeCellRow([
+        'style="width:33.33%"',
+        'style="width:33.33%"',
+        'style="width:33.33%"',
+      ]),
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("3");
+    expect(section.children.map((column) => column.length)).toEqual([1, 1, 1]);
+    expect(sectionEntriesOf(entries)[0].status).toBe("converted");
+  });
+
+  it("leaves a row with no declared widths at its counted layout", () => {
+    const { blocks, entries } = runTable(twoCellRow("", ""));
+    const section = onlySection(blocks);
+
+    // Nothing was observed, so there is no ratio to name and no downgrade.
+    expect(section.columns).toBe("2");
+    expect(section.children.map((column) => column.length)).toEqual([1, 1]);
+    expect(sectionEntriesOf(entries)[0].status).toBe("converted");
+    expect("note" in sectionEntriesOf(entries)[0]).toBe(false);
+  });
+
+  it("reports an 80/20 split as an approximation naming the observed ratio", () => {
+    const { blocks, entries } = runTable(
+      twoCellRow('width="80%"', 'width="20%"'),
+    );
+    const section = onlySection(blocks);
+
+    // 13.3pp from 2-1 and 30pp from an equal split: outside tolerance, so the
+    // counted layout stands and the loss is named.
+    expect(section.columns).toBe("2");
+    expect(section.children.map((column) => column.length)).toEqual([1, 1]);
+    const entry = sectionEntriesOf(entries)[0];
+    expect(entry.status).toBe("approximated");
+    expect(entry.note).toBe(
+      "Column widths 80% / 20% have no Templatical equivalent. The section was imported as 2 equal columns.",
+    );
+  });
+
+  it("reports a 130/280/130 row as an approximation naming the observed ratio", () => {
+    const { blocks, entries } = runTable(
+      threeCellRow(['width="130"', 'width="280"', 'width="130"']),
+    );
+    const section = onlySection(blocks);
+
+    // Templatical has no 1-2-1 layout, so equal thirds is the closest the
+    // model can express and the report says so.
+    expect(section.columns).toBe("3");
+    expect(section.children.map((column) => column.length)).toEqual([1, 1, 1]);
+    const entry = sectionEntriesOf(entries)[0];
+    expect(entry.status).toBe("approximated");
+    expect(entry.note).toBe(
+      "Column widths 24.1% / 51.9% / 24.1% have no Templatical equivalent. The section was imported as 3 equal columns.",
+    );
+  });
+
+  it("derives no ratio from a partial declaration", () => {
+    const { blocks, entries } = runTable(twoCellRow('width="190"', ""));
+    const section = onlySection(blocks);
+
+    // One share of an unknown total states no ratio.
+    expect(section.columns).toBe("2");
+    expect(sectionEntriesOf(entries)[0].status).toBe("converted");
+    expect("note" in sectionEntriesOf(entries)[0]).toBe(false);
+  });
+
+  it("derives no ratio from widths in mixed units", () => {
+    const { blocks, entries } = runTable(
+      twoCellRow('width="350"', 'width="50%"'),
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("2");
+    expect(sectionEntriesOf(entries)[0].status).toBe("converted");
+    expect("note" in sectionEntriesOf(entries)[0]).toBe(false);
+  });
+
+  it("treats a declared 100% as no signal at all", () => {
+    const { blocks, entries } = runTable(
+      twoCellRow('style="width:100%"', 'style="width:100%"'),
+    );
+    const section = onlySection(blocks);
+
+    // Two cells each claiming the whole row is not a 50/50 declaration — it
+    // is the absence of one. Normalising it would read every such row as an
+    // equal split and, worse, would read one 100% cell beside a 200px cell as
+    // a 33/67 ratio.
+    expect(section.columns).toBe("2");
+    expect(sectionEntriesOf(entries)[0].status).toBe("converted");
+    expect("note" in sectionEntriesOf(entries)[0]).toBe(false);
+  });
+
+  it("derives no ratio from a 100% width beside a real one", () => {
+    const { blocks, entries } = runTable(
+      twoCellRow('style="width:100%"', 'style="width:33%"'),
+    );
+    const section = onlySection(blocks);
+
+    // Accepting the 100% would normalise this to 75 / 25 and report the row
+    // as a downgrade it never was. Two cells both claiming 100% would hide
+    // that, normalising to an equal split and reaching the right answer for
+    // the wrong reason.
+    expect(section.columns).toBe("2");
+    expect(sectionEntriesOf(entries)[0].status).toBe("converted");
+    expect("note" in sectionEntriesOf(entries)[0]).toBe(false);
+  });
+
+  it("reports the merge, not the ratio, when a row exceeds three columns", () => {
+    const { blocks, entries, warnings } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td width="300"><h2>A</h2></td>' +
+        '<td width="100"><h2>B</h2></td>' +
+        '<td width="100"><h2>C</h2></td>' +
+        '<td width="100"><h2>D</h2></td>' +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // The columns are gone, so naming their ratio would describe a layout the
+    // section does not have.
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "title",
+      "title",
+      "title",
+      "title",
+    ]);
+    const entry = sectionEntriesOf(entries)[0];
+    expect(entry.status).toBe("approximated");
+    expect(entry.note).toBe(
+      "Row of 4 cells was merged into a single column. Templatical sections hold at most 3 columns.",
+    );
+    expect(warnings).toHaveLength(1);
+  });
+
+  it("reads no ratio from a centring row's declared gutters", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td width="20">&nbsp;</td>' +
+        '<td width="560"><h2>The email</h2></td>' +
+        '<td width="20">&nbsp;</td>' +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // The gutters were never columns, so the row has one column and no ratio
+    // to choose. Reading widths off every cell instead would find a declared
+    // 3.3 / 93.3 / 3.3 split and report the centring device as a downgrade.
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual(["title"]);
+    expect(sectionEntriesOf(entries)[0].status).toBe("converted");
+    expect("note" in sectionEntriesOf(entries)[0]).toBe(false);
+  });
+});
