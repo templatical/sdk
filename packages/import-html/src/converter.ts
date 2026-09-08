@@ -68,9 +68,21 @@ function extractSettings($: CheerioAPI): TemplateContent["settings"] {
 
 /**
  * Wrap a list of free-floating blocks (those produced by top-level non-table
- * elements) in a single one-column section.
+ * elements) in a single one-column section, and report the section.
+ *
+ * The section corresponds to no source element, so the report names `body` and
+ * says the section is synthetic — otherwise a caller counting sections against
+ * the rows it can see in the source finds one it cannot account for. Nothing is
+ * lost on this path: every loose block keeps its order inside the one column,
+ * which is why the status is `converted` rather than an approximation.
  */
-function wrapInSection(blocks: Block[]): Block {
+function wrapInSection(blocks: Block[], entries: ImportReportEntry[]): Block {
+  entries.push({
+    sourceTag: "body",
+    templaticalBlockType: "section",
+    status: "converted",
+    note: "Loose top-level content was grouped into a synthetic single-column section.",
+  });
   return createSectionBlock({
     columns: "1",
     children: [blocks],
@@ -112,7 +124,7 @@ function processBody(
 
   const flushLoose = () => {
     if (pendingLoose.length > 0) {
-      blocks.push(wrapInSection(pendingLoose));
+      blocks.push(wrapInSection(pendingLoose, entries));
       pendingLoose = [];
     }
   };

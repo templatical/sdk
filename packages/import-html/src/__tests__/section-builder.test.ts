@@ -43,7 +43,13 @@ function leaves(blocks: Block[]): Block[] {
   );
 }
 
-/** Wraps `inner` in a single-cell layout table and returns the cell's blocks. */
+/**
+ * Wraps `inner` in a single-cell layout table and returns the cell's blocks.
+ *
+ * The wrapping row emits a section, so `entries` ends with that section's own
+ * `tr` entry after the cell's blocks. `blocks` is unwrapped to the leaves, so
+ * only entry assertions see it.
+ */
 function runCell(
   inner: string,
   cellAttrs = "",
@@ -209,6 +215,7 @@ describe("extractCellBlocks — inline formatting stays in the text around it", 
         templaticalBlockType: "paragraph",
         status: "converted",
       },
+      { sourceTag: "tr", templaticalBlockType: "section", status: "converted" },
     ]);
   });
 
@@ -263,6 +270,7 @@ describe("extractCellBlocks — inline formatting stays in the text around it", 
     expect(entries.map((e) => [e.sourceTag, e.status])).toEqual([
       ["h3", "converted"],
       ["td", "converted"],
+      ["tr", "converted"],
     ]);
   });
 
@@ -294,14 +302,17 @@ describe("extractCellBlocks — inline formatting stays in the text around it", 
     const { blocks, entries } = runCell("\n  <h3>Only</h3>\n  ");
 
     expect(blocks.map((b) => b.type)).toEqual(["title"]);
-    expect(entries).toHaveLength(1);
+    // Naming the tags rather than counting them: the heading and the row's
+    // section are the only two entries, so a paragraph for the whitespace
+    // would show up as a third rather than merely shifting a length.
+    expect(entries.map((e) => e.sourceTag)).toEqual(["h3", "tr"]);
   });
 
   it("emits nothing for a run of nbsp and line breaks", () => {
     const { blocks, entries } = runCell("&nbsp;<br><br><h3>Only</h3>");
 
     expect(blocks.map((b) => b.type)).toEqual(["title"]);
-    expect(entries.map((e) => e.sourceTag)).toEqual(["h3"]);
+    expect(entries.map((e) => e.sourceTag)).toEqual(["h3", "tr"]);
   });
 
   it("does not let a comment split a run", () => {
@@ -403,6 +414,7 @@ describe("extractCellBlocks — inline formatting stays in the text around it", 
         templaticalBlockType: "paragraph",
         status: "converted",
       },
+      { sourceTag: "tr", templaticalBlockType: "section", status: "converted" },
     ]);
   });
 
@@ -442,6 +454,7 @@ describe("extractCellBlocks — a button cell is one whose whole content is the 
     expect(button.fontSize).toBe(19);
     expect(entries).toEqual([
       { sourceTag: "td", templaticalBlockType: "button", status: "converted" },
+      { sourceTag: "tr", templaticalBlockType: "section", status: "converted" },
     ]);
   });
 
@@ -469,6 +482,7 @@ describe("extractCellBlocks — a button cell is one whose whole content is the 
       "paragraph",
       "paragraph",
       "paragraph",
+      "section",
     ]);
   });
 
@@ -497,6 +511,7 @@ describe("extractCellBlocks — a button cell is one whose whole content is the 
         status: "converted",
       },
       { sourceTag: "td", templaticalBlockType: "button", status: "converted" },
+      { sourceTag: "tr", templaticalBlockType: "section", status: "converted" },
     ]);
   });
 });
@@ -576,11 +591,15 @@ describe("processTable — a one-cell wrapper row is not a layout row", () => {
     const footer = second.children[0][0];
     if (footer.type !== "paragraph") throw new Error("expected paragraph");
     expect(footer.content).toBe("<p>Footer copy.</p>");
-    // The <br> carries no text, so no block and no entry stands for it.
+    // The <br> carries no text, so no block and no entry stands for it. Each
+    // table's own row reports the section it emits, right after that row's
+    // cells — so the two sections are what mark the boundary between them.
     expect(entries.map((e) => e.templaticalBlockType)).toEqual([
       "title",
       "paragraph",
+      "section",
       "paragraph",
+      "section",
     ]);
   });
 
@@ -705,5 +724,190 @@ describe("processTable — a one-cell wrapper row is not a layout row", () => {
     expect(section.columns).toBe("2");
     expect(section.children).toHaveLength(2);
     expect(section.styles.backgroundColor).toBe("#654321");
+  });
+});
+
+describe("processTable — the section a row produces is in the report", () => {
+  function theSection(blocks: Block[]): SectionBlock {
+    expect(blocks).toHaveLength(1);
+    const section = blocks[0];
+    if (section.type !== "section") throw new Error("expected section block");
+    return section;
+  }
+
+  it("a faithful multi-cell row reports converted with no note", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr>' +
+        "<td><h2>Left heading</h2></td>" +
+        "<td><p>Right copy.</p></td>" +
+        "</tr></table>",
+    );
+    const section = theSection(blocks);
+
+    // "2" is not the section factory's default, so the pairing of the layout
+    // with two slots is what proves the row's own cell count was read.
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+
+    const sectionEntries = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntries).toHaveLength(1);
+    expect(sectionEntries[0].sourceTag).toBe("tr");
+    expect(sectionEntries[0].status).toBe("converted");
+    // A faithful conversion carries no note at all. `toEqual` cannot see an
+    // `undefined`-valued key, so the absence needs `in`.
+    expect("note" in sectionEntries[0]).toBe(false);
+
+    // The cells' own blocks keep their entries; the section adds one.
+    expect(entries.map((entry) => entry.sourceTag)).toEqual(["h2", "p", "tr"]);
+  });
+
+  it("a faithful single-cell row reports converted with no note", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr><td><h2>Only heading</h2></td></tr></table>',
+    );
+    const section = theSection(blocks);
+
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+
+    const sectionEntries = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntries).toHaveLength(1);
+    expect(sectionEntries[0].status).toBe("converted");
+    expect("note" in sectionEntries[0]).toBe(false);
+  });
+
+  it("a row of four cells reports approximated and names the collapse", () => {
+    const { blocks, entries, warnings } = runTable(
+      '<table role="presentation"><tr>' +
+        "<td><h2>One</h2></td><td><p>Two</p></td>" +
+        "<td><p>Three</p></td><td><p>Four</p></td>" +
+        "</tr></table>",
+    );
+    const section = theSection(blocks);
+
+    // The block model tops out at three columns, so four cells merge into one
+    // slot. Every cell's content survives; only the layout is lost.
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((block) => block.type)).toEqual([
+      "title",
+      "paragraph",
+      "paragraph",
+      "paragraph",
+    ]);
+
+    const sectionEntries = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntries).toHaveLength(1);
+    expect(sectionEntries[0]).toEqual({
+      sourceTag: "tr",
+      templaticalBlockType: "section",
+      status: "approximated",
+      note: "Row of 4 cells was merged into a single column. Templatical sections hold at most 3 columns.",
+    });
+
+    // The document-level warning is unchanged: a warning is context for the
+    // whole import, the entry is the per-block fact, and both have readers.
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("4 columns");
+  });
+
+  it("a flattened nested multi-cell row reports the columns it lost", () => {
+    // A nested layout table sitting beside a heading is not packaging, so the
+    // cell walker flattens it. Templatical forbids a section inside a column,
+    // so the flattening is forced — the columns are still gone.
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr><td>' +
+        "<h2>Cell heading</h2>" +
+        '<table role="presentation"><tr>' +
+        "<td><p>Inner left.</p></td>" +
+        "<td><p>Inner right.</p></td>" +
+        "</tr></table>" +
+        "</td></tr></table>",
+    );
+    const section = theSection(blocks);
+
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((block) => block.type)).toEqual([
+      "title",
+      "paragraph",
+      "paragraph",
+    ]);
+
+    const flattened = entries.filter(
+      (entry) => entry.status === "approximated",
+    );
+    expect(flattened).toHaveLength(1);
+    expect(flattened[0]).toEqual({
+      sourceTag: "tr",
+      templaticalBlockType: null,
+      status: "approximated",
+      note: "Nested row of 2 cells lost its columns. A Templatical section cannot nest inside a column, so its cells were merged into the surrounding column.",
+    });
+  });
+
+  it("a flattened nested single-cell row loses nothing and reports nothing", () => {
+    // The negative control for the case above: one cell has no columns to
+    // lose, so a nested single-cell row must not report a downgrade.
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr><td>' +
+        "<h2>Cell heading</h2>" +
+        '<table role="presentation"><tr><td><p>Inner copy.</p></td></tr></table>' +
+        "</td></tr></table>",
+    );
+    const section = theSection(blocks);
+
+    expect(section.children[0].map((block) => block.type)).toEqual([
+      "title",
+      "paragraph",
+    ]);
+    expect(entries.filter((entry) => entry.status === "approximated")).toEqual(
+      [],
+    );
+    expect(entries.map((entry) => entry.sourceTag)).toEqual(["h2", "p", "tr"]);
+  });
+
+  it("a wrapper row descended through contributes no section entry", () => {
+    // The wrapper emits no section, so it has nothing to report; the layout
+    // row it descends to reports the section that is actually created.
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr><td>' +
+        '<table role="presentation"><tr>' +
+        "<td><h2>Left heading</h2></td>" +
+        "<td><p>Right copy.</p></td>" +
+        "</tr></table>" +
+        "</td></tr></table>",
+    );
+    const section = theSection(blocks);
+
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+
+    const sectionEntries = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntries).toHaveLength(1);
+    expect(sectionEntries[0].status).toBe("converted");
+    expect("note" in sectionEntries[0]).toBe(false);
+  });
+
+  it("a data table preserved as HTML produces no section entry", () => {
+    // The fallback replaces the whole table with one html block, so there is
+    // no section to account for.
+    const { entries } = runTable(
+      "<table><tr><td>Name</td><td>Age</td></tr><tr><td>Ada</td><td>30</td></tr></table>",
+    );
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0].templaticalBlockType).toBe("html");
+    expect(
+      entries.filter((entry) => entry.templaticalBlockType === "section"),
+    ).toEqual([]);
   });
 });

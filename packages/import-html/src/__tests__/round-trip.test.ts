@@ -216,29 +216,41 @@ describe("round trip: renderToMjml -> mjml2html -> convertHtmlTemplate", () => {
     );
   });
 
-  it("reports the collapse as a clean conversion", async () => {
+  it("accounts for every section it created, and reports no downgrade", async () => {
     const original = buildGroundTruth();
-    const { report } = await roundTrip(original);
+    const { content, report } = await roundTrip(original);
+    const sectionEntries = report.entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
 
-    // Recorded defect (spec §2.2): a caller reading this report concludes a
-    // perfect import while every column layout and block type was lost.
-    //
-    // Every entry's `sourceTag` is `div`, which locates the loss: it is the
-    // per-column container inside a section's single cell, so no row with
-    // more than one cell ever reaches `resolveColumnLayout`. Per-row
-    // reporting (spec §3.2) therefore has no row to describe on this path.
+    // Desired. The report accounts for the sections as well as the leaves:
+    // one entry per imported section on top of one per column slot, so a
+    // caller can reconcile `report.entries` against `content.blocks` instead
+    // of finding sections that appear nowhere in the report.
     expect(report.summary).toEqual({
-      total: columnSlotCount(original.blocks),
-      converted: columnSlotCount(original.blocks),
+      total: columnSlotCount(original.blocks) + content.blocks.length,
+      converted: columnSlotCount(original.blocks) + content.blocks.length,
       approximated: 0,
       htmlFallback: 0,
       skipped: 0,
     });
-    expect(report.summary.total).toBe(10);
-    expect(report.warnings).toEqual([]);
+    expect(report.summary.total).toBe(15);
+    expect(sectionEntries).toHaveLength(content.blocks.length);
     expect([
       ...new Set(report.entries.map((entry) => entry.sourceTag)),
-    ]).toEqual(["div"]);
+    ]).toEqual(["div", "tr"]);
+
+    // Recorded defect, deferred to spec §7, and the shape of it matters: the
+    // entries are honest, not merely optimistic. Each section came from a row
+    // holding exactly one `<td>`, so `converted` with no note is the truthful
+    // report of that row — the columns were already gone by the time the row
+    // was read, lost in the per-column container inside that single cell.
+    //
+    // So per-row reporting cannot surface this collapse, and a detection fix
+    // is what has to move this case. When one lands, these two assertions
+    // invert: the layouts above stop being all `"1"`, and there is nothing
+    // left for a note to describe.
+    expect(report.warnings).toEqual([]);
     expect(report.entries.filter((entry) => "note" in entry)).toEqual([]);
   });
 });

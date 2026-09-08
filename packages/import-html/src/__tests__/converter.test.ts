@@ -395,10 +395,16 @@ describe("convertHtmlTemplate — a table nested more than one container deep", 
   it("reports the cells' own source tags, not the wrapping containers", () => {
     const { report } = convertHtmlTemplate(html);
 
-    expect(report.entries.map((entry) => entry.sourceTag)).toEqual(["h1", "p"]);
+    // The two wrapping divs contribute nothing; `tr` is the layout row that
+    // produced the section, which is a structural fact rather than a wrapper.
+    expect(report.entries.map((entry) => entry.sourceTag)).toEqual([
+      "h1",
+      "p",
+      "tr",
+    ]);
     expect(report.summary).toEqual({
-      total: 2,
-      converted: 2,
+      total: 3,
+      converted: 3,
       approximated: 0,
       htmlFallback: 0,
       skipped: 0,
@@ -461,9 +467,95 @@ describe("convertHtmlTemplate — a table nested more than one container deep", 
     expect(loose.columns).toBe("1");
     expect(loose.children).toHaveLength(1);
     expect(loose.children[0].map((b) => b.type)).toEqual(["paragraph"]);
+    // In source order: the table cell's heading, the row that made its
+    // section, the un-descended container's paragraph, and the synthetic
+    // section that collected it.
     expect(report.entries.map((entry) => entry.sourceTag)).toEqual([
       "h1",
+      "tr",
       "div",
+      "body",
     ]);
+  });
+});
+
+describe("convertHtmlTemplate — every section is accounted for in the report", () => {
+  it("names the synthetic section that collects loose top-level content", () => {
+    const { content, report } = convertHtmlTemplate(
+      `<!doctype html><html><body><h1>Loose heading</h1><p>Loose copy.</p></body></html>`,
+    );
+
+    expect(content.blocks).toHaveLength(1);
+    const section = content.blocks[0] as SectionBlock;
+    expect(section.type).toBe("section");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "title",
+      "paragraph",
+    ]);
+
+    // The section has no source row of its own, so `body` is what it came
+    // from — a machine-readable marker a caller can filter on without
+    // parsing the note.
+    expect(report.entries).toEqual([
+      { sourceTag: "h1", templaticalBlockType: "title", status: "converted" },
+      {
+        sourceTag: "p",
+        templaticalBlockType: "paragraph",
+        status: "converted",
+      },
+      {
+        sourceTag: "body",
+        templaticalBlockType: "section",
+        status: "converted",
+        note: "Loose top-level content was grouped into a synthetic single-column section.",
+      },
+    ]);
+    expect(report.summary).toEqual({
+      total: 3,
+      converted: 3,
+      approximated: 0,
+      htmlFallback: 0,
+      skipped: 0,
+    });
+  });
+
+  it("closes the summary arithmetic over a hand-enumerated fixture", () => {
+    const { content, report } = convertHtmlTemplate(
+      `<!doctype html><html><body>
+        <table role="presentation"><tr>
+          <td><h1>Left heading</h1></td>
+          <td><p>Right copy</p></td>
+        </tr></table>
+        <table><tr><td>Name</td><td>Age</td></tr><tr><td>Ada</td><td>30</td></tr></table>
+      </body></html>`,
+    );
+
+    // Enumerated by hand from the markup: the layout row's two cells give a
+    // title and a paragraph, the row itself gives a section, and the bare
+    // data table falls back to one html block. Four entries, three of them
+    // converted and one an html fallback.
+    expect(content.blocks.map((b) => b.type)).toEqual(["section", "html"]);
+    expect(
+      report.entries.map((entry) => [entry.sourceTag, entry.status]),
+    ).toEqual([
+      ["h1", "converted"],
+      ["p", "converted"],
+      ["tr", "converted"],
+      ["table", "html-fallback"],
+    ]);
+    expect(report.summary).toEqual({
+      total: 4,
+      converted: 3,
+      approximated: 0,
+      htmlFallback: 1,
+      skipped: 0,
+    });
+
+    // The four status counts partition the entries, so they must sum to the
+    // total rather than merely each being under it.
+    const { total, converted, approximated, htmlFallback, skipped } =
+      report.summary;
+    expect(converted + approximated + htmlFallback + skipped).toBe(total);
   });
 });

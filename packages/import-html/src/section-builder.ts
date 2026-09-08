@@ -220,6 +220,57 @@ function packagingRowTables(
   return packagingTablesOf(cells[0], $);
 }
 
+/**
+ * The report entry for the section a layout row produces.
+ *
+ * Whether the row was downgraded is read off the slots that were actually
+ * built: one slot per cell means every cell kept its own column, while fewer
+ * slots than cells means `resolveColumnLayout` merged them. Deciding it by
+ * comparing the cell count against the column ceiling instead would be a
+ * second source of truth for that ceiling and would start lying the moment
+ * the resolver changed. The ceiling appears only in the note's wording, where
+ * it explains the merge to a reader rather than driving the branch.
+ *
+ * A faithful row gets no `note` at all. Attaching one unconditionally makes
+ * "nothing was lost" indistinguishable from a downgrade for a caller that
+ * filters on `note`, which is the whole reason the field is optional.
+ */
+function sectionEntry(cellCount: number, slotCount: number): ImportReportEntry {
+  if (slotCount === cellCount) {
+    return {
+      sourceTag: "tr",
+      templaticalBlockType: "section",
+      status: "converted",
+    };
+  }
+  return {
+    sourceTag: "tr",
+    templaticalBlockType: "section",
+    status: "approximated",
+    note: `Row of ${cellCount} cells was merged into a single column. Templatical sections hold at most 3 columns.`,
+  };
+}
+
+/**
+ * The report entry for a nested row whose section wrapper was dropped, or
+ * `null` when dropping it lost nothing.
+ *
+ * `packages/core/src/editor.ts` forbids a section inside a column because MJML
+ * forbids `mj-section` there, so a layout table reached from a cell has to
+ * flatten — the columns are gone regardless. One cell has no columns to lose,
+ * and reporting that as a downgrade would fill the report with entries for a
+ * non-event.
+ */
+function flattenedRowEntry(cellCount: number): ImportReportEntry | null {
+  if (cellCount <= 1) return null;
+  return {
+    sourceTag: "tr",
+    templaticalBlockType: null,
+    status: "approximated",
+    note: `Nested row of ${cellCount} cells lost its columns. A Templatical section cannot nest inside a column, so its cells were merged into the surrounding column.`,
+  };
+}
+
 function extractCellBlocks(
   $cell: Cheerio<Element>,
   $: CheerioAPI,
@@ -384,6 +435,8 @@ export function processTable(
     }
 
     if (flattenInline) {
+      const dropped = flattenedRowEntry(cells.length);
+      if (dropped) entries.push(dropped);
       for (const col of columnsBlocks) sections.push(...col);
       continue;
     }
@@ -394,6 +447,7 @@ export function processTable(
       parseColor(rowStyles.background);
     const padding = readPaddingFromStyles(rowStyles);
 
+    entries.push(sectionEntry(cells.length, columnsBlocks.length));
     sections.push(
       createSectionBlock({
         columns: layout,
