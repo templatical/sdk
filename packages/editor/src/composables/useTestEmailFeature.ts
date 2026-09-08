@@ -44,6 +44,17 @@ export interface UseTestEmailFeatureOptions {
    * Only ever called when the provider set `includeMjml`.
    */
   renderMjml?: () => Promise<string>;
+  /**
+   * Whether {@link renderMjml} reaches the bundled `@templatical/renderer`.
+   * Omitted means yes, which is what a caller with no `render` provider wants.
+   *
+   * Gates the degradation below: a missing optional peer explains a failed
+   * render only on the local path. A consumer whose backend renders has no
+   * reason to install `@templatical/renderer` at all, so reading their backend's
+   * error as an absent package would both swallow it and advise an install that
+   * changes nothing.
+   */
+  usesLocalRenderer?: () => boolean;
   onError?: (error: Error) => void;
   /**
    * Extra gate on top of the provider being present — Cloud adds its plan
@@ -142,7 +153,7 @@ export function useTestEmailFeature(
    *
    * Returns `undefined` for the two non-fatal cases (not opted in; opted in but
    * the renderer isn't installed) and **throws** when rendering itself fails —
-   * that means the template is broken, and silently sending JSON-only would hide
+   * that means the render is broken, and silently sending JSON-only would hide
    * a real defect indefinitely.
    */
   async function resolveMjml(): Promise<string | undefined> {
@@ -151,10 +162,11 @@ export function useTestEmailFeature(
     try {
       return await options.renderMjml();
     } catch (err) {
-      // Probe only on the failure path, so the happy path pays nothing. A `null`
-      // here means the package is genuinely absent; anything else is a render
-      // error and belongs to the caller.
-      if ((await tryLoadRenderer()) === null) {
+      // Probe only on the failure path, so the happy path pays nothing — and
+      // only when the bundled renderer is what ran, since a `render` provider's
+      // failure can never be explained by the package being absent.
+      const couldBeMissingRenderer = options.usesLocalRenderer?.() ?? true;
+      if (couldBeMissingRenderer && (await tryLoadRenderer()) === null) {
         if (!warnedAboutRenderer) {
           warnedAboutRenderer = true;
           logger.warn(
