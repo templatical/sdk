@@ -1,6 +1,6 @@
 import type { CheerioAPI, Cheerio } from "cheerio";
 import { isTag } from "domhandler";
-import type { AnyNode, Element } from "domhandler";
+import type { Element } from "domhandler";
 import {
   createSectionBlock,
   createButtonBlock,
@@ -10,14 +10,13 @@ import type { Block, ColumnLayout } from "@templatical/types";
 import {
   convertElement,
   convertHtmlFallback,
-  convertInlineRun,
   isBlankCell,
   isButtonCell,
   isInlineContent,
-  isProseAnchor,
   isSpacerCell,
   isTableContainer,
   looksLikeButton,
+  walkContentNodes,
 } from "./block-mapper";
 import {
   parseColor,
@@ -417,16 +416,12 @@ function extractCellBlocks(
  * content rather than being content itself: a table cell, or a layout
  * container descended from one.
  *
- * Walked as child *nodes*, not child elements. A bare text node between two
- * elements is content, and a walk over `children()` never visits it — so
- * `Hello<br>World` loses both words while emitting a block holding nothing
- * but `<br>`. Consecutive inline nodes therefore accumulate into one run and
- * become a single paragraph, which is what makes a bare line agree with the
- * same line wrapped in a `<p>`.
- *
- * `$host` is what an inline run reads its styling and source tag from: a bare
- * run has no element of its own, and the nearest enclosing element is the one
- * carrying the colour, size and alignment it renders with.
+ * Node classification — bare text and inline markup grouped into runs, a
+ * prose anchor folded into the run around it, comments passed over without
+ * splitting one — is `walkContentNodes`' half, shared with the body walk in
+ * `converter.ts`. What is left here is the half that differs: inside a cell a
+ * nested table flattens into the surrounding column, where at body level it
+ * becomes a section of its own.
  */
 function extractContentBlocks(
   $host: Cheerio<Element>,
@@ -435,86 +430,53 @@ function extractContentBlocks(
   warnings: string[],
 ): Block[] {
   const blocks: Block[] = [];
-  let inlineRun: AnyNode[] = [];
 
-  const flushInlineRun = () => {
-    if (inlineRun.length === 0) return;
-    const run = inlineRun;
-    inlineRun = [];
-    const r = convertInlineRun(run, $host, $);
-    if (r) {
-      entries.push(r.entry);
-      blocks.push(r.block);
-    }
-  };
+  walkContentNodes(
+    $host,
+    $,
+    ({ block, entry }) => {
+      entries.push(entry);
+      blocks.push(block);
+    },
+    ($child, tag) => {
+      if (tag === "table") {
+        const inner = processTable($child, $, entries, warnings, true);
+        blocks.push(...inner);
+        return;
+      }
 
-  for (const node of $host.contents().toArray()) {
-    if (isInlineContent(node)) {
-      inlineRun.push(node);
-      continue;
-    }
-    // Comments and processing instructions carry no content, and must not end
-    // the run either: a merge-tag comment sitting mid-sentence would otherwise
-    // split one line into two paragraphs.
-    if (!isTag(node)) continue;
+      // A container contributes no block of its own; the content below it
+      // takes its place. `div` is a text tag in the block mapper, so handing a
+      // container to `convertElement` emits one paragraph whose content is the
+      // entire table subtree as raw markup — the table's blocks never exist.
+      //
+      // Recursing here rather than passing a flag is what keeps the descent
+      // consistent with the cell's own walk: a table found below a container
+      // reaches the `table` branch above and flattens, which it must, because
+      // Templatical forbids a section inside a column however many wrappers
+      // deep the table sits. Bounded by DOM depth — a container is descended
+      // only when it holds a table, and each step moves to a child.
+      if (isTableContainer($child, tag)) {
+        blocks.push(...extractContentBlocks($child, $, entries, warnings));
+        return;
+      }
 
-    const $child = $(node) as unknown as Cheerio<Element>;
-    const tag = node.tagName.toLowerCase();
+      if (tag === "a" && looksLikeButton(getStyles($child))) {
+        const r = convertElement($child, $);
+        if (r) {
+          entries.push(r.entry);
+          blocks.push(r.block);
+        }
+        return;
+      }
 
-    // A link inside a sentence is part of that sentence, so it joins the run
-    // rather than ending it: one rich-text block carries the whole line, with
-    // the anchor's own markup inside it.
-    //
-    // Asked before the run is flushed and before the button branch below,
-    // which is what keeps a call to action out of a sentence — a styled
-    // anchor is not a prose anchor, so it falls through to the branch that
-    // builds its button.
-    if (tag === "a" && isProseAnchor($child)) {
-      inlineRun.push(node);
-      continue;
-    }
-
-    flushInlineRun();
-
-    if (tag === "table") {
-      const inner = processTable($child, $, entries, warnings, true);
-      blocks.push(...inner);
-      continue;
-    }
-
-    // A container contributes no block of its own; the content below it takes
-    // its place. `div` is a text tag in the block mapper, so handing a
-    // container to `convertElement` emits one paragraph whose content is the
-    // entire table subtree as raw markup — the table's blocks never exist.
-    //
-    // Recursing here rather than passing a flag is what keeps the descent
-    // consistent with the cell's own walk: a table found below a container
-    // reaches the `table` branch above and flattens, which it must, because
-    // Templatical forbids a section inside a column however many wrappers
-    // deep the table sits. Bounded by DOM depth — a container is descended
-    // only when it holds a table, and each step moves to a child.
-    if (isTableContainer($child, tag)) {
-      blocks.push(...extractContentBlocks($child, $, entries, warnings));
-      continue;
-    }
-
-    if (tag === "a" && looksLikeButton(getStyles($child))) {
       const r = convertElement($child, $);
       if (r) {
         entries.push(r.entry);
         blocks.push(r.block);
       }
-      continue;
-    }
-
-    const r = convertElement($child, $);
-    if (r) {
-      entries.push(r.entry);
-      blocks.push(r.block);
-    }
-  }
-
-  flushInlineRun();
+    },
+  );
 
   return blocks;
 }

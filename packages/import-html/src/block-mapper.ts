@@ -508,6 +508,82 @@ export function isProseAnchor($el: Cheerio<Element>): boolean {
 }
 
 /**
+ * Walks an element's child *nodes*, grouping consecutive inline content into
+ * runs and handing every other element to the caller.
+ *
+ * A bare text node between two elements is content, and a walk over
+ * `children()` never visits it — so `Hello<br>World` loses both words while
+ * emitting a block holding nothing but `<br>`. Consecutive inline nodes
+ * therefore accumulate into one run and become a single paragraph, which is
+ * what makes a bare line agree with the same line wrapped in a `<p>`.
+ *
+ * One walker for all three content traversals — the body walk, the layout
+ * container walk and the cell walk — because a bare text node is content
+ * wherever it sits and the three have to read it identically. A second copy
+ * of this classification is the hazard: fixing it on one surface leaves the
+ * others silently dropping copy the source email displays, and nothing fails
+ * to say so. What differs between the three is only what a *block-level*
+ * element becomes, which is why that half is the caller's.
+ *
+ * `$host` is what a run reads its styling and source tag from: a bare run has
+ * no element of its own, and the nearest enclosing element is the one carrying
+ * the colour, size and alignment it renders with.
+ *
+ * A run never reaches across `$host`'s own children into a descendant's:
+ * `onElement` is called with the run already flushed, so a caller that
+ * recurses keeps the text before a block-level child ahead of it.
+ */
+export function walkContentNodes(
+  $host: Cheerio<Element>,
+  $: CheerioAPI,
+  onRun: (converted: { block: Block; entry: ImportReportEntry }) => void,
+  onElement: ($child: Cheerio<Element>, tag: string) => void,
+): void {
+  let inlineRun: AnyNode[] = [];
+
+  const flushInlineRun = () => {
+    if (inlineRun.length === 0) return;
+    const run = inlineRun;
+    inlineRun = [];
+    const converted = convertInlineRun(run, $host, $);
+    if (converted) onRun(converted);
+  };
+
+  for (const node of $host.contents().toArray()) {
+    if (isInlineContent(node)) {
+      inlineRun.push(node);
+      continue;
+    }
+    // Comments and processing instructions carry no content, and must not end
+    // the run either: a merge-tag comment sitting mid-sentence would otherwise
+    // split one line into two paragraphs.
+    if (!isTag(node)) continue;
+
+    const $child = $(node) as unknown as Cheerio<Element>;
+    const tag = node.tagName.toLowerCase();
+
+    // A link inside a sentence is part of that sentence, so it joins the run
+    // rather than ending it: one rich-text block carries the whole line, with
+    // the anchor's own markup inside it. The per-element path builds its
+    // paragraph from inner HTML, so the `<a>` never reaches the block and the
+    // `href` is lost.
+    //
+    // Asked before the run is flushed and before the caller sees the element,
+    // which is what keeps a call to action out of a sentence — a styled anchor
+    // is not a prose anchor, so it reaches `onElement` and becomes its button.
+    if (tag === "a" && isProseAnchor($child)) {
+      inlineRun.push(node);
+      continue;
+    }
+
+    flushInlineRun();
+    onElement($child, tag);
+  }
+
+  flushInlineRun();
+}
+
+/**
  * Reads a button's placement from the cell that wraps it. An anchor styled as
  * a button is sized to its own content, so its `text-align` says nothing about
  * where it sits — table-based email puts that on the containing `<td>`, as

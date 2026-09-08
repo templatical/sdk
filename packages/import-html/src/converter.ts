@@ -7,7 +7,11 @@ import {
 } from "@templatical/types";
 import type { Block, TemplateContent } from "@templatical/types";
 import { resolveCssStyles } from "./css-resolver";
-import { convertElement, isTableContainer } from "./block-mapper";
+import {
+  convertElement,
+  isTableContainer,
+  walkContentNodes,
+} from "./block-mapper";
 import { processTable } from "./section-builder";
 import {
   parseColor,
@@ -93,8 +97,14 @@ function wrapInSection(blocks: Block[], entries: ImportReportEntry[]): Block {
 }
 
 /**
- * Walk top-level body children. Tables become sections; loose content
- * elements are accumulated and wrapped in a single one-column section.
+ * Walk the body's child nodes. Tables become sections; loose content is
+ * accumulated and wrapped in a single one-column section.
+ *
+ * Both walks below go through `walkContentNodes`, the same node
+ * classification the cell walk uses, so bare text and inline markup at body
+ * level and inside a layout container reach a rich-text block. A walk over
+ * `children()` visits neither, which drops copy the source email displays —
+ * `Lead<h2>H</h2>Trailing` imported as the heading alone.
  */
 function processBody(
   $: CheerioAPI,
@@ -103,7 +113,6 @@ function processBody(
 ): Block[] {
   const blocks: Block[] = [];
   const $body = $("body");
-  const children = $body.children().toArray();
 
   let pendingLoose: Block[] = [];
 
@@ -112,6 +121,17 @@ function processBody(
       blocks.push(wrapInSection(pendingLoose, entries));
       pendingLoose = [];
     }
+  };
+
+  const collectLoose = ({
+    block,
+    entry,
+  }: {
+    block: Block;
+    entry: ImportReportEntry;
+  }) => {
+    entries.push(entry);
+    pendingLoose.push(block);
   };
 
   /**
@@ -131,13 +151,10 @@ function processBody(
    * document: content sitting before a nested table lands after it.
    */
   const walkContainer = ($container: Cheerio<Element>): void => {
-    $container.children().each((_, innerEl) => {
-      const innerTag = innerEl.tagName?.toLowerCase() ?? "";
-      const $inner = $(innerEl) as unknown as Cheerio<Element>;
-
+    walkContentNodes($container, $, collectLoose, ($inner, innerTag) => {
       if (innerTag === "table") {
         // Flush loose content accumulated BEFORE this table so it keeps its
-        // source position, mirroring the top-level loop. Without this, the
+        // source position, mirroring the top-level walk. Without this, the
         // table is appended immediately while leading siblings are flushed
         // only after the walk — reordering the document.
         flushLoose();
@@ -158,26 +175,23 @@ function processBody(
     });
   };
 
-  for (const childEl of children) {
-    const tag = childEl.tagName?.toLowerCase() ?? "";
-    const $child = $(childEl) as unknown as Cheerio<Element>;
-
+  walkContentNodes($body, $, collectLoose, ($child, tag) => {
     if (tag === "table") {
       flushLoose();
       blocks.push(...processTable($child, $, entries, warnings, false));
-      continue;
+      return;
     }
 
     // Skip hidden preheader divs — already captured in settings.
     const childStyles = parseStyleAttribute($child.attr("style"));
-    if ((childStyles.display ?? "").toLowerCase() === "none") continue;
+    if ((childStyles.display ?? "").toLowerCase() === "none") return;
 
     // Containers like a wrapping <div> with table children: descend.
     if (isTableContainer($child, tag)) {
       flushLoose();
       walkContainer($child);
       flushLoose();
-      continue;
+      return;
     }
 
     const r = convertElement($child, $);
@@ -185,7 +199,7 @@ function processBody(
       entries.push(r.entry);
       pendingLoose.push(r.block);
     }
-  }
+  });
 
   flushLoose();
   return blocks;
