@@ -10,7 +10,7 @@
     "@changesets/cli": "^3.0.2",
     "@microsoft/api-extractor": "^7.59.0",
     "@playwright/mcp": "^0.0.80",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@templatical/editor": "workspace:*",
     "@templatical/import-beefree": "workspace:*",
