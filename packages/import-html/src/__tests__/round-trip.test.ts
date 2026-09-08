@@ -202,8 +202,9 @@ describe("round trip: renderToMjml -> mjml2html -> convertHtmlTemplate", () => {
     //
     // No traversal fix reaches this: mjml@5 gives a section's row exactly one
     // <td> holding a `div.mj-column-per-50` per column, so there is no cell
-    // count to resolve a layout from. Recovering it means reading the width
-    // out of that class, which is the deferred tier.
+    // count to resolve a layout from — and the one-cell wrapper descent finds
+    // no table in that cell either, only those divs. Recovering the count
+    // means reading the width out of that class, which is the deferred tier.
     expect(columnLayouts(content.blocks)).toEqual(["1", "1", "1", "1", "1"]);
     expect(sections.map((section) => section.children.length)).toEqual([
       1, 1, 1, 1, 1,

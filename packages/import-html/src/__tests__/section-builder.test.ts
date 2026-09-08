@@ -500,3 +500,210 @@ describe("extractCellBlocks — a button cell is one whose whole content is the 
     ]);
   });
 });
+
+describe("processTable — a one-cell wrapper row is not a layout row", () => {
+  /** A two-column layout row, as the markup a wrapper hides. */
+  const twoColumnTable =
+    '<table role="presentation"><tr>' +
+    "<td><h2>Left heading</h2></td>" +
+    "<td><p>Right copy.</p></td>" +
+    "</tr></table>";
+
+  function onlySection(blocks: Block[]): SectionBlock {
+    expect(blocks).toHaveLength(1);
+    const section = blocks[0];
+    if (section.type !== "section") throw new Error("expected section block");
+    return section;
+  }
+
+  it("descends one wrapper row to the two-column table it holds", () => {
+    const { blocks, warnings } = runTable(
+      `<table role="presentation"><tr><td>${twoColumnTable}</td></tr></table>`,
+    );
+    const section = onlySection(blocks);
+
+    // "2" is off the section factory's default, and the slot count is what
+    // says the columns are real rather than a relabelled single column.
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+    expect(section.children.map((column) => column.map((b) => b.type))).toEqual(
+      [["title"], ["paragraph"]],
+    );
+
+    const heading = section.children[0][0];
+    const copy = section.children[1][0];
+    if (heading.type !== "title" || copy.type !== "paragraph")
+      throw new Error("expected a title and a paragraph");
+    expect(heading.content).toBe("<p>Left heading</p>");
+    expect(copy.content).toBe("<p>Right copy.</p>");
+    expect(warnings).toEqual([]);
+  });
+
+  it("descends through two wrapper rows to the same two-column table", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        '<table role="presentation"><tr><td>' +
+        twoColumnTable +
+        "</td></tr></table>" +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+    expect(section.children.map((column) => column.map((b) => b.type))).toEqual(
+      [["title"], ["paragraph"]],
+    );
+  });
+
+  it("descends into every table a wrapper cell holds, in source order", () => {
+    // The shape the corpus wraps a whole email in: two sibling tables and a
+    // text-free <br>, which produces no block and so cannot be lost.
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr><td>' +
+        twoColumnTable +
+        '<table role="presentation"><tr><td><p>Footer copy.</p></td></tr></table>' +
+        "<br>" +
+        "</td></tr></table>",
+    );
+
+    expect(blocks).toHaveLength(2);
+    expect(blocks.map((b) => b.type)).toEqual(["section", "section"]);
+    const [first, second] = blocks as SectionBlock[];
+    expect([first.columns, second.columns]).toEqual(["2", "1"]);
+    expect([first.children.length, second.children.length]).toEqual([2, 1]);
+
+    const footer = second.children[0][0];
+    if (footer.type !== "paragraph") throw new Error("expected paragraph");
+    expect(footer.content).toBe("<p>Footer copy.</p>");
+    // The <br> carries no text, so no block and no entry stands for it.
+    expect(entries.map((e) => e.templaticalBlockType)).toEqual([
+      "title",
+      "paragraph",
+      "paragraph",
+    ]);
+  });
+
+  it("descends a wrapper row sitting between two layout rows", () => {
+    // Row-level, not table-level: the corpus buries the two-column row in the
+    // middle row of a three-row table, so a table-level wrapper test would
+    // never reach it.
+    const { blocks } = runTable(
+      '<table role="presentation">' +
+        "<tr><td><h2>Masthead</h2></td></tr>" +
+        `<tr><td>${twoColumnTable}</td></tr>` +
+        "<tr><td><p>Footer copy.</p></td></tr>" +
+        "</table>",
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual([
+      "section",
+      "section",
+      "section",
+    ]);
+    const sections = blocks as SectionBlock[];
+    expect(sections.map((s) => s.columns)).toEqual(["1", "2", "1"]);
+    expect(sections.map((s) => s.children.length)).toEqual([1, 2, 1]);
+    expect(sections.map((s) => s.children.flat().map((b) => b.type))).toEqual([
+      ["title"],
+      ["title", "paragraph"],
+      ["paragraph"],
+    ]);
+  });
+
+  it("flattens a wrapper row instead of nesting a section in a column", () => {
+    // Templatical forbids a section inside a column, so a wrapper reached
+    // from a parent cell must keep flattening.
+    const { blocks } = runTable(
+      `<table role="presentation"><tr><td>${twoColumnTable}</td></tr></table>`,
+      true,
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual(["title", "paragraph"]);
+    expect(blocks.some((b) => b.type === "section")).toBe(false);
+  });
+
+  it("keeps a genuine single-column row as a one-column section", () => {
+    // Shaped exactly like a wrapper apart from the cell's content: this is
+    // the row the descent must not eat.
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        "<h2>Only heading</h2><p>Only copy.</p>" +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "title",
+      "paragraph",
+    ]);
+  });
+
+  it("keeps a heading that sits beside the table in a wrapper cell", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        "<h2>Beside the table</h2>" +
+        twoColumnTable +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // Not packaging: descending would drop the heading, so the row stays a
+    // section and the inner table flattens into it as before.
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "title",
+      "title",
+      "paragraph",
+    ]);
+    const aside = section.children[0][0];
+    if (aside.type !== "title") throw new Error("expected title block");
+    expect(aside.content).toBe("<p>Beside the table</p>");
+  });
+
+  it("keeps a styled wrapper row as the section that carries its band", () => {
+    const { blocks } = runTable(
+      '<table role="presentation">' +
+        '<tr style="background-color:#123456;padding:12px"><td>' +
+        twoColumnTable +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // The section is the only carrier for a row's background and padding, so
+    // a styled row is kept even though its cell is packaging.
+    expect(section.columns).toBe("1");
+    expect(section.styles.backgroundColor).toBe("#123456");
+    expect(section.styles.padding).toEqual({
+      top: 12,
+      right: 12,
+      bottom: 12,
+      left: 12,
+    });
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "title",
+      "paragraph",
+    ]);
+  });
+
+  it("keeps a band declared on the layout row it descends to", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        '<table role="presentation"><tr style="background-color:#654321">' +
+        "<td><h2>Left heading</h2></td>" +
+        "<td><p>Right copy.</p></td>" +
+        "</tr></table>" +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // The gate above is about the wrapper row's own styling, not about
+    // backgrounds: a band on the layout row survives the descent.
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+    expect(section.styles.backgroundColor).toBe("#654321");
+  });
+});

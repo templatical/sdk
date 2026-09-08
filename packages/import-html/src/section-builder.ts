@@ -145,6 +145,81 @@ function resolveColumnLayout(
   return "1";
 }
 
+/**
+ * The direct-child tables that make up a cell's entire meaningful content, or
+ * `null` when the cell holds anything else.
+ *
+ * Anything that is not a table has to leave nothing behind for the cell to
+ * count as packaging: whitespace, comments, and inline formatting carrying no
+ * text all produce no block, so a cell holding tables and a bare `<br>`
+ * qualifies while one holding a heading beside its table does not.
+ */
+function packagingTablesOf(
+  $cell: Cheerio<Element>,
+  $: CheerioAPI,
+): Cheerio<Element>[] | null {
+  const tables: Cheerio<Element>[] = [];
+  let inlineText = "";
+
+  for (const node of $cell.contents().toArray()) {
+    if (isInlineContent(node)) {
+      inlineText += $(node).text();
+      continue;
+    }
+    // Comments and processing instructions carry no content.
+    if (!isTag(node)) continue;
+    if (node.tagName.toLowerCase() === "table") {
+      tables.push($(node) as unknown as Cheerio<Element>);
+      continue;
+    }
+    return null;
+  }
+
+  if (tables.length === 0) return null;
+  if (inlineText.trim() !== "") return null;
+  return tables;
+}
+
+/**
+ * The tables a row is merely packaging for, or `null` when the row is layout
+ * in its own right.
+ *
+ * Table-based email buries the row that states the real column count under
+ * one-cell wrapper tables, and a section emitted for a wrapper resolves
+ * `columns` from that single cell — reporting one column for a row that has
+ * two or three. Descending to the table inside reads the count off the row
+ * that actually declares it, which is counting cells rather than inferring a
+ * layout from widths or class names.
+ *
+ * Two conditions keep the descent from losing anything, and both are hazards
+ * a future edit would reintroduce by relaxing them:
+ *
+ * - The cell's meaningful content must *be* the tables. Descending discards
+ *   the row, so a heading or an image beside the table would be dropped.
+ * - The row must carry no background and no padding. The section it emits is
+ *   the only carrier for those, so descending past a styled row would drop
+ *   the band it paints.
+ */
+function packagingRowTables(
+  $row: Cheerio<Element>,
+  cells: Cheerio<Element>[],
+  $: CheerioAPI,
+): Cheerio<Element>[] | null {
+  if (cells.length !== 1) return null;
+
+  const rowStyles = getStyles($row);
+  if (
+    parseColor(rowStyles["background-color"]) ||
+    parseColor(rowStyles.background)
+  )
+    return null;
+  const padding = readPaddingFromStyles(rowStyles);
+  if (padding.top || padding.right || padding.bottom || padding.left)
+    return null;
+
+  return packagingTablesOf(cells[0], $);
+}
+
 function extractCellBlocks(
   $cell: Cheerio<Element>,
   $: CheerioAPI,
@@ -277,6 +352,21 @@ export function processTable(
   for (const $row of rows) {
     const cells = getDirectCells($row, $);
     if (cells.length === 0) continue;
+
+    // A wrapper row contributes no section of its own; its tables take its
+    // place. Bounded by DOM depth: each step descends to a table strictly
+    // inside this row. `flattenInline` is carried through unchanged, because
+    // Templatical forbids a section inside a column — a wrapper reached from
+    // a parent cell must keep flattening.
+    const packaging = packagingRowTables($row, cells, $);
+    if (packaging) {
+      for (const $inner of packaging) {
+        sections.push(
+          ...processTable($inner, $, entries, warnings, flattenInline),
+        );
+      }
+      continue;
+    }
 
     const layout = resolveColumnLayout(cells.length, warnings);
 
