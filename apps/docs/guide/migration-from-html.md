@@ -68,25 +68,43 @@ HTML elements map to Templatical equivalents:
 | `<a>` (plain inline link) | `paragraph` | Approximated (wrapped in a paragraph) |
 | `<hr>` | `divider` | Converted |
 | Empty `<td>` with explicit height | `spacer` | Converted |
-| `<td>` containing a single styled `<a>` | `button` | Converted (cell-as-button pattern) |
+| `<td>` whose entire content is one styled `<a>` | `button` | Converted (cell-as-button pattern) |
 | `<table>` (layout, multi-row/column) | `section` (one per `<tr>`) | Converted |
 | `<table>` (data table — text-only cells) | `html` | HTML fallback |
 | Unknown / custom elements | `html` | HTML fallback |
 
 Anything that can't be mapped is preserved verbatim inside an HTML block, so no visible content is lost.
 
+A cell mixing copy with a link keeps both: the copy becomes a `paragraph`, and the link a `paragraph` of its own reported as `approximated`. Only a cell whose whole content is the anchor reads as a button.
+
+A `<div>`, `<center>` or `<main>` that wraps a table produces no block of its own: the importer descends into it, at any nesting depth, and maps the tables it finds. A wrapper holding only text keeps its `paragraph` mapping.
+
+## Inline Formatting
+
+`<br>`, `<em>`, `<strong>`, `<i>`, `<b>`, `<u>`, `<small>`, `<sub>` and `<sup>` stay inside the text they belong to. A run of them, together with the bare text around it, becomes one `paragraph` whose colour, size and alignment come from the containing cell — so `Hello<br>World` in a `<td>` imports as a single paragraph holding both words and the line break.
+
+`<a>` is left out of such a run. It maps to a `button` or to an approximated `paragraph` of its own, so a link keeps its own block instead of being absorbed into the surrounding text.
+
 ## Column Layout Conversion
 
-Each `<tr>` in a layout table becomes a `SectionBlock`. Cell counts map directly:
+Each `<tr>` in a layout table becomes a `SectionBlock`. The row's direct `<td>` / `<th>` children are the layout:
 
 | Cells per row | Templatical Layout |
 |---|---|
 | 1 | `'1'` |
 | 2 | `'2'` |
 | 3 | `'3'` |
-| 4+ | flattened to `'1'` with a warning |
+| 4+ | merged into `'1'`, with a warning and an `approximated` report entry |
 
-Templatical sections cannot nest. Tables nested inside a `<td>` are flattened — their inner blocks are merged into the parent cell.
+### Wrapper rows
+
+Table-based emails wrap their real layout in one-cell tables. A row holding a single cell whose content is nothing but tables is descended instead of becoming a section, so the column count is read off the row that declares it. The descent applies only when that cell holds no content beside its tables and the row carries no background colour and no padding — a row failing either becomes a section of its own, because the section is what carries a row's background and padding.
+
+Columns written as `<div class="mj-column-per-*">` inside one cell, which is how MJML compiles them, are not recognised. The row has a single cell, so it imports as one column with that div's blocks inside it.
+
+### Nesting
+
+Templatical sections cannot nest. Tables nested inside a `<td>` are flattened — their inner blocks are merged into the parent cell. A nested row with more than one cell loses its columns that way, and `report.entries` records it as `approximated` with a note.
 
 ## CSS Handling
 
@@ -118,6 +136,7 @@ Global template settings are extracted from the document:
 - **External resources** — `<link>`, external stylesheets, web fonts, and remote images are not fetched. Image `src` URLs are preserved as-is.
 - **Outlook MSO conditional comments** — preserved as HTML inside their containing block (they're inert in non-Outlook clients anyway).
 - **`<form>` / `<input>` / `<button>` form controls** — preserved as HTML-fallback. Most email clients block form submission; rebuild the call-to-action as a button linking to a hosted form.
+- **MJML-compiled columns** — a section's columns arrive as sibling `<div class="mj-column-per-*">` elements inside one `<td>`, and the importer reads a layout from cell counts, so such a row imports as a single column holding every column's blocks in order.
 - **AMP for Email** — not currently supported in Templatical.
 
 ## Verifying Converted Templates
@@ -151,3 +170,11 @@ for (const warning of report.warnings) {
   console.warn(warning);
 }
 ```
+
+### Sections in the report
+
+`report.entries` accounts for the sections alongside the leaf blocks, so the entries reconcile against `content.blocks`:
+
+- One entry per section, with `sourceTag: 'tr'` and `templaticalBlockType: 'section'`. Its status is `converted` when every cell kept its own column, and `approximated` with a note when cells were merged.
+- One entry with `sourceTag: 'body'` and a note when loose top-level content is grouped into a synthetic single-column section.
+- One entry with `templaticalBlockType: null` and a note for a nested row whose columns were dropped.
