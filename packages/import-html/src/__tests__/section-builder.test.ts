@@ -1096,17 +1096,35 @@ describe("extractCellBlocks — a container in a cell is descended to its table"
   });
 
   it("flattens a multi-column table a container hides", () => {
-    const { blocks, entries } = runCell(
-      '<div><table role="presentation"><tr>' +
+    // The outer row carries two content cells, which is what keeps the
+    // container inside a column: a row whose single cell holds nothing but a
+    // container of layout tables is packaging, and its layout row becomes a
+    // section in its own right.
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td><div><table role="presentation"><tr>' +
         "<td><h2>Left heading</h2></td>" +
         "<td><p>Right copy.</p></td>" +
-        "</tr></table></div>",
+        "</tr></table></div></td>" +
+        "<td><p>Second column.</p></td>" +
+        "</tr></table>",
     );
 
+    expect(blocks).toHaveLength(1);
+    const section = blocks[0];
+    if (section.type !== "section") throw new Error("expected section block");
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+
     // Templatical forbids a section inside a column, so a table reached from
-    // a cell flattens however many containers deep it sits.
-    expect(blocks.map((b) => b.type)).toEqual(["title", "paragraph"]);
-    expect(blocks.some((b) => b.type === "section")).toBe(false);
+    // a cell flattens however many containers deep it sits — its blocks land
+    // in the column the container sat in, in source order.
+    expect(section.children.map((column) => column.map((b) => b.type))).toEqual(
+      [["title", "paragraph"], ["paragraph"]],
+    );
+    expect(section.children.flat().some((b) => b.type === "section")).toBe(
+      false,
+    );
 
     const flattened = entries.filter(
       (entry) => entry.templaticalBlockType === null,
@@ -1208,5 +1226,585 @@ describe("extractCellBlocks — a container in a cell is descended to its table"
     expect(blocks.map((b) => b.type)).toEqual(["html"]);
     expect(entries[0].sourceTag).toBe("section");
     expect(entries[0].status).toBe("html-fallback");
+  });
+});
+
+describe("processTable — a container does not hide a wrapper cell's layout row", () => {
+  /** A two-column layout row, as the markup a wrapper hides. */
+  const twoColumnTable =
+    '<table role="presentation"><tr>' +
+    "<td><h2>Left heading</h2></td>" +
+    "<td><p>Right copy.</p></td>" +
+    "</tr></table>";
+
+  function onlySection(blocks: Block[]): SectionBlock {
+    expect(blocks).toHaveLength(1);
+    const section = blocks[0];
+    if (section.type !== "section") throw new Error("expected section block");
+    return section;
+  }
+
+  function expectTwoColumns(section: SectionBlock): void {
+    // "2" is off the section factory's default, and the slot count is what
+    // says the columns are real rather than a relabelled single column.
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+    expect(section.children.map((column) => column.map((b) => b.type))).toEqual(
+      [["title"], ["paragraph"]],
+    );
+    const heading = section.children[0][0];
+    const copy = section.children[1][0];
+    if (heading.type !== "title" || copy.type !== "paragraph")
+      throw new Error("expected a title and a paragraph");
+    expect(heading.content).toBe("<p>Left heading</p>");
+    expect(copy.content).toBe("<p>Right copy.</p>");
+  }
+
+  it("descends a <center> sitting between the wrapper cell and its table", () => {
+    const { blocks, warnings } = runTable(
+      '<table role="presentation"><tr><td>' +
+        `<center>${twoColumnTable}</center>` +
+        "</td></tr></table>",
+    );
+
+    expectTwoColumns(onlySection(blocks));
+    expect(warnings).toEqual([]);
+  });
+
+  it("descends <div> and <main> the same way as <center>", () => {
+    for (const tag of ["div", "main"]) {
+      const { blocks } = runTable(
+        '<table role="presentation"><tr><td>' +
+          `<${tag}>${twoColumnTable}</${tag}>` +
+          "</td></tr></table>",
+      );
+      expectTwoColumns(onlySection(blocks));
+    }
+  });
+
+  it("descends a container nested inside another container", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        `<div><center>${twoColumnTable}</center></div>` +
+        "</td></tr></table>",
+    );
+
+    expectTwoColumns(onlySection(blocks));
+  });
+
+  it("descends a container holding a wrapper table around the layout row", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td><center>' +
+        `<table role="presentation"><tr><td>${twoColumnTable}</td></tr></table>` +
+        "</center></td></tr></table>",
+    );
+
+    expectTwoColumns(onlySection(blocks));
+  });
+
+  it("descends into every table a container holds, in source order", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td><center>' +
+        twoColumnTable +
+        '<table role="presentation"><tr><td><p>Footer copy.</p></td></tr></table>' +
+        "</center></td></tr></table>",
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual(["section", "section"]);
+    const [first, second] = blocks as SectionBlock[];
+    expect([first.columns, second.columns]).toEqual(["2", "1"]);
+    expect([first.children.length, second.children.length]).toEqual([2, 1]);
+    const footer = second.children[0][0];
+    if (footer.type !== "paragraph") throw new Error("expected paragraph");
+    expect(footer.content).toBe("<p>Footer copy.</p>");
+  });
+
+  it("keeps a container holding prose beside its table", () => {
+    // The receipt shape from the corpus: a typography wrapper holding copy and
+    // then a table. Descending discards the wrapper, so the copy would go with
+    // it — the row has to stay the section it already is.
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        `<div class="f-fallback"><p>Lead-in copy.</p>${twoColumnTable}</div>` +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "paragraph",
+      "title",
+      "paragraph",
+    ]);
+    const lead = section.children[0][0];
+    if (lead.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(lead.content).toBe("<p>Lead-in copy.</p>");
+  });
+
+  it("keeps a container holding bare text beside its table", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        `<center>Lead-in text.${twoColumnTable}</center>` +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "paragraph",
+      "title",
+      "paragraph",
+    ]);
+  });
+
+  it("keeps a styled wrapper row whose container hides a layout row", () => {
+    const { blocks } = runTable(
+      '<table role="presentation">' +
+        '<tr style="background-color:#123456;padding:12px"><td>' +
+        `<center>${twoColumnTable}</center>` +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // The row-level guard is unchanged by the container descent: the section
+    // is the only carrier for a row's background and padding.
+    expect(section.columns).toBe("1");
+    expect(section.styles.backgroundColor).toBe("#123456");
+    expect(section.styles.padding).toEqual({
+      top: 12,
+      right: 12,
+      bottom: 12,
+      left: 12,
+    });
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "title",
+      "paragraph",
+    ]);
+  });
+
+  it("descends a wrapper cell that is a <th>", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><th>' +
+        `<center>${twoColumnTable}</center>` +
+        "</th></tr></table>",
+    );
+
+    expectTwoColumns(onlySection(blocks));
+  });
+
+  it("keeps a container holding no table as one paragraph", () => {
+    // The negative control for the descent: the container test is what stops
+    // it widening into "descend every div", and `div` is a text tag.
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr><td>' +
+        '<div style="color:#334455">Just prose, no table.</div>' +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("1");
+    expect(section.children[0].map((b) => b.type)).toEqual(["paragraph"]);
+    const copy = section.children[0][0];
+    if (copy.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(copy.content).toBe(
+      '<p><span style="color: #334455">Just prose, no table.</span></p>',
+    );
+    expect(entries[0].sourceTag).toBe("div");
+  });
+
+  it("keeps an unknown element holding a table as an html fallback", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        `<section>${twoColumnTable}</section>` +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // Gated on the container tag set, not on holding a table: widening it
+    // would turn a tag with no mapping into a silent traversal step.
+    expect(section.columns).toBe("1");
+    expect(section.children[0].map((b) => b.type)).toEqual(["html"]);
+  });
+
+  it("flattens a container-wrapped layout row reached from a parent cell", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        `<center>${twoColumnTable}</center>` +
+        "</td></tr></table>",
+      true,
+    );
+
+    // Templatical forbids a section inside a column, so the descent keeps
+    // flattening however many containers deep the table sits.
+    expect(blocks.map((b) => b.type)).toEqual(["title", "paragraph"]);
+    expect(blocks.some((b) => b.type === "section")).toBe(false);
+  });
+
+  it("keeps a container whose markup states no columns as one section", () => {
+    // Compiled MJML's shape: a column is a container holding a table whose
+    // rows are stacked blocks, not columns. Descending it promotes each of
+    // those rows to a section and shatters the source's own section into one
+    // per block, buying no column count in exchange.
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td><div>' +
+        '<table role="presentation">' +
+        "<tr><td><div><h2>First</h2></div></td></tr>" +
+        "<tr><td><div><p>Second.</p></div></td></tr>" +
+        "</table>" +
+        "</div></td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    // Each row's own `<div>` holds no table, so it is correctly not a
+    // container: it maps through the block mapper's text tags and keeps the
+    // heading markup inside the paragraph's content.
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "paragraph",
+      "paragraph",
+    ]);
+    const first = section.children[0][0];
+    if (first.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(first.content).toBe("<h2>First</h2>");
+  });
+
+  it("keeps one section when a cell holds one container per column", () => {
+    // The same shape with two columns: sibling containers in a single cell
+    // are parallel content, so the row they sit in is the section — the cells
+    // never stated a count for the descent to recover.
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        '<div><table role="presentation"><tr><td><h2>Left</h2></td></tr></table></div>' +
+        '<div><table role="presentation"><tr><td><p>Right.</p></td></tr></table></div>' +
+        "</td></tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "title",
+      "paragraph",
+    ]);
+  });
+
+  it("reports the descended container's row as one converted section", () => {
+    const { entries } = runTable(
+      '<table role="presentation"><tr><td>' +
+        `<center>${twoColumnTable}</center>` +
+        "</td></tr></table>",
+    );
+
+    // Neither the wrapper row nor the container creates a block, so only the
+    // layout row reports a section.
+    const sectionEntries = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntries).toHaveLength(1);
+    expect(sectionEntries[0].sourceTag).toBe("tr");
+    expect(sectionEntries[0].status).toBe("converted");
+    expect("note" in sectionEntries[0]).toBe(false);
+    expect(entries.map((entry) => entry.sourceTag)).toEqual(["h2", "p", "tr"]);
+  });
+});
+
+describe("processTable — a row of blank cells around one is a centring device", () => {
+  function onlySection(blocks: Block[]): SectionBlock {
+    expect(blocks).toHaveLength(1);
+    const section = blocks[0];
+    if (section.type !== "section") throw new Error("expected section block");
+    return section;
+  }
+
+  it("reads the most-copied template's nbsp gutters as one column", () => {
+    // leemunroe/responsive-html-email-template's body row: two `&nbsp;`
+    // gutters centring one content cell. Read as three columns, the whole
+    // email renders in the middle third.
+    const { blocks, warnings } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td valign="top">&nbsp;</td>' +
+        '<td class="container"><h2>The email</h2><p>Body copy.</p></td>' +
+        '<td valign="top">&nbsp;</td>' +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "title",
+      "paragraph",
+    ]);
+    const heading = section.children[0][0];
+    if (heading.type !== "title") throw new Error("expected title block");
+    expect(heading.content).toBe("<p>The email</p>");
+    expect(warnings).toEqual([]);
+  });
+
+  it("reads a Foundation expander cell as one column", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr>' +
+        "<th><h2>The content</h2></th>" +
+        '<th class="expander"></th>' +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual(["title"]);
+  });
+
+  it("drops a blank cell that states a height instead of stacking its spacer", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td height="20">&nbsp;</td>' +
+        "<td><h2>The content</h2></td>" +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // A gutter's height is horizontal chrome. Merging the cells instead would
+    // put a spacer block above the content that the source never had.
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual(["title"]);
+  });
+
+  it("reads gutters on both sides of a four-cell row without warning", () => {
+    const { blocks, warnings } = runTable(
+      '<table role="presentation"><tr>' +
+        "<td>&nbsp;</td><td>&nbsp;</td>" +
+        "<td><h2>The content</h2></td>" +
+        "<td>&nbsp;</td>" +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // No layout was flattened, so the four-column warning must not fire.
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual(["title"]);
+    expect(warnings).toEqual([]);
+  });
+
+  it("reports a centring row as one converted column", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr>' +
+        "<td>&nbsp;</td>" +
+        "<td><h2>The content</h2></td>" +
+        "<td>&nbsp;</td>" +
+        "</tr></table>",
+    );
+
+    // Read as three columns the row also reports `converted`, because three
+    // cells fill three slots — so the entry assertion below says nothing
+    // without the layout pinned beside it.
+    const section = onlySection(blocks);
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+
+    const sectionEntries = entries.filter(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntries).toHaveLength(1);
+    expect(sectionEntries[0].sourceTag).toBe("tr");
+    // Nothing was merged: the gutters were never columns, so the entry must
+    // not claim the three-column collapse.
+    expect(sectionEntries[0].status).toBe("converted");
+    expect("note" in sectionEntries[0]).toBe(false);
+  });
+
+  it("reports nothing for a centring row flattened into a parent column", () => {
+    const { blocks, entries } = runTable(
+      '<table role="presentation"><tr>' +
+        "<td>&nbsp;</td>" +
+        "<td><h2>The content</h2></td>" +
+        "<td>&nbsp;</td>" +
+        "</tr></table>",
+      true,
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual(["title"]);
+    // One column has no columns to lose, so the flattening downgrade note
+    // must not fire for a centring row either.
+    expect(entries.filter((entry) => entry.status === "approximated")).toEqual(
+      [],
+    );
+  });
+
+  it("keeps a genuine two-column row", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr>' +
+        "<td><h2>Left heading</h2></td>" +
+        "<td><p>Right copy.</p></td>" +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+    expect(section.children.map((column) => column.map((b) => b.type))).toEqual(
+      [["title"], ["paragraph"]],
+    );
+  });
+
+  it("keeps a genuine three-column row", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr>' +
+        "<td><p>One</p></td><td><p>Two</p></td><td><p>Three</p></td>" +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("3");
+    expect(section.children).toHaveLength(3);
+    expect(section.children.map((column) => column.length)).toEqual([1, 1, 1]);
+  });
+
+  it("keeps three columns when only one of them is blank", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr>' +
+        "<td><p>One</p></td><td><p>Two</p></td><td>&nbsp;</td>" +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // Two cells carry content, so this is a grid with an empty slot rather
+    // than a centring device — collapsing it would re-flow the two filled
+    // columns from thirds to halves.
+    expect(section.columns).toBe("3");
+    expect(section.children).toHaveLength(3);
+    expect(section.children.map((column) => column.length)).toEqual([1, 1, 0]);
+  });
+
+  it("counts an image-only cell as a column", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td><img src="https://example.com/a.png" alt=""></td>' +
+        "<td><p>Right copy.</p></td>" +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // Emptiness is about what a reader sees, not about text: an image or a
+    // link carries no text and is content all the same.
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+    expect(section.children.map((column) => column.map((b) => b.type))).toEqual(
+      [["image"], ["paragraph"]],
+    );
+  });
+
+  it("counts a link-only cell as a column", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr>' +
+        '<td><a href="https://example.com"><img src="https://example.com/a.png" alt=""></a></td>' +
+        "<td><p>Right copy.</p></td>" +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+    expect(section.children[0]).toHaveLength(1);
+    expect(section.children[1]).toHaveLength(1);
+  });
+
+  it("leaves a single-cell spacer row alone", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td height="24">&nbsp;</td></tr>' +
+        "<tr><td><p>Copy.</p></td></tr></table>",
+    );
+
+    // The rule needs a cell to be a gutter *of*, so a one-cell row keeps its
+    // spacer: a row on its own is vertical space, not chrome beside content.
+    expect(blocks.map((b) => b.type)).toEqual(["section", "section"]);
+    const [spacerRow] = blocks as SectionBlock[];
+    expect(spacerRow.columns).toBe("1");
+    expect(spacerRow.children[0].map((b) => b.type)).toEqual(["spacer"]);
+    const spacer = spacerRow.children[0][0];
+    if (spacer.type !== "spacer") throw new Error("expected spacer block");
+    expect(spacer.height).toBe(24);
+  });
+
+  it("leaves a row of nothing but blank cells alone", () => {
+    // The content row is what makes this a layout table at all: a table whose
+    // cells hold only `&nbsp;` is a data table and never reaches a section.
+    const { blocks } = runTable(
+      '<table role="presentation">' +
+        '<tr><td height="20">&nbsp;</td><td height="20">&nbsp;</td></tr>' +
+        "<tr><td><p>Copy.</p></td></tr>" +
+        "</table>",
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual(["section", "section"]);
+    const [blankRow] = blocks as SectionBlock[];
+
+    // Cells of a row sit side by side, so a row with no content anywhere
+    // states one gap per column rather than a stack of them. Merging would
+    // add their heights and invent vertical space.
+    expect(blankRow.columns).toBe("2");
+    expect(blankRow.children).toHaveLength(2);
+    expect(
+      blankRow.children.map((column) => column.map((b) => b.type)),
+    ).toEqual([["spacer"], ["spacer"]]);
+  });
+});
+
+describe("processTable — the container descent and the centring rule together", () => {
+  // Foundation-derived markup needs both rules at once, and either alone
+  // reads it wrongly:
+  //
+  // - Without the container descent, the `<center>` hides the layout table
+  //   and the whole subtree collapses into one column, columns and all.
+  // - Without the centring rule, the descent turns each `expander` cell into
+  //   a real column holding nothing but a spacer, so a one-column row imports
+  //   as two columns — worse than the collapse it replaced.
+  //
+  // The `line-height` on the expander is what Foundation's own stylesheet
+  // resolves onto it, and it is what makes the phantom spacer real.
+  const foundationRow =
+    "<tr>" +
+    "<th><h2>Masthead</h2></th>" +
+    '<th class="expander" style="line-height:20px"></th>' +
+    "</tr>";
+  const genuineRow =
+    "<tr>" +
+    "<th><p>Left copy.</p></th>" +
+    "<th><p>Right copy.</p></th>" +
+    "</tr>";
+
+  it("yields a clean one-column section beside the genuine two-column row", () => {
+    const { blocks, warnings } = runTable(
+      '<table role="presentation"><tr><td><center>' +
+        `<table role="presentation">${foundationRow}${genuineRow}</table>` +
+        "</center></td></tr></table>",
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual(["section", "section"]);
+    const [centred, genuine] = blocks as SectionBlock[];
+
+    // The descent is what produces two sections at all; the centring rule is
+    // what keeps the first of them one column with no spacer in it.
+    expect(centred.columns).toBe("1");
+    expect(centred.children).toHaveLength(1);
+    expect(centred.children[0].map((b) => b.type)).toEqual(["title"]);
+
+    expect(genuine.columns).toBe("2");
+    expect(genuine.children).toHaveLength(2);
+    expect(genuine.children.map((column) => column.map((b) => b.type))).toEqual(
+      [["paragraph"], ["paragraph"]],
+    );
+
+    expect(warnings).toEqual([]);
+    expect(
+      blocks.flatMap((b) =>
+        b.type === "section" ? b.children.flat().map((c) => c.type) : [b.type],
+      ),
+    ).toEqual(["title", "paragraph", "paragraph"]);
   });
 });

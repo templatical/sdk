@@ -431,13 +431,32 @@ export function convertHtmlFallback(
 }
 
 /**
- * Decides whether a `<td>` looks like a vertical spacer:
- * empty (or only `&nbsp;`) AND has an explicit height.
+ * Decides whether a `<td>` / `<th>` carries nothing a reader would see: no
+ * text once source whitespace and `&nbsp;` are collapsed, and no element that
+ * renders on its own.
+ *
+ * Text alone is not the test. An image or a link carries no text and is
+ * content all the same, so a cell holding one is never blank — reading it as
+ * blank would make a picture-only column disappear.
+ *
+ * Lives here, with the other predicates both traversal modules consult,
+ * because a spacer cell and a row's gutter cells are one fact read for two
+ * purposes: `isSpacerCell` adds a stated height to it, and the section
+ * builder reads a row's blank cells as chrome rather than as columns. A
+ * second copy would let one cell be a spacer in one traversal and a column
+ * in the other.
+ */
+export function isBlankCell($el: Cheerio<Element>): boolean {
+  if (normalizeCellText($el.text() ?? "") !== "") return false;
+  return $el.find("img, a, hr").length === 0;
+}
+
+/**
+ * Decides whether a `<td>` looks like a vertical spacer: blank, and carrying
+ * an explicit height.
  */
 export function isSpacerCell($el: Cheerio<Element>): boolean {
-  const text = ($el.text() ?? "").replace(/\s| /g, "");
-  if (text !== "") return false;
-  if ($el.find("img, a, hr").length > 0) return false;
+  if (!isBlankCell($el)) return false;
 
   const styles = getStyles($el);
   const hasHeight =
