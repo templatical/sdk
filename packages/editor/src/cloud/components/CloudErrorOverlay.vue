@@ -37,7 +37,7 @@ function isNotFoundError(error: Error): boolean {
   <div
     v-if="visible && error"
     role="alert"
-    class="tpl-error tpl:absolute tpl:inset-0 tpl:z-overlay tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-6 tpl:px-8 tpl:bg-[var(--tpl-bg)]"
+    class="tpl-error tpl:absolute tpl:inset-0 tpl:z-[100] tpl:flex tpl:flex-col tpl:items-center tpl:justify-center tpl:gap-6 tpl:px-8 tpl:bg-[var(--tpl-bg)]"
   >
     <div
       class="tpl:flex tpl:size-16 tpl:items-center tpl:justify-center tpl:rounded-full tpl:bg-[var(--tpl-danger-light)]"

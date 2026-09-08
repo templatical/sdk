@@ -75,6 +75,41 @@ describe("design system conformance", () => {
     });
   });
 
+  describe("Z-index — only utilities Tailwind actually emits", () => {
+    /**
+     * Tailwind 4 derives z-index utilities from the `--z-index-*` theme
+     * namespace. A named layer declared as `--z-modal` therefore emits NO
+     * utility at all, so `tpl:z-modal` compiles to nothing and the element
+     * silently computes `z-index: auto` — while the class string still reads
+     * like a stacking decision. Twelve of these had accumulated, and two
+     * components (`SmallScreenNotice`, `.tpl-popover-root`) had already worked
+     * around it with literal z-index values rather than the scale.
+     *
+     * The rule is to write a number Tailwind emits (`tpl:z-50`, `tpl:z-[100]`)
+     * or nothing at all. Nothing at all is the right answer inside
+     * `.tpl-popover-root`: it is one stacking context, so DOM order decides and
+     * a number there can only create ties — giving the link dialog a real
+     * `10000` puts the merge-tag suggestion popup (inline 9999) behind it.
+     */
+    it("no named z-index utilities — they compile to nothing", () => {
+      expect(
+        offenders(/\btpl:(?:[a-z][a-z0-9-]*:)*z-(?![0-9]|\[|auto\b)[a-z][a-z0-9-]*/g),
+      ).toEqual([]);
+    });
+
+    it("no named z layer survives in the theme block", () => {
+      // The tokens are what make the dead utilities look plausible; leaving
+      // them behind invites the classes back.
+      expect(INDEX_CSS()).not.toMatch(/--z-(?:panel|toast|overlay|popover|modal)\s*:/);
+    });
+
+    it("numeric z utilities are actually in use (positive control)", () => {
+      // Without this, the first assertion would also pass if every z utility
+      // were deleted rather than corrected.
+      expect(offenders(/\btpl:z-(?:[0-9]+|\[[0-9]+\])/g).length).toBeGreaterThan(8);
+    });
+  });
+
   describe("Shadow Vocabulary — the five --tpl-shadow-* steps", () => {
     /**
      * DESIGN.md §5 defines depth as five tokens. Tailwind's own shadow scale

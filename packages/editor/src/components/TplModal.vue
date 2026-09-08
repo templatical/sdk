@@ -79,7 +79,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <div
         v-if="visible"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl:fixed tpl:inset-0 tpl:z-modal tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
+        class="tpl tpl:fixed tpl:inset-0 tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
         style="
           background-color: var(--tpl-overlay);
           backdrop-filter: blur(8px);

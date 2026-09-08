@@ -43,7 +43,7 @@ const { t } = useI18n();
     <div
       v-if="visible"
       :data-tpl-theme="tplUiTheme"
-      class="tpl tpl-link-dialog tpl:fixed tpl:inset-0 tpl:z-modal tpl:flex tpl:items-center tpl:justify-center"
+      class="tpl tpl-link-dialog tpl:fixed tpl:inset-0 tpl:flex tpl:items-center tpl:justify-center"
       :style="themeStyles"
       @click.self="emit('close')"
     >
