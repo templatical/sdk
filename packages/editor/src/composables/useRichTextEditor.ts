@@ -113,7 +113,7 @@ export function useRichTextEditor(
     removeLink,
     closeLinkDialog,
     handleLinkKeydown,
-  } = useRichTextLinkDialog(editor);
+  } = useRichTextLinkDialog(editor, syntax);
 
   const { start: startFocusTimeout, stop: stopFocusTimeout } = useTimeoutFn(
     () => editor.value?.commands.focus("end"),

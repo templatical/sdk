@@ -2,6 +2,7 @@
 import { useI18n } from "../../composables/useI18n";
 import { usePopoverRoot } from "../../composables/usePopoverRoot";
 import ColorPicker from "../ColorPicker.vue";
+import MergeTagInput from "../MergeTagInput.vue";
 import { X } from "@lucide/vue";
 import { computed, inject } from "vue";
 import { EDITOR_KEY, THEME_STYLES_KEY, UI_THEME_KEY } from "../../keys";
@@ -42,7 +43,7 @@ const { t } = useI18n();
     <div
       v-if="visible"
       :data-tpl-theme="tplUiTheme"
-      class="tpl tpl-link-dialog tpl:fixed tpl:inset-0 tpl:z-modal tpl:flex tpl:items-center tpl:justify-center"
+      class="tpl tpl-link-dialog tpl:fixed tpl:inset-0 tpl:flex tpl:items-center tpl:justify-center"
       :style="themeStyles"
       @click.self="emit('close')"
     >
@@ -51,6 +52,7 @@ const { t } = useI18n();
         role="dialog"
         aria-modal="true"
         aria-labelledby="tpl-link-dialog-title"
+        data-testid="link-dialog"
         class="tpl:w-[400px] tpl:overflow-hidden tpl:rounded-lg tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:shadow-[var(--tpl-shadow-lg)]"
       >
         <div
@@ -76,17 +78,20 @@ const { t } = useI18n();
         <div class="tpl:p-5">
           <div class="tpl:mb-4 tpl:last:mb-0">
             <label
-              for="tpl-link-dialog-url"
               class="tpl:mb-1.5 tpl:block tpl:text-xs tpl:font-medium tpl:tracking-wide tpl:text-[var(--tpl-text-muted)] tpl:uppercase"
               >{{ t.linkDialog.urlLabel }}</label
             >
-            <input
-              id="tpl-link-dialog-url"
-              v-model="linkUrl"
+            <!-- Many links are composed from a merge tag (a per-recipient or
+                 per-event URL), so this field carries the same affordances as
+                 every other URL field in the editor. `@keydown` only fires for
+                 keys the autocomplete popup declined, so Enter still submits
+                 the dialog without hijacking the press that picks a tag. -->
+            <MergeTagInput
+              :model-value="linkUrl"
               type="url"
-              class="tpl:w-full tpl:rounded-md tpl:border tpl:border-[var(--tpl-border)] tpl:bg-[var(--tpl-bg)] tpl:px-3 tpl:py-2.5 tpl:text-sm tpl:text-[var(--tpl-text)] tpl:transition-all tpl:outline-none tpl:placeholder:text-[var(--tpl-text-dim)] tpl:focus:border-[var(--tpl-primary)] tpl:focus:shadow-[0_0_0_3px_var(--tpl-primary-light)]"
+              data-testid="link-dialog-url"
               :placeholder="t.linkDialog.urlPlaceholder"
-              autofocus
+              @update:model-value="linkUrl = $event"
               @keydown="emit('keydown', $event)"
             />
           </div>
@@ -124,6 +129,7 @@ const { t } = useI18n();
             <button
               type="button"
               class="tpl:inline-flex tpl:cursor-pointer tpl:items-center tpl:rounded-md tpl:border-none tpl:bg-[var(--tpl-primary)] tpl:px-4 tpl:py-2 tpl:text-[13px] tpl:font-medium tpl:transition-all tpl:hover:bg-[var(--tpl-primary-hover)] tpl:text-[var(--tpl-on-primary)]"
+              data-testid="link-dialog-submit"
               @click="emit('insert')"
             >
               {{

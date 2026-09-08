@@ -62,12 +62,11 @@
     --default-transition-duration: 120ms;
     --default-transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 
-    /* Z-index scale — semantic layers for stacking context */
-    --z-panel: 45;
-    --z-toast: 60;
-    --z-overlay: 100;
-    --z-popover: 9999;
-    --z-modal: 10000;
+    /* No named z-index layers here. Tailwind 4 derives z utilities from the
+     * `--z-index-*` namespace, so a `--z-modal` token emits no utility and the
+     * class that reads it computes `auto` — see the z-index group in
+     * `tests/design-system-conformance.test.ts`. Write a number Tailwind
+     * emits, or nothing. */
 }
 
 /* SDK-specific source paths for Tailwind scanning */
@@ -443,8 +442,11 @@
    popover root lives inside the editor container rather than at document.body. */
 .tpl-popover-root {
     position: relative;
-    /* Literal — `var(--z-modal)` resolves to :root which is unreachable
-       from inside a shadow root, dropping the stacking context. */
+    /* Literal, not a token: a `var()` declared in `@theme` lands on `:root`,
+       which is unreachable from inside a shadow root — the declaration would
+       resolve to nothing and drop the stacking context. This element is what
+       puts every teleported popup above the editor chrome, and because it is a
+       stacking context, its residents need no z-index of their own. */
     z-index: 10000;
 }
 

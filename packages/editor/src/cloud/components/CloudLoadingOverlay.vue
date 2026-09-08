@@ -7,7 +7,7 @@ defineProps<{
 <template>
   <div
     v-if="visible"
-    class="tpl-loading tpl:absolute tpl:inset-0 tpl:z-overlay tpl:flex tpl:flex-col tpl:bg-[var(--tpl-bg)]"
+    class="tpl-loading tpl:absolute tpl:inset-0 tpl:z-[100] tpl:flex tpl:flex-col tpl:bg-[var(--tpl-bg)]"
   >
     <!-- Skeleton header -->
     <div

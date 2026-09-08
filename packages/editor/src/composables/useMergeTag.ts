@@ -10,6 +10,7 @@ import {
   MERGE_TAG_SYNTAX_KEY,
   MERGE_TAG_AUTOCOMPLETE_KEY,
   MERGE_TAG_PICKER_KEY,
+  MERGE_TAG_REQUESTING_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
 } from "../keys";
 
@@ -53,7 +54,9 @@ export function useMergeTag(): UseMergeTagReturn {
   // requestMergeTag() returns null in that case rather than throwing.
   const picker = inject(MERGE_TAG_PICKER_KEY, null);
 
-  const isRequesting = ref(false);
+  // Shared per editor so every host that can open the picker is visible to
+  // useRichTextEditor's click-outside guard. See MERGE_TAG_REQUESTING_KEY.
+  const isRequesting = inject(MERGE_TAG_REQUESTING_KEY, null) ?? ref(false);
 
   function isMergeTagValue(value: string): boolean {
     return checkIsMergeTagValue(value, syntax);

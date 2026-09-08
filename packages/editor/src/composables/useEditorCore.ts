@@ -77,6 +77,7 @@ import {
   MERGE_TAG_SYNTAX_KEY,
   MERGE_TAG_AUTOCOMPLETE_KEY,
   MERGE_TAG_PICKER_KEY,
+  MERGE_TAG_REQUESTING_KEY,
   MERGE_TAG_SAMPLE_MODE_KEY,
   PREVIEW_RESOLUTION_KEY,
   RESOLVE_PREVIEW_KEY,
@@ -84,6 +85,7 @@ import {
   LOGIC_TAGS_KEY,
   LOGIC_PAIRS_KEY,
   LOGIC_TAG_PICKER_KEY,
+  LOGIC_TAG_REQUESTING_KEY,
   ON_REQUEST_LOGIC_TAG_KEY,
   ON_REQUEST_MEDIA_KEY,
   IMAGE_URL_RESOLVER_KEY,
@@ -703,6 +705,12 @@ export function useEditorCore(
   // is a ref + ref + closure per editor — negligible.
   const mergeTagPicker = useMergeTagPicker();
   provide(MERGE_TAG_PICKER_KEY, mergeTagPicker);
+
+  // One in-flight flag per editor, shared by every `useMergeTag()` /
+  // `useLogicTag()` call in the tree. The rich-text click-outside guard reads
+  // it to know a picker is open no matter which host opened it.
+  provide(MERGE_TAG_REQUESTING_KEY, ref(false));
+  provide(LOGIC_TAG_REQUESTING_KEY, ref(false));
 
   // Standalone logic tags — separate from merge tags. Native highlighting
   // (LogicMergeTagNode) is always on; these power the dedicated logic picker.

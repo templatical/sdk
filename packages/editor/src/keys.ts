@@ -214,6 +214,25 @@ export const MERGE_TAG_PICKER_KEY: InjectionKey<
   import("./composables/useMergeTagPicker").UseMergeTagPickerReturn
 > = Symbol("mergeTagPicker");
 
+/**
+ * One "a merge tag request is in flight" flag per editor, provided by
+ * `useEditorCore` and injected by every `useMergeTag()` call.
+ *
+ * Shared, not per-call: `useRichTextEditor.handleClickOutside` suppresses
+ * editor teardown while this is set, because the picker modal mounts in the
+ * popover root — outside `.tpl-text-editor-wrapper`. A ref private to one
+ * `useMergeTag()` instance leaves that guard blind to a picker opened from
+ * any other host (the link dialog's URL field), so the click on a picker row
+ * tears the block out of edit mode and the pending insert then no-ops on its
+ * own disposal guard. Falls back to a private ref for headless callers.
+ */
+export const MERGE_TAG_REQUESTING_KEY: InjectionKey<Ref<boolean>> =
+  Symbol("mergeTagRequesting");
+
+/** Logic-tag counterpart of {@link MERGE_TAG_REQUESTING_KEY}. */
+export const LOGIC_TAG_REQUESTING_KEY: InjectionKey<Ref<boolean>> =
+  Symbol("logicTagRequesting");
+
 // ---------------------------------------------------------------------------
 // Logic tags — a standalone feature, separate from merge tags. Native
 // highlighting (LogicMergeTagNode) is always on; these drive the dedicated

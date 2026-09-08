@@ -76,10 +76,19 @@ function handleKeydown(event: KeyboardEvent): void {
            `h-full` element would add to 100% and overflow by exactly the
            padding (the trap behind issue #115). Insets size the backdrop's
            border box, so padding here safely shrinks the content box instead. -->
+      <!-- `z-10` is the one z-index inside `.tpl-popover-root` that has to be
+           real. The root is a single stacking context, so its residents
+           otherwise paint in teleport-anchor order — and this modal's anchor is
+           established when the editor mounts, while a link dialog's is
+           established later, when a paragraph enters edit mode. Without a
+           number, a picker opened FROM that dialog renders behind it. Any
+           positive value beats the `auto` siblings; 10 stays far below the
+           suggestion popup (9999) and `SmallScreenNotice` (10001), and cannot
+           escape the root's own 10000 either way. -->
       <div
         v-if="visible"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl:fixed tpl:inset-0 tpl:z-modal tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
+        class="tpl tpl:fixed tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
         style="
           background-color: var(--tpl-overlay);
           backdrop-filter: blur(8px);

@@ -37,7 +37,11 @@ export interface UseMergeTagFieldReturn {
   startEditing: () => void;
   stopEditing: () => void;
   handleInput: (event: Event) => void;
-  handleKeydown: (event: KeyboardEvent) => void;
+  /**
+   * Returns whether the autocomplete popup consumed the event. A host with
+   * keys of its own (the link dialog submits on Enter) acts only on `false`.
+   */
+  handleKeydown: (event: KeyboardEvent) => boolean;
   handleClick: () => void;
   handleBlur: () => void;
   clearValue: () => void;
@@ -166,16 +170,20 @@ export function useMergeTagField(
   /**
    * Field keydown: let the autocomplete popup consume navigation/selection
    * keys first (Arrow/Enter/Tab/Escape). If it doesn't, Escape falls through
-   * to leaving edit mode — preserving the prior `@keydown.escape` behavior.
+   * to leaving edit mode.
+   *
+   * Escape is reported as NOT consumed even though it acts here: a host
+   * dialog should close on the same press rather than swallow the first one.
    */
-  function handleKeydown(event: KeyboardEvent): void {
+  function handleKeydown(event: KeyboardEvent): boolean {
     if (typeahead.handleKeydown(event)) {
       event.preventDefault();
-      return;
+      return true;
     }
     if (event.key === "Escape") {
       stopEditing();
     }
+    return false;
   }
 
   /** A click may move the caret into or out of a trigger — re-evaluate. */

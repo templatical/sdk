@@ -4,6 +4,7 @@ import { inject, ref, type Ref } from "vue";
 import {
   LOGIC_PAIRS_KEY,
   LOGIC_TAG_PICKER_KEY,
+  LOGIC_TAG_REQUESTING_KEY,
   LOGIC_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
   ON_REQUEST_LOGIC_TAG_KEY,
@@ -44,7 +45,9 @@ export function useLogicTag(): UseLogicTagReturn {
   // Picker may be null in headless contexts (tests, non-editor consumers).
   const picker = inject(LOGIC_TAG_PICKER_KEY, null);
 
-  const isRequesting = ref(false);
+  // Shared per editor — same reason as merge tags. See
+  // LOGIC_TAG_REQUESTING_KEY.
+  const isRequesting = inject(LOGIC_TAG_REQUESTING_KEY, null) ?? ref(false);
 
   // Show the affordance when a consumer callback is set OR static config
   // exists — mirrors useMergeTag's canRequestMergeTag.
