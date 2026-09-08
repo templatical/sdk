@@ -62,10 +62,14 @@ HTML elements map to Templatical equivalents:
 |---|---|---|
 | `<h1>` – `<h4>` | `title` | Converted (level preserved) |
 | `<h5>` – `<h6>` | `title` | Converted (clamped to level 4) |
+| A heading wrapped in a `<div>`, `<center>` or `<main>` | `title` | Converted (wrapper unwrapped) |
 | `<p>` / text-only `<div>` / `<span>` | `paragraph` | Converted |
+| Text-only `<td>` in a layout table | `paragraph` | Converted |
+| Bare text at body level or directly inside a wrapper | `paragraph` | Converted |
 | `<img>` | `image` | Converted |
 | `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted |
-| `<a>` (plain inline link) | `paragraph` | Approximated (wrapped in a paragraph) |
+| `<a>` (text link) | folded into the surrounding `paragraph` | Converted |
+| `<a>` wrapping an image | `paragraph` | Approximated (link target dropped) |
 | `<hr>` | `divider` | Converted |
 | Empty `<td>` with explicit height | `spacer` | Converted |
 | `<td>` whose entire content is one styled `<a>` | `button` | Converted (cell-as-button pattern) |
@@ -75,15 +79,19 @@ HTML elements map to Templatical equivalents:
 
 Anything that can't be mapped is preserved verbatim inside an HTML block, so no visible content is lost.
 
-A cell mixing copy with a link keeps both: the copy becomes a `paragraph`, and the link a `paragraph` of its own reported as `approximated`. Only a cell whose whole content is the anchor reads as a button.
+A cell mixing copy with a link becomes one `paragraph` holding both, with the `<a>` and its `href` inline. A cell reads as a button when the anchor is its entire content.
 
-A `<div>`, `<center>` or `<main>` that wraps a table produces no block of its own: the importer descends into it, at any nesting depth, and maps the tables it finds. A wrapper holding only text keeps its `paragraph` mapping.
+A `<div>`, `<center>` or `<main>` that wraps a table produces no block of its own: the importer descends into it, at any nesting depth, and maps the tables it finds. A wrapper holding only text keeps its `paragraph` mapping, and a wrapper whose whole content is one heading is unwrapped so the heading is what gets mapped.
 
 ## Inline Formatting
 
 `<br>`, `<em>`, `<strong>`, `<i>`, `<b>`, `<u>`, `<small>`, `<sub>` and `<sup>` stay inside the text they belong to. A run of them, together with the bare text around it, becomes one `paragraph` whose colour, size and alignment come from the containing cell — so `Hello<br>World` in a `<td>` imports as a single paragraph holding both words and the line break.
 
-`<a>` is left out of such a run. It maps to a `button` or to an approximated `paragraph` of its own, so a link keeps its own block instead of being absorbed into the surrounding text.
+A text `<a>` folds into that run, keeping its `href`, so a sentence containing a link arrives as one paragraph rather than as a link torn out of its copy. An `<a>` whose content is not text — a linked image — becomes a `paragraph` of its own.
+
+::: tip
+Bare text counts as content here. A cell walk that visited only element children dropped the words between two inline tags, and dropped a loose sentence sitting beside a table at body or wrapper level. Both are now kept.
+:::
 
 ## Column Layout Conversion
 
@@ -92,15 +100,38 @@ Each `<tr>` in a layout table becomes a `SectionBlock`. The row's direct `<td>` 
 | Cells per row | Templatical Layout |
 |---|---|
 | 1 | `'1'` |
-| 2 | `'2'` |
+| 2 | `'2'` or `'2-1'` / `'1-2'`, by declared width |
 | 3 | `'3'` |
 | 4+ | merged into `'1'`, with a warning and an `approximated` report entry |
+
+### Column ratios
+
+A two-cell row picks between `'2'`, `'2-1'` and `'1-2'` from the widths its cells declare — a `width` attribute, a `style="width:…"`, or the share in an `mj-column-per-*` class name. The closest of those layouts wins, so `350` / `190` reads as `'2-1'` and `33.33%` / `66.66%` as `'1-2'`.
+
+A ratio no layout expresses is imported as the equal split for that cell count and reported as `approximated`, with a note naming the widths that were measured:
+
+```txt
+Column widths 24.1% / 51.9% / 24.1% have no Templatical equivalent.
+The section was imported as 3 equal columns.
+```
 
 ### Wrapper rows
 
 Table-based emails wrap their real layout in one-cell tables. A row holding a single cell whose content is nothing but tables is descended instead of becoming a section, so the column count is read off the row that declares it. The descent applies only when that cell holds no content beside its tables and the row carries no background colour and no padding — a row failing either becomes a section of its own, because the section is what carries a row's background and padding.
 
-Columns written as `<div class="mj-column-per-*">` inside one cell, which is how MJML compiles them, are not recognised. The row has a single cell, so it imports as one column with that div's blocks inside it.
+### Gutter rows
+
+A row that pads its content with empty cells — `&nbsp;` either side of a centred container — is read as the single column it lays out, not as one column per cell. The signal is content: a cell holding nothing takes part in no layout.
+
+### Sibling column containers
+
+A single `<td>` holding one `display: inline-block` container per column is read as a column set, with the column count taken from the number of containers and the ratio from their declared widths. This is how hybrid templates and compiled MJML state their columns — MJML puts a whole section's columns into one cell as sibling `<div class="mj-column-per-*">` elements — so such a row has no cell count to read.
+
+Every container must be laid out side by side, none may be empty, and no text of the cell's own may sit beside them. A cell failing any of those is a single column.
+
+::: tip
+`display: inline-block` is what makes a set of containers a set of columns, since a block-level `<div>` stacks instead. Requiring it keeps two stacked divs from being read as a layout the source never stated.
+:::
 
 ### Nesting
 
@@ -136,7 +167,8 @@ Global template settings are extracted from the document:
 - **External resources** — `<link>`, external stylesheets, web fonts, and remote images are not fetched. Image `src` URLs are preserved as-is.
 - **Outlook MSO conditional comments** — preserved as HTML inside their containing block (they're inert in non-Outlook clients anyway).
 - **`<form>` / `<input>` / `<button>` form controls** — preserved as HTML-fallback. Most email clients block form submission; rebuild the call-to-action as a button linking to a hosted form.
-- **MJML-compiled columns** — a section's columns arrive as sibling `<div class="mj-column-per-*">` elements inside one `<td>`, and the importer reads a layout from cell counts, so such a row imports as a single column holding every column's blocks in order.
+- **Linked images** — an `<a>` wrapping an `<img>` becomes a `paragraph` holding the image, and the link target is dropped. Re-add it as an `image` block's `linkUrl` in the editor. These are the entries reported as `approximated` with `Inline anchor wrapped in a paragraph block.`
+- **Rows of more than three cells** — `ColumnLayout` holds at most three columns, so a wider row is merged into one and reported. Ratios outside `'2'` / `'2-1'` / `'1-2'` / `'3'`, such as a `1-2-1` sidebar pair, have no equivalent either and import as the equal split.
 - **AMP for Email** — not currently supported in Templatical.
 
 ## Verifying Converted Templates
@@ -175,6 +207,12 @@ for (const warning of report.warnings) {
 
 `report.entries` accounts for the sections alongside the leaf blocks, so the entries reconcile against `content.blocks`:
 
-- One entry per section, with `sourceTag: 'tr'` and `templaticalBlockType: 'section'`. Its status is `converted` when every cell kept its own column, and `approximated` with a note when cells were merged.
+- One entry per section, with `sourceTag: 'tr'` and `templaticalBlockType: 'section'`. Its status is `converted` when every cell kept its own column, and `approximated` with a note when cells were merged or when the ratio had no equivalent.
 - One entry with `sourceTag: 'body'` and a note when loose top-level content is grouped into a synthetic single-column section.
 - One entry with `templaticalBlockType: null` and a note for a nested row whose columns were dropped.
+
+A wrapper the importer descends through contributes no entry of its own: nothing is created and nothing lost. So a heading lifted out of a `<div>` is reported under its own tag, and a cell's column containers appear nowhere.
+
+::: warning Entry counts changed
+Sections and lost layouts are reported where they previously were not, so `report.summary.total` is higher for the same document, and `approximated` now covers cases that raised only a `warnings` string or went unreported. Code that asserts on exact totals needs updating; code that filters by `status` or `templaticalBlockType` does not.
+:::
