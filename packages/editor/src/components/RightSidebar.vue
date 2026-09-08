@@ -2,7 +2,8 @@
 import TemplateSettingsPanel from "./TemplateSettings.vue";
 import Toolbar from "./Toolbar.vue";
 import { useI18n } from "../composables/useI18n";
-import { TEMPLATE_LINT_KEY } from "../keys";
+import { TEMPLATE_LINT_KEY, TEMPLATE_SETTINGS_FIELDS_KEY } from "../keys";
+import { ALL_TEMPLATE_SETTINGS_FIELDS } from "../utils/templateSettingsFields";
 import type { Block, TemplateSettings } from "@templatical/types";
 import { ListChecks, LayoutTemplate, PanelTop, Settings } from "@lucide/vue";
 import { computed, defineAsyncComponent, inject, ref, watch } from "vue";
@@ -32,6 +33,15 @@ const activeTab = ref<Tab>("content");
 const lint = inject(TEMPLATE_LINT_KEY, null);
 const lintEnabled = computed(() => lint !== null);
 const issueCount = computed(() => lint?.issues.value.length ?? 0);
+
+// The tab follows the panel: with every setting excluded there is nothing for
+// it to open, and a tab onto an empty panel reads as a bug. Defaults to every
+// field, since the key is absent for a consumer who configured nothing.
+const allowedSettingsFields = inject(
+  TEMPLATE_SETTINGS_FIELDS_KEY,
+  new Set(ALL_TEMPLATE_SETTINGS_FIELDS),
+);
+const settingsEnabled = computed(() => allowedSettingsFields.size > 0);
 
 function tabClass(tab: Tab): string {
   const isActive = activeTab.value === tab;
@@ -90,6 +100,7 @@ watch(
         <span v-if="activeTab === 'content'">{{ t.sidebar.content }}</span>
       </button>
       <button
+        v-if="settingsEnabled"
         id="tpl-tab-settings"
         role="tab"
         :aria-selected="activeTab === 'settings'"
@@ -163,7 +174,7 @@ watch(
     </div>
 
     <div
-      v-if="activeTab === 'settings'"
+      v-if="activeTab === 'settings' && settingsEnabled"
       id="tpl-tabpanel-settings"
       role="tabpanel"
       aria-labelledby="tpl-tab-settings"

@@ -36,6 +36,7 @@ import type {
   TemplateContent,
   TemplateDefaults,
   TemplateSettings,
+  TemplateSettingsConfig,
   ThemeOverrides,
   UiTheme,
   ResolvePreview,
@@ -70,6 +71,7 @@ import {
   PALETTE_BLOCKS_KEY,
   HTML_BLOCK_PREVIEW_KEY,
   COLORS_KEY,
+  TEMPLATE_SETTINGS_FIELDS_KEY,
   CUSTOM_BLOCK_STYLESHEETS_KEY,
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
@@ -124,6 +126,10 @@ import {
   type HtmlBlockPreviewConfig,
 } from "../utils/resolveHtmlBlockPreview";
 import { resolveColorsConfig } from "../utils/resolveColorsConfig";
+import {
+  ALL_TEMPLATE_SETTINGS_FIELDS,
+  resolveTemplateSettingsFields,
+} from "../utils/templateSettingsFields";
 import { collectOffPaletteDefaults } from "../utils/collectOffPaletteDefaults";
 import { localizedBlockDefaults } from "../utils/localizedBlockDefaults";
 import { localizedContentDefaults } from "../i18n/contentDefaults";
@@ -231,6 +237,7 @@ export interface UseEditorCoreOptions {
     paletteBlocks?: string[];
     htmlBlockPreview?: HtmlBlockPreviewConfig;
     colors?: ColorsConfig;
+    templateSettings?: TemplateSettingsConfig;
     mergeTags?: MergeTagsConfig;
     logicTags?: LogicTagsConfig;
     displayConditions?: DisplayConditionsConfig;
@@ -475,6 +482,22 @@ export function useEditorCore(
     }
   }
 
+  // --- Template settings panel ---
+  // Which settings the panel exposes. Resolved once here, at the config
+  // surface that owns it, so the warning for a bad entry is emitted once per
+  // editor rather than on every panel render — the same split as the colours
+  // above. `TemplateSettings.vue` and `RightSidebar.vue` both read the result.
+  const resolvedSettingsFields = resolveTemplateSettingsFields(
+    config.templateSettings,
+  );
+  for (const entry of resolvedSettingsFields.unknown) {
+    logger.warn(
+      `config.templateSettings.fields: "${entry}" is not a template setting ` +
+        `(expected one of ${ALL_TEMPLATE_SETTINGS_FIELDS.join(", ")}) — ` +
+        "skipping it.",
+    );
+  }
+
   // --- Block registry ---
   const registry = useBlockRegistry();
   registerBuiltInBlocks(registry, BLOCK_COMPONENT_MAP);
@@ -603,6 +626,10 @@ export function useEditorCore(
   // Editor-wide color-picker palette (resolved + audited above, ahead of the
   // block registry).
   provide(COLORS_KEY, resolvedColors);
+  // Which template settings the Settings panel exposes (resolved + warned
+  // above). Read by `TemplateSettings.vue` for its cards and by
+  // `RightSidebar.vue` for the tab that opens them.
+  provide(TEMPLATE_SETTINGS_FIELDS_KEY, resolvedSettingsFields.fields);
   // Reactive deduped list of custom-block stylesheets currently in use. The
   // `<CustomBlockStylesheets>` component reads this and renders `<style>` tags
   // into the editor root so authored CSS previews live in the canvas. The
