@@ -124,6 +124,20 @@ import type { TemplateDefaults } from '@templatical/editor';
 import type { TemplateDefaults } from '@templatical/types';
 ```
 
+### Hiding a Setting
+
+`templateDefaults` sets a starting value; it does not decide whether the author can change it. To take a setting out of the Settings panel, pass an allowlist to `templateSettings.fields`:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  // The author picks a width; locale and preheader come from the application.
+  templateSettings: { fields: ['width', 'backgroundColor', 'fontFamily'] },
+});
+```
+
+The two compose in one direction only. `templateDefaults` applies when no content is provided, so it cannot pin a setting on a template you load — set that from the content itself (`init({ content })`, or your `templates` provider's `load`). See [Restricting the settings panel](/api/editor#restricting-the-settings-panel) for the full list of fields and how cards follow them.
+
 ## Built-in Default Constants
 
 The SDK exports the built-in default values for every block type and template settings as constants. Use these to inspect current defaults, extend them, or build custom presets:

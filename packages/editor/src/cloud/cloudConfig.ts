@@ -17,6 +17,7 @@ import type {
   TestEmailProvider,
   TemplateContent,
   TemplateDefaults,
+  TemplateSettingsConfig,
   ThemeOverrides,
   UiTheme,
   VersionHistoryOptions,
@@ -207,6 +208,16 @@ export interface TemplaticalCloudEditorConfig {
    * config for details and an example.
    */
   colors?: ColorsConfig;
+
+  /**
+   * Which template settings the Settings panel exposes — an allowlist over the
+   * members of `TemplateSettings`, `false` for none (which also removes the
+   * tab). Omit for every setting. Presentation only, and accepted here for the
+   * same reason `paletteBlocks` and `colors` are: it constrains the editor's own
+   * chrome, and Cloud exercises none of it. See `templateSettings` on the OSS
+   * editor config for details and an example.
+   */
+  templateSettings?: TemplateSettingsConfig;
   onChange?: (content: TemplateContent) => void;
   /**
    * Called whenever the editor's unsaved-changes state flips. **The same key and

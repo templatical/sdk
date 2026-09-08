@@ -20,6 +20,7 @@ import type {
   Template,
   TemplateContent,
   TemplateDefaults,
+  TemplateSettingsConfig,
   TemplatesProvider,
   ThemeOverrides,
   VersionHistoryProvider,
@@ -363,6 +364,36 @@ export interface TemplaticalEditorConfig {
    * configured, since that would leave the picker with no way to set a color.
    */
   colors?: ColorsConfig;
+
+  /**
+   * Which template settings the Settings panel exposes — an allowlist over the
+   * members of `TemplateSettings`.
+   *
+   * ```ts
+   * // Layout and Appearance only: no Language card, no Preheader card.
+   * templateSettings: { fields: ['width', 'backgroundColor', 'fontFamily'] }
+   *
+   * templateSettings: { fields: false }   // no Settings tab at all
+   * ```
+   *
+   * **Omitted by default**, in which case every setting is editable. The list
+   * only narrows: a card renders while at least one of its settings survives,
+   * and the tab itself stops rendering once none do. It never reorders —
+   * settings sit in fixed cards, so unlike {@link paletteBlocks} there is no
+   * order to express.
+   *
+   * Presentation only, and not a security boundary. Hiding a setting never
+   * changes its value: whatever the loaded content carries keeps rendering and
+   * keeps round-tripping through `getContent()`. Set the ones you hide from the
+   * content you hand the editor — `init({ content })`, or the `templates`
+   * provider's own `load`, which is the seam for "this template's locale comes
+   * from my application, not from the author".
+   *
+   * Sibling restrictions live on their own keys: {@link paletteBlocks} for the
+   * block palette, `fonts.builtIns` for the font picker, `colors.allowCustom`
+   * for free-form colors, and `templates.nameField` for the header's name.
+   */
+  templateSettings?: TemplateSettingsConfig;
 
   /**
    * Storage backend for **saved blocks** — reusable groups of blocks a user
@@ -1087,6 +1118,7 @@ export async function initCloud(
       paletteBlocks: config.paletteBlocks,
       htmlBlockPreview: config.htmlBlockPreview,
       colors: config.colors,
+      templateSettings: config.templateSettings,
       fonts: config.fonts,
       mergeTags: config.mergeTags,
       logicTags: config.logicTags,
@@ -1169,6 +1201,7 @@ export type {
   TemplatePatch,
   TemplatesOptions,
   TemplateSaveTrigger,
+  TemplateSettingsConfig,
   TemplatesProvider,
   TestEmailOptions,
   TestEmailPayload,

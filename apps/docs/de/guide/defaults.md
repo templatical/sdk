@@ -124,6 +124,20 @@ import type { TemplateDefaults } from '@templatical/editor';
 import type { TemplateDefaults } from '@templatical/types';
 ```
 
+### Eine Einstellung ausblenden
+
+`templateDefaults` legt einen Startwert fest; darüber, ob der Autor ihn ändern darf, entscheidet es nicht. Um eine Einstellung aus dem Einstellungs-Panel zu nehmen, übergeben Sie eine Positivliste an `templateSettings.fields`:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  // Der Autor wählt die Breite; Sprache und Preheader kommen aus der Anwendung.
+  templateSettings: { fields: ['width', 'backgroundColor', 'fontFamily'] },
+});
+```
+
+Die beiden greifen nur in einer Richtung ineinander. `templateDefaults` wirkt, wenn kein Inhalt übergeben wird, und kann eine Einstellung an einem geladenen Template deshalb nicht festsetzen — setzen Sie diese über den Inhalt selbst (`init({ content })` oder das `load` Ihres `templates`-Providers). Die vollständige Feldliste und wie Karten ihren Feldern folgen, steht unter [Einstellungs-Panel einschränken](/de/api/editor#einstellungs-panel-einschraenken).
+
 ## Integrierte Standardkonstanten
 
 Das SDK exportiert die integrierten Standardwerte für jeden Blocktyp und die Template-Einstellungen als Konstanten. Verwenden Sie diese, um aktuelle Standardwerte zu inspizieren, zu erweitern oder benutzerdefinierte Presets zu erstellen:

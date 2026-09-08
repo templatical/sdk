@@ -1,4 +1,5 @@
 import type { SyntaxPreset, SyntaxPresetName } from "./merge-tags";
+import type { TemplateSettings } from "./template";
 
 export type ViewportSize = "desktop" | "mobile";
 
@@ -54,6 +55,32 @@ export interface ColorsConfig {
    * with no way to choose a color.
    */
   allowCustom?: boolean;
+}
+
+export interface TemplateSettingsConfig {
+  /**
+   * Which template settings the Settings panel exposes.
+   *
+   * - `true` / omitted — every setting is editable (the default).
+   * - `false` — none; the Settings tab itself stops rendering.
+   * - `Array<keyof TemplateSettings>` — an allowlist of settings to keep
+   *   (`['width', 'backgroundColor', 'fontFamily']`). A card renders when at
+   *   least one of its settings survives, so hiding `locale` removes the
+   *   Language card and hiding `preheaderText` removes the Preheader card. An
+   *   empty array means none, the same as `false`.
+   *
+   * The list narrows, it never reorders — settings sit in fixed cards, so
+   * unlike `paletteBlocks` there is no order to express. An entry that isn't a
+   * `TemplateSettings` member is a compile error for TypeScript callers, and is
+   * logged with a warning and skipped at runtime, so a typo narrows the panel
+   * rather than silently restoring every setting.
+   *
+   * Presentation only. Hiding a setting never changes its value: whatever the
+   * loaded content carries keeps rendering and keeps round-tripping through
+   * `getContent()`. Set the values you hide from the content you hand the
+   * editor — `init({ content })`, or your own `templates.load`.
+   */
+  fields?: boolean | Array<keyof TemplateSettings>;
 }
 
 export interface ExportResult {

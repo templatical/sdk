@@ -25,7 +25,10 @@ import {
   unmount,
   createLocalStorageSavedBlocksProvider,
 } from "@templatical/editor";
-import type { TemplaticalEditor } from "@templatical/editor";
+import type {
+  TemplaticalEditor,
+  TemplateSettingsConfig,
+} from "@templatical/editor";
 import type {
   PreviewResolveContext,
   TemplateContent,
@@ -1608,6 +1611,30 @@ let currentDarkTheme: Record<string, string> = {
   ...readThemeOverride("tpl-playground-dark-theme-override"),
 };
 
+/**
+ * `tpl-playground-settings-fields` narrows the Settings panel before the first
+ * `init()` — a comma-separated allowlist of `TemplateSettings` members
+ * (`"width,backgroundColor"`), or the literal `none` for `fields: false`.
+ *
+ * Storage-only, no UI, invisible to visitors — the same shape as the
+ * saved-blocks `…-readonly` flag. Absent means the key is omitted entirely,
+ * which is the case that has to keep every setting editable, so the demo's
+ * default is the SDK's default rather than some restricted variant.
+ */
+function readTemplateSettingsConfig(): TemplateSettingsConfig | undefined {
+  const raw = localStorage.getItem("tpl-playground-settings-fields");
+  if (!raw) return undefined;
+  if (raw === "none") return { fields: false };
+  // Cast, not validate: the flag is free text, and an entry that isn't a
+  // template setting is exactly what the SDK's own warn-and-skip path covers.
+  // Validating here would hide that path from the e2e that exercises it.
+  return {
+    fields: raw.split(",").map((entry) => entry.trim()),
+  } as TemplateSettingsConfig;
+}
+
+const currentTemplateSettings = readTemplateSettingsConfig();
+
 function buildSerializableConfig() {
   return {
     content: selectedContent ?? createDefaultTemplateContent(),
@@ -1785,6 +1812,7 @@ async function initEditor(): Promise<void> {
       htmlBlockPreview: currentHtmlBlockPreview,
       fonts: currentFonts,
       colors: currentColors,
+      templateSettings: currentTemplateSettings,
       theme: { ...currentTheme, dark: currentDarkTheme },
       uiTheme: uiTheme.value,
       locale: sdkLocale.value,

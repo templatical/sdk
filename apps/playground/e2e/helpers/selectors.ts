@@ -140,6 +140,17 @@ export const SELECTORS = {
   paragraphSpacing: '[data-testid="paragraph-spacing"]',
   rightPanelSettings: "#tpl-tabpanel-settings",
   templateSettingsBackground: '[data-testid="template-settings-background"]',
+  // Settings-panel cards and fields. `templateSettings.fields` narrows which of
+  // them render, so a spec asserting the allowlist needs both levels: a card
+  // goes only when every one of its fields does.
+  templateSettingsCard: (card: string) =>
+    `[data-testid="template-settings-card-${card}"]`,
+  templateSettingsLocale: '[data-testid="template-settings-locale"]',
+  templateSettingsPreheader: '[data-testid="template-settings-preheader"]',
+  templateSettingsTextColor: '[data-testid="template-settings-text-color"]',
+  templateSettingsLinkColor: '[data-testid="template-settings-link-color"]',
+  templateSettingsFontFamily: '[data-testid="template-settings-font-family"]',
+  templateSettingsWidthPreset: '[data-testid="template-settings-width-preset"]',
   rightPanelIssues: "#tpl-tabpanel-issues",
 
   // Text editing
