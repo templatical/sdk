@@ -64,8 +64,10 @@ export function isTableContainer($el: Cheerio<Element>, tag: string): boolean {
  * those. That is silent content loss — text visible in the source email never
  * reaches the template.
  *
- * `a` is excluded on purpose: it maps to a button or to an approximated
- * paragraph of its own, so folding it into a run would drop a link.
+ * `a` is excluded on purpose: whether an anchor belongs to a run depends on
+ * how the source styled it, so the cell walk asks `isProseAnchor` per anchor
+ * instead. Reading every `<a>` as inline here would fold a styled call to
+ * action into the sentence beside it and lose the button.
  */
 const INLINE_FORMATTING_TAGS = new Set([
   "br",
@@ -316,6 +318,30 @@ export function looksLikeButton(styles: Record<string, string>): boolean {
   const display = (styles.display ?? "").toLowerCase();
   if (display === "inline-block" || display === "block") return true;
   return false;
+}
+
+/**
+ * Decides whether an `<a>` belongs to the run of prose around it rather than
+ * to a block of its own: a link the source did not style as a button, whose
+ * own text is what the reader sees.
+ *
+ * A link inside a sentence is prose, so folding it keeps the sentence in one
+ * editable block — and keeps the anchor's markup, `href` included, which the
+ * per-element path drops (`convertParagraph` reads inner HTML, so the element
+ * itself never reaches the block).
+ *
+ * Two constraints, both hazards a relaxed version would reintroduce:
+ *
+ * - `looksLikeButton` is the same predicate `convertElement` and
+ *   `isButtonCell` use to tell a call to action from a link, so a styled
+ *   anchor is never absorbed into a sentence and keeps becoming a button.
+ * - The anchor must carry text. `convertInlineRun` reads a run with no text
+ *   as empty and emits nothing, so an anchor whose content is an image has to
+ *   keep the block it already gets; folding it would delete the image.
+ */
+export function isProseAnchor($el: Cheerio<Element>): boolean {
+  if (looksLikeButton(getStyles($el))) return false;
+  return ($el.text() ?? "").trim() !== "";
 }
 
 /**

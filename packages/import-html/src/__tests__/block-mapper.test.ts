@@ -6,6 +6,7 @@ import {
   convertInlineRun,
   isButtonCell,
   isInlineContent,
+  isProseAnchor,
   isSpacerCell,
   looksLikeButton,
 } from "../block-mapper";
@@ -491,6 +492,75 @@ describe("looksLikeButton", () => {
   });
 });
 
+describe("isProseAnchor", () => {
+  function anchor(html: string) {
+    return firstEl(`<table><tr><td>${html}</td></tr></table>`, "a").$el;
+  }
+
+  it("reads an unstyled link with text as prose", () => {
+    expect(
+      isProseAnchor(anchor('<a href="https://x.test/go">read on</a>')),
+    ).toBe(true);
+  });
+
+  it("reads a link styled only for colour as prose", () => {
+    expect(
+      isProseAnchor(
+        anchor('<a style="color:#2b8a3e" href="https://x.test/go">read on</a>'),
+      ),
+    ).toBe(true);
+  });
+
+  it("reads an in-page anchor with text as prose", () => {
+    // No href at all. Folding still keeps more than the per-element path,
+    // which reads the anchor's inner HTML and drops the element.
+    expect(isProseAnchor(anchor('<a name="top">Back to top</a>'))).toBe(true);
+  });
+
+  it("refuses a link the source styled as a button", () => {
+    // Every arm of `looksLikeButton`, so the fold cannot swallow a call to
+    // action however the source declared one.
+    expect(
+      isProseAnchor(
+        anchor('<a style="background:#ff0000" href="https://x.test">Buy</a>'),
+      ),
+    ).toBe(false);
+    expect(
+      isProseAnchor(
+        anchor('<a style="padding:8px 16px" href="https://x.test">Buy</a>'),
+      ),
+    ).toBe(false);
+    expect(
+      isProseAnchor(
+        anchor('<a style="border-radius:6px" href="https://x.test">Buy</a>'),
+      ),
+    ).toBe(false);
+    expect(
+      isProseAnchor(
+        anchor('<a style="display:inline-block" href="https://x.test">Buy</a>'),
+      ),
+    ).toBe(false);
+  });
+
+  it("refuses a link carrying no text of its own", () => {
+    // `convertInlineRun` emits nothing for a run with no text, so an
+    // image-only link must stay a block rather than folding into one.
+    expect(
+      isProseAnchor(
+        anchor(
+          '<a href="https://x.test/go"><img src="https://x.test/p.png"></a>',
+        ),
+      ),
+    ).toBe(false);
+  });
+
+  it("refuses a link whose text is only whitespace", () => {
+    expect(isProseAnchor(anchor('<a href="https://x.test/go">  </a>'))).toBe(
+      false,
+    );
+  });
+});
+
 describe("isSpacerCell", () => {
   it("matches empty td with explicit height", () => {
     const { $el } = firstEl(
@@ -687,7 +757,12 @@ describe("isInlineContent", () => {
     ]);
   });
 
-  it("excludes <a>, which maps to a button or a paragraph of its own", () => {
+  it("excludes <a>, which is classified by isProseAnchor instead", () => {
+    // An anchor is not unconditionally inline: a styled one is a button. So
+    // the cell walk asks `isProseAnchor` per anchor, and this predicate keeps
+    // reading `<a>` as a block — which is also what `packagingTablesOf`
+    // needs, since a cell holding a link has content that must not be
+    // discarded as packaging.
     const { nodes } = cellNodes('<a href="https://x.test/go">link</a>');
     expect(nodes.map(isInlineContent)).toEqual([false]);
   });

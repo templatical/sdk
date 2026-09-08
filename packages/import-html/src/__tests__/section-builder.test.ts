@@ -156,10 +156,13 @@ describe("processTable — styled loose anchor in a cell becomes a button", () =
       left: 20,
     });
 
-    // The deeply-nested plain anchor flattened to an approximated paragraph.
+    // The deeply-nested plain anchor folded into the run of its own cell, so
+    // the paragraph carries the link rather than only its words.
     const para = column[1];
     if (para.type !== "paragraph") throw new Error("expected paragraph block");
-    expect(para.content).toContain("inner plain link");
+    expect(para.content).toContain(
+      '<a href="https://inner.com">inner plain link</a>',
+    );
 
     // Entry metadata: the styled anchor reports as a converted button.
     const buttonEntry = entries.find(
@@ -351,35 +354,39 @@ describe("extractCellBlocks — inline formatting stays in the text around it", 
     });
   });
 
-  it("still approximates a plain inline anchor as its own paragraph", () => {
-    // The negative control on `a`: it is excluded from the inline set, so it
-    // keeps its own entry rather than folding into the run beside it.
+  it("folds a plain anchor into the sentence around it", () => {
+    // A link in prose is prose. The anchor joins the run on both sides of it,
+    // so one rich-text block carries the whole sentence and the author edits
+    // it as a unit — with the anchor's own markup, href included, inside.
     const { blocks, entries } = runCell(
       'Click <a href="https://x.test/go">here</a> now',
     );
 
-    expect(blocks.map((b) => b.type)).toEqual([
-      "paragraph",
-      "paragraph",
-      "paragraph",
-    ]);
-    const anchor = blocks[1];
-    if (anchor.type !== "paragraph")
+    expect(blocks).toHaveLength(1);
+    const sentence = blocks[0];
+    if (sentence.type !== "paragraph")
       throw new Error("expected paragraph block");
-    expect(anchor.content).toBe("<p>here</p>");
-    expect(entries[1]).toEqual({
-      sourceTag: "a",
-      templaticalBlockType: "paragraph",
-      status: "approximated",
-      note: "Inline anchor wrapped in a paragraph block.",
-    });
+    expect(sentence.content).toBe(
+      '<p>Click <a href="https://x.test/go">here</a> now</p>',
+    );
+    expect(entries).toEqual([
+      {
+        sourceTag: "td",
+        templaticalBlockType: "paragraph",
+        status: "converted",
+      },
+      { sourceTag: "tr", templaticalBlockType: "section", status: "converted" },
+    ]);
+    // Nothing was approximated, so nothing carries a note.
+    expect(entries.filter((entry) => "note" in entry)).toEqual([]);
   });
 
   it("keeps the words around a self-styled anchor and still emits its button", () => {
-    // The other half of the `a` control. `isButtonCell` runs before any cell
-    // walk, and a cell reads as a button only when the link is its entire
-    // content — so this sentence takes the walk, the two bare text nodes
-    // become runs of their own, and the styled anchor is still a button.
+    // The negative control on the fold. A styled anchor is a call to action
+    // rather than prose, and `looksLikeButton` is consulted before the anchor
+    // can join a run — so the text on either side becomes a run of its own
+    // and the anchor becomes a button. `isButtonCell` declined the cell
+    // first, because the link is not the cell's entire content.
     const { blocks, entries } = runCell(
       'Click <a style="background:#ff0000;padding:8px 16px" ' +
         'href="https://x.test/go">here</a> now',
@@ -418,22 +425,28 @@ describe("extractCellBlocks — inline formatting stays in the text around it", 
     ]);
   });
 
-  it("still preserves a text-only cell as an html block", () => {
-    // A cell with no element children at all takes the text-only path, which
-    // reports the `<td>` itself. Structural, and owned by the deferred
-    // detection work in spec §7 — not by the inline fold.
+  it("reads a cell holding nothing but text as text", () => {
+    // A cell with no element children is still content: its text node is a
+    // run like any other. Handing the `<td>` itself to `convertElement`
+    // matches no mapping and comes back as an html block, which is the
+    // reading this pins against.
     const { blocks, entries } = runTable(
       '<table role="presentation"><tr><td>Just text</td></tr>' +
-        '<tr><td><img src="https://x.test/a.jpg"></td></tr></table>',
+        '<tr><td><img src="https://x.test/a.jpg" alt="Artwork"></td></tr></table>',
     );
 
-    expect(leaves(blocks).map((b) => b.type)).toEqual(["html", "image"]);
+    const cellBlocks = leaves(blocks);
+    expect(cellBlocks.map((b) => b.type)).toEqual(["paragraph", "image"]);
+    expect(cellBlocks.some((b) => b.type === "html")).toBe(false);
+    const copy = cellBlocks[0];
+    if (copy.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(copy.content).toBe("<p>Just text</p>");
     expect(entries[0]).toEqual({
       sourceTag: "td",
-      templaticalBlockType: "html",
-      status: "html-fallback",
-      note: 'Unknown element "td" preserved as HTML block.',
+      templaticalBlockType: "paragraph",
+      status: "converted",
     });
+    expect(entries.filter((entry) => "note" in entry)).toEqual([]);
   });
 });
 
@@ -467,20 +480,21 @@ describe("extractCellBlocks — a button cell is one whose whole content is the 
       'style="background:#0b7285;padding:14px"',
     );
 
-    expect(blocks.map((b) => b.type)).toEqual([
-      "paragraph",
-      "paragraph",
-      "paragraph",
-    ]);
-    const contents = blocks.map((block) =>
-      block.type === "paragraph" ? block.content : "",
+    expect(blocks).toHaveLength(1);
+    const sentence = blocks[0];
+    if (sentence.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(sentence.content).toBe(
+      '<p>Read the <a href="https://legal.test/terms">terms</a>' +
+        " before you continue</p>",
     );
-    expect(contents[1]).toBe("<p>terms</p>");
-    expect(contents.join(" ")).toContain("Read the");
-    expect(contents.join(" ")).toContain("before you continue");
+    expect(sentence.styles.padding).toEqual({
+      top: 14,
+      right: 14,
+      bottom: 14,
+      left: 14,
+    });
     expect(entries.map((e) => e.templaticalBlockType)).toEqual([
-      "paragraph",
-      "paragraph",
       "paragraph",
       "section",
     ]);
@@ -513,6 +527,139 @@ describe("extractCellBlocks — a button cell is one whose whole content is the 
       { sourceTag: "td", templaticalBlockType: "button", status: "converted" },
       { sourceTag: "tr", templaticalBlockType: "section", status: "converted" },
     ]);
+  });
+});
+
+describe("extractCellBlocks — a plain anchor folds, a styled one does not", () => {
+  /**
+   * One cell's blocks and entries, in a table an image row makes a layout
+   * table.
+   *
+   * A table whose every cell holds only text is a *data* table and is
+   * preserved whole as one html block, so a cell with no element children is
+   * unreachable through `runCell` — the sibling row is what gets the walk to
+   * run at all.
+   */
+  function runTextOnlyCell(
+    inner: string,
+    cellAttrs = "",
+  ): { blocks: Block[]; entries: ImportReportEntry[] } {
+    const { blocks, entries } = runTable(
+      '<table role="presentation">' +
+        `<tr><td ${cellAttrs}>${inner}</td></tr>` +
+        '<tr><td><img src="https://x.test/layout.png" alt="Layout"></td></tr>' +
+        "</table>",
+    );
+    const firstRow = blocks[0];
+    if (firstRow.type !== "section") throw new Error("expected section block");
+    // Entries are emitted in order, so the first cell's end where its row's
+    // own entry begins.
+    const rowEntry = entries.findIndex((entry) => entry.sourceTag === "tr");
+    return {
+      blocks: firstRow.children.flat(),
+      entries: entries.slice(0, rowEntry),
+    };
+  }
+
+  it("keeps a lone plain anchor's href, which the per-element path drops", () => {
+    // `convertElement`'s anchor arm builds its paragraph from the anchor's
+    // *inner* HTML, so the `<a>` — and with it the destination — never
+    // reaches the block. Folding the anchor into the run keeps the markup.
+    const { blocks, entries } = runCell(
+      '<a href="https://x.test/read">Read the full story</a>',
+    );
+
+    expect(blocks).toHaveLength(1);
+    const link = blocks[0];
+    if (link.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(link.content).toBe(
+      '<p><a href="https://x.test/read">Read the full story</a></p>',
+    );
+    expect(entries[0]).toEqual({
+      sourceTag: "td",
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    });
+  });
+
+  it("folds every plain anchor of a sentence into that one sentence", () => {
+    // Two anchors take the cell past `isButtonCell`'s single-anchor test by a
+    // different route than a prose fragment does, and the run has to survive
+    // both of them rather than restarting at the second.
+    const { blocks } = runCell(
+      'See the <a href="https://legal.test/terms">terms</a> and the ' +
+        '<a href="https://legal.test/privacy">privacy notice</a> today',
+    );
+
+    expect(blocks).toHaveLength(1);
+    const sentence = blocks[0];
+    if (sentence.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(sentence.content).toBe(
+      '<p>See the <a href="https://legal.test/terms">terms</a> and the ' +
+        '<a href="https://legal.test/privacy">privacy notice</a> today</p>',
+    );
+  });
+
+  it("leaves an anchor carrying no text as a block of its own", () => {
+    // The hazard behind the fold's text requirement: `convertInlineRun` reads
+    // a run with no text as empty and emits nothing, so an image-only link
+    // folded into one would disappear. It keeps its own block instead.
+    const { blocks } = runCell(
+      '<a href="https://x.test/go">' +
+        '<img src="https://x.test/promo.png" alt="Promo"></a>',
+    );
+
+    expect(blocks).toHaveLength(1);
+    const link = blocks[0];
+    if (link.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(link.content).toBe(
+      '<p><img src="https://x.test/promo.png" alt="Promo"></p>',
+    );
+  });
+
+  it("still emits a spacer for an empty cell that states a height", () => {
+    // The spacer branch runs before the cell is walked, and an empty cell
+    // reaches that walk rather than an early return — so this is where the
+    // two would collide.
+    const { blocks, entries } = runTextOnlyCell("&nbsp;", 'height="42"');
+
+    expect(blocks).toHaveLength(1);
+    const spacer = blocks[0];
+    if (spacer.type !== "spacer") throw new Error("expected spacer block");
+    expect(spacer.height).toBe(42);
+    expect(entries).toEqual([
+      { sourceTag: "td", templaticalBlockType: "spacer", status: "converted" },
+    ]);
+  });
+
+  it("emits nothing for an empty cell that states no height", () => {
+    // An empty cell is neither a spacer nor content, so it contributes no
+    // block and no entry at all.
+    const { blocks, entries } = runTextOnlyCell("&nbsp; ");
+
+    expect(blocks).toEqual([]);
+    expect(entries).toEqual([]);
+  });
+
+  it("styles a text-only cell from the cell's own typography", () => {
+    // The reading an html block cannot express: the cell's colour, size and
+    // alignment become the paragraph's, instead of riding along as raw markup
+    // the editor cannot touch.
+    const { blocks } = runTextOnlyCell(
+      "Cell copy with no wrapper",
+      'style="color:#2b8a3e;font-size:19px;text-align:right"',
+    );
+
+    expect(blocks).toHaveLength(1);
+    const copy = blocks[0];
+    if (copy.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(copy.content).toBe(
+      '<p style="text-align: right">' +
+        '<span style="font-size: 19px; color: #2b8a3e">' +
+        "Cell copy with no wrapper" +
+        "</span></p>",
+    );
   });
 });
 

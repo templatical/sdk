@@ -13,6 +13,7 @@ import {
   convertInlineRun,
   isButtonCell,
   isInlineContent,
+  isProseAnchor,
   isSpacerCell,
   isTableContainer,
   looksLikeButton,
@@ -297,15 +298,11 @@ function extractCellBlocks(
     return [buildCellButton($cell, btn.anchor)];
   }
 
-  if ($cell.children().length === 0) {
-    const text = ($cell.text() ?? "").trim();
-    if (!text) return [];
-    const r = convertElement($cell, $);
-    if (!r) return [];
-    entries.push(r.entry);
-    return [r.block];
-  }
-
+  // A cell whose only content is text has no element children, and the walk
+  // below is what reads it: the text node becomes an inline run and then one
+  // rich-text block styled from the cell. Handing the `<td>` to
+  // `convertElement` instead matches no mapping there and comes back as an
+  // html block, so an early return for this case intercepts the good path.
   return extractContentBlocks($cell, $, entries, warnings);
 }
 
@@ -355,10 +352,23 @@ function extractContentBlocks(
     // split one line into two paragraphs.
     if (!isTag(node)) continue;
 
-    flushInlineRun();
-
     const $child = $(node) as unknown as Cheerio<Element>;
     const tag = node.tagName.toLowerCase();
+
+    // A link inside a sentence is part of that sentence, so it joins the run
+    // rather than ending it: one rich-text block carries the whole line, with
+    // the anchor's own markup inside it.
+    //
+    // Asked before the run is flushed and before the button branch below,
+    // which is what keeps a call to action out of a sentence — a styled
+    // anchor is not a prose anchor, so it falls through to the branch that
+    // builds its button.
+    if (tag === "a" && isProseAnchor($child)) {
+      inlineRun.push(node);
+      continue;
+    }
+
+    flushInlineRun();
 
     if (tag === "table") {
       const inner = processTable($child, $, entries, warnings, true);
