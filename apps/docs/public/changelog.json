@@ -13,8 +13,24 @@
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.32.0",
+  "latest": "0.33.0",
   "versions": [
+    {
+      "version": "0.33.0",
+      "date": "2026-09-08",
+      "changes": [
+        {
+          "hash": "d76c343",
+          "level": "minor",
+          "title": "Let a consumer choose which template settings the Settings panel exposes",
+          "body": "The right sidebar's Settings tab offered all eight members of\n`TemplateSettings` unconditionally. An embedder whose application owns one of\nthem — the content locale chosen before the editor opens, a preheader edited\nin a field next to the subject line — had no way to take it out, and was left\nhiding fields with CSS against internal markup.\n\nNew `templateSettings.fields` on both `init()` and `initCloud()`:\n\n```ts\ninit({\n  container,\n  templateSettings: {\n    fields: [\"width\", \"backgroundColor\", \"fontFamily\"],\n  },\n});\n```\n\nThe list only narrows: omit the key, or pass `true`, and every setting stays\neditable. A card renders while at least one of its settings survives, so\nexcluding `locale` removes the Language card and excluding `preheaderText`\nremoves the Preheader card; `fields: false` (or `[]`) removes the Settings tab\nitself. The list never reorders — settings sit in fixed cards, so unlike\n`paletteBlocks` there is no order to express. An entry that isn't a\n`TemplateSettings` member is a compile error for TypeScript callers, and is\nwarned and skipped at runtime, so a typo narrows the panel rather than\nrestoring every setting.\n\nPresentation only. Hiding a setting never changes its value: whatever the\nloaded content carries keeps rendering and keeps round-tripping through\n`getContent()` and the export. Set the ones you hide from the content you hand\nthe editor — `init({ content })`, or your own `templates.load`.\n`templateDefaults` cannot do it, since it applies only when no content is\nprovided.\n\nSettings cards now space their contents with a flex gap rather than a bottom\nmargin on every child but the last, because which field is last depends on the\nallowlist. Every field control and card also carries a `data-testid`.\n\nCloses #674.",
+          "packages": [
+            "@templatical/editor",
+            "@templatical/types"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.32.0",
       "date": "2026-09-07",
