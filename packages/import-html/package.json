@@ -9,7 +9,9 @@
     "domhandler": "^6.0.1"
   },
   "devDependencies": {
+    "@templatical/renderer": "workspace:*",
     "@types/node": "^25.9.5",
+    "mjml": "^5.4.0",
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"
   },
