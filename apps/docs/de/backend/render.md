@@ -171,6 +171,43 @@ npm install @templatical/renderer
 Dann gibt es nichts zu installieren. Der CDN-Build ist in sich geschlossen, `@templatical/renderer` ist also enthalten — als eigener Code-Split-Chunk, der beim ersten `toMjml()`-Aufruf geladen wird.
 :::
 
+### Den integrierten Renderer umschließen
+
+`toMjml` ersetzt das lokale Rendern — und ersetzen lässt es sich unter anderem durch das lokale Rendern samt eigener Ergänzungen. Chrome, das jede E-Mail tragen muss — ein Impressum, ein Abmeldeblock, eine rechtliche Fußzeile —, entsteht dann aus gewöhnlichen Blöcken statt aus Textersetzungen in der Ausgabe:
+
+```ts
+import { renderToMjml } from '@templatical/renderer';
+
+const editor = await init({
+  container,
+  render: {
+    toMjml: ({ content, fonts }) =>
+      renderToMjml(
+        {
+          settings: { ...content.settings, backgroundColor: '#f3f4f6' },
+          blocks: [...headerBlocks, ...content.blocks, ...footerBlocks],
+        },
+        {
+          customFonts: fonts?.customFonts,
+          defaultFallbackFont: fonts?.defaultFallback,
+        },
+      ),
+  },
+});
+```
+
+`headerBlocks` und `footerBlocks` sind einfache `Block[]` — bauen Sie sie im Editor und exportieren Sie das JSON. Da sie nie in den Editor-Zustand gelangen, lassen sie sich weder auswählen noch bearbeiten, rückgängig machen oder speichern, und `getContent()` liefert die Vorlage ohne sie. `toHtml()` läuft über `toMjml()`, sodass beide Exportwege sie tragen — ebenso die `includeMjml`-Nutzlast des Testmail-Dialogs.
+
+Worauf Sie achten sollten:
+
+- Dies ist die eine Konstellation, in der `@templatical/renderer` trotz implementiertem `toMjml` in Ihrem Frontend-Bundle bleibt. Die Tabelle oben beschreibt Provider, die anderswo rendern; hier rufen Sie den lokalen Renderer selbst auf.
+- `getCustomBlockStylesheet` gehört nicht zur Nutzlast. Übergeben Sie einen eigenen Resolver, wenn Ihre Custom Blocks CSS auf Definitionsebene mitbringen — sonst entfallen deren `<mj-style>`-Regeln.
+- `initCloud()` ignoriert `render`; dies ist also eine `init()`-Konstellation. Siehe [Rendering in der Cloud](/de/cloud/rendering).
+
+::: tip Auch in der Vorschau zeigen
+Die Arbeitsfläche zeigt die Vorlage, nicht das Chrome darum herum. Dafür sorgt [`resolvePreview`](/de/guide/preview-rendering#zeigen-was-ihre-plattform-beim-versand-anhangt) — entweder über dieselbe Kompositionsfunktion wie oben oder über das Backend, das beim echten Versand anhängt.
+:::
+
 ## Headless rendern
 
 Außerhalb des Editors rufen Sie den Renderer direkt auf:

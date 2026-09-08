@@ -24,8 +24,6 @@ import { resolveAutoSave } from "./types/auto-save";
 import { resolveLintOptions } from "./utils/resolveLintOptions";
 import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
 import { logger } from "./utils/logger";
-import { toMjmlForInstance } from "./utils/toMjml";
-import { resolveRenderFonts } from "./utils/renderProvider";
 import {
   withNormalizedContentWrites,
   withNormalizedTemplateLoads,
@@ -70,6 +68,19 @@ const props = defineProps<{
    * ordinary config keys an OSS consumer would fill in themselves.
    */
   cloud?: CloudRuntime;
+  /**
+   * Render the current template to MJML, for `testEmail`'s `includeMjml` option.
+   *
+   * Supplied by the entry point, which owns the resolution ladder behind
+   * `editor.toMjml()` — a consumer's `render.toMjml` first, the bundled renderer
+   * otherwise. Rendering here instead would attach a message the send pipeline
+   * never produces, which is the one thing a test email exists to rule out.
+   *
+   * Absent means no MJML: a directly-mounted editor has no entry point to ask.
+   */
+  renderMjml?: () => Promise<string>;
+  /** Whether {@link renderMjml} reaches the bundled `@templatical/renderer`. */
+  usesLocalRenderer?: () => boolean;
 }>();
 
 // The fourth place consumer content enters (the other three are the entry
@@ -161,14 +172,13 @@ const SavedBlocksPanels = defineAsyncComponent(
 
 // --- Test email (opt-in: only when a sending provider is configured) ---
 // Created before `useEditorCore` so its capability can be passed in, same as
-// saved blocks. `renderCurrentMjml` is a hoisted function declaration, so it can
-// be referenced here and still read `core` — which is declared below — because
-// it isn't called until the user sends.
+// saved blocks.
 const testEmail = props.config.testEmail
   ? useTestEmailFeature({
       provider: props.config.testEmail,
       getContent: () => editor.content.value,
-      renderMjml: renderCurrentMjml,
+      renderMjml: props.renderMjml,
+      usesLocalRenderer: props.usesLocalRenderer,
       onError: props.config.onError,
       // Cloud folds in the plan feature and "the template must be saved", both
       // constraints of *its* sending path rather than of the contract.
@@ -396,24 +406,6 @@ const versionHistory = props.config.versionHistory
   : null;
 
 if (versionHistory) capabilities.versionHistory = versionHistory.capability;
-
-/**
- * Render the current template to MJML for `testEmail`'s `includeMjml` option.
- *
- * Assembles the same three members `defineExpose` hands to the public instance,
- * so a test email carries byte-identical MJML to `editor.toMjml()`. Only reached
- * when a provider opted in; the dynamic renderer import inside
- * `toMjmlForInstance` means an OSS consumer who didn't opt in never loads it.
- */
-function renderCurrentMjml(): Promise<string> {
-  return toMjmlForInstance({
-    getContent: () => editor.content.value,
-    renderCustomBlock: core.registry.renderCustomBlock,
-    getCustomBlockStylesheet: (customType: string) =>
-      core.registry.getDefinition(customType)?.stylesheet,
-    getFonts: () => resolveRenderFonts(props.fontsManager),
-  });
-}
 
 /**
  * Left/right insets for the canvas body and the footer, which must always agree.
