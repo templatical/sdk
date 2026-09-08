@@ -51,6 +51,23 @@ describe("detectFormat", () => {
       detectFormat("mail.html", "<html><body><p>Built with mjml</p></body></html>"),
     ).toBe("html");
   });
+  it("detects topol from the design root tagName", () => {
+    expect(detectFormat("design.json", JSON.stringify({ tagName: "mj-global-style", children: [] })))
+      .toBe("topol");
+  });
+  it("detects topol regardless of file name", () => {
+    expect(detectFormat("whatever.txt", JSON.stringify({ tagName: "mj-global-style" })))
+      .toBe("topol");
+  });
+  it("does not mistake an unlayer design for topol", () => {
+    expect(detectFormat("design.json", JSON.stringify({ body: { rows: [] } }))).toBe("unlayer");
+  });
+  it("does not mistake a beefree template for topol", () => {
+    expect(detectFormat("page.json", JSON.stringify({ page: { rows: [] } }))).toBe("beefree");
+  });
+  it("does not mistake MJML markup for topol", () => {
+    expect(detectFormat("welcome.mjml", "<mjml><mj-body /></mjml>")).toBe("mjml");
+  });
 });
 
 describe("summarizeReport", () => {
@@ -107,6 +124,10 @@ describe("runImport — real fixtures convert to valid Templatical JSON", () => 
     {
       format: "mjml",
       fixture: "packages/import-mjml/src/__tests__/fixtures/newsletter.mjml",
+    },
+    {
+      format: "topol",
+      fixture: "packages/import-topol/src/__tests__/fixtures/example-1.json",
     },
   ] as const;
 

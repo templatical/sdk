@@ -58,6 +58,10 @@ export default defineConfig({
                 packagesDir,
                 'import-mjml/src/index.ts',
             ),
+            '@templatical/import-topol': resolve(
+                packagesDir,
+                'import-topol/src/index.ts',
+            ),
             '@templatical/media-library': resolve(
                 packagesDir,
                 'media-library/src/index.ts',

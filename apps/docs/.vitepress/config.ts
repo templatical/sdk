@@ -157,6 +157,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "From Unlayer", link: "/guide/migration-from-unlayer" },
         { text: "From HTML", link: "/guide/migration-from-html" },
         { text: "From MJML", link: "/guide/migration-from-mjml" },
+        { text: "From Topol", link: "/guide/migration-from-topol" },
       ],
     },
     {
@@ -336,6 +337,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Von Unlayer", link: "/de/guide/migration-from-unlayer" },
         { text: "Von HTML", link: "/de/guide/migration-from-html" },
         { text: "Von MJML", link: "/de/guide/migration-from-mjml" },
+        { text: "Von Topol", link: "/de/guide/migration-from-topol" },
       ],
     },
     {

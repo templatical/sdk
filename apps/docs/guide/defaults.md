@@ -38,6 +38,33 @@ Defaults do **not** apply when:
 - Duplicating an existing block (the source block's values are preserved)
 - Loading saved content from the API
 
+### Placeholder text
+
+The text a new block starts with is localized, so `blockDefaults` is an override
+of a *localized* value rather than of an English one:
+
+```ts
+const editor = await init({
+  container: '#editor',
+  locale: 'de',
+  blockDefaults: {
+    // Without these, a new Title reads "Geben Sie Ihren Titel ein" and a new
+    // Button "Hier klicken".
+    title: { content: '<p>Ihre Überschrift</p>' },
+    paragraph: { content: '<p>Ihr Text</p>' },
+    button: { text: 'Jetzt kaufen' },
+    video: { alt: 'Produktvideo' },
+  },
+});
+```
+
+`title.content` and `paragraph.content` are rich-text HTML — wrap the text in
+`<p>…</p>`. Every other field above is a plain string.
+
+Which locale a default follows depends on whether the text is for the author or
+for the recipient; [Internationalization](/guide/i18n) has the table. Values you
+set here win over both.
+
 ### Deep Merge Behavior
 
 Nested objects are **deep-merged**, not shallow-replaced. This means you can override a single padding value without losing the rest:

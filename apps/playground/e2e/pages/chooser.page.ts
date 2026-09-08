@@ -1,13 +1,14 @@
 import { expect, type Page } from "@playwright/test";
 import { SELECTORS } from "../helpers/selectors";
 
-type ImportSource = "beefree" | "unlayer" | "html" | "mjml";
+type ImportSource = "beefree" | "unlayer" | "html" | "mjml" | "topol";
 
 const TRIGGER_BY_SOURCE: Record<ImportSource, string> = {
   beefree: SELECTORS.chooserImportBeefree,
   unlayer: SELECTORS.chooserImportUnlayer,
   html: SELECTORS.chooserImportHtml,
   mjml: SELECTORS.chooserImportMjml,
+  topol: SELECTORS.chooserImportTopol,
 };
 
 const TAB_BY_SOURCE: Record<ImportSource, string> = {
@@ -15,6 +16,7 @@ const TAB_BY_SOURCE: Record<ImportSource, string> = {
   unlayer: SELECTORS.importTabUnlayer,
   html: SELECTORS.importTabHtml,
   mjml: SELECTORS.importTabMjml,
+  topol: SELECTORS.importTabTopol,
 };
 
 const TEXTAREA_BY_SOURCE: Record<ImportSource, string> = {
@@ -22,6 +24,7 @@ const TEXTAREA_BY_SOURCE: Record<ImportSource, string> = {
   unlayer: SELECTORS.importTextareaUnlayer,
   html: SELECTORS.importTextareaHtml,
   mjml: SELECTORS.importTextareaMjml,
+  topol: SELECTORS.importTextareaTopol,
 };
 
 export class ChooserPage {

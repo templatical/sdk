@@ -77,6 +77,16 @@ const ptBR: typeof en = {
     countdown: "Contagem Regressiva",
   },
 
+  // Placeholder text a newly inserted block starts with. Author-facing
+  // prompts, meant to be overwritten — so they follow the editor UI locale.
+  // Recipient-facing defaults live in `i18n/contentDefaults.ts` and follow
+  // the template's own `settings.locale` instead.
+  blockDefaults: {
+    title: "Digite seu título",
+    paragraph: "Digite seu texto aqui",
+    button: "Clique aqui",
+  },
+
   // Right sidebar
   sidebar: {
     content: "Conteúdo",

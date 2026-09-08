@@ -22,6 +22,7 @@ export const SELECTORS = {
   editorContainer: '[data-testid="editor-container"]',
   canvasWrapper: '[data-testid="canvas-wrapper"]',
   canvasBody: ".tpl-body",
+  canvas: ".tpl-canvas",
   canvasBlocks: ".tpl-canvas-blocks",
   canvasEmpty: ".tpl-canvas-empty",
   canvasEmptyIcon: ".tpl-canvas-empty-icon",
@@ -243,21 +244,24 @@ export const SELECTORS = {
   // Modals
   modalBackdrop: ".pg-modal-backdrop",
 
-  // Template import (BeeFree / Unlayer / HTML / MJML)
+  // Template import (BeeFree / Unlayer / HTML / MJML / Topol)
   chooserMigrationBand: '[data-testid="chooser-migration-band"]',
   chooserImportBeefree: '[data-testid="chooser-import-beefree"]',
   chooserImportUnlayer: '[data-testid="chooser-import-unlayer"]',
   chooserImportHtml: '[data-testid="chooser-import-html"]',
   chooserImportMjml: '[data-testid="chooser-import-mjml"]',
+  chooserImportTopol: '[data-testid="chooser-import-topol"]',
   importModal: '[data-testid="import-modal"]',
   importTabBeefree: '[data-testid="import-tab-beefree"]',
   importTabUnlayer: '[data-testid="import-tab-unlayer"]',
   importTabHtml: '[data-testid="import-tab-html"]',
   importTabMjml: '[data-testid="import-tab-mjml"]',
+  importTabTopol: '[data-testid="import-tab-topol"]',
   importTextareaBeefree: '[data-testid="import-textarea-beefree"]',
   importTextareaUnlayer: '[data-testid="import-textarea-unlayer"]',
   importTextareaHtml: '[data-testid="import-textarea-html"]',
   importTextareaMjml: '[data-testid="import-textarea-mjml"]',
+  importTextareaTopol: '[data-testid="import-textarea-topol"]',
   importError: '[data-testid="import-error"]',
   importConfirm: '[data-testid="import-confirm"]',
 } as const;

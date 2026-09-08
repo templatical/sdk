@@ -3,11 +3,24 @@ import { primaryBtnClass } from "../constants/styleConstants";
 import TplModal from "./TplModal.vue";
 import { useI18n } from "../composables";
 import { blockTypeIcons } from "../utils/blockTypeIcons";
+import { formatAbsoluteDateTime } from "../utils/formatAbsoluteDateTime";
 import { formatRelativeTime } from "../utils/formatRelativeTime";
-import { SAVED_BLOCKS_KEY, EDITOR_KEY, requireInject } from "../keys";
+import {
+  SAVED_BLOCKS_KEY,
+  EDITOR_KEY,
+  UI_LOCALE_KEY,
+  requireInject,
+} from "../keys";
 import type { SavedBlock } from "@templatical/types";
 import { Package, Pencil, Search, Trash2, X } from "@lucide/vue";
-import { computed, defineAsyncComponent, nextTick, ref, watch } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  inject,
+  nextTick,
+  ref,
+  watch,
+} from "vue";
 
 const props = defineProps<{
   visible: boolean;
@@ -25,6 +38,7 @@ const BlockPreviewCanvas = defineAsyncComponent(
 const { t, format } = useI18n();
 const savedBlocks = requireInject(SAVED_BLOCKS_KEY, "SavedBlocksBrowserModal");
 const editor = requireInject(EDITOR_KEY, "SavedBlocksBrowserModal");
+const uiLocale = inject(UI_LOCALE_KEY, undefined);
 
 const searchQuery = ref("");
 /** `""` = no category filter. Matched exactly against `SavedBlock.category`. */
@@ -170,12 +184,15 @@ function relativeLabel(saved: SavedBlock): string {
   return formatRelativeTime(raw, t.time, format) ?? "";
 }
 
-/** Absolute timestamp for the row's tooltip — locale-formatted, no i18n keys. */
+/**
+ * Absolute timestamp for the row's tooltip. Built by `Intl`, so it needs no
+ * i18n keys — but it does need the editor's locale, or it formats in the
+ * browser's and disagrees with the translated row beside it.
+ */
 function absoluteLabel(saved: SavedBlock): string {
   const raw = saved.updatedAt ?? saved.createdAt;
   if (!raw) return "";
-  const parsed = new Date(raw);
-  return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleString();
+  return formatAbsoluteDateTime(raw, uiLocale);
 }
 
 async function handleDelete(id: string): Promise<void> {

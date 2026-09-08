@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, inject, ref } from "vue";
 import { useIntervalFn } from "@vueuse/core";
 import { useI18n } from "../composables/useI18n";
+import { UI_LOCALE_KEY } from "../keys";
+import { formatAbsoluteDateTime } from "../utils/formatAbsoluteDateTime";
 import { formatRelativeTime } from "../utils/formatRelativeTime";
 
 const props = defineProps<{
@@ -12,6 +14,7 @@ const props = defineProps<{
 }>();
 
 const { t, format } = useI18n();
+const uiLocale = inject(UI_LOCALE_KEY, undefined);
 
 // The header stays open for as long as the session does, so a label computed
 // once would sit at "Just now" for hours. A minute is the formatter's smallest
@@ -45,11 +48,12 @@ const label = computed(() => {
     : format(t.header.createdAt, { time: relative });
 });
 
-/** Full date for the tooltip — locale-formatted, so it needs no i18n keys. */
-const absolute = computed(() => {
-  const parsed = new Date(props.iso);
-  return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleString();
-});
+/**
+ * Full date for the tooltip — built by `Intl`, so it needs no i18n keys, but it
+ * does need the editor's locale: `toLocaleString()` with no argument formats in
+ * the BROWSER's, which put an English month name directly under German chrome.
+ */
+const absolute = computed(() => formatAbsoluteDateTime(props.iso, uiLocale));
 </script>
 
 <template>

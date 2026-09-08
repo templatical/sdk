@@ -42,7 +42,11 @@ import type {
   ResolvePreview,
   ViewportSize,
 } from "@templatical/types";
-import { hasMergeTagSamples, resolveSyntax } from "@templatical/types";
+import {
+  deepMergeDefaults,
+  hasMergeTagSamples,
+  resolveSyntax,
+} from "@templatical/types";
 import {
   usePreviewResolution,
   type UsePreviewResolutionReturn,
@@ -60,6 +64,7 @@ import {
   FONTS_MANAGER_KEY,
   THEME_STYLES_KEY,
   UI_THEME_KEY,
+  UI_LOCALE_KEY,
   BLOCK_DEFAULTS_KEY,
   BLOCK_REGISTRY_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
@@ -126,6 +131,8 @@ import {
   resolveTemplateSettingsFields,
 } from "../utils/templateSettingsFields";
 import { collectOffPaletteDefaults } from "../utils/collectOffPaletteDefaults";
+import { localizedBlockDefaults } from "../utils/localizedBlockDefaults";
+import { localizedContentDefaults } from "../i18n/contentDefaults";
 import { collectColorFieldIssues } from "../utils/collectColorFieldIssues";
 import { logger } from "../utils/logger";
 import { handleEditorKeydown } from "../utils/keyboardShortcuts";
@@ -238,6 +245,7 @@ export interface UseEditorCoreOptions {
     resolvePreview?: ResolvePreview;
     resolveImageUrl?: ResolveImageUrl | null;
     lint?: LintOptions;
+    locale?: string;
   };
 
   translations: Translations;
@@ -329,6 +337,36 @@ export function useEditorCore(
   // --- i18n ---
   const { t, format } = useI18n(translations);
 
+  // The text a newly inserted block starts with, from three layers, each
+  // beating the one before it:
+  //
+  //   1. author-facing prompts (title / paragraph / button) in the editor UI
+  //      locale — they exist to be overwritten, so the chrome's language is
+  //      right;
+  //   2. recipient-facing text (video alt, countdown labels + expired message)
+  //      in the TEMPLATE's `settings.locale` — this ships in the delivered
+  //      email, so it follows the email's declared language, which is a
+  //      different thing from the editing UI's;
+  //   3. the consumer's own `config.blockDefaults`.
+  //
+  // Deep, not shallow: overriding `button.backgroundColor` must not revert
+  // `button.text`. Layers 1 and 2 share no keys, so their order is immaterial;
+  // layer 3 must be last.
+  //
+  // A computed because layer 2's source is editable in Template Settings while
+  // the editor is open. Both readers must go through it — the palette injects
+  // it, `useBlockActions` gets it as a getter — since a surface left on
+  // `config.blockDefaults` silently keeps shipping English.
+  const resolvedBlockDefaults = computed<BlockDefaults>(() =>
+    deepMergeDefaults(
+      deepMergeDefaults(
+        localizedBlockDefaults(translations),
+        localizedContentDefaults(editor.content.value.settings?.locale),
+      ),
+      config.blockDefaults ?? {},
+    ),
+  );
+
   // --- UI Theme ---
   editor.setUiTheme(config.uiTheme ?? "auto");
   const uiThemeRef = computed(() => editor.state.uiTheme);
@@ -364,7 +402,7 @@ export function useEditorCore(
     updateBlock: editor.updateBlock,
     selectBlock: editor.selectBlock,
     findBlockLocation: editor.findBlockLocation,
-    blockDefaults: config.blockDefaults,
+    blockDefaults: () => resolvedBlockDefaults.value,
   });
 
   // --- Condition preview ---
@@ -576,7 +614,8 @@ export function useEditorCore(
   provide(FONTS_MANAGER_KEY, fontsManager);
   provide(THEME_STYLES_KEY, themeStyles);
   provide(UI_THEME_KEY, resolvedTheme);
-  provide(BLOCK_DEFAULTS_KEY, config.blockDefaults);
+  provide(BLOCK_DEFAULTS_KEY, resolvedBlockDefaults);
+  provide(UI_LOCALE_KEY, config.locale);
   provide(BLOCK_REGISTRY_KEY, registry);
   provide(CUSTOM_BLOCK_DEFINITIONS_KEY, config.customBlocks ?? []);
   provide(PALETTE_BLOCKS_KEY, config.paletteBlocks);

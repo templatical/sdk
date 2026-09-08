@@ -1,10 +1,12 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { computed, nextTick, ref } from 'vue';
 import { VueDraggable } from 'vue-draggable-plus';
 import Sidebar from '../src/components/Sidebar.vue';
 import { mountEditor } from './helpers/mount';
 import {
   EDITOR_KEY,
+  BLOCK_DEFAULTS_KEY,
   CUSTOM_BLOCK_DEFINITIONS_KEY,
   PALETTE_BLOCKS_KEY,
   CAPABILITIES_KEY,
@@ -240,6 +242,48 @@ describe('Sidebar', () => {
     expect(inserted.type).toBe('title');
     expect(inserted.id).toBeTruthy();
     expect(selectBlock).toHaveBeenCalledWith(inserted.id);
+  });
+
+  describe('localized placeholder text', () => {
+    // The palette is the surface issue #673 was reported against: in a German
+    // editor a dragged Button read "Click Here". It must read the provided ref
+    // AT INSERT TIME, so a content-language change mid-session still lands.
+    it('creates the block from the provided defaults ref', async () => {
+      const { editor, addBlock } = makeEditor({ selectedBlockId: null });
+      const wrapper = mountSidebar({
+        [EDITOR_KEY]: editor,
+        [BLOCK_DEFAULTS_KEY]: computed(() => ({
+          button: { text: 'Hier klicken' },
+        })),
+      });
+
+      await wrapper
+        .find('button[data-palette-type="button"]')
+        .trigger('click');
+
+      const [block] = addBlock.mock.calls[0];
+      expect(block.type).toBe('button');
+      expect(block.text).toBe('Hier klicken');
+    });
+
+    it('picks up a defaults change without remounting', async () => {
+      const { editor, addBlock } = makeEditor({ selectedBlockId: null });
+      const locale = ref('en');
+      const wrapper = mountSidebar({
+        [EDITOR_KEY]: editor,
+        [BLOCK_DEFAULTS_KEY]: computed(() => ({
+          video: { alt: locale.value === 'fr' ? 'Vidéo' : 'Video' },
+        })),
+      });
+
+      await wrapper.find('button[data-palette-type="video"]').trigger('click');
+      expect(addBlock.mock.calls[0][0].alt).toBe('Video');
+
+      locale.value = 'fr';
+      await nextTick();
+      await wrapper.find('button[data-palette-type="video"]').trigger('click');
+      expect(addBlock.mock.calls[1][0].alt).toBe('Vidéo');
+    });
   });
 
   describe('insert position', () => {

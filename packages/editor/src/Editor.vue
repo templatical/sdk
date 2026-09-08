@@ -22,6 +22,7 @@ import { useVersionHistoryFeature } from "./composables/useVersionHistoryFeature
 import { useSmallScreenNotice } from "./composables/useSmallScreenNotice";
 import { resolveAutoSave } from "./types/auto-save";
 import { resolveLintOptions } from "./utils/resolveLintOptions";
+import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
 import { logger } from "./utils/logger";
 import { toMjmlForInstance } from "./utils/toMjml";
 import { resolveRenderFonts } from "./utils/renderProvider";
@@ -88,7 +89,10 @@ const editor = useEditor({
   // deleted Cloud core passed this, so `init({ fonts: { defaultFont } })` never
   // reached a blank template.
   defaultFontFamily: props.config.fonts?.defaultFont,
-  templateDefaults: props.config.templateDefaults,
+  // Not `props.config.templateDefaults` raw: the editor's own `locale` seeds
+  // the template's content language when the consumer left it unset, so a
+  // German editor stops producing `<mjml lang="en">` on a fresh template.
+  templateDefaults: resolveTemplateDefaults(props.config),
   templates: templatesProvider,
   onError: props.config.onError,
   // Cloud's collaborators lock the blocks they are editing. The map is
@@ -327,6 +331,9 @@ const core = useEditorCore({
     resolvePreview: props.config.resolvePreview,
     resolveImageUrl: props.config.resolveImageUrl,
     lint: resolveLintOptions(props.config),
+    // For Intl-built labels (dates), which would otherwise format in the
+    // BROWSER's locale and disagree with the translated chrome beside them.
+    locale: props.config.locale,
   },
   translations: props.translations,
   fontsManager: props.fontsManager,

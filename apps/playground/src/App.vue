@@ -50,11 +50,7 @@ import type {
   TestEmailProvider,
   VersionHistoryProvider,
 } from "@templatical/types";
-import {
-  createDefaultTemplateContent,
-  DEFAULT_BLOCK_DEFAULTS,
-  DEFAULT_TEMPLATE_DEFAULTS,
-} from "@templatical/types";
+import { createDefaultTemplateContent } from "@templatical/types";
 import {
   templates,
   customBlockDefinitions,
@@ -103,6 +99,19 @@ import {
 } from "@/i18n";
 const { locale, t } = usePlaygroundI18n();
 const { sdkLocale } = useSdkLocale();
+
+/**
+ * A blank template in the language the editor is about to be initialized with.
+ *
+ * `createDefaultTemplateContent()` bare stamps `locale: "en"` from
+ * `DEFAULT_TEMPLATE_DEFAULTS`, and because this content is handed to
+ * `init({ content })`, the editor's own seeding of the content language is
+ * bypassed — a German editor produced `<mjml lang="en">` over German copy. A
+ * consumer that supplies content owns the language it declares.
+ */
+function createBlankTemplate() {
+  return createDefaultTemplateContent(undefined, { locale: sdkLocale.value });
+}
 const { theme: uiTheme, isDark } = usePlaygroundTheme();
 provide("isDark", isDark);
 
@@ -125,7 +134,7 @@ function tplDesc(tpl: TemplateOption): string {
 
 type Screen = "chooser" | "editor";
 const screen = ref<Screen>("chooser");
-type ImportSource = "beefree" | "unlayer" | "html" | "mjml";
+type ImportSource = "beefree" | "unlayer" | "html" | "mjml" | "topol";
 const showImport = ref(false);
 const importSource = ref<ImportSource>("beefree");
 const beefreeJson = ref("");
@@ -136,6 +145,8 @@ const htmlSource = ref("");
 const htmlError = ref("");
 const mjmlSource = ref("");
 const mjmlError = ref("");
+const topolSource = ref("");
+const topolError = ref("");
 
 // Feature showcase overlay
 const showFeatureOverlay = ref(false);
@@ -955,9 +966,16 @@ interface DefaultsPreset {
 
 const defaultsPresets: DefaultsPreset[] = [
   {
+    // "Templatical Default" means *no* overrides — the SDK's own defaults, as a
+    // consumer who passes neither key would get them. It used to restate
+    // DEFAULT_BLOCK_DEFAULTS / DEFAULT_TEMPLATE_DEFAULTS verbatim, which reads
+    // as harmless but is not: a consumer value wins over the SDK's, so pinning
+    // the English placeholder text here overrode the localized defaults and
+    // pinned `settings.locale` to "en" — making this app unable to demonstrate
+    // either, which is exactly what it exists to do.
     key: "templatical",
-    blockDefaults: DEFAULT_BLOCK_DEFAULTS,
-    templateDefaults: DEFAULT_TEMPLATE_DEFAULTS,
+    blockDefaults: {},
+    templateDefaults: {},
   },
   {
     key: "corporate",
@@ -1399,6 +1417,7 @@ function closeImportModal(): void {
   unlayerError.value = "";
   htmlError.value = "";
   mjmlError.value = "";
+  topolError.value = "";
 }
 
 function openImportFromSource(source: ImportSource): void {
@@ -1466,6 +1485,20 @@ async function importMjmlFromString(raw: string): Promise<void> {
   }
 }
 
+async function importTopolFromString(raw: string): Promise<void> {
+  topolError.value = "";
+
+  try {
+    const { convertTopolTemplate } = await import("@templatical/import-topol");
+    const { content } = convertTopolTemplate(raw);
+    closeImportModal();
+    topolSource.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    topolError.value = e instanceof Error ? e.message : "Invalid Topol JSON";
+  }
+}
+
 function confirmImport(): void {
   if (importSource.value === "beefree") {
     const raw = beefreeJson.value.trim();
@@ -1497,6 +1530,16 @@ function confirmImport(): void {
     return;
   }
 
+  if (importSource.value === "topol") {
+    const raw = topolSource.value.trim();
+    if (!raw) {
+      topolError.value = t.value.importModal.topol.emptyError;
+      return;
+    }
+    importTopolFromString(raw);
+    return;
+  }
+
   const raw = unlayerJson.value.trim();
   if (!raw) {
     unlayerError.value = t.value.importModal.unlayer.emptyError;
@@ -1520,6 +1563,8 @@ onImportFileChange(async (files) => {
     importHtmlFromString(text);
   } else if (importSource.value === "mjml") {
     importMjmlFromString(text);
+  } else if (importSource.value === "topol") {
+    importTopolFromString(text);
   } else {
     importUnlayerFromJson(text);
   }
@@ -2704,7 +2749,7 @@ onUnmounted(() => {
               :aria-label="t.a11y.startFromScratch"
               class="pg-card-stagger chooser-card flex flex-col items-start p-0 border border-gray-200 rounded-xl bg-white cursor-pointer transition-[border-color,box-shadow] duration-200 ease-in-out text-left overflow-hidden hover:border-primary hover:shadow-primary-ring-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:bg-gray-800 dark:border-gray-700"
               :style="{ animationDelay: `${templates.length * 40}ms` }"
-              @click="chooseTemplate(createDefaultTemplateContent())"
+              @click="chooseTemplate(createBlankTemplate())"
             >
               <div
                 class="w-full h-[140px] flex items-center justify-center bg-gray-50 border-b border-gray-200 text-gray-500 dark:bg-gray-700/50 dark:border-gray-700 dark:text-gray-400"
@@ -2790,6 +2835,18 @@ onUnmounted(() => {
                 @click="openImportFromSource('mjml')"
               >
                 {{ t.chooser.migration.importFromMjml }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
+              <button
+                data-testid="chooser-import-topol"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('topol')"
+              >
+                {{ t.chooser.migration.importFromTopol }}
                 <ArrowRight
                   class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                   :stroke-width="1.6"
@@ -3590,7 +3647,9 @@ onUnmounted(() => {
                         ? t.importModal.html.description
                         : importSource === "mjml"
                           ? t.importModal.mjml.description
-                          : t.importModal.unlayer.description
+                          : importSource === "topol"
+                            ? t.importModal.topol.description
+                            : t.importModal.unlayer.description
                   }}
                 </p>
               </div>
@@ -3663,6 +3722,20 @@ onUnmounted(() => {
               >
                 {{ t.importModal.sources.mjml }}
               </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'topol'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'topol'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-topol"
+                @click="importSource = 'topol'"
+              >
+                {{ t.importModal.sources.topol }}
+              </button>
             </div>
             <div class="flex-1 overflow-auto p-5">
               <button
@@ -3706,12 +3779,20 @@ onUnmounted(() => {
                 placeholder="<!doctype html>&#10;<html>&#10;  <body>&#10;    <table>...</table>&#10;  </body>&#10;</html>"
               ></textarea>
               <textarea
-                v-else
+                v-else-if="importSource === 'mjml'"
                 v-model="mjmlSource"
                 :aria-label="t.a11y.mjmlSourceContent"
                 data-testid="import-textarea-mjml"
                 class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
                 placeholder="<mjml>&#10;  <mj-body>&#10;    <mj-section>...</mj-section>&#10;  </mj-body>&#10;</mjml>"
+              ></textarea>
+              <textarea
+                v-else
+                v-model="topolSource"
+                :aria-label="t.a11y.topolSourceContent"
+                data-testid="import-textarea-topol"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder='{"tagName": "mj-global-style", "children": [{"tagName": "mj-container", "children": [...]}]}'
               ></textarea>
               <p
                 v-if="importSource === 'beefree' && beefreeError"
@@ -3740,6 +3821,13 @@ onUnmounted(() => {
                 class="mt-2 mb-0 text-[13px] text-red-500"
               >
                 {{ mjmlError }}
+              </p>
+              <p
+                v-if="importSource === 'topol' && topolError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ topolError }}
               </p>
             </div>
             <div
