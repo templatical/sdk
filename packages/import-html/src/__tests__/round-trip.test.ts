@@ -86,6 +86,13 @@ function columnLayouts(blocks: Block[]): ColumnLayout[] {
   return blocks.filter(isSection).map((block) => block.columns);
 }
 
+/** Total column slots across every section — the source's column count. */
+function columnSlotCount(blocks: Block[]): number {
+  return blocks
+    .filter(isSection)
+    .reduce((total, section) => total + section.children.length, 0);
+}
+
 function occurrences(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1;
 }
@@ -137,31 +144,31 @@ describe("round trip: renderToMjml -> mjml2html -> convertHtmlTemplate", () => {
   });
 
   it("flattens every typed leaf into a paragraph holding raw table markup", async () => {
-    const { content } = await roundTrip(buildGroundTruth());
+    const original = buildGroundTruth();
+    const { content } = await roundTrip(original);
     const leaves = leafBlocks(content.blocks);
     const paragraphs = leaves.filter(isParagraph);
 
     // Recorded defect, deferred with the column work in spec §7. The source
     // declares titles and paragraphs; the import yields one paragraph per
-    // rendered section, each holding that section's whole <table> subtree as
+    // source *column*, each holding that column's whole <table> subtree as
     // its `content`.
     //
-    // The cause sits upstream of column detection: mjml@5 wraps each section
-    // in a plain <div>, `processBody` recurses into the outer wrapper, and
-    // `div` is in block-mapper's TEXT_TAGS — so `convertElement` maps the
-    // wrapper to a paragraph before `processTable` examines a single row.
-    expect(leaves.map((block) => block.type)).toEqual([
-      "paragraph",
-      "paragraph",
-      "paragraph",
-      "paragraph",
+    // The cause is a cell-level container: mjml@5 puts every column of a
+    // section into one <td> as a sibling `div.mj-column-per-*`, and
+    // `extractCellBlocks` hands a container inside a cell straight to
+    // `convertElement`, where `div` is in block-mapper's TEXT_TAGS. So the
+    // column's own table is never examined.
+    expect(columnSlotCount(original.blocks)).toBe(10);
+    expect(leaves).toHaveLength(columnSlotCount(original.blocks));
+    expect([...new Set(leaves.map((block) => block.type))]).toEqual([
       "paragraph",
     ]);
     expect(paragraphs[0].content).toContain("<table");
     expect(paragraphs[0].content).toContain("<h3");
   });
 
-  it("collapses five known column layouts into one single-column section", async () => {
+  it("recovers every section but none of their column layouts", async () => {
     const original = buildGroundTruth();
     const { content } = await roundTrip(original);
     const sections = content.blocks.filter(isSection);
@@ -174,44 +181,63 @@ describe("round trip: renderToMjml -> mjml2html -> convertHtmlTemplate", () => {
       "1-2",
     ]);
 
+    // Desired, and the half `processBody`'s container descent owns: one
+    // section per source section, in source order. mjml@5 buries each
+    // section's table under a body wrapper div plus a per-section div, and a
+    // descent that stops at the first level maps the per-section div to a
+    // paragraph swallowing the whole table — collapsing all five into one.
+    expect(content.blocks).toHaveLength(original.blocks.length);
+    expect(content.blocks.map((block) => block.type)).toEqual([
+      "section",
+      "section",
+      "section",
+      "section",
+      "section",
+    ]);
+
     // Recorded defect, deferred to spec §7 (the generic column-detection
     // heuristic and the MJML-compiled column tier). The five layouts above
-    // are the known correct answer; the import returns one section whose
-    // single slot holds all five paragraphs.
+    // are the known correct answer; every imported section reports one
+    // column, and its single slot holds one paragraph per source column.
     //
-    // `columns: "1"` here is `wrapInSection`'s literal in converter.ts, not a
-    // resolved layout — which is why the four non-default layouts in the
-    // ground truth carry the weight of this comparison.
-    expect(content.blocks).toHaveLength(1);
-    expect(columnLayouts(content.blocks)).toEqual(["1"]);
-    expect(sections[0].children).toHaveLength(1);
-    expect(sections[0].children[0]).toHaveLength(5);
+    // No traversal fix reaches this: mjml@5 gives a section's row exactly one
+    // <td> holding a `div.mj-column-per-50` per column, so there is no cell
+    // count to resolve a layout from. Recovering it means reading the width
+    // out of that class, which is the deferred tier.
+    expect(columnLayouts(content.blocks)).toEqual(["1", "1", "1", "1", "1"]);
+    expect(sections.map((section) => section.children.length)).toEqual([
+      1, 1, 1, 1, 1,
+    ]);
+    expect(sections.map((section) => section.children[0].length)).toEqual(
+      original.blocks
+        .filter(isSection)
+        .map((section) => section.children.length),
+    );
   });
 
   it("reports the collapse as a clean conversion", async () => {
-    const { report } = await roundTrip(buildGroundTruth());
+    const original = buildGroundTruth();
+    const { report } = await roundTrip(original);
 
     // Recorded defect (spec §2.2): a caller reading this report concludes a
-    // perfect import while five sections and every block type were lost.
+    // perfect import while every column layout and block type was lost.
     //
-    // Every entry's `sourceTag` is `div`, which locates the loss: it happens
-    // in `processBody`, never reaching `resolveColumnLayout`. Per-row
+    // Every entry's `sourceTag` is `div`, which locates the loss: it is the
+    // per-column container inside a section's single cell, so no row with
+    // more than one cell ever reaches `resolveColumnLayout`. Per-row
     // reporting (spec §3.2) therefore has no row to describe on this path.
     expect(report.summary).toEqual({
-      total: 5,
-      converted: 5,
+      total: columnSlotCount(original.blocks),
+      converted: columnSlotCount(original.blocks),
       approximated: 0,
       htmlFallback: 0,
       skipped: 0,
     });
+    expect(report.summary.total).toBe(10);
     expect(report.warnings).toEqual([]);
-    expect(report.entries.map((entry) => entry.sourceTag)).toEqual([
-      "div",
-      "div",
-      "div",
-      "div",
-      "div",
-    ]);
+    expect([
+      ...new Set(report.entries.map((entry) => entry.sourceTag)),
+    ]).toEqual(["div"]);
     expect(report.entries.filter((entry) => "note" in entry)).toEqual([]);
   });
 });

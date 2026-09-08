@@ -363,3 +363,107 @@ describe("convertHtmlTemplate — wrapper-div recursion ordering", () => {
     expect(cellIdx).toBeLessThan(paraIdx);
   });
 });
+
+describe("convertHtmlTemplate — a table nested more than one container deep", () => {
+  const html = `<!doctype html><html><body>
+    <div>
+      <div>
+        <table role="presentation"><tr>
+          <td><h1>Left column heading</h1></td>
+          <td><p>Right column copy</p></td>
+        </tr></table>
+      </div>
+    </div>
+  </body></html>`;
+
+  it("reaches processTable and yields the row's real column layout", () => {
+    const { content } = convertHtmlTemplate(html);
+
+    expect(content.blocks).toHaveLength(1);
+    const section = content.blocks[0] as SectionBlock;
+    expect(section.type).toBe("section");
+    // "2" is not the section factory's default, so this cannot be satisfied by
+    // a default that merely survived — it is the row's own cell count.
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+    expect(section.children.map((col) => col.map((b) => b.type))).toEqual([
+      ["title"],
+      ["paragraph"],
+    ]);
+  });
+
+  it("reports the cells' own source tags, not the wrapping containers", () => {
+    const { report } = convertHtmlTemplate(html);
+
+    expect(report.entries.map((entry) => entry.sourceTag)).toEqual(["h1", "p"]);
+    expect(report.summary).toEqual({
+      total: 2,
+      converted: 2,
+      approximated: 0,
+      htmlFallback: 0,
+      skipped: 0,
+    });
+  });
+
+  it("leaves no block holding the table subtree as raw markup", () => {
+    const { content } = convertHtmlTemplate(html);
+
+    // A container that is not descended into falls to convertElement, where
+    // `div` is a text tag — so the whole table lands inside one paragraph's
+    // content. No block may carry table markup.
+    expect(JSON.stringify(content.blocks)).not.toContain("<table");
+    expect(JSON.stringify(content.blocks)).not.toContain("<td");
+  });
+
+  it("keeps loose siblings around a deeply nested table in source order", () => {
+    const { content } = convertHtmlTemplate(`<!doctype html><html><body>
+      <div>
+        <h1>Heading before nesting</h1>
+        <div>
+          <table role="presentation"><tr><td><p>Inside nested table cell</p></td></tr></table>
+        </div>
+        <p>Paragraph after nesting</p>
+      </div>
+    </body></html>`);
+
+    // Three sections: leading loose (h1), the nested table, trailing loose (p).
+    // The accumulator holding loose blocks is shared across nesting levels, so
+    // the heading flushes at the table's position rather than after the walk.
+    expect(content.blocks).toHaveLength(3);
+    expect(content.blocks.map((b) => b.type)).toEqual([
+      "section",
+      "section",
+      "section",
+    ]);
+
+    const serialized = JSON.stringify(content.blocks);
+    const headingIdx = serialized.indexOf("Heading before nesting");
+    const cellIdx = serialized.indexOf("Inside nested table cell");
+    const paraIdx = serialized.indexOf("Paragraph after nesting");
+    expect(headingIdx).toBeGreaterThanOrEqual(0);
+    expect(headingIdx).toBeLessThan(cellIdx);
+    expect(cellIdx).toBeLessThan(paraIdx);
+  });
+
+  it("leaves a nested container holding no table as a paragraph", () => {
+    const { content, report } = convertHtmlTemplate(`<!doctype html><html><body>
+      <div>
+        <table role="presentation"><tr><td><h1>Table heading</h1></td></tr></table>
+        <div><p>Sidebar note</p></div>
+      </div>
+    </body></html>`);
+
+    // The descent is gated on the container holding a table. A container
+    // without one keeps its text-tag mapping, so the recursion cannot widen
+    // into "descend every div" and split ordinary copy into extra blocks.
+    expect(content.blocks).toHaveLength(2);
+    const loose = content.blocks[1] as SectionBlock;
+    expect(loose.columns).toBe("1");
+    expect(loose.children).toHaveLength(1);
+    expect(loose.children[0].map((b) => b.type)).toEqual(["paragraph"]);
+    expect(report.entries.map((entry) => entry.sourceTag)).toEqual([
+      "h1",
+      "div",
+    ]);
+  });
+});

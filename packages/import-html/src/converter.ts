@@ -80,6 +80,21 @@ function wrapInSection(blocks: Block[]): Block {
   });
 }
 
+const CONTAINER_TAGS = new Set(["div", "center", "main"]);
+
+/**
+ * Decides whether an element is a layout container worth descending into: a
+ * wrapper tag that holds a table somewhere below it.
+ *
+ * The table test is what keeps the descent from widening into "descend every
+ * div". `div` is a text tag in the block mapper, so a container holding only
+ * copy must keep that mapping and become one paragraph rather than being
+ * split into a block per child.
+ */
+function isTableContainer($el: Cheerio<Element>, tag: string): boolean {
+  return CONTAINER_TAGS.has(tag) && $el.find("table").length > 0;
+}
+
 /**
  * Walk top-level body children. Tables become sections; loose content
  * elements are accumulated and wrapped in a single one-column section.
@@ -102,6 +117,50 @@ function processBody(
     }
   };
 
+  /**
+   * Descend a layout container, taking its tables as sections and everything
+   * else as loose content. A container holding another container descends
+   * again, so a table reaches `processTable` at whatever depth the wrapper
+   * markup buries it — MJML nests an outer body div around one div per
+   * section around the section's table, and a single-level walk sees only the
+   * middle div, which the block mapper turns into one paragraph swallowing
+   * the entire table subtree.
+   *
+   * Bounded by DOM depth: a container is descended only when it holds a
+   * table, and each step moves to a child.
+   *
+   * Declared here so every depth shares `pendingLoose` and `flushLoose`. A
+   * per-level accumulator flushes at the wrong point and reorders the
+   * document: content sitting before a nested table lands after it.
+   */
+  const walkContainer = ($container: Cheerio<Element>): void => {
+    $container.children().each((_, innerEl) => {
+      const innerTag = innerEl.tagName?.toLowerCase() ?? "";
+      const $inner = $(innerEl) as unknown as Cheerio<Element>;
+
+      if (innerTag === "table") {
+        // Flush loose content accumulated BEFORE this table so it keeps its
+        // source position, mirroring the top-level loop. Without this, the
+        // table is appended immediately while leading siblings are flushed
+        // only after the walk — reordering the document.
+        flushLoose();
+        blocks.push(...processTable($inner, $, entries, warnings, false));
+        return;
+      }
+
+      if (isTableContainer($inner, innerTag)) {
+        walkContainer($inner);
+        return;
+      }
+
+      const r = convertElement($inner, $);
+      if (r) {
+        entries.push(r.entry);
+        pendingLoose.push(r.block);
+      }
+    });
+  };
+
   for (const childEl of children) {
     const tag = childEl.tagName?.toLowerCase() ?? "";
     const $child = $(childEl) as unknown as Cheerio<Element>;
@@ -116,30 +175,10 @@ function processBody(
     const childStyles = parseStyleAttribute($child.attr("style"));
     if ((childStyles.display ?? "").toLowerCase() === "none") continue;
 
-    // Containers like a wrapping <div> with table children: recurse.
-    if (
-      (tag === "div" || tag === "center" || tag === "main") &&
-      $child.find("table").length > 0
-    ) {
+    // Containers like a wrapping <div> with table children: descend.
+    if (isTableContainer($child, tag)) {
       flushLoose();
-      $child.children().each((_, innerEl) => {
-        const innerTag = innerEl.tagName?.toLowerCase() ?? "";
-        const $inner = $(innerEl) as unknown as Cheerio<Element>;
-        if (innerTag === "table") {
-          // Flush loose content accumulated BEFORE this table so it keeps its
-          // source position, mirroring the top-level loop. Without this, the
-          // table is appended immediately while leading siblings are flushed
-          // only after the loop — reordering the document.
-          flushLoose();
-          blocks.push(...processTable($inner, $, entries, warnings, false));
-        } else {
-          const r = convertElement($inner, $);
-          if (r) {
-            entries.push(r.entry);
-            pendingLoose.push(r.block);
-          }
-        }
-      });
+      walkContainer($child);
       flushLoose();
       continue;
     }
