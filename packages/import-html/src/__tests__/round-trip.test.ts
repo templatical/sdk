@@ -27,9 +27,10 @@ import { convertHtmlTemplate } from "../converter";
  * table-soup HTML with mjml@5, and imports the result back. Every difference
  * from the source is a labelled failure with a known correct answer.
  *
- * Each case below is labelled desired or recorded defect, and each defect
- * names the spec section that owns its fix. A change that repairs one must
- * change that assertion — never relax it to keep the suite green.
+ * Every case below is a desired property, so any of them failing is a
+ * regression: the oracle recovers all five column layouts, one block per
+ * source leaf, each block's declared type, and the per-slot grouping that
+ * backs the layouts. Never relax one to keep the suite green.
  */
 
 const HEADING_TEXT = "Ground truth heading";
@@ -211,7 +212,7 @@ describe("round trip: renderToMjml -> mjml2html -> convertHtmlTemplate", () => {
     expect(leaves.filter(hasHeadingMarkup)).toEqual([]);
   });
 
-  it("recovers every section but none of their column layouts", async () => {
+  it("recovers every section and every column layout", async () => {
     const original = buildGroundTruth();
     const { content } = await roundTrip(original);
     const sections = content.blocks.filter(isSection);
@@ -238,32 +239,32 @@ describe("round trip: renderToMjml -> mjml2html -> convertHtmlTemplate", () => {
       "section",
     ]);
 
-    // Recorded defect, deferred to spec §7 (the generic column-detection
-    // heuristic and the MJML-compiled column tier). The five layouts above
-    // are the known correct answer; every imported section reports one
-    // column.
-    //
-    // No traversal fix reaches this: mjml@5 gives a section's row exactly one
-    // <td> holding a `div.mj-column-per-50` per column, so the row has one
-    // cell and there is no count to resolve a layout from. Descending those
-    // containers reaches each column's table, which is where the blocks come
-    // from — but it says nothing about how many columns there were.
-    // Recovering that means reading the width out of the class name, which is
-    // the deferred tier.
-    expect(columnLayouts(content.blocks)).toEqual(["1", "1", "1", "1", "1"]);
+    // Desired, and the half the column-ratio tier owns. mjml@5 gives a
+    // section's row exactly one <td> holding a `div.mj-column-per-*` per
+    // column, so the row has no cell count to read: the count comes from
+    // counting those sibling containers, and the ratio from the share in
+    // their class names. That class is the only signal available here —
+    // every compiled column div also carries `style="width:100%"`, so a
+    // reader preferring the inline style reports an equal split for all five.
+    expect(columnLayouts(content.blocks)).toEqual(
+      columnLayouts(original.blocks),
+    );
     expect(sections.map((section) => section.children.length)).toEqual([
-      1, 1, 1, 1, 1,
+      1, 2, 3, 2, 2,
     ]);
 
-    // Desired: the columns merge, but nothing inside them does. Each
-    // section's single slot holds every leaf of the source section it came
-    // from, in source order, so the collapse above is a layout loss and not a
-    // content loss. Compared against the source's leaf count per section —
-    // its column count is what a paragraph-per-column import matched.
-    expect(sections.map((section) => section.children[0].length)).toEqual(
+    // Desired, and what keeps the layouts above from being a coincidence:
+    // every leaf sits in the slot its source section put it in, so the
+    // recovered column count is backed by the grouping and not just by a
+    // number. Compared against the source's own per-slot occupancy.
+    expect(
+      sections.map((section) =>
+        section.children.map((column) => column.length),
+      ),
+    ).toEqual(
       original.blocks
         .filter(isSection)
-        .map((section) => section.children.flat().length),
+        .map((section) => section.children.map((column) => column.length)),
     );
   });
 
@@ -316,16 +317,10 @@ describe("round trip: renderToMjml -> mjml2html -> convertHtmlTemplate", () => {
     ).toHaveLength(sourceBodyCount);
     expect(sourceTitleCount + sourceBodyCount).toBe(sourceLeafCount);
 
-    // Recorded defect, deferred to spec §7, and the shape of it matters: the
-    // entries are honest, not merely optimistic. Each section came from a row
-    // holding exactly one `<td>`, so `converted` with no note is the truthful
-    // report of that row — mjml@5 expresses the columns as sibling divs
-    // inside that single cell, so the row never carried a count to lose.
-    //
-    // So per-row reporting cannot surface this collapse, and a detection fix
-    // is what has to move this case. When one lands, these two assertions
-    // invert: the layouts above stop being all `"1"`, and there is nothing
-    // left for a note to describe.
+    // Desired, and now for the reason the wording claims: every layout was
+    // recovered, so no row lost columns and none has a ratio the model could
+    // not express. `mj-column-per-66-67` / `mj-column-per-33-33` snaps onto
+    // `2-1` exactly, which is what leaves nothing for a note to describe.
     expect(report.warnings).toEqual([]);
     expect(report.entries.filter((entry) => "note" in entry)).toEqual([]);
   });

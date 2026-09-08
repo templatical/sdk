@@ -2055,3 +2055,301 @@ describe("processTable — declared widths choose between same-count layouts", (
     expect("note" in sectionEntriesOf(entries)[0]).toBe(false);
   });
 });
+
+describe("processTable — sibling column divs in one cell are a column set", () => {
+  function onlySection(blocks: Block[]): SectionBlock {
+    expect(blocks).toHaveLength(1);
+    const section = blocks[0];
+    if (section.type !== "section") throw new Error("expected section block");
+    return section;
+  }
+
+  /** A column div in Cerberus's hybrid shape, holding one heading. */
+  function stackColumn(style: string, label: string): string {
+    return (
+      `<div class="stack-column" style="display:inline-block; vertical-align:top; ${style}">` +
+      `<table role="presentation"><tr><td><h2>${label}</h2></td></tr></table>` +
+      "</div>"
+    );
+  }
+
+  function cellRow(inner: string, cellAttrs = ""): string {
+    return `<table role="presentation"><tr><td ${cellAttrs}>${inner}</td></tr></table>`;
+  }
+
+  it("reads Cerberus's 220/440 max-widths as a 1-2 column set", () => {
+    const { blocks } = runTable(
+      cellRow(
+        stackColumn("max-width: 220px; width:100%;", "Narrow") +
+          stackColumn("max-width: 440px;", "Wide"),
+      ),
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("1-2");
+    expect(section.children).toHaveLength(2);
+    expect(section.children.map((column) => column.length)).toEqual([1, 1]);
+    expect(section.children[0].map((b) => b.type)).toEqual(["title"]);
+    expect(section.children[1].map((b) => b.type)).toEqual(["title"]);
+    const narrow = section.children[0][0];
+    const wide = section.children[1][0];
+    if (narrow.type !== "title" || wide.type !== "title")
+      throw new Error("expected title blocks");
+    expect(narrow.content).toBe("<p>Narrow</p>");
+    expect(wide.content).toBe("<p>Wide</p>");
+  });
+
+  it("reads a compiled-MJML column class over its width:100% style", () => {
+    const { blocks } = runTable(
+      cellRow(
+        '<div class="mj-column-per-66-67 mj-outlook-group-fix" style="display:inline-block;vertical-align:top;width:100%;">' +
+          '<table role="presentation"><tr><td><h2>Main</h2></td></tr></table>' +
+          "</div>" +
+          '<div class="mj-column-per-33-33 mj-outlook-group-fix" style="display:inline-block;vertical-align:top;width:100%;">' +
+          '<table role="presentation"><tr><td><h2>Aside</h2></td></tr></table>' +
+          "</div>",
+      ),
+    );
+    const section = onlySection(blocks);
+
+    // The class is the only signal here: every compiled column div also
+    // carries `width:100%`, which states no share of its row. Without the
+    // class reader the row falls back to its counted layout and every MJML
+    // asymmetry imports as an equal split.
+    expect(section.columns).toBe("2-1");
+    expect(section.children.map((column) => column.length)).toEqual([1, 1]);
+  });
+
+  it("reads three equal column divs as a 3 column set", () => {
+    const { blocks, entries } = runTable(
+      cellRow(
+        stackColumn("max-width: 220px; width:100%;", "One") +
+          stackColumn("max-width: 220px; width:100%;", "Two") +
+          stackColumn("max-width: 220px; width:100%;", "Three"),
+      ),
+    );
+    const section = onlySection(blocks);
+
+    expect(section.columns).toBe("3");
+    expect(section.children.map((column) => column.length)).toEqual([1, 1, 1]);
+    const sectionEntry = entries.find(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntry?.status).toBe("converted");
+  });
+
+  it("counts the divs even when none declares a width", () => {
+    const { blocks, entries } = runTable(
+      cellRow(stackColumn("", "Left") + stackColumn("", "Right")),
+    );
+    const section = onlySection(blocks);
+
+    // Side-by-side is what makes them columns; the width only chooses between
+    // layouts of the same count.
+    expect(section.columns).toBe("2");
+    expect(section.children.map((column) => column.length)).toEqual([1, 1]);
+    const sectionEntry = entries.find(
+      (entry) => entry.templaticalBlockType === "section",
+    );
+    expect(sectionEntry?.status).toBe("converted");
+    expect(sectionEntry && "note" in sectionEntry).toBe(false);
+  });
+
+  it("leaves stacked divs that are not laid out side by side alone", () => {
+    const { blocks } = runTable(
+      cellRow(
+        '<div><table role="presentation"><tr><td><h2>One</h2></td></tr></table></div>' +
+          '<div><table role="presentation"><tr><td><h2>Two</h2></td></tr></table></div>',
+      ),
+    );
+    const section = onlySection(blocks);
+
+    // Two block-level divs stack vertically. Reading them as columns would
+    // invent a layout the source never stated.
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual(["title", "title"]);
+  });
+
+  it("refuses a column set in which any candidate is blank", () => {
+    const { blocks } = runTable(
+      cellRow(
+        stackColumn("max-width: 220px;", "Only content") +
+          '<div class="stack-column" style="display:inline-block; max-width: 440px;">&nbsp;</div>',
+      ),
+    );
+    const section = onlySection(blocks);
+
+    // A two-column section with an empty slot is worse than the one column a
+    // cell count already gives.
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual(["title"]);
+  });
+
+  it("refuses a cell holding content beside the column divs", () => {
+    const { blocks } = runTable(
+      cellRow(
+        "<h1>Section heading</h1>" +
+          stackColumn("max-width: 220px;", "Left") +
+          stackColumn("max-width: 440px;", "Right"),
+      ),
+    );
+    const section = onlySection(blocks);
+
+    // The heading belongs to neither column, and promoting the divs would
+    // have to put it in one of them.
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "title",
+      "title",
+      "title",
+    ]);
+  });
+
+  it("refuses a cell holding bare text beside the column divs", () => {
+    const { blocks } = runTable(
+      cellRow(
+        "A line of its own. " +
+          stackColumn("max-width: 220px;", "Left") +
+          stackColumn("max-width: 440px;", "Right"),
+      ),
+    );
+    const section = onlySection(blocks);
+
+    // The sentence belongs to neither column. Reading the divs as columns
+    // anyway would have to place it in one of them or lose it.
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "paragraph",
+      "title",
+      "title",
+    ]);
+    const line = section.children[0][0];
+    if (line.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(line.content).toBe("<p>A line of its own. </p>");
+  });
+
+  it("refuses a column set with a side-by-side non-container beside it", () => {
+    const { blocks } = runTable(
+      cellRow(
+        stackColumn("max-width: 220px;", "Left") +
+          stackColumn("max-width: 440px;", "Right") +
+          '<a href="https://x/cta" style="display:inline-block; padding:10px;">Act now</a>',
+      ),
+    );
+    const section = onlySection(blocks);
+
+    // The anchor is laid out beside the columns and is not one, so requiring
+    // every child to be a container is what keeps it out of a column. Only
+    // checking the display property would admit it and lose it into the last
+    // column's slot.
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual([
+      "title",
+      "title",
+      "button",
+    ]);
+  });
+
+  it("leaves a lone container to the cell walk that wraps it", () => {
+    const { blocks } = runTable(
+      cellRow(
+        '<div style="display:inline-block;">' +
+          '<a href="https://x/cta">Act now</a>' +
+          "</div>",
+        'style="padding:10px; background-color:#ff0000"',
+      ),
+    );
+    const section = onlySection(blocks);
+
+    // One container is not a column set. Promoting it would take the content
+    // walk and bypass the cell's own button classification, which reads the
+    // styling table-based email wraps a call to action in.
+    expect(section.columns).toBe("1");
+    expect(section.children).toHaveLength(1);
+    expect(section.children[0].map((b) => b.type)).toEqual(["button"]);
+    const button = section.children[0][0];
+    if (button.type !== "button") throw new Error("expected button block");
+    expect(button.url).toBe("https://x/cta");
+    expect(button.backgroundColor).toBe("#ff0000");
+  });
+
+  it("emits one section for the row, never one per column", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr><td>' +
+        stackColumn("max-width: 220px;", "Left") +
+        stackColumn("max-width: 440px;", "Right") +
+        "</td></tr>" +
+        "<tr><td><h2>Below</h2></td></tr></table>",
+    );
+
+    // Promoting the divs must not turn the cell's tables into sections of
+    // their own — the row is one section with two slots.
+    expect(blocks).toHaveLength(2);
+    const first = blocks[0];
+    if (first.type !== "section") throw new Error("expected section block");
+    expect(first.columns).toBe("1-2");
+    expect(first.children.map((column) => column.length)).toEqual([1, 1]);
+  });
+
+  it("keeps a multi-cell row's cells as its columns", () => {
+    const { blocks } = runTable(
+      '<table role="presentation"><tr>' +
+        "<td>" +
+        stackColumn("max-width: 220px;", "Inner left") +
+        stackColumn("max-width: 440px;", "Inner right") +
+        "</td>" +
+        "<td><h2>Right cell</h2></td>" +
+        "</tr></table>",
+    );
+    const section = onlySection(blocks);
+
+    // Columns inside a column are not representable, so the row's own cells
+    // win and the inner set flattens into the first slot. Promoting it would
+    // report a layout the section cannot hold.
+    expect(section.columns).toBe("2");
+    expect(section.children).toHaveLength(2);
+    expect(section.children[0].map((b) => b.type)).toEqual(["title", "title"]);
+    expect(section.children[1].map((b) => b.type)).toEqual(["title"]);
+  });
+
+  it("converts a promoted column's content the way a container is converted", () => {
+    const { blocks } = runTable(
+      cellRow(
+        '<div class="stack-column" style="display:inline-block; max-width: 220px;">' +
+          '<table role="presentation"><tr><td><a href="https://x/more">Read more</a></td></tr></table>' +
+          "</div>" +
+          stackColumn("max-width: 440px;", "Wide"),
+      ),
+    );
+    const section = onlySection(blocks);
+
+    // `looksLikeButton` answers true for `display: inline-block`, which every
+    // column container carries — so handing one to the cell walk classifies a
+    // column whose content is a link as a single button and drops the
+    // column's own table. The link is prose here and stays in a paragraph.
+    expect(section.columns).toBe("1-2");
+    expect(section.children[0].map((b) => b.type)).toEqual(["paragraph"]);
+    const link = section.children[0][0];
+    if (link.type !== "paragraph") throw new Error("expected paragraph block");
+    expect(link.content).toBe('<p><a href="https://x/more">Read more</a></p>');
+  });
+
+  it("gives every promoted column at least one block", () => {
+    const { blocks } = runTable(
+      cellRow(
+        stackColumn("max-width: 220px;", "Left") +
+          stackColumn("max-width: 440px;", "Right"),
+      ),
+    );
+    const section = onlySection(blocks);
+
+    expect(section.children.filter((column) => column.length === 0)).toEqual(
+      [],
+    );
+  });
+});

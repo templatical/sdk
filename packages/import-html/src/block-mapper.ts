@@ -52,6 +52,80 @@ export function isTableContainer($el: Cheerio<Element>, tag: string): boolean {
 }
 
 /**
+ * Whether an element is laid out beside its siblings rather than stacked above
+ * them: `display: inline-block`.
+ *
+ * This is the property that *makes* a set of divs a set of columns — an email
+ * that wants side-by-side divs has no other way to say so, since a block-level
+ * div stacks — so requiring it is the definition of the shape and not a
+ * heuristic about it. Two plain divs stack vertically, and reading those as
+ * columns would invent a layout the source never stated.
+ */
+function isSideBySide($el: Cheerio<Element>): boolean {
+  return (getStyles($el).display ?? "").trim().toLowerCase() === "inline-block";
+}
+
+/**
+ * The sibling containers that make up a cell's column set, or `null` when the
+ * cell is not one.
+ *
+ * This is the one column shape with no cell count to read: a single `<td>`
+ * holding one inline-block `<div>` per column. Cerberus's hybrid template
+ * states four layouts this way and compiled MJML states every one of them —
+ * mjml puts a whole section's columns into one cell as sibling
+ * `div.mj-column-per-*` — so a row's cell count reports one column for a
+ * layout that has two or three. Counting the divs is still *counting*: the
+ * number of columns comes from the number of elements, and a width is only
+ * ever consulted afterwards to choose between layouts of that same count.
+ *
+ * Four conditions, each of them a hazard a relaxed version would reintroduce:
+ *
+ * - Every element child must be a container. A cell mixing a column set with
+ *   anything else has no column any other element belongs to.
+ * - Every one must be laid out side by side (`isSideBySide`), which is what
+ *   distinguishes columns from stacked content.
+ * - None may be blank. A multi-column section with an empty slot is worse
+ *   than the single column a cell count already gives, and the source's own
+ *   spacer chrome is exactly what would fill one.
+ * - No text of the cell's own may survive, for the same reason as the first
+ *   condition — a bare sentence beside the columns belongs to none of them.
+ *
+ * Deliberately structural: it reads no width, so a column set with no declared
+ * width still becomes one, and a `width:100%` — which every real column div
+ * carries — can never make or break the decision.
+ */
+export function columnDivsOf(
+  $cell: Cheerio<Element>,
+  $: CheerioAPI,
+): Cheerio<Element>[] | null {
+  const columns: Cheerio<Element>[] = [];
+  let inlineText = "";
+
+  for (const node of $cell.contents().toArray()) {
+    if (isInlineContent(node)) {
+      inlineText += $(node).text();
+      continue;
+    }
+    // Comments carry no content, and MSO conditional comments sit between
+    // every pair of column divs in both real sources — skipping them is what
+    // keeps the siblings adjacent.
+    if (!isTag(node)) continue;
+
+    const tag = node.tagName.toLowerCase();
+    if (!CONTAINER_TAGS.has(tag)) return null;
+
+    const $child = $(node) as unknown as Cheerio<Element>;
+    if (!isSideBySide($child)) return null;
+    if (isBlankCell($child)) return null;
+    columns.push($child);
+  }
+
+  if (columns.length < 2) return null;
+  if (inlineText.trim() !== "") return null;
+  return columns;
+}
+
+/**
  * Block-level elements a container may be unwrapped down to. Only a heading:
  * a container wrapping one is the single case where mapping the container
  * gets the block's *type* wrong.

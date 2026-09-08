@@ -8,6 +8,7 @@ import {
 } from "@templatical/types";
 import type { Block, ColumnLayout } from "@templatical/types";
 import {
+  columnDivsOf,
   convertElement,
   convertHtmlFallback,
   isBlankCell,
@@ -392,6 +393,68 @@ function flattenedRowEntry(cellCount: number): ImportReportEntry | null {
   };
 }
 
+/**
+ * One column's content host, and which kind of element it is.
+ *
+ * Normally a row's columns are its `<td>`s. The exception is a single cell
+ * holding one inline-block `<div>` per column, which `columnDivsOf` reads —
+ * so a host is either a cell or one of those column containers, and the two
+ * are extracted differently.
+ */
+interface ColumnHost {
+  $el: Cheerio<Element>;
+  kind: "cell" | "container";
+}
+
+/**
+ * The elements that each carry one of the row's columns.
+ *
+ * A cell holding a column set is replaced by that set, so the count comes from
+ * the divs rather than from the one cell around them. Only a single layout
+ * cell is considered: columns inside a column are not representable, so a
+ * multi-cell row keeps its cells and can never have its count *reduced* by
+ * this rule.
+ *
+ * Asked after `centringCells`, which is what lets a gutter-flanked row whose
+ * middle cell holds a column set still be read as that set.
+ */
+function columnHostsOf(
+  layoutCells: Cheerio<Element>[],
+  $: CheerioAPI,
+): ColumnHost[] {
+  if (layoutCells.length === 1) {
+    const containers = columnDivsOf(layoutCells[0], $);
+    if (containers)
+      return containers.map(($el) => ({ $el, kind: "container" as const }));
+  }
+  return layoutCells.map(($el) => ({ $el, kind: "cell" as const }));
+}
+
+/**
+ * The blocks a column host contributes.
+ *
+ * A promoted container takes the content walk rather than the cell walk,
+ * which is the same walk a container reached from inside a cell already gets
+ * — so promoting one changes which slot its blocks land in and nothing about
+ * how they convert. The two early returns the cell walk adds are about cells
+ * specifically — `isSpacerCell` reads a `<td height>`, and `isButtonCell`
+ * reads the cell-level styling table-based email wraps a call to action in —
+ * and `looksLikeButton` answers true for `display: inline-block`, which every
+ * column container carries. Handing a container to the cell walk would turn a
+ * column whose content is one link into a single button block and drop
+ * everything the column's own table holds.
+ */
+function extractHostBlocks(
+  host: ColumnHost,
+  $: CheerioAPI,
+  entries: ImportReportEntry[],
+  warnings: string[],
+): Block[] {
+  return host.kind === "cell"
+    ? extractCellBlocks(host.$el, $, entries, warnings)
+    : extractContentBlocks(host.$el, $, entries, warnings);
+}
+
 /** The width an element declares, from the strongest signal it carries. */
 function readDeclaredWidth($el: Cheerio<Element>): ColumnWidth | null {
   return readColumnWidth($el.attr("class"), getStyles($el), $el.attr("width"));
@@ -549,27 +612,29 @@ export function processTable(
     }
 
     // A row's gutters are not columns, so the cells that state the layout are
-    // what everything below reads — the column count, the blocks, and both
+    // what the hosts are drawn from, and the hosts are what everything below
+    // reads — the column count, the blocks, the declared widths and both
     // report entries. Reading `cells.length` for the report instead would
     // claim a three-into-one merge for a row that always had one column.
     const layoutCells = centringCells(cells) ?? cells;
-    const countedLayout = resolveColumnLayout(layoutCells.length, warnings);
+    const hosts = columnHostsOf(layoutCells, $);
+    const countedLayout = resolveColumnLayout(hosts.length, warnings);
 
     let columnsBlocks: Block[][];
     if (countedLayout === "1") {
       const merged: Block[] = [];
-      for (const $cell of layoutCells) {
-        merged.push(...extractCellBlocks($cell, $, entries, warnings));
+      for (const host of hosts) {
+        merged.push(...extractHostBlocks(host, $, entries, warnings));
       }
       columnsBlocks = [merged];
     } else {
-      columnsBlocks = layoutCells.map(($cell) =>
-        extractCellBlocks($cell, $, entries, warnings),
+      columnsBlocks = hosts.map((host) =>
+        extractHostBlocks(host, $, entries, warnings),
       );
     }
 
     if (flattenInline) {
-      const dropped = flattenedRowEntry(layoutCells.length);
+      const dropped = flattenedRowEntry(hosts.length);
       if (dropped) entries.push(dropped);
       for (const col of columnsBlocks) sections.push(...col);
       continue;
@@ -584,7 +649,7 @@ export function processTable(
       countedLayout === "1"
         ? { layout: countedLayout, note: undefined }
         : resolveColumnRatio(
-            layoutCells.map(($cell) => readDeclaredWidth($cell)),
+            hosts.map((host) => readDeclaredWidth(host.$el)),
             countedLayout,
           );
 
@@ -594,9 +659,7 @@ export function processTable(
       parseColor(rowStyles.background);
     const padding = readPaddingFromStyles(rowStyles);
 
-    entries.push(
-      sectionEntry(layoutCells.length, columnsBlocks.length, ratio.note),
-    );
+    entries.push(sectionEntry(hosts.length, columnsBlocks.length, ratio.note));
     sections.push(
       createSectionBlock({
         columns: ratio.layout,
