@@ -1450,7 +1450,7 @@ describe("processTable — a container does not hide a wrapper cell's layout row
     const { blocks } = runTable(
       '<table role="presentation"><tr><td><div>' +
         '<table role="presentation">' +
-        "<tr><td><div><h2>First</h2></div></td></tr>" +
+        "<tr><td><div><h3>First</h3></div></td></tr>" +
         "<tr><td><div><p>Second.</p></div></td></tr>" +
         "</table>" +
         "</div></td></tr></table>",
@@ -1460,15 +1460,18 @@ describe("processTable — a container does not hide a wrapper cell's layout row
     expect(section.columns).toBe("1");
     expect(section.children).toHaveLength(1);
     // Each row's own `<div>` holds no table, so it is correctly not a
-    // container: it maps through the block mapper's text tags and keeps the
-    // heading markup inside the paragraph's content.
+    // container to descend — the block mapper unwraps it instead, which is
+    // what types the heading it wraps without promoting the row to a section.
     expect(section.children[0].map((b) => b.type)).toEqual([
-      "paragraph",
+      "title",
       "paragraph",
     ]);
     const first = section.children[0][0];
-    if (first.type !== "paragraph") throw new Error("expected paragraph block");
-    expect(first.content).toBe("<h2>First</h2>");
+    if (first.type !== "title") throw new Error("expected title block");
+    // `level: 3` is off the title factory's default (2), so this cannot pass
+    // on a default that merely survived.
+    expect(first.level).toBe(3);
+    expect(first.content).toBe("<p>First</p>");
   });
 
   it("keeps one section when a cell holds one container per column", () => {

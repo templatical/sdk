@@ -559,3 +559,53 @@ describe("convertHtmlTemplate — every section is accounted for in the report",
     expect(converted + approximated + htmlFallback + skipped).toBe(total);
   });
 });
+
+describe("convertHtmlTemplate — a heading a cell's wrapper div hides", () => {
+  // The shape mjml@5 compiles an `mj-text` into: the cell holds a plain <div>
+  // carrying the visual properties, and that div's whole content is the one
+  // block-level element. Reached through the cell walk rather than
+  // `convertElement` directly, so this is the seam the block mapper's unwrap
+  // has to hold across.
+  const html = `<html><body><table><tr><td>
+    <div style="font-family:Georgia, serif;font-size:22px;text-align:center;color:#ff0000">
+      <h3 style="margin:0;font-size:inherit;color:inherit">Cell heading</h3>
+    </div>
+    <div style="font-size:14px"><p>Cell copy.</p></div>
+  </td></tr></table></body></html>`;
+
+  const result = convertHtmlTemplate(html);
+
+  it("types the heading and keeps the copy beside it", () => {
+    const section = result.content.blocks[0] as SectionBlock;
+    expect(section.type).toBe("section");
+    expect(section.children[0].map((block) => block.type)).toEqual([
+      "title",
+      "paragraph",
+    ]);
+  });
+
+  it("keeps the level and the wrapper's styling on the title", () => {
+    const title = findBlock(result.content.blocks, "title")!;
+    expect(title.level).toBe(3);
+    expect(title.content).toBe("<p>Cell heading</p>");
+    expect(title.color).toBe("#ff0000");
+    expect(title.textAlign).toBe("center");
+    expect(title.fontFamily).toBe("Georgia");
+  });
+
+  it("names the elements the blocks came from in the report", () => {
+    expect(
+      result.report.entries.map((entry) => [
+        entry.sourceTag,
+        entry.templaticalBlockType,
+      ]),
+    ).toEqual([
+      ["h3", "title"],
+      // The wrapped <p> keeps its container mapping — see the `p` exclusion in
+      // the block mapper's unwrap set.
+      ["div", "paragraph"],
+      ["tr", "section"],
+    ]);
+    expect(result.report.warnings).toEqual([]);
+  });
+});

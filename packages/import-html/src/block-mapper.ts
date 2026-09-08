@@ -52,6 +52,30 @@ export function isTableContainer($el: Cheerio<Element>, tag: string): boolean {
 }
 
 /**
+ * Block-level elements a container may be unwrapped down to. Only a heading:
+ * a container wrapping one is the single case where mapping the container
+ * gets the block's *type* wrong.
+ *
+ * A tag qualifies only if unwrapping it loses nothing, and `p` is the one that
+ * looks like it belongs and does not. `convertParagraph` reads an element's
+ * inner HTML, so unwrapping `<div><p class="lead">…</p></div>` drops the `<p>`
+ * and every attribute on it, where mapping the container keeps that markup
+ * inside the paragraph's content. Nothing is bought in exchange: a wrapped
+ * `<p>` already maps to a paragraph, which is the right type. A heading has no
+ * such cost, because `convertHeading` stores the level and the inner HTML —
+ * so unwrapping routes it to the same converter a bare `<h3>` already reaches.
+ *
+ * `img`, `hr` and `table` stay out for the same "nothing to fix" reason: a
+ * table belongs to the container descent the two traversals run, and the other
+ * two would widen a heading-typing rule into image and divider mapping.
+ *
+ * The set is also what keeps the styling below correct — `convertHeading` is
+ * the only converter reached with a container's styles, so admitting a tag it
+ * does not handle would silently drop them.
+ */
+const UNWRAPPABLE_BLOCK_TAGS: ReadonlySet<string> = HEADING_TAGS;
+
+/**
  * Inline formatting tags, which carry no block of their own. One of these
  * reaching a block position means the parent's text extraction stopped short —
  * it does not mean the element has no mapping, so it must never fall through
@@ -96,6 +120,140 @@ function getStyles($el: Cheerio<Element>): Record<string, string> {
 }
 
 /**
+ * Whether an element carries anything a reader would see: text, or an element
+ * that renders without text of its own.
+ *
+ * One rule with two readers, which is the point: it decides both whether a
+ * text container is worth a block at all and whether a wrapper is worth
+ * unwrapping. Two copies would let `<div><h3></h3></div>` be skipped by one
+ * and turned into an empty title by the other.
+ */
+function hasRenderedContent($el: Cheerio<Element>): boolean {
+  if (($el.text() ?? "").trim() !== "") return true;
+  return $el.find("img, a").length > 0;
+}
+
+/**
+ * The single element a container's whole content consists of, or `null` when
+ * the container holds anything else.
+ *
+ * Whitespace and comments are incidental — the same reading `extractContentBlocks`
+ * gives them — and `trim` counts `&nbsp;` among them, which is how the rest of
+ * this module reads it (`normalizeCellText`, and through it `isBlankCell`).
+ * Everything else is content: a second element, a bare word, or a rendering
+ * `<br>` all mean the container holds more than one thing, and unwrapping it
+ * would drop whatever was not unwrapped.
+ */
+function soleElementChild($el: Cheerio<Element>): Element | null {
+  let found: Element | null = null;
+
+  for (const node of $el.contents().toArray()) {
+    if (isText(node)) {
+      if (node.data.trim() !== "") return null;
+      continue;
+    }
+    if (!isTag(node)) continue;
+    if (found) return null;
+    found = node;
+  }
+
+  return found;
+}
+
+/**
+ * The styles the innermost element of a wrapper chain renders with: each
+ * container's own declarations, overridden by those of the element inside it.
+ *
+ * The container's styles have to travel, because the wrapper is where
+ * table-based email puts the colour, size, font and alignment — a plain
+ * `getStyles` on the unwrapped element trades a typing defect for a styling
+ * loss.
+ *
+ * A declaration of `inherit` states nothing of its own, so it must not shadow
+ * the container's value. That is load-bearing rather than pedantic: mjml@5
+ * puts every visual property on the wrapper div and writes `color: inherit` on
+ * the heading inside it, so honouring the keyword literally drops the colour
+ * the email actually renders with.
+ */
+function inheritedStyles(chain: Cheerio<Element>[]): Record<string, string> {
+  const merged: Record<string, string> = { ...getStyles(chain[0]) };
+
+  for (const $node of chain.slice(1)) {
+    for (const [property, value] of Object.entries(getStyles($node))) {
+      if (value.trim().toLowerCase() === "inherit") continue;
+      merged[property] = value;
+    }
+  }
+
+  return merged;
+}
+
+/**
+ * The element that takes a container's place when the container's entire
+ * meaningful content is one block-level element, together with the styles that
+ * element renders with. Returns the element handed in when there is nothing to
+ * unwrap.
+ *
+ * Generator-produced email wraps each text block in a plain `<div>` holding a
+ * single block-level element — compiled MJML puts one `<h3>` inside an
+ * `mj-text` body that rendered a heading. That `<div>` holds no table, so it
+ * is correctly not a container to descend, and `div` is a text tag here:
+ * mapping it emits a paragraph with the heading buried in its content, which
+ * loses the heading's semantics, its own styling and any downstream treatment
+ * of titles.
+ *
+ * Three constraints, each a hazard a relaxed version would reintroduce:
+ *
+ * - The chain must *end* on an `UNWRAPPABLE_BLOCK_TAGS` element. That is what
+ *   keeps a `div.mj-column-per-*` out: its sole child is a `<table>`, and
+ *   handing that to the dispatch below would html-fallback the whole column.
+ *   It also leaves a chain of containers bottoming out in bare text alone, so
+ *   `<div><div>copy</div></div>` keeps mapping as it did.
+ * - A container holding a table is refused outright, through the same
+ *   `isTableContainer` predicate the two traversals use. This decides the one
+ *   case the tag test cannot — a sole child that *is* a heading, with the
+ *   table below it — and both traversals descend such a container, so the
+ *   subtree is theirs rather than this dispatch's.
+ * - An empty wrapper is refused, so a container whose sole child renders
+ *   nothing stays skipped rather than becoming an empty title.
+ *
+ * Bounded by DOM depth: each step moves to a child.
+ */
+function resolveWrappedBlock(
+  $el: Cheerio<Element>,
+  $: CheerioAPI,
+): { $el: Cheerio<Element>; styles: Record<string, string> } {
+  const unwrapped = { $el, styles: getStyles($el) };
+
+  const chain: Cheerio<Element>[] = [$el];
+  let $current = $el;
+
+  for (;;) {
+    const tag = tagOf($current[0]);
+    if (!CONTAINER_TAGS.has(tag)) break;
+    if (isTableContainer($current, tag)) break;
+
+    const child = soleElementChild($current);
+    if (!child) break;
+
+    const childTag = tagOf(child);
+    if (!CONTAINER_TAGS.has(childTag) && !UNWRAPPABLE_BLOCK_TAGS.has(childTag))
+      break;
+
+    $current = $(child) as unknown as Cheerio<Element>;
+    chain.push($current);
+  }
+
+  if (chain.length === 1) return unwrapped;
+
+  const $target = chain[chain.length - 1];
+  if (!UNWRAPPABLE_BLOCK_TAGS.has(tagOf($target[0]))) return unwrapped;
+  if (!hasRenderedContent($target)) return unwrapped;
+
+  return { $el: $target, styles: inheritedStyles(chain) };
+}
+
+/**
  * Returns the inner HTML of `$el`.
  */
 export function getInnerHtml($el: Cheerio<Element>): string {
@@ -118,10 +276,15 @@ function safeHtmlComment(message: string, raw: string): string {
 
 /**
  * Heading element (h1-h6) → Title block.
+ *
+ * `styles` is the element's own by default and the wrapper chain's when the
+ * heading was unwrapped out of a container — see `resolveWrappedBlock`.
  */
-function convertHeading($el: Cheerio<Element>): Block {
+function convertHeading(
+  $el: Cheerio<Element>,
+  styles: Record<string, string> = getStyles($el),
+): Block {
   const tag = tagOf($el[0]);
-  const styles = getStyles($el);
   const levelMatch = tag.match(/^h(\d)$/);
   const rawLevel = levelMatch ? Number(levelMatch[1]) : 2;
   const level: HeadingLevel = (
@@ -533,6 +696,13 @@ export function isButtonCell(
  * Converts a single content-bearing element (heading / paragraph / image /
  * anchor-as-button / divider) to a Templatical block.
  *
+ * A container whose entire meaningful content is one block-level element is
+ * unwrapped first, so the element inside is what gets mapped and named in the
+ * report — see `resolveWrappedBlock`. Only a heading can come back from that,
+ * which is why the heading branch is the only one taking the resolved styles:
+ * for every other branch the resolved element is the one handed in, so its own
+ * styles are what `styles` already holds.
+ *
  * Returns `null` for elements that do not contain any meaningful content
  * (the caller should skip them).
  */
@@ -540,12 +710,13 @@ export function convertElement(
   $el: Cheerio<Element>,
   $: CheerioAPI,
 ): { block: Block; entry: ImportReportEntry } | null {
-  const tag = tagOf($el[0]);
+  const { $el: $target, styles } = resolveWrappedBlock($el, $);
+  const tag = tagOf($target[0]);
   if (!tag) return null;
 
   if (HEADING_TAGS.has(tag)) {
     return {
-      block: convertHeading($el),
+      block: convertHeading($target, styles),
       entry: {
         sourceTag: tag,
         templaticalBlockType: "title",
@@ -556,7 +727,7 @@ export function convertElement(
 
   if (tag === "img") {
     return {
-      block: convertImage($el),
+      block: convertImage($target),
       entry: {
         sourceTag: tag,
         templaticalBlockType: "image",
@@ -566,9 +737,9 @@ export function convertElement(
   }
 
   if (tag === "a") {
-    if (looksLikeButton(getStyles($el))) {
+    if (looksLikeButton(styles)) {
       return {
-        block: convertButton($el),
+        block: convertButton($target),
         entry: {
           sourceTag: tag,
           templaticalBlockType: "button",
@@ -578,7 +749,7 @@ export function convertElement(
     }
     // Plain anchor — wrap as paragraph.
     return {
-      block: convertParagraph($el),
+      block: convertParagraph($target),
       entry: {
         sourceTag: tag,
         templaticalBlockType: "paragraph",
@@ -590,7 +761,7 @@ export function convertElement(
 
   if (tag === "hr") {
     return {
-      block: convertDivider($el),
+      block: convertDivider($target),
       entry: {
         sourceTag: tag,
         templaticalBlockType: "divider",
@@ -600,10 +771,9 @@ export function convertElement(
   }
 
   if (TEXT_TAGS.has(tag)) {
-    const text = ($el.text() ?? "").trim();
-    if (!text && $el.find("img, a").length === 0) return null;
+    if (!hasRenderedContent($target)) return null;
     return {
-      block: convertParagraph($el),
+      block: convertParagraph($target),
       entry: {
         sourceTag: tag,
         templaticalBlockType: "paragraph",
@@ -615,7 +785,7 @@ export function convertElement(
   // Unknown element — preserve as HTML.
   return {
     block: convertHtmlFallback(
-      $el,
+      $target,
       $,
       `Unsupported element <${tag}>: preserved as raw HTML`,
     ),
