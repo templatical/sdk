@@ -12,6 +12,8 @@ import type {
   EditorUser,
   FontsConfig,
   LogicTagsConfig,
+  MediaProvider,
+  MediaRequestContext,
   MediaResult,
   MergeTagsConfig,
   RenderProvider,
@@ -29,7 +31,6 @@ import type {
 } from "@templatical/types";
 import { createDefaultTemplateContent, safeClone } from "@templatical/types";
 import { resolveTemplateDefaults } from "./utils/resolveTemplateDefaults";
-import type { MediaRequestContext } from "@templatical/media-library";
 
 import Editor from "./Editor.vue";
 import type { CloudRuntime } from "./cloud/runtime";
@@ -252,6 +253,19 @@ export interface TemplaticalEditorConfig {
    * @default 2000
    */
   changeDebounce?: number;
+
+  /**
+   * Storage backend for the **media library** — the picker behind Browse on
+   * image fields, video thumbnails, and custom-block image fields.
+   *
+   * The editor owns the modal, grid, crop and insertion; you own persistence.
+   * `list` is required; every other method is `false | fn`. All mutations
+   * `false` is a read-only library: browse, search and pick still work.
+   *
+   * **Omitted by default.** Image fields stay URL-only. `onRequestMedia` is
+   * the UI override (a host widget) and wins when both are set.
+   */
+  media?: MediaProvider;
 
   onRequestMedia?: OnRequestMedia;
 
@@ -1247,6 +1261,10 @@ export type {
   VersionHistoryOptions,
   CommentsOptions,
   CommentEventMeta,
+  MediaAsset,
+  MediaOptions,
+  MediaProvider,
+  MediaRequestContext,
 } from "@templatical/types";
 
 // Bundled browser-local saved-blocks provider. Re-exported here (rather than

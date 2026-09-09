@@ -1,0 +1,129 @@
+import { computed, onScopeDispose, ref, type ComputedRef, type Ref } from "vue";
+import type {
+  MediaAsset,
+  MediaCategory,
+  MediaProvider,
+  MediaRequestContext,
+  MediaResult,
+} from "@templatical/types";
+import type { OnRequestMedia } from "../index";
+
+export interface UseMediaFeatureOptions {
+  /** Storage backend. Absent with a callback-only config (a host widget). */
+  provider?: MediaProvider;
+  /**
+   * UI override. Wins over {@link provider} when both are set — the host
+   * brought a widget, so the built-in modal never opens.
+   */
+  onRequestMedia?: OnRequestMedia;
+  /**
+   * Current template id, read at request time. Passed on `create` when a
+   * template is loaded; omitted on a blank canvas. Media is not gated on it.
+   */
+  getTemplateId?: () => string | undefined;
+  onError?: (error: Error) => void;
+}
+
+export interface UseMediaFeatureReturn {
+  /**
+   * What `useEditorCore` provides as `ON_REQUEST_MEDIA_KEY`. Null when
+   * neither a provider nor a callback is configured, which is what keeps
+   * image fields URL-only.
+   */
+  requestMedia: OnRequestMedia | null;
+  isModalOpen: Ref<boolean>;
+  accept: Ref<MediaCategory[] | undefined>;
+  close: () => void;
+  select: (asset: MediaAsset) => void;
+  templateId: ComputedRef<string | undefined>;
+}
+
+function toError(value: unknown): Error {
+  return value instanceof Error ? value : new Error(String(value));
+}
+
+/**
+ * Synthesizes the function image fields inject as `ON_REQUEST_MEDIA_KEY`.
+ *
+ * `onRequestMedia` is the UI override (a host widget) and wins when both
+ * are set. Otherwise a configured `media` provider opens the lazy library
+ * modal, except on drop: a `create` function uploads the file without
+ * opening, and `create: false` refuses the drop.
+ */
+export function useMediaFeature(
+  options: UseMediaFeatureOptions,
+): UseMediaFeatureReturn {
+  const { provider, onRequestMedia, getTemplateId, onError } = options;
+
+  const isModalOpen = ref(false);
+  const accept = ref<MediaCategory[] | undefined>(undefined);
+  const templateId = computed(() => getTemplateId?.());
+
+  let pending: ((result: MediaResult | null) => void) | null = null;
+
+  function settle(result: MediaResult | null): void {
+    isModalOpen.value = false;
+    pending?.(result);
+    pending = null;
+  }
+
+  function select(asset: MediaAsset): void {
+    settle({ url: asset.url, alt: asset.alt });
+  }
+
+  function close(): void {
+    settle(null);
+  }
+
+  onScopeDispose(() => {
+    if (pending) settle(null);
+  });
+
+  const requestMedia: OnRequestMedia | null =
+    onRequestMedia || provider
+      ? async (context?: MediaRequestContext): Promise<MediaResult | null> => {
+          if (onRequestMedia) {
+            return onRequestMedia(context);
+          }
+
+          if (!provider) return null;
+
+          if (context?.files?.length) {
+            if (typeof provider.create !== "function") {
+              return null;
+            }
+            const file = context.files[0];
+            const id = getTemplateId?.();
+            try {
+              const asset = await provider.create({
+                file,
+                ...(id ? { templateId: id } : {}),
+              });
+              return { url: asset.url, alt: asset.alt };
+            } catch (err) {
+              onError?.(toError(err));
+              return null;
+            }
+          }
+
+          if (pending) {
+            pending(null);
+            pending = null;
+          }
+          accept.value = context?.accept;
+          isModalOpen.value = true;
+          return new Promise<MediaResult | null>((resolve) => {
+            pending = resolve;
+          });
+        }
+      : null;
+
+  return {
+    requestMedia,
+    isModalOpen,
+    accept,
+    close,
+    select,
+    templateId,
+  };
+}
