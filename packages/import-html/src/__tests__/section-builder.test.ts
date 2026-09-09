@@ -1090,7 +1090,7 @@ describe("processTable — the section a row produces is in the report", () => {
       sourceTag: "tr",
       templaticalBlockType: "section",
       status: "approximated",
-      note: "Row of 4 cells was merged into a single column. Templatical sections hold at most 3 columns.",
+      note: "Row of 4 columns was merged into a single column. Templatical sections hold at most 3 columns.",
     });
 
     // The document-level warning is unchanged: a warning is context for the
@@ -1130,7 +1130,7 @@ describe("processTable — the section a row produces is in the report", () => {
       sourceTag: "tr",
       templaticalBlockType: null,
       status: "approximated",
-      note: "Nested row of 2 cells lost its columns. A Templatical section cannot nest inside a column, so its cells were merged into the surrounding column.",
+      note: "Nested row of 2 columns lost its columns. A Templatical section cannot nest inside a column, so its columns were merged into the surrounding column.",
     });
   });
 
@@ -1268,7 +1268,7 @@ describe("extractCellBlocks — a container in a cell is descended to its table"
     expect(flattened[0].sourceTag).toBe("tr");
     expect(flattened[0].status).toBe("approximated");
     expect(flattened[0].note).toBe(
-      "Nested row of 2 cells lost its columns. A Templatical section cannot nest inside a column, so its cells were merged into the surrounding column.",
+      "Nested row of 2 columns lost its columns. A Templatical section cannot nest inside a column, so its columns were merged into the surrounding column.",
     );
   });
 
@@ -2165,7 +2165,7 @@ describe("processTable — declared widths choose between same-count layouts", (
     const entry = sectionEntriesOf(entries)[0];
     expect(entry.status).toBe("approximated");
     expect(entry.note).toBe(
-      "Row of 4 cells was merged into a single column. Templatical sections hold at most 3 columns.",
+      "Row of 4 columns was merged into a single column. Templatical sections hold at most 3 columns.",
     );
     expect(warnings).toHaveLength(1);
   });
