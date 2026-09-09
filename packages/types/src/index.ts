@@ -54,6 +54,24 @@ export type {
   TestEmailProvider,
 } from "./test-email";
 
+// Media (the bring-your-own DAM / gallery contract)
+export type {
+  MediaAsset,
+  MediaAssetPatch,
+  MediaCategory,
+  MediaCreateInput,
+  MediaFolder,
+  MediaFolderInput,
+  MediaFoldersProvider,
+  MediaListPage,
+  MediaListParams,
+  MediaOptions,
+  MediaProvider,
+  MediaRequestContext,
+  MediaStorageInfo,
+  MediaUsageInfo,
+} from "./media";
+
 // Templates (the bring-your-own save/load contract)
 export type {
   Template,
