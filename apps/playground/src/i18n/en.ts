@@ -53,7 +53,7 @@ export default {
       content: "Template block structure",
       theme: "Colors and visual overrides (OKLch)",
       defaults: "blockDefaults, templateDefaults",
-      callbacks: "onRequestMedia, mergeTags.onRequest",
+      callbacks: "media, mergeTags.onRequest",
       locale: "SDK locale passed to init({ locale })",
     },
     localeHint:
@@ -71,7 +71,7 @@ export default {
     callbacksHint:
       'Toggle callback handlers passed to the editor. Changes apply on "Apply & Reload".',
     onRequestMediaDesc:
-      'Opens a demo image picker when the user clicks "Browse Media"',
+      "Backs Browse with a browser-local media library. Uncheck for URL-field-only.",
     onRequestMergeTag:
       "Opens a merge tag picker when the user inserts a merge tag",
     cancel: "Cancel",
@@ -117,9 +117,6 @@ export default {
   },
   mergeTagModal: {
     title: "Insert Merge Tag",
-  },
-  mediaModal: {
-    title: "Select Image",
   },
   dataSourceModal: {
     fetching: "Fetching data from endpoint\u2026",
@@ -228,11 +225,6 @@ export default {
     ifVipDescription: "Show the wrapped content only to VIP customers",
     loopItems: "Loop items",
     loopItemsDescription: "Repeat the wrapped content for each order line item",
-  },
-  demoImages: {
-    productShot: "Product Shot",
-    teamPhoto: "Team Photo",
-    abstract: "Abstract",
   },
   templates: {
     product: {
