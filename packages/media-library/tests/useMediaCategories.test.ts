@@ -70,9 +70,9 @@ describe("useMediaCategories", () => {
   /**
    * Cloud exposes `maxFileSize` as a getter over plan config that arrives
    * after construction. Reading it once at setup pins the client pre-check
-   * to `undefined`/`0` for the whole session — the `allowedRecipients`
-   * lesson. This case is the proof: a snapshot at setup stays `0` after
-   * `backing` fills, so the second expect fails.
+   * to `undefined` (no cap) for the whole session — the `allowedRecipients`
+   * lesson. This case is the proof: a snapshot at setup stays `Infinity`
+   * after `backing` fills, so the second expect fails.
    */
   it("tracks a getter-backed maxFileSize that fills after setup", () => {
     const backing = ref<number | undefined>(undefined);
@@ -84,7 +84,7 @@ describe("useMediaCategories", () => {
 
     const { result, unmount } = withLive(() => useMediaCategories(), limits);
 
-    expect(result.maxFileSize.value).toBe(0);
+    expect(result.maxFileSize.value).toBe(Number.POSITIVE_INFINITY);
 
     backing.value = 1_048_576;
 
@@ -112,7 +112,7 @@ describe("useMediaCategories", () => {
     );
     app.mount(document.createElement("div"));
 
-    expect(maxFileSize!.value).toBe(0);
+    expect(maxFileSize!.value).toBe(Number.POSITIVE_INFINITY);
 
     backing.value = 1_048_576;
 
@@ -210,9 +210,16 @@ describe("useMediaCategories", () => {
   });
 
   describe("maxFileSize", () => {
-    it("defaults to 0", () => {
+    it("omitted means no cap", () => {
       const { maxFileSize } = withProvide(() => useMediaCategories(), {
         limits: {},
+      });
+      expect(maxFileSize.value).toBe(Number.POSITIVE_INFINITY);
+    });
+
+    it("an explicit 0 is a cap of 0, not omit", () => {
+      const { maxFileSize } = withProvide(() => useMediaCategories(), {
+        limits: { maxFileSize: 0 },
       });
       expect(maxFileSize.value).toBe(0);
     });
@@ -415,6 +422,44 @@ describe("useMediaCategories", () => {
         useMediaCategories({ maxFileSize: 4242 }),
       );
       expect(maxFileSize.value).toBe(4242);
+    });
+  });
+
+  /**
+   * The upload zone's `validateFiles` is this predicate. Omitted
+   * `maxFileSize` / `mimeTypes` are no client pre-check — a BYO provider
+   * that writes neither still accepts a normal image. Empty `mimeTypes: {}`
+   * is a stated "nobody", so it still rejects.
+   */
+  describe("isAcceptedFile (upload-zone validateFiles)", () => {
+    const image = { type: "image/png", size: 1024 };
+
+    it("accepts a normal image when both limits are omitted", () => {
+      const { isAcceptedFile } = withProvide(() => useMediaCategories(), {
+        limits: {},
+      });
+      expect(isAcceptedFile(image)).toBe(true);
+    });
+
+    it("rejects when mimeTypes is an empty object", () => {
+      const { isAcceptedFile } = withProvide(() => useMediaCategories(), {
+        limits: { mimeTypes: {} },
+      });
+      expect(isAcceptedFile(image)).toBe(false);
+    });
+
+    it("rejects when the file exceeds an explicit maxFileSize", () => {
+      const { isAcceptedFile } = withProvide(() => useMediaCategories(), {
+        limits: { maxFileSize: 512 },
+      });
+      expect(isAcceptedFile(image)).toBe(false);
+    });
+
+    it("rejects a non-empty file when maxFileSize is explicitly 0", () => {
+      const { isAcceptedFile } = withProvide(() => useMediaCategories(), {
+        limits: { maxFileSize: 0 },
+      });
+      expect(isAcceptedFile(image)).toBe(false);
     });
   });
 });

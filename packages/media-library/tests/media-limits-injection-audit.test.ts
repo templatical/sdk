@@ -104,6 +104,20 @@ describe("cross-package injection audit", () => {
   });
 
   /**
+   * `allAcceptedMimeTypes` is `[]` when `mimeTypes` is omitted (no list to
+   * flatten). Using `.includes(file.type)` on that empty array rejects every
+   * drop — the BYO provider that writes no `mimeTypes`. `isAcceptedMimeType`
+   * / `isAcceptedFile` treat omit as no pre-check; empty `{}` still rejects.
+   */
+  it("upload zone validates files via isAcceptedFile, not allAcceptedMimeTypes.includes", () => {
+    const source = stripComments(
+      readFileSync(join(SRC, "components/media/MediaUploadZone.vue"), "utf8"),
+    );
+    expect(source).toMatch(/isAcceptedFile\(/);
+    expect(source).not.toMatch(/allAcceptedMimeTypes/);
+  });
+
+  /**
    * A component never sees its own `provide` — Vue resolves `inject` against the
    * *parent* chain. Both hosts provide `MEDIA_LIMITS_KEY` and then call
    * `useMediaCategories` with that same object, because injecting it from the

@@ -16,18 +16,14 @@ const emit = defineEmits<{
 
 const { t, format } = useI18n();
 
-const { allAcceptedMimeTypes, allAcceptedInputString, maxFileSize } =
-  useMediaCategories();
+const { allAcceptedInputString, isAcceptedFile } = useMediaCategories();
 
 const dropZoneRef = ref<HTMLDivElement>();
 
 function validateFiles(fileList: File[] | FileList): File[] {
   const valid: File[] = [];
   for (const file of Array.from(fileList)) {
-    if (
-      allAcceptedMimeTypes.value.includes(file.type) &&
-      file.size <= maxFileSize.value
-    ) {
+    if (isAcceptedFile(file)) {
       valid.push(file);
     }
   }

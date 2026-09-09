@@ -19,6 +19,7 @@ export interface UseMediaCategoriesReturn {
   maxFileSize: ComputedRef<number>;
   availableCategories: ComputedRef<MediaCategory[]>;
   isAcceptedMimeType: (mimeType: string, accept?: MediaCategory[]) => boolean;
+  isAcceptedFile: (file: { type: string; size: number }) => boolean;
   isImageMimeType: (mimeType: string) => boolean;
   getCategoryForMimeType: (mimeType: string) => MediaCategory | null;
 }
@@ -58,7 +59,11 @@ export function useMediaCategories(
   // implements the first two as getters over plan config that arrives after
   // construction; capturing them at setup pins the client pre-check to
   // `undefined` for the whole session.
-  const maxFileSize = computed(() => limits.maxFileSize ?? 0);
+  // Omit is no cap (`??`, so an explicit `0` stays a cap of 0). Infinity
+  // keeps `ComputedRef<number>` and `file.size <= n` without a skip branch.
+  const maxFileSize = computed(
+    () => limits.maxFileSize ?? Number.POSITIVE_INFINITY,
+  );
 
   const availableCategories = computed((): MediaCategory[] => {
     const accept = limits.accept;
@@ -105,6 +110,10 @@ export function useMediaCategories(
     );
   }
 
+  function isAcceptedFile(file: { type: string; size: number }): boolean {
+    return isAcceptedMimeType(file.type) && file.size <= maxFileSize.value;
+  }
+
   function isImageMimeType(mimeType: string): boolean {
     const mimeTypes = limits.mimeTypes;
     if (!mimeTypes) {
@@ -135,6 +144,7 @@ export function useMediaCategories(
     maxFileSize,
     availableCategories,
     isAcceptedMimeType,
+    isAcceptedFile,
     isImageMimeType,
     getCategoryForMimeType,
   };
