@@ -43,12 +43,49 @@ function toError(value: unknown): Error {
 }
 
 /**
+ * Client pre-check for a dropped file. Matches the modal's `isAcceptedFile`:
+ * omitted `maxFileSize` / `mimeTypes` are no cap; an explicit `0` or `{}`
+ * is a stated floor. `accept` narrows the mime list when the drop named
+ * categories (image fields pass `["images"]`).
+ *
+ * Reads `maxFileSize` / `mimeTypes` off the provider at call time — Cloud
+ * implements them as getters over plan config that arrives after setup.
+ */
+function dropFileError(
+  provider: MediaProvider,
+  file: File,
+  accept?: MediaCategory[],
+): Error | null {
+  const maxFileSize = provider.maxFileSize ?? Number.POSITIVE_INFINITY;
+  if (file.size > maxFileSize) {
+    return new Error(
+      `Image is too large (${file.size} bytes). Maximum allowed is ${maxFileSize} bytes.`,
+    );
+  }
+
+  const mimeTypes = provider.mimeTypes;
+  if (!mimeTypes) return null;
+
+  const categories =
+    accept && accept.length > 0
+      ? accept
+      : (Object.keys(mimeTypes) as MediaCategory[]);
+  const allowed = categories.some(
+    (category) => mimeTypes[category]?.includes(file.type) ?? false,
+  );
+  if (allowed) return null;
+
+  return new Error(`Unsupported image type: ${file.type || "unknown"}.`);
+}
+
+/**
  * Synthesizes the function image fields inject as `ON_REQUEST_MEDIA_KEY`.
  *
  * `onRequestMedia` is the UI override (a host widget) and wins when both
  * are set. Otherwise a configured `media` provider opens the lazy library
  * modal, except on drop: a `create` function uploads the file without
- * opening, and `create: false` refuses the drop.
+ * opening, and `create: false` refuses the drop. Size/type after the
+ * drop zone's `image/` filter is `MediaOptions`, read live on each drop.
  */
 export function useMediaFeature(
   options: UseMediaFeatureOptions,
@@ -93,12 +130,22 @@ export function useMediaFeature(
               return null;
             }
             const file = context.files[0];
+            const rejected = dropFileError(provider, file, context.accept);
+            if (rejected) {
+              onError?.(rejected);
+              return null;
+            }
             const id = getTemplateId?.();
             try {
               const asset = await provider.create({
                 file,
                 ...(id ? { templateId: id } : {}),
               });
+              try {
+                provider.onCreated?.(asset);
+              } catch (err) {
+                onError?.(toError(err));
+              }
               return { url: asset.url, alt: asset.alt };
             } catch (err) {
               onError?.(toError(err));
