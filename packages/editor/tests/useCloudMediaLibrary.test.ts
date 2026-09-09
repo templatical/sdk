@@ -4,8 +4,8 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { effectScope, ref } from "vue";
 import { useCloudMediaLibrary } from "../src/cloud/composables/useCloudMediaLibrary";
 
-// The built-in drag-and-drop upload lazily imports MediaApiClient from the
-// optional peer; intercept that dynamic import.
+// The built-in drag-and-drop upload lazily imports MediaApiClient from
+// @templatical/core/cloud; intercept that dynamic import.
 const { uploadMediaMock, MediaApiClientMock } = vi.hoisted(() => {
   const uploadMediaMock = vi.fn();
   // Regular function (not arrow) so `new MediaApiClient(...)` constructs.
@@ -14,7 +14,7 @@ const { uploadMediaMock, MediaApiClientMock } = vi.hoisted(() => {
   });
   return { uploadMediaMock, MediaApiClientMock };
 });
-vi.mock("@templatical/media-library", () => ({
+vi.mock("@templatical/core/cloud", () => ({
   MediaApiClient: MediaApiClientMock,
 }));
 
@@ -289,7 +289,10 @@ describe("useCloudMediaLibrary", () => {
     const mediaConfig = {
       use_media_library: true,
       categories: {
-        images: { mime_types: ["image/png", "image/jpeg"], extensions: ["png", "jpg"] },
+        images: {
+          mime_types: ["image/png", "image/jpeg"],
+          extensions: ["png", "jpg"],
+        },
       },
       max_file_size: 1_000_000,
     };
@@ -306,7 +309,10 @@ describe("useCloudMediaLibrary", () => {
 
     it("uploads a dropped file (no consumer handler) and returns url/alt", async () => {
       uploadMediaMock.mockResolvedValue(
-        createMediaItem({ url: "https://cdn/dropped.png", alt_text: "Dropped" }),
+        createMediaItem({
+          url: "https://cdn/dropped.png",
+          alt_text: "Dropped",
+        }),
       );
       const { handleRequestMedia } = useCloudMediaLibrary({
         mediaLibraryOpen: ref(false),
@@ -316,10 +322,16 @@ describe("useCloudMediaLibrary", () => {
       } as any);
 
       const file = imageFile();
-      const result = await handleRequestMedia({ accept: ["images"], files: [file] });
+      const result = await handleRequestMedia({
+        accept: ["images"],
+        files: [file],
+      });
 
       expect(uploadMediaMock).toHaveBeenCalledWith(file);
-      expect(result).toEqual({ url: "https://cdn/dropped.png", alt: "Dropped" });
+      expect(result).toEqual({
+        url: "https://cdn/dropped.png",
+        alt: "Dropped",
+      });
     });
 
     it("forwards dropped files to a consumer handler instead of uploading", async () => {
@@ -336,7 +348,10 @@ describe("useCloudMediaLibrary", () => {
       } as any);
 
       const file = imageFile();
-      const result = await handleRequestMedia({ accept: ["images"], files: [file] });
+      const result = await handleRequestMedia({
+        accept: ["images"],
+        files: [file],
+      });
 
       expect(onRequestMedia).toHaveBeenCalledWith({
         accept: ["images"],

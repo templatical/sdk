@@ -46,7 +46,10 @@ export function useCloudMediaLibrary(
 
   let mediaResolve: ((result: MediaResult | null) => void) | null = null;
 
-  function toMediaResult(item: MediaItem): MediaResult {
+  function toMediaResult(item: {
+    url: string;
+    alt_text?: string;
+  }): MediaResult {
     return { url: item.url, alt: item.alt_text || undefined };
   }
 
@@ -95,9 +98,10 @@ export function useCloudMediaLibrary(
       return null;
     }
     try {
-      // media-library is an optional, cloud-only peer — import lazily so OSS
-      // bundles never pull it in. Cloud consumers always have it installed.
-      const { MediaApiClient } = await import("@templatical/media-library");
+      // Cloud's HTTP client lives in core/cloud, which is bundled with the
+      // editor rather than an optional peer. A failed import is a real
+      // error, not a missing-package prompt.
+      const { MediaApiClient } = await import("@templatical/core/cloud");
       const item = await new MediaApiClient(authManager).uploadMedia(file);
       return toMediaResult(item);
     } catch (error) {
