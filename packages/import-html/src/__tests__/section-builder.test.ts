@@ -530,6 +530,141 @@ describe("extractCellBlocks — a button cell is one whose whole content is the 
   });
 });
 
+describe("extractCellBlocks — a linked image is an image, not a button or a paragraph", () => {
+  const SRC = "https://cdn.test/autumn-hero.jpg";
+  const ALT = "Autumn sale banner";
+  const HREF = "https://shop.test/autumn";
+  const IMG = `<img src="${SRC}" alt="${ALT}">`;
+
+  function imageEntryOf(entries: ImportReportEntry[]) {
+    const entry = entries.find((e) => e.templaticalBlockType === "image");
+    if (!entry) throw new Error("expected an image report entry");
+    return entry;
+  }
+
+  it("maps a plain linked image in a cell to an image with linkUrl", () => {
+    const { blocks, entries } = runCell(`<a href="${HREF}">${IMG}</a>`);
+
+    expect(blocks.map((b) => b.type)).toEqual(["image"]);
+    const image = blocks[0];
+    if (image.type !== "image") throw new Error("expected image block");
+    expect(image.src).toBe(SRC);
+    expect(image.alt).toBe(ALT);
+    expect(image.linkUrl).toBe(HREF);
+    const entry = imageEntryOf(entries);
+    expect(entry.status).toBe("converted");
+    expect("note" in entry).toBe(false);
+  });
+
+  it("maps a styled linked image in a cell to an image, not a button", () => {
+    // The content-loss case: padding/background on the `<a>` is a button
+    // signal, and without this pin `isButtonCell` swallows the cell and
+    // labels a button from empty text.
+    const { blocks, entries } = runCell(
+      `<a style="background:#f00;padding:8px 16px" href="${HREF}">${IMG}</a>`,
+    );
+
+    expect(blocks.some((b) => b.type === "button")).toBe(false);
+    expect(blocks.map((b) => b.type)).toEqual(["image"]);
+    const image = blocks[0];
+    if (image.type !== "image") throw new Error("expected image block");
+    expect(image.src).toBe(SRC);
+    expect(image.alt).toBe(ALT);
+    expect(image.linkUrl).toBe(HREF);
+    const entry = imageEntryOf(entries);
+    expect(entry.status).toBe("converted");
+    expect("note" in entry).toBe(false);
+  });
+
+  it("sets linkOpenInNewTab only when the wrapping anchor targets _blank", () => {
+    const blank = runCell(`<a href="${HREF}" target="_blank">${IMG}</a>`);
+    const imageBlank = blank.blocks[0];
+    if (imageBlank.type !== "image") throw new Error("expected image block");
+    expect(imageBlank.linkOpenInNewTab).toBe(true);
+
+    const sameTab = runCell(`<a href="${HREF}">${IMG}</a>`);
+    const imageSame = sameTab.blocks[0];
+    if (imageSame.type !== "image") throw new Error("expected image block");
+    expect("linkOpenInNewTab" in imageSame).toBe(false);
+  });
+
+  it("still converts a styled text anchor to a button with its label and url", () => {
+    const { blocks } = runCell(
+      '<a style="background:#c41e3a;padding:8px 16px" ' +
+        'href="https://shop.test/buy-now">Grab the deal</a>',
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual(["button"]);
+    const button = blocks[0];
+    if (button.type !== "button") throw new Error("expected button block");
+    expect(button.text).toBe("Grab the deal");
+    expect(button.url).toBe("https://shop.test/buy-now");
+  });
+
+  it("still converts a cell whose entire content is one styled text anchor to a button", () => {
+    const { blocks } = runCell(
+      '<a href="https://events.test/rsvp">Save my seat</a>',
+      'style="background:#c41e3a;padding:14px"',
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual(["button"]);
+    const button = blocks[0];
+    if (button.type !== "button") throw new Error("expected button block");
+    expect(button.text).toBe("Save my seat");
+    expect(button.url).toBe("https://events.test/rsvp");
+  });
+
+  it("still converts a bare img to an image", () => {
+    const { blocks, entries } = runCell(
+      '<img src="https://cdn.test/ceramic-vase.jpg" alt="Ceramic vase">',
+    );
+
+    expect(blocks.map((b) => b.type)).toEqual(["image"]);
+    const image = blocks[0];
+    if (image.type !== "image") throw new Error("expected image block");
+    expect(image.src).toBe("https://cdn.test/ceramic-vase.jpg");
+    expect(image.alt).toBe("Ceramic vase");
+    expect("linkUrl" in image).toBe(false);
+    const entry = imageEntryOf(entries);
+    expect(entry.sourceTag).toBe("img");
+    expect(entry.status).toBe("converted");
+    expect("note" in entry).toBe(false);
+  });
+
+  it("still folds a plain text anchor into the surrounding run", () => {
+    const { blocks } = runCell(
+      'See the <a href="https://docs.test/guide">full guide</a> today',
+    );
+
+    expect(blocks).toHaveLength(1);
+    const sentence = blocks[0];
+    if (sentence.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(sentence.content).toBe(
+      '<p>See the <a href="https://docs.test/guide">full guide</a> today</p>',
+    );
+  });
+
+  it("splits an anchor wrapping an image plus text into an image and a sibling paragraph", () => {
+    const { blocks } = runCell(`<a href="${HREF}">${IMG}Shop now</a>`);
+
+    expect(blocks.some((b) => b.type === "button")).toBe(false);
+    expect(blocks.some((b) => b.type === "html")).toBe(false);
+    expect(blocks.map((b) => b.type)).toEqual(["image", "paragraph"]);
+    const image = blocks[0];
+    if (image.type !== "image") throw new Error("expected image block");
+    expect(image.src).toBe(SRC);
+    expect(image.alt).toBe(ALT);
+    expect(image.linkUrl).toBe(HREF);
+    const paragraph = blocks[1];
+    if (paragraph.type !== "paragraph")
+      throw new Error("expected paragraph block");
+    expect(paragraph.content).toContain("Shop now");
+    expect(paragraph.content).toContain("<a");
+    expect(paragraph.content).toContain(HREF);
+  });
+});
+
 describe("extractCellBlocks — a plain anchor folds, a styled one does not", () => {
   /**
    * One cell's blocks and entries, in a table an image row makes a layout
@@ -602,20 +737,20 @@ describe("extractCellBlocks — a plain anchor folds, a styled one does not", ()
   });
 
   it("leaves an anchor carrying no text as a block of its own", () => {
-    // The hazard behind the fold's text requirement: `convertInlineRun` reads
-    // a run with no text as empty and emits nothing, so an image-only link
-    // folded into one would disappear. It keeps its own block instead.
+    // `convertInlineRun` reads a run with no text as empty and emits
+    // nothing, so an image-only link folded into one would disappear. It is
+    // an image with the wrapping href, not a paragraph of raw markup.
     const { blocks } = runCell(
       '<a href="https://x.test/go">' +
         '<img src="https://x.test/promo.png" alt="Promo"></a>',
     );
 
     expect(blocks).toHaveLength(1);
-    const link = blocks[0];
-    if (link.type !== "paragraph") throw new Error("expected paragraph block");
-    expect(link.content).toBe(
-      '<p><img src="https://x.test/promo.png" alt="Promo"></p>',
-    );
+    const image = blocks[0];
+    if (image.type !== "image") throw new Error("expected image block");
+    expect(image.src).toBe("https://x.test/promo.png");
+    expect(image.alt).toBe("Promo");
+    expect(image.linkUrl).toBe("https://x.test/go");
   });
 
   it("still emits a spacer for an empty cell that states a height", () => {
@@ -955,7 +1090,7 @@ describe("processTable — the section a row produces is in the report", () => {
       sourceTag: "tr",
       templaticalBlockType: "section",
       status: "approximated",
-      note: "Row of 4 cells was merged into a single column. Templatical sections hold at most 3 columns.",
+      note: "Row of 4 columns was merged into a single column. Templatical sections hold at most 3 columns.",
     });
 
     // The document-level warning is unchanged: a warning is context for the
@@ -995,7 +1130,7 @@ describe("processTable — the section a row produces is in the report", () => {
       sourceTag: "tr",
       templaticalBlockType: null,
       status: "approximated",
-      note: "Nested row of 2 cells lost its columns. A Templatical section cannot nest inside a column, so its cells were merged into the surrounding column.",
+      note: "Nested row of 2 columns lost its columns. A Templatical section cannot nest inside a column, so its columns were merged into the surrounding column.",
     });
   });
 
@@ -1133,7 +1268,7 @@ describe("extractCellBlocks — a container in a cell is descended to its table"
     expect(flattened[0].sourceTag).toBe("tr");
     expect(flattened[0].status).toBe("approximated");
     expect(flattened[0].note).toBe(
-      "Nested row of 2 cells lost its columns. A Templatical section cannot nest inside a column, so its cells were merged into the surrounding column.",
+      "Nested row of 2 columns lost its columns. A Templatical section cannot nest inside a column, so its columns were merged into the surrounding column.",
     );
   });
 
@@ -2030,7 +2165,7 @@ describe("processTable — declared widths choose between same-count layouts", (
     const entry = sectionEntriesOf(entries)[0];
     expect(entry.status).toBe("approximated");
     expect(entry.note).toBe(
-      "Row of 4 cells was merged into a single column. Templatical sections hold at most 3 columns.",
+      "Row of 4 columns was merged into a single column. Templatical sections hold at most 3 columns.",
     );
     expect(warnings).toHaveLength(1);
   });

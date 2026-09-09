@@ -69,17 +69,17 @@ HTML-Elemente werden auf ihre Templatical-Entsprechungen abgebildet:
 | `<img>` | `image` | Konvertiert |
 | `<a>` als Button gestaltet (Hintergrund, Padding, Border-Radius oder `display: inline-block`) | `button` | Konvertiert |
 | `<a>` (Text-Link) | geht im umgebenden `paragraph` auf | Konvertiert |
-| `<a>`, das ein Bild umschließt | `paragraph` | Approximiert (Link-Ziel entfällt) |
+| `<a>`, das ein `<img>` umschließt | `image` mit `linkUrl` | Konvertiert |
 | `<hr>` | `divider` | Konvertiert |
 | Leeres `<td>` mit explizit gesetzter Höhe | `spacer` | Konvertiert |
-| `<td>`, dessen gesamter Inhalt ein gestyltes `<a>` ist | `button` | Konvertiert (Cell-as-Button-Muster) |
+| `<td>`, dessen gesamter Inhalt ein gestyltes Text-`<a>` ist | `button` | Konvertiert (Cell-as-Button-Muster) |
 | `<table>` (Layout, mehrere Zeilen/Spalten) | `section` (eine pro `<tr>`) | Konvertiert |
 | `<table>` (Datentabelle — nur Text in Zellen) | `html` | HTML-Fallback |
 | Unbekannte / Custom-Elemente | `html` | HTML-Fallback |
 
 Alles, was sich nicht zuordnen lässt, wird wortgetreu in einem HTML-Block erhalten — sichtbarer Inhalt geht nicht verloren.
 
-Eine Zelle, die Text und einen Link mischt, wird ein einzelner `paragraph`, der beides enthält — das `<a>` samt `href` inline. Eine Zelle gilt als Button, wenn der Anchor ihr gesamter Inhalt ist.
+Eine Zelle, die Text und einen Link mischt, wird ein einzelner `paragraph`, der beides enthält — das `<a>` samt `href` inline. Eine Zelle gilt als Button, wenn ihr gesamter Inhalt ein gestyltes Text-`<a>` ist.
 
 Ein `<div>`, `<center>` oder `<main>`, das eine Tabelle umschließt, erzeugt keinen eigenen Block: Der Importer steigt hinein, unabhängig von der Verschachtelungstiefe, und ordnet die gefundenen Tabellen zu. Ein Wrapper, der nur Text enthält, behält seine `paragraph`-Zuordnung; ein Wrapper, dessen gesamter Inhalt eine Überschrift ist, wird entfernt, sodass die Überschrift selbst zugeordnet wird.
 
@@ -87,7 +87,7 @@ Ein `<div>`, `<center>` oder `<main>`, das eine Tabelle umschließt, erzeugt kei
 
 `<br>`, `<em>`, `<strong>`, `<i>`, `<b>`, `<u>`, `<small>`, `<sub>` und `<sup>` bleiben in dem Text, zu dem sie gehören. Eine Folge davon wird zusammen mit dem umgebenden reinen Text zu einem einzigen `paragraph`, dessen Farbe, Größe und Ausrichtung aus der umgebenden Zelle stammen — `Hello<br>World` in einem `<td>` wird also ein Paragraph mit beiden Wörtern und dem Umbruch.
 
-Ein Text-`<a>` geht in dieser Folge auf und behält sein `href`, sodass ein Satz mit einem Link als ein Paragraph ankommt und der Link nicht aus seinem Text herausgelöst wird. Ein `<a>`, dessen Inhalt kein Text ist — ein verlinktes Bild —, wird ein eigener `paragraph`.
+Ein Text-`<a>` geht in dieser Folge auf und behält sein `href`, sodass ein Satz mit einem Link als ein Paragraph ankommt und der Link nicht aus seinem Text herausgelöst wird. Ein `<a>`, das ein `<img>` umschließt, wird ein `image` mit `linkUrl` aus einem nicht-leeren href. Ein `<a>`, das Bild und Text umschließt, wird zu diesem `image` plus einem benachbarten `paragraph`, der das restliche `<a>` behält.
 
 ::: tip
 Reiner Text zählt hier als Inhalt. Ein Zellendurchlauf, der nur Element-Kinder besuchte, verlor die Wörter zwischen zwei Inline-Tags und ebenso einen freistehenden Satz neben einer Tabelle auf Body- oder Wrapper-Ebene. Beides bleibt jetzt erhalten.
@@ -167,7 +167,6 @@ Globale Template-Einstellungen werden aus dem Dokument gelesen:
 - **Externe Ressourcen** — `<link>`, externe Stylesheets, Web Fonts und Remote-Bilder werden nicht geladen. Bild-`src`-URLs bleiben unverändert.
 - **Outlook-MSO-Conditionals** — bleiben innerhalb des umgebenden Blocks als HTML erhalten (in Nicht-Outlook-Clients ohnehin inert).
 - **Formularelemente (`<form>`/`<input>`/`<button>`)** — bleiben als HTML-Fallback. Die meisten Mail-Clients blockieren Formular-Submits ohnehin; bauen Sie den CTA als Button mit Link auf eine gehostete Seite.
-- **Verlinkte Bilder** — ein `<a>`, das ein `<img>` umschließt, wird ein `paragraph` mit dem Bild; das Link-Ziel entfällt. Ergänzen Sie es im Editor als `linkUrl` eines `image`-Blocks. Genau diese Einträge werden als `approximated` mit `Inline anchor wrapped in a paragraph block.` gemeldet.
 - **Zeilen mit mehr als drei Zellen** — `ColumnLayout` fasst höchstens drei Spalten, eine breitere Zeile wird also auf eine zusammengefasst und gemeldet. Auch Verhältnisse außerhalb von `'2'` / `'2-1'` / `'1-2'` / `'3'` — etwa ein Sidebar-Paar im Verhältnis `1-2-1` — haben keine Entsprechung und werden als gleichmäßige Teilung importiert.
 - **AMP for Email** — wird in Templatical derzeit nicht unterstützt.
 

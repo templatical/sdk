@@ -16,7 +16,6 @@ import {
   isInlineContent,
   isSpacerCell,
   isTableContainer,
-  looksLikeButton,
   walkContentNodes,
 } from "./block-mapper";
 import { readColumnWidth, resolveColumnRatio } from "./column-ratio";
@@ -326,32 +325,34 @@ function packagingRowTables(
  * The report entry for the section a layout row produces.
  *
  * Whether the row was downgraded is read off the slots that were actually
- * built: one slot per cell means every cell kept its own column, while fewer
- * slots than cells means `resolveColumnLayout` merged them. Deciding it by
- * comparing the cell count against the column ceiling instead would be a
- * second source of truth for that ceiling and would start lying the moment
- * the resolver changed. The ceiling appears only in the note's wording, where
- * it explains the merge to a reader rather than driving the branch.
+ * built: one slot per column means every column kept its own slot, while
+ * fewer slots than columns means `resolveColumnLayout` merged them. Deciding
+ * it by comparing the column count against the column ceiling instead would
+ * be a second source of truth for that ceiling and would start lying the
+ * moment the resolver changed. The ceiling appears only in the note's
+ * wording, where it explains the merge to a reader rather than driving the
+ * branch.
  *
  * A faithful row gets no `note` at all. Attaching one unconditionally makes
  * "nothing was lost" indistinguishable from a downgrade for a caller that
  * filters on `note`, which is the whole reason the field is optional.
  *
- * `cellCount` is the row's column-bearing cells, not every cell it has: a
+ * `columnCount` is the row's column hosts — layout cells, or the sibling
+ * column `<div>`s a single cell holds — not every cell the row has: a
  * centring row's gutters were never columns, so counting them would report a
  * three-into-one merge for a row that always stated one column.
  */
 function sectionEntry(
-  cellCount: number,
+  columnCount: number,
   slotCount: number,
   ratioNote: string | undefined,
 ): ImportReportEntry {
-  if (slotCount !== cellCount) {
+  if (slotCount !== columnCount) {
     return {
       sourceTag: "tr",
       templaticalBlockType: "section",
       status: "approximated",
-      note: `Row of ${cellCount} cells was merged into a single column. Templatical sections hold at most 3 columns.`,
+      note: `Row of ${columnCount} columns was merged into a single column. Templatical sections hold at most 3 columns.`,
     };
   }
   if (ratioNote) {
@@ -379,17 +380,17 @@ function sectionEntry(
  * and reporting that as a downgrade would fill the report with entries for a
  * non-event.
  *
- * The count is the row's column-bearing cells, for the same reason
- * `sectionEntry`'s is: a centring row flattened into a parent column lost
- * nothing, so it must report nothing.
+ * The count is the row's column hosts, for the same reason `sectionEntry`'s
+ * is: a centring row flattened into a parent column lost nothing, so it must
+ * report nothing.
  */
-function flattenedRowEntry(cellCount: number): ImportReportEntry | null {
-  if (cellCount <= 1) return null;
+function flattenedRowEntry(columnCount: number): ImportReportEntry | null {
+  if (columnCount <= 1) return null;
   return {
     sourceTag: "tr",
     templaticalBlockType: null,
     status: "approximated",
-    note: `Nested row of ${cellCount} cells lost its columns. A Templatical section cannot nest inside a column, so its cells were merged into the surrounding column.`,
+    note: `Nested row of ${columnCount} columns lost its columns. A Templatical section cannot nest inside a column, so its columns were merged into the surrounding column.`,
   };
 }
 
@@ -540,15 +541,6 @@ function extractContentBlocks(
       // only when it holds a table, and each step moves to a child.
       if (isTableContainer($child, tag)) {
         blocks.push(...extractContentBlocks($child, $, entries, warnings));
-        return;
-      }
-
-      if (tag === "a" && looksLikeButton(getStyles($child))) {
-        const r = convertElement($child, $);
-        if (r) {
-          entries.push(r.entry);
-          blocks.push(r.block);
-        }
         return;
       }
 

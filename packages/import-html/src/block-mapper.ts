@@ -499,7 +499,10 @@ export function convertInlineRun(
 /**
  * <img> → Image block.
  */
-function convertImage($el: Cheerio<Element>): Block {
+function convertImage(
+  $el: Cheerio<Element>,
+  link?: { url: string; openInNewTab: boolean },
+): Block {
   const styles = getStyles($el);
   const src = $el.attr("src") ?? "";
   const alt = $el.attr("alt") ?? "";
@@ -516,6 +519,7 @@ function convertImage($el: Cheerio<Element>): Block {
     parsePxValue($el.attr("height")) ||
     parsePxValue(styles.height) ||
     undefined;
+  const href = (link?.url ?? "").trim();
 
   return createImageBlock({
     src,
@@ -531,7 +535,75 @@ function convertImage($el: Cheerio<Element>): Block {
     styles: {
       padding: readPaddingFromStyles(styles),
     },
+    ...(href ? { linkUrl: href } : {}),
+    ...(href && link?.openInNewTab ? { linkOpenInNewTab: true } : {}),
   });
+}
+
+/**
+ * Whether an `<a>` wraps an image. An anchor wrapping only an image carries
+ * no text, so a button built from it is labelled by the factory default and
+ * discards the image entirely. Asked before both button paths — `convertElement`
+ * and `isButtonCell` — and before a mixed image-plus-text anchor can fold
+ * into a prose run.
+ */
+export function isImageAnchor($el: Cheerio<Element>): boolean {
+  return $el.find("img").length > 0;
+}
+
+function isImageOnlyAnchor($el: Cheerio<Element>): boolean {
+  return isImageAnchor($el) && ($el.text() ?? "").trim() === "";
+}
+
+function convertLinkedImage(
+  $anchor: Cheerio<Element>,
+  $img: Cheerio<Element>,
+): { block: Block; entry: ImportReportEntry } {
+  return {
+    block: convertImage($img, {
+      url: $anchor.attr("href") ?? "",
+      openInNewTab: $anchor.attr("target") === "_blank",
+    }),
+    entry: {
+      sourceTag: "a",
+      templaticalBlockType: "image",
+      status: "converted",
+    },
+  };
+}
+
+/**
+ * An `<a>` that wraps both an image and text cannot become one block without
+ * dropping one of them: `convertElement` returns a single block. The walker
+ * emits the image with `linkUrl` and a sibling paragraph that keeps the
+ * remaining `<a>`, so neither is lost.
+ */
+function splitMixedImageAnchor(
+  $anchor: Cheerio<Element>,
+  $host: Cheerio<Element>,
+  $: CheerioAPI,
+): { block: Block; entry: ImportReportEntry }[] {
+  const results: { block: Block; entry: ImportReportEntry }[] = [];
+
+  for (const img of $anchor.find("img").toArray()) {
+    results.push(
+      convertLinkedImage($anchor, $(img) as unknown as Cheerio<Element>),
+    );
+  }
+
+  const $clone = $anchor.clone();
+  $clone.find("img").remove();
+  if (($clone.text() ?? "").trim() === "") return results;
+
+  results.push({
+    block: buildParagraph($.html($clone) ?? "", getStyles($host)),
+    entry: {
+      sourceTag: tagOf($host[0]),
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    },
+  });
+  return results;
 }
 
 /**
@@ -567,7 +639,7 @@ export function looksLikeButton(styles: Record<string, string>): boolean {
  * per-element path drops (`convertParagraph` reads inner HTML, so the element
  * itself never reaches the block).
  *
- * Two constraints, both hazards a relaxed version would reintroduce:
+ * Three constraints, each a hazard a relaxed version would reintroduce:
  *
  * - `looksLikeButton` is the same predicate `convertElement` and
  *   `isButtonCell` use to tell a call to action from a link, so a styled
@@ -575,9 +647,13 @@ export function looksLikeButton(styles: Record<string, string>): boolean {
  * - The anchor must carry text. `convertInlineRun` reads a run with no text
  *   as empty and emits nothing, so an anchor whose content is an image has to
  *   keep the block it already gets; folding it would delete the image.
+ * - The anchor must not wrap an image. An image-plus-text `<a>` folded into
+ *   the run would keep the image as raw markup; it is a first-class image
+ *   with `linkUrl` and a sibling paragraph instead.
  */
 export function isProseAnchor($el: Cheerio<Element>): boolean {
   if (looksLikeButton(getStyles($el))) return false;
+  if (isImageAnchor($el)) return false;
   return ($el.text() ?? "").trim() !== "";
 }
 
@@ -645,6 +721,18 @@ export function walkContentNodes(
     // Asked before the run is flushed and before the caller sees the element,
     // which is what keeps a call to action out of a sentence — a styled anchor
     // is not a prose anchor, so it reaches `onElement` and becomes its button.
+    //
+    // An image-plus-text `<a>` is not one block: `convertElement` would drop
+    // either the image or the text. Split it here so every walk — cell, body,
+    // container — keeps both.
+    if (tag === "a" && isImageAnchor($child) && ($child.text() ?? "").trim()) {
+      flushInlineRun();
+      for (const converted of splitMixedImageAnchor($child, $host, $)) {
+        onRun(converted);
+      }
+      continue;
+    }
+
     if (tag === "a" && isProseAnchor($child)) {
       inlineRun.push(node);
       continue;
@@ -825,6 +913,10 @@ export function isButtonCell(
   const anchors = $el.find("a");
   if (anchors.length !== 1) return { match: false };
   const anchor = $(anchors[0]);
+  // An image-only `<a>` is `"" === ""` on the whole-cell text test, and a
+  // button labelled from that empty text is the factory default — the image
+  // is discarded. Mixed image-plus-text is the same loss of the image.
+  if (isImageAnchor(anchor)) return { match: false };
   if (!isWholeCellAnchor($el, anchor)) return { match: false };
 
   if (looksLikeButton(getStyles(anchor))) return { match: true, anchor };
@@ -887,6 +979,15 @@ export function convertElement(
   }
 
   if (tag === "a") {
+    // Image-only is decided before looksLikeButton: an image-only anchor
+    // carries no text, so a button built from it is labelled by the factory
+    // default and discards the image entirely.
+    if (isImageOnlyAnchor($target)) {
+      return convertLinkedImage(
+        $target,
+        $($target.find("img")[0]) as unknown as Cheerio<Element>,
+      );
+    }
     if (looksLikeButton(styles)) {
       return {
         block: convertButton($target),
