@@ -28,7 +28,7 @@ import {
 } from "@lucide/vue";
 import { computed, provide, ref, toRef, watch } from "vue";
 import {
-  PLAN_CONFIG_KEY,
+  MEDIA_LIMITS_KEY,
   POPOVER_TARGET_KEY,
   TRANSLATIONS_KEY,
   UI_LOCALE_KEY,
@@ -51,9 +51,8 @@ const props = defineProps<{
   /** Scopes every request. Same story as {@link authManager}. */
   projectId: string;
   /**
-   * The active plan's config — media limits and the storage gauge. Re-provided
-   * under `PLAN_CONFIG_KEY` for the five descendants that call
-   * `useMediaCategories`, which is why this one is a prop *and* a provide.
+   * The active plan's config — storage gauge, and the source of the
+   * media-limits adapter provided to descendants.
    */
   planConfig: UsePlanConfigReturn;
   /**
@@ -134,12 +133,29 @@ provide(
 
 // Deep descendants (MediaGrid, MediaUploadZone, MediaPreviewPanel,
 // MediaEditModal) read the media limits through `useMediaCategories`, so the
-// prop is re-provided rather than drilled through four component layers. The
-// value still arrives as a prop, which is what keeps the package boundary typed.
-//
-// The object itself is stable (a host builds it once) and its reactivity lives in
-// the refs inside it, so providing it at setup is enough — no `toRef` dance.
-provide(PLAN_CONFIG_KEY, props.planConfig);
+// values are re-provided rather than drilled through four component layers.
+// Getters, not a snapshot: Cloud's plan config (and so maxFileSize / mimeTypes)
+// arrives after this component's setup.
+const mediaLimits = {
+  get maxFileSize() {
+    return props.planConfig.config.value?.media?.max_file_size;
+  },
+  get mimeTypes() {
+    const categories = props.planConfig.config.value?.media?.categories;
+    if (!categories) {
+      return undefined;
+    }
+    const mapped: Partial<Record<MediaCategory, string[]>> = {};
+    for (const [key, value] of Object.entries(categories)) {
+      mapped[key as MediaCategory] = value.mime_types;
+    }
+    return mapped;
+  },
+  get accept() {
+    return props.accept;
+  },
+};
+provide(MEDIA_LIMITS_KEY, mediaLimits);
 
 // Folders and URL import render on every plan: gating Cloud's media *UI* meters
 // no resource Cloud buys, so the media tier is limits-only and every plan gets
@@ -154,12 +170,11 @@ const storageLimitBytes = computed(
   () => props.planConfig.config.value?.storage.limit_bytes ?? 0,
 );
 
-// `props.planConfig`, not the provide above: a component never sees its own
-// `provide` (Vue resolves `inject` against the parent chain), so injecting
+// `mediaLimits` directly, not the provide above: a component never sees its
+// own `provide` (Vue resolves `inject` against the parent chain), so injecting
 // here would throw in every host.
-const { isAcceptedMimeType, availableCategories } = useMediaCategories(
-  props.planConfig,
-);
+const { isAcceptedMimeType, availableCategories } =
+  useMediaCategories(mediaLimits);
 
 const library = useMediaLibrary({
   projectId: props.projectId,

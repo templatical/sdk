@@ -12,8 +12,8 @@ import StorageProgressRing from "../components/media/StorageProgressRing.vue";
 import { useMediaLibrary } from "../composable";
 import { useMediaCategories } from "../composables/useMediaCategories";
 import { useMediaLibraryUI } from "../composables/useMediaLibraryUI";
-import type { PlanConfig, PlanFeatures } from "@templatical/types";
-import type { MediaItem } from "../types";
+import type { PlanConfig } from "@templatical/types";
+import type { MediaCategory, MediaItem } from "../types";
 import type { AuthManager } from "@templatical/core/cloud";
 import type { MediaTranslations } from "../i18n";
 import {
@@ -26,7 +26,7 @@ import {
   Search,
 } from "@lucide/vue";
 import { computed, onMounted, provide, ref } from "vue";
-import { PLAN_CONFIG_KEY, TRANSLATIONS_KEY } from "../keys";
+import { MEDIA_LIMITS_KEY, TRANSLATIONS_KEY } from "../keys";
 
 const props = defineProps<{
   authManager: AuthManager;
@@ -48,22 +48,28 @@ const t = computed(() => props.translations);
 // because the key carries one — this shell always has its strings up front.
 provide(TRANSLATIONS_KEY, ref(props.translations));
 
-// `useMediaCategories` (called by five descendants) needs a `UsePlanConfigReturn`;
-// the standalone SDK is handed a plain `PlanConfig`, so it adapts one here. Under
-// the shared `PLAN_CONFIG_KEY` — the same key `MediaLibraryModal` provides — so
-// the two hosts cannot drift on how it is spelled. `authManager` and `projectId`
-// are deliberately not provided alongside it: the modal takes them as props, and
-// nothing else in this package injects them.
-const planConfigRef = ref<PlanConfig | null>(props.planConfig);
-const planConfig = {
-  config: planConfigRef,
-  isLoading: ref(false),
-  hasFeature: (feature: keyof PlanFeatures) =>
-    props.planConfig.features[feature] ?? false,
-  features: computed(() => props.planConfig.features),
-  fetchConfig: async () => {},
+// `useMediaCategories` (called by five descendants) reads `MediaLimits`;
+// the standalone SDK is handed a plain `PlanConfig`, so it adapts one here.
+// Under the shared `MEDIA_LIMITS_KEY` — the same key `MediaLibraryModal`
+// provides — so the two hosts cannot drift on how it is spelled. Getters,
+// not a snapshot: the host may replace `planConfig` after mount.
+const mediaLimits = {
+  get maxFileSize() {
+    return props.planConfig.media?.max_file_size;
+  },
+  get mimeTypes() {
+    const categories = props.planConfig.media?.categories;
+    if (!categories) {
+      return undefined;
+    }
+    const mapped: Partial<Record<MediaCategory, string[]>> = {};
+    for (const [key, value] of Object.entries(categories)) {
+      mapped[key as MediaCategory] = value.mime_types;
+    }
+    return mapped;
+  },
 };
-provide(PLAN_CONFIG_KEY, planConfig);
+provide(MEDIA_LIMITS_KEY, mediaLimits);
 
 // Folders and URL import render on every plan: gating Cloud's media *UI* meters
 // no resource Cloud buys, so the media tier is limits-only and every plan gets
@@ -77,9 +83,9 @@ const storageLimitBytes = computed(
   () => props.planConfig.storage.limit_bytes ?? 0,
 );
 
-// `planConfig` directly, not the provide above: a component never sees its own
-// `provide` (Vue resolves `inject` against the parent chain).
-const { availableCategories } = useMediaCategories(planConfig);
+// `mediaLimits` directly, not the provide above: a component never sees its
+// own `provide` (Vue resolves `inject` against the parent chain).
+const { availableCategories } = useMediaCategories(mediaLimits);
 
 const library = useMediaLibrary({
   projectId: props.projectId,

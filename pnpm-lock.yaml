@@ -581,9 +581,6 @@ importers:
       '@lucide/vue':
         specifier: ^1.42.0
         version: 1.42.0(vue@3.5.42(typescript@6.0.3))
-      '@templatical/core':
-        specifier: workspace:*
-        version: link:../core
       '@templatical/types':
         specifier: workspace:*
         version: link:../types
