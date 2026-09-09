@@ -18,9 +18,6 @@ export type {
 export { useMediaLibrary } from "./composable";
 export type { MediaViewMode, UseMediaLibraryOptions } from "./composable";
 
-// API Client
-export { MediaApiClient } from "./api-client";
-
 // Vue Components
 export { default as MediaLibraryModal } from "./components/MediaLibraryModal.vue";
 
