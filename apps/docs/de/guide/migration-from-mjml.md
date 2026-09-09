@@ -122,7 +122,7 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, Schrift, Padding. |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, Padding. |
 | `mj-spacer` | `SpacerBlock` | `height`. |
-| `mj-social` (mit `mj-social-element`) | `SocialIconsBlock` | Jedes `mj-social-element` → ein `SocialIcon`-Eintrag. |
+| `mj-social` (mit `mj-social-element`) | `SocialIconsBlock` | Jedes `mj-social-element` → ein `SocialIcon`-Eintrag. Die Plattform kommt aus `name`, dem `src`-Dateinamen (Pack-Suffixe wie `-round-outlined` werden abgetrennt) oder `alt`. |
 | `mj-navbar` (mit `mj-navbar-link`) | `MenuBlock` | Jeder Link → `MenuItemData`. |
 | `mj-table` | `TableBlock` | Bildet `<tr>`/`<td>`/`<th>`-Zeilen und -Zellen auf Templaticals Tabellen-Daten ab; eine führende `<th>`-Zeile setzt `hasHeaderRow`. |
 | `mj-raw` | `HtmlBlock` | Inneres Markup bleibt wortgetreu erhalten. |

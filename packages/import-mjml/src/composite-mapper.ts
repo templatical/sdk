@@ -59,15 +59,44 @@ const PLATFORM_ALIASES: Record<string, SocialPlatform> = {
   "x-twitter": "twitter",
 };
 
-function normalizePlatform(raw: string): SocialPlatform | null {
-  // MJML ships `<platform>-noshare` variants that render the same icon.
-  const cleaned = raw
-    .trim()
-    .toLowerCase()
-    .replace(/-noshare$/, "");
-  if (!cleaned) return null;
+/**
+ * Icon packs (and MJML's `-noshare` variants) append tokens to the platform
+ * slug: `facebook-round-outlined.png`, `facebook-noshare`. Those stems are not
+ * `SocialPlatform` values, so a lookup that stops at the raw filename maps
+ * the icon to `"website"` and the platform name is lost.
+ */
+const PLATFORM_PACK_TOKENS = new Set([
+  "noshare",
+  "round",
+  "outlined",
+  "square",
+  "circle",
+  "solid",
+]);
+
+function lookupPlatform(cleaned: string): SocialPlatform | null {
   if (PLATFORM_ALIASES[cleaned]) return PLATFORM_ALIASES[cleaned];
   return cleaned in KNOWN_PLATFORMS ? (cleaned as SocialPlatform) : null;
+}
+
+function normalizePlatform(raw: string): SocialPlatform | null {
+  const cleaned = raw.trim().toLowerCase();
+  if (!cleaned) return null;
+
+  const direct = lookupPlatform(cleaned);
+  if (direct) return direct;
+
+  const parts = cleaned.split("-");
+  while (
+    parts.length > 1 &&
+    PLATFORM_PACK_TOKENS.has(parts[parts.length - 1])
+  ) {
+    parts.pop();
+    const candidate = parts.join("-");
+    const hit = lookupPlatform(candidate);
+    if (hit) return hit;
+  }
+  return null;
 }
 
 /** The `<style>/<platform>.png` tail of the URL `renderers/social.ts:76` builds. */
@@ -136,12 +165,19 @@ export function convertSocial(
     const src = (childAttrs.src ?? "").trim();
     const fromSrc = src ? platformFromSrc(src) : { platform: "", style: "" };
 
-    const rawName = (childAttrs.name ?? "").trim() || fromSrc.platform;
-    const platform = normalizePlatform(rawName);
-    if (!platform && rawName) {
-      notes.push(
-        `Unrecognised social platform "${rawName}" mapped to "website".`,
-      );
+    const name = (childAttrs.name ?? "").trim();
+    const alt = (childAttrs.alt ?? "").trim();
+    const platform =
+      normalizePlatform(name) ??
+      normalizePlatform(fromSrc.platform) ??
+      normalizePlatform(alt);
+    if (!platform) {
+      const rawName = name || fromSrc.platform || alt;
+      if (rawName) {
+        notes.push(
+          `Unrecognised social platform "${rawName}" mapped to "website".`,
+        );
+      }
     }
 
     icons.push({
