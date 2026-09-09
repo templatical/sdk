@@ -72,7 +72,7 @@ HTML elements map to Templatical equivalents:
 | `<a>` wrapping an `<img>` | `image` with `linkUrl` | Converted |
 | `<hr>` | `divider` | Converted |
 | Empty `<td>` with explicit height | `spacer` | Converted |
-| `<td>` whose entire content is one styled `<a>` | `button` | Converted (cell-as-button pattern) |
+| `<td>` whose entire content is one styled text `<a>` | `button` | Converted (cell-as-button pattern) |
 | `<table>` (layout, multi-row/column) | `section` (one per `<tr>`) | Converted |
 | `<table>` (data table — text-only cells) | `html` | HTML fallback |
 | Unknown / custom elements | `html` | HTML fallback |

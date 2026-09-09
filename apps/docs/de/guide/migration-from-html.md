@@ -72,7 +72,7 @@ HTML-Elemente werden auf ihre Templatical-Entsprechungen abgebildet:
 | `<a>`, das ein `<img>` umschließt | `image` mit `linkUrl` | Konvertiert |
 | `<hr>` | `divider` | Konvertiert |
 | Leeres `<td>` mit explizit gesetzter Höhe | `spacer` | Konvertiert |
-| `<td>`, dessen gesamter Inhalt ein gestyltes `<a>` ist | `button` | Konvertiert (Cell-as-Button-Muster) |
+| `<td>`, dessen gesamter Inhalt ein gestyltes Text-`<a>` ist | `button` | Konvertiert (Cell-as-Button-Muster) |
 | `<table>` (Layout, mehrere Zeilen/Spalten) | `section` (eine pro `<tr>`) | Konvertiert |
 | `<table>` (Datentabelle — nur Text in Zellen) | `html` | HTML-Fallback |
 | Unbekannte / Custom-Elemente | `html` | HTML-Fallback |
