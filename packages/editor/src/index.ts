@@ -1127,13 +1127,14 @@ async function mountEditor(
  * server-side for test email, sends and exports, so a supplied renderer
  * would change only what you preview and export, never what Cloud delivers.
  * `resolvePreview` is the same key with the same type on both entry points,
- * so upgrading an OSS integration is a deletion. `savedBlocks` and
- * `testEmail` are the same key on both entry points too, but Cloud widens
+ * so upgrading an OSS integration is a deletion. `savedBlocks`, `testEmail`
+ * and `media` are the same key on both entry points too, but Cloud widens
  * each type to also accept an events-only shape — `boolean |
- * SavedBlocksOptions | SavedBlocksProvider` and `Pick<TestEmailOptions,
- * "onSent" | "defaultRecipient"> | TestEmailProvider` — so upgrading is
- * still a deletion: drop the key to adopt Cloud's store or sender, or leave
- * it exactly as it is to keep your own.
+ * SavedBlocksOptions | SavedBlocksProvider`, `Pick<TestEmailOptions,
+ * "onSent" | "defaultRecipient"> | TestEmailProvider`, and
+ * `false | MediaOptions | MediaProvider` — so upgrading is still a
+ * deletion: drop the key to adopt Cloud's store or sender, or leave it
+ * exactly as it is to keep your own.
  *
  * `user` is not a key either: Cloud signs comment writes against the auth token's
  * `user` claim, so it fills `init({ user })` from there rather than letting a
@@ -1199,6 +1200,8 @@ export async function initCloud(
       savedBlocks: providers.savedBlocks,
       testEmail: providers.testEmail,
       comments: providers.comments,
+      media: providers.media,
+      onRequestMedia: config.onRequestMedia,
       // From the JWT. Undefined when the project's token carries no `user` claim,
       // which leaves comments unavailable rather than anonymous.
       user,

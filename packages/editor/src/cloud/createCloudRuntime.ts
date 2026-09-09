@@ -12,6 +12,7 @@ import {
   resolveExportFonts,
   resolveWebSocketConfig,
   createCloudCommentsProvider,
+  createCloudMediaProvider,
   createCloudRenderProvider,
   createCloudSavedBlocksProvider,
   createCloudTemplatesProvider,
@@ -27,6 +28,8 @@ import type {
   CommentsOptions,
   CommentsProvider,
   EditorUser,
+  MediaOptions,
+  MediaProvider,
   RenderProvider,
   SavedBlocksOptions,
   SavedBlocksProvider,
@@ -53,10 +56,6 @@ import {
 } from "../keys";
 
 import { useCloudFeatureFlags } from "./composables/useCloudFeatureFlags";
-import {
-  useCloudMediaLibrary,
-  type UseCloudMediaLibraryReturn,
-} from "./composables/useCloudMediaLibrary";
 import { useCloudPanelState } from "./composables/useCloudPanelState";
 import {
   useCloudSaveGate,
@@ -97,6 +96,8 @@ export interface CloudBootstrap {
     savedBlocks?: SavedBlocksProvider;
     testEmail: TestEmailProvider;
     comments: CommentsProvider;
+    /** Absent when `media: false` — Browse is then off unless `onRequestMedia` is set. */
+    media?: MediaProvider;
   };
   /**
    * Who is editing, from the JWT — `init({ user })`'s value for a Cloud session.
@@ -318,6 +319,65 @@ type _TestEmailOptionsForwarded =
 const _testEmailOptionsForwarded: _TestEmailOptionsForwarded = true;
 
 /**
+ * Pick only the event members off a consumer-supplied `media` value.
+ *
+ * A whitelist, never a spread. `media` accepts `false`, an events-only
+ * {@link MediaOptions}, or a full {@link MediaProvider} — this is only ever
+ * called on the first two, since a full provider replaces Cloud's adapter
+ * outright and is used as-is (see `consumerMedia` below). A non-object
+ * value (`undefined`, `false`) carries no keys to pick, so it returns `{}`
+ * rather than throwing on the destructure.
+ *
+ * What it does NOT pick: `maxFileSize` and `mimeTypes` stay Cloud's own
+ * whenever Cloud's store is in play (Cloud's plan owns those limits), so
+ * they are never read here even though `MediaOptions` declares them (see
+ * `_MediaOptionsForwarded` below).
+ *
+ * The result is assigned ONTO Cloud's own provider with `Object.assign`
+ * (never spread together with it) at the call site — that provider's
+ * `storage` / `maxFileSize` / `mimeTypes` read plan config live, and a
+ * spread reads every own property through `[[Get]]`, freezing each
+ * getter's current value into a plain property on the new object.
+ * `Object.assign` with the cloud provider as the *target* only ever
+ * writes the keys this function returns, so those getters are never
+ * read and never disturbed.
+ */
+function mediaEventsOf(
+  value: TemplaticalCloudEditorConfig["media"],
+): Pick<MediaOptions, "onCreated" | "onUpdated" | "onDeleted"> {
+  if (typeof value !== "object" || value === null) return {};
+  const { onCreated, onUpdated, onDeleted } = value;
+  return {
+    ...(typeof onCreated === "function" ? { onCreated } : {}),
+    ...(typeof onUpdated === "function" ? { onUpdated } : {}),
+    ...(typeof onDeleted === "function" ? { onDeleted } : {}),
+  };
+}
+
+/**
+ * Fails to compile when `MediaOptions` gains a member outside the five
+ * named below. `onCreated` / `onUpdated` / `onDeleted` are forwarded by
+ * `mediaEventsOf` above; `maxFileSize` and `mimeTypes` stay Cloud's own
+ * whenever Cloud's store is in play (Cloud's plan owns those limits). A
+ * sixth member still forces a deliberate decision the same way a fifth
+ * `TestEmailOptions` member does: whether it joins the forwarded trio or
+ * stays excluded for the same reason as the other two.
+ *
+ * The type alone checks nothing: TypeScript never evaluates an alias
+ * nothing reads, so a `never` result would sit there silently. The
+ * assignment below is what forces the check — it fails to compile the
+ * moment a member falls outside the five named here.
+ */
+type _MediaOptionsForwarded =
+  Exclude<
+    keyof MediaOptions,
+    "onCreated" | "onUpdated" | "onDeleted" | "maxFileSize" | "mimeTypes"
+  > extends never
+    ? true
+    : never;
+const _mediaOptionsForwarded: _MediaOptionsForwarded = true;
+
+/**
  * Pick only the event members off a consumer-supplied `versionHistory`
  * value.
  *
@@ -398,7 +458,6 @@ export async function bootstrapCloud(
   let editorRef: UseEditorReturn | null = null;
   let coreRef: UseEditorCoreReturn | null = null;
   let websocketRef: ReturnType<typeof useWebSocket> | null = null;
-  let mediaLibRef: UseCloudMediaLibraryReturn | null = null;
   let collaboration: CloudCollaborationInstance | null = null;
   let collabWarning: UseCollabUndoWarningReturn | null = null;
   let saveGate: UseCloudSaveGateReturn | null = null;
@@ -802,6 +861,75 @@ export async function bootstrapCloud(
       testEmailEventsOf(config.testEmail),
     );
 
+  // A consumer may pass their own store instead of omitting the key or
+  // passing `false`, in which case it replaces Cloud's outright —
+  // discriminated on `list`, the one required method every full provider
+  // carries, never on `typeof === "object"`: an events-only `MediaOptions`
+  // (`{ onCreated }`) is an object too, and reading it as the provider
+  // would leave `list` undefined and crash the library on first browse.
+  // That path is deliberately NOT plan-gated: there is no media plan
+  // feature. The plan licenses Cloud's *storage*, and someone else's
+  // backend isn't Cloud's to sell.
+  const consumerMedia =
+    typeof (config.media as MediaProvider | undefined)?.list === "function"
+      ? (config.media as MediaProvider)
+      : null;
+  // A malformed provider — e.g. `create` / `update` / `delete` with no
+  // working `list` — fails the discriminator above and falls through to
+  // Cloud's own store, so those methods are silently unused rather than
+  // replacing anything. Named here the same way `savedBlocks` names its
+  // own ignored methods, so the drop isn't a console-free mystery.
+  // `maxFileSize` / `mimeTypes` are named for a different reason: they
+  // are valid `MediaOptions` members but Cloud's plan owns those limits
+  // whenever Cloud's store is in play.
+  if (
+    consumerMedia === null &&
+    typeof config.media === "object" &&
+    config.media !== null
+  ) {
+    const suppliedMedia = config.media as Record<string, unknown>;
+    const ignoredMediaMethods = ["list", "create", "update", "delete"].filter(
+      (key) => typeof suppliedMedia[key] !== "undefined",
+    );
+    if (ignoredMediaMethods.length > 0) {
+      logger.warn(
+        `initCloud ignores ${joinWithAnd(
+          ignoredMediaMethods.map((key) => `media.${key}`),
+        )} — a provider needs a working list to replace Cloud's store, and ` +
+          "this value has none, so it configures Cloud's own store instead. " +
+          "Your event handlers were kept. Use init() to bring your own storage.",
+      );
+    }
+    const ignoredMediaLimits = ["maxFileSize", "mimeTypes"].filter(
+      (key) => typeof suppliedMedia[key] !== "undefined",
+    );
+    if (ignoredMediaLimits.length > 0) {
+      logger.warn(
+        `initCloud ignores ${joinWithAnd(
+          ignoredMediaLimits.map((key) => `media.${key}`),
+        )} — Cloud's plan owns those limits whenever Cloud's store is in ` +
+          "play. Your event handlers were kept.",
+      );
+    }
+  }
+  const media: MediaProvider | undefined =
+    config.media === false
+      ? undefined
+      : (consumerMedia ??
+        // `Object.assign`, not a spread: `createCloudMediaProvider`'s
+        // `storage` / `maxFileSize` / `mimeTypes` read plan config live
+        // (see `mediaEventsOf`'s doc comment for why a spread would freeze
+        // the getters). The cloud provider is the assignment *target*
+        // here, so its getters are never read — only the keys
+        // `mediaEventsOf` returns are ever written onto it.
+        Object.assign(
+          createCloudMediaProvider(
+            authManager,
+            () => planConfigInstance.config.value,
+          ),
+          mediaEventsOf(config.media),
+        ));
+
   // --- Setup-time wiring ----------------------------------------------------
 
   const aiConfig = useAiConfig(config.ai);
@@ -878,28 +1006,9 @@ export async function bootstrapCloud(
 
     const panelState = useCloudPanelState();
 
-    const mediaLib = useCloudMediaLibrary({
-      onRequestMedia: config.onRequestMedia,
-      mediaLibraryOpen: panelState.mediaLibraryOpen,
-      mediaLibraryAccept: panelState.mediaLibraryAccept,
-      authManager,
-      getMediaConfig: () => planConfigInstance.config.value?.media ?? null,
-      onError: config.onError,
-    });
-    mediaLibRef = mediaLib;
-
     return {
       websocket,
       panelState,
-      mediaLib,
-      // Handed to `MediaLibraryModal` as props by `CloudPanels`. A bare-string
-      // injection would resolve to `undefined` silently; see
-      // `CloudMediaBrowserContext`.
-      mediaBrowser: {
-        authManager,
-        projectId: authManager.projectId,
-        planConfig: planConfigInstance,
-      },
       featureFlags,
       collaboration,
       isCollaborationEnabled,
@@ -961,10 +1070,6 @@ export async function bootstrapCloud(
 
   const runtime: CloudRuntime = {
     lockedBlocks,
-    onRequestMedia: (context) =>
-      mediaLibRef
-        ? mediaLibRef.handleRequestMedia(context)
-        : Promise.resolve(null),
     isSavedBlocksAvailable: consumerSavedBlocks
       ? () => true
       : () =>
@@ -1017,6 +1122,7 @@ export async function bootstrapCloud(
       ...(savedBlocks ? { savedBlocks } : {}),
       testEmail,
       comments,
+      ...(media ? { media } : {}),
     },
     user: cloudUser,
   };

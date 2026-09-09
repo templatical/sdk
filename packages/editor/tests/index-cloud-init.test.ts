@@ -49,6 +49,7 @@ const fakeProviders = {
   },
   savedBlocks: { list: vi.fn(), create: false, update: false, delete: false },
   testEmail: { send: vi.fn() },
+  media: { list: vi.fn(), create: false, update: false, delete: false },
 };
 
 let initFn: typeof import("../src/index").init;
@@ -200,6 +201,19 @@ describe("initCloud — a thin wrapper over init()", () => {
     expect(config.versionHistory).toBe(fakeProviders.versionHistory);
     expect(config.savedBlocks).toBe(fakeProviders.savedBlocks);
     expect(config.testEmail).toBe(fakeProviders.testEmail);
+    expect(config.media).toBe(fakeProviders.media);
+  });
+
+  it("forwards onRequestMedia as the UI override", async () => {
+    const onRequestMedia = vi.fn();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const p = initCloudFn(cloudConfig(container, { onRequestMedia }));
+    await vi.waitFor(() => expect(captured.props).not.toBeNull());
+    await p;
+    const config = captured.props!.config as Record<string, unknown>;
+    expect(config.onRequestMedia).toBe(onRequestMedia);
+    expect(config.media).toBe(fakeProviders.media);
   });
 
   it("defaults autosave on, at the shared default cadence", async () => {

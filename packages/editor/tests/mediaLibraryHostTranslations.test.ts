@@ -8,7 +8,7 @@ import { TRANSLATIONS_KEY } from "../src/keys";
 import en from "../src/i18n/locales/en";
 
 /**
- * `MediaLibraryModal` mounted the way `cloud/components/CloudPanels.vue` mounts
+ * `MediaLibraryModal` mounted the way `components/MediaPanels.vue` mounts
  * it — inside the editor's own component tree.
  *
  * The editor provides its translations under `TRANSLATIONS_KEY`, a `Symbol`.
@@ -135,7 +135,9 @@ describe("MediaLibraryModal inside the editor's tree", () => {
     await vi.waitFor(() => {
       expect(document.body.textContent).toContain("Import from URL");
     });
-    const before = document.body.querySelectorAll('[data-tpl-theme="dark"]').length;
+    const before = document.body.querySelectorAll(
+      '[data-tpl-theme="dark"]',
+    ).length;
 
     const trigger = [...document.body.querySelectorAll("button")].find((b) =>
       b.textContent?.includes("Import from URL"),

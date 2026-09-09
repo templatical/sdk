@@ -9,6 +9,10 @@ import type {
   FontsConfig,
   LogicTagsConfig,
   McpConfig,
+  MediaOptions,
+  MediaProvider,
+  MediaRequestContext,
+  MediaResult,
   MergeTagsConfig,
   SavedBlocksOptions,
   SavedBlocksProvider,
@@ -23,10 +27,6 @@ import type {
   VersionHistoryOptions,
   ResolvePreview,
 } from "@templatical/types";
-import type {
-  MediaItem,
-  MediaRequestContext,
-} from "@templatical/media-library";
 import type { HtmlBlockPreviewConfig } from "../utils/resolveHtmlBlockPreview";
 
 export interface TemplaticalCloudEditorConfig {
@@ -116,6 +116,29 @@ export interface TemplaticalCloudEditorConfig {
    * leaving it exactly as-is (to keep your own) — never rewriting it.
    */
   savedBlocks?: boolean | SavedBlocksOptions | SavedBlocksProvider;
+  /**
+   * Storage backend for the **media library** — the picker behind Browse on
+   * image fields, video thumbnails, and custom-block image fields.
+   *
+   * - **omitted** — backed by Templatical Cloud. Not plan-gated;
+   * - **`false`** — off; image fields stay URL-only unless `onRequestMedia`
+   *   is set;
+   * - **a {@link MediaOptions}** — still backed by Cloud's store, plus your
+   *   `onCreated`, `onUpdated` and `onDeleted` handlers. `maxFileSize` and
+   *   `mimeTypes` are not honoured on this form — Cloud's plan owns those
+   *   limits. TypeScript does not flag passing them here (both are valid
+   *   members of the sibling {@link MediaProvider} arm, so the union
+   *   accepts them structurally); passing either logs a runtime warning
+   *   naming it instead;
+   * - **a {@link MediaProvider}** — backed by *your* store instead of
+   *   Cloud's, and **not plan-gated**, because the plan licenses Cloud's
+   *   storage rather than the editor's UI.
+   *
+   * The provider form is the same type `init()` takes, so moving an OSS
+   * integration to Cloud means deleting this key (to adopt Cloud's store) or
+   * leaving it exactly as-is (to keep your own) — never rewriting it.
+   */
+  media?: false | MediaOptions | MediaProvider;
   /**
    * Configuration and events for the template lifecycle. **The same key and
    * the same type as `init()`'s `templates`** — minus the storage methods,
@@ -228,7 +251,14 @@ export interface TemplaticalCloudEditorConfig {
   onError?: (error: Error) => void;
   onUnmount?: () => void;
 
-  onRequestMedia?: (context: MediaRequestContext) => Promise<MediaItem | null>;
+  /**
+   * UI override for Browse / drop. Same key and type as `init()`. Wins over
+   * `media` when both are set. Cloud still supplies its store as `media`
+   * unless you pass `media: false` or your own provider.
+   */
+  onRequestMedia?: (
+    context?: MediaRequestContext,
+  ) => Promise<MediaResult | null>;
   /**
    * Transform the rendered HTML just before Cloud sends a test email.
    *

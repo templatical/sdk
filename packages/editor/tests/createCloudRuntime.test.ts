@@ -106,6 +106,39 @@ vi.mock("@templatical/core/cloud", () => {
         return ["qa@templatical.test"];
       },
     })),
+    createCloudMediaProvider: vi.fn(
+      (_auth: unknown, getPlanConfig?: () => any) => ({
+        list: vi.fn().mockResolvedValue({ items: [] }),
+        create: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+        folders: {
+          list: vi.fn(),
+          create: vi.fn(),
+          update: vi.fn(),
+          delete: vi.fn(),
+          move: vi.fn(),
+        },
+        replace: vi.fn(),
+        importFromUrl: vi.fn(),
+        checkUsage: vi.fn(),
+        frequentlyUsed: vi.fn(),
+        storage: async () => {
+          const storage = getPlanConfig?.()?.storage;
+          if (!storage) return null;
+          return {
+            usedBytes: storage.used_bytes,
+            limitBytes: storage.limit_bytes,
+          };
+        },
+        get maxFileSize() {
+          return getPlanConfig?.()?.media?.max_file_size;
+        },
+        get mimeTypes() {
+          return getPlanConfig?.()?.media?.categories;
+        },
+      }),
+    ),
     useTemplateScoring: vi.fn(() => ({ fixError: ref(null) })),
     useTestEmail: vi.fn(() => ({
       isEnabled: computed(() => true),
@@ -125,8 +158,6 @@ vi.mock("@templatical/core/cloud", () => {
 vi.mock("../src/cloud/composables/useCloudPanelState", () => ({
   useCloudPanelState: vi.fn(() => ({
     commentsOpen: ref(false),
-    mediaLibraryOpen: ref(false),
-    mediaLibraryAccept: ref(null),
     rightPanelOpen: computed(() => false),
   })),
 }));
@@ -138,14 +169,6 @@ vi.mock("../src/cloud/composables/useCollabUndoWarning", () => ({
   })),
 }));
 
-vi.mock("../src/cloud/composables/useCloudMediaLibrary", () => ({
-  useCloudMediaLibrary: vi.fn(() => ({
-    handleRequestMedia: vi.fn().mockResolvedValue({ url: "https://x/y.png" }),
-    handleMediaSelect: vi.fn(),
-    handleMediaLibraryClose: vi.fn(),
-  })),
-}));
-
 vi.mock("../src/utils/preRenderCustomBlocks", () => ({
   preRenderCustomBlocks: vi.fn().mockResolvedValue(undefined),
 }));
@@ -154,6 +177,7 @@ import {
   AuthManager,
   createCloudCommentsProvider,
   createCloudRenderProvider,
+  createCloudMediaProvider,
   createCloudSavedBlocksProvider,
   createCloudTemplatesProvider,
   createCloudTestEmailProvider,
@@ -164,7 +188,7 @@ import {
   usePlanConfig,
   useWebSocket,
 } from "@templatical/core/cloud";
-import type { SavedBlocksProvider } from "@templatical/types";
+import type { MediaProvider, SavedBlocksProvider } from "@templatical/types";
 import { preRenderCustomBlocks } from "../src/utils/preRenderCustomBlocks";
 import { bootstrapCloud } from "../src/cloud/createCloudRuntime";
 
@@ -237,6 +261,7 @@ beforeEach(() => {
   vi.mocked(createCloudRenderProvider).mockClear();
   vi.mocked(createCloudTemplatesProvider).mockClear();
   vi.mocked(createCloudTestEmailProvider).mockClear();
+  vi.mocked(createCloudMediaProvider).mockClear();
   vi.mocked(createCloudVersionHistoryProvider).mockClear();
   vi.mocked(preRenderCustomBlocks).mockClear();
   vi.mocked(useWebSocket).mockClear();
@@ -446,6 +471,110 @@ describe("bootstrapCloud — savedBlocks provider selection", () => {
   });
 });
 
+/**
+ * `config.media` accepts `false`, an events-only `MediaOptions`, or a full
+ * `MediaProvider` — the same key `init()` takes, widened the same way
+ * `savedBlocks` is. Discriminated on `list`, never on `typeof === "object"`:
+ * `{ onCreated }` is an object too, and reading it as the provider would
+ * leave `list` undefined and crash the library on first browse.
+ *
+ * Media is **not plan-gated**. There is no `isMediaAvailable`. Events-only
+ * still uses Cloud's adapter (the analogue of the saved-blocks plan-gating
+ * bypass: an events-only object must not skip Cloud's store).
+ */
+describe("bootstrapCloud — media provider selection", () => {
+  function makeProvider(): MediaProvider {
+    return {
+      list: vi.fn().mockResolvedValue({ items: [] }),
+      create: false,
+      update: false,
+      delete: false,
+      folders: false,
+      replace: false,
+      importFromUrl: false,
+      checkUsage: false,
+      frequentlyUsed: false,
+      storage: false,
+    };
+  }
+
+  it("builds Cloud's adapter when the key is omitted", async () => {
+    const { providers } = await bootstrap();
+    expect(createCloudMediaProvider).toHaveBeenCalledTimes(1);
+    expect(createCloudMediaProvider).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.any(Function),
+    );
+    const cloud = vi.mocked(createCloudMediaProvider).mock.results.at(-1)!
+      .value as MediaProvider;
+    expect(providers.media?.list).toBe(cloud.list);
+  });
+
+  it("omits the provider entirely when media is false", async () => {
+    const { providers } = await bootstrap({ media: false });
+    expect(providers.media).toBeUndefined();
+    expect(createCloudMediaProvider).not.toHaveBeenCalled();
+  });
+
+  it("keeps Cloud's adapter and attaches the handler for an events-only value", async () => {
+    const onCreated = vi.fn();
+    const { providers } = await bootstrap({ media: { onCreated } });
+
+    expect(createCloudMediaProvider).toHaveBeenCalledTimes(1);
+    const cloud = vi.mocked(createCloudMediaProvider).mock.results.at(-1)!
+      .value as MediaProvider;
+    expect(providers.media?.list).toBe(cloud.list);
+    expect(providers.media?.onCreated).toBe(onCreated);
+  });
+
+  it("uses a consumer's store without constructing Cloud's", async () => {
+    const supplied = makeProvider();
+    const { providers } = await bootstrap({ media: supplied });
+
+    expect(createCloudMediaProvider).not.toHaveBeenCalled();
+    expect(providers.media).toBe(supplied);
+    await providers.media!.list({ search: "hero" });
+    expect(supplied.list).toHaveBeenCalledWith({ search: "hero" });
+  });
+
+  /**
+   * `createCloudMediaProvider` exposes `storage` / `maxFileSize` /
+   * `mimeTypes` as live reads over plan config. A spread-based merge
+   * (`{ ...events, ...cloudProvider }`) would read each getter once,
+   * through `[[Get]]`, and freeze the result as a plain value — pinning
+   * `maxFileSize` to `undefined` for the whole session. `storage()` is a
+   * method so a spread would still keep it live; `maxFileSize` is the
+   * getter that actually proves `Object.assign`.
+   */
+  it("keeps storage and maxFileSize live rather than freezing them at merge time", async () => {
+    const { providers } = await bootstrap({ media: { onCreated: vi.fn() } });
+    const plan = vi.mocked(usePlanConfig).mock.results.at(-1)!.value as {
+      config: { value: Record<string, unknown> };
+    };
+
+    expect(await providers.media!.storage!()).toBe(null);
+    expect(providers.media!.maxFileSize).toBeUndefined();
+
+    plan.config.value = {
+      ...plan.config.value,
+      storage: { used_bytes: 10, limit_bytes: 100 },
+      media: { max_file_size: 1048576 },
+    };
+
+    expect(await providers.media!.storage!()).toEqual({
+      usedBytes: 10,
+      limitBytes: 100,
+    });
+    expect(providers.media!.maxFileSize).toBe(1048576);
+
+    const descriptor = Object.getOwnPropertyDescriptor(
+      providers.media,
+      "maxFileSize",
+    );
+    expect(typeof descriptor?.get).toBe("function");
+  });
+});
+
 describe("bootstrapCloud — the keys initCloud refuses, wholly or in part", () => {
   it("ignores a templates key's methods, keeps its events, and says so", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -577,6 +706,64 @@ describe("bootstrapCloud — the keys initCloud refuses, wholly or in part", () 
     expect(
       warn.mock.calls.some((a) =>
         a.join(" ").includes("initCloud ignores comments.create"),
+      ),
+    ).toBe(true);
+    warn.mockRestore();
+  });
+
+  it("ignores a malformed media value's storage methods, keeps its events, and says so", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const onCreated = vi.fn();
+    // No `list`, so this fails the discriminator and is read as configuration
+    // for Cloud's own store rather than a replacement for it.
+    const supplied = {
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      onCreated,
+    };
+
+    const { providers } = await bootstrap({ media: supplied });
+
+    expect(supplied.create).not.toHaveBeenCalled();
+    expect(providers.media?.create).not.toBe(supplied.create);
+    expect(providers.media?.onCreated).toBe(onCreated);
+    expect(
+      warn.mock.calls.some((a) =>
+        a
+          .join(" ")
+          .includes(
+            "initCloud ignores media.create, media.update and media.delete",
+          ),
+      ),
+    ).toBe(true);
+    warn.mockRestore();
+  });
+
+  it("ignores a media value's maxFileSize and mimeTypes, keeps its events, and says so", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const onCreated = vi.fn();
+
+    const { providers } = await bootstrap({
+      media: {
+        maxFileSize: 1,
+        mimeTypes: { images: ["image/png"] },
+        onCreated,
+      } as never,
+    });
+
+    expect(providers.media?.onCreated).toBe(onCreated);
+    const descriptor = Object.getOwnPropertyDescriptor(
+      providers.media,
+      "maxFileSize",
+    );
+    expect(typeof descriptor?.get).toBe("function");
+    expect(providers.media?.maxFileSize).not.toBe(1);
+    expect(
+      warn.mock.calls.some((a) =>
+        a
+          .join(" ")
+          .includes("initCloud ignores media.maxFileSize and media.mimeTypes"),
       ),
     ).toBe(true);
     warn.mockRestore();
@@ -757,56 +944,21 @@ describe("CloudRuntime.attach — what must run inside setup()", () => {
 
     expect(runtime.lockedBlocks.value.has("block-1")).toBe(true);
   });
-
-  it("routes media requests through Cloud's browser once attached", async () => {
-    const { runtime } = await bootstrap();
-    // Before attach there is no browser to open, and the honest answer is "no
-    // selection" rather than a throw.
-    await expect(runtime.onRequestMedia()).resolves.toBe(null);
-
-    attachInComponent(runtime);
-
-    await expect(runtime.onRequestMedia()).resolves.toEqual({
-      url: "https://x/y.png",
-    });
-  });
 });
 
 /**
- * `MediaLibraryModal` takes `authManager`, `projectId` and `planConfig` as
- * **props**. Injection cannot be used for them: Vue matches keys by identity, so a
- * bare string never resolves this package's `AUTH_MANAGER_KEY = Symbol(...)`, and
- * the miss is silent — every value arrives `undefined` and the media browser opens
- * inert with nothing to trace.
- *
- * Because they are props, a dropped binding fails `vue-tsc`. These two cover what
- * a type cannot: that the attachment actually carries the values, and that
- * `CloudPanels` actually binds them.
+ * Media is an OSS panel (`MediaPanels`) over a `MediaProvider`. Cloud
+ * runtime only supplies `providers.media`; `CloudPanels` must not mount
+ * the library modal, or a Cloud session would open two.
  */
-describe("CloudRuntime.attach — the media browser's props", () => {
-  it("carries the auth manager, project id and plan config", async () => {
-    const { runtime } = await bootstrap();
-    const { attachment } = attachInComponent(runtime);
-
-    expect(attachment.mediaBrowser.authManager).toBe(
-      vi.mocked(AuthManager).mock.instances.at(-1),
-    );
-    expect(attachment.mediaBrowser.projectId).toBe("proj-42");
-    expect(attachment.mediaBrowser.planConfig).toBe(
-      vi.mocked(usePlanConfig).mock.results.at(-1)!.value,
-    );
-  });
-
-  it("is bound onto MediaLibraryModal by CloudPanels", () => {
+describe("CloudPanels does not mount the media library", () => {
+  it("has no MediaLibraryModal and no @templatical/media-library import", () => {
     const source = readFileSync(
       join(import.meta.dirname, "..", "src/cloud/components/CloudPanels.vue"),
       "utf8",
     );
-    const tag = source.match(/<MediaLibraryModal[\s\S]*?\/>/)?.[0] ?? "";
-
-    expect(tag).toContain(':auth-manager="cloud.mediaBrowser.authManager"');
-    expect(tag).toContain(':project-id="cloud.mediaBrowser.projectId"');
-    expect(tag).toContain(':plan-config="cloud.mediaBrowser.planConfig"');
+    expect(source).not.toContain("MediaLibraryModal");
+    expect(source).not.toContain("@templatical/media-library");
   });
 });
 
@@ -1186,6 +1338,56 @@ describe("bootstrapCloud — savedBlocks events", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     await bootstrap({ savedBlocks: { onCreated: vi.fn() } });
+
+    const message = warn.mock.calls.map((a) => a.join(" ")).join("\n");
+    expect(message).not.toContain("initCloud ignores");
+    warn.mockRestore();
+  });
+});
+
+/**
+ * `config.media` also accepts a `MediaOptions`-shaped value — events only,
+ * no storage methods — which must keep Cloud's own adapter in place and
+ * attach the handlers to it. `maxFileSize` / `mimeTypes` stay Cloud's own
+ * whenever Cloud's store is in play.
+ */
+describe("bootstrapCloud — media events", () => {
+  it("never lets a consumer method replace Cloud's own", async () => {
+    const rogueCreate = vi.fn();
+
+    const { providers } = await bootstrap({
+      media: { create: rogueCreate, onCreated: vi.fn() } as never,
+    });
+
+    expect(providers.media?.create).not.toBe(rogueCreate);
+    expect(rogueCreate).not.toHaveBeenCalled();
+  });
+
+  it("drops every key that is not a declared event", async () => {
+    const onCreated = vi.fn();
+
+    const { providers } = await bootstrap({
+      media: { onCreated, onFuture: vi.fn(), nonsense: 42 } as never,
+    });
+
+    expect(providers.media?.onCreated).toBe(onCreated);
+    expect("onFuture" in (providers.media as object)).toBe(false);
+    expect("nonsense" in (providers.media as object)).toBe(false);
+  });
+
+  it("drops an event member that is not a function", async () => {
+    const { providers } = await bootstrap({
+      media: { onCreated: "yes", onUpdated: null } as never,
+    });
+
+    expect("onCreated" in (providers.media as object)).toBe(false);
+    expect("onUpdated" in (providers.media as object)).toBe(false);
+  });
+
+  it("warns about nothing when only events were passed", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await bootstrap({ media: { onCreated: vi.fn() } });
 
     const message = warn.mock.calls.map((a) => a.join(" ")).join("\n");
     expect(message).not.toContain("initCloud ignores");
