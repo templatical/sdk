@@ -6,13 +6,6 @@ import type {
   ViewportSize,
 } from "./index";
 
-// Resolved by the `paths` entry in tsconfig.json, which points at
-// media-library's source by relative path — never through node_modules. So
-// `types` must NOT declare a media-library dependency of any kind: a workspace
-// edge here closes types -> media-library -> core -> types, and pnpm 12+ aborts
-// any recursive script selecting all three with ERR_PNPM_TASK_CYCLE.
-import type { MediaConfig, StorageInfo } from "@templatical/media-library";
-
 // Re-export OSS types used by Cloud consumers
 export type { SyntaxPreset, SyntaxPresetName, ViewportSize };
 
@@ -289,6 +282,34 @@ export interface PlanLimits {
   max_templates: number | null;
   media_categories: string[];
   storage_limit_bytes: number;
+}
+
+/**
+ * Cloud JWT/plan wire shape for one media category — snake_case, i.e. what
+ * the plan payload carries, not a BYO contract field.
+ */
+export interface MediaCategoryData {
+  mime_types: string[];
+  extensions: string[];
+}
+
+/**
+ * Cloud JWT/plan wire shape for media entitlements — snake_case, i.e. what
+ * the plan payload carries, not the BYO {@link MediaProvider} contract.
+ */
+export interface MediaConfig {
+  use_media_library: boolean;
+  categories: Record<string, MediaCategoryData>;
+  max_file_size: number;
+}
+
+/**
+ * Cloud JWT/plan wire shape for storage quota — snake_case, i.e. what the
+ * plan payload carries, not {@link MediaStorageInfo}.
+ */
+export interface StorageInfo {
+  used_bytes: number;
+  limit_bytes: number;
 }
 
 export interface PlanConfig {

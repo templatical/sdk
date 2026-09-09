@@ -277,9 +277,9 @@ describe("the real workspace and fixtures", () => {
   });
 
   it("detects a cycle when one exists", () => {
-    // Positive control, and the shape to never reintroduce: `types` once
-    // dev-depended on media-library for a type-only import that tsconfig
-    // `paths` already resolved from source, closing this loop.
+    // Positive control, and the shape to never reintroduce: a types
+    // dependency on media-library closes types -> media-library -> core ->
+    // types.
     expect(
       findWorkspaceCycle(
         fake({
