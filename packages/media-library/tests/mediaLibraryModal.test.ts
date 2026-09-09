@@ -202,4 +202,234 @@ describe("MediaLibraryModal chrome", () => {
     const emitted = wrapper.emitted("select");
     expect(emitted).toEqual([[asset]]);
   });
+
+  it("keeps Confirm disabled when the preview item does not match accept", async () => {
+    const pdf = createAsset("doc", { mimeType: "application/pdf" });
+    const provider = fakeProvider({
+      list: vi.fn(async () => ({ items: [pdf] })),
+      mimeTypes: {
+        images: ["image/jpeg"],
+        documents: ["application/pdf"],
+      },
+    });
+    await mountModal(provider, { accept: ["images"] });
+
+    const item = document.querySelector<HTMLElement>(".tpl-media-item");
+    expect(item).not.toBeNull();
+    item!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flushPromises();
+
+    const confirm = document.querySelector<HTMLButtonElement>(
+      '[data-testid="media-confirm"]',
+    );
+    expect(confirm).not.toBeNull();
+    expect(confirm!.disabled).toBe(true);
+  });
+
+  it("lists with category when accept has a single entry", async () => {
+    const list = vi.fn(async () => ({ items: [] }));
+    await mountModal(fakeProvider({ list }), { accept: ["images"] });
+
+    expect(list).toHaveBeenCalledWith({ category: "images" });
+  });
+
+  it("reopens without the previous search", async () => {
+    vi.useFakeTimers();
+    const list = vi.fn(async () => ({ items: [] }));
+    const wrapper = await mountModal(fakeProvider({ list }));
+
+    const input = document.querySelector<HTMLInputElement>(
+      '.tpl-media-modal input[type="text"]',
+    );
+    expect(input).not.toBeNull();
+    input!.value = "logo";
+    input!.dispatchEvent(new Event("input", { bubbles: true }));
+    await vi.advanceTimersByTimeAsync(300);
+    await flushPromises();
+
+    expect(list).toHaveBeenCalledWith({ search: "logo" });
+
+    await wrapper.setProps({ visible: false });
+    await flushPromises();
+    await wrapper.setProps({ visible: true });
+    await flushPromises();
+
+    expect(list.mock.calls.at(-1)?.[0]).toEqual({});
+    expect(list.mock.calls.at(-1)?.[0]).not.toHaveProperty("search");
+    vi.useRealTimers();
+  });
+
+  it("hides import when importFromUrl is false", async () => {
+    await mountModal(fakeProvider());
+    expect(
+      document.querySelector('[data-testid="media-import-url"]'),
+    ).not.toBeNull();
+
+    wrappers.pop()?.unmount();
+    document.body.innerHTML = "";
+
+    await mountModal(fakeProvider({ importFromUrl: false }));
+    expect(
+      document.querySelector('[data-testid="media-import-url"]'),
+    ).toBeNull();
+  });
+
+  it("hides edit and replace when those methods are false", async () => {
+    const asset = createAsset("hero");
+    await mountModal(
+      fakeProvider({
+        list: vi.fn(async () => ({ items: [asset] })),
+      }),
+    );
+    expect(document.querySelector('[data-testid="media-edit"]')).not.toBeNull();
+    expect(
+      document.querySelector('[data-testid="media-replace"]'),
+    ).not.toBeNull();
+
+    wrappers.pop()?.unmount();
+    document.body.innerHTML = "";
+
+    await mountModal(
+      fakeProvider({
+        list: vi.fn(async () => ({ items: [asset] })),
+        update: false,
+        replace: false,
+      }),
+    );
+    expect(document.querySelector('[data-testid="media-edit"]')).toBeNull();
+    expect(document.querySelector('[data-testid="media-replace"]')).toBeNull();
+  });
+
+  it("hides per-entry edit and delete when canUpdate/canDelete are false", async () => {
+    const locked = createAsset("locked", {
+      canUpdate: false,
+      canDelete: false,
+    });
+    const open = createAsset("open");
+    await mountModal(
+      fakeProvider({
+        list: vi.fn(async () => ({ items: [locked, open] })),
+      }),
+    );
+
+    expect(
+      document.querySelector('[data-media-id="locked"] [data-testid="media-edit"]'),
+    ).toBeNull();
+    expect(
+      document.querySelector(
+        '[data-media-id="locked"] [data-testid="media-replace"]',
+      ),
+    ).toBeNull();
+    expect(
+      document.querySelector('[data-media-id="open"] [data-testid="media-edit"]'),
+    ).not.toBeNull();
+
+    document
+      .querySelector<HTMLElement>('[data-media-id="locked"]')!
+      .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flushPromises();
+    expect(document.querySelector('[data-testid="media-delete"]')).toBeNull();
+
+    document
+      .querySelector<HTMLElement>('[data-media-id="open"]')!
+      .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flushPromises();
+    expect(
+      document.querySelector('[data-testid="media-delete"]'),
+    ).not.toBeNull();
+  });
+
+  it("hides delete when delete is false", async () => {
+    const asset = createAsset("hero");
+    await mountModal(
+      fakeProvider({
+        list: vi.fn(async () => ({ items: [asset] })),
+        delete: false,
+      }),
+    );
+    document
+      .querySelector<HTMLElement>(".tpl-media-item")!
+      .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flushPromises();
+    expect(document.querySelector('[data-testid="media-delete"]')).toBeNull();
+  });
+
+  it("hides the frequently-used tab when frequentlyUsed is false", async () => {
+    const shown = fakeProvider({
+      frequentlyUsed: vi.fn(async () => [createAsset("freq")]),
+    });
+    await mountModal(shown);
+    document
+      .querySelector<HTMLElement>('[data-testid="media-folder-toggle"]')!
+      .click();
+    await flushPromises();
+    expect(
+      document.querySelector('[data-testid="media-frequently-used"]'),
+    ).not.toBeNull();
+
+    wrappers.pop()?.unmount();
+    document.body.innerHTML = "";
+
+    await mountModal(fakeProvider({ frequentlyUsed: false }));
+    document
+      .querySelector<HTMLElement>('[data-testid="media-folder-toggle"]')!
+      .click();
+    await flushPromises();
+    expect(
+      document.querySelector('[data-testid="media-frequently-used"]'),
+    ).toBeNull();
+  });
+
+  it("hides the quota ring when storage is false", async () => {
+    await mountModal(
+      fakeProvider({
+        storage: vi.fn(async () => ({ usedBytes: 10, limitBytes: 100 })),
+      }),
+    );
+    expect(
+      document.querySelector('[data-testid="media-storage-ring"]'),
+    ).not.toBeNull();
+
+    wrappers.pop()?.unmount();
+    document.body.innerHTML = "";
+
+    await mountModal(fakeProvider({ storage: false }));
+    expect(
+      document.querySelector('[data-testid="media-storage-ring"]'),
+    ).toBeNull();
+  });
+
+  it("shows the usage warning when checkUsage reports templates", async () => {
+    const asset = createAsset("hero");
+    await mountModal(
+      fakeProvider({
+        list: vi.fn(async () => ({ items: [asset] })),
+        checkUsage: vi.fn(async () => ({
+          hero: { templateCount: 2, templateNames: ["Welcome", "Digest"] },
+        })),
+      }),
+    );
+    document
+      .querySelector<HTMLElement>(".tpl-media-item")!
+      .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flushPromises();
+    document.querySelector<HTMLButtonElement>('[data-testid="media-delete"]')!
+      .click();
+    await flushPromises();
+
+    expect(
+      document.querySelector('[data-testid="media-delete-usage"]'),
+    ).not.toBeNull();
+  });
+});
+
+describe("standalone shell mutation flags", () => {
+  it("passes canUpdate/canReplace/folder mutation flags to the grid and tree", () => {
+    const source = readSrc("standalone/MediaLibrary.vue");
+    expect(source).toMatch(/:can-update="/);
+    expect(source).toMatch(/:can-replace="/);
+    expect(source).toMatch(/:can-create-folder="/);
+    expect(source).toMatch(/:can-rename-folder="/);
+    expect(source).toMatch(/:can-delete-folder="/);
+  });
 });

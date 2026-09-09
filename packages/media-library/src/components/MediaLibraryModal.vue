@@ -509,6 +509,7 @@ async function handleDeleteClick(): Promise<void> {
                   />
                   <button
                     v-if="canImport"
+                    data-testid="media-import-url"
                     class="tpl:mt-2 tpl:flex tpl:w-full tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:gap-1.5 tpl:rounded-md tpl:border tpl:border-dashed tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
                     style="
                       border-color: var(--tpl-border);
@@ -610,6 +611,7 @@ async function handleDeleteClick(): Promise<void> {
                 </p>
                 <p
                   v-if="ui.hasUsedFiles.value"
+                  data-testid="media-delete-usage"
                   class="tpl:mb-4 tpl:text-xs"
                   style="color: var(--tpl-text-muted)"
                 >
@@ -744,6 +746,7 @@ async function handleDeleteClick(): Promise<void> {
               <div class="tpl:flex tpl:items-center tpl:gap-2">
                 <button
                   v-if="selectedDeletableCount > 0"
+                  data-testid="media-delete"
                   class="tpl:cursor-pointer tpl:rounded-md tpl:border tpl:px-3 tpl:py-1.5 tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
                   style="
                     border-color: var(--tpl-danger);

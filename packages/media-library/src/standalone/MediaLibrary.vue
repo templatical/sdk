@@ -99,6 +99,14 @@ const ui = useMediaLibraryUI({
   translations: t,
 });
 
+// This shell's store implements every mutation — pass the flags so
+// MediaGrid / MediaFolderTree do not treat omitted as hidden.
+const canUpdate = true;
+const canReplace = true;
+const canCreateFolder = true;
+const canRenameFolder = true;
+const canDeleteFolder = true;
+
 // Standalone-specific: confirm selection via callback
 function confirmSelection(): void {
   if (!library.previewItem.value) {
@@ -188,6 +196,9 @@ onMounted(() => {
             :current-folder-id="library.currentFolderId.value"
             :view-mode="library.viewMode.value"
             :has-frequently-used="ui.hasFrequentlyUsed.value"
+            :can-create-folder="canCreateFolder"
+            :can-rename-folder="canRenameFolder"
+            :can-delete-folder="canDeleteFolder"
             @navigate="library.navigateToFolder"
             @create-folder="ui.handleCreateFolder"
             @rename-folder="ui.handleRenameFolder"
@@ -387,6 +398,8 @@ onMounted(() => {
               library.viewMode.value === 'files' && library.hasMore.value
             "
             :layout="ui.layoutMode.value"
+            :can-update="canUpdate"
+            :can-replace="canReplace"
             @select="ui.handleSelect"
             @toggle="library.toggleSelection"
             @load-more="library.loadMore"

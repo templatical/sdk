@@ -147,6 +147,7 @@ function formatDate(dateStr: string): string {
         v-for="item in items"
         :key="item.id"
         class="tpl-media-item tpl:group tpl:relative tpl:overflow-hidden tpl:rounded-lg tpl:border-2 tpl:transition-all tpl:duration-150"
+        :data-media-id="item.id"
         :class="[
           'tpl:cursor-pointer',
           !isSelectable(item) && !selectedIds.has(item.id)
@@ -200,6 +201,7 @@ function formatDate(dateStr: string): string {
         >
           <button
             v-if="showEdit(item)"
+            data-testid="media-edit"
             class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-white"
             style="background-color: rgba(0, 0, 0, 0.6)"
             :title="t.mediaLibrary.editFile"
@@ -209,6 +211,7 @@ function formatDate(dateStr: string): string {
           </button>
           <button
             v-if="showReplace(item)"
+            data-testid="media-replace"
             class="tpl:flex tpl:size-6 tpl:items-center tpl:justify-center tpl:rounded-full tpl:text-white"
             style="background-color: rgba(0, 0, 0, 0.6)"
             :title="t.mediaLibrary.replaceFile"
@@ -232,6 +235,7 @@ function formatDate(dateStr: string): string {
         v-for="item in items"
         :key="item.id"
         class="tpl-media-list-item tpl:group tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-3 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:transition-all tpl:duration-150"
+        :data-media-id="item.id"
         :class="[
           !isSelectable(item) && !selectedIds.has(item.id)
             ? 'tpl:opacity-60'
@@ -290,6 +294,7 @@ function formatDate(dateStr: string): string {
         >
           <button
             v-if="showEdit(item)"
+            data-testid="media-edit"
             class="tpl:flex tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded"
             style="color: var(--tpl-text-muted)"
             :title="t.mediaLibrary.editFile"
@@ -299,6 +304,7 @@ function formatDate(dateStr: string): string {
           </button>
           <button
             v-if="showReplace(item)"
+            data-testid="media-replace"
             class="tpl:flex tpl:size-6 tpl:shrink-0 tpl:cursor-pointer tpl:items-center tpl:justify-center tpl:rounded"
             style="color: var(--tpl-text-muted)"
             :title="t.mediaLibrary.replaceFile"

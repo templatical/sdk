@@ -124,6 +124,7 @@ function cancelCreate(): void {
     <!-- Frequently Used -->
     <button
       v-if="hasFrequentlyUsed"
+      data-testid="media-frequently-used"
       class="tpl:flex tpl:w-full tpl:items-center tpl:gap-2 tpl:border-t tpl:px-3 tpl:py-2 tpl:text-left tpl:text-xs tpl:font-medium tpl:transition-all tpl:duration-150"
       :style="{
         borderColor: 'var(--tpl-border)',

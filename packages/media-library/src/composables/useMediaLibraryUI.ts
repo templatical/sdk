@@ -196,6 +196,9 @@ export function useMediaLibraryUI(
     library.cancelDelete();
     library.cancelReplace();
     searchInput.value = "";
+    // Assign, don't `search("")`: that would list on close. The next open
+    // already calls `loadItems()` with whatever `searchQuery` holds.
+    library.searchQuery.value = "";
     library.categoryFilter.value = null;
     library.sortOption.value = "newest";
     library.viewMode.value = "files";

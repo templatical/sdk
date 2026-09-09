@@ -361,12 +361,14 @@ describe("useMediaLibraryUI", () => {
       const { ui, library } = createUI();
 
       ui.searchInput.value = "query";
+      library.searchQuery.value = "query";
       ui.editingItem.value = createAsset();
       ui.showImportUrlModal.value = true;
 
       ui.resetUI();
 
       expect(ui.searchInput.value).toBe("");
+      expect(library.searchQuery.value).toBe("");
       expect(ui.editingItem.value).toBeNull();
       expect(ui.showImportUrlModal.value).toBe(false);
       expect(library.clearSelection).toHaveBeenCalled();
