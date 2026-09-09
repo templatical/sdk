@@ -1,16 +1,11 @@
-import { createSdkAuthManager } from "@templatical/core/cloud";
-import type { PlanConfig } from "@templatical/types";
-import { ApiClient } from "@templatical/core/cloud";
 import MediaLibrary from "./MediaLibrary.vue";
 import { loadMediaTranslations, type MediaTranslations } from "../i18n";
 import type { MediaLibraryConfig, MediaLibraryInstance } from "./types";
 import { createApp, h, ref, type App, type Ref } from "vue";
 
-// Import SDK styles
 import "../styles/index.css";
 
-// Re-export types for consumers
-export type { MediaFolder, MediaItem } from "../types";
+export type { MediaAsset, MediaFolder } from "@templatical/types";
 export type { MediaLibraryConfig, MediaLibraryInstance } from "./types";
 
 let appInstance: App | null = null;
@@ -27,20 +22,10 @@ async function init(config: MediaLibraryConfig): Promise<MediaLibraryInstance> {
     throw new Error(`Container element not found: ${config.container}`);
   }
 
-  // Initialize auth
-  const authManager = createSdkAuthManager(config.auth, config.onError);
-  await authManager.initialize();
-
-  // Fetch plan config
-  const apiClient = new ApiClient(authManager);
-  const planConfig: PlanConfig = await apiClient.fetchConfig();
-
-  // Load translations
   const translations: MediaTranslations = await loadMediaTranslations(
     config.locale ?? "en",
   );
 
-  // Apply theme overrides to container
   applyTheme(container as HTMLElement, config.theme);
 
   // Unmount any prior app *after* awaits so concurrent init() calls don't
@@ -65,12 +50,11 @@ async function init(config: MediaLibraryConfig): Promise<MediaLibraryInstance> {
 
           return () =>
             h(MediaLibrary, {
-              authManager,
-              projectId: authManager.projectId,
-              planConfig,
+              provider: config.provider,
               translations,
               onSelect: config.onSelect,
-              onError: config.onError,
+              accept: config.accept,
+              locale: config.locale,
               ref: mediaLibraryRef,
               onReady,
             });
@@ -122,15 +106,12 @@ const TemplaticalMedia = {
   unmount,
 };
 
-// Assign to window for IIFE usage
 if (typeof window !== "undefined") {
   (
     window as unknown as Window & { TemplaticalMedia: typeof TemplaticalMedia }
   ).TemplaticalMedia = TemplaticalMedia;
 }
 
-// Named exports for destructured imports
 export { init, unmount };
 
-// Default export for library mode
 export default TemplaticalMedia;

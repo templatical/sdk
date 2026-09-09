@@ -313,7 +313,9 @@ describe("MediaLibraryModal chrome", () => {
     );
 
     expect(
-      document.querySelector('[data-media-id="locked"] [data-testid="media-edit"]'),
+      document.querySelector(
+        '[data-media-id="locked"] [data-testid="media-edit"]',
+      ),
     ).toBeNull();
     expect(
       document.querySelector(
@@ -321,7 +323,9 @@ describe("MediaLibraryModal chrome", () => {
       ),
     ).toBeNull();
     expect(
-      document.querySelector('[data-media-id="open"] [data-testid="media-edit"]'),
+      document.querySelector(
+        '[data-media-id="open"] [data-testid="media-edit"]',
+      ),
     ).not.toBeNull();
 
     document
@@ -413,7 +417,8 @@ describe("MediaLibraryModal chrome", () => {
       .querySelector<HTMLElement>(".tpl-media-item")!
       .dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await flushPromises();
-    document.querySelector<HTMLButtonElement>('[data-testid="media-delete"]')!
+    document
+      .querySelector<HTMLButtonElement>('[data-testid="media-delete"]')!
       .click();
     await flushPromises();
 
@@ -424,12 +429,16 @@ describe("MediaLibraryModal chrome", () => {
 });
 
 describe("standalone shell mutation flags", () => {
-  it("passes canUpdate/canReplace/folder mutation flags to the grid and tree", () => {
+  it("derives canUpdate/canReplace/folder flags from typeof, not hardcoded true", () => {
     const source = readSrc("standalone/MediaLibrary.vue");
     expect(source).toMatch(/:can-update="/);
     expect(source).toMatch(/:can-replace="/);
     expect(source).toMatch(/:can-create-folder="/);
     expect(source).toMatch(/:can-rename-folder="/);
     expect(source).toMatch(/:can-delete-folder="/);
+    expect(source).toMatch(/typeof props\.provider\.update === "function"/);
+    expect(source).toMatch(/typeof props\.provider\.replace === "function"/);
+    expect(source).not.toMatch(/const canUpdate = true/);
+    expect(source).not.toMatch(/const canReplace = true/);
   });
 });

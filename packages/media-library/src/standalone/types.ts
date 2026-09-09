@@ -1,17 +1,19 @@
-import type { SdkAuthConfig } from "@templatical/core/cloud";
-import type { MediaItem } from "../types";
+import type {
+  MediaAsset,
+  MediaCategory,
+  MediaProvider,
+} from "@templatical/types";
 
 export interface MediaLibraryConfig {
   container: string | HTMLElement;
-  auth: SdkAuthConfig;
-  baseUrl?: string;
+  provider: MediaProvider;
   locale?: string;
   theme?: {
     primaryColor?: string;
     borderRadius?: number;
   };
-  onSelect?: (item: MediaItem) => void;
-  onError?: (error: Error) => void;
+  onSelect?: (asset: MediaAsset) => void;
+  accept?: MediaCategory[];
 }
 
 export interface MediaLibraryInstance {
