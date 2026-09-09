@@ -15,6 +15,24 @@ Installing or upgrading is covered in [Installation](/getting-started/installati
 
 ::: v-pre
 
+## 0.34.3
+
+<time datetime="2026-09-09">2026-09-09</time>
+
+### Fixes and improvements
+
+**Recognise social platforms from icon-pack filenames and `alt`.**
+
+`@templatical/import-mjml`
+
+An `mj-social-element` whose `src` was `facebook-round-outlined.png` (or
+`youtube-round-outlined.png`) imported as platform `"website"`, because
+`normalizePlatform` only accepted a bare slug or a `-noshare` variant. Pack
+suffixes (`-round`, `-outlined`, and the same tokens MJML uses for `-noshare`)
+are now stripped until a known platform remains. When `name` and `src` still
+do not match, `alt` is tried. `SocialIcon` is still `{ platform, url }` — `alt`
+is a name signal, not a stored field.
+
 ## 0.34.2
 
 <time datetime="2026-09-09">2026-09-09</time>
