@@ -13,8 +13,23 @@
     "@templatical/renderer",
     "@templatical/types"
   ],
-  "latest": "0.34.1",
+  "latest": "0.34.2",
   "versions": [
+    {
+      "version": "0.34.2",
+      "date": "2026-09-09",
+      "changes": [
+        {
+          "hash": "7582f8e",
+          "level": "patch",
+          "title": "Keep prose around inline links as a paragraph.",
+          "body": "An `mj-text` of copy plus a trailing `<a>` imported as a `menu` labelled from\nthe links, and the surrounding words were discarded. `looksLikeMenu` walked\nelement children only, so text-node siblings never vetoed. It now refuses when\na non-whitespace text node sits next to the anchors, and the block imports as\na `paragraph` that keeps both the prose and the `<a>`. Whitespace-only text\nnodes (newlines between `<a>`/`<span>`) still do not veto, so a span-separated\nmenu stays a menu. Anchors separated by a text-node `|` become a paragraph —\nsame veto, not a second rule.\n\nThe dropped footer and body words now survive: `receive`, `message`,\n`unsubscribe`, `smilesdavis`, and the Dropbox copy (`important`, `available`,\n`exclusively`, `accidentally`, `targeted`, `ransomware`).",
+          "packages": [
+            "@templatical/import-mjml"
+          ]
+        }
+      ]
+    },
     {
       "version": "0.34.1",
       "date": "2026-09-09",
