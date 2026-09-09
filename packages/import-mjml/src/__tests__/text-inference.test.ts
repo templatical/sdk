@@ -168,6 +168,57 @@ describe("menu inference", () => {
     expect(result.block!.type).toBe("paragraph");
   });
 
+  it("still reads anchors separated by newlines and a span as a menu", () => {
+    const { result } = convert(
+      '<a href="/a">Alpha</a>\n<span style="color: #cccccc; padding: 0 12px;">|</span>\n<a href="/b">Beta</a>',
+    );
+    const block = result.block as MenuBlock;
+
+    expect(block.type).toBe("menu");
+    expect(block.items.map((i) => [i.text, i.url])).toEqual([
+      ["Alpha", "/a"],
+      ["Beta", "/b"],
+    ]);
+    expect(block.separator).toBe("|");
+    expect(result.entry.templaticalBlockType).toBe("menu");
+  });
+
+  it("does not read prose plus a trailing anchor as a menu", () => {
+    // An mj-text of copy plus a trailing <a> is a paragraph. Classifying it
+    // as a menu keeps only the link labels and discards the prose.
+    const { result } = convert(
+      'No longer want to receive these emails? You can <a href="https://example.com/unsub">unsubscribe here</a>.',
+    );
+    const block = result.block as ParagraphBlock;
+
+    expect(block.type).toBe("paragraph");
+    expect(block.content).toBe(
+      '<p>No longer want to receive these emails? You can <a href="https://example.com/unsub">unsubscribe here</a>.</p>',
+    );
+    expect(result.entry).toEqual({
+      sourceTag: "mj-text",
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    });
+  });
+
+  it("does not read anchors separated by a text-node pipe as a menu", () => {
+    const { result } = convert(
+      "<a>View in browser</a> &nbsp;|&nbsp; <a>Unsubscribe</a>",
+    );
+    const block = result.block as ParagraphBlock;
+
+    expect(block.type).toBe("paragraph");
+    expect(block.content).toBe(
+      "<p><a>View in browser</a> &#xa0;|&#xa0; <a>Unsubscribe</a></p>",
+    );
+    expect(result.entry).toEqual({
+      sourceTag: "mj-text",
+      templaticalBlockType: "paragraph",
+      status: "converted",
+    });
+  });
+
   it("marks an anchor with target=_blank as opening in a new tab", () => {
     const { result } = convert('<a href="/a" target="_blank">Alpha</a>');
     expect((result.block as MenuBlock).items[0].openInNewTab).toBe(true);

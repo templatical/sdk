@@ -1,5 +1,6 @@
 import { load } from "cheerio";
 import type { Cheerio } from "cheerio";
+import { isTag, isText } from "domhandler";
 import type { Element } from "domhandler";
 import {
   createMenuBlock,
@@ -162,15 +163,25 @@ function convertTable(
  * A menu is top-level anchors with optional `<span>` separators between them —
  * exactly what `renderers/menu.ts` emits, and deliberately not matched when a
  * `<p>` wrapper is present (that is a paragraph containing links).
+ *
+ * `.children()` is elements only. A non-whitespace text-node sibling must
+ * veto: an `mj-text` of prose plus a trailing `<a>` becomes a menu labelled
+ * from the links and the prose is discarded. Whitespace-only nodes (newlines
+ * between `<a>`/`<span>`) must not.
  */
 function looksLikeMenu(html: string): boolean {
   const $inner = parseInner(html);
-  const kids = $inner("body").children().toArray();
+  const kids = $inner("body").contents().toArray();
   if (kids.length === 0) return false;
 
   let anchors = 0;
   for (const kid of kids) {
-    const tag = kid.tagName?.toLowerCase() ?? "";
+    if (isText(kid)) {
+      if (kid.data.trim() !== "") return false;
+      continue;
+    }
+    if (!isTag(kid)) continue;
+    const tag = kid.tagName.toLowerCase();
     if (tag === "a") anchors += 1;
     else if (tag !== "span") return false;
   }
