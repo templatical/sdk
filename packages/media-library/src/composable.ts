@@ -1,29 +1,44 @@
-import type { AuthManager } from "@templatical/core/cloud";
-import { MediaApiClient } from "./api-client";
+import type {
+  MediaAsset,
+  MediaAssetPatch,
+  MediaCategory,
+  MediaCreateInput,
+  MediaFolder,
+  MediaFoldersProvider,
+  MediaFolderInput,
+  MediaListParams,
+  MediaProvider,
+  MediaUsageInfo,
+} from "@templatical/types";
 import { ref, type Ref } from "vue";
-import type { MediaFolder, MediaItem, MediaUsageInfo } from "./types";
 
 export type MediaViewMode = "files" | "frequently-used";
 
 export interface UseMediaLibraryOptions {
-  projectId: string;
-  authManager: AuthManager;
+  /**
+   * Storage backend. The composable is transport-agnostic and never talks
+   * to a network itself.
+   */
+  provider: MediaProvider;
   onError?: (error: Error) => void;
 }
 
+/**
+ * Reactive state over a {@link MediaProvider}.
+ *
+ * Owns the listing, selection, preview, sequential upload loop and the
+ * delete-usage flow. Chrome that should hide for a `false` method is the
+ * modal's job; this composable simply does not call a disabled method.
+ */
 export function useMediaLibrary(options: UseMediaLibraryOptions) {
-  if (!options.projectId) {
-    throw new Error("projectId is required for useMediaLibrary");
-  }
+  const { provider } = options;
 
-  const api = new MediaApiClient(options.authManager);
-
-  const items: Ref<MediaItem[]> = ref([]);
+  const items: Ref<MediaAsset[]> = ref([]);
   const folders: Ref<MediaFolder[]> = ref([]);
   const currentFolderId: Ref<string | null> = ref(null);
   const viewMode: Ref<MediaViewMode> = ref("files");
   const searchQuery: Ref<string> = ref("");
-  const categoryFilter: Ref<string | null> = ref(null);
+  const categoryFilter: Ref<MediaCategory | null> = ref(null);
   const sortOption: Ref<string> = ref("newest");
   const isLoading = ref(false);
   const isUploading = ref(false);
@@ -32,8 +47,8 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
   const uploadProgress: Ref<{ current: number; total: number } | null> =
     ref(null);
   const selectedItems: Ref<Set<string>> = ref(new Set());
-  const previewItem: Ref<MediaItem | null> = ref(null);
-  const frequentlyUsedItems: Ref<MediaItem[]> = ref([]);
+  const previewItem: Ref<MediaAsset | null> = ref(null);
+  const frequentlyUsedItems: Ref<MediaAsset[]> = ref([]);
   const deleteUsageInfo: Ref<Record<string, MediaUsageInfo>> = ref({});
   const showDeleteWarning = ref(false);
   const pendingDeleteIds: Ref<string[]> = ref([]);
@@ -42,28 +57,61 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
   const isReplacing = ref(false);
   const replaceError: Ref<string | null> = ref(null);
   const showReplaceWarning = ref(false);
-  const pendingReplaceItem: Ref<MediaItem | null> = ref(null);
+  const pendingReplaceItem: Ref<MediaAsset | null> = ref(null);
   const replaceUsageInfo: Ref<MediaUsageInfo | null> = ref(null);
 
-  // Monotonic token so out-of-order browseMedia responses (folder switch /
-  // search change before the previous request settled) don't overwrite the
-  // current view with stale data.
+  // Monotonic token so an out-of-order list/loadMore response (folder
+  // switch / search change before the previous request settled) cannot
+  // overwrite the current view with stale data.
   let browseRequestId = 0;
+
+  /**
+   * A handler that throws must not turn a completed write into a rejected
+   * one — the UI would report a failure for an asset that was stored.
+   */
+  function notify(run: () => void): void {
+    try {
+      run();
+    } catch (error) {
+      options.onError?.(error as Error);
+    }
+  }
+
+  function foldersProvider(): MediaFoldersProvider | null {
+    return provider.folders === false ? null : provider.folders;
+  }
+
+  /**
+   * `sort` is absent: {@link MediaListParams} has no sort field.
+   * `sortOption` stays as local UI state; changing it reloads the current
+   * filters without inventing an order the store did not advertise.
+   */
+  function currentListParams(cursor?: string): MediaListParams {
+    const params: MediaListParams = {};
+    if (searchQuery.value) {
+      params.search = searchQuery.value;
+    } else if (currentFolderId.value != null) {
+      params.folderId = currentFolderId.value;
+    }
+    if (categoryFilter.value) {
+      params.category = categoryFilter.value;
+    }
+    if (cursor) {
+      params.cursor = cursor;
+    }
+    return params;
+  }
 
   async function loadItems(): Promise<void> {
     const requestId = ++browseRequestId;
     isLoading.value = true;
+    const params = currentListParams();
     try {
-      const response = await api.browseMedia({
-        folder_id: searchQuery.value ? undefined : currentFolderId.value,
-        search: searchQuery.value || undefined,
-        category: categoryFilter.value || undefined,
-        sort: sortOption.value !== "newest" ? sortOption.value : undefined,
-      });
+      const page = await provider.list(params);
       if (requestId !== browseRequestId) return;
-      items.value = response.data;
-      nextCursor.value = response.meta.next_cursor;
-      hasMore.value = !!response.meta.next_cursor;
+      items.value = page.items;
+      nextCursor.value = page.nextCursor ?? null;
+      hasMore.value = !!page.nextCursor;
     } catch (error) {
       if (requestId !== browseRequestId) return;
       options.onError?.(error as Error);
@@ -79,18 +127,13 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
 
     const requestId = ++browseRequestId;
     isLoading.value = true;
+    const params = currentListParams(nextCursor.value);
     try {
-      const response = await api.browseMedia({
-        folder_id: searchQuery.value ? undefined : currentFolderId.value,
-        search: searchQuery.value || undefined,
-        category: categoryFilter.value || undefined,
-        sort: sortOption.value !== "newest" ? sortOption.value : undefined,
-        cursor: nextCursor.value,
-      });
+      const page = await provider.list(params);
       if (requestId !== browseRequestId) return;
-      items.value = [...items.value, ...response.data];
-      nextCursor.value = response.meta.next_cursor;
-      hasMore.value = !!response.meta.next_cursor;
+      items.value = [...items.value, ...page.items];
+      nextCursor.value = page.nextCursor ?? null;
+      hasMore.value = !!page.nextCursor;
     } catch (error) {
       if (requestId !== browseRequestId) return;
       options.onError?.(error as Error);
@@ -106,7 +149,9 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     await loadItems();
   }
 
-  async function filterByCategory(category: string | null): Promise<void> {
+  async function filterByCategory(
+    category: MediaCategory | null,
+  ): Promise<void> {
     categoryFilter.value = category;
     await loadItems();
   }
@@ -134,11 +179,21 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     await loadFrequentlyUsed();
   }
 
-  async function uploadFile(file: File): Promise<MediaItem | null> {
+  async function uploadFile(file: File): Promise<MediaAsset | null> {
+    const { create } = provider;
+    if (typeof create !== "function") {
+      return null;
+    }
+
     isUploading.value = true;
     try {
-      const media = await api.uploadMedia(file, currentFolderId.value);
+      const input: MediaCreateInput = { file };
+      if (currentFolderId.value != null) {
+        input.folderId = currentFolderId.value;
+      }
+      const media = await create(input);
       items.value = [media, ...items.value];
+      notify(() => provider.onCreated?.(media));
       return media;
     } catch (error) {
       options.onError?.(error as Error);
@@ -149,14 +204,24 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
   }
 
   async function uploadFiles(files: File[]): Promise<void> {
+    const { create } = provider;
+    if (typeof create !== "function") {
+      return;
+    }
+
     isUploading.value = true;
     uploadProgress.value = { current: 0, total: files.length };
     try {
       for (let i = 0; i < files.length; i++) {
         uploadProgress.value = { current: i + 1, total: files.length };
         try {
-          const media = await api.uploadMedia(files[i], currentFolderId.value);
+          const input: MediaCreateInput = { file: files[i] };
+          if (currentFolderId.value != null) {
+            input.folderId = currentFolderId.value;
+          }
+          const media = await create(input);
           items.value = [media, ...items.value];
+          notify(() => provider.onCreated?.(media));
         } catch (error) {
           options.onError?.(error as Error);
         }
@@ -172,11 +237,14 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
       return;
     }
 
+    const foldersApi = foldersProvider();
+    const { move } = foldersApi ?? { move: false };
+    if (typeof move !== "function") {
+      return;
+    }
+
     try {
-      const movedItems = await api.moveMedia(
-        [...selectedItems.value],
-        targetFolderId,
-      );
+      const movedItems = await move([...selectedItems.value], targetFolderId);
       if (currentFolderId.value === null) {
         const movedMap = new Map(movedItems.map((item) => [item.id, item]));
         items.value = items.value.map((item) => movedMap.get(item.id) ?? item);
@@ -197,40 +265,83 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     filename: string,
     altText?: string,
   ): Promise<void> {
+    const { update } = provider;
+    if (typeof update !== "function") {
+      return;
+    }
+
     try {
-      const updated = await api.updateMedia(mediaId, filename, altText);
+      const patch: MediaAssetPatch = { filename };
+      if (altText !== undefined) {
+        patch.alt = altText;
+      }
+      const updated = await update(mediaId, patch);
       items.value = items.value.map((item) =>
         item.id === mediaId ? updated : item,
       );
       if (previewItem.value?.id === mediaId) {
         previewItem.value = updated;
       }
+      notify(() => provider.onUpdated?.(updated));
     } catch (error) {
       options.onError?.(error as Error);
     }
   }
 
+  function captureLocalAssets(ids: string[]): MediaAsset[] {
+    const captured = new Map<string, MediaAsset>();
+    for (const item of items.value) {
+      if (ids.includes(item.id)) {
+        captured.set(item.id, item);
+      }
+    }
+    for (const item of frequentlyUsedItems.value) {
+      if (ids.includes(item.id) && !captured.has(item.id)) {
+        captured.set(item.id, item);
+      }
+    }
+    return [...captured.values()];
+  }
+
+  function dropLocalAssets(ids: string[]): void {
+    items.value = items.value.filter((item) => !ids.includes(item.id));
+    frequentlyUsedItems.value = frequentlyUsedItems.value.filter(
+      (item) => !ids.includes(item.id),
+    );
+    selectedItems.value = new Set();
+    previewItem.value = null;
+  }
+
   async function deleteSelected(): Promise<void> {
     if (selectedItems.value.size === 0) return;
 
+    const { delete: providerDelete } = provider;
+    if (typeof providerDelete !== "function") {
+      return;
+    }
+
+    const ids = [...selectedItems.value];
+    const captured = captureLocalAssets(ids);
+
     try {
-      await api.deleteMedia([...selectedItems.value]);
-      items.value = items.value.filter(
-        (item) => !selectedItems.value.has(item.id),
-      );
-      frequentlyUsedItems.value = frequentlyUsedItems.value.filter(
-        (item) => !selectedItems.value.has(item.id),
-      );
-      selectedItems.value = new Set();
-      previewItem.value = null;
+      await providerDelete(ids);
+      dropLocalAssets(ids);
+      for (const asset of captured) {
+        notify(() => provider.onDeleted?.(asset));
+      }
     } catch (error) {
       options.onError?.(error as Error);
     }
   }
 
   async function loadFrequentlyUsed(): Promise<void> {
+    const { frequentlyUsed } = provider;
+    if (typeof frequentlyUsed !== "function") {
+      return;
+    }
+
     try {
-      frequentlyUsedItems.value = await api.getFrequentlyUsed();
+      frequentlyUsedItems.value = await frequentlyUsed();
     } catch (error) {
       options.onError?.(error as Error);
     }
@@ -243,12 +354,19 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
 
     pendingDeleteIds.value = [...selectedItems.value];
 
-    try {
-      const response = await api.checkMediaUsage(pendingDeleteIds.value);
-      deleteUsageInfo.value = response.data;
+    const { checkUsage } = provider;
+    if (typeof checkUsage !== "function") {
+      deleteUsageInfo.value = {};
+      showDeleteWarning.value = true;
+      return false;
+    }
 
-      const hasUsage = Object.values(response.data).some(
-        (info) => info.template_count > 0,
+    try {
+      const usage = await checkUsage(pendingDeleteIds.value);
+      deleteUsageInfo.value = usage;
+
+      const hasUsage = Object.values(usage).some(
+        (info) => info.templateCount > 0,
       );
 
       showDeleteWarning.value = true;
@@ -260,24 +378,28 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
   }
 
   async function confirmDelete(): Promise<void> {
+    const { delete: providerDelete } = provider;
+    if (typeof providerDelete !== "function") {
+      return;
+    }
+
     showDeleteWarning.value = false;
 
     if (pendingDeleteIds.value.length === 0) {
       return;
     }
 
+    const ids = pendingDeleteIds.value;
+    const captured = captureLocalAssets(ids);
+
     try {
-      await api.deleteMedia(pendingDeleteIds.value);
-      items.value = items.value.filter(
-        (item) => !pendingDeleteIds.value.includes(item.id),
-      );
-      frequentlyUsedItems.value = frequentlyUsedItems.value.filter(
-        (item) => !pendingDeleteIds.value.includes(item.id),
-      );
-      selectedItems.value = new Set();
-      previewItem.value = null;
+      await providerDelete(ids);
+      dropLocalAssets(ids);
       pendingDeleteIds.value = [];
       deleteUsageInfo.value = {};
+      for (const asset of captured) {
+        notify(() => provider.onDeleted?.(asset));
+      }
     } catch (error) {
       options.onError?.(error as Error);
     }
@@ -289,12 +411,18 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     deleteUsageInfo.value = {};
   }
 
-  async function importFromUrl(url: string): Promise<MediaItem | null> {
+  async function importFromUrl(url: string): Promise<MediaAsset | null> {
+    const importUrl = provider.importFromUrl;
+    if (typeof importUrl !== "function") {
+      return null;
+    }
+
     isImportingFromUrl.value = true;
     importFromUrlError.value = null;
     try {
-      const media = await api.importFromUrl(url, currentFolderId.value);
+      const media = await importUrl(url, currentFolderId.value);
       items.value = [media, ...items.value];
+      notify(() => provider.onCreated?.(media));
       return media;
     } catch (error) {
       importFromUrlError.value =
@@ -321,14 +449,19 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     previewItem.value = null;
   }
 
-  function selectItem(item: MediaItem): void {
+  function selectItem(item: MediaAsset): void {
     previewItem.value = item;
     selectedItems.value = new Set([item.id]);
   }
 
   async function loadFolders(): Promise<void> {
+    const foldersApi = foldersProvider();
+    if (!foldersApi) {
+      return;
+    }
+
     try {
-      folders.value = await api.getMediaFolders();
+      folders.value = await foldersApi.list();
     } catch (error) {
       options.onError?.(error as Error);
     }
@@ -338,8 +471,18 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     name: string,
     parentId?: string | null,
   ): Promise<MediaFolder | null> {
+    const foldersApi = foldersProvider();
+    const { create } = foldersApi ?? { create: false };
+    if (typeof create !== "function") {
+      return null;
+    }
+
     try {
-      const folder = await api.createMediaFolder(name, parentId);
+      const input: MediaFolderInput = { name };
+      if (parentId !== undefined) {
+        input.parentId = parentId;
+      }
+      const folder = await create(input);
       await loadFolders();
       return folder;
     } catch (error) {
@@ -354,17 +497,19 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
   ): MediaFolder | null {
     for (const folder of folderList) {
       if (folder.id === id) return folder;
-      if (folder.children) {
-        const found = findFolderInTree(folder.children, id);
-        if (found) return found;
-      }
     }
     return null;
   }
 
   async function renameFolder(folderId: string, name: string): Promise<void> {
+    const foldersApi = foldersProvider();
+    const { update } = foldersApi ?? { update: false };
+    if (typeof update !== "function") {
+      return;
+    }
+
     try {
-      await api.renameMediaFolder(folderId, name);
+      await update(folderId, { name });
       await loadFolders();
     } catch (error) {
       options.onError?.(error as Error);
@@ -372,11 +517,17 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
   }
 
   async function deleteFolder(folderId: string): Promise<void> {
+    const foldersApi = foldersProvider();
+    const { delete: deleteFn } = foldersApi ?? { delete: false };
+    if (typeof deleteFn !== "function") {
+      return;
+    }
+
     try {
       const folder = findFolderInTree(folders.value, folderId);
-      const parentId = folder?.parent_id ?? null;
+      const parentId = folder?.parentId ?? null;
 
-      await api.deleteMediaFolder(folderId);
+      await deleteFn(folderId);
 
       if (currentFolderId.value === folderId) {
         currentFolderId.value = parentId;
@@ -389,13 +540,20 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     }
   }
 
-  async function checkUsageBeforeReplace(item: MediaItem): Promise<void> {
+  async function checkUsageBeforeReplace(item: MediaAsset): Promise<void> {
     pendingReplaceItem.value = item;
     replaceError.value = null;
 
+    const { checkUsage } = provider;
+    if (typeof checkUsage !== "function") {
+      replaceUsageInfo.value = null;
+      showReplaceWarning.value = true;
+      return;
+    }
+
     try {
-      const response = await api.checkMediaUsage([item.id]);
-      replaceUsageInfo.value = response.data[item.id] ?? null;
+      const usage = await checkUsage([item.id]);
+      replaceUsageInfo.value = usage[item.id] ?? null;
       showReplaceWarning.value = true;
     } catch (error) {
       options.onError?.(error as Error);
@@ -409,8 +567,25 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     replaceError.value = null;
   }
 
-  async function replaceFile(file: File): Promise<MediaItem | null> {
-    if (!pendingReplaceItem.value) {
+  function applyReplaced(updated: MediaAsset): void {
+    items.value = items.value.map((item) =>
+      item.id === updated.id ? updated : item,
+    );
+
+    frequentlyUsedItems.value = frequentlyUsedItems.value.map((item) =>
+      item.id === updated.id ? updated : item,
+    );
+
+    if (previewItem.value?.id === updated.id) {
+      previewItem.value = updated;
+    }
+
+    notify(() => provider.onUpdated?.(updated));
+  }
+
+  async function replaceFile(file: File): Promise<MediaAsset | null> {
+    const { replace } = provider;
+    if (typeof replace !== "function" || !pendingReplaceItem.value) {
       return null;
     }
 
@@ -418,19 +593,8 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     replaceError.value = null;
 
     try {
-      const updated = await api.replaceMedia(pendingReplaceItem.value.id, file);
-
-      items.value = items.value.map((item) =>
-        item.id === updated.id ? updated : item,
-      );
-
-      frequentlyUsedItems.value = frequentlyUsedItems.value.map((item) =>
-        item.id === updated.id ? updated : item,
-      );
-
-      if (previewItem.value?.id === updated.id) {
-        previewItem.value = updated;
-      }
+      const updated = await replace(pendingReplaceItem.value.id, file);
+      applyReplaced(updated);
 
       showReplaceWarning.value = false;
       pendingReplaceItem.value = null;
@@ -450,22 +614,15 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
   async function replaceMediaDirectly(
     mediaId: string,
     file: File,
-  ): Promise<MediaItem | null> {
+  ): Promise<MediaAsset | null> {
+    const { replace } = provider;
+    if (typeof replace !== "function") {
+      return null;
+    }
+
     try {
-      const updated = await api.replaceMedia(mediaId, file);
-
-      items.value = items.value.map((item) =>
-        item.id === updated.id ? updated : item,
-      );
-
-      frequentlyUsedItems.value = frequentlyUsedItems.value.map((item) =>
-        item.id === updated.id ? updated : item,
-      );
-
-      if (previewItem.value?.id === updated.id) {
-        previewItem.value = updated;
-      }
-
+      const updated = await replace(mediaId, file);
+      applyReplaced(updated);
       return updated;
     } catch (error) {
       options.onError?.(error as Error);
