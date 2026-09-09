@@ -107,6 +107,41 @@ describe("mj-social", () => {
     ).toEqual(["twitter", "facebook"]);
   });
 
+  it("strips pack suffixes from a src filename (facebook-round-outlined.png)", () => {
+    // Icon packs append style tokens to the platform slug. The stem is not
+    // a SocialPlatform until those tokens are stripped, so the icon used to
+    // fall through to "website" and the platform name vanished.
+    const { result } = convert(
+      `<mj-social>
+         <mj-social-element src="https://cdn.test/icons/facebook-round-outlined.png" href="https://fb.test/autumn" />
+         <mj-social-element src="https://cdn.test/icons/youtube-round-outlined.png" href="https://yt.test/autumn" />
+       </mj-social>`,
+      "mj-social",
+    );
+    const block = result.block as SocialIconsBlock;
+
+    expect(block.icons.map((i) => [i.platform, i.url])).toEqual([
+      ["facebook", "https://fb.test/autumn"],
+      ["youtube", "https://yt.test/autumn"],
+    ]);
+    expect(result.entry.status).toBe("converted");
+    expect("note" in result.entry).toBe(false);
+  });
+
+  it("reads alt as a platform name when src is not a known slug", () => {
+    const { result } = convert(
+      `<mj-social>
+         <mj-social-element src="https://cdn.test/pack/icon-17.png" alt="Instagram" href="https://ig.test/autumn" />
+       </mj-social>`,
+      "mj-social",
+    );
+    const block = result.block as SocialIconsBlock;
+
+    expect(block.icons[0].platform).toBe("instagram");
+    expect(block.icons[0].url).toBe("https://ig.test/autumn");
+    expect(result.entry.status).toBe("converted");
+  });
+
   it("falls back to website for an unknown platform and reports it", () => {
     const { result } = convert(
       '<mj-social><mj-social-element name="mastodon" href="https://m.test/a" /></mj-social>',
