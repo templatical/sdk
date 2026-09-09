@@ -117,7 +117,7 @@ Run a diff between the original and Templatical-generated MJML to spot structura
 | `mj-section` (containing `mj-column`s) | `SectionBlock` with `columns` | Multi-column layouts work the same way; column widths come from MJML's `width` attribute or are equally distributed. |
 | `mj-column` | Section column | A column holds a list of nested blocks. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Not a block at all — marks the section's columns to stay side by side on mobile instead of stacking. |
-| `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, top-level links with no paragraph wrapper become `MenuBlock`, anything else becomes `ParagraphBlock`. |
+| `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Resolved structurally: a single heading root becomes `TitleBlock`, a single `<table>` becomes `TableBlock`, span-separated top-level anchors with no paragraph wrapper and no non-whitespace text-node siblings become `MenuBlock`, a sentence of copy plus a trailing `<a>` becomes `ParagraphBlock`, anything else becomes `ParagraphBlock`. |
 | `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, padding. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, font, padding. |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, padding. |
