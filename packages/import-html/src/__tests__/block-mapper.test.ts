@@ -372,6 +372,65 @@ describe("convertElement — anchors", () => {
     expect(r.entry.templaticalBlockType).toBe("paragraph");
     expect(r.entry.status).toBe("approximated");
   });
+
+  const LINKED_SRC = "https://cdn.test/autumn-hero.jpg";
+  const LINKED_ALT = "Autumn sale banner";
+  const LINKED_HREF = "https://shop.test/autumn";
+
+  it("maps an image-only anchor to an image with linkUrl", () => {
+    const { $, $el } = firstEl(
+      `<a href="${LINKED_HREF}"><img src="${LINKED_SRC}" alt="${LINKED_ALT}"></a>`,
+      "a",
+    );
+    const r = convertElement($el, $)!;
+    expect(r.entry.sourceTag).toBe("a");
+    expect(r.entry.templaticalBlockType).toBe("image");
+    expect(r.entry.status).toBe("converted");
+    expect("note" in r.entry).toBe(false);
+    if (r.block.type !== "image") throw new Error("expected image block");
+    expect(r.block.src).toBe(LINKED_SRC);
+    expect(r.block.alt).toBe(LINKED_ALT);
+    expect(r.block.linkUrl).toBe(LINKED_HREF);
+  });
+
+  it("maps a styled image-only anchor to an image, not a button", () => {
+    // A button built from an image-only anchor is labelled by the factory
+    // default and discards the image. The image case is decided first.
+    const { $, $el } = firstEl(
+      `<a style="background:#f00;padding:8px 16px" href="${LINKED_HREF}">` +
+        `<img src="${LINKED_SRC}" alt="${LINKED_ALT}"></a>`,
+      "a",
+    );
+    const r = convertElement($el, $)!;
+    expect(r.entry.templaticalBlockType).toBe("image");
+    expect(r.entry.status).toBe("converted");
+    if (r.block.type !== "image") throw new Error("expected image block");
+    expect(r.block.src).toBe(LINKED_SRC);
+    expect(r.block.alt).toBe(LINKED_ALT);
+    expect(r.block.linkUrl).toBe(LINKED_HREF);
+    expect(r.block.type).not.toBe("button");
+  });
+
+  it("sets linkOpenInNewTab when the wrapping anchor targets _blank", () => {
+    const { $, $el } = firstEl(
+      `<a href="${LINKED_HREF}" target="_blank">` +
+        `<img src="${LINKED_SRC}" alt="${LINKED_ALT}"></a>`,
+      "a",
+    );
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "image") throw new Error("expected image block");
+    expect(r.block.linkOpenInNewTab).toBe(true);
+  });
+
+  it("omits linkOpenInNewTab when the wrapping anchor has no _blank target", () => {
+    const { $, $el } = firstEl(
+      `<a href="${LINKED_HREF}"><img src="${LINKED_SRC}" alt="${LINKED_ALT}"></a>`,
+      "a",
+    );
+    const r = convertElement($el, $)!;
+    if (r.block.type !== "image") throw new Error("expected image block");
+    expect("linkOpenInNewTab" in r.block).toBe(false);
+  });
 });
 
 describe("convertElement — divider", () => {
@@ -554,6 +613,20 @@ describe("isProseAnchor", () => {
     ).toBe(false);
   });
 
+  it("refuses a link that wraps an image plus text", () => {
+    // Folding would keep the image as raw markup inside a paragraph. The
+    // image is a first-class block with linkUrl; the text is a sibling.
+    expect(
+      isProseAnchor(
+        anchor(
+          '<a href="https://shop.test/autumn">' +
+            '<img src="https://cdn.test/autumn-hero.jpg" alt="Autumn sale banner">' +
+            "Shop now</a>",
+        ),
+      ),
+    ).toBe(false);
+  });
+
   it("refuses a link whose text is only whitespace", () => {
     expect(isProseAnchor(anchor('<a href="https://x.test/go">  </a>'))).toBe(
       false,
@@ -719,6 +792,53 @@ describe("isButtonCell", () => {
     const r = isButtonCell($el, $);
     expect(r.match).toBe(true);
     expect(r.anchor?.attr("href")).toBe("https://shop.test/buy");
+  });
+
+  it("does not match a cell whose entire content is a linked image", () => {
+    // `isWholeCellAnchor` compares normalised text; an `<a><img></a>` is
+    // `"" === ""` and would otherwise pass. A button labelled from that
+    // empty text is the factory default and the image is discarded.
+    const { $, $el } = firstEl(
+      "<table><tr><td>" +
+        '<a href="https://shop.test/autumn">' +
+        '<img src="https://cdn.test/autumn-hero.jpg" alt="Autumn sale banner">' +
+        "</a></td></tr></table>",
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(false);
+  });
+
+  it("does not match a cell whose entire content is a styled linked image", () => {
+    const { $, $el } = firstEl(
+      "<table><tr><td>" +
+        '<a style="background:#f00;padding:8px 16px" href="https://shop.test/autumn">' +
+        '<img src="https://cdn.test/autumn-hero.jpg" alt="Autumn sale banner">' +
+        "</a></td></tr></table>",
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(false);
+  });
+
+  it("does not match a styled cell wrapping a linked image", () => {
+    const { $, $el } = firstEl(
+      '<table><tr><td style="background:#f00;padding:8px 16px">' +
+        '<a href="https://shop.test/autumn">' +
+        '<img src="https://cdn.test/autumn-hero.jpg" alt="Autumn sale banner">' +
+        "</a></td></tr></table>",
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(false);
+  });
+
+  it("does not match a styled anchor wrapping an image plus text", () => {
+    const { $, $el } = firstEl(
+      "<table><tr><td>" +
+        '<a style="background:#f00;padding:8px 16px" href="https://shop.test/autumn">' +
+        '<img src="https://cdn.test/autumn-hero.jpg" alt="Autumn sale banner">' +
+        "Shop now</a></td></tr></table>",
+      "td",
+    );
+    expect(isButtonCell($el, $).match).toBe(false);
   });
 });
 
