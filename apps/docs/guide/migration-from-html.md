@@ -69,7 +69,7 @@ HTML elements map to Templatical equivalents:
 | `<img>` | `image` | Converted |
 | `<a>` styled as button (background color, padding, border-radius, or `display: inline-block`) | `button` | Converted |
 | `<a>` (text link) | folded into the surrounding `paragraph` | Converted |
-| `<a>` wrapping an image | `paragraph` | Approximated (link target dropped) |
+| `<a>` wrapping an `<img>` | `image` with `linkUrl` | Converted |
 | `<hr>` | `divider` | Converted |
 | Empty `<td>` with explicit height | `spacer` | Converted |
 | `<td>` whose entire content is one styled `<a>` | `button` | Converted (cell-as-button pattern) |
@@ -79,7 +79,7 @@ HTML elements map to Templatical equivalents:
 
 Anything that can't be mapped is preserved verbatim inside an HTML block, so no visible content is lost.
 
-A cell mixing copy with a link becomes one `paragraph` holding both, with the `<a>` and its `href` inline. A cell reads as a button when the anchor is its entire content.
+A cell mixing copy with a link becomes one `paragraph` holding both, with the `<a>` and its `href` inline. A cell whose entire content is one styled text `<a>` reads as a button.
 
 A `<div>`, `<center>` or `<main>` that wraps a table produces no block of its own: the importer descends into it, at any nesting depth, and maps the tables it finds. A wrapper holding only text keeps its `paragraph` mapping, and a wrapper whose whole content is one heading is unwrapped so the heading is what gets mapped.
 
@@ -87,7 +87,7 @@ A `<div>`, `<center>` or `<main>` that wraps a table produces no block of its ow
 
 `<br>`, `<em>`, `<strong>`, `<i>`, `<b>`, `<u>`, `<small>`, `<sub>` and `<sup>` stay inside the text they belong to. A run of them, together with the bare text around it, becomes one `paragraph` whose colour, size and alignment come from the containing cell — so `Hello<br>World` in a `<td>` imports as a single paragraph holding both words and the line break.
 
-A text `<a>` folds into that run, keeping its `href`, so a sentence containing a link arrives as one paragraph rather than as a link torn out of its copy. An `<a>` whose content is not text — a linked image — becomes a `paragraph` of its own.
+A text `<a>` folds into that run, keeping its `href`, so a sentence containing a link arrives as one paragraph rather than as a link torn out of its copy. An `<a>` wrapping an `<img>` becomes an `image` with `linkUrl` from a non-empty href. An `<a>` wrapping both an image and text becomes that `image` plus a sibling `paragraph` that keeps the remaining `<a>`.
 
 ::: tip
 Bare text counts as content here. A cell walk that visited only element children dropped the words between two inline tags, and dropped a loose sentence sitting beside a table at body or wrapper level. Both are now kept.
@@ -167,7 +167,6 @@ Global template settings are extracted from the document:
 - **External resources** — `<link>`, external stylesheets, web fonts, and remote images are not fetched. Image `src` URLs are preserved as-is.
 - **Outlook MSO conditional comments** — preserved as HTML inside their containing block (they're inert in non-Outlook clients anyway).
 - **`<form>` / `<input>` / `<button>` form controls** — preserved as HTML-fallback. Most email clients block form submission; rebuild the call-to-action as a button linking to a hosted form.
-- **Linked images** — an `<a>` wrapping an `<img>` becomes a `paragraph` holding the image, and the link target is dropped. Re-add it as an `image` block's `linkUrl` in the editor. These are the entries reported as `approximated` with `Inline anchor wrapped in a paragraph block.`
 - **Rows of more than three cells** — `ColumnLayout` holds at most three columns, so a wider row is merged into one and reported. Ratios outside `'2'` / `'2-1'` / `'1-2'` / `'3'`, such as a `1-2-1` sidebar pair, have no equivalent either and import as the equal split.
 - **AMP for Email** — not currently supported in Templatical.
 
