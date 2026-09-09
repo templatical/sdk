@@ -117,7 +117,7 @@ Ein Diff zwischen Original und dem von Templatical erzeugten MJML zeigt struktur
 | `mj-section` (mit `mj-column`s) | `SectionBlock` mit `columns` | Mehrspaltige Layouts funktionieren gleich; Spaltenbreiten kommen aus MJMLs `width`-Attribut oder werden gleichmäßig verteilt. |
 | `mj-column` | Section-Spalte | Eine Spalte hält eine Liste verschachtelter Blöcke. |
 | `mj-group` | `SectionBlock.stackOnMobile: false` | Kein eigener Block — markiert, dass die Spalten der Section auf Mobilgeräten nebeneinander bleiben, statt zu stapeln. |
-| `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Strukturell aufgelöst: Eine einzelne Überschrift als Wurzelelement wird zu `TitleBlock`, eine einzelne `<table>` zu `TableBlock`, ausschließlich Top-Level-Links ohne Paragraph-Wrapper zu `MenuBlock`, alles andere zu `ParagraphBlock`. |
+| `mj-text` | `TitleBlock` / `TableBlock` / `MenuBlock` / `ParagraphBlock` | Strukturell aufgelöst: Eine einzelne Überschrift als Wurzelelement wird zu `TitleBlock`, eine einzelne `<table>` zu `TableBlock`, durch `<span>` getrennte Top-Level-Anker ohne Paragraph-Wrapper und ohne Nicht-Whitespace-Textknoten als Geschwister zu `MenuBlock`, ein Satz Fließtext plus ein abschließendes `<a>` zu `ParagraphBlock`, alles andere zu `ParagraphBlock`. |
 | `mj-image` | `ImageBlock` | `src`, `alt`, `href`, `width`, Padding. |
 | `mj-button` | `ButtonBlock` | `href`, `background-color`, `color`, Schrift, Padding. |
 | `mj-divider` | `DividerBlock` | `border-color`, `border-width`, Padding. |
