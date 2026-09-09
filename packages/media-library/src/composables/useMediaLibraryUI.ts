@@ -1,6 +1,7 @@
 import type { CropData } from "../components/media/MediaEditModal.vue";
-import type { MediaConversion, MediaItem } from "../types";
+import type { MediaAsset } from "@templatical/types";
 import type { useMediaLibrary } from "../composable";
+import { treeFolders, type MediaFolderNode } from "../utils/treeFolders";
 
 type UseMediaLibraryReturn = ReturnType<typeof useMediaLibrary>;
 import { useClipboard, useDebounceFn } from "@vueuse/core";
@@ -14,36 +15,31 @@ export interface UseMediaLibraryUIOptions {
 }
 
 export interface UseMediaLibraryUIReturn {
-  // UI state
   layoutMode: Ref<"grid" | "list">;
   showSidebar: Ref<boolean>;
   searchInput: Ref<string>;
-  selectedConversion: Ref<MediaConversion>;
-  editingItem: Ref<MediaItem | null>;
+  editingItem: Ref<MediaAsset | null>;
   showImportUrlModal: Ref<boolean>;
   showMovePicker: Ref<boolean>;
 
-  // Derived state
   selectedUrl: ComputedRef<string | null>;
   hasFrequentlyUsed: ComputedRef<boolean>;
-  displayItems: ComputedRef<MediaItem[]>;
+  displayItems: ComputedRef<MediaAsset[]>;
   hasUsedFiles: ComputedRef<boolean>;
+  folderTree: ComputedRef<MediaFolderNode[]>;
 
-  // Clipboard
   copy: (text: string) => Promise<void>;
   copied: Ref<boolean>;
 
-  // Category labels
   getCategoryLabel: (category: string) => string;
 
-  // Handlers
   handleSearchInput: (value: string) => void;
   handleUpload: (files: File[]) => Promise<void>;
-  handleSelect: (item: MediaItem) => void;
+  handleSelect: (item: MediaAsset) => void;
   handleCreateFolder: (name: string, parentId?: string | null) => Promise<void>;
   handleRenameFolder: (folderId: string, name: string) => Promise<void>;
   handleDeleteFolder: (folderId: string) => Promise<void>;
-  handleEditItem: (item: MediaItem) => void;
+  handleEditItem: (item: MediaAsset) => void;
   handleEditSave: (
     mediaId: string,
     filename: string,
@@ -53,10 +49,9 @@ export interface UseMediaLibraryUIReturn {
   handleImportFromUrl: (url: string) => Promise<void>;
   handleMoveToFolder: (folderId: string | null) => Promise<void>;
   handleDeleteClick: () => Promise<void>;
-  handleReplaceItem: (item: MediaItem) => void;
+  handleReplaceItem: (item: MediaAsset) => void;
   handleReplaceFile: (file: File) => Promise<void>;
 
-  // Reset (used by modal when closing)
   resetUI: () => void;
 }
 
@@ -73,31 +68,14 @@ export function useMediaLibraryUI(
     return translations as { mediaLibrary: Record<string, string> };
   }
 
-  // --- UI state ---
   const layoutMode = ref<"grid" | "list">("grid");
   const showSidebar = ref(false);
   const searchInput = ref("");
-  const selectedConversion = ref<MediaConversion>("original");
-  const editingItem = ref<MediaItem | null>(null);
+  const editingItem = ref<MediaAsset | null>(null);
   const showImportUrlModal = ref(false);
   const showMovePicker = ref(false);
 
-  // --- Derived state ---
-  const selectedUrl = computed(() => {
-    const item = library.previewItem.value;
-    if (!item) return null;
-
-    switch (selectedConversion.value) {
-      case "small":
-        return item.small_url || item.url;
-      case "medium":
-        return item.medium_url || item.url;
-      case "large":
-        return item.large_url || item.url;
-      default:
-        return item.url;
-    }
-  });
+  const selectedUrl = computed(() => library.previewItem.value?.url ?? null);
 
   const hasFrequentlyUsed = computed(() => {
     return library.frequentlyUsedItems.value.length > 0;
@@ -112,11 +90,12 @@ export function useMediaLibraryUI(
 
   const hasUsedFiles = computed(() => {
     return Object.values(library.deleteUsageInfo.value).some(
-      (info) => info.template_count > 0,
+      (info) => info.templateCount > 0,
     );
   });
 
-  // --- Category labels ---
+  const folderTree = computed(() => treeFolders(library.folders.value));
+
   const categoryLabels: Record<string, () => string> = {
     images: () => getTranslations().mediaLibrary.filterImages,
     documents: () => getTranslations().mediaLibrary.filterDocuments,
@@ -128,21 +107,12 @@ export function useMediaLibraryUI(
     return categoryLabels[category]?.() ?? category;
   }
 
-  // --- Watchers ---
   watch(showSidebar, (show) => {
     if (show) {
       library.loadFolders();
     }
   });
 
-  watch(
-    () => library.previewItem.value?.id,
-    () => {
-      selectedConversion.value = "original";
-    },
-  );
-
-  // --- Search ---
   const debouncedSearch = useDebounceFn((value: string) => {
     library.search(value);
   }, 300);
@@ -152,15 +122,13 @@ export function useMediaLibraryUI(
     debouncedSearch(value);
   }
 
-  // --- Clipboard ---
   const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true });
 
-  // --- Handlers ---
   async function handleUpload(files: File[]): Promise<void> {
     await library.uploadFiles(files);
   }
 
-  function handleSelect(item: MediaItem): void {
+  function handleSelect(item: MediaAsset): void {
     library.selectItem(item);
   }
 
@@ -182,7 +150,7 @@ export function useMediaLibraryUI(
     await library.deleteFolder(folderId);
   }
 
-  function handleEditItem(item: MediaItem): void {
+  function handleEditItem(item: MediaAsset): void {
     editingItem.value = item;
   }
 
@@ -215,7 +183,7 @@ export function useMediaLibraryUI(
     await library.checkUsageBeforeDelete();
   }
 
-  function handleReplaceItem(item: MediaItem): void {
+  function handleReplaceItem(item: MediaAsset): void {
     library.checkUsageBeforeReplace(item);
   }
 
@@ -233,14 +201,12 @@ export function useMediaLibraryUI(
     library.viewMode.value = "files";
     editingItem.value = null;
     showImportUrlModal.value = false;
-    selectedConversion.value = "original";
   }
 
   return {
     layoutMode,
     showSidebar,
     searchInput,
-    selectedConversion,
     editingItem,
     showImportUrlModal,
     showMovePicker,
@@ -248,6 +214,7 @@ export function useMediaLibraryUI(
     hasFrequentlyUsed,
     displayItems,
     hasUsedFiles,
+    folderTree,
     copy,
     copied,
     getCategoryLabel,

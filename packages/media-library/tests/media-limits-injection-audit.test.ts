@@ -10,8 +10,8 @@ import { MEDIA_LIMITS_KEY } from "../src/keys";
 import { useMediaCategories } from "../src/composables/useMediaCategories";
 
 /**
- * Guards how `MediaLibraryModal` reaches its host's `authManager`, `projectId`
- * and `planConfig`, and how descendants reach media limits.
+ * Guards how `MediaLibraryModal` reaches its host's `provider`,
+ * and how descendants reach media limits.
  *
  * Vue matches injection keys by **identity**, so a bare-string
  * `inject("authManager")` never resolves the `AUTH_MANAGER_KEY = Symbol(...)`
@@ -73,7 +73,7 @@ describe("cross-package injection audit", () => {
   /**
    * A blanket ban, not a list of names to remember.
    *
-   * This started as four spellings (`authManager`, `projectId`, `planConfig`,
+   * This started as four spellings (`provider`, `projectId`,
    * `translations`) and still missed `tplUiTheme` — the third component of this
    * package to inject a bare string that never resolves the identically-named
    * `Symbol` `@templatical/editor` provides. Every legitimate injection here goes
@@ -136,24 +136,22 @@ describe("cross-package injection audit", () => {
     },
   );
 
-  it("MediaLibraryModal declares the three as required props", () => {
+  it("MediaLibraryModal declares provider as a required prop", () => {
     const props = MediaLibraryModal.props as Record<
       string,
       { required?: boolean }
     >;
     expect(Object.keys(props).sort()).toEqual([
       "accept",
-      "authManager",
       "locale",
-      "planConfig",
       "popoverTarget",
-      "projectId",
+      "provider",
+      "templateId",
       "uiTheme",
       "visible",
     ]);
-    expect(props.authManager.required).toBe(true);
-    expect(props.projectId.required).toBe(true);
-    expect(props.planConfig.required).toBe(true);
+    expect(props.provider.required).toBe(true);
+    expect(props.visible.required).toBe(true);
   });
 });
 

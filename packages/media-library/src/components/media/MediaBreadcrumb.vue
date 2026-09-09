@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
-import type { MediaFolder } from "../../types";
+import type { MediaFolderNode } from "../../utils/treeFolders";
 import { ChevronRight } from "@lucide/vue";
 import { computed } from "vue";
 
 const props = defineProps<{
-  folders: MediaFolder[];
+  folders: MediaFolderNode[];
   currentFolderId: string | null;
 }>();
 
@@ -17,22 +17,22 @@ const { t } = useI18n();
 
 const breadcrumbPath = computed(() => {
   if (!props.currentFolderId) return [];
-  const path: MediaFolder[] = [];
+  const path: MediaFolderNode[] = [];
   buildPath(props.folders, props.currentFolderId, path);
   return path;
 });
 
 function buildPath(
-  folderList: MediaFolder[],
+  folderList: MediaFolderNode[],
   targetId: string,
-  path: MediaFolder[],
+  path: MediaFolderNode[],
 ): boolean {
   for (const folder of folderList) {
     if (folder.id === targetId) {
       path.push(folder);
       return true;
     }
-    if (folder.children && buildPath(folder.children, targetId, path)) {
+    if (buildPath(folder.children, targetId, path)) {
       path.unshift(folder);
       return true;
     }

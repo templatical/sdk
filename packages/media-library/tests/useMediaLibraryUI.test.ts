@@ -1,9 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { ref, computed } from "vue";
+import { nextTick, ref } from "vue";
 import { useMediaLibraryUI } from "../src/composables/useMediaLibraryUI";
-import type { MediaItem } from "../src/types";
+import type { MediaAsset } from "@templatical/types";
 
-// Minimal mock for useClipboard
 vi.mock("@vueuse/core", () => ({
   useClipboard: () => ({
     copy: vi.fn(),
@@ -12,25 +11,23 @@ vi.mock("@vueuse/core", () => ({
   useDebounceFn: (fn: Function) => fn,
 }));
 
-function createMediaItem(overrides: Partial<MediaItem> = {}): MediaItem {
+function createAsset(overrides: Partial<MediaAsset> = {}): MediaAsset {
   return {
     id: "m1",
     filename: "photo.jpg",
-    mime_type: "image/jpeg",
+    mimeType: "image/jpeg",
     size: 1024,
     url: "https://cdn.test/photo.jpg",
-    small_url: "https://cdn.test/photo-small.jpg",
-    medium_url: "https://cdn.test/photo-medium.jpg",
-    large_url: "https://cdn.test/photo-large.jpg",
-    created_at: "2026-01-01T00:00:00Z",
-    updated_at: "2026-01-01T00:00:00Z",
+    thumbnailUrl: "https://cdn.test/photo-thumb.jpg",
+    createdAt: "2026-01-01T00:00:00Z",
+    updatedAt: "2026-01-01T00:00:00Z",
     ...overrides,
-  } as MediaItem;
+  };
 }
 
 function createMockLibrary() {
   return {
-    items: ref<MediaItem[]>([]),
+    items: ref<MediaAsset[]>([]),
     folders: ref([]),
     currentFolderId: ref<string | null>(null),
     viewMode: ref<"files" | "frequently-used">("files"),
@@ -42,8 +39,8 @@ function createMockLibrary() {
     uploadProgress: ref(null),
     hasMore: ref(false),
     selectedItems: ref(new Set<string>()),
-    previewItem: ref<MediaItem | null>(null),
-    frequentlyUsedItems: ref<MediaItem[]>([]),
+    previewItem: ref<MediaAsset | null>(null),
+    frequentlyUsedItems: ref<MediaAsset[]>([]),
     deleteUsageInfo: ref({}),
     showDeleteWarning: ref(false),
     isImportingFromUrl: ref(false),
@@ -53,6 +50,7 @@ function createMockLibrary() {
     showReplaceWarning: ref(false),
     pendingReplaceItem: ref(null),
     replaceUsageInfo: ref(null),
+    storageInfo: ref(null),
     loadItems: vi.fn(),
     loadMore: vi.fn(),
     search: vi.fn(),
@@ -82,6 +80,7 @@ function createMockLibrary() {
     cancelReplace: vi.fn(),
     replaceFile: vi.fn(),
     replaceMediaDirectly: vi.fn(),
+    loadStorage: vi.fn(),
   };
 }
 
@@ -97,8 +96,7 @@ function createUI(libraryOverride?: ReturnType<typeof createMockLibrary>) {
   };
 
   const ui = useMediaLibraryUI({
-    library: library as any,
-    canUseMediaFolders: computed(() => true),
+    library: library as never,
     translations,
   });
 
@@ -117,7 +115,6 @@ describe("useMediaLibraryUI", () => {
       expect(ui.layoutMode.value).toBe("grid");
       expect(ui.showSidebar.value).toBe(false);
       expect(ui.searchInput.value).toBe("");
-      expect(ui.selectedConversion.value).toBe("original");
       expect(ui.editingItem.value).toBeNull();
       expect(ui.showImportUrlModal.value).toBe(false);
       expect(ui.showMovePicker.value).toBe(false);
@@ -130,47 +127,11 @@ describe("useMediaLibraryUI", () => {
       expect(ui.selectedUrl.value).toBeNull();
     });
 
-    it("returns original url by default", () => {
+    it("returns the asset url", () => {
       const library = createMockLibrary();
-      library.previewItem.value = createMediaItem();
+      library.previewItem.value = createAsset();
       const { ui } = createUI(library);
 
-      expect(ui.selectedUrl.value).toBe("https://cdn.test/photo.jpg");
-    });
-
-    it("returns small url when small conversion selected", () => {
-      const library = createMockLibrary();
-      library.previewItem.value = createMediaItem();
-      const { ui } = createUI(library);
-
-      ui.selectedConversion.value = "small";
-      expect(ui.selectedUrl.value).toBe("https://cdn.test/photo-small.jpg");
-    });
-
-    it("returns medium url when medium conversion selected", () => {
-      const library = createMockLibrary();
-      library.previewItem.value = createMediaItem();
-      const { ui } = createUI(library);
-
-      ui.selectedConversion.value = "medium";
-      expect(ui.selectedUrl.value).toBe("https://cdn.test/photo-medium.jpg");
-    });
-
-    it("returns large url when large conversion selected", () => {
-      const library = createMockLibrary();
-      library.previewItem.value = createMediaItem();
-      const { ui } = createUI(library);
-
-      ui.selectedConversion.value = "large";
-      expect(ui.selectedUrl.value).toBe("https://cdn.test/photo-large.jpg");
-    });
-
-    it("falls back to original url when conversion url is empty", () => {
-      const library = createMockLibrary();
-      library.previewItem.value = createMediaItem({ small_url: "" });
-      const { ui } = createUI(library);
-
-      ui.selectedConversion.value = "small";
       expect(ui.selectedUrl.value).toBe("https://cdn.test/photo.jpg");
     });
   });
@@ -178,7 +139,7 @@ describe("useMediaLibraryUI", () => {
   describe("displayItems", () => {
     it("returns items in files mode", () => {
       const library = createMockLibrary();
-      const items = [createMediaItem({ id: "1" }), createMediaItem({ id: "2" })];
+      const items = [createAsset({ id: "1" }), createAsset({ id: "2" })];
       library.items.value = items;
       const { ui } = createUI(library);
 
@@ -187,7 +148,7 @@ describe("useMediaLibraryUI", () => {
 
     it("returns frequently used items in frequently-used mode", () => {
       const library = createMockLibrary();
-      const freq = [createMediaItem({ id: "freq1" })];
+      const freq = [createAsset({ id: "freq1" })];
       library.frequentlyUsedItems.value = freq;
       library.viewMode.value = "frequently-used";
       const { ui } = createUI(library);
@@ -204,7 +165,7 @@ describe("useMediaLibraryUI", () => {
 
     it("returns true when frequently used items exist", () => {
       const library = createMockLibrary();
-      library.frequentlyUsedItems.value = [createMediaItem()];
+      library.frequentlyUsedItems.value = [createAsset()];
       const { ui } = createUI(library);
 
       expect(ui.hasFrequentlyUsed.value).toBe(true);
@@ -220,18 +181,18 @@ describe("useMediaLibraryUI", () => {
     it("returns true when files are used in templates", () => {
       const library = createMockLibrary();
       library.deleteUsageInfo.value = {
-        m1: { template_count: 3 },
-      } as any;
+        m1: { templateCount: 3, templateNames: ["A"] },
+      };
       const { ui } = createUI(library);
 
       expect(ui.hasUsedFiles.value).toBe(true);
     });
 
-    it("returns false when template_count is 0", () => {
+    it("returns false when templateCount is 0", () => {
       const library = createMockLibrary();
       library.deleteUsageInfo.value = {
-        m1: { template_count: 0 },
-      } as any;
+        m1: { templateCount: 0, templateNames: [] },
+      };
       const { ui } = createUI(library);
 
       expect(ui.hasUsedFiles.value).toBe(false);
@@ -272,7 +233,7 @@ describe("useMediaLibraryUI", () => {
 
     it("handleSelect delegates to library.selectItem", () => {
       const { ui, library } = createUI();
-      const item = createMediaItem();
+      const item = createAsset();
       ui.handleSelect(item);
 
       expect(library.selectItem).toHaveBeenCalledWith(item);
@@ -282,7 +243,10 @@ describe("useMediaLibraryUI", () => {
       const { ui, library } = createUI();
       await ui.handleCreateFolder("New Folder", "parent-1");
 
-      expect(library.createFolder).toHaveBeenCalledWith("New Folder", "parent-1");
+      expect(library.createFolder).toHaveBeenCalledWith(
+        "New Folder",
+        "parent-1",
+      );
     });
 
     it("handleRenameFolder delegates to library.renameFolder", async () => {
@@ -301,7 +265,7 @@ describe("useMediaLibraryUI", () => {
 
     it("handleEditItem sets editingItem", () => {
       const { ui } = createUI();
-      const item = createMediaItem();
+      const item = createAsset();
       ui.handleEditItem(item);
 
       expect(ui.editingItem.value).toEqual(item);
@@ -309,28 +273,38 @@ describe("useMediaLibraryUI", () => {
 
     it("handleEditSave updates file and clears editingItem", async () => {
       const { ui, library } = createUI();
-      ui.editingItem.value = createMediaItem();
+      ui.editingItem.value = createAsset();
 
       await ui.handleEditSave("m1", "renamed.jpg", "alt text");
 
-      expect(library.updateFile).toHaveBeenCalledWith("m1", "renamed.jpg", "alt text");
+      expect(library.updateFile).toHaveBeenCalledWith(
+        "m1",
+        "renamed.jpg",
+        "alt text",
+      );
       expect(ui.editingItem.value).toBeNull();
     });
 
     it("handleEditSave replaces media when cropData provided", async () => {
       const { ui, library } = createUI();
-      ui.editingItem.value = createMediaItem();
+      ui.editingItem.value = createAsset();
       const cropFile = new File([""], "cropped.jpg");
 
-      await ui.handleEditSave("m1", "photo.jpg", undefined, { file: cropFile } as any);
+      await ui.handleEditSave("m1", "photo.jpg", undefined, {
+        file: cropFile,
+      });
 
       expect(library.replaceMediaDirectly).toHaveBeenCalledWith("m1", cropFile);
-      expect(library.updateFile).toHaveBeenCalledWith("m1", "photo.jpg", undefined);
+      expect(library.updateFile).toHaveBeenCalledWith(
+        "m1",
+        "photo.jpg",
+        undefined,
+      );
     });
 
     it("handleImportFromUrl closes modal on success", async () => {
       const { ui, library } = createUI();
-      library.importFromUrl.mockResolvedValue(createMediaItem());
+      library.importFromUrl.mockResolvedValue(createAsset());
       ui.showImportUrlModal.value = true;
 
       await ui.handleImportFromUrl("https://example.com/img.jpg");
@@ -367,7 +341,7 @@ describe("useMediaLibraryUI", () => {
 
     it("handleReplaceItem delegates to library.checkUsageBeforeReplace", () => {
       const { ui, library } = createUI();
-      const item = createMediaItem();
+      const item = createAsset();
       ui.handleReplaceItem(item);
 
       expect(library.checkUsageBeforeReplace).toHaveBeenCalledWith(item);
@@ -386,18 +360,15 @@ describe("useMediaLibraryUI", () => {
     it("resets all UI state and library filters", () => {
       const { ui, library } = createUI();
 
-      // Set non-default state
       ui.searchInput.value = "query";
-      ui.editingItem.value = createMediaItem();
+      ui.editingItem.value = createAsset();
       ui.showImportUrlModal.value = true;
-      ui.selectedConversion.value = "small";
 
       ui.resetUI();
 
       expect(ui.searchInput.value).toBe("");
       expect(ui.editingItem.value).toBeNull();
       expect(ui.showImportUrlModal.value).toBe(false);
-      expect(ui.selectedConversion.value).toBe("original");
       expect(library.clearSelection).toHaveBeenCalled();
       expect(library.cancelDelete).toHaveBeenCalled();
       expect(library.cancelReplace).toHaveBeenCalled();
@@ -417,8 +388,7 @@ describe("useMediaLibraryUI", () => {
       });
 
       const ui = useMediaLibraryUI({
-        library: library as any,
-        canUseMediaFolders: computed(() => true),
+        library: library as never,
         translations,
       });
 
@@ -428,25 +398,28 @@ describe("useMediaLibraryUI", () => {
   });
 
   describe("watcher: showSidebar loads folders", () => {
-    it("does not load folders when canUseMediaFolders is false", () => {
-      const library = createMockLibrary();
-      const translations = {
-        mediaLibrary: {
-          filterImages: "Images",
-          filterDocuments: "Documents",
-          filterVideos: "Videos",
-          filterAudio: "Audio",
-        },
-      };
-
-      const ui = useMediaLibraryUI({
-        library: library as any,
-        canUseMediaFolders: computed(() => false),
-        translations,
-      });
+    it("loads folders when the sidebar opens", async () => {
+      const { ui, library } = createUI();
 
       ui.showSidebar.value = true;
-      expect(library.loadFolders).not.toHaveBeenCalled();
+      await nextTick();
+      expect(library.loadFolders).toHaveBeenCalled();
+    });
+  });
+
+  describe("folderTree", () => {
+    it("nests folders by parentId", () => {
+      const library = createMockLibrary();
+      library.folders.value = [
+        { id: "root", name: "Photos", parentId: null },
+        { id: "child", name: "2024", parentId: "root" },
+      ];
+      const { ui } = createUI(library);
+
+      expect(ui.folderTree.value.map((node) => node.id)).toEqual(["root"]);
+      expect(ui.folderTree.value[0].children.map((node) => node.id)).toEqual([
+        "child",
+      ]);
     });
   });
 });

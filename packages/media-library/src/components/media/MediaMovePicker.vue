@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from "../../composables/useI18n";
-import type { MediaFolder } from "../../types";
+import type { MediaFolderNode } from "../../utils/treeFolders";
 import { onClickOutside } from "@vueuse/core";
 import { File, Folder } from "@lucide/vue";
 import { ref } from "vue";
 
 defineProps<{
-  folders: MediaFolder[];
+  folders: MediaFolderNode[];
   currentFolderId: string | null;
 }>();
 
@@ -25,13 +25,13 @@ interface FlatFolder {
 }
 
 function flattenFolders(
-  folders: MediaFolder[],
+  folders: MediaFolderNode[],
   depth: number = 0,
 ): FlatFolder[] {
   const result: FlatFolder[] = [];
   for (const folder of folders) {
     result.push({ id: folder.id, name: folder.name, depth });
-    if (folder.children?.length) {
+    if (folder.children.length) {
       result.push(...flattenFolders(folder.children, depth + 1));
     }
   }

@@ -60,6 +60,7 @@ onChange((fileList) => {
 <template>
   <div
     ref="dropZoneRef"
+    data-testid="media-upload-zone"
     class="tpl-upload-zone tpl:flex tpl:cursor-pointer tpl:flex-col tpl:items-center tpl:justify-center tpl:rounded-lg tpl:border-2 tpl:border-dashed tpl:p-5 tpl:text-center tpl:transition-all tpl:duration-150"
     :class="isOverDropZone ? 'tpl-upload-zone-active' : ''"
     style="

@@ -8,9 +8,10 @@ import type {
   MediaFolderInput,
   MediaListParams,
   MediaProvider,
+  MediaStorageInfo,
   MediaUsageInfo,
 } from "@templatical/types";
-import { ref, type Ref } from "vue";
+import { ref, toValue, type MaybeRefOrGetter, type Ref } from "vue";
 
 export type MediaViewMode = "files" | "frequently-used";
 
@@ -21,6 +22,12 @@ export interface UseMediaLibraryOptions {
    */
   provider: MediaProvider;
   onError?: (error: Error) => void;
+  /**
+   * Forwarded on `list` / `create` / `importFromUrl` when a template is
+   * loaded. Read at call time — a ref that fills after setup must still
+   * reach the store.
+   */
+  templateId?: MaybeRefOrGetter<string | undefined>;
 }
 
 /**
@@ -59,6 +66,7 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
   const showReplaceWarning = ref(false);
   const pendingReplaceItem: Ref<MediaAsset | null> = ref(null);
   const replaceUsageInfo: Ref<MediaUsageInfo | null> = ref(null);
+  const storageInfo: Ref<MediaStorageInfo | null> = ref(null);
 
   // Monotonic token so an out-of-order list/loadMore response (folder
   // switch / search change before the previous request settled) cannot
@@ -86,6 +94,10 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
    * `sortOption` stays as local UI state; changing it reloads the current
    * filters without inventing an order the store did not advertise.
    */
+  function resolvedTemplateId(): string | undefined {
+    return toValue(options.templateId);
+  }
+
   function currentListParams(cursor?: string): MediaListParams {
     const params: MediaListParams = {};
     if (searchQuery.value) {
@@ -98,6 +110,10 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     }
     if (cursor) {
       params.cursor = cursor;
+    }
+    const templateId = resolvedTemplateId();
+    if (templateId) {
+      params.templateId = templateId;
     }
     return params;
   }
@@ -191,6 +207,10 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
       if (currentFolderId.value != null) {
         input.folderId = currentFolderId.value;
       }
+      const templateId = resolvedTemplateId();
+      if (templateId) {
+        input.templateId = templateId;
+      }
       const media = await create(input);
       items.value = [media, ...items.value];
       notify(() => provider.onCreated?.(media));
@@ -218,6 +238,10 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
           const input: MediaCreateInput = { file: files[i] };
           if (currentFolderId.value != null) {
             input.folderId = currentFolderId.value;
+          }
+          const templateId = resolvedTemplateId();
+          if (templateId) {
+            input.templateId = templateId;
           }
           const media = await create(input);
           items.value = [media, ...items.value];
@@ -420,7 +444,11 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     isImportingFromUrl.value = true;
     importFromUrlError.value = null;
     try {
-      const media = await importUrl(url, currentFolderId.value);
+      const media = await importUrl(
+        url,
+        currentFolderId.value,
+        resolvedTemplateId(),
+      );
       items.value = [media, ...items.value];
       notify(() => provider.onCreated?.(media));
       return media;
@@ -452,6 +480,20 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
   function selectItem(item: MediaAsset): void {
     previewItem.value = item;
     selectedItems.value = new Set([item.id]);
+  }
+
+  async function loadStorage(): Promise<void> {
+    const { storage } = provider;
+    if (typeof storage !== "function") {
+      storageInfo.value = null;
+      return;
+    }
+
+    try {
+      storageInfo.value = await storage();
+    } catch (error) {
+      options.onError?.(error as Error);
+    }
   }
 
   async function loadFolders(): Promise<void> {
@@ -683,5 +725,7 @@ export function useMediaLibrary(options: UseMediaLibraryOptions) {
     cancelReplace,
     replaceFile,
     replaceMediaDirectly,
+    storageInfo,
+    loadStorage,
   };
 }

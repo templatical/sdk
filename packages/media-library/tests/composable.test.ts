@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { ref } from "vue";
 import { useMediaLibrary } from "../src/composable";
 import type {
   MediaAsset,
@@ -261,6 +262,23 @@ describe("useMediaLibrary", () => {
 
       expect(list).toHaveBeenCalledWith({ category: "images" });
     });
+
+    it("includes templateId when set and omits it when unset", async () => {
+      const list = vi.fn(async () => ({ items: [] }));
+      const templateId = ref<string | undefined>(undefined);
+      const lib = useMediaLibrary({
+        provider: fakeProvider({ list }),
+        templateId,
+      });
+
+      await lib.loadItems();
+      expect(list).toHaveBeenCalledWith({});
+      expect(list.mock.calls[0][0]).not.toHaveProperty("templateId");
+
+      templateId.value = "tpl-1";
+      await lib.loadItems();
+      expect(list).toHaveBeenLastCalledWith({ templateId: "tpl-1" });
+    });
   });
 
   describe("loadMore", () => {
@@ -512,6 +530,21 @@ describe("useMediaLibrary", () => {
       expect(create).toHaveBeenCalledWith({
         file: expect.any(File),
         folderId: "f1",
+      });
+    });
+
+    it("passes templateId on create when set", async () => {
+      const create = vi.fn(async () => createAsset("new-1"));
+      const lib = useMediaLibrary({
+        provider: fakeProvider({ create }),
+        templateId: "tpl-9",
+      });
+
+      await lib.uploadFile(new File(["data"], "photo.jpg"));
+
+      expect(create).toHaveBeenCalledWith({
+        file: expect.any(File),
+        templateId: "tpl-9",
       });
     });
 
@@ -860,6 +893,23 @@ describe("useMediaLibrary", () => {
       expect(importFromUrl).toHaveBeenCalledWith(
         "https://example.com/img.jpg",
         null,
+        undefined,
+      );
+    });
+
+    it("forwards templateId to importFromUrl", async () => {
+      const importFromUrl = vi.fn(async () => createAsset("imported-1"));
+      const lib = useMediaLibrary({
+        provider: fakeProvider({ importFromUrl }),
+        templateId: "tpl-2",
+      });
+
+      await lib.importFromUrl("https://example.com/img.jpg");
+
+      expect(importFromUrl).toHaveBeenCalledWith(
+        "https://example.com/img.jpg",
+        null,
+        "tpl-2",
       );
     });
 

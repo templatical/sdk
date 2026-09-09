@@ -10,7 +10,7 @@ import {
   type AspectRatioPreset,
 } from "../../composables/useImageCrop";
 import { POPOVER_TARGET_KEY, UI_THEME_KEY } from "../../keys";
-import type { MediaItem } from "../../types";
+import type { MediaAsset } from "@templatical/types";
 import { computed, inject, ref, watch } from "vue";
 import { Cropper, type CropperResult } from "vue-advanced-cropper";
 import "vue-advanced-cropper/dist/style.css";
@@ -21,7 +21,7 @@ export interface CropData {
 
 const props = defineProps<{
   visible: boolean;
-  item: MediaItem | null;
+  item: MediaAsset | null;
 }>();
 
 const emit = defineEmits<{
@@ -69,7 +69,7 @@ const isCroppableImage = computed(() => {
     "image/gif",
   ];
 
-  return croppableMimeTypes.includes(props.item.mime_type);
+  return croppableMimeTypes.includes(props.item.mimeType ?? "");
 });
 
 const aspectRatioValue = computed(() => {
@@ -97,8 +97,8 @@ watch(
   () => props.visible,
   (visible) => {
     if (visible && props.item) {
-      filenameValue.value = props.item.filename;
-      altTextValue.value = props.item.alt_text || "";
+      filenameValue.value = props.item.filename ?? "";
+      altTextValue.value = props.item.alt ?? "";
       aspectRatio.value = "free";
       maxWidth.value = undefined;
       maxHeight.value = undefined;
@@ -152,7 +152,7 @@ async function handleSave(): Promise<void> {
     return;
   }
 
-  const isImage = isImageMimeType(props.item.mime_type);
+  const isImage = isImageMimeType(props.item.mimeType ?? "");
   let cropData: CropData | undefined;
 
   if (isCroppableImage.value && cropperRef.value && hasModifiedCrop.value) {
@@ -165,10 +165,10 @@ async function handleSave(): Promise<void> {
           maxWidth.value,
           maxHeight.value,
         );
-        const settings = getExportSettings(props.item.mime_type);
+        const settings = getExportSettings(props.item.mimeType ?? "");
         const file = await canvasToFile(
           resizedCanvas,
-          props.item.filename,
+          props.item.filename ?? "image",
           settings,
         );
         cropData = { file };
@@ -214,7 +214,7 @@ function handleKeydown(event: KeyboardEvent): void {
       <div
         v-if="visible && item"
         :data-tpl-theme="tplUiTheme"
-        class="tpl tpl:fixed tpl:inset-0 tpl:z-[10000] tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
+        class="tpl tpl:fixed tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
         style="background-color: var(--tpl-overlay)"
         @click.self="emit('close')"
         @keydown="handleKeydown"
@@ -419,7 +419,7 @@ function handleKeydown(event: KeyboardEvent): void {
             </div>
 
             <!-- Alt Text (images only) -->
-            <div v-if="isImageMimeType(item.mime_type)" class="tpl:mb-4">
+            <div v-if="isImageMimeType(item.mimeType ?? '')" class="tpl:mb-4">
               <label
                 class="tpl:mb-1 tpl:block tpl:text-xs tpl:font-medium"
                 style="color: var(--tpl-text-muted)"

@@ -13,7 +13,8 @@ import { useMediaLibrary } from "../composable";
 import { useMediaCategories } from "../composables/useMediaCategories";
 import { useMediaLibraryUI } from "../composables/useMediaLibraryUI";
 import type { PlanConfig } from "@templatical/types";
-import type { MediaCategory, MediaItem } from "../types";
+import type { MediaCategory } from "@templatical/types";
+import type { MediaItem } from "../types";
 import type { AuthManager } from "@templatical/core/cloud";
 import type { MediaTranslations } from "../i18n";
 import {
@@ -104,12 +105,7 @@ function confirmSelection(): void {
     return;
   }
 
-  const item = library.previewItem.value;
-  const itemWithSelectedUrl: MediaItem = {
-    ...item,
-    url: ui.selectedUrl.value || item.url,
-  };
-  props.onSelect?.(itemWithSelectedUrl);
+  props.onSelect?.(library.previewItem.value as never);
 }
 
 onMounted(() => {
@@ -188,7 +184,7 @@ onMounted(() => {
           "
         >
           <MediaFolderTree
-            :folders="library.folders.value"
+            :folders="ui.folderTree.value"
             :current-folder-id="library.currentFolderId.value"
             :view-mode="library.viewMode.value"
             :has-frequently-used="ui.hasFrequentlyUsed.value"
@@ -243,7 +239,7 @@ onMounted(() => {
             </template>
             <template v-else>
               <MediaBreadcrumb
-                :folders="library.folders.value"
+                :folders="ui.folderTree.value"
                 :current-folder-id="library.currentFolderId.value"
                 @navigate="library.navigateToFolder"
               />
@@ -306,7 +302,8 @@ onMounted(() => {
               :value="library.categoryFilter.value ?? ''"
               @change="
                 library.filterByCategory(
-                  ($event.target as HTMLSelectElement).value || null,
+                  (($event.target as HTMLSelectElement).value ||
+                    null) as MediaCategory | null,
                 )
               "
             >
@@ -486,7 +483,7 @@ onMounted(() => {
               class="tpl:text-xs"
               style="color: var(--tpl-text)"
             >
-              <template v-if="info.template_count > 0">
+              <template v-if="info.templateCount > 0">
                 <span class="tpl:font-medium">
                   {{
                     ui.displayItems.value.find((i) => i.id === mediaId)
@@ -498,7 +495,7 @@ onMounted(() => {
                   {{
                     t.mediaLibrary.usedInTemplates.replace(
                       "{count}",
-                      info.template_count.toString(),
+                      info.templateCount.toString(),
                     )
                   }}
                 </span>
@@ -546,9 +543,8 @@ onMounted(() => {
       <div class="tpl:flex tpl:min-w-0 tpl:flex-1 tpl:items-center tpl:gap-3">
         <MediaPreviewPanel
           v-if="library.previewItem.value"
-          v-model:selected-conversion="ui.selectedConversion.value"
           :item="library.previewItem.value"
-          :folders="library.folders.value"
+          :folders="ui.folderTree.value"
         />
       </div>
       <div class="tpl:flex tpl:items-center tpl:gap-5">
@@ -589,7 +585,7 @@ onMounted(() => {
             </button>
             <MediaMovePicker
               v-if="ui.showMovePicker.value"
-              :folders="library.folders.value"
+              :folders="ui.folderTree.value"
               :current-folder-id="library.currentFolderId.value"
               @select="ui.handleMoveToFolder"
               @close="ui.showMovePicker.value = false"
