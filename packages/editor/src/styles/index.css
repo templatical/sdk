@@ -459,6 +459,7 @@
     text-decoration: underline dotted;
     text-underline-offset: 3px;
     text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+    unicode-bidi: isolate;
 }
 
 .tpl-pulse {
@@ -712,7 +713,7 @@
 .tpl-text-editable .tiptap ul,
 .tpl-text-editable .tiptap ol {
     margin: 8px 0;
-    padding-left: 24px;
+    padding-inline-start: 24px;
 }
 
 .tpl-text-content li,
@@ -752,11 +753,13 @@
     @apply tpl:mx-0.5 tpl:inline-flex tpl:items-center tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[0.9em] tpl:font-medium;
     background-color: color-mix(in srgb, var(--tpl-primary) 20%, transparent);
     color: var(--tpl-primary);
+    unicode-bidi: isolate;
 }
 
 /* Logic merge tag styles - Outlined border style */
 .tpl-text-content span[data-logic-merge-tag],
 .tpl-text-editable span[data-logic-merge-tag] {
+    unicode-bidi: isolate;
     @apply tpl:mx-0.5 tpl:inline-flex tpl:items-center tpl:rounded tpl:px-1.5 tpl:py-0.5 tpl:text-[0.8em] tpl:font-bold tpl:tracking-wide tpl:uppercase;
     background-color: transparent;
     border: 1.5px solid color-mix(in srgb, var(--tpl-primary) 50%, transparent);

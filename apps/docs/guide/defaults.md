@@ -141,6 +141,8 @@ In other words, `templateDefaults` are fallbacks for missing content, not overri
 | `width` | `600` | Template width in pixels |
 | `backgroundColor` | `#ffffff` | Template background color |
 | `fontFamily` | `Arial` | Default font family |
+| `locale` | `en` | BCP-47 content language (`<html lang>`) |
+| `direction` | — | `"ltr"` or `"rtl"`. Unset follows the content language |
 | `preheaderText` | — | Email preheader text |
 
 ### TypeScript Type

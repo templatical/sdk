@@ -146,7 +146,7 @@ const editor = await init({
 
 ### Einstellungs-Panel einschränken {#einstellungs-panel-einschraenken}
 
-Der Tab „Einstellungen“ in der rechten Seitenleiste bietet die acht Mitglieder von `TemplateSettings` an. Übergeben Sie `templateSettings.fields`, um daraus eine Positivliste zu machen — für Einstellungen, die Ihre Anwendung besitzt und nicht der Autor:
+Der Tab „Einstellungen“ in der rechten Seitenleiste bietet jedes Mitglied von `TemplateSettings` an. Übergeben Sie `templateSettings.fields`, um daraus eine Positivliste zu machen — für Einstellungen, die Ihre Anwendung besitzt und nicht der Autor:
 
 ```ts
 const editor = await init({
@@ -170,9 +170,9 @@ const editor = await init({
 | `fields: [...]` | nur die aufgeführten Einstellungen |
 | `fields: false` oder `fields: []` | keine — der Tab „Einstellungen“ wird nicht gerendert |
 
-Die Felder sind `width`, `backgroundColor`, `textColor`, `linkColor`, `linkUnderline`, `fontFamily`, `locale` und `preheaderText`.
+Die Felder sind `width`, `backgroundColor`, `textColor`, `linkColor`, `linkUnderline`, `fontFamily`, `locale`, `direction` und `preheaderText`.
 
-- **Karten folgen ihren Feldern.** Eine Karte wird gerendert, solange mindestens eine ihrer Einstellungen übrig bleibt. Ohne `locale` entfällt die Sprach-Karte, ohne `preheaderText` die Preheader-Karte. `width` bildet die Layout-Karte, die fünf Farb- und Schrift-Einstellungen die Darstellungs-Karte.
+- **Karten folgen ihren Feldern.** Eine Karte wird gerendert, solange mindestens eine ihrer Einstellungen übrig bleibt. Ohne `locale` und `direction` entfällt die Sprach-Karte, ohne `preheaderText` die Preheader-Karte. `width` bildet die Layout-Karte, die fünf Farb- und Schrift-Einstellungen die Darstellungs-Karte.
 - **Die Liste schränkt ein, sie sortiert nicht um.** Einstellungen sitzen in festen Karten — anders als bei [`paletteBlocks`](#block-palette-anpassen) gibt es keine Reihenfolge auszudrücken.
 - **Ein unbekannter Eintrag wird mit einer Konsolenwarnung übersprungen.** TypeScript lehnt ihn bereits beim Kompilieren ab; bei einem JavaScript-Aufruf schränkt ein Tippfehler das Panel weiter ein, statt stillschweigend alle Einstellungen wiederherzustellen.
 - **Eine Einstellung auszublenden ändert ihren Wert nicht.** Was der geladene Inhalt mitbringt, wird weiterhin gerendert und bleibt über `getContent()` und den Export erhalten. Setzen Sie die ausgeblendeten Werte über den Inhalt, den Sie dem Editor übergeben — `init({ content })` oder das `load` Ihres eigenen `templates`-Providers, die Nahtstelle für „die Sprache dieses Templates kommt aus meiner Anwendung“. Für ein Template, das Sie **laden**, genügt [`templateDefaults`](/de/guide/defaults) dafür nicht: es greift nur, wenn kein Inhalt übergeben wird. Bei einem *leeren* Template greift es, und für `locale` gibt es dort eine Abkürzung — `init({ locale })` setzt die Inhaltssprache, solange Sie kein `templateDefaults.locale` angeben, sodass auch bei ausgeblendetem Feld das richtige `<html lang>` entsteht.

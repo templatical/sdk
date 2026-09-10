@@ -146,7 +146,7 @@ const editor = await init({
 
 ### Restricting the settings panel {#restricting-the-settings-panel}
 
-The right sidebar's Settings tab exposes the eight members of `TemplateSettings`. Pass `templateSettings.fields` to narrow that to an allowlist — for settings your application owns rather than the author:
+The right sidebar's Settings tab exposes every member of `TemplateSettings`. Pass `templateSettings.fields` to narrow that to an allowlist — for settings your application owns rather than the author:
 
 ```ts
 const editor = await init({
@@ -170,9 +170,9 @@ const editor = await init({
 | `fields: [...]` | only the listed settings |
 | `fields: false` or `fields: []` | none — the Settings tab does not render |
 
-The fields are `width`, `backgroundColor`, `textColor`, `linkColor`, `linkUnderline`, `fontFamily`, `locale` and `preheaderText`.
+The fields are `width`, `backgroundColor`, `textColor`, `linkColor`, `linkUnderline`, `fontFamily`, `locale`, `direction` and `preheaderText`.
 
-- **Cards follow their fields.** A card renders while at least one of its settings survives, so excluding `locale` removes the Language card and excluding `preheaderText` removes the Preheader card. `width` is the Layout card; the five colour and font settings are the Appearance card.
+- **Cards follow their fields.** A card renders while at least one of its settings survives, so excluding both `locale` and `direction` removes the Language card and excluding `preheaderText` removes the Preheader card. `width` is the Layout card; the five colour and font settings are the Appearance card.
 - **The list narrows, it never reorders.** Settings sit in fixed cards, so unlike [`paletteBlocks`](#customizing-the-block-palette) there is no order to express.
 - **An unknown entry is skipped with a console warning.** TypeScript rejects one at compile time; a JavaScript caller's typo narrows the panel rather than silently restoring every setting.
 - **Hiding a setting never changes its value.** Whatever the loaded content carries keeps rendering and keeps round-tripping through `getContent()` and the export. Set the ones you hide from the content you hand the editor — `init({ content })`, or the `templates` provider's own `load`, which is the seam for "this template's locale comes from my application". [`templateDefaults`](/guide/defaults) will not do it for a template you **load**: it applies only when no content is provided. For a *blank* template it does, and `locale` has a shortcut there — `init({ locale })` seeds the content language when you set no `templateDefaults.locale`, so hiding the field still yields the right `<html lang>`.

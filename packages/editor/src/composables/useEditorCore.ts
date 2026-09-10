@@ -45,6 +45,7 @@ import type {
 import {
   deepMergeDefaults,
   hasMergeTagSamples,
+  resolveContentDirection,
   resolveSyntax,
 } from "@templatical/types";
 import {
@@ -362,8 +363,13 @@ export function useEditorCore(
   const resolvedBlockDefaults = computed<BlockDefaults>(() =>
     deepMergeDefaults(
       deepMergeDefaults(
-        localizedBlockDefaults(translations),
-        localizedContentDefaults(editor.content.value.settings?.locale),
+        deepMergeDefaults(
+          localizedBlockDefaults(translations),
+          localizedContentDefaults(editor.content.value.settings?.locale),
+        ),
+        resolveContentDirection(editor.content.value.settings) === "rtl"
+          ? { title: { textAlign: "right" }, table: { textAlign: "right" } }
+          : {},
       ),
       config.blockDefaults ?? {},
     ),

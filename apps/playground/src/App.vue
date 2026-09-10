@@ -2733,6 +2733,27 @@ onUnmounted(() => {
                     class="h-1.5 w-[60%] rounded-[3px] bg-gray-200/30 dark:bg-gray-500/20"
                   ></div>
                 </div>
+                <!-- Arabic invitation wireframe (RTL) -->
+                <div
+                  v-else-if="tpl.preview === 'rtl'"
+                  class="flex flex-col items-end gap-1.5 w-[60%]"
+                >
+                  <div
+                    class="h-1.5 w-[40%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                  ></div>
+                  <div
+                    class="h-1.5 w-[70%] rounded-[3px] bg-gray-200 dark:bg-gray-500"
+                  ></div>
+                  <div class="my-1 h-5 w-[45%] rounded bg-blue-500/40"></div>
+                  <div class="flex w-full gap-1">
+                    <div
+                      class="h-7 flex-1 rounded-[3px] bg-gray-200/80 dark:bg-gray-500/50"
+                    ></div>
+                    <div
+                      class="h-7 w-[38%] rounded-[3px] bg-gray-200/60 dark:bg-gray-500/40"
+                    ></div>
+                  </div>
+                </div>
               </div>
               <span
                 class="block pt-3 px-[14px] pb-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100"

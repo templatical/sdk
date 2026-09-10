@@ -142,6 +142,8 @@ Mit anderen Worten, `templateDefaults` sind Fallbacks für fehlenden Inhalt, kei
 | `width` | `600` | Template-Breite in Pixeln |
 | `backgroundColor` | `#ffffff` | Hintergrundfarbe des Templates |
 | `fontFamily` | `Arial` | Standard-Schriftfamilie |
+| `locale` | `en` | BCP-47-Inhaltssprache (`<html lang>`) |
+| `direction` | — | `"ltr"` oder `"rtl"`. Ungesetzt folgt der Inhaltssprache |
 | `preheaderText` | — | E-Mail-Preheader-Text |
 
 ### TypeScript-Typ

@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { useRichTextEditor } from "../../composables/useRichTextEditor";
 import { usePopoverRoot } from "../../composables/usePopoverRoot";
-import type { ParagraphBlock as ParagraphBlockType } from "@templatical/types";
+import {
+  resolveContentDirection,
+  type ParagraphBlock as ParagraphBlockType,
+} from "@templatical/types";
+import { inject } from "vue";
+import { EDITOR_KEY } from "../../keys";
 import ParagraphToolbar from "./ParagraphToolbar.vue";
 import RichTextLinkDialog from "./RichTextLinkDialog.vue";
 import RichTextEditorContent from "./RichTextEditorContent.vue";
@@ -17,6 +22,13 @@ const emit = defineEmits<{
 }>();
 
 const popoverRoot = usePopoverRoot();
+const emailEditor = inject(EDITOR_KEY, null);
+const defaultAlignment =
+  resolveContentDirection(
+    emailEditor?.content?.value?.settings ?? { locale: "en" },
+  ) === "rtl"
+    ? "right"
+    : "left";
 
 const {
   editor,
@@ -113,7 +125,10 @@ const {
             rel: "noopener noreferrer",
           },
         }),
-        TextAlign.configure({ types: ["paragraph"] }),
+        TextAlign.configure({
+          types: ["paragraph"],
+          defaultAlignment,
+        }),
         TextStyle,
         Color,
         FontFamily,

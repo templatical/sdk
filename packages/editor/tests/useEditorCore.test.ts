@@ -413,6 +413,53 @@ describe('useEditorCore', () => {
     });
   });
 
+  describe('start-edge defaults follow content direction', () => {
+    function editorWithSettings(settings: Record<string, unknown>) {
+      const editor = makeEditor();
+      (editor.content as any).value = { blocks: [], settings };
+      return editor;
+    }
+
+    it('starts title and table at right when the email is RTL', () => {
+      const { captured } = mountCore({
+        editor: editorWithSettings({ locale: 'ar' }) as any,
+      });
+      const defaults = (captured.injected!.blockDefaults as any).value;
+      expect(defaults.title.textAlign).toBe('right');
+      expect(defaults.table.textAlign).toBe('right');
+    });
+
+    it('does not override title and table align for an LTR email', () => {
+      const { captured } = mountCore({
+        editor: editorWithSettings({ locale: 'en' }) as any,
+      });
+      const defaults = (captured.injected!.blockDefaults as any).value;
+      // Factory defaults still supply `"left"` at insert; this layer only
+      // injects `"right"` when the email is RTL.
+      expect(defaults.title?.textAlign).not.toBe('right');
+      expect(defaults.table?.textAlign).not.toBe('right');
+    });
+
+    it("lets a consumer's textAlign win over RTL", () => {
+      const { captured } = mountCore({
+        editor: editorWithSettings({ locale: 'ar' }) as any,
+        config: {
+          blockDefaults: { title: { textAlign: 'left' } },
+        } as any,
+      });
+      const defaults = (captured.injected!.blockDefaults as any).value;
+      expect(defaults.title.textAlign).toBe('left');
+    });
+
+    it('does not inject right when an Arabic locale is explicitly ltr', () => {
+      const { captured } = mountCore({
+        editor: editorWithSettings({ locale: 'ar', direction: 'ltr' }) as any,
+      });
+      const defaults = (captured.injected!.blockDefaults as any).value;
+      expect(defaults.title?.textAlign).not.toBe('right');
+    });
+  });
+
   describe('auto-save', () => {
     it('creates autoSave when autoSaveOptions is provided', () => {
       mountCore({

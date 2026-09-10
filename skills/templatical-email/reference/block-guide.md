@@ -21,6 +21,9 @@ omitted; everything else is required.
   body.
 - `locale` (string) — BCP-47 language tag (`"en"`, `"de"`, `"fr-CA"`), drives
   `<html lang>`.
+- `direction` (`"ltr"` | `"rtl"`, _optional_) — writing direction of the
+  email (`<mjml dir>` and the canvas). Unset follows `locale` (`ar` / `he` /
+  `fa` / `ur` / … → `"rtl"`).
 
 ## Common block fields
 

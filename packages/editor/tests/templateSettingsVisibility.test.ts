@@ -104,11 +104,12 @@ describe("resolveTemplateSettingsFields", () => {
 describe("TEMPLATE_SETTINGS_FIELD_CARDS", () => {
   it("assigns every TemplateSettings member to a card", () => {
     // The map is typed `Record<keyof TemplateSettings, TemplateSettingsCard>`,
-    // so a ninth setting fails `vue-tsc` until someone decides which card it
+    // so a new setting fails `vue-tsc` until someone decides which card it
     // belongs in. This case is the runtime half: it fails if that annotation
     // is ever loosened, which would let a field ship with no way to hide it.
     expect(Object.keys(TEMPLATE_SETTINGS_FIELD_CARDS).sort()).toEqual([
       "backgroundColor",
+      "direction",
       "fontFamily",
       "linkColor",
       "linkUnderline",
@@ -128,6 +129,7 @@ describe("TEMPLATE_SETTINGS_FIELD_CARDS", () => {
       linkUnderline: "appearance",
       fontFamily: "appearance",
       locale: "language",
+      direction: "language",
       preheaderText: "preheader",
     });
   });
@@ -169,7 +171,13 @@ function mountPanel(fields?: TemplateSettingsField[]) {
   });
 }
 
-const CARDS = ["layout", "appearance", "language", "preheader", "tips"] as const;
+const CARDS = [
+  "layout",
+  "appearance",
+  "language",
+  "preheader",
+  "tips",
+] as const;
 
 function visibleCards(wrapper: ReturnType<typeof mountPanel>): string[] {
   return CARDS.filter((card) =>
@@ -205,17 +213,51 @@ describe("TemplateSettings panel visibility", () => {
       "template-settings-link-underline",
       "template-settings-font-family",
       "template-settings-locale",
+      "template-settings-direction",
       "template-settings-preheader",
     ]) {
       expect(has(wrapper, testid), testid).toBe(true);
     }
   });
 
-  it("drops the Language card when locale is excluded", () => {
+  it("keeps the Language card when only locale is excluded", () => {
     const wrapper = mountPanel(
       ALL_TEMPLATE_SETTINGS_FIELDS.filter((f) => f !== "locale"),
     );
     expect(has(wrapper, "template-settings-locale")).toBe(false);
+    expect(has(wrapper, "template-settings-direction")).toBe(true);
+    expect(visibleCards(wrapper)).toEqual([
+      "layout",
+      "appearance",
+      "language",
+      "preheader",
+      "tips",
+    ]);
+  });
+
+  it("keeps the Language card when only direction is excluded", () => {
+    const wrapper = mountPanel(
+      ALL_TEMPLATE_SETTINGS_FIELDS.filter((f) => f !== "direction"),
+    );
+    expect(has(wrapper, "template-settings-direction")).toBe(false);
+    expect(has(wrapper, "template-settings-locale")).toBe(true);
+    expect(visibleCards(wrapper)).toEqual([
+      "layout",
+      "appearance",
+      "language",
+      "preheader",
+      "tips",
+    ]);
+  });
+
+  it("drops the Language card when locale and direction are both excluded", () => {
+    const wrapper = mountPanel(
+      ALL_TEMPLATE_SETTINGS_FIELDS.filter(
+        (f) => f !== "locale" && f !== "direction",
+      ),
+    );
+    expect(has(wrapper, "template-settings-locale")).toBe(false);
+    expect(has(wrapper, "template-settings-direction")).toBe(false);
     expect(visibleCards(wrapper)).toEqual([
       "layout",
       "appearance",
@@ -308,7 +350,9 @@ describe("RightSidebar Settings tab", () => {
   it("hides the Settings tab when every field is excluded", () => {
     // A tab that opens an empty panel is worse than no tab, so the whole
     // control goes rather than the panel rendering blank.
-    expect(mountRightSidebar([]).find("#tpl-tab-settings").exists()).toBe(false);
+    expect(mountRightSidebar([]).find("#tpl-tab-settings").exists()).toBe(
+      false,
+    );
   });
 
   it("keeps the Content tab when the Settings tab is hidden", () => {
@@ -358,16 +402,34 @@ async function mountRealEditor(config: Record<string, unknown>) {
 }
 
 describe("templateSettings reaches the panel through init's config", () => {
-  it("hides the Language card for a real config that excludes locale", async () => {
+  it("hides the Language card for a real config that excludes locale and direction", async () => {
     const wrapper = await mountRealEditor({
       templateSettings: {
-        fields: ALL_TEMPLATE_SETTINGS_FIELDS.filter((f) => f !== "locale"),
+        fields: ALL_TEMPLATE_SETTINGS_FIELDS.filter(
+          (f) => f !== "locale" && f !== "direction",
+        ),
       },
     });
     // The Settings tab has to be opened first — the panel is `v-if`'d on it.
     await wrapper.find("#tpl-tab-settings").trigger("click");
     expect(
       wrapper.find('[data-testid="template-settings-card-language"]').exists(),
+    ).toBe(false);
+    expect(
+      wrapper.find('[data-testid="template-settings-card-layout"]').exists(),
+    ).toBe(true);
+  });
+
+  it("shows the direction toggle for a real config of width + direction", async () => {
+    const wrapper = await mountRealEditor({
+      templateSettings: { fields: ["width", "direction"] },
+    });
+    await wrapper.find("#tpl-tab-settings").trigger("click");
+    expect(
+      wrapper.find('[data-testid="template-settings-direction"]').exists(),
+    ).toBe(true);
+    expect(
+      wrapper.find('[data-testid="template-settings-locale"]').exists(),
     ).toBe(false);
     expect(
       wrapper.find('[data-testid="template-settings-card-layout"]').exists(),
@@ -408,7 +470,9 @@ describe("templateSettings reaches the panel through init's config", () => {
       wrapper.find('[data-testid="template-settings-card-layout"]').exists(),
     ).toBe(true);
     expect(
-      wrapper.find('[data-testid="template-settings-card-appearance"]').exists(),
+      wrapper
+        .find('[data-testid="template-settings-card-appearance"]')
+        .exists(),
     ).toBe(false);
     warn.mockRestore();
   });

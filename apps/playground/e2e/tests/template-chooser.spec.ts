@@ -8,7 +8,7 @@ test.describe("Template chooser", () => {
   }) => {
     await chooserPage.goto();
     const templateCards = page.locator(SELECTORS.templateCard);
-    expect(await templateCards.count()).toBe(7);
+    expect(await templateCards.count()).toBe(8);
 
     const blankCard = page.locator(SELECTORS.blankTemplateCard);
     await expect(blankCard).toBeVisible();

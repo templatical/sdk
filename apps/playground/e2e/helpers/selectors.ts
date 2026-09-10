@@ -147,6 +147,7 @@ export const SELECTORS = {
   templateSettingsCard: (card: string) =>
     `[data-testid="template-settings-card-${card}"]`,
   templateSettingsLocale: '[data-testid="template-settings-locale"]',
+  templateSettingsDirection: '[data-testid="template-settings-direction"]',
   templateSettingsPreheader: '[data-testid="template-settings-preheader"]',
   templateSettingsTextColor: '[data-testid="template-settings-text-color"]',
   templateSettingsLinkColor: '[data-testid="template-settings-link-color"]',

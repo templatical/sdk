@@ -482,6 +482,9 @@ const de: typeof en = {
     contentLocale: "Inhaltssprache",
     contentLocaleHint:
       "BCP-47-Code (z. B. en, de, pt-BR). Setzt das lang-Attribut der gerenderten E-Mail, damit Screenreader den Inhalt korrekt aussprechen.",
+    contentDirection: "Rechts-nach-links",
+    contentDirectionHint:
+      "Schreibrichtung der E-Mail, unabhängig von der Sprache des Editors. Ungesetzt folgt sie der Inhaltssprache (Arabisch, Hebräisch, …).",
     tips: "Tipps",
     tip1: "600px ist die Standardbreite für E-Mail-Vorlagen",
     tip2: "Verwenden Sie websichere Schriften für beste Kompatibilität",

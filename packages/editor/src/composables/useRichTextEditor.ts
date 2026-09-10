@@ -15,7 +15,10 @@ import {
   type ShallowRef,
 } from "vue";
 import type { Translations } from "../i18n";
-import { getSyntaxTriggerChar } from "@templatical/types";
+import {
+  getSyntaxTriggerChar,
+  resolveContentDirection,
+} from "@templatical/types";
 import { EDITOR_KEY, TRANSLATIONS_KEY } from "../keys";
 import { useMergeTag } from "./useMergeTag";
 import { useLogicTag } from "./useLogicTag";
@@ -103,6 +106,17 @@ export function useRichTextEditor(
 
   const editor = shallowRef<Editor | null>(null);
 
+  // `content` is a ref on the real editor and absent on headless mounts.
+  const contentDirection = () =>
+    resolveContentDirection(
+      emailEditor?.content?.value?.settings ?? { locale: "en" },
+    );
+
+  watch(contentDirection, (dir) => {
+    const el = editor.value?.view.dom;
+    if (el) el.setAttribute("dir", dir);
+  });
+
   const {
     showLinkDialog,
     linkUrl,
@@ -158,6 +172,11 @@ export function useRichTextEditor(
         extensions: uniqueExtensions,
         content: options.blockContent(),
         editable: true,
+        editorProps: {
+          attributes: {
+            dir: contentDirection(),
+          },
+        },
         onUpdate: ({ editor: e }) => {
           if (destroyed) return;
           if (emailEditor) {

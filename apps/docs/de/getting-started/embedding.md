@@ -89,7 +89,7 @@ Am wichtigsten ist das für die Canvas. Ein seitenweites `text-transform: upperc
 Shadow DOM blockiert *Regeln* der Host-Seite — ein Selektor aus Ihrem Stylesheet greift innerhalb der Shadow-Wurzel des Editors nie. Es blockiert jedoch keine *Vererbung*, die dem flachgelegten Baum folgt; vererbbare Eigenschaften überschreiten die Grenze also trotzdem. Aufgehalten werden sie vom Reset des Editors, und der wirkt mit `shadowDom: false` genauso.
 :::
 
-**`direction` darf bewusst vererbt werden.** Eine RTL-Seite gibt ihre Schreibrichtung an den Editor weiter, was RTL-Einbettungen genau so wollen. `visibility` bleibt aus demselben Grund unangetastet.
+**`direction` darf bewusst auf das Editor-Chrome vererbt werden.** Eine RTL-Seite gibt ihre Schreibrichtung an Kopfzeile und Leisten weiter, was RTL-Einbettungen genau so wollen. Die E-Mail-Leinwand setzt ihr eigenes `dir` aus `settings.direction` (mit Fallback auf die Inhaltssprache), sodass die Host-Seite nicht entscheidet, wie die E-Mail gelesen wird. `visibility` bleibt aus demselben Grund unangetastet.
 
 ### Sie brauchen kein CSS-Reset auf dem Container
 

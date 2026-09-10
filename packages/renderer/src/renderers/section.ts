@@ -77,14 +77,16 @@ ${content}
   // keeps them side-by-side below 480px instead of stacking (MJML's default).
   // `mj-group` requires percentage column widths — `getWidthPercentages`
   // already guarantees that. Only meaningful with 2+ columns.
+  const dirAttr = context.contentDirection === "rtl" ? ' direction="rtl"' : "";
+
   const body =
     block.stackOnMobile === false && columnsContent.length > 1
-      ? `<mj-group>
+      ? `<mj-group${dirAttr}>
 ${columns}
 </mj-group>`
       : columns;
 
-  return `<mj-section${bgColor} padding="${padding}"${borderRadiusAttr}${visibilityAttr}>
+  return `<mj-section${bgColor} padding="${padding}"${borderRadiusAttr}${visibilityAttr}${dirAttr}>
 ${body}
 </mj-section>`;
 }

@@ -59,9 +59,13 @@ describe("ParagraphToolbar alignment controls", () => {
 
 describe("ParagraphEditor TextAlign wiring", () => {
   it("registers TextAlign for the paragraph type", () => {
-    expect(EDITOR_SRC).toContain(
-      'TextAlign.configure({ types: ["paragraph"] })',
-    );
+    expect(EDITOR_SRC).toContain("TextAlign.configure");
+    expect(EDITOR_SRC).toContain('types: ["paragraph"]');
+  });
+
+  it("starts new paragraphs at the content-direction start edge", () => {
+    expect(EDITOR_SRC).toContain("defaultAlignment");
+    expect(EDITOR_SRC).toContain("resolveContentDirection");
   });
 
   it("relies on a TipTap default that still permits justify", () => {

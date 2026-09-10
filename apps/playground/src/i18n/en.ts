@@ -263,6 +263,10 @@ export default {
       name: "Black Friday Sale",
       description: "Promo with product picks and discount code",
     },
+    rtl: {
+      name: "Arabic Invitation",
+      description: "RTL invitation with merge tags and a two-column section",
+    },
   },
   onboarding: {
     next: "Next",

@@ -3,7 +3,10 @@ import ColorPicker from "./ColorPicker.vue";
 import MergeTagTextarea from "./MergeTagTextarea.vue";
 import ToggleSwitch from "./ToggleSwitch.vue";
 import { useI18n } from "../composables/useI18n";
-import type { TemplateSettings } from "@templatical/types";
+import {
+  resolveContentDirection,
+  type TemplateSettings,
+} from "@templatical/types";
 import {
   cardClass,
   inputClass,
@@ -83,6 +86,8 @@ function showsCard(card: TemplateSettingsCard): boolean {
 // the two helpers above — the allowlist is init-time config, not reactive
 // state, and a `computed` here would imply it can change.
 const showsAnyField = allowedFields.size > 0;
+
+const isRtl = computed(() => resolveContentDirection(props.settings) === "rtl");
 
 // Cards lay their contents out with a flex gap rather than a bottom margin on
 // every child but the last. A margin leaves dead space under whichever field
@@ -303,6 +308,25 @@ const cardStackClass = `${cardClass} tpl:flex tpl:flex-col tpl:gap-3.5`;
             class="tpl:mt-1 tpl:text-xs tpl:leading-relaxed tpl:text-[var(--tpl-text-dim)]"
           >
             {{ t.templateSettings.contentLocaleHint }}
+          </p>
+        </div>
+
+        <div
+          v-if="shows('direction')"
+          data-testid="template-settings-direction"
+        >
+          <ToggleSwitch
+            class="tpl:text-sm tpl:font-medium tpl:text-[var(--tpl-text-muted)]"
+            :model-value="isRtl"
+            :label="t.templateSettings.contentDirection"
+            @update:model-value="
+              emit('update', { direction: $event ? 'rtl' : 'ltr' })
+            "
+          />
+          <p
+            class="tpl:mt-1 tpl:text-xs tpl:leading-relaxed tpl:text-[var(--tpl-text-dim)]"
+          >
+            {{ t.templateSettings.contentDirectionHint }}
           </p>
         </div>
       </div>
