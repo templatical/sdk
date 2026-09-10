@@ -33,7 +33,7 @@
     "syncpack": "^15.3.3",
     "tsdown": "^0.23.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.69.0",
+    "typescript-eslint": "^8.70.0",
     "vite": "^8.2.2",
     "vue-eslint-parser": "^10.4.1"
   },
