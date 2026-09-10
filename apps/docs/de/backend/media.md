@@ -44,6 +44,14 @@ interface MediaProvider {
   frequentlyUsed: false | (() => Promise<MediaAsset[]>);
   storage: false | (() => Promise<MediaStorageInfo | null>);
 }
+
+interface MediaFoldersProvider {
+  list(): Promise<MediaFolder[]>; // FLACH; die Oberfläche baut den Baum über parentId
+  create: false | ((input: MediaFolderInput) => Promise<MediaFolder>);
+  update: false | ((id: string, patch: { name: string }) => Promise<MediaFolder>);
+  delete: false | ((id: string) => Promise<void>);
+  move: false | ((ids: string[], folderId: string | null) => Promise<MediaAsset[]>);
+}
 ```
 
 `false` bedeutet, dass die aktuelle Person diese Aktion nicht ausführen darf; der Editor blendet das Bedienelement aus.
@@ -180,7 +188,7 @@ Ein fehlgeschlagenes `create` stellt nichts voran. `importFromUrl` behält einen
 
 Die Oberfläche ist eine **Auswahl**. Es gibt keine Leiste und kein „Medien verwalten"-Chrome.
 
-- **Durchsuchen** — ein Bildfeld (und das Video-Thumbnail und ein Bildfeld eines benutzerdefinierten Blocks) zeigt eine Durchsuchen-Schaltfläche, sobald `media` **oder** `onRequestMedia` konfiguriert ist. Ein Klick öffnet das Bibliotheks-Modal. Bildfelder und das Video-Thumbnail übergeben `accept: ["images"]`; benutzerdefinierte Blöcke können andere Kategorien übergeben. Das Modal zwingt `list({ category })` auf diese Menge und blendet andere Tabs aus.
+- **Durchsuchen** — ein Bildfeld (und das Video-Thumbnail und ein Bildfeld eines benutzerdefinierten Blocks) zeigt eine Durchsuchen-Schaltfläche, sobald `media` **oder** `onRequestMedia` konfiguriert ist. Mit einem `media`-Provider und ohne Callback öffnet der Klick das Bibliotheks-Modal. Mit `onRequestMedia` läuft der Callback stattdessen — das Modal wird nie gemountet. Bildfelder und das Video-Thumbnail übergeben `accept: ["images"]`; benutzerdefinierte Blöcke können andere Kategorien übergeben. Das Modal zwingt `list({ category })` auf diese Menge und blendet andere Tabs aus.
 - **Bestätigen** — Bestätigen oder Doppelklick übernimmt **ein** in der Vorschau gezeigtes Asset, das zu `accept` passt, als `{ url: asset.url, alt: asset.alt }`. Mehrfachauswahl gilt nur für gesammeltes Löschen und Verschieben. Schließen, Escape oder Backdrop gibt `null` zurück.
 - **Drop** — eine Bilddatei auf einen Bildblock oder ein Bildfeld ziehen:
 
@@ -209,14 +217,20 @@ media: {
 }
 ```
 
-Jedes löst aus, sobald der Editor die Änderung in seiner eigenen Liste übernommen hat: `onCreated` stellt nach einem Erstellen den neuen Eintrag voran, `onUpdated` ersetzt ihn nach einer Änderung, `onDeleted` filtert ihn nach dem Entfernen heraus.
+Jedes löst aus, sobald die zugehörige Mutation auflöst, mit dem gespeicherten Asset:
+
+- **`onCreated`** nach `create` oder `importFromUrl`. Ein Drop ruft `create` auf und löst dies aus, ohne das Modal zu öffnen und ohne eine Listenzeile voranzustellen — die URL landet auf dem Block.
+- **`onUpdated`** nach `update` oder `replace`.
+- **`onDeleted`** nach `delete`.
+
+Es gibt keine medienbezogene Liste auf Editor-Ebene. Die eigene Listing des Modals (wenn es offen ist) stellt bei Erfolg voran, ersetzt und filtert; ein Drop berührt diese Listing nie.
 
 ::: tip `onDeleted` trägt das Asset, keine ID
-`delete` löst zu nichts auf, daher übergibt der Editor den Eintrag, den er unmittelbar vor dem Entfernen erfasst hat.
+`delete` löst zu nichts auf, daher erhält der Handler den Eintrag, den das Modal unmittelbar vor dem Entfernen aus seiner geladenen Listing erfasst hat.
 :::
 
-::: tip Ein Löschen außerhalb der geladenen Liste löst kein Event aus
-Der erfasste Eintrag muss bereits in der Liste des Editors vorhanden sein. Das Löschen einer ID, die der Editor nie geladen hat, löscht weiterhin erfolgreich; es gibt dann aber nichts, das an `onDeleted` übergeben werden könnte, weshalb es nicht auslöst.
+::: tip Ein Löschen außerhalb der geladenen Listing löst kein Event aus
+Der erfasste Eintrag muss bereits in der Listing des Modals vorhanden sein. Das Löschen einer ID, die diese Listing nie gehalten hat, löscht weiterhin erfolgreich; es gibt dann aber nichts, das an `onDeleted` übergeben werden könnte, weshalb es nicht auslöst.
 :::
 
 Eine Handler-Funktion, die einen Fehler wirft, wird abgefangen und an `onError` gemeldet — sie lässt das auslösende Erstellen, Aktualisieren oder Löschen nie fehlschlagen.

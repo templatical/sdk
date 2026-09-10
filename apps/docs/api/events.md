@@ -179,7 +179,7 @@ const editor = await init({
 
 ## Media Events
 
-A `media` provider carries events beyond `list` / `create` / `update` / `delete` — `onCreated`, `onUpdated` and `onDeleted` — fired once the editor has applied the change to its own list.
+A `media` provider carries events beyond `list` / `create` / `update` / `delete` — `onCreated`, `onUpdated` and `onDeleted` — fired once the matching mutation resolves. There is no editor-level media list: a drop-create fires `onCreated` with the stored asset and never prepends a listing row.
 
 ```ts
 const editor = await init({
@@ -193,7 +193,7 @@ const editor = await init({
 });
 ```
 
-`onDeleted` receives the removed `MediaAsset` itself, not an id — `delete` resolves to nothing, so the editor passes the entry it captured before removing it. See [Events](/backend/media#events) for the full reference.
+`onDeleted` receives the removed `MediaAsset` itself, not an id — `delete` resolves to nothing, so the handler gets the entry captured from the modal's loaded listing before removing it. See [Events](/backend/media#events) for the full reference.
 
 ## Test Email Events
 

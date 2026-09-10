@@ -179,7 +179,7 @@ const editor = await init({
 
 ## Medien-Ereignisse
 
-Ein `media`-Provider trägt Events über `list` / `create` / `update` / `delete` hinaus — `onCreated`, `onUpdated` und `onDeleted` —, die ausgelöst werden, sobald der Editor die Änderung in seiner eigenen Liste übernommen hat.
+Ein `media`-Provider trägt Events über `list` / `create` / `update` / `delete` hinaus — `onCreated`, `onUpdated` und `onDeleted` —, die ausgelöst werden, sobald die zugehörige Mutation auflöst. Es gibt keine medienbezogene Liste auf Editor-Ebene: ein Drop-`create` löst `onCreated` mit dem gespeicherten Asset aus und stellt keine Listenzeile voran.
 
 ```ts
 const editor = await init({
@@ -193,7 +193,7 @@ const editor = await init({
 });
 ```
 
-`onDeleted` erhält das entfernte `MediaAsset` selbst, keine ID — `delete` löst zu nichts auf, daher übergibt der Editor den Eintrag, den er vor dem Entfernen erfasst hat. Die vollständige Referenz finden Sie unter [Events](/de/backend/media#events).
+`onDeleted` erhält das entfernte `MediaAsset` selbst, keine ID — `delete` löst zu nichts auf, daher erhält der Handler den Eintrag, den das Modal vor dem Entfernen aus seiner geladenen Listing erfasst hat. Die vollständige Referenz finden Sie unter [Events](/de/backend/media#events).
 
 ## Test-E-Mail-Ereignisse
 

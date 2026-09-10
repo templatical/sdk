@@ -44,6 +44,14 @@ interface MediaProvider {
   frequentlyUsed: false | (() => Promise<MediaAsset[]>);
   storage: false | (() => Promise<MediaStorageInfo | null>);
 }
+
+interface MediaFoldersProvider {
+  list(): Promise<MediaFolder[]>; // FLAT; the UI trees via parentId
+  create: false | ((input: MediaFolderInput) => Promise<MediaFolder>);
+  update: false | ((id: string, patch: { name: string }) => Promise<MediaFolder>);
+  delete: false | ((id: string) => Promise<void>);
+  move: false | ((ids: string[], folderId: string | null) => Promise<MediaAsset[]>);
+}
 ```
 
 `false` means the current user may not perform that action, and the editor hides the affordance.
@@ -180,7 +188,7 @@ Failed `create` does not prepend. `importFromUrl` keeps an inline field error.
 
 The surface is a **picker**. There is no sidebar rail and no "manage media" chrome.
 
-- **Browse** — an image field (and the video thumbnail, and a custom-block image field) shows a browse button when `media` **or** `onRequestMedia` is configured. Clicking it opens the library modal. Image fields and the video thumbnail pass `accept: ["images"]`; custom blocks may pass other categories. The modal forces `list({ category })` to that set and hides other tabs.
+- **Browse** — an image field (and the video thumbnail, and a custom-block image field) shows a browse button when `media` **or** `onRequestMedia` is configured. With a `media` provider and no callback, the click opens the library modal. With `onRequestMedia`, the callback runs instead — the modal never mounts. Image fields and the video thumbnail pass `accept: ["images"]`; custom blocks may pass other categories. The modal forces `list({ category })` to that set and hides other tabs.
 - **Confirm** — Confirm or double-click commits **one** previewed asset that matches `accept`, as `{ url: asset.url, alt: asset.alt }`. Multi-select is for bulk delete and move only. Close, Escape or backdrop returns `null`.
 - **Drop** — dragging an image file onto an image block or field:
 
@@ -209,14 +217,20 @@ media: {
 }
 ```
 
-Each fires once the editor has applied the change to its own list: `onCreated` after a create prepends the new entry, `onUpdated` after an edit replaces it, `onDeleted` after a removal filters it out.
+Each fires once the matching mutation resolves, with the stored asset:
+
+- **`onCreated`** after `create` or `importFromUrl`. A drop calls `create` and fires this without opening the modal and without prepending a listing row — the URL lands on the block.
+- **`onUpdated`** after `update` or `replace`.
+- **`onDeleted`** after `delete`.
+
+There is no editor-level media list. The modal's own listing (when it is open) prepends, replaces and filters on success; a drop never touches that listing.
 
 ::: tip `onDeleted` carries the asset, not an id
-`delete` resolves to nothing, so the editor passes the entry it captured immediately before removing it.
+`delete` resolves to nothing, so the handler receives the entry captured from the modal's loaded listing immediately before removing it.
 :::
 
-::: tip A delete outside the loaded list fires no event
-The captured entry has to already be in the editor's list. Deleting an id the editor never loaded still deletes successfully; there is nothing to pass to `onDeleted`, so it does not fire.
+::: tip A delete outside the loaded listing fires no event
+The captured entry has to already be in the modal's listing. Deleting an id that listing never held still deletes successfully; there is nothing to pass to `onDeleted`, so it does not fire.
 :::
 
 A handler that throws is caught and reported to `onError` — it never fails the create, update or delete that triggered it.
