@@ -448,8 +448,8 @@ importers:
         specifier: ^14.4.0
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
       es-module-lexer:
-        specifier: ^2.3.2
-        version: 2.3.2
+        specifier: ^3.0.0
+        version: 3.0.0
       happy-dom:
         specifier: ^20.14.0
         version: 20.14.0
@@ -2692,6 +2692,9 @@ packages:
 
   es-module-lexer@2.3.2:
     resolution: {integrity: sha512-poHGpORABojJJucnV9KbOavETW8lBVnphkW77ER5/BQ5Fz7oXSoCNek7IH3vR5nRjdsEz926ibFYX8KtLQmdyw==}
+
+  es-module-lexer@3.0.0:
+    resolution: {integrity: sha512-lvKy17U7Ppc8aZrar+NhN7UnyyQUnNeNlxYPLBIuYYu1jTaQOLqHSAwTbQNaw+dV0dNa+GRH8WNN0txo5d8pXw==}
 
   esbuild@0.28.2:
     resolution: {integrity: sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==}
@@ -6601,6 +6604,8 @@ snapshots:
   es-errors@1.3.0: {}
 
   es-module-lexer@2.3.2: {}
+
+  es-module-lexer@3.0.0: {}
 
   esbuild@0.28.2:
     optionalDependencies:
