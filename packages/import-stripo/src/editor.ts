@@ -4,7 +4,7 @@ import { createHtmlBlock, createSectionBlock } from "@templatical/types";
 import type { Block, ColumnLayout } from "@templatical/types";
 import { isHidden, tokenStartingWith, topLevelWithToken } from "./classes";
 import { colorFromPaint } from "./css";
-import { pushEntry, type ConvertCtx } from "./fragment";
+import { pushEntry, withBackground, type ConvertCtx } from "./fragment";
 import {
   buttonFrom,
   labelledInnerBlocks,
@@ -126,15 +126,10 @@ function sectionFromStructure(
   if (layout !== "1" || frames.length <= 3) {
     pushEntry(ctx, "esd-structure", "section", "converted");
   }
-  const backgroundColor = colorFromPaint(
-    $structure.attr("style"),
-    $structure.attr("bgcolor"),
+  return withBackground(
+    createSectionBlock({ columns: layout, children }),
+    colorFromPaint($structure.attr("style"), $structure.attr("bgcolor")),
   );
-  return createSectionBlock({
-    columns: layout,
-    children,
-    ...(backgroundColor ? { styles: { backgroundColor } } : {}),
-  });
 }
 
 export function convertEditor(html: string, ctx: ConvertCtx): Block[] {
@@ -153,14 +148,12 @@ export function convertEditor(html: string, ctx: ConvertCtx): Block[] {
       return sectionFromStructure(inner.first() as Cheerio<Element>, $, ctx);
     }
     pushEntry(ctx, "esd-stripe", "section", "converted");
-    const backgroundColor = colorFromPaint(
-      $stripe.attr("style"),
-      $stripe.attr("bgcolor"),
+    return withBackground(
+      createSectionBlock({
+        columns: "1",
+        children: [blocksInContainer($stripe, $, ctx)],
+      }),
+      colorFromPaint($stripe.attr("style"), $stripe.attr("bgcolor")),
     );
-    return createSectionBlock({
-      columns: "1",
-      children: [blocksInContainer($stripe, $, ctx)],
-      ...(backgroundColor ? { styles: { backgroundColor } } : {}),
-    });
   });
 }

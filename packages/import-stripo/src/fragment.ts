@@ -1,10 +1,19 @@
 import { convertHtmlTemplate } from "@templatical/import-html";
 import type { ImportReportEntry } from "@templatical/import-html";
-import type { Block } from "@templatical/types";
+import type { Block, SectionBlock } from "@templatical/types";
 
 export interface ConvertCtx {
   entries: ImportReportEntry[];
   warnings: string[];
+}
+
+/** Paint after `createSectionBlock` so `styles` keeps its required padding. */
+export function withBackground(
+  section: SectionBlock,
+  backgroundColor: string,
+): SectionBlock {
+  if (backgroundColor) section.styles.backgroundColor = backgroundColor;
+  return section;
 }
 
 export function flattenBlocks(blocks: Block[]): Block[] {

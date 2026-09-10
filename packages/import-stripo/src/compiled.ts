@@ -4,7 +4,12 @@ import { createSectionBlock } from "@templatical/types";
 import type { Block, ColumnLayout } from "@templatical/types";
 import { hasAnyToken, hasToken, isHidden } from "./classes";
 import { colorFromPaint } from "./css";
-import { blocksFromHtml, pushEntry, type ConvertCtx } from "./fragment";
+import {
+  blocksFromHtml,
+  pushEntry,
+  withBackground,
+  type ConvertCtx,
+} from "./fragment";
 import { buttonFrom, menuFrom, socialFrom, spacerFrom } from "./labelled";
 
 function paintOf($el: Cheerio<Element>): string {
@@ -197,11 +202,9 @@ export function convertCompiled(html: string, ctx: ConvertCtx): Block[] {
       children = cols.map(($c) => convertSubtree($c, $, ctx));
     }
     if (!flattenExtra) pushEntry(ctx, token, "section", "converted");
-    const backgroundColor = stripeFill($stripe);
-    return createSectionBlock({
-      columns: layout,
-      children,
-      ...(backgroundColor ? { styles: { backgroundColor } } : {}),
-    });
+    return withBackground(
+      createSectionBlock({ columns: layout, children }),
+      stripeFill($stripe),
+    );
   });
 }
