@@ -105,6 +105,14 @@ describe("detectFormat", () => {
       ),
     ).toBe("html");
   });
+  it("ignores class attributes buried in a long run of incomplete style closers", () => {
+    expect(
+      detectFormat(
+        "mail.html",
+        `<style>${"</style".repeat(40)} class="esd-stripe"</style><table></table>`,
+      ),
+    ).toBe("html");
+  });
   it("still detects plain html as html when no stripo class attributes exist", () => {
     expect(
       detectFormat("mail.html", "<html><body><table></table></body></html>"),

@@ -45,6 +45,11 @@ describe("detectStripoKind", () => {
     expect(detectStripoKind(html)).toBe(null);
   });
 
+  it("ignores class attributes buried in a long run of incomplete style closers", () => {
+    const html = `<style>${"</style".repeat(40)} class="esd-stripe"</style><p>plain</p>`;
+    expect(detectStripoKind(html)).toBe(null);
+  });
+
   it("returns null for generic table HTML", () => {
     expect(isStripoHtml("<table><tr><td>Hello</td></tr></table>")).toBe(false);
     expect(detectStripoKind("<table><tr><td>Hello</td></tr></table>")).toBe(
