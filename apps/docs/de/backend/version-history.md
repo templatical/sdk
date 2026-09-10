@@ -64,7 +64,7 @@ interface VersionHistoryProvider {
 }
 ```
 
-`list` und `get` lassen sich nicht abschalten — der Editor muss eine Version immer anzeigen und ihren Inhalt beschaffen können. `create` und `restore` nehmen jeweils `false` statt einer Funktion entgegen und sind **erforderlich**, nicht optional: Ein `false` erklärt die Aktion für nicht verfügbar, und der Editor blendet sie aus, statt sie zu deaktivieren. Mit `restore: false` bleibt der Verlauf durchsuchbar, ohne Schaltfläche; mit `create: false` zeichnet nur Ihr `save` Versionen auf.
+`list` und `get` lassen sich nicht abschalten — der Editor muss eine Version immer anzeigen und ihren Inhalt beschaffen können. `create` und `restore` nehmen jeweils `false` statt einer Funktion entgegen: Ein `false` erklärt die Aktion für nicht verfügbar, und der Editor blendet sie aus, statt sie zu deaktivieren. Mit `restore: false` bleibt der Verlauf durchsuchbar, ohne Schaltfläche; mit `create: false` zeichnet nur Ihr `save` Versionen auf.
 
 Der Editor rendert die Reihenfolge von `list()` unverändert und sortiert nie um. Die Reihenfolge bestimmt Ihr Speicher.
 

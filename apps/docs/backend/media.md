@@ -56,10 +56,6 @@ interface MediaFoldersProvider {
 
 `false` means the current user may not perform that action, and the editor hides the affordance.
 
-::: tip Why required, and not optional
-An optional method would make "I decided against delete" indistinguishable from "I haven't written delete yet". A `false` cannot be arrived at by forgetting.
-:::
-
 `list` cannot be `false`: without it the picker has nothing to show. Search, folder, category and cursor are sent on every listing — galleries outgrow one response. A provider that returns everything at once omits `nextCursor`.
 
 `delete` and `checkUsage` are bulk: the grid is multi-select. `folders` is nested so a gallery without folders writes `folders: false` once; `folders.list()` returns a **flat** array and the UI trees it via `parentId`.

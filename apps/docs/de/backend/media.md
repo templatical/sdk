@@ -56,10 +56,6 @@ interface MediaFoldersProvider {
 
 `false` bedeutet, dass die aktuelle Person diese Aktion nicht ausführen darf; der Editor blendet das Bedienelement aus.
 
-::: tip Warum erforderlich und nicht optional
-Eine optionale Methode würde „Ich habe mich gegen delete entschieden" nicht von „Ich habe delete noch nicht geschrieben" unterscheidbar machen. Ein `false` entsteht nicht durch Vergessen.
-:::
-
 `list` kann nicht `false` sein: ohne es hätte die Auswahl nichts zu zeigen. Suche, Ordner, Kategorie und Cursor werden bei jedem Listing mitgeschickt — Galerien wachsen über eine Antwort hinaus. Ein Provider, der alles auf einmal zurückgibt, lässt `nextCursor` weg.
 
 `delete` und `checkUsage` sind gesammelt: Das Raster ist Mehrfachauswahl. `folders` ist verschachtelt, sodass eine Galerie ohne Ordner einmal `folders: false` schreibt; `folders.list()` gibt ein **flaches** Array zurück, und die Oberfläche baut den Baum über `parentId`.
