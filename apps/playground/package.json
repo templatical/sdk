@@ -14,6 +14,7 @@
     "@templatical/import-beefree": "workspace:*",
     "@templatical/import-html": "workspace:*",
     "@templatical/import-mjml": "workspace:*",
+    "@templatical/import-stripo": "workspace:*",
     "@templatical/import-topol": "workspace:*",
     "@templatical/import-unlayer": "workspace:*",
     "@templatical/quality": "workspace:*",

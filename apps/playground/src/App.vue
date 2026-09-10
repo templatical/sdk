@@ -134,7 +134,8 @@ function tplDesc(tpl: TemplateOption): string {
 
 type Screen = "chooser" | "editor";
 const screen = ref<Screen>("chooser");
-type ImportSource = "beefree" | "unlayer" | "html" | "mjml" | "topol";
+type ImportSource =
+  "beefree" | "unlayer" | "html" | "mjml" | "topol" | "stripo";
 const showImport = ref(false);
 const importSource = ref<ImportSource>("beefree");
 const beefreeJson = ref("");
@@ -147,6 +148,8 @@ const mjmlSource = ref("");
 const mjmlError = ref("");
 const topolSource = ref("");
 const topolError = ref("");
+const stripoSource = ref("");
+const stripoError = ref("");
 
 // Feature showcase overlay
 const showFeatureOverlay = ref(false);
@@ -1418,6 +1421,7 @@ function closeImportModal(): void {
   htmlError.value = "";
   mjmlError.value = "";
   topolError.value = "";
+  stripoError.value = "";
 }
 
 function openImportFromSource(source: ImportSource): void {
@@ -1499,6 +1503,30 @@ async function importTopolFromString(raw: string): Promise<void> {
   }
 }
 
+async function importStripoFromString(raw: string): Promise<void> {
+  stripoError.value = "";
+
+  try {
+    let html = raw;
+    let css: string | undefined;
+    if (raw.trimStart().startsWith("{")) {
+      const obj = JSON.parse(raw) as { html?: unknown; css?: unknown };
+      if (typeof obj.html === "string") {
+        html = obj.html;
+        css = typeof obj.css === "string" ? obj.css : undefined;
+      }
+    }
+    const { convertStripoTemplate } =
+      await import("@templatical/import-stripo");
+    const { content } = convertStripoTemplate(html, css ? { css } : undefined);
+    closeImportModal();
+    stripoSource.value = "";
+    chooseTemplate(content);
+  } catch (e) {
+    stripoError.value = e instanceof Error ? e.message : "Invalid Stripo HTML";
+  }
+}
+
 function confirmImport(): void {
   if (importSource.value === "beefree") {
     const raw = beefreeJson.value.trim();
@@ -1540,6 +1568,16 @@ function confirmImport(): void {
     return;
   }
 
+  if (importSource.value === "stripo") {
+    const raw = stripoSource.value.trim();
+    if (!raw) {
+      stripoError.value = t.value.importModal.stripo.emptyError;
+      return;
+    }
+    importStripoFromString(raw);
+    return;
+  }
+
   const raw = unlayerJson.value.trim();
   if (!raw) {
     unlayerError.value = t.value.importModal.unlayer.emptyError;
@@ -1565,6 +1603,8 @@ onImportFileChange(async (files) => {
     importMjmlFromString(text);
   } else if (importSource.value === "topol") {
     importTopolFromString(text);
+  } else if (importSource.value === "stripo") {
+    importStripoFromString(text);
   } else {
     importUnlayerFromJson(text);
   }
@@ -2874,6 +2914,18 @@ onUnmounted(() => {
                   aria-hidden="true"
                 />
               </button>
+              <button
+                data-testid="chooser-import-stripo"
+                class="group inline-flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-900 cursor-pointer transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-100 dark:hover:bg-primary/10"
+                @click="openImportFromSource('stripo')"
+              >
+                {{ t.chooser.migration.importFromStripo }}
+                <ArrowRight
+                  class="size-3.5 -mr-0.5 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                  :stroke-width="1.6"
+                  aria-hidden="true"
+                />
+              </button>
             </div>
           </section>
 
@@ -3670,7 +3722,9 @@ onUnmounted(() => {
                           ? t.importModal.mjml.description
                           : importSource === "topol"
                             ? t.importModal.topol.description
-                            : t.importModal.unlayer.description
+                            : importSource === "stripo"
+                              ? t.importModal.stripo.description
+                              : t.importModal.unlayer.description
                   }}
                 </p>
               </div>
@@ -3757,6 +3811,20 @@ onUnmounted(() => {
               >
                 {{ t.importModal.sources.topol }}
               </button>
+              <button
+                role="tab"
+                :aria-selected="importSource === 'stripo'"
+                :class="[
+                  'px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors',
+                  importSource === 'stripo'
+                    ? 'border-primary text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100',
+                ]"
+                data-testid="import-tab-stripo"
+                @click="importSource = 'stripo'"
+              >
+                {{ t.importModal.sources.stripo }}
+              </button>
             </div>
             <div class="flex-1 overflow-auto p-5">
               <button
@@ -3808,12 +3876,20 @@ onUnmounted(() => {
                 placeholder="<mjml>&#10;  <mj-body>&#10;    <mj-section>...</mj-section>&#10;  </mj-body>&#10;</mjml>"
               ></textarea>
               <textarea
-                v-else
+                v-else-if="importSource === 'topol'"
                 v-model="topolSource"
                 :aria-label="t.a11y.topolSourceContent"
                 data-testid="import-textarea-topol"
                 class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
                 placeholder='{"tagName": "mj-global-style", "children": [{"tagName": "mj-container", "children": [...]}]}'
+              ></textarea>
+              <textarea
+                v-else
+                v-model="stripoSource"
+                :aria-label="t.a11y.stripoSourceContent"
+                data-testid="import-textarea-stripo"
+                class="pg-input h-[200px] p-4 text-xs leading-relaxed font-mono bg-gray-50 resize-y placeholder:text-gray-500 dark:bg-gray-700/50"
+                placeholder='<table class="es-wrapper">...</table>'
               ></textarea>
               <p
                 v-if="importSource === 'beefree' && beefreeError"
@@ -3849,6 +3925,13 @@ onUnmounted(() => {
                 class="mt-2 mb-0 text-[13px] text-red-500"
               >
                 {{ topolError }}
+              </p>
+              <p
+                v-if="importSource === 'stripo' && stripoError"
+                data-testid="import-error"
+                class="mt-2 mb-0 text-[13px] text-red-500"
+              >
+                {{ stripoError }}
               </p>
             </div>
             <div

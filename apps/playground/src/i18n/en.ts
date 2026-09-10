@@ -12,7 +12,7 @@ export default {
     emptyCanvas: "Empty canvas with default settings",
     migration: {
       headline:
-        "Already using BeeFree, Unlayer, MJML, Topol, or hand-coded HTML?",
+        "Already using BeeFree, Unlayer, MJML, Topol, Stripo, or hand-coded HTML?",
       description:
         "Bring your existing templates over in seconds — block mapping, layouts, and merge tags handled automatically.",
       importFromBeefree: "Import from BeeFree",
@@ -20,6 +20,7 @@ export default {
       importFromHtml: "Import from HTML",
       importFromMjml: "Import from MJML",
       importFromTopol: "Import from Topol",
+      importFromStripo: "Import from Stripo",
     },
   },
   cloudBanner: {
@@ -85,6 +86,7 @@ export default {
       html: "From HTML",
       mjml: "From MJML",
       topol: "From Topol",
+      stripo: "From Stripo",
     },
     chooseFile: "Choose file",
     orPaste: "or paste below",
@@ -113,6 +115,11 @@ export default {
       description:
         'Paste a Topol design JSON below — the design itself, not a whole API response. Topol\'s editor hands it to you directly; from its API it sits under "definition" or "json".',
       emptyError: "Paste your Topol design JSON or upload a file.",
+    },
+    stripo: {
+      description:
+        "Paste Stripo HTML below — a File → HTML export, or the { html, css } object from getTemplateData(). The converter auto-detects which one you passed.",
+      emptyError: "Paste your Stripo HTML or upload a file.",
     },
   },
   mergeTagModal: {
@@ -316,6 +323,7 @@ export default {
     htmlSourceContent: "HTML source content",
     mjmlSourceContent: "MJML source content",
     topolSourceContent: "Topol design JSON content",
+    stripoSourceContent: "Stripo HTML content",
     selectLanguage: "Select language",
     selectSdkLanguage: "Select SDK language",
     selectTheme: "Select theme",
