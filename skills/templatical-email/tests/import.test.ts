@@ -97,6 +97,14 @@ describe("detectFormat", () => {
       ),
     ).toBe("html");
   });
+  it("strips script/style even when the closing tag has extra attributes", () => {
+    expect(
+      detectFormat(
+        "mail.html",
+        `<html><body><script>var x = 'class="esd-stripe"'</script foo="bar"><table></table></body></html>`,
+      ),
+    ).toBe("html");
+  });
   it("still detects plain html as html when no stripo class attributes exist", () => {
     expect(
       detectFormat("mail.html", "<html><body><table></table></body></html>"),

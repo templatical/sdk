@@ -18,7 +18,13 @@ function injectCss(html: string, css?: string): string {
   if ($("head").length === 0) {
     $("html").prepend("<head></head>");
   }
-  $("head").append(`<style data-stripo-css="1">${css}</style>`);
+  // Style elements serialize as HTML rawtext, so a literal `</style` in the
+  // CSS would close the element and the rest would parse as markup — which
+  // can flip editor/compiled detection. Neutralize the closer; then set a
+  // text node rather than interpolating into an HTML string.
+  const safe = css.replace(/<\/style/gi, "<\\/style");
+  const $style = $("<style></style>").attr("data-stripo-css", "1").text(safe);
+  $("head").append($style);
   return $.html() ?? html;
 }
 

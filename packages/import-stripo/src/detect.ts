@@ -20,8 +20,8 @@ export type StripoKind = "editor" | "compiled";
  */
 function markupClassTokens(html: string): string[] {
   const stripped = html
-    .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
-    .replace(/<script\b[\s\S]*?<\/script>/gi, " ");
+    .replace(/<style\b[\s\S]*?<\/style[^>]*>/gi, " ")
+    .replace(/<script\b[\s\S]*?<\/script[^>]*>/gi, " ");
   const tokens: string[] = [];
   const re = /\bclass\s*=\s*(["'])([^"']*)\1/gi;
   let m: RegExpExecArray | null;

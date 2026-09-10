@@ -40,6 +40,11 @@ describe("detectStripoKind", () => {
     expect(isStripoHtml(html)).toBe(false);
   });
 
+  it("strips style and script even when the closing tag has extra attributes", () => {
+    const html = `<html><head><style>/* class="esd-block-html" */</style ></head><body><script>var x = 'class="esd-stripe"'</script foo="bar"><table><tr><td>plain</td></tr></table></body></html>`;
+    expect(detectStripoKind(html)).toBe(null);
+  });
+
   it("returns null for generic table HTML", () => {
     expect(isStripoHtml("<table><tr><td>Hello</td></tr></table>")).toBe(false);
     expect(detectStripoKind("<table><tr><td>Hello</td></tr></table>")).toBe(

@@ -24,4 +24,15 @@ describe("convertStripoTemplate", () => {
     const texts = JSON.stringify(content);
     expect(texts).toContain("Loose Widget Copy");
   });
+
+  it("does not let plugin CSS break out of the style element and flip detection", () => {
+    const html =
+      '<table class="es-wrapper"><tr><td><p>Compiled Widget Copy</p></td></tr></table>';
+    const { content } = convertStripoTemplate(html, {
+      css: '</style><td class="esd-stripe">Injected Editor Stripe</td>',
+    });
+    const texts = JSON.stringify(content);
+    expect(texts).toContain("Compiled Widget Copy");
+    expect(texts).not.toContain("Injected Editor Stripe");
+  });
 });

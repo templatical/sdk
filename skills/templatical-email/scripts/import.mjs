@@ -59,8 +59,8 @@ const FORMAT_LIST = Object.keys(FORMATS).join("|");
  */
 function markupClassTokens(html) {
   const stripped = html
-    .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
-    .replace(/<script\b[\s\S]*?<\/script>/gi, " ");
+    .replace(/<style\b[\s\S]*?<\/style[^>]*>/gi, " ")
+    .replace(/<script\b[\s\S]*?<\/script[^>]*>/gi, " ");
   const tokens = [];
   const re = /\bclass\s*=\s*(["'])([^"']*)\1/gi;
   let m;
