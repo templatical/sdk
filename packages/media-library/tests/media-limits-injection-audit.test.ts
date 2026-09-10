@@ -144,6 +144,7 @@ describe("cross-package injection audit", () => {
     expect(Object.keys(props).sort()).toEqual([
       "accept",
       "locale",
+      "onError",
       "popoverTarget",
       "provider",
       "templateId",

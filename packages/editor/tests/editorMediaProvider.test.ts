@@ -86,6 +86,41 @@ describe("config.media reaches Browse through Editor.vue", () => {
       .find((b) => b.text().includes(translations.image.browseMedia));
     expect(browse).toBeUndefined();
   });
+
+  it("does not enable drop on a read-only provider", async () => {
+    const wrapper = await mountEditor({ media: readOnlyMedia() });
+    const zone = wrapper.find('[data-testid="image-drop-zone"]');
+    expect(zone.exists()).toBe(true);
+    expect(zone.attributes("data-drop-enabled")).toBe("false");
+  });
+
+  it("enables drop when the provider can create", async () => {
+    const wrapper = await mountEditor({
+      media: {
+        ...readOnlyMedia(),
+        create: vi.fn().mockResolvedValue({
+          id: "a1",
+          url: "https://cdn.example.com/hero.png",
+        }),
+      },
+    });
+    expect(
+      wrapper
+        .find('[data-testid="image-drop-zone"]')
+        .attributes("data-drop-enabled"),
+    ).toBe("true");
+  });
+
+  it("enables drop when only onRequestMedia is configured", async () => {
+    const wrapper = await mountEditor({
+      onRequestMedia: vi.fn().mockResolvedValue(null),
+    });
+    expect(
+      wrapper
+        .find('[data-testid="image-drop-zone"]')
+        .attributes("data-drop-enabled"),
+    ).toBe("true");
+  });
 });
 
 describe("MediaPanels stays lazy", () => {
@@ -109,5 +144,13 @@ describe("MediaPanels stays lazy", () => {
   it("MediaPanels lazy-imports MediaLibraryModal from the optional peer", () => {
     expect(panels).toContain("defineAsyncComponent");
     expect(panels).toContain('import("@templatical/media-library")');
+  });
+
+  it("MediaPanels forwards the feature's onError to the modal", () => {
+    expect(panels).toMatch(/:on-error="feature\.onError"/);
+  });
+
+  it("Editor.vue's config literal forwards canDropMedia", () => {
+    expect(editor).toMatch(/canDropMedia:\s*mediaFeature\?\.canDrop/);
   });
 });

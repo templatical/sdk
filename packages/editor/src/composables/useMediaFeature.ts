@@ -31,11 +31,19 @@ export interface UseMediaFeatureReturn {
    * image fields URL-only.
    */
   requestMedia: OnRequestMedia | null;
+  /**
+   * What `useEditorCore` provides as `CAN_DROP_MEDIA_KEY`. True when a
+   * host callback is set (it receives `files`) or when `provider.create`
+   * is a function. False for a read-only library (`create: false`) so
+   * the drop zone does not highlight while Browse still works.
+   */
+  canDrop: ComputedRef<boolean>;
   isModalOpen: Ref<boolean>;
   accept: Ref<MediaCategory[] | undefined>;
   close: () => void;
   select: (asset: MediaAsset) => void;
   templateId: ComputedRef<string | undefined>;
+  onError?: (error: Error) => void;
 }
 
 function toError(value: unknown): Error {
@@ -95,6 +103,11 @@ export function useMediaFeature(
   const isModalOpen = ref(false);
   const accept = ref<MediaCategory[] | undefined>(undefined);
   const templateId = computed(() => getTemplateId?.());
+  // Callback present ⇒ drop goes to the host widget. Otherwise only a
+  // `create` function uploads; `create: false` is a read-only library.
+  const canDrop = computed(
+    () => !!onRequestMedia || typeof provider?.create === "function",
+  );
 
   let pending: ((result: MediaResult | null) => void) | null = null;
 
@@ -167,10 +180,12 @@ export function useMediaFeature(
 
   return {
     requestMedia,
+    canDrop,
     isModalOpen,
     accept,
     close,
     select,
     templateId,
+    onError,
   };
 }

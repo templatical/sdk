@@ -339,6 +339,41 @@ describe("createCloudMediaProvider", () => {
       expect(formData.get("folder_id")).toBe("f1");
     });
 
+    it("omits filename from the PUT body when patch.filename is undefined", async () => {
+      const { authManager, provider } = setup();
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockJsonResponse(wireItem({ alt_text: "x" })),
+      );
+
+      if (provider.update === false) {
+        throw new Error("Cloud update must be implemented");
+      }
+      await provider.update("m1", { alt: "x" });
+
+      const init = vi.mocked(authManager.authenticatedFetch).mock.calls[0][1];
+      expect(init?.method).toBe("PUT");
+      const body = JSON.parse(String(init?.body));
+      expect(body).toEqual({ alt_text: "x" });
+      expect("filename" in body).toBe(false);
+    });
+
+    it("includes filename when it is in the patch", async () => {
+      const { authManager, provider } = setup();
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockJsonResponse(wireItem({ filename: "renamed.png" })),
+      );
+
+      if (provider.update === false) {
+        throw new Error("Cloud update must be implemented");
+      }
+      await provider.update("m1", { filename: "renamed.png" });
+
+      const init = vi.mocked(authManager.authenticatedFetch).mock.calls[0][1];
+      expect(JSON.parse(String(init?.body))).toEqual({
+        filename: "renamed.png",
+      });
+    });
+
     it("delete posts ids", async () => {
       const { authManager, provider } = setup();
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(

@@ -112,6 +112,43 @@ describe("useMediaFeature", () => {
     expect(feature.isModalOpen.value).toBe(false);
   });
 
+  it("canDrop is false for a read-only provider", () => {
+    const { feature } = withFeature({
+      provider: createMockProvider({ create: false }),
+    });
+
+    expect(feature.canDrop.value).toBe(false);
+  });
+
+  it("canDrop is true when create is a function", () => {
+    const { feature } = withFeature({
+      provider: createMockProvider({ create: vi.fn() }),
+    });
+
+    expect(feature.canDrop.value).toBe(true);
+  });
+
+  it("canDrop is true when a host callback is set, even if create is false", () => {
+    const { feature } = withFeature({
+      provider: createMockProvider({ create: false }),
+      onRequestMedia: vi.fn(),
+    });
+
+    expect(feature.canDrop.value).toBe(true);
+  });
+
+  it("canDrop is true for a callback-only config", () => {
+    const { feature } = withFeature({ onRequestMedia: vi.fn() });
+
+    expect(feature.canDrop.value).toBe(true);
+  });
+
+  it("canDrop is false when neither a provider nor a callback is given", () => {
+    const { feature } = withFeature();
+
+    expect(feature.canDrop.value).toBe(false);
+  });
+
   it("uploads a drop through create and does not open the modal", async () => {
     const create = vi.fn().mockResolvedValue(ASSET);
     const onCreated = vi.fn();

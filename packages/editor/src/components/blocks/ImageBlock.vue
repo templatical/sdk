@@ -9,7 +9,7 @@ import { containsMergeTag } from "@templatical/types";
 import MergeTagPreviewText from "../MergeTagPreviewText.vue";
 import { Image, Upload, LoaderCircle } from "@lucide/vue";
 import { computed, inject, ref } from "vue";
-import { ON_REQUEST_MEDIA_KEY } from "../../keys";
+import { CAN_DROP_MEDIA_KEY, ON_REQUEST_MEDIA_KEY } from "../../keys";
 import { useAliveFlag } from "../../composables/useAliveFlag";
 import { useImageDrop } from "../../composables/useImageDrop";
 import { useResolvedImageSrc } from "../../composables/useImageUrlResolver";
@@ -26,6 +26,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { syntax } = useMergeTag();
 const onRequestMedia = inject(ON_REQUEST_MEDIA_KEY, null);
+const canDropMedia = inject(CAN_DROP_MEDIA_KEY, null);
 const canBrowseMedia = computed(() => !!onRequestMedia);
 const aliveFlag = useAliveFlag();
 
@@ -44,8 +45,13 @@ const dropZoneRef = ref<HTMLElement>();
 const isUploading = ref(false);
 
 // A merge-tag src is a deliberate dynamic value — never clobber it via drop.
+// Browse and drop are distinct: a read-only provider still opens the
+// library, but `canDropMedia` is false so the zone does not highlight.
 const dropEnabled = computed(
-  () => canBrowseMedia.value && !isUploading.value && !hasMergeTagSrc.value,
+  () =>
+    (canDropMedia?.value ?? !!onRequestMedia) &&
+    !isUploading.value &&
+    !hasMergeTagSrc.value,
 );
 
 async function uploadDroppedFiles(files: File[]): Promise<void> {
@@ -115,6 +121,7 @@ const displayPlaceholderUrl = useResolvedImageSrc(() =>
   <div
     ref="dropZoneRef"
     data-testid="image-drop-zone"
+    :data-drop-enabled="dropEnabled"
     class="tpl:relative tpl:w-full"
     :style="containerStyle"
   >

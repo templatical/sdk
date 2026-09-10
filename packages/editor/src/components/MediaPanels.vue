@@ -55,6 +55,7 @@ function handleSelect(asset: MediaAsset): void {
     :locale="locale"
     :ui-theme="uiTheme"
     :template-id="feature.templateId.value"
+    :on-error="feature.onError"
     @select="handleSelect"
     @close="feature.close()"
   />

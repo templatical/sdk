@@ -69,6 +69,7 @@ import {
   MERGE_TAG_PICKER_KEY,
   ON_REQUEST_MERGE_TAG_KEY,
   ON_REQUEST_MEDIA_KEY,
+  CAN_DROP_MEDIA_KEY,
   DISPLAY_CONDITIONS_KEY,
   ALLOW_CUSTOM_CONDITIONS_KEY,
   CAPABILITIES_KEY,
@@ -92,6 +93,7 @@ const ALL_KEYS: Array<{ key: InjectionKey<unknown>; label: string }> = [
   { key: MERGE_TAG_PICKER_KEY, label: 'mergeTagPicker' },
   { key: ON_REQUEST_MERGE_TAG_KEY, label: 'onRequestMergeTag' },
   { key: ON_REQUEST_MEDIA_KEY, label: 'onRequestMedia' },
+  { key: CAN_DROP_MEDIA_KEY, label: 'canDropMedia' },
   { key: DISPLAY_CONDITIONS_KEY, label: 'displayConditions' },
   { key: ALLOW_CUSTOM_CONDITIONS_KEY, label: 'allowCustomConditions' },
   { key: CAPABILITIES_KEY, label: 'capabilities' },
@@ -482,7 +484,7 @@ describe('useEditorCore', () => {
   });
 
   describe('provides', () => {
-    it('provides all 20 shared injection keys', () => {
+    it('provides all shared injection keys', () => {
       const { captured } = mountCore();
       for (const { label } of ALL_KEYS) {
         expect(captured.injected![label]).not.toBe('MISSING');
@@ -515,6 +517,19 @@ describe('useEditorCore', () => {
     it('provides onRequestMergeTag null when not configured', () => {
       const { captured } = mountCore();
       expect(captured.injected!.onRequestMergeTag).toBeNull();
+    });
+
+    it('provides canDropMedia from config', () => {
+      const canDropMedia = { value: true };
+      const { captured } = mountCore({
+        config: { canDropMedia } as any,
+      });
+      expect(captured.injected!.canDropMedia).toBe(canDropMedia);
+    });
+
+    it('provides canDropMedia null when not configured', () => {
+      const { captured } = mountCore();
+      expect(captured.injected!.canDropMedia).toBeNull();
     });
 
     it('provides displayConditions.conditions array', () => {

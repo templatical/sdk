@@ -2,13 +2,14 @@
 import "./dom-stubs";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { mount, shallowMount, flushPromises } from "@vue/test-utils";
-import { ref, toValue, type MaybeRefOrGetter } from "vue";
+import { computed, ref, toValue, type MaybeRefOrGetter } from "vue";
 import { SYNTAX_PRESETS, createImageBlock } from "@templatical/types";
 import type { CustomBlockImageField } from "@templatical/types";
 import enTranslations from "../src/i18n/locales/en";
 import {
   MERGE_TAGS_KEY,
   MERGE_TAG_SYNTAX_KEY,
+  CAN_DROP_MEDIA_KEY,
   ON_REQUEST_MEDIA_KEY,
   TRANSLATIONS_KEY,
 } from "../src/keys";
@@ -25,12 +26,15 @@ import ImageBlock from "../src/components/blocks/ImageBlock.vue";
 import ImageField from "../src/components/toolbar/fields/ImageField.vue";
 import ImageToolbar from "../src/components/toolbar/ImageToolbar.vue";
 
-function provideMap(onRequestMedia: unknown) {
+function provideMap(onRequestMedia: unknown, canDrop?: boolean) {
   return {
     [TRANSLATIONS_KEY as symbol]: enTranslations,
     [MERGE_TAG_SYNTAX_KEY as symbol]: SYNTAX_PRESETS.liquid,
     [MERGE_TAGS_KEY as symbol]: [],
     [ON_REQUEST_MEDIA_KEY as symbol]: onRequestMedia,
+    ...(canDrop !== undefined
+      ? { [CAN_DROP_MEDIA_KEY as symbol]: computed(() => canDrop) }
+      : {}),
   };
 }
 
@@ -116,6 +120,27 @@ describe("ImageBlock drag-and-drop upload (#229)", () => {
       toValue(lastDropOptions().enabled as MaybeRefOrGetter<boolean>),
     ).toBe(false);
   });
+
+  it("disables the drop zone for a read-only library while Browse stays", () => {
+    const wrapper = mount(ImageBlock, {
+      props: { block: createImageBlock({ src: "" }), viewport: "desktop" },
+      global: { provide: provideMap(vi.fn(), false) },
+    });
+
+    expect(
+      toValue(lastDropOptions().enabled as MaybeRefOrGetter<boolean>),
+    ).toBe(false);
+    expect(
+      wrapper
+        .find('[data-testid="image-drop-zone"]')
+        .attributes("data-drop-enabled"),
+    ).toBe("false");
+    const browse = wrapper
+      .findAll("button")
+      .find((b) => b.text().includes(enTranslations.image.browseMedia));
+    expect(browse).toBeTruthy();
+    expect(browse!.text()).toContain(enTranslations.image.browseMedia);
+  });
 });
 
 describe("ImageField drag-and-drop upload (#229)", () => {
@@ -150,6 +175,17 @@ describe("ImageField drag-and-drop upload (#229)", () => {
     shallowMount(ImageField, {
       props: { field, modelValue: "", readOnly: true },
       global: { provide: provideMap(vi.fn()) },
+    });
+
+    expect(
+      toValue(lastDropOptions().enabled as MaybeRefOrGetter<boolean>),
+    ).toBe(false);
+  });
+
+  it("disables the drop zone for a read-only library", () => {
+    shallowMount(ImageField, {
+      props: { field, modelValue: "" },
+      global: { provide: provideMap(vi.fn(), false) },
     });
 
     expect(
@@ -191,5 +227,16 @@ describe("ImageToolbar drag-and-drop upload (#229)", () => {
     await flushPromises();
 
     expect(wrapper.emitted("update")).toBeUndefined();
+  });
+
+  it("disables the drop zone for a read-only library", () => {
+    shallowMount(ImageToolbar, {
+      props: { block: createImageBlock({ src: "" }) },
+      global: { provide: provideMap(vi.fn(), false) },
+    });
+
+    expect(
+      toValue(lastDropOptions().enabled as MaybeRefOrGetter<boolean>),
+    ).toBe(false);
   });
 });

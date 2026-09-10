@@ -357,6 +357,8 @@ const core = useEditorCore({
     // The synthesized Browse/drop handler. Null when neither a provider nor a
     // callback is configured, which is what keeps image fields URL-only.
     onRequestMedia: mediaFeature?.requestMedia ?? null,
+    // Distinct from Browse: a read-only provider still opens the library.
+    canDropMedia: mediaFeature?.canDrop ?? null,
     resolvePreview: props.config.resolvePreview,
     resolveImageUrl: props.config.resolveImageUrl,
     lint: resolveLintOptions(props.config),

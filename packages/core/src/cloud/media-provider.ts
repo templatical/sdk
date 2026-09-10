@@ -146,9 +146,7 @@ export function createCloudMediaProvider(
     },
 
     async update(id: string, patch: MediaAssetPatch): Promise<MediaAsset> {
-      return toAsset(
-        await api.updateMedia(id, patch.filename ?? "", patch.alt),
-      );
+      return toAsset(await api.updateMedia(id, patch.filename, patch.alt));
     },
 
     delete(ids: string[]): Promise<void> {

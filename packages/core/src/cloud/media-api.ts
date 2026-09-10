@@ -166,9 +166,16 @@ export class MediaApiClient {
 
   async updateMedia(
     mediaId: string,
-    filename: string,
+    filename?: string,
     altText?: string,
   ): Promise<CloudMediaItem> {
+    const body: { filename?: string; alt_text?: string } = {};
+    if (filename !== undefined) {
+      body.filename = filename;
+    }
+    if (altText !== undefined) {
+      body.alt_text = altText;
+    }
     return this.request<CloudMediaItem>(
       buildUrl(API_ROUTES["media.update"], {
         ...this.baseParams,
@@ -176,10 +183,7 @@ export class MediaApiClient {
       }),
       {
         method: "PUT",
-        body: JSON.stringify({
-          filename,
-          alt_text: altText,
-        }),
+        body: JSON.stringify(body),
       },
     );
   }

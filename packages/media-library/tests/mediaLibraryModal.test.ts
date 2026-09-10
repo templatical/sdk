@@ -128,6 +128,7 @@ describe("MediaLibraryModal source contract", () => {
     expect(Object.keys(props).sort()).toEqual([
       "accept",
       "locale",
+      "onError",
       "popoverTarget",
       "provider",
       "templateId",
@@ -425,6 +426,24 @@ describe("MediaLibraryModal chrome", () => {
     expect(
       document.querySelector('[data-testid="media-delete-usage"]'),
     ).not.toBeNull();
+  });
+});
+
+describe("MediaLibraryModal onError", () => {
+  it("forwards list failures to the onError prop", async () => {
+    const onError = vi.fn();
+    await mountModal(
+      fakeProvider({
+        list: vi.fn(async () => {
+          throw new Error("list failed");
+        }),
+      }),
+      { onError },
+    );
+
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0][0]).toBeInstanceOf(Error);
+    expect(onError.mock.calls[0][0].message).toBe("list failed");
   });
 });
 

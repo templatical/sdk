@@ -69,6 +69,13 @@ const props = defineProps<{
   uiTheme?: string;
   /** Forwarded on list / create / importFromUrl when a template is loaded. */
   templateId?: string;
+  /**
+   * Failures from the storage provider. The composable already reports
+   * them here; a host that wants them on its own `onError` passes that
+   * function through. Standalone `init()` has no such config, so this
+   * stays optional.
+   */
+  onError?: (error: Error) => void;
 }>();
 
 const emit = defineEmits<{
@@ -120,6 +127,7 @@ const { isAcceptedMimeType, availableCategories } =
 const library = useMediaLibrary({
   provider: props.provider,
   templateId: () => props.templateId,
+  onError: (error) => props.onError?.(error),
 });
 
 const ui = useMediaLibraryUI({
