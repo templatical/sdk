@@ -4,61 +4,60 @@ import { describe, expect, it } from "vitest";
 import type { PlanConfig } from "../src/cloud";
 
 /**
- * Cloud JWT/plan wire fields — snake_case, matching the plan payload.
- * Constructing a `PlanConfig` literal is what proves the names type-check;
- * the reads prove they are the JWT fields, not the BYO camelCase contract.
+ * Cloud JWT/plan `media` / `storage` fields. Constructing a `PlanConfig`
+ * literal is what proves the names type-check.
  */
 function jwtPlan(): PlanConfig {
   return {
     features: {
-      ai_generation: false,
+      aiGeneration: false,
       collaboration: false,
       commenting: false,
-      saved_modules: false,
-      test_email: false,
+      savedModules: false,
+      testEmail: false,
     },
     limits: {
-      max_file_size_mb: 10,
-      max_templates: null,
-      media_categories: ["images"],
-      storage_limit_bytes: 100,
+      maxFileSizeMb: 10,
+      maxTemplates: null,
+      mediaCategories: ["images"],
+      storageLimitBytes: 100,
     },
-    template_count: 0,
+    templateCount: 0,
     plan: "free",
     media: {
-      use_media_library: true,
+      useMediaLibrary: true,
       categories: {
         images: {
-          mime_types: ["image/png"],
+          mimeTypes: ["image/png"],
           extensions: [".png"],
         },
       },
-      max_file_size: 1_048_576,
+      maxFileSize: 1_048_576,
     },
     storage: {
-      used_bytes: 10,
-      limit_bytes: 100,
+      usedBytes: 10,
+      limitBytes: 100,
     },
     websocket: {
       host: "ws.example",
       port: 443,
-      app_key: "key",
+      appKey: "key",
     },
   };
 }
 
 describe("PlanConfig media/storage JWT wire shape", () => {
-  it("reads snake_case media and storage fields", () => {
+  it("reads media and storage fields", () => {
     const config = jwtPlan();
 
-    expect(config.media.use_media_library).toBe(true);
-    expect(config.media.max_file_size).toBe(1_048_576);
+    expect(config.media.useMediaLibrary).toBe(true);
+    expect(config.media.maxFileSize).toBe(1_048_576);
     expect(config.media.categories.images).toEqual({
-      mime_types: ["image/png"],
+      mimeTypes: ["image/png"],
       extensions: [".png"],
     });
-    expect(config.storage.used_bytes).toBe(10);
-    expect(config.storage.limit_bytes).toBe(100);
+    expect(config.storage.usedBytes).toBe(10);
+    expect(config.storage.limitBytes).toBe(100);
   });
 });
 

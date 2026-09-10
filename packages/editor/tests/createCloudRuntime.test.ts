@@ -75,7 +75,7 @@ vi.mock("@templatical/core/cloud", () => {
     resolveWebSocketConfig: vi.fn((c: unknown) => c),
     useMcpListener: vi.fn(),
     usePlanConfig: vi.fn(() => ({
-      config: ref({ websocket: { host: "h", port: 1, app_key: "k" } }),
+      config: ref({ websocket: { host: "h", port: 1, appKey: "k" } }),
       fetchConfig: vi.fn().mockResolvedValue(undefined),
       hasFeature: vi.fn(() => true),
     })),
@@ -124,15 +124,10 @@ vi.mock("@templatical/core/cloud", () => {
         checkUsage: vi.fn(),
         frequentlyUsed: vi.fn(),
         storage: async () => {
-          const storage = getPlanConfig?.()?.storage;
-          if (!storage) return null;
-          return {
-            usedBytes: storage.used_bytes,
-            limitBytes: storage.limit_bytes,
-          };
+          return getPlanConfig?.()?.storage ?? null;
         },
         get maxFileSize() {
-          return getPlanConfig?.()?.media?.max_file_size;
+          return getPlanConfig?.()?.media?.maxFileSize;
         },
         get mimeTypes() {
           return getPlanConfig?.()?.media?.categories;
@@ -440,13 +435,13 @@ describe("bootstrapCloud — savedBlocks provider selection", () => {
     expect(createCloudSavedBlocksProvider).not.toHaveBeenCalled();
   });
 
-  it("is unavailable when the plan withholds saved_modules", async () => {
+  it("is unavailable when the plan withholds savedModules", async () => {
     withoutPlanFeature();
     const { runtime } = await bootstrap();
     expect(runtime.isSavedBlocksAvailable()).toBe(false);
   });
 
-  it("is unavailable when the plan withholds saved_modules, even with an events-only value", async () => {
+  it("is unavailable when the plan withholds savedModules, even with an events-only value", async () => {
     // The second-order bug: an events-only object is truthy, so keying
     // availability off the raw config value (rather than the discriminated
     // provider) would read this as "consumer's own store" and skip the plan
@@ -465,7 +460,7 @@ describe("bootstrapCloud — savedBlocks provider selection", () => {
 
     expect(createCloudSavedBlocksProvider).not.toHaveBeenCalled();
     expect(providers.savedBlocks).toBe(supplied);
-    // `saved_modules` licenses Cloud's storage; someone else's backend isn't
+    // `savedModules` licenses Cloud's storage; someone else's backend isn't
     // Cloud's to sell.
     expect(runtime.isSavedBlocksAvailable()).toBe(true);
   });
@@ -557,8 +552,8 @@ describe("bootstrapCloud — media provider selection", () => {
 
     plan.config.value = {
       ...plan.config.value,
-      storage: { used_bytes: 10, limit_bytes: 100 },
-      media: { max_file_size: 1048576 },
+      storage: { usedBytes: 10, limitBytes: 100 },
+      media: { maxFileSize: 1048576 },
     };
 
     expect(await providers.media!.storage!()).toEqual({
@@ -1099,7 +1094,7 @@ describe("bootstrapCloud — comments", () => {
 
   it("is unavailable when the plan withholds `commenting`", async () => {
     vi.mocked(usePlanConfig).mockReturnValueOnce({
-      config: ref({ websocket: { host: "h", port: 1, app_key: "k" } }),
+      config: ref({ websocket: { host: "h", port: 1, appKey: "k" } }),
       fetchConfig: vi.fn().mockResolvedValue(undefined),
       hasFeature: vi.fn((feature: string) => feature !== "commenting"),
     } as any);
@@ -1428,12 +1423,12 @@ describe("bootstrapCloud — testEmail provider selection", () => {
 
     expect(createCloudTestEmailProvider).not.toHaveBeenCalled();
     expect(providers.testEmail).toBe(supplied);
-    // `test_email` licenses Cloud's sending; someone else's infrastructure
+    // `testEmail` licenses Cloud's sending; someone else's infrastructure
     // isn't Cloud's to sell.
     expect(runtime.isTestEmailAvailable()).toBe(true);
   });
 
-  it("is unavailable when the plan withholds test_email, even with an events-only value", async () => {
+  it("is unavailable when the plan withholds testEmail, even with an events-only value", async () => {
     // The second-order bug: an events-only object is truthy, so keying
     // availability off the raw config value (rather than the discriminated
     // provider) would read this as "consumer's own sender" and skip the plan

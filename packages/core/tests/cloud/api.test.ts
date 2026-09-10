@@ -1,12 +1,14 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { ApiClient } from '../../src/cloud/api';
-import type { AuthManager } from '../../src/cloud/auth';
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { ApiClient } from "../../src/cloud/api";
+import type { AuthManager } from "../../src/cloud/auth";
 
-function createMockAuthManager(overrides: Partial<AuthManager> = {}): AuthManager {
+function createMockAuthManager(
+  overrides: Partial<AuthManager> = {},
+): AuthManager {
   return {
-    projectId: 'proj-1',
-    tenantId: 'tenant-1',
-    tenantSlug: 'acme',
+    projectId: "proj-1",
+    tenantId: "tenant-1",
+    tenantSlug: "acme",
     authenticatedFetch: vi.fn(),
     ...overrides,
   } as unknown as AuthManager;
@@ -20,7 +22,11 @@ function mockResponse<T>(data: T, status = 200): Response {
   } as unknown as Response;
 }
 
-function mockErrorResponse(message: string, status = 422, errors?: Record<string, string[]>): Response {
+function mockErrorResponse(
+  message: string,
+  status = 422,
+  errors?: Record<string, string[]>,
+): Response {
   return {
     ok: false,
     status,
@@ -28,7 +34,7 @@ function mockErrorResponse(message: string, status = 422, errors?: Record<string
   } as unknown as Response;
 }
 
-describe('ApiClient', () => {
+describe("ApiClient", () => {
   let authManager: AuthManager;
   let api: ApiClient;
 
@@ -37,260 +43,277 @@ describe('ApiClient', () => {
     api = new ApiClient(authManager);
   });
 
-  describe('templates', () => {
-    it('creates a template', async () => {
-      const template = { id: 'tmpl-1', content: {} };
+  describe("templates", () => {
+    it("creates a template", async () => {
+      const template = { id: "tmpl-1", content: {} };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(template),
       );
 
-      const result = await api.createTemplate({ blocks: [], settings: {} } as any);
+      const result = await api.createTemplate({
+        blocks: [],
+        settings: {},
+      } as any);
 
       expect(result).toEqual(template);
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/templates'),
-        expect.objectContaining({ method: 'POST' }),
+        expect.stringContaining("/templates"),
+        expect.objectContaining({ method: "POST" }),
       );
     });
 
-    it('gets a template by ID', async () => {
-      const template = { id: 'tmpl-1' };
+    it("gets a template by ID", async () => {
+      const template = { id: "tmpl-1" };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(template),
       );
 
-      const result = await api.getTemplate('tmpl-1');
+      const result = await api.getTemplate("tmpl-1");
 
       expect(result).toEqual(template);
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/templates/tmpl-1'),
+        expect.stringContaining("/templates/tmpl-1"),
         expect.any(Object),
       );
     });
 
-    it('updates a template', async () => {
-      const template = { id: 'tmpl-1', content: {} };
+    it("updates a template", async () => {
+      const template = { id: "tmpl-1", content: {} };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(template),
       );
 
-      const result = await api.updateTemplate('tmpl-1', { blocks: [], settings: {} } as any);
+      const result = await api.updateTemplate("tmpl-1", {
+        blocks: [],
+        settings: {},
+      } as any);
 
       expect(result).toEqual(template);
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/templates/tmpl-1'),
-        expect.objectContaining({ method: 'PUT' }),
+        expect.stringContaining("/templates/tmpl-1"),
+        expect.objectContaining({ method: "PUT" }),
       );
     });
 
-    it('deletes a template', async () => {
+    it("deletes a template", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(undefined, 204),
       );
 
-      await api.deleteTemplate('tmpl-1');
+      await api.deleteTemplate("tmpl-1");
 
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/templates/tmpl-1'),
-        expect.objectContaining({ method: 'DELETE' }),
+        expect.stringContaining("/templates/tmpl-1"),
+        expect.objectContaining({ method: "DELETE" }),
       );
     });
   });
 
-  describe('versions', () => {
-    it('gets versions for a template', async () => {
-      const versions = [{ id: 'ver-1' }];
+  describe("versions", () => {
+    it("gets versions for a template", async () => {
+      const versions = [{ id: "ver-1" }];
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(versions),
       );
 
-      const result = await api.getVersions('tmpl-1');
+      const result = await api.getVersions("tmpl-1");
 
       expect(result).toEqual(versions);
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/templates/tmpl-1/versions'),
+        expect.stringContaining("/templates/tmpl-1/versions"),
         expect.any(Object),
       );
     });
 
-    it('gets a single version', async () => {
-      const version = { id: 'ver-1', content: { blocks: [], settings: {} } };
+    it("gets a single version", async () => {
+      const version = { id: "ver-1", content: { blocks: [], settings: {} } };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(version),
       );
 
-      const result = await api.getVersion('tmpl-1', 'ver-1');
+      const result = await api.getVersion("tmpl-1", "ver-1");
 
       expect(result).toEqual(version);
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/templates/tmpl-1/versions/ver-1'),
+        expect.stringContaining("/templates/tmpl-1/versions/ver-1"),
         expect.any(Object),
       );
     });
 
-    it('creates a version', async () => {
-      const version = { id: 'ver-1' };
+    it("creates a version", async () => {
+      const version = { id: "ver-1" };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(version),
       );
 
-      const result = await api.createVersion('tmpl-1', { blocks: [], settings: {} } as any);
+      const result = await api.createVersion("tmpl-1", {
+        blocks: [],
+        settings: {},
+      } as any);
 
       expect(result).toEqual(version);
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/templates/tmpl-1/versions'),
-        expect.objectContaining({ method: 'POST' }),
+        expect.stringContaining("/templates/tmpl-1/versions"),
+        expect.objectContaining({ method: "POST" }),
       );
-      const [, init] = vi.mocked(authManager.authenticatedFetch).mock.calls.at(-1)!;
+      const [, init] = vi
+        .mocked(authManager.authenticatedFetch)
+        .mock.calls.at(-1)!;
       expect(JSON.parse((init as RequestInit).body as string)).toEqual({
         content: { blocks: [], settings: {} },
       });
     });
 
-    it('sends a label when one is given', async () => {
+    it("sends a label when one is given", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockResponse({ id: 'ver-1' }),
+        mockResponse({ id: "ver-1" }),
       );
 
-      await api.createVersion('tmpl-1', { blocks: [], settings: {} } as any, 'Before launch');
+      await api.createVersion(
+        "tmpl-1",
+        { blocks: [], settings: {} } as any,
+        "Before launch",
+      );
 
-      const [, init] = vi.mocked(authManager.authenticatedFetch).mock.calls.at(-1)!;
+      const [, init] = vi
+        .mocked(authManager.authenticatedFetch)
+        .mock.calls.at(-1)!;
       expect(JSON.parse((init as RequestInit).body as string)).toEqual({
         content: { blocks: [], settings: {} },
-        label: 'Before launch',
+        label: "Before launch",
       });
     });
 
-    it('restores a version', async () => {
-      const template = { id: 'tmpl-1' };
+    it("restores a version", async () => {
+      const template = { id: "tmpl-1" };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(template),
       );
 
-      const result = await api.restoreVersion('tmpl-1', 'ver-1');
+      const result = await api.restoreVersion("tmpl-1", "ver-1");
 
       expect(result).toEqual(template);
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/versions/ver-1/restore'),
-        expect.objectContaining({ method: 'POST' }),
+        expect.stringContaining("/versions/ver-1/restore"),
+        expect.objectContaining({ method: "POST" }),
       );
     });
   });
 
-  describe('export and test email', () => {
-    it('exports a template with fonts payload', async () => {
-      const exportResult = { html: '<html>', mjml: '<mjml>' };
+  describe("export and test email", () => {
+    it("exports a template with fonts payload", async () => {
+      const exportResult = { html: "<html>", mjml: "<mjml>" };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(exportResult),
       );
 
-      const result = await api.exportTemplate('tmpl-1', {
-        customFonts: [{ name: 'Custom', url: 'https://fonts.com/custom.css' }],
-        defaultFallback: 'Arial',
+      const result = await api.exportTemplate("tmpl-1", {
+        customFonts: [{ name: "Custom", url: "https://fonts.com/custom.css" }],
+        defaultFallback: "Arial",
       });
 
       expect(result).toEqual(exportResult);
       const callArgs = vi.mocked(authManager.authenticatedFetch).mock.calls[0];
       const body = JSON.parse(callArgs[1]!.body as string);
       expect(body.custom_fonts).toHaveLength(1);
-      expect(body.default_fallback).toBe('Arial');
+      expect(body.default_fallback).toBe("Arial");
     });
 
-    it('exports without fonts payload', async () => {
+    it("exports without fonts payload", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockResponse({ html: '<html>', mjml: '<mjml>' }),
+        mockResponse({ html: "<html>", mjml: "<mjml>" }),
       );
 
-      await api.exportTemplate('tmpl-1');
+      await api.exportTemplate("tmpl-1");
 
       const callArgs = vi.mocked(authManager.authenticatedFetch).mock.calls[0];
       expect(callArgs[1]!.body).toBeUndefined();
     });
 
-    it('sends test email', async () => {
+    it("sends test email", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(undefined, 204),
       );
 
-      await api.sendTestEmail('tmpl-1', {
-        recipient: 'test@example.com',
-        html: '<html>',
-        allowed_emails: ['test@example.com'],
-        signature: 'sig',
+      await api.sendTestEmail("tmpl-1", {
+        recipient: "test@example.com",
+        html: "<html>",
+        allowedEmails: ["test@example.com"],
+        signature: "sig",
       });
 
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/send-test-email'),
-        expect.objectContaining({ method: 'POST' }),
+        expect.stringContaining("/send-test-email"),
+        expect.objectContaining({ method: "POST" }),
       );
     });
   });
 
-  describe('comments', () => {
-    it('gets comments for a template', async () => {
-      const comments = [{ id: 'c1', body: 'hello' }];
+  describe("comments", () => {
+    it("gets comments for a template", async () => {
+      const comments = [{ id: "c1", body: "hello" }];
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(comments),
       );
 
-      const result = await api.getComments('tmpl-1');
+      const result = await api.getComments("tmpl-1");
       expect(result).toEqual(comments);
     });
 
-    it('creates a comment', async () => {
-      const comment = { id: 'c1', body: 'hello' };
+    it("creates a comment", async () => {
+      const comment = { id: "c1", body: "hello" };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(comment),
       );
 
-      const result = await api.createComment('tmpl-1', {
-        body: 'hello',
-        user_id: 'u1',
-        user_name: 'User',
-        user_signature: 'sig',
+      const result = await api.createComment("tmpl-1", {
+        body: "hello",
+        userId: "u1",
+        userName: "User",
+        userSignature: "sig",
       });
       expect(result).toEqual(comment);
     });
 
-    it('passes custom headers for comments', async () => {
+    it("passes custom headers for comments", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockResponse({ id: 'c1' }),
+        mockResponse({ id: "c1" }),
       );
 
       await api.createComment(
-        'tmpl-1',
-        { body: 'hi', user_id: 'u1', user_name: 'U', user_signature: 's' },
-        { 'X-Socket-ID': 'socket-123' },
+        "tmpl-1",
+        { body: "hi", userId: "u1", userName: "U", userSignature: "s" },
+        { "X-Socket-ID": "socket-123" },
       );
 
       const callArgs = vi.mocked(authManager.authenticatedFetch).mock.calls[0];
       expect(callArgs[1]!.headers).toEqual(
-        expect.objectContaining({ 'X-Socket-ID': 'socket-123' }),
+        expect.objectContaining({ "X-Socket-ID": "socket-123" }),
       );
     });
 
-    it('resolves a comment', async () => {
+    it("resolves a comment", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockResponse({ id: 'c1', resolved_at: '2024-01-01' }),
+        mockResponse({ id: "c1", resolvedAt: "2024-01-01" }),
       );
 
-      const result = await api.resolveComment('tmpl-1', 'c1', {
-        user_id: 'u1',
-        user_name: 'U',
-        user_signature: 's',
+      const result = await api.resolveComment("tmpl-1", "c1", {
+        userId: "u1",
+        userName: "U",
+        userSignature: "s",
       });
 
-      expect(result.resolved_at).toBe('2024-01-01');
+      expect(result.resolvedAt).toBe("2024-01-01");
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/comments/c1/resolve'),
-        expect.objectContaining({ method: 'POST' }),
+        expect.stringContaining("/comments/c1/resolve"),
+        expect.objectContaining({ method: "POST" }),
       );
     });
   });
 
-  describe('saved modules', () => {
-    it('lists modules', async () => {
-      const modules = [{ id: 'm1', name: 'Header' }];
+  describe("saved modules", () => {
+    it("lists modules", async () => {
+      const modules = [{ id: "m1", name: "Header" }];
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(modules),
       );
@@ -299,54 +322,54 @@ describe('ApiClient', () => {
       expect(result).toEqual(modules);
     });
 
-    it('lists modules with search', async () => {
+    it("lists modules with search", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse([]),
       );
 
-      await api.listModules('header');
+      await api.listModules("header");
 
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('?search=header'),
+        expect.stringContaining("?search=header"),
         expect.any(Object),
       );
     });
 
-    it('creates a module', async () => {
-      const mod = { id: 'm1', name: 'Footer', content: [] };
+    it("creates a module", async () => {
+      const mod = { id: "m1", name: "Footer", content: [] };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(mod),
       );
 
-      const result = await api.createModule({ name: 'Footer', content: [] });
+      const result = await api.createModule({ name: "Footer", content: [] });
       expect(result).toEqual(mod);
     });
 
-    it('updates a module', async () => {
+    it("updates a module", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockResponse({ id: 'm1', name: 'Updated' }),
+        mockResponse({ id: "m1", name: "Updated" }),
       );
 
-      const result = await api.updateModule('m1', { name: 'Updated' });
-      expect(result.name).toBe('Updated');
+      const result = await api.updateModule("m1", { name: "Updated" });
+      expect(result.name).toBe("Updated");
     });
 
-    it('deletes a module', async () => {
+    it("deletes a module", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(undefined, 204),
       );
 
-      await api.deleteModule('m1');
+      await api.deleteModule("m1");
 
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/saved-modules/m1'),
-        expect.objectContaining({ method: 'DELETE' }),
+        expect.stringContaining("/saved-modules/m1"),
+        expect.objectContaining({ method: "DELETE" }),
       );
     });
   });
 
-  describe('config', () => {
-    it('fetches plan config', async () => {
+  describe("config", () => {
+    it("fetches plan config", async () => {
       const config = { features: { comments: true } };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(config),
@@ -357,159 +380,159 @@ describe('ApiClient', () => {
     });
   });
 
-  describe('error handling', () => {
-    it('throws SdkError on non-OK response', async () => {
+  describe("error handling", () => {
+    it("throws SdkError on non-OK response", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockErrorResponse('Not found', 404),
+        mockErrorResponse("Not found", 404),
       );
 
-      await expect(api.getTemplate('bad-id')).rejects.toThrow('Not found');
+      await expect(api.getTemplate("bad-id")).rejects.toThrow("Not found");
     });
 
-    it('extracts first validation error', async () => {
+    it("extracts first validation error", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockErrorResponse('Validation failed', 422, {
-          name: ['Name is required', 'Name must be unique'],
+        mockErrorResponse("Validation failed", 422, {
+          name: ["Name is required", "Name must be unique"],
         }),
       );
 
-      await expect(api.createModule({ name: '', content: [] })).rejects.toThrow(
-        'Name is required',
+      await expect(api.createModule({ name: "", content: [] })).rejects.toThrow(
+        "Name is required",
       );
     });
 
-    it('falls back to message when no validation errors', async () => {
+    it("falls back to message when no validation errors", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockErrorResponse('Server error', 500),
+        mockErrorResponse("Server error", 500),
       );
 
-      await expect(api.getTemplate('id')).rejects.toThrow('Server error');
+      await expect(api.getTemplate("id")).rejects.toThrow("Server error");
     });
 
-    it('handles non-JSON error response', async () => {
+    it("handles non-JSON error response", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue({
         ok: false,
         status: 500,
-        json: () => Promise.reject(new Error('not json')),
+        json: () => Promise.reject(new Error("not json")),
       } as unknown as Response);
 
-      await expect(api.getTemplate('id')).rejects.toThrow('HTTP error 500');
+      await expect(api.getTemplate("id")).rejects.toThrow("HTTP error 500");
     });
 
-    it('handles 400 Bad Request', async () => {
+    it("handles 400 Bad Request", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockErrorResponse('Bad request data', 400),
+        mockErrorResponse("Bad request data", 400),
       );
 
-      await expect(api.getTemplate('id')).rejects.toThrow('Bad request data');
+      await expect(api.getTemplate("id")).rejects.toThrow("Bad request data");
     });
 
-    it('handles 403 Forbidden', async () => {
+    it("handles 403 Forbidden", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockErrorResponse('Access denied', 403),
+        mockErrorResponse("Access denied", 403),
       );
 
-      await expect(api.getTemplate('id')).rejects.toThrow('Access denied');
+      await expect(api.getTemplate("id")).rejects.toThrow("Access denied");
     });
 
-    it('handles empty validation errors object', async () => {
+    it("handles empty validation errors object", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockErrorResponse('Validation failed', 422, {}),
+        mockErrorResponse("Validation failed", 422, {}),
       );
 
-      await expect(api.getTemplate('id')).rejects.toThrow('Validation failed');
+      await expect(api.getTemplate("id")).rejects.toThrow("Validation failed");
     });
 
-    it('handles network error (fetch throws)', async () => {
+    it("handles network error (fetch throws)", async () => {
       vi.mocked(authManager.authenticatedFetch).mockRejectedValue(
-        new TypeError('Failed to fetch'),
+        new TypeError("Failed to fetch"),
       );
 
-      await expect(api.getTemplate('id')).rejects.toThrow('Failed to fetch');
+      await expect(api.getTemplate("id")).rejects.toThrow("Failed to fetch");
     });
 
-    it('handles validation errors with empty array for a field', async () => {
+    it("handles validation errors with empty array for a field", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockErrorResponse('Validation failed', 422, { name: [] }),
+        mockErrorResponse("Validation failed", 422, { name: [] }),
       );
 
       // Empty array means no first element, so falls back to message
-      await expect(api.getTemplate('id')).rejects.toThrow('Validation failed');
+      await expect(api.getTemplate("id")).rejects.toThrow("Validation failed");
     });
   });
 
-  describe('createComment with block_id variants', () => {
-    it('sends empty string block_id', async () => {
+  describe("createComment with blockId variants", () => {
+    it("sends empty string blockId", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockResponse({ id: 'c1' }),
+        mockResponse({ id: "c1" }),
       );
 
-      await api.createComment('tmpl-1', {
-        body: 'hi',
-        block_id: '',
-        user_id: 'u1',
-        user_name: 'U',
-        user_signature: 's',
+      await api.createComment("tmpl-1", {
+        body: "hi",
+        blockId: "",
+        userId: "u1",
+        userName: "U",
+        userSignature: "s",
       });
 
       const callArgs = vi.mocked(authManager.authenticatedFetch).mock.calls[0];
       const body = JSON.parse(callArgs[1]!.body as string);
-      expect(body.block_id).toBe('');
+      expect(body.blockId).toBe("");
     });
 
-    it('sends undefined block_id (omitted from payload)', async () => {
+    it("omits blockId when it is undefined", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockResponse({ id: 'c1' }),
+        mockResponse({ id: "c1" }),
       );
 
-      await api.createComment('tmpl-1', {
-        body: 'hi',
-        user_id: 'u1',
-        user_name: 'U',
-        user_signature: 's',
+      await api.createComment("tmpl-1", {
+        body: "hi",
+        userId: "u1",
+        userName: "U",
+        userSignature: "s",
       });
 
       const callArgs = vi.mocked(authManager.authenticatedFetch).mock.calls[0];
       const body = JSON.parse(callArgs[1]!.body as string);
-      expect(body.block_id).toBeUndefined();
+      expect(body.blockId).toBeUndefined();
     });
   });
 
-  describe('comments edge cases', () => {
-    it('updates a comment', async () => {
-      const updated = { id: 'c1', body: 'updated' };
+  describe("comments edge cases", () => {
+    it("updates a comment", async () => {
+      const updated = { id: "c1", body: "updated" };
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(updated),
       );
 
-      const result = await api.updateComment('tmpl-1', 'c1', {
-        body: 'updated',
-        user_id: 'u1',
-        user_name: 'U',
-        user_signature: 's',
+      const result = await api.updateComment("tmpl-1", "c1", {
+        body: "updated",
+        userId: "u1",
+        userName: "U",
+        userSignature: "s",
       });
 
       expect(result).toEqual(updated);
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/comments/c1'),
-        expect.objectContaining({ method: 'PUT' }),
+        expect.stringContaining("/comments/c1"),
+        expect.objectContaining({ method: "PUT" }),
       );
     });
 
-    it('deletes a comment', async () => {
+    it("deletes a comment", async () => {
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockResponse(undefined, 204),
       );
 
-      await api.deleteComment('tmpl-1', 'c1', {
-        user_id: 'u1',
-        user_name: 'U',
-        user_signature: 's',
+      await api.deleteComment("tmpl-1", "c1", {
+        userId: "u1",
+        userName: "U",
+        userSignature: "s",
       });
 
       expect(authManager.authenticatedFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/comments/c1'),
-        expect.objectContaining({ method: 'DELETE' }),
+        expect.stringContaining("/comments/c1"),
+        expect.objectContaining({ method: "DELETE" }),
       );
     });
   });

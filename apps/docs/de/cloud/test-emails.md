@@ -18,7 +18,7 @@ Test-E-Mail ist eine **gemeinsame Funktion**: Auslöser, Dialog, Empfängerprüf
 
 Drei Bedingungen steuern die Schaltfläche, und keine folgt aus einer anderen — alle müssen erfüllt sein, damit sie erscheint:
 
-- das Plan-Feature `test_email`;
+- das Plan-Feature `testEmail`;
 - eine Test-E-Mail-Konfiguration im Auth-Token des Projekts (die erlaubten Empfänger samt Signatur);
 - eine **gespeicherte** Vorlage, da Cloud aus der gespeicherten Fassung rendert.
 
@@ -67,7 +67,7 @@ await initCloud({
 });
 ```
 
-Lassen Sie den Schlüssel weg, versendet Cloud. Geben Sie einen vollständigen Provider an — einen mit `send` —, versendet stattdessen Ihre Implementierung, **ohne Plan-Bindung**, denn das Feature `test_email` lizenziert den Versand durch Cloud, nicht die Oberfläche des Editors. Ihre Nutzer merken so oder so keinen Unterschied.
+Lassen Sie den Schlüssel weg, versendet Cloud. Geben Sie einen vollständigen Provider an — einen mit `send` —, versendet stattdessen Ihre Implementierung, **ohne Plan-Bindung**, denn das Feature `testEmail` lizenziert den Versand durch Cloud, nicht die Oberfläche des Editors. Ihre Nutzer merken so oder so keinen Unterschied.
 
 Cloud akzeptiert außerdem eine schmalere Form, die den eigenen Versand behält: `{ onSent?, defaultRecipient? }`. `includeMjml` und `allowedRecipients` sind davon ausgeschlossen — Cloud rendert serverseitig statt über einen clientseitigen MJML-Durchlauf, und die Erlaubnisliste ist die signierte aus dem JWT Ihres Projekts, die ein clientseitiger Wert nicht überschreiben kann. `defaultRecipient` wird ignoriert, sofern er nicht bereits auf dieser signierten Liste steht.
 

@@ -51,7 +51,7 @@ export function useMediaCategories(
   const limits: MediaLimits = injected;
 
   // A provider in scope *is* the feature being on — there is no separate
-  // `use_media_library` flag. The composable cannot be constructed without
+  // `useMediaLibrary` flag. The composable cannot be constructed without
   // limits, so this is constantly true for every successful caller.
   const isMediaLibraryEnabled = computed(() => true);
 

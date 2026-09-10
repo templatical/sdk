@@ -11,4 +11,6 @@ The editor's image picker (Browse, drop, crop, folders, search) is now backed by
 
 `onRequestMedia` stays as the UI override for a host widget (Bynder, Cloudinary, a modal of your own). It wins over `media` when both are set.
 
+Cloud HTTP is camelCase throughout: media, comments, version history, plan JWT (`aiGeneration`, `savedModules`, `testEmail`, `expiresAt`, `projectId`, `appKey`, …), collab/MCP operations (`addBlock`, `blockId`, `client-blockLocked`), websocket auth params, and AI request/response keys (`conversationId`, `currentContent`, `mergeTags`, `createdAt`).
+
 Origin: [#700](https://github.com/templatical/sdk/issues/700).

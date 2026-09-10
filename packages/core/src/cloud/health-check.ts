@@ -27,7 +27,7 @@ async function checkApiAndAuth(
 ): Promise<{
   api: { ok: boolean; latency: number };
   auth: { ok: boolean; error?: string };
-  wsConfig?: { host: string; port: number; app_key: string };
+  wsConfig?: { host: string; port: number; appKey: string };
 }> {
   const start = performance.now();
 
@@ -88,9 +88,9 @@ async function checkApiAndAuth(
 async function checkWebSocket(wsConfig?: {
   host: string;
   port: number;
-  app_key: string;
+  appKey: string;
 }): Promise<{ ok: boolean; error?: string }> {
-  if (!wsConfig?.host || !wsConfig?.app_key) {
+  if (!wsConfig?.host || !wsConfig?.appKey) {
     return { ok: false, error: "WebSocket configuration not available" };
   }
 
@@ -102,7 +102,7 @@ async function checkWebSocket(wsConfig?: {
   }
 
   const protocol = wsConfig.port === 443 ? "wss" : "ws";
-  const url = `${protocol}://${wsConfig.host}:${wsConfig.port}/app/${wsConfig.app_key}?protocol=7&client=js&version=8.4.0-rc2&flash=false`;
+  const url = `${protocol}://${wsConfig.host}:${wsConfig.port}/app/${wsConfig.appKey}?protocol=7&client=js&version=8.4.0-rc2&flash=false`;
 
   return new Promise((resolve) => {
     let ws: WebSocket | null = null;

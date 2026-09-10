@@ -1,3 +1,4 @@
+import type { CommentAuthor } from "./comments";
 import type {
   SyntaxPreset,
   SyntaxPresetName,
@@ -19,16 +20,17 @@ export type { SyntaxPreset, SyntaxPresetName, ViewportSize };
 export type { Template };
 
 /**
- * Cloud's wire shape for one version — snake_case, i.e. what the API returns,
- * not a contract shape. `createCloudVersionHistoryProvider` maps it to the
- * camelCase `TemplateVersion` a consumer's provider also returns.
+ * Cloud's HTTP row for one version — what the API returns, not the BYO
+ * {@link TemplateVersion} contract. `createCloudVersionHistoryProvider`
+ * copies the fields the contract uses (`id`, `createdAt`, `isAutomatic`,
+ * `content`) and drops `templateId`.
  */
 export interface TemplateVersionResponse {
   id: string;
-  template_id: string;
+  templateId?: string;
   content: TemplateContent;
-  is_autosave: boolean;
-  created_at: string;
+  isAutomatic: boolean;
+  createdAt: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -36,27 +38,23 @@ export interface TemplateVersionResponse {
 // ---------------------------------------------------------------------------
 
 /**
- * Cloud's wire shape for one comment — snake_case, i.e. what the API returns,
- * not a contract shape. `createCloudCommentsProvider` maps it to the camelCase
- * `Comment` a consumer's provider also returns.
- *
- * Same split as `TemplateVersionResponse` → `TemplateVersion`, and for the same
- * reason: a wire format is one backend's business, and putting it in the contract
- * would make every BYO implementer speak Cloud's dialect.
+ * Cloud's HTTP row for one comment — what the API returns, not the BYO
+ * {@link Comment} contract. Same field names as `Comment`, plus optional
+ * `templateId`. `createCloudCommentsProvider` omits `updatedAt` when it
+ * equals `createdAt` (Cloud stamps both on insert) so the panel does not
+ * mark every comment "(edited)".
  */
 export interface CommentResponse {
   id: string;
-  template_id: string;
-  block_id: string | null;
-  parent_id: string | null;
+  templateId?: string;
+  blockId: string | null;
+  parentId: string | null;
   body: string;
-  author_identifier: string;
-  author_name: string;
-  resolved_at: string | null;
-  resolved_by_identifier: string | null;
-  resolved_by_name: string | null;
-  created_at: string;
-  updated_at: string;
+  author: CommentAuthor;
+  resolvedAt: string | null;
+  resolvedBy: CommentAuthor | null;
+  createdAt: string;
+  updatedAt: string;
   replies: CommentResponse[];
 }
 
@@ -105,11 +103,11 @@ export interface HealthCheckResult {
 
 export interface TokenData {
   token: string;
-  expires_at: number;
-  project_id: string;
+  expiresAt: number;
+  projectId: string;
   tenant: string;
-  test_email?: {
-    allowed_emails: string[];
+  testEmail?: {
+    allowedEmails: string[];
     signature: string;
   };
   user?: {
@@ -177,13 +175,13 @@ export interface Collaborator {
 // ---------------------------------------------------------------------------
 
 export type McpOperation =
-  | "add_block"
-  | "update_block"
-  | "delete_block"
-  | "move_block"
-  | "update_settings"
-  | "set_content"
-  | "update_block_style";
+  | "addBlock"
+  | "updateBlock"
+  | "deleteBlock"
+  | "moveBlock"
+  | "updateSettings"
+  | "setContent"
+  | "updateBlockStyle";
 
 export interface McpOperationPayload {
   operation: McpOperation;
@@ -224,7 +222,7 @@ export interface CollaborationConfig {
 export interface WebSocketServerConfig {
   host: string;
   port: number;
-  app_key: string;
+  appKey: string;
 }
 
 export interface ApiResponse<T> {
@@ -266,56 +264,56 @@ export interface ApiError {
  */
 export interface PlanFeatures {
   /** Inference spend, per call. */
-  ai_generation: boolean;
+  aiGeneration: boolean;
   /** Realtime connection capacity. */
   collaboration: boolean;
   /** Storage plus realtime fan-out. */
   commenting: boolean;
   /** Storage for saved blocks. */
-  saved_modules: boolean;
+  savedModules: boolean;
   /** Sending cost and deliverability reputation. */
-  test_email: boolean;
+  testEmail: boolean;
 }
 
 export interface PlanLimits {
-  max_file_size_mb: number;
-  max_templates: number | null;
-  media_categories: string[];
-  storage_limit_bytes: number;
+  maxFileSizeMb: number;
+  maxTemplates: number | null;
+  mediaCategories: string[];
+  storageLimitBytes: number;
 }
 
 /**
- * Cloud JWT/plan wire shape for one media category — snake_case, i.e. what
- * the plan payload carries, not a BYO contract field.
+ * Cloud JWT/plan wire shape for one media category — what the plan payload
+ * carries, not a BYO contract field.
  */
 export interface MediaCategoryData {
-  mime_types: string[];
+  mimeTypes: string[];
   extensions: string[];
 }
 
 /**
- * Cloud JWT/plan wire shape for media entitlements — snake_case, i.e. what
- * the plan payload carries, not the BYO {@link MediaProvider} contract.
+ * Cloud JWT/plan wire shape for media entitlements — what the plan payload
+ * carries, not the BYO {@link MediaProvider} contract.
  */
 export interface MediaConfig {
-  use_media_library: boolean;
+  useMediaLibrary: boolean;
   categories: Record<string, MediaCategoryData>;
-  max_file_size: number;
+  maxFileSize: number;
 }
 
 /**
- * Cloud JWT/plan wire shape for storage quota — snake_case, i.e. what the
- * plan payload carries, not {@link MediaStorageInfo}.
+ * Cloud JWT/plan wire shape for storage quota — what the plan payload
+ * carries. Same fields as {@link MediaStorageInfo}.
  */
 export interface StorageInfo {
-  used_bytes: number;
-  limit_bytes: number;
+  usedBytes: number;
+  limitBytes: number;
 }
 
 export interface PlanConfig {
   features: PlanFeatures;
   limits: PlanLimits;
-  template_count: number;
+  templateCount: number;
   plan: string;
   media: MediaConfig;
   storage: StorageInfo;

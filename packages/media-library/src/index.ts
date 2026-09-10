@@ -1,17 +1,13 @@
-// Types
+// Types — the contract lives in `@templatical/types`. Re-exported so a
+// media-library consumer does not also have to import types for the
+// shapes the modal and composable return.
 export type {
+  MediaAsset,
   MediaCategory,
-  MediaCategoryData,
-  MediaConfig,
-  MediaConversion,
-  MediaItem,
   MediaFolder,
-  MediaBrowseParams,
-  MediaBrowseResponse,
-  MediaUsageInfo,
-  MediaUsageResponse,
   MediaRequestContext,
-  StorageInfo,
+  MediaResult,
+  MediaUsageInfo,
 } from "./types";
 
 // Composable

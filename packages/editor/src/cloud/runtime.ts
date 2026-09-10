@@ -52,7 +52,7 @@ export interface CloudRuntime {
    */
   lockedBlocks: Ref<Map<string, unknown>>;
 
-  /** Whether the plan grants `saved_modules` — or `true` for a BYO provider. */
+  /** Whether the plan grants `savedModules` — or `true` for a BYO provider. */
   isSavedBlocksAvailable: () => boolean;
   /** Folds the plan feature, the signed allowlist and "a template exists". */
   isTestEmailAvailable: () => boolean;

@@ -6,8 +6,8 @@ import type { PlanConfig } from "@templatical/types";
 /**
  * Cloud's adapter for the same media contract a consumer implements.
  *
- * The weight is the mapping (snake_case wire → camelCase `MediaAsset`) and
- * the live plan-config getters. `templateId` is a BYO param Cloud ignores.
+ * The weight is the live plan-config getters and that `templateId` is a
+ * BYO param Cloud ignores.
  */
 
 function createMockAuthManager(): AuthManager {
@@ -31,9 +31,9 @@ function mockBrowseResponse(
         data: items,
         meta: {
           path: "/media",
-          per_page: 20,
-          next_cursor: nextCursor,
-          prev_cursor: null,
+          perPage: 20,
+          nextCursor,
+          prevCursor: null,
         },
       }),
   } as unknown as Response;
@@ -52,15 +52,12 @@ function wireItem(overrides: Record<string, unknown> = {}) {
     id: "m1",
     url: "https://cdn.example.com/hero.png",
     filename: "hero.png",
-    alt_text: "Hero image",
-    mime_type: "image/png",
-    small_url: "https://cdn.example.com/hero-sm.png",
-    medium_url: "https://cdn.example.com/hero-md.png",
-    large_url: "https://cdn.example.com/hero-lg.png",
-    folder_id: "f1",
-    conversions_generated: true,
-    created_at: "2026-09-01T10:00:00Z",
-    updated_at: "2026-09-02T11:00:00Z",
+    alt: "Hero image",
+    mimeType: "image/png",
+    thumbnailUrl: "https://cdn.example.com/hero-sm.png",
+    folderId: "f1",
+    createdAt: "2026-09-01T10:00:00Z",
+    updatedAt: "2026-09-02T11:00:00Z",
     size: 12345,
     width: 800,
     height: 600,
@@ -84,7 +81,7 @@ describe("createCloudMediaProvider", () => {
   });
 
   describe("wire shape → contract shape", () => {
-    it("maps one snake_case item to camelCase MediaAsset with the exact fields", async () => {
+    it("maps one item to MediaAsset with the exact fields", async () => {
       const { authManager, provider } = setup();
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockBrowseResponse([wireItem()]),
@@ -110,12 +107,10 @@ describe("createCloudMediaProvider", () => {
       ]);
     });
 
-    it("omits thumbnailUrl when small_url and medium_url are both null", async () => {
+    it("omits thumbnailUrl when it is null", async () => {
       const { authManager, provider } = setup();
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockBrowseResponse([
-          wireItem({ small_url: null, medium_url: null, large_url: null }),
-        ]),
+        mockBrowseResponse([wireItem({ thumbnailUrl: null })]),
       );
 
       const [asset] = (await provider.list()).items;
@@ -124,18 +119,7 @@ describe("createCloudMediaProvider", () => {
       expect("thumbnailUrl" in asset).toBe(false);
     });
 
-    it("falls back to medium_url when small_url is null", async () => {
-      const { authManager, provider } = setup();
-      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockBrowseResponse([wireItem({ small_url: null })]),
-      );
-
-      const [asset] = (await provider.list()).items;
-
-      expect(asset.thumbnailUrl).toBe("https://cdn.example.com/hero-md.png");
-    });
-
-    it("maps list { data, meta.next_cursor } to { items, nextCursor }", async () => {
+    it("maps list { data, meta.nextCursor } to { items, nextCursor }", async () => {
       const { authManager, provider } = setup();
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockBrowseResponse([wireItem()], "cursor-2"),
@@ -171,10 +155,9 @@ describe("createCloudMediaProvider", () => {
       const url = fetchUrl(authManager);
       expect(url).toContain("search=hero");
       expect(url).not.toContain("templateId");
-      expect(url).not.toContain("template_id");
     });
 
-    it("forwards folderId as folder_id, category, and cursor", async () => {
+    it("forwards folderId, category, and cursor", async () => {
       const { authManager, provider } = setup();
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockBrowseResponse(),
@@ -188,23 +171,22 @@ describe("createCloudMediaProvider", () => {
       });
 
       const url = fetchUrl(authManager);
-      expect(url).toContain("folder_id=f1");
+      expect(url).toContain("folderId=f1");
       expect(url).toContain("category=images");
       expect(url).toContain("cursor=abc");
       expect(url).not.toContain("templateId");
-      expect(url).not.toContain("template_id");
     });
   });
 
   describe("storage / limits are live", () => {
-    it("storage() is null until plan config has loaded, then maps used_bytes / limit_bytes", async () => {
+    it("storage() is null until plan config has loaded, then returns usedBytes / limitBytes", async () => {
       let plan: PlanConfig | null = null;
       const { provider } = setup(() => plan);
 
       expect(await provider.storage()).toBe(null);
 
       plan = {
-        storage: { used_bytes: 10, limit_bytes: 100 },
+        storage: { usedBytes: 10, limitBytes: 100 },
       } as PlanConfig;
 
       expect(await provider.storage()).toEqual({
@@ -222,11 +204,11 @@ describe("createCloudMediaProvider", () => {
 
       plan = {
         media: {
-          use_media_library: true,
-          max_file_size: 1_048_576,
+          useMediaLibrary: true,
+          maxFileSize: 1_048_576,
           categories: {
             images: {
-              mime_types: ["image/png", "image/jpeg"],
+              mimeTypes: ["image/png", "image/jpeg"],
               extensions: [".png", ".jpg"],
             },
           },
@@ -248,7 +230,7 @@ describe("createCloudMediaProvider", () => {
           {
             id: "a",
             name: "A",
-            children: [{ id: "b", name: "B", parent_id: "a" }],
+            children: [{ id: "b", name: "B", parentId: "a" }],
           },
         ]),
       );
@@ -265,12 +247,12 @@ describe("createCloudMediaProvider", () => {
       expect(folders[1].parentId).toBe("a");
     });
 
-    it("accepts an already-flat list of parent_id rows", async () => {
+    it("accepts an already-flat list of parentId rows", async () => {
       const { authManager, provider } = setup();
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockJsonResponse([
-          { id: "a", name: "A", parent_id: null },
-          { id: "b", name: "B", parent_id: "a" },
+          { id: "a", name: "A", parentId: null },
+          { id: "b", name: "B", parentId: "a" },
         ]),
       );
 
@@ -309,7 +291,7 @@ describe("createCloudMediaProvider", () => {
       expect(provider.folders.move).not.toBe(false);
     });
 
-    it("create posts FormData with file and folder_id, ignoring templateId", async () => {
+    it("create posts FormData with file and folderId, ignoring templateId", async () => {
       const { authManager, provider } = setup();
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
         mockJsonResponse(wireItem()),
@@ -331,18 +313,17 @@ describe("createCloudMediaProvider", () => {
         .calls[0];
       expect(String(url)).toContain("/media/upload");
       expect(String(url)).not.toContain("templateId");
-      expect(String(url)).not.toContain("template_id");
       expect(init?.method).toBe("POST");
       expect(init?.body).toBeInstanceOf(FormData);
       const formData = init?.body as FormData;
       expect(formData.get("file")).toBeInstanceOf(File);
-      expect(formData.get("folder_id")).toBe("f1");
+      expect(formData.get("folderId")).toBe("f1");
     });
 
     it("omits filename from the PUT body when patch.filename is undefined", async () => {
       const { authManager, provider } = setup();
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
-        mockJsonResponse(wireItem({ alt_text: "x" })),
+        mockJsonResponse(wireItem({ alt: "x" })),
       );
 
       if (provider.update === false) {
@@ -353,7 +334,7 @@ describe("createCloudMediaProvider", () => {
       const init = vi.mocked(authManager.authenticatedFetch).mock.calls[0][1];
       expect(init?.method).toBe("PUT");
       const body = JSON.parse(String(init?.body));
-      expect(body).toEqual({ alt_text: "x" });
+      expect(body).toEqual({ alt: "x" });
       expect("filename" in body).toBe(false);
     });
 
@@ -390,7 +371,7 @@ describe("createCloudMediaProvider", () => {
       expect(JSON.parse(String(init?.body))).toEqual({ ids: ["m1", "m2"] });
     });
 
-    it("checkUsage maps template_count / template_names", async () => {
+    it("checkUsage maps templateCount / templateNames", async () => {
       const { authManager, provider } = setup();
       vi.mocked(authManager.authenticatedFetch).mockResolvedValue({
         ok: true,
@@ -399,8 +380,8 @@ describe("createCloudMediaProvider", () => {
           Promise.resolve({
             data: {
               m1: {
-                template_count: 2,
-                template_names: ["Welcome", "Promo"],
+                templateCount: 2,
+                templateNames: ["Welcome", "Promo"],
               },
             },
           }),
@@ -414,6 +395,51 @@ describe("createCloudMediaProvider", () => {
       expect(usage).toEqual({
         m1: { templateCount: 2, templateNames: ["Welcome", "Promo"] },
       });
+    });
+
+    it("move posts folderId, importFromUrl posts folderId, create folder posts parentId", async () => {
+      const { authManager, provider } = setup();
+      if (provider.folders === false || provider.importFromUrl === false) {
+        throw new Error("Cloud folders and importFromUrl must be implemented");
+      }
+
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockJsonResponse([wireItem()]),
+      );
+      await provider.folders.move(["m1"], "f2");
+      expect(
+        JSON.parse(
+          String(
+            vi.mocked(authManager.authenticatedFetch).mock.calls[0][1]?.body,
+          ),
+        ),
+      ).toEqual({ ids: ["m1"], folderId: "f2" });
+
+      vi.mocked(authManager.authenticatedFetch).mockClear();
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockJsonResponse(wireItem()),
+      );
+      await provider.importFromUrl("https://example.com/a.png", "f1");
+      expect(
+        JSON.parse(
+          String(
+            vi.mocked(authManager.authenticatedFetch).mock.calls[0][1]?.body,
+          ),
+        ),
+      ).toEqual({ url: "https://example.com/a.png", folderId: "f1" });
+
+      vi.mocked(authManager.authenticatedFetch).mockClear();
+      vi.mocked(authManager.authenticatedFetch).mockResolvedValue(
+        mockJsonResponse({ id: "f3", name: "Nested", parentId: "f1" }),
+      );
+      await provider.folders.create({ name: "Nested", parentId: "f1" });
+      expect(
+        JSON.parse(
+          String(
+            vi.mocked(authManager.authenticatedFetch).mock.calls[0][1]?.body,
+          ),
+        ),
+      ).toEqual({ name: "Nested", parentId: "f1" });
     });
   });
 });

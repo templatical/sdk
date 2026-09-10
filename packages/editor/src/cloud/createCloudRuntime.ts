@@ -727,7 +727,7 @@ export async function bootstrapCloud(
   // events-only `SavedBlocksOptions` (`{ onCreated }`) is an object too, and
   // reading it as the provider would leave `list` undefined and crash the
   // library on first browse. That path is deliberately NOT plan-gated:
-  // `saved_modules` licenses Cloud's *storage*, and someone else's backend
+  // `savedModules` licenses Cloud's *storage*, and someone else's backend
   // isn't Cloud's to sell — `isSavedBlocksAvailable` below keys off this same
   // discriminated value for that reason.
   const consumerSavedBlocks =
@@ -1074,9 +1074,9 @@ export async function bootstrapCloud(
       ? () => true
       : () =>
           config.savedBlocks !== false &&
-          planConfigInstance.hasFeature("saved_modules"),
+          planConfigInstance.hasFeature("savedModules"),
     isTestEmailAvailable: consumerTestEmail
-      ? // Their sender, their rules — the `test_email` plan feature licenses
+      ? // Their sender, their rules — the `testEmail` plan feature licenses
         // Cloud's sending, and "the template must be saved" is a constraint of
         // Cloud's server-side render, not of an arbitrary backend.
         () => true

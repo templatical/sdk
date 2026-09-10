@@ -66,8 +66,8 @@ describe('useCollaboration', () => {
 
     // Should silently skip when channel is null
     _broadcastOperation({
-      operation: 'update_block',
-      block_id: 'b1',
+      operation: 'updateBlock',
+      blockId: 'b1',
       properties: { content: 'test' },
     });
     // No channel means nothing was triggered — editor state should be unchanged
@@ -116,8 +116,8 @@ describe('useCollaboration', () => {
 
       expect(mockChannel.bind).toHaveBeenCalledWith('pusher:member_added', expect.any(Function));
       expect(mockChannel.bind).toHaveBeenCalledWith('pusher:member_removed', expect.any(Function));
-      expect(mockChannel.bind).toHaveBeenCalledWith('client-block_locked', expect.any(Function));
-      expect(mockChannel.bind).toHaveBeenCalledWith('client-block_unlocked', expect.any(Function));
+      expect(mockChannel.bind).toHaveBeenCalledWith('client-blockLocked', expect.any(Function));
+      expect(mockChannel.bind).toHaveBeenCalledWith('client-blockUnlocked', expect.any(Function));
       expect(mockChannel.bind).toHaveBeenCalledWith('client-operation', expect.any(Function));
       expect(mockChannel.bind).toHaveBeenCalledWith('mcp-operation', expect.any(Function));
     });
@@ -140,8 +140,8 @@ describe('useCollaboration', () => {
 
       expect(mockChannel.unbind).toHaveBeenCalledWith('pusher:member_added');
       expect(mockChannel.unbind).toHaveBeenCalledWith('pusher:member_removed');
-      expect(mockChannel.unbind).toHaveBeenCalledWith('client-block_locked');
-      expect(mockChannel.unbind).toHaveBeenCalledWith('client-block_unlocked');
+      expect(mockChannel.unbind).toHaveBeenCalledWith('client-blockLocked');
+      expect(mockChannel.unbind).toHaveBeenCalledWith('client-blockUnlocked');
       expect(mockChannel.unbind).toHaveBeenCalledWith('client-operation');
       expect(mockChannel.unbind).toHaveBeenCalledWith('mcp-operation');
     });
@@ -172,8 +172,8 @@ describe('useCollaboration', () => {
 
       expect(mockChannel.unbind).toHaveBeenCalledWith('pusher:member_added');
       expect(mockChannel.unbind).toHaveBeenCalledWith('pusher:member_removed');
-      expect(mockChannel.unbind).toHaveBeenCalledWith('client-block_locked');
-      expect(mockChannel.unbind).toHaveBeenCalledWith('client-block_unlocked');
+      expect(mockChannel.unbind).toHaveBeenCalledWith('client-blockLocked');
+      expect(mockChannel.unbind).toHaveBeenCalledWith('client-blockUnlocked');
       expect(mockChannel.unbind).toHaveBeenCalledWith('client-operation');
       expect(mockChannel.unbind).toHaveBeenCalledWith('mcp-operation');
     });
@@ -257,7 +257,7 @@ describe('useCollaboration', () => {
       channel.value = mockChannel;
       await nextTick();
 
-      const payload = { operation: 'update_block' as const, block_id: 'b1', properties: { content: 'test' } };
+      const payload = { operation: 'updateBlock' as const, blockId: 'b1', properties: { content: 'test' } };
       _broadcastOperation(payload);
 
       expect(mockChannel.trigger).toHaveBeenCalledWith('client-operation', payload);
@@ -305,7 +305,7 @@ describe('useCollaboration', () => {
       expect(collaborators.value).toHaveLength(1);
 
       // Lock a block for that collaborator
-      const blockLockedHandler = mockChannel._handlers['client-block_locked'];
+      const blockLockedHandler = mockChannel._handlers['client-blockLocked'];
       blockLockedHandler({ blockId: 'block-1', userId: 'user-2' });
       expect(lockedBlocks.value.has('block-1')).toBe(true);
 
@@ -364,7 +364,7 @@ describe('useCollaboration', () => {
         });
 
         // Lock a block
-        mockChannel._handlers['client-block_locked']({ blockId: 'block-1', userId: 'user-2' });
+        mockChannel._handlers['client-blockLocked']({ blockId: 'block-1', userId: 'user-2' });
 
         expect(collaborators.value[0].selectedBlockId).toBe('block-1');
         expect(lockedBlocks.value.get('block-1')).toEqual(
@@ -394,10 +394,10 @@ describe('useCollaboration', () => {
           info: { id: 'user-2', name: 'Alice', type: 'user' },
         });
 
-        mockChannel._handlers['client-block_locked']({ blockId: 'block-1', userId: 'user-2' });
+        mockChannel._handlers['client-blockLocked']({ blockId: 'block-1', userId: 'user-2' });
         expect(lockedBlocks.value.has('block-1')).toBe(true);
 
-        mockChannel._handlers['client-block_locked']({ blockId: 'block-2', userId: 'user-2' });
+        mockChannel._handlers['client-blockLocked']({ blockId: 'block-2', userId: 'user-2' });
         expect(lockedBlocks.value.has('block-1')).toBe(false);
         expect(lockedBlocks.value.has('block-2')).toBe(true);
         expect(lockedBlocks.value.get('block-2')!.id).toBe('user-2');
@@ -423,7 +423,7 @@ describe('useCollaboration', () => {
           info: { id: 'user-2', name: 'Alice', type: 'user' },
         });
 
-        mockChannel._handlers['client-block_locked']({ blockId: 'block-1', userId: 'user-2' });
+        mockChannel._handlers['client-blockLocked']({ blockId: 'block-1', userId: 'user-2' });
 
         expect(editor.selectBlock).toHaveBeenCalledWith(null);
       });
@@ -448,7 +448,7 @@ describe('useCollaboration', () => {
           info: { id: 'user-2', name: 'Alice', type: 'user' },
         });
 
-        mockChannel._handlers['client-block_locked']({ blockId: 'block-1', userId: 'user-2' });
+        mockChannel._handlers['client-blockLocked']({ blockId: 'block-1', userId: 'user-2' });
 
         expect(editor.selectBlock).not.toHaveBeenCalled();
       });
@@ -468,7 +468,7 @@ describe('useCollaboration', () => {
         channel.value = mockChannel;
         await nextTick();
 
-        mockChannel._handlers['client-block_locked']({ blockId: 'block-1', userId: 'unknown' });
+        mockChannel._handlers['client-blockLocked']({ blockId: 'block-1', userId: 'unknown' });
 
         expect(lockedBlocks.value.size).toBe(0);
         expect(onBlockLocked).not.toHaveBeenCalled();
@@ -496,10 +496,10 @@ describe('useCollaboration', () => {
           info: { id: 'user-2', name: 'Alice', type: 'user' },
         });
 
-        mockChannel._handlers['client-block_locked']({ blockId: 'block-1', userId: 'user-2' });
+        mockChannel._handlers['client-blockLocked']({ blockId: 'block-1', userId: 'user-2' });
         expect(lockedBlocks.value.has('block-1')).toBe(true);
 
-        mockChannel._handlers['client-block_unlocked']({ blockId: 'block-1' });
+        mockChannel._handlers['client-blockUnlocked']({ blockId: 'block-1' });
 
         expect(lockedBlocks.value.has('block-1')).toBe(false);
         expect(collaborators.value[0].selectedBlockId).toBeNull();
@@ -524,7 +524,7 @@ describe('useCollaboration', () => {
         channel.value = mockChannel;
         await nextTick();
 
-        mockChannel._handlers['client-block_unlocked']({ blockId: 'nonexistent' });
+        mockChannel._handlers['client-blockUnlocked']({ blockId: 'nonexistent' });
 
         expect(onBlockUnlocked).not.toHaveBeenCalled();
       });
@@ -549,7 +549,7 @@ describe('useCollaboration', () => {
         channel.value = mockChannel;
         await nextTick();
 
-        const payload = { operation: 'update_block' as const, block_id: 'b1', properties: { content: 'hi' } };
+        const payload = { operation: 'updateBlock' as const, blockId: 'b1', properties: { content: 'hi' } };
         mockChannel._handlers['client-operation'](payload);
 
         expect(handleOperation).toHaveBeenCalledWith(editor, payload);
@@ -569,7 +569,7 @@ describe('useCollaboration', () => {
         channel.value = mockChannel;
         await nextTick();
 
-        const payload = { operation: 'add_block' as const, block_type: 'text', properties: {} };
+        const payload = { operation: 'addBlock' as const, block_type: 'text', properties: {} };
         mockChannel._handlers['mcp-operation'](payload);
 
         expect(handleOperation).toHaveBeenCalledWith(editor, payload);
@@ -595,8 +595,8 @@ describe('useCollaboration', () => {
         });
 
         mockChannel._handlers['client-operation']({
-          operation: 'update_block' as const,
-          block_id: 'b1',
+          operation: 'updateBlock' as const,
+          blockId: 'b1',
           properties: {},
         });
 
@@ -624,8 +624,8 @@ describe('useCollaboration', () => {
 
         expect(() => {
           mockChannel._handlers['client-operation']({
-            operation: 'update_block' as const,
-            block_id: 'b1',
+            operation: 'updateBlock' as const,
+            blockId: 'b1',
             properties: {},
           });
         }).toThrow('boom');
@@ -656,12 +656,12 @@ describe('useCollaboration', () => {
         const triggerCallsBefore = vi.mocked(mockChannel.trigger).mock.calls.length;
 
         vi.mocked(handleOperation).mockImplementation(() => {
-          _broadcastOperation({ operation: 'update_block' as const, block_id: 'b1', properties: {} });
+          _broadcastOperation({ operation: 'updateBlock' as const, blockId: 'b1', properties: {} });
         });
 
         mockChannel._handlers['client-operation']({
-          operation: 'update_block' as const,
-          block_id: 'b1',
+          operation: 'updateBlock' as const,
+          blockId: 'b1',
           properties: {},
         });
 
@@ -698,7 +698,7 @@ describe('useCollaboration', () => {
         state.selectedBlockId = 'block-A';
         await nextTick();
 
-        expect(mockChannel.trigger).toHaveBeenCalledWith('client-block_locked', {
+        expect(mockChannel.trigger).toHaveBeenCalledWith('client-blockLocked', {
           blockId: 'block-A',
           userId: 'my-user',
         });
@@ -734,8 +734,8 @@ describe('useCollaboration', () => {
         state.selectedBlockId = 'block-B';
         await nextTick();
 
-        expect(mockChannel.trigger).toHaveBeenCalledWith('client-block_unlocked', { blockId: 'block-A' });
-        expect(mockChannel.trigger).toHaveBeenCalledWith('client-block_locked', {
+        expect(mockChannel.trigger).toHaveBeenCalledWith('client-blockUnlocked', { blockId: 'block-A' });
+        expect(mockChannel.trigger).toHaveBeenCalledWith('client-blockLocked', {
           blockId: 'block-B',
           userId: 'my-user',
         });
@@ -770,9 +770,9 @@ describe('useCollaboration', () => {
         state.selectedBlockId = null;
         await nextTick();
 
-        expect(mockChannel.trigger).toHaveBeenCalledWith('client-block_unlocked', { blockId: 'block-A' });
+        expect(mockChannel.trigger).toHaveBeenCalledWith('client-blockUnlocked', { blockId: 'block-A' });
         expect(mockChannel.trigger).not.toHaveBeenCalledWith(
-          'client-block_locked',
+          'client-blockLocked',
           expect.anything(),
         );
       });
@@ -795,12 +795,12 @@ describe('useCollaboration', () => {
 
         // During a remote operation, broadcastOperation should be suppressed
         vi.mocked(handleOperation).mockImplementation(() => {
-          _broadcastOperation({ operation: 'update_block' as const, block_id: 'b1', properties: {} });
+          _broadcastOperation({ operation: 'updateBlock' as const, blockId: 'b1', properties: {} });
         });
 
         mockChannel._handlers['client-operation']({
-          operation: 'update_block' as const,
-          block_id: 'x',
+          operation: 'updateBlock' as const,
+          blockId: 'x',
           properties: {},
         });
 
@@ -914,16 +914,16 @@ describe('useCollaboration', () => {
         // Old channel should be unbound
         expect(oldChannel.unbind).toHaveBeenCalledWith('pusher:member_added');
         expect(oldChannel.unbind).toHaveBeenCalledWith('pusher:member_removed');
-        expect(oldChannel.unbind).toHaveBeenCalledWith('client-block_locked');
-        expect(oldChannel.unbind).toHaveBeenCalledWith('client-block_unlocked');
+        expect(oldChannel.unbind).toHaveBeenCalledWith('client-blockLocked');
+        expect(oldChannel.unbind).toHaveBeenCalledWith('client-blockUnlocked');
         expect(oldChannel.unbind).toHaveBeenCalledWith('client-operation');
         expect(oldChannel.unbind).toHaveBeenCalledWith('mcp-operation');
 
         // New channel should be bound
         expect(newChannel.bind).toHaveBeenCalledWith('pusher:member_added', expect.any(Function));
         expect(newChannel.bind).toHaveBeenCalledWith('pusher:member_removed', expect.any(Function));
-        expect(newChannel.bind).toHaveBeenCalledWith('client-block_locked', expect.any(Function));
-        expect(newChannel.bind).toHaveBeenCalledWith('client-block_unlocked', expect.any(Function));
+        expect(newChannel.bind).toHaveBeenCalledWith('client-blockLocked', expect.any(Function));
+        expect(newChannel.bind).toHaveBeenCalledWith('client-blockUnlocked', expect.any(Function));
         expect(newChannel.bind).toHaveBeenCalledWith('client-operation', expect.any(Function));
         expect(newChannel.bind).toHaveBeenCalledWith('mcp-operation', expect.any(Function));
       });

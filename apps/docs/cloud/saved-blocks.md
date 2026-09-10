@@ -24,7 +24,7 @@ Nothing to configure — this one is on by default. Cloud supplies the provider,
 
 **One library per project**, shared by everyone on it — a block one teammate saves is in another's browser on their next open. That is the part with no OSS equivalent: not the storage, but the fact that it is already shared.
 
-All four are enabled. Cloud's library is gated on the `saved_modules` plan feature.
+All four are enabled. Cloud's library is gated on the `savedModules` plan feature.
 
 ## Bringing your own
 

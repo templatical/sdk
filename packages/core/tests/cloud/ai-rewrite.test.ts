@@ -159,7 +159,7 @@ describe('useAiRewrite', () => {
       const result = await rw.rewrite('content', 'instruction', mockMergeTags);
 
       expect(result).toBeNull();
-      expect(rw.error.value).toBe('ai_generation_not_available');
+      expect(rw.error.value).toBe('aiGenerationNotAvailable');
       expect(rw.isRewriting.value).toBe(false);
     });
 

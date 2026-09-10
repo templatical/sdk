@@ -20,24 +20,21 @@ import {
 } from "./media-api";
 
 /**
- * Cloud's wire shape → the contract shape. The whole job of this adapter,
- * plus auth: snake_case to camelCase, and `small_url` / `medium_url` down to
- * a single {@link MediaAsset.thumbnailUrl}. Confirm always inserts `url`;
- * conversions never leak onto the BYO type.
- *
- * `thumbnailUrl` is omitted (not `null`) when both derivatives are null —
- * the grid then falls back to `url`.
+ * Cloud's HTTP row → {@link MediaAsset}. Omits null optionals so
+ * `thumbnailUrl` / `width` / `height` are absent rather than `null` —
+ * the grid falls back to `url` when there is no thumbnail. Confirm
+ * always inserts `url`.
  */
 function toAsset(item: CloudMediaItem): MediaAsset {
   const asset: MediaAsset = {
     id: item.id,
     url: item.url,
     filename: item.filename,
-    alt: item.alt_text,
-    mimeType: item.mime_type,
-    folderId: item.folder_id,
-    createdAt: item.created_at,
-    updatedAt: item.updated_at,
+    alt: item.alt,
+    mimeType: item.mimeType,
+    folderId: item.folderId,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
     size: item.size,
   };
   if (item.width != null) {
@@ -46,9 +43,8 @@ function toAsset(item: CloudMediaItem): MediaAsset {
   if (item.height != null) {
     asset.height = item.height;
   }
-  const thumbnailUrl = item.small_url ?? item.medium_url ?? null;
-  if (thumbnailUrl != null) {
-    asset.thumbnailUrl = thumbnailUrl;
+  if (item.thumbnailUrl != null) {
+    asset.thumbnailUrl = item.thumbnailUrl;
   }
   return asset;
 }
@@ -61,7 +57,7 @@ function toFolder(
     id: folder.id,
     name: folder.name,
     parentId:
-      folder.parent_id !== undefined ? folder.parent_id : inheritedParentId,
+      folder.parentId !== undefined ? folder.parentId : inheritedParentId,
   };
 }
 
@@ -69,8 +65,8 @@ function toFolder(
  * Flatten a Cloud folder payload into the contract's flat list.
  *
  * The index endpoint may return a tree (`children`) or already-flat
- * `parent_id` rows. Depth-first so a parent is always listed before its
- * descendants. Already-flat rows just map `parent_id` → `parentId`.
+ * `parentId` rows. Depth-first so a parent is always listed before its
+ * descendants. Already-flat rows just copy `parentId`.
  */
 function flattenFolders(
   nodes: CloudMediaFolder[],
@@ -95,7 +91,7 @@ function mimeTypesFromPlan(
   }
   const mapped: Partial<Record<MediaCategory, string[]>> = {};
   for (const [key, value] of Object.entries(categories)) {
-    mapped[key as MediaCategory] = value.mime_types;
+    mapped[key as MediaCategory] = value.mimeTypes;
   }
   return mapped;
 }
@@ -129,14 +125,14 @@ export function createCloudMediaProvider(
       const response = await api.browseMedia({
         search: params?.search,
         cursor: params?.cursor,
-        folder_id: params?.folderId,
+        folderId: params?.folderId,
         category: params?.category,
       });
       const page: MediaListPage = {
         items: response.data.map(toAsset),
       };
-      if (response.meta.next_cursor) {
-        page.nextCursor = response.meta.next_cursor;
+      if (response.meta.nextCursor) {
+        page.nextCursor = response.meta.nextCursor;
       }
       return page;
     },
@@ -192,8 +188,8 @@ export function createCloudMediaProvider(
       const mapped: Record<string, MediaUsageInfo> = {};
       for (const [id, info] of Object.entries(response.data)) {
         mapped[id] = {
-          templateCount: info.template_count,
-          templateNames: info.template_names,
+          templateCount: info.templateCount,
+          templateNames: info.templateNames,
         };
       }
       return mapped;
@@ -204,14 +200,7 @@ export function createCloudMediaProvider(
     },
 
     async storage(): Promise<MediaStorageInfo | null> {
-      const storage = getPlanConfig?.()?.storage;
-      if (!storage) {
-        return null;
-      }
-      return {
-        usedBytes: storage.used_bytes,
-        limitBytes: storage.limit_bytes,
-      };
+      return getPlanConfig?.()?.storage ?? null;
     },
 
     /**
@@ -220,7 +209,7 @@ export function createCloudMediaProvider(
      * would pin the client pre-check to `undefined`.
      */
     get maxFileSize(): number | undefined {
-      return getPlanConfig?.()?.media?.max_file_size;
+      return getPlanConfig?.()?.media?.maxFileSize;
     },
 
     get mimeTypes(): Partial<Record<MediaCategory, string[]>> | undefined {

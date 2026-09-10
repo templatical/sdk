@@ -3,42 +3,40 @@ import type { AuthManager } from "./auth";
 import { API_ROUTES, buildUrl } from "./url-builder";
 
 /**
- * Cloud's wire shape for one media row — snake_case HTTP, not the BYO
- * MediaAsset contract. The adapter maps.
+ * Cloud's HTTP row for one media file. Same field names as
+ * {@link MediaAsset}. `thumbnailUrl` is optional; omit it and the grid
+ * uses `url`.
  */
 export interface CloudMediaItem {
   id: string;
   filename: string;
-  mime_type: string;
+  mimeType: string;
   size: number;
   url: string;
-  small_url: string | null;
-  medium_url: string | null;
-  large_url: string | null;
-  folder_id: string | null;
-  conversions_generated?: boolean;
+  thumbnailUrl?: string | null;
+  folderId: string | null;
   width: number | null;
   height: number | null;
-  alt_text: string;
-  created_at: string;
-  updated_at: string;
+  alt: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
  * Cloud's wire shape for one folder. The index endpoint may return a tree
- * (`children`) or a flat list (`parent_id`); the adapter flattens either.
+ * (`children`) or a flat list (`parentId`); the adapter flattens either.
  */
 export interface CloudMediaFolder {
   id: string;
   name: string;
-  parent_id?: string | null;
+  parentId?: string | null;
   children?: CloudMediaFolder[];
-  project_id?: string;
-  created_at?: string;
+  projectId?: string;
+  createdAt?: string;
 }
 
 export interface CloudMediaBrowseParams {
-  folder_id?: string | null;
+  folderId?: string | null;
   search?: string;
   category?: string;
   sort?: string;
@@ -49,15 +47,15 @@ export interface CloudMediaBrowseResponse {
   data: CloudMediaItem[];
   meta: {
     path: string;
-    per_page: number;
-    next_cursor: string | null;
-    prev_cursor: string | null;
+    perPage: number;
+    nextCursor: string | null;
+    prevCursor: string | null;
   };
 }
 
 export interface CloudMediaUsageInfo {
-  template_count: number;
-  template_names: string[];
+  templateCount: number;
+  templateNames: string[];
 }
 
 export interface CloudMediaUsageResponse {
@@ -65,8 +63,8 @@ export interface CloudMediaUsageResponse {
 }
 
 /**
- * Cloud's HTTP client for media. Speaks snake_case; auth and project/tenant
- * scoping come from {@link AuthManager}. The BYO contract lives on
+ * Cloud's HTTP client for media. Auth and project/tenant scoping come from
+ * {@link AuthManager}. The BYO contract lives on
  * `createCloudMediaProvider`, which maps this client's rows.
  */
 export class MediaApiClient {
@@ -116,7 +114,7 @@ export class MediaApiClient {
     params: CloudMediaBrowseParams,
   ): Promise<CloudMediaBrowseResponse> {
     const query = new URLSearchParams();
-    if (params.folder_id) query.set("folder_id", params.folder_id);
+    if (params.folderId) query.set("folderId", params.folderId);
     if (params.search) query.set("search", params.search);
     if (params.category) query.set("category", params.category);
     if (params.sort) query.set("sort", params.sort);
@@ -144,7 +142,7 @@ export class MediaApiClient {
   ): Promise<CloudMediaItem> {
     const formData = new FormData();
     formData.append("file", file);
-    if (folderId) formData.append("folder_id", folderId);
+    if (folderId) formData.append("folderId", folderId);
 
     const url = buildUrl(API_ROUTES["media.upload"], this.baseParams);
     const response = await this.authManager.authenticatedFetch(url, {
@@ -167,14 +165,14 @@ export class MediaApiClient {
   async updateMedia(
     mediaId: string,
     filename?: string,
-    altText?: string,
+    alt?: string,
   ): Promise<CloudMediaItem> {
-    const body: { filename?: string; alt_text?: string } = {};
+    const body: { filename?: string; alt?: string } = {};
     if (filename !== undefined) {
       body.filename = filename;
     }
-    if (altText !== undefined) {
-      body.alt_text = altText;
+    if (alt !== undefined) {
+      body.alt = alt;
     }
     return this.request<CloudMediaItem>(
       buildUrl(API_ROUTES["media.update"], {
@@ -206,7 +204,7 @@ export class MediaApiClient {
       buildUrl(API_ROUTES["media.move"], this.baseParams),
       {
         method: "POST",
-        body: JSON.stringify({ ids, folder_id: folderId }),
+        body: JSON.stringify({ ids, folderId }),
       },
     );
   }
@@ -227,7 +225,7 @@ export class MediaApiClient {
         method: "POST",
         body: JSON.stringify({
           name,
-          parent_id: parentId ?? null,
+          parentId: parentId ?? null,
         }),
       },
     );
@@ -300,7 +298,7 @@ export class MediaApiClient {
         method: "POST",
         body: JSON.stringify({
           url,
-          folder_id: folderId ?? null,
+          folderId: folderId ?? null,
         }),
       },
     );

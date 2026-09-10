@@ -96,14 +96,14 @@ const mediaLibrary = await init({
 
 ## Headless-Nutzung
 
-Für serverseitige oder programmatische Medien-Operationen wird `MediaApiClient` aus `@templatical/core/cloud` exportiert. Er spricht Clouds snake_case-HTTP; `createCloudMediaProvider` ist die Abbildung auf `MediaProvider`.
+Für serverseitige oder programmatische Medien-Operationen wird `MediaApiClient` aus `@templatical/core/cloud` exportiert. `createCloudMediaProvider` bildet die Antwort auf `MediaProvider` ab.
 
 ```ts
 import { MediaApiClient } from '@templatical/core/cloud';
 
 const client = new MediaApiClient(authManager);
 
-const response = await client.browseMedia({ folder_id: 'folder-id', search: 'hero', category: 'images' });
+const response = await client.browseMedia({ folderId: 'folder-id', search: 'hero', category: 'images' });
 const item = await client.uploadMedia(file, folderId);
 await client.deleteMedia(['item-id-1', 'item-id-2']);
 const usage = await client.checkMediaUsage(['item-id-1']);

@@ -75,13 +75,13 @@ const lib = useMediaLibrary({
 
 ### API client (low-level)
 
-For server-side or programmatic media operations, `MediaApiClient` is exported from `@templatical/core/cloud`. It speaks Cloud's snake_case HTTP; `createCloudMediaProvider` is the mapping onto `MediaProvider`.
+For server-side or programmatic media operations, `MediaApiClient` is exported from `@templatical/core/cloud`. `createCloudMediaProvider` maps the response onto `MediaProvider`.
 
 ```ts
 import { MediaApiClient, createCloudMediaProvider } from '@templatical/core/cloud';
 
 const client = new MediaApiClient(authManager);
-const response = await client.browseMedia({ folder_id: null });
+const response = await client.browseMedia({ folderId: null });
 
 const provider = createCloudMediaProvider(authManager);
 const page = await provider.list();
@@ -92,7 +92,7 @@ const page = await provider.list();
 - **Standalone SDK** — `init()`, `unmount()`
 - **Vue components** — `MediaLibraryModal` + 12 sub-components (grid, upload zone, folder tree, preview panel, edit/replace/import modals)
 - **Composables** — `useMediaLibrary`, `useMediaCategories`, `useMediaPicker`, `useI18n`
-- **Types** — `MediaItem`, `MediaFolder`, `MediaCategory`, `MediaConversion`, `MediaBrowseParams/Response`, `MediaUsageInfo/Response`, `MediaConfig`, etc.
+- **Types** — `MediaAsset`, `MediaFolder`, `MediaCategory`, `MediaRequestContext`, `MediaUsageInfo`, `MediaResult` (re-exported from `@templatical/types`)
 
 The `MediaProvider` / `MediaAsset` contract lives in [`@templatical/types`](https://www.npmjs.com/package/@templatical/types).
 

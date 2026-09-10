@@ -81,14 +81,7 @@ afterEach(() => {
 describe("MediaLibraryModal source contract", () => {
   it("does not contain conversion picker, AuthManager, or plan config", () => {
     const source = readSrc("components/MediaLibraryModal.vue");
-    for (const banned of [
-      "small_url",
-      "medium_url",
-      "large_url",
-      "selectedConversion",
-      "authManager",
-      "planConfig",
-    ]) {
+    for (const banned of ["selectedConversion", "authManager", "planConfig"]) {
       expect(source, banned).not.toContain(banned);
     }
     expect(source).toContain("provider");
@@ -100,9 +93,6 @@ describe("MediaLibraryModal source contract", () => {
   it("preview panel has no conversion picker", () => {
     const source = readSrc("components/media/MediaPreviewPanel.vue");
     for (const banned of [
-      "small_url",
-      "medium_url",
-      "large_url",
       "selectedConversion",
       "conversionLabel",
       "conversionSmall",
@@ -117,7 +107,6 @@ describe("MediaLibraryModal source contract", () => {
   it("grid thumbs from thumbnailUrl falling back to url", () => {
     const source = readSrc("components/media/MediaGrid.vue");
     expect(source).toContain("thumbnailUrl");
-    expect(source).not.toContain("small_url");
   });
 
   it("declares provider as a required prop", () => {

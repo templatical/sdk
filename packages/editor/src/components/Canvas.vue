@@ -123,12 +123,12 @@ provide(
 
 const canUseAiChat = computed(
   () =>
-    (caps.plan?.hasFeature("ai_generation") ?? false) &&
+    (caps.plan?.hasFeature("aiGeneration") ?? false) &&
     (caps.ai?.isFeatureEnabled("chat") ?? false),
 );
 const canUseDesignToTemplate = computed(
   () =>
-    (caps.plan?.hasFeature("ai_generation") ?? false) &&
+    (caps.plan?.hasFeature("aiGeneration") ?? false) &&
     (caps.ai?.isFeatureEnabled("designToTemplate") ?? false),
 );
 

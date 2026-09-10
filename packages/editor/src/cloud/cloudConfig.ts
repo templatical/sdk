@@ -103,7 +103,7 @@ export interface TemplaticalCloudEditorConfig {
    * Reusable saved blocks.
    *
    * - **omitted / `true`** — backed by Templatical Cloud, gated on the
-   *   `saved_modules` plan feature;
+   *   `savedModules` plan feature;
    * - **`false`** — off entirely; no UI renders;
    * - **a {@link SavedBlocksOptions}** — still backed by Cloud's store, plus
    *   your `onCreated`, `onUpdated` and `onDeleted` handlers;
@@ -271,7 +271,7 @@ export interface TemplaticalCloudEditorConfig {
   /**
    * Sending backend for test emails.
    *
-   * - **omitted** — sent by Templatical Cloud, gated on the `test_email` plan
+   * - **omitted** — sent by Templatical Cloud, gated on the `testEmail` plan
    *   feature and its signed allowed-recipient list;
    * - **`{ onSent?, defaultRecipient? }`** — still sent by Cloud, plus your
    *   `onSent` handler and/or a pre-filled recipient (ignored unless it's

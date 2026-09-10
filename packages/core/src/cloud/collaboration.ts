@@ -9,8 +9,8 @@ import { computed, onScopeDispose, ref, watch, type Ref } from "vue";
 const COLLAB_EVENTS = [
   "pusher:member_added",
   "pusher:member_removed",
-  "client-block_locked",
-  "client-block_unlocked",
+  "client-blockLocked",
+  "client-blockUnlocked",
   "client-operation",
   "mcp-operation",
 ] as const;
@@ -174,7 +174,7 @@ export function useCollaboration(
       return;
     }
 
-    channel.value.trigger("client-block_locked", {
+    channel.value.trigger("client-blockLocked", {
       blockId,
       userId: myUserId.value,
     });
@@ -185,7 +185,7 @@ export function useCollaboration(
       return;
     }
 
-    channel.value.trigger("client-block_unlocked", { blockId });
+    channel.value.trigger("client-blockUnlocked", { blockId });
   }
 
   watch(
@@ -256,7 +256,7 @@ export function useCollaboration(
     );
 
     newChannel.bind(
-      "client-block_locked",
+      "client-blockLocked",
       (data: { blockId: string; userId: string }) => {
         handleBlockLocked(data);
         const collaborator = collaborators.value.find(
@@ -271,7 +271,7 @@ export function useCollaboration(
       },
     );
 
-    newChannel.bind("client-block_unlocked", (data: { blockId: string }) => {
+    newChannel.bind("client-blockUnlocked", (data: { blockId: string }) => {
       const holder = lockedBlocks.value.get(data.blockId);
       handleBlockUnlocked(data);
       if (holder) {
