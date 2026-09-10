@@ -249,6 +249,7 @@ async function handleDeleteClick(): Promise<void> {
            may mount before the locale's strings have landed. -->
       <div
         v-if="visible && translations"
+        data-testid="media-library-modal"
         :data-tpl-theme="tplUiTheme"
         class="tpl tpl-media-overlay tpl:fixed tpl:inset-0 tpl:z-10 tpl:flex tpl:items-center tpl:justify-center tpl:p-4"
         @click.self="emit('close')"

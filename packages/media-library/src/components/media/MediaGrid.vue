@@ -146,6 +146,7 @@ function formatDate(dateStr: string): string {
       <div
         v-for="item in items"
         :key="item.id"
+        data-testid="media-library-item"
         class="tpl-media-item tpl:group tpl:relative tpl:overflow-hidden tpl:rounded-lg tpl:border-2 tpl:transition-all tpl:duration-150"
         :data-media-id="item.id"
         :class="[
@@ -234,6 +235,7 @@ function formatDate(dateStr: string): string {
       <div
         v-for="item in items"
         :key="item.id"
+        data-testid="media-library-item"
         class="tpl-media-list-item tpl:group tpl:flex tpl:cursor-pointer tpl:items-center tpl:gap-3 tpl:rounded-lg tpl:px-3 tpl:py-2 tpl:transition-all tpl:duration-150"
         :data-media-id="item.id"
         :class="[
