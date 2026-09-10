@@ -23,9 +23,7 @@ function template(file: string): string {
 
 describe("the canvas declares the template's content language", () => {
   it("binds lang on the editing canvas", () => {
-    expect(template("components/Canvas.vue")).toContain(
-      ':lang="contentLang"',
-    );
+    expect(template("components/Canvas.vue")).toContain(':lang="contentLang"');
   });
 
   // Every surface that renders blocks, not just the editing canvas: the
@@ -61,6 +59,58 @@ describe("the canvas declares the template's content language", () => {
       const decl = source.match(/const contentLang = computed\([^;]*?\);/s)![0];
       expect(decl).toContain("undefined");
       expect(decl).not.toMatch(/\?\?\s*["'`]["'`]/);
+    },
+  );
+});
+
+describe("the canvas declares the template's writing direction", () => {
+  it("binds dir on the editing canvas", () => {
+    expect(template("components/Canvas.vue")).toContain(':dir="contentDir"');
+  });
+
+  it("binds dir on the shared preview canvas", () => {
+    expect(template("components/BlockPreviewCanvas.vue")).toContain(
+      ':dir="contentDir"',
+    );
+  });
+
+  it.each(["components/Canvas.vue", "components/BlockPreviewCanvas.vue"])(
+    "derives it from resolveContentDirection(settings), never from config.locale: %s",
+    (file) => {
+      const source = readFileSync(join(SRC, file), "utf8");
+      expect(source).toContain("resolveContentDirection");
+      const match = source.match(/const contentDir = computed\([^;]*?\);/s);
+      expect(match).not.toBeNull();
+      const decl = match![0];
+      expect(decl).toContain("settings");
+      expect(decl).not.toContain("config.");
+      // Empty dir would inherit the host and undo isolation. Always a token.
+      expect(decl).not.toContain("undefined");
+    },
+  );
+
+  // `flex-direction: row` follows the inline axis, so canvas `dir="rtl"`
+  // already puts column 0 on the right. A `tpl:flex-row-reverse` class would
+  // (a) ship in every LTR session's CSS because Tailwind scans the Vue
+  // source, and (b) double-reverse the columns on an RTL canvas.
+  it("does not reverse section columns with an extra flex utility", () => {
+    expect(template("components/blocks/SectionBlock.vue")).not.toContain(
+      "flex-row-reverse",
+    );
+    expect(template("components/blocks/PreviewSectionBlock.vue")).not.toContain(
+      "flex-row-reverse",
+    );
+  });
+
+  it.each([
+    "components/blocks/SectionBlock.vue",
+    "components/blocks/PreviewSectionBlock.vue",
+  ])(
+    "inherits writing direction from the canvas, never re-derives it: %s",
+    (file) => {
+      const source = readFileSync(join(SRC, file), "utf8");
+      expect(source).not.toContain("resolveContentDirection");
+      expect(source).not.toMatch(/\bisRtl\b/);
     },
   );
 });

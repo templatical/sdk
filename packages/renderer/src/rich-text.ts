@@ -1,5 +1,5 @@
 import { RICH_TEXT_SPACING, isSection } from "@templatical/types";
-import type { Block } from "@templatical/types";
+import type { Block, ContentDirection } from "@templatical/types";
 
 /**
  * Marks the `mj-text` of a block whose content is editor-authored rich text
@@ -53,7 +53,10 @@ export function richTextGapClass(gap: number): string {
  * the unversioned class: MJML resets nothing for `ul`/`ol`/`li`, so they exist
  * to pin down client defaults rather than to be designed with.
  */
-export function richTextStylesheet(gaps: number[]): string {
+export function richTextStylesheet(
+  gaps: number[],
+  direction: ContentDirection = "ltr",
+): string {
   const s = RICH_TEXT_SPACING;
   const scope = `.${RICH_TEXT_CSS_CLASS}`;
   const distinct = [...new Set(gaps)].sort((a, b) => a - b);
@@ -66,9 +69,13 @@ export function richTextStylesheet(gaps: number[]): string {
     ];
   });
 
+  // Physical sides: Outlook does not honour `padding-inline-start`.
+  const listPaddingSide =
+    direction === "rtl" ? "padding-right" : "padding-left";
+
   return [
     ...paragraphRules,
-    `${scope} ul, ${scope} ol { margin: ${s.listMarginY}px 0; padding-left: ${s.listPaddingLeft}px; }`,
+    `${scope} ul, ${scope} ol { margin: ${s.listMarginY}px 0; ${listPaddingSide}: ${s.listPaddingLeft}px; }`,
     `${scope} li { margin: ${s.listItemMarginY}px 0; }`,
   ].join("\n      ");
 }

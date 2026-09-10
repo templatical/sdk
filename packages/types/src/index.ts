@@ -113,6 +113,12 @@ export {
 // Template
 export type { TemplateContent, TemplateSettings } from "./template";
 export { createDefaultTemplateContent } from "./template";
+export type { ContentDirection } from "./direction";
+export {
+  RTL_LANGUAGE_PRIMARY_SUBTAGS,
+  isRtlLanguageTag,
+  resolveContentDirection,
+} from "./direction";
 
 // Defaults
 export type { BlockDefaults, TemplateDefaults } from "./defaults";

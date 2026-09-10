@@ -1,11 +1,16 @@
 import type {
   Block,
+  ContentDirection,
   CustomBlock,
   TemplateContent,
   CustomFont,
   SectionWrapper,
 } from "@templatical/types";
-import { isSection, isCustomBlock } from "@templatical/types";
+import {
+  isSection,
+  isCustomBlock,
+  resolveContentDirection,
+} from "@templatical/types";
 import { RenderContext, DEFAULT_SOCIAL_ICONS_BASE_URL } from "./render-context";
 import type { BlockRendererMap } from "./render-context";
 import { renderBlock } from "./renderers";
@@ -118,6 +123,8 @@ export async function renderToMjml(
     options?.getCustomBlockStylesheet,
   );
 
+  const contentDirection = resolveContentDirection(content.settings);
+
   const renderContext = new RenderContext(
     content.settings.width,
     customFonts,
@@ -126,6 +133,7 @@ export async function renderToMjml(
     customBlockHtml,
     socialIconsBaseUrl,
     options?.blockRenderers ?? {},
+    contentDirection,
   );
 
   const blocks = filterHtmlBlocks(content.blocks, allowHtmlBlocks);
@@ -157,8 +165,9 @@ export async function renderToMjml(
   const previewTag = generatePreviewTag(content.settings.preheaderText);
 
   const lang = escapeAttr(content.settings.locale);
+  const dir = escapeAttr(contentDirection);
 
-  return `<mjml lang="${lang}">
+  return `<mjml lang="${lang}" dir="${dir}">
   <mj-head>${previewTag}
     <mj-attributes>
       <mj-all font-family="${fontFamily}" />
@@ -168,7 +177,7 @@ export async function renderToMjml(
       <mj-image fluid-on-mobile="true" />
     </mj-attributes>${fontDeclarations}
     <mj-style inline="inline">
-      ${richTextStylesheet(collectParagraphGaps(blocks))}
+      ${richTextStylesheet(collectParagraphGaps(blocks), contentDirection)}
     </mj-style>
     <mj-style>
       a { color: ${linkColor}; text-decoration: ${linkDecoration}; }
@@ -202,7 +211,7 @@ function renderTopLevelBlock(block: Block, context: RenderContext): string {
   }
 
   const content = renderBlock(block, context);
-  const wrapped = wrapInSection(content);
+  const wrapped = wrapInSection(content, context.contentDirection);
   return wrapWithDisplayCondition(block, wrapped);
 }
 
@@ -228,12 +237,13 @@ ${inner}
 /**
  * Wrap block content in a default mj-section/mj-column for non-section blocks.
  */
-function wrapInSection(content: string): string {
+function wrapInSection(content: string, direction: ContentDirection): string {
   if (content === "") {
     return "";
   }
 
-  return `<mj-section>
+  const dirAttr = direction === "rtl" ? ' direction="rtl"' : "";
+  return `<mj-section${dirAttr}>
   <mj-column>
 ${content}
   </mj-column>

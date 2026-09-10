@@ -216,6 +216,11 @@ export default {
       name: "Black Friday Sale",
       description: "Aktion mit Produktauswahl und Rabattcode",
     },
+    rtl: {
+      name: "Arabische Einladung",
+      description:
+        "RTL-Einladung mit Merge-Tags und einem zweispaltigen Abschnitt",
+    },
   },
   onboarding: {
     next: "Weiter",

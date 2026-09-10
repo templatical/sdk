@@ -476,6 +476,9 @@ export default {
     contentLocale: "Content language",
     contentLocaleHint:
       "BCP 47 code (e.g. en, de, pt-BR). Sets the rendered email's lang attribute so screen readers pronounce content correctly.",
+    contentDirection: "Right-to-left",
+    contentDirectionHint:
+      "Writing direction of the email, independent of the editor's own language. When unset, follows the content language (Arabic, Hebrew, …).",
     tips: "Tips",
     tip1: "600px is the standard width for email templates",
     tip2: "Use web-safe fonts for best compatibility",

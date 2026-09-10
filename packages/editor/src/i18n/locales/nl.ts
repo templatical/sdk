@@ -424,6 +424,9 @@ const nl: typeof en = {
     contentLocale: "Taal van de inhoud",
     contentLocaleHint:
       "BCP 47-code (bv. nl, de, pt-BR). Bepaalt het lang-attribuut van de gerenderde e-mail zodat schermlezers de inhoud correct uitspreken.",
+    contentDirection: "Rechts-naar-links",
+    contentDirectionHint:
+      "Schrijfrichting van de e-mail, onafhankelijk van de taal van de editor. Zonder waarde volgt dit de inhoudstaal (Arabisch, Hebreeuws, …).",
     tips: "Tips",
     tip1: "600px is de standaardbreedte voor e-mailsjablonen",
     tip2: "Gebruik webveilige lettertypen voor de beste compatibiliteit",

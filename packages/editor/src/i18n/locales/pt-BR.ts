@@ -479,6 +479,9 @@ const ptBR: typeof en = {
     contentLocale: "Idioma do conteúdo",
     contentLocaleHint:
       "Código BCP 47 (ex.: en, de, pt-BR). Define o atributo lang do e-mail renderizado para que leitores de tela pronunciem o conteúdo corretamente.",
+    contentDirection: "Da direita para a esquerda",
+    contentDirectionHint:
+      "Direção de escrita do e-mail, independente do idioma do editor. Se não for definida, segue o idioma do conteúdo (árabe, hebraico, …).",
     tips: "Dicas",
     tip1: "600px é a largura padrão para templates de e-mail",
     tip2: "Use fontes seguras para web para melhor compatibilidade",

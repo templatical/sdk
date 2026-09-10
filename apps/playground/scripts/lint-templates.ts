@@ -19,6 +19,7 @@ import {
   createPasswordResetTemplate,
   createProductLaunchTemplate,
   createWelcomeTemplate,
+  createArabicInvitationTemplate,
 } from "../src/templates";
 
 const TEMPLATES = [
@@ -29,6 +30,7 @@ const TEMPLATES = [
   ["event-invitation", createEventInvitationTemplate],
   ["password-reset", createPasswordResetTemplate],
   ["black-friday", createBlackFridayTemplate],
+  ["arabic-invitation", createArabicInvitationTemplate],
 ] as const;
 
 const SEVERITY_RANK: Record<string, number> = { error: 3, warning: 2, info: 1 };

@@ -55,6 +55,20 @@ describe("a11y.text-all-caps", () => {
       lint("<p>Это обычное предложение со смешанным регистром букв</p>"),
     ).toEqual([]);
   });
+
+  it("does not fire for Arabic — the script has no case", () => {
+    expect(
+      lint(
+        "<p>مرحبًا نتشرف بدعوتك لحضور الحدث أكّد حضورك بالزر أدناه اليوم</p>",
+      ),
+    ).toEqual([]);
+  });
+
+  it("does not fire for Hebrew — the script has no case", () => {
+    expect(
+      lint("<p>שלום אנו שמחים להזמין אותך לאירוע נא אשר את הגעתך</p>"),
+    ).toEqual([]);
+  });
 });
 
 describe("a11y.text-justified", () => {
@@ -102,7 +116,9 @@ describe("a11y.text-justified", () => {
 
   it("does not fire for left, center or right", () => {
     for (const align of ["left", "center", "right"]) {
-      expect(lint(`<p style="text-align: ${align}">Body copy.</p>`)).toEqual([]);
+      expect(lint(`<p style="text-align: ${align}">Body copy.</p>`)).toEqual(
+        [],
+      );
     }
   });
 

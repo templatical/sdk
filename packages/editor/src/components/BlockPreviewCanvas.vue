@@ -29,7 +29,11 @@ import {
   EMAIL_GUTTER,
   getEmailFrameWidth,
 } from "../utils/emailFrameWidth";
-import type { Block, ViewportSize } from "@templatical/types";
+import {
+  resolveContentDirection,
+  type Block,
+  type ViewportSize,
+} from "@templatical/types";
 import { computed, inject, provide, type Component } from "vue";
 
 const props = withDefaults(
@@ -130,6 +134,9 @@ const documentStyle = computed(() =>
 const contentLang = computed(
   () => editor?.content.value.settings?.locale?.trim() || undefined,
 );
+const contentDir = computed(() =>
+  resolveContentDirection(editor?.content.value.settings ?? { locale: "en" }),
+);
 
 /**
  * The email's body background — `mj-body background-color` when sent, and the
@@ -208,6 +215,7 @@ function getBlockComponent(block: Block): Component | null {
     <div
       data-testid="block-preview-canvas"
       :lang="contentLang"
+      :dir="contentDir"
       :style="{
         width: `${frameWidth}px`,
         transition: EMAIL_FRAME_WIDTH_TRANSITION,

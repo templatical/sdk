@@ -423,6 +423,9 @@ const fr: typeof en = {
     contentLocale: "Langue du contenu",
     contentLocaleHint:
       "Code BCP 47 (ex. fr, de, pt-BR). Définit l'attribut lang de l'e-mail rendu pour que les lecteurs d'écran prononcent correctement le contenu.",
+    contentDirection: "De droite à gauche",
+    contentDirectionHint:
+      "Sens d'écriture de l'e-mail, indépendant de la langue de l'éditeur. S'il n'est pas défini, il suit la langue du contenu (arabe, hébreu, …).",
     tips: "Conseils",
     tip1: "600px est la largeur standard des modèles d'e-mail",
     tip2: "Utilisez des polices web sûres pour une compatibilité maximale",

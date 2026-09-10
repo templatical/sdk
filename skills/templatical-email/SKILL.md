@@ -205,7 +205,10 @@ to `html` vs. were skipped, plus warnings.
   by default — it becomes `<html lang>` in the delivered email, so a German
   message labelled `"en"` is mispronounced by every screen reader that opens
   it. The examples are English, so they all read `"en"`; a German email needs
-  `"de"`, Brazilian Portuguese `"pt-BR"`.
+  `"de"`, Brazilian Portuguese `"pt-BR"`. For Arabic, Hebrew, Persian, Urdu
+  and other RTL copy, also set `direction: "rtl"` (or omit it — those locales
+  resolve as RTL). That value is the canvas `dir` and the exported
+  `<mjml dir>`.
 
 ## Composing with project context
 

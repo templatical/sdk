@@ -1,4 +1,9 @@
-import type { Block, BlockType, CustomFont } from "@templatical/types";
+import type {
+  Block,
+  BlockType,
+  ContentDirection,
+  CustomFont,
+} from "@templatical/types";
 import pkg from "../package.json" with { type: "json" };
 
 /**
@@ -62,6 +67,12 @@ export class RenderContext {
      * Consulted before every built-in renderer — see {@link BlockRendererMap}.
      */
     public readonly blockRenderers: BlockRendererMap = {},
+    /**
+     * Writing direction of the email, resolved once in `renderToMjml`.
+     * Nested columns copy it via `withContainerWidth` — dropping it there
+     * would leave a two-column RTL section rendering LTR inside the columns.
+     */
+    public readonly contentDirection: ContentDirection = "ltr",
   ) {}
 
   /**
@@ -77,6 +88,7 @@ export class RenderContext {
       this.customBlockHtml,
       this.socialIconsBaseUrl,
       this.blockRenderers,
+      this.contentDirection,
     );
   }
 

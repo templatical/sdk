@@ -31,7 +31,7 @@ const HOSTILE: Record<string, string> = {
   "text-align": "right",
   "white-space": "pre",
   "list-style-type": "square",
-  "cursor": "crosshair",
+  cursor: "crosshair",
   "font-variant-numeric": "tabular-nums",
   "text-shadow": "1px 1px red",
 };
@@ -144,5 +144,29 @@ test.describe("host style inheritance", () => {
     }, SELECTORS.editorContainer);
 
     expect(direction).toBe("rtl");
+  });
+
+  test("an RTL host does not flip an LTR email canvas", async ({
+    page,
+    editorReady,
+  }) => {
+    void editorReady;
+    await page.addStyleTag({
+      content: `html, body, ${SELECTORS.editorContainer} { direction: rtl !important; }`,
+    });
+
+    const dirs = await page.evaluate((selector) => {
+      const host = document.querySelector(selector)!;
+      const root: ParentNode = host.shadowRoot ?? host;
+      const tpl = root.querySelector(".tpl") as HTMLElement;
+      const canvas = root.querySelector(".tpl-canvas") as HTMLElement;
+      return {
+        chrome: getComputedStyle(tpl).direction,
+        canvas: canvas.getAttribute("dir"),
+      };
+    }, SELECTORS.editorContainer);
+
+    expect(dirs.chrome).toBe("rtl");
+    expect(dirs.canvas).toBe("ltr");
   });
 });

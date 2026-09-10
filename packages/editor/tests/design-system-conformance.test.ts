@@ -353,6 +353,27 @@ describe("design system conformance", () => {
     });
   });
 
+  describe("RTL extras are not scanned into the LTR CSS", () => {
+    /**
+     * Tailwind emits a utility the moment it appears in Vue/CSS source, even
+     * behind a `v-if` / `:class` gate. An RTL-only class therefore ships in
+     * every LTR session's stylesheet. Canvas `dir` already reverses flex
+     * `row` along the inline axis, so the extra class is also a double-reverse
+     * on an RTL canvas.
+     */
+    it("no tpl:flex-row-reverse — dir on the canvas reverses flex row", () => {
+      expect(offenders(/\btpl:flex-row-reverse\b/g)).toEqual([]);
+    });
+
+    it("no tpl:rtl: variant — it would emit into every session's CSS", () => {
+      expect(offenders(/\btpl:rtl:/g)).toEqual([]);
+    });
+
+    it("flex utilities are actually in use (positive control)", () => {
+      expect(offenders(/\btpl:flex\b/g).length).toBeGreaterThan(20);
+    });
+  });
+
   describe("Reduced motion — respected on every animation", () => {
     /**
      * PRODUCT.md principle 2 and DESIGN.md's do-list both require it on *every*

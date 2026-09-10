@@ -1476,6 +1476,10 @@
         "locale": {
           "type": "string",
           "description": "BCP-47 language code for the rendered email's `<html lang>`. Drives screen-reader pronunciation. Default `'en'` via `DEFAULT_TEMPLATE_DEFAULTS`."
+        },
+        "direction": {
+          "$ref": "#/definitions/ContentDirection",
+          "description": "Writing direction of the delivered email: the canvas `dir` and the rendered `<mjml dir>`. Independent of the editor chrome (`init({ locale })`). Optional: when unset, `resolveContentDirection` falls through to the content language (`ar` / `he` / `fa` / … → `\"rtl\"`, otherwise `\"ltr\"`). An explicit `\"ltr\"` on an Arabic template is a stated decision, not a missing value."
         }
       },
       "required": [
@@ -1487,6 +1491,14 @@
         "locale"
       ],
       "additionalProperties": false
+    },
+    "ContentDirection": {
+      "type": "string",
+      "enum": [
+        "ltr",
+        "rtl"
+      ],
+      "description": "Writing direction of the delivered email — the canvas `dir` and the rendered `<mjml dir>`. Independent of the editor chrome language (`init({ locale })`)."
     }
   }
 }

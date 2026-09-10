@@ -13,7 +13,7 @@ export type TemplateSettingsCard =
 /**
  * Which card each setting is rendered in.
  *
- * Typed as a full `Record<TemplateSettingsField, …>` on purpose: a ninth
+ * Typed as a full `Record<TemplateSettingsField, …>` on purpose: a new
  * `TemplateSettings` member fails `vue-tsc` here until someone decides which
  * card it belongs in, so a setting cannot ship with no way to hide it. Field
  * names — not card names — are the public vocabulary, because they are already
@@ -30,6 +30,7 @@ export const TEMPLATE_SETTINGS_FIELD_CARDS: Record<
   linkUnderline: "appearance",
   fontFamily: "appearance",
   locale: "language",
+  direction: "language",
   preheaderText: "preheader",
 };
 

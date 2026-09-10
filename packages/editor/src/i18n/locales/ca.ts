@@ -480,6 +480,9 @@ const ca: typeof en = {
     contentLocale: "Idioma del contingut",
     contentLocaleHint:
       "Codi BCP 47 (p. ex. ca, en, de). Estableix l'atribut lang del correu renderitzat perquè els lectors de pantalla pronunciïn el contingut correctament.",
+    contentDirection: "De dreta a esquerra",
+    contentDirectionHint:
+      "Direcció d'escriptura del correu, independent de l'idioma de l'editor. Si no s'indica, segueix l'idioma del contingut (àrab, hebreu, …).",
     tips: "Consells",
     tip1: "600px és l'amplada estàndard per a les plantilles de correu electrònic",
     tip2: "Utilitzeu fonts segures per a la web per obtenir la millor compatibilitat",

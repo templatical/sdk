@@ -53,8 +53,11 @@ describe("canvas rich-text spacing matches the exported email", () => {
     const body = ruleBody(".tpl-text-content ul,");
 
     expect(body).toContain(`margin: ${RICH_TEXT_SPACING.listMarginY}px 0`);
+    // Logical start, not `padding-left`: the canvas `dir` is the writing
+    // direction, and Outlook is the only reason the renderer still emits a
+    // physical side. Same 24px, start edge.
     expect(body).toContain(
-      `padding-left: ${RICH_TEXT_SPACING.listPaddingLeft}px`,
+      `padding-inline-start: ${RICH_TEXT_SPACING.listPaddingLeft}px`,
     );
   });
 

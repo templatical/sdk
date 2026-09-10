@@ -13,7 +13,7 @@ describe("renderToMjml", () => {
   it("renders empty template", async () => {
     const content = createDefaultTemplateContent();
     const mjml = await renderToMjml(content);
-    expect(mjml).toContain('<mjml lang="en">');
+    expect(mjml).toContain('<mjml lang="en" dir="ltr">');
     expect(mjml).toContain("</mjml>");
     expect(mjml).toContain("<mj-body");
     expect(mjml).toContain('width="600px"');
@@ -240,7 +240,7 @@ describe("renderToMjml", () => {
     content.settings.width = 0;
     const mjml = await renderToMjml(content);
     expect(mjml).toContain('width="0px"');
-    expect(mjml).toContain('<mjml lang="en">');
+    expect(mjml).toContain('<mjml lang="en" dir="ltr">');
   });
 
   it("renders with very large width", async () => {
@@ -254,7 +254,7 @@ describe("renderToMjml", () => {
     const content = createDefaultTemplateContent();
     content.blocks = [];
     const mjml = await renderToMjml(content);
-    expect(mjml).toContain('<mjml lang="en">');
+    expect(mjml).toContain('<mjml lang="en" dir="ltr">');
     expect(mjml).toContain("<mj-body");
     expect(mjml).toContain("</mj-body>");
     expect(mjml).toContain("</mjml>");
@@ -268,7 +268,7 @@ describe("renderToMjml", () => {
     const content = createDefaultTemplateContent();
     content.settings.preheaderText = "";
     const mjml = await renderToMjml(content);
-    expect(mjml).toContain('<mjml lang="en">');
+    expect(mjml).toContain('<mjml lang="en" dir="ltr">');
     expect(mjml).toContain("<mj-body");
     expect(mjml).not.toContain("<mj-preview>");
   });
@@ -277,7 +277,7 @@ describe("renderToMjml", () => {
     const content = createDefaultTemplateContent();
     content.settings.preheaderText = "   ";
     const mjml = await renderToMjml(content);
-    expect(mjml).toContain('<mjml lang="en">');
+    expect(mjml).toContain('<mjml lang="en" dir="ltr">');
     expect(mjml).toContain("<mj-body");
     expect(mjml).not.toContain("<mj-preview>");
   });
@@ -310,7 +310,7 @@ describe("renderToMjml", () => {
     // preheaderText is optional and undefined by default
     expect(content.settings.preheaderText).toBeUndefined();
     const mjml = await renderToMjml(content);
-    expect(mjml).toContain('<mjml lang="en">');
+    expect(mjml).toContain('<mjml lang="en" dir="ltr">');
     expect(mjml).toContain("<mj-body");
     expect(mjml).not.toContain("<mj-preview>");
   });
@@ -335,13 +335,13 @@ describe("renderToMjml", () => {
     const content = createDefaultTemplateContent();
     content.settings.locale = "de";
     const mjml = await renderToMjml(content);
-    expect(mjml).toContain('<mjml lang="de">');
+    expect(mjml).toContain('<mjml lang="de" dir="ltr">');
   });
 
   it('uses the default locale ("en") for new templates', async () => {
     const content = createDefaultTemplateContent();
     const mjml = await renderToMjml(content);
-    expect(mjml).toContain('<mjml lang="en">');
+    expect(mjml).toContain('<mjml lang="en" dir="ltr">');
   });
 
   it("escapes locale value in lang attribute", async () => {
@@ -425,5 +425,119 @@ describe("renderToMjml", () => {
     const mjml = await renderToMjml(content);
     expect(mjml).toContain('alt="Spring sale"');
     expect(mjml).not.toContain('role="presentation"');
+  });
+});
+
+describe("content direction", () => {
+  it("emits dir=ltr on an English template", async () => {
+    const content = createDefaultTemplateContent();
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain('<mjml lang="en" dir="ltr">');
+  });
+
+  it("resolves dir=rtl from an Arabic locale when direction is unset", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.locale = "ar";
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain('<mjml lang="ar" dir="rtl">');
+  });
+
+  it("lets an explicit ltr win over an RTL locale", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.locale = "ar";
+    content.settings.direction = "ltr";
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain('<mjml lang="ar" dir="ltr">');
+  });
+
+  it("lets an explicit rtl win over an LTR locale", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.direction = "rtl";
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain('<mjml lang="en" dir="rtl">');
+  });
+
+  it("puts direction=rtl on a multi-column section when the template is RTL", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.direction = "rtl";
+    content.blocks = [
+      createSectionBlock({
+        columns: "2",
+        children: [
+          [createParagraphBlock({ content: "<p>Start</p>" })],
+          [createParagraphBlock({ content: "<p>End</p>" })],
+        ],
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).toMatch(/<mj-section[^>]*direction="rtl"/);
+    expect(mjml).toContain("Start");
+    expect(mjml).toContain("End");
+  });
+
+  it("omits section direction when the template is LTR", async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [
+      createSectionBlock({
+        columns: "2",
+        children: [
+          [createParagraphBlock({ content: "<p>A</p>" })],
+          [createParagraphBlock({ content: "<p>B</p>" })],
+        ],
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).not.toContain('direction="rtl"');
+  });
+
+  it("puts direction=rtl on the wrapper section of a top-level title", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.direction = "rtl";
+    content.blocks = [createTitleBlock({ content: "<p>عنوان</p>" })];
+    const mjml = await renderToMjml(content);
+    expect(mjml).toMatch(/<mj-section[^>]*direction="rtl"/);
+  });
+
+  it("puts direction=rtl on mj-group when stacking is opted out", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.direction = "rtl";
+    content.blocks = [
+      createSectionBlock({
+        columns: "2",
+        stackOnMobile: false,
+        children: [
+          [createParagraphBlock({ content: "<p>A</p>" })],
+          [createParagraphBlock({ content: "<p>B</p>" })],
+        ],
+      }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).toMatch(/<mj-group[^>]*direction="rtl"/);
+  });
+
+  it("aligns an RTL paragraph mj-text to the start edge", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.direction = "rtl";
+    content.blocks = [createParagraphBlock({ content: "<p>مرحبا</p>" })];
+    const mjml = await renderToMjml(content);
+    expect(mjml).toMatch(/<mj-text[^>]*align="right"/);
+  });
+
+  it("does not force align=right on an LTR paragraph", async () => {
+    const content = createDefaultTemplateContent();
+    content.blocks = [createParagraphBlock({ content: "<p>Hello</p>" })];
+    const mjml = await renderToMjml(content);
+    expect(mjml).not.toMatch(/<mj-text[^>]*align="right"/);
+  });
+
+  it("emits list padding-right in the rich-text stylesheet when RTL", async () => {
+    const content = createDefaultTemplateContent();
+    content.settings.direction = "rtl";
+    content.blocks = [
+      createParagraphBlock({ content: "<ul><li>واحد</li></ul>" }),
+    ];
+    const mjml = await renderToMjml(content);
+    expect(mjml).toContain("padding-right: 24px");
+    expect(mjml).not.toContain("padding-left: 24px");
   });
 });
