@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
-import { computed, defineComponent, h, ref } from "vue";
+import { defineComponent, h } from "vue";
 import { mount } from "@vue/test-utils";
+import type { MediaProvider } from "@templatical/types";
 import { MediaLibraryModal } from "@templatical/media-library";
 
 import { TRANSLATIONS_KEY } from "../src/keys";
@@ -23,28 +24,35 @@ import en from "../src/i18n/locales/en";
  * string-keyed translations anywhere.
  */
 
-/** The three cross-package props, stubbed just enough to reach a render. */
+/**
+ * Storage backend, stubbed just enough to reach a render. `create` and
+ * `importFromUrl` stay functions so the upload zone and Import control
+ * mount — descendants the locale assertions read.
+ */
+function fakeProvider(): MediaProvider {
+  return {
+    list: vi.fn(async () => ({ items: [] })),
+    create: vi.fn(async ({ file }) => ({
+      id: "uploaded",
+      url: `https://cdn.example/${file.name}`,
+    })),
+    update: false,
+    delete: false,
+    folders: false,
+    replace: false,
+    importFromUrl: vi.fn(async (url) => ({ id: "imported", url })),
+    checkUsage: false,
+    frequentlyUsed: false,
+    storage: false,
+  };
+}
+
 function hostProps(locale?: string, uiTheme?: string) {
   return {
     visible: true,
     locale,
     uiTheme,
-    projectId: "proj-1",
-    authManager: {
-      projectId: "proj-1",
-      getToken: vi.fn(async () => "tok"),
-      onError: vi.fn(),
-    } as never,
-    planConfig: {
-      config: ref({
-        media: { max_file_size: 1024, categories: {} },
-        storage: { used_bytes: 0, limit_bytes: 1024 },
-      }),
-      isLoading: ref(false),
-      hasFeature: vi.fn(() => true),
-      features: computed(() => null),
-      fetchConfig: vi.fn(),
-    } as never,
+    provider: fakeProvider(),
   };
 }
 

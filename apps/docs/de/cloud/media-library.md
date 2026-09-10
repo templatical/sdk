@@ -1,87 +1,110 @@
 ---
 title: Medienbibliothek
-description: Bilder hochladen, organisieren und verwalten – mit Ordnern und Suche.
+description: Templatical Cloud als eine Implementierung des Speicher-Vertrags für Medien.
 ---
 
 # Medienbibliothek
 
-Die Cloud-Medienbibliothek stellt ein vollständiges Bildmanagementsystem bereit, das in den Editor integriert ist. Nutzer können Bilder hochladen, organisieren, durchsuchen und einfügen, ohne den Editor zu verlassen.
+Medien sind ein [offener Vertrag](/de/backend/media). Templatical Cloud implementiert ihn genauso, wie Ihr eigenes Backend es täte.
 
-## Funktionen
+```ts
+const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
+```
 
-- **Upload** – Bilder direkt im Editor per Drag-and-Drop oder Klick hochladen
-- **Ordner** – Bilder in einer Ordnerhierarchie organisieren
-- **Suche** – Bilder nach Name oder Metadaten finden
-- **Bildbearbeitung** – Bilder zuschneiden, skalieren und ersetzen
-- **Verwendungs-Tracking** – Vor dem Löschen sehen, welche Templates ein Bild verwenden
-- **Import aus URL** – Bilder von externen URLs in die Bibliothek übernehmen
-- **Speicherinformationen** – Speicherverbrauch pro Plan überwachen
+Nichts zu konfigurieren — diese Funktion ist standardmäßig an. Cloud stellt den Provider bereit, und Durchsuchen erscheint an Bildfeldern, Video-Thumbnails und Bildfeldern benutzerdefinierter Blöcke.
 
-Die Medienbibliothek ist bei Verwendung von `initCloud()` automatisch verfügbar. Es ist keine zusätzliche Konfiguration erforderlich.
+## Der Adapter
 
-## Eigener Media-Picker
+| Methode | Cloud |
+| --- | --- |
+| `list` | Projektbibliothek, Suche / Ordner / Kategorie / Cursor werden weitergereicht |
+| `create` | Lädt die Datei ins Projekt hoch |
+| `update` | Dateiname und Alternativtext |
+| `delete` | Gesammeltes Entfernen |
+| `folders` | Verschachtelte Ordner; Cloud flacht eine Baum-Antwort auf die flache Liste des Vertrags ab |
+| `replace` | Ersetzt die Datei an Ort und Stelle |
+| `importFromUrl` | Übernimmt eine entfernte URL in die Bibliothek |
+| `checkUsage` | Vorlagen, die die Assets referenzieren |
+| `frequentlyUsed` | Zuletzt verwendet für die aktuelle Person |
+| `storage` | Kontingent-Ring; `null`, bis die Plan-Konfiguration geladen ist |
 
-Wenn Sie statt der integrierten Bibliothek Ihren eigenen Media-Picker verwenden möchten, geben Sie den Callback `onRequestMedia` an:
+**Eine Bibliothek pro Projekt**, geteilt von allen Beteiligten. Cloud **ignoriert `templateId`**: Der Speicher ist projektskopiert.
 
-```js
+Jede Methode ist eine Funktion. `storage`, `maxFileSize` und `mimeTypes` sind **lebende Getter** über die Plan-Konfiguration — sie füllen sich nach der Konstruktion, sodass ein Schnappschuss beim Setup das Kontingent für die ganze Sitzung auf `null` festnageln würde.
+
+Wenn Clouds Speicher im Spiel ist, werden `maxFileSize` / `mimeTypes` an einem reinen Events-Objekt ignoriert (Clouds Plan besitzt diese Limits). Nur `onCreated` / `onUpdated` / `onDeleted` werden weitergereicht.
+
+## Eigene Implementierung
+
+Das geht, und `initCloud()` nimmt dies als vollständigen Ersatz an, genauso wie `savedBlocks` und `testEmail`. Der Schlüssel hat denselben Typ wie bei `init()`, dazu eine dritte Form, die nur an diesem Einstiegspunkt existiert: Clouds Bibliothek behalten und eigene Event-Handler hinzufügen.
+
+```ts
+await initCloud({ container, auth });                        // Clouds Bibliothek
+await initCloud({ container, auth, media: { onCreated } });  // Clouds Bibliothek, plus Ihre Events
+await initCloud({ container, auth, media: mine });           // Ihre eigene, auf Cloud
+await initCloud({ container, auth, media: false });          // aus — nur URL-Feld
+```
+
+<!-- prettier-ignore -->
+| `media` | Speicher |
+| --- | --- |
+| weggelassen | Cloud |
+| `false` | aus |
+| Optionen (`{ onCreated }`) | Cloud, plus diese Handler |
+| vollständiger Provider | Ihrer, **nicht** plangebunden |
+
+Cloud unterscheidet sie an `list`, nie daran, ob der Wert ein Objekt ist: Alles mit einem funktionierenden `list` ersetzt Clouds Speicher vollständig, und alles andere — `false`, ein reines Events-Objekt — behält Clouds eigenen Speicher und leitet dessen Events an ihn weiter.
+
+Ein Provider, den Sie übergeben, ist **nicht** plangebunden — der Plan lizenziert Clouds *Speicher*, nicht die Oberfläche des Editors. Ein reines Events-Objekt nutzt weiterhin Clouds Speicher.
+
+Ein missgebildetes Objekt, das `create` (oder andere Mutationen) hat, aber kein funktionierendes `list`, fällt auf Clouds Speicher zurück, mit einer Warnung, die die ignorierten Methoden nennt.
+
+## UI-Überschreibung
+
+`onRequestMedia` ist ein Host-Widget (Bynder, Cloudinary, ein eigenes Modal). Das ist nicht der Speicher. Sind beide gesetzt, hat der Callback Vorrang und Clouds Modal öffnet sich nie. Rückgabe ist `{ url, alt? }` — siehe [Bilder](/de/guide/images).
+
+```ts
 const editor = await initCloud({
   container: '#editor',
   auth: { url: '/api/templatical/token' },
   onRequestMedia: async (context) => {
-    // Eigenen Media-Picker öffnen
-    const selected = await myMediaPicker.open();
-
+    const selected = await myMediaPicker.open(context);
     if (!selected) return null;
-
-    return {
-      id: selected.id,
-      url: selected.url,
-      filename: selected.filename,
-      width: selected.width,
-      height: selected.height,
-    };
+    return { url: selected.url, alt: selected.alt };
   },
 });
 ```
 
-## Standalone-SDK der Medienbibliothek
+## Standalone
 
-Die Medienbibliothek ist außerdem als eigenständige Komponente für die Verwendung außerhalb des Editors über das Paket `@templatical/media-library` verfügbar:
+Dieselbe Oberfläche, ohne Bestätigen, über `@templatical/media-library`. Übergeben Sie einen `provider` — Cloud ist `createCloudMediaProvider` aus `@templatical/core/cloud`:
 
-```js
+```ts
 import { init } from '@templatical/media-library';
+import { createCloudMediaProvider } from '@templatical/core/cloud';
 
-const mediaLibrary = init({
+const mediaLibrary = await init({
   container: '#media-library',
-  auth: {
-    mode: 'proxy',
-    url: '/api/templatical/token',
-  },
-  onSelect: (item) => {
-    console.log('Selected:', item.url);
+  provider: createCloudMediaProvider(authManager),
+  onSelect: (asset) => {
+    console.log('Selected:', asset.url);
   },
 });
 ```
 
-## API-Client
+`onSelect` ist optional. `accept` grenzt Kategorien ein; weglassen bedeutet jede Kategorie.
 
-Für serverseitige oder programmatische Medien-Operationen:
+## Headless-Nutzung
 
-```js
-import { MediaApiClient } from '@templatical/media-library';
+Für serverseitige oder programmatische Medien-Operationen wird `MediaApiClient` aus `@templatical/core/cloud` exportiert. Er spricht Clouds snake_case-HTTP; `createCloudMediaProvider` ist die Abbildung auf `MediaProvider`.
+
+```ts
+import { MediaApiClient } from '@templatical/core/cloud';
 
 const client = new MediaApiClient(authManager);
 
-// Bilder durchsuchen
 const response = await client.browseMedia({ folder_id: 'folder-id', search: 'hero', category: 'images' });
-// response: { data: MediaItem[], meta: { path, per_page, next_cursor, prev_cursor } }
-
-// Upload
 const item = await client.uploadMedia(file, folderId);
-
-// Löschen (akzeptiert ein Array von IDs)
 await client.deleteMedia(['item-id-1', 'item-id-2']);
-
-// Vor dem Löschen die Nutzung prüfen (akzeptiert ein Array von IDs)
 const usage = await client.checkMediaUsage(['item-id-1']);
 ```

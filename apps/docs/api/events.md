@@ -58,7 +58,9 @@ const editor = await init({
 
 ### `onRequestMedia`
 
-Called when the user clicks to select an image (e.g. in the image block settings) **or drags an image file onto an image block/field**. Return a `MediaResult` object, or `null` if the user cancels. When `alt` is provided, the editor automatically fills in the image's alt text.
+UI override for the media picker. Called when the user clicks Browse (e.g. in the image block settings) **or drags an image file onto an image block/field**. Return a `MediaResult` object, or `null` if the user cancels. When `alt` is provided, the editor automatically fills in the image's alt text.
+
+It wins over a `media` provider when both are set — the host brought a widget, so the built-in modal never opens. The store itself is the [`media`](/backend/media) key.
 
 On a drag-and-drop, the dropped file arrives in `context.files` — upload it and return the hosted URL. See [Drag and drop to upload](/guide/images#drag-and-drop-to-upload) for the full pattern.
 
@@ -75,7 +77,7 @@ const editor = await init({
 });
 ```
 
-If you don't provide `onRequestMedia`, the editor shows a text input where users type or paste image URLs directly.
+If you provide neither `onRequestMedia` nor `media`, the editor shows a text input where users type or paste image URLs directly.
 
 ### `mergeTags.onRequest`
 
@@ -174,6 +176,24 @@ const editor = await init({
 ```
 
 `onRestored` takes the resulting `Template` that `restore()` resolves to, not the `TemplateVersion` that was restored from. See [Events](/backend/version-history#events) for the full reference.
+
+## Media Events
+
+A `media` provider carries events beyond `list` / `create` / `update` / `delete` — `onCreated`, `onUpdated` and `onDeleted` — fired once the editor has applied the change to its own list.
+
+```ts
+const editor = await init({
+  container: '#editor',
+  media: {
+    ...myMediaProvider,
+    onDeleted(asset) {
+      logRemoval(asset.id);
+    },
+  },
+});
+```
+
+`onDeleted` receives the removed `MediaAsset` itself, not an id — `delete` resolves to nothing, so the editor passes the entry it captured before removing it. See [Events](/backend/media#events) for the full reference.
 
 ## Test Email Events
 

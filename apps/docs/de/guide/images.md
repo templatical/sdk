@@ -9,13 +9,13 @@ Wenn ein Benutzer einen Bildblock hinzufügt, zeigt der Editor ein Textfeld an, 
 
 <img src="/images/image-fields.png" alt="Felder des Bildblocks" style="max-width: 360px;" />
 
-## Benutzerdefinierter Medien-Picker
+## Durchsuchen und auswählen
 
-Wenn der Callback `onRequestMedia` bereitgestellt wird, erscheint eine Durchsuchen-Schaltfläche neben der URL-Eingabe.
+Eine Durchsuchen-Schaltfläche erscheint neben der URL-Eingabe, sobald **entweder** ein [`media`](/de/backend/media)-Provider **oder** `onRequestMedia` konfiguriert ist.
 
 <img src="/images/image-picker.png" alt="Schaltfläche des Medien-Pickers" style="max-width: 360px;" />
 
-Der Editor ruft diese Funktion auf, wenn der Benutzer auf die Schaltfläche klickt. Geben Sie ein `MediaResult`-Objekt zurück oder `null`, wenn der Benutzer abbricht. Wenn `alt` angegeben ist, füllt der Editor automatisch den Alternativtext des Bildes aus.
+`media` öffnet das eingebaute Bibliotheks-Modal. `onRequestMedia` ist eine **UI-Überschreibung** (Bynder, Cloudinary-Widget, ein Host-Modal): Der Editor ruft sie auf, statt die Bibliothek zu öffnen, und sie hat Vorrang, wenn beide gesetzt sind. Geben Sie ein `MediaResult` zurück oder `null`, wenn der Benutzer abbricht. Wenn `alt` angegeben ist, füllt der Editor den Alternativtext des Bildes aus.
 
 ```ts
 import { init } from '@templatical/editor';
@@ -31,6 +31,8 @@ const editor = await init({
   },
 });
 ```
+
+Eine eigene Galerie ist der Schlüssel `media` — siehe [Medien](/de/backend/media).
 
 Die Typsignatur:
 
@@ -56,7 +58,9 @@ type OnRequestMedia = (context?: MediaRequestContext) => Promise<MediaResult | n
 
 ## Per Drag-and-Drop hochladen
 
-Benutzer können eine Bilddatei von ihrem Computer direkt auf einen Bildblock (leer oder gefüllt), das Bildfeld in der Seitenleiste oder das Bildfeld eines benutzerdefinierten Blocks ziehen. Dabei ruft der Editor **denselben** `onRequestMedia`-Handler auf — jedoch mit der abgelegten Datei in `context.files`:
+Benutzer können eine Bilddatei von ihrem Computer direkt auf einen Bildblock (leer oder gefüllt), das Bildfeld in der Seitenleiste oder das Bildfeld eines benutzerdefinierten Blocks ziehen.
+
+Mit `onRequestMedia` ruft der Editor diesen Handler mit der abgelegten Datei in `context.files` auf:
 
 ```ts
 const editor = await init({
@@ -75,14 +79,16 @@ const editor = await init({
 });
 ```
 
-Der Editor lädt selbst nichts hoch — er übergibt Ihnen die `File` und verwendet die zurückgegebene URL, genau wie beim „Medien durchsuchen“-Pfad. Einige Hinweise:
+Mit einem `media`-Provider und ohne Callback geht der Drop an `provider.create({ file, templateId? })`, sofern `create` eine Funktion ist. `create: false` blendet den Drop-Hinweis aus: Die Bibliothek bleibt durchsuchbar.
+
+Einige Hinweise:
 
 - **Eine Datei pro Drop.** `files` ist aus Gründen der Vorwärtskompatibilität ein Array, aber der Editor sendet derzeit eine einzelne Datei (`files[0]`).
 - **Nur Bilder.** Der Editor filtert abgelegte Dateien vor dem Aufruf auf Bild-MIME-Typen.
-- **Kein Handler, kein Drop.** Ist `onRequestMedia` nicht gesetzt, erscheint kein Drop-Hinweis und Drops werden ignoriert.
+- **Keine Auswahl, kein Drop.** Ohne `onRequestMedia` und ohne einen `media`-Provider, dessen `create` eine Funktion ist, erscheint kein Drop-Hinweis und Drops werden ignoriert.
 - **Keine `blob:`-URL zurückgeben.** `URL.createObjectURL(file)` ist sitzungslokal und bricht den Export. Laden Sie die Datei hoch und geben Sie eine dauerhafte URL (oder eine `data:`-URL) zurück.
 
-Bei [Cloud-Editoren](/de/cloud/media-library) werden abgelegte Dateien automatisch in Ihre Templatical-Medienbibliothek hochgeladen — kein `onRequestMedia` nötig (ein eigener Handler hat weiterhin Vorrang).
+Bei [Cloud-Editoren](/de/cloud/media-library) werden abgelegte Dateien automatisch in Clouds Bibliothek hochgeladen — kein `onRequestMedia` nötig. Ein eigener Handler hat weiterhin Vorrang.
 
 ## Reine Anzeige-Auflösung von Bild-URLs {#reine-anzeige-aufloesung-von-bild-urls}
 

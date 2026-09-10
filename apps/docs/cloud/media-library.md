@@ -1,87 +1,110 @@
 ---
 title: Media Library
-description: Upload, organize, and manage images with folders and search.
+description: Templatical Cloud as one implementation of the media storage contract.
 ---
 
 # Media Library
 
-The Cloud media library provides a full image management system built into the editor. Users can upload, organize, browse, and insert images without leaving the editor.
+Media is an [open contract](/backend/media). Templatical Cloud implements it, the same way your own backend would.
 
-## Features
+```ts
+const editor = await initCloud({ container: '#editor', auth: { url: '/api/token' } });
+```
 
-- **Upload** — Drag-and-drop or click to upload images directly in the editor
-- **Folders** — Organize images in a folder hierarchy
-- **Search** — Find images by name or metadata
-- **Image Editing** — Crop, resize, and replace images
-- **Usage Tracking** — See which templates use an image before deleting
-- **Import from URL** — Pull images from external URLs into the library
-- **Storage Info** — Monitor storage usage per plan
+Nothing to configure — this one is on by default. Cloud supplies the provider, and Browse appears on image fields, video thumbnails and custom-block image fields.
 
-The media library is automatically available when using `initCloud()`. No additional configuration is needed.
+## The adapter
 
-## Custom Media Picker
+| Method | Cloud |
+| --- | --- |
+| `list` | Project library, search / folder / category / cursor forwarded |
+| `create` | Uploads the file into the project |
+| `update` | Filename and alt |
+| `delete` | Bulk remove |
+| `folders` | Nested folders; Cloud flattens a tree payload into the contract's flat list |
+| `replace` | Replaces the file in place |
+| `importFromUrl` | Pulls a remote URL into the library |
+| `checkUsage` | Templates that reference the assets |
+| `frequentlyUsed` | Recents for the current user |
+| `storage` | Quota ring; `null` until plan config has loaded |
 
-If you want to use your own media picker instead of the built-in library, provide the `onRequestMedia` callback:
+**One library per project**, shared by everyone on it. Cloud **ignores `templateId`**: the store is project-scoped.
 
-```js
+Every method is a function. `storage`, `maxFileSize` and `mimeTypes` are **live getters** over plan config — they fill in after construction, so a snapshot at setup would pin quota to `null` for the whole session.
+
+When Cloud's store is in play, consumer `maxFileSize` / `mimeTypes` on an events-only object are ignored (Cloud's plan owns those limits). Only `onCreated` / `onUpdated` / `onDeleted` forward.
+
+## Bringing your own
+
+You can, and `initCloud()` accepts this as a full swap, the same way it accepts `savedBlocks` and `testEmail`. The key takes the same type as `init()`'s, plus a third shape unique to this entry point: keep Cloud's library and add your own event handlers.
+
+```ts
+await initCloud({ container, auth });                        // Cloud's library
+await initCloud({ container, auth, media: { onCreated } });  // Cloud's library, plus your events
+await initCloud({ container, auth, media: mine });           // your own, on Cloud
+await initCloud({ container, auth, media: false });          // off — URL field only
+```
+
+<!-- prettier-ignore -->
+| `media` | Store |
+| --- | --- |
+| omitted | Cloud |
+| `false` | off |
+| options (`{ onCreated }`) | Cloud, plus those handlers |
+| full provider | yours, **not** plan-gated |
+
+Cloud tells them apart by `list`, never by whether the value is an object: something with a working `list` replaces Cloud's store outright, and anything else — `false`, an events-only object — keeps Cloud's own store and forwards whatever events it carries onto it.
+
+A provider you supply is **not** plan-gated — the plan licenses Cloud's *storage*, not the editor's UI. An events-only object still uses Cloud's store.
+
+A malformed object that has `create` (or other mutations) but no working `list` falls through to Cloud's store, with a warning naming the ignored methods.
+
+## UI override
+
+`onRequestMedia` is a host widget (Bynder, Cloudinary, a modal of your own). It is not the store. When both are set, the callback wins and Cloud's modal never opens. It returns `{ url, alt? }` — see [Images](/guide/images).
+
+```ts
 const editor = await initCloud({
   container: '#editor',
   auth: { url: '/api/templatical/token' },
   onRequestMedia: async (context) => {
-    // Open your custom media picker
-    const selected = await myMediaPicker.open();
-
+    const selected = await myMediaPicker.open(context);
     if (!selected) return null;
-
-    return {
-      id: selected.id,
-      url: selected.url,
-      filename: selected.filename,
-      width: selected.width,
-      height: selected.height,
-    };
+    return { url: selected.url, alt: selected.alt };
   },
 });
 ```
 
-## Standalone Media Library SDK
+## Standalone
 
-The media library is also available as a standalone component for use outside the editor via the `@templatical/media-library` package:
+The same UI, without Confirm, via `@templatical/media-library`. Pass a `provider` — Cloud is `createCloudMediaProvider` from `@templatical/core/cloud`:
 
-```js
+```ts
 import { init } from '@templatical/media-library';
+import { createCloudMediaProvider } from '@templatical/core/cloud';
 
-const mediaLibrary = init({
+const mediaLibrary = await init({
   container: '#media-library',
-  auth: {
-    mode: 'proxy',
-    url: '/api/templatical/token',
-  },
-  onSelect: (item) => {
-    console.log('Selected:', item.url);
+  provider: createCloudMediaProvider(authManager),
+  onSelect: (asset) => {
+    console.log('Selected:', asset.url);
   },
 });
 ```
 
-## API Client
+`onSelect` is optional. `accept` narrows categories; omit it for every category.
 
-For server-side or programmatic media operations:
+## Headless use
 
-```js
-import { MediaApiClient } from '@templatical/media-library';
+For server-side or programmatic media operations, `MediaApiClient` is exported from `@templatical/core/cloud`. It speaks Cloud's snake_case HTTP; `createCloudMediaProvider` is the mapping onto `MediaProvider`.
+
+```ts
+import { MediaApiClient } from '@templatical/core/cloud';
 
 const client = new MediaApiClient(authManager);
 
-// Browse images
 const response = await client.browseMedia({ folder_id: 'folder-id', search: 'hero', category: 'images' });
-// response: { data: MediaItem[], meta: { path, per_page, next_cursor, prev_cursor } }
-
-// Upload
 const item = await client.uploadMedia(file, folderId);
-
-// Delete (accepts an array of IDs)
 await client.deleteMedia(['item-id-1', 'item-id-2']);
-
-// Check usage before deleting (accepts an array of IDs)
 const usage = await client.checkMediaUsage(['item-id-1']);
 ```

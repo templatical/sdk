@@ -1,13 +1,13 @@
 ---
 title: Backend anbinden
-description: Speichern, Versionsverlauf, Kommentare, gespeicherte Blöcke, Test-E-Mails und Rendering sind jeweils ein Konfigurationsschlüssel mit Methoden, die Sie implementieren — gegen Ihren eigenen Stack oder gegen Templatical Cloud.
+description: Speichern, Versionsverlauf, Kommentare, gespeicherte Blöcke, Medien, Test-E-Mails und Rendering sind jeweils ein Konfigurationsschlüssel mit Methoden, die Sie implementieren — gegen Ihren eigenen Stack oder gegen Templatical Cloud.
 ---
 
 # Backend anbinden
 
 Der Editor bearbeitet eine Vorlage. Wo diese Vorlage gespeichert wird, wie ihre Vergangenheit aussieht, wer sie kommentiert hat, wohin ein Testversand geht, wie daraus versandfertiges HTML wird — all das liegt in Ihrem Stack, und der Editor erreicht es über ein einfaches Objekt, das Sie an `init()` übergeben.
 
-Dieses Objekt ist ein **Provider**. Es gibt sechs davon, alle sind optional, und alle funktionieren gleich.
+Dieses Objekt ist ein **Provider**. Alle sind optional, und alle funktionieren gleich.
 
 ## Die Provider
 
@@ -21,6 +21,7 @@ await init({
   versionHistory: myVersionStore, // frühere Stände — ansehen, Vorschau, wiederherstellen
   comments: myCommentStore, // Review in Threads, pro Block verankert
   savedBlocks: myBlockLibrary, // wiederverwendbare Blockgruppen
+  media: myGallery, // Bilder, Ordner, Upload
   testEmail: mySender, // diese Vorlage an eine Person mailen
   render: myRenderer, // MJML- und HTML-Ausgabe
 });
@@ -39,12 +40,13 @@ Jeder Schlüssel steht für sich, und jede Funktion **fehlt, solange Sie ihren S
 | [Versionsverlauf](/de/backend/version-history) | Header-Steuerelement, Versionsliste, Vorschau auf der Arbeitsfläche mit eigenem Banner, Wiederherstellen mit Rückfrage | `list` · `get` · `create` · `restore` |
 | [Kommentare](/de/backend/comments) | Review-Panel, Threads und Antworten, Zähler-Badges pro Block, Auflösen und Wiederöffnen | `list` · `create` · `update` · `delete` · `setResolved` |
 | [Gespeicherte Blöcke](/de/backend/saved-blocks) | Auswahlmodus auf der Arbeitsfläche, durchsuchbarer Browser mit Live-Vorschau, Einfügen an Position, Umbenennen, Löschen | `list` · `create` · `update` · `delete` |
+| [Medien](/de/backend/media) | Durchsuchen an Bildfeldern, Drop-Upload, Zuschnitt, Ordner, Suche | `list` · `create` · `update` · `delete` · `folders` · `replace` · `importFromUrl` · `checkUsage` · `frequentlyUsed` · `storage` |
 | [Test-E-Mails](/de/backend/test-email) | Auslöser im Header, Empfängersteuerung, Formatprüfung, exakte Vorschau, Versand- und Fehlerzustände | `send` |
 | [Rendering & Export](/de/backend/render) | `toMjml()` und `toHtml()`, vorab aufgelöste Custom Blocks, aufgelöste Schriften | eines von `toMjml` · `toHtml` · `compileMjml` |
 
 Der Editor behält, was kleinteilig und für alle gleich ist: Änderungsverfolgung, ein verzögertes Autosave, das während Undo pausiert, eine Vorschau, die Anzeigebedingungen respektiert, die Rückfrage, bevor ein Wiederherstellen ungespeicherte Arbeit verwirft. Ihnen bleibt, wohin die Daten gehen, wer sie lesen darf und wie Ihre API aussieht.
 
-Bei den vier speichernden Providern ist jede Mutation `false | fn` und **erforderlich**, nicht optional: Ein `false` erklärt die Aktion für nicht verfügbar. Der Aufruf lehnt ab, und überall dort, wo der Editor ein Bedienelement dafür rendert, wird es ausgeblendet statt deaktiviert. Jede Provider-Seite behandelt ihre eigene — [gespeicherte Blöcke](/de/backend/saved-blocks#berechtigungen-steuern) am ausführlichsten. `render` und `testEmail` sind anders geformt: Bei `render` ist jede Methode unabhängig optional, und `testEmail` besteht aus einem einzigen `send`.
+Bei `templates`, `versionHistory`, `comments`, `savedBlocks` und `media` ist jede Mutation `false | fn` und **erforderlich**, nicht optional: Ein `false` erklärt die Aktion für nicht verfügbar. Der Aufruf lehnt ab, und überall dort, wo der Editor ein Bedienelement dafür rendert, wird es ausgeblendet statt deaktiviert. Jede Provider-Seite behandelt ihre eigene — [gespeicherte Blöcke](/de/backend/saved-blocks#berechtigungen-steuern) und [Medien](/de/backend/media#berechtigungen-steuern) am ausführlichsten. `render` und `testEmail` sind anders geformt: Bei `render` ist jede Methode unabhängig optional, und `testEmail` besteht aus einem einzigen `send`.
 
 ::: warning Keine Sicherheitsgrenze
 Provider laufen im Browser der Nutzenden. Diese Flags formen die Oberfläche; Ihre API schützen sie nicht. Wer eine Vorlage öffnen darf, wer einen geteilten gespeicherten Block löschen darf, welche Adresse ein Test erreichen darf — setzen Sie all das zusätzlich auf Ihrem Server durch.
@@ -71,16 +73,16 @@ type OnRequestMedia = (context?: MediaRequestContext) => Promise<MediaResult | n
 type ResolvePreview = (context: PreviewResolveContext) => Promise<TemplateContent>;
 ```
 
-- **`onRequestMedia`** öffnet Ihre eigene Medienauswahl und gibt zurück, was gewählt wurde. Dokumentiert gemeinsam mit der übrigen Bildbehandlung unter [Bilder](/de/guide/images).
+- **`onRequestMedia`** ist eine **UI-Überschreibung** für die Medienauswahl (Bynder, Cloudinary-Widget, ein Host-Modal). Das ist nicht der Speicher — der ist der [`media`](/de/backend/media)-Provider. Sind beide gesetzt, hat der Callback Vorrang. Dokumentiert gemeinsam mit der übrigen Bildbehandlung unter [Bilder](/de/guide/images).
 - **`resolvePreview`** übergibt die Vorlage an Ihr Backend und rendert, was zurückkommt, sodass eine Vorschau echte Empfängerdaten statt Merge-Tag-Labels zeigt. Nur zur Anzeige: Das Ergebnis erreicht Vorschauflächen und wird nie gespeichert, versendet oder exportiert. Siehe [Vorschau-Rendering](/de/guide/preview-rendering).
 
 ## Headless-Nutzung
 
-`useSavedBlocks`, `useVersionHistory` und `useComments` werden aus `@templatical/core` exportiert, sodass ein Provider Ihre eigene Oberfläche versorgen kann, ganz ohne eingebundenen Editor. Die jeweilige Oberfläche steht im Abschnitt *Headless-Nutzung* der einzelnen Seiten.
+`useSavedBlocks`, `useVersionHistory` und `useComments` werden aus `@templatical/core` exportiert, sodass ein Provider Ihre eigene Oberfläche versorgen kann, ganz ohne eingebundenen Editor. Der Medienzustand ist an das Modal gebunden: `useMediaLibrary` lebt in `@templatical/media-library`, und die Provider-Methoden selbst sind die Headless-API. Die jeweilige Oberfläche steht im Abschnitt *Headless-Nutzung* der einzelnen Seiten.
 
 ## Templatical Cloud
 
-Sie möchten das alles nicht selbst bauen? Templatical Cloud implementiert sie alle. Richten Sie `initCloud()` auf einen Auth-Endpunkt, und Speichern, Versionsverlauf, Kommentare, gespeicherte Blöcke, Testversand und Rendering funktionieren — ohne eigenen Speicher, ohne selbst geschriebene Endpunkte, ohne gehosteten MJML-Compiler.
+Sie möchten das alles nicht selbst bauen? Templatical Cloud implementiert sie alle. Richten Sie `initCloud()` auf einen Auth-Endpunkt, und Speichern, Versionsverlauf, Kommentare, gespeicherte Blöcke, Medien, Testversand und Rendering funktionieren — ohne eigenen Speicher, ohne selbst geschriebene Endpunkte, ohne gehosteten MJML-Compiler.
 
 ```ts
 import { initCloud } from '@templatical/editor';
@@ -95,9 +97,8 @@ Hinzu kommt, wofür der Open-Source-Editor überhaupt keinen Vertrag hat:
 
 - **KI** — Inhalte aus einem Prompt erzeugen, eine Auswahl umformulieren, ein Design in eine Vorlage verwandeln
 - **Echtzeit-Zusammenarbeit** — Live-Cursor, Präsenz und Block-Sperren über einen verwalteten WebSocket
-- **Medienbibliothek** — Uploads, Ordner, Suche und Zuschnitt
 - **Template-Bewertung** — automatische Prüfungen auf Zustellbarkeit und Barrierefreiheit
 
-Derselbe Editor, dasselbe Blockmodell, dieselben Verträge: Cloud ist eine Erstanbieter-Implementierung der Schnittstellen auf dieser Seite, kein Fork. Sie können weiterhin Ihre eigene Blockbibliothek oder Ihren eigenen Versand mitbringen und den Rest Cloud überlassen.
+Derselbe Editor, dasselbe Blockmodell, dieselben Verträge: Cloud ist eine Erstanbieter-Implementierung der Schnittstellen auf dieser Seite, kein Fork. Sie können weiterhin Ihre eigene Blockbibliothek, Galerie oder Ihren eigenen Versand mitbringen und den Rest Cloud überlassen.
 
 [Templatical Cloud entdecken →](/de/cloud/)
