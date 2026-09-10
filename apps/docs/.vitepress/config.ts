@@ -158,6 +158,7 @@ const enSidebar: DefaultTheme.SidebarMulti = {
         { text: "From HTML", link: "/guide/migration-from-html" },
         { text: "From MJML", link: "/guide/migration-from-mjml" },
         { text: "From Topol", link: "/guide/migration-from-topol" },
+        { text: "From Stripo", link: "/guide/migration-from-stripo" },
       ],
     },
     {
@@ -338,6 +339,7 @@ const deSidebar: DefaultTheme.SidebarMulti = {
         { text: "Von HTML", link: "/de/guide/migration-from-html" },
         { text: "Von MJML", link: "/de/guide/migration-from-mjml" },
         { text: "Von Topol", link: "/de/guide/migration-from-topol" },
+        { text: "Von Stripo", link: "/de/guide/migration-from-stripo" },
       ],
     },
     {

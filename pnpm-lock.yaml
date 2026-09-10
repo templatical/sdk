@@ -149,6 +149,9 @@ importers:
       '@templatical/import-mjml':
         specifier: workspace:*
         version: link:packages/import-mjml
+      '@templatical/import-stripo':
+        specifier: workspace:*
+        version: link:packages/import-stripo
       '@templatical/import-topol':
         specifier: workspace:*
         version: link:packages/import-topol
@@ -297,6 +300,9 @@ importers:
       '@templatical/import-mjml':
         specifier: workspace:*
         version: link:../../packages/import-mjml
+      '@templatical/import-stripo':
+        specifier: workspace:*
+        version: link:../../packages/import-stripo
       '@templatical/import-topol':
         specifier: workspace:*
         version: link:../../packages/import-topol
@@ -540,6 +546,31 @@ importers:
       '@templatical/renderer':
         specifier: workspace:*
         version: link:../renderer
+      '@types/node':
+        specifier: ^25.9.5
+        version: 25.9.5
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^5.0.0
+        version: 5.0.0(@types/node@25.9.5)(@vitest/coverage-v8@5.0.0)(happy-dom@20.14.0)(jsdom@30.0.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
+
+  packages/import-stripo:
+    dependencies:
+      '@templatical/import-html':
+        specifier: workspace:*
+        version: link:../import-html
+      '@templatical/types':
+        specifier: workspace:*
+        version: link:../types
+      cheerio:
+        specifier: ^1.2.0
+        version: 1.2.0
+      domhandler:
+        specifier: ^6.0.1
+        version: 6.0.1
+    devDependencies:
       '@types/node':
         specifier: ^25.9.5
         version: 25.9.5

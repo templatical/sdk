@@ -57,7 +57,7 @@ features:
     link: /de/guide/shadow-dom
     linkText: So funktioniert die Isolation
   - title: Bestehende Templates übernehmen
-    details: Importer für BeeFree, Unlayer, rohes HTML, MJML und Topol. Migrieren Sie in Ihrem Tempo, kein Neuaufbau erforderlich.
+    details: Importer für BeeFree, Unlayer, rohes HTML, MJML, Topol und Stripo. Migrieren Sie in Ihrem Tempo, kein Neuaufbau erforderlich.
     link: /de/guide/migration-from-beefree
     linkText: Von BeeFree migrieren
 ---

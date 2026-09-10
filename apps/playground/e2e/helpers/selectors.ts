@@ -252,24 +252,27 @@ export const SELECTORS = {
   // Modals
   modalBackdrop: ".pg-modal-backdrop",
 
-  // Template import (BeeFree / Unlayer / HTML / MJML / Topol)
+  // Template import (BeeFree / Unlayer / HTML / MJML / Topol / Stripo)
   chooserMigrationBand: '[data-testid="chooser-migration-band"]',
   chooserImportBeefree: '[data-testid="chooser-import-beefree"]',
   chooserImportUnlayer: '[data-testid="chooser-import-unlayer"]',
   chooserImportHtml: '[data-testid="chooser-import-html"]',
   chooserImportMjml: '[data-testid="chooser-import-mjml"]',
   chooserImportTopol: '[data-testid="chooser-import-topol"]',
+  chooserImportStripo: '[data-testid="chooser-import-stripo"]',
   importModal: '[data-testid="import-modal"]',
   importTabBeefree: '[data-testid="import-tab-beefree"]',
   importTabUnlayer: '[data-testid="import-tab-unlayer"]',
   importTabHtml: '[data-testid="import-tab-html"]',
   importTabMjml: '[data-testid="import-tab-mjml"]',
   importTabTopol: '[data-testid="import-tab-topol"]',
+  importTabStripo: '[data-testid="import-tab-stripo"]',
   importTextareaBeefree: '[data-testid="import-textarea-beefree"]',
   importTextareaUnlayer: '[data-testid="import-textarea-unlayer"]',
   importTextareaHtml: '[data-testid="import-textarea-html"]',
   importTextareaMjml: '[data-testid="import-textarea-mjml"]',
   importTextareaTopol: '[data-testid="import-textarea-topol"]',
+  importTextareaStripo: '[data-testid="import-textarea-stripo"]',
   importError: '[data-testid="import-error"]',
   importConfirm: '[data-testid="import-confirm"]',
 } as const;

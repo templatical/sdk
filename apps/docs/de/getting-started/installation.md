@@ -118,6 +118,7 @@ Wenn Sie `editor.toMjml()` aufrufen, ohne dass der Renderer installiert ist, wir
 | `@templatical/import-html`     | Konvertiert bestehende HTML-E-Mail-Templates (Tabellen-basiert) in das Templatical-Format                               | Optional                                                                                                     |
 | `@templatical/import-mjml`     | Konvertiert MJML-E-Mail-Templates in das Templatical-Format                                                             | Optional                                                                                                     |
 | `@templatical/import-topol`    | Konvertiert Topol-JSON-Templates in das Templatical-Format                                                               | Optional                                                                                                     |
+| `@templatical/import-stripo`   | Konvertiert Stripo-Plugin-HTML und kompilierte Datei→HTML-Exporte in das Templatical-Format                              | Optional                                                                                                     |
 
 `@templatical/types` und `@templatical/core` sind direkte Abhängigkeiten von `@templatical/editor` und werden automatisch installiert.
 
@@ -354,7 +355,7 @@ overrides:
 
 npm und Yarn erledigen dasselbe über `overrides` bzw. `resolutions` in der `package.json`. `@templatical/editor` benötigt nichts davon — es bündelt alles, was es verwendet.
 
-**Fremdabhängigkeiten stammen weiterhin aus einer Registry.** `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree`, `@templatical/import-unlayer` und `@templatical/import-topol` kommen zur Laufzeit ohne weitere Pakete aus. Die übrigen ziehen Pakete nach, die nicht von uns stammen: `@templatical/core` benötigt `@vue/reactivity`, `@templatical/quality` benötigt `htmlparser2`, `@templatical/import-html` und `@templatical/import-mjml` benötigen `cheerio` und `domhandler`, und `@templatical/media-library` benötigt `@lucide/vue`, `@vueuse/core` und `vue-advanced-cropper`. Um diese ohne Registry zu installieren, brauchen Sie auch dafür einen Mirror.
+**Fremdabhängigkeiten stammen weiterhin aus einer Registry.** `@templatical/types`, `@templatical/renderer`, `@templatical/import-beefree`, `@templatical/import-unlayer` und `@templatical/import-topol` kommen zur Laufzeit ohne weitere Pakete aus. Die übrigen ziehen Pakete nach, die nicht von uns stammen: `@templatical/core` benötigt `@vue/reactivity`, `@templatical/quality` benötigt `htmlparser2`, `@templatical/import-html`, `@templatical/import-mjml` und `@templatical/import-stripo` benötigen `cheerio` und `domhandler`, und `@templatical/media-library` benötigt `@lucide/vue`, `@vueuse/core` und `vue-advanced-cropper`. Um diese ohne Registry zu installieren, brauchen Sie auch dafür einen Mirror.
 
 **Die Quellcode-Archive auf derselben Seite sind kein Ersatz.** „Source code (zip)“ und „Source code (tar.gz)“ sind Momentaufnahmen des Repositories, ebenso wie eine `github:templatical/sdk`-Abhängigkeit. Keines von beiden enthält ein gebautes `dist/`, und beide verweisen auf Geschwisterpakete als `workspace:*`, was außerhalb dieses Repositories ins Leere läuft.
 

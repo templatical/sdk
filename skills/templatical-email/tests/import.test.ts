@@ -68,6 +68,56 @@ describe("detectFormat", () => {
   it("does not mistake MJML markup for topol", () => {
     expect(detectFormat("welcome.mjml", "<mjml><mj-body /></mjml>")).toBe("mjml");
   });
+  it("detects stripo compiled HTML even with an .html extension", () => {
+    expect(
+      detectFormat(
+        "export.html",
+        '<table class="es-wrapper"><tr><td>x</td></tr></table>',
+      ),
+    ).toBe("stripo");
+  });
+  it("detects stripo editor HTML from an esd-stripe class", () => {
+    expect(detectFormat("plugin.html", '<td class="esd-stripe">x</td>')).toBe(
+      "stripo",
+    );
+  });
+  it("detects stripo plugin JSON from getTemplateData html", () => {
+    expect(
+      detectFormat(
+        "data.json",
+        JSON.stringify({ html: '<td class="esd-block-text">x</td>', css: "p{}" }),
+      ),
+    ).toBe("stripo");
+  });
+  it("does not treat a stylesheet-only esd leftover as stripo", () => {
+    expect(
+      detectFormat(
+        "mail.html",
+        "<html><head><style>.esd-block-html table { width:auto }</style></head><body><table></table></body></html>",
+      ),
+    ).toBe("html");
+  });
+  it("strips script/style even when the closing tag has extra attributes", () => {
+    expect(
+      detectFormat(
+        "mail.html",
+        `<html><body><script>var x = 'class="esd-stripe"'</script foo="bar"><table></table></body></html>`,
+      ),
+    ).toBe("html");
+  });
+  it("ignores class attributes buried in a long run of incomplete style closers", () => {
+    expect(
+      detectFormat(
+        "mail.html",
+        `<style>${"</style".repeat(40)} class="esd-stripe"</style><table></table>`,
+      ),
+    ).toBe("html");
+  });
+  it("still detects plain html as html when no stripo class attributes exist", () => {
+    expect(
+      detectFormat("mail.html", "<html><body><table></table></body></html>"),
+    ).toBe("html");
+  });
 });
 
 describe("summarizeReport", () => {
@@ -128,6 +178,11 @@ describe("runImport — real fixtures convert to valid Templatical JSON", () => 
     {
       format: "topol",
       fixture: "packages/import-topol/src/__tests__/fixtures/example-1.json",
+    },
+    {
+      format: "stripo",
+      fixture:
+        "packages/import-stripo/src/__tests__/fixtures/compiled-content.html",
     },
   ] as const;
 

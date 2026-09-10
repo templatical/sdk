@@ -130,6 +130,7 @@ const mjml = await editor.toMjml();
 | [`@templatical/import-html`](https://www.npmjs.com/package/@templatical/import-html)       | Convert HTML email templates (table-based) to Templatical format | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-mjml`](https://www.npmjs.com/package/@templatical/import-mjml)       | Convert MJML email templates to Templatical format               | [MIT](./LICENSE-MIT)     |
 | [`@templatical/import-topol`](https://www.npmjs.com/package/@templatical/import-topol)     | Convert Topol.io email templates to Templatical format           | [MIT](./LICENSE-MIT)     |
+| [`@templatical/import-stripo`](https://www.npmjs.com/package/@templatical/import-stripo)   | Convert Stripo email templates to Templatical format             | [MIT](./LICENSE-MIT)     |
 
 ## Why FSL-1.1-MIT?
 

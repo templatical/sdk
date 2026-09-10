@@ -62,6 +62,10 @@ export default defineConfig({
                 packagesDir,
                 'import-topol/src/index.ts',
             ),
+            '@templatical/import-stripo': resolve(
+                packagesDir,
+                'import-stripo/src/index.ts',
+            ),
             '@templatical/media-library': resolve(
                 packagesDir,
                 'media-library/src/index.ts',
