@@ -15,7 +15,8 @@
       "@templatical/import-html",
       "@templatical/import-mjml",
       "@templatical/import-topol",
-      "@templatical/import-stripo"
+      "@templatical/import-stripo",
+      "@templatical/import-chamaileon"
     ]
   ],
   "linked": [],
