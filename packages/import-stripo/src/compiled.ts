@@ -3,8 +3,31 @@ import type { Element } from "domhandler";
 import { createSectionBlock } from "@templatical/types";
 import type { Block, ColumnLayout } from "@templatical/types";
 import { hasAnyToken, hasToken, isHidden } from "./classes";
+import { colorFromPaint } from "./css";
 import { blocksFromHtml, pushEntry, type ConvertCtx } from "./fragment";
 import { buttonFrom, menuFrom, socialFrom, spacerFrom } from "./labelled";
+
+function paintOf($el: Cheerio<Element>): string {
+  return colorFromPaint($el.attr("style"), $el.attr("bgcolor"));
+}
+
+/**
+ * The 600px band (`es-*-body`) carries the fill; the outer stripe is often
+ * `transparent`. Style wins over `bgcolor` (a white bgcolor with a mint
+ * `background-color` is the compiled password-reset shape).
+ */
+function stripeFill($stripe: Cheerio<Element>): string {
+  const $body = $stripe
+    .find(
+      "[class~='es-header-body'], [class~='es-content-body'], [class~='es-footer-body']",
+    )
+    .first();
+  if ($body.length) {
+    const fromBody = paintOf($body as Cheerio<Element>);
+    if (fromBody) return fromBody;
+  }
+  return paintOf($stripe);
+}
 
 const STRIPE_TOKENS = ["es-header", "es-content", "es-footer"] as const;
 
@@ -174,6 +197,11 @@ export function convertCompiled(html: string, ctx: ConvertCtx): Block[] {
       children = cols.map(($c) => convertSubtree($c, $, ctx));
     }
     if (!flattenExtra) pushEntry(ctx, token, "section", "converted");
-    return createSectionBlock({ columns: layout, children });
+    const backgroundColor = stripeFill($stripe);
+    return createSectionBlock({
+      columns: layout,
+      children,
+      ...(backgroundColor ? { styles: { backgroundColor } } : {}),
+    });
   });
 }

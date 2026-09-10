@@ -45,9 +45,22 @@ const headerContentFooter = `<!DOCTYPE html>
 <html><body>
 <table class="es-wrapper">
   <tr><td>
-    <table class="es-header"><tr><td><p>Header Widget Brand</p></td></tr></table>
+    <table class="es-header" style="background-color:transparent"><tr><td>
+      <table class="es-header-body" bgcolor="#ffffff" style="background-color:#E5FBF6"><tr><td><p>Header Widget Brand</p></td></tr></table>
+    </td></tr></table>
     <table class="es-content"><tr><td><p>Body Widget Story</p></td></tr></table>
     <table class="es-footer"><tr><td><p>Footer Widget Legal</p></td></tr></table>
+  </td></tr>
+</table>
+</body></html>`;
+
+const styledButton = `<!DOCTYPE html>
+<html><body>
+<table class="es-content">
+  <tr><td>
+    <span class="es-button-border" style="background:#113F37;border-radius:30px">
+      <a class="es-button" href="https://example.com/reset" style="color:#FFFFFF;background:#113F37;border-radius:30px">Reset password</a>
+    </span>
   </td></tr>
 </table>
 </body></html>`;
@@ -104,6 +117,23 @@ describe("compiled pipeline", () => {
     expect(JSON.stringify(secs[0])).toContain("Header Widget Brand");
     expect(JSON.stringify(secs[1])).toContain("Body Widget Story");
     expect(JSON.stringify(secs[2])).toContain("Footer Widget Legal");
+    expect(secs[0].styles.backgroundColor).toBe("#e5fbf6");
+  });
+
+  it("copies es-button inline paint onto the button block", () => {
+    const { content } = convertStripoTemplate(styledButton);
+    const buttons = content.blocks
+      .flatMap((b) => (b.type === "section" ? b.children.flat() : [b]))
+      .filter((b) => b.type === "button");
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]).toMatchObject({
+      type: "button",
+      text: "Reset password",
+      url: "https://example.com/reset",
+      backgroundColor: "#113f37",
+      textColor: "#ffffff",
+      borderRadius: 30,
+    });
   });
 
   it("maps es-left/es-right siblings to three columns", () => {

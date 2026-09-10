@@ -102,7 +102,7 @@ Plugin-Speicher ist ein Tabellenbaum mit `esd-*`-Klassen. Jedes `esd-structure` 
 | `esd-structure` mit 4+ Frames | `SectionBlock` `columns: "1"` | Flattened; `approximated`. |
 | `esd-block-text` | `title` / `paragraph` | Generisches HTML-Mapping des inneren Markups. |
 | `esd-block-image` | `image` | Generisches HTML-Mapping des inneren `<img>`. |
-| `esd-block-button` | `button` | `href`, Text, `target="_blank"` → `openInNewTab`. |
+| `esd-block-button` | `button` | `href`, Text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius`, sofern vorhanden. |
 | `esd-block-menu` (2+ Item-Zellen) | `menu` | Ein `MenuItemData` je Item-Zelle. |
 | `esd-block-menu` (1 Item-Zelle) | `paragraph` (oder das innere Mapping) | Ein gestapelter Schritt, keine Navigation — Password-Reset-Zeilen bleiben Fließtext. |
 | `esd-block-social` | `social` | Plattform aus `title` / `src` / `alt`; unbekannte Namen werden `website`. |
@@ -115,10 +115,10 @@ Der kompilierte Export entfernt `esd-*` von den Elementen und behält `es-*`-Res
 
 | Stripo-Marker | Templatical-Block | Hinweise |
 |---|---|---|
-| `es-header` / `es-content` / `es-footer` | `SectionBlock` | Ein Abschnitt je Streifen auf oberster Ebene. |
+| `es-header` / `es-content` / `es-footer` | `SectionBlock` | Ein Abschnitt je Streifen auf oberster Ebene. Die Füllung kommt vom inneren `es-*-body` `background-color` (Style gewinnt gegen `bgcolor`). |
 | 1–3 `es-left` / `es-right`-Geschwister | `columns` `"1"` / `"2"` / `"3"` | Gefloatete Tabellen, nicht die `<td>`-Anzahl. |
 | 4+ gefloatete Geschwister | `columns: "3"` | Weitere Spalten landen im dritten Slot; `approximated`. |
-| `a.es-button` | `button` | |
+| `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, einschließlich vom umschließenden `es-button-border`. |
 | `table.es-menu` (2+ Item-Zellen) | `menu` | |
 | `table.es-menu` (1 Item-Zelle) | inneres Mapping, nicht `menu` | Dieselbe Schrittzeilen-Regel wie beim Plugin-Pfad. |
 | `table.es-social` | `social` | Dasselbe Plattform-Mapping wie beim Plugin-Pfad. |

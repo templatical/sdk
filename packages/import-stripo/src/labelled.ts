@@ -9,6 +9,12 @@ import {
 } from "@templatical/types";
 import type { Block, MenuItemData, SocialIcon } from "@templatical/types";
 import { isHidden } from "./classes";
+import {
+  colorFromPaint,
+  parseColor,
+  parsePxValue,
+  parseStyleAttribute,
+} from "./css";
 import { blocksFromHtml, pushEntry, type ConvertCtx } from "./fragment";
 import { normalizePlatform } from "./platform";
 
@@ -26,11 +32,22 @@ export function buttonFrom(
   const text = ($a.text() ?? "").trim() || "Shop Now";
   const url = $a.attr("href") ?? "#";
   const target = $a.attr("target");
+  const own = parseStyleAttribute($a.attr("style"));
+  const parent = parseStyleAttribute($a.parent().attr("style"));
+  const backgroundColor =
+    colorFromPaint($a.attr("style")) ||
+    colorFromPaint($a.parent().attr("style"));
+  const textColor = parseColor(own.color) || parseColor(parent.color);
+  const borderRadius =
+    parsePxValue(own["border-radius"]) || parsePxValue(parent["border-radius"]);
   pushEntry(ctx, sourceTag, "button", "converted");
   return createButtonBlock({
     text,
     url,
     ...(target === "_blank" ? { openInNewTab: true } : {}),
+    ...(backgroundColor ? { backgroundColor } : {}),
+    ...(textColor ? { textColor } : {}),
+    ...(borderRadius > 0 ? { borderRadius } : {}),
   });
 }
 

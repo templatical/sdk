@@ -102,7 +102,7 @@ Plugin storage is a table tree labelled with `esd-*` classes. Each `esd-structur
 | `esd-structure` with 4+ frames | `SectionBlock` `columns: "1"` | Flattened; `approximated`. |
 | `esd-block-text` | `title` / `paragraph` | Generic HTML mapping of the inner markup. |
 | `esd-block-image` | `image` | Generic HTML mapping of the inner `<img>`. |
-| `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. |
+| `esd-block-button` | `button` | `href`, text, `target="_blank"` → `openInNewTab`. Inline `background` / `color` / `border-radius` when present. |
 | `esd-block-menu` (2+ item cells) | `menu` | One `MenuItemData` per item cell. |
 | `esd-block-menu` (1 item cell) | `paragraph` (or the inner mapping) | A stacked step, not a nav — Password-reset rows stay copy. |
 | `esd-block-social` | `social` | Platform from `title` / `src` / `alt`; unknown names become `website`. |
@@ -115,10 +115,10 @@ Compiled export drops `esd-*` from elements and keeps `es-*` leftovers. Stripes 
 
 | Stripo marker | Templatical block | Notes |
 |---|---|---|
-| `es-header` / `es-content` / `es-footer` | `SectionBlock` | One section per top-level stripe. |
+| `es-header` / `es-content` / `es-footer` | `SectionBlock` | One section per top-level stripe. Fill comes from the inner `es-*-body` `background-color` (style wins over `bgcolor`). |
 | 1–3 `es-left` / `es-right` siblings | `columns` `"1"` / `"2"` / `"3"` | Floated tables, not `<td>` count. |
 | 4+ floated siblings | `columns: "3"` | Extra columns merge into the third slot; `approximated`. |
-| `a.es-button` | `button` | |
+| `a.es-button` | `button` | Inline `background` / `color` / `border-radius`, including from the wrapping `es-button-border`. |
 | `table.es-menu` (2+ item cells) | `menu` | |
 | `table.es-menu` (1 item cell) | inner mapping, not `menu` | Same stacked-step rule as the plugin path. |
 | `table.es-social` | `social` | Same platform mapping as the plugin path. |

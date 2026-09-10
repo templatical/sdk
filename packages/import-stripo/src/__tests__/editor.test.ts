@@ -20,7 +20,7 @@ const editorTwoCol = `<!DOCTYPE html>
             <table class="es-right" align="right">
               <tr>
                 <td class="esd-container-frame">
-                  <table><tr><td class="esd-block-button"><a class="es-button" href="https://example.com/cta" target="_blank">Shop Now</a></td></tr></table>
+                  <table><tr><td class="esd-block-button"><a class="es-button" href="https://example.com/cta" target="_blank" style="color:#FFFFFF;background:#113F37;border-radius:30px">Shop Now</a></td></tr></table>
                 </td>
               </tr>
             </table>
@@ -47,6 +47,13 @@ describe("editor pipeline", () => {
     const right = JSON.stringify(secs[0].children[1]);
     expect(left).toContain("Hello Widget");
     expect(right).toContain("Shop Now");
+    const button = secs[0].children[1].find((b) => b.type === "button");
+    expect(button).toMatchObject({
+      type: "button",
+      backgroundColor: "#113f37",
+      textColor: "#ffffff",
+      borderRadius: 30,
+    });
     expect(report.entries.some((e) => e.sourceTag === "esd-structure")).toBe(
       true,
     );
