@@ -33,6 +33,8 @@ export interface ResolveContext {
   blockAttributes: Record<string, Record<string, unknown>>;
   categoryAttributes: Record<string, Record<string, unknown>>;
   globalAttributes: Record<string, unknown>;
+  /** Page node — section fill falls back to `content-background-color`. */
+  page: EasyEmailProNode;
 }
 
 /**
@@ -132,6 +134,7 @@ export function contextFromPage(page: EasyEmailProNode): ResolveContext {
     blockAttributes: asNestedAttrMap(data.blockAttributes),
     categoryAttributes: asNestedAttrMap(data.categoryAttributes),
     globalAttributes: asAttrMap(data.globalAttributes),
+    page,
   };
 }
 
