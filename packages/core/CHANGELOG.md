@@ -1,5 +1,26 @@
 # @templatical/core
 
+## 0.36.0
+
+### Minor Changes
+
+- d8e38e4: Bring-your-own media library. Cloud is the adapter; `onRequestMedia` remains a UI override.
+
+  The editor compiles the Browse modal into a lazy chunk of `@templatical/editor` — `init({ media })` and Cloud's store no longer need `@templatical/media-library` installed, and that install no longer pulls Vue into an editor consumer. The media-library package remains for standalone `init()` / `MediaLibraryModal` in a host Vue app (`vue` peer; `tailwindcss` is build-time only).
+
+  The editor's image picker (Browse, drop, crop, folders, search) is now backed by a `MediaProvider` you implement — a CMS gallery, a DAM, or the bundled `createLocalStorageMediaProvider()`. Templatical Cloud is one adapter behind the same contract (`createCloudMediaProvider` from `@templatical/core/cloud`). `initCloud({ media })` omitted uses Cloud's store, `false` turns it off, an events-only object keeps Cloud plus your handlers, and a full provider is yours and not plan-gated.
+
+  `onRequestMedia` stays as the UI override for a host widget (Bynder, Cloudinary, a modal of your own). It wins over `media` when both are set.
+
+  Cloud HTTP is camelCase throughout: media, comments, version history, plan JWT (`aiGeneration`, `savedModules`, `testEmail`, `expiresAt`, `projectId`, `appKey`, …), collab/MCP operations (`addBlock`, `blockId`, `client-blockLocked`), websocket auth params, and AI request/response keys (`conversationId`, `currentContent`, `mergeTags`, `createdAt`).
+
+  Origin: [#700](https://github.com/templatical/sdk/issues/700).
+
+### Patch Changes
+
+- Updated dependencies [d8e38e4]
+  - @templatical/types@0.36.0
+
 ## 0.35.0
 
 ### Patch Changes
